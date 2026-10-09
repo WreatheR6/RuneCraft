@@ -77,8 +77,9 @@ for b in blocks:
                                "incomparable types", "cannot return a value", "may not have been initialized",
                                "constant expression required", "an enum switch case label",
                                "not applicable", "already defined", "unreachable")) and "--all" not in sys.argv:
-        # Keep only those clearly about our own types.
-        if not re.search(r"com\.runecraft|\bItemDef\b|\bRecipe\b|\bMonsterStats\b|\bBossDef\b|\bMonsterDef\b|\bAttackDef\b", b):
+        # Keep only errors that don't involve any Minecraft-derived type.
+        detail = "\n".join(b.splitlines()[1:]) + " " + msg
+        if any(tok in external_names for tok in re.findall(r"\w+", detail)):
             continue
     if msg.startswith("method does not override") or "does not override or implement" in msg:
         continue
