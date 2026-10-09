@@ -118,6 +118,17 @@ public final class ItemUses {
             }
         }
         if (potion == null) {
+            if (def.id().equals("antifire_potion") || def.id().equals("extended_antifire")) {
+                int minutes = def.id().equals("antifire_potion") ? 6 : 12;
+                player.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, minutes * 60 * 20, 0));
+                int used = stack.getDamage() + 1;
+                Msg.action(player, "You drink some of your antifire potion.");
+                if (used >= 4) {
+                    player.setStackInHand(hand, Inv.stack("vial", 1));
+                } else {
+                    stack.setDamage(used);
+                }
+            }
             return;
         }
         PlayerData data = Players.data(player);

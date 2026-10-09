@@ -40,6 +40,7 @@ public final class XpService {
         int oldCombat = skills.combatLevel();
         int gained = skills.addXp(skill, tenths);
         ServerNetworking.xpDrop(player, skill, tenths);
+        com.runecraft.content.GameEvents.fireXp(player, skill, tenths);
         if (gained > 0) {
             onLevelUp(player, skill, skills.level(skill), gained);
             int newCombat = skills.combatLevel();

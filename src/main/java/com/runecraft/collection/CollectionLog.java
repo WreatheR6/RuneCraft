@@ -16,6 +16,7 @@ public final class CollectionLog {
     }
 
     public static void obtain(ServerPlayerEntity player, String item) {
+        com.runecraft.content.GameEvents.fireObtain(player, item, 1);
         if (!CollectionLogData.tracked(item)) {
             return;
         }

@@ -126,15 +126,17 @@ public final class CombatHandler {
         AttackType type = Equipment.meleeType(player, skills);
         int effAtt = CombatFormulas.effectiveAttack(skills.currentLevel(Skill.ATTACK), PrayerService.attack(data), style);
         int effStr = CombatFormulas.effectiveStrength(skills.currentLevel(Skill.STRENGTH), PrayerService.strength(data), style);
-        long attackRoll = CombatFormulas.attackRoll(effAtt, eq.attack(type));
+        long attackRoll = (long) (CombatFormulas.attackRoll(effAtt, eq.attack(type)) * CombatHooks.accuracy(player, target, type));
         long defenceRoll = defenceRoll(target, type);
         int maxHit = CombatFormulas.meleeMaxHit(effStr, eq.meleeStrength());
-        maxHit = Slayer.boostMaxHit(player, target, maxHit);
+        maxHit = (int) Math.floor(Slayer.boostMaxHit(player, target, maxHit) * CombatHooks.maxHit(player, target, type));
         int damage = CombatFormulas.roll(new java.util.Random(player.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
+        damage = CombatHooks.afterRoll(player, target, type, damage);
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, type);
         }
         int dealt = applyDamage(player, target, damage);
+        CombatHooks.afterHit(player, target, type, dealt);
         awardXp(player, style, dealt, false);
     }
 
@@ -155,14 +157,18 @@ public final class CombatHandler {
         EquipmentStats eq = Equipment.total(player, skills);
         int effRanged = CombatFormulas.effectiveRanged(skills.currentLevel(Skill.RANGED), PrayerService.rangedAttack(data), style);
         int effRangedStr = CombatFormulas.effectiveRanged(skills.currentLevel(Skill.RANGED), PrayerService.rangedStrength(data), style);
-        long attackRoll = CombatFormulas.attackRoll(effRanged, eq.rangedAttack());
+        long attackRoll = (long) (CombatFormulas.attackRoll(effRanged, eq.rangedAttack())
+                * CombatHooks.accuracy(player, target, AttackType.RANGED));
         long defenceRoll = defenceRoll(target, AttackType.RANGED);
-        int maxHit = Math.max(1, CombatFormulas.rangedMaxHit(effRangedStr, rangedStrength + eq.rangedStrength()));
+        int maxHit = Math.max(1, (int) Math.floor(CombatFormulas.rangedMaxHit(effRangedStr, rangedStrength + eq.rangedStrength())
+                * CombatHooks.maxHit(player, target, AttackType.RANGED)));
         int damage = CombatFormulas.roll(new java.util.Random(player.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
+        damage = CombatHooks.afterRoll(player, target, AttackType.RANGED, damage);
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, AttackType.RANGED);
         }
         int dealt = applyDamage(player, target, damage);
+        CombatHooks.afterHit(player, target, AttackType.RANGED, dealt);
         awardXp(player, style, dealt, false);
         if (arrowItem != null && player.getRandom().nextFloat() < 0.8f) {
             target.dropStack(Inv.stack(arrowItem, 1));
@@ -226,7 +232,27 @@ public final class CombatHandler {
         if (mob instanceof OsrsMonsterEntity m) {
             damage = m.onHitPlayer(player, damage, type);
         }
-        applyDamage(mob, player, damage);
+        int dealtToPlayer = applyDamage(mob, player, damage);
+        if (dealtToPlayer > 0) {
+            CombatHooks.hurt(player, mob, dealtToPlayer);
+        }
+    }
+
+    /** Combat hook passthroughs for MagicService and module code. */
+    public static double hookAccuracy(ServerPlayerEntity p, LivingEntity t, AttackType type) {
+        return CombatHooks.accuracy(p, t, type);
+    }
+
+    public static double hookMaxHit(ServerPlayerEntity p, LivingEntity t, AttackType type) {
+        return CombatHooks.maxHit(p, t, type);
+    }
+
+    public static int hookAfterRoll(ServerPlayerEntity p, LivingEntity t, AttackType type, int damage) {
+        return CombatHooks.afterRoll(p, t, type, damage);
+    }
+
+    public static void hookAfterHit(ServerPlayerEntity p, LivingEntity t, AttackType type, int dealt) {
+        CombatHooks.afterHit(p, t, type, dealt);
     }
 
     public static void clearCooldown(LivingEntity mob) {
@@ -329,6 +355,7 @@ public final class CombatHandler {
             }
         }
         Slayer.onKill(player, entity, stats);
+        com.runecraft.content.GameEvents.fireKill(player, entity, stats);
         QuestManager.onKill(player, entity, stats);
     }
 }

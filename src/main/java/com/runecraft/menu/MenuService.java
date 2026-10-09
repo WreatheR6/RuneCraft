@@ -168,6 +168,7 @@ public final class MenuService {
                 Inv.give(player, item, count);
                 CollectionLog.obtain(player, item);
             });
+            com.runecraft.content.GameEvents.fireMake(player, r);
             if (r.skill() != null) {
                 XpService.addTenths(player, r.skill(), r.xpTenths());
             }

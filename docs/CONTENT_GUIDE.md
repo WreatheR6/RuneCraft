@@ -1,0 +1,123 @@
+# Adding content to RuneCraft
+
+RuneCraft content lives in **content modules**. Each module has three parts:
+
+| Part | Package | Notes |
+|---|---|---|
+| Pure data | `com.runecraft.osrs.content.<module>` | Pure Java, no Minecraft imports. Compiled and unit-tested without Minecraft. |
+| Minecraft behaviour | `com.runecraft.content.<module>` | Entry point `<Name>Hooks implements ModuleHooks` with `init()`. |
+| Client code | `com.runecraft.client.content.<module>` | Entry point `<Name>ClientHooks implements ClientModuleHooks` with `initClient()`. |
+
+Modules are listed in `osrs/content/Modules.java`, `content/ModuleHooksRegistry.java` and `client/content/ClientModuleHooksRegistry.java`. All three lists already contain every module, so you never edit them.
+
+## Golden rules
+1. **Only edit files inside your module's three packages** (and your module's test package `src/test/java/com/runecraft/osrs/content/<module>/`). Shared files are owned by the integrator. If you need a shared change, describe it in your final report.
+2. **Ids are global.** Prefix nothing, but make sure an id isn't already used:
+   - `grep -r '"your_id"' src/main/java`
+   - check `build/catalog.json` after `bash tools/run_core_tests.sh`
+3. **References to items:** you may only reference items that:
+   - you define in your own module,
+   - are built-in (`osrs/ItemCatalog.java`, the enums in `osrs/data`), or
+   - are listed in `osrs/content/CommonItems.java`.
+
+   Never reference another module's items. Modules are developed in parallel and merged later.
+4. **Before you finish, both must pass:**
+   - `bash tools/run_core_tests.sh` (data tests, including `ContentModulesTest`)
+   - `python3 tools/check_compile.py` (best-effort compile of the Minecraft code against our own classes; must say `0 relevant error(s)`)
+5. **Be faithful to OSRS:** real levels, XP, stats, drop rates and mechanics. Approximations are fine where the exact value is unknown; note them in a comment.
+6. **Don't touch these:**
+   - `src/main/resources` (assets are generated later from `build/catalog.json`)
+   - `tools/`
+   - git config
+
+## Data API (pure Java)
+Implement the methods you need on your module class (`ContentModule`):
+
+- `items(ItemSink items)`:
+  - Call `items.add(id, name, ItemDef.Kind, shape, rgbColor)`, then the fluent setters `.value(gp) .stack(n) .heal(hp) .equipment(EquipmentDef) .tier("rune") .rangedStrength(n) .examine("...")`.
+  - **Kinds:** SIMPLE, FOOD (needs `heal`), BONES (only for `Bone` enum ids), POTION (4 doses; effect via your hooks), GRIMY_HERB, AXE, PICKAXE, MELEE_WEAPON, ARMOUR, SHIELD, BOW, ARROW (needs `rangedStrength`), STAFF, TOOL, SEED, RUNE, COINS, SLAYER_GEM, VIAL, TRAP.
+  - **Equipment:** `new EquipmentDef(slot, new EquipmentStats(stabA, slashA, crushA, magicA, rangedA, stabD, slashD, crushD, magicD, rangedD, str, rangedStr, magicDmg%, prayer), Map.of(Skill.ATTACK, 70), speedTicks, AttackType.SLASH, WeaponClass.MELEE)`.
+  - **Existing texture shapes:** coins, log, plank, ore, essence, clay, bar, arrowtips, axe, pickaxe, tinderbox, knife, chisel, hammer, needle, net, rod, pot, harpoon, dibber, mould, snare, box_trap, bait, gem, mark, fish_raw, fish_cooked, fish_burnt, meat_raw, meat_cooked, meat_burnt, cake, bones, big_bones, rune, staff, staff_orb, dagger, scimitar, longsword, warhammer, battleaxe, 2h_sword, full_helm, platebody, platelegs, kiteshield, shaft, headless, string, flax, shortbow(_u), longbow(_u), arrow, hide, leather, wool, cloth, fur, spice, cowl, leather_body, chaps, boots, gem_uncut, ring, necklace, amulet, vial, vial_water, herb_grimy, herb, potion_unf, secondary, potion, seed, produce, creature, key, club, spear, crossbow, flail, cape, tokkul, pet, pot_item, skull, bead, tail, note, package, talisman, stake, beer, whip.
+  - New shape names are allowed (e.g. "godsword", "trident", "crystal_bow", "dart", "blowpipe", "shard", "casket", "orb", "book"). The asset generator will get a drawer for each new shape. List new shapes in your report.
+- `recipes(Consumer<Recipe> recipes)`: `Recipe.builder(id, MenuType, name).skill(Skill, level, xp).in(item, n).out(item, n).tool(item).ticks(n).success(p).burn(stopLevel, burntItem).build()`. MenuType values: see `osrs/MenuType.java`.
+- `monsters()`: return `List<MonsterDef>`:
+  ```java
+  MonsterDef.of("abyssal_demon", "Abyssal demon").level(124).stats(150, 97, 67, 135, 1, 1)
+      .speed(4).defenceBonus(20, 20, 20, 0, 20)
+      .attack(AttackDef.of("melee", AttackType.STAB, 8, 2.5, 10))
+      .drops(Drop.always("ashes"), Drop.of("abyssal_whip", 1, 1, 512))
+      .slayer(85, "abyssal_demons").skin(0x3A1A3A, 0x2A102A, 0x2A102A, 0xA02020)
+      .size(0.8f, 2.2f, 1.2f).spawn(Region.WILDERNESS, 4, 1, 2).underground()
+  ```
+  - `size(width, height, scale)`: hitbox width and height in blocks, multiplied by the render/hitbox scale.
+  - `model("id")`: points at a custom `ModelSpec`. A spec with the same id as the creature is picked up automatically. Without one, the creature renders as a biped with a texture generated from `skin(...)`.
+- `bosses()`: return `List<BossDef>`. Same builder plus `.phase(belowPercent, message, dmgMult, summonMinions, AttackDef...)`, `.at(place)`, `.key(item)`, `.pet(item)`, `.minion(creatureId, n)`, `.arena(radius, style)`, `.raidOnly()`, `.wilderness()`, `.category("Bosses"|"Raids"|...)`.
+  - Arena styles: stone, lava, ice, crypt, jungle, void, water, sand.
+  - `at(place)` is a `Landmark` enum name (e.g. "EDGEVILLE") or one of your `PlaceDef` ids. An arena with a summoning stone is generated there automatically.
+  - Drops with rarity ≥ 24, plus the pet, form the boss's collection log page automatically.
+- `AttackDef`: `AttackDef.of(name, AttackType, maxHit, rangeBlocks, weight)`, then `.special(Special, param)`, `.telegraph(ticks, "message")`, `.particle("minecraft:flame")` and `.message("...")`.
+  - **Specials:** AOE, SKY_STRIKE (dodgeable), PRAYER_PIERCING, DRAIN_PRAYER, POISON, VENOM, LIFESTEAL, SUMMON, KNOCKBACK, FREEZE, PULL, DRAGONFIRE (anti-dragon shield / antifire reduce it), HAZARD (ground pool), DRAIN_STAT, BLINK, HEAL_SELF.
+  - Telegraphed attacks give players time to switch protection prayers (Jad-style).
+- `places()`: `PlaceDef.town(id, name, osrsX, osrsY, Station...)` or `PlaceDef.of(id, name, osrsX, osrsY, Style, List.of(blockIds))`.
+  - Uses real OSRS world coordinates (Lumbridge = 3222, 3218).
+  - Built when the chunk first loads, with a plaza in the given style plus the stations and blocks.
+- `npcs()`: `NpcDef.of(id, name, place, dx, dz, skinRGB, topRGB, bottomRGB, hatRGB)`. Talk handlers are registered on the Minecraft side.
+- `quests()`: `QuestDef.of(id, name).difficulty(...).points(qp).requires(Skill, lvl).requiresQuest(id).xp(Skill, xp).reward("item:count").step("journal line for stage 0").step(...)`. Stage == number of steps means complete.
+- `blocks()`: `BlockDef.menu(id, name, MenuType, color, look)`, `BlockDef.scripted(id, name, color, look)` and `BlockDef.decor(...)`.
+  - The `look` hint drives the texture, e.g. "altar", "chest", "portal_glow", "crate", "statue", "range", "machine", "obelisk".
+- `models()`: return `List<ModelSpec>`, built with `ModelSpec.builder(id).scale(s).shadow(r).part(name, parentOrNull, Role, rgb).pivot(x, y, z).rotate(pitch, yaw, roll).box(x, y, z, w, h, d).pattern("eyes|scales|plates|spots|stripes|glow|none")...build()`.
+  - Units are model pixels (16 per block). Y grows downward and Y=24 is the ground, as in vanilla entity models.
+  - Roles animate automatically: HEAD looks at the player; NECK sways; JAW opens on attack; LEG_* walk; LEG_EXTRA uses insect gait; ARM_* swing and attack; WING_* flap; TAIL, TENTACLE and FIN sway; SPIN rotates; FLOAT bobs; BODY breathes.
+  - Use `pattern("eyes")` on heads (the generator paints eyes on the front face).
+  - Keep each model under about 40 boxes.
+- `collectionLog()`: extra `CollectionLogData.Page`s.
+
+## Minecraft API (in your `Hooks.init()`)
+### Bosses
+- **Boss scripts:**
+  - `BossScripts.register("vorkath", VorkathScript::new)`.
+  - `BossScript` has `onSpawn`, `tick`, `gameTick`, `chooseAttack`, `modifyIncoming`, `onHitPlayer`, `onPhase`, `onDeath` and `isVulnerable`.
+  - Use it for mechanics `AttackDef` can't express: Zulrah rotations, Vorkath's acid walk, Nightmare totems, Hydra's vents, and so on.
+- **Boss helpers:**
+  - `DataBossService.spawn(world, pos, bossDef, target)`
+  - `DataBossService.buildArena(world, center, radius, style)`
+  - `DataBossService.requirement(bossId, (player, def) -> boolean)`
+- **Mechanics:** `Mechanics.perform(mob, target, attackDef, mult)`, `Mechanics.addHazard(world, pos, dmg, ticks, owner)` and `Mechanics.choose(...)`.
+
+### Combat
+- `CombatHandler.applyDamage(attacker, target, dmg)`, `CombatHandler.npcAttack(mob, player, type)` and `CombatHandler.awardXp(player, style, dmg, magic)`.
+- `CombatHooks.addModifier(PlayerAttackModifier)` adjusts accuracy, max hit, rolled damage and after-hit effects (special attacks, slayer helm, salve, void).
+- `CombatHooks.addHurtListener(...)` reacts to a player being hit.
+- `PoisonService.poison/venom/cure`.
+
+### Quests
+- `QuestScripts.onTalk(npcId, (player, npcEntity) -> ...)` and `QuestScripts.onKill(...)`.
+- `QuestApi.say/you/stage/setStage/start/complete/isComplete/takeAll/has/give`.
+
+### Events
+- `GameEvents.onXp/onKill/onMake/onObtain`: diaries, clue steps, points.
+
+### World, blocks and items
+- `BlockHooks.register(blockId, (player, pos, state) -> ...)` handles scripted blocks.
+- `LandmarkBuilder.registerCustom(placeIdOrLandmarkName, (world, centre) -> ...)` builds extra structures (dungeon rooms, minigame arenas) once.
+- `MenuService.open(player, MenuType, stationPos, range)`.
+- `XpService.add(player, Skill, xp)`.
+- `Inv.has/count/remove/give/stack/idOf`. Coins live in a money pouch, so use `Inv` with "coins".
+- `Msg.game/red/action`.
+- `Players.data(player)` gives `PlayerData`: skills, prayer, quest stages, kill counts, collection log, bank, coins.
+- `ServerNetworking.sync(player)`.
+- `ActionManager.start(player, Action)` for repeating 0.6s-tick actions. `ActionManager.gameTick()/mcTick()`.
+- `Gielinor.teleport(player, Landmark)`, `Gielinor.safeSpot(world, x, z)`, `Gielinor.is(entity)`, `Gielinor.wildernessLevel(entity)`.
+- `CollectionLog.obtain(player, item)`.
+
+### Fabric and Minecraft
+- You may register your own Fabric event listeners, networking channels (ids under `runecraft:<module>/...`), extra blocks/items/entities (`Registry.register` with ids under `runecraft:`) and persistent state (`PersistentStateManager`, key `runecraft_<module>`).
+- Target Minecraft 1.20.1, Yarn 1.20.1+build.10 and Fabric API 0.92.2+1.20.1.
+- Use only APIs you are certain exist in 1.20.1.
+
+### Client (`initClient()`)
+- `EntityRendererRegistry` for your own entity types.
+- `HudRenderCallback` for overlays.
+- `KeyBindingHelper` for keys.
+- Your own `Screen`s.
+- Renderers for module monsters and bosses are registered automatically: a custom model if a `ModelSpec` exists, otherwise a biped.

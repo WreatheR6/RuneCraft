@@ -135,10 +135,13 @@ public final class MagicService {
         SkillSet skills = data.skills();
         EquipmentStats eq = Equipment.total(player, skills);
         int eff = CombatFormulas.effectiveMagic(skills.currentLevel(Skill.MAGIC), PrayerService.magic(data));
-        long attackRoll = CombatFormulas.attackRoll(eff, eq.magicAttack());
+        long attackRoll = (long) (CombatFormulas.attackRoll(eff, eq.magicAttack())
+                * CombatHandler.hookAccuracy(player, target, AttackType.MAGIC));
         long defenceRoll = CombatHandler.defenceRoll(target, AttackType.MAGIC);
-        int maxHit = CombatFormulas.magicMaxHit(spell.maxHit(), eq.magicDamagePercent());
+        int maxHit = (int) Math.floor(CombatFormulas.magicMaxHit(spell.maxHit(), eq.magicDamagePercent())
+                * CombatHandler.hookMaxHit(player, target, AttackType.MAGIC));
         int damage = CombatFormulas.roll(new java.util.Random(player.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
+        damage = CombatHandler.hookAfterRoll(player, target, AttackType.MAGIC, damage);
         boolean splash = player.getRandom().nextDouble() >= com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll) && damage == 0;
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, AttackType.MAGIC);
@@ -147,6 +150,7 @@ public final class MagicService {
             ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.CLOUD, target.getX(), target.getY() + 1, target.getZ(), 8, 0.3, 0.3, 0.3, 0.02);
         }
         int dealt = CombatHandler.applyDamage(player, target, damage);
+        CombatHandler.hookAfterHit(player, target, AttackType.MAGIC, dealt);
         if (dealt > 0) {
             XpService.addTenths(player, Skill.MAGIC, dealt * 20);
             XpService.addTenths(player, Skill.HITPOINTS, CombatFormulas.hitpointsXpTenths(dealt));
