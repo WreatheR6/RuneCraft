@@ -184,7 +184,7 @@ public final class CombatHandler {
     }
 
     /** Defence roll of any target against an attack style. */
-    static long defenceRoll(LivingEntity target, AttackType type) {
+    public static long defenceRoll(LivingEntity target, AttackType type) {
         if (target instanceof ServerPlayerEntity defender) {
             PlayerData d = Players.data(defender);
             SkillSet s = d.skills();
