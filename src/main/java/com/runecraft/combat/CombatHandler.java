@@ -229,6 +229,10 @@ public final class CombatHandler {
         applyDamage(mob, player, damage);
     }
 
+    public static void clearCooldown(LivingEntity mob) {
+        NPC_LAST_ATTACK.remove(mob);
+    }
+
     // ---------------- Damage + XP ----------------
 
     public static DamageSource source(LivingEntity attacker) {

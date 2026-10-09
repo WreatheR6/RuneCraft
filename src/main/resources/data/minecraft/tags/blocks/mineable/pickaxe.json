@@ -1,0 +1,21 @@
+{
+  "replace": false,
+  "values": [
+    "runecraft:bank_booth",
+    "runecraft:furnace",
+    "runecraft:anvil",
+    "runecraft:cooking_range",
+    "runecraft:prayer_altar",
+    "runecraft:general_store",
+    "runecraft:rune_shop",
+    "runecraft:weapon_shop",
+    "runecraft:tool_shop",
+    "runecraft:archery_shop",
+    "runecraft:spinning_wheel",
+    "runecraft:tanning_rack",
+    "runecraft:construction_workbench",
+    "runecraft:slayer_master",
+    "runecraft:apothecary_table",
+    "runecraft:gielinor_portal"
+  ]
+}

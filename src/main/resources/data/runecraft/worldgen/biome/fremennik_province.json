@@ -1,0 +1,108 @@
+{
+  "has_precipitation": true,
+  "temperature": -0.3,
+  "downfall": 0.5,
+  "effects": {
+    "sky_color": 8364543,
+    "fog_color": 14215423,
+    "water_color": 4020182,
+    "water_fog_color": 329011,
+    "grass_color": 6332795,
+    "foliage_color": 6396257,
+    "mood_sound": {
+      "sound": "minecraft:ambient.cave",
+      "tick_delay": 6000,
+      "block_search_extent": 8,
+      "offset": 2.0
+    }
+  },
+  "spawners": {
+    "monster": [
+      {
+        "type": "runecraft:barbarian",
+        "weight": 8,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:ice_giant",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:man",
+        "weight": 4,
+        "minCount": 1,
+        "maxCount": 2
+      }
+    ],
+    "creature": [
+      {
+        "type": "minecraft:wolf",
+        "weight": 6,
+        "minCount": 2,
+        "maxCount": 4
+      },
+      {
+        "type": "minecraft:sheep",
+        "weight": 6,
+        "minCount": 2,
+        "maxCount": 3
+      }
+    ],
+    "ambient": [],
+    "axolotls": [],
+    "underground_water_creature": [],
+    "water_creature": [],
+    "water_ambient": [],
+    "misc": []
+  },
+  "spawn_costs": {},
+  "carvers": {
+    "air": [
+      "minecraft:cave",
+      "minecraft:canyon"
+    ]
+  },
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "minecraft:ore_dirt",
+      "minecraft:ore_gravel",
+      "runecraft:clay_rock_ore",
+      "runecraft:iron_rock_ore",
+      "runecraft:coal_rock_ore",
+      "runecraft:adamantite_rock_ore",
+      "runecraft:runite_rock_ore"
+    ],
+    [],
+    [
+      "minecraft:spring_water"
+    ],
+    [
+      "runecraft:cage_harpoon_fishing_spot",
+      "runecraft:net_harpoon_fishing_spot",
+      "runecraft:clay_rock_surface",
+      "runecraft:iron_rock_surface",
+      "runecraft:coal_rock_surface",
+      "runecraft:adamantite_rock_surface",
+      "runecraft:runite_rock_surface",
+      "runecraft:tree_tree",
+      "runecraft:maple_tree",
+      "runecraft:yew_tree",
+      "minecraft:patch_grass_taiga",
+      "minecraft:patch_large_fern",
+      "minecraft:brown_mushroom_normal",
+      "minecraft:red_mushroom_normal"
+    ],
+    [
+      "minecraft:freeze_top_layer"
+    ]
+  ]
+}

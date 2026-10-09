@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "runecraft:bronze_arrow",
+    "runecraft:iron_arrow",
+    "runecraft:steel_arrow",
+    "runecraft:mithril_arrow",
+    "runecraft:adamant_arrow",
+    "runecraft:rune_arrow"
+  ]
+}

@@ -85,7 +85,11 @@ public final class ModItems {
 
     private static OsrsArmorMaterial armorMaterial(String tier) {
         return ARMOR_MATERIALS.computeIfAbsent(tier, t -> new OsrsArmorMaterial(t,
-                "leather".equals(t) ? 1 : metal(t).ordinal() + 1));
+                switch (t) {
+                    case "leather" -> 1;
+                    case "barrows", "bandos" -> 8;
+                    default -> metal(t).ordinal() + 1;
+                }));
     }
 
     private static ArmorItem.Type armorType(EquipmentDef.Slot slot) {

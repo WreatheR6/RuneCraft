@@ -1,0 +1,25 @@
+{
+  "type": "runecraft:gielinor",
+  "generator": {
+    "type": "minecraft:noise",
+    "settings": "runecraft:gielinor",
+    "biome_source": {
+      "type": "runecraft:gielinor",
+      "biomes": {
+        "misthalin": "runecraft:misthalin",
+        "lumbridge_swamp": "runecraft:lumbridge_swamp",
+        "asgarnia": "runecraft:asgarnia",
+        "wilderness": "runecraft:wilderness",
+        "kharidian_desert": "runecraft:kharidian_desert",
+        "morytania": "runecraft:morytania",
+        "kandarin": "runecraft:kandarin",
+        "feldip_hills": "runecraft:feldip_hills",
+        "fremennik_province": "runecraft:fremennik_province",
+        "troll_country": "runecraft:troll_country",
+        "karamja": "runecraft:karamja",
+        "tirannwn": "runecraft:tirannwn",
+        "uncharted_isles": "runecraft:uncharted_isles"
+      }
+    }
+  }
+}

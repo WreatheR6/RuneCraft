@@ -1,0 +1,103 @@
+{
+  "has_precipitation": true,
+  "temperature": 0.6,
+  "downfall": 0.8,
+  "effects": {
+    "sky_color": 5267552,
+    "fog_color": 4214864,
+    "water_color": 4214848,
+    "water_fog_color": 329011,
+    "grass_color": 4872762,
+    "foliage_color": 3820074,
+    "mood_sound": {
+      "sound": "minecraft:ambient.cave",
+      "tick_delay": 6000,
+      "block_search_extent": 8,
+      "offset": 2.0
+    }
+  },
+  "spawners": {
+    "monster": [
+      {
+        "type": "runecraft:ghoul",
+        "weight": 10,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "minecraft:zombie",
+        "weight": 8,
+        "minCount": 2,
+        "maxCount": 4
+      },
+      {
+        "type": "minecraft:skeleton",
+        "weight": 4,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:man",
+        "weight": 4,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:lesser_demon",
+        "weight": 1,
+        "minCount": 1,
+        "maxCount": 1
+      }
+    ],
+    "creature": [],
+    "ambient": [],
+    "axolotls": [],
+    "underground_water_creature": [],
+    "water_creature": [],
+    "water_ambient": [],
+    "misc": []
+  },
+  "spawn_costs": {},
+  "carvers": {
+    "air": [
+      "minecraft:cave",
+      "minecraft:canyon"
+    ]
+  },
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "minecraft:ore_dirt",
+      "minecraft:ore_gravel",
+      "runecraft:iron_rock_ore",
+      "runecraft:coal_rock_ore",
+      "runecraft:mithril_rock_ore",
+      "runecraft:adamantite_rock_ore"
+    ],
+    [],
+    [
+      "minecraft:spring_water"
+    ],
+    [
+      "runecraft:lure_bait_fishing_spot",
+      "runecraft:iron_rock_surface",
+      "runecraft:coal_rock_surface",
+      "runecraft:mithril_rock_surface",
+      "runecraft:adamantite_rock_surface",
+      "runecraft:tree_tree",
+      "runecraft:willow_tree",
+      "runecraft:mahogany_tree",
+      "minecraft:flower_swamp",
+      "minecraft:patch_grass_plain",
+      "minecraft:patch_waterlily",
+      "minecraft:brown_mushroom_normal",
+      "minecraft:red_mushroom_normal"
+    ],
+    []
+  ]
+}

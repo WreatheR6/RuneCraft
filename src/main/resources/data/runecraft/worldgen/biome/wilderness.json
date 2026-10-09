@@ -1,0 +1,129 @@
+{
+  "has_precipitation": true,
+  "temperature": 0.6,
+  "downfall": 0.2,
+  "effects": {
+    "sky_color": 7363162,
+    "fog_color": 5914688,
+    "water_color": 3820122,
+    "water_fog_color": 329011,
+    "grass_color": 8022586,
+    "foliage_color": 5917226,
+    "mood_sound": {
+      "sound": "minecraft:ambient.cave",
+      "tick_delay": 6000,
+      "block_search_extent": 8,
+      "offset": 2.0
+    }
+  },
+  "spawners": {
+    "monster": [
+      {
+        "type": "minecraft:skeleton",
+        "weight": 8,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "minecraft:zombie",
+        "weight": 6,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:dark_wizard",
+        "weight": 5,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:hill_giant",
+        "weight": 5,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:moss_giant",
+        "weight": 4,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:lesser_demon",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:greater_demon",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:black_demon",
+        "weight": 1,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:ice_giant",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      }
+    ],
+    "creature": [],
+    "ambient": [],
+    "axolotls": [],
+    "underground_water_creature": [],
+    "water_creature": [],
+    "water_ambient": [],
+    "misc": []
+  },
+  "spawn_costs": {},
+  "carvers": {
+    "air": [
+      "minecraft:cave",
+      "minecraft:canyon"
+    ]
+  },
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "minecraft:ore_dirt",
+      "minecraft:ore_gravel",
+      "runecraft:iron_rock_ore",
+      "runecraft:coal_rock_ore",
+      "runecraft:gold_rock_ore",
+      "runecraft:mithril_rock_ore",
+      "runecraft:adamantite_rock_ore",
+      "runecraft:runite_rock_ore"
+    ],
+    [],
+    [
+      "minecraft:spring_water"
+    ],
+    [
+      "runecraft:dark_crab_fishing_spot",
+      "runecraft:iron_rock_surface",
+      "runecraft:coal_rock_surface",
+      "runecraft:gold_rock_surface",
+      "runecraft:mithril_rock_surface",
+      "runecraft:adamantite_rock_surface",
+      "runecraft:runite_rock_surface",
+      "runecraft:tree_tree",
+      "runecraft:yew_tree",
+      "runecraft:magic_tree",
+      "minecraft:patch_dead_bush_2",
+      "minecraft:brown_mushroom_normal",
+      "minecraft:red_mushroom_normal"
+    ],
+    []
+  ]
+}

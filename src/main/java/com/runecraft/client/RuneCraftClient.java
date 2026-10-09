@@ -1,0 +1,144 @@
+package com.runecraft.client;
+
+import com.runecraft.entity.BossEntity;
+import com.runecraft.entity.OsrsMonsterEntity;
+import com.runecraft.network.Net;
+import com.runecraft.osrs.CombatStyle;
+import com.runecraft.osrs.MenuType;
+import com.runecraft.osrs.Quest;
+import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.Spell;
+import com.runecraft.osrs.data.Boss;
+import com.runecraft.osrs.data.Monster;
+import com.runecraft.registry.ModBlocks;
+import com.runecraft.registry.ModEntities;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.minecraft.block.Block;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.util.InputUtil;
+import net.minecraft.entity.EntityType;
+import org.lwjgl.glfw.GLFW;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+public class RuneCraftClient implements ClientModInitializer {
+    public static KeyBinding interfaceKey;
+
+    @Override
+    public void onInitializeClient() {
+        registerPackets();
+        interfaceKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.runecraft.interface", InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_K, "key.categories.runecraft"));
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while (interfaceKey.wasPressed()) {
+                client.setScreen(new RuneScapeScreen(RuneScapeScreen.Tab.SKILLS));
+            }
+        });
+        HudRenderCallback.EVENT.register(HudOverlay::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(HitsplatRenderer::render);
+        ItemTooltipCallback.EVENT.register(Tooltips::append);
+
+        for (Map.Entry<Monster, EntityType<OsrsMonsterEntity>> e : ModEntities.MONSTERS.entrySet()) {
+            String id = e.getKey().entity();
+            EntityRendererRegistry.register(e.getValue(), ctx -> new OsrsBipedRenderer<>(ctx, id, ModEntities.scale(id)));
+        }
+        for (Map.Entry<Boss, EntityType<BossEntity>> e : ModEntities.BOSS_TYPES.entrySet()) {
+            String id = e.getKey().entityId();
+            EntityRendererRegistry.register(e.getValue(), ctx -> new OsrsBipedRenderer<>(ctx, id, e.getKey().scale()));
+        }
+        EntityRendererRegistry.register(ModEntities.QUEST_NPC, ctx -> new OsrsBipedRenderer<>(ctx, null, 1.0f));
+
+        List<Block> cutout = new ArrayList<>(ModBlocks.FISHING_SPOTS.values());
+        cutout.add(ModBlocks.FIRE);
+        cutout.add(ModBlocks.BIRD_SNARE);
+        cutout.add(ModBlocks.BOX_TRAP);
+        cutout.add(ModBlocks.HERB_PATCH);
+        cutout.add(ModBlocks.ALLOTMENT_PATCH);
+        for (Block b : cutout) {
+            BlockRenderLayerMap.INSTANCE.putBlock(b, RenderLayer.getCutout());
+        }
+    }
+
+    private static void registerPackets() {
+        ClientPlayNetworking.registerGlobalReceiver(Net.SYNC, (client, handler, buf, sender) -> {
+            int n = buf.readVarInt();
+            int[] xp = new int[n];
+            int[] boosts = new int[n];
+            for (int i = 0; i < n; i++) {
+                xp[i] = buf.readVarInt();
+                boosts[i] = buf.readVarInt();
+            }
+            int prayer = buf.readVarInt();
+            int mask = buf.readInt();
+            int style = buf.readVarInt();
+            int autocast = buf.readVarInt();
+            long coins = buf.readVarLong();
+            String task = buf.readString();
+            int remaining = buf.readVarInt();
+            int questCount = buf.readVarInt();
+            int[] stages = new int[questCount];
+            for (int i = 0; i < questCount; i++) {
+                stages[i] = buf.readVarInt();
+            }
+            int qp = buf.readVarInt();
+            int logCount = buf.readVarInt();
+            List<String> log = new ArrayList<>();
+            for (int i = 0; i < logCount; i++) {
+                log.add(buf.readString());
+            }
+            client.execute(() -> {
+                ClientState.SKILLS.load(xp, boosts);
+                ClientState.prayerPoints = prayer;
+                ClientState.prayerMask = mask;
+                ClientState.style = CombatStyle.values()[Math.max(0, Math.min(style, CombatStyle.values().length - 1))];
+                ClientState.autocast = autocast < 0 || autocast >= Spell.values().length ? null : Spell.values()[autocast];
+                ClientState.coins = coins;
+                ClientState.slayerTask = task;
+                ClientState.slayerRemaining = remaining;
+                System.arraycopy(stages, 0, ClientState.QUEST_STAGES, 0, Math.min(stages.length, Quest.values().length));
+                ClientState.questPoints = qp;
+                ClientState.COLLECTION_LOG.clear();
+                ClientState.COLLECTION_LOG.addAll(log);
+            });
+        });
+        ClientPlayNetworking.registerGlobalReceiver(Net.XP_DROP, (client, handler, buf, sender) -> {
+            int skill = buf.readVarInt();
+            int tenths = buf.readVarInt();
+            client.execute(() -> ClientState.XP_DROPS.add(new ClientState.XpDrop(Skill.byIndex(skill), tenths, System.currentTimeMillis())));
+        });
+        ClientPlayNetworking.registerGlobalReceiver(Net.HITSPLAT, (client, handler, buf, sender) -> {
+            int entity = buf.readVarInt();
+            int damage = buf.readVarInt();
+            byte type = buf.readByte();
+            float ratio = buf.readFloat();
+            client.execute(() -> ClientState.HITSPLATS.computeIfAbsent(entity, k -> new ArrayList<>())
+                    .add(new ClientState.Hitsplat(damage, type, ratio, System.currentTimeMillis())));
+        });
+        ClientPlayNetworking.registerGlobalReceiver(Net.OPEN_MENU, (client, handler, buf, sender) -> {
+            int type = buf.readVarInt();
+            int count = buf.readVarInt();
+            List<ClientState.MenuEntry> entries = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                entries.add(new ClientState.MenuEntry(buf.readString(), buf.readString(), buf.readString(), buf.readVarInt(),
+                        buf.readVarInt(), buf.readBoolean()));
+            }
+            client.execute(() -> {
+                ClientState.menuType = MenuType.values()[type];
+                ClientState.MENU.clear();
+                ClientState.MENU.addAll(entries);
+                client.setScreen(new MakeXScreen());
+            });
+        });
+    }
+}

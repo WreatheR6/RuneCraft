@@ -82,6 +82,15 @@ public final class ServerNetworking {
         buf.writeVarLong(data.coins());
         buf.writeString(data.slayerTask() == null ? "" : data.slayerTask().name());
         buf.writeVarInt(data.slayerRemaining());
+        buf.writeVarInt(com.runecraft.osrs.Quest.values().length);
+        for (com.runecraft.osrs.Quest q : com.runecraft.osrs.Quest.values()) {
+            buf.writeVarInt(data.questStage(q));
+        }
+        buf.writeVarInt(data.questPoints());
+        buf.writeVarInt(data.collectionLog().size());
+        for (String item : data.collectionLog()) {
+            buf.writeString(item);
+        }
         ServerPlayNetworking.send(player, Net.SYNC, buf);
     }
 

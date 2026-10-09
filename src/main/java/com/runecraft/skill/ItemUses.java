@@ -147,6 +147,10 @@ public final class ItemUses {
     }
 
     private static void clean(ServerPlayerEntity player, ItemStack stack, ItemDef def) {
+        if (!Players.data(player).questComplete(com.runecraft.osrs.Quest.DRUIDIC_RITUAL)) {
+            Msg.game(player, "You need to complete the Druidic Ritual quest to use the Herblore skill.");
+            return;
+        }
         for (Herb h : Herb.values()) {
             if (h.grimyItem().equals(def.id())) {
                 if (Players.data(player).skills().currentLevel(Skill.HERBLORE) < h.cleanLevel()) {

@@ -3,6 +3,8 @@ package com.runecraft.registry;
 import com.runecraft.RuneCraft;
 import com.runecraft.block.AgilityObstacleBlock;
 import com.runecraft.block.AllotmentPatchBlock;
+import com.runecraft.block.BossSummonBlock;
+import com.runecraft.osrs.data.Boss;
 import com.runecraft.block.FishingSpotBlock;
 import com.runecraft.block.HerbPatchBlock;
 import com.runecraft.block.OsrsFireBlock;
@@ -46,6 +48,7 @@ public final class ModBlocks {
     public static final Map<RuneAltar, RuneAltarBlock> ALTARS = new EnumMap<>(RuneAltar.class);
     public static final Map<Thieving.Stall, StallBlock> STALLS = new EnumMap<>(Thieving.Stall.class);
     public static final Map<Station, Block> STATIONS = new LinkedHashMap<>();
+    public static final Map<Boss, BossSummonBlock> BOSS_STONES = new EnumMap<>(Boss.class);
 
     public static AgilityObstacleBlock AGILITY_OBSTACLE;
     public static HerbPatchBlock HERB_PATCH;
@@ -94,6 +97,11 @@ public final class ModBlocks {
             if (s == Station.HERB_PATCH || s == Station.ALLOTMENT_PATCH) {
                 continue;
             }
+            Thieving.Stall stall = Thieving.Stall.byBlock(s.blockId());
+            if (stall != null) {
+                STATIONS.put(s, STALLS.get(stall));
+                continue;
+            }
             AbstractBlock.Settings settings = AbstractBlock.Settings.create().mapColor(MapColor.STONE_GRAY)
                     .sounds(s == Station.ANVIL ? BlockSoundGroup.ANVIL : BlockSoundGroup.STONE).strength(3.0f, 1200.0f)
                     .requiresTool();
@@ -101,6 +109,10 @@ public final class ModBlocks {
                 settings = settings.luminance(st -> 10);
             }
             STATIONS.put(s, register(s.blockId(), new StationBlock(s, settings), true));
+        }
+        for (Boss b : Boss.values()) {
+            BOSS_STONES.put(b, register(b.summonBlockId(), new BossSummonBlock(b,
+                    unbreakable(MapColor.BLACK, BlockSoundGroup.DEEPSLATE).luminance(st -> 6)), true));
         }
         AGILITY_OBSTACLE = register("agility_obstacle", new AgilityObstacleBlock(
                 unbreakable(MapColor.OAK_TAN, BlockSoundGroup.WOOD)), true);

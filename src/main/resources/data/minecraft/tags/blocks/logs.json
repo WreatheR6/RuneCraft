@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    "runecraft:tree_tree_log",
+    "runecraft:oak_tree_log",
+    "runecraft:willow_tree_log",
+    "runecraft:teak_tree_log",
+    "runecraft:maple_tree_log",
+    "runecraft:mahogany_tree_log",
+    "runecraft:yew_tree_log",
+    "runecraft:magic_tree_log",
+    "runecraft:redwood_tree_log"
+  ]
+}

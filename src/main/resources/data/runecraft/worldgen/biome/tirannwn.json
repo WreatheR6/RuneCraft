@@ -1,0 +1,113 @@
+{
+  "has_precipitation": true,
+  "temperature": 0.7,
+  "downfall": 0.8,
+  "effects": {
+    "sky_color": 8433919,
+    "fog_color": 13693152,
+    "water_color": 4163300,
+    "water_fog_color": 329011,
+    "grass_color": 5288032,
+    "foliage_color": 4235344,
+    "mood_sound": {
+      "sound": "minecraft:ambient.cave",
+      "tick_delay": 6000,
+      "block_search_extent": 8,
+      "offset": 2.0
+    }
+  },
+  "spawners": {
+    "monster": [
+      {
+        "type": "runecraft:guard",
+        "weight": 6,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:moss_giant",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 2
+      }
+    ],
+    "creature": [
+      {
+        "type": "minecraft:chicken",
+        "weight": 10,
+        "minCount": 2,
+        "maxCount": 4
+      },
+      {
+        "type": "minecraft:cow",
+        "weight": 8,
+        "minCount": 2,
+        "maxCount": 4
+      },
+      {
+        "type": "minecraft:sheep",
+        "weight": 8,
+        "minCount": 2,
+        "maxCount": 4
+      },
+      {
+        "type": "minecraft:pig",
+        "weight": 4,
+        "minCount": 1,
+        "maxCount": 3
+      }
+    ],
+    "ambient": [],
+    "axolotls": [],
+    "underground_water_creature": [],
+    "water_creature": [],
+    "water_ambient": [],
+    "misc": []
+  },
+  "spawn_costs": {},
+  "carvers": {
+    "air": [
+      "minecraft:cave",
+      "minecraft:canyon"
+    ]
+  },
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "minecraft:ore_dirt",
+      "minecraft:ore_gravel",
+      "runecraft:coal_rock_ore",
+      "runecraft:mithril_rock_ore",
+      "runecraft:adamantite_rock_ore",
+      "runecraft:amethyst_rock_ore"
+    ],
+    [],
+    [
+      "minecraft:spring_water"
+    ],
+    [
+      "runecraft:lure_bait_fishing_spot",
+      "runecraft:angler_fishing_spot",
+      "runecraft:pure_essence_rock_surface",
+      "runecraft:coal_rock_surface",
+      "runecraft:mithril_rock_surface",
+      "runecraft:adamantite_rock_surface",
+      "runecraft:amethyst_rock_surface",
+      "runecraft:teak_tree",
+      "runecraft:maple_tree",
+      "runecraft:yew_tree",
+      "runecraft:magic_tree",
+      "runecraft:redwood_tree",
+      "minecraft:flower_default",
+      "minecraft:patch_large_fern",
+      "minecraft:brown_mushroom_normal",
+      "minecraft:red_mushroom_normal"
+    ],
+    []
+  ]
+}

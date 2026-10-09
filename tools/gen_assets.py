@@ -1095,7 +1095,229 @@ def draw_blob(img, pal, item, rng):
     bevel(img, pix, pal, noise=rng)
 
 
+def draw_key(img, pal, item, rng):
+    def fn(u, v):
+        d = math.hypot(u - 2, v)
+        if 0.9 <= d <= 2.0:
+            return pal.l if u + v < 2 else pal.m
+        if 3.5 <= u <= 12 and v == 0:
+            return pal.l
+        if u in (9.5, 11.5) and 0 < v <= 1.5:
+            return pal.m
+        if u in (9, 10, 11, 12) and v == 1:
+            return pal.d
+        return None
+    rdiag(img, fn)
+
+
+def draw_club(img, pal, item, rng):
+    def fn(u, v):
+        if 0 <= u <= 4.5 and v == 0:
+            return pal.d
+        if 4.5 < u <= 13:
+            w = 0.5 + (u - 4.5) * 0.22
+            if u > 12:
+                w -= (u - 12) * 1.2
+            if abs(v) <= w:
+                if (u * 2 + v * 2) % 7 == 0:
+                    return pal.dd  # knots
+                return pal.l if v < -w / 3 else (pal.m if v <= w / 3 else pal.d)
+        return None
+    rdiag(img, fn)
+
+
+def draw_spear(img, pal, item, rng):
+    shaft = shade(pal.m, 0.55) if item.get("tier") == "dragon" else WOOD
+    head = Pal(STEEL) if item.get("tier") != "dragon" else pal
+
+    def fn(u, v):
+        if 10 <= u <= 13.5 and abs(v) <= min(1.5, (13.5 - u) * 0.6, (u - 9.5) * 1.2):
+            return head.h if v < 0 else head.l if v == 0 else head.m
+        if 9.5 <= u <= 10 and abs(v) <= 1.5:
+            return pal.d if item.get("tier") != "dragon" else GOLD
+        return _handle(u, v, 0, 9.5, shaft)
+    rdiag(img, fn)
+
+
+def draw_crossbow(img, pal, item, rng):
+    limb = Pal(STEEL if item.get("tier") != "barrows" else (110, 110, 100))
+
+    def fn(u, v):
+        if abs(v) <= 4.5:
+            uc = 10.5 - 0.12 * v * v
+            if abs(u - uc) <= 0.25 or (abs(u - uc) <= 0.5 and abs(v) < 3.5):
+                return limb.l if v < 0 else limb.m
+        if 1 <= u <= 11.5 and abs(v) <= 0.5:
+            return pal.l if v < 0 else (pal.m if v == 0 else pal.d)
+        if 4 <= u <= 5 and 0.5 < v <= 2 and u - 4 <= v - 0.5:
+            return pal.d  # trigger guard
+        return None
+    rdiag(img, fn)
+    pts = []
+    for y in range(16):
+        for x in range(16):
+            u = ((x - 1) - (y - 14)) / 2.0
+            v = ((x - 1) + (y - 14)) / 2.0
+            if abs(v) <= 3.5 and abs(u - (8.6 - 0.0 * v)) <= 0.25 and not opaque(img, x, y):
+                pts.append((x, y, (220, 220, 200)))
+    return pts
+
+
+def draw_flail(img, pal, item, rng):
+    metal = Pal(mix(pal.m, STEEL, 0.4))
+
+    def fn(u, v):
+        d = math.hypot(u - 11, v)
+        if d <= 1.9:
+            return metal.h if u + v < 10.2 else (metal.l if d < 1 else metal.m)
+        if d <= 2.6 and (u == 11 or v == 0):
+            return metal.d  # spikes
+        if 7.5 <= u <= 8.5 and v == 0:
+            return (120, 120, 125) if u % 1 else (160, 160, 165)
+        if 7 <= u <= 7.5 and abs(v) <= 0.5:
+            return metal.d
+        return _handle(u, v, 0, 6.5, pal.d)
+    rdiag(img, fn)
+
+
+def draw_cape(img, pal, item, rng):
+    pix = mask(lambda d: d.polygon([(4, 1), (11, 1), (14, 14), (1, 14)], fill=255))
+    if item["id"] == "fire_cape":
+        lava = Pal((60, 15, 5))
+        for (x, y) in pix:
+            n = math.sin(x * 1.3 + y * 0.7) + math.sin(y * 1.9 - x * 0.5) + rng.random() * 0.8
+            c = (255, 220, 70) if n > 1.4 else (240, 120, 20) if n > 0.6 else (190, 50, 10) if n > -0.4 else lava.m
+            put(img, x, y, c)
+    else:
+        bevel(img, pix, pal)
+    for x in range(4, 12):
+        put(img, x, 1, shade(pal.m, 0.5))
+    for y in range(3, 14, 3):
+        put(img, 7, y, shade(pal.m, 0.6))
+
+
+def draw_tokkul(img, pal, item, rng):
+    pix = mask(lambda d: d.polygon([(4, 3), (11, 3), (13, 8), (11, 13), (4, 13), (2, 8)], fill=255))
+    bevel(img, pix, Pal((55, 45, 45)))
+    for (x, y) in ((6, 6), (7, 7), (8, 8), (9, 7), (7, 9), (6, 10), (9, 10)):
+        put(img, x, y, (230, 100, 30))
+    put(img, 5, 5, (255, 200, 90))
+
+
+def draw_pet(img, pal, item, rng):
+    body = mask(lambda d: (d.ellipse((4, 7, 11, 14), fill=255),
+                           d.polygon([(4, 9), (5, 3), (7, 7), (8, 1), (9, 7), (11, 3), (11, 9)], fill=255)))
+    for (x, y) in body:
+        t = (y - 1) / 13
+        put(img, x, y, mix((255, 230, 90), pal.m, min(1, t * 1.4)))
+    for (x, y) in ((6, 10), (9, 10)):
+        put(img, x, y, BLACK)
+    for x in (6, 7, 8, 9):
+        put(img, x, 13, shade(pal.m, 0.5))
+
+
+def draw_pot_item(img, pal, item, rng):
+    draw_pot(img, Pal((150, 100, 60)), item, rng)
+    for (x, y) in mask(lambda d: d.ellipse((5, 1, 10, 5), fill=255)):
+        put(img, x, y, pal.h if y < 3 else pal.m)
+
+
+def draw_skull(img, pal, item, rng):
+    rows = ["..######..", ".########.", "##########", "##..##..##", "##..##..##", "#####.####",
+            ".########.", "..#.##.#..", "..######.."]
+    pix = {(3 + i, 3 + j) for j, r in enumerate(rows) for i, ch in enumerate(r) if ch == "#"}
+    bevel(img, pix, pal)
+
+
+def draw_bead(img, pal, item, rng):
+    pix = mask(lambda d: d.ellipse((4, 4, 11, 11), fill=255)) - {(7, 7), (8, 7), (7, 8), (8, 8)}
+    bevel(img, pix, pal)
+
+
+def draw_tail(img, pal, item, rng):
+    pts = [(2, 12), (4, 12), (6, 11), (8, 9), (9, 7), (9, 5), (10, 3), (12, 2), (13, 3)]
+    for i in range(len(pts) - 1):
+        line(img, *pts[i], *pts[i + 1], pal.m if i < 5 else pal.l)
+    for (x, y) in ((2, 13), (3, 13), (4, 13), (3, 11), (5, 12)):
+        put(img, x, y, pal.d)
+
+
+def draw_note(img, pal, item, rng):
+    pix = {(x, y) for x in range(3, 13) for y in range(2, 15)}
+    bevel(img, pix, pal)
+    ink = (70, 60, 50)
+    for y in range(4, 13, 2):
+        for x in range(5, 11 if y < 12 else 8):
+            if rng.random() < 0.85:
+                put(img, x, y, ink)
+    if item["id"].startswith("message"):
+        for (x, y) in ((10, 12), (11, 12), (10, 13), (11, 13)):
+            put(img, x, y, (190, 30, 30))
+
+
+def draw_package(img, pal, item, rng):
+    p = Pal(pal.m)
+    front = {(x, y) for x in range(2, 12) for y in range(6, 14)}
+    bevel(img, front, p)
+    for y in range(3, 6):
+        for x in range(2 + (6 - y), 12 + (6 - y)):
+            put(img, x, y, p.h)
+    for y in range(3, 12):
+        for x in (12, 13):
+            if y - 3 <= (x - 11) * 3 + 6 and (x, y) not in front:
+                put(img, x, y, p.d)
+    string = (230, 220, 180)
+    for y in range(6, 14):
+        put(img, 7, y, string)
+    for x in range(2, 12):
+        put(img, x, 10, string)
+    line(img, 7, 6, 10, 3, string)
+
+
+def draw_talisman(img, pal, item, rng):
+    for (x, y) in mask(lambda d: d.arc((5, -3, 10, 6), 0, 180, fill=255)):
+        put(img, x, y, (200, 190, 150))
+    pix = mask(lambda d: d.ellipse((2, 4, 13, 15), fill=255))
+    bevel(img, pix, Pal((140, 140, 145)), noise=rng)
+    sym = rune_symbol(item["id"].replace("_talisman", ""))
+    for j, row in enumerate(sym):
+        for i, ch in enumerate(row):
+            if ch == "#":
+                put(img, 4 + i, 6 + j, pal.l if (i + j) < 5 else pal.m)
+
+
+def draw_stake(img, pal, item, rng):
+    def fn(u, v):
+        if 1 <= u <= 13 and abs(v) <= min(1.0, (13 - u) * 0.35):
+            if u < 2:
+                return pal.d
+            return pal.l if v < 0 else (pal.m if v == 0 else pal.d)
+        return None
+    rdiag(img, fn)
+
+
+def draw_beer(img, pal, item, rng):
+    mug = Pal((150, 100, 55))
+    body = {(x, y) for x in range(3, 11) for y in range(4, 15)}
+    bevel(img, body, mug)
+    for y in range(5, 14):
+        for x in range(4, 10):
+            put(img, x, y, pal.l if x < 6 else pal.m)
+    for y in (6, 10):
+        for x in range(3, 11):
+            put(img, x, y, (110, 110, 115))
+    for (x, y) in mask(lambda d: d.arc((8, 6, 14, 12), 270, 90, fill=255, width=2)):
+        if x >= 11:
+            put(img, x, y, mug.d)
+    for (x, y) in mask(lambda d: d.ellipse((2, 1, 11, 6), fill=255)):
+        put(img, x, y, (250, 248, 235) if y < 4 else (230, 225, 205))
+
+
 SHAPES = {
+    "key": draw_key, "club": draw_club, "spear": draw_spear, "crossbow": draw_crossbow, "flail": draw_flail,
+    "cape": draw_cape, "tokkul": draw_tokkul, "pet": draw_pet, "pot_item": draw_pot_item, "skull": draw_skull,
+    "bead": draw_bead, "tail": draw_tail, "note": draw_note, "package": draw_package, "talisman": draw_talisman,
+    "stake": draw_stake, "beer": draw_beer,
     "coins": draw_coins, "log": draw_log, "plank": draw_plank, "ore": draw_ore, "essence": draw_essence,
     "clay": draw_clay, "bar": draw_bar, "arrowtips": draw_arrowtips, "axe": draw_axe, "pickaxe": draw_pickaxe,
     "tinderbox": draw_tinderbox, "knife": draw_knife, "chisel": draw_chisel, "hammer": draw_hammer,
@@ -1159,6 +1381,7 @@ def gen_items(cat):
 ARMOUR_COLOURS = {
     "bronze": 0xB08D57, "iron": 0x8A8A8E, "steel": 0xB8B8C0, "black": 0x2E2E34, "mithril": 0x4A5A9C,
     "adamant": 0x4C7A4C, "rune": 0x4FB8C8, "dragon": 0xB02020, "leather": 0x9A6A3A,
+    "barrows": 0x6A6A60, "bandos": 0x6A7A3A,
 }
 
 
@@ -1171,7 +1394,7 @@ def box_faces(u, v, w, h, d):
     }
 
 
-def paint_plate(img, rect, pal, rng, leather=False, face=""):
+def paint_plate(img, rect, pal, rng, leather=False, face="", style=None):
     x0, y0, w, h = rect
     for y in range(y0, y0 + h):
         for x in range(x0, x0 + w):
@@ -1194,6 +1417,10 @@ def paint_plate(img, rect, pal, rng, leather=False, face=""):
                     c = pal.l
                 if rng.random() < 0.08 and 0 < lx < w - 1 and 0 < ly < h - 1:
                     c = pal.h
+                if style == "barrows" and rng.random() < 0.12:
+                    c = mix(c, (90, 70, 50), 0.5)  # weathering / rust
+                if style == "bandos" and h > 4 and (ly == 0 or ly == h - 1):
+                    c = GOLD if (lx + ly) % 3 else shade(GOLD, 0.75)
             put(img, x, y, c)
 
 
@@ -1204,7 +1431,7 @@ def armour_layer(name, colour, layer):
     leather = name == "leather"
     if layer == 1:
         for f, r in box_faces(0, 0, 8, 8, 8).items():
-            paint_plate(img, r, pal, rng, leather, f)
+            paint_plate(img, r, pal, rng, leather, f, name)
         # visor on the helmet front (metal only), leave face open for leather (cowl)
         fx, fy = 8, 8
         if leather:
@@ -1218,16 +1445,16 @@ def armour_layer(name, colour, layer):
                 put(img, fx + 3, y, BLACK)
                 put(img, fx + 4, y, BLACK)
         for f, r in box_faces(16, 16, 8, 12, 4).items():
-            paint_plate(img, r, pal, rng, leather, f)
+            paint_plate(img, r, pal, rng, leather, f, name)
         for f, r in box_faces(40, 16, 4, 12, 4).items():
-            paint_plate(img, r, pal, rng, leather, f)
+            paint_plate(img, r, pal, rng, leather, f, name)
         for f, r in box_faces(0, 16, 4, 12, 4).items():  # boots
-            paint_plate(img, r, Pal(shade(colour, 0.85)), rng, leather, f)
+            paint_plate(img, r, Pal(shade(colour, 0.85)), rng, leather, f, name)
     else:
         for f, r in box_faces(16, 16, 8, 12, 4).items():
-            paint_plate(img, r, pal, rng, leather, f)
+            paint_plate(img, r, pal, rng, leather, f, name)
         for f, r in box_faces(0, 16, 4, 12, 4).items():
-            paint_plate(img, r, pal, rng, leather, f)
+            paint_plate(img, r, pal, rng, leather, f, name)
         # belt line on waist
         for x in range(16, 40):
             if opaque(img, x, 20):
@@ -1895,7 +2122,162 @@ def gen_blocks(cat):
     block_item_model("box_trap_trap", {"parent": "minecraft:item/generated",
                                        "textures": {"layer0": f"{NS}:item/box_trap"}})
     names["box_trap_trap"] = "Box trap (set)"
+    gen_boss_stones(names)
     return names
+
+
+SIGILS = {
+    "club": ["......##", ".....###", "....###.", "...###..", "..##....", ".##.....", "##......", "#......."],
+    "leaf": ["....####", "..######", ".######.", ".#####..", ".####...", ".##.....", "#.......", "........"],
+    "bandos": ["#..##..#", "#.####.#", "########", ".######.", "..####..", "..####..", ".##..##.", "##....##"],
+    "zamorak": ["#..##..#", "##.##.##", ".######.", "...##...", "...##...", "..####..", ".##..##.", "#......#"],
+    "cross": ["...##...", "...##...", "########", "########", "...##...", "...##...", "...##...", "...##..."],
+    "fang": ["########", "#......#", ".#....#.", ".##..##.", "..#..#..", "..#..#..", "...##...", "...##..."],
+}
+
+BARROWS_BROTHERS = {
+    "ahrim": ((150, 70, 200), "Ahrim's sarcophagus"), "dharok": ((200, 40, 30), "Dharok's sarcophagus"),
+    "guthan": ((60, 170, 70), "Guthan's sarcophagus"), "karil": ((60, 170, 190), "Karil's sarcophagus"),
+    "torag": ((220, 140, 40), "Torag's sarcophagus"), "verac": ((210, 200, 80), "Verac's sarcophagus"),
+}
+
+
+def glow_sigil(img, rows, col, scale=1, ox=None, oy=None):
+    w, h = len(rows[0]) * scale, len(rows) * scale
+    ox = (16 - w) // 2 if ox is None else ox
+    oy = (16 - h) // 2 if oy is None else oy
+    cells = {(ox + i * scale + sx, oy + j * scale + sy) for j, r in enumerate(rows) for i, ch in enumerate(r)
+             if ch == "#" for sx in range(scale) for sy in range(scale)}
+    for (x, y) in list(cells):
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                if (x + dx, y + dy) not in cells and 0 <= x + dx < 16 and 0 <= y + dy < 16:
+                    put(img, x + dx, y + dy, mix(img.getpixel((x + dx, y + dy)), col, 0.35))
+    p = Pal(col)
+    for (x, y) in cells:
+        put(img, x, y, p.h if (x + y) % 4 == 0 else p.l)
+
+
+def coffin_outline(img, col):
+    pts = [(5, 1), (10, 1), (13, 4), (11, 14), (4, 14), (2, 4)]
+    for i in range(len(pts)):
+        line(img, *pts[i], *pts[(i + 1) % len(pts)], col)
+
+
+def pentagram(img, col):
+    cx, cy, r = 7.5, 7.8, 6.3
+    pts = [(int(round(cx + r * math.sin(math.radians(a)))), int(round(cy - r * math.cos(math.radians(a)))))
+           for a in range(0, 360, 72)]
+    for (x, y) in mask(lambda d: d.ellipse((0, 0, 15, 15), outline=255)):
+        put(img, x, y, shade(col, 0.75))
+    for i in range(5):
+        line(img, *pts[i], *pts[(i + 2) % 5], col)
+
+
+def gen_boss_stones(names):
+    for bid, nm, side, top, bottom in boss_stone_specs():
+        m = block_model(bid, cube_bottom_top(block_tex(side, bid + "_side"), block_tex(top, bid + "_top"),
+                                             block_tex(bottom, bid + "_bottom")))
+        blockstate(bid, {"variants": {"": {"model": m}}})
+        block_item_model(bid, {"parent": m})
+        names[bid] = nm
+
+
+def boss_stone_specs():
+    specs = []
+    ominous = (45, 42, 48)
+
+    def stone(key, base=ominous, amt=0.09):
+        return stone_tex(rng_for("boss", key), base, amt)
+
+    def frame(img, col):
+        for i in range(16):
+            for (x, y) in ((i, 0), (i, 15), (0, i), (15, i)):
+                put(img, x, y, col)
+        return img
+
+    # Obor / Bryophyta: gates
+    for bid, nm, col, sig in (("obor_summoning_stone", "Obor's gate", (150, 100, 50), "club"),
+                              ("bryophyta_summoning_stone", "Bryophyta's gate", (70, 170, 50), "leaf")):
+        side = stone(bid + "s")
+        for x in (3, 6, 9, 12):  # gate bars
+            for y in range(1, 15):
+                put(side, x, y, shade(col, 0.55) if y % 5 else shade(col, 0.8))
+        for x in range(1, 15):
+            put(side, x, 2, shade(col, 0.6))
+            put(side, x, 13, shade(col, 0.6))
+        top = frame(stone(bid + "t"), shade(col, 0.5))
+        glow_sigil(top, SIGILS[sig], col)
+        specs.append((bid, nm, side, top, stone(bid + "b", (30, 28, 32))))
+    # Barrows brothers: grey stone sarcophagi
+    for bro, (col, nm) in BARROWS_BROTHERS.items():
+        bid = bro + "_summoning_stone"
+        grey = (105, 102, 98)
+        side = stone(bid + "s", grey, 0.07)
+        for x in range(16):
+            put(side, x, 3, shade(grey, 0.65))
+            put(side, x, 12, shade(grey, 0.65))
+        for x in range(2, 14, 4):
+            for y in range(5, 11):
+                put(side, x, y, shade(grey, 0.75))
+        top = stone(bid + "t", (90, 88, 85), 0.07)
+        coffin_outline(top, (60, 58, 56))
+        glow_sigil(top, SIGILS["cross"], col)
+        specs.append((bid, nm, side, top, stone(bid + "b", (60, 58, 56))))
+    # General Graardor: Bandos altar
+    gb = (106, 122, 58)
+    side = stone("graardor_s", shade(gb, 0.55), 0.1)
+    for x in range(16):
+        put(side, x, 1, GOLD)
+        put(side, x, 14, GOLD)
+    glow_sigil(side, SIGILS["bandos"], (150, 170, 80), oy=4)
+    top = frame(stone("graardor_t", shade(gb, 0.45)), GOLD)
+    glow_sigil(top, SIGILS["bandos"], (190, 220, 90))
+    specs.append(("general_graardor_summoning_stone", "Bandos altar", side, top, stone("graardor_b", (40, 38, 30))))
+    # K'ril: Zamorak altar
+    side = stone("kril_s", (35, 20, 22), 0.1)
+    for y in range(16):
+        put(side, 0, y, (150, 20, 20))
+        put(side, 15, y, (150, 20, 20))
+    glow_sigil(side, SIGILS["zamorak"], (180, 30, 30), oy=4)
+    top = frame(stone("kril_t", (30, 15, 18)), (120, 15, 15))
+    glow_sigil(top, SIGILS["zamorak"], (230, 40, 30))
+    specs.append(("kril_tsutsaroth_summoning_stone", "Zamorak altar", side, top, stone("kril_b", (20, 12, 14))))
+    # TzTok-Jad: obsidian with lava
+    rng = rng_for("jad")
+
+    def obsidian(key, lava_frac):
+        img = stone_tex(rng_for("jad", key), (28, 22, 30), 0.12)
+        for y in range(16):
+            for x in range(16):
+                n = math.sin(x * 0.9 + y * 0.4 + rng.random()) + math.sin(y * 1.3 - x * 0.7)
+                if n > 2 - lava_frac * 3:
+                    put(img, x, y, (255, 200, 60) if n > 2.2 - lava_frac * 3 else (230, 90, 20))
+        return img
+    top = obsidian("t", 0.55)
+    for (x, y) in mask(lambda d: d.ellipse((3, 3, 12, 12), fill=255)):
+        put(top, x, y, mix((255, 210, 80), (220, 70, 10), rng.random()))
+    specs.append(("tztok_jad_summoning_stone", "TzHaar Fight Cave entrance", obsidian("s", 0.35), top,
+                  stone("jad_b", (20, 16, 20))))
+    # Count Draynor: dark wooden coffin
+    dw = (60, 35, 25)
+    side = planks_tex(dw, rng_for("draynor_s"))
+    for x in range(16):
+        put(side, x, 1, (140, 20, 20))
+    top = planks_tex(dw, rng_for("draynor_t"))
+    coffin_outline(top, (150, 20, 20))
+    glow_sigil(top, SIGILS["fang"], (200, 30, 30), oy=5)
+    specs.append(("count_draynor_summoning_stone", "Count Draynor's coffin", side, top,
+                  planks_tex(shade(dw, 0.7), rng_for("draynor_b"))))
+    # Delrith: summoning circle
+    side = stone("delrith_s", (40, 30, 32))
+    for x in range(1, 15, 2):
+        put(side, x, 12, (170, 20, 20))
+        put(side, x + 1, 3, (170, 20, 20))
+    top = stone("delrith_t", (35, 28, 30))
+    pentagram(top, (230, 30, 20))
+    specs.append(("delrith_summoning_stone", "Delrith's summoning circle", side, top, stone("delrith_b", (25, 20, 22))))
+    return specs
 
 
 STATIONS = {
@@ -1952,6 +2334,66 @@ ENTITIES = {
 }
 
 
+ENTITIES.update({
+    "obor": ("Obor", dict(skin=0xC09A70, hair=0x4A3018, shirt=None, pants=0x6A4A28, shoes=None,
+                          loincloth=True, beard=0x4A3018)),
+    "bryophyta": ("Bryophyta", dict(skin=0x5A7A30, hair=0x2A5A18, shirt=0x3A6A20, pants=0x3A6A20, shoes=None,
+                                    robe=True, moss=True, eyes=(200, 240, 120))),
+    "ahrim": ("Ahrim the Blighted", dict(skin=0xD8D0C8, hair=0x202024, shirt=0x2A2A30, pants=0x202026,
+                                         shoes=0x101012, robe=True, hood=True, eyes=(120, 220, 255))),
+    "dharok": ("Dharok the Wretched", dict(skin=0xB8A890, hair=0xB0A088, shirt=0x4A4A48, pants=0x404040,
+                                           shoes=0x2A2A2A, plate=True, eyes=(230, 60, 40))),
+    "guthan": ("Guthan the Infested", dict(skin=0xB8A890, hair=0x6A6A60, shirt=0x7A7A70, pants=0x4A4A40,
+                                           shoes=0x2A2A2A, chain=True, helmet=True, helmet_col=(110, 110, 100),
+                                           tabard=(70, 90, 50), eyes=(120, 230, 90))),
+    "karil": ("Karil the Tainted", dict(skin=0xB8A890, hair=0x3A2A1A, shirt=0x5A4028, pants=0x4A3420,
+                                        shoes=0x2A1A10, helmet=True, coif=True, helmet_col=(80, 60, 40),
+                                        trim=(110, 80, 50), eyes=(100, 220, 230))),
+    "torag": ("Torag the Corrupted", dict(skin=0xB8A890, hair=0x5A5A50, shirt=0x5A5A52, pants=0x4A4A44,
+                                          shoes=0x2A2A2A, plate=True, helmet=True, helmet_col=(90, 90, 82),
+                                          eyes=(240, 160, 50))),
+    "verac": ("Verac the Defiled", dict(skin=0xB8A890, hair=0x3A3A36, shirt=0x3A3A38, pants=0x343432,
+                                        shoes=0x1A1A1A, plate=True, helmet=True, helmet_col=(60, 60, 56),
+                                        eyes=(230, 220, 90))),
+    "general_graardor": ("General Graardor", dict(skin=0x6A7A3A, hair=0x4A5A28, shirt=0x5A6A30, pants=0x4A5A28,
+                                                  shoes=0x3A3020, plate=True, trim=GOLD, ears=True,
+                                                  eyes=(230, 200, 40))),
+    "kril_tsutsaroth": ("K'ril Tsutsaroth", dict(skin=0x701818, hair=0x300808, shirt=None, pants=0x1A1012,
+                                                 shoes=None, horns=True, loincloth=True, eyes=(255, 210, 50))),
+    "tztok_jad": ("TzTok-Jad", dict(skin=0x2A1E1C, hair=0x1A1210, shirt=None, pants=None, shoes=None,
+                                   molten=True, eyes=(255, 150, 30))),
+    "count_draynor": ("Count Draynor", dict(skin=0xE8E4E0, hair=0x101010, shirt=0x1A1A1E, pants=0x141418,
+                                            shoes=0x0A0A0A, cape=(15, 15, 18), collar=(170, 20, 25), long_sleeves=True,
+                                            eyes=(220, 30, 30))),
+    "delrith": ("Delrith", dict(skin=0xC03020, hair=0x701810, shirt=None, pants=None, shoes=None,
+                                horns=True, eyes=(255, 230, 80))),
+})
+
+NPC_LOOKS = {
+    "peasant": dict(skin=0xC8A080, hair=0x6A4A2A, shirt=0x8A7A5A, pants=0x6A5A3A, shoes=0x3A2A1A),
+    "cook": dict(skin=0xD0A888, hair=0x5A3A1A, shirt=0xE8E8E8, pants=0x505060, shoes=0x2A2A2A, apron=True,
+                 hat=("chef", (250, 250, 250))),
+    "wizard": dict(skin=0xC8A080, hair=0xC0C0C8, shirt=0x2A40A0, pants=0x22388A, shoes=0x1A1A3A, robe=True,
+                   hat=("pointy", (40, 60, 170)), beard=0xD0D0D8),
+    "priest": dict(skin=0xC8A080, hair=0x8A8A88, shirt=0x1A1A1A, pants=0x1A1A1A, shoes=0x101010, robe=True,
+                   trim=(240, 240, 240)),
+    "noble": dict(skin=0xD8B898, hair=0x8A6A30, shirt=0x6A2A8A, pants=0x4A1A6A, shoes=0x2A1A10, trim=GOLD,
+                  cape=(110, 30, 140), collar=GOLD),
+    "dwarf": dict(skin=0xC89070, hair=0xC86A20, shirt=0x8A5A2A, pants=0x5A4A3A, shoes=0x3A2A1A,
+                  big_beard=0xD07020, helmet=True, helmet_col=(120, 120, 128)),
+    "knight": dict(skin=0xC8A080, hair=0x6A4A2A, shirt=0xA8A8B0, pants=0x8A8A92, shoes=0x4A4A50, chain=True,
+                   tabard=(240, 240, 245), emblem=(40, 70, 180), helmet=True),
+    "witch": dict(skin=0x9AB07A, hair=0x2A2A2A, shirt=0x1A1A1E, pants=0x141418, shoes=0x0A0A0A, robe=True,
+                  hat=("pointy", (25, 25, 30)), eyes=(120, 230, 80)),
+    "druid": dict(skin=0xC8A080, hair=0xE0E0E0, shirt=0xF0F0EC, pants=0xE8E8E4, shoes=0x6A5A3A, robe=True,
+                  trim=(60, 150, 50), beard=0xE8E8E8, hood=True),
+    "ghost": dict(skin=0xC8D4E8, hair=0xA8B8D0, shirt=0xB0C0DC, pants=0xA0B0D0, shoes=0x90A0C0, robe=True,
+                  eyes=(40, 50, 80), alpha=180),
+    "lady": dict(skin=0xE0C0A0, hair=0xB07030, shirt=0xD04060, pants=0xC03050, shoes=0x6A1A2A, robe=True,
+                 trim=(250, 180, 200)),
+}
+
+
 def fill_rect(img, rect, col, rng, amount=0.08):
     x0, y0, w, h = rect
     for y in range(y0, y0 + h):
@@ -1995,12 +2437,16 @@ def entity_texture(eid, o):
         fill_rect(img, (fx, fy, 1, 8), hood, rng, 0.06)
         fill_rect(img, (fx + 7, fy, 1, 8), hood, rng, 0.06)
     if o.get("helmet"):
-        steel = (150, 150, 158)
+        steel = rgb(o.get("helmet_col", (150, 150, 158)))
         for f in ("top", "back", "right", "left"):
             x, y, w, h = head[f]
-            fill_rect(img, (x, y, w, h if f in ("top", "back") else 4), steel, rng, 0.05)
+            fill_rect(img, (x, y, w, h if f in ("top", "back") else (8 if o.get("coif") else 4)), steel, rng, 0.05)
         fill_rect(img, (fx, fy, 8, 3), steel, rng, 0.05)
-        fill_rect(img, (fx + 3, fy + 3, 2, 2), steel, rng, 0.05)  # nose guard
+        if o.get("coif"):
+            fill_rect(img, (fx, fy, 1, 8), steel, rng, 0.05)
+            fill_rect(img, (fx + 7, fy, 1, 8), steel, rng, 0.05)
+        else:
+            fill_rect(img, (fx + 3, fy + 3, 2, 2), steel, rng, 0.05)  # nose guard
     eyes = o.get("eyes", (255, 255, 255))
     pupil = (30, 30, 60) if "eyes" not in o else shade(eyes, 0.5)
     put(img, fx + 1, fy + 4, eyes)
@@ -2050,7 +2496,7 @@ def entity_texture(eid, o):
             fill_rect(img, r, skin, rng, amt)
             if o.get("shirt") is not None and f not in ("top", "bottom"):
                 x, y, w, h = r
-                sleeve = h if o.get("robe") or o.get("chain") else 4
+                sleeve = h if o.get("robe") or o.get("chain") or o.get("plate") or o.get("long_sleeves") else 4
                 fill_rect(img, (x, y, w, sleeve), shirt, rng, amt)
         fill_rect(img, a["top"], shirt if o.get("shirt") is not None else skin, rng, amt)
     for lg in legs:
@@ -2101,10 +2547,19 @@ def entity_texture(eid, o):
                     if (xx + yy) % 2 == 0:
                         put(img, xx, yy, shade(shirt, 0.75))
         bx, by, bw, bh = body["front"]
-        fill_rect(img, (bx, by, bw, 2), (180, 30, 30), rng, 0.04)  # tabard collar
-        fill_rect(img, (bx + 2, by + 2, 4, 8), (180, 30, 30), rng, 0.04)
-        put(img, bx + 3, by + 4, GOLD)
-        put(img, bx + 4, by + 4, GOLD)
+        tab = rgb(o.get("tabard", (180, 30, 30)))
+        if o.get("tabard") is not False:
+            fill_rect(img, (bx, by, bw, 2), tab, rng, 0.04)  # tabard collar
+            fill_rect(img, (bx + 2, by + 2, 4, 8), tab, rng, 0.04)
+            emblem = rgb(o.get("emblem", GOLD))
+            put(img, bx + 3, by + 4, emblem)
+            put(img, bx + 4, by + 4, emblem)
+            if o.get("emblem"):
+                for dy in range(3, 9):
+                    put(img, bx + 3, by + dy, emblem)
+                    put(img, bx + 4, by + dy, emblem)
+                for dx in range(2, 6):
+                    put(img, bx + dx, by + 5, emblem)
     if o.get("ragged"):
         for f in ("front", "back", "right", "left"):
             x, y, w, h = body[f]
@@ -2121,6 +2576,7 @@ def entity_texture(eid, o):
             x, y = rng.randrange(64), rng.randrange(64)
             if opaque(img, x, y) and not (32 <= x < 64 and y < 16):
                 put(img, x, y, (80, 90, 60) if rng.random() < 0.5 else (110, 100, 80))
+    extra_features(img, o, rng, head, body, arms, legs, skin, shirt, fx, fy)
     if eid == "black_demon":
         put(img, fx + 1, fy + 4, (255, 40, 40))
         put(img, fx + 6, fy + 4, (255, 40, 40))
@@ -2128,7 +2584,107 @@ def entity_texture(eid, o):
     if "eyes" in o:
         for x in (1, 2, 5, 6):
             put(img, fx + x, fy + 4, eyes)
+    if o.get("alpha"):
+        for y in range(64):
+            for x in range(64):
+                px = img.getpixel((x, y))
+                if px[3] > 0:
+                    img.putpixel((x, y), px[:3] + (o["alpha"],))
     return img
+
+
+def extra_features(img, o, rng, head, body, arms, legs, skin, shirt, fx, fy):
+    """Optional costume details used by bosses and quest NPCs."""
+    sides = ("front", "back", "right", "left")
+    if o.get("plate"):
+        for part in [body] + arms + legs:
+            for f in sides:
+                x, y, w, h = part[f]
+                for xx in range(x, x + w):
+                    put(img, xx, y, mix(img.getpixel((xx, y)), WHITE, 0.25))
+                    for yy in range(y + 4, y + h - 1, 4):
+                        put(img, xx, yy, shade(img.getpixel((xx, yy)), 0.65))
+        if o.get("trim"):
+            t = rgb(o["trim"])
+            for f in sides:
+                x, y, w, h = body[f]
+                for xx in range(x, x + w):
+                    put(img, xx, y, t)
+                    put(img, xx, y + h - 1, t)
+                if f == "front":
+                    put(img, x + w // 2, y + 5, t)
+    elif o.get("trim"):
+        t = rgb(o["trim"])
+        for f in sides:
+            x, y, w, h = body[f]
+            for xx in range(x, x + w):
+                put(img, xx, y + h - 1, t)
+            if f == "front":
+                for yy in range(y, y + h):
+                    put(img, x + 3, yy, t)
+                    put(img, x + 4, yy, t)
+            for part in legs + arms:
+                lx, ly, lw, lh = part[f]
+                for xx in range(lx, lx + lw):
+                    put(img, xx, ly + lh - (2 if part in legs else 5), t)
+    if o.get("apron"):
+        x, y, w, h = body["front"]
+        fill_rect(img, (x + 1, y + 2, w - 2, h - 2), (245, 245, 240), rng, 0.03)
+        for lg in legs:
+            lx, ly, lw, lh = lg["front"]
+            fill_rect(img, (lx, ly, lw, 6), (245, 245, 240), rng, 0.03)
+    if o.get("cape"):
+        c = rgb(o["cape"])
+        fill_rect(img, body["back"], c, rng, 0.04)
+        for lg in legs:
+            fill_rect(img, lg["back"], c, rng, 0.04)
+        for part in arms:
+            x, y, w, h = part["back"]
+            fill_rect(img, (x, y, w, h), c, rng, 0.04)
+        col = rgb(o.get("collar", c))
+        for f in ("front", "right", "left"):
+            x, y, w, h = body[f]
+            fill_rect(img, (x, y, w, 2), col, rng, 0.04)
+        x, y, w, h = body["front"]
+        for i in range(3):
+            put(img, x + i, y + 2 + i, col)
+            put(img, x + w - 1 - i, y + 2 + i, col)
+    if o.get("hat"):
+        kind, c = o["hat"]
+        c = rgb(c)
+        rows = 3 if kind == "chef" else 2
+        fill_rect(img, head["top"], c, rng, 0.04)
+        for f in ("front", "back", "right", "left"):
+            x, y, w, h = head[f]
+            fill_rect(img, (x, y, w, rows), c, rng, 0.04)
+            for xx in range(x, x + w):
+                put(img, xx, y + rows, shade(c, 0.7) if kind != "chef" else (215, 215, 210))
+        if kind == "pointy":
+            tx, ty, _, _ = head["top"]
+            for (dx, dy) in ((3, 3), (4, 4), (3, 4), (4, 3)):
+                put(img, tx + dx, ty + dy, mix(c, WHITE, 0.4))
+            put(img, fx + 4, fy, (240, 220, 60))
+    if o.get("big_beard"):
+        b = rgb(o["big_beard"])
+        for (dx, dy) in [(x, y) for x in range(0, 8) for y in range(5, 8)]:
+            if not (dy == 5 and 2 < dx < 5):
+                put(img, fx + dx, fy + dy, b)
+        for f in ("right", "left"):
+            x, y, w, h = head[f]
+            fill_rect(img, (x, y + 5, w, 3), b, rng, 0.08)
+        x, y, w, h = body["front"]
+        fill_rect(img, (x + 1, y, w - 2, 5), b, rng, 0.08)
+        fill_rect(img, (x + 2, y + 5, w - 4, 2), b, rng, 0.08)
+    if o.get("molten"):
+        for _ in range(55):
+            x, y = rng.randrange(64), rng.randrange(64)
+            if 32 <= x < 64 and y < 16:
+                continue
+            for k in range(rng.randint(2, 5)):
+                if opaque(img, x, y):
+                    put(img, x, y, (255, 200, 60) if k == 0 else (240, 110, 20))
+                x += rng.choice((-1, 0, 1))
+                y += 1
 
 
 def gen_entities():
@@ -2136,6 +2692,10 @@ def gen_entities():
     for eid, (nm, o) in ENTITIES.items():
         save_png(entity_texture(eid, o), os.path.join(ASSETS, "textures", "entity", eid + ".png"), "entity textures")
         names[eid] = nm
+    for look, o in NPC_LOOKS.items():
+        save_png(entity_texture("npc_" + look, o),
+                 os.path.join(ASSETS, "textures", "entity", f"npc_{look}.png"), "entity textures")
+    names["quest_npc"] = "Gielinor resident"
     return names
 
 
@@ -2279,6 +2839,7 @@ def gen_lang(cat, block_names, entity_names):
         "itemGroup.runecraft.blocks": "RuneCraft World",
         "key.categories.runecraft": "RuneCraft",
         "key.runecraft.interface": "Open RuneScape interface",
+        "key.runecraft.collection_log": "Open collection log",
         "death.attack.runecraft.osrs_hit": "%1$s was slain",
         "death.attack.runecraft.osrs_hit.player": "%1$s was slain by %2$s",
         "dimension.runecraft.gielinor": "Gielinor",

@@ -1,0 +1,38 @@
+package com.runecraft.client;
+
+import com.runecraft.RuneCraft;
+import com.runecraft.entity.QuestNpcEntity;
+import net.minecraft.client.render.entity.BipedEntityRenderer;
+import net.minecraft.client.render.entity.EntityRendererFactory;
+import net.minecraft.client.render.entity.model.BipedEntityModel;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.util.Identifier;
+
+import java.util.Locale;
+
+/** Renders RuneCraft humanoids with the zombie/player biped model, a custom skin and a scale. */
+public class OsrsBipedRenderer<T extends MobEntity> extends BipedEntityRenderer<T, BipedEntityModel<T>> {
+    private final Identifier texture;
+    private final float scale;
+
+    public OsrsBipedRenderer(EntityRendererFactory.Context ctx, String textureName, float scale) {
+        super(ctx, new BipedEntityModel<>(ctx.getPart(EntityModelLayers.ZOMBIE)), 0.5f * scale);
+        this.texture = textureName == null ? null : RuneCraft.id("textures/entity/" + textureName + ".png");
+        this.scale = scale;
+    }
+
+    @Override
+    public Identifier getTexture(T entity) {
+        if (entity instanceof QuestNpcEntity npc) {
+            return RuneCraft.id("textures/entity/npc_" + npc.npc().look().name().toLowerCase(Locale.ROOT) + ".png");
+        }
+        return texture;
+    }
+
+    @Override
+    protected void scale(T entity, MatrixStack matrices, float amount) {
+        matrices.scale(scale, scale, scale);
+    }
+}

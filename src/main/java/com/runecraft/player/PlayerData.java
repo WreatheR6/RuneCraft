@@ -37,6 +37,9 @@ public final class PlayerData {
     private boolean visitedGielinor;
     private BlockPos returnPos;
     private int questPoints;
+    private final java.util.Map<String, Integer> killCounts = new java.util.HashMap<>();
+    private final java.util.Map<String, Integer> questStages = new java.util.HashMap<>();
+    private final java.util.Set<String> collectionLog = new java.util.LinkedHashSet<>();
 
     // Transient (not saved)
     public long lastAttackTick = -1000;
@@ -153,6 +156,38 @@ public final class PlayerData {
         return questPoints;
     }
 
+    public void setQuestPoints(int questPoints) {
+        this.questPoints = questPoints;
+    }
+
+    public int killCount(String boss) {
+        return killCounts.getOrDefault(boss, 0);
+    }
+
+    public int incrementKillCount(String boss) {
+        return killCounts.merge(boss, 1, Integer::sum);
+    }
+
+    public java.util.Map<String, Integer> killCounts() {
+        return killCounts;
+    }
+
+    public int questStage(com.runecraft.osrs.Quest quest) {
+        return questStages.getOrDefault(quest.name(), 0);
+    }
+
+    public void setQuestStage(com.runecraft.osrs.Quest quest, int stage) {
+        questStages.put(quest.name(), stage);
+    }
+
+    public boolean questComplete(com.runecraft.osrs.Quest quest) {
+        return questStage(quest) >= quest.finalStage();
+    }
+
+    public java.util.Set<String> collectionLog() {
+        return collectionLog;
+    }
+
     public NbtCompound toNbt() {
         NbtCompound nbt = new NbtCompound();
         nbt.putIntArray("Xp", skills.rawXp());
@@ -186,6 +221,17 @@ public final class PlayerData {
             nbt.putLong("ReturnPos", returnPos.asLong());
         }
         nbt.putInt("QuestPoints", questPoints);
+        NbtCompound kc = new NbtCompound();
+        killCounts.forEach(kc::putInt);
+        nbt.put("KillCounts", kc);
+        NbtCompound quests = new NbtCompound();
+        questStages.forEach(quests::putInt);
+        nbt.put("Quests", quests);
+        NbtList log = new NbtList();
+        for (String item : collectionLog) {
+            log.add(net.minecraft.nbt.NbtString.of(item));
+        }
+        nbt.put("CollectionLog", log);
         return nbt;
     }
 
@@ -219,6 +265,21 @@ public final class PlayerData {
         visitedGielinor = nbt.getBoolean("Visited");
         returnPos = nbt.contains("ReturnPos") ? BlockPos.fromLong(nbt.getLong("ReturnPos")) : null;
         questPoints = nbt.getInt("QuestPoints");
+        killCounts.clear();
+        NbtCompound kc = nbt.getCompound("KillCounts");
+        for (String k : kc.getKeys()) {
+            killCounts.put(k, kc.getInt(k));
+        }
+        questStages.clear();
+        NbtCompound quests = nbt.getCompound("Quests");
+        for (String k : quests.getKeys()) {
+            questStages.put(k, quests.getInt(k));
+        }
+        collectionLog.clear();
+        NbtList log = nbt.getList("CollectionLog", NbtElement.STRING_TYPE);
+        for (int i = 0; i < log.size(); i++) {
+            collectionLog.add(log.getString(i));
+        }
     }
 
     private static <E extends Enum<E>> E parse(Class<E> type, String name, E fallback) {

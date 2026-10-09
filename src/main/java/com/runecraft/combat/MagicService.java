@@ -62,6 +62,9 @@ public final class MagicService {
     private static boolean staffProvides(ServerPlayerEntity player, Rune rune) {
         ItemStack held = player.getMainHandStack();
         String id = held.isEmpty() ? "" : Inv.idOf(held);
+        if (id.equals("steam_battlestaff")) {
+            return rune == Rune.FIRE || rune == Rune.WATER;
+        }
         return id.equals("staff_of_" + rune.name().toLowerCase(java.util.Locale.ROOT));
     }
 

@@ -1,0 +1,112 @@
+{
+  "has_precipitation": true,
+  "temperature": 0.95,
+  "downfall": 0.9,
+  "effects": {
+    "sky_color": 7842047,
+    "fog_color": 12640448,
+    "water_color": 3186880,
+    "water_fog_color": 329011,
+    "grass_color": 5884220,
+    "foliage_color": 3193611,
+    "mood_sound": {
+      "sound": "minecraft:ambient.cave",
+      "tick_delay": 6000,
+      "block_search_extent": 8,
+      "offset": 2.0
+    }
+  },
+  "spawners": {
+    "monster": [
+      {
+        "type": "runecraft:moss_giant",
+        "weight": 4,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:lesser_demon",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:goblin",
+        "weight": 4,
+        "minCount": 2,
+        "maxCount": 3
+      },
+      {
+        "type": "minecraft:spider",
+        "weight": 4,
+        "minCount": 1,
+        "maxCount": 2
+      }
+    ],
+    "creature": [
+      {
+        "type": "minecraft:parrot",
+        "weight": 4,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "minecraft:chicken",
+        "weight": 4,
+        "minCount": 1,
+        "maxCount": 2
+      }
+    ],
+    "ambient": [],
+    "axolotls": [],
+    "underground_water_creature": [],
+    "water_creature": [],
+    "water_ambient": [],
+    "misc": []
+  },
+  "spawn_costs": {},
+  "carvers": {
+    "air": [
+      "minecraft:cave",
+      "minecraft:canyon"
+    ]
+  },
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "minecraft:ore_dirt",
+      "minecraft:ore_gravel",
+      "runecraft:iron_rock_ore",
+      "runecraft:coal_rock_ore",
+      "runecraft:gold_rock_ore",
+      "runecraft:gem_rock_ore"
+    ],
+    [],
+    [
+      "minecraft:spring_water"
+    ],
+    [
+      "runecraft:net_bait_fishing_spot",
+      "runecraft:cage_harpoon_fishing_spot",
+      "runecraft:net_harpoon_fishing_spot",
+      "runecraft:iron_rock_surface",
+      "runecraft:coal_rock_surface",
+      "runecraft:gold_rock_surface",
+      "runecraft:gem_rock_surface",
+      "runecraft:tree_tree",
+      "runecraft:willow_tree",
+      "runecraft:teak_tree",
+      "runecraft:mahogany_tree",
+      "minecraft:patch_grass_jungle",
+      "minecraft:patch_sugar_cane",
+      "minecraft:brown_mushroom_normal",
+      "minecraft:red_mushroom_normal"
+    ],
+    []
+  ]
+}

@@ -42,6 +42,10 @@ public final class MenuService {
         }
         ActionManager.cancel(player);
         PlayerData data = Players.data(player);
+        if (type == MenuType.HERBLORE && !data.questComplete(com.runecraft.osrs.Quest.DRUIDIC_RITUAL)) {
+            Msg.game(player, "You need to complete the Druidic Ritual quest to use the Herblore skill.");
+            return;
+        }
         List<ServerNetworking.MenuOption> options = new ArrayList<>();
         for (Recipe r : Recipes.menu(type)) {
             boolean relevant = type.isShop() || type == MenuType.CONSTRUCTION
