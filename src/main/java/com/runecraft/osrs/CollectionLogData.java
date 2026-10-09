@@ -55,6 +55,25 @@ public final class CollectionLogData {
                 "cosmic_rune", "chaos_rune", "astral_rune", "nature_rune", "law_rune", "death_rune", "blood_rune",
                 "soul_rune", "wrath_rune"));
         page("Other", "Quest rewards", List.of("silverlight", "air_talisman", "amulet_of_accuracy"));
+        for (com.runecraft.osrs.content.BossDef b : com.runecraft.osrs.content.ContentRegistry.bosses()) {
+            List<String> uniques = new ArrayList<>();
+            for (Drop d : b.drops) {
+                if (d.rarity() >= 24 && !d.item().startsWith("#") && !uniques.contains(d.item())) {
+                    uniques.add(d.item());
+                }
+            }
+            if (b.pet != null && !uniques.contains(b.pet)) {
+                uniques.add(b.pet);
+            }
+            if (!uniques.isEmpty()) {
+                page(b.category, b.name, uniques);
+            }
+        }
+        for (com.runecraft.osrs.content.ContentModule m : com.runecraft.osrs.content.Modules.ALL) {
+            for (Page p : m.collectionLog()) {
+                page(p.category(), p.name(), p.items());
+            }
+        }
     }
 
     private CollectionLogData() {

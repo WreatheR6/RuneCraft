@@ -50,6 +50,8 @@ public final class ModBlocks {
     public static final Map<Station, Block> STATIONS = new LinkedHashMap<>();
     public static final Map<Boss, BossSummonBlock> BOSS_STONES = new EnumMap<>(Boss.class);
 
+    public static final Map<String, com.runecraft.block.ModuleBlock> MODULE_BLOCKS = new LinkedHashMap<>();
+    public static final Map<String, com.runecraft.block.DataBossSummonBlock> DATA_BOSS_STONES = new LinkedHashMap<>();
     public static AgilityObstacleBlock AGILITY_OBSTACLE;
     public static HerbPatchBlock HERB_PATCH;
     public static AllotmentPatchBlock ALLOTMENT_PATCH;
@@ -113,6 +115,21 @@ public final class ModBlocks {
         for (Boss b : Boss.values()) {
             BOSS_STONES.put(b, register(b.summonBlockId(), new BossSummonBlock(b,
                     unbreakable(MapColor.BLACK, BlockSoundGroup.DEEPSLATE).luminance(st -> 6)), true));
+        }
+        for (com.runecraft.osrs.content.BlockDef def : com.runecraft.osrs.content.ContentRegistry.blocks()) {
+            AbstractBlock.Settings settings = def.breakable()
+                    ? AbstractBlock.Settings.create().mapColor(MapColor.STONE_GRAY).strength(2.5f, 1200.0f).sounds(BlockSoundGroup.STONE)
+                    : unbreakable(MapColor.STONE_GRAY, BlockSoundGroup.STONE);
+            if (def.look() != null && (def.look().contains("glow") || def.look().contains("fire") || def.look().contains("portal"))) {
+                settings = settings.luminance(st -> 10);
+            }
+            MODULE_BLOCKS.put(def.id(), register(def.id(), new com.runecraft.block.ModuleBlock(def, settings), true));
+        }
+        for (com.runecraft.osrs.content.BossDef b : com.runecraft.osrs.content.ContentRegistry.bosses()) {
+            if (!b.raidOnly) {
+                DATA_BOSS_STONES.put(b.id, register(b.summonBlockId(), new com.runecraft.block.DataBossSummonBlock(b,
+                        unbreakable(MapColor.BLACK, BlockSoundGroup.DEEPSLATE).luminance(st -> 6)), true));
+            }
         }
         AGILITY_OBSTACLE = register("agility_obstacle", new AgilityObstacleBlock(
                 unbreakable(MapColor.OAK_TAN, BlockSoundGroup.WOOD)), true);

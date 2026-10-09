@@ -33,19 +33,18 @@ public final class QuestManager {
     // ---------------- Helpers ----------------
 
     private static void say(ServerPlayerEntity player, QuestNpc npc, String line) {
-        player.sendMessage(Text.literal(npc.displayName() + ": ").formatted(Formatting.DARK_BLUE)
-                .append(Text.literal(line)), false);
+        QuestApi.say(player, npc.displayName(), line);
     }
 
     private static void you(ServerPlayerEntity player, String line) {
-        player.sendMessage(Text.literal("You: ").formatted(Formatting.DARK_GREEN).append(Text.literal(line)), false);
+        QuestApi.you(player, line);
     }
 
-    private static int stage(ServerPlayerEntity p, Quest q) {
+    private static int stage(ServerPlayerEntity p, com.runecraft.osrs.QuestInfo q) {
         return Players.data(p).questStage(q);
     }
 
-    private static void set(ServerPlayerEntity p, Quest q, int stage) {
+    static void set(ServerPlayerEntity p, com.runecraft.osrs.QuestInfo q, int stage) {
         PlayerData data = Players.data(p);
         if (data.questStage(q) == 0 && stage > 0) {
             p.sendMessage(Text.literal("You have started a new quest: " + q.displayName()).formatted(Formatting.DARK_PURPLE), false);
@@ -54,7 +53,7 @@ public final class QuestManager {
         ServerNetworking.sync(p);
     }
 
-    private static boolean takeAll(ServerPlayerEntity p, Map<String, Integer> items) {
+    static boolean takeAll(ServerPlayerEntity p, Map<String, Integer> items) {
         for (Map.Entry<String, Integer> e : items.entrySet()) {
             if (!Inv.has(p, e.getKey(), e.getValue())) {
                 return false;
@@ -64,8 +63,17 @@ public final class QuestManager {
         return true;
     }
 
-    private static boolean meetsRequirements(ServerPlayerEntity p, Quest q) {
+    static boolean meetsRequirements(ServerPlayerEntity p, com.runecraft.osrs.QuestInfo q) {
         PlayerData data = Players.data(p);
+        if (q instanceof com.runecraft.osrs.content.QuestDef def) {
+            for (String req : def.questRequirements()) {
+                com.runecraft.osrs.QuestInfo other = com.runecraft.osrs.content.ContentRegistry.quest(req);
+                if (other != null && !data.questComplete(other)) {
+                    Msg.game(p, "You need to complete " + other.displayName() + " first.");
+                    return false;
+                }
+            }
+        }
         for (Map.Entry<Skill, Integer> e : q.requirements().entrySet()) {
             if (data.skills().level(e.getKey()) < e.getValue()) {
                 Msg.game(p, "You need " + Msg.article(e.getKey().displayName()) + " level of " + e.getValue() + " to start this quest.");
@@ -76,7 +84,7 @@ public final class QuestManager {
     }
 
     /** Marks a quest complete and hands out rewards (once). */
-    public static void complete(ServerPlayerEntity p, Quest q) {
+    public static void complete(ServerPlayerEntity p, com.runecraft.osrs.QuestInfo q) {
         PlayerData data = Players.data(p);
         if (data.questComplete(q)) {
             return;
@@ -101,6 +109,10 @@ public final class QuestManager {
 
     public static void talk(ServerPlayerEntity p, QuestNpcEntity entity) {
         QuestNpc npc = entity.npc();
+        if (npc == null) {
+            QuestScripts.talk(p, entity);
+            return;
+        }
         switch (npc) {
             case COOK -> cook(p, npc);
             case FRED_THE_FARMER -> fred(p, npc);
@@ -452,6 +464,7 @@ public final class QuestManager {
     // ---------------- Kill objectives & quest drops ----------------
 
     public static void onKill(ServerPlayerEntity p, LivingEntity entity, MonsterStats stats) {
+        QuestScripts.onKill(p, entity, stats);
         PlayerData data = Players.data(p);
         String name = stats.name();
         if (data.questStage(Quest.RESTLESS_GHOST) == 3 && name.equals("Skeleton") && !Inv.has(p, "ghosts_skull", 1)

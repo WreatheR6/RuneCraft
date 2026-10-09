@@ -8,7 +8,7 @@ import java.util.Map;
  * Minecraft layer ({@code com.runecraft.quest}) scripts the dialogue and stage changes.
  * Stage 0 = not started; stage {@link #finalStage()} = complete.
  */
-public enum Quest {
+public enum Quest implements QuestInfo {
     COOKS_ASSISTANT("Cook's Assistant", Difficulty.NOVICE, 1, Map.of(), Map.of(Skill.COOKING, 300.0), List.of(),
             List.of("I can start this quest by speaking to the Cook in the kitchen of Lumbridge Castle.",
                     "The Cook needs a bucket of milk, an egg and a pot of flour for the Duke's birthday cake.")),
@@ -88,6 +88,12 @@ public enum Quest {
         this.journal = journal;
     }
 
+    @Override
+    public String questId() {
+        return name();
+    }
+
+    @Override
     public String displayName() {
         return displayName;
     }
@@ -129,10 +135,11 @@ public enum Quest {
         return journal.get(Math.max(0, stage));
     }
 
+    /** Total quest points across built-in and module quests. */
     public static int totalQuestPoints() {
         int total = 0;
-        for (Quest q : values()) {
-            total += q.questPoints;
+        for (QuestInfo q : com.runecraft.osrs.content.ContentRegistry.quests()) {
+            total += q.questPoints();
         }
         return total;
     }

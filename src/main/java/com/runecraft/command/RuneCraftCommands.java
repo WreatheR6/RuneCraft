@@ -84,9 +84,15 @@ public final class RuneCraftCommands {
                 .then(CommandManager.literal("completequest").requires(s -> s.hasPermissionLevel(2))
                         .then(CommandManager.argument("quest", StringArgumentType.word())
                                 .suggests((ctx, b) -> CommandSource.suggestMatching(
-                                        Arrays.stream(Quest.values()).map(q -> q.name().toLowerCase(Locale.ROOT)), b))
+                                        com.runecraft.osrs.content.ContentRegistry.quests().stream().map(q -> q.questId().toLowerCase(Locale.ROOT)), b))
                                 .executes(ctx -> {
-                                    Quest q = Quest.valueOf(StringArgumentType.getString(ctx, "quest").toUpperCase(Locale.ROOT));
+                                    String wanted = StringArgumentType.getString(ctx, "quest");
+                                    com.runecraft.osrs.QuestInfo q = com.runecraft.osrs.content.ContentRegistry.quests().stream()
+                                            .filter(x -> x.questId().equalsIgnoreCase(wanted)).findFirst().orElse(null);
+                                    if (q == null) {
+                                        ctx.getSource().sendError(Text.literal("Unknown quest"));
+                                        return 0;
+                                    }
                                     QuestManager.complete(ctx.getSource().getPlayerOrThrow(), q);
                                     return 1;
                                 })))
@@ -123,7 +129,7 @@ public final class RuneCraftCommands {
     private static int quests(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
         ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
         PlayerData data = Players.data(p);
-        for (Quest q : Quest.values()) {
+        for (com.runecraft.osrs.QuestInfo q : com.runecraft.osrs.content.ContentRegistry.quests()) {
             int stage = data.questStage(q);
             Formatting color = stage == 0 ? Formatting.RED : stage >= q.finalStage() ? Formatting.GREEN : Formatting.YELLOW;
             p.sendMessage(Text.literal(q.displayName()).formatted(color).append(Text.literal(" - " + q.journalFor(stage))

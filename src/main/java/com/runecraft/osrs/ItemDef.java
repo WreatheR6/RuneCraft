@@ -23,7 +23,7 @@ public final class ItemDef {
     private int rangedStrength;
     private String examine;
 
-    ItemDef(String id, String name, Kind kind, String shape, int color) {
+    public ItemDef(String id, String name, Kind kind, String shape, int color) {
         this.id = id;
         this.name = name;
         this.kind = kind;
@@ -31,37 +31,37 @@ public final class ItemDef {
         this.color = color;
     }
 
-    ItemDef value(int value) {
+    public ItemDef value(int value) {
         this.value = value;
         return this;
     }
 
-    ItemDef stack(int maxStack) {
+    public ItemDef stack(int maxStack) {
         this.maxStack = maxStack;
         return this;
     }
 
-    ItemDef heal(int heal) {
+    public ItemDef heal(int heal) {
         this.heal = heal;
         return this;
     }
 
-    ItemDef equipment(EquipmentDef equipment) {
+    public ItemDef equipment(EquipmentDef equipment) {
         this.equipment = equipment;
         return this;
     }
 
-    ItemDef tier(String tier) {
+    public ItemDef tier(String tier) {
         this.tier = tier;
         return this;
     }
 
-    ItemDef rangedStrength(int rangedStrength) {
+    public ItemDef rangedStrength(int rangedStrength) {
         this.rangedStrength = rangedStrength;
         return this;
     }
 
-    ItemDef examine(String examine) {
+    public ItemDef examine(String examine) {
         this.examine = examine;
         return this;
     }

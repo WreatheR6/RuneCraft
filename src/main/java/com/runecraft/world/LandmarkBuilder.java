@@ -38,11 +38,26 @@ import java.util.Map;
 public final class LandmarkBuilder {
     private static final Map<Long, List<Landmark>> BY_CHUNK = new HashMap<>();
     private static final Deque<Landmark> QUEUE = new ArrayDeque<>();
+    private static final Map<Long, List<com.runecraft.osrs.content.PlaceDef>> PLACES_BY_CHUNK = new HashMap<>();
+    private static final Deque<com.runecraft.osrs.content.PlaceDef> PLACE_QUEUE = new ArrayDeque<>();
+    /** Custom structure builders keyed by Landmark enum name or PlaceDef id: (world, plaza centre at floor level). */
+    private static final Map<String, List<java.util.function.BiConsumer<ServerWorld, BlockPos>>> CUSTOM = new HashMap<>();
 
     static {
         for (Landmark l : Landmark.values()) {
             BY_CHUNK.computeIfAbsent(ChunkPos.toLong(l.blockX() >> 4, l.blockZ() >> 4), k -> new ArrayList<>()).add(l);
         }
+        for (com.runecraft.osrs.content.PlaceDef p : com.runecraft.osrs.content.ContentRegistry.places()) {
+            PLACES_BY_CHUNK.computeIfAbsent(ChunkPos.toLong(p.blockX() >> 4, p.blockZ() >> 4), k -> new ArrayList<>()).add(p);
+        }
+    }
+
+    /**
+     * Registers extra structure-building code for a landmark (enum name, e.g. "LUMBRIDGE") or module
+     * place id. Runs once, right after the place's plaza is generated, with the plaza centre.
+     */
+    public static void registerCustom(String placeId, java.util.function.BiConsumer<ServerWorld, BlockPos> builder) {
+        CUSTOM.computeIfAbsent(placeId, k -> new ArrayList<>()).add(builder);
     }
 
     private LandmarkBuilder() {
@@ -61,14 +76,26 @@ public final class LandmarkBuilder {
                     }
                 }
             }
+            List<com.runecraft.osrs.content.PlaceDef> places = PLACES_BY_CHUNK.get(chunk.getPos().toLong());
+            if (places != null) {
+                for (com.runecraft.osrs.content.PlaceDef p : places) {
+                    if (!PLACE_QUEUE.contains(p)) {
+                        PLACE_QUEUE.add(p);
+                    }
+                }
+            }
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (QUEUE.isEmpty()) {
+            if (QUEUE.isEmpty() && PLACE_QUEUE.isEmpty()) {
                 return;
             }
             ServerWorld world = Gielinor.world(server);
             if (world != null) {
-                buildNow(world, QUEUE.poll());
+                if (!QUEUE.isEmpty()) {
+                    buildNow(world, QUEUE.poll());
+                } else {
+                    buildNow(world, PLACE_QUEUE.poll());
+                }
             }
         });
     }
@@ -87,6 +114,146 @@ public final class LandmarkBuilder {
         }
     }
 
+    /** Builds a module place if it hasn't been built yet. */
+    public static void buildNow(ServerWorld world, com.runecraft.osrs.content.PlaceDef place) {
+        PlayerDataState state = Players.state(world.getServer());
+        String key = "place:" + place.id();
+        if (state.isBuilt(key)) {
+            return;
+        }
+        state.markBuilt(key);
+        try {
+            buildPlace(world, place);
+        } catch (RuntimeException e) {
+            RuneCraft.LOGGER.error("Failed to build place {}", place.id(), e);
+        }
+    }
+
+    private static int groundY(ServerWorld world, int x, int z) {
+        world.getChunk(x >> 4, z >> 4);
+        int ground = Math.max(world.getTopY(Heightmap.Type.OCEAN_FLOOR, x, z), world.getSeaLevel());
+        return Math.max(ground, world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z) - 1);
+    }
+
+    private static void buildPlace(ServerWorld world, com.runecraft.osrs.content.PlaceDef place) {
+        int cx = place.blockX();
+        int cz = place.blockZ();
+        int y = groundY(world, cx, cz);
+        if (place.style() != com.runecraft.osrs.content.PlaceDef.Style.NONE) {
+            int radius = Math.max(5, 3 + (place.stations().size() + place.blocks().size()) / 2 + 2);
+            plaza(world, cx, y, cz, radius, place.style());
+            int slot = 0;
+            for (Station s : place.stations()) {
+                Block block = ModBlocks.STATIONS.get(s);
+                if (block != null) {
+                    set(world, stationSlot(cx, y + 1, cz, radius - 2, slot++), block.getDefaultState());
+                }
+            }
+            for (String id : place.blocks()) {
+                Block block = net.minecraft.registry.Registries.BLOCK.get(RuneCraft.resolve(id));
+                if (block != Blocks.AIR) {
+                    set(world, stationSlot(cx, y + 1, cz, radius - 2, slot++), block.getDefaultState());
+                }
+            }
+        }
+        afterBuild(world, place.id(), cx, y, cz);
+    }
+
+    /** Boss arenas, NPCs and custom builders shared by landmarks and module places. */
+    private static void afterBuild(ServerWorld world, String placeId, int cx, int y, int cz) {
+        int arena = 0;
+        for (com.runecraft.osrs.content.BossDef b : com.runecraft.osrs.content.ContentRegistry.bosses()) {
+            if (b.raidOnly || !placeId.equals(b.place)) {
+                continue;
+            }
+            int r = b.arenaRadius;
+            int ax = cx + (arena % 2 == 0 ? 1 : -1) * (14 + r);
+            int az = cz + (arena / 2) * (2 * r + 6);
+            int ay = groundY(world, ax, az);
+            com.runecraft.boss.DataBossService.buildArena(world, new BlockPos(ax, ay, az), r, b.arenaStyle);
+            Block stone = ModBlocks.DATA_BOSS_STONES.get(b.id);
+            if (stone != null) {
+                set(world, new BlockPos(ax, ay + 1, az - r + 2), stone.getDefaultState());
+            }
+            arena++;
+        }
+        for (com.runecraft.osrs.content.NpcDef npc : com.runecraft.osrs.content.ContentRegistry.npcs()) {
+            if (!placeId.equals(npc.place())) {
+                continue;
+            }
+            QuestNpcEntity entity = ModEntities.QUEST_NPC.create(world);
+            if (entity == null) {
+                continue;
+            }
+            int x = cx + npc.dx();
+            int z = cz + npc.dz();
+            int top = Math.max(y + 1, world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z));
+            entity.refreshPositionAndAngles(x + 0.5, top, z + 0.5, world.getRandom().nextFloat() * 360f, 0);
+            entity.setNpc(npc);
+            entity.initialize(world, world.getLocalDifficulty(entity.getBlockPos()), SpawnReason.STRUCTURE, null, null);
+            world.spawnEntity(entity);
+        }
+        for (java.util.function.BiConsumer<ServerWorld, BlockPos> custom : CUSTOM.getOrDefault(placeId, List.of())) {
+            try {
+                custom.accept(world, new BlockPos(cx, y, cz));
+            } catch (RuntimeException e) {
+                RuneCraft.LOGGER.error("Custom builder for {} failed", placeId, e);
+            }
+        }
+    }
+
+    private static void plaza(ServerWorld world, int cx, int y, int cz, int radius, com.runecraft.osrs.content.PlaceDef.Style style) {
+        BlockState floorA;
+        BlockState floorB;
+        BlockState wallState;
+        switch (style) {
+            case RUINS -> {
+                floorA = Blocks.MOSSY_STONE_BRICKS.getDefaultState();
+                floorB = Blocks.CRACKED_STONE_BRICKS.getDefaultState();
+                wallState = Blocks.MOSSY_STONE_BRICK_WALL.getDefaultState();
+            }
+            case CAVE -> {
+                floorA = Blocks.DEEPSLATE_TILES.getDefaultState();
+                floorB = Blocks.COBBLED_DEEPSLATE.getDefaultState();
+                wallState = Blocks.DEEPSLATE_BRICK_WALL.getDefaultState();
+            }
+            case CAMP -> {
+                floorA = Blocks.COARSE_DIRT.getDefaultState();
+                floorB = Blocks.PACKED_MUD.getDefaultState();
+                wallState = Blocks.OAK_FENCE.getDefaultState();
+            }
+            case ARENA -> {
+                floorA = Blocks.SMOOTH_SANDSTONE.getDefaultState();
+                floorB = Blocks.CUT_SANDSTONE.getDefaultState();
+                wallState = Blocks.SANDSTONE_WALL.getDefaultState();
+            }
+            default -> {
+                floorA = Blocks.STONE_BRICKS.getDefaultState();
+                floorB = Blocks.POLISHED_ANDESITE.getDefaultState();
+                wallState = Blocks.STONE_BRICK_WALL.getDefaultState();
+            }
+        }
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                BlockPos p = new BlockPos(cx + dx, y, cz + dz);
+                for (int fill = 1; fill <= 4; fill++) {
+                    BlockState below = world.getBlockState(p.down(fill));
+                    if (below.isAir() || !below.getFluidState().isEmpty()) {
+                        set(world, p.down(fill), Blocks.STONE_BRICKS.getDefaultState());
+                    }
+                }
+                set(world, p, ((dx + dz) & 1) == 0 ? floorA : floorB);
+                for (int up = 1; up <= 6; up++) {
+                    set(world, p.up(up), Blocks.AIR.getDefaultState());
+                }
+                boolean edge = Math.abs(dx) == radius || Math.abs(dz) == radius;
+                if (edge && Math.abs(dx) > 1 && Math.abs(dz) > 1) {
+                    set(world, p.up(), wallState);
+                }
+            }
+        }
+    }
+
     private static void set(ServerWorld world, BlockPos pos, BlockState state) {
         world.setBlockState(pos, state, Block.NOTIFY_LISTENERS);
     }
@@ -99,6 +266,7 @@ public final class LandmarkBuilder {
         int y = Math.max(ground, world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, cx, cz) - 1);
         if (landmark.isAltar()) {
             buildAltar(world, landmark, cx, y, cz);
+            afterBuild(world, landmark.name(), cx, y, cz);
             return;
         }
         int radius = landmark.stations().size() > 6 ? 8 : 6;
@@ -157,6 +325,7 @@ public final class LandmarkBuilder {
             buildCourse(world, course, cx + radius + 4, y, cz - radius);
         }
         spawnNpcs(world, landmark, cx, y + 1, cz);
+        afterBuild(world, landmark.name(), cx, y, cz);
     }
 
     private static BlockPos stationSlot(int cx, int y, int cz, int inner, int slot) {

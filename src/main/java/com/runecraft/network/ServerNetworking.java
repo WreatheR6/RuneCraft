@@ -82,8 +82,9 @@ public final class ServerNetworking {
         buf.writeVarLong(data.coins());
         buf.writeString(data.slayerTask() == null ? "" : data.slayerTask().name());
         buf.writeVarInt(data.slayerRemaining());
-        buf.writeVarInt(com.runecraft.osrs.Quest.values().length);
-        for (com.runecraft.osrs.Quest q : com.runecraft.osrs.Quest.values()) {
+        java.util.List<com.runecraft.osrs.QuestInfo> quests = com.runecraft.osrs.content.ContentRegistry.quests();
+        buf.writeVarInt(quests.size());
+        for (com.runecraft.osrs.QuestInfo q : quests) {
             buf.writeVarInt(data.questStage(q));
         }
         buf.writeVarInt(data.questPoints());

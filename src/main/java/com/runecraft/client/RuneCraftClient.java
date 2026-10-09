@@ -49,13 +49,20 @@ public class RuneCraftClient implements ClientModInitializer {
         WorldRenderEvents.AFTER_ENTITIES.register(HitsplatRenderer::render);
         ItemTooltipCallback.EVENT.register(Tooltips::append);
 
+        com.runecraft.client.model.ModelSpecs.registerAll();
         for (Map.Entry<Monster, EntityType<OsrsMonsterEntity>> e : ModEntities.MONSTERS.entrySet()) {
             String id = e.getKey().entity();
-            EntityRendererRegistry.register(e.getValue(), ctx -> new OsrsBipedRenderer<>(ctx, id, ModEntities.scale(id)));
+            register(e.getValue(), id, null, ModEntities.scale(id));
         }
         for (Map.Entry<Boss, EntityType<BossEntity>> e : ModEntities.BOSS_TYPES.entrySet()) {
             String id = e.getKey().entityId();
-            EntityRendererRegistry.register(e.getValue(), ctx -> new OsrsBipedRenderer<>(ctx, id, e.getKey().scale()));
+            register(e.getValue(), id, null, e.getKey().scale());
+        }
+        for (com.runecraft.osrs.content.MonsterDef m : com.runecraft.osrs.content.ContentRegistry.monsters()) {
+            register(ModEntities.MODULE_MONSTERS.get(m.id), m.id, m.model, m.scale);
+        }
+        for (com.runecraft.osrs.content.BossDef b : com.runecraft.osrs.content.ContentRegistry.bosses()) {
+            register(ModEntities.DATA_BOSS_TYPES.get(b.id), b.id, b.model, b.scale);
         }
         EntityRendererRegistry.register(ModEntities.QUEST_NPC, ctx -> new OsrsBipedRenderer<>(ctx, null, 1.0f));
 
@@ -67,6 +74,26 @@ public class RuneCraftClient implements ClientModInitializer {
         cutout.add(ModBlocks.ALLOTMENT_PATCH);
         for (Block b : cutout) {
             BlockRenderLayerMap.INSTANCE.putBlock(b, RenderLayer.getCutout());
+        }
+        for (com.runecraft.client.content.ClientModuleHooks hooks : com.runecraft.client.content.ClientModuleHooksRegistry.ALL) {
+            hooks.initClient();
+        }
+    }
+
+    /**
+     * Registers the renderer for a creature: its custom model if one exists (explicit {@code model}
+     * id, or a model spec with the creature's own id), otherwise the textured biped.
+     */
+    public static <T extends net.minecraft.entity.mob.MobEntity> void register(EntityType<T> type, String id, String model, float scale) {
+        if (type == null) {
+            return;
+        }
+        java.util.Map<String, com.runecraft.osrs.model.ModelSpec> specs = com.runecraft.osrs.content.ContentRegistry.models();
+        com.runecraft.osrs.model.ModelSpec spec = specs.get(model != null ? model : id);
+        if (spec != null) {
+            EntityRendererRegistry.register(type, ctx -> new com.runecraft.client.model.GenericEntityRenderer<>(ctx, spec, scale));
+        } else {
+            EntityRendererRegistry.register(type, ctx -> new OsrsBipedRenderer<>(ctx, id, scale));
         }
     }
 
@@ -106,7 +133,7 @@ public class RuneCraftClient implements ClientModInitializer {
                 ClientState.coins = coins;
                 ClientState.slayerTask = task;
                 ClientState.slayerRemaining = remaining;
-                System.arraycopy(stages, 0, ClientState.QUEST_STAGES, 0, Math.min(stages.length, Quest.values().length));
+                System.arraycopy(stages, 0, ClientState.QUEST_STAGES, 0, Math.min(stages.length, ClientState.QUEST_STAGES.length));
                 ClientState.questPoints = qp;
                 ClientState.COLLECTION_LOG.clear();
                 ClientState.COLLECTION_LOG.addAll(log);

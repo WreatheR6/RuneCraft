@@ -26,6 +26,9 @@ public class OsrsBipedRenderer<T extends MobEntity> extends BipedEntityRenderer<
     @Override
     public Identifier getTexture(T entity) {
         if (entity instanceof QuestNpcEntity npc) {
+            if (npc.npc() == null) {
+                return RuneCraft.id("textures/entity/npc/" + npc.npcId() + ".png");
+            }
             return RuneCraft.id("textures/entity/npc_" + npc.npc().look().name().toLowerCase(Locale.ROOT) + ".png");
         }
         return texture;

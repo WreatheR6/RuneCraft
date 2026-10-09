@@ -63,7 +63,13 @@ public final class HitsplatRenderer {
                     continue;
                 }
                 String text = String.valueOf(s.damage());
-                int bg = s.type() == Net.SPLAT_MISS ? 0xE01060C0 : s.type() == Net.SPLAT_HEAL ? 0xE020A020 : 0xE0B01010;
+                int bg = switch (s.type()) {
+                    case Net.SPLAT_MISS -> 0xE01060C0;
+                    case Net.SPLAT_HEAL -> 0xE020A020;
+                    case Net.SPLAT_POISON -> 0xE0309030;
+                    case Net.SPLAT_VENOM -> 0xE0105020;
+                    default -> 0xE0B01010;
+                };
                 float tx = -tr.getWidth(text) / 2f + (slot % 2 == 0 ? 0 : 12) * (slot > 0 ? 1 : 0);
                 float ty = (slot / 2) * -11;
                 tr.draw(text, tx, ty, 0xFFFFFFFF, false, m, consumers, TextRenderer.TextLayerType.SEE_THROUGH, bg,

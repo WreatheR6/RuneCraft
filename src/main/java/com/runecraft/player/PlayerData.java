@@ -172,15 +172,15 @@ public final class PlayerData {
         return killCounts;
     }
 
-    public int questStage(com.runecraft.osrs.Quest quest) {
-        return questStages.getOrDefault(quest.name(), 0);
+    public int questStage(com.runecraft.osrs.QuestInfo quest) {
+        return questStages.getOrDefault(quest.questId(), 0);
     }
 
-    public void setQuestStage(com.runecraft.osrs.Quest quest, int stage) {
-        questStages.put(quest.name(), stage);
+    public void setQuestStage(com.runecraft.osrs.QuestInfo quest, int stage) {
+        questStages.put(quest.questId(), stage);
     }
 
-    public boolean questComplete(com.runecraft.osrs.Quest quest) {
+    public boolean questComplete(com.runecraft.osrs.QuestInfo quest) {
         return questStage(quest) >= quest.finalStage();
     }
 

@@ -131,6 +131,7 @@ public final class ItemUses {
         }
         if (potion == Potion.ANTIPOISON) {
             player.removeStatusEffect(StatusEffects.POISON);
+            com.runecraft.combat.PoisonService.cure(player, false, 150, ActionManager.gameTick());
         } else if (potion == Potion.ENERGY) {
             player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 20 * 60, 0));
         }

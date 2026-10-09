@@ -331,6 +331,13 @@ BIOMES = {
                             monsters=[("runecraft:goblin", 6, 1, 3)], creatures=FARM),
 }
 
+# Module monsters (from build/catalog.json) join their kingdoms' spawn lists.
+_catalog = json.load(open("build/catalog.json"))
+for _m in _catalog.get("monsters", []):
+    for _sp in _m.get("spawns", []):
+        if _sp["region"] in BIOMES:
+            BIOMES[_sp["region"]]["monsters"].append((f"runecraft:{_m['id']}", _sp["weight"], _sp["min"], _sp["max"]))
+
 for name, d in BIOMES.items():
     effects = {"sky_color": d["sky"], "fog_color": d["fog"], "water_color": d["water"], "water_fog_color": 0x050533,
                "grass_color": d["grass"], "foliage_color": d["foliage"],

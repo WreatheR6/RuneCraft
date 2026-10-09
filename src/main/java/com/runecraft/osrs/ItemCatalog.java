@@ -296,6 +296,11 @@ public final class ItemCatalog {
         add("grey_chinchompa", "Chinchompa", Kind.SIMPLE, "creature", 0xA0A0A0).value(50);
         add("red_chinchompa", "Red chinchompa", Kind.SIMPLE, "creature", 0xC04030).value(100);
         add("black_chinchompa", "Black chinchompa", Kind.SIMPLE, "creature", 0x303030).value(200);
+
+        // --- Content modules ---
+        for (com.runecraft.osrs.content.ContentModule module : com.runecraft.osrs.content.Modules.ALL) {
+            module.items(ItemCatalog::add);
+        }
     }
 
     private static EquipmentDef wearable(EquipmentDef.Slot slot, EquipmentStats stats, Object... reqs) {

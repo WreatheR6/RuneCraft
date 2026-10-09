@@ -114,6 +114,7 @@ public final class PlayerEvents {
     public static void gameTick(ServerPlayerEntity player, long gameTick) {
         PlayerData data = Players.data(player);
         boolean gielinor = Gielinor.is(player);
+        com.runecraft.combat.PoisonService.tick(player, gameTick);
         // Hitpoints regenerate 1 per minute (twice as fast with Rapid Heal).
         int regenTicks = data.isActive(Prayer.RAPID_HEAL) ? 50 : 100;
         if (gielinor && gameTick % regenTicks == 0 && player.getHealth() < player.getMaxHealth() && player.isAlive()) {

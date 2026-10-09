@@ -1,75 +1,176 @@
 package com.runecraft.osrs;
 
+import com.runecraft.osrs.content.BlockDef;
+import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.CombatProfile;
+import com.runecraft.osrs.content.ContentRegistry;
+import com.runecraft.osrs.content.MonsterDef;
+import com.runecraft.osrs.content.NpcDef;
 import com.runecraft.osrs.data.FishingSpot;
 import com.runecraft.osrs.data.Herb;
 import com.runecraft.osrs.data.Rock;
 import com.runecraft.osrs.data.RuneAltar;
 import com.runecraft.osrs.data.Thieving;
 import com.runecraft.osrs.data.Tree;
+import com.runecraft.osrs.model.ModelSpec;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
-/** Writes the item/block catalog as JSON for tools/gen_assets.py. */
+/** Writes the item/block/entity/model catalog as JSON for tools/gen_assets.py and tools/gen_worldgen.py. */
 public final class CatalogDump {
     private CatalogDump() {
     }
 
-    public static void main(String[] args) throws IOException {
-        StringBuilder sb = new StringBuilder("{\n  \"items\": [\n");
-        boolean first = true;
-        for (ItemDef d : ItemCatalog.all()) {
-            if (!first) {
-                sb.append(",\n");
+    // ---- tiny JSON writer ----
+    private static String q(String s) {
+        return s == null ? "null" : "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    }
+
+    private static String obj(Object... kv) {
+        StringBuilder sb = new StringBuilder("{");
+        for (int i = 0; i < kv.length; i += 2) {
+            if (i > 0) {
+                sb.append(", ");
             }
-            first = false;
-            sb.append(String.format(java.util.Locale.ROOT,
-                    "    {\"id\": \"%s\", \"name\": \"%s\", \"kind\": \"%s\", \"shape\": \"%s\", \"color\": %d, \"tier\": %s}",
-                    d.id(), d.name().replace("\"", "\\\""), d.kind(), d.shape(), d.color(),
-                    d.tier() == null ? "null" : "\"" + d.tier() + "\""));
+            sb.append(q((String) kv[i])).append(": ").append(val(kv[i + 1]));
         }
-        sb.append("\n  ],\n  \"trees\": [");
-        first = true;
+        return sb.append('}').toString();
+    }
+
+    private static String val(Object v) {
+        if (v == null) {
+            return "null";
+        }
+        if (v instanceof String s) {
+            return s.startsWith("{") || s.startsWith("[") ? s : q(s);
+        }
+        if (v instanceof Float f) {
+            return String.format(Locale.ROOT, "%s", f);
+        }
+        if (v instanceof int[] arr) {
+            List<String> parts = new ArrayList<>();
+            for (int a : arr) {
+                parts.add(String.valueOf(a));
+            }
+            return "[" + String.join(", ", parts) + "]";
+        }
+        if (v instanceof List<?> list) {
+            List<String> parts = new ArrayList<>();
+            for (Object o : list) {
+                parts.add(val(o));
+            }
+            return "[" + String.join(", ", parts) + "]";
+        }
+        return String.valueOf(v);
+    }
+
+    private static String arr(List<String> items) {
+        return "[\n    " + String.join(",\n    ", items) + "\n  ]";
+    }
+
+    public static void main(String[] args) throws IOException {
+        List<String> items = new ArrayList<>();
+        for (ItemDef d : ItemCatalog.all()) {
+            items.add(obj("id", d.id(), "name", d.name(), "kind", d.kind().name(), "shape", d.shape(), "color", d.color(),
+                    "tier", d.tier()));
+        }
+        List<String> trees = new ArrayList<>();
         for (Tree t : Tree.values()) {
-            sb.append(first ? "" : ", ").append(String.format(java.util.Locale.ROOT,
-                    "{\"id\": \"%s\", \"name\": \"%s\", \"color\": %d}", t.id(), t.displayName(), t.color()));
-            first = false;
+            trees.add(obj("id", t.id(), "name", t.displayName(), "color", t.color()));
         }
-        sb.append("],\n  \"rocks\": [");
-        first = true;
+        List<String> rocks = new ArrayList<>();
         for (Rock r : Rock.values()) {
-            sb.append(first ? "" : ", ").append(String.format(java.util.Locale.ROOT,
-                    "{\"id\": \"%s\", \"name\": \"%s\", \"color\": %d}", r.id(), r.displayName(), r.color()));
-            first = false;
+            rocks.add(obj("id", r.id(), "name", r.displayName(), "color", r.color()));
         }
-        sb.append("],\n  \"fishing_spots\": [");
-        first = true;
+        List<String> spots = new ArrayList<>();
         for (FishingSpot s : FishingSpot.values()) {
-            sb.append(first ? "" : ", ").append(String.format(java.util.Locale.ROOT,
-                    "{\"id\": \"%s\", \"name\": \"%s\"}", s.blockId(), s.displayName()));
-            first = false;
+            spots.add(obj("id", s.blockId(), "name", s.displayName()));
         }
-        sb.append("],\n  \"altars\": [");
-        first = true;
+        List<String> altars = new ArrayList<>();
         for (RuneAltar a : RuneAltar.values()) {
-            sb.append(first ? "" : ", ").append(String.format(java.util.Locale.ROOT,
-                    "{\"id\": \"%s\", \"name\": \"%s\"}", a.blockId(), a.rune().displayName().replace(" rune", "") + " Altar"));
-            first = false;
+            altars.add(obj("id", a.blockId(), "name", a.rune().displayName().replace(" rune", "") + " Altar"));
         }
-        sb.append("],\n  \"stalls\": [");
-        first = true;
+        List<String> stalls = new ArrayList<>();
         for (Thieving.Stall s : Thieving.Stall.values()) {
-            sb.append(first ? "" : ", ").append(String.format(java.util.Locale.ROOT,
-                    "{\"id\": \"%s\", \"name\": \"%s\"}", s.blockId(), s.displayName()));
-            first = false;
+            stalls.add(obj("id", s.blockId(), "name", s.displayName()));
         }
-        sb.append("],\n  \"herbs\": ").append(Herb.values().length).append("\n}\n");
+        List<String> monsters = new ArrayList<>();
+        for (MonsterDef m : ContentRegistry.monsters()) {
+            List<String> spawns = new ArrayList<>();
+            for (MonsterDef.Spawn s : m.spawns) {
+                spawns.add(obj("region", s.region().id(), "weight", s.weight(), "min", s.min(), "max", s.max()));
+            }
+            monsters.add(profile(m, "spawns", "[" + String.join(", ", spawns) + "]", "underground", m.underground));
+        }
+        List<String> bosses = new ArrayList<>();
+        for (BossDef b : ContentRegistry.bosses()) {
+            bosses.add(profile(b, "place", b.place, "arena_style", b.arenaStyle, "raid_only", b.raidOnly,
+                    "summon_block", b.summonBlockId()));
+        }
+        List<String> npcs = new ArrayList<>();
+        for (NpcDef n : ContentRegistry.npcs()) {
+            npcs.add(obj("id", n.id(), "name", n.name(), "colors", n.colors()));
+        }
+        List<String> blocks = new ArrayList<>();
+        for (BlockDef b : ContentRegistry.blocks()) {
+            blocks.add(obj("id", b.id(), "name", b.name(), "kind", b.kind().name(), "color", b.color(), "look", b.look(),
+                    "breakable", b.breakable()));
+        }
+        List<String> models = new ArrayList<>();
+        for (Map.Entry<String, ModelSpec> e : ContentRegistry.models().entrySet()) {
+            ModelSpec m = e.getValue();
+            List<String> parts = new ArrayList<>();
+            for (ModelSpec.Part p : m.parts()) {
+                List<String> boxes = new ArrayList<>();
+                for (int i = 0; i < p.boxes.size(); i++) {
+                    ModelSpec.Box b = p.boxes.get(i);
+                    int[] uv = p.uvs.get(i);
+                    boxes.add(obj("w", b.w(), "h", b.h(), "d", b.d(), "u", uv[0], "v", uv[1]));
+                }
+                parts.add(obj("name", p.name, "role", p.role.name(), "color", p.color, "accent", p.accent,
+                        "pattern", p.pattern, "boxes", "[" + String.join(", ", boxes) + "]"));
+            }
+            models.add(obj("id", m.id(), "tex_w", m.texWidth(), "tex_h", m.texHeight(),
+                    "parts", "[" + String.join(", ", parts) + "]"));
+        }
+        List<String> quests = new ArrayList<>();
+        for (QuestInfo qi : ContentRegistry.quests()) {
+            quests.add(obj("id", qi.questId(), "name", qi.displayName(), "points", qi.questPoints()));
+        }
+        String json = "{\n  \"items\": " + arr(items)
+                + ",\n  \"trees\": " + arr(trees)
+                + ",\n  \"rocks\": " + arr(rocks)
+                + ",\n  \"fishing_spots\": " + arr(spots)
+                + ",\n  \"altars\": " + arr(altars)
+                + ",\n  \"stalls\": " + arr(stalls)
+                + ",\n  \"monsters\": " + (monsters.isEmpty() ? "[]" : arr(monsters))
+                + ",\n  \"bosses\": " + (bosses.isEmpty() ? "[]" : arr(bosses))
+                + ",\n  \"npcs\": " + (npcs.isEmpty() ? "[]" : arr(npcs))
+                + ",\n  \"blocks\": " + (blocks.isEmpty() ? "[]" : arr(blocks))
+                + ",\n  \"models\": " + (models.isEmpty() ? "[]" : arr(models))
+                + ",\n  \"quests\": " + arr(quests)
+                + ",\n  \"herbs\": " + Herb.values().length + "\n}\n";
         Path out = Path.of(args.length > 0 ? args[0] : "build/catalog.json");
         if (out.getParent() != null) {
             Files.createDirectories(out.getParent());
         }
-        Files.writeString(out, sb.toString());
-        System.out.println("Wrote " + ItemCatalog.all().size() + " items to " + out);
+        Files.writeString(out, json);
+        System.out.println("Wrote " + ItemCatalog.all().size() + " items, " + monsters.size() + " monsters, "
+                + bosses.size() + " bosses, " + models.size() + " models to " + out);
+    }
+
+    private static String profile(CombatProfile<?> p, Object... extra) {
+        Object[] base = {"id", p.id, "name", p.name, "level", p.combatLevel, "model", p.model, "skin", p.skin,
+                "scale", p.scale};
+        Object[] all = new Object[base.length + extra.length];
+        System.arraycopy(base, 0, all, 0, base.length);
+        System.arraycopy(extra, 0, all, base.length, extra.length);
+        return obj(all);
     }
 }

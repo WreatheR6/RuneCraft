@@ -25,7 +25,8 @@ public final class ClientState {
     public static long coins;
     public static String slayerTask = "";
     public static int slayerRemaining;
-    public static final int[] QUEST_STAGES = new int[Quest.values().length];
+    /** Quest stages indexed like {@code ContentRegistry.quests()}. */
+    public static final int[] QUEST_STAGES = new int[com.runecraft.osrs.content.ContentRegistry.quests().size()];
     public static int questPoints;
     public static final Set<String> COLLECTION_LOG = new HashSet<>();
 

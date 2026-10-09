@@ -23,7 +23,7 @@ import net.minecraft.world.World;
 
 /** A stationary, invulnerable quest character. Right-click to talk. */
 public class QuestNpcEntity extends PathAwareEntity {
-    private static final TrackedData<Integer> NPC = DataTracker.registerData(QuestNpcEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<String> NPC = DataTracker.registerData(QuestNpcEntity.class, TrackedDataHandlerRegistry.STRING);
 
     public QuestNpcEntity(EntityType<? extends PathAwareEntity> type, World world) {
         super(type, world);
@@ -38,7 +38,7 @@ public class QuestNpcEntity extends PathAwareEntity {
     @Override
     protected void initDataTracker() {
         super.initDataTracker();
-        this.dataTracker.startTracking(NPC, 0);
+        this.dataTracker.startTracking(NPC, QuestNpc.COOK.name());
     }
 
     @Override
@@ -47,31 +47,51 @@ public class QuestNpcEntity extends PathAwareEntity {
         this.goalSelector.add(2, new LookAroundGoal(this));
     }
 
+    /** NPC id: a {@link QuestNpc} enum name for built-in characters or a module {@code NpcDef} id. */
+    public String npcId() {
+        return this.dataTracker.get(NPC);
+    }
+
+    /** The built-in quest character, or null for module NPCs. */
     public QuestNpc npc() {
-        int i = this.dataTracker.get(NPC);
-        QuestNpc[] all = QuestNpc.values();
-        return all[Math.max(0, Math.min(all.length - 1, i))];
+        try {
+            return QuestNpc.valueOf(npcId());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public void setNpc(QuestNpc npc) {
-        this.dataTracker.set(NPC, npc.ordinal());
+        this.dataTracker.set(NPC, npc.name());
         setCustomName(Text.literal(npc.displayName()));
+        setCustomNameVisible(true);
+    }
+
+    public void setNpc(com.runecraft.osrs.content.NpcDef npc) {
+        this.dataTracker.set(NPC, npc.id());
+        setCustomName(Text.literal(npc.name()));
         setCustomNameVisible(true);
     }
 
     @Override
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
-        nbt.putString("Npc", npc().name());
+        nbt.putString("Npc", npcId());
     }
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
-        try {
-            setNpc(QuestNpc.valueOf(nbt.getString("Npc")));
-        } catch (IllegalArgumentException ignored) {
-            // keep default
+        String id = nbt.getString("Npc");
+        com.runecraft.osrs.content.NpcDef def = com.runecraft.osrs.content.ContentRegistry.npc(id);
+        if (def != null) {
+            setNpc(def);
+        } else {
+            try {
+                setNpc(QuestNpc.valueOf(id));
+            } catch (IllegalArgumentException ignored) {
+                // keep default
+            }
         }
     }
 

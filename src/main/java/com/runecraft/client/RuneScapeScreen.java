@@ -47,7 +47,8 @@ public class RuneScapeScreen extends Screen {
     private int page;
     private int left;
     private int top;
-    private Quest selectedQuest;
+    private com.runecraft.osrs.QuestInfo selectedQuest;
+    private int selectedIndex;
 
     public RuneScapeScreen(Tab tab) {
         super(Text.literal("RuneScape"));
@@ -187,14 +188,30 @@ public class RuneScapeScreen extends Screen {
     // ---------------- Quests ----------------
 
     private void initQuests() {
-        Quest[] all = Quest.values();
-        for (int i = 0; i < all.length; i++) {
-            Quest q = all[i];
-            int stage = ClientState.QUEST_STAGES[q.ordinal()];
-            String prefix = stage == 0 ? "§c" : stage >= q.finalStage() ? "§a" : "§e";
-            addDrawableChild(ButtonWidget.builder(Text.literal(prefix + q.displayName()), b -> {
+        java.util.List<com.runecraft.osrs.QuestInfo> all = com.runecraft.osrs.content.ContentRegistry.quests();
+        int perPage = 12;
+        int pages = Math.max(1, (all.size() + perPage - 1) / perPage);
+        page = Math.min(page, pages - 1);
+        for (int i = page * perPage; i < Math.min(all.size(), (page + 1) * perPage); i++) {
+            com.runecraft.osrs.QuestInfo q = all.get(i);
+            int index = i;
+            int stage = ClientState.QUEST_STAGES[i];
+            String prefix = stage == 0 ? "\u00a7c" : stage >= q.finalStage() ? "\u00a7a" : "\u00a7e";
+            String name = q.displayName().length() > 20 ? q.displayName().substring(0, 19) + "." : q.displayName();
+            addDrawableChild(ButtonWidget.builder(Text.literal(prefix + name), b -> {
                 selectedQuest = q;
-            }).dimensions(left + 5, top + 6 + i * 16, 130, 15).build());
+                selectedIndex = index;
+            }).dimensions(left + 5, top + 6 + (i - page * perPage) * 16, 130, 15).build());
+        }
+        if (pages > 1) {
+            addDrawableChild(ButtonWidget.builder(Text.literal("<"), b -> {
+                page = (page + pages - 1) % pages;
+                clearAndInit();
+            }).dimensions(left + 5, top + PANEL_H - 22, 20, 18).build());
+            addDrawableChild(ButtonWidget.builder(Text.literal(">"), b -> {
+                page = (page + 1) % pages;
+                clearAndInit();
+            }).dimensions(left + 115, top + PANEL_H - 22, 20, 18).build());
         }
     }
 
@@ -282,7 +299,7 @@ public class RuneScapeScreen extends Screen {
         ctx.drawTextWithShadow(textRenderer, "Quest points: " + ClientState.questPoints + "/" + Quest.totalQuestPoints(),
                 left + 140, top + 8, 0xFFFFD700);
         if (selectedQuest != null) {
-            int stage = ClientState.QUEST_STAGES[selectedQuest.ordinal()];
+            int stage = ClientState.QUEST_STAGES[selectedIndex];
             ctx.drawTextWithShadow(textRenderer, selectedQuest.displayName(), left + 140, top + 26, 0xFFFF9800);
             List<net.minecraft.text.OrderedText> wrapped = textRenderer.wrapLines(Text.literal(selectedQuest.journalFor(stage)), 150);
             int y = top + 42;

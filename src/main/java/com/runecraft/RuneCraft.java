@@ -47,6 +47,10 @@ public class RuneCraft implements ModInitializer {
         Interactions.register();
         LandmarkBuilder.register();
         RuneCraftCommands.register();
+        com.runecraft.boss.Mechanics.register();
+        for (com.runecraft.content.ModuleHooks hooks : com.runecraft.content.ModuleHooksRegistry.ALL) {
+            hooks.init();
+        }
         LOGGER.info("Welcome to Gielinor. {} items, {} blocks registered.", ModItems.count(), ModBlocks.count());
     }
 }

@@ -60,6 +60,13 @@ public final class Recipes {
     }
 
     private static void build() {
+        buildBuiltIn();
+        for (com.runecraft.osrs.content.ContentModule module : com.runecraft.osrs.content.Modules.ALL) {
+            module.recipes(Recipes::add);
+        }
+    }
+
+    private static void buildBuiltIn() {
         // --- Smelting (furnace) ---
         for (Bar bar : Bar.values()) {
             Recipe.Builder b = Recipe.builder("smelt_" + bar.itemId(), MenuType.SMELTING, bar.displayName())

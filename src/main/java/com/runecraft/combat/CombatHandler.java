@@ -191,7 +191,7 @@ public final class CombatHandler {
         }
         MonsterStats stats = MonsterStats.of(target);
         int level = type == AttackType.MAGIC ? stats.magic() : stats.defence();
-        return CombatFormulas.npcRoll(level, stats.defenceBonus());
+        return CombatFormulas.npcRoll(level, stats.defenceBonus(type));
     }
 
     // ---------------- Monsters attacking ----------------
@@ -236,8 +236,12 @@ public final class CombatHandler {
     // ---------------- Damage + XP ----------------
 
     public static DamageSource source(LivingEntity attacker) {
-        RegistryEntry<DamageType> type = attacker.getWorld().getRegistryManager().get(RegistryKeys.DAMAGE_TYPE).entryOf(OSRS_HIT);
-        return new DamageSource(type, attacker);
+        return source(attacker, attacker);
+    }
+
+    private static DamageSource source(LivingEntity attacker, LivingEntity worldHolder) {
+        RegistryEntry<DamageType> type = worldHolder.getWorld().getRegistryManager().get(RegistryKeys.DAMAGE_TYPE).entryOf(OSRS_HIT);
+        return attacker == null ? new DamageSource(type) : new DamageSource(type, attacker);
     }
 
     /** Applies OSRS damage with a hitsplat; returns the damage actually dealt (capped at remaining HP). */
@@ -256,11 +260,13 @@ public final class CombatHandler {
         applying = true;
         try {
             target.timeUntilRegen = 0;
-            target.damage(source(attacker), damage);
+            target.damage(source(attacker, target), damage);
         } finally {
             applying = false;
         }
-        ServerNetworking.hitsplat(target, damage, Net.SPLAT_DAMAGE);
+        if (attacker != null) {
+            ServerNetworking.hitsplat(target, damage, Net.SPLAT_DAMAGE);
+        }
         return dealt;
     }
 
@@ -314,8 +320,10 @@ public final class CombatHandler {
         if (entity instanceof OsrsMonsterEntity custom) {
             custom.onKilledBy(player);
         }
-        if (stats.monster() != null) {
-            for (Drops.Rolled r : Drops.roll(stats.monster().drops(), entity.getRandom(), false)) {
+        java.util.List<com.runecraft.osrs.data.Drop> table = stats.monster() != null ? stats.monster().drops()
+                : stats.profile() instanceof com.runecraft.osrs.content.MonsterDef md ? md.drops : null;
+        if (table != null) {
+            for (Drops.Rolled r : Drops.roll(table, entity.getRandom(), false)) {
                 entity.dropStack(Inv.stack(r.item(), r.count()));
                 CollectionLog.obtain(player, r.item());
             }

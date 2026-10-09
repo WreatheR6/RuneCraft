@@ -20,6 +20,8 @@ public final class Net {
     public static final byte SPLAT_MISS = 0;
     public static final byte SPLAT_DAMAGE = 1;
     public static final byte SPLAT_HEAL = 2;
+    public static final byte SPLAT_POISON = 3;
+    public static final byte SPLAT_VENOM = 4;
 
     private Net() {
     }
