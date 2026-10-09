@@ -1,0 +1,12 @@
+.gradle/
+build/
+out/
+run/
+classes/
+*.iml
+.idea/
+.vscode/
+bin/
+*.class
+!gradle/wrapper/gradle-wrapper.jar
+__pycache__/
