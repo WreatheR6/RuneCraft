@@ -198,7 +198,7 @@ public final class Recipes {
                 "fishing_rod", "fly_fishing_rod", "lobster_pot", "harpoon", "fishing_bait", "minecraft:feather",
                 "vial_of_water", "seed_dibber", "bird_snare", "box_trap", "ring_mould", "necklace_mould",
                 "amulet_mould", "enchanted_gem", "bronze_axe", "bronze_pickaxe", "potato_seed", "guam_seed",
-                "minecraft:bucket", "cake");
+                "minecraft:bucket", "cake", "pot_of_flour", "beer", "garlic", "vial");
         shop(MenuType.SHOP_RUNES, "air_rune", "water_rune", "earth_rune", "fire_rune", "mind_rune", "body_rune",
                 "chaos_rune", "death_rune", "law_rune", "nature_rune", "staff", "staff_of_air", "staff_of_water",
                 "staff_of_earth", "staff_of_fire");

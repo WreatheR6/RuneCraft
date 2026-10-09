@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "caught=false": {
+      "model": "runecraft:block/box_trap_trap"
+    },
+    "caught=true": {
+      "model": "runecraft:block/box_trap_trap_caught"
+    }
+  }
+}

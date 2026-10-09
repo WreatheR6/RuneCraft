@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "empty=false": {
+      "model": "runecraft:block/silk_stall"
+    },
+    "empty=true": {
+      "model": "runecraft:block/silk_stall_empty"
+    }
+  }
+}

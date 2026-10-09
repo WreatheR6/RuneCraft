@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/altar_side",
+    "top": "runecraft:block/astral_altar_top",
+    "bottom": "runecraft:block/altar_bottom"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "runecraft:block/pure_essence_rock"
+  }
+}

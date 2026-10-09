@@ -53,6 +53,27 @@ class DataIntegrityTest {
     }
 
     @Test
+    void bossesQuestsAndCollectionLog() {
+        for (com.runecraft.osrs.data.Boss b : com.runecraft.osrs.data.Boss.values()) {
+            for (Drop d : b.drops()) {
+                assertTrue(ItemCatalog.exists(d.item()), b + " drops " + d.item());
+            }
+            if (b.key() != null) {
+                assertNotNull(ItemCatalog.get(b.key()), b + " key");
+            }
+        }
+        for (CollectionLogData.Page p : CollectionLogData.pages()) {
+            p.items().forEach(i -> assertNotNull(ItemCatalog.get(i), p.name() + " " + i));
+        }
+        for (Quest q : Quest.values()) {
+            for (String reward : q.itemRewards()) {
+                assertNotNull(ItemCatalog.get(reward.split(":")[0]), q + " reward " + reward);
+            }
+        }
+        assertEquals(22, Quest.totalQuestPoints());
+    }
+
+    @Test
     void uniqueIdsAndNames() {
         Set<String> ids = new HashSet<>();
         for (ItemDef d : ItemCatalog.all()) {

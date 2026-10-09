@@ -1,0 +1,102 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "runecraft:block/trap_stick",
+    "stick": "runecraft:block/trap_stick",
+    "loop": "runecraft:block/bird_snare_loop",
+    "feathers": "runecraft:block/bird_snare_feathers"
+  },
+  "elements": [
+    {
+      "from": [
+        7,
+        0,
+        7
+      ],
+      "to": [
+        9,
+        9,
+        9
+      ],
+      "faces": {
+        "north": {
+          "texture": "#stick",
+          "uv": [
+            7,
+            0,
+            9,
+            9
+          ]
+        },
+        "south": {
+          "texture": "#stick",
+          "uv": [
+            7,
+            0,
+            9,
+            9
+          ]
+        },
+        "east": {
+          "texture": "#stick",
+          "uv": [
+            7,
+            0,
+            9,
+            9
+          ]
+        },
+        "west": {
+          "texture": "#stick",
+          "uv": [
+            7,
+            0,
+            9,
+            9
+          ]
+        },
+        "up": {
+          "texture": "#stick",
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        0.25,
+        2
+      ],
+      "to": [
+        14,
+        0.25,
+        14
+      ],
+      "faces": {
+        "up": {
+          "texture": "#loop",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "down": {
+          "texture": "#loop",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    }
+  ]
+}

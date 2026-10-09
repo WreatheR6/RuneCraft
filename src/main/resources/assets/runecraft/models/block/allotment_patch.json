@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/patch_dirt",
+    "top": "runecraft:block/patch_soil",
+    "bottom": "runecraft:block/patch_dirt"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "depleted=false": {
+      "model": "runecraft:block/yew_tree_log"
+    },
+    "depleted=true": {
+      "model": "runecraft:block/yew_tree_log_depleted"
+    }
+  }
+}

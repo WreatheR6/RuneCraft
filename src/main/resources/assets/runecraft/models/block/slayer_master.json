@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/slayer_master_side",
+    "top": "runecraft:block/slayer_master_top",
+    "bottom": "runecraft:block/slayer_master_bottom"
+  }
+}

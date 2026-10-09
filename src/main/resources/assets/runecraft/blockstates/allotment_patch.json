@@ -1,0 +1,25 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "runecraft:block/allotment_patch"
+      }
+    },
+    {
+      "when": {
+        "stage": "1|2|3"
+      },
+      "apply": {
+        "model": "runecraft:block/allotment_patch_growing"
+      }
+    },
+    {
+      "when": {
+        "stage": "4"
+      },
+      "apply": {
+        "model": "runecraft:block/allotment_patch_grown"
+      }
+    }
+  ]
+}

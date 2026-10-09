@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/general_store_side",
+    "top": "runecraft:block/general_store_top",
+    "bottom": "runecraft:block/general_store_bottom"
+  }
+}

@@ -1,0 +1,322 @@
+package com.runecraft.combat;
+
+import com.runecraft.RuneCraft;
+import com.runecraft.action.ActionManager;
+import com.runecraft.collection.CollectionLog;
+import com.runecraft.entity.OsrsMonsterEntity;
+import com.runecraft.item.OsrsEquipmentItems;
+import com.runecraft.network.Net;
+import com.runecraft.network.ServerNetworking;
+import com.runecraft.osrs.AttackType;
+import com.runecraft.osrs.CombatFormulas;
+import com.runecraft.osrs.CombatStyle;
+import com.runecraft.osrs.EquipmentDef;
+import com.runecraft.osrs.EquipmentStats;
+import com.runecraft.osrs.Prayer;
+import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.SkillSet;
+import com.runecraft.player.PlayerData;
+import com.runecraft.player.Players;
+import com.runecraft.quest.QuestManager;
+import com.runecraft.skill.Drops;
+import com.runecraft.skill.XpService;
+import com.runecraft.util.Inv;
+import com.runecraft.util.Msg;
+import com.runecraft.world.Gielinor;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageType;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.network.ServerPlayerEntity;
+
+import java.util.Map;
+import java.util.WeakHashMap;
+
+/**
+ * Replaces Minecraft combat with OSRS combat inside Gielinor: accuracy rolls, max hits, attack
+ * speeds, equipment bonuses, prayers and per-damage experience. Outside Gielinor vanilla damage
+ * is kept but still awards OSRS combat experience.
+ */
+public final class CombatHandler {
+    public static final RegistryKey<DamageType> OSRS_HIT = RegistryKey.of(RegistryKeys.DAMAGE_TYPE, RuneCraft.id("osrs_hit"));
+
+    private static boolean applying;
+    private static final Map<LivingEntity, Long> NPC_LAST_ATTACK = new WeakHashMap<>();
+
+    private CombatHandler() {
+    }
+
+    public static void register() {
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register(CombatHandler::allowDamage);
+        ServerLivingEntityEvents.AFTER_DEATH.register(CombatHandler::afterDeath);
+    }
+
+    private static boolean allowDamage(LivingEntity target, DamageSource source, float amount) {
+        if (applying) {
+            return true;
+        }
+        Entity attacker = source.getAttacker();
+        Entity direct = source.getSource();
+        boolean gielinor = Gielinor.is(target);
+
+        if (attacker instanceof ServerPlayerEntity player && target != player) {
+            if (!gielinor) {
+                overworldXp(player, target, amount, direct);
+                return true;
+            }
+            if (target instanceof PlayerEntity && (Gielinor.wildernessLevel(target) == 0 || Gielinor.wildernessLevel(player) == 0)) {
+                return false;
+            }
+            if (direct instanceof PersistentProjectileEntity arrow) {
+                playerRanged(player, target, arrow);
+                return false;
+            }
+            if (direct == player) {
+                playerMelee(player, target);
+                return false;
+            }
+            return true;
+        }
+        if (target instanceof ServerPlayerEntity player && attacker instanceof LivingEntity mob && !(attacker instanceof PlayerEntity)) {
+            if (gielinor || mob instanceof OsrsMonsterEntity) {
+                MonsterStats stats = MonsterStats.of(mob);
+                AttackType type = direct instanceof ProjectileEntity ? AttackType.RANGED
+                        : stats.style().isMelee() ? stats.style() : AttackType.CRUSH;
+                if (direct instanceof ProjectileEntity projectile) {
+                    projectile.discard();
+                }
+                npcAttack(mob, player, type);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // ---------------- Players attacking ----------------
+
+    private static void playerMelee(ServerPlayerEntity player, LivingEntity target) {
+        PlayerData data = Players.data(player);
+        SkillSet skills = data.skills();
+        int speed = Equipment.weaponSpeed(player, skills);
+        long now = ActionManager.mcTick();
+        if (now - data.lastAttackTick < (long) speed * ActionManager.MC_TICKS_PER_GAME_TICK) {
+            return;
+        }
+        data.lastAttackTick = now;
+        ItemStack held = player.getMainHandStack();
+        com.runecraft.osrs.ItemDef heldDef = com.runecraft.registry.ModItems.def(held);
+        if (heldDef != null && heldDef.equipment() != null) {
+            String unmet = heldDef.equipment().unmetRequirement(skills);
+            if (unmet != null) {
+                Msg.game(player, "You need " + unmet + " to wield this.");
+            }
+        }
+        ActionManager.cancel(player);
+        CombatStyle style = data.style().forMelee();
+        EquipmentStats eq = Equipment.total(player, skills);
+        AttackType type = Equipment.meleeType(player, skills);
+        int effAtt = CombatFormulas.effectiveAttack(skills.currentLevel(Skill.ATTACK), PrayerService.attack(data), style);
+        int effStr = CombatFormulas.effectiveStrength(skills.currentLevel(Skill.STRENGTH), PrayerService.strength(data), style);
+        long attackRoll = CombatFormulas.attackRoll(effAtt, eq.attack(type));
+        long defenceRoll = defenceRoll(target, type);
+        int maxHit = CombatFormulas.meleeMaxHit(effStr, eq.meleeStrength());
+        maxHit = Slayer.boostMaxHit(player, target, maxHit);
+        int damage = CombatFormulas.roll(new java.util.Random(player.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
+        if (target instanceof OsrsMonsterEntity monster) {
+            damage = monster.modifyIncoming(player, damage, type);
+        }
+        int dealt = applyDamage(player, target, damage);
+        awardXp(player, style, dealt, false);
+    }
+
+    private static void playerRanged(ServerPlayerEntity player, LivingEntity target, PersistentProjectileEntity arrow) {
+        PlayerData data = Players.data(player);
+        SkillSet skills = data.skills();
+        int rangedStrength = 0;
+        String arrowItem = null;
+        for (String tag : arrow.getCommandTags()) {
+            if (tag.startsWith(OsrsEquipmentItems.RANGED_STRENGTH_TAG)) {
+                rangedStrength = parse(tag.substring(OsrsEquipmentItems.RANGED_STRENGTH_TAG.length()));
+            } else if (tag.startsWith("runecraft_arrow_")) {
+                arrowItem = tag.substring("runecraft_arrow_".length());
+            }
+        }
+        arrow.discard();
+        CombatStyle style = data.style().forRanged();
+        EquipmentStats eq = Equipment.total(player, skills);
+        int effRanged = CombatFormulas.effectiveRanged(skills.currentLevel(Skill.RANGED), PrayerService.rangedAttack(data), style);
+        int effRangedStr = CombatFormulas.effectiveRanged(skills.currentLevel(Skill.RANGED), PrayerService.rangedStrength(data), style);
+        long attackRoll = CombatFormulas.attackRoll(effRanged, eq.rangedAttack());
+        long defenceRoll = defenceRoll(target, AttackType.RANGED);
+        int maxHit = Math.max(1, CombatFormulas.rangedMaxHit(effRangedStr, rangedStrength + eq.rangedStrength()));
+        int damage = CombatFormulas.roll(new java.util.Random(player.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
+        if (target instanceof OsrsMonsterEntity monster) {
+            damage = monster.modifyIncoming(player, damage, AttackType.RANGED);
+        }
+        int dealt = applyDamage(player, target, damage);
+        awardXp(player, style, dealt, false);
+        if (arrowItem != null && player.getRandom().nextFloat() < 0.8f) {
+            target.dropStack(Inv.stack(arrowItem, 1));
+        }
+    }
+
+    private static int parse(String s) {
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    /** Defence roll of any target against an attack style. */
+    static long defenceRoll(LivingEntity target, AttackType type) {
+        if (target instanceof ServerPlayerEntity defender) {
+            PlayerData d = Players.data(defender);
+            SkillSet s = d.skills();
+            EquipmentStats eq = Equipment.total(defender, s);
+            int eff = type == AttackType.MAGIC
+                    ? CombatFormulas.effectiveMagicDefence(s.currentLevel(Skill.MAGIC), PrayerService.magic(d),
+                    s.currentLevel(Skill.DEFENCE), PrayerService.defence(d), d.style())
+                    : CombatFormulas.effectiveDefence(s.currentLevel(Skill.DEFENCE), PrayerService.defence(d), d.style());
+            return CombatFormulas.attackRoll(eff, eq.defence(type));
+        }
+        MonsterStats stats = MonsterStats.of(target);
+        int level = type == AttackType.MAGIC ? stats.magic() : stats.defence();
+        return CombatFormulas.npcRoll(level, stats.defenceBonus());
+    }
+
+    // ---------------- Monsters attacking ----------------
+
+    /** Performs one OSRS attack from a monster against a player (respecting attack speed). */
+    public static void npcAttack(LivingEntity mob, ServerPlayerEntity player, AttackType type) {
+        MonsterStats stats = MonsterStats.of(mob);
+        long now = ActionManager.mcTick();
+        Long last = NPC_LAST_ATTACK.get(mob);
+        if (last != null && now - last < (long) stats.attackSpeed() * ActionManager.MC_TICKS_PER_GAME_TICK) {
+            return;
+        }
+        NPC_LAST_ATTACK.put(mob, now);
+        PlayerData data = Players.data(player);
+        int attackLevel = switch (type) {
+            case MAGIC -> stats.magic();
+            case RANGED -> stats.ranged();
+            default -> stats.attack();
+        };
+        long attackRoll = CombatFormulas.npcRoll(attackLevel, 0);
+        long defenceRoll = defenceRoll(player, type);
+        int maxHit = mob instanceof OsrsMonsterEntity m ? m.maxHitAgainst(player, type) : stats.maxHit();
+        int damage = CombatFormulas.roll(new java.util.Random(mob.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
+        boolean protectedHit = switch (type) {
+            case MAGIC -> data.isActive(Prayer.PROTECT_FROM_MAGIC);
+            case RANGED -> data.isActive(Prayer.PROTECT_FROM_MISSILES);
+            default -> data.isActive(Prayer.PROTECT_FROM_MELEE);
+        };
+        if (protectedHit) {
+            damage = mob instanceof OsrsMonsterEntity m ? m.damageThroughPrayer(damage) : 0;
+        }
+        if (mob instanceof OsrsMonsterEntity m) {
+            damage = m.onHitPlayer(player, damage, type);
+        }
+        applyDamage(mob, player, damage);
+    }
+
+    // ---------------- Damage + XP ----------------
+
+    public static DamageSource source(LivingEntity attacker) {
+        RegistryEntry<DamageType> type = attacker.getWorld().getRegistryManager().get(RegistryKeys.DAMAGE_TYPE).entryOf(OSRS_HIT);
+        return new DamageSource(type, attacker);
+    }
+
+    /** Applies OSRS damage with a hitsplat; returns the damage actually dealt (capped at remaining HP). */
+    public static int applyDamage(LivingEntity attacker, LivingEntity target, int damage) {
+        if (target instanceof MobEntity mob && attacker != null && mob.getTarget() == null) {
+            mob.setTarget(attacker);
+        }
+        if (attacker != null) {
+            target.setAttacker(attacker);
+        }
+        if (damage <= 0) {
+            ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS);
+            return 0;
+        }
+        int dealt = Math.min(damage, (int) Math.ceil(target.getHealth()));
+        applying = true;
+        try {
+            target.timeUntilRegen = 0;
+            target.damage(source(attacker), damage);
+        } finally {
+            applying = false;
+        }
+        ServerNetworking.hitsplat(target, damage, Net.SPLAT_DAMAGE);
+        return dealt;
+    }
+
+    /** OSRS combat XP: 4 per damage to the trained skill (1.33 each when controlled) plus 1.33 Hitpoints. */
+    public static void awardXp(ServerPlayerEntity player, CombatStyle style, int damage, boolean magic) {
+        if (damage <= 0) {
+            return;
+        }
+        switch (style) {
+            case ACCURATE -> XpService.addTenths(player, Skill.ATTACK, CombatFormulas.meleeXpTenths(damage));
+            case AGGRESSIVE -> XpService.addTenths(player, Skill.STRENGTH, CombatFormulas.meleeXpTenths(damage));
+            case DEFENSIVE -> XpService.addTenths(player, Skill.DEFENCE, CombatFormulas.meleeXpTenths(damage));
+            case CONTROLLED -> {
+                XpService.addTenths(player, Skill.ATTACK, CombatFormulas.controlledXpTenths(damage));
+                XpService.addTenths(player, Skill.STRENGTH, CombatFormulas.controlledXpTenths(damage));
+                XpService.addTenths(player, Skill.DEFENCE, CombatFormulas.controlledXpTenths(damage));
+            }
+            case RANGED_ACCURATE, RAPID -> XpService.addTenths(player, Skill.RANGED, CombatFormulas.meleeXpTenths(damage));
+            case LONGRANGE -> {
+                XpService.addTenths(player, Skill.RANGED, damage * 20);
+                XpService.addTenths(player, Skill.DEFENCE, damage * 20);
+            }
+        }
+        XpService.addTenths(player, Skill.HITPOINTS, CombatFormulas.hitpointsXpTenths(damage));
+    }
+
+    private static void overworldXp(ServerPlayerEntity player, LivingEntity target, float amount, Entity direct) {
+        int damage = (int) Math.ceil(Math.min(amount, target.getHealth()));
+        if (damage <= 0) {
+            return;
+        }
+        PlayerData data = Players.data(player);
+        CombatStyle style = direct instanceof PersistentProjectileEntity ? data.style().forRanged() : data.style().forMelee();
+        if (direct == player || direct instanceof PersistentProjectileEntity) {
+            awardXp(player, style, damage, false);
+        }
+    }
+
+    // ---------------- Deaths ----------------
+
+    private static void afterDeath(LivingEntity entity, DamageSource source) {
+        Entity attacker = source.getAttacker();
+        if (entity instanceof ServerPlayerEntity) {
+            return;
+        }
+        boolean osrsWorld = Gielinor.is(entity) || entity instanceof OsrsMonsterEntity;
+        if (!osrsWorld || !(attacker instanceof ServerPlayerEntity player)) {
+            return;
+        }
+        MonsterStats stats = MonsterStats.of(entity);
+        if (entity instanceof OsrsMonsterEntity custom) {
+            custom.onKilledBy(player);
+        }
+        if (stats.monster() != null) {
+            for (Drops.Rolled r : Drops.roll(stats.monster().drops(), entity.getRandom(), false)) {
+                entity.dropStack(Inv.stack(r.item(), r.count()));
+                CollectionLog.obtain(player, r.item());
+            }
+        }
+        Slayer.onKill(player, entity, stats);
+        QuestManager.onKill(player, entity, stats);
+    }
+}

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "empty=false": {
+      "model": "runecraft:block/fur_stall"
+    },
+    "empty=true": {
+      "model": "runecraft:block/fur_stall_empty"
+    }
+  }
+}

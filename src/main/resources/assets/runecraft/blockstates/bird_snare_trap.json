@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "caught=false": {
+      "model": "runecraft:block/bird_snare_trap"
+    },
+    "caught=true": {
+      "model": "runecraft:block/bird_snare_trap_caught"
+    }
+  }
+}

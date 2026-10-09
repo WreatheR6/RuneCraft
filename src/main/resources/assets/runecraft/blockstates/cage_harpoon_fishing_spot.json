@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "waterlogged=false": {
+      "model": "runecraft:block/cage_harpoon_fishing_spot"
+    },
+    "waterlogged=true": {
+      "model": "runecraft:block/cage_harpoon_fishing_spot"
+    }
+  }
+}

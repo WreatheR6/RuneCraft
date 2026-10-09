@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "side": "runecraft:block/yew_stump_side",
+    "end": "runecraft:block/yew_stump_top"
+  }
+}

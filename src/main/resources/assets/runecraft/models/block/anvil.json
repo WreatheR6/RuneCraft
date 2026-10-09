@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/anvil_side",
+    "top": "runecraft:block/anvil_top",
+    "bottom": "runecraft:block/anvil_bottom"
+  }
+}

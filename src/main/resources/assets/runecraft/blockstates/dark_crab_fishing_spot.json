@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "waterlogged=false": {
+      "model": "runecraft:block/dark_crab_fishing_spot"
+    },
+    "waterlogged=true": {
+      "model": "runecraft:block/dark_crab_fishing_spot"
+    }
+  }
+}

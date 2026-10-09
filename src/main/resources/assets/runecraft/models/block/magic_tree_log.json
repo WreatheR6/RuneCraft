@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "side": "runecraft:block/magic_log_side",
+    "end": "runecraft:block/magic_log_top"
+  }
+}

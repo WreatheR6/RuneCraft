@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "empty=false": {
+      "model": "runecraft:block/spice_stall"
+    },
+    "empty=true": {
+      "model": "runecraft:block/spice_stall_empty"
+    }
+  }
+}

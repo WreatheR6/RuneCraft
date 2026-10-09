@@ -44,6 +44,12 @@ public enum Landmark {
     POLLNIVNEACH("Pollnivneach", 3359, 2970, Station.GENERAL_STORE, Station.RANGE),
     NARDAH("Nardah", 3428, 2892, Station.BANK_BOOTH, Station.GENERAL_STORE, Station.PRAYER_ALTAR),
     LLETYA("Lletya", 2340, 3170, Station.BANK_BOOTH, Station.GENERAL_STORE, Station.RANGE),
+    WIZARDS_TOWER("Wizards' Tower", 3109, 3162, Station.RUNE_SHOP),
+    DRAYNOR_MANOR("Draynor Manor", 3109, 3353),
+    STONE_CIRCLE("Stone circle", 3227, 3369),
+    BARROWS("Barrows", 3565, 3288, Station.BANK_BOOTH, Station.PRAYER_ALTAR),
+    GOD_WARS_DUNGEON("God Wars Dungeon", 2917, 3745, Station.PRAYER_ALTAR),
+    MOR_UL_REK("Mor Ul Rek", 2845, 3170, Station.BANK_BOOTH, Station.PRAYER_ALTAR),
 
     AIR_ALTAR("Air Altar", 2985, 3292, Rune.AIR),
     MIND_ALTAR("Mind Altar", 2982, 3514, Rune.MIND),

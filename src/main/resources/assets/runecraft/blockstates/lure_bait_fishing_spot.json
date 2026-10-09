@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "waterlogged=false": {
+      "model": "runecraft:block/lure_bait_fishing_spot"
+    },
+    "waterlogged=true": {
+      "model": "runecraft:block/lure_bait_fishing_spot"
+    }
+  }
+}

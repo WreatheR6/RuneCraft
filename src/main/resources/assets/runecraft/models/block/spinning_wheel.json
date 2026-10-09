@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/spinning_wheel_side",
+    "top": "runecraft:block/spinning_wheel_top",
+    "bottom": "runecraft:block/spinning_wheel_bottom"
+  }
+}

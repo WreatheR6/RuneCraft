@@ -1,0 +1,146 @@
+{
+  "textures": {
+    "particle": "runecraft:block/box_trap_side",
+    "side": "runecraft:block/box_trap_side",
+    "front": "runecraft:block/box_trap_front_open",
+    "stick": "runecraft:block/trap_stick"
+  },
+  "elements": [
+    {
+      "from": [
+        4,
+        0,
+        4
+      ],
+      "to": [
+        12,
+        6,
+        12
+      ],
+      "faces": {
+        "east": {
+          "texture": "#side",
+          "uv": [
+            4,
+            10,
+            12,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#side",
+          "uv": [
+            4,
+            10,
+            12,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#side",
+          "uv": [
+            4,
+            10,
+            12,
+            16
+          ]
+        },
+        "north": {
+          "texture": "#front",
+          "uv": [
+            4,
+            6,
+            12,
+            12
+          ]
+        },
+        "up": {
+          "texture": "#side",
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ]
+        },
+        "down": {
+          "texture": "#side",
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        7.5,
+        0,
+        2
+      ],
+      "to": [
+        8.5,
+        7,
+        3
+      ],
+      "rotation": {
+        "origin": [
+          8,
+          0,
+          2.5
+        ],
+        "axis": "x",
+        "angle": 22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#stick",
+          "uv": [
+            0,
+            0,
+            1,
+            7
+          ]
+        },
+        "south": {
+          "texture": "#stick",
+          "uv": [
+            0,
+            0,
+            1,
+            7
+          ]
+        },
+        "east": {
+          "texture": "#stick",
+          "uv": [
+            0,
+            0,
+            1,
+            7
+          ]
+        },
+        "west": {
+          "texture": "#stick",
+          "uv": [
+            0,
+            0,
+            1,
+            7
+          ]
+        },
+        "up": {
+          "texture": "#stick",
+          "uv": [
+            0,
+            0,
+            1,
+            7
+          ]
+        }
+      }
+    }
+  ]
+}

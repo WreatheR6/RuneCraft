@@ -288,11 +288,158 @@ public final class ItemCatalog {
             }
         }
 
+        // --- Bosses, keys & quest items ---
+        bossAndQuestItems();
+
         // --- Hunter ---
         add("ferret", "Ferret", Kind.SIMPLE, "creature", 0xC8B898).value(10);
         add("grey_chinchompa", "Chinchompa", Kind.SIMPLE, "creature", 0xA0A0A0).value(50);
         add("red_chinchompa", "Red chinchompa", Kind.SIMPLE, "creature", 0xC04030).value(100);
         add("black_chinchompa", "Black chinchompa", Kind.SIMPLE, "creature", 0x303030).value(200);
+    }
+
+    private static EquipmentDef wearable(EquipmentDef.Slot slot, EquipmentStats stats, Object... reqs) {
+        Map<Skill, Integer> map = new java.util.EnumMap<>(Skill.class);
+        for (int i = 0; i < reqs.length; i += 2) {
+            map.put((Skill) reqs[i], (Integer) reqs[i + 1]);
+        }
+        return new EquipmentDef(slot, stats, map, 0, AttackType.CRUSH, EquipmentDef.WeaponClass.NONE);
+    }
+
+    private static EquipmentDef weapon(EquipmentStats stats, int speed, AttackType type, EquipmentDef.WeaponClass cls, Object... reqs) {
+        Map<Skill, Integer> map = new java.util.EnumMap<>(Skill.class);
+        for (int i = 0; i < reqs.length; i += 2) {
+            map.put((Skill) reqs[i], (Integer) reqs[i + 1]);
+        }
+        return new EquipmentDef(EquipmentDef.Slot.WEAPON, stats, map, speed, type, cls);
+    }
+
+    private static EquipmentStats stats(int sa, int sl, int cr, int ma, int ra, int sd, int sld, int cd, int md, int rd,
+                                        int str, int rstr, int mdmg, int prayer) {
+        return new EquipmentStats(sa, sl, cr, ma, ra, sd, sld, cd, md, rd, str, rstr, mdmg, prayer);
+    }
+
+    private static void armour(String id, String name, String shape, int color, String tier, int value, EquipmentDef eq) {
+        add(id, name, Kind.ARMOUR, shape, color).value(value).stack(1).tier(tier).equipment(eq);
+    }
+
+    private static void bossAndQuestItems() {
+        final EquipmentDef.Slot H = EquipmentDef.Slot.HEAD;
+        final EquipmentDef.Slot C = EquipmentDef.Slot.CHEST;
+        final EquipmentDef.Slot L = EquipmentDef.Slot.LEGS;
+        final EquipmentDef.Slot F = EquipmentDef.Slot.FEET;
+        int barrows = 0x6A6A60;
+        // Obor & Bryophyta
+        add("giant_key", "Giant key", Kind.SIMPLE, "key", 0xB09060).value(1).examine("Opens Obor's lair.");
+        add("mossy_key", "Mossy key", Kind.SIMPLE, "key", 0x4A7A2A).value(1).examine("Opens Bryophyta's lair.");
+        add("hill_giant_club", "Hill giant club", Kind.MELEE_WEAPON, "club", 0x8A6A3A).value(200000).stack(1).tier("rune")
+                .equipment(weapon(stats(-4, -4, 65, 0, 0, 0, 0, 0, 0, 0, 70, 0, 0, 0), 7, AttackType.CRUSH,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 65));
+        add("bryophytas_essence", "Bryophyta's essence", Kind.SIMPLE, "essence", 0x3AAA3A).value(150000);
+        // Barrows - Ahrim
+        armour("ahrims_hood", "Ahrim's hood", "cowl", 0x3A3A5A, "barrows", 50000,
+                wearable(H, stats(0, 0, 0, 6, -2, 15, 13, 16, 6, 0, 0, 0, 0, 0), Skill.MAGIC, 70, Skill.DEFENCE, 70));
+        armour("ahrims_robetop", "Ahrim's robetop", "leather_body", 0x3A3A5A, "barrows", 120000,
+                wearable(C, stats(0, 0, 0, 30, -10, 52, 37, 63, 30, 0, 0, 0, 0, 0), Skill.MAGIC, 70, Skill.DEFENCE, 70));
+        armour("ahrims_robeskirt", "Ahrim's robeskirt", "chaps", 0x3A3A5A, "barrows", 110000,
+                wearable(L, stats(0, 0, 0, 22, -7, 22, 20, 24, 22, 0, 0, 0, 0, 0), Skill.MAGIC, 70, Skill.DEFENCE, 70));
+        add("ahrims_staff", "Ahrim's staff", Kind.STAFF, "staff_orb", 0x3A3A5A).value(100000).stack(1).tier("barrows")
+                .equipment(weapon(stats(12, -1, 65, 15, 0, 3, 5, 2, 15, 0, 68, 0, 5, 0), 5, AttackType.CRUSH,
+                        EquipmentDef.WeaponClass.STAFF, Skill.MAGIC, 70, Skill.ATTACK, 70));
+        // Dharok
+        armour("dharoks_helm", "Dharok's helm", "full_helm", barrows, "barrows", 100000,
+                wearable(H, stats(0, 0, 0, -3, -1, 45, 48, 44, -1, 51, 0, 0, 0, 0), Skill.DEFENCE, 70));
+        armour("dharoks_platebody", "Dharok's platebody", "platebody", barrows, "barrows", 250000,
+                wearable(C, stats(0, 0, 0, -30, -10, 122, 120, 110, -6, 120, 0, 0, 0, 0), Skill.DEFENCE, 70));
+        armour("dharoks_platelegs", "Dharok's platelegs", "platelegs", barrows, "barrows", 250000,
+                wearable(L, stats(0, 0, 0, -21, -7, 85, 82, 83, -4, 92, 0, 0, 0, 0), Skill.DEFENCE, 70));
+        add("dharoks_greataxe", "Dharok's greataxe", Kind.MELEE_WEAPON, "battleaxe", barrows).value(208000).stack(1).tier("rune")
+                .equipment(weapon(stats(-4, 103, 95, 0, 0, 0, 0, 0, 0, 0, 105, 0, 0, 0), 7, AttackType.SLASH,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 70, Skill.STRENGTH, 70));
+        // Guthan
+        armour("guthans_helm", "Guthan's helm", "full_helm", 0x6A6A5A, "barrows", 100000,
+                wearable(H, stats(0, 0, 0, -6, -2, 55, 58, 54, -1, 62, 0, 0, 0, 0), Skill.DEFENCE, 70));
+        armour("guthans_platebody", "Guthan's platebody", "platebody", 0x6A6A5A, "barrows", 250000,
+                wearable(C, stats(0, 0, 0, -30, -10, 132, 130, 117, -6, 138, 0, 0, 0, 0), Skill.DEFENCE, 70));
+        armour("guthans_chainskirt", "Guthan's chainskirt", "platelegs", 0x6A6A5A, "barrows", 250000,
+                wearable(L, stats(0, 0, 0, -21, -7, 85, 82, 83, -4, 92, 0, 0, 0, 0), Skill.DEFENCE, 70));
+        add("guthans_warspear", "Guthan's warspear", Kind.MELEE_WEAPON, "spear", 0x6A6A5A).value(196000).stack(1).tier("rune")
+                .equipment(weapon(stats(75, 75, 75, 0, 0, 0, 0, 0, 0, 0, 75, 0, 0, 0), 5, AttackType.STAB,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 70));
+        // Karil
+        armour("karils_coif", "Karil's coif", "cowl", 0x4A3A2A, "barrows", 50000,
+                wearable(H, stats(0, 0, 0, -1, 7, 6, 9, 12, 6, 10, 0, 0, 0, 0), Skill.RANGED, 70, Skill.DEFENCE, 70));
+        armour("karils_leathertop", "Karil's leathertop", "leather_body", 0x4A3A2A, "barrows", 150000,
+                wearable(C, stats(0, 0, 0, -15, 30, 47, 42, 50, 65, 57, 0, 0, 0, 0), Skill.RANGED, 70, Skill.DEFENCE, 70));
+        armour("karils_leatherskirt", "Karil's leatherskirt", "chaps", 0x4A3A2A, "barrows", 100000,
+                wearable(L, stats(0, 0, 0, -8, 17, 26, 20, 28, 34, 35, 0, 0, 0, 0), Skill.RANGED, 70, Skill.DEFENCE, 70));
+        add("karils_crossbow", "Karil's crossbow", Kind.BOW, "crossbow", 0x4A3A2A).value(140000).stack(1).tier("barrows")
+                .equipment(weapon(stats(0, 0, 0, 0, 84, 0, 0, 0, 0, 0, 0, 0, 0, 0), 4, AttackType.RANGED,
+                        EquipmentDef.WeaponClass.BOW, Skill.RANGED, 70));
+        // Torag
+        armour("torags_helm", "Torag's helm", "full_helm", 0x5A4A3A, "barrows", 100000,
+                wearable(H, stats(0, 0, 0, -6, -2, 55, 58, 54, -1, 62, 0, 0, 0, 0), Skill.DEFENCE, 70));
+        armour("torags_platebody", "Torag's platebody", "platebody", 0x5A4A3A, "barrows", 250000,
+                wearable(C, stats(0, 0, 0, -30, -10, 122, 120, 110, -6, 120, 0, 0, 0, 0), Skill.DEFENCE, 70));
+        armour("torags_platelegs", "Torag's platelegs", "platelegs", 0x5A4A3A, "barrows", 250000,
+                wearable(L, stats(0, 0, 0, -21, -7, 85, 82, 83, -4, 92, 0, 0, 0, 0), Skill.DEFENCE, 70));
+        add("torags_hammers", "Torag's hammers", Kind.MELEE_WEAPON, "warhammer", 0x5A4A3A).value(196000).stack(1).tier("rune")
+                .equipment(weapon(stats(-4, -4, 85, 0, 0, 0, 0, 0, 0, 0, 72, 0, 0, 0), 5, AttackType.CRUSH,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 70, Skill.STRENGTH, 70));
+        // Verac
+        armour("veracs_helm", "Verac's helm", "full_helm", 0x6A5A4A, "barrows", 100000,
+                wearable(H, stats(0, 0, 0, -6, -2, 55, 58, 54, 0, 56, 0, 0, 0, 3), Skill.DEFENCE, 70));
+        armour("veracs_brassard", "Verac's brassard", "platebody", 0x6A5A4A, "barrows", 250000,
+                wearable(C, stats(0, 0, 0, -6, -5, 81, 95, 85, 0, 81, 0, 0, 0, 5), Skill.DEFENCE, 70));
+        armour("veracs_plateskirt", "Verac's plateskirt", "platelegs", 0x6A5A4A, "barrows", 250000,
+                wearable(L, stats(0, 0, 0, -21, -7, 85, 82, 83, 0, 84, 0, 0, 0, 4), Skill.DEFENCE, 70));
+        add("veracs_flail", "Verac's flail", Kind.MELEE_WEAPON, "flail", 0x6A5A4A).value(196000).stack(1).tier("rune")
+                .equipment(weapon(stats(68, -2, 82, 0, 0, 0, 0, 0, 0, 0, 72, 0, 0, 6), 5, AttackType.CRUSH,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 70));
+        // God Wars Dungeon
+        armour("bandos_chestplate", "Bandos chestplate", "platebody", 0x6A7A3A, "bandos", 2000000,
+                wearable(C, stats(0, 0, 0, -15, -10, 98, 93, 105, -6, 133, 4, 0, 0, 1), Skill.DEFENCE, 65));
+        armour("bandos_tassets", "Bandos tassets", "platelegs", 0x6A7A3A, "bandos", 2000000,
+                wearable(L, stats(0, 0, 0, -21, -7, 71, 63, 66, -4, 93, 2, 0, 0, 1), Skill.DEFENCE, 65));
+        armour("bandos_boots", "Bandos boots", "boots", 0x6A7A3A, "bandos", 300000,
+                wearable(F, stats(0, 0, 0, -5, -3, 17, 18, 19, 0, 15, 1, 0, 0, 1), Skill.DEFENCE, 65));
+        add("zamorakian_spear", "Zamorakian spear", Kind.MELEE_WEAPON, "spear", 0x801818).value(800000).stack(1).tier("dragon")
+                .equipment(weapon(stats(85, 65, 65, 0, 0, 13, 13, 12, 0, 13, 75, 0, 0, 2), 4, AttackType.STAB,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 70));
+        add("steam_battlestaff", "Steam battlestaff", Kind.STAFF, "staff_orb", 0xA0A0C0).value(45000).stack(1).tier("rune")
+                .equipment(weapon(stats(10, -1, 40, 12, 0, 2, 3, 1, 12, 0, 45, 0, 0, 0), 4, AttackType.CRUSH,
+                        EquipmentDef.WeaponClass.STAFF, Skill.MAGIC, 30, Skill.ATTACK, 30));
+        add("staff_of_the_dead", "Staff of the dead", Kind.STAFF, "staff_orb", 0x205020).value(1500000).stack(1).tier("dragon")
+                .equipment(weapon(stats(55, 70, 0, 17, 0, 0, 3, 3, 17, 0, 72, 0, 15, 0), 4, AttackType.SLASH,
+                        EquipmentDef.WeaponClass.STAFF, Skill.MAGIC, 75, Skill.ATTACK, 75));
+        // Fight Caves
+        add("fire_cape", "Fire cape", Kind.SHIELD, "cape", 0xE05010).value(64000).stack(1).tier("dragon")
+                .equipment(wearable(EquipmentDef.Slot.SHIELD, stats(1, 1, 1, 1, 1, 11, 11, 11, 11, 11, 4, 0, 0, 2)));
+        add("tokkul", "Tokkul", Kind.SIMPLE, "tokkul", 0x5A3A2A).value(1);
+        add("tzrek_jad", "TzRek-Jad", Kind.SIMPLE, "pet", 0xE05010).value(1).stack(1).examine("A pet TzTok-Jad.");
+        // Quest items
+        add("pot_of_flour", "Pot of flour", Kind.SIMPLE, "pot_item", 0xF0F0E0).value(10);
+        add("ghostspeak_amulet", "Ghostspeak amulet", Kind.SIMPLE, "amulet", 0x60E0A0).value(35).stack(1);
+        add("ghosts_skull", "Ghost's skull", Kind.SIMPLE, "skull", 0xE8E0D0).value(1).stack(1);
+        add("black_bead", "Black bead", Kind.SIMPLE, "bead", 0x202020).value(1);
+        add("red_bead", "Red bead", Kind.SIMPLE, "bead", 0xC02020).value(1);
+        add("yellow_bead", "Yellow bead", Kind.SIMPLE, "bead", 0xE0D020).value(1);
+        add("white_bead", "White bead", Kind.SIMPLE, "bead", 0xF0F0F0).value(1);
+        add("rats_tail", "Rat's tail", Kind.SIMPLE, "tail", 0xC09080).value(1);
+        add("cadava_berries", "Cadava berries", Kind.SIMPLE, "secondary", 0x8A2A8A).value(3);
+        add("cadava_potion", "Cadava potion", Kind.SIMPLE, "potion_unf", 0x8A2A8A).value(3).stack(1);
+        add("message_from_juliet", "Message", Kind.SIMPLE, "note", 0xE8E0C0).value(1).stack(1);
+        add("research_package", "Research package", Kind.SIMPLE, "package", 0xA08050).value(1).stack(1);
+        add("research_notes", "Research notes", Kind.SIMPLE, "note", 0xE8E0C0).value(1).stack(1);
+        add("air_talisman", "Air talisman", Kind.SIMPLE, "talisman", 0xE0E0E8).value(4).stack(1);
+        add("silverlights_key", "Silverlight key", Kind.SIMPLE, "key", 0xC0C0C8).value(1).stack(1);
+        add("stake", "Stake", Kind.SIMPLE, "stake", 0x8A6A3A).value(1).stack(1);
+        add("garlic", "Garlic", Kind.FOOD, "produce", 0xF0F0E0).value(1).heal(1);
+        add("beer", "Beer", Kind.FOOD, "beer", 0xE0A030).value(2).heal(1);
+        add("silverlight", "Silverlight", Kind.MELEE_WEAPON, "longsword", 0xD8D8F0).value(50).stack(1).tier("rune")
+                .equipment(weapon(stats(9, 14, -2, 0, 0, 0, 3, 2, 1, 0, 12, 0, 0, 1), 4, AttackType.SLASH,
+                        EquipmentDef.WeaponClass.MELEE));
+        add("amulet_of_accuracy", "Amulet of accuracy", Kind.SIMPLE, "amulet", 0x3060E0).value(100).stack(1);
     }
 
     private static EquipmentDef.Slot slotOf(ArmourType.Slot slot) {

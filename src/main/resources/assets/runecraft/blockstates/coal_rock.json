@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "depleted=false": {
+      "model": "runecraft:block/coal_rock"
+    },
+    "depleted=true": {
+      "model": "runecraft:block/depleted_rock"
+    }
+  }
+}

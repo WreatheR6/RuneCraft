@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/construction_workbench_side",
+    "top": "runecraft:block/construction_workbench_top",
+    "bottom": "runecraft:block/construction_workbench_bottom"
+  }
+}
