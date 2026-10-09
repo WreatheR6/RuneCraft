@@ -58,3 +58,9 @@ tasks.register('dumpCatalog', JavaExec) {
     mainClass = 'com.runecraft.osrs.CatalogDump'
     args = ["${buildDir}/catalog.json"]
 }
+
+// Copies the full compile classpath (remapped Minecraft + Fabric jars) for offline compile checks.
+tasks.register('exportClasspath', Copy) {
+    from configurations.compileClasspath
+    into "${buildDir}/classpath"
+}

@@ -5,7 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.Region;
 import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.math.BiomeCoords;
+import net.minecraft.world.biome.source.BiomeCoords;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.biome.source.util.MultiNoiseUtil;

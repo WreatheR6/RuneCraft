@@ -15,6 +15,14 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
+      - name: Export compile classpath
+        run: ./gradlew exportClasspath --stacktrace
+      - name: Upload classpath
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-classpath
+          path: build/classpath/*.jar
+          retention-days: 7
       - name: Build mod jar
         run: ./gradlew build --stacktrace
       - name: Upload jar
