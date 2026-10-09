@@ -102,7 +102,7 @@ public class OsrsMonsterEntity extends HostileEntity {
     }
 
     @Override
-    protected boolean isDisallowedInPeaceful() {
+    public boolean isDisallowedInPeaceful() {
         return stats() != null && stats().monster() != null && stats().monster().aggressive();
     }
 }

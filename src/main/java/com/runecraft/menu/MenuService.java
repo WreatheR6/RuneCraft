@@ -106,7 +106,7 @@ public final class MenuService {
         if (recipe == null || recipe.menu() != data.openMenu) {
             return;
         }
-        if (data.menuStation != null && player.squaredDistanceTo(data.menuStation.toCenterPos()) > STATION_REACH_SQ) {
+        if (data.menuStation != null && player.squaredDistanceTo(net.minecraft.util.math.Vec3d.ofCenter(data.menuStation)) > STATION_REACH_SQ) {
             Msg.game(player, "You're too far away.");
             return;
         }

@@ -37,11 +37,11 @@ public final class Gielinor {
     }
 
     public static Region region(Entity entity) {
-        return GielinorMap.regionAtBlock(entity.getBlockX(), entity.getBlockZ());
+        return GielinorMap.regionAtBlock(entity.getBlockPos().getX(), entity.getBlockPos().getZ());
     }
 
     public static int wildernessLevel(Entity entity) {
-        return is(entity) ? GielinorMap.wildernessLevel(entity.getBlockX(), entity.getBlockZ()) : 0;
+        return is(entity) ? GielinorMap.wildernessLevel(entity.getBlockPos().getX(), entity.getBlockPos().getZ()) : 0;
     }
 
     /** Finds a safe standing position at the given column (loads/generates the chunk). */

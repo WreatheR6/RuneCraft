@@ -73,7 +73,7 @@ public final class ThievingService {
             Msg.red(player, "You have been stunned!");
             int damage = 1 + player.getRandom().nextInt(kind.stunDamage());
             target.swingHand(Hand.MAIN_HAND);
-            com.runecraft.combat.CombatHandler.applyDamage(player, target, damage);
+            com.runecraft.combat.CombatHandler.applyDamage(target, player, damage);
             player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 4, false, false));
             Stun.apply(player, 8);
         }

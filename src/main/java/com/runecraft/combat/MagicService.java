@@ -111,7 +111,7 @@ public final class MagicService {
             return;
         }
         Vec3d eye = player.getEyePos();
-        Vec3d look = player.getRotationVec(1.0f);
+        Vec3d look = player.getRotationVector();
         Vec3d end = eye.add(look.multiply(SPELL_RANGE));
         Box box = player.getBoundingBox().stretch(look.multiply(SPELL_RANGE)).expand(1.0);
         EntityHitResult hit = ProjectileUtil.raycast(player, eye, end, box,

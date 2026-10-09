@@ -321,7 +321,7 @@ public final class Gathering {
         public boolean tick(ServerPlayerEntity player, long gameTick) {
             ServerWorld world = (ServerWorld) player.getWorld();
             BlockState state = world.getBlockState(pos);
-            if (!valid(player, state) || player.squaredDistanceTo(pos.toCenterPos()) > REACH_SQ) {
+            if (!valid(player, state) || player.squaredDistanceTo(net.minecraft.util.math.Vec3d.ofCenter(pos)) > REACH_SQ) {
                 return false;
             }
             player.swingHand(Hand.MAIN_HAND, true);

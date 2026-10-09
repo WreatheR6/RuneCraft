@@ -21,8 +21,10 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.HungerManager;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -45,7 +47,7 @@ public final class PlayerEvents {
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
             XpService.updateMaxHealth(player);
             if (!Gielinor.is(destination)) {
-                player.getHungerManager().setFoodLevel(20);
+                setFood(player, 20, -1f);
             }
             ServerNetworking.sync(player);
         });
@@ -91,8 +93,10 @@ public final class PlayerEvents {
                 continue;
             }
             // No hunger in Gielinor; food at 17 also stops vanilla regeneration (OSRS regen is applied separately).
-            player.getHungerManager().setFoodLevel(17);
-            player.getHungerManager().setSaturationLevel(0f);
+            HungerManager hunger = player.getHungerManager();
+            if (hunger.getFoodLevel() != 17 || hunger.getSaturationLevel() != 0f) {
+                setFood(player, 17, 0f);
+            }
             // Coins go straight into the money pouch.
             for (int i = 0; i < player.getInventory().size(); i++) {
                 ItemStack s = player.getInventory().getStack(i);
@@ -126,12 +130,28 @@ public final class PlayerEvents {
             regionMessages(player, data);
         }
         if (gielinor && player.getVehicle() instanceof BoatEntity boat) {
-            data.sailingDistance += boat.getVelocity().horizontalLength() * 12;
+            net.minecraft.util.math.Vec3d v = boat.getVelocity();
+            data.sailingDistance += Math.sqrt(v.x * v.x + v.z * v.z) * 12;
             if (data.sailingDistance >= 32) {
                 data.sailingDistance -= 32;
                 XpService.add(player, Skill.SAILING, 10);
             }
         }
+    }
+
+    /**
+     * Sets food (and saturation, unless negative) through the hunger NBT, which is always present on
+     * a dedicated server (HungerManager's setters are only used by client code in vanilla).
+     */
+    private static void setFood(ServerPlayerEntity player, int food, float saturation) {
+        HungerManager hunger = player.getHungerManager();
+        NbtCompound nbt = new NbtCompound();
+        hunger.writeNbt(nbt);
+        nbt.putInt("foodLevel", food);
+        if (saturation >= 0f) {
+            nbt.putFloat("foodSaturationLevel", saturation);
+        }
+        hunger.readNbt(nbt);
     }
 
     private static final EquipmentSlot[] ARMOUR = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};

@@ -24,6 +24,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -87,10 +88,11 @@ public final class ItemUses {
     }
 
     private static void eat(ServerPlayerEntity player, ItemStack stack, ItemDef def) {
+        Item item = stack.getItem();
         stack.decrement(1);
         player.heal(def.heal());
         player.getHungerManager().add(Math.max(1, def.heal() / 2), 0.3f);
-        player.getItemCooldownManager().set(stack.getItem(), EAT_DELAY);
+        player.getItemCooldownManager().set(item, EAT_DELAY);
         player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_PLAYER_BURP, SoundCategory.PLAYERS, 0.5f, 1.0f);
         Msg.action(player, "You eat the " + def.name().toLowerCase(Locale.ROOT) + ". It heals some health.");
         ActionManager.cancel(player);
@@ -101,8 +103,8 @@ public final class ItemUses {
         if (bone == null) {
             return;
         }
-        stack.decrement(1);
         player.getItemCooldownManager().set(stack.getItem(), 2 * ActionManager.MC_TICKS_PER_GAME_TICK);
+        stack.decrement(1);
         player.swingHand(Hand.MAIN_HAND, true);
         XpService.add(player, Skill.PRAYER, bone.xp());
         Msg.action(player, "You dig a hole in the ground... You bury the bones.");
@@ -157,10 +159,10 @@ public final class ItemUses {
                     Msg.game(player, "You need level " + h.cleanLevel() + " Herblore to clean the " + h.displayName() + ".");
                     return;
                 }
+                player.getItemCooldownManager().set(stack.getItem(), ActionManager.MC_TICKS_PER_GAME_TICK);
                 stack.decrement(1);
                 Inv.give(player, h.cleanItem(), 1);
                 XpService.add(player, Skill.HERBLORE, h.cleanXp());
-                player.getItemCooldownManager().set(stack.getItem(), ActionManager.MC_TICKS_PER_GAME_TICK);
                 Msg.action(player, "You clean the dirt from the " + h.displayName().toLowerCase(Locale.ROOT) + ".");
                 return;
             }
@@ -169,7 +171,7 @@ public final class ItemUses {
 
     private static void fillVial(ServerPlayerEntity player, ItemStack stack) {
         Vec3d eye = player.getEyePos();
-        Vec3d end = eye.add(player.getRotationVec(1.0f).multiply(5.0));
+        Vec3d end = eye.add(player.getRotationVector().multiply(5.0));
         BlockHitResult hit = player.getWorld().raycast(new RaycastContext(eye, end, RaycastContext.ShapeType.OUTLINE,
                 RaycastContext.FluidHandling.SOURCE_ONLY, player));
         if (hit.getType() == HitResult.Type.BLOCK) {

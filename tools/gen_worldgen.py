@@ -345,7 +345,7 @@ for name, d in BIOMES.items():
 
 # ---------------------------------------------------------------- damage type & tags
 write("runecraft/damage_type/osrs_hit.json", {"exhaustion": 0.0, "message_id": "runecraft.osrs_hit", "scaling": "never"})
-for tag in ["bypasses_armor", "bypasses_cooldown", "bypasses_shield", "no_knockback"]:
+for tag in ["bypasses_armor", "bypasses_cooldown", "bypasses_shield", "bypasses_enchantments", "bypasses_effects", "no_knockback"]:
     if tag == "no_knockback":
         continue
     write(f"minecraft/tags/damage_type/{tag}.json", {"replace": False, "values": ["runecraft:osrs_hit"]})

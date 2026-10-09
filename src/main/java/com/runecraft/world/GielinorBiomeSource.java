@@ -21,7 +21,7 @@ import java.util.stream.Stream;
  */
 public class GielinorBiomeSource extends BiomeSource {
     public static final Codec<GielinorBiomeSource> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.unboundedMap(Codec.STRING, Biome.REGISTRY_ENTRY_CODEC).fieldOf("biomes").forGetter(s -> s.byName)
+            Codec.unboundedMap(Codec.STRING, Biome.REGISTRY_CODEC).fieldOf("biomes").forGetter(s -> s.byName)
     ).apply(instance, instance.stable(GielinorBiomeSource::new)));
 
     private final Map<String, RegistryEntry<Biome>> byName;
