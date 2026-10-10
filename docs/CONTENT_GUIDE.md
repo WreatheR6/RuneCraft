@@ -121,3 +121,27 @@ Implement the methods you need on your module class (`ContentModule`):
 - `KeyBindingHelper` for keys.
 - Your own `Screen`s.
 - Renderers for module monsters and bosses are registered automatically: a custom model if a `ModelSpec` exists, otherwise a biped.
+
+## Structures (`ContentModule.structures()`)
+
+Hand-built buildings live in `osrs/content/world/*Structures.java` as `StructureDef`s
+(`com.runecraft.osrs.world.StructureDef`). Each is an ordered list of block ops; the Minecraft side
+(`world/StructurePlacer`) applies each structure's share chunk by chunk as chunks load, so size is
+not a problem.
+
+* Coordinates: OSRS tile (x, y) covers blocks `[bx(x), bx(x)+1] x [bz(y), bz(y)+1]`; higher OSRS y is
+  further north (smaller block z). The `t*` builder methods take OSRS tiles; heights are blocks
+  relative to `ground()` (default 64, sea level is 62). `y = 0` is the first block above the floor,
+  `y = -1` the floor itself.
+* Start every settlement with `tFlatten(...)` over its footprint: it levels the ground to
+  `ground()-1` and blends an 8-block ring back into the natural terrain.
+* Use `tBuilding` for ordinary houses, `tTower` for round towers, `tWallLine` for town/castle
+  walls, `roof` for pitched roofs, and the raw `fill/walls/clear/set` primitives for detail.
+  Block strings use command syntax: `minecraft:oak_stairs[facing=north,half=top]`,
+  `runecraft:bank_booth`. Station blocks: `runecraft:bank_booth`, `furnace`, `anvil`,
+  `cooking_range`, `prayer_altar`, `general_store`, `rune_shop`, `weapon_shop`, `tool_shop`,
+  `archery_shop`, `spinning_wheel`, `tanning_rack`, `construction_workbench`, `herb_patch`,
+  `allotment_patch`, `*_stall`, `gielinor_portal`, `slayer_master`, `apothecary_table`.
+* `replaces("LUMBRIDGE")` (Landmark enum name or module place id) suppresses that place's default
+  paved plaza. Its NPCs, boss arenas and any station the structure does not contain are still
+  added, so put the bank booths / furnaces / altars where they really are.
