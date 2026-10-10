@@ -79,6 +79,11 @@ public final class QuestBook {
             LateQuestsA.register(b);
             LateQuestsB.register(b);
             RecipeForDisaster.register(b);
+            DwarfGoblinQuests.register(b);
+            MahjarratQuests.register(b);
+            LateQuestsC.register(b);
+            VarlamoreQuests.register(b);
+            Miniquests.register(b);
             WiseOldMan.register(b);
             b.quests.forEach(QuestSpec::seal);
             instance = b;
