@@ -1,0 +1,1041 @@
+package com.runecraft.content.raids;
+
+import com.runecraft.action.ActionManager;
+import com.runecraft.boss.DataBossEntity;
+import com.runecraft.boss.Mechanics;
+import com.runecraft.combat.CombatHandler;
+import com.runecraft.combat.PoisonService;
+import com.runecraft.osrs.AttackType;
+import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.raids.RaidsContent;
+import com.runecraft.osrs.content.raids.RoomDef;
+import com.runecraft.skill.XpService;
+import com.runecraft.util.Inv;
+import com.runecraft.util.Msg;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.PillarBlock;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/** Chambers of Xeric rooms. */
+final class CoxRooms {
+    private CoxRooms() {
+    }
+
+    /** Tekton: every so often he retreats to his anvil (sparks fly at everyone), then returns enraged. */
+    static final class Tekton extends RoomLogic {
+        private DataBossEntity tekton;
+        private Vec3d anvil;
+        private int fight;
+        private int anvilTicks;
+        private int enrage;
+
+        Tekton(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void decorate() {
+            RaidBuilder.set(world(), at(13, 0), Blocks.ANVIL.getDefaultState());
+            RaidBuilder.set(world(), at(13, -2), Blocks.LAVA_CAULDRON.getDefaultState());
+            RaidBuilder.set(world(), at(13, 2), Blocks.LAVA_CAULDRON.getDefaultState());
+        }
+
+        @Override
+        public void start() {
+            tekton = spawnBoss("tekton", at(8, 0));
+            anvil = vec(11, 0);
+        }
+
+        @Override
+        public void gameTick(long tick) {
+            super.gameTick(tick);
+            if (!alive(tekton)) {
+                return;
+            }
+            if (anvilTicks > 0) {
+                anvilTicks--;
+                tekton.getNavigation().stop();
+                world().spawnParticles(ParticleTypes.LAVA, anvil.x + 2, anvil.y + 1, anvil.z, 6, 0.4, 0.3, 0.4, 0);
+                if (anvilTicks % 2 == 0) {
+                    for (ServerPlayerEntity p : players()) {
+                        RaidEffects.strike(world(), p.getPos(), 1.5, 18, 3, tekton, ParticleTypes.LAVA);
+                    }
+                }
+                if (anvilTicks == 0) {
+                    enrage = 16;
+                    unanchor(tekton);
+                    warn("Tekton's hammer glows red hot!");
+                }
+            } else {
+                if (enrage > 0) {
+                    enrage--;
+                    world().spawnParticles(ParticleTypes.FLAME, tekton.getX(), tekton.getY() + 2, tekton.getZ(), 4, 0.6, 0.6, 0.6, 0.01);
+                }
+                if (++fight >= 35) {
+                    fight = 0;
+                    anvilTicks = 8;
+                    move(tekton, anvil);
+                    anchor(tekton);
+                    say("Tekton retreats to his anvil to sharpen his hammer.");
+                }
+            }
+        }
+
+        @Override
+        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            return anvilTicks > 0 ? damage / 2 : damage;
+        }
+
+        @Override
+        public int bossOutgoing(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+            return enrage > 0 ? (int) Math.round(damage * 1.25) : damage;
+        }
+    }
+
+    /** Vasa Nistirio: siphons power from glowing crystals and teleports players to him. */
+    static final class Vasa extends RoomLogic {
+        private DataBossEntity vasa;
+        private final List<LivingEntity> crystals = new ArrayList<>();
+        private LivingEntity siphon;
+        private int siphonTicks;
+        private int siphonCooldown = 20;
+        private int teleportCooldown = 15;
+
+        Vasa(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void decorate() {
+            for (int sx = -1; sx <= 1; sx += 2) {
+                for (int sz = -1; sz <= 1; sz += 2) {
+                    BlockPos p = center().add(sx * 13, 0, sz * 13);
+                    RaidBuilder.fill(world(), p.getX() - 1, p.getY(), p.getZ() - 1, p.getX() + 1, p.getY(), p.getZ() + 1,
+                            Blocks.PURPUR_BLOCK.getDefaultState());
+                }
+            }
+        }
+
+        @Override
+        public void start() {
+            vasa = spawnBoss("vasa_nistirio", at(4, 0));
+            crystals.clear();
+            for (int sx = -1; sx <= 1; sx += 2) {
+                for (int sz = -1; sz <= 1; sz += 2) {
+                    LivingEntity c = spawnMob("vasa_crystal", at(sx * 13, sz * 13), false);
+                    if (c != null) {
+                        crystals.add(c);
+                        anchor(c);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void gameTick(long tick) {
+            super.gameTick(tick);
+            if (!alive(vasa)) {
+                return;
+            }
+            if (siphon != null) {
+                if (!alive(siphon)) {
+                    siphon = null;
+                    CombatHandler.applyDamage(null, vasa, Math.max(1, raid.maxHitpoints(vasa) / 20));
+                    vasa.setAiDisabled(true);
+                    RaidEffects.later(4, () -> vasa.setAiDisabled(false));
+                    warn("The crystal shatters and Vasa is stunned!");
+                    return;
+                }
+                siphonTicks--;
+                raid.heal(vasa, Math.max(1, raid.maxHitpoints(vasa) / 100));
+                Vec3d a = siphon.getPos().add(0, 1.5, 0);
+                Vec3d b = vasa.getPos().add(0, 2, 0);
+                for (int i = 0; i <= 8; i++) {
+                    Vec3d p = a.lerp(b, i / 8.0);
+                    world().spawnParticles(ParticleTypes.END_ROD, p.x, p.y, p.z, 1, 0, 0, 0, 0);
+                }
+                if (siphonTicks <= 0) {
+                    siphon = null;
+                    unanchor(vasa);
+                    siphonCooldown = 30;
+                }
+                return;
+            }
+            List<LivingEntity> live = new ArrayList<>();
+            for (LivingEntity c : crystals) {
+                if (alive(c)) {
+                    live.add(c);
+                }
+            }
+            if (--siphonCooldown <= 0 && !live.isEmpty()) {
+                siphon = live.get(rnd().nextInt(live.size()));
+                Vec3d dir = center().toCenterPos().subtract(siphon.getPos()).normalize().multiply(2.5);
+                move(vasa, siphon.getPos().add(dir.x, 0, dir.z));
+                anchor(vasa);
+                siphonTicks = 20;
+                warn("Vasa begins to draw power from a glowing crystal! Destroy it!");
+                return;
+            }
+            if (--teleportCooldown <= 0) {
+                teleportCooldown = 25;
+                ServerPlayerEntity p = randomPlayer();
+                if (p != null) {
+                    raid.teleport(p, vasa.getBlockPos().add(1, 0, 1));
+                    Msg.red(p, "Vasa Nistirio teleports you to him! Run!");
+                    RaidEffects.strike(world(), vasa.getPos(), 4.0, 55, 4, vasa, ParticleTypes.END_ROD);
+                }
+            }
+        }
+
+        @Override
+        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            return siphon != null ? damage / 2 : damage;
+        }
+
+        @Override
+        public void cleanup() {
+            super.cleanup();
+            for (LivingEntity c : crystals) {
+                if (alive(c)) {
+                    c.discard();
+                }
+            }
+        }
+    }
+
+    /** Guardians: stone statues that can only be chipped apart with a pickaxe. */
+    static final class Guardians extends RoomLogic {
+        Guardians(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void start() {
+            anchor(spawnBoss("cox_guardian", at(9, -4)));
+            anchor(spawnBoss("cox_guardian", at(9, 4)));
+        }
+
+        @Override
+        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            if (!Inv.idOf(attacker.getMainHandStack()).endsWith("_pickaxe")) {
+                Msg.action(attacker, "Only a pickaxe can harm the Guardians.");
+                return 0;
+            }
+            if (damage > 0) {
+                XpService.add(attacker, Skill.MINING, damage * 2.0);
+            }
+            return damage + (damage > 0 ? level(attacker, Skill.MINING) / 20 : 0);
+        }
+    }
+
+    /** Lizardman shamans: leap onto players and release purple spawn that explode. */
+    static final class Shamans extends RoomLogic {
+        private final Map<LivingEntity, Integer> jumpCooldown = new HashMap<>();
+        private final Set<LivingEntity> jumping = new HashSet<>();
+
+        Shamans(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void decorate() {
+            for (int i = 0; i < 8; i++) {
+                BlockPos p = at(rnd().nextInt(30) - 15, rnd().nextInt(30) - 15);
+                RaidBuilder.set(world(), p, Blocks.MOSSY_COBBLESTONE_WALL.getDefaultState());
+                RaidBuilder.set(world(), p.up(), Blocks.MOSS_BLOCK.getDefaultState());
+            }
+        }
+
+        @Override
+        public void gameTick(long tick) {
+            super.gameTick(tick);
+            for (LivingEntity e : spawned) {
+                if (!alive(e) || jumping.contains(e)) {
+                    continue;
+                }
+                int cd = jumpCooldown.getOrDefault(e, 8 + rnd().nextInt(10)) - 1;
+                jumpCooldown.put(e, cd);
+                if (cd > 0) {
+                    continue;
+                }
+                jumpCooldown.put(e, 14 + rnd().nextInt(8));
+                ServerPlayerEntity target = randomPlayer();
+                if (target == null) {
+                    continue;
+                }
+                Vec3d mark = target.getPos();
+                jumping.add(e);
+                say("A lizardman shaman leaps into the air!");
+                world().spawnParticles(ParticleTypes.CLOUD, e.getX(), e.getY(), e.getZ(), 15, 0.5, 0.2, 0.5, 0.05);
+                e.setInvisible(true);
+                RaidEffects.strike(world(), mark, 2.5, 30, 3, e, ParticleTypes.ITEM_SLIME);
+                RaidEffects.later(3, () -> {
+                    jumping.remove(e);
+                    e.setInvisible(false);
+                    if (alive(e)) {
+                        e.requestTeleport(mark.x, mark.y, mark.z);
+                    }
+                });
+            }
+            for (LivingEntity spawn : living("cox_lizardman_spawn")) {
+                if (spawn.age > 6 * ActionManager.MC_TICKS_PER_GAME_TICK) {
+                    world().spawnParticles(ParticleTypes.EXPLOSION, spawn.getX(), spawn.getY() + 0.5, spawn.getZ(), 2, 0.3, 0.3, 0.3, 0);
+                    for (ServerPlayerEntity p : players()) {
+                        if (p.squaredDistanceTo(spawn) < 2.5 * 2.5) {
+                            RaidEffects.hit(null, p, rnd().nextInt(21), null, true);
+                        }
+                    }
+                    spawn.discard();
+                }
+            }
+        }
+
+        @Override
+        public boolean bossVulnerable(DataBossEntity boss) {
+            return !jumping.contains(boss);
+        }
+
+        @Override
+        public void cleanup() {
+            super.cleanup();
+            for (LivingEntity s : living("cox_lizardman_spawn")) {
+                s.discard();
+            }
+        }
+    }
+
+    /** Muttadiles: the small one first, then its mother; both heal at the meat tree until it is chopped. */
+    static final class Muttadiles extends RoomLogic {
+        private DataBossEntity small;
+        private DataBossEntity big;
+        private boolean treeAlive = true;
+        private int chops;
+        private final Map<LivingEntity, Integer> feeding = new HashMap<>();
+        private final Map<LivingEntity, Integer> feedCooldown = new HashMap<>();
+
+        Muttadiles(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        private BlockPos tree() {
+            return at(-4, 10);
+        }
+
+        @Override
+        public void decorate() {
+            BlockPos c = center();
+            RaidBuilder.fill(world(), c.getX() + 4, c.getY(), c.getZ() - 14, c.getX() + 15, c.getY(), c.getZ() - 4,
+                    Blocks.WATER.getDefaultState());
+            RaidBuilder.set(world(), tree(), RaidBuilder.module(RaidsContent.MEAT_TREE));
+            RaidBuilder.set(world(), tree().up(), Blocks.MANGROVE_ROOTS.getDefaultState());
+            RaidBuilder.fill(world(), tree().getX() - 1, tree().getY() + 2, tree().getZ() - 1, tree().getX() + 1, tree().getY() + 3,
+                    tree().getZ() + 1, Blocks.RED_MUSHROOM_BLOCK.getDefaultState());
+        }
+
+        @Override
+        public void start() {
+            chops = 6 + 2 * (raid.partySize() - 1);
+            small = spawnBoss("small_muttadile", at(9, -9));
+        }
+
+        @Override
+        public void gameTick(long tick) {
+            for (DataBossEntity m : new DataBossEntity[]{small, big}) {
+                if (!alive(m)) {
+                    continue;
+                }
+                Integer f = feeding.get(m);
+                if (f != null) {
+                    if (!treeAlive || f <= 0) {
+                        feeding.remove(m);
+                        unanchor(m);
+                        feedCooldown.put(m, 30);
+                    } else {
+                        feeding.put(m, f - 1);
+                        raid.heal(m, Math.max(1, raid.maxHitpoints(m) * 3 / 100));
+                        world().spawnParticles(ParticleTypes.HEART, m.getX(), m.getY() + 1.5, m.getZ(), 1, 0.3, 0.3, 0.3, 0);
+                    }
+                    continue;
+                }
+                int cd = feedCooldown.getOrDefault(m, 0);
+                if (cd > 0) {
+                    feedCooldown.put(m, cd - 1);
+                } else if (treeAlive && raid.healthFraction(m) < 0.4) {
+                    move(m, Vec3d.ofBottomCenter(tree().add(2, 0, 0)));
+                    anchor(m);
+                    feeding.put(m, 8);
+                    warn("The Muttadile goes to feed on the meat tree!");
+                }
+            }
+            if (small != null && !alive(small) && big == null) {
+                big = spawnBoss("muttadile", at(9, -9));
+                warn("The mother Muttadile emerges from the water!");
+            }
+            if (big != null && !alive(big) && !alive(small)) {
+                complete();
+            }
+        }
+
+        @Override
+        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+            if (!blockId.equals(RaidsContent.MEAT_TREE)) {
+                return false;
+            }
+            if (!treeAlive || cooldown(player, 2)) {
+                return true;
+            }
+            if (!hasTool(player, "_axe")) {
+                Msg.game(player, "You need an axe to chop down the meat tree.");
+                return true;
+            }
+            player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+            if (rnd().nextDouble() < 0.3 + level(player, Skill.WOODCUTTING) / 150.0) {
+                XpService.add(player, Skill.WOODCUTTING, 25);
+                if (--chops <= 0) {
+                    treeAlive = false;
+                    RaidBuilder.fill(world(), tree().getX() - 1, tree().getY(), tree().getZ() - 1, tree().getX() + 1, tree().getY() + 3,
+                            tree().getZ() + 1, Blocks.AIR.getDefaultState());
+                    RaidBuilder.set(world(), tree(), Blocks.MANGROVE_ROOTS.getDefaultState());
+                    say("The meat tree has been chopped down! The Muttadiles can no longer feed.");
+                } else {
+                    Msg.action(player, "You chop at the meat tree. (" + chops + " chops left)");
+                }
+            }
+            return true;
+        }
+    }
+
+    /** Vanguards: shells, rotation, and the health reset if one falls too far behind the others. */
+    static final class Vanguards extends RoomLogic {
+        private static final String[] IDS = {"vanguard_melee", "vanguard_ranged", "vanguard_magic"};
+        private final DataBossEntity[] guards = new DataBossEntity[3];
+        private final BlockPos[] spots = new BlockPos[3];
+        private int shelled;
+        private int resetCooldown;
+        private int deadTicks;
+
+        Vanguards(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void start() {
+            spots[0] = at(6, -7);
+            spots[1] = at(13, 0);
+            spots[2] = at(6, 7);
+            for (int i = 0; i < 3; i++) {
+                guards[i] = spawnBoss(IDS[i], spots[i]);
+                anchor(guards[i]);
+            }
+        }
+
+        @Override
+        public void gameTick(long tick) {
+            super.gameTick(tick);
+            if (done) {
+                return;
+            }
+            List<DataBossEntity> live = new ArrayList<>();
+            for (DataBossEntity g : guards) {
+                if (alive(g)) {
+                    live.add(g);
+                }
+            }
+            if (shelled > 0 && --shelled == 0) {
+                say("The Vanguards emerge from their shells.");
+            }
+            if (raid.roomTicks() % 30 == 29 && live.size() > 1) {
+                shelled = 4;
+                say("The Vanguards retreat into their shells and change places!");
+                Vec3d first = live.get(0).getPos();
+                for (int i = 0; i < live.size(); i++) {
+                    DataBossEntity g = live.get(i);
+                    Vec3d to = i + 1 < live.size() ? live.get(i + 1).getPos() : first;
+                    unanchor(g);
+                    move(g, to);
+                    anchor(g);
+                }
+            }
+            if (resetCooldown > 0) {
+                resetCooldown--;
+            } else if (live.size() > 1) {
+                double min = 1;
+                double max = 0;
+                double sum = 0;
+                for (DataBossEntity g : live) {
+                    double f = raid.healthFraction(g);
+                    min = Math.min(min, f);
+                    max = Math.max(max, f);
+                    sum += f;
+                }
+                if (max - min > 0.3) {
+                    double avg = sum / live.size();
+                    for (DataBossEntity g : live) {
+                        raid.setCurrentHitpoints(g, (int) Math.round(avg * raid.maxHitpoints(g)));
+                    }
+                    warn("The Vanguards' health is too uneven - they reset!");
+                    resetCooldown = 8;
+                }
+            }
+            if (!live.isEmpty() && live.size() < 3) {
+                if (++deadTicks > 17) {
+                    deadTicks = 0;
+                    double avg = 0;
+                    for (DataBossEntity g : live) {
+                        avg += raid.healthFraction(g);
+                    }
+                    avg /= live.size();
+                    for (int i = 0; i < 3; i++) {
+                        if (!alive(guards[i])) {
+                            guards[i] = spawnBoss(IDS[i], spots[i]);
+                            if (guards[i] != null) {
+                                raid.setCurrentHitpoints(guards[i], (int) Math.round(avg * raid.maxHitpoints(guards[i])));
+                                anchor(guards[i]);
+                            }
+                        }
+                    }
+                    warn("You were too slow: the fallen Vanguard rises again!");
+                }
+            } else {
+                deadTicks = 0;
+            }
+        }
+
+        @Override
+        public boolean bossVulnerable(DataBossEntity boss) {
+            return shelled <= 0;
+        }
+    }
+
+    /** Vespula: kill the abyssal portal while Vespula and her soldiers defend it. */
+    static final class Vespula extends RoomLogic {
+        private DataBossEntity vespula;
+        private DataBossEntity portal;
+
+        Vespula(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void decorate() {
+            for (int i = -1; i <= 1; i += 2) {
+                RaidBuilder.pillar(world(), center().add(4, 0, i * 9), 0, 4, Blocks.JUNGLE_LOG.getDefaultState());
+                RaidBuilder.set(world(), center().add(4, 5, i * 9), Blocks.BEE_NEST.getDefaultState());
+            }
+        }
+
+        @Override
+        public void start() {
+            portal = spawnBoss("vespula_portal", at(15, 0));
+            anchor(portal);
+            vespula = spawnBoss("vespula", at(8, 0), false);
+        }
+
+        @Override
+        public void gameTick(long tick) {
+            if (!alive(portal)) {
+                complete();
+                return;
+            }
+            autoAttack(portal, tick, 6);
+            if (tick % 20 == 0 && living("vespine_soldier").size() < 2 + raid.partySize()) {
+                spawnMob("vespine_soldier", at(13, rnd().nextInt(7) - 3), false);
+                say("A lux grub hatches into a vespine soldier!");
+            }
+        }
+
+        @Override
+        protected void onComplete() {
+            if (alive(vespula)) {
+                say("The portal collapses and Vespula plummets to the ground!");
+            }
+            cleanup();
+        }
+
+        @Override
+        public void cleanup() {
+            super.cleanup();
+            if (alive(vespula)) {
+                vespula.discard();
+            }
+            for (LivingEntity s : living("vespine_soldier")) {
+                s.discard();
+            }
+        }
+    }
+
+    /** Ice demon: chop kindling from the saplings and burn it in the braziers to thaw the demon. */
+    static final class IceDemon extends RoomLogic {
+        private DataBossEntity demon;
+        private int heat;
+        private int needed;
+        private boolean thawed;
+
+        IceDemon(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void decorate() {
+            for (int sx = -1; sx <= 1; sx += 2) {
+                for (int sz = -1; sz <= 1; sz += 2) {
+                    RaidBuilder.set(world(), at(sx * 7, sz * 7), RaidBuilder.module(RaidsContent.BRAZIER));
+                }
+            }
+            for (int x = -12; x <= 12; x += 8) {
+                RaidBuilder.set(world(), at(x, -18), RaidBuilder.module(RaidsContent.SAPLING));
+                RaidBuilder.set(world(), at(x, 18), RaidBuilder.module(RaidsContent.SAPLING));
+            }
+            ice(Blocks.BLUE_ICE.getDefaultState());
+        }
+
+        private void ice(net.minecraft.block.BlockState state) {
+            for (int sx = -1; sx <= 1; sx += 2) {
+                for (int sz = -1; sz <= 1; sz += 2) {
+                    RaidBuilder.pillar(world(), center().add(sx * 2, 0, sz * 2), 0, 3, state);
+                }
+            }
+        }
+
+        @Override
+        public void start() {
+            needed = 8 + 4 * (raid.partySize() - 1);
+            demon = spawnBoss("cox_ice_demon", at(0, 0));
+            if (demon != null) {
+                demon.setAiDisabled(true);
+                anchor(demon);
+            }
+        }
+
+        @Override
+        public void reset() {
+            super.reset();
+            heat = 0;
+            thawed = false;
+        }
+
+        @Override
+        public boolean bossVulnerable(DataBossEntity boss) {
+            return thawed;
+        }
+
+        @Override
+        public void gameTick(long tick) {
+            super.gameTick(tick);
+            if (!thawed && alive(demon) && tick % 3 == 0) {
+                world().spawnParticles(ParticleTypes.SNOWFLAKE, demon.getX(), demon.getY() + 1.5, demon.getZ(), 8, 1, 1, 1, 0.01);
+            }
+        }
+
+        @Override
+        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+            if (blockId.equals(RaidsContent.SAPLING)) {
+                if (cooldown(player, 2)) {
+                    return true;
+                }
+                if (!hasTool(player, "_axe")) {
+                    Msg.game(player, "You need an axe to cut the sapling.");
+                    return true;
+                }
+                player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+                if (rnd().nextDouble() < 0.4 + level(player, Skill.WOODCUTTING) / 150.0) {
+                    Inv.give(player, "cox_kindling", 1);
+                    XpService.add(player, Skill.WOODCUTTING, 15);
+                    Msg.action(player, "You cut some kindling.");
+                }
+                return true;
+            }
+            if (blockId.equals(RaidsContent.BRAZIER)) {
+                if (thawed) {
+                    Msg.game(player, "The Ice demon is already free.");
+                    return true;
+                }
+                int n = Inv.count(player, "cox_kindling");
+                if (n <= 0) {
+                    Msg.game(player, "You need some kindling to fuel the brazier.");
+                    return true;
+                }
+                Inv.remove(player, "cox_kindling", n);
+                XpService.add(player, Skill.FIREMAKING, n * 25.0);
+                heat += n;
+                RaidBuilder.set(world(), pos.up(), Blocks.CAMPFIRE.getDefaultState());
+                world().spawnParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 20, 0.3, 0.5, 0.3, 0.02);
+                say("The braziers warm the room... (" + Math.min(heat, needed) + "/" + needed + ")");
+                if (heat >= needed && alive(demon)) {
+                    thawed = true;
+                    ice(Blocks.AIR.getDefaultState());
+                    demon.setAiDisabled(false);
+                    unanchor(demon);
+                    warn("The ice cracks - the Ice demon breaks free!");
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+
+    /** Thieving: search grubby chests for cavern grubs and feed the scavenger's trough. */
+    static final class Thieving extends RoomLogic {
+        private final Map<BlockPos, Integer> chests = new HashMap<>();
+        private final Set<BlockPos> searched = new HashSet<>();
+        private int needed;
+        private int deposited;
+
+        Thieving(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void decorate() {
+            for (int x = -12; x <= 6; x += 6) {
+                for (int z = -12; z <= 12; z += 8) {
+                    BlockPos p = at(x, z);
+                    RaidBuilder.set(world(), p, RaidBuilder.module(RaidsContent.GRUBBY_CHEST));
+                    chests.put(p, 0);
+                }
+            }
+            RaidBuilder.set(world(), at(14, 0), RaidBuilder.module(RaidsContent.TROUGH));
+            RaidBuilder.set(world(), at(15, 0), Blocks.HAY_BLOCK.getDefaultState());
+            refill();
+        }
+
+        private void refill() {
+            searched.clear();
+            for (BlockPos p : chests.keySet()) {
+                int r = rnd().nextInt(10);
+                chests.put(p, r < 4 ? 1 : r < 6 ? 2 : 0);
+            }
+        }
+
+        @Override
+        public void start() {
+            needed = 12 + 6 * (raid.partySize() - 1);
+        }
+
+        @Override
+        public void gameTick(long tick) {
+        }
+
+        @Override
+        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+            if (blockId.equals(RaidsContent.GRUBBY_CHEST)) {
+                if (cooldown(player, 2)) {
+                    return true;
+                }
+                if (searched.contains(pos)) {
+                    Msg.game(player, "This chest has already been searched.");
+                    return true;
+                }
+                player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+                if (rnd().nextDouble() > 0.55 + level(player, Skill.THIEVING) / 250.0) {
+                    Msg.game(player, "You fail to pick the lock, and trigger a trap!");
+                    RaidEffects.hit(null, player, 1 + rnd().nextInt(3), null, true);
+                    return true;
+                }
+                searched.add(pos);
+                int content = chests.getOrDefault(pos, 0);
+                XpService.add(player, Skill.THIEVING, 30);
+                if (content == 1) {
+                    int n = 1 + rnd().nextInt(3);
+                    Inv.give(player, "cavern_grubs", n);
+                    Msg.game(player, "You find " + n + " cavern grub" + (n > 1 ? "s" : "") + " in the chest.");
+                } else if (content == 2) {
+                    Msg.red(player, "A poisonous scorpion leaps out and stings you!");
+                    PoisonService.poison(player, 4, ActionManager.gameTick());
+                    RaidEffects.hit(null, player, 3, null, true);
+                } else {
+                    Msg.game(player, "The chest is empty.");
+                }
+                if (searched.size() >= chests.size()) {
+                    refill();
+                    say("You hear scuttling as the chests are refilled.");
+                }
+                return true;
+            }
+            if (blockId.equals(RaidsContent.TROUGH)) {
+                int n = Inv.count(player, "cavern_grubs");
+                if (n <= 0) {
+                    Msg.game(player, "The scavenger is hungry for cavern grubs. (" + deposited + "/" + needed + ")");
+                    return true;
+                }
+                Inv.remove(player, "cavern_grubs", n);
+                deposited += n;
+                say(player.getName().getString() + " feeds " + n + " grubs to the scavenger. (" + Math.min(deposited, needed) + "/" + needed + ")");
+                if (deposited >= needed) {
+                    say("The corrupted scavenger has eaten its fill and falls asleep.");
+                    complete();
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+
+    /** Tightrope: kill the deathly mages and rangers, then cross the rope over the chasm. */
+    static final class Tightrope extends RoomLogic {
+        private boolean crossed;
+
+        Tightrope(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void decorate() {
+            BlockPos c = center();
+            int y = c.getY();
+            int h = RaidBuilder.HALF;
+            RaidBuilder.fill(world(), c.getX() - 3, y - 4, c.getZ() - h, c.getX() + 3, y - 4, c.getZ() + h,
+                    Blocks.OBSIDIAN.getDefaultState());
+            RaidBuilder.fill(world(), c.getX() - 3, y - 3, c.getZ() - h, c.getX() + 3, y - 3, c.getZ() + h,
+                    Blocks.MAGMA_BLOCK.getDefaultState());
+            RaidBuilder.fill(world(), c.getX() - 3, y - 2, c.getZ() - h, c.getX() + 3, y, c.getZ() + h, Blocks.AIR.getDefaultState());
+            RaidBuilder.fill(world(), c.getX() - 3, y, c.getZ(), c.getX() + 3, y, c.getZ(),
+                    Blocks.CHAIN.getDefaultState().with(PillarBlock.AXIS, Direction.Axis.X));
+            RaidBuilder.set(world(), at(-5, 1), RaidBuilder.module(RaidsContent.TIGHTROPE));
+            RaidBuilder.fill(world(), c.getX() + 8, y + 1, c.getZ() - 9, c.getX() + 12, y + 1, c.getZ() + 9,
+                    Blocks.PURPUR_SLAB.getDefaultState());
+        }
+
+        @Override
+        public void start() {
+            int pairs = raid.partySize() > 2 ? 2 : 1;
+            for (int i = 0; i < pairs; i++) {
+                spawnMob("deathly_ranger", at(10, -7 + i * 3).up(), true);
+                spawnMob("deathly_mage", at(10, 7 - i * 3).up(), true);
+            }
+        }
+
+        @Override
+        public void gameTick(long tick) {
+            for (ServerPlayerEntity p : raid.activePlayers()) {
+                double dx = p.getX() - (center().getX() + 0.5);
+                double dz = p.getZ() - (center().getZ() + 0.5);
+                if (Math.abs(dx) > RaidBuilder.HALF + 0.5 || Math.abs(dz) > RaidBuilder.HALF + 0.5) {
+                    continue;
+                }
+                if (p.getY() < center().getY() - 0.5 && Math.abs(dx) < 5) {
+                    raid.teleport(p, at(-6, 0));
+                    RaidEffects.hit(null, p, 5, null, true);
+                    Msg.red(p, "You fall into the chasm and climb back out.");
+                } else if (p.getX() > center().getX() + 4 && inside(p.getPos())) {
+                    crossed = true;
+                }
+            }
+            if (crossed && allDead()) {
+                complete();
+            }
+        }
+
+        @Override
+        protected void onComplete() {
+            BlockPos c = center();
+            RaidBuilder.fill(world(), c.getX() - 3, c.getY(), c.getZ() - RaidBuilder.HALF, c.getX() + 3, c.getY(),
+                    c.getZ() + RaidBuilder.HALF, RaidBuilder.palette(def.style()).floor());
+            say("A bridge forms across the chasm.");
+            cleanup();
+        }
+
+        @Override
+        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+            if (!blockId.equals(RaidsContent.TIGHTROPE)) {
+                return false;
+            }
+            if (cooldown(player, 3)) {
+                return true;
+            }
+            if (rnd().nextDouble() < 0.6 + level(player, Skill.AGILITY) / 200.0) {
+                raid.teleport(player, at(5, 0));
+                XpService.add(player, Skill.AGILITY, 40);
+                Msg.game(player, "You carefully cross the tightrope.");
+                crossed = true;
+            } else {
+                raid.teleport(player, at(0, 3).down(3));
+                Msg.red(player, "You lose your balance!");
+            }
+            return true;
+        }
+    }
+
+    /**
+     * The Great Olm: both claws must die each phase; the head is only vulnerable once the claws of
+     * the final phase are dead. Each phase has a special (acid, crystals or flames) on top of
+     * falling crystals and the left claw's lightning, crystal bursts and teleport portals.
+     */
+    static final class Olm extends RoomLogic {
+        private static final String[] SPECIALS = {"acid", "crystal", "flame"};
+        private DataBossEntity head;
+        private DataBossEntity left;
+        private DataBossEntity right;
+        private int phase;
+        private int phases;
+        private String special;
+        private boolean headExposed;
+        private int clawSpecial;
+
+        Olm(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void decorate() {
+            BlockPos c = center();
+            int y = c.getY();
+            RaidBuilder.fill(world(), c.getX() + 18, y + 1, c.getZ() - RaidBuilder.HALF, c.getX() + RaidBuilder.HALF, y + RaidBuilder.HEIGHT,
+                    c.getZ() + RaidBuilder.HALF, Blocks.BLACKSTONE.getDefaultState());
+            RaidBuilder.fill(world(), c.getX() + 13, y, c.getZ() - 12, c.getX() + 17, y, c.getZ() + 12,
+                    Blocks.POLISHED_BLACKSTONE.getDefaultState());
+            for (int i = 0; i < 14; i++) {
+                BlockPos p = c.add(18, 1 + rnd().nextInt(RaidBuilder.HEIGHT - 1), rnd().nextInt(RaidBuilder.HALF * 2) - RaidBuilder.HALF);
+                RaidBuilder.set(world(), p, Blocks.AMETHYST_BLOCK.getDefaultState());
+            }
+        }
+
+        @Override
+        public void start() {
+            phases = 3 + (raid.partySize() >= 8 ? 1 : 0);
+            phase = 0;
+            headExposed = false;
+            head = spawnBoss("great_olm", at(15, 0));
+            anchor(head);
+            nextPhase();
+        }
+
+        private void nextPhase() {
+            phase++;
+            left = spawnBoss("olm_left_claw", at(15, 9));
+            right = spawnBoss("olm_right_claw", at(15, -9));
+            anchor(left);
+            anchor(right);
+            special = SPECIALS[rnd().nextInt(SPECIALS.length)];
+            warn("The Great Olm rises with the power of " + special + ". (Phase " + phase + "/" + phases + ")");
+        }
+
+        @Override
+        public void reset() {
+            super.reset();
+            head = null;
+            left = null;
+            right = null;
+        }
+
+        @Override
+        public boolean bossVulnerable(DataBossEntity boss) {
+            return boss != head || headExposed;
+        }
+
+        @Override
+        public void gameTick(long tick) {
+            if (head == null) {
+                return;
+            }
+            if (!alive(head)) {
+                complete();
+                return;
+            }
+            autoAttack(head, tick, 4);
+            List<ServerPlayerEntity> players = players();
+            if (players.isEmpty()) {
+                return;
+            }
+            // Falling crystals.
+            if (tick % (headExposed ? 3 : 5) == 0) {
+                ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
+                Vec3d at = p.getPos().add(rnd().nextDouble() * 2 - 1, 0, rnd().nextDouble() * 2 - 1);
+                RaidEffects.strike(world(), at, 1.3, 20, 3, head, ParticleTypes.END_ROD);
+            }
+            // Phase special.
+            if (tick % 12 == 0) {
+                switch (special) {
+                    case "acid" -> {
+                        say("The Great Olm sprays acid!");
+                        for (ServerPlayerEntity p : players) {
+                            Mechanics.addHazard(world(), p.getPos(), 6, 12, head);
+                        }
+                        ServerPlayerEntity drip = players.get(rnd().nextInt(players.size()));
+                        PoisonService.poison(drip, 4, ActionManager.gameTick());
+                        Msg.red(drip, "The Great Olm's acid drips onto you!");
+                    }
+                    case "crystal" -> {
+                        say("The Great Olm fires crystal bombs!");
+                        for (int i = 0; i < 2 + players.size(); i++) {
+                            RaidEffects.strike(world(), vec(rnd().nextInt(26) - 16, rnd().nextInt(30) - 15), 3.0, 40, 6, head,
+                                    ParticleTypes.END_ROD);
+                        }
+                    }
+                    default -> {
+                        ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
+                        say("The Great Olm breathes a wall of flame!");
+                        for (int x = -18; x <= 12; x += 2) {
+                            RaidEffects.strike(world(), new Vec3d(center().getX() + 0.5 + x, p.getY(), p.getZ()), 1.3, 30, 4, head,
+                                    ParticleTypes.FLAME);
+                        }
+                    }
+                }
+            }
+            // Left claw specials.
+            if (alive(left) && tick % 20 == 10) {
+                switch (clawSpecial++ % 3) {
+                    case 0 -> {
+                        say("The Great Olm's left claw clenches - lightning strikes!");
+                        for (int lane = 0; lane < 2; lane++) {
+                            int z = rnd().nextInt(32) - 16;
+                            for (int x = -18; x <= 12; x += 2) {
+                                RaidEffects.strike(world(), vec(x, z), 1.5, 20, 3, left, ParticleTypes.ELECTRIC_SPARK);
+                            }
+                        }
+                    }
+                    case 1 -> {
+                        say("Crystals burst from the ground!");
+                        for (ServerPlayerEntity p : players) {
+                            RaidEffects.strike(world(), p.getPos(), 1.5, 30, 3, left, ParticleTypes.END_ROD);
+                        }
+                    }
+                    default -> portals(players);
+                }
+            }
+            if (!alive(left) && !alive(right)) {
+                if (phase < phases) {
+                    nextPhase();
+                } else if (!headExposed) {
+                    headExposed = true;
+                    warn("The Great Olm's claws are dead - its head is now vulnerable!");
+                }
+            }
+        }
+
+        /** Teleport portals: pairs of players swap places; a lone player is blasted. */
+        private void portals(List<ServerPlayerEntity> players) {
+            say("Portals open beneath you!");
+            List<ServerPlayerEntity> list = new ArrayList<>(players);
+            java.util.Collections.shuffle(list, rnd());
+            for (int i = 0; i + 1 < list.size(); i += 2) {
+                ServerPlayerEntity a = list.get(i);
+                ServerPlayerEntity b = list.get(i + 1);
+                RaidEffects.later(4, () -> {
+                    if (a.isAlive() && b.isAlive()) {
+                        Vec3d pa = a.getPos();
+                        a.requestTeleport(b.getX(), b.getY(), b.getZ());
+                        b.requestTeleport(pa.x, pa.y, pa.z);
+                    }
+                });
+            }
+            if (list.size() % 2 == 1) {
+                ServerPlayerEntity p = list.get(list.size() - 1);
+                RaidEffects.strike(world(), p.getPos(), 1.4, 25, 4, left, ParticleTypes.PORTAL);
+            }
+        }
+    }
+}
