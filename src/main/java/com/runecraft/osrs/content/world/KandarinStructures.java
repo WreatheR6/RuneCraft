@@ -12,6 +12,12 @@ final class KandarinStructures {
 
     static List<StructureDef> all() {
         List<StructureDef> out = new ArrayList<>();
+        KandarinSeers.addAll(out);
+        KandarinArdougne.addAll(out);
+        KandarinSouth.addAll(out);
+        KandarinGnomes.addAll(out);
+        KandarinNorth.addAll(out);
+        KandarinElves.addAll(out);
         return out;
     }
 }
