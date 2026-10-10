@@ -24,7 +24,7 @@ final class FremennikQuests {
         b.place("rellekka_longhall_basement", "Longhall arena", 2655, 3690, PlaceDef.Style.ARENA);
         b.spot("swensens_maze", "Swensen's maze", 2635, 3660);
         b.spot("fossegrimen_lake", "Lake of the fossegrimen", 2620, 3612);
-        b.place("lunar_isle", "Lunar Isle", 2111, 3915, PlaceDef.Style.TOWN);
+        b.place("quest_lunar_isle", "Lunar Isle", 2111, 3915, PlaceDef.Style.TOWN);
         b.place("lunar_dream_world", "Dream world", 2080, 3920, PlaceDef.Style.ARENA);
         b.place("mountain_camp", "Mountain Camp", 2810, 3672, PlaceDef.Style.CAMP);
         b.place("kendal_cave", "The Kendal's cave", 2790, 3700, PlaceDef.Style.CAVE);
@@ -101,8 +101,8 @@ final class FremennikQuests {
 
     private static void lunarDiplomacy(QuestBook b) {
         b.npc("lokar_searunner", "Lokar Searunner", "RELLEKKA", -4, 7, 0xE8C0A2, 0x5A3A6A, 0x3A2A3A, 0xE0E0E0);
-        b.npc("oneiromancer", "Oneiromancer", "lunar_isle", 0, 3, 0xF0E0D0, 0x8AA0C0, 0x6A80A0, 0xC0D0F0);
-        b.npc("pauline_polaris", "Pauline Polaris", "lunar_isle", 3, -2, 0xF0D8C8, 0x6A6AA0, 0x4A4A7A, 0xD0C060);
+        b.npc("oneiromancer", "Oneiromancer", "quest_lunar_isle", 0, 3, 0xF0E0D0, 0x8AA0C0, 0x6A80A0, 0xC0D0F0);
+        b.npc("pauline_polaris", "Pauline Polaris", "quest_lunar_isle", 3, -2, 0xF0D8C8, 0x6A6AA0, 0x4A4A7A, 0xD0C060);
         b.item("seal_of_passage", "Seal of passage", "amulet", 0x8AA0C0, "Lets you be understood by the Moon Clan of Lunar Isle.");
         b.item("waking_sleep_vial", "Waking sleep vial", "potion", 0x8A8AE0, "A potion to enter the dream world.");
         b.item("lunar_moonclan_manual", "Moonclan manual", "book", 0x5A6A8A, "A manual on the Lunar arts.");
@@ -117,7 +117,7 @@ final class FremennikQuests {
                 .xp(Skill.MAGIC, 5000).xp(Skill.RUNECRAFT, 5000).reward("seal_of_passage", "lunar_staff")
                 .unlock("The Lunar spellbook")
                 .stage("I can start this quest by speaking to Lokar Searunner on the Rellekka docks. (Requires Fremennik Trials, Lost City, Rune Mysteries, Shilo Village and many skills.)")
-                .talk("lokar_searunner").travel("lunar_isle").say("Lunar Isle? Few go there. Very well, I'll take you... *A pirate crew attacks your ship, but you fight them off and reach the isle.*")
+                .talk("lokar_searunner").travel("quest_lunar_isle").say("Lunar Isle? Few go there. Very well, I'll take you... *A pirate crew attacks your ship, but you fight them off and reach the isle.*")
                 .stage("I've reached Lunar Isle. I should speak to the Oneiromancer.")
                 .talk("oneiromancer").give("seal_of_passage", "lunar_moonclan_manual")
                 .say("Wear this seal so my people can understand you. The Fremennik want peace with the Moon Clan? Then prove yourself to us.",
@@ -131,7 +131,7 @@ final class FremennikQuests {
                 .missing("I need a guam leaf, a marrentill and a vial of water. And Pauline Polaris needs your help with your equipment.")
                 .stage("I should drink the waking sleep potion and defeat 'Me' in the dream world.")
                 .talk("oneiromancer").stay().need("waking_sleep_vial").travel("lunar_dream_world").say("Drink the potion... *The world fades into a dream.*")
-                .kill("me").take("waking_sleep_vial").travel("lunar_isle").say("* You defeat your dream self and wake up in the shrine.")
+                .kill("me").take("waking_sleep_vial").travel("quest_lunar_isle").say("* You defeat your dream self and wake up in the shrine.")
                 .stage("I should tell the Oneiromancer I've defeated myself.")
                 .talk("oneiromancer").take("lunar_moonclan_manual").say("You have shown great wisdom. The Moon Clan will make peace with the Fremennik. Our Lunar magic is yours to learn.")
                 .done("oneiromancer", "May the moon guide your spells.");

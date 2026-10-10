@@ -36,7 +36,7 @@ final class AsgarniaKandarinQuests {
         b.place("lumbridge_swamp_camp", "Adventurers' camp", 3150, 3206, PlaceDef.Style.CAMP);
         b.spot("zanaris_shed", "Lumbridge Swamp shed", 3202, 3169);
         // Zanaris is an instanced realm in OSRS (2412, 4434); it is placed beside the shed that leads to it.
-        b.places.add(PlaceDef.town("zanaris", "Zanaris", 3168, 3158, Station.BANK_BOOTH, Station.GENERAL_STORE, Station.HERB_PATCH));
+        b.places.add(PlaceDef.town("quest_zanaris", "Zanaris", 3168, 3158, Station.BANK_BOOTH, Station.GENERAL_STORE, Station.HERB_PATCH));
         b.place("entrana", "Entrana", 2834, 3335, PlaceDef.Style.TOWN);
         b.spot("almeras_house", "Almera's house", 2521, 3495);
         b.spot("hadleys_house", "Hadley's house", 2518, 3429);
@@ -49,7 +49,7 @@ final class AsgarniaKandarinQuests {
         b.spot("galahads_house", "Galahad's house", 2612, 3475);
         b.spot("jolly_boar_inn", "Jolly Boar Inn", 3279, 3500);
         b.place("edgeville_dungeon_chronozon", "Edgeville Dungeon (Chronozon)", 3100, 3510, PlaceDef.Style.CAVE);
-        b.spot("heroes_guild", "Heroes' Guild", 2902, 3510);
+        b.spot("quest_heroes_guild", "Heroes' Guild", 2902, 3510);
         b.place("ice_queens_lair", "Ice Queen's lair", 2866, 3520, PlaceDef.Style.CAVE);
         b.spot("ardougne_wall", "Ardougne wall", 2616, 3300);
         b.place("west_ardougne", "West Ardougne", 2530, 3305, PlaceDef.Style.RUINS);
@@ -72,7 +72,7 @@ final class AsgarniaKandarinQuests {
         b.npc("shamus", "Shamus", "zanaris_shed", 3, 3, 0xC0D080, 0x2A8A2A, 0x1A5A1A, 0x2A8A2A);
         b.npc("monk_of_entrana", "Monk of Entrana", "PORT_SARIM", -6, -4, 0xE0C0A0, 0x9A7A4A, 0x9A7A4A, 0x9A7A4A);
         b.npc("cave_monk", "Cave monk", "entrana", 3, 0, 0xD8B898, 0x7A5A3A, 0x7A5A3A, 0x5A3A1A);
-        b.npc("fairy_queen", "Fairy Queen", "zanaris", 0, 3, 0xF0E0F0, 0xC0A0E0, 0xA080C0, 0xF0D060);
+        b.npc("fairy_queen", "Fairy Queen", "quest_zanaris", 0, 3, 0xF0E0F0, 0xC0A0E0, 0xA080C0, 0xF0D060);
         b.item("dramen_branch", "Dramen branch", "log", 0x6A8A3A, "A branch from the magical Dramen tree.");
         b.boss(BossDef.of("tree_spirit", "Tree spirit").level(101).stats(85, 90, 80, 85, 1, 1).speed(5)
                 .defenceBonus(0, 0, 0, 0, 0)
@@ -102,7 +102,7 @@ final class AsgarniaKandarinQuests {
                 .say("You'll want to carve that branch with your knife. *You carve a Dramen staff.* Now, let me guide you back to the boat.")
                 .missing("You'll need a knife to carve that branch into a staff.")
                 .stage("Holding the Dramen staff, I should enter the shed in Lumbridge Swamp.")
-                .reach("zanaris_shed", 5).need("dramen_staff").travel("zanaris")
+                .reach("zanaris_shed", 5).need("dramen_staff").travel("quest_zanaris")
                 .say("* You step into the shed holding the Dramen staff... and the world shimmers. You have found Zanaris!")
                 .finish()
                 .done("fairy_queen", "Welcome to Zanaris, adventurer. You may come and go with your Dramen staff.")
@@ -273,7 +273,7 @@ final class AsgarniaKandarinQuests {
 
     // ---------------------------------------------------------------- Heroes' Quest
     private static void heroesQuest(QuestBook b) {
-        b.npc("achietties", "Achietties", "heroes_guild", 0, 0, 0xF0C8A8, 0xC03A3A, 0x6A1A1A, 0xE0A030);
+        b.npc("achietties", "Achietties", "quest_heroes_guild", 0, 0, 0xF0C8A8, 0xC03A3A, 0x6A1A1A, 0xE0A030);
         b.npc("grip", "Grip", "BRIMHAVEN", 3, 3, 0xD0A070, 0x3A3A3A, 0x2A2A2A, 0x6A2A1A);
         b.npc("alfonse_the_waiter", "Alfonse the Waiter", "BRIMHAVEN", -3, 3, 0xE0B898, 0xF0F0F0, 0x1A1A1A, 0x2A1A0A);
         b.item("entranan_firebird_feather", "Entranan firebird feather", "mark", 0xFF6A1A, "A feather from an Entranan firebird. It's still hot.");

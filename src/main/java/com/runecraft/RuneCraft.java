@@ -12,6 +12,7 @@ import com.runecraft.registry.ModItems;
 import com.runecraft.skill.Interactions;
 import com.runecraft.world.GielinorBiomeSource;
 import com.runecraft.world.LandmarkBuilder;
+import com.runecraft.world.StructurePlacer;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -45,6 +46,7 @@ public class RuneCraft implements ModInitializer {
         ActionManager.register();
         CombatHandler.register();
         Interactions.register();
+        StructurePlacer.register();
         LandmarkBuilder.register();
         RuneCraftCommands.register();
         com.runecraft.boss.Mechanics.register();

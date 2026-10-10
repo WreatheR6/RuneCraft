@@ -120,7 +120,7 @@ final class MisthalinMoreQuests {
     }
 
     private static void dreamMentor(QuestBook b) {
-        b.npc("cyrisus", "Cyrisus", "lunar_isle", -3, -2, 0xE8C0B8, 0x8A8AA0, 0x5A5A7A, 0x5A3A1E);
+        b.npc("cyrisus", "Cyrisus", "quest_lunar_isle", -3, -2, 0xE8C0B8, 0x8A8AA0, 0x5A5A7A, 0x5A3A1E);
         b.boss(BossDef.of("the_inadequacy", "The Inadequacy").level(343).stats(340, 300, 300, 150, 1, 1).speed(5)
                 .defenceBonus(0, 0, 0, 0, 0)
                 .attack(AttackDef.of("crush", AttackType.CRUSH, 24, 3, 6))
@@ -139,7 +139,7 @@ final class MisthalinMoreQuests {
                 .stage("I should enter Cyrisus's dream with him and face his fears.")
                 .talk("oneiromancer").travel("dream_world_cyrisus").say("Drink this and share his dream... *The world fades.*")
                 .stage("I must defeat The Inadequacy, Cyrisus's worst fear.")
-                .kill("the_inadequacy").travel("lunar_isle").say("* The Inadequacy fades away. Cyrisus wakes with new courage.")
+                .kill("the_inadequacy").travel("quest_lunar_isle").say("* The Inadequacy fades away. Cyrisus wakes with new courage.")
                 .stage("I should speak to Cyrisus.")
                 .talk("cyrisus").say("I'm free of my fears! Thank you. The Oneiromancer says you've earned the Dream spell.");
     }

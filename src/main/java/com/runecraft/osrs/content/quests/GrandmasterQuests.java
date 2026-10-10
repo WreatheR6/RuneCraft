@@ -17,7 +17,7 @@ final class GrandmasterQuests {
     static void register(QuestBook b) {
         b.place("kruks_dungeon", "Kruk's dungeon", 2775, 2765, PlaceDef.Style.CAVE);
         b.place("myths_guild", "Myths' Guild", 2458, 2847, PlaceDef.Style.TOWN);
-        b.place("ungael", "Ungael", 2270, 4050, PlaceDef.Style.RUINS);
+        b.place("quest_ungael", "Ungael", 2270, 4050, PlaceDef.Style.RUINS);
         b.place("galveks_sea", "The Western Sea", 2440, 2880, PlaceDef.Style.ARENA);
         b.spot("temple_knight_hq", "Temple Knight headquarters", 2962, 3382);
         b.place("movarios_base", "Movario's base", 3240, 3170, PlaceDef.Style.CAVE);
@@ -73,7 +73,7 @@ final class GrandmasterQuests {
                 .attack(AttackDef.of("bite", AttackType.STAB, 32, 3, 3))
                 .attack(AttackDef.of("firebomb", AttackType.MAGIC, 121, 12, 1).special(Special.SKY_STRIKE, 0)
                         .telegraph(3, "Vorkath launches a fiery bomb high into the air!").particle("minecraft:flame"))
-                .drops(Drop.always("superior_dragon_bones")).size(2.4f, 2.0f, 1.0f).at("ungael").arena(14, "ice"));
+                .drops(Drop.always("superior_dragon_bones")).size(2.4f, 2.0f, 1.0f).at("quest_ungael").arena(14, "ice"));
         b.boss(BossDef.of("galvek", "Galvek").level(608).stats(1200, 632, 350, 350, 250, 1).speed(5)
                 .defenceBonus(100, 120, 120, 200, 200)
                 .attack(AttackDef.of("dragonfire", AttackType.MAGIC, 50, 12, 6).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"))
@@ -104,7 +104,7 @@ final class GrandmasterQuests {
                 .stage("I should search for dragonkin ruins on Fossil Island.")
                 .reach("fossil_island", 12).give("ancient_mural_map").say("* Beneath Fossil Island you find a dragonkin mural. It shows an island in the far north: Ungael.")
                 .stage("I need a ship to Ungael. Brundt of the Fremennik may lend me one.")
-                .talk("brundt").need("ancient_mural_map").travel("ungael").say("A voyage to the frozen north? The Fremennik will sail you. *Your longship lands on Ungael.*")
+                .talk("brundt").need("ancient_mural_map").travel("quest_ungael").say("A voyage to the frozen north? The Fremennik will sail you. *Your longship lands on Ungael.*")
                 .stage("I must defeat the undead dragon Vorkath on Ungael.")
                 .kill("ds2_vorkath").take("ancient_mural_map").give("dragonkin_key").say("* Vorkath collapses. In its lair you find a dragonkin key.")
                 .stage("I should take the dragonkin key to Alec Kincade.")

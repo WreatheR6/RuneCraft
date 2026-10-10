@@ -62,8 +62,8 @@ final class LateQuestsA {
 
     private static void fairytales(QuestBook b) {
         b.npc("martin_the_master_gardener", "Martin the Master Gardener", "DRAYNOR_VILLAGE", -6, -5, 0xE8C0BC, 0x5A8A3B, 0x3A5A2B, 0xC0B081);
-        b.npc("fairy_godfather", "Fairy Godfather", "zanaris", 3, -3, 0xF0E0F1, 0x5A3A8A, 0x3A2A5A, 0xE0D061);
-        b.npc("fairy_nuff", "Fairy Nuff", "zanaris", -3, -3, 0xF0E0F2, 0xE0A0C0, 0xC080A0, 0xF0D062);
+        b.npc("fairy_godfather", "Fairy Godfather", "quest_zanaris", 3, -3, 0xF0E0F1, 0x5A3A8A, 0x3A2A5A, 0xE0D061);
+        b.npc("fairy_nuff", "Fairy Nuff", "quest_zanaris", -3, -3, 0xF0E0F2, 0xE0A0C0, 0xC080A0, 0xF0D062);
         b.npc("malignius_mortifer", "Malignius Mortifer", "lumbridge_swamp_camp", -3, 3, 0xC8C0C0, 0x2A1A3A, 0x1A0A2A, 0x1A1A20);
         b.items(s -> s.add("magic_secateurs", "Magic secateurs", Kind.TOOL, "knife", 0xA060E0).value(1).stack(1)
                 .examine("Magic secateurs. Increase the yield of herbs, allotments and hops by 10%."));

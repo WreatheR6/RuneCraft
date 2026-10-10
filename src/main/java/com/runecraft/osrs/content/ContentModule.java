@@ -53,4 +53,9 @@ public interface ContentModule {
     default List<CollectionLogData.Page> collectionLog() {
         return List.of();
     }
+
+    /** Hand-built structures (towns, castles, walls...) placed chunk by chunk. */
+    default List<com.runecraft.osrs.world.StructureDef> structures() {
+        return List.of();
+    }
 }

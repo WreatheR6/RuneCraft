@@ -55,10 +55,7 @@ final class QuestItemsData {
         b.items(s -> s.add("cape_of_legends", "Cape of legends", Kind.SIMPLE, "cape", 0xE8E8E8).value(450).stack(1)
                 .examine("The cape worn by members of the Legends' Guild. Right-click to wear."));
         b.gear("cape_of_legends", QuestBook.GearSlot.CAPE, new EquipmentStats(0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 0, 0, 0, 0), "legends_quest");
-        // Quest point cape (Wise Old Man): +9 all defences.
-        b.items(s -> s.add("quest_point_cape", "Quest point cape", Kind.SIMPLE, "cape", 0x2A4AA0).value(99000).stack(1)
-                .examine("The cape worn only by the most experienced adventurers. Right-click to wear."));
-        b.gear("quest_point_cape", QuestBook.GearSlot.CAPE, new EquipmentStats(0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 0, 0, 0, 0), null);
+        // The quest point cape item is defined (and worn) by the systems module; the Wise Old Man sells it.
         // Steel gauntlets (Family Crest).
         b.items(s -> s.add("steel_gauntlets", "Steel gauntlets", Kind.SIMPLE, "gloves", 0xA0A0A8).value(1).stack(1)
                 .examine("Very handy gauntlets bearing the crest of the Fitzharmon family. Right-click to wear."));

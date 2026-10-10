@@ -130,6 +130,17 @@ public final class ContentRegistry {
         return models;
     }
 
+    private static List<com.runecraft.osrs.world.StructureDef> structures;
+
+    public static synchronized List<com.runecraft.osrs.world.StructureDef> structures() {
+        if (structures == null) {
+            List<com.runecraft.osrs.world.StructureDef> all = new ArrayList<>();
+            Modules.ALL.forEach(m -> all.addAll(m.structures()));
+            structures = unique(all, com.runecraft.osrs.world.StructureDef::id, "structure");
+        }
+        return structures;
+    }
+
     public static MonsterDef monster(String id) {
         for (MonsterDef m : monsters()) {
             if (m.id.equals(id)) {

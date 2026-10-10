@@ -28,7 +28,7 @@ final class MorytaniaQuests {
         b.place("mos_le_harmless", "Mos Le'Harmless", 3680, 2970, PlaceDef.Style.TOWN);
         b.place("myreque_hideout", "Myreque hideout", 3505, 3450, PlaceDef.Style.CAVE);
         b.place("meiyerditch", "Meiyerditch", 3626, 3218, PlaceDef.Style.RUINS);
-        b.place("ver_sinhaza", "Ver Sinhaza", 3650, 3205, PlaceDef.Style.RUINS);
+        b.place("quest_ver_sinhaza", "Ver Sinhaza", 3650, 3205, PlaceDef.Style.RUINS);
         b.place("darkmeyer", "Darkmeyer", 3600, 3380, PlaceDef.Style.RUINS);
         priestInPeril(b);
         natureSpirit(b);
@@ -80,8 +80,6 @@ final class MorytaniaQuests {
         b.npc("filliman_tarlock", "Filliman Tarlock", "mort_myre", 0, 0, 0xC8E8E0, 0x3A6A3A, 0x2A4A2A, 0xE8E8E8);
         b.npc("nature_spirit", "Nature spirit", "nature_grotto", 0, 2, 0xA0E0A0, 0x5AA05A, 0x3A8A3A, 0xD0F0A0);
         b.item("filliman_journal", "Journal", "book", 0x5A6A3A, "Filliman Tarlock's journal.");
-        b.item("silver_sickle", "Silver sickle", "scimitar", 0xC0C0D0, "An unblessed silver sickle.");
-        b.item("mort_myre_fungus", "Mort myre fungus", "herb", 0x8A6A5A, "Fungus grown from Mort Myre's decay.");
         b.quest("nature_spirit", "Nature Spirit", Difficulty.NOVICE, 2)
                 .reqQuest("priest_in_peril", "RESTLESS_GHOST").req(Skill.CRAFTING, 18)
                 .xp(Skill.CRAFTING, 3000).xp(Skill.DEFENCE, 3000).xp(Skill.HITPOINTS, 3000).reward("silver_sickle_b")
@@ -250,7 +248,7 @@ final class MorytaniaQuests {
         b.npc("veliaf_hurtz", "Veliaf Hurtz", "myreque_hideout", 0, 2, 0xE0B89A, 0x5A3A2A, 0x3A2A1A, 0x6A3A1A);
         b.npc("ivan_strom", "Ivan Strom", "myreque_hideout", 3, -2, 0xF0D0BB, 0x6A2A6A, 0x3A1A3A, 0xC08A3A);
         b.npc("sani_piliu", "Sani Piliu", "myreque_hideout", -3, -2, 0xE8C0A8, 0x3A6A3A, 0x2A4A2A, 0x2A1A0C);
-        b.boss(BossDef.of("skeleton_hellhound", "Skeleton hellhound").level(97).stats(80, 80, 80, 80, 1, 1).speed(4)
+        b.boss(BossDef.of("quest_skeleton_hellhound", "Skeleton hellhound").level(97).stats(80, 80, 80, 80, 1, 1).speed(4)
                 .attack(AttackDef.of("bite", AttackType.STAB, 12, 2.5, 10))
                 .drops(Drop.always("bones")).size(1.0f, 1.2f, 1.0f).at("myreque_hideout").arena(9, "crypt"));
         b.quest("in_search_of_the_myreque", "In Search of the Myreque", Difficulty.INTERMEDIATE, 2)
@@ -263,7 +261,7 @@ final class MorytaniaQuests {
                 .stage("I should speak to the Myreque members.")
                 .talk("veliaf_hurtz").say("Who sent you? Vanstrom Klause? Then you've been followed! A skeleton hellhound is in the tunnels!")
                 .stage("I must defeat the skeleton hellhound that followed me.")
-                .kill("skeleton_hellhound").say("* The hellhound crumbles. The Myreque lower their weapons.")
+                .kill("quest_skeleton_hellhound").say("* The hellhound crumbles. The Myreque lower their weapons.")
                 .stage("I should report to Veliaf Hurtz.")
                 .talk("veliaf_hurtz").say("You fought for us. Vanstrom is a vampyre, one of the Drakans! We'll need your help again. Welcome, friend of the Myreque.")
                 .done("ivan_strom", "I'll be a great vampyre hunter one day!")
@@ -287,14 +285,13 @@ final class MorytaniaQuests {
     }
 
     private static void tasteOfHope(QuestBook b) {
-        b.npc("vertida_sefalatis", "Vertida Sefalatis", "ver_sinhaza", -2, 3, 0xE8C0A9, 0x5A6A2A, 0x3A4A1A, 0x2A1A0D);
-        b.item("vial_of_blood", "Vial of blood", "vial", 0x8A0A0A, "A vial of blood.");
+        b.npc("vertida_sefalatis", "Vertida Sefalatis", "quest_ver_sinhaza", -2, 3, 0xE8C0A9, 0x5A6A2A, 0x3A4A1A, 0x2A1A0D);
         b.boss(BossDef.of("ranis_drakan", "Ranis Drakan").level(233).stats(500, 200, 200, 150, 150, 1).speed(4)
                 .defenceBonus(80, 80, 80, 50, 80)
                 .requiresWeapon("ivandis_flail")
                 .attack(AttackDef.of("claw", AttackType.SLASH, 30, 2.5, 6).special(Special.LIFESTEAL, 30))
                 .attack(AttackDef.of("blood_storm", AttackType.MAGIC, 25, 8, 3).special(Special.AOE, 4).particle("minecraft:crimson_spore"))
-                .drops(Drop.always("bones")).size(0.8f, 2.4f, 1.2f).at("ver_sinhaza").arena(12, "crypt"));
+                .drops(Drop.always("bones")).size(0.8f, 2.4f, 1.2f).at("quest_ver_sinhaza").arena(12, "crypt"));
         b.quest("a_taste_of_hope", "A Taste of Hope", Difficulty.EXPERIENCED, 1)
                 .reqQuest("darkness_of_hallowvale")
                 .req(Skill.CRAFTING, 48).req(Skill.AGILITY, 45).req(Skill.ATTACK, 40).req(Skill.HERBLORE, 40).req(Skill.SLAYER, 38)

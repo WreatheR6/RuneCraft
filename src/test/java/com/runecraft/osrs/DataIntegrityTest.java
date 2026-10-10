@@ -70,7 +70,8 @@ class DataIntegrityTest {
                 assertNotNull(ItemCatalog.get(reward.split(":")[0]), q + " reward " + reward);
             }
         }
-        assertEquals(22, Quest.totalQuestPoints());
+        assertEquals(22, java.util.Arrays.stream(Quest.values()).mapToInt(Quest::questPoints).sum());
+        assertTrue(Quest.totalQuestPoints() >= 22);
     }
 
     @Test

@@ -138,6 +138,9 @@ public final class LandmarkBuilder {
     private static void buildPlace(ServerWorld world, com.runecraft.osrs.content.PlaceDef place) {
         int cx = place.blockX();
         int cz = place.blockZ();
+        if (replacedBuild(world, place.id(), cx, cz, place.stations(), place.blocks())) {
+            return;
+        }
         int y = groundY(world, cx, cz);
         if (place.style() != com.runecraft.osrs.content.PlaceDef.Style.NONE) {
             int radius = Math.max(5, 3 + (place.stations().size() + place.blocks().size()) / 2 + 2);
@@ -258,9 +261,63 @@ public final class LandmarkBuilder {
         world.setBlockState(pos, state, Block.NOTIFY_LISTENERS);
     }
 
+    /**
+     * If a hand-built {@link com.runecraft.osrs.world.StructureDef} replaces this place, builds the
+     * structure around it first and then adds only what it lacks: any station block the structure
+     * doesn't contain (placed on the ground near the centre), NPCs, arenas and custom builders.
+     */
+    private static boolean replacedBuild(ServerWorld world, String placeId, int cx, int cz,
+                                         java.util.Collection<Station> stations, java.util.Collection<String> blocks) {
+        com.runecraft.osrs.world.StructureDef def = StructurePlacer.replacing(placeId);
+        if (def == null) {
+            return false;
+        }
+        StructurePlacer.applyAround(world, cx, cz, 32);
+        java.util.Set<String> used = new java.util.HashSet<>();
+        for (com.runecraft.osrs.world.StructureDef.Op op : def.ops()) {
+            if (op.block() != null) {
+                String b = op.block();
+                int bracket = b.indexOf('[');
+                used.add(RuneCraft.resolve(bracket < 0 ? b : b.substring(0, bracket)).toString());
+            }
+        }
+        List<Block> missing = new ArrayList<>();
+        for (Station s : stations) {
+            Block block = ModBlocks.STATIONS.get(s);
+            if (block != null && !used.contains(net.minecraft.registry.Registries.BLOCK.getId(block).toString())) {
+                missing.add(block);
+            }
+        }
+        for (String id : blocks) {
+            Block block = net.minecraft.registry.Registries.BLOCK.get(RuneCraft.resolve(id));
+            if (block != Blocks.AIR && !used.contains(net.minecraft.registry.Registries.BLOCK.getId(block).toString())) {
+                missing.add(block);
+            }
+        }
+        int slot = 0;
+        for (Block block : missing) {
+            BlockPos p = stationSlot(cx, 0, cz, 4, slot++);
+            int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, p.getX(), p.getZ());
+            set(world, new BlockPos(p.getX(), top, p.getZ()), block.getDefaultState());
+        }
+        afterBuild(world, placeId, cx, groundY(world, cx, cz), cz);
+        return true;
+    }
+
     private static void build(ServerWorld world, Landmark landmark) {
         int cx = landmark.blockX();
         int cz = landmark.blockZ();
+        if (!landmark.isAltar() && replacedBuild(world, landmark.name(), cx, cz, landmark.stations(), List.of())) {
+            for (Boss b : Boss.values()) {
+                if (b.lair() == landmark) {
+                    int lx = cx - 6 + b.ordinal() % 4 * 2;
+                    int lz = cz + 12;
+                    buildLair(world, new BlockPos(lx, world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, lx, lz), lz), b);
+                }
+            }
+            spawnNpcs(world, landmark, cx, groundY(world, cx, cz) + 1, cz);
+            return;
+        }
         world.getChunk(cx >> 4, cz >> 4);
         int ground = Math.max(world.getTopY(Heightmap.Type.OCEAN_FLOOR, cx, cz), world.getSeaLevel()) ;
         int y = Math.max(ground, world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, cx, cz) - 1);

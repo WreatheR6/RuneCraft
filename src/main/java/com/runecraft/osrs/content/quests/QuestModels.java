@@ -30,7 +30,7 @@ final class QuestModels {
         b.model(spider("kalrag", 0x4A3A2A, 1.8f));
         b.model(hound("bouncer", 0x5A2A1A, 0xC03A1A, 1.5f));
         b.model(hound("temple_guardian", 0x6A5A4A, 0xFFD040, 1.4f));
-        b.model(hound("skeleton_hellhound", 0xD8D0C0, 0x8A2A2A, 1.4f));
+        b.model(hound("quest_skeleton_hellhound", 0xD8D0C0, 0x8A2A2A, 1.4f));
         b.model(hound("witchs_experiment", 0x8A5A6A, 0xE04040, 1.4f));
         b.model(treeSpirit("tree_spirit", 0x5A4A2A, 0x3A7A2A, 1.6f));
         b.model(ape("kruk", 0x5A3A26, 0x8A6A4A, 2.0f));

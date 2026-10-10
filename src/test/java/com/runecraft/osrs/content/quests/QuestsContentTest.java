@@ -168,7 +168,7 @@ class QuestsContentTest {
             q.stages.forEach(s -> used.addAll(s.hints.keySet()));
         }
         for (NpcDef n : BOOK.npcs) {
-            assertTrue(used.contains(n.id()) || n.id().equals("wise_old_man"), n.id() + " is never used");
+            assertTrue(used.contains(n.id()) || n.id().equals("quest_wise_old_man"), n.id() + " is never used");
         }
     }
 

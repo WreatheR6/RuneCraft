@@ -72,7 +72,6 @@ final class F2pQuests {
         b.item("crandor_map", "Crandor map", "note", 0xE0D0A0, "A complete map showing the route to Crandor.");
         b.item("elvargs_head", "Elvarg's head", "skull", 0x4A5A26, "The severed head of the great dragon Elvarg.");
         b.item("wizards_mind_bomb", "Wizard's mind bomb", "beer", 0xC0A040, "It's got strange bubbles in it.");
-        b.item("unfired_bowl", "Unfired bowl", "pot", 0xA87A5A, "I need to fire this in a pottery oven.");
 
         b.boss(BossDef.of("melzar_the_mad", "Melzar the Mad").level(43).stats(44, 1, 1, 30, 52, 1).speed(5)
                 .defenceBonus(0, 0, 0, 25, 0)
@@ -224,7 +223,6 @@ final class F2pQuests {
         b.item("karamjan_rum", "Karamjan rum", "beer", 0x8A3A1A, "A very strong spirit brewed in Karamja.");
         b.item("chest_key", "Chest key", "key", 0xB09040, "A key to One-Eyed Hector's chest.");
         b.item("pirate_message", "Pirate message", "note", 0xE0D8B0, "'Visit the city of the White Knights. In the park, Saradomin points to the X which marks the spot.'");
-        b.item("casket", "Casket", "casket", 0x8A6A3A, "One-Eyed Hector's treasure casket.");
         b.quest("pirates_treasure", "Pirate's Treasure", Difficulty.NOVICE, 2)
                 .reward("coins:450", "gold_ring", "emerald")
                 .stage("I can start this quest by speaking to Redbeard Frank in Port Sarim.")
@@ -262,7 +260,6 @@ final class F2pQuests {
         b.item("blonde_wig", "Wig", "wool", 0xF0E080, "A blonde wig made of wool.");
         b.item("skin_paste", "Paste", "pot", 0xE8C8A0, "A paste to make skin look lighter.");
         b.item("pink_skirt", "Pink skirt", "cloth", 0xF0A0C0, "A pink skirt.");
-        b.item("rope", "Rope", "string", 0xA08050, "A coil of rope.");
         b.quest("prince_ali_rescue", "Prince Ali Rescue", Difficulty.NOVICE, 3)
                 .reward("coins:700")
                 .stage("I can start this quest by speaking to Hassan in the Al Kharid palace.")
@@ -304,9 +301,7 @@ final class F2pQuests {
         b.npc("reldo", "Reldo", "varrock_palace", -3, 3, 0xE8C8B0, 0x6A3A8A, 0x4A2A5A, 0xD0D0D0);
         b.npc("thurgo", "Thurgo", "mudskipper_point", 0, 0, 0xD8A880, 0x8A4A2A, 0x3A2A1A, 0xC06A2A);
         b.npc("sir_vyvin", "Sir Vyvin", "falador_castle", -3, 2, 0xE0B898, 0xE0E0E8, 0xA0A0B0, 0x4A3A2A);
-        b.item("redberry_pie", "Redberry pie", "cake", 0xC03A3A, "Looks tasty. Dwarves love these.");
         b.item("portrait", "Portrait", "note", 0xC0A060, "A portrait of Sir Vyvin, showing his sword.");
-        b.item("blurite_ore", "Blurite ore", "ore", 0x3A5AB0, "A rare blue ore found only under Asgarnia.");
         b.item("blurite_sword", "Blurite sword", "longsword", 0x4A6AC0, "Sir Vyvin's replacement sword.");
         b.quest("the_knights_sword", "The Knight's Sword", Difficulty.INTERMEDIATE, 1)
                 .req(Skill.MINING, 10).xp(Skill.SMITHING, 12725)

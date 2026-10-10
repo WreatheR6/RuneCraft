@@ -25,7 +25,7 @@ final class DesertQuests {
         b.spot("shantay_pass", "Shantay Pass", 3302, 3115);
         b.place("desert_mining_camp", "Desert Mining Camp", 3285, 3025, PlaceDef.Style.CAMP);
         b.place("bandit_camp", "Bandit Camp", 3171, 2976, PlaceDef.Style.CAMP);
-        b.place("jaldraocht_pyramid", "Jaldraocht Pyramid", 3233, 2898, PlaceDef.Style.RUINS);
+        b.place("quest_jaldraocht_pyramid", "Jaldraocht Pyramid", 3233, 2898, PlaceDef.Style.RUINS);
         b.place("ice_path", "The Ice Path", 2832, 3807, PlaceDef.Style.CAVE);
         b.place("dessous_graveyard", "Morytania graveyard", 3567, 3403, PlaceDef.Style.RUINS);
         b.place("smoke_dungeon", "Smoke Dungeon", 3310, 2962, PlaceDef.Style.CAVE);
@@ -136,7 +136,7 @@ final class DesertQuests {
         b.npc("rasolo", "Rasolo", "rasolo", 0, 0, 0xC8A070, 0x5A2A5A, 0x3A1A3A, 0x8A6A3A);
         b.npc("malak", "Malak", "CANIFIS", 6, 6, 0xC8C8D0, 0x3A0A1A, 0x1A0A0A, 0x1A1A1A);
         b.npc("troll_child", "Troll child", "trollheim_ice", 0, 0, 0x7A8A6A, 0x5A6A4A, 0x4A5A3A, 0x6A7A5A);
-        b.npc("azzanadra", "Azzanadra", "jaldraocht_pyramid", 0, 3, 0x6A3A6A, 0x3A1A4A, 0x2A0A2A, 0xC0A040);
+        b.npc("azzanadra", "Azzanadra", "quest_jaldraocht_pyramid", 0, 3, 0x6A3A6A, 0x3A1A4A, 0x2A0A2A, 0xC0A040);
         b.item("ancient_diary", "Ancient diary", "book", 0x7A5A3A, "The Archaeologist's translation of an ancient diary.");
         b.item("smoke_diamond", "Smoke diamond", "gem", 0x8A8A8A, "One of the four Diamonds of Azzanadra.");
         b.item("shadow_diamond", "Shadow diamond", "gem", 0x2A2A3A, "One of the four Diamonds of Azzanadra.");
@@ -185,7 +185,7 @@ final class DesertQuests {
                 .kill("fareed").stay().unless("smoke_diamond").give("smoke_diamond").say("* Fareed's flames gutter out. You take the Smoke diamond.")
                 .kill("kamil").stay().unless("ice_diamond").give("ice_diamond").say("* Kamil shatters. The troll child's parents are freed, and you take the Ice diamond.")
                 .kill("dessous").stay().unless("blood_diamond").give("blood_diamond").say("* Dessous crumbles to dust. You take the Blood diamond.")
-                .reach("jaldraocht_pyramid", 10).take("smoke_diamond", "shadow_diamond", "ice_diamond", "blood_diamond")
+                .reach("quest_jaldraocht_pyramid", 10).take("smoke_diamond", "shadow_diamond", "ice_diamond", "blood_diamond")
                 .say("* You place the four diamonds in the obelisks around the Jaldraocht Pyramid. The doors grind open...")
                 .stage("I should enter the pyramid and speak to whoever was imprisoned within.")
                 .talk("azzanadra").say("Free... after millennia! I am Azzanadra, servant of Zaros. You have my gratitude, mortal.",

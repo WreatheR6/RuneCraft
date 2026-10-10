@@ -8,6 +8,7 @@ import com.runecraft.osrs.content.raids.RaidsContent;
 import com.runecraft.osrs.content.skilling.SkillingContent;
 import com.runecraft.osrs.content.slayer.SlayerContent;
 import com.runecraft.osrs.content.systems.SystemsContent;
+import com.runecraft.osrs.content.world.WorldContent;
 
 import java.util.List;
 
@@ -21,7 +22,8 @@ public final class Modules {
             new RaidsContent(),
             new QuestsContent(),
             new SystemsContent(),
-            new MinigamesContent());
+            new MinigamesContent(),
+            new WorldContent());
 
     private Modules() {
     }
