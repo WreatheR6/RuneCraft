@@ -40,6 +40,7 @@ final class Overrides {
         // ---- slayer creatures ----
         l.addAll(Slayers.all());
         l.addAll(Bosses.overrides());
+        l.addAll(BigBosses.overrides());
         return l;
     }
 }

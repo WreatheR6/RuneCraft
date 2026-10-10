@@ -2,5 +2,25 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "runecraft:item/attack_potion"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "damage": 0.25
+      },
+      "model": "runecraft:item/attack_potion_3"
+    },
+    {
+      "predicate": {
+        "damage": 0.5
+      },
+      "model": "runecraft:item/attack_potion_2"
+    },
+    {
+      "predicate": {
+        "damage": 0.75
+      },
+      "model": "runecraft:item/attack_potion_1"
+    }
+  ]
 }

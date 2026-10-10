@@ -979,20 +979,24 @@ def draw_amulet(img, pal, item, rng):
     put(img, 8, 11, pal.m)
 
 
-def vial_shape(img, liquid, extra=None):
+VIAL_DOSE_TOP = {4: 7, 3: 9, 2: 10, 1: 12}
+
+
+def vial_shape(img, liquid, extra=None, dose=4):
     glass = Pal(GLASS)
     body = mask(lambda d: (d.ellipse((3, 6, 12, 14), fill=255), d.rectangle((6, 2, 9, 7), fill=255)))
     for (x, y) in body:
         put(img, x, y, glass.m, 110)
+    top = VIAL_DOSE_TOP.get(dose, 7)
     if liquid is not None:
         lp = Pal(liquid)
         for (x, y) in body:
-            if y >= 8:
-                put(img, x, y, lp.l if y == 8 else (lp.m if x < 9 else lp.d))
+            if y >= top:
+                put(img, x, y, lp.l if y == top else (lp.m if x < 9 else lp.d))
     # glass rim & highlight
     for (x, y) in body:
         if (x - 1, y) not in body or (x + 1, y) not in body or (x, y + 1) not in body:
-            if not (liquid is not None and y >= 8 and (x, y + 1) in body):
+            if not (liquid is not None and y >= top and (x, y + 1) in body):
                 put(img, x, y, glass.l, 230)
     put(img, 5, 9, WHITE)
     put(img, 5, 10, WHITE, 200)
@@ -3648,6 +3652,19 @@ def gen_items(cat):
         save_png(render_item(item), os.path.join(ASSETS, "textures", "item", iid + ".png"), "item textures")
         parent = "minecraft:item/handheld" if item["kind"] in HANDHELD_KINDS else "minecraft:item/generated"
         model = {"parent": parent, "textures": {"layer0": f"{NS}:item/{iid}"}}
+        if item["kind"] == "POTION" and item.get("shape") in ("potion", "potion_unf"):
+            # doses are item damage (0..3 of 4): vanilla's minecraft:damage predicate picks the vial fill level
+            for dose in (3, 2, 1):
+                img = new_img()
+                liquid = Pal(item.get("color") or 0x808080).m
+                if item.get("shape") == "potion_unf":
+                    liquid = mix(liquid, (60, 110, 220), 0.4)
+                vial_shape(img, liquid, dose=dose)
+                save_png(img, os.path.join(ASSETS, "textures", "item", f"{iid}_{dose}.png"), "item textures")
+                write_json(os.path.join(ASSETS, "models", "item", f"{iid}_{dose}.json"),
+                           {"parent": parent, "textures": {"layer0": f"{NS}:item/{iid}_{dose}"}}, "item models")
+            model["overrides"] = [{"predicate": {"damage": round((4 - d) / 4, 2)}, "model": f"{NS}:item/{iid}_{d}"}
+                                  for d in (3, 2, 1)]
         if iid == "coins":
             # runecraft:coin_stack = stage index / 10 (registered client-side): 1, 2, 3, 4, 5, 25, 100, 250, 1000, 10000
             model["textures"]["layer0"] = f"{NS}:item/coins_1"
