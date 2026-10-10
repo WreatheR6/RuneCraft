@@ -51,6 +51,7 @@ public class RuneCraftClient implements ClientModInitializer {
 
         com.runecraft.client.model.ModelSpecs.registerAll();
         com.runecraft.client.model.GielinorLooks.registerAll();
+        CoinStacks.register();
         for (Map.Entry<Monster, EntityType<OsrsMonsterEntity>> e : ModEntities.MONSTERS.entrySet()) {
             String id = e.getKey().entity();
             register(e.getValue(), id, null, ModEntities.scale(id));

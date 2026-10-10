@@ -1,6 +1,68 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "runecraft:item/coins"
-  }
+    "layer0": "runecraft:item/coins_1"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "runecraft:coin_stack": 0.0
+      },
+      "model": "runecraft:item/coins_1"
+    },
+    {
+      "predicate": {
+        "runecraft:coin_stack": 0.1
+      },
+      "model": "runecraft:item/coins_2"
+    },
+    {
+      "predicate": {
+        "runecraft:coin_stack": 0.2
+      },
+      "model": "runecraft:item/coins_3"
+    },
+    {
+      "predicate": {
+        "runecraft:coin_stack": 0.3
+      },
+      "model": "runecraft:item/coins_4"
+    },
+    {
+      "predicate": {
+        "runecraft:coin_stack": 0.4
+      },
+      "model": "runecraft:item/coins_5"
+    },
+    {
+      "predicate": {
+        "runecraft:coin_stack": 0.5
+      },
+      "model": "runecraft:item/coins_25"
+    },
+    {
+      "predicate": {
+        "runecraft:coin_stack": 0.6
+      },
+      "model": "runecraft:item/coins_100"
+    },
+    {
+      "predicate": {
+        "runecraft:coin_stack": 0.7
+      },
+      "model": "runecraft:item/coins_250"
+    },
+    {
+      "predicate": {
+        "runecraft:coin_stack": 0.8
+      },
+      "model": "runecraft:item/coins_1000"
+    },
+    {
+      "predicate": {
+        "runecraft:coin_stack": 0.9
+      },
+      "model": "runecraft:item/coins_10000"
+    }
+  ]
 }

@@ -263,24 +263,26 @@ def biped_front(skin, scale=4):
     return img.resize((16 * scale, 32 * scale), Image.NEAREST)
 
 
-NPCS = ["hans", "duke_horacio", "bob", "shopkeeper", "banker", "cook", "father_aereck", "aubury", "zaff", "horvik",
-        "thessalia", "gertrude", "romeo", "juliet", "sir_amik_varze", "wise_old_man", "doric", "ned", "aggie",
-        "fred_the_farmer", "king_roald", "ellis", "lowe", "gerrant", "wizard_traiborn", "sedridor", "brian", "gaius"]
+NPCS = ["q:duke_horacio", "q:cook", "q:father_aereck", "q:fred_the_farmer", "q:sedridor", "q:aubury", "q:romeo",
+        "q:juliet", "q:gypsy_aris", "q:sir_prysin", "q:doric", "q:hetty", "q:kaqemeex", "q:restless_ghost", "hans",
+        "ned", "sir_amik_varze", "king_roald", "reldo", "wise_old_man", "aggie", "gertrude", "prince_ali", "lady_keli",
+        "lumbridge_guide", "npc_horvik", "npc_bob", "npc_zaff", "npc_thessalia", "npc_lowe", "npc_banker_lumbridge_1",
+        "npc_lumbridge_shopkeeper", "npc_jolly_boar_bartender", "grand_exchange_clerk", "thurgo", "oziach"]
+
+
+def npc_skin_path(n):
+    if n.startswith("q:"):
+        return os.path.join(ASSETS, "textures", "entity", "npc_q_" + n[2:] + ".png")
+    return os.path.join(ASSETS, "textures", "entity", "npc", n + ".png")
 
 
 def npcs_sheet(cat):
     cells = []
-    ids = [n for n in NPCS if os.path.exists(os.path.join(ASSETS, "textures", "entity", "npc", n + ".png"))]
-    if len(ids) < 24:
-        for n in cat["npcs"]:
-            if n["id"] not in ids and os.path.exists(os.path.join(ASSETS, "textures", "entity", "npc", n["id"] + ".png")):
-                ids.append(n["id"])
-            if len(ids) >= 32:
-                break
-    for n in ids[:32]:
-        skin = Image.open(os.path.join(ASSETS, "textures", "entity", "npc", n + ".png")).convert("RGBA")
-        cells.append((n, biped_front(skin, 3)))
-    return grid(cells, 8, 100, 116, "NPC skins (front view)")
+    for n in NPCS:
+        path = npc_skin_path(n)
+        if os.path.exists(path):
+            cells.append((n.replace("q:", ""), biped_front(Image.open(path).convert("RGBA"), 3)))
+    return grid(cells, 9, 100, 116, "NPC skins (front view)")
 
 
 def iso_cube(top, side, front, size=72):
