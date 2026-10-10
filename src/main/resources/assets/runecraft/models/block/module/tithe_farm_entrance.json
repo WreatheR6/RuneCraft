@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/tithe_farm_entrance_side",
+    "top": "runecraft:block/module/tithe_farm_entrance_top",
+    "bottom": "runecraft:block/module/tithe_farm_entrance_bottom"
+  }
+}

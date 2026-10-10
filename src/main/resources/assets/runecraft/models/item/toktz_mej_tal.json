@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "runecraft:item/toktz_mej_tal"
+  }
+}

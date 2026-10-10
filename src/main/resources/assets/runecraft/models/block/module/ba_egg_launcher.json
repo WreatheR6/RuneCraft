@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/ba_egg_launcher_side",
+    "top": "runecraft:block/module/ba_egg_launcher_top",
+    "bottom": "runecraft:block/module/ba_egg_launcher_bottom"
+  }
+}

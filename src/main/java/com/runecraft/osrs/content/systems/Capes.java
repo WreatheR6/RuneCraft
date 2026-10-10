@@ -120,8 +120,7 @@ public final class Capes {
                 st(2, -1, 9, 10, 0, 2, 3, 1, 10, 0, 6, 0, 0, 0), req(Skill.MAGIC, 60)).examine("A staff of Guthix; casts Claws of Guthix.");
         Defs.staff(items, "zamorak_staff", "Zamorak staff", "staff_orb", 0xA02020, 80000,
                 st(2, -1, 9, 10, 0, 2, 3, 1, 10, 0, 6, 0, 0, 0), req(Skill.MAGIC, 60)).examine("A staff of Zamorak; casts Flames of Zamorak.");
-        Defs.staff(items, "master_wand", "Master wand", "staff", 0x3A3A8A, 1_000_000,
-                st(0, 0, 0, 20, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0), req(Skill.MAGIC, 60)).examine("The wand of a magical master.");
+        // master_wand is defined by the minigames module (Mage Training Arena).
         Defs.staff(items, "ancient_sceptre", "Ancient sceptre", "staff_orb", 0x6A3A8A, 3_000_000,
                 st(0, 0, 0, 20, 0, 0, 0, 0, 20, 0, 0, 0, 5, 0), req(Skill.MAGIC, 70)).examine("Boosts the power of Ancient Magicks.");
         for (String god : new String[]{"saradomin", "guthix", "zamorak"}) {

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/trouble_brewing_entrance_side",
+    "top": "runecraft:block/module/trouble_brewing_entrance_top",
+    "bottom": "runecraft:block/module/trouble_brewing_entrance_bottom"
+  }
+}

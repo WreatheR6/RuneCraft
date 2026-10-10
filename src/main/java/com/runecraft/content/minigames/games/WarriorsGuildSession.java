@@ -106,7 +106,7 @@ public class WarriorsGuildSession extends MinigameSession {
         boolean elite = online().stream().anyMatch(p -> bestDefender(p) >= 6);
         List<LivingEntity> cyclopes = living(null);
         if (ticks % 10 == 0 && cyclopes.size() < 4 + playerCount()) {
-            MobEntity c = spawn(elite ? "cyclops_elite" : "cyclops", randomFloor(0, -6, 8));
+            MobEntity c = spawn(elite ? "cyclops_elite" : "warriors_guild_cyclops", randomFloor(0, -6, 8));
             if (c != null) {
                 aggro(c);
             }
@@ -152,7 +152,7 @@ public class WarriorsGuildSession extends MinigameSession {
             Msg.game(player, "The animated armour collapses. You collect your armour and " + tokens + " tokens.");
             return;
         }
-        if (creatureId.startsWith("cyclops")) {
+        if (creatureId.contains("cyclops")) {
             int best = bestDefender(player);
             int next = WarriorsGuild.nextDefender(best);
             boolean dragon = next == MinigameItems.DEFENDER_TIERS.length - 1;

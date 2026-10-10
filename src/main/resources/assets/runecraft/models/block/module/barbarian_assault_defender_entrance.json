@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/barbarian_assault_defender_entrance_side",
+    "top": "runecraft:block/module/barbarian_assault_defender_entrance_top",
+    "bottom": "runecraft:block/module/barbarian_assault_defender_entrance_bottom"
+  }
+}

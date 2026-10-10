@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/shades_of_mortton_entrance_side",
+    "top": "runecraft:block/module/shades_of_mortton_entrance_top",
+    "bottom": "runecraft:block/module/shades_of_mortton_entrance_bottom"
+  }
+}

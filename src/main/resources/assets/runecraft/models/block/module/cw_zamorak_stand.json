@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/cw_zamorak_stand_side",
+    "top": "runecraft:block/module/cw_zamorak_stand_top",
+    "bottom": "runecraft:block/module/cw_zamorak_stand_bottom"
+  }
+}

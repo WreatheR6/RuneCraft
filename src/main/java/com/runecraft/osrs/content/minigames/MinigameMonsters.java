@@ -154,7 +154,7 @@ public final class MinigameMonsters {
                     .stats(hp, lvl, lvl, lvl, 1, 1).speed(4).defenceBonus(20 + i * 15, 20 + i * 15, 20 + i * 15, -5, 20 + i * 15)
                     .attack(melee(AttackType.SLASH, max)).skin(c, c, c, 0x101010));
         }
-        list.add(m("cyclops", "Cyclops", 56).stats(55, 50, 50, 50, 1, 1).speed(5)
+        list.add(m("warriors_guild_cyclops", "Cyclops", 56).model("cyclops").stats(55, 50, 50, 50, 1, 1).speed(5)
                 .attack(melee(AttackType.CRUSH, 6)).size(0.9f, 2.4f, 1.3f).skin(0xA08060, 0x6A4A2A, 0x4A3A2A, 0x202020));
         list.add(m("cyclops_elite", "Cyclops", 106).model("cyclops").stats(75, 90, 105, 90, 1, 1).speed(5)
                 .attack(melee(AttackType.CRUSH, 11)).size(0.9f, 2.4f, 1.5f).skin(0x907050, 0x5A3A2A, 0x3A2A1A, 0x202020));

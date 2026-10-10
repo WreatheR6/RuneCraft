@@ -197,9 +197,7 @@ public final class MinigameItems {
         wear(items, "tome_of_water", "Tome of water", "book", 0x2050C0, Slot.SHIELD, 1,
                 s(0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), Skill.MAGIC, 50)
                 .examine("+10% magic damage (Water spells in OSRS; all spells here).");
-        weapon(items, "dragon_harpoon", "Dragon harpoon", Kind.TOOL, "harpoon", 0xC03020, 1_000_000,
-                s(10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 4, AttackType.STAB, WeaponClass.MELEE, Skill.ATTACK, 60)
-                .tier("dragon").examine("Requires 61 Fishing to use. Fishes faster than any other harpoon.");
+        // dragon_harpoon is defined by the slayer module.
         pet(items, "tiny_tempor", "Tiny tempor", 0x40A0D0, "A tiny Tempoross.");
     }
 
@@ -220,7 +218,7 @@ public final class MinigameItems {
         wear(items, "boots_of_the_eye", "Boots of the eye", "boots", 0x8A2A8A, Slot.FEET, 1,
                 s(0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0)).examine("+10% runes crafted.");
         single(items, "abyssal_needle", "Abyssal needle", "needle", 0x6A2A8A, 1, "Merges essence pouches into a colossal pouch.");
-        single(items, "colossal_pouch", "Colossal pouch", "package", 0x4A2A6A, 1, "Holds 40 essence.");
+        // colossal_pouch is defined by the skilling module.
         wear(items, "abyssal_lantern", "Abyssal lantern", "orb", 0x80C080, Slot.SHIELD, 1,
                 s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)).examine("Burns logs; lights the way in the Abyss.");
         single(items, "catalytic_talisman", "Catalytic talisman", "talisman", 0x8040E0, 1, "A talisman of every catalytic altar.");
@@ -457,7 +455,7 @@ public final class MinigameItems {
         wear(items, "farmers_boots", "Farmer's boots", "boots", 0x5A4A2A, Slot.FEET, 1, EquipmentStats.NONE)
                 .examine("+0.2% Farming XP.");
         single(items, "seed_box", "Seed box", "package", 0x8A6A3A, 1, "Stores seeds.");
-        single(items, "herb_sack", "Herb sack", "package", 0x5A8A3A, 1, "Stores grimy herbs.");
+        // herb_sack is defined by the slayer module.
     }
 
     // ------------------------------------------------------------------ Giants' Foundry
@@ -488,7 +486,7 @@ public final class MinigameItems {
         single(items, "plank_sack", "Plank sack", "package", 0x9A7A4A, 1, "Holds 28 planks.");
         single(items, "amys_saw", "Amy's saw", "knife", 0xB0B0B8, 1, "Works as a saw and boosts Construction by 3.");
         single(items, "hosidius_blueprints", "Hosidius blueprints", "note", 0x6080C0, 1, "Plans for Hosidius house hotspots.");
-        single(items, "steel_nails", "Steel nails", "arrowtips", 0x9A9AA0, 1, "Nails for repairs.");
+        // steel_nails is defined by the skilling module.
     }
 
     // ------------------------------------------------------------------ Fishing Trawler

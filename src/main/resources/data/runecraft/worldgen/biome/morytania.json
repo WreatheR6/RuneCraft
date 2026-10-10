@@ -155,6 +155,36 @@
         "weight": 1,
         "minCount": 1,
         "maxCount": 1
+      },
+      {
+        "type": "runecraft:loar_shade",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:phrin_shade",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:riyl_shade",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:asyn_shade",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:fiyr_shade",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
       }
     ],
     "creature": [],

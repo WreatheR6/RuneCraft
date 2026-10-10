@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "runecraft:block/module/ba_egg_launcher"
+    }
+  }
+}

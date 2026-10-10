@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/mta_coin_collector_side",
+    "top": "runecraft:block/module/mta_coin_collector_top",
+    "bottom": "runecraft:block/module/mta_coin_collector_bottom"
+  }
+}
