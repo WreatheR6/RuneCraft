@@ -136,7 +136,7 @@ final class BestiaryWldBeasts {
                 .box(-5, -5, -8, 10, 9, 8).add();
         part(b, "poll", "head", Role.STATIC, black).at(0, -5, -4).mat("hair").box(-3, -1.5f, -2.5f, 6, 2, 5).add();
         part(b, "muzzle", "head", Role.STATIC, pink).at(0, 1.5f, -8).mat("skin").box(-4.5f, -2.5f, -3, 9, 5, 4).add();
-        part(b, "lip", "muzzle", Role.JAW, dk(pink, 0.85f)).at(0, 2.5f, -0.5f).mat("skin").box(-4, 0, -2.5f, 8, 1, 3).add();
+        part(b, "lip", "muzzle", Role.STATIC, dk(pink, 0.85f)).at(0, 2.5f, -0.5f).mat("skin").box(-4, 0, -2.5f, 8, 1, 3).add();
         sym(b, "nostril", "muzzle", false, 0x7A4040).at(2, -0.8f, -3).mat("flesh").box(-1, -0.5f, -0.4f, 2, 1, 1, -0.1f).add();
         sym(b, "horn", "head", false, 0xE8DEC0).at(4, -4.5f, -4).rot(0, 0, -70).mat("horn").box(-1, -2.5f, -1, 2, 3, 2).add();
         sym(b, "horn_tip", "horn", true, 0xC8B890).at(0, -2.5f, 0).rot(-20, 0, 50).mat("horn").box(-0.5f, -2, -0.5f, 1, 2, 1).add();
