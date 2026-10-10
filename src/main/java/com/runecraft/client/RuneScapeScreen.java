@@ -1,19 +1,17 @@
 package com.runecraft.client;
 
-import com.runecraft.RuneCraft;
 import com.runecraft.combat.Equipment;
 import com.runecraft.network.Net;
 import com.runecraft.osrs.CollectionLogData;
 import com.runecraft.osrs.CombatStyle;
 import com.runecraft.osrs.EquipmentStats;
-import com.runecraft.osrs.Experience;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.Quest;
 import com.runecraft.osrs.Skill;
-import com.runecraft.osrs.SkillSet;
 import com.runecraft.osrs.Spell;
+import com.runecraft.osrs.ui.SkillPanel;
 import com.runecraft.util.Inv;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
@@ -26,23 +24,29 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 /** The OSRS side-panel, as one screen with tabs. */
 public class RuneScapeScreen extends Screen {
-    public enum Tab { COMBAT("Combat"), SKILLS("Skills"), QUESTS("Quests"), PRAYER("Prayer"), MAGIC("Magic"),
-        EQUIPMENT("Gear"), COLLECTION("Log");
+    public enum Tab { COMBAT("Combat", "combat"), SKILLS("Skills", "skills"), QUESTS("Quests", "quests"), PRAYER("Prayer", "prayer"),
+        MAGIC("Magic", "magic"), EQUIPMENT("Gear", "gear"), COLLECTION("Log", "log");
         final String label;
+        final String icon;
 
-        Tab(String label) {
+        Tab(String label, String icon) {
             this.label = label;
+            this.icon = icon;
         }
     }
 
     private static final int PANEL_W = 300;
+    /** Fits a 480x270 GUI (1080p at auto GUI scale) together with the tab row. */
     private static final int PANEL_H = 230;
+    private static final int TAB_H = 20;
+    /** The OSRS skills grid is CONTENT_H tall; shrink it slightly to fit this panel. */
+    private static final float SKILLS_SCALE = Math.min(1f, (PANEL_H - 6) / (float) SkillPanel.CONTENT_H);
+    private final SkillsTab skillsTab = new SkillsTab();
     private Tab tab;
     private int page;
     private int left;
@@ -55,6 +59,21 @@ public class RuneScapeScreen extends Screen {
         this.tab = tab;
     }
 
+    /** Opens the quest journal of {@code ContentRegistry.quests().get(index)} (Quests tab). */
+    public void selectQuest(int index) {
+        java.util.List<com.runecraft.osrs.QuestInfo> all = com.runecraft.osrs.content.ContentRegistry.quests();
+        if (index >= 0 && index < all.size()) {
+            selectedQuest = all.get(index);
+            selectedIndex = index;
+            page = index / 12;
+        }
+    }
+
+    /** Shows collection log page {@code index} (Collection tab). */
+    public void selectPage(int index) {
+        page = Math.max(0, Math.min(index, CollectionLogData.pages().size() - 1));
+    }
+
     @Override
     public boolean shouldPause() {
         return false;
@@ -63,12 +82,7 @@ public class RuneScapeScreen extends Screen {
     @Override
     protected void init() {
         left = (width - PANEL_W) / 2;
-        top = (height - PANEL_H) / 2;
-        int tw = PANEL_W / Tab.values().length;
-        for (Tab t : Tab.values()) {
-            addDrawableChild(ButtonWidget.builder(Text.literal(t.label), b -> switchTab(t))
-                    .dimensions(left + t.ordinal() * tw, top - 20, tw, 18).build());
-        }
+        top = Math.max(TAB_H + 4, (height - PANEL_H + TAB_H) / 2);
         switch (tab) {
             case COMBAT -> initCombat();
             case PRAYER -> initPrayer();
@@ -81,9 +95,61 @@ public class RuneScapeScreen extends Screen {
     }
 
     private void switchTab(Tab t) {
+        if (t == Tab.SKILLS && tab == Tab.SKILLS) {
+            skillsTab.closeGuide();
+        }
         tab = t;
         page = 0;
         clearAndInit();
+    }
+
+    private int tabWidth() {
+        return PANEL_W / Tab.values().length;
+    }
+
+    /** The OSRS-style icon tab under the mouse, or null. */
+    private Tab tabAt(double mouseX, double mouseY) {
+        if (mouseY < top - TAB_H || mouseY >= top || mouseX < left || mouseX >= left + tabWidth() * Tab.values().length) {
+            return null;
+        }
+        return Tab.values()[(int) ((mouseX - left) / tabWidth())];
+    }
+
+    private int skillsX() {
+        return left + (int) ((PANEL_W - SkillPanel.CONTENT_W * SKILLS_SCALE) / 2);
+    }
+
+    private double skillsLocalX(double mouseX) {
+        return (mouseX - skillsX()) / SKILLS_SCALE;
+    }
+
+    private double skillsLocalY(double mouseY) {
+        return (mouseY - skillsY()) / SKILLS_SCALE;
+    }
+
+    private int skillsY() {
+        return top + 3;
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        Tab t = tabAt(mouseX, mouseY);
+        if (t != null && button == 0) {
+            switchTab(t);
+            return true;
+        }
+        if (tab == Tab.SKILLS && button == 0 && skillsTab.click(skillsLocalX(mouseX), skillsLocalY(mouseY))) {
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+        if (tab == Tab.SKILLS && skillsTab.scroll(amount)) {
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, amount);
     }
 
     private static void send(Identifier channel, int value) {
@@ -232,10 +298,26 @@ public class RuneScapeScreen extends Screen {
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         renderBackground(ctx);
-        ctx.fill(left - 2, top - 2, left + PANEL_W + 2, top + PANEL_H + 2, 0xFF1A140C);
-        ctx.fill(left, top, left + PANEL_W, top + PANEL_H, 0xF03E3529);
+        // OSRS stone frame with a row of icon tabs along the top.
+        OsrsUi.stonePanel(ctx, left - 4, top - TAB_H - 4, PANEL_W + 8, PANEL_H + TAB_H + 8);
+        Tab hoveredTab = tabAt(mouseX, mouseY);
+        int tw = tabWidth();
+        for (Tab t : Tab.values()) {
+            int x = left + t.ordinal() * tw;
+            OsrsUi.button(ctx, x, top - TAB_H, tw - 1, TAB_H - 1, t == tab, t == hoveredTab);
+            OsrsUi.icon(ctx, OsrsUi.tabIcon(t.icon), x + (tw - 17) / 2, top - TAB_H + 2, 16);
+        }
+        ctx.fill(left - 1, top - 1, left + PANEL_W + 1, top + PANEL_H + 1, OsrsUi.EDGE);
+        OsrsUi.stone(ctx, left, top, PANEL_W, PANEL_H);
+        List<String> skillTip = null;
         switch (tab) {
-            case SKILLS -> renderSkills(ctx, mouseX, mouseY);
+            case SKILLS -> {
+                ctx.getMatrices().push();
+                ctx.getMatrices().translate(skillsX(), skillsY(), 0);
+                ctx.getMatrices().scale(SKILLS_SCALE, SKILLS_SCALE, 1);
+                skillTip = skillsTab.render(ctx, textRenderer, skillsLocalX(mouseX), skillsLocalY(mouseY));
+                ctx.getMatrices().pop();
+            }
             case COMBAT -> renderCombat(ctx);
             case PRAYER -> ctx.drawTextWithShadow(textRenderer, "Prayer points: " + ClientState.prayerPoints + " / "
                     + ClientState.SKILLS.currentLevel(Skill.PRAYER), left + 6, top + 8, 0xFF40E0FF);
@@ -246,40 +328,16 @@ public class RuneScapeScreen extends Screen {
             case COLLECTION -> renderCollection(ctx, mouseX, mouseY);
         }
         super.render(ctx, mouseX, mouseY, delta);
-    }
-
-    private void renderSkills(DrawContext ctx, int mouseX, int mouseY) {
-        SkillSet s = ClientState.SKILLS;
-        int cw = 96;
-        int ch = 24;
-        Skill hovered = null;
-        for (Skill skill : Skill.values()) {
-            int i = skill.ordinal();
-            int x = left + 6 + (i % 3) * cw;
-            int y = top + 6 + (i / 3) * ch;
-            ctx.fill(x, y, x + cw - 4, y + ch - 3, 0xFF2A231A);
-            ctx.drawTexture(RuneCraft.id("textures/gui/skill/" + skill.id() + ".png"), x + 3, y + 2, 0, 0, 16, 16, 16, 16);
-            int cur = s.currentLevel(skill);
-            int real = s.level(skill);
-            int color = cur > real ? 0xFF00FF00 : cur < real ? 0xFFFF4040 : 0xFFFFFF00;
-            ctx.drawTextWithShadow(textRenderer, cur + "/" + real, x + 24, y + 6, color);
-            if (mouseX >= x && mouseX < x + cw - 4 && mouseY >= y && mouseY < y + ch - 3) {
-                hovered = skill;
-            }
+        if (skillTip != null) {
+            ctx.getMatrices().push();
+            ctx.getMatrices().translate(skillsX(), skillsY(), 0);
+            ctx.getMatrices().scale(SKILLS_SCALE, SKILLS_SCALE, 1);
+            OsrsUi.tooltip(ctx, textRenderer, skillTip, (int) skillsLocalX(mouseX), (int) skillsLocalY(mouseY),
+                    (int) ((left + PANEL_W - skillsX()) / SKILLS_SCALE), (int) (PANEL_H / SKILLS_SCALE));
+            ctx.getMatrices().pop();
         }
-        ctx.drawTextWithShadow(textRenderer, "Total level: " + s.totalLevel() + "   Combat: " + s.combatLevel()
-                + "   QP: " + ClientState.questPoints, left + 6, top + PANEL_H - 12, 0xFFFFD700);
-        if (hovered != null) {
-            int xp = s.xp(hovered);
-            int level = s.virtualLevel(hovered);
-            List<Text> lines = new ArrayList<>();
-            lines.add(Text.literal(hovered.displayName() + " XP: " + Experience.format(s.xpTenths(hovered))));
-            if (level < Experience.MAX_VIRTUAL_LEVEL) {
-                int next = Experience.xpForLevel(level + 1);
-                lines.add(Text.literal("Next level at: " + String.format(Locale.ROOT, "%,d", next)));
-                lines.add(Text.literal("Remaining XP: " + String.format(Locale.ROOT, "%,d", next - xp)));
-            }
-            ctx.drawTooltip(textRenderer, lines, mouseX, mouseY);
+        if (hoveredTab != null) {
+            ctx.drawTooltip(textRenderer, Text.literal(hoveredTab.label), mouseX, mouseY);
         }
     }
 

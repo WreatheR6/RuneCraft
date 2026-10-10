@@ -33,16 +33,34 @@ import java.util.List;
 import java.util.Map;
 
 public class RuneCraftClient implements ClientModInitializer {
+    /** Opens the full-screen RuneScape interface (all tabs). */
     public static KeyBinding interfaceKey;
+    /** Shows/hides the OSRS side panel at the bottom-right of the HUD. */
+    public static KeyBinding sidePanelKey;
+    /** Hold to free the cursor and use the side panel. */
+    public static KeyBinding panelCursorKey;
 
     @Override
     public void onInitializeClient() {
         registerPackets();
-        interfaceKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.runecraft.interface", InputUtil.Type.KEYSYM,
+        sidePanelKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.runecraft.side_panel", InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_K, "key.categories.runecraft"));
+        panelCursorKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.runecraft.panel_cursor", InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_LEFT_ALT, "key.categories.runecraft"));
+        interfaceKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.runecraft.interface", InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_J, "key.categories.runecraft"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (interfaceKey.wasPressed()) {
-                client.setScreen(new RuneScapeScreen(RuneScapeScreen.Tab.SKILLS));
+                client.setScreen(new RuneScapeScreen(SidePanel.fullTab(SidePanel.tab)));
+            }
+            while (sidePanelKey.wasPressed()) {
+                SidePanel.visible = !SidePanel.visible;
+            }
+            while (panelCursorKey.wasPressed()) {
+                if (client.currentScreen == null && client.player != null) {
+                    SidePanel.visible = true;
+                    client.setScreen(new SidePanelScreen());
+                }
             }
         });
         HudRenderCallback.EVENT.register(HudOverlay::render);
