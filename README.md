@@ -7,7 +7,7 @@ Old School RuneScape for **Minecraft 1.20.1 (Fabric)**. It adds a separate dimen
 ## Getting there
 * Craft a **Gielinor portal**: obsidian in the corners, ender pearls on the edges, a diamond in the centre. Place it and right-click it to travel to Lumbridge. Right-click a portal in Gielinor to go back.
 * Ops can also use `/rc gielinor`.
-* Press **K** for the RuneScape interface: Combat, Skills, Quests, Prayer, Magic, Gear and the Collection log.
+* The OSRS side panel sits at the bottom-right of the screen (Skills tab by default, with Combat, Quests, Collection log, Equipment, Prayer and Magic tabs). **Hold Left Alt** to free the cursor and use it: hover a skill for its XP tooltip, click it for the skill guide. **K** shows or hides the panel, **J** opens the full-screen RuneScape interface.
 
 ## Faithful to OSRS
 * **24 skills:** Attack, Hitpoints, Mining, Strength, Agility, Smithing, Defence, Herblore, Fishing, Ranged, Thieving, Cooking, Prayer, Crafting, Firemaking, Magic, Fletching, Woodcutting, Runecraft, Slayer, Farming, Construction, Hunter and Sailing.

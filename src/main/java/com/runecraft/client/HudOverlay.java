@@ -20,7 +20,7 @@ import net.minecraft.util.hit.EntityHitResult;
 import java.util.Iterator;
 import java.util.Locale;
 
-/** Status orbs, XP drops and the OSRS mouseover text ("Attack Goblin (level-2)"). */
+/** Status orbs, XP drops, the OSRS mouseover text ("Attack Goblin (level-2)") and the side panel. */
 public final class HudOverlay {
     private static final long XP_DROP_MS = 1800;
 
@@ -63,8 +63,8 @@ public final class HudOverlay {
             String text = "+" + Experience.format(d.tenths());
             int dy = dropY + index * 12 + 40 - rise;
             int tx = w - tr.getWidth(text) - 6;
-            Identifier icon = RuneCraft.id("textures/gui/skill/" + d.skill().id() + ".png");
-            ctx.drawTexture(icon, tx - 12, dy - 2, 0, 0, 10, 10, 10, 10);
+            Identifier icon = OsrsUi.skillIcon(d.skill());
+            ctx.drawTexture(icon, tx - 12, dy - 1, 10, 10, 0, 0, 32, 32, 32, 32);
             ctx.drawTextWithShadow(tr, text, tx, dy, 0xFFFFFFFF);
             index++;
         }
@@ -84,6 +84,12 @@ public final class HudOverlay {
         if (!ClientState.slayerTask.isEmpty() && ClientState.slayerRemaining > 0) {
             String task = "Slayer: " + ClientState.slayerRemaining + " x " + ClientState.slayerTask.toLowerCase(Locale.ROOT).replace('_', ' ');
             ctx.drawTextWithShadow(tr, task, w - tr.getWidth(task) - 4, y + 44, 0xFFC0C0C0);
+        }
+
+        // OSRS side panel (bottom right). While the cursor is free SidePanelScreen draws it instead,
+        // with hover tooltips.
+        if (SidePanel.visible && !(mc.currentScreen instanceof SidePanelScreen)) {
+            SidePanel.render(ctx, w, ctx.getScaledWindowHeight(), Double.NaN, Double.NaN);
         }
     }
 
