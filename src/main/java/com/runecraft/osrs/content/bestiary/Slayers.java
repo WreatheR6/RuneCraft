@@ -16,7 +16,6 @@ final class Slayers {
 
     static List<ModelSpec> all() {
         List<ModelSpec> l = new ArrayList<>();
-        l.add(Creatures.ghost("ghost", 0xD8E4EC));
         l.add(banshee("banshee", 0xE0E0D8, 0xF0F0F0));
         l.add(spectre("aberrant_spectre", 0x7A8A5A, 0x5A6A3A));
         l.add(abyssalDemon("abyssal_demon"));
@@ -24,8 +23,6 @@ final class Slayers {
         l.add(nechryael("nechryael"));
         l.add(bloodveld("bloodveld", 0xB04848, 0xE88A8A));
         l.add(bloodveld("mutated_bloodveld", 0x7A2A6A, 0xB060A0));
-        l.add(dagannoth("dagannoth", 0x4A6A58, 0x8A9A6A));
-        l.add(kalphite("kalphite", 0xC09A50, 0x8A6A30));
         l.add(caveCrawler("cave_crawler"));
         l.add(crawlingHand("crawling_hand"));
         l.add(cockatrice("cockatrice"));

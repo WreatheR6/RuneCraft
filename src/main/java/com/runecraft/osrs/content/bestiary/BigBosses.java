@@ -26,13 +26,11 @@ final class BigBosses {
         l.add(vetion("vetion", 0x5A2A8A));
         l.add(vetion("calvarion", 0x3A6A4A));
         l.add(scorpion("scorpia", 0x2A2A2E, 0x6A4A2A, 0xC04020));
-        l.add(scorpion("scorpion", 0x2A2A2A, 0x4A3A2A, 0xC04020));
         l.add(kraken("kraken", 0x8A3A5A, 0xD07090));
         l.add(Slayers.dagannoth("dagannoth_rex", 0x5A6A48, 0x9A9A6A));
         l.add(Slayers.dagannoth("dagannoth_prime", 0x5A7A8A, 0x9AB0B8));
         l.add(Slayers.dagannoth("dagannoth_supreme", 0x7A5A3A, 0xB09A70));
         l.add(nex());
-        l.add(Fallbacks.crab("sand_crab", 0xC8A870, 0xA08050, 0xB89058, false, false));
         return l;
     }
 

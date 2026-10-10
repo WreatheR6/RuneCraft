@@ -41,6 +41,7 @@ final class Overrides {
         l.addAll(Slayers.all());
         l.addAll(Bosses.overrides());
         l.addAll(BigBosses.overrides());
+        l.addAll(BestiaryWld.overrides());
         return l;
     }
 }
