@@ -74,17 +74,31 @@ final class EasternMorytania {
         k.set(t[0] + 3, g + 4, t[3] - 1, "minecraft:white_carpet");
         k.fill(t[0] + 3, g + 4, t[3] - 2, t[0] + 4, g + 4, t[3] - 2, "minecraft:blue_carpet");
         // Steeple with a bell.
-        k.tower(3420, 3494, 3, 22, STONE_BRICKS, ANDESITE, null, DEEP_TILE_ROOF);
+        k.tower(3420, 3494, 3, 32, STONE_BRICKS, ANDESITE, null, DEEP_TILE_ROOF);
         k.towerPassage(3420, 3494, -1, 1, g, 3);
         k.towerPassage(3420, 3494, -1, 1, g + 4, 3);
-        k.set(cx(3420), g + 20, cz(3494), "minecraft:bell[attachment=ceiling]");
-        k.set(cx(3420), g + 27, cz(3494), "minecraft:lightning_rod");
+        k.set(cx(3420), g + 30, cz(3494), "minecraft:bell[attachment=ceiling]");
+        for (int[] o : new int[][]{{3, 0}, {-3, 0}, {0, 3}}) {
+            k.fill(cx(3420) + o[0], g + 27, cz(3494) + o[1], cx(3420) + o[0], g + 29, cz(3494) + o[1], AIR);
+        }
         // Graveyard and fence.
         k.graveyard(3407, 3496, 3419, 3499, 102);
         k.fence(3404, 3500, 3424, 3500, "minecraft:spruce_fence");
         k.floor(3402, 3487, 3405, 3488, GRAVEL);
         k.deadTree(3404, 3478, 6);
         k.deadTree(3423, 3478, 5);
+        // Buttresses along the nave, a lych-gate in the graveyard fence and the river landing.
+        k.buttresses(t, 7, STONE_BRICKS, "minecraft:stone_brick_stairs", 6);
+        int lg = bx(3414);
+        int lz = bz(3500);
+        k.clear(lg, g, lz, lg + 1, g, lz + 1);
+        k.fill(lg - 1, g, lz, lg - 1, g + 2, lz, "minecraft:spruce_log");
+        k.fill(lg + 2, g, lz, lg + 2, g + 2, lz, "minecraft:spruce_log");
+        k.fill(lg - 2, g + 3, lz, lg + 3, g + 3, lz, "minecraft:spruce_stairs[facing=south]");
+        k.fill(lg - 2, g + 3, lz + 1, lg + 3, g + 3, lz + 1, "minecraft:spruce_stairs[facing=north]");
+        k.set(lg, g + 2, lz, "minecraft:lantern[hanging=true]");
+        k.d.weather(t[0], g, t[1], t[2], g + 7, t[3], STONE_BRICKS, MOSSY_BRICKS, 25, 103);
+        k.d.overgrowth(bx(3402), bz(3500), bx(3426), bz(3476), 40, 104);
         return k.build();
     }
 
@@ -148,6 +162,16 @@ final class EasternMorytania {
         }
         k.scatter(3468, 3462, 3522, 3514, 0, "minecraft:dead_bush", 16, 113);
         k.scatter(3485, 3478, 3505, 3498, 0, "minecraft:fern", 14, 114);
+        // The pub sign (a black banner over the door), a muddy cart track round the green, picket fences
+        // and back-garden clutter; lamp posts along the lanes and gloomy props on free ground.
+        k.set((pub[0] + pub[2]) / 2 - 2, g + 3, pub[3] + 1, "minecraft:black_wall_banner[facing=south]");
+        k.d.weather(bx(3483), g - 1, bz(3500), bx(3507) + 1, g - 1, bz(3476) + 1, GRAVEL, MUD, 30, 115);
+        k.d.weather(bx(3483), g - 1, bz(3500), bx(3507) + 1, g - 1, bz(3476) + 1, GRAVEL, COARSE, 20, 116);
+        k.d.flowerBed(bx(3486), bz(3497), bx(3488) + 1, bz(3496) + 1, "minecraft:dark_oak_planks", 117);
+        k.set(bx(3492), g, bz(3486), "minecraft:dark_oak_fence");
+        k.set(bx(3492), g + 1, bz(3486), "minecraft:carved_pumpkin[facing=south]");
+        k.take(bx(3483), bz(3500), bx(3507) + 1, bz(3476) + 1);
+        k.dressTown(3468, 3462, 3522, 3514, "mory", 26, 118);
         return k.build();
     }
 
@@ -213,7 +237,7 @@ final class EasternMorytania {
         k.fill(imx - 1, g, imz - 1, imx + 1, g, imz - 1, "minecraft:chiseled_stone_bricks");
         // Corner turrets with cone roofs.
         for (int[] t : new int[][]{{3412, 3566, 1, 1}, {3444, 3566, -1, 1}, {3412, 3534, 1, -1}, {3444, 3534, -1, -1}}) {
-            k.tower(t[0], t[1], 5, 28, STONE_BRICKS, ANDESITE, null, DEEP_TILE_ROOF);
+            k.tower(t[0], t[1], 5, 34, STONE_BRICKS, ANDESITE, null, DEEP_TILE_ROOF);
             for (int y : new int[]{g, g + 7, g + 14, g + 21}) {
                 k.towerPassage(t[0], t[1], t[2], t[3], y, 5);
             }
@@ -225,6 +249,50 @@ final class EasternMorytania {
         }
         k.deadTree(3409, 3531, 7);
         k.deadTree(3447, 3532, 6);
+        // The belfry: a second stage rising from the roof with barred lancets, a steep slate roof and
+        // gargoyles at its eaves, reached through an arch from the roof walk.
+        int[] sp = r(3424, 3546, 3432, 3554);
+        k.clear(sp[0] + 1, g + 21, sp[1] + 1, sp[2] - 1, g + 29, sp[3] - 1);
+        k.b.walls(sp[0], g + 21, sp[1], sp[2], g + 30, sp[3], STONE_BRICKS);
+        k.d.ringReplace(sp, g + 21, g + 21, STONE_BRICKS, "minecraft:andesite");
+        k.d.ringReplace(sp, g + 27, g + 27, STONE_BRICKS, "minecraft:andesite");
+        k.slits(sp, g + 23, 4, "minecraft:iron_bars");
+        k.fill(sp[0] + 1, g + 30, sp[1] + 1, sp[2] - 1, g + 30, sp[3] - 1, ANDESITE);
+        k.b.roof(sp[0], sp[1], sp[2], sp[3], g + 31, "minecraft:deepslate_tile");
+        int spm = (sp[0] + sp[2]) / 2;
+        k.clear(spm, g + 21, sp[3], spm + 1, g + 23, sp[3]);
+        k.fill(spm, g + 21, sp[3] - 1, spm + 1, g + 21, (sp[1] + sp[3]) / 2, "minecraft:gray_carpet");
+        k.set(spm, g + 28, (sp[1] + sp[3]) / 2, "minecraft:bell[attachment=ceiling]");
+        k.set(spm, g + 25, (sp[1] + sp[3]) / 2, SOUL_LANTERN + "[hanging=true]");
+        k.fill(spm, g + 26, (sp[1] + sp[3]) / 2, spm, g + 27, (sp[1] + sp[3]) / 2, "minecraft:chain");
+        for (int[] c : new int[][]{{sp[0] - 1, sp[1] - 1}, {sp[2] + 1, sp[1] - 1}, {sp[0] - 1, sp[3] + 1}, {sp[2] + 1, sp[3] + 1}}) {
+            k.fill(c[0], g + 30, c[1], c[0], g + 31, c[1], "minecraft:blackstone");
+            k.set(c[0], g + 32, c[1], "minecraft:wither_skeleton_skull");
+        }
+        // Buttresses down the faces of the keep, a sooty plinth, moss creeping up from the ground.
+        for (int x = q[0] + 9; x <= q[2] - 9; x += 8) {
+            if (x >= mx - 3 && x <= mx + 4) {
+                continue;
+            }
+            for (int[] f : new int[][]{{q[1] - 1, -1}, {q[3] + 1, 1}}) {
+                k.fill(x, g - 1, f[0], x, g + 15, f[0], STONE_BRICKS);
+                k.set(x, g + 16, f[0], "minecraft:stone_brick_stairs[facing=" + (f[1] < 0 ? "south" : "north") + "]");
+                k.fill(x, g - 1, f[0] + f[1], x, g + 6, f[0] + f[1], STONE_BRICKS);
+                k.set(x, g + 7, f[0] + f[1], "minecraft:stone_brick_stairs[facing=" + (f[1] < 0 ? "south" : "north") + "]");
+            }
+        }
+        for (int z = q[1] + 9; z <= q[3] - 9; z += 8) {
+            for (int[] f : new int[][]{{q[0] - 1, -1}, {q[2] + 1, 1}}) {
+                k.fill(f[0], g - 1, z, f[0], g + 15, z, STONE_BRICKS);
+                k.set(f[0], g + 16, z, "minecraft:stone_brick_stairs[facing=" + (f[1] < 0 ? "east" : "west") + "]");
+                k.fill(f[0] + f[1], g - 1, z, f[0] + f[1], g + 6, z, STONE_BRICKS);
+                k.set(f[0] + f[1], g + 7, z, "minecraft:stone_brick_stairs[facing=" + (f[1] < 0 ? "east" : "west") + "]");
+            }
+        }
+        k.d.weather(q[0], g, q[1], q[2], g + 4, q[3], STONE_BRICKS, MOSSY_BRICKS, 60, 123);
+        k.d.weather(q[0], g + 5, q[1], q[2], g + 20, q[3], STONE_BRICKS, CRACKED_BRICKS, 50, 124);
+        k.graveyard(3409, 3530, 3418, 3532, 125);
+        k.graveyard(3438, 3530, 3447, 3532, 126);
         return k.build();
     }
 
@@ -294,6 +362,33 @@ final class EasternMorytania {
         k.fill(e[0] + 1, g, e[1] + 1, e[0] + 1, g, e[3] - 1, "minecraft:bone_block");
         k.set(e[2] - 1, g, e[1] + 1, "minecraft:cauldron");
         k.set(e[2] - 1, g, e[3] - 1, "minecraft:water_cauldron[level=3]");
+        // The Ectofuntus glows: sea lanterns under the green glass ring, slime-green windows up the grinder
+        // tower, buttresses along the temple and ectoplasm buckets by the door.
+        k.ring(ex, g - 1, g - 1, ez, 2.5, 1.5, "minecraft:sea_lantern");
+        for (int y = g + 5; y < g + 22; y += 5) {
+            k.fill(ex + 3, y, ez, ex + 3, y + 1, ez, "minecraft:lime_stained_glass_pane");
+            k.fill(ex - 3, y, ez, ex - 3, y + 1, ez, "minecraft:lime_stained_glass_pane");
+        }
+        k.buttresses(e, 8, MOSSY_COBBLE, "minecraft:mossy_cobblestone_stairs");
+        k.set(e[0] + 3, g, e[3] + 1, "minecraft:water_cauldron[level=2]");
+        k.set(e[2] - 3, g, e[3] + 1, "minecraft:cauldron");
+        // The square by the pub: a statue of Necrovarus on a plinth, benches and a notice board.
+        int sx = bx(3689);
+        int sz = bz(3504);
+        k.fill(sx - 1, g, sz - 1, sx + 1, g, sz + 1, "minecraft:chiseled_stone_bricks");
+        k.fill(sx, g + 1, sz, sx, g + 3, sz, "minecraft:light_gray_wool");
+        k.set(sx - 1, g + 3, sz, "minecraft:light_gray_wool");
+        k.set(sx + 1, g + 3, sz, "minecraft:light_gray_wool");
+        k.set(sx, g + 4, sz, "minecraft:skeleton_skull[rotation=8]");
+        k.d.bench(bx(3683), bz(3509), true, "north", "minecraft:spruce");
+        k.d.bench(bx(3694), bz(3509), true, "north", "minecraft:spruce");
+        k.fill(bx(3697), g, bz(3505), bx(3697), g + 1, bz(3505), "minecraft:spruce_fence");
+        k.fill(bx(3697), g + 2, bz(3505), bx(3697) + 1, g + 2, bz(3505), "minecraft:spruce_planks");
+        k.set(bx(3697), g + 2, bz(3505) + 1, "minecraft:spruce_wall_sign[facing=south]");
+        k.d.weather(bx(3657), g - 1, bz(3511), bx(3699) + 1, g - 1, bz(3463) + 1, MOSSY_COBBLE, GRAVEL, 40, 134);
+        k.take(bx(3681) - 1, bz(3510) - 1, bx(3697) + 2, bz(3504) + 2);
+        k.take(bx(3654) - 3, bz(3526) - 3, bx(3666) + 3, bz(3513) + 2);
+        k.dressTown(3656, 3462, 3700, 3512, "mory", 22, 135);
         return k.build();
     }
 
@@ -334,6 +429,19 @@ final class EasternMorytania {
         int z2 = bz(3490);
         ship(k, x1, z1, x2, z2);
         k.fill(pier[2] + 1, g, (z1 + z2) / 2, x1 - 1, g, (z1 + z2) / 2 + 1, "minecraft:spruce_slab[type=top]");
+        // Mooring posts with rope along the jetty, nets drying on the rail, cargo, lanterns on poles and two
+        // rowing boats tied up south of the jetty.
+        k.d.mooringX(jet[0] + 1, jet[2] - 3, jet[3] + 1, g - 1, 4);
+        for (int x = jet[0] + 2; x < jet[2] - 2; x += 5) {
+            k.set(x, g + 1, jet[1], COBWEB);
+        }
+        k.d.crates(jet[0] + 2, jet[1] + 1, 136);
+        k.d.crates(pier[0] + 1, pier[3] - 3, 137);
+        k.set(pier[0] + 1, g, pier[3] - 6, "minecraft:chest[facing=east]");
+        k.d.rowboat(jet[0] + 3, jet[3] + 3, g - 2, "minecraft:dark_oak");
+        k.d.rowboat(jet[0] + 9, jet[3] + 4, g - 2, "minecraft:spruce");
+        k.fill(jet[0], g, jet[1] + 1, jet[0], g + 2, jet[1] + 1, "minecraft:spruce_fence");
+        k.set(jet[0], g + 3, jet[1] + 1, SOUL_LANTERN);
         return k.build();
     }
 
@@ -451,6 +559,9 @@ final class EasternMorytania {
         k.deadTree(3506, 3288, 6);
         k.graveyard(3476, 3271, 3478, 3273, 159);
         k.scatter(3475, 3271, 3509, 3303, 0, COBWEB, 10, 160);
+        // Plague-town clutter: barricades of planks, abandoned carts, bone heaps and smouldering pyres.
+        k.d.weather(bx(3474), g - 1, bz(3304), bx(3510) + 1, g - 1, bz(3270) + 1, GRAVEL, MUD, 25, 162);
+        k.dressTown(3474, 3270, 3510, 3304, "mory", 16, 163);
         return k.build();
     }
 
@@ -500,6 +611,7 @@ final class EasternMorytania {
         k.deadTree(3487, 3216, 6);
         k.deadTree(3509, 3209, 5);
         k.scatter(3481, 3195, 3511, 3233, 0, COBWEB, 8, 178);
+        k.dressTown(3480, 3194, 3512, 3234, "mory", 14, 179);
         return k.build();
     }
 
@@ -542,6 +654,15 @@ final class EasternMorytania {
             k.fill(bx(tx), g, bz(3235), bx(tx), g + 2, bz(3235), "minecraft:polished_blackstone_brick_wall");
             k.set(bx(tx), g + 3, bz(3235), SOUL_LANTERN);
         }
+        // Crimson banners on the theatre, braziers and benches round the plaza.
+        for (int z = th[1] + 3; z < th[3] - 2; z += 6) {
+            k.set(th[0] - 1, g + 7, z, "minecraft:red_wall_banner[facing=west]");
+        }
+        k.buttresses(th, 12, PBB, "minecraft:polished_blackstone_brick_stairs", 6);
+        k.d.bench(bx(3641), bz(3220), false, "east", "minecraft:crimson");
+        k.d.bench(bx(3663), bz(3220), false, "west", "minecraft:crimson");
+        k.take(bx(3638) - 1, bz(3234) - 1, bx(3666) + 2, bz(3212) + 2);
+        k.dressTown(3634, 3194, 3692, 3238, "dark", 12, 183);
         return k.build();
     }
 
@@ -625,6 +746,22 @@ final class EasternMorytania {
             k.fill(bx(tx), g, bz(3366), bx(tx), g + 2, bz(3366), "minecraft:polished_blackstone_brick_wall");
             k.set(bx(tx), g + 3, bz(3366), SOUL_LANTERN);
         }
+        // Crimson banners on the towers, iron spikes along the wall walk, blood-red glass in the houses'
+        // lancets and dressing in the streets (not inside the Hallowed Sepulchre, its own structure).
+        for (int[] t : new int[][]{{3594, 3332}, {3666, 3332}, {3594, 3396}, {3666, 3396}, {3625, 3332}, {3634, 3332}}) {
+            int bxx = cx(t[0]);
+            int bzz = cz(t[1]);
+            k.set(bxx, g + 10, bzz + 4, "minecraft:red_wall_banner[facing=south]");
+            k.set(bxx, g + 10, bzz - 4, "minecraft:red_wall_banner[facing=north]");
+        }
+        for (int[] l : new int[][]{{3594, 3332, 3666, 3332}, {3594, 3396, 3666, 3396}}) {
+            int[] q = r(l[0], l[1], l[2], l[3]);
+            for (int x = q[0] + 1; x < q[2]; x += 3) {
+                k.set(x, g + 9, q[1], "minecraft:iron_bars");
+            }
+        }
+        k.take(bx(3644) - 3, bz(3388) - 3, bx(3656) + 4, bz(3376) + 4);
+        k.dressTown(3594, 3332, 3666, 3396, "dark", 30, 182);
         return k.build();
     }
 
@@ -730,6 +867,17 @@ final class EasternMorytania {
         k.deadTree(3564, 3531, 6);
         k.deadTree(3536, 3560, 7);
         k.scatter(3541, 3537, 3559, 3555, 0, COBWEB, 8, 194);
+        // Buttresses, a tall chimney stack from the hall fireplace, ivy-dark weathering and a gibbet.
+        k.buttresses(q, 10, DEEP_BRICKS, "minecraft:deepslate_brick_stairs", 8);
+        k.fill(q[2] + 1, g, mz + 5, q[2] + 1, g + 14, mz + 6, "minecraft:bricks");
+        k.set(q[2] + 1, g + 15, mz + 5, "minecraft:campfire[lit=true]");
+        k.d.weather(q[0], g, q[1], q[2], g + 9, q[3], DEEP_BRICKS, CRACKED_DEEP, 40, 195);
+        int gx = bx(3545);
+        int gz = bz(3531);
+        k.fill(gx, g, gz, gx, g + 4, gz, DARK_LOG);
+        k.fill(gx + 1, g + 4, gz, gx + 2, g + 4, gz, "minecraft:dark_oak_log[axis=x]");
+        k.fill(gx + 2, g + 2, gz, gx + 2, g + 3, gz, "minecraft:chain");
+        k.set(gx + 2, g + 1, gz, "minecraft:skeleton_skull");
         return k.build();
     }
 
@@ -767,6 +915,11 @@ final class EasternMorytania {
         k.graveyard(3727, 3336, 3740, 3346, 202);
         k.deadTree(3724, 3343, 6);
         k.deadTree(3740, 3310, 5);
+        // Buttressed church, picket fences round the cottage gardens, mud in the lanes.
+        k.buttresses(c, 8, DEEP_BRICKS, "minecraft:deepslate_brick_stairs", 5);
+        k.d.weather(bx(3708), g - 1, bz(3346), bx(3740) + 1, g - 1, bz(3296) + 1, GRAVEL, MUD, 30, 203);
+        k.take(bx(3727), bz(3346), bx(3740) + 1, bz(3336) + 1);
+        k.dressTown(3706, 3294, 3742, 3348, "mory", 18, 204);
         return k.build();
     }
 }

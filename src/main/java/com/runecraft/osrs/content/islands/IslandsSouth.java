@@ -138,13 +138,13 @@ final class IslandsSouth {
         b.tTower(2632, 2680, 3, 9, w, ANDESITE);
         b.tTower(2678, 2680, 3, 9, w, ANDESITE);
         // The bank and the Void Knights' hall with the rewards.
-        b.tBuilding(2664, 2652, 2674, 2659, 1, w, "minecraft:polished_andesite", "minecraft:deepslate_tile", "west", true);
+        building(b, 2664, 2652, 2674, 2659, 1, w, "minecraft:polished_andesite", "minecraft:deepslate_tile", "west", true);
         b.tSet(2668, 2657, 0, rc("bank_booth"));
         b.tSet(2670, 2657, 0, rc("bank_booth"));
-        b.tBuilding(2636, 2652, 2648, 2662, 2, w, "minecraft:polished_andesite", "minecraft:deepslate_tile", "east", true);
+        building(b, 2636, 2652, 2648, 2662, 2, w, "minecraft:polished_andesite", "minecraft:deepslate_tile", "east", true);
         b.tSet(2640, 2658, 0, rc("pest_control_rewards"));
         b.tFill(2641, 2654, 2643, 2660, -1, -1, "minecraft:purple_carpet");
-        b.tBuilding(2660, 2666, 2672, 2676, 1, w, "minecraft:spruce_planks", "minecraft:deepslate_tile", "west", true);
+        building(b, 2660, 2666, 2672, 2676, 1, w, "minecraft:spruce_planks", "minecraft:deepslate_tile", "west", true);
         // The north dock for the Port Sarim boats.
         pier(b, 2654, 2683, 2657, 2690, SPRUCE);
         for (int[] l : new int[][]{{2653, 2650}, {2657, 2650}, {2653, 2670}, {2657, 2670}}) {

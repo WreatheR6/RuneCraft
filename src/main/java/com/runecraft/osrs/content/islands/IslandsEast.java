@@ -30,11 +30,11 @@ final class IslandsEast {
         b.tFloor(3662, 2964, 3700, 2967, PATH);
         b.tFloor(3671, 2950, 3673, 2963, PATH);
         // Shacks: Mike's general store, Charley's hats, Patchy's and the tavern.
-        b.tBuilding(3684, 2970, 3692, 2976, 1, SHACK, OAK, "minecraft:dark_oak", "south", true);
+        building(b, 3684, 2970, 3692, 2976, 1, SHACK, OAK, "minecraft:dark_oak", "south", true);
         b.tSet(3688, 2974, 0, rc("general_store"));
-        b.tBuilding(3672, 2970, 3680, 2976, 1, SHACK, OAK, "minecraft:dark_oak", "south", true);
-        b.tBuilding(3684, 2955, 3692, 2961, 1, SHACK, OAK, "minecraft:dark_oak", "north", true);
-        b.tBuilding(3662, 2970, 3669, 2980, 1, SHACK, OAK, "minecraft:dark_oak", "east", true);
+        building(b, 3672, 2970, 3680, 2976, 1, SHACK, OAK, "minecraft:dark_oak", "south", true);
+        building(b, 3684, 2955, 3692, 2961, 1, SHACK, OAK, "minecraft:dark_oak", "north", true);
+        building(b, 3662, 2970, 3669, 2980, 1, SHACK, OAK, "minecraft:dark_oak", "east", true);
         b.tSet(3664, 2978, 0, rc("cooking_range"));
         b.tSet(3666, 2978, 0, "minecraft:barrel");
         b.tSet(3667, 2978, 0, "minecraft:barrel");
@@ -57,7 +57,7 @@ final class IslandsEast {
         Builder b = StructureDef.builder("isl_harmony_island", "Harmony Island").replaces(IslandsPlaces.HARMONY_ISLAND);
         b.tFlatten(3780, 2842, 3795, 2864, GRASS);
         b.tFlatten(3784, 2865, 3815, 2880, GRASS);
-        b.tBuilding(3790, 2868, 3806, 2877, 2, MOSSY_STONE, "minecraft:spruce_planks", "minecraft:deepslate_tile", "south", true);
+        building(b, 3790, 2868, 3806, 2877, 2, MOSSY_STONE, "minecraft:spruce_planks", "minecraft:deepslate_tile", "south", true);
         b.tSet(3798, 2876, 0, rc("prayer_altar"));
         b.tFill(3797, 2875, 3799, 2875, -1, -1, "minecraft:red_carpet");
         b.tTower(3808, 2873, 3, 14, MOSSY_STONE, SPRUCE);
@@ -107,7 +107,7 @@ final class IslandsEast {
         b.tFloor(3093, 3080, 3094, 3128, PATH);
         b.tFloor(3116, 3100, 3117, 3127, PATH);
         // Gielinor Guide's house.
-        b.tBuilding(3090, 3104, 3098, 3111, 1, OAK, OAK, "minecraft:oak", "south", true);
+        building(b, 3090, 3104, 3098, 3111, 1, OAK, OAK, "minecraft:oak", "south", true);
         // Survival Expert: trees and the fishing pond.
         String leaves = "minecraft:oak_leaves[persistent=true]";
         for (int[] t : new int[][]{{3100, 3096}, {3108, 3098}, {3102, 3090}, {3110, 3090}}) {
@@ -117,11 +117,11 @@ final class IslandsEast {
         b.tSet(3105, 3093, -1, rc("net_bait_fishing_spot"));
         b.tSet(3102, 3094, 0, "minecraft:campfire");
         // Master Chef's kitchen.
-        b.tBuilding(3072, 3082, 3080, 3088, 1, "minecraft:bricks", OAK, "minecraft:spruce", "north", true);
+        building(b, 3072, 3082, 3080, 3088, 1, "minecraft:bricks", OAK, "minecraft:spruce", "north", true);
         b.tSet(3076, 3084, 0, rc("cooking_range"));
         b.tSet(3074, 3086, 0, "minecraft:barrel");
         // Quest Guide's house.
-        b.tBuilding(3082, 3118, 3090, 3125, 1, STONE, OAK, "minecraft:spruce", "south", true);
+        building(b, 3082, 3118, 3090, 3125, 1, STONE, OAK, "minecraft:spruce", "south", true);
         b.tSet(3084, 3123, 0, "minecraft:bookshelf");
         b.tSet(3088, 3123, 0, "minecraft:lectern");
         // Mining area: copper and tin rocks, the furnace and anvil.
@@ -138,10 +138,10 @@ final class IslandsEast {
         b.tClear(3108, 3115, 3110, 3115, -4, 0);
         b.tFill(3108, 3113, 3110, 3115, -4, -1, "minecraft:oak_stairs[facing=north]");
         // The bank and Brother Brace's chapel.
-        b.tBuilding(3120, 3118, 3128, 3125, 1, STONE, "minecraft:polished_andesite", "minecraft:deepslate_tile", "west", true);
+        building(b, 3120, 3118, 3128, 3125, 1, STONE, "minecraft:polished_andesite", "minecraft:deepslate_tile", "west", true);
         b.tSet(3124, 3124, 0, rc("bank_booth"));
         b.tSet(3126, 3124, 0, rc("bank_booth"));
-        b.tBuilding(3120, 3100, 3128, 3108, 1, STONE, "minecraft:polished_andesite", "minecraft:deepslate_tile", "west", true);
+        building(b, 3120, 3100, 3128, 3108, 1, STONE, "minecraft:polished_andesite", "minecraft:deepslate_tile", "west", true);
         b.tSet(3127, 3104, 0, rc("prayer_altar"));
         // The Magic Instructor's hut and the chicken pen.
         hut(b, 3140, 3086, 4, "minecraft:stripped_birch_log", "minecraft:blue_wool", "minecraft:birch_planks", "north");
@@ -187,14 +187,14 @@ final class IslandsEast {
         }
         // Bank and general store; Jukat's and Irksol's shops.
         String wall = "minecraft:stripped_birch_log";
-        b.tBuilding(2396, 4436, 2405, 4444, 1, wall, "minecraft:birch_planks", "minecraft:warped", "south", true);
+        building(b, 2396, 4436, 2405, 4444, 1, wall, "minecraft:birch_planks", "minecraft:warped", "south", true);
         b.tSet(2399, 4442, 0, rc("bank_booth"));
         b.tSet(2402, 4442, 0, rc("bank_booth"));
-        b.tBuilding(2414, 4436, 2423, 4444, 1, wall, "minecraft:birch_planks", "minecraft:warped", "south", true);
+        building(b, 2414, 4436, 2423, 4444, 1, wall, "minecraft:birch_planks", "minecraft:warped", "south", true);
         b.tSet(2418, 4442, 0, rc("general_store"));
-        b.tBuilding(2416, 4419, 2423, 4425, 1, wall, "minecraft:birch_planks", "minecraft:crimson", "west", true);
+        building(b, 2416, 4419, 2423, 4425, 1, wall, "minecraft:birch_planks", "minecraft:crimson", "west", true);
         b.tSet(2421, 4422, 0, rc("weapon_shop"));
-        b.tBuilding(2397, 4419, 2404, 4425, 1, wall, "minecraft:birch_planks", "minecraft:crimson", "east", true);
+        building(b, 2397, 4419, 2404, 4425, 1, wall, "minecraft:birch_planks", "minecraft:crimson", "east", true);
         // Glowing trees and lanterns.
         String leaves = "minecraft:flowering_azalea_leaves[persistent=true]";
         for (int[] t : new int[][]{{2388, 4458}, {2438, 4458}, {2388, 4430}, {2438, 4430}, {2410, 4456}, {2390, 4446},

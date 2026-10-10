@@ -1,5 +1,6 @@
 package com.runecraft.osrs.content.islands;
 
+import com.runecraft.osrs.content.world.EasternDetail;
 import com.runecraft.osrs.world.StructureDef;
 import com.runecraft.osrs.world.StructureDef.Builder;
 import com.runecraft.osrs.world.StructureDef.Op;
@@ -73,12 +74,130 @@ final class IslandsKit {
         return bz(tileY) - centreZ(placeY);
     }
 
+    // ------------------------------------------------------------------ detailed buildings
+
+    /** The facade look for an island building by its wall material (per-island styles). */
+    static EasternDetail.Look lookFor(String wall) {
+        return switch (wall) {
+            // Fremennik timber: log walls on a stone footing, dark beams, carved gables
+            case SPRUCE_LOG -> new EasternDetail.Look(SPRUCE_LOG, COBBLE, "minecraft:spruce_log", "minecraft:spruce_log", false,
+                    "minecraft:spruce_stairs", "minecraft:spruce_trapdoor", SPRUCE, COBBLE, "minecraft:lantern", null, false,
+                    "minecraft:dark_oak", false);
+            case MOSSY_STONE -> new EasternDetail.Look(MOSSY_STONE, MOSSY, STONE, "minecraft:mossy_cobblestone", false,
+                    "minecraft:mossy_stone_brick_stairs", "minecraft:spruce_trapdoor", SPRUCE, COBBLE, "minecraft:lantern", null, true,
+                    "minecraft:mossy_cobblestone", true);
+            case STONE -> new EasternDetail.Look(STONE, ANDESITE, "minecraft:chiseled_stone_bricks", "minecraft:polished_andesite",
+                    false, "minecraft:stone_brick_stairs", null, null, STONE, "minecraft:lantern", null, true, null, false);
+            case OAK -> new EasternDetail.Look(OAK, COBBLE, "minecraft:stripped_oak_log", "minecraft:oak_log", true,
+                    "minecraft:oak_stairs", "minecraft:oak_trapdoor", null, COBBLE, "minecraft:lantern", null, true, "minecraft:spruce",
+                    false);
+            case "minecraft:spruce_planks" -> new EasternDetail.Look(SPRUCE, COBBLE, SPRUCE_LOG, "minecraft:spruce_log", true,
+                    "minecraft:spruce_stairs", "minecraft:spruce_trapdoor", null, COBBLE, "minecraft:lantern", null, true, null, true);
+            case "minecraft:dark_oak_planks" -> new EasternDetail.Look("minecraft:dark_oak_planks", COBBLE, "minecraft:dark_oak_log",
+                    "minecraft:dark_oak_log", true, "minecraft:dark_oak_stairs", "minecraft:dark_oak_trapdoor", null, COBBLE,
+                    "minecraft:lantern", null, true, "minecraft:spruce", true);
+            case "minecraft:bricks" -> new EasternDetail.Look("minecraft:bricks", STONE, "minecraft:stripped_spruce_log",
+                    "minecraft:spruce_log", false, "minecraft:brick_stairs", "minecraft:spruce_trapdoor", null, "minecraft:bricks",
+                    "minecraft:lantern", null, true, null, false);
+            // Ape Atoll jungle wood: bamboo posts and thatch-patched roofs
+            case JUNGLE -> new EasternDetail.Look(JUNGLE, MUD_BRICKS, "minecraft:stripped_jungle_log", "minecraft:bamboo_block", true,
+                    "minecraft:jungle_stairs", "minecraft:bamboo_trapdoor", "minecraft:bamboo_planks", null, "minecraft:lantern", null,
+                    true, "minecraft:bamboo", false);
+            case BLACKSTONE -> new EasternDetail.Look(BLACKSTONE, "minecraft:blackstone", "minecraft:polished_blackstone",
+                    "minecraft:gilded_blackstone", false, "minecraft:polished_blackstone_brick_stairs", null, null, null,
+                    "minecraft:soul_lantern", null, true, null, false);
+            default -> new EasternDetail.Look(wall, null, null, null, false, "minecraft:spruce_stairs", null, null, null,
+                    "minecraft:lantern", null, true, null, false);
+        };
+    }
+
+    static EasternDetail.Furniture furnitureFor(String wall) {
+        if (wall.equals(JUNGLE)) {
+            return new EasternDetail.Furniture("minecraft:jungle", "minecraft:yellow_carpet", "minecraft:lime_carpet", "minecraft:yellow_bed",
+                    "minecraft:lantern", false);
+        }
+        if (wall.equals(SPRUCE_LOG)) {
+            return new EasternDetail.Furniture("minecraft:spruce", "minecraft:white_carpet", "minecraft:gray_carpet", "minecraft:white_bed",
+                    "minecraft:lantern", false);
+        }
+        if (wall.equals(MOSSY_STONE) || wall.equals(BLACKSTONE)) {
+            return new EasternDetail.Furniture("minecraft:dark_oak", "minecraft:gray_carpet", "minecraft:black_carpet", "minecraft:gray_bed",
+                    "minecraft:lantern", true);
+        }
+        return new EasternDetail.Furniture("minecraft:oak", "minecraft:red_carpet", "minecraft:brown_carpet", "minecraft:red_bed",
+                "minecraft:lantern", false);
+    }
+
+    /**
+     * {@link Builder#tBuilding} plus the detail kit: a dressed facade, roof detail with chimney, a real door
+     * where the wall material has a wood to make it from, a hanging light, and a furnished room in single
+     * storey pitched buildings (multi-storey and flat-roofed ones keep their interiors for the caller).
+     */
+    static int[] building(Builder b, int tx1, int ty1, int tx2, int ty2, int storeys, String wall, String floor, String roof,
+                          String door, boolean pitched) {
+        b.tBuilding(tx1, ty1, tx2, ty2, storeys, wall, floor, roof, door, pitched);
+        EasternDetail d = new EasternDetail(b);
+        int g = b.ground();
+        int[] q = {bx(Math.min(tx1, tx2)), bz(Math.max(ty1, ty2)), bx(Math.max(tx1, tx2)) + 1, bz(Math.min(ty1, ty2)) + 1};
+        int top = g + storeys * 4;
+        EasternDetail.Look l = lookFor(wall);
+        d.facade(q, storeys, l, door, "minecraft:glass_pane");
+        long seed = q[0] * 31L + q[1] * 17L + q[2];
+        if (pitched) {
+            b.fill(q[0] + 1, top - 1, q[1] + 1, q[2] - 1, top - 1, q[3] - 1, floor);
+            d.roof(q, top, roof, l, door, seed);
+            if (wall.equals(SPRUCE_LOG)) {
+                // Fremennik crossed bargeboards (dragon horns) at the gable peaks
+                boolean alongX = (q[2] - q[0]) >= (q[3] - q[1]);
+                int depth = alongX ? q[3] - q[1] : q[2] - q[0];
+                int ridge = top + (depth + 2) / 2;
+                int c = alongX ? (q[1] + q[3]) / 2 : (q[0] + q[2]) / 2;
+                for (int e : alongX ? new int[]{q[0] - 1, q[2] + 1} : new int[]{q[1] - 1, q[3] + 1}) {
+                    if (alongX) {
+                        b.fill(e, ridge, c - 1, e, ridge + 1, c - 1, "minecraft:spruce_fence");
+                        b.fill(e, ridge, c + 2, e, ridge + 1, c + 2, "minecraft:spruce_fence");
+                    } else {
+                        b.fill(c - 1, ridge, e, c - 1, ridge + 1, e, "minecraft:spruce_fence");
+                        b.fill(c + 2, ridge, e, c + 2, ridge + 1, e, "minecraft:spruce_fence");
+                    }
+                }
+            }
+        }
+        String doorBlock = switch (wall) {
+            case SPRUCE_LOG, "minecraft:spruce_planks" -> "minecraft:spruce_door";
+            case OAK -> "minecraft:oak_door";
+            case JUNGLE -> "minecraft:jungle_door";
+            case "minecraft:dark_oak_planks", MOSSY_STONE -> "minecraft:dark_oak_door";
+            default -> null;
+        };
+        if (door != null && doorBlock != null) {
+            int mx = (q[0] + q[2]) / 2;
+            int mz = (q[1] + q[3]) / 2;
+            int[] a = switch (door) {
+                case "north" -> new int[]{mx, q[1], mx + 1, q[1]};
+                case "south" -> new int[]{mx, q[3], mx + 1, q[3]};
+                case "east" -> new int[]{q[2], mz, q[2], mz + 1};
+                default -> new int[]{q[0], mz, q[0], mz + 1};
+            };
+            String facing = EasternDetail.opposite(door);
+            boolean aLeft = door.equals("south") || door.equals("west");
+            b.set(a[0], g, a[1], doorBlock + "[facing=" + facing + ",half=lower,hinge=" + (aLeft ? "left" : "right") + ",open=false]");
+            b.set(a[2], g, a[3], doorBlock + "[facing=" + facing + ",half=lower,hinge=" + (aLeft ? "right" : "left") + ",open=false]");
+        }
+        b.set((q[0] + q[2]) / 2, g + 2, (q[1] + q[3]) / 2, "minecraft:lantern[hanging=true]");
+        if (storeys == 1 && pitched) {
+            d.room(q, g, EasternDetail.Room.HOUSE, furnitureFor(wall), seed);
+        }
+        return q;
+    }
+
     // ------------------------------------------------------------------ small pieces
 
     static void lamp(Builder b, int tx, int ty, String post) {
         b.tSet(tx, ty, 0, post);
         b.tSet(tx, ty, 1, post);
-        b.tSet(tx, ty, 2, "minecraft:lantern");
+        b.tSet(tx, ty, 2, post);
+        b.tSet(tx, ty, 3, "minecraft:lantern");
     }
 
     static void torchPost(Builder b, int tx, int ty, String post) {
@@ -117,17 +236,8 @@ final class IslandsKit {
     static void palm(Builder b, int tx, int ty, int height) {
         int x = bx(tx);
         int z = bz(ty);
-        int g = b.ground();
-        b.set(x, g - 1, z, "minecraft:dirt");
-        b.fill(x, g, z, x, g + height - 1, z, JUNGLE_LOG);
-        String leaves = "minecraft:jungle_leaves[persistent=true]";
-        b.fill(x - 3, g + height, z, x + 3, g + height, z, leaves);
-        b.fill(x, g + height, z - 3, x, g + height, z + 3, leaves);
-        b.fill(x - 1, g + height + 1, z - 1, x + 1, g + height + 1, z + 1, leaves);
-        b.set(x - 4, g + height - 1, z, leaves);
-        b.set(x + 4, g + height - 1, z, leaves);
-        b.set(x, g + height - 1, z - 4, leaves);
-        b.set(x, g + height - 1, z + 4, leaves);
+        b.set(x, b.ground() - 1, z, "minecraft:dirt");
+        new EasternDetail(b).palm(x, z, height, tx * 31L + ty);
     }
 
     /** A giant mushroom (Fossil Island style): a stem and a wide cap. */
@@ -180,6 +290,21 @@ final class IslandsKit {
             case "east" -> b.clear(cx + r, g, cz, cx + r, g + 1, cz);
             default -> b.clear(cx - r, g, cz, cx - r, g + 1, cz);
         }
+        // Door poles with a bone/skull charm, a sleeping mat, a water pot, a fire pit and a light.
+        int ox = door.equals("east") ? 1 : door.equals("west") ? -1 : 0;
+        int oz = door.equals("south") ? 1 : door.equals("north") ? -1 : 0;
+        int dx = cx + ox * (r + 1);
+        int dz = cz + oz * (r + 1);
+        String pole = wall.contains("jungle") ? "minecraft:bamboo_fence" : "minecraft:spruce_fence";
+        b.fill(dx + oz, g, dz + ox, dx + oz, g + 2, dz + ox, pole);
+        b.fill(dx - oz, g, dz - ox, dx - oz, g + 2, dz - ox, pole);
+        if (r >= 3) {
+            b.set(cx - ox * (r - 1) + oz, g, cz - oz * (r - 1) + ox, "minecraft:yellow_carpet");
+            b.set(cx - ox * (r - 1), g, cz - oz * (r - 1), "minecraft:yellow_carpet");
+            b.set(cx + oz * (r - 1), g, cz + ox * (r - 1), "minecraft:decorated_pot");
+            b.set(cx - oz * (r - 1), g, cz - ox * (r - 1), "minecraft:barrel[facing=up]");
+        }
+        b.set(cx, g + 2, cz, "minecraft:lantern[hanging=true]");
     }
 
     /** A ridge tent of wool over a tile rectangle (ridge along x), open at the west and east ends. */
@@ -196,6 +321,21 @@ final class IslandsKit {
         }
         b.set(x1, g, (z1 + z2) / 2, "minecraft:spruce_fence");
         b.set(x2, g, (z1 + z2) / 2, "minecraft:spruce_fence");
+        // ridge pole out past both ends, guy ropes to pegs, a camp bed and a crate inside
+        int mz = (z1 + z2) / 2;
+        int ridge = g + (z2 - z1) / 2;
+        b.fill(x1 - 1, ridge + 1, mz, x2 + 1, ridge + 1, mz, "minecraft:spruce_log[axis=x]");
+        b.fill(x1 - 1, g, mz, x1 - 1, ridge, mz, "minecraft:spruce_fence");
+        b.fill(x2 + 1, g, mz, x2 + 1, ridge, mz, "minecraft:spruce_fence");
+        b.set(x1, g, z1 - 1, "minecraft:spruce_fence");
+        b.set(x2, g, z1 - 1, "minecraft:spruce_fence");
+        b.set(x1, g, z2 + 1, "minecraft:spruce_fence");
+        b.set(x2, g, z2 + 1, "minecraft:spruce_fence");
+        if (x2 - x1 >= 4 && z2 - z1 >= 4) {
+            b.set(x1 + 2, g, mz, "minecraft:white_bed[facing=east,part=foot]");
+            b.set(x2 - 1, g, mz, "minecraft:barrel[facing=up]");
+            b.set(x2 - 1, g + 1, mz, "minecraft:lantern");
+        }
     }
 
     /** A wooden pier deck one block above the sea with posts down into the water. */
@@ -217,6 +357,14 @@ final class IslandsKit {
             b.tSet(x, ya, 0, "minecraft:spruce_fence");
             b.tSet(x, yb, 0, "minecraft:spruce_fence");
         }
+        // bollards with rope and lanterns on posts at the ends, a few crates
+        for (int x = xa; x <= xb; x += 6) {
+            b.tSet(x, ya, 1, "minecraft:spruce_fence");
+            b.tSet(x, ya, 2, "minecraft:lantern");
+            b.tSet(x, yb, 1, "minecraft:spruce_slab");
+        }
+        b.tSet(xb, (ya + yb) / 2, 0, "minecraft:barrel[facing=up]");
+        b.tSet(xb - 1, (ya + yb) / 2, 0, "minecraft:spruce_planks");
     }
 
     /** A ship hull moored along x (bow to the east), with a mast; deck at relative height 0. */
@@ -238,6 +386,24 @@ final class IslandsKit {
         b.fill(mx, g, cz, mx, g + 9, cz, "minecraft:spruce_log");
         b.fill(mx, g + 4, cz - 3, mx, g + 8, cz + 3, sail);
         b.set(x1 + len, g, cz, hull);
+        // yard, crow's nest, pennant, gunwale rail, stern cabin, bowsprit, lanterns and cargo
+        b.fill(mx, g + 9, cz - 4, mx, g + 9, cz + 4, "minecraft:spruce_log[axis=z]");
+        b.fill(mx, g + 6, cz - 3, mx, g + 6, cz + 3, sail.contains("white") ? "minecraft:red_wool" : "minecraft:white_wool");
+        b.walls(mx - 1, g + 10, cz - 1, mx + 1, g + 10, cz + 1, "minecraft:spruce_fence");
+        b.fill(mx, g + 10, cz, mx, g + 12, cz, "minecraft:spruce_fence");
+        b.set(mx + 1, g + 12, cz, "minecraft:red_wool");
+        for (int i = 3; i < len - 4; i++) {
+            b.set(x1 + i, g + 1, cz - 4, "minecraft:spruce_fence");
+            b.set(x1 + i, g + 1, cz + 4, "minecraft:spruce_fence");
+        }
+        b.fill(x1 + 1, g, cz - 1, x1 + 3, g + 1, cz + 1, "minecraft:spruce_planks");
+        b.set(x1 + 3, g + 1, cz, "minecraft:spruce_trapdoor[facing=east,open=true]");
+        b.fill(x1 + 1, g + 2, cz - 2, x1 + 3, g + 2, cz + 2, "minecraft:spruce_slab");
+        b.set(x1 + 2, g + 3, cz, "minecraft:lantern");
+        b.fill(x1 + len, g + 1, cz, x1 + len, g + 2, cz, "minecraft:spruce_fence");
+        b.set(mx + 3, g, cz + 1, "minecraft:barrel[facing=up]");
+        b.set(mx + 3, g, cz - 1, "minecraft:barrel[facing=up]");
+        b.set(mx - 3, g, cz, "minecraft:chest[facing=east]");
     }
 
     /** Broken walls of a ruined building: crumbled to varying heights with gaps. */
@@ -267,6 +433,11 @@ final class IslandsKit {
             }
         }
         b.tFloor(xa + 1, ya + 1, xb - 1, yb - 1, rubble);
+        EasternDetail d = new EasternDetail(b);
+        String[] mats = {block, "minecraft:cobblestone", "minecraft:mossy_cobblestone"};
+        d.rubble(bx(xa + 1) + 1, bz(ya + 1), mats, xa * 7L + ya);
+        d.rubble(bx(xb - 1), bz(yb - 1) + 1, mats, xb * 5L + yb);
+        d.overgrowth(bx(xa), bz(yb), bx(xb) + 1, bz(ya) + 1, Math.max(4, (xb - xa) * (yb - ya) / 2), xa + yb);
     }
 
     /** A fairy ring: the ring block on mycelium, ringed by mushrooms. */
@@ -286,7 +457,7 @@ final class IslandsKit {
 
     /** A Fremennik longhall: log walls, pitched spruce roof, doorway at the south. */
     static void longhall(Builder b, int tx1, int ty1, int tx2, int ty2, String door) {
-        b.tBuilding(tx1, ty1, tx2, ty2, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", door, true);
+        building(b, tx1, ty1, tx2, ty2, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", door, true);
     }
 
     /** A row of crop/flower blocks over a tile rectangle (on farmland). */

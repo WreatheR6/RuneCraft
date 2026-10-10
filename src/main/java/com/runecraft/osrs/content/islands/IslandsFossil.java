@@ -40,7 +40,7 @@ final class IslandsFossil {
         tent(b, 3736, 3812, 3742, 3816, "minecraft:white_wool");
         tent(b, 3716, 3798, 3722, 3802, "minecraft:light_gray_wool");
         // Storage hut with the bank chest and the camp kitchen.
-        b.tBuilding(3736, 3797, 3748, 3804, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "north", true);
+        building(b, 3736, 3797, 3748, 3804, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "north", true);
         b.tSet(3740, 3800, 0, rc("bank_booth"));
         b.tSet(3745, 3800, 0, rc("cooking_range"));
         b.tSet(3738, 3799, 0, "minecraft:barrel");
@@ -66,7 +66,7 @@ final class IslandsFossil {
                 .ground(68);
         b.tFlatten(3750, 3856, 3778, 3882, GRASS);
         b.tFloor(3762, 3856, 3764, 3865, PATH);
-        b.tBuilding(3757, 3866, 3771, 3878, 2, MOSSY_STONE, "minecraft:polished_andesite", "minecraft:deepslate_tile", "south", true);
+        building(b, 3757, 3866, 3771, 3878, 2, MOSSY_STONE, "minecraft:polished_andesite", "minecraft:deepslate_tile", "south", true);
         // Fossil displays: skeletons of bone blocks on andesite plinths.
         for (int t = 3759; t <= 3769; t += 5) {
             b.tSet(t, 3876, 0, ANDESITE);
@@ -92,7 +92,7 @@ final class IslandsFossil {
         Builder b = StructureDef.builder("isl_volcanic_mine", "Volcanic Mine").replaces(IslandsPlaces.VOLCANIC_MINE).ground(70);
         b.tFlatten(3804, 3798, 3828, 3818, "minecraft:basalt");
         b.tFloor(3804, 3798, 3828, 3818, BASALT);
-        b.tBuilding(3809, 3805, 3821, 3813, 1, BLACKSTONE, "minecraft:polished_blackstone", "minecraft:polished_blackstone_brick_slab",
+        building(b, 3809, 3805, 3821, 3813, 1, BLACKSTONE, "minecraft:polished_blackstone", "minecraft:polished_blackstone_brick_slab",
                 "south", false);
         b.tSet(3815, 3811, 0, "minecraft:polished_blackstone_bricks");
         b.tSet(3815, 3811, 1, "minecraft:soul_lantern");

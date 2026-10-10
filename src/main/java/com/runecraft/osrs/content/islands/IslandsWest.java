@@ -69,7 +69,7 @@ final class IslandsWest {
     private static void castle(Builder b, int tx1, int ty1, String banner, String stand, String door) {
         int tx2 = tx1 + 8;
         int ty2 = ty1 + 8;
-        b.tBuilding(tx1, ty1, tx2, ty2, 3, STONE, ANDESITE, "minecraft:stone_brick_slab", door, false);
+        building(b, tx1, ty1, tx2, ty2, 3, STONE, ANDESITE, "minecraft:stone_brick_slab", door, false);
         b.tTower(tx1, ty1, 3, 15, STONE, ANDESITE);
         b.tTower(tx2, ty1, 3, 15, STONE, ANDESITE);
         b.tTower(tx1, ty2, 3, 15, STONE, ANDESITE);
@@ -89,7 +89,7 @@ final class IslandsWest {
         b.tFlatten(2366, 3074, 2433, 3136, GRASS);
         b.tFlatten(2381, 3031, 2389, 3039, GRASS);
         // The lobby.
-        b.tBuilding(2436, 3080, 2448, 3094, 2, STONE, "minecraft:polished_andesite", "minecraft:deepslate_tile", "west", true);
+        building(b, 2436, 3080, 2448, 3094, 2, STONE, "minecraft:polished_andesite", "minecraft:deepslate_tile", "west", true);
         b.tSet(2442, 3092, 0, rc("castle_wars_entrance"));
         b.tSet(2446, 3088, 0, rc("castle_wars_rewards"));
         b.tSet(2444, 3082, 0, rc("bank_booth"));
@@ -127,10 +127,10 @@ final class IslandsWest {
         b.tFlatten(2550, 2848, 2592, 2878, SAND);
         b.tFlatten(2517, 2855, 2529, 2869, SAND);
         String wall = "minecraft:stripped_oak_log";
-        b.tBuilding(2551, 2850, 2559, 2856, 1, wall, OAK, "minecraft:oak", "east", true);
-        b.tBuilding(2582, 2850, 2590, 2856, 1, wall, OAK, "minecraft:oak", "west", true);
-        b.tBuilding(2551, 2869, 2559, 2876, 1, wall, OAK, "minecraft:oak", "east", true);
-        b.tBuilding(2581, 2869, 2590, 2876, 1, wall, OAK, "minecraft:oak", "west", true);
+        building(b, 2551, 2850, 2559, 2856, 1, wall, OAK, "minecraft:oak", "east", true);
+        building(b, 2582, 2850, 2590, 2856, 1, wall, OAK, "minecraft:oak", "west", true);
+        building(b, 2551, 2869, 2559, 2876, 1, wall, OAK, "minecraft:oak", "east", true);
+        building(b, 2581, 2869, 2590, 2876, 1, wall, OAK, "minecraft:oak", "west", true);
         b.tSet(2584, 2874, 0, rc("cooking_range"));
         b.tSet(2588, 2874, 0, "minecraft:barrel");
         b.tFloor(2560, 2861, 2581, 2863, PATH);
@@ -220,11 +220,11 @@ final class IslandsWest {
         b.tFloor(2138, 3117, 2161, 3119, PATH);
         pier(b, 2126, 3117, 2137, 3119, SPRUCE);
         ship(b, 2124, 3123, 10, "minecraft:spruce_planks", "minecraft:red_wool");
-        b.tBuilding(2142, 3122, 2152, 3130, 1, "minecraft:spruce_planks", SPRUCE, "minecraft:dark_oak", "south", true);
+        building(b, 2142, 3122, 2152, 3130, 1, "minecraft:spruce_planks", SPRUCE, "minecraft:dark_oak", "south", true);
         b.tSet(2146, 3128, 0, "minecraft:barrel");
         b.tSet(2148, 3128, 0, "minecraft:barrel");
         b.tSet(2150, 3126, 0, rc("general_store"));
-        b.tBuilding(2142, 3109, 2150, 3115, 1, STONE, SPRUCE, "minecraft:deepslate_tile", "north", true);
+        building(b, 2142, 3109, 2150, 3115, 1, STONE, SPRUCE, "minecraft:deepslate_tile", "north", true);
         b.tSet(2148, 3112, 0, rc("cooking_range"));
         b.tTower(2156, 3112, 3, 10, STONE, SPRUCE);
         b.tFill(2156, 3112, 2156, 3112, 10, 13, "minecraft:spruce_fence");
@@ -238,7 +238,7 @@ final class IslandsWest {
     static StructureDef braindeathIsland() {
         Builder b = StructureDef.builder("isl_braindeath_island", "Braindeath Island").replaces(IslandsPlaces.BRAINDEATH_ISLAND);
         b.tFlatten(2124, 3141, 2152, 3164, SAND);
-        b.tBuilding(2132, 3152, 2146, 3162, 2, "minecraft:dark_oak_planks", SPRUCE, "minecraft:dark_oak", "south", true);
+        building(b, 2132, 3152, 2146, 3162, 2, "minecraft:dark_oak_planks", SPRUCE, "minecraft:dark_oak", "south", true);
         for (int x = 2134; x <= 2144; x += 3) {
             b.tSet(x, 3160, 0, "minecraft:barrel");
             b.tSet(x, 3160, 1, "minecraft:barrel");
