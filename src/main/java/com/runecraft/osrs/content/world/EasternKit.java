@@ -267,7 +267,206 @@ final class EasternKit {
 
     EasternKit floor(int tx1, int ty1, int tx2, int ty2, String block) {
         b.tFloor(tx1, ty1, tx2, ty2, block);
+        int[] q = r(tx1, ty1, tx2, ty2);
+        take(q[0] - 1, q[1] - 1, q[2] + 1, q[3] + 1);
+        int w = q[2] - q[0];
+        int dd = q[3] - q[1];
+        if (Math.min(w, dd) <= 7 && Math.max(w, dd) >= 12) {
+            roads.add(q);
+        }
         return this;
+    }
+
+    // ---------------- occupancy (for scattering props without blocking doors, roads or buildings) ----------------
+
+    /** Block rectangles already used by buildings, roads, walls, stalls, trees... */
+    final java.util.List<int[]> taken = new java.util.ArrayList<>();
+    /** Long, narrow paved rectangles (streets) that get lamp posts along their edges. */
+    final java.util.List<int[]> roads = new java.util.ArrayList<>();
+
+    void take(int x1, int z1, int x2, int z2) {
+        taken.add(new int[]{Math.min(x1, x2), Math.min(z1, z2), Math.max(x1, x2), Math.max(z1, z2)});
+    }
+
+    boolean free(int x1, int z1, int x2, int z2) {
+        for (int[] t : taken) {
+            if (x2 >= t[0] && x1 <= t[2] && z2 >= t[1] && z1 <= t[3]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Street dressing for a settlement over a tile rectangle: lamp posts along its streets and {@code count}
+     * props (crates, pots, benches, planters, carts...) in the theme ("desert", "mory", "dark", "wild",
+     * "ferox") on free ground only.
+     */
+    void dressTown(int tx1, int ty1, int tx2, int ty2, String theme, int count, long seed) {
+        if (legacy) {
+            return;
+        }
+        int[] area = r(tx1, ty1, tx2, ty2);
+        Random rnd = new Random(seed);
+        String post = switch (theme) {
+            case "desert" -> SS_WALL;
+            case "mory" -> "minecraft:dark_oak_fence";
+            case "dark" -> "minecraft:polished_blackstone_brick_wall";
+            case "ferox" -> "minecraft:stone_brick_wall";
+            default -> "minecraft:spruce_fence";
+        };
+        String lantern = theme.equals("mory") || theme.equals("dark") ? SOUL_LANTERN : "minecraft:lantern";
+        // lamps along the streets
+        for (int[] rd : roads) {
+            boolean alongX = rd[2] - rd[0] >= rd[3] - rd[1];
+            int len = alongX ? rd[2] - rd[0] : rd[3] - rd[1];
+            for (int i = 4; i < len - 2; i += 12) {
+                for (int side = 0; side < 2; side++) {
+                    int x = alongX ? rd[0] + i + side * 6 : (side == 0 ? rd[0] - 1 : rd[2] + 1);
+                    int z = alongX ? (side == 0 ? rd[1] - 1 : rd[3] + 1) : rd[1] + i + side * 6;
+                    if (x < area[0] || x > area[2] || z < area[1] || z > area[3]) {
+                        continue;
+                    }
+                    if (freeExceptRoads(x, z, x, z)) {
+                        d.lampPost(x, z, null, post, lantern, false);
+                        take(x - 1, z - 1, x + 1, z + 1);
+                    }
+                }
+            }
+        }
+        int placed = 0;
+        for (int attempt = 0; attempt < count * 12 && placed < count; attempt++) {
+            int x = area[0] + 2 + rnd.nextInt(Math.max(1, area[2] - area[0] - 4));
+            int z = area[1] + 2 + rnd.nextInt(Math.max(1, area[3] - area[1] - 4));
+            if (!free(x - 1, z - 1, x + 2, z + 2)) {
+                continue;
+            }
+            prop(x, z, theme, rnd);
+            take(x - 1, z - 1, x + 2, z + 2);
+            placed++;
+        }
+    }
+
+    /** Free of everything except the 1-block margins around roads (lamps stand on the kerb). */
+    private boolean freeExceptRoads(int x1, int z1, int x2, int z2) {
+        for (int[] t : taken) {
+            boolean isRoadMargin = false;
+            for (int[] rd : roads) {
+                if (t[0] == rd[0] - 1 && t[1] == rd[1] - 1 && t[2] == rd[2] + 1 && t[3] == rd[3] + 1) {
+                    isRoadMargin = true;
+                    break;
+                }
+            }
+            if (isRoadMargin) {
+                continue;
+            }
+            if (x2 >= t[0] && x1 <= t[2] && z2 >= t[1] && z1 <= t[3]) {
+                return false;
+            }
+        }
+        for (int[] rd : roads) {
+            if (x2 >= rd[0] && x1 <= rd[2] && z2 >= rd[1] && z1 <= rd[3]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** One street prop at (x, z) (uses x..x+1, z..z+1). */
+    private void prop(int x, int z, String theme, Random rnd) {
+        int kind = rnd.nextInt(6);
+        switch (theme) {
+            case "desert" -> {
+                switch (kind) {
+                    case 0 -> d.crates(x, z, rnd.nextLong());
+                    case 1 -> {
+                        set(x, g, z, "minecraft:decorated_pot");
+                        set(x + 1, g, z, "minecraft:decorated_pot");
+                        set(x, g, z + 1, "minecraft:flower_pot");
+                    }
+                    case 2 -> {
+                        set(x, g - 1, z, SAND);
+                        fill(x, g, z, x, g + 1 + rnd.nextInt(2), z, "minecraft:cactus");
+                        set(x + 1, g, z + 1, "minecraft:dead_bush");
+                    }
+                    case 3 -> d.bench(x, z, true, "south", "minecraft:jungle");
+                    case 4 -> {
+                        // a handcart
+                        fill(x, g, z, x + 1, g, z, "minecraft:jungle_slab[type=top]");
+                        set(x, g + 1, z, "minecraft:hay_block");
+                        set(x - 1, g, z, "minecraft:jungle_fence");
+                        set(x, g, z + 1, "minecraft:jungle_trapdoor[facing=south,open=true]");
+                        set(x + 1, g, z + 1, "minecraft:jungle_trapdoor[facing=south,open=true]");
+                    }
+                    default -> {
+                        fill(x, g, z, x + 1, g, z + 1, "minecraft:orange_carpet");
+                        set(x, g, z, "minecraft:red_carpet");
+                        set(x + 1, g, z + 1, "minecraft:decorated_pot");
+                    }
+                }
+            }
+            case "mory", "dark" -> {
+                switch (kind) {
+                    case 0 -> d.crates(x, z, rnd.nextLong());
+                    case 1 -> grave(x, z, rnd.nextInt(6));
+                    case 2 -> {
+                        set(x, g, z, "minecraft:barrel[facing=up]");
+                        set(x, g + 1, z, COBWEB);
+                        set(x + 1, g, z, "minecraft:dead_bush");
+                    }
+                    case 3 -> d.bench(x, z, true, "south", theme.equals("dark") ? "minecraft:crimson" : "minecraft:dark_oak");
+                    case 4 -> {
+                        set(x, g - 1, z, "minecraft:soul_soil");
+                        set(x, g, z, "minecraft:soul_campfire[lit=false]");
+                        set(x + 1, g, z, "minecraft:bone_block");
+                    }
+                    default -> {
+                        fill(x, g, z, x, g + 1, z, theme.equals("dark") ? "minecraft:iron_bars" : "minecraft:dark_oak_fence");
+                        set(x, g + 2, z, "minecraft:skeleton_skull");
+                        set(x + 1, g - 1, z, "minecraft:mud");
+                    }
+                }
+            }
+            case "ferox" -> {
+                switch (kind) {
+                    case 0, 1 -> d.crates(x, z, rnd.nextLong());
+                    case 2 -> d.bench(x, z, true, "south", "minecraft:spruce");
+                    case 3 -> d.flowerBed(x - 1, z - 1, x + 2, z + 2, "minecraft:stone_bricks", rnd.nextLong());
+                    case 4 -> {
+                        set(x, g, z, "minecraft:hay_block");
+                        set(x + 1, g, z, "minecraft:hay_block");
+                        set(x, g + 1, z, "minecraft:hay_block");
+                    }
+                    default -> {
+                        set(x, g, z, "minecraft:barrel[facing=up]");
+                        set(x + 1, g, z, "minecraft:water_cauldron[level=3]");
+                    }
+                }
+            }
+            default -> {
+                switch (kind) {
+                    case 0, 1 -> d.rubble(x, z, new String[]{MOSSY_COBBLE, COBBLE, CRACKED_BRICKS}, rnd.nextLong());
+                    case 2 -> {
+                        set(x, g, z, "minecraft:bone_block");
+                        set(x + 1, g, z, "minecraft:skeleton_skull[rotation=3]");
+                    }
+                    case 3 -> {
+                        set(x, g, z, "minecraft:mossy_cobblestone");
+                        set(x + 1, g, z, "minecraft:cobblestone_slab");
+                        set(x, g + 1, z, "minecraft:mossy_cobblestone_wall");
+                    }
+                    case 4 -> {
+                        set(x, g, z, "minecraft:campfire[lit=false]");
+                        set(x + 1, g, z, "minecraft:spruce_log[axis=z]");
+                    }
+                    default -> {
+                        set(x, g, z, "minecraft:dead_bush");
+                        set(x + 1, g, z + 1, "minecraft:dead_bush");
+                        set(x, g - 1, z + 1, COARSE);
+                    }
+                }
+            }
+        }
     }
 
     EasternKit tfill(int tx1, int ty1, int tx2, int ty2, int y1, int y2, String block) {
@@ -324,6 +523,7 @@ final class EasternKit {
     /** An unfurnished building (walls, floors, roof, corner posts, windows, doorway, ladder, lights). */
     int[] hall(int tx1, int ty1, int tx2, int ty2, int storeys, Style s, String doorSide) {
         int[] q = r(tx1, ty1, tx2, ty2);
+        take(q[0] - 3, q[1] - 3, q[2] + 3, q[3] + 3);
         b.tBuilding(tx1, ty1, tx2, ty2, storeys, s.wall(), s.floor(), s.roof(), doorSide, s.pitched());
         int top = g + storeys * 4;
         if (s.pitched()) {
@@ -363,6 +563,44 @@ final class EasternKit {
         return q;
     }
 
+    /**
+     * Stepped buttresses every 6 blocks along the long sides of block rectangle q, {@code h} blocks tall,
+     * skipping the middle (doorways). {@code stairs} is a stairs block id for the weathered slopes.
+     */
+    void buttresses(int[] q, int h, String block, String stairs) {
+        buttresses(q, h, block, stairs, 3);
+    }
+
+    /** As {@link #buttresses(int[], int, String, String)}, keeping {@code ends} blocks clear at each corner (towers). */
+    void buttresses(int[] q, int h, String block, String stairs, int ends) {
+        boolean alongX = q[2] - q[0] >= q[3] - q[1];
+        int mid = alongX ? (q[0] + q[2]) / 2 : (q[1] + q[3]) / 2;
+        int lo = alongX ? q[0] : q[1];
+        int hi = alongX ? q[2] : q[3];
+        for (int p = lo + ends; p <= hi - ends; p += 6) {
+            if (p >= mid - 2 && p <= mid + 3) {
+                continue;
+            }
+            for (int s = 0; s < 2; s++) {
+                int o = s == 0 ? -1 : 1;
+                String out = alongX ? (s == 0 ? "north" : "south") : (s == 0 ? "west" : "east");
+                String in = EasternDetail.opposite(out);
+                int w1 = alongX ? q[s == 0 ? 1 : 3] : q[s == 0 ? 0 : 2];
+                if (alongX) {
+                    fill(p, g - 1, w1 + o, p, g + h - 2, w1 + o, block);
+                    set(p, g + h - 1, w1 + o, stairs + "[facing=" + in + "]");
+                    fill(p, g - 1, w1 + 2 * o, p, g + h / 2 - 2, w1 + 2 * o, block);
+                    set(p, g + h / 2 - 1, w1 + 2 * o, stairs + "[facing=" + in + "]");
+                } else {
+                    fill(w1 + o, g - 1, p, w1 + o, g + h - 2, p, block);
+                    set(w1 + o, g + h - 1, p, stairs + "[facing=" + in + "]");
+                    fill(w1 + 2 * o, g - 1, p, w1 + 2 * o, g + h / 2 - 2, p, block);
+                    set(w1 + 2 * o, g + h / 2 - 1, p, stairs + "[facing=" + in + "]");
+                }
+            }
+        }
+    }
+
     /** Removes the intermediate floors of a building so it becomes one tall hall (keeps the ladder harmlessly). */
     void openUp(int[] q, int storeys) {
         int mx = (q[0] + q[2]) / 2;
@@ -380,6 +618,7 @@ final class EasternKit {
 
     /** A well: stone ring around water, posts and a little roof. */
     void well(int x, int z, String rim, String roof) {
+        take(x - 3, z - 3, x + 3, z + 3);
         ring(x, g - 1, g, z, 2.5, 1.5, rim);
         fill(x - 1, g - 6, z - 1, x + 1, g - 6, z + 1, rim);
         fill(x - 1, g - 5, z - 1, x + 1, g - 1, z + 1, WATER);
@@ -396,6 +635,7 @@ final class EasternKit {
     void stall(int tx, int ty, String block, String wool) {
         int x = bx(tx);
         int z = bz(ty);
+        take(x - 1, z - 1, x + 3, z + 4);
         if (!legacy) {
             String stripe = wool.equals("minecraft:white_wool") ? "minecraft:yellow_wool" : "minecraft:white_wool";
             d.stall(x, z, block, wool, stripe, "minecraft:jungle_fence");
@@ -801,6 +1041,7 @@ final class EasternKit {
     void wall(int tx1, int ty1, int tx2, int ty2, int h, String block, String cap) {
         b.tWallLine(tx1, ty1, tx2, ty2, h, block);
         int[] q = r(tx1, ty1, tx2, ty2);
+        take(q[0] - 2, q[1] - 2, q[2] + 2, q[3] + 2);
         if (!legacy) {
             // Weathered patches, a footing course and buttress pilasters on both faces.
             String v = variantOf(block);
@@ -872,6 +1113,7 @@ final class EasternKit {
 
     /** Round tower with a doorway, an inner ladder to the top and an optional cone roof. */
     void tower(int tx, int ty, int radius, int h, String wall, String floor, String doorSide, String roof) {
+        take(cx(tx) - radius - 2, cz(ty) - radius - 2, cx(tx) + radius + 2, cz(ty) + radius + 2);
         b.tTower(tx, ty, radius, h, wall, floor);
         int x = cx(tx);
         int z = cz(ty);
@@ -1032,6 +1274,34 @@ final class EasternKit {
         return yy;
     }
 
+    /**
+     * A steep (2:1) pyramid: every course is a full block layer capped by a ring of stairs, insetting one block
+     * per two of height; every fourth course gets a {@code trim} band. Returns the apex height.
+     */
+    int steepPyramid(int x1, int z1, int x2, int z2, int y, String full, String stairs, String trim) {
+        int yy = y;
+        int course = 0;
+        while (x2 - x1 >= 2 && z2 - z1 >= 2) {
+            fill(x1, yy, z1, x2, yy, z2, full);
+            if (trim != null && course % 4 == 3) {
+                b.walls(x1, yy, z1, x2, yy, z2, trim);
+            }
+            fill(x1 + 1, yy + 1, z1 + 1, x2 - 1, yy + 1, z2 - 1, full);
+            fill(x1, yy + 1, z1, x2, yy + 1, z1, stairs + "[facing=south]");
+            fill(x1, yy + 1, z2, x2, yy + 1, z2, stairs + "[facing=north]");
+            fill(x1, yy + 1, z1 + 1, x1, yy + 1, z2 - 1, stairs + "[facing=east]");
+            fill(x2, yy + 1, z1 + 1, x2, yy + 1, z2 - 1, stairs + "[facing=west]");
+            x1++;
+            z1++;
+            x2--;
+            z2--;
+            yy += 2;
+            course++;
+        }
+        fill(x1, yy, z1, x2, yy, z2, full);
+        return yy;
+    }
+
     /** Smooth pyramid with stair-block faces; returns the apex height. */
     int smoothPyramid(int x1, int z1, int x2, int z2, int y, String full, String stairs) {
         int yy = y;
@@ -1056,6 +1326,7 @@ final class EasternKit {
     /** Broken walls of random heights around a tile rectangle, a rubble-strewn floor and an opening. */
     void ruin(int tx1, int ty1, int tx2, int ty2, int h, String[] mats, String floor, long seed) {
         int[] q = r(tx1, ty1, tx2, ty2);
+        take(q[0] - 1, q[1] - 1, q[2] + 1, q[3] + 1);
         Random rnd = new Random(seed);
         if (floor != null) {
             fill(q[0], g - 1, q[1], q[2], g - 1, q[3], floor);
@@ -1115,6 +1386,7 @@ final class EasternKit {
 
     /** A standing (optionally broken) pillar of {@code h} blocks with a capital. */
     void pillar(int x, int z, int h, String block, String cap) {
+        take(x - 1, z - 1, x + 1, z + 1);
         fill(x, g, z, x, g + h - 1, z, block);
         if (cap != null) {
             set(x, g + h, z, cap);
@@ -1125,6 +1397,7 @@ final class EasternKit {
     void palm(int tx, int ty, int h) {
         int x = bx(tx);
         int z = bz(ty);
+        take(x - 2, z - 2, x + 2, z + 2);
         if (!legacy) {
             d.palm(x, z, h + 1, tx * 31L + ty);
             return;
@@ -1144,6 +1417,7 @@ final class EasternKit {
     void tree(int tx, int ty, int h, String log, String leaves) {
         int x = bx(tx);
         int z = bz(ty);
+        take(x - 2, z - 2, x + 2, z + 2);
         if (!legacy) {
             d.tree(x, z, h + 1, log, leaves, tx * 17L + ty);
             return;
@@ -1159,6 +1433,7 @@ final class EasternKit {
     void deadTree(int tx, int ty, int h) {
         int x = bx(tx);
         int z = bz(ty);
+        take(x - 2, z - 2, x + 2, z + 2);
         if (!legacy) {
             d.deadTree(x, z, h + 1, tx * 13L + ty);
             return;
@@ -1246,6 +1521,7 @@ final class EasternKit {
 
     /** Fountain: stone basin with water and a central spout. */
     void fountain(int x, int z, int radius, String rim, String spout) {
+        take(x - radius - 2, z - radius - 2, x + radius + 2, z + radius + 2);
         ring(x, g - 1, g, z, radius + 0.5, radius - 0.5, rim);
         disc(x, g - 2, z, radius - 0.5, rim);
         disc(x, g - 1, z, radius - 0.5, WATER);
@@ -1254,6 +1530,7 @@ final class EasternKit {
 
     /** A canvas tent (A-frame of wool) over a block rectangle running north-south. */
     void tent(int x1, int z1, int x2, int z2, String wool) {
+        take(x1 - 2, z1 - 2, x2 + 2, z2 + 2);
         int w = x2 - x1;
         for (int i = 0; i <= w / 2; i++) {
             fill(x1 + i, g + i, z1, x1 + i, g + i, z2, wool);

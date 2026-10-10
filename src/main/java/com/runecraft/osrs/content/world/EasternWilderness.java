@@ -166,6 +166,16 @@ final class EasternWilderness {
         k.campfire(bx(3021), bz(3624));
         k.set(bx(3040), g, bz(3624), "minecraft:hay_block");
         k.set(bx(3040), g, bz(3625), "minecraft:barrel[facing=up]");
+        // Black banners on the towers, a weapon rack and training dummies in the yard, rubble by the walls.
+        for (int[] t : new int[][]{{3016, 3619}, {3044, 3619}, {3016, 3643}, {3044, 3643}}) {
+            k.set(cx(t[0]), g + 8, cz(t[1]) + 3, "minecraft:black_wall_banner[facing=south]");
+        }
+        k.set((keep[0] + keep[2]) / 2 - 2, g + 3, keep[3] + 1, "minecraft:black_wall_banner[facing=south]");
+        for (int x = bx(3020); x <= bx(3026); x += 3) {
+            k.fill(x, g, bz(3627), x, g + 1, bz(3627), "minecraft:spruce_fence");
+            k.set(x, g + 2, bz(3627), "minecraft:carved_pumpkin[facing=south]");
+        }
+        k.dressTown(3017, 3620, 3043, 3642, "wild", 8, 322);
         return k.build();
     }
 
@@ -189,6 +199,7 @@ final class EasternWilderness {
         k.tentT(3044, 3694, 3047, 3698, "minecraft:brown_wool");
         k.campfire(bx(3040), bz(3700));
         k.set(bx(3038), g, bz(3697), "minecraft:chest[facing=east]");
+        k.dressTown(3028, 3692, 3052, 3710, "wild", 8, 323);
         return k.build();
     }
 
@@ -234,6 +245,58 @@ final class EasternWilderness {
         k.tree(3143, 3636, 5, "minecraft:oak_log", "minecraft:oak_leaves");
         k.tree(3135, 3636, 4, "minecraft:birch_log", "minecraft:birch_leaves");
         k.tree(3143, 3628, 4, "minecraft:birch_log", "minecraft:birch_leaves");
+        // Blue-and-white banners of the enclave over each gate, portcullises raised in the gate arches,
+        // guard posts with weapon racks, clipped hedges and flower beds round the garden, benches, and the
+        // inn's sign and beer garden.
+        for (int[] gt : new int[][]{{3138, 3617, 3140, 3617, 0}, {3138, 3647, 3140, 3647, 1}, {3123, 3631, 3123, 3633, 2},
+                {3155, 3631, 3155, 3633, 3}}) {
+            int[] q = r(gt[0], gt[1], gt[2], gt[3]);
+            String[] face = {"north", "south", "west", "east"};
+            String[] in = {"south", "north", "east", "west"};
+            k.fill(q[0], g + 4, q[1], q[2], g + 4, q[3], "minecraft:iron_bars");
+            if (gt[4] < 2) {
+                int z = gt[4] == 0 ? q[1] - 1 : q[3] + 1;
+                int zi = gt[4] == 0 ? q[3] + 1 : q[1] - 1;
+                k.set(q[0] - 1, g + 4, z, "minecraft:blue_wall_banner[facing=" + face[gt[4]] + "]");
+                k.set(q[2] + 1, g + 4, z, "minecraft:white_wall_banner[facing=" + face[gt[4]] + "]");
+                k.set(q[0] - 1, g + 3, zi, "minecraft:lantern[hanging=true]");
+                k.set(q[2] + 1, g + 3, zi, "minecraft:lantern[hanging=true]");
+                k.set(q[0] - 2, g, zi, "minecraft:barrel[facing=up]");
+                k.set(q[2] + 2, g, zi, "minecraft:grindstone[face=floor,facing=" + in[gt[4]] + "]");
+            } else {
+                int x = gt[4] == 2 ? q[0] - 1 : q[2] + 1;
+                int xi = gt[4] == 2 ? q[2] + 1 : q[0] - 1;
+                k.set(x, g + 4, q[1] - 1, "minecraft:blue_wall_banner[facing=" + face[gt[4]] + "]");
+                k.set(x, g + 4, q[3] + 1, "minecraft:white_wall_banner[facing=" + face[gt[4]] + "]");
+                k.set(xi, g + 3, q[1] - 1, "minecraft:lantern[hanging=true]");
+                k.set(xi, g + 3, q[3] + 1, "minecraft:lantern[hanging=true]");
+                k.set(xi, g, q[1] - 2, "minecraft:barrel[facing=up]");
+            }
+        }
+        for (int[] t : new int[][]{{3123, 3617}, {3155, 3617}, {3123, 3647}, {3155, 3647}}) {
+            k.set(cx(t[0]), g + 9, cz(t[1]) + 3, "minecraft:blue_wall_banner[facing=south]");
+        }
+        // Garden: hedges along the paths, flower beds in the corners, benches facing the fountain.
+        int[] gd = r(3134, 3627, 3144, 3637);
+        for (int[] h : new int[][]{{gd[0], gd[1], gd[0] + 5, gd[1]}, {gd[2] - 5, gd[1], gd[2], gd[1]}, {gd[0], gd[3], gd[0] + 5, gd[3]},
+                {gd[2] - 5, gd[3], gd[2], gd[3]}}) {
+            k.fill(h[0], g, h[1], h[2], g, h[3], "minecraft:oak_leaves[persistent=true]");
+        }
+        k.d.flowerBed(gd[0] + 1, gd[1] + 2, gd[0] + 4, gd[1] + 5, "minecraft:stone_brick_slab[type=top]", 332);
+        k.d.flowerBed(gd[2] - 4, gd[3] - 5, gd[2] - 1, gd[3] - 2, "minecraft:stone_brick_slab[type=top]", 333);
+        k.d.bench(cxg - 1, czg - 3, true, "south", "minecraft:spruce");
+        k.d.bench(cxg + 2, czg + 5, true, "north", "minecraft:spruce");
+        // The inn: sign, a beer garden with tables, kegs by the wall.
+        k.set((inn[0] + inn[2]) / 2 - 2, g + 3, inn[1] - 1, "minecraft:blue_wall_banner[facing=north]");
+        for (int x = inn[0] + 2; x < inn[2] - 2; x += 5) {
+            k.set(x, g, inn[1] - 3, "minecraft:spruce_slab[type=top]");
+            k.set(x - 1, g, inn[1] - 3, "minecraft:spruce_stairs[facing=east]");
+            k.set(x + 1, g, inn[1] - 3, "minecraft:spruce_stairs[facing=west]");
+        }
+        k.fill(inn[2] - 1, g, inn[3] + 1, inn[2] - 1, g + 1, inn[3] + 1, "minecraft:barrel[facing=north]");
+        k.take(gd[0] - 1, gd[1] - 1, gd[2] + 1, gd[3] + 1);
+        k.take(inn[0], inn[1] - 4, inn[2], inn[1]);
+        k.dressTown(3123, 3617, 3155, 3647, "ferox", 14, 334);
         return k.build();
     }
 
@@ -306,6 +369,16 @@ final class EasternWilderness {
         statue(k, x - 7, z + 5, "minecraft:mossy_stone_bricks", "minecraft:green_wool", "minecraft:moss_block");
         statue(k, x + 7, z + 5, "minecraft:red_nether_bricks", "minecraft:red_wool", "minecraft:black_wool");
         k.disc(x, g - 1, z, 3.5, "minecraft:chiseled_stone_bricks");
+        // Braziers on the rim, cracked flagstones and scorch marks from the duels.
+        for (int a = 0; a < 8; a++) {
+            double ang = a * Math.PI / 4 + Math.PI / 8;
+            int px = x + (int) Math.round(Math.cos(ang) * 26);
+            int pz = z + (int) Math.round(Math.sin(ang) * 26);
+            k.fill(px, g, pz, px, g + 1, pz, "minecraft:chiseled_stone_bricks");
+            k.set(px, g + 2, pz, a % 2 == 0 ? "minecraft:campfire" : "minecraft:soul_campfire");
+        }
+        k.d.weather(x - 28, g - 1, z - 28, x + 28, g - 1, z + 28, GRAVEL, "minecraft:black_concrete_powder", 20, 353);
+        k.d.weather(x - 31, g, z - 31, x + 31, g + 5, z + 31, STONE_BRICKS, MOSSY_BRICKS, 50, 354);
         return k.build();
     }
 
@@ -490,6 +563,14 @@ final class EasternWilderness {
         k.campfire(bx(3290), bz(3926));
         k.set(bx(3279), g, bz(3925), "minecraft:barrel[facing=up]");
         k.set(bx(3280), g, bz(3925), "minecraft:barrel[facing=up]");
+        // Red banners, a weathered keep, stacked loot crates and a broken cart in the bailey.
+        for (int[] t : new int[][]{{3276, 3922}, {3296, 3922}, {3276, 3944}, {3296, 3944}}) {
+            k.set(cx(t[0]), g + 10, cz(t[1]) + 4, "minecraft:red_wall_banner[facing=south]");
+        }
+        k.buttresses(keep, 8, STONE_BRICKS, "minecraft:stone_brick_stairs", 3);
+        k.d.crates(bx(3283), bz(3926), 392);
+        k.d.crates(bx(3292), bz(3940), 393);
+        k.dressTown(3277, 3923, 3295, 3943, "wild", 6, 394);
         return k.build();
     }
 
@@ -529,6 +610,14 @@ final class EasternWilderness {
         }
         k.set(mx, g + 6, t[1] + 1, "minecraft:red_wall_banner[facing=south]");
         k.set(mx + 1, g + 6, t[1] + 1, "minecraft:red_wall_banner[facing=south]");
+        // Blackstone buttresses, braziers at the door and bone-strewn approach.
+        k.buttresses(t, 8, BLACKSTONE, "minecraft:blackstone_stairs", 3);
+        int dmx = (t[0] + t[2]) / 2;
+        for (int x : new int[]{dmx - 3, dmx + 4}) {
+            k.set(x, g, t[3] + 2, "minecraft:polished_blackstone_bricks");
+            k.set(x, g + 1, t[3] + 2, "minecraft:soul_campfire");
+        }
+        k.dressTown(2944, 3810, 2962, 3830, "wild", 5, 303);
         return k.build();
     }
 
@@ -572,6 +661,13 @@ final class EasternWilderness {
         k.campfire(bx(3042), bz(3948));
         k.fill(bx(3040), g, bz(3949), bx(3040), g + 4, bz(3949), "minecraft:spruce_fence");
         k.set(bx(3040), g + 5, bz(3949), "minecraft:black_wool");
+        // The Jolly Roger, stacked cargo and a cannon by the gate.
+        k.set(bx(3040) + 1, g + 5, bz(3949), "minecraft:black_wool");
+        k.set(bx(3040) + 1, g + 4, bz(3949), "minecraft:white_wool");
+        k.d.crates(bx(3046), bz(3950), 556);
+        k.set(bx(3043), g, bz(3945), "minecraft:polished_blackstone_bricks");
+        k.set(bx(3043), g + 1, bz(3945), "minecraft:black_concrete");
+        k.set(bx(3044), g + 1, bz(3945), "minecraft:anvil[facing=east]");
         return k.build();
     }
 
