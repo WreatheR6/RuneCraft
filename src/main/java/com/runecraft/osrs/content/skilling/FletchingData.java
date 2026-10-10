@@ -33,7 +33,7 @@ public final class FletchingData extends SkillingPart {
             new Crossbow("blurite_crossbow", "Blurite crossbow", "oak_stock", "blurite_limbs", 24, 32.0, 16.0, 30, 16, 0x5A7AD0),
             new Crossbow("iron_crossbow", "Iron crossbow", "willow_stock", "iron_limbs", 39, 44.0, 22.0, 42, 26, 0x8A8A8E),
             new Crossbow("steel_crossbow", "Steel crossbow", "teak_stock", "steel_limbs", 46, 54.0, 27.0, 54, 31, 0xB8B8C0),
-            new Crossbow("mithril_crossbow", "Mithril crossbow", "maple_stock", "mithril_limbs", 54, 64.0, 32.0, 66, 36, 0x4A5A9C),
+            new Crossbow("mithril_crossbow", "Mith crossbow", "maple_stock", "mithril_limbs", 54, 64.0, 32.0, 66, 36, 0x4A5A9C),
             new Crossbow("adamant_crossbow", "Adamant crossbow", "mahogany_stock", "adamant_limbs", 61, 82.0, 41.0, 78, 46, 0x4C7A4C),
             new Crossbow("rune_crossbow", "Rune crossbow", "yew_stock", "rune_limbs", 69, 100.0, 50.0, 90, 61, 0x4FB8C8),
             new Crossbow("dragon_crossbow", "Dragon crossbow", "magic_stock", "dragon_limbs", 78, 135.0, 70.0, 94, 64, 0xB02020));

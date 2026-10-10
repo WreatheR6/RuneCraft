@@ -106,10 +106,11 @@ public final class SmithingData extends SkillingPart {
                     s.add(id, name(t) + " knife", Kind.ARROW, a.shape, t.color()).value(base * 2).rangedStrength(knifeStrength(t))
                             .tier(t.id()).examine("A finely balanced throwing knife.");
                 } else {
-                    simple(s, id, t.displayName() + " " + a.name, a.shape, t.color(), base);
+                    String metal = t == MetalTier.RUNE && a.suffix.equals("bolts_unf") ? "Runite" : t.displayName();
+                    simple(s, id, metal + " " + a.name, a.shape, t.color(), base);
                 }
             }
-            simple(s, t.id() + "_limbs", (t == MetalTier.MITHRIL ? "Mithril" : name(t)) + " limbs", "limbs", t.color(), base * 4);
+            simple(s, t.id() + "_limbs", (t == MetalTier.RUNE ? "Runite" : t.displayName()) + " limbs", "limbs", t.color(), base * 4);
         }
         simple(s, "steel_studs", "Steel studs", "nails", 0xB8B8C0, 20);
         simple(s, "cannonball", "Cannonball", "cannonball", 0x5A5A60, 5).examine("Ammo for the Dwarf Cannon.");
@@ -134,7 +135,7 @@ public final class SmithingData extends SkillingPart {
                         + (a.suffix.equals("dart_tip") ? "s" : ""));
                 smith(out, id, name, a.amount, t, 1, t.smithingBase() + a.offset);
             }
-            smith(out, t.id() + "_limbs", (t == MetalTier.MITHRIL ? "Mithril" : name(t)) + " limbs", 1, t, 1, limbsLevel(t));
+            smith(out, t.id() + "_limbs", (t == MetalTier.RUNE ? "Runite" : t.displayName()) + " limbs", 1, t, 1, limbsLevel(t));
         }
         smith(out, "steel_studs", "Steel studs", 1, MetalTier.STEEL, 1, 36);
         out.accept(r("smith_cannonball", MenuType.SMELTING, "4 cannonballs", Skill.SMITHING, 35, 25.6).in("steel_bar", 1)
