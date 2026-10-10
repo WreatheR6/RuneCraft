@@ -6,7 +6,8 @@ import java.util.List;
 
 /**
  * Scripted dungeon blocks: the Stronghold of Security's doors and reward chests, Brimhaven's
- * vines, the Mining Guild door and the Abyss rifts.
+ * vines, the Mining Guild door, the Abyss rifts and the Barrows' sarcophagi, crypt stairs, tunnel
+ * doors and chest (see {@link Barrows}).
  */
 public final class DungeonBlocks {
     private DungeonBlocks() {
@@ -53,6 +54,10 @@ public final class DungeonBlocks {
                 BlockDef.scripted(VINES, "Vines", 0x3A7A2A, "young_tree"),
                 BlockDef.scripted(MINING_GUILD_DOOR, "Mining Guild door", 0x5A4A3A, "door"),
                 BlockDef.scripted(RIFT, "Abyssal rift", 0x8A2AA0, "portal_glow"),
-                BlockDef.scripted(ABYSS_PASSAGE, "Passage", 0x3A1A3A, "boulder"));
+                BlockDef.scripted(ABYSS_PASSAGE, "Passage", 0x3A1A3A, "boulder"),
+                BlockDef.scripted(Barrows.SARCOPHAGUS, "Sarcophagus", 0x5A5856, "coffin"),
+                BlockDef.scripted(Barrows.CRYPT_STAIRS, "Crypt stairs", 0x3A3A3A, "statue"),
+                BlockDef.scripted(Barrows.TUNNEL_DOOR, "Crypt door", 0x4A3A2A, "door"),
+                BlockDef.scripted(Barrows.CHEST, "Barrows chest", 0x6A5A3A, "chest"));
     }
 }

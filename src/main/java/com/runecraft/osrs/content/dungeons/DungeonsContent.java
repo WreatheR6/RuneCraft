@@ -22,7 +22,7 @@ import java.util.Map;
  * Cave, the Slayer Tower basement, the Fremennik Slayer Dungeon, the Smoke Dungeon, the Kalphite
  * Lair, the Dwarven Mine with the Mining Guild and the Motherlode Mine, the Lumbridge Swamp Caves,
  * the caves below the Lumbridge Castle cellar leading to Dorgesh-Kaan, the Waterfall Dungeon, the
- * Ancient Cavern, the Mos Le'Harmless caves, the Lizardman Caves, the Karuulm Slayer Dungeon, the
+ * Ancient Cavern, the Barrows crypts and tunnels, the Mos Le'Harmless caves, the Lizardman Caves, the Karuulm Slayer Dungeon, the
  * Kraken Cove, the Smoke Devil Dungeon, the Iorwerth Dungeon, the Wyvern Cave, the Lithkren Vault,
  * the Chasm of Fire, the Abyss (with rifts to the rune altars) and the TzHaar city.
  */

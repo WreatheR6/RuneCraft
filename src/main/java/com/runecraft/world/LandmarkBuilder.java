@@ -309,7 +309,8 @@ public final class LandmarkBuilder {
         int cz = landmark.blockZ();
         if (!landmark.isAltar() && replacedBuild(world, landmark.name(), cx, cz, landmark.stations(), List.of())) {
             for (Boss b : Boss.values()) {
-                if (b.lair() == landmark) {
+                // The Barrows brothers are summoned from their sarcophagi in the crypts (dungeons module).
+                if (b.lair() == landmark && landmark != Landmark.BARROWS) {
                     int lx = cx - 6 + b.ordinal() % 4 * 2;
                     int lz = cz + 12;
                     buildLair(world, new BlockPos(lx, world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, lx, lz), lz), b);
@@ -367,7 +368,7 @@ public final class LandmarkBuilder {
         // Lair for bosses based here.
         int lair = 0;
         for (Boss b : Boss.values()) {
-            if (b.lair() == landmark) {
+            if (b.lair() == landmark && landmark != Landmark.BARROWS) {
                 BlockPos p = new BlockPos(cx - inner + lair * 2, y + 1, cz + radius + 4);
                 buildLair(world, p, b);
                 lair++;

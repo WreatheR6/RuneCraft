@@ -9,7 +9,8 @@ import static com.runecraft.osrs.content.dungeons.Cave.mc;
 
 /**
  * Morytania and the northern isles: the Slayer Tower basement (carved under the tower the world
- * module built, entered from outside it), the Fossil Island Wyvern Cave and the Lithkren Vault.
+ * module built, entered from outside it), the Barrows crypts and tunnels, the Fossil Island Wyvern
+ * Cave and the Lithkren Vault.
  */
 final class DungeonsEast {
     private DungeonsEast() {
@@ -20,6 +21,7 @@ final class DungeonsEast {
         out.add(slayerTowerBasement());
         out.add(wyvernCave());
         out.add(lithkrenVault());
+        out.add(Barrows.dungeon());
         return out;
     }
 
