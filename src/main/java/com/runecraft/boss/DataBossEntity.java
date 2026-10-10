@@ -178,7 +178,8 @@ public class DataBossEntity extends OsrsMonsterEntity {
             dropStack(Inv.stack(r.item(), r.count()));
             CollectionLog.obtain(player, r.item());
         }
-        if (def.pet != null && getRandom().nextInt(3000) == 0) {
+        int petRate = com.runecraft.osrs.content.extras.Pets.engineRate(def.id);
+        if (def.pet != null && petRate > 0 && getRandom().nextInt(petRate) == 0) {
             Inv.give(player, def.pet, 1);
             CollectionLog.obtain(player, def.pet);
             player.getServer().getPlayerManager().broadcast(Text.literal(player.getName().getString()

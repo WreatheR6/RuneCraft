@@ -1,6 +1,7 @@
 package com.runecraft.osrs.content;
 
 import com.runecraft.osrs.content.bosses.BossesContent;
+import com.runecraft.osrs.content.extras.ExtrasContent;
 import com.runecraft.osrs.content.godwars.GodWarsWildernessContent;
 import com.runecraft.osrs.content.minigames.MinigamesContent;
 import com.runecraft.osrs.content.npcs.NpcsContent;
@@ -27,7 +28,8 @@ public final class Modules {
             new MinigamesContent(),
             new WorldContent(),
             new NpcsContent(),
-            new ZeahContent());
+            new ZeahContent(),
+            new ExtrasContent());
 
     private Modules() {
     }
