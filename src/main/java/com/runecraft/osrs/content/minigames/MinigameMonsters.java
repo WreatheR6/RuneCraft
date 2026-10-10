@@ -180,10 +180,7 @@ public final class MinigameMonsters {
                 .defenceBonus(0, 0, 0, 350, 100).model("tzkal_zuk")
                 .attack(AttackDef.of("typeless", AttackType.MAGIC, 148, 30, 10).special(Special.PRAYER_PIERCING, 0)
                         .particle("minecraft:flame").message("TzKal-Zuk unleashes a blast of fire!"))
-                .phase(50, "Ahh! My shield has broken!", 1.0, false,
-                        AttackDef.of("typeless", AttackType.MAGIC, 148, 30, 10).special(Special.PRAYER_PIERCING, 0)
-                                .particle("minecraft:flame"))
-                .raidOnly().category("Minigames").arena(16, "lava").size(2.0f, 3.5f, 2.6f)
+                .moveSpeed(0.0).raidOnly().category("Minigames").arena(16, "lava").size(2.0f, 3.5f, 2.6f)
                 .skin(0xC04010, 0x803010, 0x501808, 0xFFD040));
         list.add(BossDef.of("penance_queen", "Penance Queen").level(209).stats(250, 300, 200, 260, 1, 1).speed(5)
                 .model("penance_queen")
