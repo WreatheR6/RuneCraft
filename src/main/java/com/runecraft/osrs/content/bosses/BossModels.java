@@ -41,14 +41,10 @@ public final class BossModels {
                 gargoyle("dusk", 0x3A3A4A, 0x6A6AA0, false),
                 gargoyle("dawn", 0xA09A8A, 0xE0D8B0, true),
                 corp(), skotizo(), hespori(),
-                hunllef("crystalline_hunllef", 0x7AC0E0, 0xD0F0FF),
-                hunllef("corrupted_hunllef", 0x9A2A2A, 0xF06040),
-                nightmare("the_nightmare", 0x2A2A3A, 0x9A4AC0),
-                nightmare("phosanis_nightmare", 0x3A2A2A, 0xC04A4A),
                 muspah(), duke(), leviathan(), whisperer(), vardorvis(), scurrius(), araxxor(), hueycoatl(), amoxliatl(),
                 titan("branda_the_fire_queen", 0xC0502A, 0xFFB040, 0xE0C040),
                 titan("eldric_the_ice_king", 0x6A9AC8, 0xD0F0FF, 0xC0C0D0),
-                zalcano(), mimic(), solHeredit()));
+                mimic(), solHeredit()));
         list.addAll(MinionModels.all());
         return list;
     }
@@ -352,43 +348,6 @@ public final class BossModels {
         return b.build();
     }
 
-    static ModelSpec hunllef(String id, int crystal, int light) {
-        ModelSpec.Builder b = ModelSpec.builder(id).shadow(1.5f);
-        b.part("torso", null, Role.BODY, crystal, light).pivot(0, 9, 0).box(-8, -7, -10, 16, 13, 20).pattern("plates");
-        b.part("crystals", "torso", Role.STATIC, light, crystal).pivot(0, -7, 0).box(-5, -6, -8, 3, 6, 3).box(2, -8, -4, 3, 8, 3)
-                .box(-3, -7, 1, 3, 7, 3).box(3, -5, 5, 2, 5, 2).pattern("glow");
-        b.part("head", "torso", Role.HEAD, crystal, 0xFFFFFF).pivot(0, -2, -10).box(-5, -5, -8, 10, 9, 8).pattern("eyes");
-        b.part("head_crystals", "head", Role.STATIC, light).pivot(0, -5, -2).rotate(-20, 0, 0).box(-5, -5, 0, 2, 5, 2).box(3, -5, 0, 2, 5, 2);
-        b.part("jaw", "head", Role.JAW, crystal).pivot(0, 3, -2).box(-4, 0, -7, 8, 2, 7).pattern("stripes");
-        b.part("leg_fl", null, Role.LEG_FRONT_LEFT, crystal).pivot(7, 11, -7).box(-2.5f, 0, -2.5f, 5, 13, 5);
-        b.part("leg_fr", null, Role.LEG_FRONT_RIGHT, crystal).pivot(-7, 11, -7).box(-2.5f, 0, -2.5f, 5, 13, 5);
-        b.part("leg_bl", null, Role.LEG_BACK_LEFT, crystal).pivot(6, 14, 7).box(-2.5f, 0, -2.5f, 5, 10, 6);
-        b.part("leg_br", null, Role.LEG_BACK_RIGHT, crystal).pivot(-6, 14, 7).box(-2.5f, 0, -2.5f, 5, 10, 6);
-        String tail = chainZ(b, "tail", "torso", Role.TAIL, crystal, 4, 0, -2, 10, 1, 5, 5, 6, 8, "plates");
-        b.part("tail_crystal", tail, Role.STATIC, light).pivot(0, 0, 6).box(-1.5f, -4, 0, 3, 6, 4).pattern("glow");
-        return b.build();
-    }
-
-    static ModelSpec nightmare(String id, int robe, int glow) {
-        ModelSpec.Builder b = ModelSpec.builder(id).shadow(1.4f);
-        b.part("robe", null, Role.FLOAT, robe, glow).pivot(0, 8, 0).box(-6, -12, -4, 12, 14, 8).box(-8, 2, -6, 16, 10, 12)
-                .pattern("stripes");
-        b.part("head", "robe", Role.HEAD, 0xD8D0E0, glow).pivot(0, -12, 0).box(-4, -8, -4, 8, 8, 8).pattern("eyes");
-        b.part("hood", "head", Role.STATIC, robe).pivot(0, -8, 1).box(-5, -1, -4, 10, 9, 8, 0.25f);
-        b.part("crown", "head", Role.STATIC, glow).pivot(0, -9, 0).box(-4, -3, -1, 1, 3, 1).box(-0.5f, -4, -1, 1, 4, 1)
-                .box(3, -3, -1, 1, 3, 1).pattern("glow");
-        b.part("arm_l", "robe", Role.ARM_LEFT, robe).pivot(6, -10, 0).box(0, -1, -1.5f, 3, 17, 3);
-        b.part("claw_l", "arm_l", Role.STATIC, 0xD8D0E0).pivot(1.5f, 16, 0).box(-1.5f, 0, -2, 1, 6, 1).box(0, 0, -2, 1, 7, 1)
-                .box(1, 0, -2, 1, 6, 1);
-        b.part("arm_r", "robe", Role.ARM_RIGHT, robe).pivot(-6, -10, 0).box(-3, -1, -1.5f, 3, 17, 3);
-        b.part("claw_r", "arm_r", Role.STATIC, 0xD8D0E0).pivot(-1.5f, 16, 0).box(-1.5f, 0, -2, 1, 6, 1).box(-0.5f, 0, -2, 1, 7, 1)
-                .box(0.5f, 0, -2, 1, 6, 1);
-        for (int i = 0; i < 4; i++) {
-            chainDown(b, "tendril" + i + "_", "robe", Role.TENTACLE, robe, 2, -4.5f + i * 3, -8, 4, 2, 8, 30, 180, "none");
-        }
-        return b.build();
-    }
-
     static ModelSpec muspah() {
         int body = 0x5A6A8A;
         int ice = 0xA0D0F0;
@@ -565,22 +524,6 @@ public final class BossModels {
         b.part("arm_r", "torso", Role.ARM_RIGHT, skin).pivot(-7, -11, 0).box(-5, -1, -2.5f, 5, 14, 5).box(-5.5f, 12, -3, 6, 5, 6);
         b.part("aura", "torso", Role.SPIN, element).pivot(0, -14, 0).box(-11, 0, -1, 2, 2, 2).box(9, -2, 0, 2, 2, 2).box(0, 2, 9, 2, 2, 2);
         legs2(b, "leg", 0x5A4A3A, 3.5f, 0, 14, 5);
-        return b.build();
-    }
-
-    static ModelSpec zalcano() {
-        int rock = 0x5A4A4A;
-        int core = 0xE07020;
-        ModelSpec.Builder b = ModelSpec.builder("zalcano").shadow(1.5f);
-        b.part("torso", null, Role.BODY, rock, core).pivot(0, 8, 0).box(-7, -10, -4, 14, 14, 8).pattern("spots");
-        b.part("core", "torso", Role.SPIN, core, 0xFFE040).pivot(0, -4, -4.5f).box(-2, -2, -1, 4, 4, 2).pattern("glow");
-        b.part("head", "torso", Role.HEAD, rock, 0xFFA040).pivot(0, -10, 0).box(-4, -8, -4, 8, 8, 8).pattern("eyes");
-        b.part("rock_hair", "head", Role.STATIC, 0x3A2A2A, core).pivot(0, -8, 1).box(-5, -4, -3, 3, 4, 3).box(-1, -5, -2, 3, 5, 3)
-                .box(2, -3, -3, 3, 3, 3).box(-2, -2, 2, 4, 4, 3).pattern("glow");
-        b.part("shoulders", "torso", Role.STATIC, 0x4A3A3A).pivot(0, -10, 0).box(-11, -2, -3, 5, 5, 6).box(6, -2, -3, 5, 5, 6);
-        b.part("arm_l", "torso", Role.ARM_LEFT, rock).pivot(9, -7, 0).box(-1, 0, -2.5f, 5, 14, 5).box(-1.5f, 12, -3, 6, 5, 6);
-        b.part("arm_r", "torso", Role.ARM_RIGHT, rock).pivot(-9, -7, 0).box(-4, 0, -2.5f, 5, 14, 5).box(-4.5f, 12, -3, 6, 5, 6);
-        legs2(b, "leg", rock, 3.5f, 0, 12, 5);
         return b.build();
     }
 
