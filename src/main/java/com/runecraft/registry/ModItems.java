@@ -84,9 +84,10 @@ public final class ModItems {
     }
 
     private static OsrsArmorMaterial armorMaterial(String tier) {
-        return ARMOR_MATERIALS.computeIfAbsent(tier, t -> new OsrsArmorMaterial(t,
+        // Untiered armour (robes, hats, outfits) shares the cloth-style "runecraft_null" textures.
+        return ARMOR_MATERIALS.computeIfAbsent(tier == null ? "null" : tier, t -> new OsrsArmorMaterial(t,
                 switch (t) {
-                    case "leather" -> 1;
+                    case "leather", "null" -> 1;
                     case "barrows", "bandos" -> 8;
                     default -> metal(t).ordinal() + 1;
                 }));
