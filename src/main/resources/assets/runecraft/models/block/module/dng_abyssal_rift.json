@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/dng_abyssal_rift_side",
+    "top": "runecraft:block/module/dng_abyssal_rift_top",
+    "bottom": "runecraft:block/module/dng_abyssal_rift_bottom"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/dng_portal_of_death_side",
+    "top": "runecraft:block/module/dng_portal_of_death_top",
+    "bottom": "runecraft:block/module/dng_portal_of_death_bottom"
+  }
+}
