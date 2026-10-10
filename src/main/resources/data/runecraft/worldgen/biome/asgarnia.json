@@ -143,6 +143,24 @@
         "weight": 2,
         "minCount": 1,
         "maxCount": 2
+      },
+      {
+        "type": "runecraft:woman",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:dwarf",
+        "weight": 1,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:highwayman",
+        "weight": 1,
+        "minCount": 1,
+        "maxCount": 1
       }
     ],
     "creature": [

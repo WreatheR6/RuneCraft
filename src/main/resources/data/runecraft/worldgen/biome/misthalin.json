@@ -125,6 +125,24 @@
         "weight": 2,
         "minCount": 1,
         "maxCount": 3
+      },
+      {
+        "type": "runecraft:woman",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:farmer",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:mugger",
+        "weight": 1,
+        "minCount": 1,
+        "maxCount": 1
       }
     ],
     "creature": [

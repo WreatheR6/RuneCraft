@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/zeah_sunlight_antelope_pit_side",
+    "top": "runecraft:block/module/zeah_sunlight_antelope_pit_top",
+    "bottom": "runecraft:block/module/zeah_sunlight_antelope_pit_bottom"
+  }
+}

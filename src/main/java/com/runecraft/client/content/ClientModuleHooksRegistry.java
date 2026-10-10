@@ -9,6 +9,7 @@ import com.runecraft.client.content.quests.QuestsClientHooks;
 import com.runecraft.client.content.systems.SystemsClientHooks;
 import com.runecraft.client.content.minigames.MinigamesClientHooks;
 import com.runecraft.client.content.npcs.NpcsClientHooks;
+import com.runecraft.client.content.zeah.ZeahClientHooks;
 
 import java.util.List;
 
@@ -23,7 +24,8 @@ public final class ClientModuleHooksRegistry {
             new QuestsClientHooks(),
             new SystemsClientHooks(),
             new MinigamesClientHooks(),
-            new NpcsClientHooks());
+            new NpcsClientHooks(),
+            new ZeahClientHooks());
 
     private ClientModuleHooksRegistry() {
     }

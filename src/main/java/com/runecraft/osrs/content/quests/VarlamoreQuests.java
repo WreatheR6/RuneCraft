@@ -22,10 +22,7 @@ final class VarlamoreQuests {
     }
 
     static void register(QuestBook b) {
-        b.place("quest_civitas_illa_fortis", "Civitas illa Fortis", 1680, 3130, PlaceDef.Style.TOWN);
         b.place("quest_cam_torum", "Cam Torum", 1440, 3110, PlaceDef.Style.CAVE);
-        b.place("quest_hunter_guild", "Hunter Guild", 1558, 3046, PlaceDef.Style.TOWN);
-        b.place("quest_aldarin", "Aldarin", 1385, 2945, PlaceDef.Style.TOWN);
         b.spot("quest_villa_lucens", "Villa Lucens", 1450, 2968);
         b.place("quest_tal_teklan", "Tal Teklan", 1225, 3090, PlaceDef.Style.CAMP);
         b.place("quest_ralos_rise", "Ralos' Rise", 1460, 3330, PlaceDef.Style.RUINS);
@@ -62,7 +59,7 @@ final class VarlamoreQuests {
 
     private static void twilightsPromise(QuestBook b) {
         Cast.npc(b, "prince_itzla_arkan", "Prince Itzla Arkan", "quest_sunrise_palace", 0, 2, Cast.TAN, 0xE0B040);
-        Cast.npc(b, "quest_civitas_guard_captain", "Guard captain", "quest_civitas_illa_fortis", 3, 3, Cast.BROWN, 0x8A2A2A);
+        Cast.npc(b, "quest_civitas_guard_captain", "Guard captain", "zeah_civitas_illa_fortis", 3, 3, Cast.BROWN, 0x8A2A2A);
         b.item("twilight_cult_orders", "Cult orders", "note", 0x3A2A5A, "Orders from the Twilight Emissaries.");
         b.quest("twilights_promise", "Twilight's Promise", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("children_of_the_sun")
@@ -112,7 +109,7 @@ final class VarlamoreQuests {
     }
 
     private static void atFirstLight(QuestBook b) {
-        Cast.npc(b, "guildmaster_apatura", "Guildmaster Apatura", "quest_hunter_guild", 0, 3, Cast.TAN, 0x5A6A2A);
+        Cast.npc(b, "guildmaster_apatura", "Guildmaster Apatura", "zeah_hunter_guild", 0, 3, Cast.TAN, 0x5A6A2A);
         Cast.npc(b, "quest_renu_keeper", "Quetzal keeper", "avium_savannah", 2, 2, Cast.BROWN, 0x2A8A6A);
         b.item("quest_quetzal_feed", "Quetzal feed", "bait", 0xC0A040, "Food fit for a quetzal chick.");
         b.quest("at_first_light", "At First Light", Difficulty.INTERMEDIATE, 1)
@@ -154,7 +151,7 @@ final class VarlamoreQuests {
     private static void deathOnTheIsle(QuestBook b) {
         Cast.npc(b, "constantinius", "Constantinius", "quest_villa_lucens", 0, 2, Cast.TAN, 0x6A2A6A);
         Cast.npc(b, "quest_villa_steward", "Steward", "quest_villa_lucens", 3, -2, Cast.TAN, 0xE0E0D0);
-        Cast.npc(b, "quest_aldarin_guard", "Aldarin guard", "quest_aldarin", 3, 3, Cast.BROWN, 0x8A8A3A);
+        Cast.npc(b, "quest_aldarin_guard", "Aldarin guard", "zeah_aldarin", 3, 3, Cast.BROWN, 0x8A8A3A);
         b.item("quest_poisoned_goblet", "Goblet", "pot_item", 0xC0A040, "A goblet with a strange residue.");
         b.quest("death_on_the_isle", "Death on the Isle", Difficulty.INTERMEDIATE, 2)
                 .reqQuest("children_of_the_sun").req(Skill.THIEVING, 34).req(Skill.AGILITY, 32).req(Skill.CRAFTING, 22)
@@ -172,7 +169,7 @@ final class VarlamoreQuests {
 
     private static void meatAndGreet(QuestBook b) {
         Cast.npc(b, "quest_tal_teklan_chief", "Tal Teklan chieftain", "quest_tal_teklan", 0, 3, Cast.BROWN, 0x8A5A2A);
-        Cast.npc(b, "quest_civitas_envoy", "Civitas envoy", "quest_civitas_illa_fortis", -3, 3, Cast.TAN, 0xE0C060);
+        Cast.npc(b, "quest_civitas_envoy", "Civitas envoy", "zeah_civitas_illa_fortis", -3, 3, Cast.TAN, 0xE0C060);
         b.item("quest_feast_platter", "Feast platter", "meat_cooked", 0xA0603A, "A feast fit for two peoples.");
         b.quest("meat_and_greet", "Meat and Greet", Difficulty.EXPERIENCED, 1)
                 .reqQuest("children_of_the_sun").req(Skill.COOKING, 30)
@@ -229,7 +226,7 @@ final class VarlamoreQuests {
     }
 
     private static void scrambled(QuestBook b) {
-        Cast.npc(b, "quest_egg_collector", "Egg collector", "quest_hunter_guild", 3, -3, Cast.TAN, 0xE0D0A0);
+        Cast.npc(b, "quest_egg_collector", "Egg collector", "zeah_hunter_guild", 3, -3, Cast.TAN, 0xE0D0A0);
         b.items(s -> s.add("quest_quetzal_egg", "Quetzal egg", Kind.SIMPLE, "pot_item", 0xE0E0C0).value(0)
                 .examine("A large speckled egg. Handle with care."));
         b.quest("scrambled", "Scrambled!", Difficulty.NOVICE, 1)

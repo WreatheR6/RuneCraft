@@ -47,6 +47,9 @@
     "runecraft:adamant_javelin",
     "runecraft:rune_javelin",
     "runecraft:amethyst_javelin",
-    "runecraft:broad_arrows"
+    "runecraft:broad_arrows",
+    "runecraft:sunlight_antler_bolts",
+    "runecraft:moonlight_antler_bolts",
+    "runecraft:atlatl_dart"
   ]
 }
