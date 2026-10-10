@@ -1,0 +1,311 @@
+package com.runecraft.content.slayer;
+
+import com.runecraft.collection.CollectionLog;
+import com.runecraft.combat.MonsterStats;
+import com.runecraft.network.ServerNetworking;
+import com.runecraft.osrs.Region;
+import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.CombatProfile;
+import com.runecraft.osrs.content.slayer.SlayerCategories;
+import com.runecraft.osrs.content.slayer.SlayerChests;
+import com.runecraft.osrs.content.slayer.SlayerGear;
+import com.runecraft.osrs.content.slayer.SlayerMasters;
+import com.runecraft.osrs.content.slayer.SlayerRewards;
+import com.runecraft.osrs.content.slayer.SlayerTasks;
+import com.runecraft.osrs.content.slayer.Superiors;
+import com.runecraft.player.PlayerData;
+import com.runecraft.player.Players;
+import com.runecraft.registry.ModEntities;
+import com.runecraft.skill.XpService;
+import com.runecraft.util.Inv;
+import com.runecraft.util.Msg;
+import com.runecraft.world.Gielinor;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+
+import java.util.List;
+import java.util.Locale;
+import java.util.Random;
+
+/** Slayer tasks, points, streaks, keys and superiors (called through {@link com.runecraft.combat.Slayer}). */
+public final class SlayerService {
+    private SlayerService() {
+    }
+
+    public static SlayerState.Profile profile(ServerPlayerEntity player) {
+        SlayerState.Profile p = SlayerState.of(player.getServer()).get(player.getUuid());
+        if (!p.migrated) {
+            migrate(player, p);
+        }
+        return p;
+    }
+
+    /** Moves a task stored by the old core system (PlayerData) into the slayer module's state. */
+    private static void migrate(ServerPlayerEntity player, SlayerState.Profile p) {
+        p.migrated = true;
+        PlayerData data = Players.data(player);
+        p.streak = Math.max(p.streak, data.slayerStreak());
+        if (data.slayerTask() != null && data.slayerRemaining() > 0) {
+            SlayerCategories.Category c = SlayerCategories.ofBuiltIn(data.slayerTask().name());
+            if (c != null && !p.hasTask()) {
+                p.task = c.id();
+                p.remaining = data.slayerRemaining();
+                p.amount = p.remaining;
+                p.master = "turael";
+            }
+        }
+        data.setSlayerTask(null, 0);
+    }
+
+    // ------------------------------------------------------------------ masters
+
+    /** The generic slayer master station: the best master for the player's levels. */
+    public static void talkToStation(ServerPlayerEntity player) {
+        PlayerData data = Players.data(player);
+        SlayerMasters.Master m = SlayerMasters.bestFor(data.skills().combatLevel(), data.skills().level(Skill.SLAYER));
+        talk(player, m);
+    }
+
+    public static void talk(ServerPlayerEntity player, SlayerMasters.Master master) {
+        PlayerData data = Players.data(player);
+        SlayerState.Profile p = profile(player);
+        int combat = data.skills().combatLevel();
+        int slayer = data.skills().level(Skill.SLAYER);
+        if (combat < master.combatLevel() || slayer < master.slayerLevel()) {
+            say(player, master, "You're too weak to be one of my students. Come back with a combat level of "
+                    + master.combatLevel() + (master.slayerLevel() > 1 ? " and a Slayer level of " + master.slayerLevel() : "") + ".");
+            return;
+        }
+        if (p.hasTask()) {
+            boolean turaelSkip = master.id().equals("turael") && p.master != null && !p.master.equals("turael")
+                    && master.assignment(p.task) == null;
+            if (turaelSkip) {
+                say(player, master, "That's a bit much for you, isn't it? I'll give you something easier, but your task streak is reset.");
+                p.streak = 0;
+                p.task = null;
+                p.remaining = 0;
+                assign(player, master, p, combat, slayer);
+                return;
+            }
+            say(player, master, "You're still hunting " + describe(p) + "; you have " + p.remaining + " to go.");
+            menu(player, p);
+            return;
+        }
+        assign(player, master, p, combat, slayer);
+    }
+
+    private static void assign(ServerPlayerEntity player, SlayerMasters.Master master, SlayerState.Profile p, int combat,
+                               int slayer) {
+        Random random = new Random(player.getRandom().nextLong());
+        String previous = p.task;
+        SlayerMasters.Assignment a = master.pick(random,
+                x -> SlayerTasks.eligible(x, slayer, combat, p.unlocks, p.blocked, previous));
+        if (a == null) {
+            a = master.pick(random, x -> SlayerTasks.eligible(x, slayer, combat, p.unlocks, p.blocked, null));
+        }
+        if (a == null) {
+            say(player, master, "I have nothing for you right now.");
+            return;
+        }
+        SlayerRewards.Unlock ext = SlayerRewards.extensionFor(a.category());
+        boolean extended = ext != null && p.unlocks.contains(ext.id());
+        p.task = a.category();
+        p.amount = SlayerTasks.amount(a, extended, random);
+        p.remaining = p.amount;
+        p.master = master.id();
+        p.region = null;
+        if (master.locationRestricted()) {
+            List<Region> regions = SlayerTasks.regions(a.category());
+            if (!regions.isEmpty()) {
+                p.region = regions.get(random.nextInt(regions.size())).name();
+            }
+        }
+        say(player, master, "Your new task is to kill " + p.amount + " " + describe(p) + "."
+                + (master.wilderness() ? " They only count in the Wilderness." : ""));
+        SlayerNet.sync(player);
+    }
+
+    private static String describe(SlayerState.Profile p) {
+        String name = SlayerTasks.displayName(p.task);
+        if (p.region != null) {
+            name += " in " + Region.valueOf(p.region).displayName();
+        }
+        return name;
+    }
+
+    private static void say(ServerPlayerEntity player, SlayerMasters.Master master, String line) {
+        player.sendMessage(Text.literal(master.name() + ": ").formatted(Formatting.YELLOW)
+                .append(Text.literal(line).formatted(Formatting.WHITE)), false);
+    }
+
+    /** Clickable task-management options shown by masters. */
+    static void menu(ServerPlayerEntity player, SlayerState.Profile p) {
+        MutableText line = Text.literal("Options: ").formatted(Formatting.GRAY);
+        line.append(button("[Skip " + SlayerRewards.SKIP_COST + "pts]", "/slayer skip", "Cancel this task for 30 points"));
+        line.append(Text.literal(" "));
+        line.append(button("[Block " + SlayerRewards.BLOCK_COST + "pts]", "/slayer block", "Never be assigned this task again"));
+        line.append(Text.literal(" "));
+        line.append(button("[Rewards]", "/slayer rewards", "Spend your " + p.points + " slayer points"));
+        line.append(Text.literal(" "));
+        line.append(button("[Shop]", "/slayer shop", "Buy slayer equipment"));
+        line.append(Text.literal(" "));
+        line.append(button("[Craft]", "/slayer craft", "Assemble slayer helmets, rings and more"));
+        player.sendMessage(line, false);
+    }
+
+    static MutableText button(String label, String command, String hover) {
+        return Text.literal(label).styled(s -> s.withColor(Formatting.GOLD)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(hover))));
+    }
+
+    public static void checkTask(ServerPlayerEntity player) {
+        SlayerState.Profile p = profile(player);
+        if (!p.hasTask()) {
+            Msg.game(player, "You need something new to hunt. Visit a Slayer master. (Streak: " + p.streak + ", points: "
+                    + p.points + ")");
+        } else {
+            Msg.game(player, "You're assigned to kill " + describe(p) + "; only " + p.remaining + " more to go. (Streak: "
+                    + p.streak + ", points: " + p.points + ")");
+        }
+        SlayerNet.sync(player);
+    }
+
+    // ------------------------------------------------------------------ kills
+
+    /** The task category a kill counts towards, or null. */
+    public static String categoryOf(MonsterStats stats) {
+        if (stats == null) {
+            return null;
+        }
+        if (stats.profile() != null) {
+            return stats.profile().slayerCategory;
+        }
+        if (stats.monster() != null) {
+            SlayerCategories.Category c = SlayerCategories.ofBuiltIn(stats.monster().name());
+            return c == null ? null : c.id();
+        }
+        return null;
+    }
+
+    /** True if the entity counts towards the player's current task right now (location rules included). */
+    public static boolean isOnTask(ServerPlayerEntity player, LivingEntity entity) {
+        SlayerState.Profile p = profile(player);
+        if (!p.hasTask()) {
+            return false;
+        }
+        String category = categoryOf(MonsterStats.of(entity));
+        if (!p.task.equals(category)) {
+            return false;
+        }
+        SlayerMasters.Master m = p.master == null ? null : SlayerMasters.get(p.master);
+        if (m != null && m.wilderness() && Gielinor.wildernessLevel(entity) <= 0) {
+            return false;
+        }
+        return p.region == null || Gielinor.region(entity).name().equals(p.region);
+    }
+
+    public static void onKill(ServerPlayerEntity player, LivingEntity entity, MonsterStats stats) {
+        SlayerState.Profile p = profile(player);
+        if (!p.hasTask() || !p.task.equals(categoryOf(stats))) {
+            return;
+        }
+        SlayerMasters.Master master = p.master == null ? null : SlayerMasters.get(p.master);
+        if (master != null && master.wilderness() && Gielinor.wildernessLevel(entity) <= 0) {
+            Msg.game(player, "Krystilia's tasks only count in the Wilderness.");
+            return;
+        }
+        if (p.region != null && !Gielinor.region(entity).name().equals(p.region)) {
+            Msg.game(player, "Konar wants you to kill these in " + Region.valueOf(p.region).displayName() + ".");
+            return;
+        }
+        CombatProfile<?> prof = stats.profile();
+        Superiors.Superior superior = prof == null ? null : Superiors.byId(prof.id);
+        XpService.add(player, Skill.SLAYER, superior != null ? superior.xp() : stats.hitpoints());
+        p.remaining--;
+        Random random = new Random(player.getRandom().nextLong());
+        if (master != null && master.locationRestricted() && random.nextInt(SlayerChests.brimstoneKeyChance(stats.combatLevel())) == 0) {
+            reward(player, entity, "brimstone_key", "A brimstone key falls to the floor.");
+        }
+        if (master != null && master.wilderness() && random.nextInt(SlayerChests.larranKeyChance(stats.combatLevel())) == 0) {
+            reward(player, entity, "larran_key", "A Larran's key falls to the floor.");
+        }
+        if (superior == null && prof != null && p.unlocks.contains("bigger_and_badder") && p.remaining > 0
+                && random.nextInt(SlayerRewards.SUPERIOR_CHANCE) == 0) {
+            Superiors.Superior s = Superiors.forBase(prof.id);
+            if (s != null) {
+                spawnSuperior(player, entity, s);
+            }
+        }
+        if (p.remaining <= 0) {
+            complete(player, p, master);
+        }
+        SlayerNet.sync(player);
+    }
+
+    private static void complete(ServerPlayerEntity player, SlayerState.Profile p, SlayerMasters.Master master) {
+        p.remaining = 0;
+        p.streak++;
+        p.completed++;
+        int points = master == null ? 0 : master.pointsFor(p.streak);
+        p.points += points;
+        Msg.red(player, "You have completed your task! You've completed " + p.streak + " tasks in a row"
+                + (points > 0 ? " and received " + points + " points, giving you a total of " + p.points : "")
+                + ". Return to a Slayer master.");
+        p.region = null;
+        ServerNetworking.sync(player);
+    }
+
+    private static void reward(ServerPlayerEntity player, LivingEntity at, String item, String message) {
+        at.dropStack(Inv.stack(item, 1));
+        CollectionLog.obtain(player, item);
+        Msg.red(player, message);
+    }
+
+    private static void spawnSuperior(ServerPlayerEntity player, LivingEntity base, Superiors.Superior s) {
+        EntityType<?> type = ModEntities.typeById(s.id());
+        if (type == null || !(base.getWorld() instanceof ServerWorld world)) {
+            return;
+        }
+        Entity e = type.create(world);
+        if (e == null) {
+            return;
+        }
+        e.refreshPositionAndAngles(base.getX(), base.getY(), base.getZ(), base.getYaw(), 0);
+        world.spawnEntity(e);
+        if (e instanceof MobEntity mob) {
+            mob.setTarget(player);
+        }
+        Msg.red(player, "A superior foe has appeared...");
+    }
+
+    // ------------------------------------------------------------------ combat bonuses
+
+    /** Black mask / slayer helmet: +16.67% melee max hit against the current task. */
+    public static int boostMaxHit(ServerPlayerEntity player, LivingEntity target, int maxHit) {
+        if (target != null && wearingAny(player, SlayerGear.MELEE_BOOST_HEADGEAR) && isOnTask(player, target)) {
+            return maxHit * 7 / 6;
+        }
+        return maxHit;
+    }
+
+    static boolean wearingAny(ServerPlayerEntity player, List<String> items) {
+        String head = Inv.idOf(player.getEquippedStack(EquipmentSlot.HEAD));
+        return items.contains(head);
+    }
+
+    /** Points, streak and unlock bookkeeping for commands. */
+    static String summary(SlayerState.Profile p) {
+        return String.format(Locale.ROOT, "Points: %d  Streak: %d  Tasks completed: %d", p.points, p.streak, p.completed);
+    }
+}
