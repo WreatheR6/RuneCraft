@@ -183,24 +183,24 @@ public final class QuestInterpreter {
 
     static void talk(ServerPlayerEntity p, String npcId) {
         String name = npcName(npcId);
-        // 1. Objectives of quests in progress.
+        // 1. Objectives of quests in progress (the first satisfiable one across all active quests).
+        List<QuestSpec> owners = new ArrayList<>();
+        List<Trigger> here = new ArrayList<>();
         for (QuestSpec q : book.quests) {
             if (!active(p, q)) {
                 continue;
             }
-            QuestSpec.Stage stage = q.stages.get(stage(p, q));
-            List<Trigger> here = new ArrayList<>();
-            for (Trigger t : stage.triggers) {
+            for (Trigger t : q.stages.get(stage(p, q)).triggers) {
                 if (t.kind == Trigger.Kind.TALK && t.target.equals(npcId) && !skipped(p, t)) {
+                    owners.add(q);
                     here.add(t);
                 }
             }
-            if (here.isEmpty()) {
-                continue;
-            }
-            for (Trigger t : here) {
-                if (unmet(p, t) == null) {
-                    fire(p, q, t, name);
+        }
+        if (!here.isEmpty()) {
+            for (int i = 0; i < here.size(); i++) {
+                if (unmet(p, here.get(i)) == null) {
+                    fire(p, owners.get(i), here.get(i), name);
                     return;
                 }
             }
