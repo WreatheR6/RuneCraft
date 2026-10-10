@@ -123,7 +123,7 @@ final class LateQuestsB {
                 .attack(AttackDef.of("water_blast", AttackType.MAGIC, 22, 10, 4).particle("minecraft:splash"))
                 .drops(Drop.always("big_bones")).size(1.2f, 2.6f, 1.0f).at("piscatoris").arena(12, "water"));
         b.quest("swan_song", "Swan Song", Difficulty.MASTER, 2)
-                .qp(100).reqQuest("garden_of_tranquillity").reqNote("One Small Favour")
+                .qp(100).reqQuest("garden_of_tranquillity").reqQuest("one_small_favour")
                 .req(Skill.MAGIC, 66).req(Skill.COOKING, 62).req(Skill.FISHING, 62).req(Skill.SMITHING, 45).req(Skill.FIREMAKING, 42).req(Skill.CRAFTING, 40)
                 .xp(Skill.MAGIC, 15000).xp(Skill.HITPOINTS, 10000)
                 .unlock("Fishing monkfish at the Piscatoris Fishing Colony")

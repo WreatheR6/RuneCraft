@@ -330,7 +330,7 @@ final class LateQuestsA {
         b.npc("black_knight_jailer", "Black Knight jailer", "castle_wars_knights", -2, 2, 0xE0B8B1, 0x1A1A1B, 0x1A1A1C, 0x2A2A2F);
         b.item("lockpick_kr", "Lockpick", "key", 0x5A5A5A, "Useful for opening locks.");
         b.quest("kings_ransom", "King's Ransom", Difficulty.EXPERIENCED, 1)
-                .reqQuest("black_knights_fortress", "holy_grail", "murder_mystery").reqNote("One Small Favour")
+                .reqQuest("black_knights_fortress", "holy_grail", "murder_mystery").reqQuest("one_small_favour")
                 .req(Skill.MAGIC, 45).req(Skill.DEFENCE, 65)
                 .xp(Skill.DEFENCE, 33000).xp(Skill.MAGIC, 5000)
                 .unlock("The Chivalry and Piety prayers (Knight Waves training ground)")
