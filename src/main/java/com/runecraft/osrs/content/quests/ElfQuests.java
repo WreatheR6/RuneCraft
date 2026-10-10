@@ -101,7 +101,7 @@ final class ElfQuests {
                 .phase(33, "Seren's fragment sings a terrible song!", 1.4, false)
                 .drops(Drop.always("coins")).size(0.8f, 2.4f, 1.3f).at("prifddinas_ruins").arena(14, "void"));
         b.quest("song_of_the_elves", "Song of the Elves", Difficulty.GRANDMASTER, 4)
-                .reqQuest("regicide", "plague_city").reqNote("Mourning's End Part II").reqNote("Making History")
+                .reqQuest("regicide", "plague_city").reqQuest("mournings_end_part_ii", "making_history")
                 .req(Skill.AGILITY, 70).req(Skill.CONSTRUCTION, 70).req(Skill.FARMING, 70).req(Skill.HERBLORE, 70)
                 .req(Skill.HUNTER, 70).req(Skill.MINING, 70).req(Skill.SMITHING, 70).req(Skill.WOODCUTTING, 70)
                 .xp(Skill.AGILITY, 20000).xp(Skill.FARMING, 20000).xp(Skill.HERBLORE, 20000).xp(Skill.MINING, 20000)

@@ -177,7 +177,7 @@ final class FremennikQuests {
                 .attack(AttackDef.of("water_spit", AttackType.RANGED, 12, 8, 3).particle("minecraft:splash"))
                 .drops(Drop.always("dagannoth_bones")).size(1.2f, 2.6f, 1.0f).at("lighthouse").arena(11, "water"));
         b.quest("horror_from_the_deep", "Horror from the Deep", Difficulty.EXPERIENCED, 2)
-                .req(Skill.AGILITY, 35).reqNote("Alfred Grimhand's Barcrawl (miniquest)")
+                .req(Skill.AGILITY, 35).reqQuest("alfred_grimhands_barcrawl")
                 .xp(Skill.MAGIC, 4662).xp(Skill.STRENGTH, 4662).xp(Skill.RANGED, 4662).reward("damaged_holy_book")
                 .unlock("Access to the Lighthouse and the Dagannoth caves")
                 .stage("I can start this quest by speaking to Larrissa outside the lighthouse north of the Barbarian Outpost. (Requires 35 Agility.)")

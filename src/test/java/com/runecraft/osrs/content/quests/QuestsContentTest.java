@@ -115,6 +115,31 @@ class QuestsContentTest {
     }
 
     @Test
+    void questRequirementsAreAcyclic() {
+        Map<String, Integer> state = new HashMap<>();
+        for (QuestSpec q : BOOK.quests) {
+            visit(q.id(), state);
+        }
+    }
+
+    private static void visit(String id, Map<String, Integer> state) {
+        Integer s = state.get(id);
+        if (s != null) {
+            assertTrue(s == 2, "quest requirement cycle through " + id);
+            return;
+        }
+        state.put(id, 1);
+        QuestSpec q = BOOK.spec(id);
+        if (q != null) {
+            for (String req : q.def.questRequirements()) {
+                visit(req, state);
+            }
+            q.triggers().forEach(t -> t.quests.forEach(r -> visit(r, state)));
+        }
+        state.put(id, 2);
+    }
+
+    @Test
     void flagsThatAreNeededAreSet() {
         for (QuestSpec q : BOOK.quests) {
             Set<String> set = new HashSet<>();

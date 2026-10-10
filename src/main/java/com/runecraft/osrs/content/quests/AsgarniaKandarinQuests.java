@@ -351,7 +351,6 @@ final class AsgarniaKandarinQuests {
         b.npc("bravek", "Bravek", "west_ardougne", 0, -4, 0xE8C8A8, 0x8A6A1A, 0x5A4A1A, 0x2A2A2A);
         b.npc("elena", "Elena", "west_ardougne", -4, -4, 0xF0D0B8, 0x3A6A3A, 0x2A4A2A, 0xC06A2A);
         b.item("gas_mask", "Gas mask", "full_helm", 0x6A6A5A, "Stops me from breathing in plague-infected air.");
-        b.item("hangover_cure", "Hangover cure", "potion", 0xC0A060, "It doesn't look very tasty.");
         b.item("warrant", "Warrant", "note", 0xE8E0C0, "A warrant from Bravek to release Elena.");
         b.item("magic_scroll_ardougne", "A magic scroll", "note", 0xD0C0F0, "Teaches the Ardougne Teleport spell.");
         b.quest("plague_city", "Plague City", Difficulty.NOVICE, 1)

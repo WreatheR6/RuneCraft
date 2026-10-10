@@ -41,7 +41,7 @@ final class GrandmasterQuests {
                 .drops(Drop.always("big_bones")).size(1.3f, 2.4f, 1.0f).at("kruks_dungeon").arena(13, "jungle"));
         b.quest("monkey_madness_ii", "Monkey Madness II", Difficulty.GRANDMASTER, 4)
                 .reqQuest("monkey_madness_i", "the_grand_tree", "troll_stronghold")
-                .reqNote("Enlightened Journey").reqNote("The Eyes of Glouphrie").reqNote("Watchtower")
+                .reqQuest("enlightened_journey", "the_eyes_of_glouphrie", "watchtower")
                 .reqNote("Recipe for Disaster: Freeing King Awowogei")
                 .req(Skill.SLAYER, 69).req(Skill.CRAFTING, 70).req(Skill.HUNTER, 60).req(Skill.AGILITY, 55)
                 .req(Skill.THIEVING, 55).req(Skill.FIREMAKING, 60)
@@ -92,7 +92,7 @@ final class GrandmasterQuests {
                 .drops(Drop.always("superior_dragon_bones")).size(2.6f, 2.2f, 1.0f).at("galveks_sea").arena(16, "water"));
         b.quest("dragon_slayer_ii", "Dragon Slayer II", Difficulty.GRANDMASTER, 5)
                 .qp(200).reqQuest("legends_quest", "animal_magnetism", "ghosts_ahoy", "bone_voyage")
-                .reqNote("Dream Mentor").reqNote("A Tail of Two Cats").reqNote("Client of Kourend")
+                .reqQuest("dream_mentor", "a_tail_of_two_cats", "client_of_kourend")
                 .req(Skill.MAGIC, 75).req(Skill.SMITHING, 70).req(Skill.MINING, 68).req(Skill.CRAFTING, 62)
                 .req(Skill.AGILITY, 60).req(Skill.THIEVING, 60).req(Skill.CONSTRUCTION, 50).req(Skill.HITPOINTS, 50)
                 .xp(Skill.ATTACK, 25000).xp(Skill.STRENGTH, 25000).xp(Skill.DEFENCE, 25000)
@@ -131,7 +131,7 @@ final class GrandmasterQuests {
                 .drops(Drop.always("coins")).size(1.2f, 2.6f, 1.0f).at("guthix_sanctum").arena(12, "void"));
         b.quest("while_guthix_sleeps", "While Guthix Sleeps", Difficulty.GRANDMASTER, 5)
                 .qp(180).reqQuest("legends_quest", "holy_grail", "hazeel_cult", "fremennik_trials")
-                .reqNote("Defender of Varrock").reqNote("Tears of Guthix").reqNote("The Path of Glouphrie").reqNote("Dream Mentor").reqNote("Wanted!")
+                .reqQuest("defender_of_varrock", "tears_of_guthix", "dream_mentor", "wanted").reqNote("The Path of Glouphrie")
                 .req(Skill.THIEVING, 72).req(Skill.MAGIC, 67).req(Skill.AGILITY, 66).req(Skill.FARMING, 65)
                 .req(Skill.HERBLORE, 65).req(Skill.HUNTER, 62).req(Skill.DEFENCE, 65)
                 .xp(Skill.THIEVING, 50000).xp(Skill.MAGIC, 50000).xp(Skill.AGILITY, 50000).xp(Skill.HERBLORE, 50000)

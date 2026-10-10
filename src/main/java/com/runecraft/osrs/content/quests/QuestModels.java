@@ -44,6 +44,12 @@ final class QuestModels {
         b.model(vampyre("ranis_drakan", 0xD0C8C8, 0x5A0A12, 1.2f));
         b.model(vampyre("dessous", 0xA8B0B8, 0x1A1A1A, 1.2f));
         b.model(hound("plague_sheep", 0xC8D0A0, 0x8AA060, 1.1f));
+        b.model(slug("sea_slug", 0x8A9A5B, 1.0f));
+        b.model(slug("evil_creature", 0x6A2A6A, 0.9f));
+        b.model(bird("chompy_bird", 0x8A9A5C, 0xE0A040, 1.6f));
+        b.model(troll("slash_bash", 0x7A8A6A, 0x3A4A2A, 1.7f));
+        b.model(golem("the_inadequacy", 0x2A2A3A, 0x8A2AA0, 2.0f));
+        b.model(demon("agrith_naar", 0x9A4A2A, 0x5A2A1A, 1.7f));
         b.model(bird("entranan_firebird", 0xFF6A1A, 0xFFD040, 1.2f));
         // Crystal
         b.model(crystal("fragment_of_seren", 0xB8F0FF, 0x80C0FF, 1.3f));

@@ -31,7 +31,7 @@ final class MiscQuests {
                 .attack(AttackDef.of("acid_spit", AttackType.RANGED, 8, 8, 3).special(Special.HAZARD, 2))
                 .drops(Drop.always("bones")).size(1.2f, 1.4f, 1.0f).at("witchaven_dungeon").arena(9, "water"));
         b.quest("the_slug_menace", "The Slug Menace", Difficulty.INTERMEDIATE, 1)
-                .reqNote("Wanted!").reqNote("Sea Slug")
+                .reqQuest("wanted", "sea_slug")
                 .req(Skill.CRAFTING, 30).req(Skill.RUNECRAFT, 30).req(Skill.SLAYER, 30).req(Skill.THIEVING, 30)
                 .xp(Skill.CRAFTING, 3500).xp(Skill.RUNECRAFT, 3500).xp(Skill.THIEVING, 3500)
                 .unlock("Proselyte armour from the Temple Knights")

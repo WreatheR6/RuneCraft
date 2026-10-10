@@ -74,6 +74,8 @@ public final class QuestBook {
             ElfQuests.register(b);
             GrandmasterQuests.register(b);
             MiscQuests.register(b);
+            KandarinMoreQuests.register(b);
+            MisthalinMoreQuests.register(b);
             RecipeForDisaster.register(b);
             WiseOldMan.register(b);
             b.quests.forEach(QuestSpec::seal);

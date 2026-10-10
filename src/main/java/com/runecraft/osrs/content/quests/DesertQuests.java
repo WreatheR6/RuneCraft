@@ -217,7 +217,7 @@ final class DesertQuests {
         b.npc("apprentice_felix", "Apprentice Felix", "temple_of_the_eye", 2, 2, 0xF0C8AC, 0x3A3AA0, 0x2A2A7A, 0xC06A2A);
         b.item("abyssal_incantation", "Abyssal incantation", "note", 0xA02A2A, "A strange incantation to open a rift.");
         b.quest("temple_of_the_eye", "Temple of the Eye", Difficulty.INTERMEDIATE, 1)
-                .reqQuest("RUNE_MYSTERIES").req(Skill.RUNECRAFT, 10).reqNote("Enter the Abyss (miniquest)")
+                .reqQuest("RUNE_MYSTERIES").req(Skill.RUNECRAFT, 10).reqQuest("enter_the_abyss")
                 .xp(Skill.RUNECRAFT, 10000)
                 .unlock("Access to Guardians of the Rift")
                 .stage("I can start this quest by speaking to Wizard Persten in the Wizards' Tower. (Requires Rune Mysteries, 10 Runecraft.)")

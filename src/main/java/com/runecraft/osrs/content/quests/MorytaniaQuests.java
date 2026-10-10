@@ -112,7 +112,6 @@ final class MorytaniaQuests {
         b.item("undead_chicken", "Undead chicken", "creature", 0xB0C0A0, "A chicken from Alice's farm. It's... undead.");
         b.item("selected_iron", "Selected iron", "bar", 0x6A6A7A, "A magnetised iron bar.");
         b.item("undead_twigs", "Undead twigs", "log", 0x5A5A4A, "Twigs from the undead trees near Draynor Manor.");
-        b.item("hard_leather_ava", "Hard leather", "leather", 0x8A5A3A, "Hardened leather for Ava's device.");
         b.quest("animal_magnetism", "Animal Magnetism", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("RESTLESS_GHOST", "ernest_the_chicken", "priest_in_peril")
                 .req(Skill.SLAYER, 18).req(Skill.CRAFTING, 19).req(Skill.RANGED, 30).req(Skill.WOODCUTTING, 35)
@@ -185,7 +184,6 @@ final class MorytaniaQuests {
         b.npc("gravingas", "Gravingas", "PORT_PHASMATYS", 4, -4, 0xC8E8E4, 0x8A2A2A, 0x5A1A1A, 0x6A6A6A);
         b.item("petition_form", "Petition form", "note", 0xE8E0C8, "A petition against Necrovarus, with ghostly signatures.");
         b.item("ectophial", "Ectophial", "vial", 0x7AE0A0, "A vial of ectoplasm. Empty it to teleport to the Ectofuntus.");
-        b.item("ectotoken", "Ectotoken", "coins", 0x7AE0A1, "Ghostly currency of Port Phasmatys.");
         b.quest("ghosts_ahoy", "Ghosts Ahoy", Difficulty.INTERMEDIATE, 2)
                 .reqQuest("priest_in_peril", "RESTLESS_GHOST").req(Skill.AGILITY, 25).req(Skill.COOKING, 20)
                 .xp(Skill.PRAYER, 2400).reward("ectophial")
@@ -230,7 +228,7 @@ final class MorytaniaQuests {
         b.npc("mama_lehar", "Mama", "mos_le_harmless", 3, 3, 0xA0785A, 0x8A2A2A, 0x5A1A1A, 0x3A2A1A);
         b.item("plunder", "Plunder", "coins", 0xE0C040, "Pirate plunder from Mos Le'Harmless.");
         b.quest("cabin_fever", "Cabin Fever", Difficulty.EXPERIENCED, 2)
-                .reqQuest("pirates_treasure", "priest_in_peril").reqNote("Rum Deal")
+                .reqQuest("pirates_treasure", "priest_in_peril").reqQuest("rum_deal")
                 .req(Skill.AGILITY, 42).req(Skill.CRAFTING, 45).req(Skill.SMITHING, 50).req(Skill.RANGED, 40)
                 .xp(Skill.AGILITY, 7000).xp(Skill.CRAFTING, 7000).xp(Skill.SMITHING, 7000).xp(Skill.RANGED, 7000)
                 .reward("coins:10000")
@@ -276,7 +274,7 @@ final class MorytaniaQuests {
         b.npc("safalaan", "Safalaan Hallow", "meiyerditch", 2, 2, 0xD8D8E0, 0x3A5A8A, 0x2A3A5A, 0xE0E0E0);
         b.item("sketch_of_hallowvale", "Sketches", "note", 0xD8D0B8, "Sketches of the old city of Hallowvale.");
         b.quest("darkness_of_hallowvale", "Darkness of Hallowvale", Difficulty.INTERMEDIATE, 2)
-                .reqQuest("in_search_of_the_myreque").reqNote("In Aid of the Myreque")
+                .reqQuest("in_search_of_the_myreque").reqQuest("in_aid_of_the_myreque")
                 .req(Skill.CONSTRUCTION, 5).req(Skill.MINING, 20).req(Skill.THIEVING, 22).req(Skill.AGILITY, 26)
                 .req(Skill.CRAFTING, 32).req(Skill.MAGIC, 33).req(Skill.STRENGTH, 40)
                 .xp(Skill.AGILITY, 7000).xp(Skill.THIEVING, 6000).xp(Skill.CONSTRUCTION, 2000)
