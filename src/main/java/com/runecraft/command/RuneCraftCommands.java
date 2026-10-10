@@ -109,7 +109,8 @@ public final class RuneCraftCommands {
 
     private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestSkills(
             CommandContext<ServerCommandSource> ctx, com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
-        return CommandSource.suggestMatching(Arrays.stream(Skill.values()).map(Skill::id), builder);
+        return CommandSource.suggestMatching(java.util.stream.Stream.concat(java.util.stream.Stream.of("all"),
+                Arrays.stream(Skill.values()).map(Skill::id)), builder);
     }
 
     private static int stats(CommandContext<ServerCommandSource> ctx, ServerPlayerEntity player) {
@@ -151,12 +152,22 @@ public final class RuneCraftCommands {
 
     private static int setLevel(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
         ServerPlayerEntity p = EntityArgumentType.getPlayer(ctx, "player");
-        Skill skill = Skill.byId(StringArgumentType.getString(ctx, "skill"));
+        String name = StringArgumentType.getString(ctx, "skill");
+        int level = IntegerArgumentType.getInteger(ctx, "level");
+        if (name.equals("all")) {
+            for (Skill s : Skill.values()) {
+                // Hitpoints never goes below 10 in OSRS.
+                XpService.setLevel(p, s, s == Skill.HITPOINTS ? Math.max(10, level) : level);
+            }
+            ctx.getSource().sendFeedback(() -> Text.literal("Set every skill to " + level), true);
+            return 1;
+        }
+        Skill skill = Skill.byId(name);
         if (skill == null) {
             ctx.getSource().sendError(Text.literal("Unknown skill"));
             return 0;
         }
-        XpService.setLevel(p, skill, IntegerArgumentType.getInteger(ctx, "level"));
+        XpService.setLevel(p, skill, level);
         ctx.getSource().sendFeedback(() -> Text.literal("Set " + skill.displayName() + " to " + IntegerArgumentType.getInteger(ctx, "level")), true);
         return 1;
     }
