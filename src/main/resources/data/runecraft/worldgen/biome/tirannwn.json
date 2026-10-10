@@ -17,76 +17,8 @@
     }
   },
   "spawners": {
-    "monster": [
-      {
-        "type": "runecraft:guard",
-        "weight": 6,
-        "minCount": 1,
-        "maxCount": 2
-      },
-      {
-        "type": "runecraft:moss_giant",
-        "weight": 3,
-        "minCount": 1,
-        "maxCount": 2
-      },
-      {
-        "type": "runecraft:eclectic_impling",
-        "weight": 2,
-        "minCount": 1,
-        "maxCount": 1
-      },
-      {
-        "type": "runecraft:nature_impling",
-        "weight": 2,
-        "minCount": 1,
-        "maxCount": 1
-      },
-      {
-        "type": "runecraft:lucky_impling",
-        "weight": 1,
-        "minCount": 1,
-        "maxCount": 1
-      },
-      {
-        "type": "runecraft:elf_warrior",
-        "weight": 5,
-        "minCount": 1,
-        "maxCount": 3
-      },
-      {
-        "type": "runecraft:kurask",
-        "weight": 2,
-        "minCount": 1,
-        "maxCount": 2
-      }
-    ],
-    "creature": [
-      {
-        "type": "minecraft:chicken",
-        "weight": 10,
-        "minCount": 2,
-        "maxCount": 4
-      },
-      {
-        "type": "minecraft:cow",
-        "weight": 8,
-        "minCount": 2,
-        "maxCount": 4
-      },
-      {
-        "type": "minecraft:sheep",
-        "weight": 8,
-        "minCount": 2,
-        "maxCount": 4
-      },
-      {
-        "type": "minecraft:pig",
-        "weight": 4,
-        "minCount": 1,
-        "maxCount": 3
-      }
-    ],
+    "monster": [],
+    "creature": [],
     "ambient": [],
     "axolotls": [],
     "underground_water_creature": [],

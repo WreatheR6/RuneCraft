@@ -17,64 +17,8 @@
     }
   },
   "spawners": {
-    "monster": [
-      {
-        "type": "runecraft:goblin",
-        "weight": 8,
-        "minCount": 2,
-        "maxCount": 4
-      },
-      {
-        "type": "runecraft:hill_giant",
-        "weight": 6,
-        "minCount": 1,
-        "maxCount": 3
-      },
-      {
-        "type": "runecraft:nature_impling",
-        "weight": 2,
-        "minCount": 1,
-        "maxCount": 1
-      },
-      {
-        "type": "runecraft:ogre",
-        "weight": 6,
-        "minCount": 1,
-        "maxCount": 3
-      },
-      {
-        "type": "runecraft:blue_dragon",
-        "weight": 2,
-        "minCount": 1,
-        "maxCount": 2
-      }
-    ],
-    "creature": [
-      {
-        "type": "minecraft:chicken",
-        "weight": 10,
-        "minCount": 2,
-        "maxCount": 4
-      },
-      {
-        "type": "minecraft:cow",
-        "weight": 8,
-        "minCount": 2,
-        "maxCount": 4
-      },
-      {
-        "type": "minecraft:sheep",
-        "weight": 8,
-        "minCount": 2,
-        "maxCount": 4
-      },
-      {
-        "type": "minecraft:pig",
-        "weight": 4,
-        "minCount": 1,
-        "maxCount": 3
-      }
-    ],
+    "monster": [],
+    "creature": [],
     "ambient": [],
     "axolotls": [],
     "underground_water_creature": [],
