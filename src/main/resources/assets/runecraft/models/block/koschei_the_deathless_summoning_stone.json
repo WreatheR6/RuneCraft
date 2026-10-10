@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/koschei_the_deathless_summoning_stone_side",
+    "top": "runecraft:block/koschei_the_deathless_summoning_stone_top",
+    "bottom": "runecraft:block/koschei_the_deathless_summoning_stone_bottom"
+  }
+}

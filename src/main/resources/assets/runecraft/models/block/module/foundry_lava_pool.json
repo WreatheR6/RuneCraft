@@ -1,8 +1,6 @@
 {
-  "parent": "minecraft:block/cube_bottom_top",
+  "parent": "minecraft:block/cube_all",
   "textures": {
-    "side": "runecraft:block/module/foundry_lava_pool_side",
-    "top": "runecraft:block/module/foundry_lava_pool_top",
-    "bottom": "runecraft:block/module/foundry_lava_pool_bottom"
+    "all": "runecraft:block/module/foundry_lava_pool"
   }
 }

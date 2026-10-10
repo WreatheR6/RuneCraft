@@ -1,6 +1,8 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "all": "runecraft:block/module/fairy_ring_shed"
+    "side": "runecraft:block/module/fairy_ring_shed_side",
+    "top": "runecraft:block/module/fairy_ring_shed_top",
+    "bottom": "runecraft:block/module/fairy_ring_shed_bottom"
   }
 }

@@ -1,6 +1,8 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "all": "runecraft:block/module/cox_scavenger_trough"
+    "side": "runecraft:block/module/cox_scavenger_trough_side",
+    "top": "runecraft:block/module/cox_scavenger_trough_top",
+    "bottom": "runecraft:block/module/cox_scavenger_trough_bottom"
   }
 }

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/damis_summoning_stone_side",
+    "top": "runecraft:block/damis_summoning_stone_top",
+    "bottom": "runecraft:block/damis_summoning_stone_bottom"
+  }
+}

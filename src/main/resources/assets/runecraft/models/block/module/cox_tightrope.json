@@ -1,8 +1,6 @@
 {
-  "parent": "minecraft:block/cube_bottom_top",
+  "parent": "minecraft:block/cube_all",
   "textures": {
-    "side": "runecraft:block/module/cox_tightrope_side",
-    "top": "runecraft:block/module/cox_tightrope_top",
-    "bottom": "runecraft:block/module/cox_tightrope_bottom"
+    "all": "runecraft:block/module/cox_tightrope"
   }
 }

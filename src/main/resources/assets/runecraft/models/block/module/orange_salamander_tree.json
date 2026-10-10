@@ -1,6 +1,8 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "all": "runecraft:block/module/orange_salamander_tree"
+    "side": "runecraft:block/module/orange_salamander_tree_side",
+    "top": "runecraft:block/module/orange_salamander_tree_top",
+    "bottom": "runecraft:block/module/orange_salamander_tree_bottom"
   }
 }

@@ -1,6 +1,8 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "all": "runecraft:block/module/apmeken_roof_support"
+    "side": "runecraft:block/module/apmeken_roof_support_side",
+    "top": "runecraft:block/module/apmeken_roof_support_top",
+    "bottom": "runecraft:block/module/apmeken_roof_support_bottom"
   }
 }

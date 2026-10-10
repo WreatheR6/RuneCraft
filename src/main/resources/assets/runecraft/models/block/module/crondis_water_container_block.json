@@ -1,6 +1,8 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "all": "runecraft:block/module/crondis_water_container_block"
+    "side": "runecraft:block/module/crondis_water_container_block_side",
+    "top": "runecraft:block/module/crondis_water_container_block_top",
+    "bottom": "runecraft:block/module/crondis_water_container_block_bottom"
   }
 }

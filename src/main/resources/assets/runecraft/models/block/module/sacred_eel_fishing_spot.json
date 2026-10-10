@@ -1,8 +1,6 @@
 {
-  "parent": "minecraft:block/cube_bottom_top",
+  "parent": "minecraft:block/cube_all",
   "textures": {
-    "side": "runecraft:block/module/sacred_eel_fishing_spot_side",
-    "top": "runecraft:block/module/sacred_eel_fishing_spot_top",
-    "bottom": "runecraft:block/module/sacred_eel_fishing_spot_bottom"
+    "all": "runecraft:block/module/sacred_eel_fishing_spot"
   }
 }

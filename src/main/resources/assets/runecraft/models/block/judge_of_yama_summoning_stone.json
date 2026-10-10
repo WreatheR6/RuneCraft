@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/judge_of_yama_summoning_stone_side",
+    "top": "runecraft:block/judge_of_yama_summoning_stone_top",
+    "bottom": "runecraft:block/judge_of_yama_summoning_stone_bottom"
+  }
+}

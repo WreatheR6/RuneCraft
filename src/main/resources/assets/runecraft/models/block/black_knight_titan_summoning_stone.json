@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/black_knight_titan_summoning_stone_side",
+    "top": "runecraft:block/black_knight_titan_summoning_stone_top",
+    "bottom": "runecraft:block/black_knight_titan_summoning_stone_bottom"
+  }
+}
