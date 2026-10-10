@@ -57,6 +57,8 @@ Old School RuneScape for **Minecraft 1.20.1 (Fabric)**. It adds a separate dimen
   * Morytania: Canifis, Port Phasmatys, the Barrows, Darkmeyer, Ver Sinhaza, the Slayer Tower.
   * The Wilderness: the ditch, Ferox Enclave, the Mage Arena, Rogues' Castle and ruins.
   * Great Kourend and Varlamore: Kourend Castle with the Catacombs, the five house towns, Civitas illa Fortis and the Colosseum.
+  * Islands and the far west: Fossil Island, Ape Atoll, Miscellania and Etceteria, Lunar Isle, Neitiznot and Jatizso, Waterbirth, Mos Le'Harmless, Zanaris (with fairy rings), Crandor, Tutorial Island, Castle Wars, Corsair Cove, Gu'Tanoth, Zul-Andra and the Void Knights' Outpost.
+* **Dungeons:** 27 dungeons are carved underground beneath their real entrances, with monsters that spawn inside. These include Taverley, Brimhaven, Edgeville, the Stronghold of Security (with its rewards), the slayer caves, the Kalphite Lair, TzHaar city, the Ancient Cavern, Dorgesh-Kaan and the Abyss.
 
   Previews are in `docs/previews/`.
 * **NPCs and shops:** 86 shops with OSRS stock and the OSRS shop price formula, shared stock and restocking. There are bankers in every bank, about 700 NPCs with dialogue, and attackable, pickpocketable townsfolk.
@@ -73,6 +75,11 @@ Old School RuneScape for **Minecraft 1.20.1 (Fabric)**. It adds a separate dimen
 ## Systems and minigames
 * **Systems:** slayer with every master, clue scrolls, the Grand Exchange, achievement diaries, the ancient, lunar and Arceuus spellbooks, special attacks, jewellery teleports, skill capes, and run energy.
 * **Minigames:** Fight Caves, the Inferno, Pest Control, Wintertodt, Tempoross, Guardians of the Rift, Barbarian Assault, Castle Wars, the Warriors' Guild, Mage Training Arena, Pyramid Plunder, Hallowed Sepulchre and more.
+
+## Pets, houses and Sailing
+* **Pets:** boss, raid, minigame and skilling pets drop at OSRS rates, with an "All Pets" log page. Pets follow their owner.
+* **Player-owned houses:** portals in all eight towns, 18 rooms and 133 furniture pieces. Altars, pools, lecterns, jewellery boxes and portals all work. Use `/house` to build.
+* **Sailing:** buy boats at shipwrights and sail them on water. There are charter docks at 12 ports and voyages that give Sailing XP.
 
 ## Collection log
 Pages for bosses, raids, clues, minigames, slayer, quests and other activities.
