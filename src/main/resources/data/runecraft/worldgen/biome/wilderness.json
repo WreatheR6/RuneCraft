@@ -71,6 +71,72 @@
         "weight": 2,
         "minCount": 1,
         "maxCount": 2
+      },
+      {
+        "type": "runecraft:revenant_imp",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:revenant_goblin",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:revenant_pyrefiend",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:revenant_hobgoblin",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:revenant_cyclops",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:revenant_hellhound",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:revenant_demon",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:revenant_ork",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:revenant_dark_beast",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:revenant_knight",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:revenant_dragon",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
       }
     ],
     "creature": [],
