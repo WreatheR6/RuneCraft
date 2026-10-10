@@ -140,7 +140,7 @@ final class AsgarniaNorth {
             k.tree(bx(trees[i][0]), bz(trees[i][1]), i % 2 == 0 ? "oak" : "birch", 6 + i % 2);
         }
         k.flowers(2891, 3430, 2893, 3432);
-        return b.build();
+        return k.build();
     }
 
     static StructureDef witchsTower() {
@@ -158,7 +158,7 @@ final class AsgarniaNorth {
         k.s(cx - 3, 10, cz, mc("chest[facing=east]"));
         k.s(cx + 3, 10, cz, mc("enchanting_table"));
         k.path(2905, 3446, 2906, 3449, mc("dirt_path"), mc("gravel"));
-        return b.build();
+        return k.build();
     }
 
     static StructureDef witchsHouse() {
@@ -187,7 +187,7 @@ final class AsgarniaNorth {
         AsgarniaRoom shed = k.house(WITCH, 2900, 3471, 2903, 3474, 1, "west", PITCHED);
         shed.set(0, 0, 0, mc("barrel[facing=up]"));
         shed.set(shed.len() - 1, 0, 0, mc("chest[facing=east]"));
-        return b.build();
+        return k.build();
     }
 
     static StructureDef lavaEelCave() {
@@ -214,7 +214,7 @@ final class AsgarniaNorth {
         k.s(cx, -8, cz - 3, rc("lava_eel_fishing_spot"));
         k.f(cx - 3, -5, cz + 1, cx - 3, -2, cz + 1, mc("chain"));
         k.s(cx - 3, -6, cz + 1, mc("lantern[hanging=true]"));
-        return b.build();
+        return k.build();
     }
 
     static StructureDef taverleyTreePatch() {
@@ -225,7 +225,7 @@ final class AsgarniaNorth {
         k.clearT(2936, 3438, 2936, 3438, 0, 0);
         k.st(2938, 3438, 0, rc("tree_patch"));
         k.st(2939, 3436, 0, rc("compost_bin"));
-        return b.build();
+        return k.build();
     }
 
     static StructureDef druidsCircle() {
@@ -255,7 +255,7 @@ final class AsgarniaNorth {
         }
         k.tree(cx - 18, cz - 6, "oak", 7);
         k.tree(cx + 17, cz + 8, "oak", 6);
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ Burthorpe
@@ -326,7 +326,7 @@ final class AsgarniaNorth {
         for (int[] t : trees) {
             k.tree(bx(t[0]), bz(t[1]), "spruce", 8);
         }
-        return b.build();
+        return k.build();
     }
 
     static StructureDef burthorpeCastle() {
@@ -373,7 +373,7 @@ final class AsgarniaNorth {
             l2.bed(u, 0, "red");
         }
         l2.set(l2.len() - 1, l2.depth() - 1, 0, rc("anvil"));
-        return b.build();
+        return k.build();
     }
 
     static StructureDef roguesDen() {
@@ -405,7 +405,7 @@ final class AsgarniaNorth {
         k.f(tx - 1, 0, tz - 1, tx - 1, 2, tz - 1, mc("spruce_fence"));
         k.f(tx + 1, 0, tz - 1, tx + 1, 2, tz - 1, mc("spruce_fence"));
         k.f(tx - 1, 3, tz - 2, tx + 1, 3, tz, mc("black_wool"));
-        return b.build();
+        return k.build();
     }
 
     static StructureDef warriorsGuild() {
@@ -450,7 +450,7 @@ final class AsgarniaNorth {
         }
         k.tower(g.x2 + 1, g.z1, 4, 18, mc("stone_bricks"), mc("polished_andesite"), null, null);
         k.tower(g.x2 + 1, g.z2, 4, 18, mc("stone_bricks"), mc("polished_andesite"), null, null);
-        return b.build();
+        return k.build();
     }
 
     static StructureDef heroesGuild() {
@@ -481,7 +481,7 @@ final class AsgarniaNorth {
         k.s(fx - 1, 0, fz + 4, rc("fountain_of_heroes"));
         k.s(fx - 4, 0, fz - 3, mc("lantern"));
         k.s(fx - 4, -1, fz - 3, mc("chiseled_stone_bricks"));
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ Goblin Village
@@ -527,7 +527,7 @@ final class AsgarniaNorth {
         k.st(2950, 3504, 1, mc("red_banner"));
         k.st(2959, 3504, 0, mc("spruce_fence"));
         k.st(2959, 3504, 1, mc("green_banner"));
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ Black Knights' Fortress
@@ -593,7 +593,7 @@ final class AsgarniaNorth {
         }
         k.st(3026, 3508, 0, rc("anvil"));
         k.st(3027, 3508, 0, mc("grindstone[face=floor,facing=north]"));
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ Ice Mountain
@@ -657,6 +657,6 @@ final class AsgarniaNorth {
             k.f(x, peak, z, x, peak + 1, z, mc("stone_bricks"));
             k.s(x, peak + 2, z, mc("snow[layers=2]"));
         }
-        return b.build();
+        return k.build();
     }
 }

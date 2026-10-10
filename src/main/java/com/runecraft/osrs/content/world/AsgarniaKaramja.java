@@ -117,7 +117,7 @@ final class AsgarniaKaramja {
         roundHut(k, bx(2934), bz(3180), 4, mc("bamboo_block[axis=y]"), mc("hay_block"), "west");
         palms(k, new int[][]{{2894, 3140}, {2898, 3170}, {2892, 3184}, {2910, 3186}, {2930, 3186}, {2944, 3180},
                 {2946, 3142}, {2918, 3144}, {2932, 3138}, {2908, 3156}});
-        return b.build();
+        return k.build();
     }
 
     static StructureDef musaDocks() {
@@ -131,7 +131,7 @@ final class AsgarniaKaramja {
         k.st(2961, 3149, 0, mc("barrel[facing=up]"));
         k.ship(bx(2950), bz(3145), 26, 3, true, 1, 2, mc("dark_oak_planks"), mc("spruce_planks"), mc("white_wool"));
         k.rowboat(bx(2960), bz(3158), true);
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ Brimhaven
@@ -177,7 +177,7 @@ final class AsgarniaKaramja {
         roundHut(k, bx(2802), bz(3150), 4, mc("bamboo_block[axis=y]"), mc("hay_block"), "west");
         palms(k, new int[][]{{2742, 3144}, {2758, 3146}, {2776, 3144}, {2806, 3146}, {2740, 3204}, {2770, 3206},
                 {2790, 3208}, {2742, 3230}, {2796, 3228}, {2806, 3170}, {2752, 3186}, {2774, 3192}, {2788, 3186}});
-        return b.build();
+        return k.build();
     }
 
     static StructureDef brimhavenDocks() {
@@ -200,7 +200,7 @@ final class AsgarniaKaramja {
             k.st(x, 3236, 0, mc("jungle_fence"));
             k.st(x, 3236, 1, mc("lantern"));
         }
-        return b.build();
+        return k.build();
     }
 
     static StructureDef brimhavenPatches() {
@@ -212,7 +212,7 @@ final class AsgarniaKaramja {
         k.st(2756, 3212, 0, rc("fruit_tree_patch"));
         k.st(2757, 3216, 0, rc("spirit_tree_patch"));
         k.st(2759, 3211, 0, mc("composter"));
-        return b.build();
+        return k.build();
     }
 
     static StructureDef agilityArena() {
@@ -235,7 +235,7 @@ final class AsgarniaKaramja {
         a.set(a.len() / 2 + 2, a.depth() - 1, 0, rc("brimhaven_agility_arena_rewards"));
         a.set(1, a.depth() - 1, 0, mc("barrel[facing=up]"));
         k.path(2808, 3175, 2811, 3191, mc("dirt_path"), mc("coarse_dirt"));
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ Shilo Village
@@ -294,7 +294,7 @@ final class AsgarniaKaramja {
         k.clearT(2830, 2998, 2830, 2999, 0, 0);
         palms(k, new int[][]{{2820, 2960}, {2822, 2984}, {2840, 2976}, {2856, 2980}, {2876, 2958}, {2876, 2984},
                 {2846, 3002}, {2836, 3004}, {2858, 2946}, {2840, 2946}});
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ Tai Bwo Wannai
@@ -338,7 +338,7 @@ final class AsgarniaKaramja {
         k.ring(fx, fz, 1.5, -1, -1, mc("cobblestone"));
         k.s(fx, 0, fz, mc("campfire[lit=true]"));
         palms(k, new int[][]{{2780, 3040}, {2808, 3040}, {2808, 3064}, {2780, 3064}, {2800, 3050}, {2786, 3052}});
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ Karamja volcano
@@ -419,7 +419,7 @@ final class AsgarniaKaramja {
         k.f(tx0 - 1, 6, tz - 3, tx0 - 1, 6, tz + 4, mc("obsidian"));
         // jungle at the foot
         palms(k, new int[][]{{2832, 3152}, {2834, 3184}, {2878, 3150}, {2878, 3188}, {2846, 3190}, {2830, 3176}});
-        return b.build();
+        return k.build();
     }
 
     static StructureDef tzhaarGate() {
@@ -449,7 +449,7 @@ final class AsgarniaKaramja {
         k.f(r[2] - 2, 0, cz - 1, r[2] - 2, 2, cz - 1, mc("polished_blackstone_wall"));
         k.f(r[2] - 2, 0, cz + 1, r[2] - 2, 2, cz + 1, mc("polished_blackstone_wall"));
         k.f(r[2] - 2, 3, cz - 1, r[2], 3, cz + 1, mc("polished_blackstone_slab[type=bottom]"));
-        return b.build();
+        return k.build();
     }
 
     static StructureDef eelPool() {
@@ -464,6 +464,6 @@ final class AsgarniaKaramja {
         k.s(cx - 1, 0, cz, rc("infernal_eel_fishing_spot"));
         k.s(cx + 1, 0, cz + 1, rc("infernal_eel_fishing_spot"));
         k.s(cx, 0, cz - 4, mc("soul_lantern"));
-        return b.build();
+        return k.build();
     }
 }

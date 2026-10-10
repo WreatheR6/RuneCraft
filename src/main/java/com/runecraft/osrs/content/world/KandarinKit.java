@@ -110,20 +110,24 @@ final class KandarinKit {
 
     final StructureDef.Builder b;
     final int g;
+    /** Deferred finishing details (textures, shutters, chimneys...), appended on {@link #build}. */
+    final MisthalinDetail d;
 
     KandarinKit(String id, String name) {
         this.b = StructureDef.builder(id, name);
         this.g = b.ground();
+        this.d = new MisthalinDetail(id);
     }
 
-    private KandarinKit(StructureDef.Builder b, int g) {
+    private KandarinKit(StructureDef.Builder b, int g, MisthalinDetail d) {
         this.b = b;
         this.g = g;
+        this.d = d;
     }
 
     /** A view of the same structure whose relative heights start {@code dy} blocks higher (platforms, upper decks). */
     KandarinKit raised(int dy) {
-        return new KandarinKit(b, g + dy);
+        return new KandarinKit(b, g + dy, d);
     }
 
     KandarinKit replaces(String place) {
@@ -132,6 +136,7 @@ final class KandarinKit {
     }
 
     StructureDef build() {
+        d.flush(b);
         return b.build();
     }
 
@@ -412,8 +417,10 @@ final class KandarinKit {
 
     /** A lamp post: fence column with a lantern on top. */
     void lamp(int x, int z, String fence) {
-        fill(x, 0, z, x, 2, z, fence);
+        set(x, 0, z, "minecraft:cobblestone_wall");
+        fill(x, 1, z, x, 2, z, fence);
         set(x, 3, z, "minecraft:lantern");
+        d.air(x, g + 4, z, x, g + 4, z, "minecraft:spruce_trapdoor[half=bottom]");
     }
 
     /** A well: stone ring with water and a little roof. */
@@ -423,7 +430,14 @@ final class KandarinKit {
         walls(x - 1, 0, z - 1, x + 1, 0, z + 1, "minecraft:cobblestone_wall");
         fill(x - 1, 1, z - 1, x - 1, 2, z - 1, "minecraft:oak_fence");
         fill(x + 1, 1, z + 1, x + 1, 2, z + 1, "minecraft:oak_fence");
-        fill(x - 1, 3, z - 1, x + 1, 3, z + 1, "minecraft:spruce_slab");
+        fill(x - 1, 1, z + 1, x - 1, 2, z + 1, "minecraft:oak_fence");
+        fill(x + 1, 1, z - 1, x + 1, 2, z - 1, "minecraft:oak_fence");
+        fill(x - 1, 3, z - 1, x + 1, 3, z - 1, "minecraft:spruce_stairs[facing=south]");
+        fill(x - 1, 3, z + 1, x + 1, 3, z + 1, "minecraft:spruce_stairs[facing=north]");
+        fill(x - 1, 3, z, x + 1, 3, z, "minecraft:spruce_planks");
+        fill(x - 1, 4, z, x + 1, 4, z, "minecraft:spruce_slab");
+        set(x, 2, z, "minecraft:chain");
+        set(x, 1, z, "minecraft:lantern[hanging=true]");
     }
 
     // ------------------------------------------------------------------ nature
@@ -647,6 +661,26 @@ final class KandarinKit {
         String st = th ? HAY : base + "_stairs";
         String fl = th ? HAY : full(base);
         boolean alongX = (x2 - x1) >= (z2 - z1);
+        if (gable != null) {
+            String log = MisthalinDetail.isStone(gable) ? null
+                    : gable.contains("terracotta") ? "minecraft:stripped_dark_oak_log" : "minecraft:stripped_spruce_log";
+            d.gables(x1, z1, x2, z2, g + y, alongX, gable, log, PANE);
+        }
+        if (th) {
+            // thatch: dark eaves trim along the overhang and a timber ridge cap
+            String eave = "minecraft:dark_oak_stairs";
+            int span = alongX ? z2 - z1 : x2 - x1;
+            int ridge = y + (span + 2) / 2;
+            if (alongX) {
+                d.replace(x1 - 1, g + y, z1 - 1, x2 + 1, g + y, z1 - 1, HAY, eave + "[facing=south]");
+                d.replace(x1 - 1, g + y, z2 + 1, x2 + 1, g + y, z2 + 1, HAY, eave + "[facing=north]");
+                d.air(x1 - 1, g + ridge + 1, (z1 + z2) / 2, x2 + 1, g + ridge + 1, (z1 + z2 + 1) / 2, "minecraft:dark_oak_slab");
+            } else {
+                d.replace(x1 - 1, g + y, z1 - 1, x1 - 1, g + y, z2 + 1, HAY, eave + "[facing=east]");
+                d.replace(x2 + 1, g + y, z1 - 1, x2 + 1, g + y, z2 + 1, HAY, eave + "[facing=west]");
+                d.air((x1 + x2) / 2, g + ridge + 1, z1 - 1, (x1 + x2 + 1) / 2, g + ridge + 1, z2 + 1, "minecraft:dark_oak_slab");
+            }
+        }
         for (int i = 0; ; i++) {
             int yy = y + i;
             if (alongX) {
@@ -657,6 +691,9 @@ final class KandarinKit {
                 }
                 if (a == c) {
                     fill(x1 - 1, yy, a, x2 + 1, yy, a, fl);
+                    if (!th) {
+                        d.air(x1 - 1, g + yy + 1, a, x2 + 1, g + yy + 1, a, base + "_slab");
+                    }
                     break;
                 }
                 fill(x1 - 1, yy, a, x2 + 1, yy, a, th ? st : st + "[facing=south]");
@@ -675,6 +712,9 @@ final class KandarinKit {
                 }
                 if (a == c) {
                     fill(a, yy, z1 - 1, a, yy, z2 + 1, fl);
+                    if (!th) {
+                        d.air(a, g + yy + 1, z1 - 1, a, g + yy + 1, z2 + 1, base + "_slab");
+                    }
                     break;
                 }
                 fill(a, yy, z1 - 1, a, yy, z2 + 1, th ? st : st + "[facing=east]");
@@ -827,6 +867,7 @@ final class KandarinKit {
             int oz = door == 's' ? 1 : door == 'n' ? -1 : 0;
             set(dx + ox, -1, dz + oz, "minecraft:" + p.wood() + "_planks");
         }
+        finishHouse(x1, z1, x2, z2, storeys, p, door, flags, dx, dz, flat);
         // roof
         if (flat) {
             String rb = p.roof().startsWith("flat:") ? p.roof().substring(5) : p.floor();
@@ -864,6 +905,79 @@ final class KandarinKit {
         return new Bld(x1, z1, x2, z2, storeys, door, dx, dz);
     }
 
+    /** Wall weathering, plinth, window dressings, door lanterns and a chimney for {@link #houseB} (deferred). */
+    private void finishHouse(int x1, int z1, int x2, int z2, int storeys, Pal p, char door, int flags, int dx, int dz, boolean flat) {
+        int top = storeys * H;
+        String wall = p.wall();
+        boolean stone = MisthalinDetail.isStone(wall);
+        if (stone) {
+            d.texture(x1, z1, x2, z2, g + 1, g + top - 1, wall, 8);
+        }
+        d.plinth(x1, z1, x2, z2, g, wall, MisthalinDetail.plinthFor(wall));
+        String log = p.post().contains("_log") ? MisthalinDetail.bare(p.post()) : "minecraft:stripped_" + p.wood() + "_log";
+        if (!log.contains("stripped")) {
+            log = log.replace("minecraft:", "minecraft:stripped_");
+        }
+        String wood = MisthalinDetail.shutterWood(wall, p.wood());
+        boolean castle = flat && stone && (storeys >= 2 || x2 - x1 >= 14);
+        if ((flags & NO_WINDOWS) == 0) {
+            for (int s = 0; s < storeys; s++) {
+                int wy = g + s * H + 1;
+                for (int x = x1 + 2; x <= x2 - 2; x += 4) {
+                    String l = stone ? MisthalinDetail.quoinFor(wall) : log + "[axis=x]";
+                    dressWindow(castle, x, wy, z1, 'n', wall, wood, l);
+                    dressWindow(castle, x, wy, z2, 's', wall, wood, l);
+                }
+                for (int z = z1 + 2; z <= z2 - 2; z += 4) {
+                    String l = stone ? MisthalinDetail.quoinFor(wall) : log + "[axis=z]";
+                    dressWindow(castle, x1, wy, z, 'w', wall, wood, l);
+                    dressWindow(castle, x2, wy, z, 'e', wall, wood, l);
+                }
+            }
+        }
+        if (castle) {
+            int y = g + top - 1;
+            d.replace(x1, y, z1, x2, y, z1, wall, MisthalinDetail.quoinFor(wall));
+            d.replace(x1, y, z2, x2, y, z2, wall, MisthalinDetail.quoinFor(wall));
+            d.replace(x1, y, z1, x1, y, z2, wall, MisthalinDetail.quoinFor(wall));
+            d.replace(x2, y, z1, x2, y, z2, wall, MisthalinDetail.quoinFor(wall));
+        }
+        if (door != ' ') {
+            int ox = MisthalinDetail.dx(door);
+            int oz = MisthalinDetail.dz(door);
+            int px = oz != 0 ? 1 : 0;
+            int pz = ox != 0 ? 1 : 0;
+            boolean wide = (flags & WIDE_DOOR) != 0;
+            d.wallLantern(dx + ox - px, g + 2, dz + oz - pz);
+            d.wallLantern(dx + ox + px * (wide ? 2 : 1), g + 2, dz + oz + pz * (wide ? 2 : 1));
+        }
+        if (!flat && x2 - x1 >= 5 && z2 - z1 >= 5 && MisthalinDetail.noise(x1, 2, z1, 9) % 3 != 0) {
+            boolean alongX = (x2 - x1) >= (z2 - z1);
+            int span = alongX ? z2 - z1 : x2 - x1;
+            String stack = stone ? COBBLE : "minecraft:bricks";
+            char[] ends = alongX ? new char[]{'w', 'e'} : new char[]{'n', 's'};
+            for (char e : ends) {
+                int along = alongX ? z1 + 3 : x1 + 3;
+                int mid = alongX ? dz : dx;
+                if (door == e && Math.abs(along - mid) <= 2) {
+                    continue;
+                }
+                int cx = alongX ? (e == 'w' ? x1 : x2) : along;
+                int cz = alongX ? along : (e == 'n' ? z1 : z2);
+                d.chimney(cx, cz, g + 1, g + top + span / 2 + 2, stack);
+                break;
+            }
+        }
+    }
+
+    private void dressWindow(boolean castle, int x, int y, int z, char out, String wall, String wood, String lintel) {
+        if (castle) {
+            d.castleWindow(x, y, y, z, out, wall, lintel, g);
+        } else {
+            d.window(x, y, y, z, out, wall, wood, lintel, g);
+        }
+    }
+
     private void furnish(int x1, int z1, int x2, int z2, int storeys, Pal p, int dx, int dz, int lx, int lz) {
         int ix1 = x1 + 1;
         int ix2 = x2 - 1;
@@ -899,6 +1013,15 @@ final class KandarinKit {
                 table(cx, y, cz, w);
             }
             set(cx, y + 2, cz, "minecraft:lantern[hanging=true]");
+            // a rug, a plant and a candle on the bookshelf (only into free floor)
+            String rug = s == 0 ? "brown" : "red";
+            d.air(Math.max(ix1 + 1, cx - 2), g + y, Math.max(iz1 + 1, cz - 1), Math.min(ix2 - 1, cx + 2), g + y,
+                    Math.min(iz2 - 1, cz + 1), "minecraft:" + rug + "_carpet");
+            if (s > 0) {
+                d.air(corners[1][0], g + y + 1, corners[1][1], corners[1][0], g + y + 1, corners[1][1], "minecraft:candle[candles=2,lit=true]");
+            } else {
+                d.air(corners[1][0], g + y + 1, corners[1][1], corners[1][0], g + y + 1, corners[1][1], "minecraft:potted_fern");
+            }
         }
     }
 
@@ -908,6 +1031,7 @@ final class KandarinKit {
      * conical roof.
      */
     void towerB(int cx, int cz, int r, int h, String wall, String floor, String coneBlock, char door, int storeyH) {
+        d.roundTower(cx, cz, r, g, g + h, storeyH, wall, coneBlock == null && r >= 2);
         disc(cx, cz, -1, -1, r, floor);
         ring(cx, cz, -1, h - 1, r, wall);
         disc(cx, cz, 0, h + 1, r - 1, AIR);
@@ -1003,6 +1127,8 @@ final class KandarinKit {
         int cx = x2(tx1, tx2);
         int cz = z2(ty1, ty2);
         fill(ax, -1, az, cx, h - 1, cz, block);
+        d.textureSolid(ax, g, az, cx, g + h - 1, cz, block, 6);
+        d.replace(ax, g, az, cx, g, cz, block, MisthalinDetail.plinthFor(block));
         for (int x = ax; x <= cx; x += 2) {
             set(x, h, az, block);
             set(x, h, cz, block);

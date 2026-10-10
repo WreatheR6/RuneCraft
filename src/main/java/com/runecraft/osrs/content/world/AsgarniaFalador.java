@@ -332,7 +332,7 @@ final class AsgarniaFalador {
         }
         k.flowers(3009, 3341, 3012, 3344);
         k.flowers(2990, 3350, 2993, 3352);
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ White Knights' Castle
@@ -470,7 +470,7 @@ final class AsgarniaFalador {
         k.f(tx, 13, tz, tx, 20, tz, mc("quartz_pillar[axis=y]"));
         k.f(tx + 1, 18, tz, tx + 3, 20, tz, mc("blue_wool"));
         k.f(tx + 1, 19, tz, tx + 3, 19, tz, mc("white_wool"));
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ Falador Park
@@ -541,7 +541,7 @@ final class AsgarniaFalador {
         shed.set(1, 0, 0, mc("barrel[facing=up]"));
         shed.set(shed.len() - 1, 0, 0, mc("chest[facing=south]"));
         shed.set(shed.len() - 2, 0, 0, mc("potted_oak_sapling"));
-        return b.build();
+        return k.build();
     }
 
     static StructureDef treePatch() {
@@ -553,7 +553,7 @@ final class AsgarniaFalador {
         k.st(2990, 3371, 0, rc("tree_patch"));
         k.st(2988, 3372, 1, mc("lantern"));
         k.st(2989, 3370, 0, rc("compost_bin"));
-        return b.build();
+        return k.build();
     }
 
     static StructureDef mahoganyHomes() {
@@ -568,7 +568,7 @@ final class AsgarniaFalador {
         o.set(o.len() - 1, o.depth() - 2, 0, mc("stripped_dark_oak_log[axis=x]"));
         k.st(2985, 3367, 0, mc("oak_planks"));
         k.st(2985, 3367, 1, mc("oak_slab[type=bottom]"));
-        return b.build();
+        return k.build();
     }
 
     static StructureDef miningYard() {
@@ -616,7 +616,7 @@ final class AsgarniaFalador {
             k.s(x, -3, wz, mc("lantern[hanging=true]"));
             k.s(x, -1, wz, mc("spruce_planks"));
         }
-        return b.build();
+        return k.build();
     }
 
     static StructureDef makeoverMage() {
@@ -641,6 +641,6 @@ final class AsgarniaFalador {
         k.flowers(2920, 3326, 2924, 3328);
         k.fenceRing(2912, 3316, 2924, 3329, mc("oak_fence"));
         k.clearT(2917, 3329, 2918, 3329, 0, 0);
-        return b.build();
+        return k.build();
     }
 }

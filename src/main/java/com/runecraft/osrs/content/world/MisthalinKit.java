@@ -125,6 +125,8 @@ final class MisthalinKit {
     final StructureDef.Builder b;
     final int g;
     final Random rnd;
+    /** Deferred finishing details (textures, shutters, chimneys...), appended on {@link #build}. */
+    final MisthalinDetail d;
 
     MisthalinKit(String id, String name) {
         this(id, name, null);
@@ -137,9 +139,11 @@ final class MisthalinKit {
         }
         g = b.ground();
         rnd = new Random(id.hashCode());
+        d = new MisthalinDetail(id);
     }
 
     StructureDef build() {
+        d.flush(b);
         return b.build();
     }
 
@@ -289,6 +293,8 @@ final class MisthalinKit {
         String gab = gable == null ? m.full() : gable;
         boolean alongX = (x2 - x1) >= (z2 - z1);
         int span = alongX ? z2 - z1 : x2 - x1;
+        String gableLog = MisthalinDetail.isStone(gab) ? null : m == Roof.SLATE || m == Roof.DARK_OAK ? STRIPPED_DARK : STRIPPED_SPRUCE;
+        d.gables(x1, z1, x2, z2, g + y, alongX, gab, gableLog, GLASS);
         int layers = span / 2 + 2;
         for (int i = 0; i < layers; i++) {
             int yy = y + i;
@@ -300,8 +306,10 @@ final class MisthalinKit {
             if (a == c) {
                 if (alongX) {
                     fill(x1 - 1, yy, a, x2 + 1, yy, a, m.full());
+                    d.air(x1 - 1, g + yy + 1, a, x2 + 1, g + yy + 1, a, m.slab());
                 } else {
                     fill(a, yy, z1 - 1, a, yy, z2 + 1, m.full());
+                    d.air(a, g + yy + 1, z1 - 1, a, g + yy + 1, z2 + 1, m.slab());
                 }
                 break;
             }
@@ -395,6 +403,7 @@ final class MisthalinKit {
         String gable = null;
         String parapet = null;
         int windowEvery = 3;
+        boolean detail = true;
         final List<int[]> doors = new ArrayList<>();
 
         House(Box box) {
@@ -489,6 +498,12 @@ final class MisthalinKit {
             return this;
         }
 
+        /** Leaves out the finishing details (textures, shutters, lanterns, chimney). */
+        House plain() {
+            detail = false;
+            return this;
+        }
+
         /** A doorway one tile wide on side 'n','s','e','w' at tile coordinate {@code tile} along that wall. */
         House door(char side, int tile) {
             int from = side == 'n' || side == 's' ? bx(tile) : bz(tile);
@@ -522,6 +537,99 @@ final class MisthalinKit {
                 }
             }
             return false;
+        }
+
+        /** Wall textures, quoins, plinth, timbering, window dressings, door lanterns and a chimney. */
+        private void finish(List<int[]> wins) {
+            int top = top();
+            int lowerTop = upperWall != null ? h - 1 : top - 1;
+            boolean castle = roofKind == RoofKind.CRENEL;
+            int y0 = base != null ? 1 : 0;
+            if (MisthalinDetail.isStone(wall)) {
+                d.texture(box.x1, box.z1, box.x2, box.z2, g + y0, g + lowerTop, wall, castle ? 6 : 8);
+                if (corner == null) {
+                    d.quoins(box.x1, box.z1, box.x2, box.z2, g + y0, g + lowerTop, wall, MisthalinDetail.quoinFor(wall));
+                }
+            }
+            if (upperWall != null && MisthalinDetail.isStone(upperWall)) {
+                d.texture(box.x1, box.z1, box.x2, box.z2, g + h, g + top - 1, upperWall, 8);
+            }
+            if (base == null) {
+                d.plinth(box.x1, box.z1, box.x2, box.z2, g, wall, MisthalinDetail.plinthFor(wall));
+            }
+            String log = beam != null && beam.contains("_log") ? MisthalinDetail.bare(beam)
+                    : corner != null && corner.contains("_log") ? MisthalinDetail.bare(corner) : STRIPPED_SPRUCE;
+            if (MisthalinDetail.isPlaster(wall) || wall.endsWith("_planks")) {
+                d.timber(box.x1, box.z1, box.x2, box.z2, g + y0, g + lowerTop, h, wall, log, 3);
+            }
+            if (upperWall != null && (MisthalinDetail.isPlaster(upperWall) || upperWall.endsWith("_planks"))) {
+                d.timber(box.x1, box.z1, box.x2, box.z2, g + h, g + top - 1, h, upperWall, log, 3);
+            }
+            // windows
+            for (int[] p : wins) {
+                char side = p[2] == box.z1 ? 'n' : p[2] == box.z2 ? 's' : p[0] == box.x1 ? 'w' : 'e';
+                int s = (p[1] - 1) / h;
+                String w = s > 0 && upperWall != null ? upperWall : wall;
+                boolean stone = MisthalinDetail.isStone(w);
+                String lintel = stone ? MisthalinDetail.quoinFor(w)
+                        : log + (side == 'n' || side == 's' ? "[axis=x]" : "[axis=z]");
+                if (castle) {
+                    d.replace(p[0], g + p[3] + 1, p[2], p[0], g + p[3] + 1, p[2], w, lintel);
+                } else {
+                    d.window(p[0], g + p[1], g + p[3], p[2], side, w, MisthalinDetail.shutterWood(w, "spruce"), lintel, g);
+                }
+            }
+            // lanterns either side of ordinary doorways
+            for (int[] dr : doors) {
+                if (dr[2] > 4 || dr[3] > 4) {
+                    continue;
+                }
+                int from = dr[1];
+                int to = dr[1] + dr[2] - 1;
+                switch ((char) dr[0]) {
+                    case 'n' -> {
+                        d.wallLantern(from - 1, g + 2, box.z1 - 1);
+                        d.wallLantern(to + 1, g + 2, box.z1 - 1);
+                    }
+                    case 's' -> {
+                        d.wallLantern(from - 1, g + 2, box.z2 + 1);
+                        d.wallLantern(to + 1, g + 2, box.z2 + 1);
+                    }
+                    case 'e' -> {
+                        d.wallLantern(box.x2 + 1, g + 2, from - 1);
+                        d.wallLantern(box.x2 + 1, g + 2, to + 1);
+                    }
+                    default -> {
+                        d.wallLantern(box.x1 - 1, g + 2, from - 1);
+                        d.wallLantern(box.x1 - 1, g + 2, to + 1);
+                    }
+                }
+            }
+            // a chimney stack built into one gable wall
+            if (roofKind == RoofKind.PITCHED && box.w() >= 6 && box.d() >= 6
+                    && MisthalinDetail.noise(box.x1, 0, box.z1, 3) % 3 != 0) {
+                boolean alongX = (box.x2 - box.x1) >= (box.z2 - box.z1);
+                int span = alongX ? box.z2 - box.z1 : box.x2 - box.x1;
+                int ridge = top + span / 2 + 2;
+                String stack = MisthalinDetail.isStone(wall) ? COBBLE : "minecraft:bricks";
+                char[] ends = alongX ? new char[]{'w', 'e'} : new char[]{'n', 's'};
+                for (char e : ends) {
+                    int along = alongX ? box.z1 + 3 : box.x1 + 3;
+                    boolean blocked = false;
+                    for (int[] dr : doors) {
+                        if (dr[0] == e && along >= dr[1] - 2 && along <= dr[1] + dr[2] + 1) {
+                            blocked = true;
+                        }
+                    }
+                    if (blocked) {
+                        continue;
+                    }
+                    int cx = alongX ? (e == 'w' ? box.x1 : box.x2) : along;
+                    int cz = alongX ? along : (e == 'n' ? box.z1 : box.z2);
+                    d.chimney(cx, cz, g + 1, g + ridge, stack);
+                    break;
+                }
+            }
         }
 
         House build() {
@@ -613,6 +721,9 @@ final class MisthalinKit {
                         default -> set(box.x1, 0, from, a).set(box.x1, 0, to, c);
                     }
                 }
+            }
+            if (detail) {
+                finish(wins);
             }
             switch (roofKind) {
                 case PITCHED -> {
@@ -784,6 +895,16 @@ final class MisthalinKit {
         for (int y = h - 2; y < height - 1; y += h) {
             hang(cx, y, cz);
         }
+        // weathering, string courses at each floor and a corbelled parapet (deferred details)
+        d.textureSolid(cx - r, g, cz - r, cx + r, g + height - 1, cz + r, wall, 5);
+        String trim = MisthalinDetail.quoinFor(wall);
+        for (int y = h - 1; y < height - 1; y += h) {
+            d.replace(cx - r, g + y, cz - r, cx + r, g + y, cz + r, wall, trim);
+        }
+        d.replace(cx - r, g, cz - r, cx + r, g, cz + r, wall, MisthalinDetail.plinthFor(wall));
+        if (cone == null) {
+            corbel(cx, cz, r, height, wall);
+        }
         if (cone == null) {
             disc(cx, cz, r - 1, height - 1, height - 1, floor);
             ring(cx, cz, r, 1, height, height, wall);
@@ -816,6 +937,39 @@ final class MisthalinKit {
             }
             if (ladder && last > 0) {
                 ladder(cx, cz - r + 1, "south", 0, last);
+            }
+        }
+        return this;
+    }
+
+    /**
+     * A corbelled parapet round a crenellated tower (deferred, only into air): a ring of upturned
+     * slabs one block outside the wall just below the top, a parapet ring on them and merlons.
+     */
+    MisthalinKit corbel(int cx, int cz, int r, int height, String wall) {
+        String slab = MisthalinDetail.slabFor(wall) + "[type=top]";
+        int R = r + 2;
+        for (int dz = -R; dz <= R; dz++) {
+            int w = half(r + 1, dz);
+            if (w < 0) {
+                continue;
+            }
+            int wi = half(r, dz);
+            int a1 = cx - w;
+            int a2 = wi < 0 ? cx + w : cx - wi - 1;
+            int c1 = wi < 0 ? a2 + 1 : cx + wi + 1;
+            int c2 = cx + w;
+            for (int[] seg : new int[][]{{a1, a2}, {c1, c2}}) {
+                if (seg[0] > seg[1]) {
+                    continue;
+                }
+                d.air(seg[0], g + height - 1, cz + dz, seg[1], g + height - 1, cz + dz, slab);
+                d.air(seg[0], g + height, cz + dz, seg[1], g + height, cz + dz, wall);
+            }
+        }
+        for (int[] p : rim(cx, cz, r + 1)) {
+            if (((p[0] + p[1]) & 1) == 1) {
+                d.air(p[0], g + height + 1, p[1], p[0], g + height + 1, p[1], wall);
             }
         }
         return this;
@@ -995,6 +1149,13 @@ final class MisthalinKit {
             set(fx + (ladderEast ? 1 : -1), 0, in.z2(), CRAFTING);
         }
         hang(tx, h.h - 2, tz);
+        // a rug round the table, a plant, a bookcase and a hearth rug (only into free floor)
+        d.air(tx - 2, g, tz - 1, tx + 2, g, tz + 1, "minecraft:" + colour + "_carpet");
+        d.air(fx, g + 1, in.z2(), fx, g + 1, in.z2(), "minecraft:potted_fern");
+        if (in.d() > 5) {
+            d.air(fx, g, in.z1() + 2, fx, g + 1, in.z1() + 2, BOOKSHELF);
+            d.air(fx, g + 2, in.z1() + 2, fx, g + 2, in.z1() + 2, "minecraft:candle[candles=2,lit=true]");
+        }
         if (h.storeys > 1) {
             ladder(lx, in.z1(), "south", 0, h.h * (h.storeys - 1));
             for (int s = 1; s < h.storeys; s++) {
@@ -1124,7 +1285,14 @@ final class MisthalinKit {
         set(x + 1, 1, z + 1, "minecraft:spruce_fence").set(x + 1, 2, z + 1, "minecraft:spruce_fence");
         set(x - 1, 1, z + 1, "minecraft:spruce_fence").set(x - 1, 2, z + 1, "minecraft:spruce_fence");
         set(x + 1, 1, z - 1, "minecraft:spruce_fence").set(x + 1, 2, z - 1, "minecraft:spruce_fence");
-        fill(x - 1, 3, z - 1, x + 1, 3, z + 1, "minecraft:spruce_slab");
+        // a little gabled roof with a winch beam, rope and bucket
+        fill(x - 2, 3, z - 1, x + 2, 3, z - 1, "minecraft:spruce_stairs[facing=south]");
+        fill(x - 2, 3, z + 1, x + 2, 3, z + 1, "minecraft:spruce_stairs[facing=north]");
+        fill(x - 2, 3, z, x + 2, 3, z, "minecraft:spruce_planks");
+        fill(x - 2, 4, z, x + 2, 4, z, "minecraft:spruce_slab");
+        set(x, 2, z, "minecraft:chain");
+        set(x, 1, z, "minecraft:lantern[hanging=true]");
+        set(x - 1, 1, z, "minecraft:spruce_trapdoor[facing=east,half=top]");
         return this;
     }
 
@@ -1154,8 +1322,11 @@ final class MisthalinKit {
 
     /** Lamp post with a lantern on top. */
     MisthalinKit lampPost(int x, int z) {
-        fill(x, 0, z, x, 2, z, "minecraft:spruce_fence");
-        return set(x, 3, z, LANTERN);
+        set(x, 0, z, "minecraft:stone_brick_wall");
+        fill(x, 1, z, x, 2, z, "minecraft:spruce_fence");
+        set(x, 3, z, LANTERN);
+        d.air(x, g + 4, z, x, g + 4, z, "minecraft:spruce_trapdoor[half=bottom]");
+        return this;
     }
 
     /** Crops on moist farmland over a block rectangle with an irrigation channel along its middle row. */
