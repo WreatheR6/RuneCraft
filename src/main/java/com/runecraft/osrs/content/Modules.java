@@ -9,6 +9,7 @@ import com.runecraft.osrs.content.skilling.SkillingContent;
 import com.runecraft.osrs.content.slayer.SlayerContent;
 import com.runecraft.osrs.content.systems.SystemsContent;
 import com.runecraft.osrs.content.world.WorldContent;
+import com.runecraft.osrs.content.zeah.ZeahContent;
 
 import java.util.List;
 
@@ -23,7 +24,8 @@ public final class Modules {
             new QuestsContent(),
             new SystemsContent(),
             new MinigamesContent(),
-            new WorldContent());
+            new WorldContent(),
+            new ZeahContent());
 
     private Modules() {
     }

@@ -8,6 +8,7 @@ import com.runecraft.client.content.raids.RaidsClientHooks;
 import com.runecraft.client.content.quests.QuestsClientHooks;
 import com.runecraft.client.content.systems.SystemsClientHooks;
 import com.runecraft.client.content.minigames.MinigamesClientHooks;
+import com.runecraft.client.content.zeah.ZeahClientHooks;
 
 import java.util.List;
 
@@ -21,7 +22,8 @@ public final class ClientModuleHooksRegistry {
             new RaidsClientHooks(),
             new QuestsClientHooks(),
             new SystemsClientHooks(),
-            new MinigamesClientHooks());
+            new MinigamesClientHooks(),
+            new ZeahClientHooks());
 
     private ClientModuleHooksRegistry() {
     }
