@@ -8,6 +8,7 @@ import com.runecraft.content.raids.RaidsHooks;
 import com.runecraft.content.quests.QuestsHooks;
 import com.runecraft.content.systems.SystemsHooks;
 import com.runecraft.content.minigames.MinigamesHooks;
+import com.runecraft.content.npcs.NpcsHooks;
 
 import java.util.List;
 
@@ -21,7 +22,8 @@ public final class ModuleHooksRegistry {
             new RaidsHooks(),
             new QuestsHooks(),
             new SystemsHooks(),
-            new MinigamesHooks());
+            new MinigamesHooks(),
+            new NpcsHooks());
 
     private ModuleHooksRegistry() {
     }
