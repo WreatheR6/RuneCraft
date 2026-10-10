@@ -175,8 +175,9 @@ public final class Mechanics {
         };
         int maxHit = (int) Math.round(a.maxHit() * multiplier);
         if (a.special() == AttackDef.Special.DRAGONFIRE) {
-            boolean shield = "anti_dragon_shield".equals(Inv.idOf(target.getOffHandStack()))
-                    || "dragonfire_shield".equals(Inv.idOf(target.getOffHandStack()));
+            String off = Inv.idOf(target.getOffHandStack());
+            boolean shield = off.equals("anti_dragon_shield") || off.startsWith("dragonfire_")
+                    || off.equals("elemental_shield") || off.equals("mind_shield") || off.equals("ancient_wyvern_shield");
             boolean antifire = target.hasStatusEffect(StatusEffects.FIRE_RESISTANCE);
             boolean prayer = data.isActive(Prayer.PROTECT_FROM_MAGIC);
             if (shield && antifire) {
