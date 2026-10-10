@@ -76,8 +76,8 @@ final class BestiaryHumQuest {
         // ---- brutes: giants, ogres, trolls ----
         l.add(brute("glod", S_HUMAN, 0xA87A50, "skin", "giant", 0x5A3A1E, "club"));
         l.add(brute("moss_guardian", S_HUMAN, 0x5A7A3B, "moss", "giant", 0x3A5A1A, "club"));
-        l.add(brute("quest_arrg", 1.4358974f, 0x7A7468, "rock", "troll", 0x4A3A2A, "club"));
-        l.add(brute("quest_mother", 1.5384614f, 0x6A7068, "rock", "troll", 0x3A3A2A, "none"));
+        l.add(brute("quest_arrg", 1.4358974f, 0x7A7468, "hide", "troll", 0x4A3A2A, "club"));
+        l.add(brute("quest_mother", 1.5384614f, 0x6A7068, "hide", "troll", 0x3A3A2A, "none"));
         l.add(barrelchest());
         l.add(tarn());
         l.add(lizardman());
@@ -102,8 +102,8 @@ final class BestiaryHumQuest {
         l.add(vampyre("dessous", 1.2f, 0x6A6A78, 0x2A2A34, 0x8A1A1A));
         l.add(vampyre("ranis_drakan", 1.2f, 0xC8C0C8, 0x2A1A2A, 0xA01A2A));
         l.add(vampyre("vanstrom_klause", 1.25f, 0xB8B4C0, 0x1A1A24, 0x5A1A6A));
-        l.add(brute("dad", 2.0f, 0x7A7468, "rock", "troll", 0x5A4A2A, "club"));
-        l.add(brute("troll_general", 1.8f, 0x6A7068, "rock", "troll", 0x4A3A2A, "general"));
+        l.add(brute("dad", 2.0f, 0x7A7468, "hide", "troll", 0x5A4A2A, "club"));
+        l.add(brute("troll_general", 1.8f, 0x6A7068, "hide", "troll", 0x4A3A2A, "general"));
         l.add(brute("ice_troll_king", 2.0f, 0x8AB0C8, "ice", "troll", 0x3A5A7A, "king"));
         l.add(brute("slash_bash", 1.7f, 0x7A8A6A, "flesh", "ogre", 0x3A3A2A, "club"));
         l.add(demon("gorak", 0x6A5A4A, 0x2A2018, 0x3A3028, 0xFFD040, 2).scale(1.5f).build());
@@ -192,7 +192,7 @@ final class BestiaryHumQuest {
                 .skirt(tunic, "cloth", 5, dk, 6).belt(0x2A1E14, 0xB0A070, true).boots(0x2A1E14, "leather").gauntlets(0x3A2A1A, "leather");
         f.p("jerkin", "chest", leather).at(0, -6, -2.7f).mat("leather").box(-3.5f, 0.5f, -0.5f, 7, 5, 1, 0.1f).add();
         f.p("jerkin_back", "chest", darker(leather, 0.85f)).at(0, -6, 2.7f).mat("leather").box(-3.5f, 0.5f, -0.5f, 7, 5, 1, 0.1f).add();
-        f.s("shoulder_pad", "arm", true, leather).at(0, -1.5f, 0).rot(0, 0, -15).mat("leather").box(-2, -1, -2, 4, 3, 4, 0.1f).add();
+        f.s("shoulder_pad", "arm", true, leather).at(0, -1.5f, 0).rot(0, 0, 15).mat("leather").box(-2, -1, -2, 4, 3, 4, 0.1f).add();
         f.s("bracer", "forearm", true, darker(leather, 0.8f)).at(0, 1, 0).mat("leather").box(-1.5f, 0, -1.5f, 3, 3, 3, 0.25f).add();
         f.p("bandolier", "chest", 0x2A1E14).at(0, -6, 0).rot(0, 0, 32).mat("leather").box(-5.5f, 0, -3, 11, 1, 6, 0.2f).add();
         switch (hat) {
@@ -330,7 +330,7 @@ final class BestiaryHumQuest {
                 .armsBuild(coat, "cloth", coat, "cloth", skin, "skin").claws(lighter(skin, 0.3f), 2)
                 .legsBuild(coat, "cloth", coat, "cloth", 0x0E0E12, "leather").hair(0x1A1418, "slick").cape(coat, lining, 22, true)
                 .skirt(coat, "cloth", 9, lining, 6);
-        f.s("collar_wing", "cape_collar", false, lining).at(4, -1, 0).rot(0, 0, -25).mat("cloth").box(0, -5, -2, 1, 5, 4).add();
+        f.s("collar_wing", "cape_collar", false, lining).at(4, -1, 0).rot(0, 0, 25).mat("cloth").box(0, -5, -2, 1, 5, 4).add();
         f.p("collar_back", "cape_collar", coat).at(0, -1, 2.5f).rot(-12, 0, 0).mat("cloth").box(-4, -5, -0.5f, 8, 5, 1).add();
         f.s("fang", "head", false, IVORY).at(1, -1.5f, -3.1f).mat("horn").box(-0.5f, 0, -0.4f, 1, 1, 1).add();
         f.s("pointed_ear", "head", false, skin).at(3, -4.5f, 0).rot(0, -20, -30).mat("skin").box(0, -1, -0.5f, 2, 2, 1).add();
@@ -396,7 +396,7 @@ final class BestiaryHumQuest {
                     .mat("moss").box(-1, -3, -0.5f, 2, 3, 1).add();
         }
         f.s("moss_shoulder", "chest", false, 0x3A6A2A).at(4.5f, -7, 0).rot(0, 0, -25).mat("moss").box(-2, -2, -3, 4, 3, 6).add();
-        f.s("branch", "chest", false, darker(bark, 0.9f)).at(3, -7, 2).rot(-30, 0, -30).mat("wood").box(-0.5f, -6, -0.5f, 1, 6, 1).add();
+        f.s("branch", "chest", false, darker(bark, 0.9f)).at(3, -7, 2).rot(-30, 0, 30).mat("wood").box(-0.5f, -6, -0.5f, 1, 6, 1).add();
         f.staff("hand_r", 8, 0x4A3420, 0x2A5A1A, 0x60FF40, "full");
         return f.build();
     }
@@ -447,7 +447,7 @@ final class BestiaryHumQuest {
         f.horns(0x5A5060, 2.2f, -7, -0.5f, 25, 30, 1);
         f.staff("hand_r", 8, 0x2A1E14, 0x8A40C0, 0xA060FF, "full");
         f.p("staff_skull", "staff_band", BONE).at(0, -4.5f, 0).mat("bone").pattern("skull").box(-1.5f, -1.5f, -1.5f, 3, 3, 3).add();
-        f.s("bone_pauldron", "arm", true, BONE).at(0, -1.5f, 0).rot(0, 0, -20).mat("bone").box(-2, -1, -2, 4, 2, 4).add();
+        f.s("bone_pauldron", "arm", true, BONE).at(0, -1.5f, 0).rot(0, 0, 20).mat("bone").box(-2, -1, -2, 4, 2, 4).add();
         return f.build();
     }
 
@@ -753,7 +753,7 @@ final class BestiaryHumQuest {
         for (int k = 0; k < 3; k++) {
             f.s("root" + k, "foot", true, darker(bark, 0.8f)).at(-1 + k, 1, -2.5f).rot(-10, (k - 1) * -30, 0).mat("wood").box(-0.5f, -0.5f, -3, 1, 1, 3).add();
         }
-        f.s("branch", "chest", false, darker(bark, 0.9f)).at(4, -8, 1).rot(-20, 0, -40).mat("wood").box(-0.5f, -6, -0.5f, 1, 6, 1).add();
+        f.s("branch", "chest", false, darker(bark, 0.9f)).at(4, -8, 1).rot(-20, 0, 40).mat("wood").box(-0.5f, -6, -0.5f, 1, 6, 1).add();
         f.s("branch_leaf", "branch", true, 0x3A7A2A).at(0, -6, 0).mat("moss").box(-1.5f, -2, -1.5f, 3, 2, 3).add();
         f.p("bark_mouth", "head", 0x1A120A).at(0, -2, -3.6f).mat("wood").glow("maw").box(-2, -1, -0.3f, 4, 2, 1).add();
         return f.build();

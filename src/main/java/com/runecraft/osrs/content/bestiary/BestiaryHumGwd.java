@@ -65,8 +65,14 @@ final class BestiaryHumGwd {
             f.p("collar_spike" + k, "gorget", IVORY).at(-4.5f + k * 3, -1, -3).rot(-30, 0, (k - 1.5f) * 20).mat("horn").box(-0.5f, -2, -0.5f, 1, 2, 1).add();
         }
         f.s("bracer", "forearm", true, BANDOS_DK).at(0, 2, 0).mat("metal").box(-4, 0, -4, 8, 4, 8, -0.3f).add();
-        f.s("bracer_spike", "bracer", true, IVORY).at(3.5f, 2, 0).rot(0, 0, -70).mat("horn").box(-0.5f, -2, -0.5f, 1, 2, 1).add();
+        f.s("bracer_spike", "bracer", true, IVORY).at(3.5f, 2, 0).rot(0, 0, 70).mat("horn").box(-0.5f, -2, -0.5f, 1, 2, 1).add();
         f.p("bandos_emblem", "breastplate", GOLD).at(0, 2, -1.1f).mat("metal").box(-1.5f, 0, -0.3f, 3, 3, 1).add();
+        f.hump(OURG, "hide", 14, 5, 7);
+        f.p("back_plate", "hump", BANDOS).accent(GOLD).at(0, -2.5f, 3.4f).mat("metal").box(-6, -2.5f, -0.5f, 12, 5, 1).add();
+        for (int k = 0; k < 3; k++) {
+            f.p("hump_spike" + k, "hump", IVORY).at(-4 + k * 4, -5, 1).rot(-35, 0, (k - 1) * 18).mat("horn").box(-0.5f, -3, -0.5f, 1, 3, 1, 0.1f).add();
+        }
+        f.p("bandos_cloth", "hips", 0x5A2A1A).at(0, 1, -5.6f).rot(-6, 0, 0).mat("cloth").box(-2, 0, -0.5f, 4, 8, 1).add();
         f.mace("hand_r", 40, DARK_LEATHER, 0x6A6A6A, 6);
         return f.build();
     }
@@ -140,13 +146,13 @@ final class BestiaryHumGwd {
 
     /** Commander Zilyana: Saradomin's icyene general in white-and-gold plate, with great white wings and her sword. */
     static ModelSpec zilyana() {
-        Fig f = fig("commander_zilyana").legs(13, 3).torso(7, 6, 8, 6, 5, 4).arms(12, 3, 3).head(6, 7, 6).pose(4, 3, 7).armPitch(-6, -40)
+        Fig f = fig("commander_zilyana").legs(13, 3).torso(7, 6, 8, 6, 5, 4).arms(12, 3, 3).head(6, 6, 6).pose(4, 3, 7).armPitch(-6, -40)
                 .skin(0xE8C8A8, "skin").shadow(0.7f);
         f.core(0xC8CCD8, "metal", SARA_WHITE, "metal", SARA_WHITE, "metal").head("human", 0)
                 .armsBuild(SARA_WHITE, "metal", SARA_WHITE, "metal", 0xC8CCD8, "metal").legsBuild(SARA_BLUE, "cloth", SARA_WHITE, "metal", 0xC8CCD8, "metal")
                 .platebody(SARA_WHITE, GOLD).pauldrons(SARA_WHITE, GOLD, 2, 0, 0).armPlates(SARA_WHITE, GOLD).legPlates(SARA_WHITE, GOLD)
                 .skirt(SARA_BLUE, "cloth", 8, GOLD, 9).belt(0x2A3A7A, GOLD, false).hair(0xE8D080, "long");
-        f.p("tiara", "head", GOLD).at(0, -6.6f, -3.1f).mat("metal").box(-3, -0.5f, -0.5f, 6, 1, 1).box(-0.5f, -1.5f, -0.6f, 1, 1, 1).add();
+        f.p("tiara", "head", GOLD).at(0, -5.6f, -3.1f).mat("metal").box(-3, -0.5f, -0.5f, 6, 1, 1).box(-0.5f, -1.5f, -0.6f, 1, 1, 1).add();
         f.p("tiara_gem", "tiara", 0x80B0FF).at(0, -1, -0.8f).mat("energy").glow("full").box(-0.5f, -0.5f, -0.3f, 1, 1, 1, -0.1f).add();
         f.p("sara_star", "breastplate", SARA_BLUE).at(0, 1.5f, -1.1f).mat("metal").box(-0.5f, 0, -0.3f, 1, 3, 1).box(-1.5f, 1, -0.3f, 3, 1, 1).add();
         f.featherWings("chest", 0xF6F6FA, 0xD8E0F0, 0xC8D0E8, 2, -5, 3, 15, 6);
@@ -252,7 +258,7 @@ final class BestiaryHumGwd {
         Fig f = aviansie("kreearra", 0x5A4232, 0xC8B090, 0xD8A030, 0xFFE060, 20, 4);
         f.p("arma_chest", "chest", ARMA_GOLD).at(0, -f.chestH + 1, -f.depth / 2f - 1.2f).mat("metal").box(-4, 0, -0.5f, 8, 5, 1).add();
         f.p("arma_chest_gem", "arma_chest", 0x40E0E0).at(0, 2, -0.7f).mat("energy").glow("full").box(-1, -1, -0.3f, 2, 2, 1).add();
-        f.s("arma_shoulder", "arm", true, ARMA_GOLD).at(0, -1.5f, 0).rot(0, 0, -14).mat("metal").box(-3, -1.5f, -3, 6, 3, 6, 0.1f).add();
+        f.s("arma_shoulder", "arm", true, ARMA_GOLD).at(0, -1.5f, 0).rot(0, 0, 14).mat("metal").box(-3, -1.5f, -3, 6, 3, 6, 0.1f).add();
         f.s("arma_bracer", "forearm", true, ARMA_GOLD).at(0, 2, 0).mat("metal").box(-2.5f, 0, -2.5f, 5, 3, 5, -0.2f).add();
         f.skirt(0xE8E0D0, "cloth", 7, ARMA_GOLD, 8);
         f.belt(0x3A2A1E, ARMA_GOLD, false);
@@ -291,7 +297,7 @@ final class BestiaryHumGwd {
                 .legsBuild(dk, "metal", plate, "metal", dk, "metal")
                 .platebody(plate, violet).pauldrons(plate, violet, 3, 2, 0xD8D0E0).armPlates(plate, violet).legPlates(plate, violet)
                 .tassets(plate, violet, 6).belt(dk, violet, false)
-                .horns(0xD0C8D8, 2.4f, -6, 0.5f, 55, 50, 2);
+                .horns(0xD0C8D8, 2.6f, -6, 0.5f, 60, 25, 3);
         f.p("skull_helm", "head", 0x4A4058).at(0, -7, -0.2f).mat("bone").box(-3.5f, -0.5f, -3.5f, 7, 3, 7, 0.1f).add();
         f.p("skull_crest", "skull_helm", 0x6A5A78).at(0, -0.5f, 0).mat("bone").box(-0.5f, -2, -3, 1, 2, 6).add();
         f.p("rune_core", "breastplate", violet).at(0, 1.5f, -1.2f).mat("energy").glow("full").box(-1, 0, -0.3f, 2, 2, 1).add();

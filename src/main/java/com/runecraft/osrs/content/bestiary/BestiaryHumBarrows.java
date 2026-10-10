@@ -105,7 +105,7 @@ final class BestiaryHumBarrows {
         f.p("leathertop", "chest", green).at(0, -6, -2.6f).mat("leather").box(-3.5f, 0.5f, -0.5f, 7, 5, 1, 0.1f).add();
         f.p("studs", "leathertop", 0xA89A70).at(0, 1, -0.7f).mat("metal").box(-2.5f, 0, -0.2f, 1, 1, 1, -0.2f).box(1.5f, 0, -0.2f, 1, 1, 1, -0.2f)
                 .box(-2.5f, 2, -0.2f, 1, 1, 1, -0.2f).box(1.5f, 2, -0.2f, 1, 1, 1, -0.2f).box(-0.5f, 1, -0.2f, 1, 1, 1, -0.2f).add();
-        f.s("shoulder_guard", "arm", true, leather).at(0, -1.5f, 0).rot(0, 0, -12).mat("leather").box(-2, -1, -2, 4, 3, 4, 0.1f).add();
+        f.s("shoulder_guard", "arm", true, leather).at(0, -1.5f, 0).rot(0, 0, 12).mat("leather").box(-2, -1, -2, 4, 3, 4, 0.1f).add();
         f.s("bracer", "forearm", true, dk).at(0, 1, 0).mat("leather").box(-1.5f, 0, -1.5f, 3, 3, 3, 0.25f).add();
         f.p("quiver", "chest", dk).at(1.5f, -6, 3).rot(0, 0, 25).mat("leather").box(-1.5f, 0, -1, 3, 7, 2).add();
         f.p("quiver_bolts", "quiver", 0x8A8A80).at(0, 0, 0).mat("metal").box(-1, -2, -0.5f, 2, 2, 1).add();

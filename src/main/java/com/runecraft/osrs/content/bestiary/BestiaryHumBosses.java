@@ -109,7 +109,7 @@ final class BestiaryHumBosses {
         f.p("shirt_front", "chest", 0xE8E4E0).at(0, -6, -2.6f).mat("cloth").box(-1.5f, 0.5f, -0.5f, 3, 4, 1).add();
         f.p("cravat", "shirt_front", red).at(0, 0.5f, -0.6f).mat("cloth").box(-1, 0, -0.3f, 2, 2, 1).add();
         f.s("lapel", "chest", false, 0x2A2832).at(2.2f, -5.5f, -2.6f).rot(0, 0, 15).mat("cloth").box(-0.5f, 0, -0.6f, 1, 5, 1).add();
-        f.s("collar_wing", "cape_collar", false, red).at(3.5f, -1, 0).rot(0, 0, -25).mat("cloth").box(0, -5, -2, 1, 5, 4).add();
+        f.s("collar_wing", "cape_collar", false, red).at(3.5f, -1, 0).rot(0, 0, 25).mat("cloth").box(0, -5, -2, 1, 5, 4).add();
         f.p("collar_back", "cape_collar", black).at(0, -1, 2.5f).rot(-12, 0, 0).mat("cloth").box(-4, -5, -0.5f, 8, 5, 1).add();
         f.s("fang", "head", false, IVORY).at(1, -1.5f, -3.1f).mat("horn").box(-0.5f, 0, -0.4f, 1, 1, 1).add();
         f.p("medallion", "chest", GOLD).at(0, -2, -2.8f).mat("metal").box(-1, 0, -0.5f, 2, 2, 1).add();
@@ -141,7 +141,7 @@ final class BestiaryHumBosses {
         f.p("spine", "waist", bone).at(0, -5, 0).mat("bone").box(-0.5f, 0, -0.5f, 1, 5, 1).add();
         f.p("helm", "head", armour).at(0, -7, 0).mat("metal").box(-3.5f, -0.5f, -3.5f, 7, 3, 7, 0.1f).add();
         f.p("helm_crest", "helm", GOLD).at(0, -0.5f, 0).mat("metal").box(-0.5f, -3, -3.5f, 1, 3, 7).add();
-        f.s("helm_wing", "helm", false, GOLD).at(3.5f, 0, 0).rot(0, 0, -40).mat("metal").box(0, -3, -1, 1, 3, 2).add();
+        f.s("helm_wing", "helm", false, GOLD).at(3.5f, 0, 0).rot(0, 0, 40).mat("metal").box(0, -3, -1, 1, 3, 2).add();
         f.p("soul_flame", "helm_crest", glow).at(0, -3, 0).mat("energy").glow("full").box(-1, -2, -1, 2, 2, 2).add();
         f.halberd("hand_r", 20, 0x2A1A1A, 0xA8A8B8, 22);
         f.p("halberd_glow", "hal_blade", glow).at(3.5f, 0, -0.6f).mat("energy").glow("full").box(-0.5f, -3, -0.2f, 1, 6, 1, -0.2f).add();
@@ -279,9 +279,9 @@ final class BestiaryHumBosses {
             f.p("crown_spike" + k, "crown", fire ? 0xFFB030 : 0xE8FFFF).at(-3 + k * 1.5f, -1.5f, -3.5f).rot(-10, 0, (k - 2) * 10)
                     .mat(fire ? "lava" : "ice").glow(fire ? "full" : null).box(-0.5f, -3 - (k == 2 ? 2 : k % 2), -0.5f, 1, 3 + (k == 2 ? 2 : k % 2), 1).add();
         }
-        f.s("shoulder_shard", "chest", false, fire ? 0xFF9030 : 0xD8F4FF).at(5.5f, -9, 0).rot(0, 0, -30).mat(fire ? "lava" : "ice")
+        f.s("shoulder_shard", "chest", false, fire ? 0xFF9030 : 0xD8F4FF).at(5.5f, -9, 0).rot(0, 0, 30).mat(fire ? "lava" : "ice")
                 .box(-1.5f, -5, -1.5f, 3, 5, 3).add();
-        f.s("shoulder_shard2", "chest", false, fire ? 0xC04010 : 0xB8E0F8).at(6.5f, -8, 2).rot(20, 0, -50).mat(fire ? "lava" : "ice")
+        f.s("shoulder_shard2", "chest", false, fire ? 0xC04010 : 0xB8E0F8).at(6.5f, -8, 2).rot(20, 0, 50).mat(fire ? "lava" : "ice")
                 .box(-1, -4, -1, 2, 4, 2).add();
         if (fire) {
             f.hair(0xFF7020, "long");
@@ -312,8 +312,8 @@ final class BestiaryHumBosses {
                 .tassets(armour, trim, 6).belt(0x2A2018, trim, false).helm("full", armour, trim);
         f.p("moon_mask", "helm", trim).at(0, -4, -4.1f).mat("metal").box(-2.5f, -2.5f, -0.4f, 5, 5, 1).add();
         f.p("moon_face", "moon_mask", glow).at(0, 0, -0.5f).mat("energy").glow("full").box(-1.5f, -1.5f, -0.3f, 3, 3, 1, -0.1f).add();
-        f.s("crescent", "helm", false, trim).at(3.5f, -7, 0).rot(0, 0, -30).mat("metal").box(-0.5f, -4, -0.5f, 1, 4, 1).add();
-        f.s("crescent_tip", "crescent", true, trim).at(0, -4, 0).rot(0, 0, 45).mat("metal").box(-0.5f, -3, -0.5f, 1, 3, 1).add();
+        f.s("crescent", "helm", false, trim).at(3.5f, -7, 0).rot(0, 0, 30).mat("metal").box(-0.5f, -4, -0.5f, 1, 4, 1).add();
+        f.s("crescent_tip", "crescent", true, trim).at(0, -4, 0).rot(0, 0, -50).mat("metal").box(-0.5f, -3, -0.5f, 1, 3, 1).add();
         f.p("moon_gem", "breastplate", glow).at(0, 2, -1.2f).mat("energy").glow("full").box(-1, -1, -0.3f, 2, 2, 1).add();
         return f;
     }

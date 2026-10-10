@@ -33,7 +33,7 @@ final class BestiaryHumForms {
                 .tail(mid, horn, 5, "spade").loincloth(darker(dark, 0.8f), 5).backSpikes(horn, 3, 1);
         f.s("shoulder", "chest", false, skin).at(f.chestW / 2f - 1, -f.chestH + 1, 0).rot(0, 0, -22).mat("hide")
                 .box(-2, -3, -3, 5, 4, 6).add();
-        f.s("shoulder_spike", "shoulder", true, horn).at(1.5f, -3, 0).rot(-10, 0, -25).mat("horn").box(-0.5f, -3, -0.5f, 1, 3, 1).add();
+        f.s("shoulder_spike", "shoulder", true, horn).at(1.5f, -3, 0).rot(-10, 0, 25).mat("horn").box(-0.5f, -3, -0.5f, 1, 3, 1).add();
         f.s("forearm_ridge", "forearm", true, darker(dark, 0.9f)).at(f.foreW / 2f, 1, 0).mat("horn").box(-0.3f, 0, -1, 1, f.foreLen() - 2, 2).add();
         return f;
     }

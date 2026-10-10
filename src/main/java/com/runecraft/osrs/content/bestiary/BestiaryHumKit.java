@@ -198,7 +198,7 @@ final class BestiaryHumKit {
                     .box(-chestW / 2f, -chestH, -depth / 2f - 0.5f, chestW, chestH, depth + 1).add();
             p("neck", "chest", skin).at(0, -chestH, 0).mat(skinMat).box(-1.5f, -2, -1.5f, 3, 2, 3).add();
             // trapezius slopes from neck to shoulders and a pelvis band: breaks the box silhouette
-            s("trap", "chest", false, darker(chestCol, 0.94f)).at(1.2f, -chestH + 0.2f, 0.3f).rot(0, 0, -24).mat(chestMat)
+            s("trap", "chest", false, darker(chestCol, 0.94f)).at(1.2f, -chestH - 0.6f, 0.3f).rot(0, 0, 22).mat(chestMat)
                     .box(0, -1, -depth / 2f + 0.5f, Math.max(2, chestW / 2 - 1), 2, depth - 1).add();
             p("pelvis_band", "hips", darker(pelvisCol, 0.9f)).at(0, 1.5f, 0).mat(pelvisMat)
                     .box(-hipW / 2f + 0.5f, 0, -depth / 2f - 0.25f, hipW - 1, 1, depth, 0.15f).add();
@@ -393,7 +393,7 @@ final class BestiaryHumKit {
         /** Layered pauldrons: 2-3 overlapping rotated plates with an optional rim colour and spikes. */
         Fig pauldrons(int col, int rim, int layers, int spikes, int spikeCol) {
             int dk = darker(col, 0.8f);
-            s("pauldron", "arm", true, col).accent(rim).at(0, -1.5f, 0).rot(0, 0, -14).mat("metal")
+            s("pauldron", "arm", true, col).accent(rim).at(0, -1.5f, 0).rot(0, 0, spread + 8).mat("metal")
                     .box(-armW / 2f - 1, -1.5f, -armW / 2f - 1, armW + 3, 3, armW + 2, 0.1f).add();
             for (int i = 1; i < layers; i++) {
                 s("pauldron" + i, "pauldron", true, i % 2 == 1 ? dk : col).at(0.5f, 1.4f * i, 0).rot(0, 0, 6 * i).mat("metal")
@@ -405,7 +405,7 @@ final class BestiaryHumKit {
             }
             for (int k = 0; k < spikes; k++) {
                 s("pauldron_spike" + k, "pauldron", true, spikeCol).at(-0.5f + k * 1.6f - (spikes - 1) * 0.8f + 1, -1.5f, 0)
-                        .rot(0, 0, -20 - k * 8).mat("horn").box(-0.5f, -3, -0.5f, 1, 3, 1).add();
+                        .rot(0, 0, 15 + k * 12).mat("horn").box(-0.5f, -3, -0.5f, 1, 3, 1).add();
             }
             return this;
         }
@@ -677,10 +677,10 @@ final class BestiaryHumKit {
         /** Curving three-segment horns on the head. */
         Fig horns(int col, float x, float y, float z, float out, float back, int size) {
             int tip = darker(col, 0.7f);
-            s("horn", "head", false, col).at(x, y, z).rot(-back, 0, -out).mat("horn").box(-size / 2f, -size - 1, -size / 2f, size, size + 1, size).add();
-            s("horn_mid", "horn", true, darker(col, 0.88f)).at(0, -size - 1, 0).rot(-back * 0.8f, 0, out * 0.6f).mat("horn")
+            s("horn", "head", false, col).at(x, y, z).rot(-back, 0, out).mat("horn").box(-size / 2f, -size - 1, -size / 2f, size, size + 1, size).add();
+            s("horn_mid", "horn", true, darker(col, 0.88f)).at(0, -size - 1, 0).rot(-back * 0.6f, 0, -out * 0.5f).mat("horn")
                     .box(-(size - 1) / 2f, -size - 1, -(size - 1) / 2f, Math.max(1, size - 1), size + 1, Math.max(1, size - 1)).add();
-            s("horn_tip", "horn_mid", true, tip).at(0, -size - 1, 0).rot(-back * 0.6f, 0, out * 0.5f).mat("horn")
+            s("horn_tip", "horn_mid", true, tip).at(0, -size - 1, 0).rot(-back * 0.5f, 0, -out * 0.4f).mat("horn")
                     .box(-0.5f, -size, -0.5f, 1, size, 1).add();
             return this;
         }
