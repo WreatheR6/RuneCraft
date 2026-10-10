@@ -49,6 +49,7 @@ Implement the methods you need on your module class (`ContentModule`):
       .slayer(85, "abyssal_demons").skin(0x3A1A3A, 0x2A102A, 0x2A102A, 0xA02020)
       .size(0.8f, 2.2f, 1.2f).spawn(Region.WILDERNESS, 4, 1, 2).underground()
   ```
+  - **Where it spawns:** Gielinor has no natural (biome) mob spawning. A monster only appears at its OSRS spawn locations: a camp of your module (see the dungeons, zeah, islands and godwars camps) or a point in `osrs/world/SpawnTable.java` (`SpawnPoint(monster, osrsX, osrsY, floorY, count, radius, respawnTicks)`), kept stocked by `world/LocationSpawner`. `.spawn(Region, ...)` only records the kingdoms it lives in. `SpawnTableTest` fails for a hostile monster with no camp or spawn point unless it is listed in `SpawnTable.encounterOnly()` (boss minions, raids, minigames, superiors).
   - `size(width, height, scale)`: hitbox width and height in blocks, multiplied by the render/hitbox scale.
   - `model("id")`: points at a custom `ModelSpec`. A spec with the same id as the creature is picked up automatically. Without one, the creature renders as a biped with a texture generated from `skin(...)`.
 - `bosses()`: return `List<BossDef>`. Same builder plus `.phase(belowPercent, message, dmgMult, summonMinions, AttackDef...)`, `.at(place)`, `.key(item)`, `.pet(item)`, `.minion(creatureId, n)`, `.arena(radius, style)`, `.raidOnly()`, `.wilderness()`, `.category("Bosses"|"Raids"|...)`.
