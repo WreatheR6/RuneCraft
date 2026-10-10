@@ -5,7 +5,7 @@ Reads build/catalog.json (produced by tools/run_core_tests.sh) and writes everyt
 src/main/resources/. Deterministic (seeded randomness) and idempotent (overwrites outputs).
 
 Usage: python3 tools/gen_assets.py [--catalog build/catalog.json] [--out src/main/resources]
-Requires: Python 3 + Pillow.
+Requires: Python 3 + Pillow + numpy.
 """
 import argparse
 import json
@@ -18,6 +18,9 @@ import zlib
 from collections import Counter
 
 from PIL import Image, ImageDraw
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import model_painter  # noqa: E402  (per-pixel ModelSpec texture painter; needs numpy)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CATALOG = os.path.join(ROOT, "build", "catalog.json")
@@ -4672,26 +4675,6 @@ def hash01(*keys):
     return (zlib.crc32("|".join(map(str, keys)).encode()) & 0xFFFFFF) / float(0x1000000)
 
 
-def face_xyz(face, i, j, w, h, d):
-    """3D surface coordinate (X right, Y down, Z back; the front face is Z=0) of a net pixel."""
-    if face == "front":
-        return i, j, 0
-    if face == "back":
-        return w - 1 - i, j, d - 1
-    if face == "right":
-        return 0, j, d - 1 - i
-    if face == "left":
-        return w - 1, j, i
-    if face == "top":
-        return i, 0, d - 1 - j
-    return i, h - 1, j  # bottom
-
-
-def face_axes(face):
-    """Which of X/Y/Z (0/1/2) vary across a face."""
-    return {"front": (0, 1), "back": (0, 1), "right": (2, 1), "left": (2, 1), "top": (0, 2), "bottom": (0, 2)}[face]
-
-
 def eye_colour(base, accent):
     a, b = rgb(accent), rgb(base)
     if sat(a) > 0.45 and lum(a) > 110 and cdist(a, b) > 90:
@@ -4701,211 +4684,26 @@ def eye_colour(base, accent):
     return (255, 214, 60)
 
 
-def pattern_colour(pattern, base, accent, face, i, j, fw, fh, xyz, dims, key):
-    """Base colour of one net pixel after applying the part's surface pattern (before lighting)."""
-    w, h, d = dims
-    axis = max(range(3), key=lambda k: dims[k])
-    in_plane = axis in face_axes(face)
-    t = xyz[axis]
-    if pattern == "scales":
-        if fw < 3 or fh < 3:
-            return base
-        r = j // 2
-        k = (i + 2 * (r % 2)) % 4
-        edge = shade(mix(base, accent, 0.5), 0.72)
-        if j % 2 == 1:
-            return edge if k in (0, 3) else shade(base, 0.92)
-        return light(base, 1.14) if k in (1, 2) else base
-    if pattern == "plates":
-        if face == "bottom":
-            belly = mix(base, accent, 0.55)
-            return shade(belly, 0.75) if t % 3 == 2 and in_plane else light(belly, 1.08)
-        if dims[axis] < 4 or not in_plane:
-            return base
-        s = t % 4
-        if s == 3:
-            return shade(mix(base, accent, 0.45), 0.68)
-        return light(base, 1.12) if s == 0 else base
-    if pattern == "spots":
-        if fw * fh < 6:
-            return base
-        cell = 4 if min(fw, fh) < 10 else 5
-        cx, cy = i // cell, j // cell
-        if hash01(key, face, cx, cy) < 0.55:
-            sx = cx * cell + int(hash01(key, face, cx, cy, "x") * cell)
-            sy = cy * cell + int(hash01(key, face, cx, cy, "y") * cell)
-            big = min(fw, fh) >= 8 and hash01(key, face, cx, cy, "r") < 0.5
-            dd = max(abs(i - sx), abs(j - sy))
-            if dd == 0 or (big and abs(i - sx) + abs(j - sy) == 1):
-                return accent if cdist(accent, base) > 40 else light(base, 1.3)
-        return base
-    if pattern == "stripes":
-        if not in_plane or dims[axis] < 3:
-            return base
-        other = [a for a in face_axes(face) if a != axis][0]
-        wob = int(round(math.sin(xyz[other] * 0.9 + hash01(key) * 6) * 0.8))
-        period = 4 if dims[axis] < 14 else 5
-        stripe_col = accent if cdist(accent, base) > 40 else shade(base, 0.55)
-        return stripe_col if (t + wob) % period == 0 else base
-    if pattern == "glow":
-        ci = abs(2 * i / max(1, fw - 1) - 1) if fw > 1 else 0
-        cj = abs(2 * j / max(1, fh - 1) - 1) if fh > 1 else 0
-        centre = 1 - max(ci, cj)
-        c = mix(base, WHITE, 0.12 + 0.38 * centre)
-        if hash01(key, face, i, j) < 0.07:
-            c = mix(mix(base, accent, 0.4), WHITE, 0.6)
-        return c
-    return base
-
-
-def paint_eyes(img, fx, fy, fw, fh, base, accent):
-    eye = eye_colour(base, accent)
-    ew = 2 if fw >= 8 and fh >= 5 else 1
-    eh = 2 if fw >= 10 and fh >= 8 else 1
-    if fw == 1:
-        xs = [0]
-    else:
-        lx = max(0, fw // 2 - ew - max(1, fw // 6))
-        xs = [lx, fw - lx - ew]
-    ey = int(fh * 0.35) if fh >= 3 else 0
-    eye_pix = {(x + a, ey + b) for x in xs for a in range(ew) for b in range(eh)}
-    if fw >= 6 and fh >= 4:  # soft glow halo
-        for (x, y) in eye_pix:
-            for dx in (-1, 0, 1):
-                for dy in (-1, 0, 1):
-                    p = (x + dx, y + dy)
-                    if p not in eye_pix and 0 <= p[0] < fw and 0 <= p[1] < fh:
-                        cur = img.getpixel((fx + p[0], fy + p[1]))
-                        put(img, fx + p[0], fy + p[1], mix(cur, eye, 0.22))
-    if ey >= 1 and fh >= 5:  # brow ridge
-        for x in xs:
-            for a in range(-1, ew + 1):
-                if 0 <= x + a < fw:
-                    cur = img.getpixel((fx + x + a, fy + ey - 1))
-                    put(img, fx + x + a, fy + ey - 1, shade(cur, 0.62))
-    for k, x in enumerate(xs):
-        for a in range(ew):
-            for b in range(eh):
-                inner = (a == ew - 1) if k == 0 else (a == 0)
-                c = light(eye, 1.12) if b == 0 and not inner and ew > 1 else eye
-                if eh > 1 and b == eh - 1 and inner:
-                    c = shade(eye, 0.55)  # pupil slit towards the centre
-                put(img, fx + x + a, fy + ey + b, c)
-    if fh >= 4 and fw >= 3:
-        my = min(fh - 1, ey + eh + max(1, (fh - ey - eh) // 2))
-        x0, x1 = fw // 4, fw - fw // 4 - 1
-        mouth = mix((35, 10, 10), base, 0.15)
-        for x in range(x0, x1 + 1):
-            put(img, fx + x, fy + my, mouth)
-        if fw >= 6 and my + 1 < fh:
-            put(img, fx + x0, fy + my + 1, (240, 236, 220))
-            put(img, fx + x1, fy + my + 1, (240, 236, 220))
-
-
-def paint_snout(img, fx, fy, fw, fh, base):
-    dark = shade(base, 0.3)
-    if fw >= 4 and fh >= 2:
-        nx = max(0, fw // 2 - 1 - (1 if fw >= 6 else 0))
-        put(img, fx + nx, fy, dark)
-        put(img, fx + fw - 1 - nx, fy, dark)
-    if fh >= 3 and fw >= 2:
-        for x in range(fw):
-            put(img, fx + x, fy + fh - 1, shade(base, 0.45))
-
-
-def paint_model_box(img, spec_id, part, bi, box, eyes_here, snout_here):
-    w, h, d, u, v = box["w"], box["h"], box["d"], box["u"], box["v"]
-    base = rgb(part.get("color", 0x808080))
-    if lum(base) < 35:
-        base = mix(base, WHITE, 0.10)
-    acc = part.get("accent")
-    accent = rgb(acc) if acc is not None else shade(base, 0.75)
-    pattern = (part.get("pattern") or "none").lower()
-    role = part.get("role") or "STATIC"
-    key = f"{spec_id}|{part.get('name')}|{bi}"
-    rng = rng_for("model", key)
-    dims = (w, h, d)
-    faces = box_faces(u, v, w, h, d)
-    for face, (fx, fy, fw, fh) in faces.items():
-        if fw <= 0 or fh <= 0:
-            continue
-        for j in range(fh):
-            for i in range(fw):
-                xyz = face_xyz(face, i, j, w, h, d)
-                c = pattern_colour(pattern, base, accent, face, i, j, fw, fh, xyz, dims, key)
-                f = FACE_LIGHT[face]
-                if face in SIDE_FACES and fh > 2:
-                    f *= 1.07 - 0.14 * j / (fh - 1)
-                if fw >= 3 and fh >= 3:
-                    if i == 0 or j == 0:
-                        f *= 1.06
-                    elif i == fw - 1 or j == fh - 1:
-                        f *= 0.86
-                if pattern == "glow":
-                    f = 1 + (f - 1) * 0.3
-                f *= 1 + (rng.random() - 0.5) * (0.10 if fw * fh > 4 else 0.04)
-                put(img, fx + i, fy + j, light(c, f))
-        # role details
-        if role in LIMB_ROLES and h >= 4 and pattern != "glow":
-            tip = shade(mix(base, accent, 0.5), 0.55)
-            if face in SIDE_FACES:
-                for j in range(fh - (2 if h >= 8 else 1), fh):
-                    for i in range(fw):
-                        put(img, fx + i, fy + j, tip if (i + j) % 3 else shade(tip, 0.8))
-            elif face == "bottom":
-                for j in range(fh):
-                    for i in range(fw):
-                        put(img, fx + i, fy + j, shade(tip, 0.8))
-        if role == "JAW":
-            if face == "front" and fw >= 3:
-                for i in range(fw):
-                    put(img, fx + i, fy, (238, 232, 212) if i % 2 == 0 else (196, 188, 170))
-            if face == "top":
-                for j in range(fh):
-                    for i in range(fw):
-                        put(img, fx + i, fy + j, shade((150, 40, 40), 0.75 + rng.random() * 0.3))
-        if role in ("WING_LEFT", "WING_RIGHT") and face in ("top", "bottom") and pattern != "glow":
-            bone = shade(mix(base, accent, 0.5), 0.62 if face == "top" else 0.5)
-            along_x = w >= d
-            for j in range(fh):
-                for i in range(fw):
-                    X, _, Z = face_xyz(face, i, j, w, h, d)
-                    if (along_x and (X % 5 == 2 or Z == 0)) or (not along_x and (Z % 5 == 2 or X == 0)):
-                        put(img, fx + i, fy + j, bone)
-        if role == "TENTACLE" and face == "bottom" and fw >= 2:
-            for j in range(fh):
-                for i in range(fw):
-                    if (i + j) % 3 == 1:
-                        put(img, fx + i, fy + j, light(mix(base, accent, 0.4), 1.25))
-    if eyes_here:
-        fx, fy, fw, fh = faces["front"]
-        if fw > 0 and fh > 0:
-            paint_eyes(img, fx, fy, fw, fh, base, accent)
-    elif snout_here:
-        fx, fy, fw, fh = faces["front"]
-        if fw > 0 and fh > 0:
-            paint_snout(img, fx, fy, fw, fh, base)
-
-
-def model_texture(m):
-    img = new_img(m["tex_w"], m["tex_h"])
-    parts = m.get("parts", [])
-    auto_eyes = not any((p.get("pattern") or "").lower() == "eyes" for p in parts)
-    for p in parts:
-        boxes = p.get("boxes", [])
-        wants_eyes = (p.get("pattern") or "").lower() == "eyes" or (auto_eyes and p.get("role") == "HEAD")
-        eye_box = None
-        if wants_eyes and boxes:
-            eye_box = max(range(len(boxes)), key=lambda k: (boxes[k]["w"] * boxes[k]["h"], -k))
-        for bi, b in enumerate(boxes):
-            paint_model_box(img, m["id"], p, bi, b, bi == eye_box, wants_eyes and bi != eye_box)
-    return img
+def _model_texture_job(m):
+    img, glow = model_painter.model_texture(m)
+    return m["id"], img, glow
 
 
 def gen_model_textures(cat):
-    for m in cat.get("models", []):
-        save_png(model_texture(m), os.path.join(ASSETS, "textures", "entity", "model", m["id"] + ".png"),
-                 "model textures")
+    models = cat.get("models", [])
+    try:
+        import multiprocessing
+        with multiprocessing.Pool() as pool:
+            results = pool.map(_model_texture_job, models, chunksize=4)
+    except (ImportError, OSError):
+        results = [_model_texture_job(m) for m in models]
+    for mid, img, glow in results:
+        base = os.path.join(ASSETS, "textures", "entity", "model", mid)
+        save_png(img, base + ".png", "model textures")
+        if glow is not None:
+            save_png(glow, base + "_glow.png", "model glow layers")
+        elif os.path.exists(base + "_glow.png"):
+            os.remove(base + "_glow.png")
 
 
 # ----------------------------------------------------------------------------------------------
@@ -6227,8 +6025,11 @@ def validate(cat):
             errors.append(f"model {m['id']}: missing texture")
             continue
         with Image.open(tp) as im:
-            if im.size != (m["tex_w"], m["tex_h"]):
-                errors.append(f"model {m['id']}: texture is {im.size}, spec wants {(m['tex_w'], m['tex_h'])}")
+            k = im.size[0] // m["tex_w"]
+            if k < 1 or im.size != (m["tex_w"] * k, m["tex_h"] * k):
+                errors.append(f"model {m['id']}: texture is {im.size}, spec wants a multiple of "
+                              f"{(m['tex_w'], m['tex_h'])}")
+                continue
             px = im.convert("RGBA").load()
             for p in m.get("parts", []):
                 for b in p.get("boxes", []):
@@ -6237,8 +6038,17 @@ def validate(cat):
                             continue
                         if x + w > m["tex_w"] or y + h > m["tex_h"]:
                             errors.append(f"model {m['id']}: part {p['name']} {face} face outside texture")
-                        elif any(px[xx, yy][3] == 0 for yy in range(y, y + h) for xx in range(x, x + w)):
+                        elif any(px[xx * k + k // 2, yy * k + k // 2][3] == 0 for yy in range(y, y + h)
+                                 for xx in range(x, x + w)):
                             errors.append(f"model {m['id']}: part {p['name']} {face} face has transparent pixels")
+        if m.get("has_glow"):
+            gp = os.path.join(ASSETS, "textures", "entity", "model", m["id"] + "_glow.png")
+            if not os.path.exists(gp):
+                errors.append(f"model {m['id']}: has glow parts but no _glow texture")
+            else:
+                with Image.open(gp) as g, Image.open(tp) as im:
+                    if g.size != im.size:
+                        errors.append(f"model {m['id']}: glow layer size {g.size} != texture size {im.size}")
     for group, label in (("monsters", "monster"), ("bosses", "boss")):
         for e in cat.get(group, []):
             if (e.get("model") or e["id"]) in specs:

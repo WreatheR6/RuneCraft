@@ -131,12 +131,14 @@ public final class CatalogDump {
                 for (int i = 0; i < p.boxes.size(); i++) {
                     ModelSpec.Box b = p.boxes.get(i);
                     int[] uv = p.uvs.get(i);
-                    boxes.add(obj("w", b.w(), "h", b.h(), "d", b.d(), "u", uv[0], "v", uv[1]));
+                    boxes.add(obj("w", b.w(), "h", b.h(), "d", b.d(), "u", uv[0], "v", uv[1],
+                            "x", b.x(), "y", b.y(), "z", b.z(), "dil", b.dilation()));
                 }
                 parts.add(obj("name", p.name, "role", p.role.name(), "color", p.color, "accent", p.accent,
-                        "pattern", p.pattern, "boxes", "[" + String.join(", ", boxes) + "]"));
+                        "pattern", p.pattern, "glow", p.glow, "material", p.material, "parent", p.parent, "px", p.px, "py", p.py, "pz", p.pz,
+                        "pitch", p.pitch, "yaw", p.yaw, "roll", p.roll, "boxes", "[" + String.join(", ", boxes) + "]"));
             }
-            models.add(obj("id", m.id(), "tex_w", m.texWidth(), "tex_h", m.texHeight(),
+            models.add(obj("id", m.id(), "tex_w", m.texWidth(), "tex_h", m.texHeight(), "scale", m.scale(), "has_glow", m.hasGlow(),
                     "parts", "[" + String.join(", ", parts) + "]"));
         }
         List<String> quests = new ArrayList<>();

@@ -17,6 +17,9 @@ public class GenericEntityRenderer<T extends MobEntity> extends MobEntityRendere
         super(ctx, new GenericModel<>(ctx.getPart(ModelSpecs.layer(spec.id())), spec), spec.shadowRadius() * entityScale);
         this.texture = RuneCraft.id("textures/entity/model/" + spec.id() + ".png");
         this.scale = spec.scale() * entityScale;
+        if (spec.hasGlow()) {
+            this.addFeature(new GlowFeatureRenderer<>(this, RuneCraft.id("textures/entity/model/" + spec.id() + "_glow.png")));
+        }
     }
 
     @Override

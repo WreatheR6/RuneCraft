@@ -59,6 +59,18 @@ public final class ModelSpec {
         public String pattern = "none";
         /** For LEG_EXTRA: index used to alternate the gait. */
         public int index;
+        /**
+         * Emissive detail rendered full-bright on top of the model (an extra "_glow" texture layer):
+         * "none", "full" (the whole part), "eyes" (eyes on the front face), "cracks" (lava veins),
+         * "maw" (mouth/inner faces), "runes" (glowing glyphs/trim).
+         */
+        public String glow = "none";
+        /**
+         * Surface material for the texture painter (null = inferred from the pattern and names): e.g. "skin",
+         * "rock", "scales", "fur", "feathers", "cloth", "leather", "metal", "chain", "bone", "chitin", "membrane",
+         * "slime", "hair", "wood", "ghost", "moss", "ice", "flesh", "face", "lava".
+         */
+        public String material;
 
         Part(String name, String parent, Role role, int color, int accent) {
             this.name = name;
@@ -107,6 +119,16 @@ public final class ModelSpec {
 
     public int texHeight() {
         return texHeight;
+    }
+
+    /** True if some part has emissive detail, i.e. the model has a full-bright "_glow" texture layer. */
+    public boolean hasGlow() {
+        for (Part p : parts) {
+            if (!"none".equals(p.glow) || "glow".equals(p.pattern)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Shelf-packs every box's UV region (2*(d+w) wide, d+h tall) into the smallest power-of-two texture. */
@@ -222,6 +244,23 @@ public final class ModelSpec {
         public Builder pattern(String pattern) {
             current.pattern = pattern;
             return this;
+        }
+
+        /** Emissive detail for the current part (see {@link Part#glow}). */
+        public Builder glow(String glow) {
+            current.glow = glow == null ? "none" : glow;
+            return this;
+        }
+
+        /** Surface material for the current part (see {@link Part#material}). */
+        public Builder material(String material) {
+            current.material = material;
+            return this;
+        }
+
+        /** Name of the part most recently started (handy for kits that attach children). */
+        public String currentName() {
+            return current == null ? null : current.name;
         }
 
         public ModelSpec build() {
