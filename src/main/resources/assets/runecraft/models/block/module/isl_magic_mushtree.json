@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/isl_magic_mushtree_side",
+    "top": "runecraft:block/module/isl_magic_mushtree_top",
+    "bottom": "runecraft:block/module/isl_magic_mushtree_bottom"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "runecraft:block/module/isl_kingdom_ledger"
+    }
+  }
+}
