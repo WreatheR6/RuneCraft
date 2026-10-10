@@ -294,6 +294,17 @@ final class MisthalinVarrock {
         k.stall(X(3218), Z(3435), "runecraft:fur_stall", "brown");
         k.crates(X(3221), Z(3436));
         k.stall(X(3205), Z(3422), "runecraft:cake_stall", "yellow");
+        // flower tubs on the square's corners, a sign post and sacks by the stalls
+        int[][] tubs = {{sq.x1() + 3, sq.z1() + 3}, {sq.x2() - 3, sq.z1() + 3}, {sq.x1() + 3, sq.z2() - 3}, {sq.x2() - 3, sq.z2() - 3}};
+        int i = 0;
+        for (int[] p : tubs) {
+            k.d.planter(p[0], k.g, p[1], i++);
+            k.d.planter(p[0] + (p[0] < cx ? 1 : -1), k.g, p[1], i++);
+        }
+        k.d.signpost(cx + 9, k.g, cz - 9, "spruce");
+        k.d.crates(X(3207), k.g, Z(3421));
+        k.d.bench(cx - 10, k.g, cz + 9, 'e', 3, 'n', "spruce");
+        k.d.bench(cx + 8, k.g, cz + 9, 'e', 3, 'n', "spruce");
     }
 
     // ---- palace
@@ -319,11 +330,14 @@ final class MisthalinVarrock {
                 .doorAt('s', X(3211), 4, 4).build();
         int[][] towers = {{keep.x1(), keep.z1()}, {keep.x2(), keep.z1()}, {keep.x1(), keep.z2()}, {keep.x2(), keep.z2()}};
         for (int[] tw : towers) {
-            k.tower(tw[0], tw[1], 6, 20, 5, WALL, SPRUCE_PLANKS, null, true);
-            k.fill(tw[0], 20, tw[1], tw[0], 22, tw[1], "minecraft:spruce_fence");
-            k.set(tw[0], 23, tw[1], "minecraft:red_wool").set(tw[0] + 1, 23, tw[1], "minecraft:red_wool");
-            k.set(tw[0] + 1, 22, tw[1], "minecraft:yellow_wool");
+            // the palace towers rise two floors above the keep
+            k.tower(tw[0], tw[1], 6, 30, 5, WALL, SPRUCE_PLANKS, null, true);
+            k.fill(tw[0], 30, tw[1], tw[0], 33, tw[1], "minecraft:spruce_fence");
+            k.set(tw[0], 34, tw[1], "minecraft:red_wool").set(tw[0] + 1, 34, tw[1], "minecraft:red_wool");
+            k.set(tw[0] + 1, 33, tw[1], "minecraft:yellow_wool").set(tw[0] + 2, 33, tw[1], "minecraft:red_wool");
+            k.set(tw[0] + 2, 34, tw[1], "minecraft:yellow_wool");
         }
+        palaceHall(k, keep);
         // doors from the keep roof into the towers
         k.clear(keep.x1() + 6, 15, keep.z1() + 2, keep.x1() + 6, 17, keep.z1() + 2);
         k.clear(keep.x2() - 6, 15, keep.z1() + 2, keep.x2() - 6, 17, keep.z1() + 2);
@@ -423,6 +437,56 @@ final class MisthalinVarrock {
         k.disc(X(3226), Z(3478), 2, -1, -1, WATER);
         k.ring(X(3226), Z(3478), 3, 1, -1, 0, POLISHED_ANDESITE);
         k.tOak(3229, 3470).tOak(3226, 3490).tOak(3229, 3496).tOak(3201, 3498);
+    }
+
+    /**
+     * The palace's raised great hall on the keep roof: a fourth storey with pilasters, tall windows,
+     * a slate roof and a banqueting table, plus buttresses and banners on the keep's faces.
+     */
+    private static void palaceHall(MisthalinKit k, Box keep) {
+        Box hall = new Box(keep.x1() + 12, keep.z1() + 10, keep.x2() - 12, keep.z2() - 10);
+        k.walls(hall, 15, 18, WALL);
+        k.walls(hall, 15, 15, COBBLE);
+        k.fill(hall.inset(1), 18, 18, SPRUCE_PLANKS);
+        for (int z = hall.z1(); z <= hall.z2(); z += 4) {
+            k.fill(hall.x1(), 15, z, hall.x1(), 18, z, CHISELED).fill(hall.x2(), 15, z, hall.x2(), 18, z, CHISELED);
+        }
+        for (int x = hall.x1(); x <= hall.x2(); x += 4) {
+            k.fill(x, 15, hall.z1(), x, 18, hall.z1(), CHISELED).fill(x, 15, hall.z2(), x, 18, hall.z2(), CHISELED);
+        }
+        for (int z = hall.z1() + 2; z <= hall.z2() - 2; z += 4) {
+            k.connect(hall.x1(), 16, z, hall.x1(), 17, z, GLASS).connect(hall.x2(), 16, z, hall.x2(), 17, z, GLASS);
+            k.d.castleWindow(hall.x1(), k.g + 16, k.g + 17, z, 'w', WALL, POLISHED_ANDESITE, k.g + 15);
+            k.d.castleWindow(hall.x2(), k.g + 16, k.g + 17, z, 'e', WALL, POLISHED_ANDESITE, k.g + 15);
+        }
+        k.clear(hall.cx(), 15, hall.z2(), hall.cx() + 1, 17, hall.z2());
+        k.set(hall.cx(), 15, hall.z2(), "minecraft:dark_oak_door[facing=south,half=lower,hinge=right]");
+        k.set(hall.cx() + 1, 15, hall.z2(), "minecraft:dark_oak_door[facing=south,half=lower,hinge=left]");
+        k.d.banner(hall.cx() - 1, k.g + 17, hall.z2() + 1, 's', "red");
+        k.d.banner(hall.cx() + 2, k.g + 17, hall.z2() + 1, 's', "red");
+        k.roof(hall, 19, Roof.SLATE, WALL);
+        k.d.texture(hall.x1(), hall.z1(), hall.x2(), hall.z2(), k.g + 16, k.g + 18, WALL, 6);
+        // inside: a red runner, the banqueting table, chandeliers and banners
+        Box in = hall.inset(1);
+        k.carpet(new Box(in.cx() - 2, in.z1() + 1, in.cx() + 2, in.z2()), 15, "red");
+        k.diningZ(in.cx(), 15, in.z1() + 4, in.z2() - 6);
+        k.set(in.cx(), 15, in.z1() + 2, "minecraft:dark_oak_stairs[facing=south]");
+        k.fill(in.cx() - 1, 15, in.z1(), in.cx() + 1, 16, in.z1(), "minecraft:gold_block");
+        for (int z = in.z1() + 3; z <= in.z2() - 3; z += 6) {
+            k.hang(in.cx(), 17, z);
+            k.set(in.x1(), 16, z, "minecraft:red_wall_banner[facing=east]").set(in.x2(), 16, z, "minecraft:red_wall_banner[facing=west]");
+        }
+        k.shelvesZ(in.x1(), 15, in.z2() - 4, in.z2() - 1, "east");
+        k.set(in.x2(), 15, in.z2() - 2, "minecraft:chest[facing=west]").set(in.x2(), 15, in.z2() - 3, BARREL);
+        // buttresses down the long faces of the keep and banners over the south door
+        k.d.buttresses(keep.x1(), keep.z1() + 9, keep.x1(), keep.z2() - 9, 'w', 8, k.g, k.g + 12, WALL, "minecraft:stone_brick_stairs");
+        k.d.buttresses(keep.x2(), keep.z1() + 9, keep.x2(), keep.z2() - 9, 'e', 8, k.g, k.g + 12, WALL, "minecraft:stone_brick_stairs");
+        for (int x = keep.x1() + 9; x <= keep.x2() - 9; x += 6) {
+            if (Math.abs(x - X(3211)) > 4) {
+                k.d.banner(x, k.g + 8, keep.z2() + 1, 's', "red");
+                k.d.banner(x, k.g + 13, keep.z2() + 1, 's', "yellow");
+            }
+        }
     }
 
     // ---- banks

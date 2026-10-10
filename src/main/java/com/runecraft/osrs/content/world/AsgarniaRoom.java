@@ -159,6 +159,13 @@ final class AsgarniaRoom {
         }
         int mid = l / 2;
         fill(mid - 1, d - 2, mid, d - 2, 0, 0, mc(rug + "_carpet"));
+        // a rug under the table (only into free floor)
+        if (d >= 4 && l >= 5) {
+            int v = d / 2 - (d > 5 ? 1 : 0);
+            k.fa(Math.min(wx(mid - 2, v - 1), wx(mid + 2, v + 1)), y, Math.min(wz(mid - 2, v - 1), wz(mid + 2, v + 1)),
+                    Math.max(wx(mid - 2, v - 1), wx(mid + 2, v + 1)), y, Math.max(wz(mid - 2, v - 1), wz(mid + 2, v + 1)),
+                    mc(rug + "_carpet"));
+        }
     }
 
     /** A shop: counter across the room with the shop block in the middle and goods behind. */

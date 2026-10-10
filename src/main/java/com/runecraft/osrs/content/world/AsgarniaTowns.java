@@ -136,7 +136,7 @@ final class AsgarniaTowns {
         for (int[] t : trees) {
             k.tree(bx(t[0]), bz(t[1]), "oak", 6);
         }
-        return b.build();
+        return k.build();
     }
 
     static StructureDef portSarimDocks() {
@@ -149,7 +149,7 @@ final class AsgarniaTowns {
         k.st(3046, 3199, 0, mc("spruce_fence"));
         k.st(3046, 3199, 1, mc("lantern"));
         k.rowboat(bx(3048), bz(3199), false);
-        return b.build();
+        return k.build();
     }
 
     static StructureDef iceDungeon() {
@@ -172,7 +172,7 @@ final class AsgarniaTowns {
         k.s(cx - 1, -8, cz + 2, mc("lantern"));
         k.f(cx - 2, -1, cz + 3, cx + 2, -1, cz + 5, mc("snow_block"));
         k.f(cx - 3, 0, cz + 6, cx + 3, 0, cz + 6, mc("snow[layers=2]"));
-        return b.build();
+        return k.build();
     }
 
     static StructureDef thurgo() {
@@ -188,7 +188,7 @@ final class AsgarniaTowns {
         k.st(2995, 3149, 0, mc("sweet_berry_bush[age=3]"));
         k.st(2993, 3146, 0, mc("campfire[lit=true]"));
         k.path(2992, 3145, 2995, 3146, mc("dirt_path"), mc("gravel"));
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ Rimmington
@@ -266,7 +266,7 @@ final class AsgarniaTowns {
         k.tree(bx(2950), bz(3236), "oak", 7);
         k.tree(bx(2983), bz(3209), "birch", 6);
         k.flowers(2955, 3209, 2957, 3210);
-        return b.build();
+        return k.build();
     }
 
     static StructureDef rimmingtonBush() {
@@ -277,7 +277,7 @@ final class AsgarniaTowns {
         k.clearT(2940, 3222, 2940, 3222, 0, 0);
         k.st(2938, 3222, 0, rc("bush_patch"));
         k.st(2937, 3224, 0, rc("compost_bin"));
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ Crafting Guild
@@ -328,7 +328,7 @@ final class AsgarniaTowns {
         k.st(2943, 3286, 0, mc("water_cauldron[level=3]"));
         k.tree(bx(2922), bz(3295), "oak", 7);
         k.tree(bx(2922), bz(3274), "oak", 6);
-        return b.build();
+        return k.build();
     }
 
     // ------------------------------------------------------------------ Entrana
@@ -416,7 +416,7 @@ final class AsgarniaTowns {
         for (int[] t : trees) {
             k.tree(bx(t[0]), bz(t[1]), "oak", 7);
         }
-        return b.build();
+        return k.build();
     }
 
     static StructureDef entranaHops() {
@@ -427,6 +427,6 @@ final class AsgarniaTowns {
         k.clearT(2812, 3334, 2812, 3334, 0, 0);
         k.st(2810, 3334, 0, rc("hops_patch"));
         k.st(2809, 3332, 0, rc("compost_bin"));
-        return b.build();
+        return k.build();
     }
 }
