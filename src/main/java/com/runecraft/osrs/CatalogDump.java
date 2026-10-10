@@ -131,13 +131,20 @@ public final class CatalogDump {
                 for (int i = 0; i < p.boxes.size(); i++) {
                     ModelSpec.Box b = p.boxes.get(i);
                     int[] uv = p.uvs.get(i);
-                    boxes.add(obj("w", b.w(), "h", b.h(), "d", b.d(), "u", uv[0], "v", uv[1]));
+                    boxes.add(obj("w", b.w(), "h", b.h(), "d", b.d(), "u", uv[0], "v", uv[1],
+                            "x", b.x(), "y", b.y(), "z", b.z(), "dil", b.dilation()));
                 }
                 parts.add(obj("name", p.name, "role", p.role.name(), "color", p.color, "accent", p.accent,
-                        "pattern", p.pattern, "boxes", "[" + String.join(", ", boxes) + "]"));
+                        "pattern", p.pattern, "glow", p.glow, "material", p.material, "parent", p.parent, "px", p.px, "py", p.py, "pz", p.pz,
+                        "pitch", p.pitch, "yaw", p.yaw, "roll", p.roll, "boxes", "[" + String.join(", ", boxes) + "]"));
             }
-            models.add(obj("id", m.id(), "tex_w", m.texWidth(), "tex_h", m.texHeight(),
+            models.add(obj("id", m.id(), "tex_w", m.texWidth(), "tex_h", m.texHeight(), "scale", m.scale(), "has_glow", m.hasGlow(),
                     "parts", "[" + String.join(", ", parts) + "]"));
+        }
+        List<String> questNpcs = new ArrayList<>();
+        for (QuestNpc q : QuestNpc.values()) {
+            questNpcs.add(obj("id", q.name().toLowerCase(Locale.ROOT), "name", q.displayName(),
+                    "look", q.look().name().toLowerCase(Locale.ROOT)));
         }
         List<String> quests = new ArrayList<>();
         for (QuestInfo qi : ContentRegistry.quests()) {
@@ -154,6 +161,7 @@ public final class CatalogDump {
                 + ",\n  \"npcs\": " + (npcs.isEmpty() ? "[]" : arr(npcs))
                 + ",\n  \"blocks\": " + (blocks.isEmpty() ? "[]" : arr(blocks))
                 + ",\n  \"models\": " + (models.isEmpty() ? "[]" : arr(models))
+                + ",\n  \"quest_npcs\": " + arr(questNpcs)
                 + ",\n  \"quests\": " + arr(quests)
                 + ",\n  \"herbs\": " + Herb.values().length + "\n}\n";
         Path out = Path.of(args.length > 0 ? args[0] : "build/catalog.json");

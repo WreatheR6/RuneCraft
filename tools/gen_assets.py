@@ -5,7 +5,7 @@ Reads build/catalog.json (produced by tools/run_core_tests.sh) and writes everyt
 src/main/resources/. Deterministic (seeded randomness) and idempotent (overwrites outputs).
 
 Usage: python3 tools/gen_assets.py [--catalog build/catalog.json] [--out src/main/resources]
-Requires: Python 3 + Pillow.
+Requires: Python 3 + Pillow + numpy.
 """
 import argparse
 import json
@@ -18,6 +18,9 @@ import zlib
 from collections import Counter
 
 from PIL import Image, ImageDraw
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import model_painter  # noqa: E402  (per-pixel ModelSpec texture painter; needs numpy)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CATALOG = os.path.join(ROOT, "build", "catalog.json")
@@ -976,20 +979,24 @@ def draw_amulet(img, pal, item, rng):
     put(img, 8, 11, pal.m)
 
 
-def vial_shape(img, liquid, extra=None):
+VIAL_DOSE_TOP = {4: 7, 3: 9, 2: 10, 1: 12}
+
+
+def vial_shape(img, liquid, extra=None, dose=4):
     glass = Pal(GLASS)
     body = mask(lambda d: (d.ellipse((3, 6, 12, 14), fill=255), d.rectangle((6, 2, 9, 7), fill=255)))
     for (x, y) in body:
         put(img, x, y, glass.m, 110)
+    top = VIAL_DOSE_TOP.get(dose, 7)
     if liquid is not None:
         lp = Pal(liquid)
         for (x, y) in body:
-            if y >= 8:
-                put(img, x, y, lp.l if y == 8 else (lp.m if x < 9 else lp.d))
+            if y >= top:
+                put(img, x, y, lp.l if y == top else (lp.m if x < 9 else lp.d))
     # glass rim & highlight
     for (x, y) in body:
         if (x - 1, y) not in body or (x + 1, y) not in body or (x, y + 1) not in body:
-            if not (liquid is not None and y >= 8 and (x, y + 1) in body):
+            if not (liquid is not None and y >= top and (x, y + 1) in body):
                 put(img, x, y, glass.l, 230)
     put(img, 5, 9, WHITE)
     put(img, 5, 10, WHITE, 200)
@@ -3000,6 +3007,524 @@ for _k, _v in EXTRA_SHAPES.items():
     SHAPES.setdefault(_k, _v)
 
 
+# ----------------------------------------------------------------------------------------------
+# OSRS-faithful item sprites: exact metal tier colours, black outline + drop shadow, and dedicated
+# drawers for the items players see most (armour pieces, ores, logs, fish, hides, coin stacks).
+# ----------------------------------------------------------------------------------------------
+
+# OSRS metal colours (mid tone of the in-game item sprites).
+TIER_COLOURS = {
+    "bronze": 0x9C6A36, "iron": 0x5F5C5A, "steel": 0x9D9D9F, "black": 0x2B2B2D, "white": 0xE6E6E8,
+    "mithril": 0x4B5385, "adamant": 0x3F6A45, "adamantite": 0x3F6A45, "rune": 0x3B8CA5, "runite": 0x3B8CA5,
+    "dragon": 0xA6261A, "granite": 0x7A6E62, "blurite": 0x4A6AC0, "gold": 0xD9A92F, "silver": 0xC6C6CE,
+    "obsidian": 0x2E1F24, "bone": 0xE0D8C0, "crystal": 0xA8E0F0,
+}
+# Shapes whose main colour is the metal (weapons, armour, metal tools, ammo heads, bars).
+METAL_SHAPES = {
+    "sword", "longsword", "scimitar", "dagger", "2h_sword", "mace", "warhammer", "battleaxe", "axe", "pickaxe",
+    "spear", "hasta", "halberd", "claws", "defender", "full_helm", "med_helm", "platebody", "platelegs",
+    "plateskirt", "chainbody", "kiteshield", "sq_shield", "boots", "gloves", "arrowtips", "dart", "dart_tip",
+    "javelin", "javelin_heads", "bolts", "bolt", "bolt_tips", "knife", "throwing_knife", "bar", "nails",
+    "arrow", "crossbow", "crossbow_u", "limbs", "maul", "rapier", "scythe", "hammer", "godsword", "ingot",
+}
+
+
+def item_tier(item):
+    t = item.get("tier")
+    if t in TIER_COLOURS:
+        return t
+    iid = item.get("id") or ""
+    for k in sorted(TIER_COLOURS, key=len, reverse=True):
+        if iid.startswith(k + "_"):
+            return k
+    return None
+
+
+def metal_pal(col):
+    """A shinier ramp for metals: brighter highlight, deeper shadow."""
+    p = Pal(col)
+    c = rgb(col)
+    p.h = mix(c, WHITE, 0.72 if lum(c) > 60 else 0.5)
+    p.l = mix(c, WHITE, 0.35)
+    p.d = shade(c, 0.62) if lum(c) > 45 else mix(c, BLACK, 0.35)
+    p.dd = shade(c, 0.40) if lum(c) > 45 else mix(c, BLACK, 0.6)
+    if lum(c) < 50:
+        p.m = mix(c, WHITE, 0.10)
+        p.l = mix(c, WHITE, 0.28)
+        p.h = mix(c, WHITE, 0.50)
+    return p
+
+
+OUTLINE = (14, 12, 10)
+
+
+def osrs_outline(img):
+    """OSRS sprite finish: a 1px near-black outline and a soft shadow one pixel down-right."""
+    src = img.copy()
+    w, h = img.size
+    px = src.load()
+    out = img.load()
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] > 0:
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < w and 0 <= ny < h and px[nx, ny][3] > 160:
+                    out[x, y] = OUTLINE + (255,)
+                    break
+    src2 = img.copy()
+    p2 = src2.load()
+    for y in range(h):
+        for x in range(w):
+            if p2[x, y][3] == 0 and x > 0 and y > 0 and p2[x - 1, y - 1][3] > 0:
+                out[x, y] = (0, 0, 0, 90)
+
+
+def _poly(pts):
+    return mask(lambda d: d.polygon(pts, fill=255))
+
+
+def draw_platebody_osrs(img, pal, item, rng, leather=False):
+    """Front view of a platebody: pauldrons, short sleeves, chest plates with a centre ridge, flared hem."""
+    body = _poly([(4, 3), (6, 2), (9, 2), (11, 3), (12, 6), (12, 13), (10, 14), (5, 14), (3, 13), (3, 6)])
+    neck = {(x, y) for x in range(6, 10) for y in range(1, 4)} | {(7, 4), (8, 4)}
+    body -= neck
+    arms_l = _poly([(1, 4), (4, 3), (4, 9), (1, 9)])
+    arms_r = _poly([(11, 3), (14, 4), (14, 9), (11, 9)])
+    bevel(img, arms_l | arms_r, Pal(shade(pal.m, 0.88)), noise=rng if leather else None)
+    bevel(img, body, pal, noise=rng if leather else None)
+    if leather:
+        for x in range(4, 12):
+            if (x, 10) in body:
+                put(img, x, 10, DARK_WOOD)
+        for y in range(5, 13, 2):
+            put(img, 7, y, pal.h)
+        return
+    pp = metal_pal(pal.m)
+    for (cx, cy) in ((2, 4), (13, 4)):  # pauldron caps
+        for dx in (-1, 0, 1):
+            put(img, cx + dx, cy, pp.h if dx < 1 else pp.l)
+        put(img, cx, cy + 1, pp.l)
+    for y in range(4, 14):
+        put(img, 7, y, pp.d)
+        put(img, 8, y, pp.h)
+    for x in range(4, 12):
+        if (x, 8) in body:
+            put(img, x, 8, pp.d)
+            put(img, x, 9, pp.l if x not in (7, 8) else pp.d)
+    for x in range(4, 12):
+        if (x, 13) in body:
+            put(img, x, 13, pp.dd)
+
+
+def draw_chainbody_osrs(img, pal, item, rng):
+    draw_platebody_osrs(img, pal, item, rng)
+    for y in range(2, 15):
+        for x in range(1, 15):
+            if opaque(img, x, y) and (x + y) % 2 == 0:
+                put(img, x, y, shade(img.getpixel((x, y)), 0.72))
+
+
+def draw_platelegs_osrs(img, pal, item, rng, leather=False):
+    p = metal_pal(pal.m) if not leather else pal
+    waist = {(x, y) for x in range(3, 13) for y in range(2, 5)}
+    left = _poly([(3, 5), (7, 5), (7, 14), (3, 14)])
+    right = _poly([(8, 5), (12, 5), (12, 14), (8, 14)])
+    bevel(img, waist | left | right, p, noise=rng if leather else None)
+    for x in range(3, 13):
+        put(img, x, 3, p.dd if not leather else DARK_WOOD)
+    if not leather:
+        for leg in ((3, 7), (8, 12)):
+            for x in range(leg[0], leg[1] + 1):
+                put(img, x, 9, p.h)
+                put(img, x, 10, p.d)
+            put(img, leg[0] + 1, 6, p.h)
+        for y in range(6, 15):
+            put(img, 7, y, p.dd)
+
+
+def draw_plateskirt_osrs(img, pal, item, rng):
+    p = metal_pal(pal.m)
+    pix = _poly([(4, 2), (11, 2), (13, 14), (2, 14)])
+    bevel(img, pix, p)
+    for x in range(3, 13):
+        if (x, 3) in pix:
+            put(img, x, 3, p.dd)
+    for x in range(4, 13, 3):
+        line(img, x, 5, x - 1 if x < 8 else x + 1, 13, p.d)
+
+
+def draw_full_helm_osrs(img, pal, item, rng):
+    p = metal_pal(pal.m)
+    pix = mask(lambda d: (d.ellipse((3, 1, 12, 11), fill=255), d.rectangle((3, 6, 12, 13), fill=255)))
+    bevel(img, pix, p)
+    for x in range(5, 11):
+        put(img, x, 7, OUTLINE)
+    for y in range(8, 12):
+        put(img, 7, y, OUTLINE)
+    for x in range(4, 12):
+        put(img, x, 13, p.dd)
+    line(img, 6, 2, 5, 5, p.h)
+    put(img, 8, 1, p.l)
+
+
+def draw_med_helm_osrs(img, pal, item, rng):
+    p = metal_pal(pal.m)
+    pix = mask(lambda d: d.ellipse((2, 2, 13, 14), fill=255))
+    pix = {(x, y) for (x, y) in pix if y <= 9}
+    pix |= {(7, y) for y in range(9, 14)} | {(8, y) for y in range(9, 14)}
+    bevel(img, pix, p)
+    for x in range(2, 14):
+        if (x, 9) in pix:
+            put(img, x, 9, p.dd)
+    line(img, 5, 3, 4, 6, p.h)
+    put(img, 7, 2, p.h)
+
+
+def draw_kiteshield_osrs(img, pal, item, rng):
+    p = metal_pal(pal.m)
+    pix = _poly([(2, 1), (13, 1), (13, 7), (8, 14), (7, 14), (2, 7)])
+    bevel(img, pix, p)
+    trim = metal_pal(shade(pal.m, 0.7)) if item_tier(item) != "dragon" else metal_pal((200, 170, 60))
+    for (x, y) in pix:
+        nb = sum((x + dx, y + dy) in pix for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+        if nb < 4:
+            put(img, x, y, trim.d if x + y > 12 else trim.l)
+    for y in range(3, 12):
+        put(img, 7, y, trim.m)
+        put(img, 8, y, trim.d)
+    for x in range(4, 12):
+        put(img, x, 5, trim.m)
+    put(img, 4, 3, p.h)
+
+
+def draw_sq_shield_osrs(img, pal, item, rng):
+    p = metal_pal(pal.m)
+    pix = {(x, y) for x in range(2, 14) for y in range(2, 14)}
+    bevel(img, pix, p)
+    trim = metal_pal(shade(pal.m, 0.7))
+    for (x, y) in pix:
+        if x in (2, 13) or y in (2, 13):
+            put(img, x, y, trim.l if x + y < 15 else trim.d)
+    for i in range(4, 12):
+        put(img, 7, i, trim.d)
+        put(img, i, 7, trim.d)
+    put(img, 7, 7, p.h)
+
+
+ORE_FLECKS = {
+    "copper_ore": (0xD07A3A, 0x6E5A48), "tin_ore": (0xD8D8D0, 0x6A6662), "iron_ore": (0x9A4A30, 0x5A4238),
+    "silver_ore": (0xF0F0F8, 0x6A6662), "coal": (0x3A3A3A, 0x1E1C1C), "gold_ore": (0xF0C030, 0x6A5E50),
+    "mithril_ore": (0x6A70B0, 0x4A4A56), "adamantite_ore": (0x5A9A5A, 0x464E46), "runite_ore": (0x50C0D8, 0x48545A),
+    "blurite_ore": (0x6080E0, 0x505868), "amethyst": (0xB080E0, 0x5A4A6A), "lovakite_ore": (0x6A8AA0, 0x4A5050),
+    "elemental_ore": (0xC07040, 0x5A4A40), "clay": (0xC0A070, 0x8A7050),
+}
+
+
+def draw_ore_osrs(item_id, pal, img, rng):
+    fleck, rock = ORE_FLECKS.get(item_id, (pal.m, (0x6E, 0x66, 0x60)))
+    pix = _poly([(3, 5), (6, 2), (11, 2), (13, 6), (13, 11), (10, 13), (5, 13), (2, 10)])
+    bevel(img, pix, Pal(rock), noise=rng)
+    fp = Pal(fleck)
+    for _ in range(9 if item_id != "coal" else 5):
+        x, y = rng.randint(4, 11), rng.randint(4, 11)
+        if (x, y) in pix and (x + 1, y) in pix:
+            put(img, x, y, fp.h)
+            put(img, x + 1, y, fp.m)
+            if (x, y + 1) in pix:
+                put(img, x, y + 1, fp.d)
+
+
+def draw_ore_new(img, pal, item, rng):
+    draw_ore_osrs(item["id"], pal, img, rng)
+
+
+LOG_COLOURS = {
+    "logs": (0x6B4A2A, 0xC8A070), "oak_logs": (0x7A5A30, 0xD8B880), "willow_logs": (0x6A6A34, 0xC8C090),
+    "teak_logs": (0x8A6A3A, 0xD8B888), "maple_logs": (0x8A4A22, 0xE0A060), "mahogany_logs": (0x5A2418, 0xB06048),
+    "yew_logs": (0x4A3220, 0xB07850), "magic_logs": (0x2A5A6A, 0x80D0E0), "redwood_logs": (0x8A2A1E, 0xD07050),
+    "arctic_pine_logs": (0x4A5A3A, 0xD0C8A0), "achey_tree_logs": (0x7A4A2A, 0xC89060),
+    "blisterwood_logs": (0x5A3A5A, 0xC0A0C0),
+}
+
+
+def draw_log_osrs(img, pal, item, rng):
+    bark, grain = LOG_COLOURS.get(item["id"], (pal.m, mix(pal.m, (230, 200, 150), 0.6)))
+    bp = Pal(bark)
+    gp = Pal(grain)
+
+    def fn(u, v):
+        if 1.5 <= u <= 11.5 and abs(v) <= 2.5:
+            if v <= -2:
+                return bp.l
+            if v >= 2:
+                return bp.dd
+            return bp.d if (int(u * 1.7) + int(v * 2)) % 4 == 0 else bp.m
+        if 11.5 < u <= 13 and (u - 12.25) ** 2 / 0.9 + v * v / 7.5 <= 1:
+            r = math.hypot((u - 12.25) * 2.5, v)
+            return gp.d if int(r) % 2 else gp.l
+        return None
+    rdiag(img, fn)
+    if item["id"] == "magic_logs":
+        for (x, y) in ((4, 9), (7, 6), (9, 8)):
+            put(img, x, y, (220, 250, 255))
+
+
+def _fish_body(img, pts, col, belly=None, fin_pts=None, fin_col=None, eye=(3, 7)):
+    p = Pal(col)
+    pix = _poly(pts)
+    bevel(img, pix, p)
+    if belly is not None:
+        bp = Pal(belly)
+        ys = {}
+        for (x, y) in pix:
+            ys.setdefault(x, []).append(y)
+        for x, yl in ys.items():
+            for y in sorted(yl)[-2:]:
+                put(img, x, y, bp.m)
+    if fin_pts:
+        fp = Pal(fin_col or shade(col, 0.7))
+        bevel(img, _poly(fin_pts), fp)
+    put(img, eye[0], eye[1], OUTLINE)
+    return pix
+
+
+FISH_RAW_TINT = 0.0
+COOKED = (190, 120, 60)
+
+
+def cooked_col(col, item):
+    if "burnt" in item["id"]:
+        return (45, 36, 30)
+    if item["shape"] == "fish_cooked":
+        return mix(col, COOKED, 0.45)
+    return rgb(col)
+
+
+def draw_lobster(img, pal, item, rng):
+    raw = item["shape"] == "fish_raw"
+    col = (120, 50, 40) if raw else (215, 70, 40)
+    if "burnt" in item["id"]:
+        col = (45, 36, 30)
+    p = Pal(col)
+    body = _poly([(5, 4), (9, 4), (10, 9), (9, 12), (5, 12), (4, 9)])
+    tail = _poly([(5, 12), (9, 12), (10, 14), (4, 14)])
+    claw_l = _poly([(1, 1), (4, 2), (5, 5), (3, 6), (1, 4)])
+    claw_r = _poly([(14, 1), (11, 2), (10, 5), (12, 6), (14, 4)])
+    for part in (tail, body, claw_l, claw_r):
+        bevel(img, part, p)
+    for y in (7, 9, 11):
+        for x in range(5, 10):
+            if (x, y) in body:
+                put(img, x, y, p.d)
+    put(img, 6, 5, OUTLINE)
+    put(img, 8, 5, OUTLINE)
+    line(img, 6, 4, 4, 0, p.d)
+    line(img, 8, 4, 10, 0, p.d)
+
+
+def draw_swordfish(img, pal, item, rng):
+    col = cooked_col((80, 80, 150), item)
+    pix = _fish_body(img, [(3, 8), (6, 5), (11, 5), (14, 3), (14, 11), (11, 9), (6, 10)], col,
+                     belly=mix(col, (230, 230, 230), 0.5), fin_pts=[(7, 5), (9, 2), (10, 5)], eye=(5, 7))
+    line(img, 0, 9, 3, 8, Pal(col).l)
+    line(img, 0, 10, 3, 9, Pal(col).d)
+
+
+def draw_shark(img, pal, item, rng):
+    col = cooked_col((120, 125, 135), item)
+    _fish_body(img, [(1, 9), (4, 6), (10, 6), (13, 4), (14, 7), (13, 11), (10, 10), (4, 11)], col,
+               belly=mix(col, (240, 240, 240), 0.6), fin_pts=[(6, 6), (8, 2), (9, 6)], eye=(3, 8))
+    for x in range(2, 5):
+        put(img, x, 10, (240, 240, 240) if x % 2 else OUTLINE)
+
+
+def draw_shrimp(img, pal, item, rng):
+    col = cooked_col((230, 140, 120), item) if item["shape"] == "fish_cooked" else (200, 120, 110)
+    if "burnt" in item["id"]:
+        col = (45, 36, 30)
+    p = Pal(col)
+    pix = set()
+    for i, (cx, cy) in enumerate(((11, 5), (10, 8), (8, 10), (5, 10), (3, 8))):
+        r = 2.6 - i * 0.25
+        pix |= {(x, y) for x in range(16) for y in range(16) if (x - cx) ** 2 + (y - cy) ** 2 <= r * r}
+    bevel(img, pix, p)
+    for (cx, cy) in ((10, 8), (8, 10), (5, 10)):
+        put(img, cx, cy - 1, p.d)
+    put(img, 12, 4, OUTLINE)
+    line(img, 13, 4, 15, 1, p.d)
+
+
+def draw_manta(img, pal, item, rng):
+    col = cooked_col((60, 70, 100), item)
+    p = Pal(col)
+    pix = _poly([(8, 2), (14, 8), (8, 11), (2, 8)])
+    bevel(img, pix, p)
+    line(img, 8, 11, 9, 15, p.d)
+    put(img, 7, 5, OUTLINE)
+    put(img, 9, 5, OUTLINE)
+
+
+def draw_anglerfish(img, pal, item, rng):
+    col = cooked_col((110, 60, 90), item)
+    _fish_body(img, [(2, 6), (5, 4), (10, 5), (14, 3), (14, 12), (10, 10), (5, 12), (2, 10)], col, eye=(5, 6))
+    line(img, 4, 4, 2, 1, (60, 40, 40))
+    put(img, 1, 1, (255, 230, 120))
+    for x in range(2, 6):
+        put(img, x, 9, (240, 240, 230) if x % 2 else OUTLINE)
+
+
+def draw_crab_food(img, pal, item, rng):
+    col = (60, 40, 80) if item["shape"] == "fish_raw" else (180, 70, 50)
+    if "burnt" in item["id"]:
+        col = (45, 36, 30)
+    p = Pal(col)
+    pix = mask(lambda d: d.ellipse((3, 5, 12, 12), fill=255))
+    bevel(img, pix, p)
+    for (a, b) in (((3, 5), (1, 2)), ((12, 5), (14, 2))):
+        line(img, a[0], a[1], b[0], b[1], p.d)
+        put(img, b[0], b[1], p.l)
+    for x in (4, 6, 9, 11):
+        put(img, x, 13, p.d)
+
+
+def draw_turtle(img, pal, item, rng):
+    shell = Pal(cooked_col((70, 100, 50), item))
+    skin = Pal(cooked_col((120, 140, 80), item))
+    bevel(img, mask(lambda d: (d.ellipse((1, 6, 4, 9), fill=255), d.rectangle((3, 11, 4, 13), fill=255),
+                                d.rectangle((11, 11, 12, 13), fill=255))), skin)
+    pix = mask(lambda d: d.ellipse((3, 3, 13, 12), fill=255))
+    bevel(img, pix, shell)
+    for (x, y) in ((6, 6), (9, 6), (7, 9), (10, 9)):
+        put(img, x, y, shell.d)
+        put(img, x + 1, y, shell.d)
+
+
+FISH_DRAWERS = {
+    "lobster": draw_lobster, "swordfish": draw_swordfish, "shark": draw_shark, "shrimps": draw_shrimp,
+    "giant_krill": draw_shrimp, "manta_ray": draw_manta, "anglerfish": draw_anglerfish, "dark_crab": draw_crab_food,
+    "sea_turtle": draw_turtle,
+}
+
+
+def fish_species(item):
+    iid = item["id"].replace("raw_", "").replace("burnt_", "").replace("cooked_", "")
+    return FISH_DRAWERS.get(iid)
+
+
+def draw_fish_species(img, pal, item, rng, fallback):
+    d = fish_species(item)
+    if d:
+        return d(img, pal, item, rng)
+    return fallback(img, pal, item, rng)
+
+
+_old_fish_raw, _old_fish_cooked, _old_fish_burnt = draw_fish_raw, draw_fish_cooked, draw_fish_burnt
+
+
+def draw_fish_raw2(img, pal, item, rng):
+    return draw_fish_species(img, pal, item, rng, _old_fish_raw)
+
+
+def draw_fish_cooked2(img, pal, item, rng):
+    return draw_fish_species(img, pal, item, rng, _old_fish_cooked)
+
+
+def draw_fish_burnt2(img, pal, item, rng):
+    return draw_fish_species(img, pal, item, rng, _old_fish_burnt)
+
+
+def draw_hide_osrs(img, pal, item, rng):
+    """A stretched animal hide; cowhide is cream with black patches, dragonhide is scaled."""
+    iid = item["id"]
+    pts = [(2, 2), (5, 4), (10, 4), (13, 2), (12, 7), (13, 13), (10, 11), (5, 11), (2, 13), (3, 7)]
+    pix = _poly(pts)
+    if iid == "cowhide":
+        bevel(img, pix, Pal((228, 220, 200)))
+        for (cx, cy, r) in ((6, 7, 1.6), (10, 9, 1.3), (8, 5, 1.0), (5, 10, 1.0)):
+            for (x, y) in pix:
+                if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
+                    put(img, x, y, (40, 34, 30))
+        return
+    bevel(img, pix, pal, noise=rng)
+    if "dragonhide" in iid:
+        for (x, y) in pix:
+            if (x + 2 * (y // 2)) % 4 == 0 and y % 2 == 0:
+                put(img, x, y, pal.d)
+            elif (x + 2 * (y // 2)) % 4 == 1 and y % 2 == 0:
+                put(img, x, y, pal.l)
+
+
+COIN_STAGES = [1, 2, 3, 4, 5, 25, 100, 250, 1000, 10000]
+
+
+def coin(img, cx, cy, p):
+    for y in range(cy - 2, cy + 3):
+        for x in range(cx - 3, cx + 4):
+            dx, dy = (x - cx) / 3.4, (y - cy) / 2.4
+            if dx * dx + dy * dy <= 1:
+                c = p.m
+                if y == cy - 2 or (y == cy - 1 and abs(x - cx) == 3):
+                    c = p.h
+                elif y == cy + 2 or (x - cx) == 3:
+                    c = p.d
+                put(img, x, y, c)
+    put(img, cx - 1, cy, p.l)
+    put(img, cx, cy, p.l)
+
+
+COIN_LAYOUTS = {
+    1: [(8, 9)],
+    2: [(6, 10), (10, 8)],
+    3: [(5, 11), (10, 10), (8, 7)],
+    4: [(5, 11), (10, 11), (7, 8), (10, 6)],
+    5: [(4, 12), (9, 12), (6, 9), (11, 9), (8, 6)],
+    25: [(4, 12), (8, 12), (12, 12), (6, 10), (10, 10), (8, 8), (8, 6)],
+    100: [(3, 12), (7, 12), (11, 12), (5, 10), (9, 10), (13, 10), (7, 8), (11, 8), (9, 6), (8, 4)],
+}
+
+
+def draw_coin_stack(img, n, colour=GOLD):
+    p = metal_pal(colour)
+    if n in COIN_LAYOUTS:
+        for (cx, cy) in COIN_LAYOUTS[n]:
+            coin(img, cx, cy, p)
+        return
+    # big piles: a heap that gets taller and wider with the amount
+    height = {250: 6, 1000: 8, 10000: 10}.get(n, 8)
+    top = 14 - height
+    pix = _poly([(1, 14), (4, top + 2), (8, top), (12, top + 2), (15, 14)])
+    bevel(img, pix, p)
+    rows = 0
+    for y in range(top + 1, 14, 2):
+        rows += 1
+        for x in range(1, 15):
+            if (x, y) in pix and (x + rows) % 4 == 0:
+                put(img, x, y, p.h)
+                if (x + 1, y) in pix:
+                    put(img, x + 1, y, p.l)
+            elif (x, y) in pix and (x + rows) % 4 == 2:
+                put(img, x, y, p.d)
+    if n == 10000:
+        for (x, y) in ((5, 8), (10, 7), (8, 10)):
+            put(img, x, y, (255, 255, 230))
+
+
+def draw_coins_osrs(img, pal, item, rng):
+    colour = GOLD if item["id"] in ("coins", "pieces_of_eight") else pal.m
+    draw_coin_stack(img, 4 if item["id"] == "coins" else 3, colour)
+
+
+SHAPES.update({
+    "platebody": draw_platebody_osrs, "chainbody": draw_chainbody_osrs, "platelegs": draw_platelegs_osrs,
+    "plateskirt": draw_plateskirt_osrs, "full_helm": draw_full_helm_osrs, "med_helm": draw_med_helm_osrs,
+    "kiteshield": draw_kiteshield_osrs, "sq_shield": draw_sq_shield_osrs, "ore": draw_ore_new, "log": draw_log_osrs,
+    "fish_raw": draw_fish_raw2, "fish_cooked": draw_fish_cooked2, "fish_burnt": draw_fish_burnt2,
+    "hide": draw_hide_osrs, "coins": draw_coins_osrs,
+})
+
+
 # Keyword heuristics for unknown shapes: checked in order against the tokens of the shape, then the
 # id, then the name, so "dragon_crossbow" finds "crossbow" before "bow" and "armadyl_godsword" finds
 # "godsword" before "sword". Multi-word keys match as substrings of the space-joined text.
@@ -3089,10 +3614,17 @@ def resolve_drawer(item):
 def render_item(item):
     drawer = resolve_drawer(item)
     img = new_img()
-    pal = Pal(item.get("color") or 0x808080)
+    colour = item.get("color") or 0x808080
+    tier = item_tier(item)
+    shape = item.get("shape")
+    if tier and (shape in METAL_SHAPES or guess_shape(item) in METAL_SHAPES):
+        colour = TIER_COLOURS[tier]
+        pal = metal_pal(colour)
+    else:
+        pal = Pal(colour)
     res = drawer(img, pal, item, rng_for("item", item["id"]))
     if res != "no_outline":
-        outline(img)
+        osrs_outline(img)
     if isinstance(res, list):
         for (x, y, c) in res:
             put(img, x, y, c)
@@ -3102,13 +3634,43 @@ def render_item(item):
 HANDHELD_KINDS = {"AXE", "PICKAXE", "MELEE_WEAPON", "STAFF", "BOW", "TOOL"}
 
 
+def coin_stack_textures():
+    """coins_<n>.png for every OSRS coin-stack sprite stage (selected by stack size on the client)."""
+    for n in COIN_STAGES:
+        img = new_img()
+        draw_coin_stack(img, n)
+        osrs_outline(img)
+        save_png(img, os.path.join(ASSETS, "textures", "item", f"coins_{n}.png"), "item textures")
+        write_json(os.path.join(ASSETS, "models", "item", f"coins_{n}.json"),
+                   {"parent": "minecraft:item/generated", "textures": {"layer0": f"{NS}:item/coins_{n}"}}, "item models")
+
+
 def gen_items(cat):
+    coin_stack_textures()
     for item in cat["items"]:
         iid = item["id"]
         save_png(render_item(item), os.path.join(ASSETS, "textures", "item", iid + ".png"), "item textures")
         parent = "minecraft:item/handheld" if item["kind"] in HANDHELD_KINDS else "minecraft:item/generated"
-        write_json(os.path.join(ASSETS, "models", "item", iid + ".json"),
-                   {"parent": parent, "textures": {"layer0": f"{NS}:item/{iid}"}}, "item models")
+        model = {"parent": parent, "textures": {"layer0": f"{NS}:item/{iid}"}}
+        if item["kind"] == "POTION" and item.get("shape") in ("potion", "potion_unf"):
+            # doses are item damage (0..3 of 4): vanilla's minecraft:damage predicate picks the vial fill level
+            for dose in (3, 2, 1):
+                img = new_img()
+                liquid = Pal(item.get("color") or 0x808080).m
+                if item.get("shape") == "potion_unf":
+                    liquid = mix(liquid, (60, 110, 220), 0.4)
+                vial_shape(img, liquid, dose=dose)
+                save_png(img, os.path.join(ASSETS, "textures", "item", f"{iid}_{dose}.png"), "item textures")
+                write_json(os.path.join(ASSETS, "models", "item", f"{iid}_{dose}.json"),
+                           {"parent": parent, "textures": {"layer0": f"{NS}:item/{iid}_{dose}"}}, "item models")
+            model["overrides"] = [{"predicate": {"damage": round((4 - d) / 4, 2)}, "model": f"{NS}:item/{iid}_{d}"}
+                                  for d in (3, 2, 1)]
+        if iid == "coins":
+            # runecraft:coin_stack = stage index / 10 (registered client-side): 1, 2, 3, 4, 5, 25, 100, 250, 1000, 10000
+            model["textures"]["layer0"] = f"{NS}:item/coins_1"
+            model["overrides"] = [{"predicate": {f"{NS}:coin_stack": round(i / 10, 2)}, "model": f"{NS}:item/coins_{n}"}
+                                  for i, n in enumerate(COIN_STAGES)]
+        write_json(os.path.join(ASSETS, "models", "item", iid + ".json"), model, "item models")
 
 
 # ----------------------------------------------------------------------------------------------
@@ -3695,6 +4257,164 @@ def plant_tex(rng, leaf, produce=None, tall=False):
     return img
 
 
+# ----------------------------------------------------------------------------------------------
+# Shaped block models: OSRS-looking stations, rune altars and market stalls (JSON elements)
+# ----------------------------------------------------------------------------------------------
+
+DIRS = ("north", "south", "east", "west", "up", "down")
+# OSRS market stall awning stripes per stall
+STALL_AWNINGS = {
+    "cake_stall": ((200, 40, 40), (240, 234, 220)), "silk_stall": ((60, 80, 170), (240, 234, 220)),
+    "fur_stall": ((110, 80, 40), (220, 200, 160)), "silver_stall": ((90, 90, 110), (220, 220, 230)),
+    "spice_stall": ((200, 120, 30), (240, 220, 160)), "gem_stall": ((120, 40, 140), (240, 234, 220)),
+}
+
+
+def el(frm, to, tex, faces=None, **extra):
+    """One model element; `tex` is a texture key for every face or a {dir: key} map (UVs auto from position)."""
+    out = {"from": list(frm), "to": list(to), "faces": {}}
+    for d in (faces or DIRS):
+        key = tex.get(d, tex.get("all")) if isinstance(tex, dict) else tex
+        if key:
+            out["faces"][d] = {"texture": "#" + key}
+    out.update(extra)
+    return out
+
+
+def shaped(name, textures, elements):
+    textures = dict(textures)
+    textures.setdefault("particle", next(iter(textures.values())))
+    return block_model(name, {"parent": "minecraft:block/block", "textures": textures, "elements": elements})
+
+
+def tex_iron(rng, col=(64, 64, 70)):
+    img = metal_tex(col, rng)
+    for x in range(16):
+        put(img, x, 0, light(col, 1.3))
+        put(img, x, 15, shade(col, 0.6))
+    for (x, y) in ((2, 2), (13, 2), (2, 13), (13, 13)):
+        put(img, x, y, light(col, 1.5))
+    return img
+
+
+def tex_cloth(rng, col, trim):
+    img = new_img()
+    for y in range(16):
+        for x in range(16):
+            c = col if (x // 2) % 4 else shade(col, 0.93)
+            put(img, x, y, shade(c, 0.97 + rng.random() * 0.06))
+    for x in range(16):
+        put(img, x, 13, trim)
+        put(img, x, 14, trim)
+    return img
+
+
+def tex_awning(rng, a=(180, 30, 30), b=(236, 230, 214)):
+    img = new_img()
+    for y in range(16):
+        for x in range(16):
+            c = a if (x // 4) % 2 == 0 else b
+            put(img, x, y, shade(c, 0.95 + rng.random() * 0.08))
+    for x in range(16):
+        put(img, x, 15, shade(a, 0.7) if (x // 4) % 2 == 0 else shade(b, 0.8))
+    return img
+
+
+def tex_fire_mouth(rng, stone):
+    img = stone.copy()
+    for y in range(6, 15):
+        for x in range(4, 12):
+            if y == 6 and x in (4, 11):
+                continue
+            t = (y - 6) / 8
+            put(img, x, y, (25, 15, 10) if y < 8 else mix((255, 220, 90), (230, 80, 20), t) if (x * 3 + y) % 4 else (255, 170, 50))
+    return img
+
+
+def tex_bars(rng):
+    img = new_img()
+    for y in range(16):
+        for x in range(16):
+            put(img, x, y, (120, 150, 170) if not (x % 4 == 0 or y % 5 == 0) else (60, 50, 40))
+            if (x + y) % 9 == 0 and x % 4 and y % 5:
+                put(img, x, y, (190, 210, 225))
+    return img
+
+
+def tex_symbol_top(sym_name, rng, stone_col=(80, 78, 84)):
+    return altar_top(sym_name, rng)
+
+
+def station_shape(sid, side_t, top_t, bottom_t, rng):
+    """Shaped model for a station, or None to keep the textured cube."""
+    stone = block_tex(stone_tex(rng_for("shape_stone", sid), (112, 108, 104), 0.08), "shape_stone")
+    brick = block_tex(bricks_tex((120, 112, 104), rng_for("shape_brick")), "shape_brick")
+    wood = block_tex(planks_tex(WOOD, rng_for("shape_wood")), "shape_wood")
+    dark_wood = block_tex(planks_tex(DARK_WOOD, rng_for("shape_dark_wood")), "shape_dark_wood")
+    iron = block_tex(tex_iron(rng_for("shape_iron")), "shape_iron")
+    if sid == "bank_booth":
+        bars = block_tex(tex_bars(rng_for("bank_bars")), "bank_bars")
+        gold = block_tex(metal_tex(GOLD, rng_for("bank_gold")), "bank_gold")
+        return shaped(sid, {"particle": dark_wood, "w": dark_wood, "side": side_t, "top": top_t, "bars": bars, "gold": gold}, [
+            el((0, 0, 3), (16, 10, 16), {"north": "side", "south": "w", "east": "w", "west": "w", "up": "w", "down": "w"}),
+            el((0, 10, 0), (16, 11, 16), {"up": "top", "all": "w"}),
+            el((0, 11, 12), (2, 16, 14), "w"), el((14, 11, 12), (16, 16, 14), "w"),
+            el((2, 11, 12.5), (14, 15, 13.5), {"north": "bars", "south": "bars", "up": "w", "down": "w", "east": "w", "west": "w"}),
+            el((0, 15, 11), (16, 16, 15), {"north": "gold", "all": "w"}),
+        ])
+    if sid == "furnace":
+        mouth = block_tex(tex_fire_mouth(rng, stone_tex(rng_for("furnace_mouth"), (112, 108, 104), 0.08)), "furnace_mouth")
+        return shaped(sid, {"particle": brick, "b": brick, "mouth": mouth, "s": stone}, [
+            el((1, 0, 1), (15, 11, 15), {"north": "mouth", "all": "b"}),
+            el((2, 11, 2), (14, 13, 14), "b"),
+            el((4, 13, 4), (12, 14, 12), "s"),
+            el((6, 14, 6), (10, 16, 10), "b"),
+        ])
+    if sid == "anvil":
+        dark = block_tex(tex_iron(rng_for("anvil_iron"), (52, 52, 58)), "anvil_iron")
+        return shaped(sid, {"particle": dark, "i": dark, "top": top_t}, [
+            el((3, 0, 3), (13, 3, 13), "i"),
+            el((5, 3, 5), (11, 7, 11), "i"),
+            el((1, 7, 4), (15, 11, 12), {"up": "top", "all": "i"}),
+            el((15, 8, 6), (16, 10, 10), "i"),
+            el((0, 9, 5), (1, 11, 11), "i"),
+        ])
+    if sid == "cooking_range":
+        door = block_tex(tex_fire_mouth(rng, tex_iron(rng_for("range_door"), (60, 58, 62))), "range_front")
+        return shaped(sid, {"particle": iron, "i": iron, "door": door, "top": top_t}, [
+            el((1, 0, 1), (15, 12, 15), {"north": "door", "all": "i"}),
+            el((0, 12, 0), (16, 13, 16), {"up": "top", "all": "i"}),
+            el((11, 13, 11), (14, 16, 14), "i"),
+        ])
+    if sid == "prayer_altar":
+        cloth = block_tex(tex_cloth(rng_for("altar_cloth"), (236, 236, 232), (40, 70, 180)), "altar_cloth")
+        candle = block_tex(metal_tex(GOLD, rng_for("altar_candle")), "altar_candle")
+        return shaped(sid, {"particle": stone, "s": stone, "c": cloth, "g": candle}, [
+            el((1, 0, 3), (15, 9, 13), "s"),
+            el((0.5, 7, 2.5), (15.5, 10, 13.5), {"up": "c", "north": "c", "south": "c", "east": "c", "west": "c", "down": "s"}),
+            el((2, 10, 6), (3, 14, 7), "g"), el((13, 10, 6), (14, 14, 7), "g"),
+            el((6, 10, 7), (10, 13, 9), "g"),
+        ])
+    return None
+
+
+def altar_shape(aid, top_t, side_t, bottom_t):
+    return shaped(aid, {"particle": side_t, "s": side_t, "top": top_t, "b": bottom_t}, [
+        el((0, 0, 0), (16, 3, 16), {"down": "b", "all": "s"}),
+        el((2, 3, 2), (14, 10, 14), "s"),
+        el((1, 10, 1), (15, 13, 15), {"up": "top", "all": "s"}),
+    ])
+
+
+def stall_shape(name, goods_t, side_t, bottom_t, awning_t, post_t):
+    return shaped(name, {"particle": side_t, "side": side_t, "goods": goods_t, "b": bottom_t, "aw": awning_t, "p": post_t}, [
+        el((0, 0, 0), (16, 8, 16), {"up": "goods", "down": "b", "all": "side"}),
+        el((0, 8, 0), (1.5, 15, 1.5), "p"), el((14.5, 8, 0), (16, 15, 1.5), "p"),
+        el((0, 8, 14.5), (1.5, 15, 16), "p"), el((14.5, 8, 14.5), (16, 15, 16), "p"),
+        el((-0.5, 15, -0.5), (16.5, 16, 16.5), "aw"),
+    ])
+
+
 def gen_blocks(cat):
     names = {}
     cat_by_id = {i["id"]: i for i in cat["items"]}
@@ -3752,7 +4472,7 @@ def gen_blocks(cat):
     for a in cat["altars"]:
         aid = a["id"]
         top = block_tex(altar_top(aid.replace("_altar", ""), rng_for("altar", aid)), aid + "_top")
-        m = block_model(aid, cube_bottom_top(a_side, top, a_bot))
+        m = altar_shape(aid, top, a_side, a_bot)
         blockstate(aid, {"variants": {"": {"model": m}}})
         block_item_model(aid, {"parent": m})
         names[aid] = a["name"]
@@ -3764,8 +4484,11 @@ def gen_blocks(cat):
     for s in cat["stalls"]:
         sid = s["id"]
         top = block_tex(stall_goods(sid.replace("_stall", ""), rng_for("stall", sid)), sid + "_top")
-        m1 = block_model(sid, cube_bottom_top(st_side, top, st_bot))
-        m2 = block_model(sid + "_empty", cube_bottom_top(st_side, st_empty, st_bot))
+        aw = block_tex(tex_awning(rng_for("awning", sid), *STALL_AWNINGS.get(sid, ((180, 30, 30), (236, 230, 214)))),
+                       sid + "_awning")
+        post = block_tex(planks_tex(DARK_WOOD, rng_for("stall_post")), "stall_post")
+        m1 = stall_shape(sid, top, st_side, st_bot, aw, post)
+        m2 = stall_shape(sid + "_empty", st_empty, st_side, st_bot, aw, post)
         blockstate(sid, {"variants": {"empty=false": {"model": m1}, "empty=true": {"model": m2}}})
         block_item_model(sid, {"parent": m1})
         names[sid] = s["name"]
@@ -3773,8 +4496,9 @@ def gen_blocks(cat):
     # f) stations
     for sid, nm in STATIONS.items():
         side, top, bottom = station_textures(sid, cat_by_id)
-        m = block_model(sid, cube_bottom_top(block_tex(side, sid + "_side"), block_tex(top, sid + "_top"),
-                                             block_tex(bottom, sid + "_bottom")))
+        side_t, top_t, bottom_t = block_tex(side, sid + "_side"), block_tex(top, sid + "_top"), block_tex(bottom, sid + "_bottom")
+        m = station_shape(sid, side_t, top_t, bottom_t, rng_for("shape", sid)) \
+            or block_model(sid, cube_bottom_top(side_t, top_t, bottom_t))
         blockstate(sid, {"variants": {"": {"model": m}}})
         block_item_model(sid, {"parent": m})
         names[sid] = nm
@@ -4353,6 +5077,7 @@ def entity_texture(eid, o):
             if opaque(img, x, y) and not (32 <= x < 64 and y < 16):
                 put(img, x, y, (80, 90, 60) if rng.random() < 0.5 else (110, 100, 80))
     extra_features(img, o, rng, head, body, arms, legs, skin, shirt, fx, fy)
+    biped_finish(img, o, rng)
     if eid == "black_demon":
         put(img, fx + 1, fy + 4, (255, 40, 40))
         put(img, fx + 6, fy + 4, (255, 40, 40))
@@ -4501,6 +5226,224 @@ def extra_features(img, o, rng, head, body, arms, legs, skin, shirt, fx, fy):
                     put(img, x, y, (255, 200, 60) if k == 0 else (240, 110, 20))
                 x += rng.choice((-1, 0, 1))
                 y += 1
+
+
+# ----------------------------------------------------------------------------------------------
+# OSRS outfits for named NPCs, and a finishing pass that gives every biped skin depth
+# ----------------------------------------------------------------------------------------------
+
+# Built-in quest characters (QuestNpc enum, textures/entity/npc_q_<id>.png): overrides on top of their look.
+QUEST_NPC_OUTFITS = {
+    "cook": dict(hair_style="short"),
+    "duke_horacio": dict(hair=0xD8D8D0, beard=0xD8D8D0, shirt=0x2A3A8A, pants=0x23306A, trim=GOLD, crown=GOLD,
+                         cape=(150, 30, 30), collar=(240, 240, 235), long_sleeves=True, hair_style="short"),
+    "father_aereck": dict(hair=0x5A3A1A, hair_style="short"),
+    "father_urhney": dict(hair=0x9A9A98, beard=0x9A9A98, shirt=0x2A2420, pants=0x2A2420, ragged=True),
+    "father_lawrence": dict(hair=0x8A8A88, hair_style="bald"),
+    "fred_the_farmer": dict(hair=0x6A4A2A, shirt=0x6A8A3A, pants=0x5A4A2A, hat=("straw", (216, 190, 110)),
+                            beard=0x6A4A2A),
+    "sedridor": dict(shirt=0x3048B0, pants=0x283C98, hat=("pointy", (40, 60, 170)), beard=0xE0E0E0),
+    "wizard_mizgog": dict(shirt=0x3A2A8A, pants=0x30247A, hat=("pointy", (60, 40, 140)), beard=0xC8C8C8),
+    "wizard_traiborn": dict(shirt=0x2A40A0, pants=0x22388A, hat=("pointy", (40, 60, 170)), beard=0xE8E8E8, hair=0xE8E8E8),
+    "aubury": dict(shirt=0x6A2A6A, pants=0x5A225A, hat=None, hair=0x5A3A1A, beard=None, trim=GOLD, hair_style="short"),
+    "romeo": dict(skin=0xD8B090, hair=0xC89040, shirt=0xA02020, pants=0xD0B040, shoes=0x5A3A1A, crown=None, cape=None,
+                  collar=None, trim=None, hair_style="short"),
+    "juliet": dict(hair=0xD8B040, shirt=0xE070A0, pants=0xD06090, trim=(250, 220, 230), hair_style="long"),
+    "apothecary": dict(hair=0x8A8A88, shirt=0x3A6A3A, pants=0x4A3A2A, apron=True, beard=0x8A8A88),
+    "dr_harlow": dict(hair=0x9A9A98, shirt=0x5A4A3A, pants=0x3A3A3A, ragged=True, beard=0x9A9A98),
+    "gypsy_aris": dict(hair=0x2A1A1A, shirt=0x6A2A6A, pants=0x5A225A, hat=("scarf", (180, 40, 40)), hair_style="long"),
+    "sir_prysin": dict(shirt=0xB0B0B8, tabard=(150, 30, 30), emblem=GOLD),
+    "doric": dict(big_beard=0x9A9A98, hair=0x9A9A98, shirt=0x6A4A2A),
+    "hetty": dict(hair=0x5A5A5A),
+    "kaqemeex": dict(),
+    "sanfew": dict(hair=0xD0D0D0),
+    "morgan": dict(hair=0x2A2A2A, shirt=0x6A5A3A, pants=0x3A3A3A),
+    "restless_ghost": dict(),
+}
+
+# Module NPCs by id (catalog["npcs"]): OSRS outfits that a palette alone can't express.
+NAMED_NPCS = {
+    "hans": dict(hair=(150, 150, 146), long_sleeves=True, belt=(60, 40, 20), hair_style="short"),
+    "ned": dict(hair=(232, 232, 228), beard=(232, 232, 228), shirt=(70, 90, 140), pants=(90, 70, 50), hair_style="short"),
+    "sir_amik_varze": dict(plate=True, helmet=True, helmet_col=(230, 230, 236), shirt=(228, 228, 234), pants=(210, 210, 218),
+                           trim=GOLD, cape=(40, 70, 180)),
+    "king_roald": dict(crown=GOLD, cape=(160, 20, 20), collar=(245, 245, 240), shirt=(120, 30, 60), pants=(90, 20, 40),
+                       beard=(150, 140, 120), hair=(150, 140, 120), trim=GOLD, robe=True),
+    "reldo": dict(shirt=(110, 75, 40), pants=(90, 60, 30), robe=True, hair=(70, 50, 30), hair_style="short"),
+    "wise_old_man": dict(shirt=(60, 74, 160), pants=(50, 62, 140), robe=True, hair=(240, 240, 236),
+                         beard=(240, 240, 236), big_beard=(240, 240, 236), hair_style="long"),
+    "quest_wise_old_man": dict(shirt=(60, 74, 160), pants=(50, 62, 140), robe=True, hair=(240, 240, 236),
+                               big_beard=(240, 240, 236), hair_style="long"),
+    "aggie": dict(skin=(150, 176, 122), hair=(40, 40, 40), shirt=(28, 28, 32), pants=(22, 22, 26), robe=True,
+                  hat=("pointy", (25, 25, 30)), eyes=(120, 230, 80)),
+    "gertrude": dict(hair=(110, 70, 40), shirt=(140, 60, 60), pants=(110, 50, 50), robe=True, apron=True, hair_style="bun"),
+    "prince_ali": dict(skin=(176, 128, 90), shirt=(240, 236, 220), pants=(232, 226, 210), robe=True, trim=GOLD,
+                       hat=("turban", (240, 236, 220))),
+    "lady_keli": dict(hair=(40, 30, 20), shirt=(60, 40, 30), pants=(50, 35, 25), belt=(120, 30, 30), hair_style="ponytail"),
+    "thurgo": dict(big_beard=(200, 110, 40), hair=(200, 110, 40)),
+    "oziach": dict(hair=(220, 220, 215), beard=(220, 220, 215), shirt=(90, 70, 40)),
+    "lumbridge_guide": dict(hair=(230, 230, 230), beard=(230, 230, 230), shirt=(50, 70, 150), pants=(230, 230, 230),
+                            hat=("tophat", (40, 50, 110))),
+    "npc_horvik": dict(shirt=None, apron_col=(90, 60, 30), apron=True, hair_style="bald", beard=(70, 50, 30)),
+    "npc_bob": dict(hair=(90, 60, 30), beard=(90, 60, 30), shirt=(70, 110, 60), apron=True, apron_col=(110, 80, 50)),
+    "npc_thessalia": dict(hair=(60, 40, 30), robe=True, hair_style="long"),
+    "npc_lowe": dict(shirt=(60, 110, 50), pants=(80, 60, 40), hat=("cap", (50, 90, 40))),
+    "npc_zaff": dict(shirt=(80, 40, 120), pants=(70, 34, 110), robe=True, hat=("pointy", (80, 40, 120)), beard=(200, 200, 200)),
+    "npc_aubury": dict(shirt=(110, 40, 110), robe=True),
+    "grand_exchange_clerk": dict(shirt=(30, 30, 40), long_sleeves=True, waistcoat=(140, 30, 30), bowtie=True),
+}
+
+
+def npc_role_outfit(eid, name):
+    """Outfit hints shared by whole professions."""
+    text = f"{eid} {name}"
+    o = {}
+    if has_word(text, "banker", "clerk"):
+        o.update(shirt=(235, 235, 230), long_sleeves=True, waistcoat=(34, 40, 70), bowtie=True, pants=(40, 40, 50),
+                 hair_style="short")
+    if has_word(text, "shopkeeper", "shop", "merchant", "trader", "seller", "stall"):
+        o.update(apron=True, apron_col=(120, 90, 55))
+    if has_word(text, "bartender", "barman", "barmaid", "innkeeper"):
+        o.update(apron=True, apron_col=(235, 235, 230))
+    if has_word(text, "smith", "blacksmith", "armourer"):
+        o.update(apron=True, apron_col=(80, 55, 30), shirt=None)
+    if has_word(text, "fisher", "fisherman", "fishmonger", "sailor", "captain", "pirate", "boatman"):
+        o.update(hat=("cap", (60, 70, 110)))
+    if has_word(text, "monk", "brother", "abbot"):
+        o.update(robe=True, shirt=(110, 72, 40), pants=(110, 72, 40), hair_style="bald", belt=(200, 180, 120))
+    if has_word(text, "farmer", "gardener"):
+        o.update(hat=("straw", (216, 190, 110)))
+    if has_word(text, "guide", "tutor"):
+        o.update(hat=("tophat", (40, 50, 110)))
+    return o
+
+
+def hat_layer(img, o, rng):
+    """Hair, hoods and hats on the 3D hat layer (box 32,0 8x8x8) so heads get volume."""
+    hat = box_faces(32, 0, 8, 8, 8)
+    style = o.get("hair_style", "short")
+    hair = rgb(o["hair"])
+    covered = o.get("helmet") or o.get("hood")
+    kind = o["hat"][0] if o.get("hat") else None
+    if not covered and kind not in ("chef", "pointy", "tophat", "turban") and style != "bald":
+        hp = Pal(hair)
+        for f in ("top", "back"):
+            x, y, w, h = hat[f]
+            rows = h if f == "top" else (h if style in ("long", "ponytail") else 5)
+            for yy in range(y, y + rows):
+                for xx in range(x, x + w):
+                    c = hp.m if (xx * 7 + yy * 3) % 5 else hp.d
+                    if f == "top" and (xx + yy) % 4 == 0:
+                        c = hp.l
+                    put(img, xx, yy, c)
+        for f in ("right", "left"):
+            x, y, w, h = hat[f]
+            rows = 7 if style == "long" else 3
+            for yy in range(y, y + rows):
+                for xx in range(x, x + w):
+                    if style != "long" and yy - y == 2 and (xx - x) in ((0, 1) if f == "left" else (6, 7)):
+                        continue
+                    put(img, xx, yy, hp.m if (xx + yy) % 3 else hp.d)
+        x, y, w, h = hat["front"]
+        for xx in range(x, x + w):
+            put(img, xx, y, hp.m)
+            if style in ("long", "short") and (xx - x) in (0, 1, 6, 7):
+                put(img, xx, y + 1, hp.d)
+        if style == "bun":
+            x, y, w, h = hat["back"]
+            for yy in range(y + 1, y + 4):
+                for xx in range(x + 2, x + 6):
+                    put(img, xx, yy, hp.l)
+    if kind in ("straw", "cap", "tophat", "turban", "scarf"):
+        c = rgb(o["hat"][1])
+        cp = Pal(c)
+        for f in ("top",):
+            x, y, w, h = hat[f]
+            for yy in range(y, y + h):
+                for xx in range(x, x + w):
+                    put(img, xx, yy, cp.l if (xx + yy) % 3 == 0 else cp.m)
+        for f in ("front", "back", "right", "left"):
+            x, y, w, h = hat[f]
+            rows = {"straw": 2, "cap": 2, "tophat": 4, "turban": 3, "scarf": 3}[kind]
+            for yy in range(y, y + rows):
+                for xx in range(x, x + w):
+                    put(img, xx, yy, cp.m if yy < y + rows - 1 else cp.d)
+            if kind == "scarf" and f == "back":
+                for yy in range(y + rows, y + 7):
+                    for xx in range(x + 2, x + 6):
+                        put(img, xx, yy, cp.d)
+
+
+def biped_finish(img, o, rng):
+    """Light every limb like OSRS gouraud shading: brighter tops, darker undersides and lower edges."""
+    nets = [box_faces(0, 0, 8, 8, 8), box_faces(16, 16, 8, 12, 4), box_faces(40, 16, 4, 12, 4),
+            box_faces(32, 48, 4, 12, 4), box_faces(0, 16, 4, 12, 4), box_faces(16, 48, 4, 12, 4)]
+    side_f = {"front": 1.0, "back": 0.86, "right": 0.9, "left": 0.9, "top": 1.1, "bottom": 0.7}
+    px = img.load()
+    for n, net in enumerate(nets):
+        for f, (x, y, w, h) in net.items():
+            for yy in range(y, y + h):
+                t = (yy - y) / max(1, h - 1)
+                for xx in range(x, x + w):
+                    c = px[xx, yy]
+                    if c[3] == 0:
+                        continue
+                    k = side_f[f]
+                    if f in ("front", "back", "right", "left") and not (n == 0 and f == "front"):
+                        k *= 1.06 - 0.16 * t
+                        if xx == x and w > 2:
+                            k *= 1.05
+                        elif xx == x + w - 1 and w > 2:
+                            k *= 0.92
+                    r, g, b = (max(0, min(255, int(v * k))) for v in c[:3])
+                    px[xx, yy] = (r, g, b, c[3])
+    if o.get("waistcoat"):
+        wc = rgb(o["waistcoat"])
+        x, y, w, h = box_faces(16, 16, 8, 12, 4)["front"]
+        for yy in range(y + 1, y + 10):
+            for xx in (x, x + 1, x + 2, x + 5, x + 6, x + 7):
+                put(img, xx, yy, wc)
+        for f in ("back", "right", "left"):
+            bx, by, bw, bh = box_faces(16, 16, 8, 12, 4)[f]
+            for yy in range(by + 1, by + 10):
+                for xx in range(bx, bx + bw):
+                    put(img, xx, yy, shade(wc, 0.9))
+        put(img, x + 3, y + 5, GOLD)
+        put(img, x + 4, y + 7, GOLD)
+    if o.get("bowtie"):
+        x, y, w, h = box_faces(16, 16, 8, 12, 4)["front"]
+        for xx in (x + 2, x + 3, x + 4, x + 5):
+            put(img, xx, y, (160, 20, 20))
+    if o.get("apron_col") and o.get("apron"):
+        ac = rgb(o["apron_col"])
+        x, y, w, h = box_faces(16, 16, 8, 12, 4)["front"]
+        for yy in range(y + 2, y + h):
+            for xx in range(x + 1, x + w - 1):
+                put(img, xx, yy, shade(ac, 1.0 - 0.1 * ((yy - y) / h)))
+        for lg in (box_faces(0, 16, 4, 12, 4), box_faces(16, 48, 4, 12, 4)):
+            lx, ly, lw, lh = lg["front"]
+            for yy in range(ly, ly + 6):
+                for xx in range(lx, lx + lw):
+                    put(img, xx, yy, shade(ac, 0.92))
+    hat_layer(img, o, rng)
+
+
+def merge_outfit(o, over):
+    for k, v in over.items():
+        if v is None and k not in ("shirt", "pants", "shoes"):
+            o.pop(k, None)
+        else:
+            o[k] = v
+    return o
+
+
+def gen_quest_npcs(cat):
+    """One skin per built-in quest character (npc_q_<id>.png) in its OSRS outfit."""
+    for q in cat.get("quest_npcs", []):
+        o = dict(NPC_LOOKS.get(q["look"], NPC_LOOKS["peasant"]))
+        merge_outfit(o, QUEST_NPC_OUTFITS.get(q["id"], {}))
+        save_png(entity_texture("npc_q_" + q["id"], o),
+                 os.path.join(ASSETS, "textures", "entity", f"npc_q_{q['id']}.png"), "entity textures")
 
 
 def gen_entities():
@@ -4672,26 +5615,6 @@ def hash01(*keys):
     return (zlib.crc32("|".join(map(str, keys)).encode()) & 0xFFFFFF) / float(0x1000000)
 
 
-def face_xyz(face, i, j, w, h, d):
-    """3D surface coordinate (X right, Y down, Z back; the front face is Z=0) of a net pixel."""
-    if face == "front":
-        return i, j, 0
-    if face == "back":
-        return w - 1 - i, j, d - 1
-    if face == "right":
-        return 0, j, d - 1 - i
-    if face == "left":
-        return w - 1, j, i
-    if face == "top":
-        return i, 0, d - 1 - j
-    return i, h - 1, j  # bottom
-
-
-def face_axes(face):
-    """Which of X/Y/Z (0/1/2) vary across a face."""
-    return {"front": (0, 1), "back": (0, 1), "right": (2, 1), "left": (2, 1), "top": (0, 2), "bottom": (0, 2)}[face]
-
-
 def eye_colour(base, accent):
     a, b = rgb(accent), rgb(base)
     if sat(a) > 0.45 and lum(a) > 110 and cdist(a, b) > 90:
@@ -4701,211 +5624,26 @@ def eye_colour(base, accent):
     return (255, 214, 60)
 
 
-def pattern_colour(pattern, base, accent, face, i, j, fw, fh, xyz, dims, key):
-    """Base colour of one net pixel after applying the part's surface pattern (before lighting)."""
-    w, h, d = dims
-    axis = max(range(3), key=lambda k: dims[k])
-    in_plane = axis in face_axes(face)
-    t = xyz[axis]
-    if pattern == "scales":
-        if fw < 3 or fh < 3:
-            return base
-        r = j // 2
-        k = (i + 2 * (r % 2)) % 4
-        edge = shade(mix(base, accent, 0.5), 0.72)
-        if j % 2 == 1:
-            return edge if k in (0, 3) else shade(base, 0.92)
-        return light(base, 1.14) if k in (1, 2) else base
-    if pattern == "plates":
-        if face == "bottom":
-            belly = mix(base, accent, 0.55)
-            return shade(belly, 0.75) if t % 3 == 2 and in_plane else light(belly, 1.08)
-        if dims[axis] < 4 or not in_plane:
-            return base
-        s = t % 4
-        if s == 3:
-            return shade(mix(base, accent, 0.45), 0.68)
-        return light(base, 1.12) if s == 0 else base
-    if pattern == "spots":
-        if fw * fh < 6:
-            return base
-        cell = 4 if min(fw, fh) < 10 else 5
-        cx, cy = i // cell, j // cell
-        if hash01(key, face, cx, cy) < 0.55:
-            sx = cx * cell + int(hash01(key, face, cx, cy, "x") * cell)
-            sy = cy * cell + int(hash01(key, face, cx, cy, "y") * cell)
-            big = min(fw, fh) >= 8 and hash01(key, face, cx, cy, "r") < 0.5
-            dd = max(abs(i - sx), abs(j - sy))
-            if dd == 0 or (big and abs(i - sx) + abs(j - sy) == 1):
-                return accent if cdist(accent, base) > 40 else light(base, 1.3)
-        return base
-    if pattern == "stripes":
-        if not in_plane or dims[axis] < 3:
-            return base
-        other = [a for a in face_axes(face) if a != axis][0]
-        wob = int(round(math.sin(xyz[other] * 0.9 + hash01(key) * 6) * 0.8))
-        period = 4 if dims[axis] < 14 else 5
-        stripe_col = accent if cdist(accent, base) > 40 else shade(base, 0.55)
-        return stripe_col if (t + wob) % period == 0 else base
-    if pattern == "glow":
-        ci = abs(2 * i / max(1, fw - 1) - 1) if fw > 1 else 0
-        cj = abs(2 * j / max(1, fh - 1) - 1) if fh > 1 else 0
-        centre = 1 - max(ci, cj)
-        c = mix(base, WHITE, 0.12 + 0.38 * centre)
-        if hash01(key, face, i, j) < 0.07:
-            c = mix(mix(base, accent, 0.4), WHITE, 0.6)
-        return c
-    return base
-
-
-def paint_eyes(img, fx, fy, fw, fh, base, accent):
-    eye = eye_colour(base, accent)
-    ew = 2 if fw >= 8 and fh >= 5 else 1
-    eh = 2 if fw >= 10 and fh >= 8 else 1
-    if fw == 1:
-        xs = [0]
-    else:
-        lx = max(0, fw // 2 - ew - max(1, fw // 6))
-        xs = [lx, fw - lx - ew]
-    ey = int(fh * 0.35) if fh >= 3 else 0
-    eye_pix = {(x + a, ey + b) for x in xs for a in range(ew) for b in range(eh)}
-    if fw >= 6 and fh >= 4:  # soft glow halo
-        for (x, y) in eye_pix:
-            for dx in (-1, 0, 1):
-                for dy in (-1, 0, 1):
-                    p = (x + dx, y + dy)
-                    if p not in eye_pix and 0 <= p[0] < fw and 0 <= p[1] < fh:
-                        cur = img.getpixel((fx + p[0], fy + p[1]))
-                        put(img, fx + p[0], fy + p[1], mix(cur, eye, 0.22))
-    if ey >= 1 and fh >= 5:  # brow ridge
-        for x in xs:
-            for a in range(-1, ew + 1):
-                if 0 <= x + a < fw:
-                    cur = img.getpixel((fx + x + a, fy + ey - 1))
-                    put(img, fx + x + a, fy + ey - 1, shade(cur, 0.62))
-    for k, x in enumerate(xs):
-        for a in range(ew):
-            for b in range(eh):
-                inner = (a == ew - 1) if k == 0 else (a == 0)
-                c = light(eye, 1.12) if b == 0 and not inner and ew > 1 else eye
-                if eh > 1 and b == eh - 1 and inner:
-                    c = shade(eye, 0.55)  # pupil slit towards the centre
-                put(img, fx + x + a, fy + ey + b, c)
-    if fh >= 4 and fw >= 3:
-        my = min(fh - 1, ey + eh + max(1, (fh - ey - eh) // 2))
-        x0, x1 = fw // 4, fw - fw // 4 - 1
-        mouth = mix((35, 10, 10), base, 0.15)
-        for x in range(x0, x1 + 1):
-            put(img, fx + x, fy + my, mouth)
-        if fw >= 6 and my + 1 < fh:
-            put(img, fx + x0, fy + my + 1, (240, 236, 220))
-            put(img, fx + x1, fy + my + 1, (240, 236, 220))
-
-
-def paint_snout(img, fx, fy, fw, fh, base):
-    dark = shade(base, 0.3)
-    if fw >= 4 and fh >= 2:
-        nx = max(0, fw // 2 - 1 - (1 if fw >= 6 else 0))
-        put(img, fx + nx, fy, dark)
-        put(img, fx + fw - 1 - nx, fy, dark)
-    if fh >= 3 and fw >= 2:
-        for x in range(fw):
-            put(img, fx + x, fy + fh - 1, shade(base, 0.45))
-
-
-def paint_model_box(img, spec_id, part, bi, box, eyes_here, snout_here):
-    w, h, d, u, v = box["w"], box["h"], box["d"], box["u"], box["v"]
-    base = rgb(part.get("color", 0x808080))
-    if lum(base) < 35:
-        base = mix(base, WHITE, 0.10)
-    acc = part.get("accent")
-    accent = rgb(acc) if acc is not None else shade(base, 0.75)
-    pattern = (part.get("pattern") or "none").lower()
-    role = part.get("role") or "STATIC"
-    key = f"{spec_id}|{part.get('name')}|{bi}"
-    rng = rng_for("model", key)
-    dims = (w, h, d)
-    faces = box_faces(u, v, w, h, d)
-    for face, (fx, fy, fw, fh) in faces.items():
-        if fw <= 0 or fh <= 0:
-            continue
-        for j in range(fh):
-            for i in range(fw):
-                xyz = face_xyz(face, i, j, w, h, d)
-                c = pattern_colour(pattern, base, accent, face, i, j, fw, fh, xyz, dims, key)
-                f = FACE_LIGHT[face]
-                if face in SIDE_FACES and fh > 2:
-                    f *= 1.07 - 0.14 * j / (fh - 1)
-                if fw >= 3 and fh >= 3:
-                    if i == 0 or j == 0:
-                        f *= 1.06
-                    elif i == fw - 1 or j == fh - 1:
-                        f *= 0.86
-                if pattern == "glow":
-                    f = 1 + (f - 1) * 0.3
-                f *= 1 + (rng.random() - 0.5) * (0.10 if fw * fh > 4 else 0.04)
-                put(img, fx + i, fy + j, light(c, f))
-        # role details
-        if role in LIMB_ROLES and h >= 4 and pattern != "glow":
-            tip = shade(mix(base, accent, 0.5), 0.55)
-            if face in SIDE_FACES:
-                for j in range(fh - (2 if h >= 8 else 1), fh):
-                    for i in range(fw):
-                        put(img, fx + i, fy + j, tip if (i + j) % 3 else shade(tip, 0.8))
-            elif face == "bottom":
-                for j in range(fh):
-                    for i in range(fw):
-                        put(img, fx + i, fy + j, shade(tip, 0.8))
-        if role == "JAW":
-            if face == "front" and fw >= 3:
-                for i in range(fw):
-                    put(img, fx + i, fy, (238, 232, 212) if i % 2 == 0 else (196, 188, 170))
-            if face == "top":
-                for j in range(fh):
-                    for i in range(fw):
-                        put(img, fx + i, fy + j, shade((150, 40, 40), 0.75 + rng.random() * 0.3))
-        if role in ("WING_LEFT", "WING_RIGHT") and face in ("top", "bottom") and pattern != "glow":
-            bone = shade(mix(base, accent, 0.5), 0.62 if face == "top" else 0.5)
-            along_x = w >= d
-            for j in range(fh):
-                for i in range(fw):
-                    X, _, Z = face_xyz(face, i, j, w, h, d)
-                    if (along_x and (X % 5 == 2 or Z == 0)) or (not along_x and (Z % 5 == 2 or X == 0)):
-                        put(img, fx + i, fy + j, bone)
-        if role == "TENTACLE" and face == "bottom" and fw >= 2:
-            for j in range(fh):
-                for i in range(fw):
-                    if (i + j) % 3 == 1:
-                        put(img, fx + i, fy + j, light(mix(base, accent, 0.4), 1.25))
-    if eyes_here:
-        fx, fy, fw, fh = faces["front"]
-        if fw > 0 and fh > 0:
-            paint_eyes(img, fx, fy, fw, fh, base, accent)
-    elif snout_here:
-        fx, fy, fw, fh = faces["front"]
-        if fw > 0 and fh > 0:
-            paint_snout(img, fx, fy, fw, fh, base)
-
-
-def model_texture(m):
-    img = new_img(m["tex_w"], m["tex_h"])
-    parts = m.get("parts", [])
-    auto_eyes = not any((p.get("pattern") or "").lower() == "eyes" for p in parts)
-    for p in parts:
-        boxes = p.get("boxes", [])
-        wants_eyes = (p.get("pattern") or "").lower() == "eyes" or (auto_eyes and p.get("role") == "HEAD")
-        eye_box = None
-        if wants_eyes and boxes:
-            eye_box = max(range(len(boxes)), key=lambda k: (boxes[k]["w"] * boxes[k]["h"], -k))
-        for bi, b in enumerate(boxes):
-            paint_model_box(img, m["id"], p, bi, b, bi == eye_box, wants_eyes and bi != eye_box)
-    return img
+def _model_texture_job(m):
+    img, glow = model_painter.model_texture(m)
+    return m["id"], img, glow
 
 
 def gen_model_textures(cat):
-    for m in cat.get("models", []):
-        save_png(model_texture(m), os.path.join(ASSETS, "textures", "entity", "model", m["id"] + ".png"),
-                 "model textures")
+    models = cat.get("models", [])
+    try:
+        import multiprocessing
+        with multiprocessing.Pool() as pool:
+            results = pool.map(_model_texture_job, models, chunksize=4)
+    except (ImportError, OSError):
+        results = [_model_texture_job(m) for m in models]
+    for mid, img, glow in results:
+        base = os.path.join(ASSETS, "textures", "entity", "model", mid)
+        save_png(img, base + ".png", "model textures")
+        if glow is not None:
+            save_png(glow, base + "_glow.png", "model glow layers")
+        elif os.path.exists(base + "_glow.png"):
+            os.remove(base + "_glow.png")
 
 
 # ----------------------------------------------------------------------------------------------
@@ -5024,6 +5762,8 @@ def gen_catalog_creatures(cat):
                      "creature skins")
     for n in cat.get("npcs", []):
         o = creature_options(n["id"], n.get("name", n["id"]), n.get("colors"), npc=True)
+        merge_outfit(o, npc_role_outfit(n["id"], n.get("name", n["id"])))
+        merge_outfit(o, NAMED_NPCS.get(n["id"], {}))
         save_png(entity_texture("npc|" + n["id"], o), os.path.join(ASSETS, "textures", "entity", "npc", n["id"] + ".png"),
                  "npc skins")
     return names
@@ -6227,8 +6967,11 @@ def validate(cat):
             errors.append(f"model {m['id']}: missing texture")
             continue
         with Image.open(tp) as im:
-            if im.size != (m["tex_w"], m["tex_h"]):
-                errors.append(f"model {m['id']}: texture is {im.size}, spec wants {(m['tex_w'], m['tex_h'])}")
+            k = im.size[0] // m["tex_w"]
+            if k < 1 or im.size != (m["tex_w"] * k, m["tex_h"] * k):
+                errors.append(f"model {m['id']}: texture is {im.size}, spec wants a multiple of "
+                              f"{(m['tex_w'], m['tex_h'])}")
+                continue
             px = im.convert("RGBA").load()
             for p in m.get("parts", []):
                 for b in p.get("boxes", []):
@@ -6237,8 +6980,17 @@ def validate(cat):
                             continue
                         if x + w > m["tex_w"] or y + h > m["tex_h"]:
                             errors.append(f"model {m['id']}: part {p['name']} {face} face outside texture")
-                        elif any(px[xx, yy][3] == 0 for yy in range(y, y + h) for xx in range(x, x + w)):
+                        elif any(px[xx * k + k // 2, yy * k + k // 2][3] == 0 for yy in range(y, y + h)
+                                 for xx in range(x, x + w)):
                             errors.append(f"model {m['id']}: part {p['name']} {face} face has transparent pixels")
+        if m.get("has_glow"):
+            gp = os.path.join(ASSETS, "textures", "entity", "model", m["id"] + "_glow.png")
+            if not os.path.exists(gp):
+                errors.append(f"model {m['id']}: has glow parts but no _glow texture")
+            else:
+                with Image.open(gp) as g, Image.open(tp) as im:
+                    if g.size != im.size:
+                        errors.append(f"model {m['id']}: glow layer size {g.size} != texture size {im.size}")
     for group, label in (("monsters", "monster"), ("bosses", "boss")):
         for e in cat.get(group, []):
             if (e.get("model") or e["id"]) in specs:
@@ -6250,6 +7002,9 @@ def validate(cat):
     for n in cat.get("npcs", []):
         if not exists("textures", "entity", "npc", n["id"] + ".png"):
             errors.append(f"npc {n['id']}: missing skin")
+    for q in cat.get("quest_npcs", []):
+        if not exists("textures", "entity", f"npc_q_{q['id']}.png"):
+            errors.append(f"quest npc {q['id']}: missing skin")
     return errors
 
 
@@ -6266,7 +7021,7 @@ def main(argv=None):
         sys.exit(f"missing {CATALOG}; run tools/run_core_tests.sh first")
     with open(CATALOG, encoding="utf-8") as f:
         cat = json.load(f)
-    for key in ("monsters", "bosses", "npcs", "blocks", "models"):
+    for key in ("monsters", "bosses", "npcs", "blocks", "models", "quest_npcs"):
         cat.setdefault(key, [])
     gen_items(cat)
     gen_armour(cat)
@@ -6277,6 +7032,7 @@ def main(argv=None):
     entity_names = gen_entities()
     gen_model_textures(cat)
     entity_names.update(gen_catalog_creatures(cat))
+    gen_quest_npcs(cat)
     gen_skill_icons(cat)
     gen_interface()
     lang = gen_lang(cat, block_names, entity_names)

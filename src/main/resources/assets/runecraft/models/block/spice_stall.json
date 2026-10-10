@@ -1,8 +1,205 @@
 {
-  "parent": "minecraft:block/cube_bottom_top",
+  "parent": "minecraft:block/block",
   "textures": {
+    "particle": "runecraft:block/stall_side",
     "side": "runecraft:block/stall_side",
-    "top": "runecraft:block/spice_stall_top",
-    "bottom": "runecraft:block/stall_bottom"
-  }
+    "goods": "runecraft:block/spice_stall_top",
+    "b": "runecraft:block/stall_bottom",
+    "aw": "runecraft:block/spice_stall_awning",
+    "p": "runecraft:block/stall_post"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        8,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#side"
+        },
+        "south": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        },
+        "west": {
+          "texture": "#side"
+        },
+        "up": {
+          "texture": "#goods"
+        },
+        "down": {
+          "texture": "#b"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        8,
+        0
+      ],
+      "to": [
+        1.5,
+        15,
+        1.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#p"
+        },
+        "south": {
+          "texture": "#p"
+        },
+        "east": {
+          "texture": "#p"
+        },
+        "west": {
+          "texture": "#p"
+        },
+        "up": {
+          "texture": "#p"
+        },
+        "down": {
+          "texture": "#p"
+        }
+      }
+    },
+    {
+      "from": [
+        14.5,
+        8,
+        0
+      ],
+      "to": [
+        16,
+        15,
+        1.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#p"
+        },
+        "south": {
+          "texture": "#p"
+        },
+        "east": {
+          "texture": "#p"
+        },
+        "west": {
+          "texture": "#p"
+        },
+        "up": {
+          "texture": "#p"
+        },
+        "down": {
+          "texture": "#p"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        8,
+        14.5
+      ],
+      "to": [
+        1.5,
+        15,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#p"
+        },
+        "south": {
+          "texture": "#p"
+        },
+        "east": {
+          "texture": "#p"
+        },
+        "west": {
+          "texture": "#p"
+        },
+        "up": {
+          "texture": "#p"
+        },
+        "down": {
+          "texture": "#p"
+        }
+      }
+    },
+    {
+      "from": [
+        14.5,
+        8,
+        14.5
+      ],
+      "to": [
+        16,
+        15,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#p"
+        },
+        "south": {
+          "texture": "#p"
+        },
+        "east": {
+          "texture": "#p"
+        },
+        "west": {
+          "texture": "#p"
+        },
+        "up": {
+          "texture": "#p"
+        },
+        "down": {
+          "texture": "#p"
+        }
+      }
+    },
+    {
+      "from": [
+        -0.5,
+        15,
+        -0.5
+      ],
+      "to": [
+        16.5,
+        16,
+        16.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#aw"
+        },
+        "south": {
+          "texture": "#aw"
+        },
+        "east": {
+          "texture": "#aw"
+        },
+        "west": {
+          "texture": "#aw"
+        },
+        "up": {
+          "texture": "#aw"
+        },
+        "down": {
+          "texture": "#aw"
+        }
+      }
+    }
+  ]
 }

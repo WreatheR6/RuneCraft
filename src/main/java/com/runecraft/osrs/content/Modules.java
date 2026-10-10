@@ -1,5 +1,6 @@
 package com.runecraft.osrs.content;
 
+import com.runecraft.osrs.content.bestiary.BestiaryContent;
 import com.runecraft.osrs.content.bosses.BossesContent;
 import com.runecraft.osrs.content.dungeons.DungeonsContent;
 import com.runecraft.osrs.content.extras.ExtrasContent;
@@ -33,7 +34,8 @@ public final class Modules {
             new ZeahContent(),
             new DungeonsContent(),
             new ExtrasContent(),
-            new IslandsContent());
+            new IslandsContent(),
+            new BestiaryContent());
 
     private Modules() {
     }

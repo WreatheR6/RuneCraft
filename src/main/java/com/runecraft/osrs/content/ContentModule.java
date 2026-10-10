@@ -50,6 +50,22 @@ public interface ContentModule {
         return List.of();
     }
 
+    /**
+     * Replacement looks for models defined by other modules: each spec replaces the registered model with the
+     * same id (applied after every module's {@link #models()}).
+     */
+    default List<ModelSpec> modelOverrides() {
+        return List.of();
+    }
+
+    /**
+     * Models for creatures that have no model yet, given every model id registered so far (applied last;
+     * ids already taken are ignored).
+     */
+    default List<ModelSpec> fallbackModels(java.util.Set<String> existingModelIds) {
+        return List.of();
+    }
+
     default List<CollectionLogData.Page> collectionLog() {
         return List.of();
     }
