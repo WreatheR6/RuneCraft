@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/branda_the_fire_queen_summoning_stone_side",
+    "top": "runecraft:block/branda_the_fire_queen_summoning_stone_top",
+    "bottom": "runecraft:block/branda_the_fire_queen_summoning_stone_bottom"
+  }
+}

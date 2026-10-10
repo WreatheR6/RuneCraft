@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/thermonuclear_smoke_devil_summoning_stone_side",
+    "top": "runecraft:block/thermonuclear_smoke_devil_summoning_stone_top",
+    "bottom": "runecraft:block/thermonuclear_smoke_devil_summoning_stone_bottom"
+  }
+}

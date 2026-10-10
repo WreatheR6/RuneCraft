@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/font_of_consumption_side",
+    "top": "runecraft:block/module/font_of_consumption_top",
+    "bottom": "runecraft:block/module/font_of_consumption_bottom"
+  }
+}

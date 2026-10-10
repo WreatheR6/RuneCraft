@@ -46,6 +46,8 @@ public final class SlayerItems {
     private static final EquipmentStats SLAYER_HELM = s(0, 0, 0, -6, -2, 30, 32, 27, -1, 30, 0, 0, 0, 0);
     private static final EquipmentStats SLAYER_HELM_I = s(0, 0, 0, -6, -2, 30, 32, 27, -1, 30, 0, 0, 0, 0);
 
+    // Shared slayer-boss uniques (hydra parts, trident, occult, abyssal dagger/head, granite maul,
+    // dragon chainbody, brimstone ring, ferocious gloves, smouldering stone) are defined by the bosses module.
     public static void add(ItemSink items) {
         // --- Protective equipment (slayer equipment shop) ---
         items.add("earmuffs", "Earmuffs", Kind.ARMOUR, "full_helm", 0xC8A050).value(200).stack(1).tier("leather")
@@ -130,20 +132,12 @@ public final class SlayerItems {
                 .examine("An imbued slayer helmet: also boosts ranged and magic on task.");
 
         // --- Unique drops ---
-        items.add("abyssal_dagger", "Abyssal dagger", Kind.MELEE_WEAPON, "dagger", 0x5A2A3A).value(115000).stack(1).tier("dragon")
-                .equipment(weapon(s(75, 40, -4, 1, 0, 0, 0, 0, 1, 0, 75, 0, 0, 0), 4, AttackType.STAB, WeaponClass.MELEE,
-                        Skill.ATTACK, 70));
-        items.add("abyssal_head", "Abyssal head", Kind.SIMPLE, "skull", 0x6A2A4A).value(1).stack(1)
-                .examine("The head of an abyssal demon. Very mountable.");
         items.add("abyssal_ashes", "Abyssal ashes", Kind.SIMPLE, "ashes", 0x4A2A4A).value(100)
                 .examine("The ashes of an abyssal demon.");
         items.add("dark_bow", "Dark bow", Kind.BOW, "longbow", 0x2A2A3A).value(120000).stack(1).tier("dragon")
                 .equipment(weapon(s(0, 0, 0, 0, 95, 0, 0, 0, 0, 0, 0, 0, 0, 0), 9, AttackType.RANGED, WeaponClass.BOW,
                         Skill.RANGED, 60))
                 .examine("A bow from a darker dimension.");
-        items.add("granite_maul", "Granite maul", Kind.MELEE_WEAPON, "warhammer", 0x7A7A7A).value(31000).stack(1).tier("rune")
-                .equipment(weapon(s(0, 0, 81, 0, 0, 0, 0, 0, 0, 0, 79, 0, 0, 0), 7, AttackType.CRUSH, WeaponClass.MELEE,
-                        Skill.ATTACK, 50, Skill.STRENGTH, 50));
         items.add("granite_legs", "Granite legs", Kind.ARMOUR, "platelegs", 0x7A7A7A).value(41000).stack(1).tier("rune")
                 .equipment(wear(Slot.LEGS, s(0, 0, 0, -31, -18, 43, 45, 41, -4, 68, 0, 0, 0, 0), Skill.DEFENCE, 50,
                         Skill.STRENGTH, 50));
@@ -153,14 +147,6 @@ public final class SlayerItems {
                 .examine("It looks like this could be attached to a shield somehow.");
         items.add("dragon_boots", "Dragon boots", Kind.ARMOUR, "boots", 0xA02020).value(40000).stack(1).tier("dragon")
                 .equipment(wear(Slot.FEET, s(0, 0, 0, -3, -1, 16, 17, 18, 0, 0, 4, 0, 0, 0), Skill.DEFENCE, 60));
-        items.add("dragon_chainbody", "Dragon chainbody", Kind.ARMOUR, "platebody", 0xA02020).value(250000).stack(1).tier("dragon")
-                .equipment(wear(Slot.CHEST, s(0, 0, 0, -15, 0, 81, 93, 98, -3, 82, 0, 0, 0, 0), Skill.DEFENCE, 60));
-        items.add("trident_of_the_seas", "Trident of the seas", Kind.STAFF, "trident", 0x2A8AA0).value(160000).stack(1)
-                .equipment(weapon(s(0, 0, 0, 15, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0), 4, AttackType.MAGIC, WeaponClass.STAFF,
-                        Skill.MAGIC, 75))
-                .examine("A weapon from the deep. Has a built-in spell.");
-        items.add("occult_necklace", "Occult necklace", Kind.SIMPLE, "necklace", 0x6A3A8A).value(350000).stack(1)
-                .examine("+10% magic damage (needs a neck slot).");
         items.add("brine_sabre", "Brine sabre", Kind.MELEE_WEAPON, "scimitar", 0x4A8A9A).value(15000).stack(1).tier("mithril")
                 .equipment(weapon(s(7, 47, -2, 0, 0, 0, 1, 0, 0, 0, 46, 0, 0, 0), 4, AttackType.SLASH, WeaponClass.MELEE,
                         Skill.ATTACK, 40, Skill.SLAYER, 47));
@@ -180,18 +166,6 @@ public final class SlayerItems {
         items.add("drakes_tooth", "Drake's tooth", Kind.SIMPLE, "tooth", 0xE8E0C0).value(30000).stack(1);
         items.add("drakes_claw", "Drake's claw", Kind.SIMPLE, "claw", 0x9A6A3A).value(30000).stack(1)
                 .examine("Use it on boots of stone to make boots of brimstone.");
-        items.add("hydras_eye", "Hydra's eye", Kind.SIMPLE, "gem", 0xE0A020).value(25000).stack(1);
-        items.add("hydras_fang", "Hydra's fang", Kind.SIMPLE, "tooth", 0xE8E0D0).value(25000).stack(1);
-        items.add("hydras_heart", "Hydra's heart", Kind.SIMPLE, "gem", 0xC02030).value(25000).stack(1);
-        items.add("hydra_tail", "Hydra tail", Kind.SIMPLE, "tail", 0x4A7A3A).value(10000).stack(1);
-        items.add("hydra_leather", "Hydra leather", Kind.SIMPLE, "leather", 0x5A8A4A).value(50000).stack(1)
-                .examine("Can be made into ferocious gloves.");
-        items.add("brimstone_ring", "Brimstone ring", Kind.SIMPLE, "ring", 0xD06020).value(50000).stack(1)
-                .examine("A ring forged from the remains of a hydra (needs a ring slot).");
-        items.add("ferocious_gloves", "Ferocious gloves", Kind.SIMPLE, "leather", 0x4A6A3A).value(100000).stack(1)
-                .examine("Gloves of hydra leather (needs a hands slot).");
-        items.add("smouldering_stone", "Smouldering stone", Kind.SIMPLE, "gem", 0xE04010).value(1000000).stack(1)
-                .examine("A rare stone found inside a hellhound.");
         items.add("lava_scale", "Lava scale", Kind.SIMPLE, "secondary", 0xE06020).value(4000)
                 .examine("Grind it into shards for extended antifires.");
         items.add("dragon_limbs", "Dragon limbs", Kind.SIMPLE, "shaft", 0xA02020).value(500000).stack(1);
