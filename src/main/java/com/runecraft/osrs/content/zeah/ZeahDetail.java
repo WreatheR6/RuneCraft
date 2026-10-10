@@ -355,8 +355,8 @@ final class ZeahDetail {
                             b.set(x, g + 1, z, "minecraft:coal_block");
                         }
                         case 1 -> {
-                            b.set(x, g, z, "minecraft:minecart");
                             b.fill(x, g, z, x + 2, g, z, "minecraft:rail[shape=east_west]");
+                            b.set(x + 1, g, z + 1, "minecraft:raw_iron_block");
                         }
                         default -> d.crates(x, z, rnd.nextLong());
                     }
