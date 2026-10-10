@@ -1,0 +1,8 @@
+--release
+17
+-proc:none
+-Xmaxerrs
+100000
+-d
+/tmp/claude-0/-home-user-RuneCraft/b295053c-1073-5552-9c7f-8c8934c3fd60/scratchpad/quests/cc
+@/tmp/claude-0/-home-user-RuneCraft/b295053c-1073-5552-9c7f-8c8934c3fd60/scratchpad/quests/cc/srcs.txt
