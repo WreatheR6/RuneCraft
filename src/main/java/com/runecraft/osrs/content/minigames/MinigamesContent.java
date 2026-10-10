@@ -1,11 +1,66 @@
 package com.runecraft.osrs.content.minigames;
 
+import com.runecraft.osrs.CollectionLogData;
+import com.runecraft.osrs.content.BlockDef;
+import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.ContentModule;
+import com.runecraft.osrs.content.ItemSink;
+import com.runecraft.osrs.content.MonsterDef;
+import com.runecraft.osrs.content.NpcDef;
+import com.runecraft.osrs.content.PlaceDef;
+import com.runecraft.osrs.model.ModelSpec;
 
-/** Minigames: Pest Control, Wintertodt, Tempoross, Fight Caves waves, Inferno, Barbarian Assault, Castle Wars... */
+import java.util.List;
+
+/**
+ * Minigames: TzHaar Fight Cave and Inferno, Pest Control, Wintertodt, Tempoross, Guardians of the
+ * Rift, Barbarian Assault, Castle Wars, Warriors' Guild, Mage Training Arena, Pyramid Plunder,
+ * Hallowed Sepulchre, Brimhaven Agility Arena, Gnome Restaurant, Trouble Brewing, Shades of
+ * Mort'ton, Tithe Farm, Giants' Foundry, Mahogany Homes, Fishing Trawler and Rogues' Den.
+ */
 public final class MinigamesContent implements ContentModule {
     @Override
     public String id() {
         return "minigames";
+    }
+
+    @Override
+    public void items(ItemSink items) {
+        MinigameItems.add(items);
+    }
+
+    @Override
+    public List<MonsterDef> monsters() {
+        return MinigameMonsters.monsters();
+    }
+
+    @Override
+    public List<BossDef> bosses() {
+        return MinigameMonsters.bosses();
+    }
+
+    @Override
+    public List<PlaceDef> places() {
+        return MinigameWorld.places();
+    }
+
+    @Override
+    public List<NpcDef> npcs() {
+        return MinigameWorld.npcs();
+    }
+
+    @Override
+    public List<BlockDef> blocks() {
+        return MinigameWorld.blocks();
+    }
+
+    @Override
+    public List<ModelSpec> models() {
+        return MinigameModels.models();
+    }
+
+    @Override
+    public List<CollectionLogData.Page> collectionLog() {
+        return MinigameWorld.collectionLog();
     }
 }
