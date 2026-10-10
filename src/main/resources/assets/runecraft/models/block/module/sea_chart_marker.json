@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/sea_chart_marker_side",
+    "top": "runecraft:block/module/sea_chart_marker_top",
+    "bottom": "runecraft:block/module/sea_chart_marker_bottom"
+  }
+}

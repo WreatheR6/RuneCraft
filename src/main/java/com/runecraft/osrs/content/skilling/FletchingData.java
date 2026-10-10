@@ -116,7 +116,7 @@ public final class FletchingData extends SkillingPart {
         for (Stock st : STOCKS) {
             simple(s, st.id, title(st.id), "stock", st.color, st.level * 2);
         }
-        simple(s, "dragon_limbs", "Dragon limbs", "limbs", 0xB02020, 40000);
+        // dragon_limbs is defined by the slayer module (dropped by metal dragons).
         for (Crossbow c : CROSSBOWS) {
             simple(s, c.id() + "_u", c.name() + " (u)", "crossbow_u", c.color(), c.rangedAttack() * 20).stack(1);
             s.add(c.id(), c.name(), Kind.BOW, "crossbow", c.color()).value(c.rangedAttack() * 40).stack(1)
@@ -140,8 +140,7 @@ public final class FletchingData extends SkillingPart {
         }
         simple(s, "unfinished_broad_bolts", "Unfinished broad bolts", "bolts", 0x8A8A70, 5);
         s.add("broad_bolts", "Broad bolts", Kind.ARROW, "bolts", 0x8A8A70).value(10).rangedStrength(100).tier("broad");
-        simple(s, "broad_arrowheads", "Broad arrowheads", "arrowtips", 0x8A8A70, 30);
-        s.add("broad_arrows", "Broad arrows", Kind.ARROW, "arrow", 0x8A8A70).value(40).rangedStrength(28).tier("broad");
+        // broad_arrowheads / broad_arrows are defined by the slayer module.
         simple(s, "amethyst_arrowtips", "Amethyst arrowtips", "arrowtips", 0xA070D0, 40);
         s.add("amethyst_arrow", "Amethyst arrow", Kind.ARROW, "arrow", 0xA070D0).value(80).rangedStrength(55).tier("amethyst");
         simple(s, "amethyst_bolt_tips", "Amethyst bolt tips", "bolt_tips", 0xA070D0, 30);

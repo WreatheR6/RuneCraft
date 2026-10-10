@@ -172,7 +172,7 @@ public final class GatheringData extends SkillingPart {
                 PlaceDef.of("lumbridge_swamp_caves", "Lumbridge Swamp Caves", 3243, 3160, PlaceDef.Style.CAVE,
                         List.of("eel_fishing_spot", "eel_fishing_spot")),
                 PlaceDef.of("taverley_dungeon_lava_eels", "Lava eel fishing", 2895, 3480, PlaceDef.Style.CAVE, List.of("lava_eel_fishing_spot")),
-                PlaceDef.of("zul_andra", "Zul-Andra", 2192, 3058, PlaceDef.Style.CAMP, List.of("sacred_eel_fishing_spot", "sacred_eel_fishing_spot")),
+                PlaceDef.of("zul_andra_shore", "Zul-Andra", 2192, 3058, PlaceDef.Style.CAMP, List.of("sacred_eel_fishing_spot", "sacred_eel_fishing_spot")),
                 PlaceDef.of("mor_ul_rek_eels", "Infernal eel fishing", 2858, 3190, PlaceDef.Style.CAVE,
                         List.of("infernal_eel_fishing_spot", "infernal_eel_fishing_spot")),
                 PlaceDef.of("fishing_platform_deep_sea", "Deep sea fishing", 2770, 3290, PlaceDef.Style.NONE, List.of()));

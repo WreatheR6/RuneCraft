@@ -55,6 +55,48 @@
         "maxCount": 3
       },
       {
+        "type": "runecraft:baby_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:young_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:gourmet_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:eclectic_impling",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:nature_impling",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:magpie_impling",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:lucky_impling",
+        "weight": 1,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
         "type": "runecraft:grizzly_bear",
         "weight": 2,
         "minCount": 1,

@@ -73,6 +73,48 @@
         "maxCount": 2
       },
       {
+        "type": "runecraft:earth_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:essence_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:eclectic_impling",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:magpie_impling",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:ninja_impling",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:dragon_impling",
+        "weight": 1,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:lucky_impling",
+        "weight": 1,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
         "type": "runecraft:giant_bat",
         "weight": 4,
         "minCount": 1,

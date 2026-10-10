@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/poh_teak_armchair_side",
+    "top": "runecraft:block/module/poh_teak_armchair_top",
+    "bottom": "runecraft:block/module/poh_teak_armchair_bottom"
+  }
+}

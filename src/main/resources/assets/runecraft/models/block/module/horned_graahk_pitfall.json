@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/horned_graahk_pitfall_side",
+    "top": "runecraft:block/module/horned_graahk_pitfall_top",
+    "bottom": "runecraft:block/module/horned_graahk_pitfall_bottom"
+  }
+}

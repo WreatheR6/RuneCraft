@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/ore_stall_side",
+    "top": "runecraft:block/module/ore_stall_top",
+    "bottom": "runecraft:block/module/ore_stall_bottom"
+  }
+}

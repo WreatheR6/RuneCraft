@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/spined_larupia_pitfall_side",
+    "top": "runecraft:block/module/spined_larupia_pitfall_top",
+    "bottom": "runecraft:block/module/spined_larupia_pitfall_bottom"
+  }
+}

@@ -37,6 +37,12 @@
         "maxCount": 2
       },
       {
+        "type": "runecraft:earth_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
         "type": "runecraft:cave_crawler",
         "weight": 5,
         "minCount": 2,

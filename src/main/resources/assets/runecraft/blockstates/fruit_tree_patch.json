@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "runecraft:block/module/fruit_tree_patch"
+    }
+  }
+}

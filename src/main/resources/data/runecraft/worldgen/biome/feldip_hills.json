@@ -31,6 +31,12 @@
         "maxCount": 3
       },
       {
+        "type": "runecraft:nature_impling",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
         "type": "runecraft:ogre",
         "weight": 6,
         "minCount": 1,

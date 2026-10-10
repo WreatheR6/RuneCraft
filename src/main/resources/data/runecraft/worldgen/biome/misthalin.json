@@ -67,6 +67,30 @@
         "maxCount": 2
       },
       {
+        "type": "runecraft:baby_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:young_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:gourmet_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:essence_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
         "type": "runecraft:scorpion",
         "weight": 2,
         "minCount": 1,

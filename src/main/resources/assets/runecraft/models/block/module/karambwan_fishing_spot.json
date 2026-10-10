@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/karambwan_fishing_spot_side",
+    "top": "runecraft:block/module/karambwan_fishing_spot_top",
+    "bottom": "runecraft:block/module/karambwan_fishing_spot_bottom"
+  }
+}

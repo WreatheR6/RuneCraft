@@ -167,7 +167,7 @@ public final class ThievingData extends SkillingPart {
                 PlaceDef.of("ardougne_castle", "Ardougne Castle", 2588, 3291, PlaceDef.Style.TOWN, List.of("ardougne_castle_chest")),
                 PlaceDef.of("rellekka_arrowtip_chest", "Rellekka chest", 2648, 3660, PlaceDef.Style.CAMP, List.of("arrowtip_chest", "fish_stall")),
                 PlaceDef.of("morytania_blood_chest", "Sanguinesti chest", 3585, 3360, PlaceDef.Style.RUINS, List.of("blood_rune_chest")),
-                PlaceDef.of("rogues_castle", "Rogues' Castle", 3286, 3930, PlaceDef.Style.RUINS,
+                PlaceDef.of("rogues_castle_chests", "Rogues' Castle", 3286, 3930, PlaceDef.Style.RUINS,
                         List.of("rogues_castle_chest", "rogues_castle_chest")),
                 PlaceDef.of("draynor_market", "Draynor market", 3080, 3250, PlaceDef.Style.TOWN,
                         List.of("seed_stall", "wine_stall", "vegetable_stall")),

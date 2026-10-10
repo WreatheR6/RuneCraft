@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/mushroom_patch_side",
+    "top": "runecraft:block/module/mushroom_patch_top",
+    "bottom": "runecraft:block/module/mushroom_patch_bottom"
+  }
+}

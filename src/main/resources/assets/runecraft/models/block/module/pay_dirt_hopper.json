@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/pay_dirt_hopper_side",
+    "top": "runecraft:block/module/pay_dirt_hopper_top",
+    "bottom": "runecraft:block/module/pay_dirt_hopper_bottom"
+  }
+}

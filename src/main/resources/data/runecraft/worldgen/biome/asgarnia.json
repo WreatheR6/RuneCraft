@@ -55,6 +55,24 @@
         "maxCount": 2
       },
       {
+        "type": "runecraft:baby_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:young_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "runecraft:earth_impling",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
         "type": "runecraft:grizzly_bear",
         "weight": 3,
         "minCount": 1,

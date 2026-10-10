@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/birdhouse_side",
+    "top": "runecraft:block/module/birdhouse_top",
+    "bottom": "runecraft:block/module/birdhouse_bottom"
+  }
+}
