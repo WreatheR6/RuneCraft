@@ -118,7 +118,7 @@ public class PestControlSession extends MinigameSession {
             if (!up.isEmpty()) {
                 int i = up.get(random.nextInt(up.size()));
                 shielded[i] = false;
-                portals[i].removeCommandTag(MinigameCombat.INVULNERABLE);
+                portals[i].getCommandTags().remove(MinigameCombat.INVULNERABLE);
                 broadcastRed("The " + colour(i) + ", " + PORTAL_DIR[i] + " portal shield has dropped!");
             }
         }
