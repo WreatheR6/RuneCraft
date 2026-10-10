@@ -31,8 +31,6 @@ final class Folk {
                 .bottoms(0x3A3A4A, "trousers").helm("bandana", 0xA02A2A).belt(0x1A1A1A).weapon("scimitar", STEEL).build());
         l.add(of("desert_bandit").skin(SKIN_DESERT).hair(HAIR_BLACK, "short").top(0xE0D8C0, "cloth")
                 .bottoms(0x8A6A4A, "trousers").helm("bandana", 0xE0D8C0).belt(0x6A2A2A).weapon("scimitar", IRON).build());
-        l.add(of("chaos_druid").skin(SKIN).hair(HAIR_GREY, "long").beard(HAIR_GREY, "long").top(0x3A2A4A, "robe")
-                .bottoms(0x2A1A3A, "robe").helm("hood", 0x2A1A3A).weapon("staff", 0x8A3AC0).build());
         l.add(of("dwarf").dwarfBody().skin(0xC08A68).hair(HAIR_GINGER, "short").beard(HAIR_GINGER, "long")
                 .top(0x6A3A1A, "cloth").bottoms(0x4A3A2A, "trousers").helm("med", IRON).belt(LEATHER)
                 .weapon("pickaxe", IRON).build());
@@ -65,32 +63,20 @@ final class Folk {
         l.add(of("dark_wizard").skin(SKIN_PALE).hair(HAIR_GREY, "short").beard(HAIR_GREY, "long")
                 .top(0x26263E, "robe").bottoms(0x1E1E32, "robe").trim(0x8A1A1A).helm("wizard", 0x1E1E30)
                 .weapon("staff", 0xE04020).build());
-        l.add(of("infernal_mage").skin(0x8A6A5A).hair(HAIR_BLACK, "none").top(0x6A1A1A, "robe").bottoms(0x3A0A0A, "robe")
-                .helm("hood", 0x2A0A0A).glowingEyes().face("eyes").weapon("staff", 0xFF6020).build());
-        l.add(of("malevolent_mage").skin(0x8A6A5A).hair(HAIR_BLACK, "none").top(0x6A1A1A, "robe").bottoms(0x3A0A0A, "robe")
-                .trim(0xE0A020).helm("hood", 0x2A0A0A).glowingEyes().face("eyes").weapon("staff", 0xFF3020).build());
         // ---- goblins ----
         l.add(of("goblin").goblinBody().skin(GOBLIN_GREEN).face("eyes").hair(0, "none").top(0x7A4A28, "leather")
                 .sleeves("none").bottoms(0x5A3A20, "loincloth").boots(GOBLIN_GREEN).weapon("spear", BRONZE).build());
         l.add(of("hobgoblin").body(11, 9, 11, 5, 12, 3).head(8, 8, 8).ears("pointy").bigNose(true).hunch(10)
                 .skin(0x7A9A4A).face("eyes").hair(0, "none").top(0x6A3A2A, "leather").sleeves("none")
                 .bottoms(0x4A3A2A, "kilt").boots(0x7A9A4A).weapon("spear", IRON).build());
-        l.add(of("cave_goblin").goblinBody().skin(0xC8D8C0).face("eyes").hair(0, "none").top(0x6A5A8A, "cloth")
-                .sleeves("short").bottoms(0x4A3A5A, "loincloth").boots(0xC8D8C0).helm("cap", 0x4A3A5A).build());
-        l.add(of("cave_goblin_guard").goblinBody().skin(0xC8D8C0).face("eyes").hair(0, "none").top(0x5A5A6A, "chain")
-                .bottoms(0x3A3A4A, "kilt").helm("med", 0x5A5A6A).weapon("spear", IRON).build());
         // ---- giants ----
         l.add(of("hill_giant").giantBody().skin(0xC8A070).hair(HAIR_BROWN, "none").top(0xC8A070, "skin").sleeves("none")
                 .bottoms(0x6A4A2A, "loincloth").boots(0xC8A070).weapon("club", WOOD).build());
-        l.add(of("catacomb_hill_giant").giantBody().skin(0xB89068).hair(HAIR_BROWN, "none").top(0xB89068, "skin").sleeves("none")
-                .bottoms(0x4A3A2A, "loincloth").boots(0xB89068).weapon("club", WOOD).glowingEyes().build());
         l.add(moss(of("moss_giant"), 0x6A7A3A, 0x3A6A1E));
-        l.add(moss(of("catacomb_moss_giant"), 0x5A7A3A, 0x2A5A16));
         l.add(of("ice_giant").giantBody().skin(0x9ABCD8).skinMaterial("ice").hair(HAIR_WHITE, "long").beard(HAIR_WHITE, "long")
                 .top(0x9ABCD8, "skin").sleeves("none").bottoms(0x5A6A8A, "loincloth").boots(0x9ABCD8)
                 .helm("horned", 0x6A7A8A).weapon("club", 0x8AA8C8).build());
         l.add(fire(of("fire_giant")));
-        l.add(fire(of("catacomb_fire_giant")));
         l.add(of("ice_warrior").skin(0x9AC8E8).skinMaterial("ice").face("eyes").glowingEyes().hair(0, "none").top(0x7AA8D8, "metal")
                 .bottoms(0x5A88B8, "plate").helm("full", 0xB0D8F0).weapon("mace", 0xD0F0FF).build());
         l.add(of("earth_warrior").skin(0x6A5A3A).face("eyes").hair(0, "none").top(0x5A4A2A, "metal").bottoms(0x4A3A2A, "plate")
@@ -98,8 +84,6 @@ final class Folk {
         // ---- ogres, trolls ----
         l.add(of("ogre").ogreBody().skin(0x8AA060).face("eyes").hair(0, "none").top(0x8AA060, "skin").sleeves("none")
                 .bottoms(0x6A5A3A, "loincloth").boots(0x8AA060).weapon("club", WOOD).build());
-        l.add(of("mogre").ogreBody().skin(0x5A8A7A).skinMaterial("scales").face("eyes").hair(0, "none").top(0x5A8A7A, "skin")
-                .sleeves("none").bottoms(0x3A4A3A, "loincloth").boots(0x5A8A7A).build());
         l.add(of("jogre").ogreBody().skin(0x7A6A3A).face("eyes").hair(0, "none").top(0x7A6A3A, "skin").sleeves("none")
                 .bottoms(0x5A4A2A, "loincloth").boots(0x7A6A3A).weapon("club", WOOD).build());
         l.add(of("ogress_warrior").ogreBody().skin(0x8A9A5A).face("eyes").hair(HAIR_BLACK, "ponytail").top(0x5A3A2A, "leather")

@@ -26,12 +26,13 @@ public final class BestiaryContent implements ContentModule {
         list.addAll(Folk.all());
         list.addAll(Creatures.all());
         list.addAll(Bosses.fresh());
+        list.addAll(BestiarySlm.fresh());
         return list;
     }
 
     @Override
     public List<ModelSpec> fallbackModels(java.util.Set<String> existingModelIds) {
-        return Fallbacks.all(existingModelIds);
+        return BestiarySlm.withFallbacks(existingModelIds, Fallbacks::all);
     }
 
     @Override

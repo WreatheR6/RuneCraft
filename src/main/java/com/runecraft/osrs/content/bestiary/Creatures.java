@@ -26,15 +26,9 @@ public final class Creatures {
         l.add(spider("poison_spider", 0x3A6A2A, 0xA0D040, 1.0f));
         l.add(canine("wolf", 0x8A8A88, 0xD8D8D0, false));
         l.add(canine("wild_dog", 0x8A6A4A, 0xC8A880, false));
-        l.add(canine("catacomb_hellhound", 0x7A1A16, 0xF0A020, true));
         l.add(yak("yak"));
         l.add(cat("blood_jaguar", 0x8A1A1A, 0xE0C040));
         l.add(skeleton("skeleton", 0xE0DCC8, "sword", false));
-        l.add(demon("lesser_demon", 0xA8241E, 0x3A1A12, 0xE0D0B0, 1.0f, false));
-        l.add(demon("greater_demon", 0x8A1A16, 0x2A0E0A, 0xE0D0B0, 1.0f, true));
-        l.add(demon("black_demon", 0x2A2628, 0x141214, 0xA02020, 1.0f, true));
-        l.add(demon("catacomb_greater_demon", 0x8A1A16, 0x2A0E0A, 0xE0D0B0, 1.0f, true));
-        l.add(demon("catacomb_black_demon", 0x2A2628, 0x141214, 0xA02020, 1.0f, true));
         l.add(demon("reanimated_demon_spawn", 0x5A2A2A, 0x2A1010, 0xA02020, 0.8f, false));
         return l;
     }
