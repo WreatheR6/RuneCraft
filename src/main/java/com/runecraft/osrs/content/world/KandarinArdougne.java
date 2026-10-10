@@ -62,6 +62,7 @@ final class KandarinArdougne {
         for (int[] c : new int[][]{{2651, 3293}, {2673, 3293}, {2651, 3311}, {2673, 3311}}) {
             k.lamp(KandarinKit.X(c[0]), KandarinKit.Z(c[1]), "minecraft:dark_oak_fence");
         }
+        marketDetails(k, fx, fz);
 
         // --- Rooftop course houses around the market (flat roofs) ---
         Pal flat = ARDY.roof("flat:minecraft:smooth_stone");
@@ -159,6 +160,39 @@ final class KandarinArdougne {
             k.oak(KandarinKit.X(t[0]), KandarinKit.Z(t[1]), 6);
         }
         return k.build();
+    }
+
+    /**
+     * The Ardougne market's furnishings: a second fountain tier, benches round the basin, flower
+     * tubs, crate stacks behind the stalls, a notice board and a paved edge kerb.
+     */
+    private static void marketDetails(KandarinKit k, int fx, int fz) {
+        int g = k.g;
+        // an upper basin round the fountain column
+        k.d.air(fx - 1, g + 2, fz - 1, fx + 1, g + 2, fz + 1, "minecraft:stone_brick_slab[type=top]");
+        // benches facing the fountain on all four sides
+        k.d.bench(fx - 1, g, fz - 6, 'e', 3, 's', "dark_oak");
+        k.d.bench(fx - 1, g, fz + 6, 'e', 3, 'n', "dark_oak");
+        k.d.bench(fx - 6, g, fz - 1, 's', 3, 'e', "dark_oak");
+        k.d.bench(fx + 6, g, fz - 1, 's', 3, 'w', "dark_oak");
+        // flower tubs at the diagonals
+        int i = 0;
+        for (int[] p : new int[][]{{-5, -5}, {5, -5}, {-5, 5}, {5, 5}}) {
+            k.d.planter(fx + p[0], g, fz + p[1], i++);
+        }
+        // the square's kerb, crates behind the stalls and a notice board
+        int x1 = KandarinKit.X(2651);
+        int x2 = KandarinKit.X(2673) + 1;
+        int z1 = KandarinKit.Z(3311);
+        int z2 = KandarinKit.Z(3293) + 1;
+        k.d.replace(x1, g - 1, z1, x2, g - 1, z1, SB, "minecraft:polished_andesite");
+        k.d.replace(x1, g - 1, z2, x2, g - 1, z2, SB, "minecraft:polished_andesite");
+        k.d.replace(x1, g - 1, z1, x1, g - 1, z2, SB, "minecraft:polished_andesite");
+        k.d.replace(x2, g - 1, z1, x2, g - 1, z2, SB, "minecraft:polished_andesite");
+        k.d.crates(KandarinKit.X(2657), g, KandarinKit.Z(3311));
+        k.d.crates(KandarinKit.X(2666), g, KandarinKit.Z(3294));
+        k.d.crates(KandarinKit.X(2651) + 1, g, KandarinKit.Z(3305));
+        k.d.signpost(KandarinKit.X(2662), g, KandarinKit.Z(3299), "dark_oak");
     }
 
     /** Ardougne rooftop course (7 obstacles) over the houses around the market. */

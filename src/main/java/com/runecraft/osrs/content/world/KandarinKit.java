@@ -404,6 +404,49 @@ final class KandarinKit {
         fill(x + 1, 1, z + 1, x + 1, 2, z + 1, post);
         fill(x - 1, 3, z - 1, x + 1, 3, z + 1, "minecraft:" + wool + "_wool");
         fill(x, 3, z - 1, x, 3, z + 1, "minecraft:white_wool");
+        // a scalloped valance of banners under the front of the awning, a ridge and goods on the counter
+        d.banner(x - 1, g + 3, z + 2, 's', wool);
+        d.banner(x, g + 3, z + 2, 's', "white");
+        d.banner(x + 1, g + 3, z + 2, 's', wool);
+        d.air(x - 1, g + 4, z - 1, x + 1, g + 4, z - 1, "minecraft:" + wood + "_slab");
+        String goods = stallGoods(stallBlock);
+        if (goods != null) {
+            d.air(x - 1, g + 1, z, x - 1, g + 1, z, goods);
+        }
+        d.air(x + 1, g + 1, z, x + 1, g + 1, z, "minecraft:" + wood + "_trapdoor[half=bottom]");
+    }
+
+    /** A block that reads as the wares of a market stall (placed on its counter), or null. */
+    static String stallGoods(String stallBlock) {
+        String s = stallBlock.toLowerCase();
+        if (s.contains("cake") || s.contains("bakery")) {
+            return "minecraft:cake";
+        }
+        if (s.contains("silk")) {
+            return "minecraft:purple_carpet";
+        }
+        if (s.contains("silver")) {
+            return "minecraft:chain";
+        }
+        if (s.contains("gem")) {
+            return "minecraft:amethyst_cluster";
+        }
+        if (s.contains("spice")) {
+            return "minecraft:potted_orange_tulip";
+        }
+        if (s.contains("fur")) {
+            return "minecraft:brown_carpet";
+        }
+        if (s.contains("fish")) {
+            return "minecraft:dried_kelp_block";
+        }
+        if (s.contains("veg") || s.contains("fruit")) {
+            return "minecraft:melon";
+        }
+        if (s.contains("tea")) {
+            return "minecraft:flower_pot";
+        }
+        return "minecraft:flower_pot";
     }
 
     /** Fence around a block rect at ground level (gate gaps left to the caller). */

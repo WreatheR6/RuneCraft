@@ -507,6 +507,33 @@ final class MisthalinDetail {
         }
     }
 
+    /**
+     * A steep conical spire (only into air) from absolute height y: discs shrinking by one block
+     * of radius every {@code steep} layers, a finial and a pennant on top.
+     */
+    void spire(int cx, int cz, int r, int y, int steep, String block, String pennant) {
+        int yy = y;
+        for (int rr = r; rr >= 1; rr--) {
+            for (int s = 0; s < steep; s++) {
+                for (int dz = -rr; dz <= rr; dz++) {
+                    double v = (rr + 0.4) * (rr + 0.4) - dz * dz;
+                    if (v < 0) {
+                        continue;
+                    }
+                    int w = (int) Math.floor(Math.sqrt(v));
+                    air(cx - w, yy, cz + dz, cx + w, yy, cz + dz, block);
+                }
+                yy++;
+            }
+        }
+        air(cx, yy, cz, cx, yy + 1, cz, block);
+        air(cx, yy + 2, cz, cx, yy + 4, cz, "minecraft:spruce_fence");
+        if (pennant != null) {
+            air(cx + 1, yy + 4, cz, cx + 2, yy + 4, cz, "minecraft:" + pennant + "_wool");
+            air(cx + 1, yy + 3, cz, cx + 1, yy + 3, cz, "minecraft:" + pennant + "_wool");
+        }
+    }
+
     static char opposite(char d) {
         return switch (d) {
             case 'n' -> 's';

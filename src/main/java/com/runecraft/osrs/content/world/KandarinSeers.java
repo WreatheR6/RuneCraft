@@ -165,7 +165,40 @@ final class KandarinSeers {
         k.oak(KandarinKit.X(2720), KandarinKit.Z(3466), 5);
         k.well(KandarinKit.X(2733), KandarinKit.Z(3486));
         k.meadow(KandarinKit.X(2686), KandarinKit.Z(3510), KandarinKit.X(2742) + 1, KandarinKit.Z(3455) + 1, 11);
+        seersDetails(k, pub, bank, spin);
         return k.build();
+    }
+
+    /**
+     * Seers' Village life: cottage gardens, the Forester's Arms' sign, benches and beer barrels
+     * outside the pub, a sign post at the crossroads, hay and crates, and upstairs rooms in the pub.
+     */
+    private static void seersDetails(KandarinKit k, Bld pub, Bld bank, Bld spin) {
+        int g = k.g;
+        // pub: hanging sign, benches and barrels out front, rooms upstairs
+        k.d.air(pub.x2() + 1, g + 3, pub.z2() - 1, pub.x2() + 2, g + 3, pub.z2() - 1, "minecraft:spruce_fence");
+        k.d.air(pub.x2() + 2, g + 2, pub.z2() - 1, pub.x2() + 2, g + 2, pub.z2() - 1, "minecraft:spruce_hanging_sign[rotation=4]");
+        k.d.bench(pub.x1() + 1, g, pub.z2() + 3, 'e', 2, 'n', "spruce");
+        k.d.bench(pub.x2() - 2, g, pub.z2() + 3, 'e', 2, 'n', "spruce");
+        k.d.air(pub.x1() - 1, g, pub.z2() - 3, pub.x1() - 1, g + 1, pub.z2() - 3, "minecraft:barrel[facing=up]");
+        k.d.air(pub.x1() - 1, g, pub.z2() - 4, pub.x1() - 1, g, pub.z2() - 4, "minecraft:barrel[facing=west]");
+        k.d.air(pub.x1() + 1, g + 4, pub.z2() - 3, pub.x2() - 1, g + 4, pub.z2() - 1, "minecraft:green_carpet");
+        k.d.air(pub.cx(), g + 4, pub.z2() - 2, pub.cx(), g + 4, pub.z2() - 2, "minecraft:spruce_slab[type=top]");
+        k.d.air(pub.cx(), g + 5, pub.z2() - 2, pub.cx(), g + 5, pub.z2() - 2, "minecraft:candle[candles=3,lit=true]");
+        k.d.air(pub.x2() - 1, g + 4, pub.cz(), pub.x2() - 1, g + 5, pub.cz(), "minecraft:bookshelf");
+        // a strip of cottage flowers along the front of the spinning house
+        String[] fl = {"minecraft:poppy", "minecraft:oxeye_daisy", "minecraft:cornflower", "minecraft:allium"};
+        for (int x = spin.x1(); x <= spin.x2(); x++) {
+            if (x < spin.doorX() - 1 || x > spin.doorX() + 1) {
+                k.d.air(x, g, spin.z2() + 1, x, g, spin.z2() + 1, fl[Math.floorMod(x, fl.length)]);
+            }
+        }
+        // a sign post at the crossroads by the bank, hay, crates and a bench at the well
+        k.d.signpost(KandarinKit.X(2735), g, KandarinKit.Z(3483) + 2, "spruce");
+        k.d.air(KandarinKit.X(2738), g, KandarinKit.Z(3475), KandarinKit.X(2739), g, KandarinKit.Z(3475), "minecraft:hay_block");
+        k.d.air(KandarinKit.X(2738), g + 1, KandarinKit.Z(3475), KandarinKit.X(2738), g + 1, KandarinKit.Z(3475), "minecraft:hay_block");
+        k.d.crates(bank.x2() + 2, g, bank.z1() + 1);
+        k.d.bench(KandarinKit.X(2731), g, KandarinKit.Z(3486) + 4, 'e', 3, 'n', "spruce");
     }
 
     /** Seers' Village rooftop course (6 obstacles): bank wall, gap, tightrope, gap, gap, edge. */
@@ -387,7 +420,55 @@ final class KandarinSeers {
         k.oak(KandarinKit.X(2747), KandarinKit.Z(3513), 5);
         k.oak(KandarinKit.X(2768), KandarinKit.Z(3516), 5);
         k.meadow(KandarinKit.X(2738), KandarinKit.Z(3483), KandarinKit.X(2782), KandarinKit.Z(3466), 13);
+        camelotDetails(k, keep);
         return k.build();
+    }
+
+    /**
+     * Camelot's finishing: a slate roof over the keep behind its battlement walk, buttresses and
+     * red-and-gold banners on the curtain walls, arrow slits, and a furnished courtyard.
+     */
+    private static void camelotDetails(KandarinKit k, Bld keep) {
+        int g = k.g;
+        String w = SB;
+        // the keep's great slate roof (the battlement walk stays clear round it)
+        int top = keep.top();
+        k.roof(keep.x1() + 3, keep.z1() + 3, keep.x2() - 3, keep.z2() - 3, top, "minecraft:deepslate_tile", w);
+        k.d.texture(keep.x1(), keep.z1(), keep.x2(), keep.z2(), g + 1, g + top - 1, w, 6);
+        for (int x = keep.x1() + 4; x <= keep.x2() - 4; x += 8) {
+            k.d.banner(x, g + 10, keep.z2() + 1, 's', "red");
+            k.d.banner(x + 4, g + 10, keep.z2() + 1, 's', "yellow");
+        }
+        // curtain walls: buttresses, slits and banners on the outer faces
+        int x1 = KandarinKit.X(2744);
+        int x2 = KandarinKit.X(2772) + 1;
+        int z1 = KandarinKit.Z(3519);
+        int z2 = KandarinKit.Z(3485) + 1;
+        k.d.buttresses(x1, z1 + 10, x1, z2 - 10, 'w', 7, g, g + 8, w, "minecraft:stone_brick_stairs");
+        k.d.buttresses(x2, z1 + 10, x2, z2 - 10, 'e', 7, g, g + 8, w, "minecraft:stone_brick_stairs");
+        k.d.buttresses(x1 + 10, z1, x2 - 10, z1, 'n', 7, g, g + 8, w, "minecraft:stone_brick_stairs");
+        for (int x = x1 + 13; x <= x2 - 13; x += 7) {
+            k.d.slit(x, g + 5, g + 6, z1, w);
+        }
+        for (int z = z1 + 13; z <= z2 - 13; z += 7) {
+            k.d.slit(x1, g + 5, g + 6, z, w);
+            k.d.slit(x2, g + 5, g + 6, z, w);
+        }
+        for (int x : new int[]{KandarinKit.X(2755) - 1, KandarinKit.X(2760) + 2}) {
+            k.d.banner(x, g + 8, z2 + 1, 's', "red");
+            k.d.banner(x + (x < KandarinKit.X(2757) ? -2 : 2), g + 8, z2 + 1, 's', "yellow");
+        }
+        // courtyard: benches, lamp posts, a sign post, crates by the kitchen and flower tubs
+        k.d.bench(KandarinKit.X(2750), g, KandarinKit.Z(3499), 'e', 3, 'n', "dark_oak");
+        k.d.bench(KandarinKit.X(2762), g, KandarinKit.Z(3499), 'e', 3, 'n', "dark_oak");
+        k.d.lamp(KandarinKit.X(2756) - 1, g, KandarinKit.Z(3495), "minecraft:dark_oak_fence");
+        k.d.lamp(KandarinKit.X(2759) + 2, g, KandarinKit.Z(3495), "minecraft:dark_oak_fence");
+        k.d.signpost(KandarinKit.X(2756) - 1, g, KandarinKit.Z(3490), "spruce");
+        k.d.crates(KandarinKit.X(2764), g, KandarinKit.Z(3490));
+        for (int i = 0; i < 4; i++) {
+            k.d.planter(keep.x1() + 1 + i * 2, g, keep.z2() + 2, i);
+            k.d.planter(keep.x2() - 1 - i * 2, g, keep.z2() + 2, i + 1);
+        }
     }
 
     /** Sprinkle mossy/cracked bricks over the outer faces of a wall box. */

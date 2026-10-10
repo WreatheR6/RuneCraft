@@ -366,7 +366,7 @@ final class AsgarniaFalador {
         int[][] corners = {{x1 + 1, z1 + 1}, {x2 - 1, z1 + 1}, {x1 + 1, z2 - 1}, {x2 - 1, z2 - 1}};
         for (int[] c : corners) {
             k.tower(c[0], c[1], 6, 18, qb, mc("polished_diorite"), null, null);
-            k.s(c[0], 19, c[1], mc("blue_banner"));
+            k.d.spire(c[0], c[1], 5, k.g + 18, 2, mc("deepslate_tiles"), "blue");
         }
         // north gatehouse aligned with the castle road (tiles 2961..2964)
         int[] gr = rect(2961, 3356, 2964, 3356);
@@ -410,10 +410,11 @@ final class AsgarniaFalador {
         smithy.set(smithy.len() - 1, 0, 0, mc("water_cauldron[level=3]"));
         // great tower, south of the courtyard
         k.tower(bx(2965) + 1, bz(3327), 6, 30, qb, mc("polished_diorite"), "north", null);
-        k.s(bx(2965) + 1, 31, bz(3327), mc("blue_banner"));
+        k.d.spire(bx(2965) + 1, bz(3327), 5, k.g + 30, 3, mc("deepslate_tiles"), "blue");
+        k.d.banner(bx(2965) + 1, k.g + 27, bz(3327) + 7, 's', "blue");
 
         // the keep
-        AsgarniaRoom hall = k.house(CASTLE, 2971, 3327, 2987, 3351, 3, "west", FLAT);
+        AsgarniaRoom hall = k.house(CASTLE, 2971, 3327, 2987, 3351, 4, "west", FLAT);
         int len = hall.len();
         int dep = hall.depth();
         // ground floor: great hall with long table, blue runner and throne
@@ -464,13 +465,66 @@ final class AsgarniaFalador {
             l2.set(u + 1, dep - 1, 0, mc("barrel[facing=up]"));
         }
         l2.table(len / 2, dep / 2 + 2, "spruce");
-        // roof terrace with a flag
+        // twin blue-grey slate roofs over the keep behind a walkway, with the White Knights' flag
         int tx = (hall.x1 + hall.x2) / 2;
         int tz = (hall.z1 + hall.z2) / 2;
-        k.f(tx, 13, tz, tx, 20, tz, mc("quartz_pillar[axis=y]"));
-        k.f(tx + 1, 18, tz, tx + 3, 20, tz, mc("blue_wool"));
-        k.f(tx + 1, 19, tz, tx + 3, 19, tz, mc("white_wool"));
+        k.pitched(hall.x1 + 2, hall.z1 + 2, tx - 1, hall.z2 - 2, 16, mc("deepslate_tile_stairs"), mc("deepslate_tiles"));
+        k.pitched(tx + 1, hall.z1 + 2, hall.x2 - 2, hall.z2 - 2, 16, mc("deepslate_tile_stairs"), mc("deepslate_tiles"));
+        k.d.gables(hall.x1 + 2, hall.z1 + 2, tx - 1, hall.z2 - 2, k.g + 16, false, mc("deepslate_tiles"), null, mc("light_blue_stained_glass_pane"));
+        k.d.gables(tx + 1, hall.z1 + 2, hall.x2 - 2, hall.z2 - 2, k.g + 16, false, mc("deepslate_tiles"), null, mc("light_blue_stained_glass_pane"));
+        int ridge = 16 + (tx - 1 - hall.x1 - 2 + 2) / 2 + 1;
+        int fx = (hall.x1 + 2 + tx - 1) / 2;
+        k.f(fx, ridge, tz, fx, ridge + 6, tz, mc("quartz_pillar[axis=y]"));
+        k.f(fx + 1, ridge + 4, tz, fx + 3, ridge + 6, tz, mc("blue_wool"));
+        k.f(fx + 1, ridge + 5, tz, fx + 3, ridge + 5, tz, mc("white_wool"));
+        // third floor: the White Knights' trophy hall with armour displays and a map table
+        AsgarniaRoom l3 = hall.level(3);
+        l3.fill(1, 1, len - 2, dep - 2, 0, 0, mc("light_blue_carpet"));
+        l3.longTable(3, len - 4, dep / 2, "dark_oak", mc("white_carpet"));
+        for (int u = 2; u < len - 1; u += 3) {
+            k.d.armourStand(l3.wx(u, 0), k.g + 12, l3.wz(u, 0), hall.front().charAt(0));
+        }
+        for (int u = 3; u < len - 2; u += 4) {
+            l3.set(u, dep - 1, 0, mc("bookshelf"));
+            l3.set(u, dep - 1, 1, mc("bookshelf"));
+        }
+        l3.set(len - 2, 2, 0, mc("cartography_table"));
+        details(k, x1, z1, x2, z2, hall);
         return k.build();
+    }
+
+    /** Buttresses, banners, arrow slits and courtyard dressing for the White Knights' Castle. */
+    private static void details(AsgarniaKit k, int x1, int z1, int x2, int z2, AsgarniaRoom hall) {
+        String qb = mc("quartz_bricks");
+        int g = k.g;
+        // buttresses along the outer curtain walls, clear of the towers and the north gate
+        k.d.buttresses(x1 + 9, z2, x2 - 9, z2, 's', 6, g, g + 8, qb, mc("quartz_stairs"));
+        k.d.buttresses(x1, z1 + 9, x1, z2 - 9, 'w', 6, g, g + 8, qb, mc("quartz_stairs"));
+        k.d.buttresses(x2, z1 + 9, x2, z2 - 9, 'e', 6, g, g + 8, qb, mc("quartz_stairs"));
+        // arrow slits and blue-and-white banners on the outer faces
+        for (int x = x1 + 12; x <= x2 - 12; x += 6) {
+            k.d.slit(x, g + 5, g + 6, z2, qb);
+            k.d.banner(x + 3, g + 7, z2 + 1, 's', (x / 6 & 1) == 0 ? "blue" : "white");
+        }
+        for (int z = z1 + 12; z <= z2 - 12; z += 6) {
+            k.d.slit(x1, g + 5, g + 6, z, qb);
+            k.d.slit(x2, g + 5, g + 6, z, qb);
+            k.d.banner(x1 - 1, g + 7, z + 3, 'w', "blue");
+            k.d.banner(x2 + 1, g + 7, z + 3, 'e', "blue");
+        }
+        k.d.textureSolid(x1, g, z1, x2, g + 9, z2, qb, 10);
+        // a banner on every corner of the keep and window boxes of flowers on its courtyard face
+        k.d.banner(hall.x1 - 2, g + 10, (hall.z1 + hall.z2) / 2 - 3, 'w', "blue");
+        k.d.banner(hall.x1 - 2, g + 10, (hall.z1 + hall.z2) / 2 + 3, 'w', "blue");
+        // courtyard: training dummies, benches and lamps
+        for (int i = 0; i < 3; i++) {
+            k.d.dummy(bx(2957) + i * 3, g, bz(3346));
+        }
+        k.d.bench(bx(2967), g, bz(3338), 'e', 3, 's', "spruce");
+        k.d.bench(bx(2961), g, bz(3330), 'e', 3, 'n', "spruce");
+        k.d.lamp(bx(2960), g, bz(3342), "minecraft:spruce_fence");
+        k.d.lamp(bx(2967), g, bz(3342), "minecraft:spruce_fence");
+        k.d.crates(bx(2956), g, bz(3332));
     }
 
     // ------------------------------------------------------------------ Falador Park

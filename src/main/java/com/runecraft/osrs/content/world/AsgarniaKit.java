@@ -510,7 +510,7 @@ final class AsgarniaKit {
                 dressWindow(castle, x2, g + y, z, 'e', wall, wood, lz);
             }
         }
-        if (roof == PITCHED && x2 - x1 >= 5 && z2 - z1 >= 5 && MisthalinDetail.noise(x1, 1, z1, 5) % 3 != 0) {
+        if (roof == PITCHED && !wall.contains("jungle") && !wall.contains("bamboo") && !st.roofFull.contains("hay") && x2 - x1 >= 5 && z2 - z1 >= 5 && MisthalinDetail.noise(x1, 1, z1, 5) % 3 != 0) {
             boolean alongX = (x2 - x1) >= (z2 - z1);
             int span = alongX ? z2 - z1 : x2 - x1;
             String stack = stone ? mc("cobblestone") : mc("bricks");
