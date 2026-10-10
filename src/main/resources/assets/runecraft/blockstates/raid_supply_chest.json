@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "runecraft:block/module/raid_supply_chest"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/toa_invocation_obelisk_side",
+    "top": "runecraft:block/module/toa_invocation_obelisk_top",
+    "bottom": "runecraft:block/module/toa_invocation_obelisk_bottom"
+  }
+}

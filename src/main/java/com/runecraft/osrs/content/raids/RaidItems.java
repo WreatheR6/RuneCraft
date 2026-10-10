@@ -127,15 +127,14 @@ public final class RaidItems {
                         AttackType.SLASH, WeaponClass.MELEE))
                 .examine("A scythe once wielded by Verzik Vitur.");
         items.add("lil_zik", "Lil' Zik", Kind.SIMPLE, "pet", 0x6A2A4A).value(1).stack(1).examine("Something tiny and nasty.");
-        items.add("vial_of_blood", "Vial of blood", Kind.SIMPLE, "potion", 0x9A1010).value(15_000).examine("A vial of Vyrewatch blood.");
+        // vial_of_blood is defined by another module (skilling / systems).
 
         // ---------------- Tombs of Amascut ----------------
         items.add("osmumtens_fang", "Osmumten's fang", Kind.MELEE_WEAPON, "fang", 0xE0D8B0).value(20_000_000).stack(1).tier("dragon")
                 .equipment(weapon(s(105, 75, 0, 0, 0, 0, 0, 0, 0, 0, 103, 0, 0, 0), Map.of(Skill.ATTACK, 82), 5, AttackType.STAB,
                         WeaponClass.MELEE))
                 .examine("A fang from a vicious creature of the desert.");
-        items.add("lightbearer", "Lightbearer", Kind.SIMPLE, "ring", 0xF0C040).value(4_000_000).stack(1)
-                .examine("A ring that hastens the regeneration of special attack energy.");
+        // lightbearer is defined by another module (skilling / systems).
         items.add("elidinis_ward", "Elidinis' ward", Kind.SHIELD, "ward", 0x3A9AA0).value(10_000_000).stack(1).tier("dragon")
                 .equipment(armour(Slot.SHIELD, s(0, 0, 0, 25, 0, 53, 55, 73, 2, 52, 0, 0, 0, 4),
                         Map.of(Skill.MAGIC, 80, Skill.PRAYER, 80)))

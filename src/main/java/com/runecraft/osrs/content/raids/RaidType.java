@@ -14,7 +14,7 @@ public enum RaidType {
     /** Theatre of Blood, beneath Ver Sinhaza in Morytania. */
     TOB("theatre_of_blood", "Theatre of Blood", "ver_sinhaza", "Ver Sinhaza", 3650, 3220, 5),
     /** Tombs of Amascut, in the Jaldraocht Pyramid in the Kharidian Desert. */
-    TOA("tombs_of_amascut", "Tombs of Amascut", "jaldraocht_pyramid", "Jaldraocht Pyramid", 3350, 2750, 8);
+    TOA("tombs_of_amascut", "Tombs of Amascut", "toa_jaldraocht_entrance", "Jaldraocht Pyramid", 3350, 2750, 8);
 
     private final String id;
     private final String displayName;

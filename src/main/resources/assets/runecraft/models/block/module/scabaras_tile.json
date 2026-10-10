@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/scabaras_tile_side",
+    "top": "runecraft:block/module/scabaras_tile_top",
+    "bottom": "runecraft:block/module/scabaras_tile_bottom"
+  }
+}

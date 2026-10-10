@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "runecraft:block/module/crondis_water_container_block"
+    }
+  }
+}
