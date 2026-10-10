@@ -37,6 +37,7 @@ public final class BestiaryContent implements ContentModule {
                 list.add(m);
             }
         }
+        list.addAll(BestiaryHum.fresh());
         return list;
     }
 

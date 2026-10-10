@@ -16,9 +16,6 @@ final class BigBosses {
 
     static List<ModelSpec> overrides() {
         List<ModelSpec> l = new ArrayList<>();
-        l.add(vetion("vetion", 0x5A2A8A));
-        l.add(vetion("calvarion", 0x3A6A4A));
-        l.add(nex());
         return l;
     }
 
