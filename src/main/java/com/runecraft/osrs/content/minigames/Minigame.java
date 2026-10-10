@@ -38,7 +38,7 @@ public enum Minigame {
             Skill.CONSTRUCTION, 1),
     FISHING_TRAWLER("fishing_trawler", "Fishing Trawler", "mg_port_khazard_trawler", 2676, 3170, 2676, 3170, PlaceDef.Style.CAMP, 20, 10,
             Skill.FISHING, 15),
-    ROGUES_DEN("rogues_den", "Rogues' Den", "mg_rogues_den", 2905, 3537, 2905, 3537, PlaceDef.Style.CAVE, 0, 1, Skill.THIEVING, 50);
+    ROGUES_DEN("rogues_den", "Rogues' Den", "mg_rogues_den", 2905, 3537, 2913, 3530, PlaceDef.Style.CAVE, 0, 1, Skill.THIEVING, 50);
 
     private final String id;
     private final String displayName;
