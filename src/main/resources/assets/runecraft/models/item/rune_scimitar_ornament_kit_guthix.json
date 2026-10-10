@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "runecraft:item/rune_scimitar_ornament_kit_guthix"
+  }
+}

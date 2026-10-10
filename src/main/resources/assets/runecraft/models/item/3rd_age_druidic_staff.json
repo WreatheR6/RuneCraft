@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "runecraft:item/3rd_age_druidic_staff"
+  }
+}

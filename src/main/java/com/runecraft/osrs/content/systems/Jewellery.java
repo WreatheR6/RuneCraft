@@ -126,12 +126,9 @@ public final class Jewellery {
                 Perk.NONE, "An unholy symbol of Zamorak.");
         worn("lightbearer", "Lightbearer", Slot.RING, "ring", 0xF0E080, 3000000, NONE, Perk.LIGHTBEARER,
                 "Doubles the rate at which special attack energy regenerates.");
-        worn("treasonous_ring", "Treasonous ring", Slot.RING, "ring", 0xB02020, 2500000, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-                Perk.NONE, "A ring of the Zamorakian rebellion.");
-        worn("tyrannical_ring", "Tyrannical ring", Slot.RING, "ring", 0x806020, 300000, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-                Perk.NONE, "A ring belonging to a king.");
-        worn("ring_of_the_gods", "Ring of the gods", Slot.RING, "ring", 0x40A0E0, 2500000, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4),
-                Perk.NONE, "A ring of divine power.");
+        wornExternal("treasonous_ring", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)); // item defined by the godwars module
+        wornExternal("tyrannical_ring", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)); // item defined by the godwars module
+        wornExternal("ring_of_the_gods", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4)); // item defined by the godwars module
         worn("ring_of_nature", "Ring of nature", Slot.RING, "ring", 0x30A030, 10000, NONE, Perk.NONE, "A ring of nature.");
         worn("ring_of_coins", "Ring of coins", Slot.RING, "ring", 0xE8C030, 10000, NONE, Perk.NONE, "Turns you into a pile of coins.");
         worn("amulet_of_magic_t", "Amulet of magic (t)", Slot.NECK, "amulet", 0x5070E0, 900, s(0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
