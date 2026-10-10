@@ -90,10 +90,10 @@ public final class ModBlocks {
         }
         for (RuneAltar a : RuneAltar.values()) {
             ALTARS.put(a, register(a.blockId(), new RuneAltarBlock(a,
-                    unbreakable(MapColor.STONE_GRAY, BlockSoundGroup.STONE).luminance(s -> 7)), true));
+                    unbreakable(MapColor.STONE_GRAY, BlockSoundGroup.STONE).luminance(s -> 7).nonOpaque()), true));
         }
         for (Thieving.Stall s : Thieving.Stall.values()) {
-            STALLS.put(s, register(s.blockId(), new StallBlock(s, unbreakable(MapColor.OAK_TAN, BlockSoundGroup.WOOD)), true));
+            STALLS.put(s, register(s.blockId(), new StallBlock(s, unbreakable(MapColor.OAK_TAN, BlockSoundGroup.WOOD).nonOpaque()), true));
         }
         for (Station s : Station.values()) {
             if (s == Station.HERB_PATCH || s == Station.ALLOTMENT_PATCH) {
@@ -107,6 +107,10 @@ public final class ModBlocks {
             AbstractBlock.Settings settings = AbstractBlock.Settings.create().mapColor(MapColor.STONE_GRAY)
                     .sounds(s == Station.ANVIL ? BlockSoundGroup.ANVIL : BlockSoundGroup.STONE).strength(3.0f, 1200.0f)
                     .requiresTool();
+            if (s == Station.BANK_BOOTH || s == Station.FURNACE || s == Station.ANVIL || s == Station.RANGE
+                    || s == Station.PRAYER_ALTAR) {
+                settings = settings.nonOpaque(); // shaped OSRS models (see tools/gen_assets.py station_shape)
+            }
             if (s == Station.FURNACE || s == Station.RANGE || s == Station.PORTAL || s == Station.PRAYER_ALTAR) {
                 settings = settings.luminance(st -> 10);
             }

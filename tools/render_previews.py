@@ -285,85 +285,136 @@ def npcs_sheet(cat):
     return grid(cells, 9, 100, 116, "NPC skins (front view)")
 
 
-def iso_cube(top, side, front, size=72):
-    s = 16
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    k = size / (2 * s) * 0.98
-    cx = size / 2
-    tex = {"top": top.load(), "left": side.load(), "right": front.load()}
-    dr = ImageDraw.Draw(img)
-    for face in ("top", "left", "right"):
-        px = tex[face]
-        for j in range(s):
-            for i in range(s):
-                c = px[i, j]
-                if c[3] < 10:
-                    continue
-                f = {"top": 1.0, "left": 0.82, "right": 0.66}[face]
-                col = tuple(int(c[n] * f) for n in range(3)) + (255,)
-                if face == "top":
-                    def P(a, b):
-                        return (cx + (a - b) * k, (a + b) * k * 0.5)
-                    pts = [P(i, j), P(i + 1, j), P(i + 1, j + 1), P(i, j + 1)]
-                elif face == "left":
-                    def P(a, b):
-                        return (cx - s * k + a * k, s * k * 0.5 + a * k * 0.5 + b * k)
-                    pts = [P(i, j), P(i + 1, j), P(i + 1, j + 1), P(i, j + 1)]
-                else:
-                    def P(a, b):
-                        return (cx + a * k, s * k - a * k * 0.5 + b * k)
-                    pts = [P(i, j), P(i + 1, j), P(i + 1, j + 1), P(i, j + 1)]
-                dr.polygon(pts, fill=col, outline=col)
-    return img
+def _tex(ref):
+    if not isinstance(ref, str) or ":" not in ref:
+        return None
+    ns, path = ref.split(":", 1)
+    if ns != "runecraft":
+        return None
+    p = os.path.join(ASSETS, "textures", path + ".png")
+    if not os.path.exists(p):
+        return None
+    im = Image.open(p).convert("RGBA")
+    return im.crop((0, 0, 16, 16)) if im.size != (16, 16) else im
 
 
-def block_textures(bid):
-    """(top, side, front) texture images for a block id, from its block model json."""
+CUBE_PARENTS = {
+    "minecraft:block/cube_all": {d: "all" for d in ("north", "south", "east", "west", "up", "down")},
+    "minecraft:block/cube_bottom_top": {"north": "side", "south": "side", "east": "side", "west": "side", "up": "top", "down": "bottom"},
+    "minecraft:block/cube_column": {"north": "side", "south": "side", "east": "side", "west": "side", "up": "end", "down": "end"},
+}
+
+
+def block_elements(bid):
+    """[(from, to, {dir: texture image})] for a block model, or None."""
     mp = os.path.join(ASSETS, "models", "block", bid + ".json")
     if not os.path.exists(mp):
         return None
     with open(mp) as f:
         model = json.load(f)
-    t = model.get("textures", {})
+    textures = model.get("textures", {})
 
-    def load(key_order):
-        for k in key_order:
-            ref = t.get(k)
-            if isinstance(ref, str) and ref.startswith("runecraft:"):
-                p = os.path.join(ASSETS, "textures", ref.split(":", 1)[1] + ".png")
-                if os.path.exists(p):
-                    im = Image.open(p).convert("RGBA")
-                    return im.crop((0, 0, 16, 16)) if im.size != (16, 16) else im
+    def resolve(key):
+        seen = 0
+        while isinstance(key, str) and key.startswith("#") and seen < 5:
+            key = textures.get(key[1:])
+            seen += 1
+        return _tex(key)
+
+    if "elements" in model:
+        out = []
+        for e in model["elements"]:
+            faces = {d: resolve(fc["texture"]) for d, fc in e.get("faces", {}).items()}
+            out.append((e["from"], e["to"], faces))
+        return out
+    parent = model.get("parent")
+    if parent in CUBE_PARENTS:
+        faces = {d: _tex(textures.get(k)) for d, k in CUBE_PARENTS[parent].items()}
+        if all(v is None for v in faces.values()):
+            return None
+        return [([0, 0, 0], [16, 16, 16], faces)]
+    return None
+
+
+def render_block(bid, size=80):
+    els = block_elements(bid)
+    if not els:
         return None
+    yaw, pitch = math.radians(45), math.radians(30)
+    view = mat_mul(rot_x(pitch), rot_y(yaw))
+    quads = []
+    shade_f = {"up": 1.0, "north": 0.8, "south": 0.8, "east": 0.62, "west": 0.62, "down": 0.5}
+    for frm, to, faces in els:
+        x0, y0, z0 = frm
+        x1, y1, z1 = to
+        for d, img in faces.items():
+            if img is None:
+                continue
+            px = img.load()
+            # world corners per face (Y up) and texture sampling from auto UVs (position based)
+            for j in range(16):
+                for i in range(16):
+                    if d in ("north", "south"):
+                        u0, u1 = (16 - x1, 16 - x0) if d == "north" else (x0, x1)
+                        v0, v1 = 16 - y1, 16 - y0
+                    elif d in ("east", "west"):
+                        u0, u1 = (16 - z1, 16 - z0) if d == "east" else (z0, z1)
+                        v0, v1 = 16 - y1, 16 - y0
+                    else:
+                        u0, u1, v0, v1 = x0, x1, z0, z1
+                    if not (u0 <= i + 0.5 <= u1 and v0 <= j + 0.5 <= v1):
+                        continue
+                    c = px[i, j]
+                    if c[3] < 10:
+                        continue
+                    a, b = max(i, u0), min(i + 1, u1)
+                    cc, dd = max(j, v0), min(j + 1, v1)
+                    if d == "north":
+                        pts = [(16 - a, 16 - cc, z0), (16 - b, 16 - cc, z0), (16 - b, 16 - dd, z0), (16 - a, 16 - dd, z0)]
+                    elif d == "south":
+                        pts = [(a, 16 - cc, z1), (b, 16 - cc, z1), (b, 16 - dd, z1), (a, 16 - dd, z1)]
+                    elif d == "east":
+                        pts = [(x1, 16 - cc, 16 - a), (x1, 16 - cc, 16 - b), (x1, 16 - dd, 16 - b), (x1, 16 - dd, 16 - a)]
+                    elif d == "west":
+                        pts = [(x0, 16 - cc, a), (x0, 16 - cc, b), (x0, 16 - dd, b), (x0, 16 - dd, a)]
+                    elif d == "up":
+                        pts = [(a, y1, cc), (b, y1, cc), (b, y1, dd), (a, y1, dd)]
+                    else:
+                        pts = [(a, y0, cc), (b, y0, cc), (b, y0, dd), (a, y0, dd)]
+                    w = [mat_vec(view, (p[0] - 8, -(p[1] - 8), p[2] - 8)) for p in pts]
+                    k = shade_f[d]
+                    quads.append((sum(q[2] for q in w) / 4, [(q[0], q[1]) for q in w], tuple(int(c[n] * k) for n in range(3)), d))
+    normals = {"north": (0, 0, -1), "south": (0, 0, 1), "east": (1, 0, 0), "west": (-1, 0, 0), "up": (0, -1, 0), "down": (0, 1, 0)}
+    ss = 3
+    img = Image.new("RGBA", (size * ss, size * ss), (0, 0, 0, 0))
+    dr = ImageDraw.Draw(img)
+    k = size * ss / 30.0
+    for depth, pts, col, d in sorted(quads, key=lambda t: -t[0]):
+        n = mat_vec(view, normals[d])
+        if n[2] > 0.01:
+            continue
+        poly = [(x * k + size * ss / 2, y * k + size * ss / 2) for x, y in pts]
+        dr.polygon(poly, fill=col + (255,), outline=col + (255,))
+    return img.resize((size, size), Image.LANCZOS)
 
-    top = load(["top", "up", "end", "all", "texture", "cross", "particle"])
-    side = load(["side", "west", "east", "all", "texture", "cross", "particle"])
-    front = load(["front", "north", "south", "side", "all", "texture", "cross", "particle"])
-    if top is None and side is None:
-        return None
-    return top or side, side or top, front or side or top
 
-
-BLOCKS = ["bank_booth", "furnace", "anvil", "range", "cooking_range", "spinning_wheel", "altar", "chaos_altar",
-          "air_altar", "water_altar", "earth_altar", "fire_altar", "nature_altar", "law_altar", "death_altar",
-          "cosmic_altar", "cake_stall", "silk_stall", "gem_stall", "fur_stall", "silver_stall", "spice_stall",
-          "copper", "tin", "iron", "coal", "mithril", "adamantite", "runite", "tree_log", "oak_log", "willow_log",
-          "yew_log", "magic_log", "pottery_wheel", "loom", "sink", "agility_log_balance", "agility_rope_swing",
-          "agility_net", "agility_wall", "agility_pipe", "dairy_churn", "portal", "poll_booth", "deposit_box"]
+BLOCKS = ["bank_booth", "furnace", "anvil", "cooking_range", "prayer_altar", "spinning_wheel", "chaos_altar", "air_altar",
+          "water_altar", "earth_altar", "fire_altar", "mind_altar", "body_altar", "cosmic_altar", "nature_altar", "law_altar",
+          "death_altar", "blood_altar", "cake_stall", "silk_stall", "gem_stall", "fur_stall", "silver_stall", "spice_stall",
+          "copper_rock", "tin_rock", "iron_rock", "coal_rock", "mithril_rock", "adamantite_rock", "runite_rock",
+          "tree_tree_log", "oak_tree_log", "willow_tree_log", "yew_tree_log", "magic_tree_log", "agility_obstacle",
+          "general_store", "rune_shop", "tanning_rack", "gielinor_portal", "apothecary_table"]
 
 
 def blocks_sheet(cat):
-    ids = [b for b in BLOCKS if block_textures(b)]
+    ids = [b for b in BLOCKS if block_elements(b)]
     for b in cat["blocks"]:
-        if len(ids) >= 64:
+        if len(ids) >= 70:
             break
-        if b["id"] not in ids and block_textures(b["id"]):
+        if b["id"] not in ids and block_elements(b["id"]):
             ids.append(b["id"])
-    cells = []
-    for b in ids[:64]:
-        top, side, front = block_textures(b)
-        cells.append((b, iso_cube(top, side, front)))
-    return grid(cells, 10, 84, 92, "Blocks")
+    cells = [(b, render_block(b)) for b in ids[:70]]
+    return grid([c for c in cells if c[1] is not None], 10, 88, 100, "Blocks")
 
 
 SHEETS = {"items": items_sheet, "monsters": monsters_sheet, "bosses": bosses_sheet, "npcs": npcs_sheet,

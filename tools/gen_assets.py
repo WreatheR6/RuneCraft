@@ -4240,6 +4240,164 @@ def plant_tex(rng, leaf, produce=None, tall=False):
     return img
 
 
+# ----------------------------------------------------------------------------------------------
+# Shaped block models: OSRS-looking stations, rune altars and market stalls (JSON elements)
+# ----------------------------------------------------------------------------------------------
+
+DIRS = ("north", "south", "east", "west", "up", "down")
+# OSRS market stall awning stripes per stall
+STALL_AWNINGS = {
+    "cake_stall": ((200, 40, 40), (240, 234, 220)), "silk_stall": ((60, 80, 170), (240, 234, 220)),
+    "fur_stall": ((110, 80, 40), (220, 200, 160)), "silver_stall": ((90, 90, 110), (220, 220, 230)),
+    "spice_stall": ((200, 120, 30), (240, 220, 160)), "gem_stall": ((120, 40, 140), (240, 234, 220)),
+}
+
+
+def el(frm, to, tex, faces=None, **extra):
+    """One model element; `tex` is a texture key for every face or a {dir: key} map (UVs auto from position)."""
+    out = {"from": list(frm), "to": list(to), "faces": {}}
+    for d in (faces or DIRS):
+        key = tex.get(d, tex.get("all")) if isinstance(tex, dict) else tex
+        if key:
+            out["faces"][d] = {"texture": "#" + key}
+    out.update(extra)
+    return out
+
+
+def shaped(name, textures, elements):
+    textures = dict(textures)
+    textures.setdefault("particle", next(iter(textures.values())))
+    return block_model(name, {"parent": "minecraft:block/block", "textures": textures, "elements": elements})
+
+
+def tex_iron(rng, col=(64, 64, 70)):
+    img = metal_tex(col, rng)
+    for x in range(16):
+        put(img, x, 0, light(col, 1.3))
+        put(img, x, 15, shade(col, 0.6))
+    for (x, y) in ((2, 2), (13, 2), (2, 13), (13, 13)):
+        put(img, x, y, light(col, 1.5))
+    return img
+
+
+def tex_cloth(rng, col, trim):
+    img = new_img()
+    for y in range(16):
+        for x in range(16):
+            c = col if (x // 2) % 4 else shade(col, 0.93)
+            put(img, x, y, shade(c, 0.97 + rng.random() * 0.06))
+    for x in range(16):
+        put(img, x, 13, trim)
+        put(img, x, 14, trim)
+    return img
+
+
+def tex_awning(rng, a=(180, 30, 30), b=(236, 230, 214)):
+    img = new_img()
+    for y in range(16):
+        for x in range(16):
+            c = a if (x // 4) % 2 == 0 else b
+            put(img, x, y, shade(c, 0.95 + rng.random() * 0.08))
+    for x in range(16):
+        put(img, x, 15, shade(a, 0.7) if (x // 4) % 2 == 0 else shade(b, 0.8))
+    return img
+
+
+def tex_fire_mouth(rng, stone):
+    img = stone.copy()
+    for y in range(6, 15):
+        for x in range(4, 12):
+            if y == 6 and x in (4, 11):
+                continue
+            t = (y - 6) / 8
+            put(img, x, y, (25, 15, 10) if y < 8 else mix((255, 220, 90), (230, 80, 20), t) if (x * 3 + y) % 4 else (255, 170, 50))
+    return img
+
+
+def tex_bars(rng):
+    img = new_img()
+    for y in range(16):
+        for x in range(16):
+            put(img, x, y, (120, 150, 170) if not (x % 4 == 0 or y % 5 == 0) else (60, 50, 40))
+            if (x + y) % 9 == 0 and x % 4 and y % 5:
+                put(img, x, y, (190, 210, 225))
+    return img
+
+
+def tex_symbol_top(sym_name, rng, stone_col=(80, 78, 84)):
+    return altar_top(sym_name, rng)
+
+
+def station_shape(sid, side_t, top_t, bottom_t, rng):
+    """Shaped model for a station, or None to keep the textured cube."""
+    stone = block_tex(stone_tex(rng_for("shape_stone", sid), (112, 108, 104), 0.08), "shape_stone")
+    brick = block_tex(bricks_tex((120, 112, 104), rng_for("shape_brick")), "shape_brick")
+    wood = block_tex(planks_tex(WOOD, rng_for("shape_wood")), "shape_wood")
+    dark_wood = block_tex(planks_tex(DARK_WOOD, rng_for("shape_dark_wood")), "shape_dark_wood")
+    iron = block_tex(tex_iron(rng_for("shape_iron")), "shape_iron")
+    if sid == "bank_booth":
+        bars = block_tex(tex_bars(rng_for("bank_bars")), "bank_bars")
+        gold = block_tex(metal_tex(GOLD, rng_for("bank_gold")), "bank_gold")
+        return shaped(sid, {"particle": dark_wood, "w": dark_wood, "side": side_t, "top": top_t, "bars": bars, "gold": gold}, [
+            el((0, 0, 3), (16, 10, 16), {"north": "side", "south": "w", "east": "w", "west": "w", "up": "w", "down": "w"}),
+            el((0, 10, 0), (16, 11, 16), {"up": "top", "all": "w"}),
+            el((0, 11, 12), (2, 16, 14), "w"), el((14, 11, 12), (16, 16, 14), "w"),
+            el((2, 11, 12.5), (14, 15, 13.5), {"north": "bars", "south": "bars", "up": "w", "down": "w", "east": "w", "west": "w"}),
+            el((0, 15, 11), (16, 16, 15), {"north": "gold", "all": "w"}),
+        ])
+    if sid == "furnace":
+        mouth = block_tex(tex_fire_mouth(rng, stone_tex(rng_for("furnace_mouth"), (112, 108, 104), 0.08)), "furnace_mouth")
+        return shaped(sid, {"particle": brick, "b": brick, "mouth": mouth, "s": stone}, [
+            el((1, 0, 1), (15, 11, 15), {"north": "mouth", "all": "b"}),
+            el((2, 11, 2), (14, 13, 14), "b"),
+            el((4, 13, 4), (12, 14, 12), "s"),
+            el((6, 14, 6), (10, 16, 10), "b"),
+        ])
+    if sid == "anvil":
+        dark = block_tex(tex_iron(rng_for("anvil_iron"), (52, 52, 58)), "anvil_iron")
+        return shaped(sid, {"particle": dark, "i": dark, "top": top_t}, [
+            el((3, 0, 3), (13, 3, 13), "i"),
+            el((5, 3, 5), (11, 7, 11), "i"),
+            el((1, 7, 4), (15, 11, 12), {"up": "top", "all": "i"}),
+            el((15, 8, 6), (16, 10, 10), "i"),
+            el((0, 9, 5), (1, 11, 11), "i"),
+        ])
+    if sid == "cooking_range":
+        door = block_tex(tex_fire_mouth(rng, tex_iron(rng_for("range_door"), (60, 58, 62))), "range_front")
+        return shaped(sid, {"particle": iron, "i": iron, "door": door, "top": top_t}, [
+            el((1, 0, 1), (15, 12, 15), {"north": "door", "all": "i"}),
+            el((0, 12, 0), (16, 13, 16), {"up": "top", "all": "i"}),
+            el((11, 13, 11), (14, 16, 14), "i"),
+        ])
+    if sid == "prayer_altar":
+        cloth = block_tex(tex_cloth(rng_for("altar_cloth"), (236, 236, 232), (40, 70, 180)), "altar_cloth")
+        candle = block_tex(metal_tex(GOLD, rng_for("altar_candle")), "altar_candle")
+        return shaped(sid, {"particle": stone, "s": stone, "c": cloth, "g": candle}, [
+            el((1, 0, 3), (15, 9, 13), "s"),
+            el((0.5, 7, 2.5), (15.5, 10, 13.5), {"up": "c", "north": "c", "south": "c", "east": "c", "west": "c", "down": "s"}),
+            el((2, 10, 6), (3, 14, 7), "g"), el((13, 10, 6), (14, 14, 7), "g"),
+            el((6, 10, 7), (10, 13, 9), "g"),
+        ])
+    return None
+
+
+def altar_shape(aid, top_t, side_t, bottom_t):
+    return shaped(aid, {"particle": side_t, "s": side_t, "top": top_t, "b": bottom_t}, [
+        el((0, 0, 0), (16, 3, 16), {"down": "b", "all": "s"}),
+        el((2, 3, 2), (14, 10, 14), "s"),
+        el((1, 10, 1), (15, 13, 15), {"up": "top", "all": "s"}),
+    ])
+
+
+def stall_shape(name, goods_t, side_t, bottom_t, awning_t, post_t):
+    return shaped(name, {"particle": side_t, "side": side_t, "goods": goods_t, "b": bottom_t, "aw": awning_t, "p": post_t}, [
+        el((0, 0, 0), (16, 8, 16), {"up": "goods", "down": "b", "all": "side"}),
+        el((0, 8, 0), (1.5, 15, 1.5), "p"), el((14.5, 8, 0), (16, 15, 1.5), "p"),
+        el((0, 8, 14.5), (1.5, 15, 16), "p"), el((14.5, 8, 14.5), (16, 15, 16), "p"),
+        el((-0.5, 15, -0.5), (16.5, 16, 16.5), "aw"),
+    ])
+
+
 def gen_blocks(cat):
     names = {}
     cat_by_id = {i["id"]: i for i in cat["items"]}
@@ -4297,7 +4455,7 @@ def gen_blocks(cat):
     for a in cat["altars"]:
         aid = a["id"]
         top = block_tex(altar_top(aid.replace("_altar", ""), rng_for("altar", aid)), aid + "_top")
-        m = block_model(aid, cube_bottom_top(a_side, top, a_bot))
+        m = altar_shape(aid, top, a_side, a_bot)
         blockstate(aid, {"variants": {"": {"model": m}}})
         block_item_model(aid, {"parent": m})
         names[aid] = a["name"]
@@ -4309,8 +4467,11 @@ def gen_blocks(cat):
     for s in cat["stalls"]:
         sid = s["id"]
         top = block_tex(stall_goods(sid.replace("_stall", ""), rng_for("stall", sid)), sid + "_top")
-        m1 = block_model(sid, cube_bottom_top(st_side, top, st_bot))
-        m2 = block_model(sid + "_empty", cube_bottom_top(st_side, st_empty, st_bot))
+        aw = block_tex(tex_awning(rng_for("awning", sid), *STALL_AWNINGS.get(sid, ((180, 30, 30), (236, 230, 214)))),
+                       sid + "_awning")
+        post = block_tex(planks_tex(DARK_WOOD, rng_for("stall_post")), "stall_post")
+        m1 = stall_shape(sid, top, st_side, st_bot, aw, post)
+        m2 = stall_shape(sid + "_empty", st_empty, st_side, st_bot, aw, post)
         blockstate(sid, {"variants": {"empty=false": {"model": m1}, "empty=true": {"model": m2}}})
         block_item_model(sid, {"parent": m1})
         names[sid] = s["name"]
@@ -4318,8 +4479,9 @@ def gen_blocks(cat):
     # f) stations
     for sid, nm in STATIONS.items():
         side, top, bottom = station_textures(sid, cat_by_id)
-        m = block_model(sid, cube_bottom_top(block_tex(side, sid + "_side"), block_tex(top, sid + "_top"),
-                                             block_tex(bottom, sid + "_bottom")))
+        side_t, top_t, bottom_t = block_tex(side, sid + "_side"), block_tex(top, sid + "_top"), block_tex(bottom, sid + "_bottom")
+        m = station_shape(sid, side_t, top_t, bottom_t, rng_for("shape", sid)) \
+            or block_model(sid, cube_bottom_top(side_t, top_t, bottom_t))
         blockstate(sid, {"variants": {"": {"model": m}}})
         block_item_model(sid, {"parent": m})
         names[sid] = nm
