@@ -10,6 +10,7 @@ import com.runecraft.content.systems.SystemsHooks;
 import com.runecraft.content.minigames.MinigamesHooks;
 import com.runecraft.content.npcs.NpcsHooks;
 import com.runecraft.content.zeah.ZeahHooks;
+import com.runecraft.content.islands.IslandsHooks;
 
 import java.util.List;
 
@@ -25,7 +26,8 @@ public final class ModuleHooksRegistry {
             new SystemsHooks(),
             new MinigamesHooks(),
             new NpcsHooks(),
-            new ZeahHooks());
+            new ZeahHooks(),
+            new IslandsHooks());
 
     private ModuleHooksRegistry() {
     }
