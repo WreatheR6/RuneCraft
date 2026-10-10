@@ -155,7 +155,8 @@ final class BossFx {
             form.dropStack(Inv.stack(r.item(), r.count()));
             CollectionLog.obtain(killer, r.item());
         }
-        if (def.pet != null && form.getRandom().nextInt(3000) == 0) {
+        int petRate = com.runecraft.osrs.content.extras.Pets.engineRate(def.id);
+        if (def.pet != null && petRate > 0 && form.getRandom().nextInt(petRate) == 0) {
             Inv.give(killer, def.pet, 1);
             CollectionLog.obtain(killer, def.pet);
             killer.getServer().getPlayerManager().broadcast(Text.literal(killer.getName().getString()

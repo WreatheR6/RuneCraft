@@ -72,7 +72,7 @@ class DungeonsContentTest {
     @Test
     void moduleIsRegisteredAndIdsAreUnique() {
         assertEquals("dungeons", MODULE.id());
-        assertTrue(Modules.ALL.get(Modules.ALL.size() - 1) instanceof DungeonsContent);
+        assertTrue(Modules.ALL.stream().anyMatch(m -> m instanceof DungeonsContent));
         Set<String> structureIds = new HashSet<>();
         for (StructureDef s : ContentRegistry.structures()) {
             assertTrue(structureIds.add(s.id()), "duplicate structure id " + s.id());

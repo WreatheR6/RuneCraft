@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/ext_poh_oak_clock_side",
+    "top": "runecraft:block/module/ext_poh_oak_clock_top",
+    "bottom": "runecraft:block/module/ext_poh_oak_clock_bottom"
+  }
+}

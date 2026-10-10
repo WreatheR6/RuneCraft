@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/ext_poh_baby_red_dragon_side",
+    "top": "runecraft:block/module/ext_poh_baby_red_dragon_top",
+    "bottom": "runecraft:block/module/ext_poh_baby_red_dragon_bottom"
+  }
+}

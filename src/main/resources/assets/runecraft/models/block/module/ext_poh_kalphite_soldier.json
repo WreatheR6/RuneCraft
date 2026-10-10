@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/ext_poh_kalphite_soldier_side",
+    "top": "runecraft:block/module/ext_poh_kalphite_soldier_top",
+    "bottom": "runecraft:block/module/ext_poh_kalphite_soldier_bottom"
+  }
+}

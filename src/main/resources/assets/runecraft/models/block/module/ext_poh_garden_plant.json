@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "runecraft:block/module/ext_poh_garden_plant"
+  }
+}
