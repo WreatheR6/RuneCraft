@@ -385,7 +385,7 @@ final class EasternMorytania {
 
     // ------------------------------------------------------------------ Barrows
 
-    /** The Barrows: six burial mounds with the brothers' stones, crypt doors and the mausoleum. */
+    /** The Barrows: the six burial mounds (dig on top to enter the crypts below) and the mausoleum. */
     static StructureDef barrows() {
         EasternKit k = new EasternKit("barrows", "Barrows").replaces("BARROWS");
         int g = k.g;
@@ -402,16 +402,8 @@ final class EasternMorytania {
             int x = cx((Integer) b[1]);
             int z = cz((Integer) b[2]);
             k.dome(x, z, g, 9.5, 5, "minecraft:dirt", GRASS);
-            k.set(x, g + 5, z, "runecraft:" + b[0] + "_summoning_stone");
-            // Crypt doorway on the south flank of the mound.
-            k.clear(x - 1, g, z + 4, x + 1, g + 2, z + 10);
-            k.fill(x - 1, g - 1, z + 4, x + 1, g - 1, z + 10, STONE_BRICKS);
-            k.fill(x - 2, g, z + 6, x - 2, g + 3, z + 6, MOSSY_BRICKS);
-            k.fill(x + 2, g, z + 6, x + 2, g + 3, z + 6, MOSSY_BRICKS);
-            k.fill(x - 2, g + 3, z + 6, x + 2, g + 3, z + 6, CRACKED_BRICKS);
-            k.fill(x - 1, g, z + 3, x + 1, g + 2, z + 3, CRACKED_DEEP);
-            k.fill(x - 1, g, z + 4, x + 1, g + 1, z + 4, "minecraft:iron_bars");
-            k.set(x - 1, g + 2, z + 5, SOUL_LANTERN + "[hanging=true]");
+            // No stone or door: as in OSRS, the crypt is reached by digging on top of the mound with a
+            // spade (the dungeons module carves the crypt below and handles the digging).
         }
         // The mausoleum with the chest, bank chest and altar.
         int[] m = k.hall(3555, 3270, 3560, 3275, 1, MORY_STONE, "north");

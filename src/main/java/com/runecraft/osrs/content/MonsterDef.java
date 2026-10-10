@@ -6,8 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A regular monster added by a content module. Spawns naturally in the listed kingdoms
- * (tools/gen_worldgen.py reads this from build/catalog.json).
+ * A regular monster added by a content module. Gielinor has no natural (biome) spawning: a monster
+ * only appears at its OSRS spawn locations, from a module camp or a point in
+ * {@link com.runecraft.osrs.world.SpawnTable}. {@link #spawns} only records the kingdoms it lives in.
  */
 public final class MonsterDef extends CombatProfile<MonsterDef> {
     public record Spawn(Region region, int weight, int min, int max) {

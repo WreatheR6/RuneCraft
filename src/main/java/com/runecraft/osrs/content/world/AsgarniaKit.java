@@ -22,9 +22,18 @@ final class AsgarniaKit {
     /** Wood of the doors hung in {@link #house} doorways (null leaves doorways open). */
     String doorWood = "spruce";
 
+    /** Deferred finishing details (textures, shutters, chimneys...), appended on {@link #build}. */
+    final MisthalinDetail d = new MisthalinDetail("asgarnia");
+
     AsgarniaKit(StructureDef.Builder b) {
         this.b = b;
         this.g = b.ground();
+    }
+
+    /** Appends the deferred details and builds the structure. */
+    StructureDef build() {
+        d.flush(b);
+        return b.build();
     }
 
     // ------------------------------------------------------------------ block strings
@@ -203,6 +212,7 @@ final class AsgarniaKit {
      * {@code cone} is non-null a pointed cap of that block is added instead of open battlements.
      */
     void tower(int cx, int cz, int r, int height, String wall, String floor, String door, String cone) {
+        d.roundTower(cx, cz, r, g, g + height, 5, wall, cone == null);
         for (int dx = -r; dx <= r; dx++) {
             for (int dz = -r; dz <= r; dz++) {
                 double d = Math.sqrt(dx * dx + dz * dz);
@@ -281,10 +291,14 @@ final class AsgarniaKit {
                 }
                 if (za == zb) {
                     f(x1 - 1, y, za, x2 + 1, y, za, full);
+                    ridgeCap(x1 - 1, y + 1, za, x2 + 1, za, stairs);
                     break;
                 }
                 f(x1 - 1, y, za, x2 + 1, y, za, stair(stairs, "south"));
                 f(x1 - 1, y, zb, x2 + 1, y, zb, stair(stairs, "north"));
+                if (za + 1 == zb) {
+                    ridgeCap(x1 - 1, y + 1, za, x2 + 1, zb, stairs);
+                }
                 if (za + 1 <= zb - 1) {
                     f(x1, y, za + 1, x1, y, zb - 1, full);
                     f(x2, y, za + 1, x2, y, zb - 1, full);
@@ -297,15 +311,26 @@ final class AsgarniaKit {
                 }
                 if (xa == xb) {
                     f(xa, y, z1 - 1, xa, y, z2 + 1, full);
+                    ridgeCap(xa, y + 1, z1 - 1, xa, z2 + 1, stairs);
                     break;
                 }
                 f(xa, y, z1 - 1, xa, y, z2 + 1, stair(stairs, "east"));
                 f(xb, y, z1 - 1, xb, y, z2 + 1, stair(stairs, "west"));
+                if (xa + 1 == xb) {
+                    ridgeCap(xa, y + 1, z1 - 1, xb, z2 + 1, stairs);
+                }
                 if (xa + 1 <= xb - 1) {
                     f(xa + 1, y, z1, xb - 1, y, z1, full);
                     f(xa + 1, y, z2, xb - 1, y, z2, full);
                 }
             }
+        }
+    }
+
+    /** A slab ridge cap (deferred, only into air) along a roof ridge; skipped for non-stair roofs. */
+    void ridgeCap(int x1, int dy, int z1, int x2, int z2, String stairs) {
+        if (stairs.endsWith("_stairs")) {
+            d.air(x1, g + dy, z1, x2, g + dy, z2, stairs.substring(0, stairs.length() - 7) + "_slab");
         }
     }
 
@@ -430,8 +455,15 @@ final class AsgarniaKit {
         for (int k = 0; k < storeys; k++) {
             s(mx, 4 * k + 2, mz, mc("lantern[hanging=true]"));
         }
+        finishHouse(st, x1, z1, x2, z2, storeys, door, roof);
         if (roof == PITCHED) {
             pitched(x1, z1, x2, z2, h, st.roofStairs, st.roofFull);
+            String gableLog = MisthalinDetail.isStone(st.wall) ? null : MisthalinDetail.bare(st.post).replace("minecraft:", "minecraft:stripped_")
+                    .replace("stripped_stripped_", "stripped_");
+            if (gableLog != null && !gableLog.endsWith("_log")) {
+                gableLog = "minecraft:stripped_spruce_log";
+            }
+            d.gables(x1, z1, x2, z2, g + h, (x2 - x1) >= (z2 - z1), st.roofFull, gableLog, mc("glass_pane"));
         } else if (roof == FLAT) {
             for (int x = x1; x <= x2; x++) {
                 for (int z = z1; z <= z2; z++) {
@@ -443,6 +475,59 @@ final class AsgarniaKit {
             }
         }
         return room;
+    }
+
+    private void dressWindow(boolean castle, int x, int y, int z, char out, String wall, String wood, String lintel) {
+        if (castle) {
+            d.castleWindow(x, y, y + 1, z, out, wall, lintel, g);
+        } else {
+            d.window(x, y, y + 1, z, out, wall, wood, lintel, g);
+        }
+    }
+
+    /** Wall weathering, plinth, quoins, window dressings and a chimney for {@link #houseB} (deferred). */
+    private void finishHouse(Style st, int x1, int z1, int x2, int z2, int storeys, String door, int roof) {
+        int h = storeys * 4;
+        String wall = st.wall;
+        boolean stone = MisthalinDetail.isStone(wall);
+        if (stone) {
+            d.texture(x1, z1, x2, z2, g + 1, g + h - 1, wall, 8);
+        }
+        d.plinth(x1, z1, x2, z2, g, wall, MisthalinDetail.plinthFor(wall));
+        String log = st.post.contains("_log") ? MisthalinDetail.bare(st.post) : "minecraft:stripped_spruce_log";
+        String wood = MisthalinDetail.shutterWood(wall, doorWood != null ? doorWood : "spruce");
+        boolean castle = roof != PITCHED && stone && (storeys >= 2 || x2 - x1 >= 14 || z2 - z1 >= 14);
+        for (int k = 0; k < storeys; k++) {
+            int y = 4 * k + 1;
+            for (int x = x1 + 2; x <= x2 - 2; x += 3) {
+                String lx = stone ? MisthalinDetail.quoinFor(wall) : log + "[axis=x]";
+                dressWindow(castle, x, g + y, z1, 'n', wall, wood, lx);
+                dressWindow(castle, x, g + y, z2, 's', wall, wood, lx);
+            }
+            for (int z = z1 + 2; z <= z2 - 2; z += 3) {
+                String lz = stone ? MisthalinDetail.quoinFor(wall) : log + "[axis=z]";
+                dressWindow(castle, x1, g + y, z, 'w', wall, wood, lz);
+                dressWindow(castle, x2, g + y, z, 'e', wall, wood, lz);
+            }
+        }
+        if (roof == PITCHED && !wall.contains("jungle") && !wall.contains("bamboo") && !st.roofFull.contains("hay") && x2 - x1 >= 5 && z2 - z1 >= 5 && MisthalinDetail.noise(x1, 1, z1, 5) % 3 != 0) {
+            boolean alongX = (x2 - x1) >= (z2 - z1);
+            int span = alongX ? z2 - z1 : x2 - x1;
+            String stack = stone ? mc("cobblestone") : mc("bricks");
+            char ds = door == null ? ' ' : door.charAt(0);
+            char[] ends = alongX ? new char[]{'w', 'e'} : new char[]{'n', 's'};
+            for (char e : ends) {
+                int along = alongX ? z1 + 3 : x1 + 3;
+                int mid = alongX ? (z1 + z2) / 2 : (x1 + x2) / 2;
+                if (ds == e && Math.abs(along - mid) <= 2) {
+                    continue;
+                }
+                int cx = alongX ? (e == 'w' ? x1 : x2) : along;
+                int cz = alongX ? along : (e == 'n' ? z1 : z2);
+                d.chimney(cx, cz, g + 1, g + h + span / 2 + 2, stack);
+                break;
+            }
+        }
     }
 
     // ------------------------------------------------------------------ nature

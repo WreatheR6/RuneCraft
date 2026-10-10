@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Minecraft-side behaviour for the dungeons module: the monster camps inside every dungeon, the
  * Stronghold of Security's doors and reward chests, Brimhaven's vines, the Mining Guild door and
- * the Abyss's passages and rifts.
+ * the Abyss's passages and rifts, and the Barrows crypts and tunnels ({@link BarrowsHooks}).
  */
 public final class DungeonsHooks implements ModuleHooks {
     /** Security advice spoken by the Stronghold of Security's doors (one is picked per use). */
@@ -56,6 +56,7 @@ public final class DungeonsHooks implements ModuleHooks {
         });
         BlockHooks.register(DungeonBlocks.RIFT, DungeonsHooks::rift);
         DungeonCamps.register();
+        BarrowsHooks.register();
     }
 
     /**

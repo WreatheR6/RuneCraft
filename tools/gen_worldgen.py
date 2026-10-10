@@ -378,7 +378,10 @@ for name, d in BIOMES.items():
     write(f"runecraft/worldgen/biome/{name}.json", {
         "has_precipitation": d["temp"] < 1.5, "temperature": d["temp"], "downfall": d["down"],
         "effects": effects,
-        "spawners": spawns(d["monsters"], d["creatures"], d.get("aquatic", ()), d.get("fish", ())),
+        # No natural mob spawning in Gielinor: monsters only appear at their OSRS spawn locations
+        # (com.runecraft.osrs.world.SpawnTable and the modules' camps), so every biome spawner is empty
+        # (including the terrain biomes sea and mountain_peaks).
+        "spawners": spawns(),
         "spawn_costs": {},
         "carvers": {"air": ["minecraft:cave", "minecraft:canyon"]},
         "features": features(set(d["feats"]))})

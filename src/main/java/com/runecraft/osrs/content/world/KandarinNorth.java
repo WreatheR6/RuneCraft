@@ -169,12 +169,12 @@ final class KandarinNorth {
         // fur stall in the market square
         k.stall(KandarinKit.X(2642) + 1, KandarinKit.Z(3657) + 1, "runecraft:fur_stall", "brown", "spruce");
         // smithy and range house
-        Bld sm = k.house(2664, 3645, 2670, 3651, 1, FREM_DARK.roof("thatch"), 'w', NO_LADDER);
+        Bld sm = k.house(2664, 3645, 2670, 3651, 1, FREM_DARK, 'w', NO_LADDER);
         k.set(sm.x2() - 1, 0, sm.z1() + 1, FURNACE);
         k.set(sm.cx(), 0, sm.cz(), ANVIL);
         k.set(sm.x2() - 1, 0, sm.z2() - 1, "minecraft:water_cauldron[level=3]");
         k.set(sm.x2() - 1, 0, sm.z1() + 2, "minecraft:grindstone[face=floor,facing=west]");
-        Bld rh = k.house(2640, 3645, 2648, 3651, 1, FREM, 'n', FURN);
+        Bld rh = k.house(2640, 3645, 2648, 3651, 1, FREM.roof("minecraft:spruce"), 'n', FURN);
         k.set(rh.cx(), 0, rh.z2() - 1, RANGE);
         // longhouses
         int[][] hs = {{2614, 3646, 2624, 3652, 'n'}, {2626, 3645, 2636, 3651, 'n'}, {2614, 3664, 2624, 3670, 's'},
@@ -182,7 +182,7 @@ final class KandarinNorth {
                 {2627, 3663, 2631, 3669, 'e'}, {2678, 3684, 2688, 3690, 'w'}, {2614, 3685, 2624, 3690, 's'}};
         for (int i = 0; i < hs.length; i++) {
             int[] h = hs[i];
-            k.house(h[0], h[1], h[2], h[3], 1, i % 2 == 0 ? FREM : FREM_DARK.roof("thatch"), (char) h[4], FURN);
+            k.house(h[0], h[1], h[2], h[3], 1, i % 2 == 0 ? FREM.roof("minecraft:spruce") : FREM_DARK, (char) h[4], FURN);
         }
         // rooftop course houses (flat sod roofs)
         Pal flat = FREM.roof("flat:minecraft:spruce_planks");
@@ -197,7 +197,69 @@ final class KandarinNorth {
         for (int[] t : new int[][]{{2612, 3656}, {2637, 3656}, {2650, 3646}, {2686, 3646}, {2668, 3658}, {2612, 3674}}) {
             k.spruce(KandarinKit.X(t[0]), KandarinKit.Z(t[1]), 9);
         }
+        rellekkaDetails(k, hs);
         return k.build();
+    }
+
+    /**
+     * Rellekka's yard life: painted shields on the longhouses, firewood stacks, fish-drying racks,
+     * braziers along the main street, crates and barrels, and carved posts at the gate.
+     */
+    private static void rellekkaDetails(KandarinKit k, int[][] houses) {
+        int g = k.g;
+        String[] shields = {"red", "yellow", "blue", "white"};
+        int i = 0;
+        for (int[] h : houses) {
+            int x1 = KandarinKit.x1(h[0], h[2]);
+            int x2 = KandarinKit.x2(h[0], h[2]);
+            int z1 = KandarinKit.z1(h[1], h[3]);
+            int z2 = KandarinKit.z2(h[1], h[3]);
+            char door = (char) h[4];
+            // shields hung along the long walls, away from the windows
+            if (door == 'n' || door == 's') {
+                int z = door == 'n' ? z1 - 1 : z2 + 1;
+                for (int x = x1 + 4; x <= x2 - 3; x += 4) {
+                    if (Math.abs(x - (x1 + x2) / 2) > 1) {
+                        k.d.banner(x, g + 2, z, door, shields[i++ % shields.length]);
+                    }
+                }
+                // firewood stacked against the back wall
+                int bz = door == 'n' ? z2 + 1 : z1 - 1;
+                k.d.air(x1 + 1, g, bz, x1 + 3, g + 1, bz, "minecraft:spruce_log[axis=x]");
+            } else {
+                int x = door == 'w' ? x1 - 1 : x2 + 1;
+                for (int z = z1 + 4; z <= z2 - 3; z += 4) {
+                    if (Math.abs(z - (z1 + z2) / 2) > 1) {
+                        k.d.banner(x, g + 2, z, door, shields[i++ % shields.length]);
+                    }
+                }
+                int bx = door == 'w' ? x2 + 1 : x1 - 1;
+                k.d.air(bx, g, z1 + 1, bx, g + 1, z1 + 3, "minecraft:spruce_log[axis=z]");
+            }
+        }
+        // fish-drying racks on the beach
+        for (int x = KandarinKit.X(2612); x <= KandarinKit.X(2628); x += 8) {
+            int z = KandarinKit.Z(3693);
+            k.d.air(x, g, z, x, g + 1, z, "minecraft:spruce_fence");
+            k.d.air(x + 3, g, z, x + 3, g + 1, z, "minecraft:spruce_fence");
+            k.d.air(x, g + 2, z, x + 3, g + 2, z, "minecraft:spruce_fence");
+            k.d.air(x + 1, g + 1, z, x + 2, g + 1, z, "minecraft:dried_kelp_block");
+        }
+        // braziers along the main east-west street
+        for (int tx = 2616; tx <= 2686; tx += 14) {
+            int x = KandarinKit.X(tx);
+            int z = KandarinKit.Z(3662);
+            k.d.air(x, g, z, x, g, z, "minecraft:cobblestone_wall");
+            k.d.air(x, g + 1, z, x, g + 1, z, "minecraft:campfire[lit=true]");
+        }
+        // crates and barrels by the smithy and the market, sign post at the gate
+        k.d.crates(KandarinKit.X(2662), g, KandarinKit.Z(3646));
+        k.d.crates(KandarinKit.X(2650), g, KandarinKit.Z(3668));
+        k.d.signpost(KandarinKit.X(2661), g, KandarinKit.Z(3645), "spruce");
+        for (int tx : new int[]{2656, 2661}) {
+            k.d.air(KandarinKit.X(tx), g, KandarinKit.Z(3643), KandarinKit.X(tx), g + 2, KandarinKit.Z(3643), "minecraft:stripped_dark_oak_log");
+            k.d.air(KandarinKit.X(tx), g + 3, KandarinKit.Z(3643), KandarinKit.X(tx), g + 3, KandarinKit.Z(3643), "minecraft:skeleton_skull[rotation=0]");
+        }
     }
 
     /** Rellekka rooftop course (7 obstacles) over the six flat-roofed houses on the east side. */
@@ -256,8 +318,8 @@ final class KandarinNorth {
             k.fill(h.x2() - 4, 0, z, h.x2() - 4, 6, z, "minecraft:stripped_spruce_log");
         }
         for (int z = h.z1() + 3; z <= h.z2() - 3; z += 4) {
-            k.set(h.x1() + 1, 2, z, "minecraft:red_wool");
-            k.set(h.x2() - 1, 2, z, "minecraft:yellow_wool");
+            k.set(h.x1() + 1, 2, z, "minecraft:red_wall_banner[facing=east]");
+            k.set(h.x2() - 1, 2, z, "minecraft:yellow_wall_banner[facing=west]");
         }
         k.longTable(h.x1() + 6, h.x1() + 7, 0, h.cz(), "spruce");
         k.fill(h.x1() + 2, 0, h.z1() + 6, h.x1() + 2, 0, h.z2() - 4, "minecraft:spruce_slab[type=top]");
@@ -273,6 +335,21 @@ final class KandarinNorth {
         // dragon-headed gable posts
         k.set(h.x1() - 1, 8, h.z2() + 1, "minecraft:carved_pumpkin[facing=south]");
         k.set(h.x2() + 1, 8, h.z2() + 1, "minecraft:carved_pumpkin[facing=south]");
+        // painted shields along the outside, braziers by the door, firewood and a carved post
+        String[] shields = {"red", "yellow", "blue", "white"};
+        int i = 0;
+        for (int z = h.z1() + 4; z <= h.z2() - 3; z += 4) {
+            k.d.banner(h.x1() - 1, k.g + 2, z, 'w', shields[i++ % 4]);
+            k.d.banner(h.x2() + 1, k.g + 2, z, 'e', shields[i++ % 4]);
+            k.d.banner(h.x1() - 1, k.g + 6, z, 'w', shields[(i + 1) % 4]);
+            k.d.banner(h.x2() + 1, k.g + 6, z, 'e', shields[(i + 2) % 4]);
+        }
+        for (int x : new int[]{h.cx() - 3, h.cx() + 4}) {
+            k.d.air(x, k.g, h.z2() + 2, x, k.g, h.z2() + 2, "minecraft:cobblestone_wall");
+            k.d.air(x, k.g + 1, h.z2() + 2, x, k.g + 1, h.z2() + 2, "minecraft:campfire[lit=true]");
+        }
+        k.d.air(h.x1() + 1, k.g, h.z1() - 1, h.x1() + 4, k.g + 1, h.z1() - 1, "minecraft:spruce_log[axis=x]");
+        k.d.crates(h.x2() - 3, k.g, h.z1() - 2);
         return k.build();
     }
 
