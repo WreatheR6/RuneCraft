@@ -21,7 +21,7 @@ final class MinionModels {
         return List.of(snakeling(), tentacle("enormous_tentacle", 0x8A3A6A, 0xC07090), zombifiedSpawn(),
                 soul("summoned_soul_ranged", 0x40C040), soul("summoned_soul_magic", 0x4060E0), soul("summoned_soul_melee", 0xE04040),
                 respiratorySystem(), abyssalSpawn(), darkCore(), awakenedAltar(), flower(), spider("spawn_of_sarachnis", 0x8A2A1A, 0xE0A040, 0.6f),
-                tornado(), totem(), parasite(), rat(), spider("acidic_araxyte", 0x4A6A2A, 0xC0E040, 0.8f),
+                rat(), spider("acidic_araxyte", 0x4A6A2A, 0xC0E040, 0.8f),
                 spider("mirrorback_araxyte", 0x8A8A9A, 0xE0E0F0, 0.8f), spider("ruptura_araxyte", 0x8A2A3A, 0xF06040, 0.8f),
                 tentacle("whisperer_tentacle", 0x1A2A4A, 0x50E0E0), scion());
     }
@@ -137,31 +137,6 @@ final class MinionModels {
         b.part("head", "body", Role.HEAD, color, 0xE04020).pivot(0, 0, -4).box(-2.5f, -2, -3, 5, 4, 3).pattern("eyes");
         b.part("fangs", "head", Role.JAW, accent).pivot(0, 2, -3).box(-2, 0, -1, 1, 2, 1).box(1, 0, -1, 1, 2, 1);
         spiderLegs(b, "leg", "body", color, 4, 3.5f, 1, -3, 2, 6, 5, 1);
-        return b.build();
-    }
-
-    static ModelSpec tornado() {
-        ModelSpec.Builder b = ModelSpec.builder("hunllef_tornado").shadow(0.5f);
-        b.part("base", null, Role.SPIN, 0xB0D8F0, 0xFFFFFF).pivot(0, 24, 0).box(-2, -6, -2, 4, 6, 4).box(-3, -12, -3, 6, 6, 6)
-                .box(-4, -18, -4, 8, 6, 8).box(-5, -24, -5, 10, 6, 10).box(-6, -30, -6, 12, 6, 12).pattern("stripes");
-        return b.build();
-    }
-
-    static ModelSpec totem() {
-        ModelSpec.Builder b = ModelSpec.builder("nightmare_totem").shadow(0.7f);
-        b.part("pole", null, Role.STATIC, 0x4A3A4A, 0x9A4AC0).pivot(0, 24, 0).box(-4, -30, -4, 8, 30, 8).box(-6, -4, -6, 12, 4, 12)
-                .pattern("stripes");
-        b.part("face", "pole", Role.STATIC, 0x5A4A5A, 0xC060F0).pivot(0, -22, -4).box(-3, -4, -1, 6, 6, 1).pattern("eyes");
-        b.part("orb", null, Role.FLOAT, 0x9A4AC0, 0xFFFFFF).pivot(0, -10, 0).box(-3, -3, -3, 6, 6, 6).pattern("glow");
-        return b.build();
-    }
-
-    static ModelSpec parasite() {
-        ModelSpec.Builder b = ModelSpec.builder("nightmare_parasite").shadow(0.4f);
-        b.part("body", null, Role.BODY, 0x6A8A4A, 0xA0C060).pivot(0, 20, 0).box(-3, -3, -5, 6, 5, 7).pattern("stripes");
-        b.part("head", "body", Role.HEAD, 0x7A9A5A, 0xE04040).pivot(0, -1, -5).box(-2.5f, -2, -4, 5, 4, 4).pattern("eyes");
-        b.part("maw", "head", Role.JAW, 0x8A2A2A).pivot(0, 1, -3).box(-2, 0, -2, 4, 1, 2);
-        chainZ(b, "tail", "body", Role.TAIL, 0x6A8A4A, 3, 0, 0, 2, 1, 4, 3, 3, 0, "stripes");
         return b.build();
     }
 
