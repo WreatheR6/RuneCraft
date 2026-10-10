@@ -16,9 +16,6 @@ final class Slayers {
 
     static List<ModelSpec> all() {
         List<ModelSpec> l = new ArrayList<>();
-        l.add(Creatures.ghost("ghost", 0xD8E4EC));
-        l.add(dagannoth("dagannoth", 0x4A6A58, 0x8A9A6A));
-        l.add(kalphite("kalphite", 0xC09A50, 0x8A6A30));
         return l;
     }
 

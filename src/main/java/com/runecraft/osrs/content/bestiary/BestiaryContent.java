@@ -26,7 +26,17 @@ public final class BestiaryContent implements ContentModule {
         list.addAll(Folk.all());
         list.addAll(Creatures.all());
         list.addAll(Bosses.fresh());
-        list.addAll(BestiarySlm.fresh());
+        // The world-monster and slayer sets overlap on a few humanoids (cave goblins, catacomb giants,
+        // mogre, chaos druid); the world-monster version wins.
+        List<ModelSpec> world = BestiaryWld.models();
+        java.util.Set<String> worldIds = new java.util.HashSet<>();
+        world.forEach(m -> worldIds.add(m.id()));
+        list.addAll(world);
+        for (ModelSpec m : BestiarySlm.fresh()) {
+            if (!worldIds.contains(m.id())) {
+                list.add(m);
+            }
+        }
         return list;
     }
 

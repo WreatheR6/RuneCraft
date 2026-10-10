@@ -18,9 +18,7 @@ final class BigBosses {
         List<ModelSpec> l = new ArrayList<>();
         l.add(vetion("vetion", 0x5A2A8A));
         l.add(vetion("calvarion", 0x3A6A4A));
-        l.add(scorpion("scorpion", 0x2A2A2A, 0x4A3A2A, 0xC04020));
         l.add(nex());
-        l.add(Fallbacks.crab("sand_crab", 0xC8A870, 0xA08050, 0xB89058, false, false));
         return l;
     }
 
