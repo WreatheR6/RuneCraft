@@ -240,9 +240,12 @@ public class BossEntity extends OsrsMonsterEntity {
         if (boss.mechanic() == Boss.Mechanic.VAMPIRE) {
             Inv.remove(player, "stake", 1);
         }
-        for (Drops.Rolled r : Drops.roll(boss.drops(), getRandom(), false)) {
-            dropStack(Inv.stack(r.item(), r.count()));
-            CollectionLog.obtain(player, r.item());
+        // As in OSRS the Barrows brothers drop nothing: their tables are rolled by the Barrows chest.
+        if (boss.lair() != com.runecraft.osrs.Landmark.BARROWS) {
+            for (Drops.Rolled r : Drops.roll(boss.drops(), getRandom(), false)) {
+                dropStack(Inv.stack(r.item(), r.count()));
+                CollectionLog.obtain(player, r.item());
+            }
         }
         PlayerData data = Players.data(player);
         int kc = data.incrementKillCount(boss.entityId());
