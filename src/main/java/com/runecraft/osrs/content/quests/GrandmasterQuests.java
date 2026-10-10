@@ -131,7 +131,7 @@ final class GrandmasterQuests {
                 .drops(Drop.always("coins")).size(1.2f, 2.6f, 1.0f).at("guthix_sanctum").arena(12, "void"));
         b.quest("while_guthix_sleeps", "While Guthix Sleeps", Difficulty.GRANDMASTER, 5)
                 .qp(180).reqQuest("legends_quest", "holy_grail", "hazeel_cult", "fremennik_trials")
-                .reqQuest("defender_of_varrock", "tears_of_guthix", "dream_mentor", "wanted").reqNote("The Path of Glouphrie")
+                .reqQuest("defender_of_varrock", "tears_of_guthix", "dream_mentor", "wanted", "the_path_of_glouphrie")
                 .req(Skill.THIEVING, 72).req(Skill.MAGIC, 67).req(Skill.AGILITY, 66).req(Skill.FARMING, 65)
                 .req(Skill.HERBLORE, 65).req(Skill.HUNTER, 62).req(Skill.DEFENCE, 65)
                 .xp(Skill.THIEVING, 50000).xp(Skill.MAGIC, 50000).xp(Skill.AGILITY, 50000).xp(Skill.HERBLORE, 50000)

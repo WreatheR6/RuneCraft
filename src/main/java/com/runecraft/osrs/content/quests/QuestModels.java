@@ -50,6 +50,16 @@ final class QuestModels {
         b.model(troll("slash_bash", 0x7A8A6A, 0x3A4A2A, 1.7f));
         b.model(golem("the_inadequacy", 0x2A2A3A, 0x8A2AA0, 2.0f));
         b.model(demon("agrith_naar", 0x9A4A2A, 0x5A2A1A, 1.7f));
+        b.model(treeSpirit("tanglefoot", 0x3A5A2A, 0x6AA03A, 1.7f));
+        b.model(demon("gorak", 0x6A3A6B, 0x3A1A3A, 1.5f));
+        b.model(bird("warped_terrorbird", 0x6A5A8A, 0xA040C0, 2.2f));
+        b.model(troll("ice_troll_king", 0x8AA0C0, 0x3A4A6A, 2.0f));
+        b.model(slug("giant_sea_snake", 0x2A6A5A, 2.0f));
+        b.model(spider("giant_scarab", 0x3A3A1A, 1.9f));
+        b.model(spider("champion_of_scabaras", 0x6A5A1A, 2.3f));
+        b.model(troll("sea_troll_queen", 0x3A6A6A, 0x1A3A4A, 2.2f));
+        b.model(hound("rat_king", 0x6A5A4A, 0xE04040, 1.3f));
+        b.model(demon("judge_of_yama", 0x3A1A4A, 0x1A0A2A, 1.9f));
         b.model(bird("entranan_firebird", 0xFF6A1A, 0xFFD040, 1.2f));
         // Crystal
         b.model(crystal("fragment_of_seren", 0xB8F0FF, 0x80C0FF, 1.3f));

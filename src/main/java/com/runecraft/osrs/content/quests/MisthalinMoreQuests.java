@@ -304,7 +304,7 @@ final class MisthalinMoreQuests {
                 .drops(Drop.always("bones")).skin(0x8AA07B, 0xA08A3A, 0x6A5A2A, 0x5A6A4A).at("varrock_sewers_arrav").arena(10, "crypt"));
         b.quest("defender_of_varrock", "Defender of Varrock", Difficulty.EXPERIENCED, 2)
                 .reqQuest("shield_of_arrav", "temple_of_ikov", "below_ice_mountain", "family_crest", "what_lies_below", "ROMEO_AND_JULIET", "DEMON_SLAYER")
-                .reqNote("Garden of Tranquillity")
+                .reqQuest("garden_of_tranquillity")
                 .req(Skill.AGILITY, 51).req(Skill.HUNTER, 52).req(Skill.MINING, 59)
                 .xp(Skill.SMITHING, 15000).xp(Skill.HUNTER, 15000)
                 .stage("I can start this quest by speaking to Captain Rovin in Varrock Palace. (Requires Shield of Arrav, What Lies Below and more.)")
