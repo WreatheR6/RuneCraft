@@ -53,7 +53,7 @@ public final class EasternDetail {
 
     // ------------------------------------------------------------------ small helpers
 
-    static String axis(String block, boolean alongX) {
+    public static String axis(String block, boolean alongX) {
         if (block == null || block.contains("[")) {
             return block;
         }
@@ -65,7 +65,7 @@ public final class EasternDetail {
     }
 
     /** A log-like block standing upright. */
-    static String vert(String block) {
+    public static String vert(String block) {
         if (block == null || block.contains("[")) {
             return block;
         }
@@ -78,7 +78,7 @@ public final class EasternDetail {
         return i < 0 ? block : block.substring(0, i);
     }
 
-    static String opposite(String side) {
+    public static String opposite(String side) {
         return switch (side) {
             case "north" -> "south";
             case "south" -> "north";
@@ -101,11 +101,11 @@ public final class EasternDetail {
         return material + "_slab";
     }
 
-    void set(int x, int y, int z, String s) {
+    public void set(int x, int y, int z, String s) {
         b.set(x, y, z, s);
     }
 
-    void fill(int x1, int y1, int z1, int x2, int y2, int z2, String s) {
+    public void fill(int x1, int y1, int z1, int x2, int y2, int z2, String s) {
         b.fill(x1, y1, z1, x2, y2, z2, s);
     }
 
@@ -114,7 +114,7 @@ public final class EasternDetail {
     }
 
     /** Replaces {@code from} with {@code to} on the four wall strips of a rectangle between y1 and y2. */
-    void ringReplace(int[] q, int y1, int y2, String from, String to) {
+    public void ringReplace(int[] q, int y1, int y2, String from, String to) {
         replace(q[0], y1, q[1], q[2], y2, q[1], from, axis(to, true));
         replace(q[0], y1, q[3], q[2], y2, q[3], from, axis(to, true));
         replace(q[0], y1, q[1] + 1, q[0], y2, q[3] - 1, from, axis(to, false));
@@ -677,7 +677,7 @@ public final class EasternDetail {
     }
 
     /** Something to show on a stall counter for a given station block. */
-    static String goods(String station, int i) {
+    public static String goods(String station, int i) {
         String s = station == null ? "" : station;
         if (s.contains("fish")) {
             return i == 0 ? "minecraft:barrel[facing=up]" : "minecraft:sea_pickle";
