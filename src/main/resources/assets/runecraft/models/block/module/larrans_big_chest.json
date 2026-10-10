@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/larrans_big_chest_side",
+    "top": "runecraft:block/module/larrans_big_chest_top",
+    "bottom": "runecraft:block/module/larrans_big_chest_bottom"
+  }
+}

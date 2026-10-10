@@ -41,6 +41,42 @@
         "weight": 4,
         "minCount": 1,
         "maxCount": 2
+      },
+      {
+        "type": "runecraft:cave_bug",
+        "weight": 6,
+        "minCount": 2,
+        "maxCount": 5
+      },
+      {
+        "type": "runecraft:cave_crawler",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:cave_slime",
+        "weight": 5,
+        "minCount": 2,
+        "maxCount": 4
+      },
+      {
+        "type": "runecraft:rockslug",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:wall_beast",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:mutated_zygomite",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 3
       }
     ],
     "creature": [

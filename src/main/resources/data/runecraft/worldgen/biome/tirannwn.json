@@ -29,6 +29,18 @@
         "weight": 3,
         "minCount": 1,
         "maxCount": 2
+      },
+      {
+        "type": "runecraft:elf_warrior",
+        "weight": 5,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:kurask",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
       }
     ],
     "creature": [

@@ -41,6 +41,54 @@
         "weight": 2,
         "minCount": 1,
         "maxCount": 2
+      },
+      {
+        "type": "runecraft:scorpion",
+        "weight": 6,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:lizard",
+        "weight": 4,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:desert_lizard",
+        "weight": 6,
+        "minCount": 2,
+        "maxCount": 4
+      },
+      {
+        "type": "runecraft:pyrefiend",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:dust_devil",
+        "weight": 5,
+        "minCount": 2,
+        "maxCount": 4
+      },
+      {
+        "type": "runecraft:kalphite_worker",
+        "weight": 6,
+        "minCount": 2,
+        "maxCount": 5
+      },
+      {
+        "type": "runecraft:kalphite_soldier",
+        "weight": 4,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:kalphite_guardian",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
       }
     ],
     "creature": [],

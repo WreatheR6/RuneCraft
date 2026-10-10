@@ -65,6 +65,42 @@
         "weight": 3,
         "minCount": 1,
         "maxCount": 2
+      },
+      {
+        "type": "runecraft:scorpion",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:minotaur",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:ghost",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:killerwatt",
+        "weight": 3,
+        "minCount": 2,
+        "maxCount": 4
+      },
+      {
+        "type": "runecraft:molanisk",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:ankou",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 3
       }
     ],
     "creature": [

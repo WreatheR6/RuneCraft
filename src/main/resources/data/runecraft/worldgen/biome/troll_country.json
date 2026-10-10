@@ -35,6 +35,36 @@
         "weight": 2,
         "minCount": 1,
         "maxCount": 1
+      },
+      {
+        "type": "runecraft:bloodveld",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:spiritual_ranger",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:spiritual_warrior",
+        "weight": 3,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "runecraft:spiritual_mage",
+        "weight": 2,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "runecraft:mountain_troll",
+        "weight": 6,
+        "minCount": 1,
+        "maxCount": 3
       }
     ],
     "creature": [],
