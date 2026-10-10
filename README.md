@@ -2,10 +2,10 @@
 
 Old School RuneScape for **Minecraft 1.20.1 (Fabric)**. It adds a separate dimension, **Gielinor**, laid out like the real OSRS world map (as the LOTR mod does for Middle-earth). Skills, experience and combat follow OSRS formulas.
 
-> **Status: early alpha. The Minecraft-side code has not been compiled yet.** The pure-Java OSRS core (`com.runecraft.osrs`) is compiled and unit-tested. The Fabric layer was written against the 1.20.1 Yarn API, but the build server used to write it couldn't reach `maven.fabricmc.net`. Run `./gradlew build` and expect to fix some compile errors on the first build.
+> **Status: early alpha.** Every push is built by GitHub Actions. The latest jar is on the [dev-latest release](https://github.com/WreatheR6/RuneCraft/releases/tag/dev-latest). Most content has not been play-tested in game yet.
 
 ## Getting there
-* Craft a **Gielinor portal** (obsidian / ender pearl / diamond / ender pearl / obsidian, in a cross). Place it and right-click it to travel to Lumbridge. Right-click a portal in Gielinor to go back.
+* Craft a **Gielinor portal**: obsidian in the corners, ender pearls on the edges, a diamond in the centre. Place it and right-click it to travel to Lumbridge. Right-click a portal in Gielinor to go back.
 * Ops can also use `/rc gielinor`.
 * Press **K** for the RuneScape interface: Combat, Skills, Quests, Prayer, Magic, Gear and the Collection log.
 
