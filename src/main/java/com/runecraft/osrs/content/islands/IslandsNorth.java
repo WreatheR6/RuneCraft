@@ -50,7 +50,7 @@ final class IslandsNorth {
         b.tTower(2485, 3876, 3, 9, w, ANDESITE);
         b.tTower(2504, 3876, 3, 9, w, ANDESITE);
         b.tFloor(2494, 3855, 2495, 3863, COBBLE);
-        b.tBuilding(2489, 3864, 2500, 3873, 3, w, "minecraft:spruce_planks", "minecraft:deepslate_tile", "south", true);
+        building(b, 2489, 3864, 2500, 3873, 3, w, "minecraft:spruce_planks", "minecraft:deepslate_tile", "south", true);
         // Throne room, the royal ledger and the workforce board (kingdom management).
         b.tFill(2493, 3870, 2496, 3872, -1, -1, "minecraft:red_wool");
         b.tSet(2494, 3872, 0, "minecraft:gold_block");
@@ -60,8 +60,8 @@ final class IslandsNorth {
         b.tFill(2493, 3872, 2496, 3872, 2, 2, "minecraft:blue_wool");
         // The village: longhall, houses, the maples, coal rocks, the flax and herb fields.
         longhall(b, 2513, 3863, 2523, 3870, "south");
-        b.tBuilding(2527, 3863, 2533, 3868, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "south", true);
-        b.tBuilding(2537, 3865, 2543, 3870, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "west", true);
+        building(b, 2527, 3863, 2533, 3868, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "south", true);
+        building(b, 2537, 3865, 2543, 3870, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "west", true);
         b.tFloor(2511, 3861, 2548, 3861, PATH);
         field(b, 2514, 3875, 2524, 3879, "minecraft:cornflower");
         field(b, 2526, 3875, 2530, 3879, "minecraft:fern");
@@ -100,12 +100,12 @@ final class IslandsNorth {
         b.tTower(2628, 3890, 3, 9, w, ANDESITE);
         b.tFloor(2618, 3866, 2619, 3876, COBBLE);
         // Queen Sigrid's keep with the castle kitchen.
-        b.tBuilding(2613, 3877, 2625, 3887, 2, w, "minecraft:spruce_planks", "minecraft:deepslate_tile", "south", true);
+        building(b, 2613, 3877, 2625, 3887, 2, w, "minecraft:spruce_planks", "minecraft:deepslate_tile", "south", true);
         b.tFill(2617, 3884, 2620, 3886, -1, -1, "minecraft:purple_wool");
         b.tSet(2618, 3886, 0, "minecraft:gold_block");
         b.tSet(2624, 3879, 0, rc("cooking_range"));
         // The village general store.
-        b.tBuilding(2604, 3879, 2608, 3885, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "east", true);
+        building(b, 2604, 3879, 2608, 3885, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "east", true);
         b.tSet(2605, 3882, 0, rc("general_store"));
         for (int[] t : new int[][]{{2606, 3869}, {2631, 3868}, {2631, 3893}, {2606, 3892}}) {
             tree(b, t[0], t[1], "minecraft:oak_log", OAK_LEAVES, 6);
@@ -122,10 +122,10 @@ final class IslandsNorth {
         b.tFlatten(2072, 3930, 2104, 3942, GRASS);
         String wall = "minecraft:calcite";
         String roof = "minecraft:purple_terracotta";
-        b.tBuilding(2108, 3920, 2114, 3925, 1, wall, "minecraft:smooth_stone", roof, "south", false);
-        b.tBuilding(2118, 3918, 2125, 3925, 1, wall, "minecraft:smooth_stone", roof, "south", false);
-        b.tBuilding(2110, 3898, 2116, 3905, 1, wall, "minecraft:smooth_stone", roof, "north", false);
-        b.tBuilding(2120, 3900, 2127, 3907, 1, wall, "minecraft:smooth_stone", roof, "west", false);
+        building(b, 2108, 3920, 2114, 3925, 1, wall, "minecraft:smooth_stone", roof, "south", false);
+        building(b, 2118, 3918, 2125, 3925, 1, wall, "minecraft:smooth_stone", roof, "south", false);
+        building(b, 2110, 3898, 2116, 3905, 1, wall, "minecraft:smooth_stone", roof, "north", false);
+        building(b, 2120, 3900, 2127, 3907, 1, wall, "minecraft:smooth_stone", roof, "west", false);
         b.tSet(2112, 3901, 0, rc("general_store"));
         b.tSet(2124, 3904, 0, rc("cooking_range"));
         b.tSet(2121, 3922, 0, "minecraft:enchanting_table");
@@ -155,7 +155,7 @@ final class IslandsNorth {
         b.fill((x1 + x2) / 2, g, z2, (x1 + x2) / 2, g + 2, z2, "minecraft:stripped_birch_log");
         b.fill((x1 + x2) / 2, g, z2 + 1, (x1 + x2) / 2, g + 3, z2 + 1, "minecraft:ladder[facing=south]");
         b.set(x1 + 2, g + 4, z1 + 2, "minecraft:cauldron");
-        b.tBuilding(2076, 3933, 2082, 3939, 1, wall, "minecraft:smooth_stone", roof, "south", false);
+        building(b, 2076, 3933, 2082, 3939, 1, wall, "minecraft:smooth_stone", roof, "south", false);
         for (int[] t : new int[][]{{2074, 3941}, {2085, 3941}, {2100, 3934}, {2130, 3926}, {2132, 3896}, {2107, 3896}}) {
             tree(b, t[0], t[1], "minecraft:spruce_log", SPRUCE_LEAVES, 7);
         }
@@ -198,7 +198,7 @@ final class IslandsNorth {
         longhall(b, 2313, 3786, 2321, 3793, "east");
         longhall(b, 2350, 3786, 2358, 3793, "west");
         longhall(b, 2352, 3800, 2360, 3807, "west");
-        b.tBuilding(2344, 3789, 2348, 3795, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "north", true);
+        building(b, 2344, 3789, 2348, 3795, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "north", true);
         b.tSet(2346, 3791, 0, rc("tanning_rack"));
         b.tFill(2336, 3790, 2337, 3791, -1, -1, "minecraft:water");
         b.tFill(2335, 3789, 2338, 3792, 0, 0, "minecraft:cobblestone_wall");
@@ -242,10 +242,10 @@ final class IslandsNorth {
         b.tFill(2416, 3794, 2416, 3800, -1, -1, "minecraft:red_carpet");
         b.tSet(2422, 3797, 0, rc("cooking_range"));
         // The taxed shops: ore (Hring Hring), fish (Flosi), weapons (Raum) and armour (Skuli).
-        b.tBuilding(2400, 3787, 2406, 3792, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "north", true);
-        b.tBuilding(2427, 3787, 2432, 3792, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "north", true);
-        b.tBuilding(2400, 3809, 2406, 3814, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "south", true);
-        b.tBuilding(2427, 3807, 2432, 3812, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "south", true);
+        building(b, 2400, 3787, 2406, 3792, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "north", true);
+        building(b, 2427, 3787, 2432, 3792, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "north", true);
+        building(b, 2400, 3809, 2406, 3814, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "south", true);
+        building(b, 2427, 3807, 2432, 3812, 1, SPRUCE_LOG, SPRUCE, "minecraft:spruce", "south", true);
         b.tSet(2403, 3789, 0, rc("anvil"));
         b.tSet(2404, 3811, 0, rc("weapon_shop"));
         b.tFloor(2397, 3804, 2433, 3805, COBBLE);
@@ -296,10 +296,10 @@ final class IslandsNorth {
         b.tFlatten(2196, 3794, 2228, 3822, SAND);
         b.tFloor(2198, 3804, 2226, 3806, PATH);
         // The pirate bank and the tavern.
-        b.tBuilding(2214, 3808, 2222, 3814, 1, "minecraft:dark_oak_planks", OAK, "minecraft:dark_oak", "south", true);
+        building(b, 2214, 3808, 2222, 3814, 1, "minecraft:dark_oak_planks", OAK, "minecraft:dark_oak", "south", true);
         b.tSet(2216, 3812, 0, rc("bank_booth"));
         b.tSet(2218, 3812, 0, rc("bank_booth"));
-        b.tBuilding(2200, 3808, 2208, 3816, 1, "minecraft:dark_oak_planks", OAK, "minecraft:dark_oak", "south", true);
+        building(b, 2200, 3808, 2208, 3816, 1, "minecraft:dark_oak_planks", OAK, "minecraft:dark_oak", "south", true);
         b.tSet(2202, 3814, 0, rc("cooking_range"));
         b.tSet(2206, 3814, 0, "minecraft:barrel");
         b.tSet(2205, 3814, 0, "minecraft:barrel");

@@ -749,12 +749,13 @@ public final class EasternDetail {
         set(tx, y + 1, tz, leaf);
         for (int[] dir : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
             fill(tx + dir[0], y, tz + dir[1], tx + 2 * dir[0], y, tz + 2 * dir[1], leaf);
+            // (reach stays within 4 blocks of the root, like the plain palm)
             set(tx + 3 * dir[0], y - 1, tz + 3 * dir[1], leaf);
-            set(tx + 4 * dir[0], y - 2, tz + 4 * dir[1], leaf);
+            set(tx + 3 * dir[0], y - 2, tz + 3 * dir[1], leaf);
         }
         for (int[] dir : new int[][]{{1, 1}, {-1, 1}, {1, -1}, {-1, -1}}) {
             set(tx + dir[0], y, tz + dir[1], leaf);
-            set(tx + 2 * dir[0], y - 1, tz + 2 * dir[1], leaf);
+            set(tx + dir[0], y - 1, tz + dir[1], leaf);
         }
         set(tx, y - 1, tz + 1, "minecraft:cocoa[age=2,facing=north]");
         set(tx + 1, y - 1, tz, "minecraft:cocoa[age=2,facing=west]");

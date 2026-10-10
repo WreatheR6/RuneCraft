@@ -1,11 +1,14 @@
 package com.runecraft.osrs.content.islands;
 
+import com.runecraft.osrs.content.world.EasternDetail;
 import com.runecraft.osrs.world.StructureDef;
 import com.runecraft.osrs.world.StructureDef.Builder;
 
 import java.util.List;
 
 import static com.runecraft.osrs.content.islands.IslandsKit.*;
+import static com.runecraft.osrs.world.StructureDef.bx;
+import static com.runecraft.osrs.world.StructureDef.bz;
 
 /**
  * Ape Atoll: the walled monkey city of Marim with its two Monkey Madness gates (west and south),
@@ -52,7 +55,7 @@ final class IslandsApeAtoll {
         b.tFloor(2728, 2785, 2751, 2787, PATH);
         b.tFloor(2761, 2760, 2763, 2772, PATH);
         // King Awowogei's palace in the west quarter: a great hall of jungle wood with a throne.
-        b.tBuilding(2731, 2765, 2750, 2781, 2, "minecraft:jungle_planks", "minecraft:mud_bricks", "minecraft:jungle", "east", true);
+        building(b, 2731, 2765, 2750, 2781, 2, "minecraft:jungle_planks", "minecraft:mud_bricks", "minecraft:jungle", "east", true);
         b.tFill(2733, 2772, 2735, 2774, -1, -1, "minecraft:red_wool");
         b.tSet(2734, 2773, 0, "minecraft:gold_block");
         b.tSet(2734, 2773, 1, "minecraft:jungle_stairs[facing=east]");
@@ -75,6 +78,29 @@ final class IslandsApeAtoll {
             palm(b, p[0], p[1], 6);
         }
         b.tFloor(2752, 2789, 2753, 2812, PATH);
+        // Jungle in the town: bamboo clumps and ferns along the walls, monkey idols at the gates, banana
+        // crates by the huts, and the palace hung with red and gold.
+        EasternDetail md = new EasternDetail(b);
+        int g = b.ground();
+        for (int[] c : new int[][]{{2729, 2800}, {2736, 2812}, {2746, 2812}, {2766, 2812}, {2729, 2763}, {2747, 2761}, {2774, 2800}}) {
+            b.tSet(c[0], c[1], 0, "minecraft:bamboo[age=1,leaves=large,stage=0]");
+            b.tSet(c[0], c[1], 1, "minecraft:bamboo[age=1,leaves=large,stage=0]");
+            b.tSet(c[0], c[1], 2, "minecraft:bamboo[age=1,leaves=large,stage=0]");
+            md.bush(bx(c[0]) + 1, bz(c[1]) + 1, "minecraft:jungle_leaves");
+        }
+        for (int[] idol : new int[][]{{2725, 2781}, {2725, 2791}}) {
+            b.tFill(idol[0], idol[1], idol[0], idol[1], 0, 1, "minecraft:mossy_cobblestone");
+            b.tSet(idol[0], idol[1], 2, "minecraft:gold_block");
+            b.tSet(idol[0], idol[1], 3, "minecraft:carved_pumpkin[facing=west]");
+        }
+        md.overgrowth(bx(2728), bz(2812), bx(2775), bz(2794), 50, 2701);
+        for (int[] cr : new int[][]{{2738, 2797}, {2755, 2807}, {2764, 2798}}) {
+            b.tSet(cr[0], cr[1], 0, "minecraft:hay_block");
+            b.set(bx(cr[0]) + 1, g, bz(cr[1]), "minecraft:barrel[facing=up]");
+        }
+        for (int tx = 2733; tx <= 2748; tx += 5) {
+            b.set(bx(tx), g + 6, bz(2765) + 2, "minecraft:red_wall_banner[facing=south]");
+        }
         return b.build();
     }
 
@@ -120,6 +146,18 @@ final class IslandsApeAtoll {
         torchPost(b, 2781, 2801, "minecraft:mossy_cobblestone_wall");
         b.tSet(2786, 2794, 6, "minecraft:skeleton_skull");
         b.tSet(2790, 2802, 6, "minecraft:skeleton_skull");
+        // Crumbling, overgrown tiers: moss and cracks in the stone, jungle creeping over the steps, braziers.
+        EasternDetail td = new EasternDetail(b);
+        int g = b.ground();
+        int[] tq = {bx(2782), bz(2806), bx(2794) + 1, bz(2790) + 1};
+        td.weather(tq[0], g, tq[1], tq[2], g + 9, tq[3], MOSSY_STONE, CRACKED, 30, 2801);
+        td.weather(tq[0], g, tq[1], tq[2], g + 9, tq[3], MOSSY_STONE, "minecraft:moss_block", 15, 2802);
+        for (int[] c : new int[][]{{2782, 2790}, {2794, 2790}, {2782, 2806}, {2794, 2806}}) {
+            b.tSet(c[0], c[1], 2, "minecraft:jungle_leaves[persistent=true]");
+            b.tSet(c[0], c[1], 3, "minecraft:jungle_leaves[persistent=true]");
+        }
+        b.tSet(2786, 2797, 6, "minecraft:soul_campfire");
+        b.tSet(2786, 2799, 6, "minecraft:soul_campfire");
         return b.build();
     }
 
