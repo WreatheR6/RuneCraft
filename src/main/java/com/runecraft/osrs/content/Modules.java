@@ -3,6 +3,7 @@ package com.runecraft.osrs.content;
 import com.runecraft.osrs.content.bosses.BossesContent;
 import com.runecraft.osrs.content.godwars.GodWarsWildernessContent;
 import com.runecraft.osrs.content.minigames.MinigamesContent;
+import com.runecraft.osrs.content.npcs.NpcsContent;
 import com.runecraft.osrs.content.quests.QuestsContent;
 import com.runecraft.osrs.content.raids.RaidsContent;
 import com.runecraft.osrs.content.skilling.SkillingContent;
@@ -23,7 +24,8 @@ public final class Modules {
             new QuestsContent(),
             new SystemsContent(),
             new MinigamesContent(),
-            new WorldContent());
+            new WorldContent(),
+            new NpcsContent());
 
     private Modules() {
     }
