@@ -73,9 +73,6 @@ final class Fallbacks {
         if (has(key, "spiritual")) {
             return spiritual(id, s, h);
         }
-        if (id.equals("catacomb_abyssal_demon")) {
-            return Slayers.abyssalDemon(id);
-        }
         if (has(key, "dagannoth", "wallasalki")) {
             return Slayers.dagannoth(id, s[0], s[3]);
         }
@@ -132,12 +129,6 @@ final class Fallbacks {
         }
         if (has(key, "basilisk")) {
             return Slayers.basilisk(id);
-        }
-        if (id.equals("abyssal_guardian")) {
-            return Creatures.demon(id, s[0], s[1], s[3], 1.0f, false);
-        }
-        if (id.equals("abyssal_walker")) {
-            return beast(id, s, h);
         }
         if (has(key, "moss_guardian", "moss guardian")) {
             ModelSpec.Builder b = Humanoid.of(id).scale(h).giantBody().skin(s[0]).skinMaterial("moss").hair(0, "none").top(s[0], "skin")
