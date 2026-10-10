@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/dng_jungle_vines_side",
+    "top": "runecraft:block/module/dng_jungle_vines_top",
+    "bottom": "runecraft:block/module/dng_jungle_vines_bottom"
+  }
+}

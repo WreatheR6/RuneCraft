@@ -66,7 +66,7 @@ public final class IslandsTravel {
                     IslandsStructures.VALLEY_TREE_DZ, true),
             new Stop("STICKY_SWAMP", "Sticky swamp", IslandsPlaces.MUSHROOM_FOREST, IslandsStructures.FOREST_TREE_DX,
                     IslandsStructures.FOREST_TREE_DZ, true),
-            new Stop("MUSHROOM_MEADOW", "Mushroom Meadow", IslandsPlaces.WYVERN_CAVE, IslandsStructures.MEADOW_TREE_DX,
+            new Stop("MUSHROOM_MEADOW", "Mushroom Meadow", IslandsPlaces.MUSHROOM_MEADOW, IslandsStructures.MEADOW_TREE_DX,
                     IslandsStructures.MEADOW_TREE_DZ, true)));
 
     public static List<Network> networks() {

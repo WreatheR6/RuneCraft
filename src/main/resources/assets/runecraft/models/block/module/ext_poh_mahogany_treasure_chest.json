@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/ext_poh_mahogany_treasure_chest_side",
+    "top": "runecraft:block/module/ext_poh_mahogany_treasure_chest_top",
+    "bottom": "runecraft:block/module/ext_poh_mahogany_treasure_chest_bottom"
+  }
+}

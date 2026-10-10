@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/ext_poh_bench_with_lathe_side",
+    "top": "runecraft:block/module/ext_poh_bench_with_lathe_top",
+    "bottom": "runecraft:block/module/ext_poh_bench_with_lathe_bottom"
+  }
+}

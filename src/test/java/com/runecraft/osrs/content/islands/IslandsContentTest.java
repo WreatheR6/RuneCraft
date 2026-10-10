@@ -189,8 +189,9 @@ class IslandsContentTest {
     }
 
     @Test
-    void caveCampsLieInsideTheirCarvedCaves() {
-        List<StructureDef> all = IslandsStructures.all();
+    void caveCampsLieInsideCarvedCaves() {
+        // Ours (the Corsair Cove Dungeon) or the dungeons module's (the Wyvern Cave).
+        List<StructureDef> all = ContentRegistry.structures();
         int caves = 0;
         for (IslandsPlaces.Camp camp : IslandsPlaces.camps()) {
             if (camp.surface()) {
@@ -212,7 +213,7 @@ class IslandsContentTest {
             }
             assertTrue(covered, camp.place() + " camp must lie inside a carved cave: " + cx + "," + cz + " r" + camp.radius());
         }
-        assertEquals(4, caves);
+        assertEquals(2, caves);
     }
 
     // ------------------------------------------------------------------ structures
@@ -258,7 +259,24 @@ class IslandsContentTest {
         for (ContentModule m : Modules.ALL) {
             if (!m.id().equals("islands")) {
                 for (StructureDef s : m.structures()) {
-                    zones.add(new Zone(s.id() + " structure", s.minX(), s.minZ(), s.maxX(), s.maxZ()));
+                    // Only what reaches the surface: dungeons' caves lie far below.
+                    int x1 = Integer.MAX_VALUE;
+                    int z1 = Integer.MAX_VALUE;
+                    int x2 = Integer.MIN_VALUE;
+                    int z2 = Integer.MIN_VALUE;
+                    for (StructureDef.Op op : s.ops()) {
+                        if (underground(op)) {
+                            continue;
+                        }
+                        int mg = op.margin();
+                        x1 = Math.min(x1, op.x1() - mg);
+                        z1 = Math.min(z1, op.z1() - mg);
+                        x2 = Math.max(x2, op.x2() + mg);
+                        z2 = Math.max(z2, op.z2() + mg);
+                    }
+                    if (x1 <= x2) {
+                        zones.add(new Zone(s.id() + " structure", x1, z1, x2, z2));
+                    }
                 }
             }
         }

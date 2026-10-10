@@ -12,8 +12,7 @@ import static com.runecraft.osrs.content.islands.IslandsKit.*;
  * the maples, coal rocks, flax and fishing jetty, fairy ring CIP and the ferry dock) and Etceteria
  * (Queen Sigrid's castle); Lunar Isle's Moonclan village, Baba Yaga's house, the dock and the mine;
  * Neitiznot (the Burgher's longhall, the yak pen) and Jatizso (walled town, King Gjuki's tower) with
- * the rope bridge between them; Waterbirth Island; Pirates' Cove; Ungael; and Lithkren with the
- * Lithkren Vault beneath it.
+ * the rope bridge between them; Waterbirth Island; Pirates' Cove; Ungael; and Lithkren's ruins.
  *
  * <p>Left alone: the Miscellania dungeon and the giant sea snake's arena, Etceteria's patches, the
  * Lunar Isle altar plaza (systems), the dream world arenas and the Astral Altar, Neitiznot's arctic
@@ -337,19 +336,21 @@ final class IslandsNorth {
         return b.build();
     }
 
-    /** Lithkren: the ruined dragonkin research facility, Dallas Jones' dig tent and the Vault entrance. */
+    /**
+     * Lithkren: the ruined dragonkin research facility and Dallas Jones' dig tent, west and north of the
+     * Lithkren Vault's entrance hut (the vault is the dungeons module's and is left alone).
+     */
     static StructureDef lithkren() {
         Builder b = StructureDef.builder("isl_lithkren", "Lithkren").replaces(IslandsPlaces.LITHKREN);
-        b.tFlatten(3536, 3984, 3566, 4010, "minecraft:coarse_dirt");
-        ruins(b, 3538, 3998, 3547, 4008, 6, "minecraft:deepslate_tiles", "minecraft:cobbled_deepslate");
-        ruins(b, 3555, 3999, 3564, 4008, 5, "minecraft:deepslate_tiles", "minecraft:cobbled_deepslate");
-        int[] e = IslandsStructures.LITHKREN_VAULT_ENTRANCE;
-        cave(b, e[0], e[1], IslandsStructures.LITHKREN_VAULT_HALF, IslandsStructures.LITHKREN_VAULT_HALF,
-                "minecraft:deepslate_tiles", "minecraft:polished_deepslate");
-        tent(b, 3556, 3986, 3561, 3990, "minecraft:brown_wool");
-        b.tSet(3540, 3988, 0, "minecraft:dragon_head");
-        b.tSet(3543, 3990, 0, "minecraft:bone_block");
-        pier(b, 3548, 3976, 3551, 3983, SPRUCE);
+        b.tFlatten(3528, 3988, 3545, 4014, "minecraft:coarse_dirt");
+        b.tFlatten(3546, 4004, 3566, 4014, "minecraft:coarse_dirt");
+        ruins(b, 3530, 4000, 3540, 4010, 6, "minecraft:deepslate_tiles", "minecraft:cobbled_deepslate");
+        ruins(b, 3550, 4006, 3562, 4013, 5, "minecraft:deepslate_tiles", "minecraft:cobbled_deepslate");
+        tent(b, 3533, 3990, 3538, 3994, "minecraft:brown_wool");
+        b.tSet(3543, 3992, 0, "minecraft:dragon_head");
+        b.tSet(3542, 3996, 0, "minecraft:bone_block");
+        b.tSet(3564, 4005, 0, "minecraft:dragon_head");
+        pier(b, 3534, 3980, 3537, 3987, SPRUCE);
         return b.build();
     }
 }

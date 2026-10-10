@@ -8,7 +8,7 @@ import java.util.List;
 import static com.runecraft.osrs.content.islands.IslandsKit.*;
 
 /**
- * Mos Le'Harmless (the pirate town, its dock and the cave horrors' caves), Harmony Island's
+ * Mos Le'Harmless (the pirate town and its dock; its caves are the dungeons module's), Harmony Island's
  * monastery, Dragontooth Island, Tutorial Island, Mudskipper Point with fairy ring AIQ, and Zanaris
  * with the fairy ring centre. The Trouble Brewing brewery, Barrelchest's arena on Harmony Island and
  * the Wizards' Tower, Tanglefoot's and the Temple of the Eye's areas north of Tutorial Island are left
@@ -19,7 +19,7 @@ final class IslandsEast {
     }
 
     static List<StructureDef> all() {
-        return List.of(mosLeHarmless(), mosCaves(), harmonyIsland(), dragontooth(), tutorialIsland(), mudskipperPoint(), zanaris());
+        return List.of(mosLeHarmless(), harmonyIsland(), dragontooth(), tutorialIsland(), mudskipperPoint(), zanaris());
     }
 
     private static final String SHACK = "minecraft:dark_oak_planks";
@@ -49,18 +49,6 @@ final class IslandsEast {
             palm(b, p[0], p[1], 6);
         }
         lamp(b, 3682, 2963, "minecraft:dark_oak_fence");
-        return b.build();
-    }
-
-    static StructureDef mosCaves() {
-        Builder b = StructureDef.builder("isl_mos_le_harmless_caves", "Mos Le'Harmless Caves").replaces(IslandsPlaces.MOS_LE_HARMLESS_CAVES);
-        b.tFlatten(3738, 2961, 3758, 2986, "minecraft:podzol");
-        int[] e = IslandsStructures.MOS_CAVE_ENTRANCE;
-        cave(b, e[0], e[1], IslandsStructures.MOS_CAVE_HALF, IslandsStructures.MOS_CAVE_HALF, MOSSY, "minecraft:moss_block");
-        for (int[] t : new int[][]{{3740, 2964}, {3756, 2963}, {3741, 2983}, {3756, 2984}, {3752, 2976}}) {
-            tree(b, t[0], t[1], JUNGLE_LOG, "minecraft:jungle_leaves[persistent=true]", 7);
-        }
-        b.tSet(3745, 2966, 0, "minecraft:skeleton_skull");
         return b.build();
     }
 

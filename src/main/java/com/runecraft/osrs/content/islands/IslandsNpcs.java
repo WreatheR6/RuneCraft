@@ -167,9 +167,9 @@ public final class IslandsNpcs {
         npc(out, "isl_patchy", "Patchy", P, 6, -6, TAN, 0x5A5A3A, 0x3A3A2A, 0x1A1A1A,
                 "I sew things together. Pirate hats onto eyepatches, mostly.",
                 "The caves east of town are full of cave horrors. Wear a witchwood icon or they'll scream you to death.");
-        P = IslandsPlaces.MOS_LE_HARMLESS_CAVES;
-        npc(out, "isl_mos_cave_pirate", "Old pirate", P, -6, 6, TAN, 0x5A3A2A, 0x3A2A1A, 0x6A2A2A,
-                "Cave horrors below. Level 58 Slayer, and a witchwood icon round yer neck.",
+        P = IslandsPlaces.MOS_LE_HARMLESS_JUNGLE;
+        npc(out, "isl_mos_cave_pirate", "Old pirate", P, 4, 4, TAN, 0x5A3A2A, 0x3A2A1A, 0x6A2A2A,
+                "The caves east of here are full of cave horrors. Level 58 Slayer, and a witchwood icon round yer neck.",
                 "They drop black masks now and then. Worth a fortune to a slayer.");
         // ---- Dragontooth Island ----
         P = IslandsPlaces.DRAGONTOOTH_ISLAND;

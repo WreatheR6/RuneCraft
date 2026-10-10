@@ -29,7 +29,7 @@ public final class IslandsPlaces {
     public static final String HOUSE_ON_THE_HILL = "isl_house_on_the_hill";
     public static final String VOLCANIC_MINE = "isl_volcanic_mine";
     public static final String MUSHROOM_FOREST = "isl_mushroom_forest";
-    public static final String WYVERN_CAVE = "isl_wyvern_cave";
+    public static final String MUSHROOM_MEADOW = "isl_mushroom_meadow";
     public static final String FOSSIL_NORTH_COAST = "isl_fossil_north_coast";
     // ---- Ape Atoll ----
     public static final String APE_ATOLL_AGILITY = "isl_ape_atoll_agility";
@@ -40,7 +40,6 @@ public final class IslandsPlaces {
     public static final String PIRATES_COVE = "isl_pirates_cove";
     public static final String LITHKREN = "isl_lithkren";
     // ---- Morytania seas ----
-    public static final String MOS_LE_HARMLESS_CAVES = "isl_mos_le_harmless_caves";
     public static final String MOS_LE_HARMLESS_JUNGLE = "isl_mos_le_harmless_jungle";
     public static final String DRAGONTOOTH_ISLAND = "isl_dragontooth_island";
     // ---- Misthalin / Asgarnia coast ----
@@ -87,8 +86,9 @@ public final class IslandsPlaces {
                 PlaceDef.of(VOLCANIC_MINE, "Volcanic Mine", 3815, 3808, Style.CAVE, List.of()),
                 // The Mushroom forest (sticky swamp, tar swamp and its Magic Mushtree), approx.
                 PlaceDef.of(MUSHROOM_FOREST, "Mushroom forest", 3695, 3792, Style.CAMP, List.of(IslandsBlocks.MUSHTREE)),
-                // Entrance to the Fossil Island Wyvern Cave (spitting, taloned, long-tailed and ancient wyverns), approx.
-                PlaceDef.of(WYVERN_CAVE, "Wyvern Cave", 3677, 3854, Style.CAVE, List.of(IslandsBlocks.MUSHTREE)),
+                // Mushroom Meadow's Magic Mushtree, just north of the Wyvern Cave entrance (the cave itself is the
+                // dungeons module's), approx.
+                PlaceDef.of(MUSHROOM_MEADOW, "Mushroom Meadow", 3672, 3865, Style.CAMP, List.of(IslandsBlocks.MUSHTREE)),
                 PlaceDef.of(FOSSIL_NORTH_COAST, "Fossil Island north coast", 3726, 3889, Style.NONE, List.of()),
                 // Ape Atoll Agility Course (south of Marim).
                 PlaceDef.of(APE_ATOLL_AGILITY, "Ape Atoll Agility Course", 2758, 2744, Style.CAMP, List.of(IslandsBlocks.FAIRY_RING)),
@@ -99,10 +99,10 @@ public final class IslandsPlaces {
                 PlaceDef.of(LUNAR_SUQAH_HILLS, "Lunar Isle suqah hills", 2128, 3870, Style.NONE, List.of()),
                 // Pirates' Cove: Lokar Searunner's ship and the pirate bank.
                 PlaceDef.town(PIRATES_COVE, "Pirates' Cove", 2212, 3808, Station.BANK_BOOTH, Station.RANGE),
-                // Lithkren: the dragonkin research facility ruins and the Lithkren Vault (approx.).
-                PlaceDef.of(LITHKREN, "Lithkren", 3550, 3998, Style.RUINS, List.of()),
-                // Mos Le'Harmless caves (cave horrors) entrance and the island's jungle.
-                PlaceDef.of(MOS_LE_HARMLESS_CAVES, "Mos Le'Harmless Caves", 3748, 2973, Style.CAVE, List.of()),
+                // Lithkren: the dragonkin research facility ruins west and north of the Lithkren Vault's entrance
+                // (the vault is the dungeons module's), approx.
+                PlaceDef.of(LITHKREN, "Lithkren", 3540, 4004, Style.RUINS, List.of()),
+                // The jungle of Mos Le'Harmless (the caves beneath it are the dungeons module's).
                 PlaceDef.of(MOS_LE_HARMLESS_JUNGLE, "Mos Le'Harmless jungle", 3720, 2996, Style.NONE, List.of()),
                 // Dragontooth Island (Ghosts Ahoy), east of Port Phasmatys.
                 PlaceDef.of(DRAGONTOOTH_ISLAND, "Dragontooth Island", 3806, 3557, Style.RUINS, List.of()),
@@ -140,16 +140,16 @@ public final class IslandsPlaces {
         int cave = IslandsKit.CAVE_FLOOR_Y + 1;
         return List.of(
                 new Camp(FOSSIL_NORTH_COAST, 0, 0, 12, 5, SURFACE, List.of("ammonite_crab")),
-                new Camp(WYVERN_CAVE, IslandsStructures.WYVERN_CAVE_DX, IslandsStructures.WYVERN_CAVE_DZ, 14, 6, cave,
-                        List.of("spitting_wyvern", "taloned_wyvern", "long_tailed_wyvern", "ancient_wyvern")),
+                // The long-tailed and ancient wyverns, in the dungeons module's Wyvern Cave (which keeps its own
+                // spitting and taloned wyverns).
+                new Camp(MUSHROOM_MEADOW, IslandsStructures.WYVERN_CAMP_DX, IslandsStructures.WYVERN_CAMP_DZ, 16, 4,
+                        IslandsStructures.WYVERN_CAVE_FLOOR_Y, List.of("long_tailed_wyvern", "ancient_wyvern")),
                 new Camp(APE_ATOLL, -54, -8, 8, 4, SURFACE, List.of("monkey_guard", "monkey_guard", "monkey_archer")),
                 new Camp(APE_ATOLL_TEMPLE, -8, 0, 8, 3, SURFACE, List.of("monkey_zombie")),
                 new Camp(LUNAR_SUQAH_HILLS, 0, 0, 14, 5, SURFACE, List.of("suqah")),
                 new Camp(NEITIZNOT, 30, -40, 12, 6, SURFACE, List.of("yak")),
                 new Camp(JATIZSO, -10, -64, 10, 4, SURFACE, List.of("ice_troll")),
                 new Camp(WATERBIRTH, -40, -10, 14, 6, SURFACE, List.of("dagannoth", "wallasalki", "rock_lobster")),
-                new Camp(MOS_LE_HARMLESS_CAVES, IslandsStructures.MOS_CAVE_DX, IslandsStructures.MOS_CAVE_DZ, 12, 5, cave,
-                        List.of("cave_horror")),
                 new Camp(MOS_LE_HARMLESS_JUNGLE, 0, 0, 14, 4, SURFACE, List.of("jungle_horror")),
                 new Camp(DRAGONTOOTH_ISLAND, 0, 0, 12, 3, SURFACE, List.of("ghost")),
                 new Camp(CRANDOR, -30, -60, 16, 5, SURFACE, List.of("lesser_demon", "moss_giant", "moss_giant")),
@@ -158,8 +158,6 @@ public final class IslandsPlaces {
                 new Camp(CORSAIR_COVE, IslandsStructures.CORSAIR_DUNGEON_DX, IslandsStructures.CORSAIR_DUNGEON_DZ, 12, 5, cave,
                         List.of("ogress_warrior", "ogress_shaman")),
                 new Camp(MUDSKIPPER_POINT, 0, 6, 10, 4, SURFACE, List.of("mudskipper")),
-                new Camp(LITHKREN, IslandsStructures.LITHKREN_VAULT_DX, IslandsStructures.LITHKREN_VAULT_DZ, 12, 3, cave,
-                        List.of("adamant_dragon", "rune_dragon")),
                 new Camp(BRAINDEATH_ISLAND, 20, -6, 6, 4, SURFACE, List.of("fever_spider", "pirate")),
                 new Camp(ZANARIS, 0, 40, 12, 3, SURFACE, List.of("mutated_zygomite")));
     }

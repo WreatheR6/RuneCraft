@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/ext_poh_rope_bell_pull_side",
+    "top": "runecraft:block/module/ext_poh_rope_bell_pull_top",
+    "bottom": "runecraft:block/module/ext_poh_rope_bell_pull_bottom"
+  }
+}

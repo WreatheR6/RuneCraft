@@ -25,7 +25,7 @@ import static com.runecraft.osrs.content.islands.IslandsKit.dz;
 
 /**
  * Hand-built islands at their real tile coordinates: Fossil Island (Museum Camp, House on the Hill,
- * Volcanic Mine, Mushroom forest, Verdant Valley, Wyvern Cave), Ape Atoll (Marim's walls and gates,
+ * Volcanic Mine, Mushroom forest, Verdant Valley, Mushroom Meadow), Ape Atoll (Marim's walls and gates,
  * King Awowogei's palace, the market, the temple and the agility course), Miscellania and Etceteria,
  * Lunar Isle's Moonclan village and mine, Neitiznot and Jatizso, Waterbirth Island, Pirates' Cove,
  * Ungael, Lithkren, Mos Le'Harmless, Harmony Island, Dragontooth Island, Tutorial Island, Mudskipper
@@ -53,7 +53,7 @@ public final class IslandsStructures {
     static final int[] HOUSE_TREE = {3755, 3862};
     static final int[] VALLEY_TREE = {3756, 3762};
     static final int[] FOREST_TREE = {3701, 3797};
-    static final int[] MEADOW_TREE = {3671, 3859};
+    static final int[] MEADOW_TREE = {3667, 3866};
 
     public static final int ZANARIS_RING_DX = dx(ZANARIS_RING[0], 2412);
     public static final int ZANARIS_RING_DZ = dz(ZANARIS_RING[1], 4434);
@@ -75,25 +75,21 @@ public final class IslandsStructures {
     public static final int VALLEY_TREE_DZ = dz(VALLEY_TREE[1], 3756);
     public static final int FOREST_TREE_DX = dx(FOREST_TREE[0], 3695);
     public static final int FOREST_TREE_DZ = dz(FOREST_TREE[1], 3792);
-    public static final int MEADOW_TREE_DX = dx(MEADOW_TREE[0], 3677);
-    public static final int MEADOW_TREE_DZ = dz(MEADOW_TREE[1], 3854);
+    public static final int MEADOW_TREE_DX = dx(MEADOW_TREE[0], 3672);
+    public static final int MEADOW_TREE_DZ = dz(MEADOW_TREE[1], 3865);
 
-    // ---- caves carved beneath their entrances (entrance tile, room half-size in blocks) ----
-    static final int[] WYVERN_CAVE_ENTRANCE = {3677, 3846};
-    static final int WYVERN_CAVE_HALF = 16;
-    static final int[] MOS_CAVE_ENTRANCE = {3748, 2969};
-    static final int MOS_CAVE_HALF = 14;
-    static final int[] LITHKREN_VAULT_ENTRANCE = {3550, 3993};
-    static final int LITHKREN_VAULT_HALF = 14;
+    // ---- caves: the Corsair Cove Dungeon is carved here; the others belong to the dungeons module ----
     static final int[] CORSAIR_DUNGEON_ENTRANCE = {2523, 2861};
     static final int CORSAIR_DUNGEON_HALF = 14;
 
-    public static final int WYVERN_CAVE_DX = caveCentreX(WYVERN_CAVE_ENTRANCE[0]) - centreX(3677);
-    public static final int WYVERN_CAVE_DZ = caveCentreZ(WYVERN_CAVE_ENTRANCE[1], WYVERN_CAVE_HALF) - centreZ(3854);
-    public static final int MOS_CAVE_DX = caveCentreX(MOS_CAVE_ENTRANCE[0]) - centreX(3748);
-    public static final int MOS_CAVE_DZ = caveCentreZ(MOS_CAVE_ENTRANCE[1], MOS_CAVE_HALF) - centreZ(2973);
-    public static final int LITHKREN_VAULT_DX = caveCentreX(LITHKREN_VAULT_ENTRANCE[0]) - centreX(3550);
-    public static final int LITHKREN_VAULT_DZ = caveCentreZ(LITHKREN_VAULT_ENTRANCE[1], LITHKREN_VAULT_HALF) - centreZ(3998);
+    /**
+     * The dungeons module carves the Wyvern Cave (entrance tile 3677, 3854) with its spitting and taloned
+     * wyverns; this module's long-tailed and ancient wyverns live in its great southern cavern (blocks
+     * +20..+64 east, -30..+24 south of the entrance, floor y = 14).
+     */
+    public static final int WYVERN_CAVE_FLOOR_Y = 15;
+    public static final int WYVERN_CAMP_DX = StructureDef.bx(3677) + 42 - centreX(3672);
+    public static final int WYVERN_CAMP_DZ = StructureDef.bz(3854) - 3 - centreZ(3865);
     public static final int CORSAIR_DUNGEON_DX = caveCentreX(CORSAIR_DUNGEON_ENTRANCE[0]) - centreX(2570);
     public static final int CORSAIR_DUNGEON_DZ = caveCentreZ(CORSAIR_DUNGEON_ENTRANCE[1], CORSAIR_DUNGEON_HALF) - centreZ(2862);
 
@@ -191,10 +187,35 @@ public final class IslandsStructures {
                 continue;
             }
             for (StructureDef s : m.structures()) {
-                zones.add(new IslandsKit.Zone(s.id() + " structure", s.minX(), s.minZ(), s.maxX(), s.maxZ()));
+                IslandsKit.Zone z = surface(s);
+                if (z != null) {
+                    zones.add(z);
+                }
             }
         }
         return zones;
+    }
+
+    /**
+     * The footprint of a structure's surface parts (flattening with its blend ring, and everything that
+     * reaches ground level), or null if it is entirely underground (a dungeon's caves).
+     */
+    static IslandsKit.Zone surface(StructureDef s) {
+        int x1 = Integer.MAX_VALUE;
+        int z1 = Integer.MAX_VALUE;
+        int x2 = Integer.MIN_VALUE;
+        int z2 = Integer.MIN_VALUE;
+        for (StructureDef.Op op : s.ops()) {
+            if (op.type() != StructureDef.Op.Type.FLATTEN && op.y2() < StructureDef.GROUND - 1) {
+                continue;
+            }
+            int m = op.margin();
+            x1 = Math.min(x1, op.x1() - m);
+            z1 = Math.min(z1, op.z1() - m);
+            x2 = Math.max(x2, op.x2() + m);
+            z2 = Math.max(z2, op.z2() + m);
+        }
+        return x1 > x2 ? null : new IslandsKit.Zone(s.id() + " structure", x1, z1, x2, z2);
     }
 
     private static IslandsKit.Zone square(String owner, int cx, int cz, int r) {
