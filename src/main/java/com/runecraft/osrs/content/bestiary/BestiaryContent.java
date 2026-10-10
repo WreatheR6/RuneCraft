@@ -25,6 +25,17 @@ public final class BestiaryContent implements ContentModule {
         list.addAll(Beasts.all());
         list.addAll(Folk.all());
         list.addAll(Creatures.all());
+        list.addAll(Bosses.fresh());
         return list;
+    }
+
+    @Override
+    public List<ModelSpec> fallbackModels(java.util.Set<String> existingModelIds) {
+        return Fallbacks.all(existingModelIds);
+    }
+
+    @Override
+    public List<ModelSpec> modelOverrides() {
+        return Overrides.all();
     }
 }

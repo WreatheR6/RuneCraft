@@ -456,13 +456,17 @@ def m_energy(c):
 
 
 def m_lava(c):
+    """Molten rock: dark crust plates with glowing seams of the base colour between them."""
     base = col_arr(c.base, c.shape)
-    crust = cell(c.P, 1.0, c.seed) * 0.6 + cell(c.P + 0.5, 0.5, c.seed + 1) * 0.4
-    hot = tone(base, 0.25 + (fbm(c.P, 2, c.seed + 5) - 0.5) * 0.5)
-    dark = col_arr(mix_c(c.base, (30, 10, 5), 0.75), c.shape)
-    is_crust = crust < 0.42
-    col = np.where(is_crust[..., None], dark, hot)
-    glow = np.where(is_crust[..., None], 0, hot * 0.85)
+    crust_col = col_arr(mix_c(c.base, (34, 14, 8), 0.72), c.shape)
+    a = cell(c.P, 1.5, c.seed)
+    b = cell(c.P + 0.5, 0.75, c.seed + 1)
+    v = a * 0.65 + b * 0.35
+    is_crust = v < 0.58
+    hot = tone(base, 0.05 + (fbm(c.P, 2, c.seed + 5) - 0.5) * 0.3)
+    crust = tone(crust_col, (cell(c.P, 0.5, c.seed + 9) - 0.5) * 0.25)
+    col = np.where(is_crust[..., None], crust, hot)
+    glow = np.where(is_crust[..., None], 0, hot * 0.75)
     return col, glow
 
 

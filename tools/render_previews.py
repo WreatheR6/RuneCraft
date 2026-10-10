@@ -214,12 +214,12 @@ def model_cells(cat, ids):
     return cells
 
 
-MONSTERS = ["man", "woman", "goblin", "guard", "chicken", "cow", "giant_rat", "giant_spider", "imp", "dark_wizard",
+MONSTERS = ["man", "woman", "goblin", "guard", "chicken", "cow", "giant_rat", "giant_spider", "gwd_imp", "dark_wizard",
             "barbarian", "al_kharid_warrior", "hill_giant", "moss_giant", "ice_giant", "skeleton", "zombie", "ghost",
             "lesser_demon", "greater_demon", "black_demon", "hellhound", "green_dragon", "red_dragon",
             "black_dragon", "steel_dragon", "rune_dragon", "baby_blue_dragon", "abyssal_demon", "gargoyle", "nechryael",
             "bloodveld", "aberrant_spectre", "dagannoth", "kalphite", "cave_crawler", "crawling_hand", "banshee",
-            "rock_crab", "sand_crab", "ankou", "cockatrice", "basilisk", "kurask", "turoth", "jelly", "spitting_wyvern",
+            "ammonite_crab", "sand_crab", "ankou", "cockatrice", "basilisk", "kurask", "turoth", "jelly", "spitting_wyvern",
             "tzhaar_ket", "ghoul", "sheep", "wolf", "scorpion", "hobgoblin", "fire_giant"]
 
 BOSSES = ["ahrim", "dharok", "guthan", "karil", "torag", "verac", "king_black_dragon", "giant_mole", "kalphite_queen",

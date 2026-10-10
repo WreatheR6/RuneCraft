@@ -185,7 +185,7 @@ public final class Creatures {
         String m = hell ? "rock" : "fur";
         part(b, "body", null, Role.BODY, fur).accent(light).at(0, 13, 1).mat(m).glow(hell ? "cracks" : null)
                 .box(-3.5f, -3.5f, -7, 7, 7, 13).add();
-        part(b, "chest", "body", Role.STATIC, light).at(0, 0, -7).mat("fur").box(-3, -3, -1, 6, 6, 2).add();
+        part(b, "chest", "body", Role.STATIC, hell ? fur : light).at(0, 0, -7).mat("fur").box(-3, -3, -1, 6, 6, 2).add();
         part(b, "mane", "body", Role.STATIC, fur).at(0, -3.5f, -5).mat("fur").box(-4, -1, -3, 8, 3, 6).add();
         part(b, "neck", "body", Role.NECK, fur).at(0, -2, -7).rot(-25, 0, 0).mat(m).box(-2.5f, -2.5f, -4, 5, 5, 4).add();
         part(b, "head", "neck", Role.HEAD, fur).accent(hell ? 0xFFB020 : light).at(0, -1, -3.5f).rot(25, 0, 0).mat(m)

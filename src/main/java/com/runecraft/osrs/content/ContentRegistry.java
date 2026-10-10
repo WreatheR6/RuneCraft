@@ -125,6 +125,23 @@ public final class ContentRegistry {
                     }
                 }
             }
+            // Re-sculpted versions of other modules' models replace them in place (same id, so every
+            // creature that uses the model picks up the new look).
+            for (ContentModule m : Modules.ALL) {
+                for (ModelSpec spec : m.modelOverrides()) {
+                    if (!map.containsKey(spec.id())) {
+                        throw new IllegalStateException("Model override for unknown model " + spec.id());
+                    }
+                    map.put(spec.id(), spec);
+                }
+            }
+            // Last, modules may supply models for creatures that still have none (so nothing falls back to
+            // the plain biped); they only ever add ids that are not taken yet.
+            for (ContentModule m : Modules.ALL) {
+                for (ModelSpec spec : m.fallbackModels(Collections.unmodifiableSet(map.keySet()))) {
+                    map.putIfAbsent(spec.id(), spec);
+                }
+            }
             models = Collections.unmodifiableMap(map);
         }
         return models;
