@@ -32,34 +32,23 @@ write("runecraft/dimension_type/gielinor.json", {
 
 REGIONS = ["misthalin", "lumbridge_swamp", "asgarnia", "wilderness", "kharidian_desert", "morytania", "kandarin",
            "feldip_hills", "fremennik_province", "troll_country", "karamja", "tirannwn", "uncharted_isles"]
+# Terrain biomes chosen by GielinorBiomeSource from the elevation model (open sea, snowy mountain tops).
+TERRAIN_BIOMES = ["sea", "mountain_peaks"]
 
 write("runecraft/dimension/gielinor.json", {
     "type": "runecraft:gielinor",
     "generator": {
         "type": "minecraft:noise",
         "settings": "runecraft:gielinor",
-        "biome_source": {"type": "runecraft:gielinor", "biomes": {r: "runecraft:" + r for r in REGIONS}}
+        "biome_source": {"type": "runecraft:gielinor", "biomes": {r: "runecraft:" + r for r in REGIONS + TERRAIN_BIOMES}}
     }
 })
 
-# ---------------------------------------------------------------- noise: gentle OSRS-like hills with lakes
-write("runecraft/worldgen/noise/gielinor_terrain.json", {"firstOctave": -8, "amplitudes": [1.0, 1.0, 0.5, 0.25]})
-write("runecraft/worldgen/noise/gielinor_hills.json", {"firstOctave": -6, "amplitudes": [1.0, 0.5, 0.25]})
-
-final_density = {
-    "type": "minecraft:interpolated",
-    "argument": {
-        "type": "minecraft:add",
-        "argument1": {"type": "minecraft:y_clamped_gradient", "from_y": 0, "to_y": 128, "from_value": 1.0, "to_value": -1.0},
-        "argument2": {
-            "type": "minecraft:add",
-            "argument1": {"type": "minecraft:mul", "argument1": 0.16,
-                          "argument2": {"type": "minecraft:noise", "noise": "runecraft:gielinor_terrain", "xz_scale": 1.0, "y_scale": 0.0}},
-            "argument2": {"type": "minecraft:mul", "argument1": 0.05,
-                          "argument2": {"type": "minecraft:noise", "noise": "runecraft:gielinor_hills", "xz_scale": 1.0, "y_scale": 0.0}}
-        }
-    }
-}
+# ---------------------------------------------------------------- terrain
+# The terrain height comes from the OSRS-faithful elevation model in Java
+# (com.runecraft.osrs.world.Elevation) through the custom density function runecraft:gielinor_terrain:
+# density = (height(x, z) - y) * scale. It is linear in y, so the vanilla interpolation is exact.
+final_density = {"type": "minecraft:interpolated", "argument": {"type": "runecraft:gielinor_terrain", "scale": 0.125}}
 
 
 def block(name, props=None):
@@ -85,14 +74,43 @@ ON_FLOOR = {"type": "minecraft:stone_depth", "offset": 0, "add_surface_depth": F
 UNDER_FLOOR = {"type": "minecraft:stone_depth", "offset": 0, "add_surface_depth": True, "secondary_depth_range": 0, "surface_type": "floor"}
 ABOVE_WATER = {"type": "minecraft:water", "offset": -1, "surface_depth_multiplier": 0, "add_stone_depth": False}
 NEAR_SURFACE = {"type": "minecraft:above_preliminary_surface"}
+STEEP = {"type": "minecraft:steep"}
+
+
+def y_above(y):
+    return {"type": "minecraft:y_above", "anchor": {"absolute": y}, "surface_depth_multiplier": 0, "add_stone_depth": False}
+
+
+def not_(c):
+    return {"type": "minecraft:not", "invert": c}
+
+
+def seq(*rules):
+    return {"type": "minecraft:sequence", "sequence": list(rules)}
+
+
+ROCKY = {"type": "minecraft:noise_threshold", "noise": "minecraft:surface", "min_threshold": 0.0, "max_threshold": 10.0}
 
 surface_rule = {"type": "minecraft:sequence", "sequence": [
     cond({"type": "minecraft:vertical_gradient", "random_name": "minecraft:bedrock_floor",
           "true_at_and_below": {"above_bottom": 0}, "false_at_and_above": {"above_bottom": 5}}, b("minecraft:bedrock")),
     cond(NEAR_SURFACE, {"type": "minecraft:sequence", "sequence": [
+        # snow-capped peaks (Ice Mountain, White Wolf Mountain, Trollheim, the Fremennik mountains...)
+        cond(biome_is("mountain_peaks"), seq(
+            cond(ON_FLOOR, cond(STEEP, b("minecraft:stone"))),
+            cond(ON_FLOOR, b("minecraft:snow_block")),
+            cond(UNDER_FLOOR, b("minecraft:stone")))),
         cond(biome_is("kharidian_desert"), {"type": "minecraft:sequence", "sequence": [
+            cond(ON_FLOOR, cond(STEEP, b("minecraft:sandstone"))),
             cond(ON_FLOOR, b("minecraft:sand")),
             cond(UNDER_FLOOR, b("minecraft:sandstone"))]}),
+        # mountains: bare rock on cliffs and high slopes, scree, snow on the highest summits
+        cond(ON_FLOOR, cond(y_above(150), b("minecraft:snow_block"))),
+        cond(ON_FLOOR, cond(STEEP, cond(y_above(70), b("minecraft:stone")))),
+        cond(y_above(112), seq(
+            cond(ON_FLOOR, cond(ROCKY, b("minecraft:gravel"))),
+            cond(ON_FLOOR, b("minecraft:stone")),
+            cond(UNDER_FLOOR, b("minecraft:stone")))),
         cond(biome_is("troll_country"), {"type": "minecraft:sequence", "sequence": [
             cond(ON_FLOOR, cond(ABOVE_WATER, b("minecraft:snow_block"))),
             cond(UNDER_FLOOR, b("minecraft:stone"))]}),
@@ -106,6 +124,9 @@ surface_rule = {"type": "minecraft:sequence", "sequence": [
                                                     "min_threshold": 0.25, "max_threshold": 10.0}, b("minecraft:mud")))),
             cond(ON_FLOOR, cond(ABOVE_WATER, b("minecraft:grass_block"))),
             cond(UNDER_FLOOR, b("minecraft:dirt"))]}),
+        # beaches just above the water line, gravel on the deep sea floor
+        cond(ON_FLOOR, cond(not_(y_above(63)), cond(ABOVE_WATER, b("minecraft:sand")))),
+        cond(ON_FLOOR, cond(not_(y_above(50)), b("minecraft:gravel"))),
         cond(ON_FLOOR, cond(ABOVE_WATER, b("minecraft:grass_block"))),
         cond(ON_FLOOR, b("minecraft:sand")),
         cond(UNDER_FLOOR, b("minecraft:dirt"))
@@ -221,7 +242,8 @@ ORDER = {
        + ["minecraft:flower_default", "minecraft:flower_swamp", "minecraft:patch_grass_plain", "minecraft:patch_grass_taiga",
           "minecraft:patch_grass_jungle", "minecraft:patch_large_fern", "minecraft:patch_tall_grass_2",
           "minecraft:patch_dead_bush_2", "minecraft:patch_cactus_desert", "minecraft:patch_sugar_cane",
-          "minecraft:patch_waterlily", "minecraft:brown_mushroom_normal", "minecraft:red_mushroom_normal"],
+          "minecraft:patch_waterlily", "minecraft:brown_mushroom_normal", "minecraft:red_mushroom_normal",
+          "minecraft:seagrass_normal", "minecraft:kelp_cold"],
     10: ["minecraft:freeze_top_layer"],
 }
 
@@ -233,11 +255,11 @@ def features(wanted):
     return steps
 
 
-def spawns(monsters=(), creatures=()):
+def spawns(monsters=(), creatures=(), water=(), fish=()):
     def entries(lst):
         return [{"type": t, "weight": w, "minCount": lo, "maxCount": hi} for (t, w, lo, hi) in lst]
     return {"monster": entries(monsters), "creature": entries(creatures), "ambient": [], "axolotls": [],
-            "underground_water_creature": [], "water_creature": [], "water_ambient": [], "misc": []}
+            "underground_water_creature": [], "water_creature": entries(water), "water_ambient": entries(fish), "misc": []}
 
 
 FARM = [("minecraft:chicken", 10, 2, 4), ("minecraft:cow", 8, 2, 4), ("minecraft:sheep", 8, 2, 4), ("minecraft:pig", 4, 1, 3)]
@@ -325,6 +347,17 @@ BIOMES = {
                      feats=COMMON + trees("yew", "magic", "teak", "redwood", "maple") + rocks("coal", "mithril", "adamantite", "amethyst", "pure_essence")
                      + spots("angler", "lure_bait") + ["minecraft:flower_default", "minecraft:patch_large_fern"],
                      monsters=[("runecraft:guard", 6, 1, 2), ("runecraft:moss_giant", 3, 1, 2)], creatures=FARM),
+    # Open sea around the continent and islands (chosen from the elevation model, not a kingdom).
+    "sea": dict(temp=0.6, down=0.5, grass=0x79C05A, foliage=0x59AE30, sky=0x78A7FF, fog=0xC0D8FF, water=0x3F76E4,
+                feats=["minecraft:ore_dirt", "minecraft:ore_gravel"] + spots("net_harpoon", "cage_harpoon")
+                + ["minecraft:seagrass_normal", "minecraft:kelp_cold"],
+                monsters=[], creatures=[], aquatic=[("minecraft:squid", 4, 1, 3)],
+                fish=[("minecraft:cod", 10, 3, 6), ("minecraft:salmon", 4, 1, 4)]),
+    # Snow-capped mountain tops (Ice Mountain, White Wolf Mountain, Trollheim, Fremennik peaks...).
+    "mountain_peaks": dict(temp=-0.7, down=0.4, grass=0x80B497, foliage=0x60A17B, sky=0x8AA8D0, fog=0xD8E4F0, water=0x3D57D6,
+                           feats=COMMON + trees("yew") + rocks("coal", "mithril", "adamantite", "runite") + ["minecraft:freeze_top_layer"],
+                           monsters=[("runecraft:ice_giant", 4, 1, 2), ("minecraft:stray", 3, 1, 2)],
+                           creatures=[("minecraft:goat", 4, 1, 3)]),
     "uncharted_isles": dict(temp=0.8, down=0.6, grass=0x79C05A, foliage=0x59AE30, sky=0x78A7FF, fog=0xC0D8FF, water=0x3F76E4,
                             feats=COMMON + trees("tree", "oak", "redwood") + rocks("copper", "tin", "iron", "coal", "amethyst")
                             + spots("angler", "net_bait") + ["minecraft:patch_grass_plain"],
@@ -345,7 +378,7 @@ for name, d in BIOMES.items():
     write(f"runecraft/worldgen/biome/{name}.json", {
         "has_precipitation": d["temp"] < 1.5, "temperature": d["temp"], "downfall": d["down"],
         "effects": effects,
-        "spawners": spawns(d["monsters"], d["creatures"]),
+        "spawners": spawns(d["monsters"], d["creatures"], d.get("aquatic", ()), d.get("fish", ())),
         "spawn_costs": {},
         "carvers": {"air": ["minecraft:cave", "minecraft:canyon"]},
         "features": features(set(d["feats"]))})

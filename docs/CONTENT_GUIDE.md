@@ -147,3 +147,28 @@ not a problem.
   added, so put the bank booths / furnaces / altars where they really are.
 * Doors and beds: give one half with full properties (`minecraft:oak_door[facing=north,half=lower]`,
   `minecraft:red_bed[facing=east,part=foot]`); the placer adds the other half.
+
+## Terrain (`osrs/world/Elevation.java`)
+
+Gielinor's landscape comes from a hand-authored height model of the OSRS world map, not from
+Minecraft's climate noise. `GielinorGeography` holds the coastlines, islands, mountain ridges,
+rivers, lakes and swamps in OSRS tile coordinates. `Elevation.height(blockX, blockZ)` gives the
+surface height, and the dimension samples it through the `runecraft:gielinor_terrain` density
+function. Run `bash tools/render_terrain.sh` to redraw `docs/previews/terrain_map.png`.
+
+The terrain adapts to content automatically (`TerrainAnchors`):
+* Every `FLATTEN` op levels its box exactly to its `ground()`. The terrain then stays within ±6
+  blocks of that level for 16 blocks around the box and climbs at most 1.5 blocks per block beyond.
+  A town never gets a cliff at its edge. Mountains simply rise further away.
+* Places with a plaza (any style except `NONE`) and their boss arenas get a small flat terrace at
+  their natural height. Style `NONE` places build nothing and leave the terrain alone.
+* Rooms under y 56 (dungeons) always have at least 5 blocks of rock above them, and the surface over
+  them stays at y 56 or higher.
+* Large water fills at sea level (harbours, moats, river channels) stay open water. Natural rivers stop
+  at the edge of a town's levelled ground, so extend a town's own river channel to the edge of its
+  `tFlatten` box.
+
+For a structure on a mountain top, build it at a higher ground level, e.g.
+`StructureDef.builder(id, name).ground(120)`; Trollheim and the Troll Stronghold do this. Avoid
+building your own hills or mountains out of blocks. Add a ridge to `GielinorGeography.RIDGES`
+instead. A place on a summit that should not be levelled goes in `TerrainAnchors.MOUNTAIN_PLACES`.

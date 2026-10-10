@@ -11,8 +11,10 @@ import com.runecraft.registry.ModItemGroups;
 import com.runecraft.registry.ModItems;
 import com.runecraft.skill.Interactions;
 import com.runecraft.world.GielinorBiomeSource;
+import com.runecraft.world.GielinorTerrainDensity;
 import com.runecraft.world.LandmarkBuilder;
 import com.runecraft.world.StructurePlacer;
+import com.runecraft.world.TerrainFeatures;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -40,6 +42,8 @@ public class RuneCraft implements ModInitializer {
         ModEntities.register();
         ModItemGroups.register();
         Registry.register(Registries.BIOME_SOURCE, id("gielinor"), GielinorBiomeSource.CODEC);
+        GielinorTerrainDensity.register();
+        TerrainFeatures.register();
 
         ServerNetworking.register();
         PlayerEvents.register();

@@ -52,9 +52,10 @@ final class MisthalinLumbridge {
 
     private static void river(MisthalinKit k) {
         // River Lum: north-south past the castle, bending east below the bridge and south past the graveyard
-        k.water(new Box(34, -80, 41, -1), 3);
+        // (the channel runs to the edges of the levelled ground, where the natural river continues)
+        k.water(new Box(34, -88, 41, -1), 3);
         k.water(new Box(34, -10, 71, -1), 3);
-        k.water(new Box(64, -10, 71, 43), 3);
+        k.water(new Box(64, -10, 71, 49), 3);
         // reed and gravel banks
         k.floor(new Box(32, -80, 33, -18), "minecraft:sand").floor(new Box(42, -80, 43, -18), GRAVEL);
         k.floor(new Box(72, -10, 73, 43), GRAVEL).floor(new Box(42, 0, 63, 1), "minecraft:sand");

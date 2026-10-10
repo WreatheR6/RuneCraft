@@ -212,7 +212,7 @@ final class MisthalinEdgeville {
         k.tPath(3082, 3452, 3082, 3422, 2);
         k.tPath(3082, 3418, 3082, 3400, 2);
         // the river (fly fishing spots) and the bridge
-        k.water(t(3102, 3400, 3106, 3450), 3);
+        k.water(t(3102, 3398, 3106, 3452), 3);
         k.floor(t(3101, 3400, 3101, 3450), GRAVEL).floor(t(3107, 3400, 3107, 3450), GRAVEL);
         k.set(X(3104), -1, Z(3431), "runecraft:lure_bait_fishing_spot").set(X(3105), -1, Z(3437), "runecraft:lure_bait_fishing_spot");
         k.set(X(3103), -1, Z(3412), "runecraft:lure_bait_fishing_spot");

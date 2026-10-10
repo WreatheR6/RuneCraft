@@ -51,7 +51,7 @@ final class MisthalinDraynor {
         k.tPath(3092, 3239, 3092, 3233, 2);
         k.tPath(3118, 3247, 3118, 3238, 2);
         // the river / sea shore to the south with Draynor's willows and fishing spots
-        k.water(t(3072, 3227, 3110, 3230), 3);
+        k.water(t(3072, 3226, 3110, 3230), 3);
         k.floor(t(3072, 3231, 3110, 3231), "minecraft:sand");
         k.scatter(t(3072, 3231, 3110, 3231), -1, GRAVEL, 4);
         int[][] willows = {{3076, 3234}, {3081, 3233}, {3085, 3236}, {3089, 3233}, {3096, 3235}, {3100, 3233}, {3105, 3235}};

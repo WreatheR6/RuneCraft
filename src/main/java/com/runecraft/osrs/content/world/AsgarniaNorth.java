@@ -620,43 +620,8 @@ final class AsgarniaNorth {
         k.f(ex - 1, 0, ez + 1, ex - 1, 0, ez + 6, mc("rail[shape=north_south]"));
         k.s(ex - 1, -8, ez - 1, rc("iron_rock"));
         k.s(ex + 1, -8, ez - 1, rc("copper_rock"));
-        // the mountain
-        k.flatten(2998, 3462, 3024, 3490);
-        int cx = bx(3010);
-        int cz = bz(3478);
-        int rr = 28;
-        int peak = 26;
-        for (int dx = -rr; dx <= rr; dx++) {
-            for (int dz = -rr; dz <= rr; dz++) {
-                double d = Math.sqrt(dx * dx + dz * dz);
-                if (d > rr) {
-                    continue;
-                }
-                double t = Math.max(0, (d - 3) / (rr - 3));
-                double wobble = Math.sin(dx * 0.7) * Math.cos(dz * 0.6) * 1.5;
-                int h = (int) Math.round(peak * Math.pow(1 - t, 1.3) + (d > 4 ? wobble : 0));
-                if (h <= 0) {
-                    continue;
-                }
-                int x = cx + dx;
-                int z = cz + dz;
-                boolean rock = (AsgarniaKit.noise(dx, dz) & 7) == 0;
-                k.f(x, -3, z, x, h - 2, z, mc("stone"));
-                String top = h > 16 ? mc("snow_block") : h > 9 ? (rock ? mc("stone") : mc("packed_ice")) : (rock ? mc("cobblestone") : mc("snow_block"));
-                k.s(x, h - 1, z, top);
-                if (h > 4 && !rock) {
-                    k.s(x, h, z, mc("snow[layers=1]"));
-                }
-            }
-        }
-        // the Oracle's summit: a ring of standing stones
-        for (int i = 0; i < 6; i++) {
-            double a = i * Math.PI / 3;
-            int x = cx + (int) Math.round(3 * Math.cos(a));
-            int z = cz + (int) Math.round(3 * Math.sin(a));
-            k.f(x, peak, z, x, peak + 1, z, mc("stone_bricks"));
-            k.s(x, peak + 2, z, mc("snow[layers=2]"));
-        }
+        // The mountain itself (peak ~3010, 3478) is natural terrain from Elevation; the Oracle's
+        // standing stones on the summit are built on the real ground by TerrainFeatures.
         return b.build();
     }
 }

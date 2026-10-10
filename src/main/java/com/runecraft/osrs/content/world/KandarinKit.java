@@ -116,6 +116,12 @@ final class KandarinKit {
         this.g = b.ground();
     }
 
+    /** A structure whose ground level is {@code ground} (e.g. on a mountain top) instead of the default 64. */
+    KandarinKit(String id, String name, int ground) {
+        this.b = StructureDef.builder(id, name).ground(ground);
+        this.g = ground;
+    }
+
     private KandarinKit(StructureDef.Builder b, int g) {
         this.b = b;
         this.g = g;

@@ -214,6 +214,10 @@ public final class StructurePlacer {
                     }
                     continue;
                 }
+                // Rivers, lakes and the sea next to a levelled area are left open (a bank instead of a dam).
+                if (!world.getBlockState(pos.set(x, natural + 1, z)).getFluidState().isEmpty()) {
+                    continue;
+                }
                 double t = dist / (double) (StructureDef.Op.BLEND + 1);
                 int h = (int) Math.round(target + (natural - target) * t);
                 if (h == natural) {

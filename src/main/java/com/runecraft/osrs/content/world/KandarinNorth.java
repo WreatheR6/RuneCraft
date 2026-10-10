@@ -333,7 +333,8 @@ final class KandarinNorth {
     // ------------------------------------------------------------------ Trollheim
 
     static StructureDef trollheim() {
-        KandarinKit k = new KandarinKit("trollheim", "Trollheim").replaces("TROLLHEIM");
+        // Trollheim is a mountain top: the summit is levelled high up in the Troll Country range.
+        KandarinKit k = new KandarinKit("trollheim", "Trollheim", 122).replaces("TROLLHEIM");
         k.flatten(2876, 3664, 2904, 3692, "minecraft:snow_block");
         int cx = KandarinKit.X(2890);
         int cz = KandarinKit.Z(3678);
@@ -376,7 +377,8 @@ final class KandarinNorth {
      * east half of the courtyard is left open as the troll arena; the keep and the prison stand west.
      */
     static StructureDef trollStronghold() {
-        KandarinKit k = new KandarinKit("troll_stronghold", "Troll Stronghold").replaces("troll_stronghold");
+        // The stronghold stands on the crags above Death Plateau.
+        KandarinKit k = new KandarinKit("troll_stronghold", "Troll Stronghold", 108).replaces("troll_stronghold");
         String w = "minecraft:cobbled_deepslate";
         k.flatten(2820, 3666, 2866, 3708, "minecraft:coarse_dirt");
         k.cwallRect(2824, 3670, 2862, 3704, 11, w);

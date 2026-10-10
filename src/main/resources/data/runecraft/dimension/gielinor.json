@@ -18,7 +18,9 @@
         "troll_country": "runecraft:troll_country",
         "karamja": "runecraft:karamja",
         "tirannwn": "runecraft:tirannwn",
-        "uncharted_isles": "runecraft:uncharted_isles"
+        "uncharted_isles": "runecraft:uncharted_isles",
+        "sea": "runecraft:sea",
+        "mountain_peaks": "runecraft:mountain_peaks"
       }
     }
   }
