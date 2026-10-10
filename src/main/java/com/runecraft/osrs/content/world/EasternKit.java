@@ -80,7 +80,7 @@ final class EasternKit {
     static final Style DESERT_MUD = new Style("minecraft:packed_mud", SMOOTH, "minecraft:mud_bricks", false, null,
             "minecraft:mud_bricks", AIR, "minecraft:lantern", "minecraft:jungle_slab[type=top]",
             "minecraft:jungle_stairs", "minecraft:yellow_carpet");
-    static final Style MORY = new Style(DARK_PLANKS, "minecraft:spruce_planks", "minecraft:dark_oak", true,
+    static final Style MORY = new Style("minecraft:spruce_planks", "minecraft:spruce_planks", "minecraft:dark_oak", true,
             "minecraft:dark_oak_door", STRIPPED_DARK, "minecraft:gray_stained_glass_pane", SOUL_LANTERN,
             "minecraft:dark_oak_slab[type=top]", "minecraft:dark_oak_stairs", "minecraft:gray_carpet");
     static final Style MORY_STONE = new Style(DEEP_BRICKS, POL_DEEP, "minecraft:deepslate_tile", true,
@@ -101,10 +101,121 @@ final class EasternKit {
 
     final StructureDef.Builder b;
     final int g;
+    /** The detail kit dressing this builder's buildings. */
+    final EasternDetail d;
+    /**
+     * The Barrows keep the plain kit exactly as it was (another rework owns that structure); everything else
+     * gets the detailed buildings, furniture, trees and graves.
+     */
+    final boolean legacy;
 
     EasternKit(String id, String name) {
         this.b = StructureDef.builder(id, name);
         this.g = b.ground();
+        this.d = new EasternDetail(b);
+        this.legacy = id.equals("barrows");
+    }
+
+    // ---------------- looks ----------------
+
+    static final EasternDetail.Look L_DESERT = new EasternDetail.Look(CUT, "minecraft:sandstone", ORANGE_TERRA, SMOOTH, false,
+            null, null, null, null, "minecraft:lantern", "minecraft:stripped_jungle_log", false, null, false);
+    static final Style DESERT_SMOOTH = new Style(SMOOTH, SMOOTH, SMOOTH, false, null, CUT, AIR, "minecraft:lantern",
+            "minecraft:smooth_sandstone_slab[type=top]", "minecraft:sandstone_stairs", "minecraft:yellow_carpet");
+    static final Style DESERT_ROUGH = new Style(SS, SMOOTH, SMOOTH, false, null, CUT, AIR, "minecraft:lantern",
+            "minecraft:smooth_sandstone_slab[type=top]", "minecraft:sandstone_stairs", "minecraft:red_carpet");
+    static final EasternDetail.Look L_DESERT_SMOOTH = new EasternDetail.Look(SMOOTH, CUT, "minecraft:terracotta", CUT, false,
+            null, null, null, null, "minecraft:lantern", "minecraft:stripped_jungle_log", false, null, false);
+    static final EasternDetail.Look L_DESERT_ROUGH = new EasternDetail.Look(SS, SMOOTH, RED_SS, CUT, false,
+            "minecraft:sandstone_stairs", "minecraft:jungle_trapdoor", null, null, "minecraft:lantern", null, false, null, false);
+    static final EasternDetail.Look L_DESERT_RICH = new EasternDetail.Look(SMOOTH, CUT, ORANGE_TERRA, CHIS, false,
+            "minecraft:smooth_sandstone_stairs", null, null, null, "minecraft:lantern", CHIS, true, null, false);
+    static final EasternDetail.Look L_DESERT_MUD = new EasternDetail.Look("minecraft:packed_mud", "minecraft:mud_bricks",
+            "minecraft:stripped_jungle_log", "minecraft:mud_bricks", false, null, null, null, null, "minecraft:lantern",
+            "minecraft:stripped_spruce_log", false, null, false);
+    static final EasternDetail.Look L_MORY = new EasternDetail.Look("minecraft:spruce_planks", COB_DEEP, DARK_LOG, DARK_LOG, true,
+            "minecraft:dark_oak_stairs", "minecraft:dark_oak_trapdoor", "minecraft:stripped_dark_oak_log", COB_DEEP, SOUL_LANTERN,
+            null, true, "minecraft:deepslate_tile", true);
+    static final EasternDetail.Look L_MORY_STONE = new EasternDetail.Look(DEEP_BRICKS, COB_DEEP, DEEP_TILES, POL_DEEP, false,
+            "minecraft:deepslate_brick_stairs", "minecraft:spruce_trapdoor", null, COB_DEEP, SOUL_LANTERN, null, true,
+            "minecraft:cobbled_deepslate", true);
+    static final EasternDetail.Look L_PHASMATYS = new EasternDetail.Look(MOSSY_BRICKS, MOSSY_COBBLE, "minecraft:stripped_spruce_log",
+            DARK_LOG, false, "minecraft:spruce_stairs", "minecraft:spruce_trapdoor", "minecraft:spruce_planks", MOSSY_COBBLE,
+            SOUL_LANTERN, null, true, "minecraft:mossy_stone_brick", true);
+    static final EasternDetail.Look L_DARKMEYER = new EasternDetail.Look(PBB, "minecraft:polished_blackstone", CRACKED_PBB,
+            BLACKSTONE, false, "minecraft:polished_blackstone_brick_stairs", "minecraft:crimson_trapdoor", null, BLACKSTONE,
+            SOUL_LANTERN, null, true, null, false);
+    static final EasternDetail.Look L_WILD = new EasternDetail.Look(CRACKED_BRICKS, MOSSY_COBBLE, MOSSY_BRICKS, MOSSY_BRICKS, false,
+            "minecraft:stone_brick_stairs", "minecraft:spruce_trapdoor", "minecraft:spruce_planks", COBBLE, "minecraft:lantern",
+            null, true, "minecraft:mossy_stone_brick", true);
+    static final EasternDetail.Look L_FEROX = new EasternDetail.Look(STONE_BRICKS, "minecraft:polished_andesite",
+            "minecraft:stripped_spruce_log", "minecraft:spruce_log", false, "minecraft:spruce_stairs", "minecraft:spruce_trapdoor",
+            "minecraft:stripped_spruce_log", STONE_BRICKS, "minecraft:lantern", null, true, null, false);
+    static final EasternDetail.Look L_TEMPLE = new EasternDetail.Look(STONE_BRICKS, "minecraft:polished_andesite",
+            "minecraft:chiseled_stone_bricks", MOSSY_BRICKS, false, "minecraft:stone_brick_stairs", null, null, null,
+            "minecraft:lantern", null, true, "minecraft:mossy_stone_brick", false);
+
+    static final EasternDetail.Furniture F_DESERT = new EasternDetail.Furniture("minecraft:jungle", "minecraft:orange_carpet",
+            "minecraft:red_carpet", "minecraft:orange_bed", "minecraft:lantern", false);
+    static final EasternDetail.Furniture F_MORY = new EasternDetail.Furniture("minecraft:dark_oak", "minecraft:gray_carpet",
+            "minecraft:black_carpet", "minecraft:gray_bed", SOUL_LANTERN, true);
+    static final EasternDetail.Furniture F_DARK = new EasternDetail.Furniture("minecraft:crimson", "minecraft:red_carpet",
+            "minecraft:black_carpet", "minecraft:red_bed", SOUL_LANTERN, true);
+    static final EasternDetail.Furniture F_WILD = new EasternDetail.Furniture("minecraft:spruce", "minecraft:brown_carpet",
+            "minecraft:gray_carpet", "minecraft:brown_bed", "minecraft:lantern", true);
+    static final EasternDetail.Furniture F_FEROX = new EasternDetail.Furniture("minecraft:spruce", "minecraft:blue_carpet",
+            "minecraft:light_gray_carpet", "minecraft:blue_bed", "minecraft:lantern", false);
+
+    /** The detail look for a style (styles defined elsewhere get a plain look derived from their blocks). */
+    static EasternDetail.Look look(Style s) {
+        if (s == DESERT) {
+            return L_DESERT;
+        } else if (s == DESERT_SMOOTH) {
+            return L_DESERT_SMOOTH;
+        } else if (s == DESERT_ROUGH) {
+            return L_DESERT_ROUGH;
+        } else if (s == DESERT_RICH) {
+            return L_DESERT_RICH;
+        } else if (s == DESERT_MUD) {
+            return L_DESERT_MUD;
+        } else if (s == MORY) {
+            return L_MORY;
+        } else if (s == MORY_STONE) {
+            return L_MORY_STONE;
+        } else if (s == PHASMATYS) {
+            return L_PHASMATYS;
+        } else if (s == DARKMEYER) {
+            return L_DARKMEYER;
+        } else if (s == WILD) {
+            return L_WILD;
+        } else if (s == FEROX) {
+            return L_FEROX;
+        } else if (s == EasternMorytania.TEMPLE) {
+            return L_TEMPLE;
+        } else if (s.wall().equals(CUT) || s.wall().equals(SMOOTH) || s.wall().equals(SS)) {
+            return L_DESERT.withWall(s.wall());
+        }
+        return new EasternDetail.Look(s.wall(), null, null, s.corner(), false, s.chair(), null, null, null, s.light(), null, true,
+                null, false);
+    }
+
+    static EasternDetail.Furniture furniture(Style s) {
+        if (s == MORY || s == MORY_STONE || s == PHASMATYS || s == EasternMorytania.TEMPLE) {
+            return F_MORY;
+        } else if (s == DARKMEYER) {
+            return F_DARK;
+        } else if (s == WILD) {
+            return F_WILD;
+        } else if (s == FEROX) {
+            return F_FEROX;
+        } else if (s.wall().equals(CUT) || s.wall().equals(SMOOTH) || s.wall().equals(SS) || s == DESERT_MUD) {
+            return F_DESERT;
+        }
+        return F_WILD;
+    }
+
+    static long seed(int[] q) {
+        return q[0] * 341873128712L + q[1] * 132897987541L + q[2] * 31L + q[3];
     }
 
     EasternKit replaces(String place) {
@@ -201,6 +312,15 @@ final class EasternKit {
         return q;
     }
 
+    /** A furnished room of a given kind on the storey whose floor is at y-1 (detail kit; legacy: plain furnish). */
+    void room(int[] q, int y, Style s, EasternDetail.Room type) {
+        if (legacy) {
+            furnish(q, y, s, type == EasternDetail.Room.BEDROOM);
+            return;
+        }
+        d.room(q, y, type, furniture(s), seed(q) + y);
+    }
+
     /** An unfurnished building (walls, floors, roof, corner posts, windows, doorway, ladder, lights). */
     int[] hall(int tx1, int ty1, int tx2, int ty2, int storeys, Style s, String doorSide) {
         int[] q = r(tx1, ty1, tx2, ty2);
@@ -217,6 +337,17 @@ final class EasternKit {
         }
         if (s.window() != null && !s.window().equals("minecraft:glass_pane")) {
             b.replace(q[0], g, q[1], q[2], top, q[3], "minecraft:glass_pane", s.window());
+        }
+        if (!legacy) {
+            EasternDetail.Look l = look(s);
+            d.facade(q, storeys, l, doorSide, s.window() == null ? "minecraft:glass_pane" : s.window());
+            if (s.pitched()) {
+                d.roof(q, top, s.roof(), l, doorSide, seed(q));
+            } else {
+                boolean desert = s.wall().equals(CUT) || s.wall().equals(SMOOTH) || s.wall().equals(SS) || s == DESERT_MUD;
+                d.flatRoof(q, top, s.wall(), desert ? (s == DESERT_RICH ? CHIS : SS_WALL) : null,
+                        desert ? "minecraft:stripped_jungle_log" : null, s == DESERT_RICH ? null : canopyFor(q), seed(q));
+            }
         }
         if (doorSide != null) {
             door(q, doorSide, s.door(), s.wall());
@@ -265,6 +396,11 @@ final class EasternKit {
     void stall(int tx, int ty, String block, String wool) {
         int x = bx(tx);
         int z = bz(ty);
+        if (!legacy) {
+            String stripe = wool.equals("minecraft:white_wool") ? "minecraft:yellow_wool" : "minecraft:white_wool";
+            d.stall(x, z, block, wool, stripe, "minecraft:jungle_fence");
+            return;
+        }
         for (int dx : new int[]{0, 2}) {
             for (int dz : new int[]{0, 2}) {
                 fill(x + dx, g, z + dz, x + dx, g + 2, z + dz, "minecraft:oak_fence");
@@ -355,6 +491,27 @@ final class EasternKit {
         }
         set(ax, g + 2, az, wall);
         set(bx2, g + 2, bz2, wall);
+        if (!legacy) {
+            if (door != null) {
+                // A double door (the placer adds the upper halves) under a trapdoor transom.
+                String facing = EasternDetail.opposite(side);
+                boolean aLeft = side.equals("south") || side.equals("west");
+                set(ax, g, az, door + "[facing=" + facing + ",half=lower,hinge=" + (aLeft ? "left" : "right") + ",open=false]");
+                set(bx2, g, bz2, door + "[facing=" + facing + ",half=lower,hinge=" + (aLeft ? "right" : "left") + ",open=false]");
+                String trap = door.replace("_door", "_trapdoor");
+                set(ax, g + 2, az, trap + "[half=top,facing=" + facing + "]");
+                set(bx2, g + 2, bz2, trap + "[half=top,facing=" + facing + "]");
+            } else {
+                // An open archway: the lintel steps in with upside-down stairs.
+                String st = archStairs(wall);
+                if (st != null) {
+                    boolean x = side.equals("north") || side.equals("south");
+                    set(ax, g + 2, az, st + "[facing=" + (x ? "west" : "north") + ",half=top]");
+                    set(bx2, g + 2, bz2, st + "[facing=" + (x ? "east" : "south") + ",half=top]");
+                }
+            }
+            return;
+        }
         if (door != null) {
             // Two-part blocks (doors, beds) cannot be placed by the chunk placer, so the frame gets a
             // trapdoor "transom" in the door material instead.
@@ -385,6 +542,10 @@ final class EasternKit {
         int mx = (x1 + x2) / 2;
         int mz = (z1 + z2) / 2;
         set(mx, y + 2, mz, s.light() + "[hanging=true]");
+        if (!legacy) {
+            d.room(q, y, bed ? EasternDetail.Room.BEDROOM : EasternDetail.Room.HOUSE, furniture(s), seed(q) + y);
+            return;
+        }
         if (x2 - x1 < 4 || z2 - z1 < 4) {
             return;
         }
@@ -405,14 +566,87 @@ final class EasternKit {
 
     /** A furnished building with a shop counter across the back of the room holding a station block. */
     int[] shop(int tx1, int ty1, int tx2, int ty2, int storeys, Style s, String side, String station) {
-        int[] q = house(tx1, ty1, tx2, ty2, storeys, s, side);
+        if (legacy) {
+            int[] q = house(tx1, ty1, tx2, ty2, storeys, s, side);
+            switch (side) {
+                case "south" -> counterX(q[0] + 2, q[2] - 2, q[1] + 2, g, s.table(), station);
+                case "north" -> counterX(q[0] + 2, q[2] - 2, q[3] - 2, g, s.table(), station);
+                case "east" -> counterZ(q[0] + 2, q[1] + 2, q[3] - 2, g, s.table(), station);
+                default -> counterZ(q[2] - 2, q[1] + 2, q[3] - 2, g, s.table(), station);
+            }
+            return q;
+        }
+        int[] q = hall(tx1, ty1, tx2, ty2, storeys, s, side);
+        d.room(q, g, EasternDetail.Room.SHOP, furniture(s), seed(q));
+        for (int st = 1; st < storeys; st++) {
+            furnish(q, g + st * 4, s, st == storeys - 1);
+        }
+        // The counter with wares at its ends; a shelf of goods on the wall behind the shopkeeper.
+        String wood = furniture(s).wood();
         switch (side) {
-            case "south" -> counterX(q[0] + 2, q[2] - 2, q[1] + 2, g, s.table(), station);
-            case "north" -> counterX(q[0] + 2, q[2] - 2, q[3] - 2, g, s.table(), station);
-            case "east" -> counterZ(q[0] + 2, q[1] + 2, q[3] - 2, g, s.table(), station);
-            default -> counterZ(q[2] - 2, q[1] + 2, q[3] - 2, g, s.table(), station);
+            case "south" -> {
+                counterX(q[0] + 2, q[2] - 2, q[1] + 2, g, s.table(), station);
+                set(q[0] + 2, g + 1, q[1] + 2, EasternDetail.goods(station, 0));
+                set(q[2] - 2, g + 1, q[1] + 2, EasternDetail.goods(station, 1));
+                shelfX(q[0] + 2, q[2] - 2, q[1] + 1, wood, station);
+            }
+            case "north" -> {
+                counterX(q[0] + 2, q[2] - 2, q[3] - 2, g, s.table(), station);
+                set(q[0] + 2, g + 1, q[3] - 2, EasternDetail.goods(station, 0));
+                set(q[2] - 2, g + 1, q[3] - 2, EasternDetail.goods(station, 1));
+                shelfX(q[0] + 2, q[2] - 2, q[3] - 1, wood, station);
+            }
+            case "east" -> {
+                counterZ(q[0] + 2, q[1] + 2, q[3] - 2, g, s.table(), station);
+                set(q[0] + 2, g + 1, q[1] + 2, EasternDetail.goods(station, 0));
+                set(q[0] + 2, g + 1, q[3] - 2, EasternDetail.goods(station, 1));
+                shelfZ(q[0] + 1, q[1] + 2, q[3] - 2, wood, station);
+            }
+            default -> {
+                counterZ(q[2] - 2, q[1] + 2, q[3] - 2, g, s.table(), station);
+                set(q[2] - 2, g + 1, q[1] + 2, EasternDetail.goods(station, 0));
+                set(q[2] - 2, g + 1, q[3] - 2, EasternDetail.goods(station, 1));
+                shelfZ(q[2] - 1, q[1] + 2, q[3] - 2, wood, station);
+            }
         }
         return q;
+    }
+
+    /** Stock behind the counter: a shelf board over the shopkeeper's head and crates at both ends. */
+    void shelfX(int x1, int x2, int z, String wood, String station) {
+        fill(x1, g + 2, z, x2, g + 2, z, wood + "_slab[type=top]");
+        set(x1, g, z, "minecraft:barrel[facing=up]");
+        set(x1, g + 1, z, EasternDetail.goods(station, 0));
+        set(x2, g, z, "minecraft:barrel[facing=up]");
+        set(x2, g + 1, z, EasternDetail.goods(station, 1));
+    }
+
+    void shelfZ(int x, int z1, int z2, String wood, String station) {
+        fill(x, g + 2, z1, x, g + 2, z2, wood + "_slab[type=top]");
+        set(x, g, z1, "minecraft:barrel[facing=up]");
+        set(x, g + 1, z1, EasternDetail.goods(station, 0));
+        set(x, g, z2, "minecraft:barrel[facing=up]");
+        set(x, g + 1, z2, EasternDetail.goods(station, 1));
+    }
+
+    /** Stairs matching a wall material for arch lintels, or null. */
+    static String archStairs(String wall) {
+        return switch (wall) {
+            case CUT, SS -> "minecraft:sandstone_stairs";
+            case SMOOTH -> "minecraft:smooth_sandstone_stairs";
+            case "minecraft:packed_mud", "minecraft:mud_bricks" -> "minecraft:mud_brick_stairs";
+            case STONE_BRICKS, CRACKED_BRICKS -> "minecraft:stone_brick_stairs";
+            case MOSSY_BRICKS -> "minecraft:mossy_stone_brick_stairs";
+            case PBB, CRACKED_PBB -> "minecraft:polished_blackstone_brick_stairs";
+            case DEEP_BRICKS, CRACKED_DEEP -> "minecraft:deepslate_brick_stairs";
+            default -> null;
+        };
+    }
+
+    /** A wool colour for a rooftop shade canopy (deterministic per building; sometimes none). */
+    static String canopyFor(int[] q) {
+        String[] c = {ORANGE_WOOL, "minecraft:white_wool", null, "minecraft:red_wool", "minecraft:yellow_wool", null};
+        return c[(int) Math.floorMod(seed(q), (long) c.length)];
     }
 
     /** Desert shop with an awning outside its doorway. */
@@ -424,12 +658,48 @@ final class EasternKit {
 
     /** Desert flat-roofed house with an open doorway, an orange awning, roof clutter and open windows. */
     int[] desertHouse(int tx1, int ty1, int tx2, int ty2, int storeys, String side, String awning) {
-        int[] q = house(tx1, ty1, tx2, ty2, storeys, DESERT, side);
+        if (legacy) {
+            int[] q = house(tx1, ty1, tx2, ty2, storeys, DESERT, side);
+            awning(q, side, awning);
+            int top = g + storeys * 4;
+            set(q[0] + 1, top, q[1] + 1, "minecraft:barrel[facing=up]");
+            set(q[2] - 1, top, q[3] - 1, "minecraft:potted_dead_bush");
+            return q;
+        }
+        // Three kinds of sandstone house so a street doesn't repeat: cut, smooth and rough sandstone.
+        Style[] kinds = {DESERT, DESERT_SMOOTH, DESERT_ROUGH};
+        Style s = kinds[Math.floorMod(tx1 * 7 + ty1 * 13, 3)];
+        int[] q = house(tx1, ty1, tx2, ty2, storeys, s, side);
         awning(q, side, awning);
         int top = g + storeys * 4;
-        set(q[0] + 1, top, q[1] + 1, "minecraft:barrel[facing=up]");
         set(q[2] - 1, top, q[3] - 1, "minecraft:potted_dead_bush");
+        if (storeys > 1) {
+            // roof hatch over the ladder
+            set(q[0] + 1, top - 1, q[1] + 1, "minecraft:jungle_trapdoor[half=top,facing=south]");
+            fill(q[0] + 1, top - 3, q[1] + 1, q[0] + 1, top - 2, q[1] + 1, "minecraft:ladder[facing=south]");
+        }
+        // a water jar and a crate by the door
+        int[] p = outsideDoor(q, side);
+        if (p != null) {
+            set(p[0], g, p[1], "minecraft:decorated_pot");
+            set(p[2], g, p[3], Math.floorMod(tx1 + ty1, 2) == 0 ? "minecraft:barrel[facing=up]" : "minecraft:flower_pot");
+        }
         return q;
+    }
+
+    /** Two cells just outside a doorway, flanking it ({x, z, x, z}), or null. */
+    int[] outsideDoor(int[] q, String side) {
+        if (side == null) {
+            return null;
+        }
+        int mx = (q[0] + q[2]) / 2;
+        int mz = (q[1] + q[3]) / 2;
+        return switch (side) {
+            case "north" -> new int[]{mx - 2, q[1] - 1, mx + 3, q[1] - 1};
+            case "south" -> new int[]{mx - 2, q[3] + 1, mx + 3, q[3] + 1};
+            case "east" -> new int[]{q[2] + 1, mz - 2, q[2] + 1, mz + 3};
+            default -> new int[]{q[0] - 1, mz - 2, q[0] - 1, mz + 3};
+        };
     }
 
     /** Wool awning on posts outside the doorway of a block rectangle. */
@@ -440,6 +710,38 @@ final class EasternKit {
         int mx = (q[0] + q[2]) / 2;
         int mz = (q[1] + q[3]) / 2;
         String post = "minecraft:oak_fence";
+        if (!legacy) {
+            // Striped canvas on jungle-wood poles, a lantern under it and a mat at the door.
+            String stripe = wool.equals("minecraft:white_wool") ? "minecraft:light_gray_wool" : "minecraft:white_wool";
+            post = "minecraft:jungle_fence";
+            switch (side) {
+                case "north" -> {
+                    d.awning(mx - 1, q[1] - 2, mx + 2, q[1] - 1, g + 3, wool, stripe, true);
+                    fill(mx - 1, g, q[1] - 2, mx - 1, g + 2, q[1] - 2, post);
+                    fill(mx + 2, g, q[1] - 2, mx + 2, g + 2, q[1] - 2, post);
+                    set(mx + 1, g + 2, q[1] - 2, "minecraft:lantern[hanging=true]");
+                }
+                case "south" -> {
+                    d.awning(mx - 1, q[3] + 1, mx + 2, q[3] + 2, g + 3, wool, stripe, true);
+                    fill(mx - 1, g, q[3] + 2, mx - 1, g + 2, q[3] + 2, post);
+                    fill(mx + 2, g, q[3] + 2, mx + 2, g + 2, q[3] + 2, post);
+                    set(mx + 1, g + 2, q[3] + 2, "minecraft:lantern[hanging=true]");
+                }
+                case "east" -> {
+                    d.awning(q[2] + 1, mz - 1, q[2] + 2, mz + 2, g + 3, wool, stripe, false);
+                    fill(q[2] + 2, g, mz - 1, q[2] + 2, g + 2, mz - 1, post);
+                    fill(q[2] + 2, g, mz + 2, q[2] + 2, g + 2, mz + 2, post);
+                    set(q[2] + 2, g + 2, mz + 1, "minecraft:lantern[hanging=true]");
+                }
+                default -> {
+                    d.awning(q[0] - 2, mz - 1, q[0] - 1, mz + 2, g + 3, wool, stripe, false);
+                    fill(q[0] - 2, g, mz - 1, q[0] - 2, g + 2, mz - 1, post);
+                    fill(q[0] - 2, g, mz + 2, q[0] - 2, g + 2, mz + 2, post);
+                    set(q[0] - 2, g + 2, mz + 1, "minecraft:lantern[hanging=true]");
+                }
+            }
+            return;
+        }
         switch (side) {
             case "north" -> {
                 fill(mx - 1, g + 3, q[1] - 2, mx + 2, g + 3, q[1] - 1, wool);
@@ -498,10 +800,35 @@ final class EasternKit {
     /** Town wall along a tile line, {@code h} blocks tall, with crenellations of {@code cap} on top. */
     void wall(int tx1, int ty1, int tx2, int ty2, int h, String block, String cap) {
         b.tWallLine(tx1, ty1, tx2, ty2, h, block);
+        int[] q = r(tx1, ty1, tx2, ty2);
+        if (!legacy) {
+            // Weathered patches, a footing course and buttress pilasters on both faces.
+            String v = variantOf(block);
+            if (v != null) {
+                int len = Math.max(q[2] - q[0], q[3] - q[1]);
+                d.weather(q[0], g, q[1], q[2], g + h - 1, q[3], block, v, len / 3, seed(q));
+            }
+            String acc = accentOf(block);
+            String pil = acc != null ? acc : block;
+            boolean alongX = q[2] - q[0] >= q[3] - q[1];
+            if (alongX) {
+                for (int x = q[0] + 6; x < q[2] - 3; x += 10) {
+                    fill(x, g - 1, q[1] - 1, x, g + h - 2, q[1] - 1, pil);
+                    fill(x, g - 1, q[3] + 1, x, g + h - 2, q[3] + 1, pil);
+                }
+            } else {
+                for (int z = q[1] + 6; z < q[3] - 3; z += 10) {
+                    fill(q[0] - 1, g - 1, z, q[0] - 1, g + h - 2, z, pil);
+                    fill(q[2] + 1, g - 1, z, q[2] + 1, g + h - 2, z, pil);
+                }
+            }
+            if (acc != null) {
+                b.replace(q[0], g, q[1], q[2], g, q[3], block, acc);
+            }
+        }
         if (cap == null) {
             return;
         }
-        int[] q = r(tx1, ty1, tx2, ty2);
         if (q[2] - q[0] >= q[3] - q[1]) {
             for (int x = q[0]; x <= q[2]; x += 3) {
                 fill(x, g + h, q[1], Math.min(x + 1, q[2]), g + h, q[3], cap);
@@ -516,6 +843,18 @@ final class EasternKit {
     /** Opens a gate through a wall over a tile rectangle, keeping a lintel at {@code h-1}. */
     void gate(int tx1, int ty1, int tx2, int ty2, int h) {
         b.tClear(tx1, ty1, tx2, ty2, 0, h - 2);
+        if (!legacy) {
+            // keep the way clear of the wall's pilasters, and frame the gate with them instead
+            int[] q = r(tx1, ty1, tx2, ty2);
+            boolean alongX = q[2] - q[0] >= q[3] - q[1];
+            if (alongX) {
+                clear(q[0], g, q[1] - 1, q[2], g + h - 2, q[1] - 1);
+                clear(q[0], g, q[3] + 1, q[2], g + h - 2, q[3] + 1);
+            } else {
+                clear(q[0] - 1, g, q[1], q[0] - 1, g + h - 2, q[3]);
+                clear(q[2] + 1, g, q[1], q[2] + 1, g + h - 2, q[3]);
+            }
+        }
     }
 
     /** Clears one relative layer over a tile rectangle (e.g. a wall cap above a gate). */
@@ -551,6 +890,81 @@ final class EasternKit {
         if (roof != null) {
             cone(x, z, g + h + 1, radius + 1, roof);
         }
+        if (!legacy && radius >= 2) {
+            towerDetail(x, z, radius, h, wall, roof);
+        }
+    }
+
+    /**
+     * Tower dressing: a plinth course, string courses every five blocks, arrow slits on the four faces
+     * (skipping the doorway), a corbelled parapet or an eave under the cone, and a pennant on top.
+     */
+    void towerDetail(int x, int z, int radius, int h, String wall, String roof) {
+        String accent = accentOf(wall);
+        if (accent != null) {
+            ringReplaceRound(x, z, radius, g, wall, accent);
+            for (int y = g + 5; y < g + h - 1; y += 5) {
+                ringReplaceRound(x, z, radius, y, wall, accent);
+            }
+        }
+        for (int y = g + 4; y < g + h - 2; y += 5) {
+            String bars = y % 2 == 0 ? "minecraft:air" : "minecraft:iron_bars";
+            // (not the north face: the inner ladder hangs on it)
+            int[][] faces = {{radius, 0}, {-radius, 0}, {0, radius}};
+            for (int[] f : faces) {
+                fill(x + f[0], y, z + f[1], x + f[0], y + 1, z + f[1], bars);
+            }
+        }
+        if (roof == null) {
+            String flag = wall.contains("sandstone") ? "minecraft:orange_wool" : wall.contains("blackstone")
+                    ? "minecraft:red_wool" : wall.contains("deepslate") ? "minecraft:black_wool" : "minecraft:white_wool";
+            fill(x, g + h, z, x, g + h + 3, z, "minecraft:spruce_fence");
+            fill(x + 1, g + h + 2, z, x + 2, g + h + 3, z, flag);
+        } else {
+            set(x, g + h + radius + 3, z, "minecraft:lightning_rod");
+        }
+    }
+
+    /** Replaces {@code from} with {@code to} on a round tower's shell at one height. */
+    void ringReplaceRound(int x, int z, int r, int y, String from, String to) {
+        for (int dz = -r; dz <= r; dz++) {
+            int w = (int) Math.floor(Math.sqrt((r + 0.5) * (r + 0.5) - dz * dz));
+            b.replace(x - w, y, z + dz, x - w + 1, y, z + dz, from, to);
+            b.replace(x + w - 1, y, z + dz, x + w, y, z + dz, from, to);
+        }
+        b.replace(x - r, y, z - r, x + r, y, z - r, from, to);
+        b.replace(x - r, y, z + r, x + r, y, z + r, from, to);
+    }
+
+    /** A weathered variant of a wall material (for patches), or null. */
+    static String variantOf(String wall) {
+        return switch (wall) {
+            case CUT -> SS;
+            case SS -> "minecraft:chiseled_sandstone";
+            case SMOOTH -> SS;
+            case STONE_BRICKS -> MOSSY_BRICKS;
+            case CRACKED_BRICKS -> MOSSY_BRICKS;
+            case MOSSY_BRICKS -> CRACKED_BRICKS;
+            case PBB -> CRACKED_PBB;
+            case DEEP_BRICKS -> CRACKED_DEEP;
+            case MOSSY_COBBLE -> COBBLE;
+            case COBBLE -> MOSSY_COBBLE;
+            default -> null;
+        };
+    }
+
+    /** A contrasting trim block for a wall material, or null. */
+    static String accentOf(String wall) {
+        return switch (wall) {
+            case CUT, SS -> SMOOTH;
+            case SMOOTH -> CUT;
+            case STONE_BRICKS -> "minecraft:polished_andesite";
+            case CRACKED_BRICKS, MOSSY_BRICKS -> STONE_BRICKS;
+            case PBB -> "minecraft:polished_blackstone";
+            case DEEP_BRICKS -> POL_DEEP;
+            case "minecraft:spruce_log" -> "minecraft:stripped_spruce_log";
+            default -> null;
+        };
     }
 
     /** Stacked shrinking discs forming a cone, starting at {@code y} with radius {@code r}. */
@@ -680,6 +1094,23 @@ final class EasternKit {
             String m = mats[rnd.nextInt(mats.length)];
             set(x, g, z, rnd.nextBoolean() ? m : "minecraft:cobblestone_slab");
         }
+        if (!legacy) {
+            // Fallen stones heaped against the walls, weeds in the cracks, a doorway arch fragment.
+            int piles = Math.max(2, Math.min(8, (w + d) / 8));
+            for (int i = 0; i < piles; i++) {
+                boolean xs = rnd.nextBoolean();
+                int x = xs ? q[0] + 1 + rnd.nextInt(Math.max(1, w - 2)) : (rnd.nextBoolean() ? q[0] + 1 : q[2] - 1);
+                int z = xs ? (rnd.nextBoolean() ? q[1] + 1 : q[3] - 1) : q[1] + 1 + rnd.nextInt(Math.max(1, d - 2));
+                this.d.rubble(x, z, mats, seed + 1000 + i);
+            }
+            this.d.overgrowth(q[0], q[1], q[2], q[3], Math.min(80, area / 10), seed + 77);
+            for (String m : mats) {
+                String v = variantOf(m);
+                if (v != null) {
+                    this.d.weather(q[0], g, q[1], q[2], g + h, q[3], m, v, Math.max(2, (w + d) / 10), seed + m.length());
+                }
+            }
+        }
     }
 
     /** A standing (optionally broken) pillar of {@code h} blocks with a capital. */
@@ -694,6 +1125,10 @@ final class EasternKit {
     void palm(int tx, int ty, int h) {
         int x = bx(tx);
         int z = bz(ty);
+        if (!legacy) {
+            d.palm(x, z, h + 1, tx * 31L + ty);
+            return;
+        }
         fill(x, g, z, x, g + h - 1, z, "minecraft:jungle_log");
         String leaf = "minecraft:jungle_leaves[persistent=true]";
         fill(x - 3, g + h, z, x + 3, g + h, z, leaf);
@@ -709,6 +1144,10 @@ final class EasternKit {
     void tree(int tx, int ty, int h, String log, String leaves) {
         int x = bx(tx);
         int z = bz(ty);
+        if (!legacy) {
+            d.tree(x, z, h + 1, log, leaves, tx * 17L + ty);
+            return;
+        }
         String leaf = leaves + "[persistent=true]";
         fill(x - 2, g + h - 2, z - 2, x + 2, g + h - 1, z + 2, leaf);
         fill(x - 1, g + h, z - 1, x + 1, g + h, z + 1, leaf);
@@ -720,6 +1159,10 @@ final class EasternKit {
     void deadTree(int tx, int ty, int h) {
         int x = bx(tx);
         int z = bz(ty);
+        if (!legacy) {
+            d.deadTree(x, z, h + 1, tx * 13L + ty);
+            return;
+        }
         fill(x, g, z, x, g + h - 1, z, "minecraft:dark_oak_log");
         fill(x + 1, g + h - 2, z, x + 2, g + h - 2, z, "minecraft:dark_oak_log[axis=x]");
         set(x + 2, g + h - 1, z, "minecraft:dark_oak_fence");
@@ -731,6 +1174,37 @@ final class EasternKit {
 
     /** A gravestone (stone block with a slab cap) and a skull at its foot sometimes. */
     void grave(int x, int z, int variant) {
+        if (!legacy) {
+            // A sunken mound with a headstone at its head; some with a candle, flowers, a skull or a broken stone.
+            set(x, g - 1, z + 1, variant % 2 == 0 ? "minecraft:podzol" : "minecraft:coarse_dirt");
+            set(x, g - 1, z + 2, "minecraft:rooted_dirt");
+            switch (variant % 6) {
+                case 0 -> {
+                    set(x, g, z, "minecraft:cobblestone_wall");
+                    set(x, g + 1, z, "minecraft:stone_brick_slab");
+                }
+                case 1 -> {
+                    set(x, g, z, MOSSY_BRICKS);
+                    set(x, g + 1, z, "minecraft:mossy_stone_brick_wall");
+                    set(x, g, z + 1, "minecraft:moss_carpet");
+                }
+                case 2 -> {
+                    set(x, g, z, "minecraft:chiseled_stone_bricks");
+                    set(x, g + 1, z, "minecraft:candle[candles=1,lit=true]");
+                }
+                case 3 -> {
+                    set(x, g, z, "minecraft:andesite_wall");
+                    set(x, g + 1, z, "minecraft:andesite_wall");
+                    set(x, g, z + 1, "minecraft:wither_rose");
+                }
+                case 4 -> {
+                    set(x, g, z, "minecraft:cracked_stone_bricks");
+                    set(x, g, z + 1, "minecraft:skeleton_skull[rotation=8]");
+                }
+                default -> set(x, g, z, "minecraft:cobblestone_slab");
+            }
+            return;
+        }
         switch (variant % 4) {
             case 0 -> {
                 set(x, g, z, "minecraft:cobblestone_wall");
@@ -755,9 +1229,18 @@ final class EasternKit {
         for (int x = q[0] + 1; x < q[2]; x += 3) {
             for (int z = q[1] + 1; z < q[3]; z += 4) {
                 if (rnd.nextInt(5) != 0) {
-                    grave(x, z, rnd.nextInt(4));
+                    grave(x, z, rnd.nextInt(legacy ? 4 : 6));
                 }
             }
+        }
+        if (!legacy && q[2] - q[0] >= 6 && q[3] - q[1] >= 6) {
+            // a stone cross and a lantern post among the graves
+            int cx = (q[0] + q[2]) / 2 + 1;
+            int cz = (q[1] + q[3]) / 2 + 2;
+            fill(cx, g, cz, cx, g + 3, cz, "minecraft:stone_bricks");
+            set(cx - 1, g + 2, cz, "minecraft:stone_brick_stairs[facing=east,half=top]");
+            set(cx + 1, g + 2, cz, "minecraft:stone_brick_stairs[facing=west,half=top]");
+            set(cx, g + 4, cz, "minecraft:stone_brick_slab");
         }
     }
 
@@ -779,6 +1262,26 @@ final class EasternKit {
         clear(x1 + 1, g, z1, x2 - 1, g, z1);
         set((x1 + x2) / 2, g, (z1 + z2) / 2, "minecraft:white_carpet");
         set((x1 + x2) / 2, g, (z1 + z2) / 2 - 1, "minecraft:brown_carpet");
+        if (legacy) {
+            return;
+        }
+        // Ridge pole sticking out at both ends, guy ropes to pegs, a bedroll, a chest and a lantern.
+        int mx = (x1 + x2) / 2;
+        int top = g + w / 2;
+        fill(mx, top + 1, z1 - 1, mx, top + 1, z2 + 1, "minecraft:spruce_log[axis=z]");
+        set(mx, g, z1 - 1, "minecraft:spruce_fence");
+        fill(mx, g + 1, z1 - 1, mx, top, z1 - 1, "minecraft:spruce_fence");
+        fill(mx, g, z2 + 1, mx, top, z2 + 1, "minecraft:spruce_fence");
+        set(x1 - 1, g, z1 + 1, "minecraft:spruce_fence");
+        set(x2 + 1, g, z1 + 1, "minecraft:spruce_fence");
+        set(x1 - 1, g, z2 - 1, "minecraft:spruce_fence");
+        set(x2 + 1, g, z2 - 1, "minecraft:spruce_fence");
+        fill(x1 + 1, g - 1, z1, x2 - 1, g - 1, z2, "minecraft:spruce_planks");
+        set(x1 + 1, g, z2 - 1, "minecraft:white_bed[facing=north,part=foot]");
+        set(x2 - 1, g, z2, "minecraft:chest[facing=west]");
+        if (top - 1 > g + 1) {
+            set(mx, top - 1, (z1 + z2) / 2, "minecraft:lantern[hanging=true]");
+        }
     }
 
     /** Campfire with logs to sit on. */
@@ -786,6 +1289,19 @@ final class EasternKit {
         set(x, g, z, "minecraft:campfire");
         set(x + 2, g, z, "minecraft:oak_log[axis=z]");
         set(x - 2, g, z, "minecraft:oak_log[axis=z]");
+        if (!legacy) {
+            // a ring of stones, a cooking spit and a log pile
+            set(x - 1, g - 1, z, "minecraft:cobblestone");
+            set(x + 1, g - 1, z, "minecraft:cobblestone");
+            set(x, g - 1, z - 1, "minecraft:cobblestone");
+            set(x, g - 1, z + 1, "minecraft:cobblestone");
+            set(x - 1, g, z - 1, "minecraft:spruce_fence");
+            set(x + 1, g, z - 1, "minecraft:spruce_fence");
+            set(x - 1, g + 1, z - 1, "minecraft:spruce_fence");
+            set(x + 1, g + 1, z - 1, "minecraft:spruce_fence");
+            set(x, g + 1, z - 1, "minecraft:chain[axis=x]");
+            set(x, g, z + 2, "minecraft:oak_log[axis=x]");
+        }
     }
 
     /** A fence line along a tile line (both 2-block rows). */
