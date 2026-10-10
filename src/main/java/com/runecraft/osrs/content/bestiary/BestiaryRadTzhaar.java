@@ -182,6 +182,21 @@ final class BestiaryRadTzhaar {
             p(b, "spot_melee", "body", 0xF03A28).at(0, -h - 0.6f, 2.5f).mat("energy").glow("full")
                     .box(-2, -0.6f, -2, 4, 1, 4).add();
         }
+        // a ridge of obsidian spikes, a smouldering vent, more lumps, cheek plates and magma drool
+        spikes(b, "back_spikes", "body", deep, "rock", -h + 1, new float[][]{{-size / 4f, size / 4f, 2}, {0, size / 3f, 3},
+            {size / 4f, size / 4f, 2}, {0, 0, 2}}, -25);
+        p(b, "vent", "cap", lava).at(0, -2, 0).mat("lava").glow("full").box(-1.5f, -0.5f, -1.5f, 3, 1, 3).add();
+        float[][] low = {{size / 2f, -2.5f, size / 4f, 2, 15}, {-size / 2f, -3, -size / 5f, 2, -20}, {size / 3f, -2, size / 2f - 1, 2, 40},
+            {-size / 3f, -2, size / 2f - 1, 2, -35}};
+        for (int i = 0; i < low.length; i++) {
+            float[] q = low[i];
+            p(b, "pebble" + i, "body", i % 2 == 0 ? dark : deep).accent(lava).at(q[0], q[1], q[2]).rot(q[4], q[4] * 1.5f, -q[4])
+                    .mat("rock").box(-1, -1, -1, 2, 2, 2).add();
+        }
+        s(b, "cheek", "body", false, deep).accent(lava).at(size / 2f - 1, lipY + 1, -size / 2f + 2.5f).rot(0, -20, 0).mat("rock")
+                .box(-1, -2, -2, 2, 4, 3).add();
+        p(b, "drool", "jaw", lava).at(0, 2, -jawD + 1).mat("lava").glow("full").box(-mw / 4f, 0, -0.5f, 1, 2, 1)
+                .box(mw / 4f - 1, 0, -0.5f, 1, 3, 1).add();
         return b.build();
     }
 
@@ -360,7 +375,7 @@ final class BestiaryRadTzhaar {
     /** Jal-ImKot: the burrowing melee beast - a low, broad back of plates and huge digging claws. */
     static ModelSpec jalImKot() {
         ModelSpec.Builder b = ModelSpec.builder("jal_imkot").scale(1.4f).shadow(1.0f);
-        p(b, "body", null, Role.BODY, IRED).accent(ILAVA).at(0, 13, 1).rot(-8, 0, 0).mat("rock").glow("cracks")
+        p(b, "body", null, Role.BODY, IRED).accent(ILAVA).at(0, 10, 1).rot(-8, 0, 0).mat("rock").glow("cracks")
                 .box(-6, -5, -8, 12, 10, 16).add();
         for (int i = 0; i < 4; i++) {
             p(b, "plate" + i, "body", i % 2 == 0 ? IDEEP : IRED).accent(ILAVA).at(0, -5, -6 + i * 4).rot(-12, 0, 0).mat("rock")
@@ -404,7 +419,7 @@ final class BestiaryRadTzhaar {
         int dark = 0x341210;
         int lava = 0xFFB040;
         ModelSpec.Builder b = ModelSpec.builder("jaltok_jad").scale(1.8f).shadow(1.2f);
-        p(b, "body", null, Role.BODY, red).accent(lava).at(0, 11, 1).rot(-10, 0, 0).mat("rock").glow("cracks")
+        p(b, "body", null, Role.BODY, red).accent(lava).at(0, 9, 1).rot(-10, 0, 0).mat("rock").glow("cracks")
                 .box(-7, -7, -9, 14, 12, 18).add();
         p(b, "chest", "body", deep).accent(lava).at(0, -3, -9).rot(-8, 0, 0).mat("rock").glow("cracks").box(-6, -3, -2, 12, 9, 3).add();
         p(b, "haunch", "body", deep).accent(lava).at(0, -6, 6).rot(12, 0, 0).mat("rock").box(-6.5f, -2, -3, 13, 4, 7).add();
@@ -460,7 +475,7 @@ final class BestiaryRadTzhaar {
     /** The Ancestral Glyph: a great floating obsidian shield carved with a blazing rune. */
     static ModelSpec glyph() {
         ModelSpec.Builder b = ModelSpec.builder("ancestral_glyph").scale(1.0f).shadow(0.8f);
-        p(b, "slab", null, Role.FLOAT, IDEEP).accent(ILAVA).at(0, 7, 0).mat("rock").glow("cracks").box(-9, -13, -1.5f, 18, 26, 3).add();
+        p(b, "slab", null, Role.FLOAT, IDEEP).accent(ILAVA).at(0, 2, 0).mat("rock").glow("cracks").box(-9, -13, -1.5f, 18, 26, 3).add();
         // stepped rim
         p(b, "rim", "slab", IDARK).accent(ILAVA).at(0, 0, 0).mat("rock")
                 .box(-11, -12, -2, 2, 24, 4).box(9, -12, -2, 2, 24, 4).box(-8, -15, -2, 16, 2, 4).box(-8, 13, -2, 16, 2, 4).add();
@@ -480,6 +495,14 @@ final class BestiaryRadTzhaar {
         }
         p(b, "embers", "slab", Role.SPIN, ILAVA).at(0, 16, 0).mat("lava").glow("full")
                 .box(-6, 4, -6, 2, 2, 2).box(4, 5, 4, 2, 2, 2).box(5, 3, -5, 1, 1, 1).box(-5, 6, 5, 1, 1, 1).add();
+        Kit.P studs = p(b, "studs", "rim", ILAVA).at(0, 0, -2.2f).mat("energy").glow("full");
+        for (int i = 0; i < 4; i++) {
+            studs.box(-10.5f, -9 + i * 6, -0.5f, 1, 1, 1).box(9.5f, -9 + i * 6, -0.5f, 1, 1, 1);
+        }
+        studs.add();
+        s(b, "side_fin2", "side_fin", true, IDARK).at(4, 0, 0).mat("rock").box(0, -2, -0.5f, 2, 4, 1).add();
+        p(b, "crack_bars", "slab", IDARK).accent(ILAVA).at(0, 0, 0).mat("rock").glow("cracks")
+                .box(-7, -11, -2.1f, 3, 2, 1).box(4, 8, -2.1f, 3, 2, 1).box(-7, 8, 1.1f, 3, 2, 1).box(4, -11, 1.1f, 3, 2, 1).add();
         return b.build();
     }
 

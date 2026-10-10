@@ -172,6 +172,23 @@ final class BestiaryRadCox {
         }
         p(b, "glow_ring", "base", Role.SPIN, 0xC080FF).at(0, -4.2f, 0).mat("energy").glow("full")
                 .box(-4, -0.5f, -4, 8, 1, 1).box(-4, -0.5f, 3, 8, 1, 1).box(-4, -0.5f, -3, 1, 1, 6).box(3, -0.5f, -3, 1, 1, 6).add();
+        for (int i = 0; i < 6; i++) {
+            float a = (float) (i * Math.PI / 3 + 0.4);
+            float x = (float) Math.cos(a) * 5;
+            float z = (float) Math.sin(a) * 5;
+            p(b, "base_shard" + i, "base", i % 2 == 0 ? cry : 0xD8A0FF).at(x, -4, z)
+                    .rot((float) Math.sin(a) * 30, 0, -(float) Math.cos(a) * 30).mat("ice").glow(i % 3 == 0 ? "full" : null)
+                    .box(-1, -3 - i % 3, -1, 2, 3 + i % 3, 2).add();
+        }
+        p(b, "cracks", "base", 0xC080FF).at(0, -3.1f, 0).mat("energy").glow("full").box(-6, -0.5f, -0.5f, 3, 1, 1)
+                .box(3, -0.5f, 1, 3, 1, 1).box(-0.5f, -0.5f, 3, 1, 1, 3).box(1, -0.5f, -6, 1, 1, 3).add();
+        p(b, "motes", "crystal", Role.SPIN, 0xF0D0FF).at(0, -10, 0).mat("energy").glow("full").box(-7, 0, 0, 1, 1, 1)
+                .box(6, -4, 1, 1, 1, 1).box(0, -8, 6, 1, 1, 1).box(-1, 3, -7, 1, 1, 1).add();
+        p(b, "facets", "crystal", 0xE0B8FF).at(0, 0, 0).mat("ice").box(-3, -12, -1, 1, 10, 2).box(2, -14, -1, 1, 11, 2).add();
+        for (int i = 0; i < 4; i++) {
+            p(b, "rock" + i, "base", 0x5A5262).at(i < 2 ? -7 : 7, -1, i % 2 == 0 ? -6 : 5).rot(i * 20, i * 30, i * 15).mat("hide")
+                    .box(-1.5f, -1.5f, -1.5f, 3, 2, 3).add();
+        }
         return b.build();
     }
 
@@ -209,6 +226,12 @@ final class BestiaryRadCox {
         s(b, "fist_block", "hand", true, dark).at(0, 1, 0).mat("rock").box(-5, 0, -5, 10, 4, 10).add();
         s(b, "fist_rune", "fist_block", true, rune).at(0, 2, -5.2f).mat("energy").glow("full").box(-2, -0.5f, -0.5f, 4, 1, 1).add();
         p(b, "cracks", "torso", dark).at(0, -4, 0).mat("rock").box(-10.5f, -3, -3, 1, 6, 6).box(9.5f, -6, -2, 1, 5, 5).add();
+        s(b, "knee_rune", "knee", true, rune).at(0, 0, -1.3f).mat("energy").glow("full").box(-1, -0.5f, -0.5f, 2, 1, 1).add();
+        s(b, "arm_band", "arm", true, dark).at(0, 3, 0).mat("hide").box(-4, 0, -4, 8, 2, 8).add();
+        s(b, "fore_rune", "forearm", true, rune).at(0, 4, -4.2f).mat("energy").glow("full").box(-0.5f, -1.5f, -0.5f, 1, 3, 1).add();
+        p(b, "chips", "plinth", dark).at(0, -3, 0).mat("hide").box(-10, -1, -8, 2, 1, 2).box(8, -1, 6, 2, 1, 2).box(-3, -1, 7, 3, 1, 1).add();
+        p(b, "plinth_runes", "plinth", rune).at(0, -1, -9.1f).mat("energy").glow("full").box(-8, -0.5f, -0.5f, 3, 1, 1)
+                .box(-1.5f, -0.5f, -0.5f, 3, 1, 1).box(5, -0.5f, -0.5f, 3, 1, 1).add();
         return b.build();
     }
 
@@ -357,6 +380,14 @@ final class BestiaryRadCox {
         s(b, "toes_b", "leg_b", true, 0xE0C0F0).at(0, 4, -1).mat("horn").box(-1, -0.5f, -1, 1, 1, 1).box(0.2f, -0.5f, -1, 1, 1, 1).add();
         p(b, "tail", "body", Role.TAIL, purple).at(0, -2, 4).rot(10, 0, 0).mat("slime").box(-1, -1, 0, 2, 2, 4).add();
         p(b, "tail2", "tail", Role.TAIL, dark).at(0, 0, 4).mat("slime").box(-0.5f, -0.5f, 0, 1, 1, 3).add();
+        spikes(b, "ridge", "body", 0xE070FF, "slime", -4, new float[][]{{0, -2, 1}, {0, 0.5f, 2}, {0, 3, 1}}, -20);
+        s(b, "frill", "head", false, 0xE070FF).at(2.5f, -1.5f, -1).rot(0, -30, -30).mat("membrane").box(0, -1.5f, -0.5f, 2, 3, 1).add();
+        s(b, "cheek", "head", false, dark).at(2.5f, 0, -2).mat("slime").box(-0.5f, -1, -1, 1, 2, 2).add();
+        p(b, "belly_bands", "belly", 0x8A40B0).at(0, 0.6f, 0).mat("slime").box(-2.5f, -0.5f, -3, 5, 1, 1)
+                .box(-2.5f, -0.5f, -0.5f, 5, 1, 1).box(-2.5f, -0.5f, 2, 5, 1, 1).add();
+        s(b, "thigh_f", "leg_f", true, purple).at(0, 0, 0).mat("slime").box(-1.5f, -1, -1.5f, 3, 2, 3).add();
+        s(b, "thigh_b", "leg_b", true, purple).at(0, 0, 0).mat("slime").box(-1.5f, -1, -1.5f, 3, 2, 3).add();
+        teeth(b, "teeth", "snout", TOOTH, -1, 1, 1, -1.6f, 3, 1);
         return b.build();
     }
 
@@ -569,6 +600,14 @@ final class BestiaryRadCox {
         p(b, "pupil", "eye", 0x200808).at(0, 0, -1).mat("energy").box(-0.5f, -1, -0.4f, 1, 2, 1).add();
         p(b, "tendrils", "base", 0x5A2A6A).at(0, -2, 0).mat("flesh").box(-10, -3, -4, 2, 3, 2).box(8, -4, 2, 2, 4, 2)
                 .box(-4, -2, 3, 3, 2, 2).box(3, -2, -5, 2, 2, 2).add();
+        s(b, "pillar_rib", "pillar", true, 0xD8C8B0).at(0, -27, 0).mat("bone").box(-3, -1, -3, 6, 1, 6).box(-3, 5, -3, 6, 1, 6).add();
+        s(b, "pillar_eye", "pillar", true, 0xF06060).at(0, -16, -2.6f).mat("energy").glow("full").box(-1, -1, -0.5f, 2, 2, 1).add();
+        p(b, "vortex_ring2", "vortex", 0x6A20B0).at(0, 0, 0).rot(0, 0, 20).mat("energy").glow("full")
+                .box(-8, -13, -0.8f, 16, 1, 2).box(-8, 12, -0.8f, 16, 1, 2).box(-9, -12, -0.8f, 1, 24, 2).box(8, -12, -0.8f, 1, 24, 2).add();
+        p(b, "hive", "base", 0x6A4A2A).at(0, -3, 0).mat("chitin").box(-11, -2, -3, 3, 2, 3).box(-8, -3, 1, 3, 3, 3)
+                .box(8, -2, -2, 3, 2, 3).box(5, -3, 1, 3, 3, 2).add();
+        p(b, "hive_glow", "hive", 0xE0A030).at(0, -2.1f, 0).mat("energy").glow("full").box(-10, -0.5f, -2, 1, 1, 1).box(6, -1.5f, 2, 1, 1, 1).add();
+        p(b, "arch_ribs", "arch", 0xD8C8B0).at(0, 0, 0).mat("bone").box(-11, 0, -3, 2, 3, 6).box(9, 0, -3, 2, 3, 6).add();
         return b.build();
     }
 
@@ -720,6 +759,16 @@ final class BestiaryRadCox {
                     .mat("ice").glow(left && i % 2 == 0 ? "full" : null).box(-1.5f, -h, -1.5f, 3, h, 3).box(-0.5f, -h - 2, -0.5f, 1, 2, 1).add();
         }
         p(b, "scars", "palm", dark).at(0, -4, 5).mat("scales").box(-7, -3, -0.5f, 3, 1, 1).box(3, -5, -0.5f, 4, 1, 1).add();
+        for (int i = 0; i < 3; i++) {
+            p(b, "finger" + i + "_ridge", "finger" + i, shade(hide, 0.9f)).at(0, -2, 0).mat("scales").box(-1.5f, -1, -5, 3, 1, 4).add();
+        }
+        p(b, "wrist_folds", "wrist", dark).at(0, 0, 0).mat("scales").box(-6.5f, -3, -6.5f, 13, 1, 1).box(-6.5f, 0, -6.5f, 13, 1, 1).add();
+        p(b, "palm_spots", "palm", dark).at(0, 0, 0).mat("scales").box(-9.5f, -6, -2, 1, 2, 2).box(8.5f, -4, 1, 1, 2, 2)
+                .box(-4, -8.5f, 2, 2, 1, 2).add();
+        p(b, "rubble", "rock", 0x3A2E26).at(0, -4, 0).mat("rock").box(-13, -2, -9, 3, 2, 3).box(10, -1, -8, 3, 1, 2)
+                .box(-9, -1, 2, 2, 1, 2).box(7, -2, 0, 2, 2, 2).add();
+        s(b, "side_crystal", "palm", false, crystal).at(9, -5, 2).rot(0, 0, -50).mat("ice").glow(left ? "full" : null)
+                .box(-1, -4, -1, 2, 4, 2).add();
         return b.build();
     }
 }

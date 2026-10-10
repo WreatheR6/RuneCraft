@@ -110,7 +110,7 @@ final class BestiaryRadTob {
         int red = 0xB01A1A;
         int dark = 0x6A0A0A;
         ModelSpec.Builder b = ModelSpec.builder("blood_spawn").shadow(0.4f);
-        p(b, "blob", null, Role.FLOAT, red).accent(0xFF4040).at(0, 15, 0).mat("slime").box(-4, -4, -4, 8, 8, 8).add();
+        p(b, "blob", null, Role.FLOAT, red).accent(0xFF4040).at(0, 13, 0).mat("slime").box(-4, -4, -4, 8, 8, 8).add();
         p(b, "blob_x", "blob", red).at(0, 0, 0).mat("slime").box(-5, -2.5f, -2.5f, 10, 5, 5).add();
         p(b, "blob_z", "blob", red).at(0, 0, 0).mat("slime").box(-2.5f, -2.5f, -5, 5, 5, 10).add();
         p(b, "blob_y", "blob", shade(red, 1.1f)).at(0, 0, 0).mat("slime").box(-2.5f, -5, -2.5f, 5, 10, 5).add();
@@ -126,6 +126,18 @@ final class BestiaryRadTob {
         }
         p(b, "bubbles", "blob", 0xFF6060).at(0, -5, 0).mat("energy").glow("full").box(-2, -1, 1, 1, 1, 1).box(1, -1.5f, -1, 1, 1, 1)
                 .box(2, -0.5f, 2, 1, 1, 1).add();
+        float[][] lobes = {{-3.5f, -3.5f, -3.5f}, {3.5f, -3.5f, -3.5f}, {-3.5f, -3.5f, 3.5f}, {3.5f, -3.5f, 3.5f}, {-3.5f, 3.5f, -3.5f},
+            {3.5f, 3.5f, -3.5f}, {-3.5f, 3.5f, 3.5f}, {3.5f, 3.5f, 3.5f}};
+        for (int i = 0; i < lobes.length; i++) {
+            float[] q = lobes[i];
+            p(b, "lobe" + i, "blob", i % 2 == 0 ? shade(red, 0.9f) : red).at(q[0] * 0.8f, q[1] * 0.8f, q[2] * 0.8f).mat("slime")
+                    .box(-1.5f, -1.5f, -1.5f, 3, 3, 3).add();
+        }
+        p(b, "veins", "blob", dark).at(0, 0, 0).mat("flesh").box(-5.2f, -1, -1, 1, 3, 1).box(4.2f, -2, 1, 1, 4, 1)
+                .box(-1, -5.2f, 2, 3, 1, 1).box(1, -1, 4.2f, 1, 3, 1).add();
+        teeth(b, "teeth", "maw", TOOTH, -1.5f, 1.5f, 0, -1.1f, 3, 1);
+        p(b, "orbiting", "blob", Role.SPIN, 0xD02020).at(0, 0, 0).mat("slime").box(-8, -1, -1, 2, 2, 2).box(6, 0, 1, 2, 2, 2)
+                .box(0, -2, 6, 2, 2, 2).box(-1, 1, -8, 2, 2, 2).add();
         return b.build();
     }
 
@@ -227,8 +239,8 @@ final class BestiaryRadTob {
             s(b, n, "thorax", false, leg).roles(Role.LEG_EXTRA, Role.LEG_EXTRA).accent(accent).at(5, -1, zs[i])
                     .rot(0, yaws[i], -30).mat("chitin").box(0, -1, -1, 7, 2, 2).add();
             s(b, n + "_knee", n, true, accent).at(7, 0, 0).mat("chitin").box(-1, -1.5f, -1.5f, 2, 3, 3).add();
-            s(b, n + "_shin", n, true, dark).at(7, 0, 0).rot(0, 0, 12).mat("chitin").box(-1, 0, -1, 2, 9, 2).add();
-            s(b, n + "_foot", n + "_shin", true, TOOTH).at(0, 9, 0).mat("horn").box(-0.5f, 0, -0.5f, 1, 2, 1).add();
+            s(b, n + "_shin", n, true, dark).at(7, 0, 0).rot(0, 0, 12).mat("chitin").box(-1, 0, -1, 2, 11, 2).add();
+            s(b, n + "_foot", n + "_shin", true, TOOTH).at(0, 11, 0).mat("horn").box(-0.5f, 0, -0.5f, 1, 2, 1).add();
         }
         if (queen) {
             spikes(b, "crown", "thorax", accent, "horn", -5, new float[][]{{-3, -2, 4}, {0, -3, 6}, {3, -2, 4}, {-4, 2, 3}, {4, 2, 3}}, -10);
@@ -478,8 +490,8 @@ final class BestiaryRadTob {
             s(b, n, "thorax", false, legC).roles(Role.LEG_EXTRA, Role.LEG_EXTRA).accent(red).at(8, -2, zs[i]).rot(0, yaws[i], -40)
                     .mat("chitin").box(0, -1.5f, -1.5f, 12, 3, 3).add();
             s(b, n + "_knee", n, true, dark).at(12, 0, 0).mat("chitin").box(-1.5f, -2, -2, 3, 4, 4).box(-0.5f, -4, -0.5f, 1, 2, 1).add();
-            s(b, n + "_shin", n, true, body).at(12, 0, 0).rot(0, 0, 25).mat("chitin").box(-1, 0, -1, 2, 15, 2).add();
-            s(b, n + "_tip", n + "_shin", true, 0xD8C8C0).at(0, 15, 0).mat("horn").box(-0.5f, 0, -0.5f, 1, 3, 1).add();
+            s(b, n + "_shin", n, true, body).at(12, 0, 0).rot(0, 0, 25).mat("chitin").box(-1, 0, -1, 2, 19, 2).add();
+            s(b, n + "_tip", n + "_shin", true, 0xD8C8C0).at(0, 19, 0).mat("horn").box(-0.5f, 0, -0.5f, 1, 3, 1).add();
         }
         return b.build();
     }

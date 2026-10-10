@@ -345,6 +345,15 @@ final class BestiaryRadGames {
         shield.box(-10, -8, -0.5f, 1, 3, 1).box(9, -6, -0.5f, 1, 3, 1).box(-10, 4, -0.5f, 1, 3, 1).box(9, 6, -0.5f, 1, 3, 1);
         shield.add();
         p(b, "rubble", "base", stone).at(0, 0, 0).mat("rock").box(-13, -2, 1, 2, 2, 2).box(11, -2, -3, 2, 2, 2).box(-4, -1, 4, 2, 1, 2).add();
+        s(b, "pillar_crystal", "pillar", true, 0x9A60D0).at(-1.5f, -20, 0).rot(0, 0, 40).mat("ice").glow("full")
+                .box(-1, -4, -1, 2, 4, 2).box(-0.5f, 2, -1, 1, 3, 1).add();
+        s(b, "pillar_band", "pillar", true, dark).at(0, -8, 0).mat("rock").box(-2, 0, -2.5f, 4, 2, 5).box(-2, -12, -2.5f, 4, 2, 5).add();
+        p(b, "ground_cracks", "base", vortex).at(0, -3, 0).mat("energy").glow("full").box(-8, -0.5f, -1, 4, 1, 1)
+                .box(4, -0.5f, 1, 4, 1, 1).box(-1, -0.5f, 2, 1, 1, 2).box(1, -0.5f, -3, 1, 1, 2).add();
+        p(b, "lintel_spikes", "lintel", dark).at(0, -2, 0).mat("rock").box(-6, -3, -1, 2, 3, 2).box(4, -3, -1, 2, 3, 2)
+                .box(-0.5f, -6, -0.5f, 1, 1, 1).add();
+        p(b, "motes", "vortex", Role.SPIN, 0xF0C0FF).at(0, 0, 0).mat("energy").glow("full").box(-9, -6, -1, 1, 1, 1)
+                .box(8, 2, 1, 1, 1, 1).box(-1, 12, 2, 1, 1, 1).box(2, -13, -2, 1, 1, 1).add();
         return b.build();
     }
 
@@ -354,7 +363,7 @@ final class BestiaryRadGames {
         int dark = 0x3E4A26;
         int deep = 0x56663A;
         BestiaryRad.Frame f = new BestiaryRad.Frame("brawler", 1.3f, 0.9f).colors(skin, dark, deep, 0xD0E060)
-                .legs(4, 4, 5, 4).torso(15, 11, 10, 30).arms(7, 8, 5, 6).head(7, 5, 6).hips(11, 4, 8);
+                .legs(4, 4, 5, 4).torso(15, 11, 10, 30).arms(6, 6, 5, 6).head(7, 5, 6).hips(11, 4, 8);
         f.mat = "hide";
         f.claws = 0;
         f.handW = 7;
@@ -424,6 +433,12 @@ final class BestiaryRadGames {
         s(b, "foot_b", "leg_b", true, 0xE0D0C0).at(0, 6, -1.5f).mat("horn").box(-1.5f, 0, -1, 1, 1, 1).box(0.5f, 0, -1, 1, 1, 1).add();
         p(b, "tail", "body", Role.TAIL, shell).at(0, 0, 6).rot(-20, 0, 0).mat("chitin").box(-1.5f, -1.5f, 0, 3, 3, 5).add();
         p(b, "tail_spike", "tail", 0xE0D0C0).at(0, -1, 5).rot(-30, 0, 0).mat("horn").box(-0.5f, -3, -0.5f, 1, 3, 1).add();
+        p(b, "belly", "body", dark).at(0, 4, 0).mat("chitin").box(-4, -0.5f, -5, 8, 1, 10).add();
+        p(b, "carapace2", "carapace", shade(shell, 0.9f)).at(0, -2, 4).rot(15, 0, 0).mat("chitin").box(-4.5f, -1, -2, 9, 2, 4).add();
+        s(b, "shoulder_spike", "body", false, 0xE0D0C0).at(5, -4, -4).rot(-20, 0, -40).mat("horn").box(-0.5f, -3, -0.5f, 1, 3, 1).add();
+        eyes(b, "eye", "head", 0xFF5030, 2, -1.5f, -5, 1, 1);
+        s(b, "knee", "leg_b", true, shell).at(0, 3, -1.5f).mat("chitin").box(-1.5f, -1, -0.5f, 3, 2, 1).add();
+        s(b, "mandible", "jaw", false, 0xE0D0C0).at(2, 0, -2.5f).rot(0, 20, 0).mat("horn").box(-0.5f, -1, -2, 1, 1, 2).add();
         return b.build();
     }
 
@@ -456,6 +471,14 @@ final class BestiaryRadGames {
         p(b, "tail", "body", Role.TAIL, skin).at(0, -1, 6).rot(-20, 0, 0).mat("hide").box(-1, -1, 0, 2, 2, 5).add();
         p(b, "tail2", "tail", Role.TAIL, dark).at(0, 0, 5).rot(-15, 0, 0).mat("hide").box(-0.5f, -0.5f, 0, 1, 1, 6).add();
         p(b, "tail_wisp", "tail2", glow).at(0, 0, 6).mat("energy").glow("full").box(-1, -1, 0, 2, 2, 2).add();
+        p(b, "ribs", "body", dark).at(0, 0, 0).mat("hide").box(-3.2f, -1, -3, 1, 3, 1).box(-3.2f, -1, 0, 1, 3, 1).box(2.2f, -1, -3, 1, 3, 1)
+                .box(2.2f, -1, 0, 1, 3, 1).add();
+        spikes(b, "neck_spines", "neck", glow, "energy", -2, new float[][]{{0, -1, 2}, {0, 1, 2}}, -40);
+        s(b, "shoulder", "body", false, dark).at(3, -1, -4).mat("hide").box(-0.5f, -1.5f, -1.5f, 1, 3, 3).add();
+        s(b, "hip", "body", false, dark).at(3, -1, 4).mat("hide").box(-0.5f, -1.5f, -1.5f, 1, 3, 3).add();
+        p(b, "collar", "neck", glow).at(0, 0, 0).mat("energy").glow("full").box(-2.5f, -2.5f, -0.5f, 5, 1, 1).add();
+        s(b, "claws_f", "leg_f_paw", true, 0xE8E0D0).at(0, 0.5f, -2).mat("horn").box(-1, -0.5f, -1, 1, 1, 1).box(0.2f, -0.5f, -1, 1, 1, 1).add();
+        s(b, "claws_b", "leg_b_paw", true, 0xE8E0D0).at(0, 0.5f, -2).mat("horn").box(-1, -0.5f, -1, 1, 1, 1).box(0.2f, -0.5f, -1, 1, 1, 1).add();
         return b.build();
     }
 
@@ -477,9 +500,18 @@ final class BestiaryRadGames {
             String n = "leg" + i;
             s(b, n, "body", false, dark).roles(Role.LEG_EXTRA, Role.LEG_EXTRA).at(4, -1, zs[i]).rot(0, yaws[i], -35).mat("chitin")
                     .box(0, -0.5f, -0.5f, 5, 1, 1).add();
-            s(b, n + "_shin", n, true, body).at(5, 0, 0).rot(0, 0, 15).mat("chitin").box(-0.5f, 0, -0.5f, 1, 8, 1).add();
+            s(b, n + "_shin", n, true, body).at(5, 0, 0).rot(0, 0, 15).mat("chitin").box(-0.5f, 0, -0.5f, 1, 10, 1).add();
         }
         p(b, "thread", "abdomen", 0xF0F0F0).at(0, 0, 9).mat("cloth").box(-0.5f, 0, 0, 1, 1, 3).add();
+        for (int i = 0; i < 4; i++) {
+            String n = "leg" + i;
+            s(b, n + "_knee", n, true, body).at(5, 0, 0).mat("chitin").box(-1, -1, -1, 2, 2, 2).add();
+            s(b, n + "_tip", n + "_shin", true, 0xE8D8B0).at(0, 10, 0).mat("horn").box(-0.5f, 0, -0.5f, 1, 1, 1).add();
+        }
+        p(b, "abd_bands", "abdomen", dark).at(0, 0, 0).mat("chitin").box(-5.5f, -5.5f, 2, 11, 9, 1).box(-5.5f, -5.5f, 5, 11, 9, 1)
+                .box(-4.5f, -4.5f, 8, 9, 7, 1).add();
+        s(b, "palp", "head", false, dark).at(2.5f, 1, -2.5f).rot(20, 20, 0).mat("chitin").box(-0.5f, 0, -2, 1, 1, 2).box(-0.5f, 1, -2.5f, 1, 2, 1).add();
+        p(b, "web_strands", "web_sac", 0xF0F0F0).at(0, 0, 0).mat("cloth").box(-3.5f, -1, -0.5f, 7, 1, 1).box(-0.5f, -1, -3.5f, 1, 1, 7).add();
         return b.build();
     }
 
@@ -504,6 +536,15 @@ final class BestiaryRadGames {
         s(b, "leg_f", null, false, dark).roles(Role.LEG_FRONT_LEFT, Role.LEG_FRONT_RIGHT).at(3, 20, -3).mat("slime").box(-1.5f, 0, -1.5f, 3, 4, 3).add();
         s(b, "leg_b", null, false, dark).roles(Role.LEG_BACK_LEFT, Role.LEG_BACK_RIGHT).at(3, 20, 3).mat("slime").box(-1.5f, 0, -1.5f, 3, 4, 3).add();
         p(b, "drip", "body", 0xF090B0).at(0, 0, 0).mat("slime").glow("full").box(-4, -1, -5.5f, 1, 2, 1).box(3, -2, 5, 1, 3, 1).add();
+        p(b, "veins", "body", dark).at(0, 0, 0).mat("flesh").box(-5.2f, -7, -1, 1, 5, 1).box(4.2f, -6, 1, 1, 5, 1)
+                .box(-2, -7, 4.2f, 1, 5, 1).box(2, -8, -5.2f, 1, 4, 1).add();
+        p(b, "lip", "mouth", shade(skin, 0.8f)).at(0, 2, -0.5f).mat("slime").box(-3.5f, 0, -1, 7, 1, 1).add();
+        s(b, "toes_f", "leg_f", true, 0xE8D0D8).at(0, 3.5f, -1.5f).mat("horn").box(-1.5f, 0, -1, 1, 1, 1).box(0.5f, 0, -1, 1, 1, 1).add();
+        s(b, "toes_b", "leg_b", true, 0xE8D0D8).at(0, 3.5f, -1.5f).mat("horn").box(-1.5f, 0, -1, 1, 1, 1).box(0.5f, 0, -1, 1, 1, 1).add();
+        spikes(b, "nubs", "cap", shade(skin, 0.75f), "slime", -1.5f, new float[][]{{-2, -1, 1}, {1.5f, 0, 2}, {-0.5f, 2, 1}}, 0);
+        p(b, "tongue", "mouth", 0xE07090).at(0.5f, 1, -1).rot(30, 0, 0).mat("flesh").box(-1, 0, -2, 2, 1, 2).add();
+        p(b, "glow_cracks", "body", 0xF0A0C0).at(0, -1, 0).mat("energy").glow("full").box(-5.3f, -3, 2, 1, 1, 2).box(4.3f, -5, -3, 1, 1, 2)
+                .box(-1, -2, 5.3f, 2, 1, 1).add();
         return b.build();
     }
 
@@ -526,6 +567,14 @@ final class BestiaryRadGames {
         p(b, "tail", "body", Role.TAIL, body).at(0, 0, 4).rot(-10, 0, 0).mat("hide").box(-1, -1, 0, 2, 2, 4).add();
         p(b, "tail_flame", "tail", flame).at(0, 0, 4).mat("lava").glow("full").box(-1.5f, -1.5f, 0, 3, 3, 3).add();
         p(b, "fireball", "body", Role.SPIN, flame).at(0, 5, -5).mat("energy").glow("full").box(-1, -1, -1, 2, 2, 2).add();
+        s(b, "wing2", "wing", true, dark).accent(flame).at(9, 0, 0).rot(0, -20, 0).mat("membrane").box(0, -0.5f, -2, 6, 1, 6).add();
+        s(b, "wing_finger", "wing2", true, 0xE0C080).at(0, -0.6f, -2).mat("bone").box(0, -0.5f, -0.5f, 6, 1, 1).box(2, -0.5f, 1, 4, 1, 1).add();
+        p(b, "jaw", "head", Role.JAW, 0xC0A060).at(0, 1.5f, -4).rot(10, 0, 0).mat("horn").box(-1, 0, -2, 2, 1, 2).add();
+        s(b, "horn", "head", false, 0xE0C080).at(2, -2.5f, -2).rot(-30, 0, -30).mat("horn").box(-0.5f, -3, -0.5f, 1, 3, 1).add();
+        p(b, "chest_plate", "body", shade(body, 1.15f)).at(0, -1, -4).mat("hide").box(-2, -1.5f, -0.6f, 4, 4, 1).add();
+        p(b, "flame_trail", "tail", Role.SPIN, flame).at(0, 0, 7).mat("lava").glow("full").box(-2, -1, 0, 1, 1, 1).box(1, 0, 1, 1, 1, 1)
+                .box(0, -2, 2, 1, 1, 1).box(-1, 1, 3, 1, 1, 1).add();
+        spikes(b, "back_flames", "body", flame, "lava", -3, new float[][]{{0, -2, 2}, {0, 0.5f, 3}, {0, 3, 2}}, -30);
         return b.build();
     }
 }

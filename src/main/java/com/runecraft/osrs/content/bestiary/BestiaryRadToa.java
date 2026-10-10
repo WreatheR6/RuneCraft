@@ -219,6 +219,16 @@ final class BestiaryRadToa {
         }
         p(b, "glyph", "rock", 0xE0B040).at(0, 0, -7.1f).mat("energy").glow("full").box(-1.5f, -2, -0.5f, 3, 1, 1)
                 .box(-1.5f, 1, -0.5f, 3, 1, 1).box(-2.5f, -1, -0.5f, 1, 2, 1).box(1.5f, -1, -0.5f, 1, 2, 1).box(-0.5f, -0.5f, -0.6f, 1, 1, 1).add();
+        for (int i = 0; i < 6; i++) {
+            float a = (float) (i * Math.PI / 3 + 0.5);
+            p(b, "nub" + i, "rock", i % 2 == 0 ? shade(sand, 0.85f) : shade(sand, 1.1f))
+                    .at((float) Math.cos(a) * 4, (i % 2 == 0 ? 1 : -1) * 6, (float) Math.sin(a) * 4).rot(i * 25, i * 40, i * 10).mat("hide")
+                    .box(-1.5f, -1, -1.5f, 3, 2, 3).add();
+        }
+        p(b, "cracks", "rock", dark).at(0, 0, 0).mat("hide").box(-7.1f, -2, -0.5f, 1, 5, 1).box(6.1f, -3, 1, 1, 4, 1)
+                .box(-1, -7.1f, 2, 4, 1, 1).box(2, 6.1f, -2, 1, 1, 4).add();
+        p(b, "glyph_back", "rock", 0xE0B040).at(0, 0, 7.1f).mat("energy").glow("full").box(-1.5f, -2, -0.5f, 3, 1, 1)
+                .box(-0.5f, -1, -0.5f, 1, 3, 1).box(-1.5f, 2, -0.5f, 3, 1, 1).add();
         return b.build();
     }
 
@@ -308,6 +318,14 @@ final class BestiaryRadToa {
                 .box(-5, -0.5f, -4, 1, 1, 8).box(4, -0.5f, -4, 1, 1, 8).add();
         s(b, "corner", "base", false, GOLD).at(8, -3, 8).mat("metal").box(-1.5f, -2, -1.5f, 3, 2, 3).add();
         s(b, "corner_f", "base", false, GOLD).at(8, -3, -8).mat("metal").box(-1.5f, -2, -1.5f, 3, 2, 3).add();
+        p(b, "band0", "pillar", GOLD).at(0, 0, 0).mat("metal").box(-5.5f, -1, -5.5f, 11, 1, 11).add();
+        p(b, "band1", "pillar", GOLD).at(0, -16, 0).mat("metal").box(-5.5f, 0, -5.5f, 11, 1, 11).add();
+        p(b, "band2", "pillar2", GOLD).at(0, -12, 0).mat("metal").box(-4.5f, 0, -4.5f, 9, 1, 9).add();
+        s(b, "cartouche", "pillar", false, dark).at(5, -9, 0).mat("plates").box(-0.4f, -5, -2, 1, 10, 4).add();
+        s(b, "cartouche_glyph", "cartouche", true, energy).at(0.4f, 0, 0).mat("energy").glow("full").box(-0.3f, -3, -0.5f, 1, 2, 1)
+                .box(-0.3f, 0, -1, 1, 1, 2).box(-0.3f, 2, -0.5f, 1, 2, 1).add();
+        p(b, "sun_disc", "pyramidion", Role.SPIN, 0xFFE070).at(0, -9, 0).mat("energy").glow("full").box(-2, -2, -0.5f, 4, 4, 1).add();
+        s(b, "base_step", "base", false, shade(sand, 0.9f)).at(9, -1.5f, 0).mat("plates").box(0, -1.5f, -6, 2, 3, 12).add();
         return b.build();
     }
 
