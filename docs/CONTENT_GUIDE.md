@@ -145,3 +145,5 @@ not a problem.
 * `replaces("LUMBRIDGE")` (Landmark enum name or module place id) suppresses that place's default
   paved plaza. Its NPCs, boss arenas and any station the structure does not contain are still
   added, so put the bank booths / furnaces / altars where they really are.
+* Doors and beds: give one half with full properties (`minecraft:oak_door[facing=north,half=lower]`,
+  `minecraft:red_bed[facing=east,part=foot]`); the placer adds the other half.

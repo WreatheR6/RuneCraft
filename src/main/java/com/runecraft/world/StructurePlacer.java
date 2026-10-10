@@ -12,10 +12,14 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LeavesBlock;
+import net.minecraft.block.enums.BedPart;
+import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.command.argument.BlockArgumentParser;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.Heightmap;
@@ -249,8 +253,36 @@ public final class StructurePlacer {
     }
 
     private static void set(ServerWorld world, BlockPos pos, BlockState state) {
+        if (state.contains(Properties.DOUBLE_BLOCK_HALF) || state.contains(Properties.BED_PART)) {
+            setMultipart(world, pos, state);
+            return;
+        }
         BlockState placed = state.isAir() ? state : Block.postProcessState(state, world, pos);
         world.setBlockState(pos, placed, Block.NOTIFY_LISTENERS | Block.SKIP_DROPS);
+    }
+
+    /**
+     * Doors, tall plants and beds: neighbour post-processing would break a half placed alone, so
+     * place the given half as-is together with its partner (FORCE_STATE stops either half from
+     * popping before the other exists).
+     */
+    private static void setMultipart(ServerWorld world, BlockPos pos, BlockState state) {
+        int flags = Block.NOTIFY_LISTENERS | Block.SKIP_DROPS | Block.FORCE_STATE;
+        world.setBlockState(pos, state, flags);
+        if (state.contains(Properties.DOUBLE_BLOCK_HALF)) {
+            boolean lower = state.get(Properties.DOUBLE_BLOCK_HALF) == DoubleBlockHalf.LOWER;
+            BlockPos other = lower ? pos.up() : pos.down();
+            world.setBlockState(other, state.with(Properties.DOUBLE_BLOCK_HALF,
+                    lower ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER), flags);
+        } else if (state.contains(Properties.HORIZONTAL_FACING)) {
+            boolean foot = state.get(Properties.BED_PART) == BedPart.FOOT;
+            Direction facing = state.get(Properties.HORIZONTAL_FACING);
+            BlockPos other = foot ? pos.offset(facing) : pos.offset(facing.getOpposite());
+            if (!world.isChunkLoaded(other.getX() >> 4, other.getZ() >> 4)) {
+                return;
+            }
+            world.setBlockState(other, state.with(Properties.BED_PART, foot ? BedPart.HEAD : BedPart.FOOT), flags);
+        }
     }
 
     /** Parses a block state in command syntax ("minecraft:oak_stairs[facing=north]"); unknown blocks become air. */
