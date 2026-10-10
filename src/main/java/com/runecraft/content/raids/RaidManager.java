@@ -11,6 +11,10 @@ import com.runecraft.osrs.content.raids.RaidsContent;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.item.BlockItem;
+import net.minecraft.util.ActionResult;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -136,6 +140,16 @@ public final class RaidManager {
                 RaidEffects.later(1, () -> sendHome(p));
             }
         });
+        // Raid instances cannot be dug out of or built in (outside creative mode).
+        PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) ->
+                player.isCreative() || !RaidBuilder.inInstanceArea(pos.getX(), pos.getZ()) || !Gielinor.is(world));
+        UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+            if (!world.isClient() && !player.isCreative() && player.getStackInHand(hand).getItem() instanceof BlockItem
+                    && RaidBuilder.inInstanceArea(hit.getBlockPos().getX(), hit.getBlockPos().getZ()) && Gielinor.is(world)) {
+                return ActionResult.FAIL;
+            }
+            return ActionResult.PASS;
+        });
         ServerLifecycleEvents.SERVER_STARTED.register(RaidManager::releaseStaleChunks);
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             for (RaidInstance raid : active()) {
@@ -253,6 +267,9 @@ public final class RaidManager {
             case RaidsContent.SUPPLIES -> raid.takeSupplies(player);
             case RaidsContent.REWARD_CHEST -> raid.claim(player);
             case RaidsContent.EXIT -> {
+                if (raid.finished() && !raid.hasClaimed(player)) {
+                    raid.claim(player);
+                }
                 Msg.game(player, raid.finished() ? "You leave with your reward." : "You leave the " + raid.type.displayName() + ".");
                 raid.removePlayer(player.getUuid(), true);
                 if (raid.party().isEmpty()) {

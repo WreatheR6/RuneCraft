@@ -388,6 +388,9 @@ public final class RaidInstance {
 
     /** Builds the lobby and first room and brings the party in. */
     void open(List<ServerPlayerEntity> members) {
+        for (int i = 0; i < Math.min(3, rooms.size()); i++) {
+            RaidBuilder.prefetch(world, slot, i);
+        }
         ensureBuilt(0);
         ensureBuilt(1);
         RaidBuilder.closeExit(world, slot, 0, RaidBuilder.module(RaidsContent.START_BARRIER));
@@ -472,6 +475,9 @@ public final class RaidInstance {
         roomStartTick = ActionManager.gameTick();
         ensureBuilt(i);
         ensureBuilt(i + 1);
+        if (i + 2 < rooms.size()) {
+            RaidBuilder.prefetch(world, slot, i + 2);
+        }
         RoomDef def = rooms.get(i);
         RoomLogic logic = logics[i];
         logic.started = true;
@@ -583,6 +589,10 @@ public final class RaidInstance {
             world.getServer().getPlayerManager().broadcast(Text.literal(p.getName().getString()
                     + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
         }
+    }
+
+    public boolean hasClaimed(ServerPlayerEntity p) {
+        return claimed.contains(p.getUuid());
     }
 
     public void takeSupplies(ServerPlayerEntity p) {

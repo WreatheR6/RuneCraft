@@ -114,6 +114,22 @@ public final class RaidBuilder {
         }
     }
 
+    /**
+     * Force-loads a room's chunks without waiting: the forced ticket makes the server generate them
+     * in the background, so building the room later does not stall the tick.
+     */
+    public static void prefetch(ServerWorld world, int slot, int room) {
+        BlockPos c = center(slot, room);
+        int w = HALF + 1;
+        RaidsState state = RaidsState.get(world.getServer());
+        for (int cx = (c.getX() - w - 1) >> 4; cx <= (c.getX() + SPACING - w + 1) >> 4; cx++) {
+            for (int cz = (c.getZ() - w - 1) >> 4; cz <= (c.getZ() + w + 1) >> 4; cz++) {
+                world.setChunkForced(cx, cz, true);
+                state.addForced(ChunkPos.toLong(cx, cz));
+            }
+        }
+    }
+
     /** Releases every chunk of an instance slot. */
     public static void unloadSlot(ServerWorld world, int slot) {
         RaidsState state = RaidsState.get(world.getServer());
