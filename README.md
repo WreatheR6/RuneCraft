@@ -47,45 +47,41 @@ Old School RuneScape for **Minecraft 1.20.1 (Fabric)**. It adds a separate dimen
 | Sailing | **Placeholder:** XP for travelling by boat in Gielinor. |
 
 ## World
-* **Map:** Lumbridge is at (0, 0), and one OSRS tile is two blocks. Kingdom borders follow the OSRS map. The Wilderness starts at the ditch and shows its level. The map has 13 kingdom biomes: Misthalin, Lumbridge Swamp, Asgarnia, Wilderness, Kharidian Desert, Morytania, Kandarin, Feldip Hills, Fremennik, Troll Country, Karamja, Tirannwn and an uncharted fringe.
-* **Terrain:** custom terrain gives gentle OSRS-like hills and lakes.
-* **Landmarks:** about 50 landmarks are built at their real coordinates the first time their chunk loads. These are cities with banks, furnaces, anvils, ranges, shops and stalls, plus rune altars, boss lairs, agility courses and quest NPCs.
-* **Monsters:** monsters use OSRS stats and are aggressive only toward players whose combat level is at most double theirs plus one. The list includes goblins, men, guards, Al-Kharid warriors, barbarians, dark wizards, hill/moss/ice giants, ghouls and lesser/greater/black demons. Vanilla mobs in Gielinor take OSRS stats.
+* **Map:** Lumbridge is at (0, 0), and one OSRS tile is two blocks. Kingdom borders follow the OSRS map. The Wilderness starts at the ditch and shows its level.
+* **Hand-built structures:** about 200 towns, castles, guilds, temples and ruins are built at their real OSRS tile positions, chunk by chunk as you explore. The ground under each one is levelled and blended into the surrounding terrain. This covers:
+  * Misthalin: Lumbridge, Draynor and Draynor Manor, Varrock and the Grand Exchange, Edgeville, Barbarian Village, the Wizards' Tower.
+  * Asgarnia: Falador and the White Knights' Castle, Port Sarim, Rimmington, Taverley, Burthorpe, the Warriors' and Heroes' guilds, the Black Knights' Fortress, Entrana.
+  * Karamja: Musa Point, Brimhaven, Shilo Village, Tai Bwo Wannai, the volcano.
+  * Kandarin and the west: Camelot, Seers', Catherby, both Ardougnes, Yanille, the Gnome Stronghold and Grand Tree, Rellekka, Lletya, Prifddinas, Trollheim.
+  * The desert: Al Kharid, Pollnivneach, Nardah, Sophanem, Menaphos, the pyramids.
+  * Morytania: Canifis, Port Phasmatys, the Barrows, Darkmeyer, Ver Sinhaza, the Slayer Tower.
+  * The Wilderness: the ditch, Ferox Enclave, the Mage Arena, Rogues' Castle and ruins.
+  * Great Kourend and Varlamore: Kourend Castle with the Catacombs, the five house towns, Civitas illa Fortis and the Colosseum.
 
-## Bosses
-Obor (needs a giant key), Bryophyta (needs a mossy key), the six **Barrows brothers** (each with their set effect), **General Graardor**, **K'ril Tsutsaroth** and **TzTok-Jad** (telegraphed attacks, so you can swap prayers). Each has a boss bar, kill counts and unique drops (Barrows gear, Bandos armour, Zamorakian spear, fire cape and more).
+  Previews are in `docs/previews/`.
+* **NPCs and shops:** 86 shops with OSRS stock and the OSRS shop price formula, shared stock and restocking. There are bankers in every bank, about 700 NPCs with dialogue, and attackable, pickpocketable townsfolk.
+* **Travel:** boats, charter ships, gnome gliders, magic carpets, canoes, the Lovakengj minecarts and the quetzal network.
+* **Monsters:** over 300 monster types with OSRS stats, drop tables and OSRS aggression rules.
 
-## Quests (22 quest points)
-* Cook's Assistant
-* Sheep Shearer
-* Doric's Quest
-* Rune Mysteries
-* The Restless Ghost
-* Imp Catcher
-* Witch's Potion
-* Romeo & Juliet
-* Druidic Ritual
-* Vampyre Slayer (kill Count Draynor with a stake and hammer)
-* Demon Slayer (banish Delrith with Silverlight)
-* The Barrows and Fight Caves miniquests
+## Bosses and raids
+* **Bosses:** 200 bosses with custom models and scripted mechanics. Examples are God Wars, Zulrah, Vorkath, the wilderness bosses, the Desert Treasure II bosses, the Moons of Peril, slayer bosses and Varlamore bosses.
+* **Raids:** Chambers of Xeric, Theatre of Blood and Tombs of Amascut, with invocations and scaling.
+
+## Quests
+196 quests and miniquests, worth 326 quest points. This covers F2P through Varlamore. They have OSRS requirements, steps, NPCs and rewards; some recent quests are approximations.
+
+## Systems and minigames
+* **Systems:** slayer with every master, clue scrolls, the Grand Exchange, achievement diaries, the ancient, lunar and Arceuus spellbooks, special attacks, jewellery teleports, skill capes, and run energy.
+* **Minigames:** Fight Caves, the Inferno, Pest Control, Wintertodt, Tempoross, Guardians of the Rift, Barbarian Assault, Castle Wars, the Warriors' Guild, Mage Training Arena, Pyramid Plunder, Hallowed Sepulchre and more.
 
 ## Collection log
-Boss uniques, keys, rooftop agility, hunter, gems, herbs, runes and quest rewards.
+Pages for bosses, raids, clues, minigames, slayer, quests and other activities.
 
-## What's not there yet
-This is a large foundation, not all of OSRS. Not yet implemented:
-* Most of the ~170 quests
-* The Grand Exchange
-* Clue scrolls
-* Minigames
-* Player-owned houses
-* Most bosses and raids
-* Dragons (no model yet)
-* Diaries
-* Ancient, Lunar and Arceuus spellbooks
-* Special attacks
-* Poison and venom
-* Real Sailing content
+## Known limitations
+* Much of the content is generated data that has not been play-tested in game yet. Expect balance and placement issues.
+* Layouts of structures are recognisable approximations, not tile-exact copies of the OSRS map.
+* Some mechanics are simplified. For example, the Moons of Peril drop their own sets instead of using a shared chest.
+* Some recent content uses approximate stats, coordinates or quest details. These are marked `approx`/`approximate` in the code.
 
 ## Building
 ```
