@@ -23,6 +23,22 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+loom {
+    runs {
+        // CI client smoke test (./gradlew runClientSmoke, see .github/workflows/build.yml): loads the
+        // world saved as build/clientsmoke/saves/smoke, walks through Gielinor taking screenshots, quits.
+        clientSmoke {
+            client()
+            name "Client Smoke Test"
+            runDir "build/clientsmoke"
+            ideConfigGenerated false
+            property("runecraft.clientSmoke", "true")
+            property("runecraft.clientSmoke.world", "smoke")
+            programArgs("--quickPlaySingleplayer", "smoke", "--width", "1280", "--height", "720")
+        }
+    }
+}
+
 processResources {
     inputs.property "version", project.version
     filesMatching("fabric.mod.json") {
