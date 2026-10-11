@@ -145,12 +145,36 @@ public final class Barrows {
         return new int[]{tunnelX() + (c - 1) * ROOM_SPACING, tunnelZ() + (r - 1) * ROOM_SPACING};
     }
 
+    /** The tunnel room (0..8) whose floor area contains column (x, z), or -1 (corridors and doors too). */
+    public static int roomAt(int x, int z) {
+        for (int room = 0; room < 9; room++) {
+            int[] c = roomCentre(room);
+            if (Math.abs(x - c[0]) <= ROOM_HALF && Math.abs(z - c[1]) <= ROOM_HALF) {
+                return room;
+            }
+        }
+        return -1;
+    }
+
     /** The door {x, z} (block column of the door's centre) of tunnel edge {@code edge}. */
     public static int[] doorAt(int edge) {
         int[] rooms = BarrowsRun.edgeRooms(edge);
         int[] a = roomCentre(rooms[0]);
         int[] b = roomCentre(rooms[1]);
         return new int[]{(a[0] + b[0]) / 2, (a[1] + b[1]) / 2};
+    }
+
+    /**
+     * The room on the far side of edge {@code e}'s door from a player standing at column (x, z): the
+     * room the player is heading into when he opens that door.
+     */
+    public static int roomBeyondDoor(int e, int x, int z) {
+        int[] rooms = BarrowsRun.edgeRooms(e);
+        int[] a = roomCentre(rooms[0]);
+        int[] b = roomCentre(rooms[1]);
+        long da = (long) (x - a[0]) * (x - a[0]) + (long) (z - a[1]) * (z - a[1]);
+        long db = (long) (x - b[0]) * (x - b[0]) + (long) (z - b[1]) * (z - b[1]);
+        return da <= db ? rooms[1] : rooms[0];
     }
 
     /** The tunnel edge whose door is at column (x, z), or -1. */

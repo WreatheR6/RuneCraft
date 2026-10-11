@@ -19,6 +19,9 @@ import java.util.Random;
  * 0..8, the chest in room 4) joined by {@link #EDGES} corridors: edges 0..5 run east-west
  * (row * 2 + column), edges 6..11 north-south (6 + row * 3 + column). Each run opens a random
  * spanning tree of the corridors plus one extra, so every room can be reached but the route changes.
+ * About half of the doors into the chest room pose a puzzle ({@link BarrowsPuzzles}) that must be
+ * solved once per run, brothers who are still alive may ambush the player in the tunnels
+ * ({@link #tunnelEncounter(Random)}), and killing tunnel monsters adds a little reward potential.
  */
 public final class BarrowsRun {
     public static final int EDGES = 12;
@@ -29,23 +32,32 @@ public final class BarrowsRun {
     private int tunnel;
     private long seed;
     private boolean hiddenSummoned;
+    private int solved;
+    private int monsterKills;
 
-    private BarrowsRun(int killed, int summoned, int tunnel, long seed, boolean hiddenSummoned) {
+    private BarrowsRun(int killed, int summoned, int tunnel, long seed, boolean hiddenSummoned, int solved, int monsterKills) {
         this.killed = killed & ALL;
         this.summoned = summoned & ALL;
         this.tunnel = Math.floorMod(tunnel, 6);
         this.seed = seed;
         this.hiddenSummoned = hiddenSummoned;
+        this.solved = solved & ((1 << EDGES) - 1);
+        this.monsterKills = Math.max(0, monsterKills);
     }
 
     /** A new run with a random tunnel brother and tunnel layout. */
     public static BarrowsRun fresh(Random random) {
-        return new BarrowsRun(0, 0, random.nextInt(6), random.nextLong(), false);
+        return new BarrowsRun(0, 0, random.nextInt(6), random.nextLong(), false, 0, 0);
     }
 
     /** Restores a saved run (see the getters for the fields). */
     public static BarrowsRun of(int killed, int summoned, int tunnel, long seed, boolean hiddenSummoned) {
-        return new BarrowsRun(killed, summoned, tunnel, seed, hiddenSummoned);
+        return of(killed, summoned, tunnel, seed, hiddenSummoned, 0, 0);
+    }
+
+    /** Restores a saved run including its solved puzzle doors and tunnel monster kills. */
+    public static BarrowsRun of(int killed, int summoned, int tunnel, long seed, boolean hiddenSummoned, int solved, int monsterKills) {
+        return new BarrowsRun(killed, summoned, tunnel, seed, hiddenSummoned, solved, monsterKills);
     }
 
     /** Ends the run (after the chest is looted): everything is reset and a new tunnel brother picked. */
@@ -55,6 +67,8 @@ public final class BarrowsRun {
         tunnel = random.nextInt(6);
         seed = random.nextLong();
         hiddenSummoned = false;
+        solved = 0;
+        monsterKills = 0;
     }
 
     public int killedMask() {
@@ -79,6 +93,16 @@ public final class BarrowsRun {
 
     public boolean hiddenSummoned() {
         return hiddenSummoned;
+    }
+
+    /** Bit mask (by edge) of the puzzle doors already solved this run. */
+    public int solvedMask() {
+        return solved;
+    }
+
+    /** Tunnel monsters killed this run (all of them; only {@link #MONSTER_POTENTIAL_CAP} count). */
+    public int monsterKills() {
+        return monsterKills;
     }
 
     public boolean killed(int brother) {
@@ -186,13 +210,100 @@ public final class BarrowsRun {
         return edge >= 0 && edge < EDGES && openDoors()[edge];
     }
 
+    /** True if edge {@code e} joins the chest room to one of the four rooms around it. */
+    public static boolean chestDoor(int e) {
+        int[] r = edgeRooms(e);
+        return r[0] == Barrows.CHEST_ROOM || r[1] == Barrows.CHEST_ROOM;
+    }
+
+    /**
+     * True if the door of edge {@code e} poses a puzzle this run: about half of the doors into the
+     * chest room, fixed for the run (so walking away and back doesn't skip it).
+     */
+    public boolean puzzleDoor(int e) {
+        if (e < 0 || e >= EDGES || !chestDoor(e)) {
+            return false;
+        }
+        long z = seed + (e + 1) * 0x9E3779B97F4A7C15L;
+        z = (z ^ (z >>> 33)) * 0xFF51AFD7ED558CCDL;
+        z = (z ^ (z >>> 33)) * 0xC4CEB9FE1A85EC53L;
+        return ((z ^ (z >>> 33)) & 1L) == 0;
+    }
+
+    public boolean solved(int e) {
+        return e >= 0 && e < EDGES && (solved & (1 << e)) != 0;
+    }
+
+    /** The puzzle on door {@code e} was answered correctly: it stays open for the rest of the run. */
+    public void solve(int e) {
+        if (e >= 0 && e < EDGES) {
+            solved |= 1 << e;
+        }
+    }
+
+    /** True if opening door {@code e} (an open one) needs its puzzle answered first. */
+    public boolean needsPuzzle(int e) {
+        return doorOpen(e) && puzzleDoor(e) && !solved(e);
+    }
+
     /** The room the tunnel entrance leads into this run: one of the four corner rooms. */
     public int startRoom() {
         int[] corners = {0, 2, 6, 8};
         return corners[(int) Math.floorMod(seed >>> 7, 4L)];
     }
 
+    // ------------------------------------------------------------------ tunnel brothers
+
+    /** OSRS-like chance (1 in this) that a living brother ambushes the player on entering a tunnel room. */
+    public static final int TUNNEL_ENCOUNTER_CHANCE = 6;
+
+    /** The brothers who may still appear in the tunnels: not killed this run and not the hidden one. */
+    public List<Integer> tunnelCandidates() {
+        List<Integer> list = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            if (!killed(i) && !isTunnel(i)) {
+                list.add(i);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Rolls a tunnel ambush on entering a room: the brother (index) who appears, or -1. The caller
+     * makes sure no brother is already up before summoning him (and then calls {@link #summon(int)},
+     * so his kill counts toward the run as usual).
+     */
+    public int tunnelEncounter(Random random) {
+        List<Integer> candidates = tunnelCandidates();
+        if (candidates.isEmpty() || random.nextInt(TUNNEL_ENCOUNTER_CHANCE) != 0) {
+            return -1;
+        }
+        return candidates.get(random.nextInt(candidates.size()));
+    }
+
     // ------------------------------------------------------------------ rewards
+
+    /** At most this many tunnel monster kills add reward potential. */
+    public static final int MONSTER_POTENTIAL_CAP = 10;
+    /** Percent more coins and runes per counted tunnel monster kill (so at most +50%). */
+    public static final int MONSTER_POTENTIAL_PERCENT = 5;
+
+    /** A monster was killed in the tunnels this run. */
+    public void addMonsterKill() {
+        if (monsterKills < 1000) {
+            monsterKills++;
+        }
+    }
+
+    /** Reward potential from tunnel monsters: one point per kill, capped. */
+    public int monsterPotential() {
+        return Math.min(MONSTER_POTENTIAL_CAP, monsterKills);
+    }
+
+    /** Coins/runes quantity multiplier in percent from the tunnel monster kills (100 = none). */
+    public int quantityPercent() {
+        return 100 + MONSTER_POTENTIAL_PERCENT * monsterPotential();
+    }
 
     /** One stack from the chest. */
     public record Reward(String item, int count) {
@@ -215,7 +326,8 @@ public final class BarrowsRun {
     /**
      * Rolls the chest using the brothers' own drop tables ({@link Boss#drops()}): every roll is either
      * one of the killed brothers' equipment pieces (OSRS chance) or one of the common lines (coins and
-     * runes) of the brothers' tables. Nothing can be won from a brother who wasn't killed.
+     * runes) of the brothers' tables. Nothing can be won from a brother who wasn't killed. Tunnel
+     * monster kills raise the coin and rune quantities ({@link #quantityPercent()}).
      */
     public List<Reward> rollRewards(Random random) {
         int n = killedCount();
@@ -244,6 +356,7 @@ public final class BarrowsRun {
             }
             Drop d = common.get(random.nextInt(common.size()));
             int count = d.min() + (d.max() > d.min() ? random.nextInt(d.max() - d.min() + 1) : 0);
+            count = (int) ((long) count * quantityPercent() / 100);
             out.merge(d.item(), count, Integer::sum);
         }
         List<Reward> list = new ArrayList<>();

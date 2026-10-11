@@ -218,6 +218,150 @@ class BarrowsTest {
     }
 
     @Test
+    void puzzleBankIsWellFormed() {
+        assertTrue(BarrowsPuzzles.BANK.size() >= 10);
+        Set<String> questions = new HashSet<>();
+        for (BarrowsPuzzles.Puzzle p : BarrowsPuzzles.BANK) {
+            assertEquals(3, p.sequence().size(), p.toString());
+            assertEquals(2, p.wrong().size(), p.toString());
+            Set<String> all = new HashSet<>(p.sequence());
+            all.add(p.answer());
+            all.addAll(p.wrong());
+            assertEquals(6, all.size(), "duplicate item in " + p);
+            assertTrue(p.question().endsWith(", ?"));
+            assertTrue(questions.add(p.question()), "duplicate puzzle " + p);
+        }
+        Random random = new Random(3);
+        Set<Integer> positions = new HashSet<>();
+        BarrowsPuzzles.Puzzle previous = null;
+        for (int i = 0; i < 500; i++) {
+            BarrowsPuzzles.Asked asked = BarrowsPuzzles.roll(random, previous);
+            assertNotEquals(previous, asked.puzzle(), "a wrong answer must re-roll a different puzzle");
+            assertEquals(3, asked.options().size());
+            assertEquals(asked.puzzle().answer(), asked.options().get(asked.correct()));
+            assertTrue(asked.isCorrect(asked.correct()));
+            assertFalse(asked.isCorrect((asked.correct() + 1) % 3));
+            assertTrue(asked.options().containsAll(asked.puzzle().wrong()));
+            positions.add(asked.correct());
+            previous = asked.puzzle();
+        }
+        assertEquals(3, positions.size(), "the right answer moves between the options");
+    }
+
+    @Test
+    void aboutHalfOfTheChestRoomDoorsPoseAPuzzleUntilSolved() {
+        Set<Integer> chestDoors = new HashSet<>();
+        for (int e = 0; e < BarrowsRun.EDGES; e++) {
+            if (BarrowsRun.chestDoor(e)) {
+                chestDoors.add(e);
+            }
+        }
+        assertEquals(Set.of(2, 3, 7, 10), chestDoors);
+        Random random = new Random(11);
+        int puzzles = 0;
+        int total = 0;
+        for (int i = 0; i < 1000; i++) {
+            BarrowsRun run = BarrowsRun.fresh(random);
+            for (int e = 0; e < BarrowsRun.EDGES; e++) {
+                boolean puzzle = run.puzzleDoor(e);
+                assertEquals(puzzle, run.puzzleDoor(e), "fixed for the run");
+                if (!chestDoors.contains(e)) {
+                    assertFalse(puzzle);
+                    continue;
+                }
+                total++;
+                puzzles += puzzle ? 1 : 0;
+                assertEquals(puzzle && run.doorOpen(e), run.needsPuzzle(e));
+            }
+        }
+        assertTrue(puzzles > total * 0.4 && puzzles < total * 0.6, puzzles + " of " + total);
+        // Solving keeps a door open for the run (and survives saving); looting resets it.
+        BarrowsRun run = null;
+        int edge = -1;
+        for (long seed = 0; edge < 0; seed++) {
+            run = BarrowsRun.of(0, 0, 0, seed, false);
+            for (int e : chestDoors) {
+                if (run.needsPuzzle(e)) {
+                    edge = e;
+                }
+            }
+        }
+        run.solve(edge);
+        assertTrue(run.solved(edge));
+        assertFalse(run.needsPuzzle(edge));
+        BarrowsRun copy = BarrowsRun.of(run.killedMask(), run.summonedMask(), run.tunnel(), run.seed(), run.hiddenSummoned(),
+                run.solvedMask(), run.monsterKills());
+        assertFalse(copy.needsPuzzle(edge));
+        run.reset(new Random(1));
+        assertEquals(0, run.solvedMask());
+        // The puzzle is asked only on the way into the chest room.
+        int[] rooms = BarrowsRun.edgeRooms(7);
+        int[] d = Barrows.doorAt(7);
+        int outer = rooms[0] == Barrows.CHEST_ROOM ? rooms[1] : rooms[0];
+        int[] oc = Barrows.roomCentre(outer);
+        int[] cc = Barrows.roomCentre(Barrows.CHEST_ROOM);
+        assertEquals(Barrows.CHEST_ROOM, Barrows.roomBeyondDoor(7, d[0] + Integer.signum(oc[0] - d[0]), d[1] + Integer.signum(oc[1] - d[1])));
+        assertEquals(outer, Barrows.roomBeyondDoor(7, d[0] + Integer.signum(cc[0] - d[0]), d[1] + Integer.signum(cc[1] - d[1])));
+        for (int room = 0; room < 9; room++) {
+            int[] c = Barrows.roomCentre(room);
+            assertEquals(room, Barrows.roomAt(c[0] + 3, c[1] - 3));
+        }
+        assertEquals(-1, Barrows.roomAt(d[0], d[1]));
+    }
+
+    @Test
+    void livingBrothersOtherThanTheHiddenOneAmbushInTheTunnels() {
+        BarrowsRun run = BarrowsRun.of(1 << 1, 1 << 1, 4, 99L, false);
+        assertEquals(List.of(0, 2, 3, 5), run.tunnelCandidates());
+        Random random = new Random(5);
+        int hits = 0;
+        for (int i = 0; i < 6000; i++) {
+            int b = run.tunnelEncounter(random);
+            if (b >= 0) {
+                hits++;
+                assertTrue(run.tunnelCandidates().contains(b));
+            }
+        }
+        assertTrue(hits > 800 && hits < 1200, "about 1 in " + BarrowsRun.TUNNEL_ENCOUNTER_CHANCE + ", got " + hits);
+        // A tunnel brother is summoned like any other: his kill counts, and he can't come back.
+        run.summon(3);
+        assertFalse(run.hiddenSummoned());
+        assertTrue(run.kill(3));
+        assertFalse(run.tunnelCandidates().contains(3));
+        assertEquals(2, run.killedCount());
+        // Nobody left but the hidden brother: no more ambushes.
+        BarrowsRun done = BarrowsRun.of(63 & ~(1 << 4), 63 & ~(1 << 4), 4, 1L, false);
+        for (int i = 0; i < 200; i++) {
+            assertEquals(-1, done.tunnelEncounter(random));
+        }
+    }
+
+    @Test
+    void tunnelMonsterKillsAddCappedRewardPotential() {
+        BarrowsRun run = BarrowsRun.of(1, 1, 3, 5L, true);
+        assertEquals(100, run.quantityPercent());
+        for (int i = 0; i < 25; i++) {
+            run.addMonsterKill();
+        }
+        assertEquals(25, run.monsterKills());
+        assertEquals(BarrowsRun.MONSTER_POTENTIAL_CAP, run.monsterPotential());
+        assertEquals(100 + BarrowsRun.MONSTER_POTENTIAL_CAP * BarrowsRun.MONSTER_POTENTIAL_PERCENT, run.quantityPercent());
+        long plain = 0;
+        long boosted = 0;
+        for (int i = 0; i < 2000; i++) {
+            for (BarrowsRun.Reward r : BarrowsRun.of(1, 1, 3, 5L, true).rollRewards(new Random(i))) {
+                plain += r.item().equals("coins") ? r.count() : 0;
+            }
+            for (BarrowsRun.Reward r : BarrowsRun.of(1, 1, 3, 5L, true, 0, 25).rollRewards(new Random(i))) {
+                boosted += r.item().equals("coins") ? r.count() : 0;
+            }
+        }
+        assertTrue(boosted > plain * 1.3 && boosted <= plain * 1.5 + 1, plain + " vs " + boosted);
+        run.reset(new Random(2));
+        assertEquals(0, run.monsterKills());
+    }
+
+    @Test
     void barrowsBlocksAndSurfaceAreConsistent() {
         Set<String> ids = new HashSet<>();
         DungeonBlocks.all().forEach(b -> ids.add(b.id()));
