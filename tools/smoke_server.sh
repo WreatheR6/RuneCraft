@@ -91,6 +91,17 @@ feed() {
         sleep 1
     done
     sleep 15
+    # Second look at every station (late chunks may still have been building on the first pass),
+    # plus whether the spot is plain air, to tell "not built yet/never built" from "overwritten".
+    for s in "${STATIONS[@]}"; do
+        read -r _ town x y z block structure <<< "$s"
+        echo "say SMOKE-CHECK recheck $town $block at $x $y $z ($structure)"
+        echo "$G if block $x $y $z $block"
+        echo "say SMOKE-CHECK air $town at $x $y $z"
+        echo "$G if block $x $y $z minecraft:air"
+        sleep 1
+    done
+    sleep 5
     echo "save-all"
     sleep 5
     echo "stop"
@@ -115,9 +126,18 @@ grep -q 'Failed to place structure\|Failed to build\|Custom builder for .* faile
 grep -E '\[(Server thread|main)/ERROR\]' "$LOG" | grep -qi 'runecraft' && { echo "FAIL: RuneCraft logged errors"; fail=1; }
 grep -q '^\s*at com\.runecraft\.' "$LOG" && { echo "FAIL: exception thrown through RuneCraft code:"; grep -n -B3 -m5 '^\s*at com\.runecraft\.' "$LOG"; fail=1; }
 stations_run=$(grep -c '^station ' checks.txt)
-stations_bad=$(grep '^station ' checks.txt | grep -vc '=> PASS$')
+# A station passes if it is there on the first look or on the later recheck.
+stations_bad=0
+while read -r line; do
+    key=${line#station }; key=${key% => *}
+    if ! grep -qF "station $key => PASS" checks.txt && ! grep -qF "recheck $key => PASS" checks.txt; then
+        stations_bad=$((stations_bad + 1))
+        coords=$(sed 's/.* at \([^ ]* [^ ]* [^ ]*\).*/\1/' <<< "$key")
+        echo "missing: $key ($(grep -F "air ${key%% *} at $coords =>" checks.txt | head -1 | sed 's/.*=> PASS/spot is air/;s/.*=> FAIL/spot holds another block/'))"
+    fi
+done < <(grep '^station ' checks.txt)
 [ "$stations_run" -eq "${#STATIONS[@]}" ] || { echo "FAIL: only $stations_run of ${#STATIONS[@]} station checks ran"; fail=1; }
-[ "$stations_bad" -eq 0 ] || { echo "FAIL: $stations_bad station block check(s) failed:"; grep '^station ' checks.txt | grep -v '=> PASS$'; fail=1; }
+[ "$stations_bad" -eq 0 ] || { echo "FAIL: $stations_bad station block check(s) failed on both looks"; fail=1; }
 entities_bad=$(grep '^entity ' checks.txt | grep -vc '=> PASS$')
 [ "$entities_bad" -eq 0 ] || { echo "WARN: $entities_bad summoned creature(s) not found after 20s (died or despawned?):"; grep '^entity ' checks.txt | grep -v '=> PASS$'; }
 [ $fail = 0 ] && echo "Smoke test passed ($stations_run station checks)"
