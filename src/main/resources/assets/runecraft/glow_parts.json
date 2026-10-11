@@ -28,6 +28,10 @@
   "adamant_dragon": [
     "head"
   ],
+  "agrith_na_na": [
+    "eyes",
+    "jaw"
+  ],
   "agrith_naar": [
     "head",
     "jaw"
@@ -189,6 +193,17 @@
     "moon_gem",
     "frost_tip"
   ],
+  "bouncer": [
+    "chest",
+    "loin",
+    "neck",
+    "head",
+    "eyes",
+    "jaw",
+    "leg_f_lo_l",
+    "leg_b_l",
+    "tail_fire"
+  ],
   "branda_the_fire_queen": [
     "waist",
     "neck",
@@ -332,6 +347,13 @@
     "meta_b_r",
     "tail_fire"
   ],
+  "champion_of_scabaras": [
+    "elytron_l",
+    "elytron_r",
+    "pronotum",
+    "eyes",
+    "sun_disc"
+  ],
   "chaos_druid": [
     "staff_orb",
     "amulet"
@@ -359,12 +381,6 @@
     "chaos_mark",
     "staff_orb",
     "hand_spark"
-  ],
-  "chompy_bird": [
-    "crest",
-    "wing_l",
-    "wing_r",
-    "tail"
   ],
   "chronozon": [
     "head",
@@ -470,6 +486,10 @@
   ],
   "dad": [
     "head"
+  ],
+  "dagannoth_mother": [
+    "eyes",
+    "jaw"
   ],
   "dagannoth_prime": [
     "eyes"
@@ -604,14 +624,33 @@
     "eyes"
   ],
   "entranan_firebird": [
-    "crest",
-    "wing_l",
-    "wing_r",
-    "tail"
+    "eyes",
+    "crest0",
+    "crest1",
+    "crest2",
+    "crest3",
+    "crest4",
+    "primary0_l",
+    "primary0_r",
+    "primary1_l",
+    "primary1_r",
+    "primary3_r",
+    "tail0",
+    "tail1",
+    "tail2",
+    "streamer_l",
+    "streamer_r",
+    "ember_core"
   ],
   "essence_impling": [
     "head",
     "sparkle"
+  ],
+  "evil_creature": [
+    "iris",
+    "jaw",
+    "stalk_eye_l",
+    "stalk_eye_r"
   ],
   "ext_pet_rift_guardian": [
     "core",
@@ -706,6 +745,15 @@
   "gargoyle": [
     "head"
   ],
+  "gelatinnoth_mother": [
+    "hips",
+    "torso",
+    "head",
+    "eyes",
+    "jaw",
+    "core",
+    "drips"
+  ],
   "general_graardor": [
     "head"
   ],
@@ -717,6 +765,13 @@
   ],
   "giant_bat": [
     "head"
+  ],
+  "giant_scarab": [
+    "eyes"
+  ],
+  "giant_sea_snake": [
+    "eyes",
+    "jaw"
   ],
   "giant_spider": [
     "eyes"
@@ -891,6 +946,9 @@
     "core",
     "head"
   ],
+  "imp": [
+    "eyes"
+  ],
   "infernal_mage": [
     "head",
     "w_orb",
@@ -1051,6 +1109,11 @@
   "kalphite_queen_airborne": [
     "eyes"
   ],
+  "kalrag": [
+    "eyes",
+    "venom_l",
+    "venom_r"
+  ],
   "kamil": [
     "blade_frost"
   ],
@@ -1140,6 +1203,9 @@
     "head",
     "jaw",
     "zamorak_mark"
+  ],
+  "kruk": [
+    "eyes"
   ],
   "kurask": [
     "head"
@@ -1247,7 +1313,9 @@
     "jaw"
   ],
   "nightmare_husk": [
-    "head"
+    "spore0",
+    "spore2",
+    "eyes"
   ],
   "nightmare_parasite": [
     "eye_l",
@@ -1373,6 +1441,11 @@
     "cowl_glow",
     "aura"
   ],
+  "plague_sheep": [
+    "sores",
+    "drool",
+    "eyes"
+  ],
   "poison_spider": [
     "eyes"
   ],
@@ -1420,7 +1493,7 @@
     "head"
   ],
   "quest_basilisk_boss": [
-    "head"
+    "eyes"
   ],
   "quest_blood_moon": [
     "moon_face",
@@ -1448,6 +1521,9 @@
     "head",
     "reaper_eyes"
   ],
+  "quest_giant_roc": [
+    "eyes"
+  ],
   "quest_kolodion": [
     "staff_orb",
     "orb_left"
@@ -1460,9 +1536,26 @@
     "jaw",
     "sword_fire"
   ],
+  "quest_shaikahan": [
+    "eyes"
+  ],
+  "quest_skeleton_hellhound": [
+    "heart",
+    "eyes"
+  ],
   "quest_slagilith": [
-    "core",
-    "head"
+    "torso",
+    "chest_seam",
+    "eyes",
+    "jaw",
+    "arm_l",
+    "forearm_l",
+    "shin_l",
+    "shin_r"
+  ],
+  "quest_sourhog": [
+    "drool",
+    "eyes"
   ],
   "quest_tarn_razorlor": [
     "head",
@@ -1484,6 +1577,10 @@
   "ranis_drakan": [
     "head",
     "brooch"
+  ],
+  "rat_king": [
+    "eyes",
+    "crown_gem"
   ],
   "ravager": [
     "head",
@@ -1564,14 +1661,24 @@
   "scurrius": [
     "eyes"
   ],
+  "sea_slug": [
+    "eye_l",
+    "eye_r"
+  ],
   "sea_snake": [
     "head"
+  ],
+  "sea_troll_queen": [
+    "eyes",
+    "pearls"
   ],
   "sergeant_steelwill": [
     "staff_orb"
   ],
   "shade": [
-    "head"
+    "wisp",
+    "wisp_tip",
+    "eyes"
   ],
   "shadow_of_light": [
     "head",
@@ -1602,6 +1709,12 @@
   ],
   "slash_bash": [
     "head"
+  ],
+  "slug_prince": [
+    "eye_l",
+    "eye_r",
+    "mind_gem",
+    "slime_trail"
   ],
   "small_muttadile": [
     "eye_l",
@@ -1682,12 +1795,22 @@
   "taloned_wyvern": [
     "head"
   ],
+  "tanglefoot": [
+    "eyes",
+    "jaw",
+    "stamen0",
+    "stamen1",
+    "stamen2"
+  ],
   "tekton": [
     "head",
     "jaw",
     "hammer_head",
     "hammer_face_l",
     "hammer_face_r"
+  ],
+  "temple_guardian": [
+    "eyes"
   ],
   "tempoross": [
     "foam",
@@ -1704,7 +1827,18 @@
     "eyes"
   ],
   "the_inadequacy": [
-    "core"
+    "mass",
+    "upper",
+    "core",
+    "eyes",
+    "jaw",
+    "body_eyes",
+    "arm2_tip",
+    "arm3_tip",
+    "drips"
+  ],
+  "the_kendal": [
+    "eyes"
   ],
   "the_leviathan": [
     "shell",
@@ -2068,10 +2202,8 @@
     "dome"
   ],
   "warped_terrorbird": [
-    "crest",
-    "wing_l",
-    "wing_r",
-    "tail"
+    "eyes",
+    "warp_rift"
   ],
   "waterfiend": [
     "core",
@@ -2093,6 +2225,9 @@
     "icicle0",
     "claw_l",
     "claw_r"
+  ],
+  "witchs_experiment": [
+    "eyes"
   ],
   "wyrm": [
     "head",
