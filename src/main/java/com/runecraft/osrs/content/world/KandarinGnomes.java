@@ -112,6 +112,7 @@ final class KandarinGnomes {
             }
         }
         k.meadow(KandarinKit.X(2418), KandarinKit.Z(3520), KandarinKit.X(2500), KandarinKit.Z(3405), 9);
+        KandarinGrandTree.tidy(k, KandarinKit.X(2466), KandarinKit.Z(3494));
         return k.build();
     }
 
@@ -131,124 +132,9 @@ final class KandarinGnomes {
         return false;
     }
 
-    /**
-     * The Grand Tree: a hollow trunk around an open atrium (so the gnomes inside stand on the
-     * ground floor), ring galleries on five levels joined by a ladder, a bank and shops on the first
-     * gallery, the kitchen above, outer balconies and a vast canopy.
-     */
+    /** The Grand Tree (see {@link KandarinGrandTree}). */
     private static void grandTree(KandarinKit k) {
-        int gx = KandarinKit.X(2466);
-        int gz = KandarinKit.Z(3494);
-        int r = 10;
-        int top = 56;
-        // roots and flare
-        k.ring(gx, gz, -1, 4, r + 1, BARK);
-        k.ring(gx, gz, -1, 1, r + 2, BARK);
-        int[][] dirs = {{1, 0}, {-1, 0}, {0, -1}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}};
-        for (int[] d : dirs) {
-            for (int i = r + 2; i <= r + 8; i++) {
-                int h = i < r + 5 ? 1 : 0;
-                k.fill(gx + d[0] * i, -1, gz + d[1] * i, gx + d[0] * i, h, gz + d[1] * i, BARK);
-                if (d[0] == 0 || d[1] == 0) {
-                    k.fill(gx + d[0] * i + d[1], -1, gz + d[1] * i + d[0], gx + d[0] * i + d[1], h, gz + d[1] * i + d[0], BARK);
-                }
-            }
-        }
-        // trunk
-        k.ring(gx, gz, -1, top, r, BARK);
-        k.ring(gx, gz, -1, top - 6, r - 1, BARK);
-        k.disc(gx, gz, -1, -1, r - 2, PLANK);
-        k.disc(gx, gz, 0, top + 2, r - 2, AIR);
-        k.disc(gx, gz, -1, -1, 4, "minecraft:moss_block");
-        k.set(gx, -1, gz, "minecraft:glowstone");
-        // galleries (annulus floors around the open atrium)
-        int[] levels = {7, 15, 23, 31, 39};
-        for (int y : levels) {
-            k.ring(gx, gz, y, y, r - 2, PLANK);
-            k.ring(gx, gz, y, y, r - 3, PLANK);
-            k.ring(gx, gz, y, y, r - 4, PLANK);
-            k.ring(gx, gz, y + 1, y + 1, r - 5, "minecraft:jungle_fence");
-        }
-        // grand south entrance
-        k.clear(gx - 2, 0, gz + r - 3, gx + 2, 4, gz + r + 3);
-        k.fill(gx - 2, -1, gz + r - 3, gx + 2, -1, gz + r + 3, PLANK);
-        k.fill(gx - 1, 5, gz + r, gx + 1, 5, gz + r, "minecraft:jungle_wood");
-        // windows on every level
-        for (int y : new int[]{2, 10, 18, 26, 34, 42}) {
-            k.fill(gx + r - 1, y, gz - 1, gx + r, y + 1, gz + 1, "minecraft:glass_pane");
-            k.fill(gx - r, y, gz - 1, gx - r + 1, y + 1, gz + 1, "minecraft:glass_pane");
-            k.fill(gx - 1, y, gz - r, gx + 1, y + 1, gz - r + 1, "minecraft:glass_pane");
-        }
-        // ladder up the inside of the trunk
-        boolean placed = k.ladder(gx + r - 2, gz - 2, 0, levels[levels.length - 1], "west")
-                || k.ladder(gx - r + 2, gz - 2, 0, levels[levels.length - 1], "east")
-                || k.ladder(gx - 2, gz - r + 2, 0, levels[levels.length - 1], "south");
-        if (!placed) {
-            k.ladder(gx + 2, gz - r + 2, 0, levels[levels.length - 1], "south");
-        }
-        // ground floor: King Narnode's throne (north)
-        k.fill(gx - 2, 0, gz - r + 2, gx + 2, 0, gz - r + 3, PLANK);
-        k.set(gx, 1, gz - r + 2, "minecraft:jungle_stairs[facing=north]");
-        k.set(gx - 1, 1, gz - r + 2, "minecraft:jungle_trapdoor[facing=north,open=true]");
-        k.set(gx + 1, 1, gz - r + 2, "minecraft:jungle_trapdoor[facing=north,open=true]");
-        k.ring(gx, gz, 0, 0, r - 2, "minecraft:green_carpet");
-        k.clear(gx - 2, 0, gz + r - 3, gx + 2, 0, gz + r - 1);
-        // first gallery: bank and shops
-        int y1 = 8;
-        for (int dz = -2; dz <= 2; dz += 2) {
-            k.set(gx - r + 3, y1, gz + dz, BANK);
-        }
-        k.set(gx - r + 3, y1, gz - 1, "minecraft:jungle_slab[type=top]");
-        k.set(gx - r + 3, y1, gz + 1, "minecraft:jungle_slab[type=top]");
-        k.set(gx + 3, y1, gz + r - 3, GENERAL);
-        k.set(gx - 3, y1, gz + r - 3, "minecraft:barrel[facing=up]");
-        k.set(gx, y1, gz + r - 3, "minecraft:chest[facing=north]");
-        // second gallery: kitchen and restaurant
-        int y2 = 16;
-        k.set(gx, y2, gz - r + 3, RANGE);
-        k.set(gx + 1, y2, gz - r + 3, "minecraft:smoker[facing=south]");
-        k.set(gx - 1, y2, gz - r + 3, "minecraft:barrel[facing=up]");
-        k.set(gx - 5, y2, gz + 4, "minecraft:jungle_fence");
-        k.set(gx - 5, y2 + 1, gz + 4, "minecraft:jungle_pressure_plate");
-        k.set(gx + 5, y2, gz + 4, "minecraft:jungle_fence");
-        k.set(gx + 5, y2 + 1, gz + 4, "minecraft:jungle_pressure_plate");
-        // third/fourth galleries: sleeping quarters and the glider deck
-        k.bed(gx - 6, 24, gz - 3, "lime");
-        k.bed(gx + 6, 24, gz - 3, "lime");
-        k.set(gx + 4, 32, gz + 5, "minecraft:cartography_table");
-        // outer balconies at levels 23 and 39
-        for (int y : new int[]{23, 39}) {
-            for (int rr = r + 1; rr <= r + 4; rr++) {
-                k.ring(gx, gz, y, y, rr, PLANK);
-            }
-            k.ring(gx, gz, y + 1, y + 1, r + 4, "minecraft:jungle_fence");
-            k.clear(gx + r - 1, y + 1, gz + 2, gx + r, y + 3, gz + 3);
-            k.clear(gx - r, y + 1, gz + 2, gx - r + 1, y + 3, gz + 3);
-        }
-        // glider on the top balcony
-        k.fill(gx + r + 1, 40, gz - 3, gx + r + 1, 40, gz + 3, "minecraft:white_wool");
-        k.fill(gx + r + 2, 40, gz, gx + r + 3, 40, gz, "minecraft:white_wool");
-        k.set(gx + r + 1, 41, gz, "minecraft:jungle_fence");
-        // branches and canopy
-        int[][] br = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}};
-        for (int[] d : br) {
-            for (int i = 0; i < 12; i++) {
-                int x = gx + d[0] * (r + i);
-                int z = gz + d[1] * (r + i);
-                k.fill(x, 44 + i / 2, z, x, 45 + i / 2, z, BARK);
-            }
-        }
-        k.blob(gx, 62, gz, 24, 10, 24, LEAF, true);
-        k.blob(gx + 16, 56, gz + 6, 10, 6, 10, LEAF, true);
-        k.blob(gx - 15, 57, gz - 8, 10, 6, 10, LEAF, true);
-        k.blob(gx + 4, 58, gz - 17, 10, 5, 9, LEAF, true);
-        k.blob(gx - 6, 55, gz + 16, 9, 5, 9, LEAF, true);
-        k.blob(gx, 70, gz, 14, 5, 14, "minecraft:jungle_leaves[persistent=true]", true);
-        // lanterns hanging from the galleries over the atrium
-        for (int y : levels) {
-            k.set(gx + 6, y - 1, gz, "minecraft:lantern[hanging=true]");
-            k.set(gx - 6, y - 1, gz, "minecraft:lantern[hanging=true]");
-        }
+        KandarinGrandTree.build(k, KandarinKit.X(2466), KandarinKit.Z(3494));
     }
 
     /** Gnome Stronghold Agility Course (7 obstacles). */
