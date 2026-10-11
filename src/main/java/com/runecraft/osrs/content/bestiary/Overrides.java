@@ -20,6 +20,7 @@ final class Overrides {
         l.addAll(BestiaryBst.all());
         l.addAll(BestiaryWld.overrides());
         l.addAll(BestiaryHum.overrides());
+        l.addAll(BestiaryQbm.overrides());
         return l;
     }
 }
