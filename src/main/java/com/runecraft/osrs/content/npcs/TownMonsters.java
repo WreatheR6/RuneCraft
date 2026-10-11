@@ -185,6 +185,27 @@ public final class TownMonsters {
                         Drop.of("toktz_mej_tal", 1, 1, 512), Drop.of("obsidian_cape", 1, 1, 1024))
                 .skin(0x8A3A1A, 0x2A1A3A, 0x2A1A3A, 0xA040E0));
 
+        // ------------------------------------------------------------- wild creatures on the towns' doorsteps
+        // (their spawn points are in world.SpawnTable: rock crabs on the Rellekka and Waterbirth shores, imps
+        // around Lumbridge, Draynor, Falador and Varrock)
+        add(MonsterDef.of("rock_crab", "Rock crab").level(13).stats(50, 1, 1, 1, 1, 1).speed(4).defenceBonus(0, 0, 0, 0, 0)
+                .attack(AttackDef.of("pinch", AttackType.CRUSH, 1, 2.5, 10))
+                .drops(Drop.of("seaweed", 1, 1, 16), Drop.of("fishing_bait", 1, 5, 16), Drop.of("oyster", 1, 1, 32),
+                        Drop.of("copper_ore", 1, 1, 40), Drop.of("tin_ore", 1, 1, 40), Drop.of("iron_ore", 1, 1, 40),
+                        Drop.of("coal", 1, 1, 64), Drop.of("casket", 1, 1, 128), Drop.of("clue_scroll_easy", 1, 1, 128)) // approx. table
+                .skin(0x7A7468, 0x8A5A3A, 0x5E5A50, 0x6A7A3A).size(1.0f, 0.8f, 1.0f).moveSpeed(0.2)
+                .spawn(Region.FREMENNIK_PROVINCE, 3, 2, 4));
+        add(MonsterDef.of("imp", "Imp").level(2).stats(8, 4, 3, 2, 1, 1).speed(4).defenceBonus(0, 0, 0, 0, 0) // approx. att/str/def
+                .attack(AttackDef.melee(1)).passive()
+                .drops(Drop.of("black_bead", 1, 1, 12), Drop.of("red_bead", 1, 1, 12), Drop.of("white_bead", 1, 1, 12),
+                        Drop.of("yellow_bead", 1, 1, 12), Drop.of("burnt_bread", 1, 1, 16), Drop.of("burnt_meat", 1, 1, 16),
+                        Drop.of("cabbage", 1, 1, 20), Drop.of("bread_dough", 1, 1, 24), Drop.of("pot_of_flour", 1, 1, 24),
+                        Drop.of("ball_of_wool", 1, 1, 24), Drop.of("jug", 1, 1, 32), Drop.of("empty_cup", 1, 1, 32),
+                        Drop.of("tinderbox", 1, 1, 40), Drop.of("hammer", 1, 1, 40), Drop.of("needle", 1, 1, 48),
+                        Drop.of("mind_talisman", 1, 1, 64), Drop.of("clue_scroll_beginner", 1, 1, 128))
+                .skin(0xB02A20, 0xB02A20, 0x6A1410, 0x2A1A14).size(0.5f, 1.2f, 1.0f).moveSpeed(0.32)
+                .spawn(Region.MISTHALIN, 3, 1, 2).spawn(Region.ASGARNIA, 2, 1, 2));
+
         // ------------------------------------------------------------- pickpocketing (OSRS levels, XP and loot)
         PICKPOCKETS.add(new Pickpocket("woman", "Woman", 1, 8.0, 180, 240, 1, List.of(Loot.always("coins", 3)), List.of()));
         PICKPOCKETS.add(new Pickpocket("farmer", "Farmer", 10, 14.5, 150, 240, 1, List.of(Loot.always("coins", 9)),

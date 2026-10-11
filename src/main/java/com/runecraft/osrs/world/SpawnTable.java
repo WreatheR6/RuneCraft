@@ -133,6 +133,11 @@ public final class SpawnTable {
         s("minecraft:cave_spider", 3178, 3165, 3, 8);  // spiders (level 1)
         // Draynor
         s("dark_wizard", 3083, 3228, 3, 5);            // south of Draynor Village
+        // Imps blink about the countryside of Misthalin (and Asgarnia, below)
+        s("imp", 3180, 3245, 2, 14);                   // fields west of Lumbridge
+        s("imp", 3115, 3290, 2, 14);                   // north of Draynor Village, towards the manor
+        s("imp", 3255, 3365, 2, 14);                   // south-east of Varrock, by the Lumber Yard road
+        s("imp", 3160, 3395, 2, 12);                   // west of Varrock
         // Varrock
         s("minecraft:witch", 3227, 3369, 2, 6);        // the level 20 dark wizards at the stone circle
         s("scorpion", 3300, 3300, 4, 8);               // Al Kharid mine
@@ -144,6 +149,8 @@ public final class SpawnTable {
         s("minecraft:cow", 3029, 3308, 4, 6);          // cow field south of Falador
         s("minecraft:cow", 2926, 3280, 3, 5);          // pen by the Crafting Guild
         s("hobgoblin", 2910, 3285, 4, 6);              // hobgoblin peninsula west of the Crafting Guild
+        s("imp", 2995, 3325, 2, 14);                   // farmland south of Falador
+        s("imp", 2935, 3420, 2, 12);                   // between Falador and Taverley
         s("dark_wizard", 2908, 3335, 3, 5);            // Dark Wizards' Tower
         s("minecraft:witch", 2910, 3338, 2, 5);
         s("icefiend", 3007, 3477, 4, 8);               // Ice Mountain summit
@@ -198,6 +205,9 @@ public final class SpawnTable {
 
         // ============================================================ Fremennik Province, Troll Country
         s("brine_rat", 2752, 3735, 3, 6);              // Brine Rat Cavern, east of Rellekka
+        s("rock_crab", 2706, 3718, 6, 8);              // rock crabs on the shore north-east of Rellekka
+        s("rock_crab", 2675, 3714, 5, 8);              // and on the north-western beach
+        si("rock_crab", 2525, 3755, 5, 8);             // Waterbirth Island's beaches
         s("mountain_troll", 2870, 3600, 4, 10);        // Death Plateau
         s("mountain_troll", 2825, 3680, 3, 8);         // outside the Troll Stronghold
 

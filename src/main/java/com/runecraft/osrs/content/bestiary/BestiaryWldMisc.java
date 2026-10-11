@@ -40,7 +40,6 @@ final class BestiaryWldMisc {
     static List<ModelSpec> overrides() {
         List<ModelSpec> l = new ArrayList<>();
         l.add(ghost("ghost"));
-        l.add(shade("shade"));
         l.add(icefiend("icefiend"));
         l.add(kalphite("kalphite"));
         l.add(dagannoth("dagannoth", 0x4A6A50, 0x2E4A36, 0x9AA878));
@@ -141,36 +140,6 @@ final class BestiaryWldMisc {
             side(part(b, "hand", "sleeve*", Role.STATIC, 0xC8D8E0).at(0, 3, 0).mat("ghost").box(-1, 0, -1, 2, 2, 2), left);
             side(part(b, "fingers", "hand*", Role.STATIC, 0xB8C8D4).at(0, 2, -0.5f).rot(25, 0, 0).mat("ghost")
                     .box(-1, 0, -0.5f, 1, 2, 1, -0.1f).box(0.2f, 0, -0.5f, 1, 2, 1, -0.1f), left);
-        }
-        return b.build();
-    }
-
-    /** Shade: a hunched shadow in layered ragged black cloth, a deep hood hiding two burning eyes and bony grasping hands. */
-    static ModelSpec shade(String id) {
-        int c = 0x22222A;
-        int d = 0x15151B;
-        int hand = 0x8A8A8A;
-        ModelSpec.Builder b = ModelSpec.builder(id).shadow(0.4f);
-        part(b, "body", null, Role.FLOAT, c).at(0, 10, 0).rot(12, 0, 0).mat("ghost").box(-4, -11, -2.5f, 8, 11, 5).add();
-        part(b, "cloak", "body", Role.STATIC, d).at(0, -1, 0).mat("cloth").box(-4.5f, 0, -3, 9, 5, 6).add();
-        part(b, "cloak_low", "cloak", Role.TAIL, dk(d, 0.9f)).at(0, 5, 0.5f).rot(10, 0, 0).mat("cloth")
-                .box(-5, 0, -3, 3, 6, 6).box(-2, 0, -3, 4, 8, 6).box(2, 0, -3, 3, 5, 6).add();
-        part(b, "tatters", "cloak_low", Role.STATIC, dk(d, 0.8f)).at(0, 6, -3).mat("cloth")
-                .box(-4.5f, 0, -0.5f, 1, 2, 1).box(-0.5f, 2, -0.5f, 1, 2, 1).box(3, 0, -0.5f, 1, 2, 1).add();
-        sym(b, "mantle", "body", false, c).at(4, -10, 0).rot(0, 0, -20).mat("cloth").box(-2, -1, -3, 4, 3, 6).add();
-        part(b, "hood", "body", Role.STATIC, c).at(0, -11, 0.5f).rot(-10, 0, 0).mat("cloth").box(-4, -7, -3.5f, 8, 7, 7).add();
-        part(b, "hood_tip", "hood", Role.STATIC, d).at(0, -6, 3).rot(-45, 0, 0).mat("cloth").box(-1.5f, -2, -1, 3, 3, 3).add();
-        part(b, "head", "hood", Role.HEAD, 0x08080A).accent(0xC0F0FF).at(0, -3, -3.6f).mat("ghost").pattern("eyes").glow("eyes")
-                .box(-3, -3, -0.2f, 6, 5, 1).add();
-        part(b, "hood_rim", "hood", Role.STATIC, dk(c, 1.3f)).at(0, -7, -3.6f).mat("cloth")
-                .box(-4, 0, -0.8f, 8, 1, 1).box(-4, 1, -0.8f, 1, 6, 1).box(3, 1, -0.8f, 1, 6, 1).add();
-        for (boolean left : new boolean[]{true, false}) {
-            side(part(b, "arm", "body", left ? Role.ARM_LEFT : Role.ARM_RIGHT, c).at(4.5f, -9.5f, 0).rot(-55, 0, -12).mat("cloth")
-                    .box(-1.5f, -1, -1.5f, 3, 6, 3), left);
-            side(part(b, "sleeve", "arm*", Role.STATIC, d).at(0, 5, 0).mat("cloth").box(-2, 0, -2, 4, 3, 4), left);
-            side(part(b, "hand", "sleeve*", Role.STATIC, hand).at(0, 3, 0).mat("bone").box(-1, 0, -1, 2, 1, 2), left);
-            side(part(b, "claws", "hand*", Role.STATIC, dk(hand, 0.9f)).at(0, 1, -0.5f).rot(35, 0, 0).mat("bone")
-                    .box(-1, 0, -0.5f, 1, 3, 1, -0.15f).box(0.2f, 0, -0.5f, 1, 3, 1, -0.15f), left);
         }
         return b.build();
     }
