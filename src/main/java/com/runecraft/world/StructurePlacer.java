@@ -4,6 +4,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.runecraft.RuneCraft;
 import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.world.StructureDef;
+import com.runecraft.osrs.world.StructureIndex;
 import com.runecraft.player.PlayerDataState;
 import com.runecraft.player.Players;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
@@ -25,7 +26,6 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.Heightmap;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,7 +40,8 @@ import java.util.Set;
  */
 public final class StructurePlacer {
     private static final int CHUNKS_PER_TICK = 2;
-    private static final Map<Long, List<StructureDef>> BY_CHUNK = new HashMap<>();
+    /** Per chunk: the structures touching it and exactly which of their operations do. */
+    private static final StructureIndex INDEX = StructureIndex.build(ContentRegistry.structures());
     private static final Map<String, StructureDef> REPLACING = new HashMap<>();
     private static final Map<String, BlockState> STATE_CACHE = new HashMap<>();
     private static final Deque<Long> QUEUE = new ArrayDeque<>();
@@ -48,15 +49,6 @@ public final class StructurePlacer {
 
     static {
         for (StructureDef def : ContentRegistry.structures()) {
-            for (int cx = def.minX() >> 4; cx <= def.maxX() >> 4; cx++) {
-                for (int cz = def.minZ() >> 4; cz <= def.maxZ() >> 4; cz++) {
-                    final int fx = cx;
-                    final int fz = cz;
-                    if (def.ops().stream().anyMatch(op -> op.intersectsChunk(fx, fz))) {
-                        BY_CHUNK.computeIfAbsent(ChunkPos.toLong(cx, cz), k -> new ArrayList<>()).add(def);
-                    }
-                }
-            }
             if (def.replacesLandmark() != null) {
                 REPLACING.put(def.replacesLandmark(), def);
             }
@@ -77,7 +69,7 @@ public final class StructurePlacer {
                 return;
             }
             long key = chunk.getPos().toLong();
-            if (BY_CHUNK.containsKey(key) && QUEUED.add(key)) {
+            if (INDEX.contains(key) && QUEUED.add(key)) {
                 QUEUE.add(key);
             }
         });
@@ -105,7 +97,7 @@ public final class StructurePlacer {
     public static void applyAround(ServerWorld world, int x, int z, int radius) {
         for (int cx = (x - radius) >> 4; cx <= (x + radius) >> 4; cx++) {
             for (int cz = (z - radius) >> 4; cz <= (z + radius) >> 4; cz++) {
-                if (BY_CHUNK.containsKey(ChunkPos.toLong(cx, cz))) {
+                if (INDEX.contains(cx, cz)) {
                     world.getChunk(cx, cz);
                     applyChunk(world, cx, cz);
                 }
@@ -115,22 +107,20 @@ public final class StructurePlacer {
 
     /** Applies each not-yet-built structure share in one chunk. */
     public static void applyChunk(ServerWorld world, int cx, int cz) {
-        List<StructureDef> defs = BY_CHUNK.get(ChunkPos.toLong(cx, cz));
-        if (defs == null) {
+        List<StructureIndex.Share> shares = INDEX.at(cx, cz);
+        if (shares == null) {
             return;
         }
         PlayerDataState state = Players.state(world.getServer());
-        for (StructureDef def : defs) {
-            String key = "s:" + def.id() + ":" + cx + "," + cz;
-            if (state.isBuilt(key)) {
+        for (StructureIndex.Share share : shares) {
+            StructureDef def = share.def();
+            if (state.isStructureBuilt(def.id(), cx, cz)) {
                 continue;
             }
-            state.markBuilt(key);
+            state.markStructureBuilt(def.id(), cx, cz);
             try {
-                for (StructureDef.Op op : def.ops()) {
-                    if (op.intersectsChunk(cx, cz)) {
-                        apply(world, op, cx, cz);
-                    }
+                for (int i = 0; i < share.size(); i++) {
+                    apply(world, share.op(i), cx, cz);
                 }
             } catch (RuntimeException e) {
                 RuneCraft.LOGGER.error("Failed to place structure {} in chunk {},{}", def.id(), cx, cz, e);
@@ -152,28 +142,31 @@ public final class StructurePlacer {
         }
         BlockState block = parse(op.block());
         BlockState match = op.type() == StructureDef.Op.Type.REPLACE ? parse(op.extra()) : null;
+        BlockState air = Blocks.AIR.getDefaultState();
+        // property lookups hoisted out of the per-block loop (same result for every block of the op)
+        boolean multipart = isMultipart(block);
         BlockPos.Mutable pos = new BlockPos.Mutable();
         for (int x = x1; x <= x2; x++) {
             for (int z = z1; z <= z2; z++) {
                 for (int y = y1; y <= y2; y++) {
                     pos.set(x, y, z);
                     switch (op.type()) {
-                        case FILL -> set(world, pos, block);
-                        case CLEAR -> set(world, pos, Blocks.AIR.getDefaultState());
+                        case FILL -> set(world, pos, block, multipart);
+                        case CLEAR -> set(world, pos, air, false);
                         case WALLS -> {
                             if (x == op.x1() || x == op.x2() || z == op.z1() || z == op.z2()) {
-                                set(world, pos, block);
+                                set(world, pos, block, multipart);
                             }
                         }
                         case FILL_AIR -> {
                             BlockState here = world.getBlockState(pos);
                             if (here.isAir() || !here.getFluidState().isEmpty() || here.isReplaceable()) {
-                                set(world, pos, block);
+                                set(world, pos, block, multipart);
                             }
                         }
                         case REPLACE -> {
                             if (match != null && world.getBlockState(pos).isOf(match.getBlock())) {
-                                set(world, pos, block);
+                                set(world, pos, block, multipart);
                             }
                         }
                         default -> {
@@ -256,8 +249,16 @@ public final class StructurePlacer {
         return y;
     }
 
+    private static boolean isMultipart(BlockState state) {
+        return state.contains(Properties.DOUBLE_BLOCK_HALF) || state.contains(Properties.BED_PART);
+    }
+
     private static void set(ServerWorld world, BlockPos pos, BlockState state) {
-        if (state.contains(Properties.DOUBLE_BLOCK_HALF) || state.contains(Properties.BED_PART)) {
+        set(world, pos, state, isMultipart(state));
+    }
+
+    private static void set(ServerWorld world, BlockPos pos, BlockState state, boolean multipart) {
+        if (multipart) {
             setMultipart(world, pos, state);
             return;
         }
