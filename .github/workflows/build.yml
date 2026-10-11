@@ -39,7 +39,35 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: smoke-server-log
-          path: build/smoke/server.log
+          path: |
+            build/smoke/server.log
+            build/smoke/probes.txt
+            build/smoke/checks.txt
+          retention-days: 7
+      # Real client under a virtual display with software OpenGL, on the world the server smoke test
+      # generated. Not blocking yet: the result and screenshot list go to the job summary.
+      - name: Install virtual display
+        continue-on-error: true
+        run: sudo apt-get update -q && sudo apt-get install -y -q xvfb mesa-utils libgl1-mesa-dri
+      - name: Client smoke test
+        id: client_smoke
+        continue-on-error: true
+        timeout-minutes: 30
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: bash tools/smoke_client.sh
+      - name: Upload client smoke results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-smoke
+          path: |
+            build/clientsmoke/screenshots/
+            build/clientsmoke/logs/latest.log
+            build/clientsmoke/run.log
+            build/clientsmoke/crash-reports/
+            build/clientsmoke/*.txt
+          if-no-files-found: warn
           retention-days: 7
       - name: Publish development release
         if: github.event_name == 'push'

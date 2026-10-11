@@ -98,6 +98,10 @@ public class RuneCraftClient implements ClientModInitializer {
         for (com.runecraft.client.content.ClientModuleHooks hooks : com.runecraft.client.content.ClientModuleHooksRegistry.ALL) {
             hooks.initClient();
         }
+        // Dev/CI only: automated in-game walkthrough, never active without -Drunecraft.clientSmoke=true.
+        if (ClientSmokeTest.enabled()) {
+            ClientSmokeTest.install();
+        }
     }
 
     /**
