@@ -41,6 +41,17 @@ public final class Elevation {
     private static final int N = TILE / GRID + 1;
     private static final ConcurrentHashMap<Long, float[]> TILES = new ConcurrentHashMap<>();
     private static final int MAX_TILES = 8_000;
+    /**
+     * Lock-free direct-mapped front cache over {@link #TILES}: the density function asks for the same
+     * few tiles millions of times from several worldgen threads, and a hit here costs no {@code Long}
+     * boxing or hash-map probe. Entries are immutable (final fields), so racy reads are safe; a stale
+     * entry is still correct because tiles are pure functions of their coordinates.
+     */
+    private static final int FAST_BITS = 10;
+    private static final CachedTile[] FAST = new CachedTile[1 << FAST_BITS];
+
+    private record CachedTile(int tx, int tz, float[] grid) {
+    }
 
     private Elevation() {
     }
@@ -124,6 +135,7 @@ public final class Elevation {
     /** Clears the cached grid (tests). */
     static void clearCache() {
         TILES.clear();
+        java.util.Arrays.fill(FAST, null);
     }
 
     // ------------------------------------------------------------------ coordinates
@@ -161,6 +173,17 @@ public final class Elevation {
     }
 
     private static float[] tile(int tx, int tz) {
+        int slot = ((tx * 0x9E3779B1) ^ (tz * 0x85EBCA77)) >>> (32 - FAST_BITS);
+        CachedTile fast = FAST[slot];
+        if (fast != null && fast.tx() == tx && fast.tz() == tz) {
+            return fast.grid();
+        }
+        float[] g = slowTile(tx, tz);
+        FAST[slot] = new CachedTile(tx, tz, g);
+        return g;
+    }
+
+    private static float[] slowTile(int tx, int tz) {
         long key = ((long) tx << 32) | (tz & 0xFFFFFFFFL);
         float[] g = TILES.get(key);
         if (g != null) {
@@ -190,7 +213,7 @@ public final class Elevation {
                 water.add(w);
             }
         }
-        Context ctx = new Context(near, water);
+        Context ctx = Context.of(near, water);
         float[] g = new float[2 * N * N];
         for (int j = 0; j < N; j++) {
             for (int i = 0; i < N; i++) {
@@ -202,8 +225,34 @@ public final class Elevation {
         return g;
     }
 
-    /** Anchors and water boxes relevant to one tile. */
-    private record Context(List<TerrainAnchors.Anchor> anchors, List<TerrainAnchors.WaterBox> water) {
+    /**
+     * Anchors and water boxes relevant to one tile, pre-sorted (keeping their order) by how the model
+     * uses them so the per-sample loops do no kind/source tests: {@code places} and {@code structures}
+     * are the non-FLOOR anchors of each anchor pass (place/landmark sources contain a ':', structure
+     * ids don't), {@code cores} the structure CORE anchors that stop natural rivers, and {@code floors}
+     * the FLOOR anchors.
+     */
+    private record Context(List<TerrainAnchors.Anchor> places, List<TerrainAnchors.Anchor> structures,
+                           List<TerrainAnchors.Anchor> cores, List<TerrainAnchors.Anchor> floors,
+                           List<TerrainAnchors.WaterBox> water) {
+        static Context of(List<TerrainAnchors.Anchor> anchors, List<TerrainAnchors.WaterBox> water) {
+            List<TerrainAnchors.Anchor> places = new ArrayList<>();
+            List<TerrainAnchors.Anchor> structures = new ArrayList<>();
+            List<TerrainAnchors.Anchor> cores = new ArrayList<>();
+            List<TerrainAnchors.Anchor> floors = new ArrayList<>();
+            for (TerrainAnchors.Anchor a : anchors) {
+                boolean structure = !a.source().contains(":");
+                if (a.kind() == TerrainAnchors.Kind.FLOOR) {
+                    floors.add(a);
+                    continue;
+                }
+                (structure ? structures : places).add(a);
+                if (a.kind() == TerrainAnchors.Kind.CORE && structure) {
+                    cores.add(a);
+                }
+            }
+            return new Context(places, structures, cores, floors, water);
+        }
     }
 
     // ------------------------------------------------------------------ the model
@@ -217,15 +266,16 @@ public final class Elevation {
                     near.add(a);
                 }
             }
-            ctx = new Context(near, TerrainAnchors.get().water());
+            ctx = Context.of(near, TerrainAnchors.get().water());
         }
         double ox = osrsX(bx);
         double oy = osrsY(bz);
         double[] nat = natural(ox, oy);
         double h = nat[0];
-        h = applyAnchors(h, bx, bz, ctx.anchors());
+        h = applyAnchorPass(h, bx, bz, ctx.places());
+        h = applyAnchorPass(h, bx, bz, ctx.structures());
         h = carveWater(h, ox, oy, bx, bz, ctx);
-        h = applyFloors(h, bx, bz, ctx.anchors());
+        h = applyFloors(h, bx, bz, ctx.floors());
         return new double[]{h, nat[1]};
     }
 
@@ -285,8 +335,8 @@ public final class Elevation {
     /** Signed distance (tiles) to the nearest coast of any landmass. */
     static double landDistance(double x, double y) {
         double best = -45;
-        for (GielinorGeography.Polygon p : GielinorGeography.POLYGONS) {
-            best = Math.max(best, polygonDistance(p, x, y, -best));
+        for (int i = 0; i < POLYGONS.length; i++) {
+            best = Math.max(best, polygonDistance(POLYGONS[i], POLYGON_BOUNDS[i], x, y, -best));
         }
         for (GielinorGeography.Ellipse e : GielinorGeography.ISLANDS) {
             double k = ellipseK(e, x, y);
@@ -295,11 +345,13 @@ public final class Elevation {
         return Math.min(best, 45);
     }
 
-    private static final java.util.Map<GielinorGeography.Polygon, double[]> BOUNDS = new java.util.IdentityHashMap<>();
+    /** The coast polygons and their bounding boxes {minX, minY, maxX, maxY}, by index (no map lookup per sample). */
+    private static final GielinorGeography.Polygon[] POLYGONS = GielinorGeography.POLYGONS.toArray(new GielinorGeography.Polygon[0]);
+    private static final double[][] POLYGON_BOUNDS = new double[POLYGONS.length][];
 
     static {
-        for (GielinorGeography.Polygon p : GielinorGeography.POLYGONS) {
-            double[] xy = p.xy();
+        for (int k = 0; k < POLYGONS.length; k++) {
+            double[] xy = POLYGONS[k].xy();
             double a = Double.MAX_VALUE, b = Double.MAX_VALUE, c = -Double.MAX_VALUE, d = -Double.MAX_VALUE;
             for (int i = 0; i < xy.length; i += 2) {
                 a = Math.min(a, xy[i]);
@@ -307,12 +359,11 @@ public final class Elevation {
                 c = Math.max(c, xy[i]);
                 d = Math.max(d, xy[i + 1]);
             }
-            BOUNDS.put(p, new double[]{a, b, c, d});
+            POLYGON_BOUNDS[k] = new double[]{a, b, c, d};
         }
     }
 
-    private static double polygonDistance(GielinorGeography.Polygon p, double x, double y, double far) {
-        double[] bb = BOUNDS.get(p);
+    private static double polygonDistance(GielinorGeography.Polygon p, double[] bb, double x, double y, double far) {
         double bdx = Math.max(0, Math.max(bb[0] - x, x - bb[2]));
         double bdy = Math.max(0, Math.max(bb[1] - y, y - bb[3]));
         double bd = Math.hypot(bdx, bdy);
@@ -418,23 +469,15 @@ public final class Elevation {
     // ------------------------------------------------------------------ anchors and water
 
     /**
-     * Levels and clamps the terrain around anchors: first places/arenas, then structures, so a
-     * structure's ground always wins where the two disagree.
+     * Levels and clamps the terrain around one group of anchors. {@link #evaluate} runs it first for
+     * places/arenas, then for structures, so a structure's ground always wins where the two disagree.
      */
-    private static double applyAnchors(double h, double bx, double bz, List<TerrainAnchors.Anchor> anchors) {
-        h = applyAnchorPass(h, bx, bz, anchors, true);
-        return applyAnchorPass(h, bx, bz, anchors, false);
-    }
-
-    private static double applyAnchorPass(double h, double bx, double bz, List<TerrainAnchors.Anchor> anchors, boolean places) {
+    private static double applyAnchorPass(double h, double bx, double bz, List<TerrainAnchors.Anchor> anchors) {
         double upper = Double.MAX_VALUE;
         double lower = -Double.MAX_VALUE;
         double coreW = 0;
         double coreT = GROUND;
         for (TerrainAnchors.Anchor a : anchors) {
-            if (a.kind() == TerrainAnchors.Kind.FLOOR || a.source().contains(":") != places) {
-                continue;
-            }
             double d = a.distance(bx, bz);
             if (a.kind() == TerrainAnchors.Kind.CORE) {
                 double w = 1 - smooth(d / CORE_BLEND);
@@ -460,8 +503,8 @@ public final class Elevation {
         // Natural rivers and lakes stop at the edge of levelled structure ground: the town fills it
         // in and builds its own channels (which are carved below as water boxes).
         boolean inCore = false;
-        for (TerrainAnchors.Anchor a : ctx.anchors()) {
-            if (a.kind() == TerrainAnchors.Kind.CORE && !a.source().contains(":") && a.distance(bx, bz) == 0) {
+        for (TerrainAnchors.Anchor a : ctx.cores()) {
+            if (a.distance(bx, bz) == 0) {
                 inCore = true;
                 break;
             }
@@ -482,7 +525,7 @@ public final class Elevation {
         return h;
     }
 
-    private static double carveNatural(double h, double ox, double oy) {
+    static double carveNatural(double h, double ox, double oy) {
         for (GielinorGeography.River r : GielinorGeography.RIVERS) {
             double half = r.width() / 2;
             double[] p = r.xy();
@@ -523,9 +566,6 @@ public final class Elevation {
 
     private static double applyFloors(double h, double bx, double bz, List<TerrainAnchors.Anchor> anchors) {
         for (TerrainAnchors.Anchor a : anchors) {
-            if (a.kind() != TerrainAnchors.Kind.FLOOR) {
-                continue;
-            }
             double d = a.distance(bx, bz);
             double need = a.target() - Math.max(0, d - 2);
             if (need > h) {

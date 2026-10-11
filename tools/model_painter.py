@@ -891,3 +891,27 @@ def model_texture(m):
         g[ga == 0] = 0
         gimg = Image.fromarray(np.dstack([g, ga]), "RGBA")
     return img, gimg
+
+
+def lit_parts(m, glow_img):
+    """Names of the parts with at least one emissive texel in the glow layer (in spec order).
+
+    The client draws only these parts in the full-bright glow pass: every other texel of the glow
+    layer is fully transparent black, which adds nothing under the additive eyes blend, so skipping
+    those boxes is invisible and saves most of the second pass's vertices.
+    """
+    R = texture_scale(m["tex_w"], m["tex_h"])
+    alpha = np.asarray(glow_img.convert("RGBA"))[..., 3]
+    out = []
+    for p in m.get("parts", []):
+        lit = False
+        for b in p.get("boxes", []):
+            for fx, fy, fw, fh in box_faces(b["u"], b["v"], b["w"], b["h"], b["d"]).values():
+                if fw > 0 and fh > 0 and alpha[fy * R:(fy + fh) * R, fx * R:(fx + fw) * R].any():
+                    lit = True
+                    break
+            if lit:
+                break
+        if lit:
+            out.append(p["name"])
+    return out

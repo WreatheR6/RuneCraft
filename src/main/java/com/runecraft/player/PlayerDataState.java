@@ -1,5 +1,6 @@
 package com.runecraft.player;
 
+import com.runecraft.osrs.world.BuiltChunks;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
@@ -18,6 +19,8 @@ public final class PlayerDataState extends PersistentState {
 
     private final Map<UUID, PlayerData> players = new HashMap<>();
     private final Set<String> builtLandmarks = new HashSet<>();
+    /** Placed structure shares, one long set per structure (was one "s:id:cx,cz" string each). */
+    private final BuiltChunks builtStructures = new BuiltChunks();
 
     public PlayerData get(UUID uuid) {
         return players.computeIfAbsent(uuid, u -> new PlayerData());
@@ -33,6 +36,16 @@ public final class PlayerDataState extends PersistentState {
 
     public void markBuilt(String landmark) {
         builtLandmarks.add(landmark);
+        markDirty();
+    }
+
+    /** True if this structure's share of the chunk has been placed. */
+    public boolean isStructureBuilt(String structureId, int chunkX, int chunkZ) {
+        return builtStructures.isBuilt(structureId, chunkX, chunkZ);
+    }
+
+    public void markStructureBuilt(String structureId, int chunkX, int chunkZ) {
+        builtStructures.markBuilt(structureId, chunkX, chunkZ);
         markDirty();
     }
 
@@ -52,6 +65,11 @@ public final class PlayerDataState extends PersistentState {
             built.add(NbtString.of(s));
         }
         nbt.put("Landmarks", built);
+        NbtCompound structures = new NbtCompound();
+        for (String id : builtStructures.structures()) {
+            structures.putLongArray(id, builtStructures.chunkKeys(id));
+        }
+        nbt.put("StructureChunks", structures);
         return nbt;
     }
 
@@ -69,7 +87,14 @@ public final class PlayerDataState extends PersistentState {
         }
         NbtList built = nbt.getList("Landmarks", NbtElement.STRING_TYPE);
         for (int i = 0; i < built.size(); i++) {
-            state.builtLandmarks.add(built.getString(i));
+            String key = built.getString(i);
+            if (!state.builtStructures.parseLegacyKey(key)) { // older saves: one string per structure share
+                state.builtLandmarks.add(key);
+            }
+        }
+        NbtCompound structures = nbt.getCompound("StructureChunks");
+        for (String id : structures.getKeys()) {
+            state.builtStructures.addAll(id, structures.getLongArray(id));
         }
         return state;
     }

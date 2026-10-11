@@ -26,6 +26,6 @@ public class GlowFeatureRenderer<T extends MobEntity> extends FeatureRenderer<T,
     public void render(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, T entity, float limbAngle,
                        float limbDistance, float tickDelta, float animationProgress, float headYaw, float headPitch) {
         VertexConsumer consumer = vertexConsumers.getBuffer(layer);
-        this.getContextModel().render(matrices, consumer, 0xF00000, OverlayTexture.DEFAULT_UV, 1.0f, 1.0f, 1.0f, 1.0f);
+        this.getContextModel().renderGlow(matrices, consumer, 0xF00000, OverlayTexture.DEFAULT_UV);
     }
 }

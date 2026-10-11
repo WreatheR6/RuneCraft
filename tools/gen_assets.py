@@ -21,6 +21,7 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import model_painter  # noqa: E402  (per-pixel ModelSpec texture painter; needs numpy)
+import optimize_pngs  # noqa: E402  (lossless PNG re-encoding, final pass)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CATALOG = os.path.join(ROOT, "build", "catalog.json")
@@ -5637,13 +5638,18 @@ def gen_model_textures(cat):
             results = pool.map(_model_texture_job, models, chunksize=4)
     except (ImportError, OSError):
         results = [_model_texture_job(m) for m in models]
+    by_id = {m["id"]: m for m in models}
+    glow_parts = {}
     for mid, img, glow in results:
         base = os.path.join(ASSETS, "textures", "entity", "model", mid)
         save_png(img, base + ".png", "model textures")
         if glow is not None:
             save_png(glow, base + "_glow.png", "model glow layers")
+            glow_parts[mid] = model_painter.lit_parts(by_id[mid], glow)
         elif os.path.exists(base + "_glow.png"):
             os.remove(base + "_glow.png")
+    # Which parts the client's glow pass has to draw (GenericModel.renderGlow); see model_painter.lit_parts.
+    write_json(os.path.join(ASSETS, "glow_parts.json"), dict(sorted(glow_parts.items())), "glow part lists")
 
 
 # ----------------------------------------------------------------------------------------------
@@ -6879,6 +6885,8 @@ def resolve(ref, kind):
 
 def validate(cat):
     errors = []
+    gpp = os.path.join(ASSETS, "glow_parts.json")
+    glow_parts = json.load(open(gpp, encoding="utf-8")) if os.path.exists(gpp) else {}
     for p in WRITTEN_JSON:
         try:
             with open(p, encoding="utf-8") as f:
@@ -6991,6 +6999,8 @@ def validate(cat):
                 with Image.open(gp) as g, Image.open(tp) as im:
                     if g.size != im.size:
                         errors.append(f"model {m['id']}: glow layer size {g.size} != texture size {im.size}")
+                    elif glow_parts.get(m["id"]) != model_painter.lit_parts(m, g):
+                        errors.append(f"model {m['id']}: glow_parts.json is stale for its _glow texture")
     for group, label in (("monsters", "monster"), ("bosses", "boss")):
         for e in cat.get(group, []):
             if (e.get("model") or e["id"]) in specs:
@@ -7036,12 +7046,16 @@ def main(argv=None):
     gen_skill_icons(cat)
     gen_interface()
     lang = gen_lang(cat, block_names, entity_names)
+    # Final pass: lossless re-encoding of every PNG (identical RGBA pixels, smallest encoding).
+    png_files, png_before, png_after = optimize_pngs.optimise_tree([RES], quiet=True)
 
     print(f"RuneCraft asset generation summary ({os.path.relpath(CATALOG, ROOT)} -> {RES}):")
     for k in sorted(COUNTS):
         print(f"  {k:20s} {COUNTS[k]}")
     print(f"  {'TOTAL':20s} {sum(COUNTS.values())}")
     print(f"  lang entries         {len(lang)}")
+    print(f"  png optimisation     {png_files} files, {png_before / 1e6:.2f} MB -> {png_after / 1e6:.2f} MB lossless"
+          f" ({'oxipng' if optimize_pngs.oxipng else 'pillow only'})")
     print(f"  blocks               {len(block_names)}")
     print(f"  catalog content      {len(cat['monsters'])} monsters, {len(cat['bosses'])} bosses, "
           f"{len(cat['npcs'])} npcs, {len(cat['blocks'])} blocks, {len(cat['models'])} models")
