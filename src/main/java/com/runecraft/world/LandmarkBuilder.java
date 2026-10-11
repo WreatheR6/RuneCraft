@@ -192,8 +192,11 @@ public final class LandmarkBuilder {
             }
             int x = cx + npc.dx();
             int z = cz + npc.dz();
-            int top = Math.max(y + 1, world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z));
-            entity.refreshPositionAndAngles(x + 0.5, top, z + 0.5, world.getRandom().nextFloat() * 360f, 0);
+            // the building around the spot first, so the NPC is placed on its floor rather than in the open
+            StructurePlacer.applyIfLoaded(world, x >> 4, z >> 4);
+            BlockPos feet = NpcFloor.spot(world, x, z, NpcFloor.isBanker(npc.id(), npc.name()));
+            entity.refreshPositionAndAngles(feet.getX() + 0.5, NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
+                    world.getRandom().nextFloat() * 360f, 0);
             entity.setNpc(npc);
             entity.initialize(world, world.getLocalDifficulty(entity.getBlockPos()), SpawnReason.STRUCTURE, null, null);
             world.spawnEntity(entity);
@@ -467,8 +470,10 @@ public final class LandmarkBuilder {
             }
             int x = cx + npc.dx();
             int z = cz + npc.dz();
-            int top = Math.max(y, world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z));
-            entity.refreshPositionAndAngles(x + 0.5, top, z + 0.5, world.getRandom().nextFloat() * 360f, 0);
+            StructurePlacer.applyIfLoaded(world, x >> 4, z >> 4);
+            BlockPos feet = NpcFloor.spot(world, x, z, NpcFloor.isBanker(npc.name(), npc.displayName()));
+            entity.refreshPositionAndAngles(feet.getX() + 0.5, NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
+                    world.getRandom().nextFloat() * 360f, 0);
             entity.setNpc(npc);
             entity.initialize(world, world.getLocalDifficulty(entity.getBlockPos()), SpawnReason.STRUCTURE, null, null);
             world.spawnEntity(entity);

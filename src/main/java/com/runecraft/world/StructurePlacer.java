@@ -3,6 +3,7 @@ package com.runecraft.world;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.runecraft.RuneCraft;
 import com.runecraft.osrs.content.ContentRegistry;
+import com.runecraft.osrs.world.ChunkBuildQueue;
 import com.runecraft.osrs.world.StructureDef;
 import com.runecraft.osrs.world.StructureIndex;
 import com.runecraft.player.PlayerDataState;
@@ -25,18 +26,18 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.Heightmap;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.LongPredicate;
 
 /**
  * Applies {@link StructureDef}s in Gielinor. Each structure is split per chunk: when a chunk loads
  * its share of every intersecting structure is queued and built a few chunks per tick, clipped to
- * that chunk, so a whole city appears without forcing neighbouring chunks to generate.
+ * that chunk, so a whole city appears without forcing neighbouring chunks to generate. A queued
+ * chunk that is no longer loaded when its turn comes waits in {@link ChunkBuildQueue} until it is
+ * loaded again (it used to be dropped, and since Fabric does not announce an in-memory chunk twice,
+ * chunks just outside loaded areas were then never built).
  */
 public final class StructurePlacer {
     private static final int CHUNKS_PER_TICK = 2;
@@ -44,8 +45,10 @@ public final class StructurePlacer {
     private static final StructureIndex INDEX = StructureIndex.build(ContentRegistry.structures());
     private static final Map<String, StructureDef> REPLACING = new HashMap<>();
     private static final Map<String, BlockState> STATE_CACHE = new HashMap<>();
-    private static final Deque<Long> QUEUE = new ArrayDeque<>();
-    private static final Set<Long> QUEUED = new HashSet<>();
+    /** How often chunks waiting to be loaded again are rechecked. */
+    private static final int RECHECK_TICKS = 20;
+    private static final ChunkBuildQueue QUEUE = new ChunkBuildQueue();
+    private static int recheckTicks;
 
     static {
         for (StructureDef def : ContentRegistry.structures()) {
@@ -69,28 +72,41 @@ public final class StructurePlacer {
                 return;
             }
             long key = chunk.getPos().toLong();
-            if (INDEX.contains(key) && QUEUED.add(key)) {
-                QUEUE.add(key);
+            if (INDEX.contains(key)) {
+                QUEUE.offer(key);
+            }
+        });
+        ServerChunkEvents.CHUNK_UNLOAD.register((world, chunk) -> {
+            if (Gielinor.is(world)) {
+                QUEUE.unloaded(chunk.getPos().toLong());
             }
         });
         ServerTickEvents.START_SERVER_TICK.register(server -> {
-            if (QUEUE.isEmpty()) {
+            if (QUEUE.isEmpty() && QUEUE.waitingCount() == 0) {
                 return;
             }
             ServerWorld world = Gielinor.world(server);
             if (world == null) {
                 return;
             }
-            for (int i = 0; i < CHUNKS_PER_TICK && !QUEUE.isEmpty(); i++) {
-                long key = QUEUE.poll();
-                QUEUED.remove(key);
-                int cx = ChunkPos.getPackedX(key);
-                int cz = ChunkPos.getPackedZ(key);
-                if (world.isChunkLoaded(cx, cz)) {
-                    applyChunk(world, cx, cz);
-                }
+            LongPredicate loaded = key -> world.isChunkLoaded(ChunkPos.getPackedX(key), ChunkPos.getPackedZ(key));
+            // Chunks that were announced but demoted before their turn wait until they are loaded again
+            // (their load event will not fire a second time); see ChunkBuildQueue.
+            if (QUEUE.waitingCount() > 0 && ++recheckTicks >= RECHECK_TICKS) {
+                recheckTicks = 0;
+                QUEUE.recheck(loaded);
+            }
+            for (long key : QUEUE.next(CHUNKS_PER_TICK, loaded)) {
+                applyChunk(world, ChunkPos.getPackedX(key), ChunkPos.getPackedZ(key));
             }
         });
+    }
+
+    /** Builds this chunk's structure shares now if the chunk is loaded (cheap no-op once built). */
+    public static void applyIfLoaded(ServerWorld world, int cx, int cz) {
+        if (INDEX.contains(cx, cz) && world.isChunkLoaded(cx, cz)) {
+            applyChunk(world, cx, cz);
+        }
     }
 
     /** Builds every structure share in the chunks within {@code radius} blocks of a point (loading them). */

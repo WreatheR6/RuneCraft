@@ -6,9 +6,7 @@ import com.runecraft.osrs.content.NpcDef;
 import com.runecraft.osrs.content.npcs.NpcsContent;
 import com.runecraft.osrs.content.npcs.TownNpc;
 import com.runecraft.osrs.content.npcs.Townsfolk;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.registry.tag.BlockTags;
+import com.runecraft.world.NpcFloor;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -18,9 +16,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Keeps NPCs on the floor of the building they work in. Module NPCs are spawned on top of the
- * highest block of their column, which is the roof when a hand-built shop stands there; this moves
- * them down to the indoor floor (a standable spot below the roof whose floor isn't natural ground).
+ * Keeps NPCs on the floor of the building they work in ({@link NpcFloor}): a building may be placed
+ * around an NPC after it spawned, so bankers are re-seated beside their bank booth and anyone left on
+ * a roof is moved down to the column's lowest floor.
  */
 final class NpcPlacement {
     private static final Set<String> MINE = new HashSet<>();
@@ -38,61 +36,40 @@ final class NpcPlacement {
         return MINE.contains(e.npcId());
     }
 
-    private static boolean natural(BlockState s) {
-        return s.isIn(BlockTags.DIRT) || s.isIn(BlockTags.BASE_STONE_OVERWORLD) || s.isIn(BlockTags.SAND)
-                || s.isOf(Blocks.GRAVEL) || !s.getFluidState().isEmpty();
-    }
-
-    private static boolean standable(ServerWorld world, BlockPos pos) {
-        BlockState below = world.getBlockState(pos.down());
-        BlockState feet = world.getBlockState(pos);
-        BlockState head = world.getBlockState(pos.up());
-        return !below.getCollisionShape(world, pos.down()).isEmpty()
-                && feet.getCollisionShape(world, pos).isEmpty() && feet.getFluidState().isEmpty()
-                && head.getCollisionShape(world, pos.up()).isEmpty();
+    /** Y a town resident should spawn at in column (x, z): the lowest floor there (not the roof). */
+    static int standY(ServerWorld world, int x, int z) {
+        return NpcFloor.lowestY(world, x, z);
     }
 
     /**
-     * The indoor floor of column (x, z): the first standable spot below the highest block whose floor
-     * isn't natural ground (i.e. the floor of a building under its roof), or -1 if there is none.
+     * Puts an NPC back on its floor when the world changed around it: bankers go beside the nearest
+     * bank booth (the bank may have been built after they spawned); anyone standing on top of their
+     * column (a roof) or stuck inside blocks moves to the column's lowest floor. NPCs already standing
+     * on a floor under a roof are left alone.
      */
-    static int indoorY(ServerWorld world, int x, int z) {
-        world.getChunk(x >> 4, z >> 4);
-        int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
-        int floorLimit = Math.max(world.getBottomY() + 1, Math.max(world.getSeaLevel() - 2, top - 16));
-        for (int y = top - 1; y > floorLimit; y--) {
-            BlockPos p = new BlockPos(x, y, z);
-            if (standable(world, p)) {
-                return natural(world.getBlockState(p.down())) ? -1 : y;
-            }
-        }
-        return -1;
-    }
-
-    /** Y an NPC should stand at in column (x, z): the indoor floor under a roof, else the surface. */
-    static int standY(ServerWorld world, int x, int z) {
-        int indoor = indoorY(world, x, z);
-        return indoor >= 0 ? indoor : world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
-    }
-
-    /** Moves an NPC down to the floor of the building around it (off the roof), or out of a block it's stuck in. */
     static void settle(ServerWorld world, QuestNpcEntity e) {
         BlockPos cur = e.getBlockPos();
+        if (NpcFloor.isBanker(e.npcId(), e.getName().getString())) {
+            if (NpcFloor.standable(world, cur) && NpcFloor.nextToBooth(world, cur)) {
+                return;
+            }
+            BlockPos booth = NpcFloor.besideBooth(world, cur.getX(), cur.getZ());
+            if (booth != null) {
+                e.requestTeleport(booth.getX() + 0.5, NpcFloor.feetY(world, booth), booth.getZ() + 0.5);
+                return;
+            }
+        }
         int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, cur.getX(), cur.getZ());
-        if (cur.getY() < top && standable(world, cur) && !natural(world.getBlockState(cur.down()))) {
+        if (cur.getY() < top && NpcFloor.standable(world, cur)) {
             return; // already on a floor inside a building
         }
-        int indoor = indoorY(world, cur.getX(), cur.getZ());
-        int y;
-        if (indoor >= 0) {
-            y = indoor;
-        } else if (!standable(world, cur)) {
-            y = top;
-        } else {
-            return;
-        }
-        if (Math.abs(y - e.getY()) >= 1.0) {
-            e.requestTeleport(cur.getX() + 0.5, y, cur.getZ() + 0.5);
+        int y = NpcFloor.lowestY(world, cur.getX(), cur.getZ());
+        if (y != cur.getY() || !NpcFloor.standable(world, cur)) {
+            BlockPos to = new BlockPos(cur.getX(), y, cur.getZ());
+            double feet = NpcFloor.feetY(world, to);
+            if (Math.abs(feet - e.getY()) >= 0.5) {
+                e.requestTeleport(cur.getX() + 0.5, feet, cur.getZ() + 0.5);
+            }
         }
     }
 

@@ -1,5 +1,7 @@
 package com.runecraft.client.model;
 
+import com.runecraft.entity.Disguisable;
+import com.runecraft.osrs.model.DisguisePlan;
 import com.runecraft.osrs.model.ModelSpec;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.VertexConsumer;
@@ -31,6 +33,11 @@ public class GenericModel<T extends Entity> extends SinglePartEntityModel<T> {
     /** Scratch for restoring the flags after the glow pass (render thread only; no per-frame allocation). */
     private boolean[] wasHidden;
     private boolean[] wasVisible;
+    /** How the model looks while its creature is disguised (rock crabs as plain rocks), or null. */
+    private final DisguisePlan disguise;
+    /** Per animated part, while disguised: drawn at all / own boxes skipped (ancestor of the shell). */
+    private boolean[] disguiseVisible;
+    private boolean[] disguiseAncestor;
 
     public GenericModel(ModelPart root, ModelSpec spec) {
         this.root = root;
@@ -42,6 +49,36 @@ public class GenericModel<T extends Entity> extends SinglePartEntityModel<T> {
         }
         this.allParts = root.traverse().toArray(ModelPart[]::new);
         planGlow(spec);
+        this.disguise = DisguisePlan.of(spec, DisguisePlan.SHELL);
+        if (disguise != null) {
+            disguiseVisible = new boolean[animated.size()];
+            disguiseAncestor = new boolean[animated.size()];
+            for (int i = 0; i < animated.size(); i++) {
+                String name = animated.get(i).spec().name;
+                disguiseVisible[i] = disguise.visible(name);
+                disguiseAncestor[i] = disguise.ancestors().contains(name);
+            }
+        }
+    }
+
+    /**
+     * Shows only the shell while the creature is disguised (rock crabs lying as "Rocks"), the whole
+     * model otherwise. Returns true if disguised (the caller then skips the animations).
+     */
+    private boolean applyDisguise(T entity) {
+        if (disguise == null) {
+            return false;
+        }
+        boolean disguised = entity instanceof Disguisable d && d.isDisguised();
+        for (int i = 0; i < animated.size(); i++) {
+            Animated a = animated.get(i);
+            a.part().visible = !disguised || disguiseVisible[i];
+            a.part().hidden = disguised && disguiseAncestor[i];
+            if (disguised && a.spec().parent == null) {
+                a.part().pivotY += disguise.drop();
+            }
+        }
+        return disguised;
     }
 
     /** Works out which parts the glow pass can skip, from the lit-part list made with the glow texture. */
@@ -135,6 +172,9 @@ public class GenericModel<T extends Entity> extends SinglePartEntityModel<T> {
     public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
         for (ModelPart part : allParts) {
             part.resetTransform();
+        }
+        if (applyDisguise(entity)) {
+            return;
         }
         float walk = MathHelper.cos(limbAngle * 0.6662f) * 1.2f * limbDistance;
         float swing = MathHelper.sin(MathHelper.sqrt(handSwingProgress) * (float) Math.PI);

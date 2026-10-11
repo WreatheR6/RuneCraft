@@ -99,9 +99,12 @@ public final class ModEntities {
         }
         for (com.runecraft.osrs.content.MonsterDef m : com.runecraft.osrs.content.ContentRegistry.monsters()) {
             float sc = m.scale;
+            // rock crabs lie disguised as rocks until a player comes close
+            EntityType.EntityFactory<OsrsMonsterEntity> factory = "rock_crab".equals(m.id)
+                    ? com.runecraft.entity.RockCrabEntity::new : OsrsMonsterEntity::new;
             EntityType<OsrsMonsterEntity> type = FabricEntityTypeBuilder.<OsrsMonsterEntity>createMob()
                     .spawnGroup(SpawnGroup.MONSTER)
-                    .entityFactory(OsrsMonsterEntity::new)
+                    .entityFactory(factory)
                     .dimensions(EntityDimensions.fixed(m.width * sc, m.height * sc))
                     .defaultAttributes(() -> attributes(m.hitpoints, m.moveSpeed))
                     .spawnRestriction(SpawnRestriction.Location.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,

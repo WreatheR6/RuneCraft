@@ -137,13 +137,7 @@ while read -r line; do
     fi
 done < <(grep '^station ' checks.txt)
 [ "$stations_run" -eq "${#STATIONS[@]}" ] || { echo "FAIL: only $stations_run of ${#STATIONS[@]} station checks ran"; fail=1; }
-# Known issue: a couple of stations in small outlying buildings near chunk corners come up empty
-# (investigating). Tolerate up to 2 as a warning; more than that means something real broke.
-if [ "$stations_bad" -gt 2 ]; then
-    echo "FAIL: $stations_bad station block check(s) failed on both looks"; fail=1
-elif [ "$stations_bad" -gt 0 ]; then
-    echo "WARN: $stations_bad station block(s) missing (tolerated, known issue)"
-fi
+[ "$stations_bad" -eq 0 ] || { echo "FAIL: $stations_bad station block check(s) failed on both looks"; fail=1; }
 entities_bad=$(grep '^entity ' checks.txt | grep -vc '=> PASS$')
 [ "$entities_bad" -eq 0 ] || { echo "WARN: $entities_bad summoned creature(s) not found after 20s (died or despawned?):"; grep '^entity ' checks.txt | grep -v '=> PASS$'; }
 [ $fail = 0 ] && echo "Smoke test passed ($stations_run station checks)"

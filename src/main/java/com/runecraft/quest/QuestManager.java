@@ -3,6 +3,7 @@ package com.runecraft.quest;
 import com.runecraft.combat.MonsterStats;
 import com.runecraft.entity.QuestNpcEntity;
 import com.runecraft.network.ServerNetworking;
+import com.runecraft.osrs.ImpCatcherBeads;
 import com.runecraft.osrs.Quest;
 import com.runecraft.osrs.QuestNpc;
 import com.runecraft.osrs.Skill;
@@ -20,6 +21,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -273,7 +275,7 @@ public final class QuestManager {
         Quest q = Quest.IMP_CATCHER;
         switch (stage(p, q)) {
             case 0 -> {
-                say(p, npc, "My beads! Imps stole my black, red, yellow and white beads. Dark wizards and goblins may have them now.");
+                say(p, npc, "My beads! Imps stole my black, red, yellow and white beads. Kill the imps around Misthalin and Asgarnia and bring them back.");
                 set(p, q, 1);
             }
             case 1 -> {
@@ -281,7 +283,8 @@ public final class QuestManager {
                     say(p, npc, "All four beads! Here, take this amulet of accuracy.");
                     complete(p, q);
                 } else {
-                    say(p, npc, "I still need a black, red, yellow and white bead.");
+                    List<String> missing = ImpCatcherBeads.missing(item -> Inv.has(p, item, 1));
+                    say(p, npc, "I still need " + missing.size() + " of my beads. The imps have them!");
                 }
             }
             default -> say(p, npc, "Thanks for finding my beads.");
@@ -471,10 +474,15 @@ public final class QuestManager {
                 && p.getRandom().nextInt(4) == 0) {
             entity.dropStack(Inv.stack("ghosts_skull", 1));
         }
-        if (data.questStage(Quest.IMP_CATCHER) == 1 && (name.equals("Dark wizard") || name.equals("Goblin"))
-                && p.getRandom().nextInt(3) == 0) {
-            String[] beads = {"black_bead", "red_bead", "yellow_bead", "white_bead"};
-            entity.dropStack(Inv.stack(beads[p.getRandom().nextInt(beads.length)], 1));
+        // OSRS: imps carry Mizgog's beads (also on their normal drop table); while the quest needs them,
+        // an imp also often drops a bead the player is still missing.
+        if (data.questStage(Quest.IMP_CATCHER) == 1
+                && ImpCatcherBeads.carriesBeads(stats.profile() != null ? stats.profile().id : null, name)) {
+            String bead = ImpCatcherBeads.questDrop(item -> Inv.has(p, item, 1),
+                    p.getRandom().nextInt(ImpCatcherBeads.QUEST_DROP_ONE_IN), p.getRandom().nextInt(4));
+            if (bead != null) {
+                entity.dropStack(Inv.stack(bead, 1));
+            }
         }
         if (data.questStage(Quest.WITCHS_POTION) == 1 && name.equals("Giant rat") && !Inv.has(p, "rats_tail", 1)) {
             entity.dropStack(Inv.stack("rats_tail", 1));

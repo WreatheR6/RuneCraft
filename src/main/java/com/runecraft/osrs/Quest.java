@@ -31,7 +31,7 @@ public enum Quest implements QuestInfo {
                     "I have the skull. I should return it to the ghost.")),
     IMP_CATCHER("Imp Catcher", Difficulty.NOVICE, 1, Map.of(), Map.of(Skill.MAGIC, 875.0), List.of("amulet_of_accuracy"),
             List.of("I can start this quest by speaking to Wizard Mizgog in the Wizards' Tower.",
-                    "Mizgog needs his black, red, yellow and white beads back. Dark wizards and goblins may have them.")),
+                    "Mizgog needs his black, red, yellow and white beads back. The imps that stole them still have them.")),
     WITCHS_POTION("Witch's Potion", Difficulty.NOVICE, 1, Map.of(), Map.of(Skill.MAGIC, 325.0), List.of(),
             List.of("I can start this quest by speaking to Hetty in Rimmington.",
                     "Hetty needs a rat's tail, an eye of newt, some burnt meat and an onion.",
