@@ -1,0 +1,2210 @@
+{
+  "aberrant_spectre": [
+    "head"
+  ],
+  "abyssal_demon": [
+    "head"
+  ],
+  "abyssal_guardian": [
+    "jaw"
+  ],
+  "abyssal_leech": [
+    "mouth"
+  ],
+  "abyssal_sire": [
+    "body",
+    "shoulder_l",
+    "shoulder_r",
+    "eyes",
+    "jaw",
+    "arm_l",
+    "arm_r"
+  ],
+  "abyssal_walker": [
+    "head",
+    "jaw",
+    "tail_tip"
+  ],
+  "adamant_dragon": [
+    "head"
+  ],
+  "agrith_naar": [
+    "head",
+    "jaw"
+  ],
+  "ahrim": [
+    "head",
+    "eye_glow_l",
+    "eye_glow_r",
+    "staff_orb"
+  ],
+  "akkha": [
+    "head",
+    "collar_gems",
+    "halberd_blade",
+    "shadow_orb"
+  ],
+  "alchemical_hydra": [
+    "vent_glow0",
+    "vent_glow1",
+    "vent_glow2",
+    "eyes0",
+    "eyes1",
+    "eyes2",
+    "eyes3"
+  ],
+  "alchemical_hydra_blue": [
+    "vent_glow0",
+    "vent_glow1",
+    "vent_glow2",
+    "eyes0",
+    "eyes1",
+    "eyes2"
+  ],
+  "alchemical_hydra_enraged": [
+    "vent_glow0",
+    "vent_glow1",
+    "vent_glow2",
+    "eyes0"
+  ],
+  "alchemical_hydra_red": [
+    "vent_glow0",
+    "vent_glow1",
+    "vent_glow2",
+    "eyes0",
+    "eyes1"
+  ],
+  "alomone": [
+    "staff_orb",
+    "hand_glow"
+  ],
+  "amoxliatl": [
+    "crystal0",
+    "crystal1",
+    "crystal2",
+    "crystal3",
+    "crystal4",
+    "crystal5",
+    "shard_l",
+    "shard_r",
+    "head",
+    "tail_tip"
+  ],
+  "ancestral_glyph": [
+    "slab",
+    "rune_f",
+    "rune_b",
+    "embers",
+    "studs",
+    "crack_bars"
+  ],
+  "ancient_guardian": [
+    "head",
+    "core_glow",
+    "glow_seam_l",
+    "glow_seam_r",
+    "back_crystal_l",
+    "back_crystal_r"
+  ],
+  "ankou": [
+    "head",
+    "soul_lantern"
+  ],
+  "araxxor": [
+    "eyes",
+    "abdomen"
+  ],
+  "arrav": [
+    "head"
+  ],
+  "artio": [
+    "eyes"
+  ],
+  "baba": [
+    "eye_l",
+    "eye_r",
+    "crown_gem"
+  ],
+  "baba_boulder": [
+    "glyph",
+    "glyph_back"
+  ],
+  "baby_impling": [
+    "head",
+    "sparkle"
+  ],
+  "balance_elemental": [
+    "head",
+    "core_glow",
+    "glow_seam_l",
+    "glow_seam_r",
+    "back_crystal_l",
+    "back_crystal_r"
+  ],
+  "balfrug_kreeyath": [
+    "head",
+    "jaw",
+    "hand_fire_l",
+    "hand_fire_r",
+    "hand_fire_tip_l",
+    "hand_fire_tip_r"
+  ],
+  "banshee": [
+    "head"
+  ],
+  "basilisk": [
+    "head"
+  ],
+  "basilisk_knight": [
+    "head"
+  ],
+  "black_demon": [
+    "head"
+  ],
+  "black_dragon": [
+    "head"
+  ],
+  "black_knight_titan": [
+    "titan_eyes"
+  ],
+  "blood_jaguar": [
+    "head"
+  ],
+  "blood_moon": [
+    "moon_face",
+    "moon_gem"
+  ],
+  "blood_spawn": [
+    "pupil",
+    "bubbles"
+  ],
+  "bloodveld": [
+    "head"
+  ],
+  "blue_dragon": [
+    "head"
+  ],
+  "blue_moon": [
+    "moon_face",
+    "moon_gem",
+    "frost_tip"
+  ],
+  "branda_the_fire_queen": [
+    "waist",
+    "neck",
+    "head",
+    "brow",
+    "chin",
+    "forearm_l",
+    "forearm_r",
+    "shin_l",
+    "shin_r",
+    "calf_l",
+    "calf_r",
+    "crown_spike0",
+    "crown_spike1",
+    "crown_spike2",
+    "crown_spike3",
+    "crown_spike4",
+    "shoulder_shard_l",
+    "shoulder_shard_r",
+    "shoulder_shard2_l",
+    "shoulder_shard2_r",
+    "flame_hair",
+    "fire_core",
+    "knuckle_spike_l",
+    "knuckle_spike_r"
+  ],
+  "brawler": [
+    "head",
+    "jaw"
+  ],
+  "brine_rat": [
+    "head"
+  ],
+  "bronze_dragon": [
+    "head"
+  ],
+  "brutal_black_dragon": [
+    "head"
+  ],
+  "brutal_blue_dragon": [
+    "head"
+  ],
+  "brutal_green_dragon": [
+    "head"
+  ],
+  "brutal_red_dragon": [
+    "head"
+  ],
+  "bryophyta": [
+    "head",
+    "staff_orb"
+  ],
+  "callisto": [
+    "eyes"
+  ],
+  "calvarion": [
+    "head",
+    "soul_flame",
+    "halberd_glow"
+  ],
+  "catablepon": [
+    "head"
+  ],
+  "catacomb_abyssal_demon": [
+    "head"
+  ],
+  "catacomb_ankou": [
+    "head",
+    "soul_lantern"
+  ],
+  "catacomb_black_demon": [
+    "head"
+  ],
+  "catacomb_dagannoth": [
+    "head"
+  ],
+  "catacomb_dust_devil": [
+    "head"
+  ],
+  "catacomb_fire_giant": [
+    "head",
+    "flames",
+    "flame_beard",
+    "flame_shoulder_l",
+    "flame_shoulder_r"
+  ],
+  "catacomb_greater_demon": [
+    "head"
+  ],
+  "catacomb_hellhound": [
+    "head",
+    "jaw"
+  ],
+  "catacomb_hill_giant": [
+    "head"
+  ],
+  "catacomb_moss_giant": [
+    "head"
+  ],
+  "cave_abomination": [
+    "head"
+  ],
+  "cave_bug": [
+    "head"
+  ],
+  "cave_crawler": [
+    "head"
+  ],
+  "cave_horror": [
+    "head"
+  ],
+  "cave_kraken": [
+    "head"
+  ],
+  "cave_slime": [
+    "dome"
+  ],
+  "cerberus": [
+    "body",
+    "chest",
+    "shoulder_l",
+    "shoulder_r",
+    "haunch_l",
+    "haunch_r",
+    "neck0",
+    "eyes0",
+    "jaw0",
+    "neck1",
+    "eyes1",
+    "jaw1",
+    "neck2",
+    "eyes2",
+    "jaw2",
+    "leg_f_l",
+    "leg_f_r",
+    "fore_f_l",
+    "fore_f_r",
+    "thigh_b_l",
+    "thigh_b_r",
+    "meta_b_l",
+    "meta_b_r",
+    "tail_fire"
+  ],
+  "chaos_druid": [
+    "staff_orb",
+    "amulet"
+  ],
+  "chaos_elemental": [
+    "core",
+    "inner",
+    "head",
+    "eyes",
+    "arm_l",
+    "arm_r",
+    "arm_mid_l",
+    "arm_mid_r",
+    "arm_end_l",
+    "arm_end_r",
+    "ring_green",
+    "ring_blue",
+    "ring_purple",
+    "wisp0",
+    "wisp1",
+    "wisp2",
+    "wisp3"
+  ],
+  "chaos_fanatic": [
+    "chaos_mark",
+    "staff_orb",
+    "hand_spark"
+  ],
+  "chompy_bird": [
+    "crest",
+    "wing_l",
+    "wing_r",
+    "tail"
+  ],
+  "chronozon": [
+    "head",
+    "jaw"
+  ],
+  "cockatrice": [
+    "head"
+  ],
+  "commander_zilyana": [
+    "tiara_gem",
+    "sword_gem"
+  ],
+  "corporeal_beast": [
+    "body",
+    "chest",
+    "shoulder_l",
+    "shoulder_r",
+    "eyes",
+    "leg_f_l",
+    "leg_f_r",
+    "thigh_b_l",
+    "thigh_b_r"
+  ],
+  "corrupt_lizardman": [
+    "head",
+    "lizard_jaw",
+    "corrupt_mark"
+  ],
+  "corrupted_hunllef": [
+    "blade0",
+    "blade2",
+    "blade4",
+    "flank_shard_l",
+    "flank_shard_r",
+    "head",
+    "jaw",
+    "crest",
+    "leg_f_claw_l",
+    "leg_f_claw_r",
+    "leg_b_claw_l",
+    "leg_b_claw_r",
+    "tail_shard"
+  ],
+  "count_draynor": [
+    "head"
+  ],
+  "cox_guardian": [
+    "hips",
+    "head",
+    "chest_rune",
+    "fist_rune_l",
+    "fist_rune_r",
+    "knee_rune_l",
+    "knee_rune_r",
+    "fore_rune_l",
+    "fore_rune_r",
+    "plinth_runes"
+  ],
+  "cox_ice_demon": [
+    "head",
+    "jaw",
+    "shoulder_ice_l",
+    "shoulder_ice_r",
+    "tail_tip",
+    "frost_aura"
+  ],
+  "cox_lizardman_shaman": [
+    "eye_l",
+    "eye_r",
+    "spit"
+  ],
+  "cox_lizardman_spawn": [
+    "bulge",
+    "pustule0",
+    "pustule1",
+    "pustule2",
+    "eye_l",
+    "eye_r"
+  ],
+  "crazy_archaeologist": [
+    "book_spark"
+  ],
+  "cruor": [
+    "orb"
+  ],
+  "crystalline_hunllef": [
+    "blade0",
+    "blade2",
+    "blade4",
+    "flank_shard_l",
+    "flank_shard_r",
+    "head",
+    "jaw",
+    "crest",
+    "leg_f_claw_l",
+    "leg_f_claw_r",
+    "leg_b_claw_l",
+    "leg_b_claw_r",
+    "tail_shard"
+  ],
+  "cyclops": [
+    "pupil"
+  ],
+  "dad": [
+    "head"
+  ],
+  "dagannoth_prime": [
+    "eyes"
+  ],
+  "dagannoth_rex": [
+    "eyes"
+  ],
+  "dagannoth_supreme": [
+    "eyes"
+  ],
+  "damis": [
+    "head",
+    "soul_glow",
+    "hand_wisp_l",
+    "hand_wisp_r"
+  ],
+  "dark_beast": [
+    "head",
+    "jaw"
+  ],
+  "dark_energy_core": [
+    "core"
+  ],
+  "dark_wizard": [
+    "staff_orb",
+    "rune_sigil"
+  ],
+  "dawn": [
+    "eyes"
+  ],
+  "deathly_mage": [
+    "head",
+    "staff_orb",
+    "spell"
+  ],
+  "deathly_ranger": [
+    "head",
+    "arrow",
+    "quiver_arrows"
+  ],
+  "defiler": [
+    "head",
+    "jaw"
+  ],
+  "delrith": [
+    "head",
+    "jaw",
+    "brand"
+  ],
+  "dessourt": [
+    "head",
+    "soul_glow",
+    "hand_wisp_l",
+    "hand_wisp_r"
+  ],
+  "dessous": [
+    "head",
+    "brooch"
+  ],
+  "deviant_spectre": [
+    "head"
+  ],
+  "dharok": [
+    "head",
+    "eye_glow_l",
+    "eye_glow_r"
+  ],
+  "dragon_impling": [
+    "head",
+    "sparkle"
+  ],
+  "drake": [
+    "head"
+  ],
+  "draugen": [
+    "head"
+  ],
+  "ds2_vorkath": [
+    "body",
+    "shoulder_l",
+    "shoulder_r",
+    "neck",
+    "eyes",
+    "breath",
+    "leg_f_l",
+    "leg_f_r",
+    "thigh_b_l",
+    "thigh_b_r",
+    "tail0",
+    "tail1"
+  ],
+  "duke_sucellus": [
+    "vent_gas0",
+    "vent_gas1",
+    "vent_gas2",
+    "eyes"
+  ],
+  "dusk": [
+    "eyes"
+  ],
+  "dust_devil": [
+    "head"
+  ],
+  "earth_impling": [
+    "head",
+    "sparkle"
+  ],
+  "earth_warrior": [
+    "head"
+  ],
+  "eclectic_impling": [
+    "head",
+    "sparkle"
+  ],
+  "eclipse_moon": [
+    "moon_face",
+    "moon_gem",
+    "eclipse_ring"
+  ],
+  "eldric_the_ice_king": [
+    "head",
+    "ice_core"
+  ],
+  "elidinis_warden": [
+    "hips",
+    "torso",
+    "head",
+    "core",
+    "ankh"
+  ],
+  "elvarg": [
+    "eyes"
+  ],
+  "entranan_firebird": [
+    "crest",
+    "wing_l",
+    "wing_r",
+    "tail"
+  ],
+  "essence_impling": [
+    "head",
+    "sparkle"
+  ],
+  "ext_pet_rift_guardian": [
+    "core",
+    "eye"
+  ],
+  "fareed": [
+    "head",
+    "flame_crest",
+    "hand_flame_l",
+    "hand_flame_r",
+    "blade_fire"
+  ],
+  "fever_spider": [
+    "head",
+    "eyes"
+  ],
+  "fire_giant": [
+    "head",
+    "flames",
+    "flame_beard",
+    "flame_shoulder_l",
+    "flame_shoulder_r"
+  ],
+  "fire_warrior_of_lesarkus": [
+    "fire_aura",
+    "sword_fire",
+    "shoulder_flame_l",
+    "shoulder_flame_r"
+  ],
+  "flambeed": [
+    "waist",
+    "chest",
+    "neck",
+    "trap_l",
+    "trap_r",
+    "head",
+    "brow",
+    "chin",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r",
+    "bicep_l",
+    "bicep_r",
+    "shin_l",
+    "shin_r",
+    "calf_l",
+    "calf_r",
+    "flame0",
+    "flame1",
+    "flame2",
+    "flame3",
+    "hand_fire_l",
+    "hand_fire_r",
+    "shoulder_flame_l",
+    "shoulder_flame_r"
+  ],
+  "flesh_crawler": [
+    "head"
+  ],
+  "flight_kilisa": [
+    "head"
+  ],
+  "flockleader_geerin": [
+    "head"
+  ],
+  "fragment_of_seren": [
+    "head",
+    "seren_core",
+    "crystal_shard0",
+    "crystal_shard2",
+    "hand_light_l",
+    "hand_light_r"
+  ],
+  "fumus": [
+    "orb"
+  ],
+  "galvek": [
+    "body",
+    "shoulder_l",
+    "shoulder_r",
+    "neck",
+    "eyes",
+    "jaw",
+    "leg_f_l",
+    "leg_f_r",
+    "thigh_b_l",
+    "thigh_b_r",
+    "tail0",
+    "tail1"
+  ],
+  "gargoyle": [
+    "head"
+  ],
+  "general_graardor": [
+    "head"
+  ],
+  "general_khazard": [
+    "khazard_eyes"
+  ],
+  "ghost": [
+    "head"
+  ],
+  "giant_bat": [
+    "head"
+  ],
+  "giant_spider": [
+    "eyes"
+  ],
+  "glacies": [
+    "orb"
+  ],
+  "glod": [
+    "head"
+  ],
+  "glough_black_demon": [
+    "head",
+    "jaw"
+  ],
+  "gorak": [
+    "head",
+    "jaw"
+  ],
+  "gourmet_impling": [
+    "head",
+    "sparkle"
+  ],
+  "great_guardian": [
+    "hips",
+    "torso",
+    "head",
+    "pedestal_runes",
+    "eye",
+    "pauldron_l",
+    "pauldron_r",
+    "chest_rune",
+    "ring",
+    "rune0",
+    "rune1",
+    "rune2",
+    "rune3",
+    "rune4",
+    "rune5"
+  ],
+  "great_olm": [
+    "eye_l",
+    "eye_r",
+    "crystal0",
+    "crystal3",
+    "crystal6"
+  ],
+  "greater_demon": [
+    "head"
+  ],
+  "green_dragon": [
+    "head"
+  ],
+  "growler": [
+    "head",
+    "jaw",
+    "aura"
+  ],
+  "guthan": [
+    "head"
+  ],
+  "gwd_imp": [
+    "head"
+  ],
+  "gwd_pyrefiend": [
+    "body",
+    "head",
+    "flame",
+    "arm_l",
+    "arm_r",
+    "wisp"
+  ],
+  "gwd_saradomin_priest": [
+    "w_orb"
+  ],
+  "gwd_spiritual_mage_armadyl": [
+    "head",
+    "w_orb"
+  ],
+  "gwd_spiritual_mage_bandos": [
+    "head",
+    "w_orb"
+  ],
+  "gwd_spiritual_mage_saradomin": [
+    "head",
+    "w_orb"
+  ],
+  "gwd_spiritual_mage_zamorak": [
+    "head",
+    "w_orb"
+  ],
+  "gwd_spiritual_ranger_armadyl": [
+    "head"
+  ],
+  "gwd_spiritual_ranger_bandos": [
+    "head"
+  ],
+  "gwd_spiritual_ranger_saradomin": [
+    "head"
+  ],
+  "gwd_spiritual_ranger_zamorak": [
+    "head"
+  ],
+  "gwd_spiritual_warrior_armadyl": [
+    "head"
+  ],
+  "gwd_spiritual_warrior_bandos": [
+    "head"
+  ],
+  "gwd_spiritual_warrior_saradomin": [
+    "head"
+  ],
+  "gwd_spiritual_warrior_zamorak": [
+    "head"
+  ],
+  "gwd_vampire": [
+    "head"
+  ],
+  "harpie_bug_swarm": [
+    "bug0_tail",
+    "bug1_tail",
+    "bug2_tail",
+    "bug3_tail",
+    "bug4_tail",
+    "bug5_tail",
+    "bug6_tail",
+    "bug7_tail",
+    "bug8_tail",
+    "bug9_tail",
+    "bug10_tail",
+    "bug11_tail"
+  ],
+  "hellhound": [
+    "head",
+    "jaw"
+  ],
+  "hespori": [
+    "maw",
+    "pollen"
+  ],
+  "hunllef_tornado": [
+    "shards",
+    "shards2",
+    "wisp",
+    "streaks",
+    "shards3"
+  ],
+  "hydra": [
+    "head0",
+    "head1",
+    "head2",
+    "head3"
+  ],
+  "ice_giant": [
+    "head"
+  ],
+  "ice_queen": [
+    "icicle0",
+    "icicle1",
+    "icicle2",
+    "icicle3",
+    "icicle4",
+    "staff_orb"
+  ],
+  "ice_troll_king": [
+    "head",
+    "crown_gem"
+  ],
+  "ice_warrior": [
+    "head"
+  ],
+  "icefiend": [
+    "core",
+    "head"
+  ],
+  "infernal_mage": [
+    "head",
+    "w_orb",
+    "staff_gem",
+    "amulet",
+    "sigil0",
+    "sigil1",
+    "sigil2",
+    "hand_glow"
+  ],
+  "iron_dragon": [
+    "head"
+  ],
+  "jal_ak": [
+    "body",
+    "girth",
+    "rump",
+    "cap",
+    "gullet",
+    "jaw",
+    "eye_l",
+    "eye_r",
+    "spot_ranged",
+    "spot_magic",
+    "spot_melee",
+    "vent",
+    "drool"
+  ],
+  "jal_akrek": [
+    "body",
+    "girth",
+    "rump",
+    "cap",
+    "gullet",
+    "jaw",
+    "eye_l",
+    "eye_r",
+    "vent",
+    "drool"
+  ],
+  "jal_imkot": [
+    "body",
+    "plate0",
+    "plate1",
+    "plate2",
+    "plate3",
+    "head",
+    "jaw",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r",
+    "leg_l",
+    "leg_r"
+  ],
+  "jal_mejjak": [
+    "hips",
+    "torso",
+    "leg_l",
+    "leg_r",
+    "shin_l",
+    "forearm_l",
+    "forearm_r",
+    "head",
+    "jaw",
+    "orb",
+    "heart"
+  ],
+  "jal_mejrah": [
+    "body",
+    "jaw",
+    "eye_l",
+    "eye_r",
+    "ear_inner_l",
+    "ear_inner_r"
+  ],
+  "jal_nib": [
+    "girth",
+    "rump",
+    "cap",
+    "gullet",
+    "jaw",
+    "eye_l",
+    "eye_r",
+    "vent",
+    "drool"
+  ],
+  "jal_xil": [
+    "hips",
+    "torso",
+    "leg_l",
+    "leg_r",
+    "shin_l",
+    "shin_r",
+    "arm_l",
+    "arm_r",
+    "forearm_r",
+    "head",
+    "jaw"
+  ],
+  "jal_zek": [
+    "hips",
+    "torso",
+    "leg_l",
+    "leg_r",
+    "shin_r",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r",
+    "head",
+    "jaw",
+    "skull_back",
+    "robe0",
+    "robe2",
+    "robe4",
+    "flame",
+    "flame_l",
+    "mantle_l",
+    "mantle_r"
+  ],
+  "jaltok_jad": [
+    "body",
+    "chest",
+    "shoulder_l",
+    "shoulder_r",
+    "neck",
+    "mane",
+    "head",
+    "jaw",
+    "crest",
+    "leg_f_l",
+    "leg_f_r",
+    "leg_b_l",
+    "leg_b_r",
+    "shin_b_l",
+    "shin_b_r",
+    "tail"
+  ],
+  "jelly": [
+    "dome"
+  ],
+  "judge_of_yama": [
+    "head",
+    "jaw"
+  ],
+  "jungle_demon": [
+    "head",
+    "jaw"
+  ],
+  "kalphite": [
+    "eye_l",
+    "eye_r"
+  ],
+  "kalphite_queen": [
+    "eyes"
+  ],
+  "kalphite_queen_airborne": [
+    "eyes"
+  ],
+  "kamil": [
+    "blade_frost"
+  ],
+  "karamel": [
+    "staff_orb",
+    "frost_orb"
+  ],
+  "karil": [
+    "head"
+  ],
+  "kephri": [
+    "eye_l",
+    "eye_r",
+    "sun",
+    "sun_rays",
+    "scarab_ankh"
+  ],
+  "ket_zek": [
+    "hips",
+    "torso",
+    "leg_l",
+    "shin_l",
+    "shin_r",
+    "arm_l",
+    "arm_r",
+    "forearm_r",
+    "head",
+    "jaw",
+    "crest",
+    "tasset0",
+    "tasset1",
+    "tasset2",
+    "fireball",
+    "fire_core"
+  ],
+  "killerwatt": [
+    "head",
+    "node0",
+    "node1",
+    "node2",
+    "node3",
+    "node4",
+    "ring",
+    "ring2",
+    "bolt0",
+    "bolt0_b",
+    "bolt0_c",
+    "bolt1",
+    "bolt1_b",
+    "bolt1_c",
+    "bolt2",
+    "bolt2_b",
+    "bolt2_c",
+    "bolt3",
+    "bolt3_b",
+    "bolt3_c",
+    "arc0",
+    "arc1",
+    "arc2",
+    "arc3",
+    "spark_l",
+    "spark_r",
+    "spark_tip_l",
+    "spark_tip_r"
+  ],
+  "king_black_dragon": [
+    "eyes0",
+    "eyes1",
+    "eyes2"
+  ],
+  "king_tyras": [
+    "crown_gem"
+  ],
+  "koschei_the_deathless": [
+    "head",
+    "rune_tattoo"
+  ],
+  "kraken": [
+    "eye_l",
+    "eye_r"
+  ],
+  "kreearra": [
+    "head",
+    "arma_chest_gem"
+  ],
+  "kril_tsutsaroth": [
+    "head",
+    "jaw",
+    "zamorak_mark"
+  ],
+  "kurask": [
+    "head"
+  ],
+  "lava_dragon": [
+    "body",
+    "chest",
+    "shoulder_l",
+    "shoulder_r",
+    "haunch_l",
+    "haunch_r",
+    "neck0",
+    "neck1",
+    "head",
+    "jaw",
+    "wing_web0_l",
+    "wing_web0_r",
+    "wing_finger0_web_l",
+    "wing_finger0_web_r",
+    "wing_finger1_web_l",
+    "wing_finger1_web_r",
+    "wing_finger2_web_l",
+    "wing_finger2_web_r",
+    "leg_f_l",
+    "leg_f_r",
+    "leg_b_l",
+    "leg_b_r",
+    "throat_glow"
+  ],
+  "lesser_demon": [
+    "head"
+  ],
+  "lizard": [
+    "head"
+  ],
+  "lizardman": [
+    "head"
+  ],
+  "lucky_impling": [
+    "head",
+    "sparkle"
+  ],
+  "magpie_impling": [
+    "head",
+    "sparkle"
+  ],
+  "malevolent_mage": [
+    "head",
+    "w_orb",
+    "staff_gem",
+    "amulet",
+    "sigil0",
+    "sigil1",
+    "sigil2",
+    "hand_glow"
+  ],
+  "me": [
+    "head",
+    "soul_glow",
+    "hand_wisp_l",
+    "hand_wisp_r"
+  ],
+  "melzar_the_mad": [
+    "staff_orb",
+    "hand_glow"
+  ],
+  "mithril_dragon": [
+    "head"
+  ],
+  "moss_guardian": [
+    "head"
+  ],
+  "mutated_bloodveld": [
+    "head"
+  ],
+  "muttadile": [
+    "eye_l",
+    "eye_r"
+  ],
+  "nature_impling": [
+    "head",
+    "sparkle"
+  ],
+  "nazastarool": [
+    "head"
+  ],
+  "nechryael": [
+    "head",
+    "jaw"
+  ],
+  "nex": [
+    "head",
+    "rune_core",
+    "wing_web_in_l",
+    "wing_web_in_r",
+    "wing_web0_l",
+    "wing_web0_r",
+    "wing_web1_l",
+    "wing_web1_r",
+    "wing_web2_l",
+    "wing_web2_r"
+  ],
+  "nezikchened": [
+    "head",
+    "jaw"
+  ],
+  "nightmare_husk": [
+    "head"
+  ],
+  "nightmare_parasite": [
+    "eye_l",
+    "eye_r",
+    "spores",
+    "slime_trail"
+  ],
+  "nightmare_totem": [
+    "pole",
+    "face0",
+    "face1",
+    "face2",
+    "orb",
+    "orb_ring",
+    "wisps"
+  ],
+  "ninja_impling": [
+    "head",
+    "sparkle"
+  ],
+  "nylocas_athanatos": [
+    "eyes_main"
+  ],
+  "nylocas_hagios": [
+    "eyes_main"
+  ],
+  "nylocas_ischyros": [
+    "eyes_main"
+  ],
+  "nylocas_matomenos": [
+    "eyes_main"
+  ],
+  "nylocas_toxobolos": [
+    "eyes_main"
+  ],
+  "nylocas_vasilias": [
+    "eyes_main",
+    "abd_glow"
+  ],
+  "obor": [
+    "head"
+  ],
+  "ogre_shaman": [
+    "head",
+    "staff_orb"
+  ],
+  "ogress_shaman": [
+    "staff_orb"
+  ],
+  "olm_left_claw": [
+    "crystal0",
+    "crystal2",
+    "crystal4",
+    "side_crystal_l",
+    "side_crystal_r"
+  ],
+  "penance_fighter": [
+    "head"
+  ],
+  "penance_healer": [
+    "head",
+    "heal_sac",
+    "cross"
+  ],
+  "penance_queen": [
+    "eggs",
+    "head",
+    "crown_gem"
+  ],
+  "penance_ranger": [
+    "head",
+    "sac",
+    "spit"
+  ],
+  "penance_runner": [
+    "head"
+  ],
+  "pest_portal": [
+    "vortex",
+    "vortex_ring",
+    "vortex_inner",
+    "core",
+    "shield_runes",
+    "pillar_crystal_l",
+    "pillar_crystal_r",
+    "ground_cracks",
+    "motes"
+  ],
+  "pestilent_bloat": [
+    "pustule0",
+    "pustule1",
+    "pustule2",
+    "pustule3",
+    "pustule4",
+    "pustule5",
+    "eye_l",
+    "eye_r",
+    "ooze"
+  ],
+  "phantom_muspah": [
+    "torso",
+    "shard0",
+    "shard1",
+    "shard2",
+    "shard3",
+    "shard4",
+    "eyes",
+    "tusk_l",
+    "tusk_r",
+    "horn_l",
+    "horn_r",
+    "arm_l",
+    "arm_r",
+    "knuckles_l",
+    "knuckles_r",
+    "aura"
+  ],
+  "phosanis_nightmare": [
+    "heart",
+    "head",
+    "horn0_tip_l",
+    "horn0_tip_r",
+    "cowl_glow",
+    "aura"
+  ],
+  "poison_spider": [
+    "eyes"
+  ],
+  "possessed_king_roald": [
+    "head",
+    "crown_gem",
+    "possession"
+  ],
+  "pyrefiend": [
+    "body",
+    "core",
+    "wisp0",
+    "wisp1",
+    "wisp2",
+    "wisp3",
+    "wisp_tip",
+    "tongue0",
+    "tongue1",
+    "tongue2",
+    "tongue3",
+    "tongue4",
+    "tongue5",
+    "head",
+    "jaw",
+    "flame0",
+    "flame1",
+    "flame2",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r"
+  ],
+  "quest_arrg": [
+    "head"
+  ],
+  "quest_arzinian_avatar": [
+    "head",
+    "core_glow",
+    "glow_seam_l",
+    "glow_seam_r",
+    "back_crystal_l",
+    "back_crystal_r"
+  ],
+  "quest_barrelchest": [
+    "head"
+  ],
+  "quest_basilisk_boss": [
+    "head"
+  ],
+  "quest_blood_moon": [
+    "moon_face",
+    "moon_gem"
+  ],
+  "quest_blue_moon": [
+    "moon_face",
+    "moon_gem",
+    "frost_tip"
+  ],
+  "quest_boneguard": [
+    "head",
+    "staff_orb"
+  ],
+  "quest_derwen": [
+    "head",
+    "staff_orb"
+  ],
+  "quest_eclipse_moon": [
+    "moon_face",
+    "moon_gem",
+    "eclipse_ring"
+  ],
+  "quest_fear_reaper": [
+    "head",
+    "reaper_eyes"
+  ],
+  "quest_kolodion": [
+    "staff_orb",
+    "orb_left"
+  ],
+  "quest_mother": [
+    "head"
+  ],
+  "quest_porazdir": [
+    "head",
+    "jaw",
+    "sword_fire"
+  ],
+  "quest_slagilith": [
+    "core",
+    "head"
+  ],
+  "quest_tarn_razorlor": [
+    "head",
+    "jaw",
+    "growth0",
+    "growth1",
+    "growth2",
+    "growth3",
+    "growth4"
+  ],
+  "quest_twilight_emissary": [
+    "staff_orb",
+    "hand_glow"
+  ],
+  "quest_zemouregal": [
+    "head",
+    "staff_orb"
+  ],
+  "ranis_drakan": [
+    "head",
+    "brooch"
+  ],
+  "ravager": [
+    "head",
+    "eye_l",
+    "eye_r"
+  ],
+  "reanimated_demon_spawn": [
+    "head"
+  ],
+  "red_dragon": [
+    "head"
+  ],
+  "revenant_cyclops": [
+    "body",
+    "eye"
+  ],
+  "revenant_dark_beast": [
+    "body"
+  ],
+  "revenant_demon": [
+    "body"
+  ],
+  "revenant_dragon": [
+    "body"
+  ],
+  "revenant_goblin": [
+    "body"
+  ],
+  "revenant_hellhound": [
+    "body"
+  ],
+  "revenant_hobgoblin": [
+    "body"
+  ],
+  "revenant_imp": [
+    "body"
+  ],
+  "revenant_knight": [
+    "body"
+  ],
+  "revenant_ork": [
+    "body"
+  ],
+  "revenant_pyrefiend": [
+    "body"
+  ],
+  "rockslug": [
+    "stalk_r_eye",
+    "stalk_l_eye"
+  ],
+  "rune_dragon": [
+    "body",
+    "neck1",
+    "head",
+    "jaw",
+    "leg_f_l",
+    "leg_f_r",
+    "leg_b_l",
+    "leg_b_r",
+    "throat_glow"
+  ],
+  "sarachnis": [
+    "eyes"
+  ],
+  "scorpia": [
+    "eyes",
+    "sting"
+  ],
+  "scorpias_guardian": [
+    "stinger"
+  ],
+  "scorpias_offspring": [
+    "stinger"
+  ],
+  "scorpion": [
+    "eyes"
+  ],
+  "scurrius": [
+    "eyes"
+  ],
+  "sea_snake": [
+    "head"
+  ],
+  "sergeant_steelwill": [
+    "staff_orb"
+  ],
+  "shade": [
+    "head"
+  ],
+  "shadow_of_light": [
+    "head",
+    "soul_glow",
+    "hand_wisp_l",
+    "hand_wisp_r"
+  ],
+  "shifter": [
+    "spikes",
+    "eye_l",
+    "eye_r",
+    "tail_wisp",
+    "neck_spines",
+    "collar"
+  ],
+  "skeletal_mystic": [
+    "head",
+    "staff_orb",
+    "spell"
+  ],
+  "skeletal_wyvern": [
+    "head",
+    "jaw"
+  ],
+  "skotizo": [
+    "head",
+    "jaw"
+  ],
+  "slash_bash": [
+    "head"
+  ],
+  "small_muttadile": [
+    "eye_l",
+    "eye_r"
+  ],
+  "smoke_devil": [
+    "head"
+  ],
+  "sol_heredit": [
+    "head",
+    "sun_disc"
+  ],
+  "solus_dellagar": [
+    "staff_orb",
+    "hand_glow"
+  ],
+  "sotetseg": [
+    "seam",
+    "head",
+    "jaw",
+    "orb"
+  ],
+  "spider": [
+    "eyes"
+  ],
+  "spindel": [
+    "eyes",
+    "mark"
+  ],
+  "spinner": [
+    "eyes"
+  ],
+  "spiritual_mage": [
+    "head",
+    "w_orb",
+    "wisp0",
+    "wisp1",
+    "wisp2",
+    "aura",
+    "orb"
+  ],
+  "spiritual_ranger": [
+    "head",
+    "wisp0",
+    "wisp1",
+    "wisp2",
+    "aura"
+  ],
+  "spiritual_warrior": [
+    "head",
+    "wisp0",
+    "wisp1",
+    "wisp2",
+    "aura"
+  ],
+  "spitting_wyvern": [
+    "head"
+  ],
+  "splatter": [
+    "boil0",
+    "boil1",
+    "boil2",
+    "boil3",
+    "boil4",
+    "boil5",
+    "boil6",
+    "eye_l",
+    "eye_r",
+    "drip",
+    "glow_cracks"
+  ],
+  "starlight": [
+    "uni_horn"
+  ],
+  "steel_dragon": [
+    "head"
+  ],
+  "taloned_wyvern": [
+    "head"
+  ],
+  "tekton": [
+    "head",
+    "jaw",
+    "hammer_head",
+    "hammer_face_l",
+    "hammer_face_r"
+  ],
+  "tempoross": [
+    "foam",
+    "eye_l",
+    "eye_r",
+    "gullet",
+    "bolts",
+    "spray"
+  ],
+  "terror_dog": [
+    "head"
+  ],
+  "the_hueycoatl": [
+    "eyes"
+  ],
+  "the_inadequacy": [
+    "core"
+  ],
+  "the_leviathan": [
+    "shell",
+    "vent_l",
+    "vent_r",
+    "eyes",
+    "maw"
+  ],
+  "the_maiden_of_sugadinti": [
+    "pool",
+    "head",
+    "drips"
+  ],
+  "the_mimic": [
+    "eyes",
+    "coins"
+  ],
+  "the_nightmare": [
+    "heart",
+    "head",
+    "horn0_tip_l",
+    "horn0_tip_r",
+    "cowl_glow",
+    "aura"
+  ],
+  "the_whisperer": [
+    "body",
+    "spine_glow",
+    "eyes",
+    "maw",
+    "crest2",
+    "claw_l",
+    "claw_r",
+    "tentacle0_3",
+    "tentacle1_3",
+    "tentacle2_3",
+    "tentacle3_3",
+    "tentacle4_3",
+    "tentacle5_3"
+  ],
+  "thermonuclear_smoke_devil": [
+    "body",
+    "eyes",
+    "maw",
+    "jaw",
+    "embers"
+  ],
+  "titan_fire_elemental": [
+    "hips",
+    "torso",
+    "core",
+    "boulder_l",
+    "boulder_r",
+    "head",
+    "arm_l",
+    "arm_r",
+    "fist_l",
+    "fist_r",
+    "leg_l",
+    "leg_r"
+  ],
+  "titan_ice_elemental": [
+    "core",
+    "head"
+  ],
+  "toa_baboon": [
+    "eye_l",
+    "eye_r"
+  ],
+  "toa_scarab": [
+    "eye_l",
+    "eye_r"
+  ],
+  "tok_xil": [
+    "hips",
+    "torso",
+    "leg_l",
+    "leg_r",
+    "shin_l",
+    "shin_r",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r",
+    "head",
+    "jaw",
+    "fore_plate_l",
+    "fore_plate_r"
+  ],
+  "torag": [
+    "head"
+  ],
+  "torcher": [
+    "head",
+    "flame_crest",
+    "wing_flame_l",
+    "wing_flame_r",
+    "tail_flame",
+    "fireball",
+    "flame_trail",
+    "back_flames"
+  ],
+  "tree_spirit": [
+    "head"
+  ],
+  "treus_dayth": [
+    "head",
+    "soul_glow",
+    "sword_aura"
+  ],
+  "troll_general": [
+    "head"
+  ],
+  "tstanon_karlak": [
+    "head",
+    "jaw"
+  ],
+  "tumekens_warden": [
+    "hips",
+    "torso",
+    "head",
+    "core",
+    "ankh"
+  ],
+  "twisted_banshee": [
+    "head"
+  ],
+  "tz_kek": [
+    "body",
+    "girth",
+    "rump",
+    "cap",
+    "gullet",
+    "jaw",
+    "eye_l",
+    "eye_r",
+    "vent",
+    "drool"
+  ],
+  "tz_kih": [
+    "body",
+    "jaw",
+    "eye_l",
+    "eye_r",
+    "ear_inner_l",
+    "ear_inner_r"
+  ],
+  "tzhaar_hur_citizen": [
+    "torso",
+    "leg_l",
+    "leg_r",
+    "shin_r",
+    "arm_l",
+    "forearm_l",
+    "arm_r",
+    "forearm_r",
+    "head",
+    "brow",
+    "tail"
+  ],
+  "tzhaar_ket": [
+    "neck",
+    "head",
+    "chin",
+    "brow"
+  ],
+  "tzhaar_mej": [
+    "head",
+    "chin",
+    "staff_orb",
+    "tail"
+  ],
+  "tzhaar_xil": [
+    "torso",
+    "leg_l",
+    "leg_r",
+    "shin_l",
+    "shin_r",
+    "arm_l",
+    "forearm_l",
+    "arm_r",
+    "forearm_r",
+    "head",
+    "chin",
+    "brow",
+    "tail"
+  ],
+  "tzkal_zuk": [
+    "throne",
+    "throne_arm_l",
+    "throne_arm_r",
+    "throne_glow",
+    "body",
+    "heart",
+    "shoulder_l",
+    "shoulder_r",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r",
+    "head",
+    "jaw",
+    "crown_band",
+    "fin1_l",
+    "fin1_r",
+    "fin2_l",
+    "fin2_r",
+    "fin3_l",
+    "hood_web",
+    "crown_gem"
+  ],
+  "tztok_jad": [
+    "hips",
+    "torso",
+    "chest",
+    "belly",
+    "shoulder_l",
+    "shoulder_r",
+    "head",
+    "jaw",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r",
+    "forearm_plate_l",
+    "forearm_plate_r",
+    "leg_l",
+    "leg_r",
+    "shin_l",
+    "shin_r"
+  ],
+  "ulfric": [
+    "head",
+    "soul_glow",
+    "sword_aura"
+  ],
+  "umbra": [
+    "orb"
+  ],
+  "vanguard_magic": [
+    "visor",
+    "staff_orb"
+  ],
+  "vanguard_melee": [
+    "visor"
+  ],
+  "vanguard_ranged": [
+    "visor",
+    "launcher_glow"
+  ],
+  "vanstrom_klause": [
+    "head",
+    "brooch"
+  ],
+  "vardorvis": [
+    "head",
+    "tendril0_tip",
+    "tendril1_tip",
+    "tendril2_tip",
+    "tendril3_tip",
+    "vein_l",
+    "vein_r"
+  ],
+  "vasa_crystal": [
+    "crystal",
+    "shard0",
+    "shard2",
+    "shard4",
+    "glow_ring",
+    "base_shard0",
+    "base_shard3",
+    "cracks",
+    "motes"
+  ],
+  "vasa_nistirio": [
+    "head",
+    "jaw",
+    "core",
+    "crystal0",
+    "crystal3",
+    "shoulder_crystal_l",
+    "shoulder_crystal_r",
+    "head_crystal"
+  ],
+  "venenatis": [
+    "eyes",
+    "mark"
+  ],
+  "verac": [
+    "head"
+  ],
+  "verzik_vitur": [
+    "head",
+    "crown_gem"
+  ],
+  "verzik_vitur_p2": [
+    "head",
+    "jaw",
+    "blood_orb"
+  ],
+  "verzik_vitur_p3": [
+    "abd_mark",
+    "head",
+    "jaw",
+    "eye_cluster_l",
+    "eye_cluster_r"
+  ],
+  "vespine_soldier": [
+    "compound_eye_l",
+    "compound_eye_r"
+  ],
+  "vespula": [
+    "compound_eye_l",
+    "compound_eye_r",
+    "venom_sac"
+  ],
+  "vespula_portal": [
+    "vortex",
+    "vortex_ring",
+    "vortex_inner",
+    "eye",
+    "pupil",
+    "pillar_eye_l",
+    "pillar_eye_r",
+    "vortex_ring2",
+    "hive_glow"
+  ],
+  "vetion": [
+    "head",
+    "soul_flame",
+    "halberd_glow"
+  ],
+  "vorkath": [
+    "body",
+    "shoulder_l",
+    "shoulder_r",
+    "neck",
+    "eyes",
+    "breath",
+    "leg_f_l",
+    "thigh_b_l",
+    "thigh_b_r",
+    "tail0",
+    "tail1"
+  ],
+  "wall_beast": [
+    "head"
+  ],
+  "wardens_obelisk": [
+    "pillar",
+    "pillar2",
+    "glyphs",
+    "eye_glyph",
+    "energy",
+    "energy_ring",
+    "cartouche_glyph_l",
+    "cartouche_glyph_r",
+    "sun_disc"
+  ],
+  "warped_jelly": [
+    "dome"
+  ],
+  "warped_terrorbird": [
+    "crest",
+    "wing_l",
+    "wing_r",
+    "tail"
+  ],
+  "waterfiend": [
+    "core",
+    "head"
+  ],
+  "wingman_skree": [
+    "head",
+    "staff_orb"
+  ],
+  "wintertodt": [
+    "blizzard",
+    "core",
+    "core_glow",
+    "shard0",
+    "shard3",
+    "shard6",
+    "head",
+    "jaw",
+    "icicle0",
+    "claw_l",
+    "claw_r"
+  ],
+  "wyrm": [
+    "head",
+    "jaw",
+    "tongue_glow"
+  ],
+  "xarpus": [
+    "head",
+    "pustule0",
+    "pustule1",
+    "pustule2",
+    "pustule3",
+    "spit",
+    "poison_pool"
+  ],
+  "young_impling": [
+    "head",
+    "sparkle"
+  ],
+  "yt_hurkot": [
+    "hips",
+    "torso",
+    "leg_l",
+    "leg_r",
+    "shin_l",
+    "shin_r",
+    "arm_l",
+    "forearm_l",
+    "forearm_r",
+    "head",
+    "jaw",
+    "heal_glow_l",
+    "heal_glow_r",
+    "heart"
+  ],
+  "yt_mejkot": [
+    "hips",
+    "torso",
+    "leg_l",
+    "leg_r",
+    "shin_l",
+    "shin_r",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r",
+    "head",
+    "jaw",
+    "magma_belly"
+  ],
+  "zakln_gritch": [
+    "head",
+    "jaw"
+  ],
+  "zalcano": [
+    "hips",
+    "torso",
+    "leg_l",
+    "leg_r",
+    "shin_l",
+    "shin_r",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r",
+    "head",
+    "jaw",
+    "core",
+    "horn3_l",
+    "horn3_r",
+    "mane2",
+    "pauldron_l",
+    "pauldron_r",
+    "fist_glow_l",
+    "fist_glow_r",
+    "skirt",
+    "embers"
+  ],
+  "zalcano_golem": [
+    "hips",
+    "torso",
+    "head",
+    "core",
+    "fist_rock_l",
+    "fist_rock_r",
+    "lava_seams"
+  ],
+  "zebak": [
+    "collar_gem",
+    "eye_l",
+    "eye_r"
+  ],
+  "zulrah": [
+    "eyes"
+  ],
+  "zulrah_magma": [
+    "coil",
+    "coil2",
+    "trunk0",
+    "trunk1",
+    "trunk2",
+    "head",
+    "eyes",
+    "jaw"
+  ],
+  "zulrah_tanzanite": [
+    "eyes"
+  ],
+  "zygomite": [
+    "face",
+    "spore0",
+    "spore1",
+    "spore2"
+  ]
+}
