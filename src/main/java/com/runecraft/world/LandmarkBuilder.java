@@ -170,8 +170,10 @@ public final class LandmarkBuilder {
                 continue;
             }
             int r = b.arenaRadius;
-            int ax = cx + (arena % 2 == 0 ? 1 : -1) * (14 + r);
-            int az = cz + (arena / 2) * (2 * r + 6);
+            com.runecraft.osrs.world.ArenaLayout.Arena spot = com.runecraft.osrs.world.ArenaLayout.of(b.id);
+            int[] fallback = com.runecraft.osrs.world.ArenaLayout.defaultPosition(cx, cz, arena, r);
+            int ax = spot != null ? spot.x() : fallback[0];
+            int az = spot != null ? spot.z() : fallback[1];
             int ay = groundY(world, ax, az);
             com.runecraft.boss.DataBossService.buildArena(world, new BlockPos(ax, ay, az), r, b.arenaStyle);
             Block stone = ModBlocks.DATA_BOSS_STONES.get(b.id);

@@ -331,8 +331,10 @@ public final class ClientSmokeTest {
             }
         }
         int r = boss.arenaRadius;
-        int ax = place.blockX() + (arena % 2 == 0 ? 1 : -1) * (14 + r);
-        int az = place.blockZ() + (arena / 2) * (2 * r + 6);
+        com.runecraft.osrs.world.ArenaLayout.Arena spot = com.runecraft.osrs.world.ArenaLayout.of(bossId);
+        int[] fallback = com.runecraft.osrs.world.ArenaLayout.defaultPosition(place.blockX(), place.blockZ(), arena, r);
+        int ax = spot != null ? spot.x() : fallback[0];
+        int az = spot != null ? spot.z() : fallback[1];
         LOG.info("[ClientSmoke] {} arena at {} {} (place {})", bossId, ax, az, place.id());
         onServer(client, uuid, p -> {
             ServerWorld world = Gielinor.world(p.getServer());

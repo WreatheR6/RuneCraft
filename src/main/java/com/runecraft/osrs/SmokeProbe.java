@@ -197,8 +197,10 @@ public final class SmokeProbe {
                     continue;
                 }
                 int r = b.arenaRadius;
-                int ax = cx + (arena % 2 == 0 ? 1 : -1) * (14 + r);
-                int az = cz + (arena / 2) * (2 * r + 6);
+                com.runecraft.osrs.world.ArenaLayout.Arena spot = com.runecraft.osrs.world.ArenaLayout.of(b.id);
+                int[] fallback = com.runecraft.osrs.world.ArenaLayout.defaultPosition(cx, cz, arena, r);
+                int ax = spot != null ? spot.x() : fallback[0];
+                int az = spot != null ? spot.z() : fallback[1];
                 if (Math.max(Math.abs(x - ax), Math.abs(z - az)) <= r + 4) {
                     return true;
                 }

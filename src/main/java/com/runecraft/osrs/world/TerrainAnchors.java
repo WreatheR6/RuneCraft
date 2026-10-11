@@ -216,8 +216,10 @@ public final class TerrainAnchors {
         int arena = 0;
         for (BossDef b : bosses) {
             int r = b.arenaRadius;
-            int ax = cx + (arena % 2 == 0 ? 1 : -1) * (14 + r);
-            int az = cz + (arena / 2) * (2 * r + 6);
+            ArenaLayout.Arena spot = ArenaLayout.of(b.id);
+            int[] fallback = ArenaLayout.defaultPosition(cx, cz, arena, r);
+            int ax = spot != null ? spot.x() : fallback[0];
+            int az = spot != null ? spot.z() : fallback[1];
             plaza(out, "arena:" + placeId + ":" + b.id, ax, az, r + 1);
             arena++;
         }
