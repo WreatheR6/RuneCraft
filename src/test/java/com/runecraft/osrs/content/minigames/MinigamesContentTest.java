@@ -248,6 +248,11 @@ class MinigamesContentTest {
         assertEquals(275.0, MinigameRules.PyramidPlunder.SARCOPHAGUS_XP[7]);
         assertEquals(0, MinigameRules.Tempoross.permits(1999));
         assertEquals(1, MinigameRules.Tempoross.permits(2000));
+        // Tempoross points (OSRS Wiki): 5 per catch, 20 per raw / 65 per cooked fish deposited, 55 per spirit pool strike.
+        assertEquals(5, MinigameRules.Tempoross.POINTS_CATCH);
+        assertEquals(65, MinigameRules.Tempoross.POINTS_LOAD_COOKED);
+        assertEquals(20, MinigameRules.Tempoross.POINTS_LOAD_RAW);
+        assertEquals(55, MinigameRules.Tempoross.POINTS_SPIRIT);
         assertEquals(0.6, MinigameRules.Guardians.raimentBonus(4));
         assertEquals(0, MinigameRules.Guardians.searches(50, 50));
         assertTrue(MinigameRules.WarriorsGuild.canEnter(65, 65));
