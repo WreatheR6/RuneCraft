@@ -53,9 +53,28 @@ class MinigamesContentTest {
     void infernoHas69Waves() {
         List<List<String>> waves = TzHaarWaves.infernoWaves();
         assertEquals(69, waves.size());
+        Set<Integer> nibblerOnly = Set.of(3, 8, 17, 34);
         for (int i = 1; i <= 66; i++) {
-            assertEquals(3, count(TzHaarWaves.inferno(i), "jal_nib"), "nibblers on wave " + i);
+            assertEquals(nibblerOnly.contains(i) ? 6 : 3, count(TzHaarWaves.inferno(i), "jal_nib"), "nibblers on wave " + i);
+            assertEquals(nibblerOnly.contains(i), TzHaarWaves.inferno(i).stream().allMatch("jal_nib"::equals), "nibbler-only wave " + i);
         }
+        assertEquals(List.of("jal_nib", "jal_nib", "jal_nib", "jal_mejrah"), TzHaarWaves.inferno(1));
+        assertEquals(List.of("jal_nib", "jal_nib", "jal_nib", "jal_mejrah", "jal_mejrah"), TzHaarWaves.inferno(2));
+        assertEquals(List.of("jal_nib", "jal_nib", "jal_nib", "jal_ak"), TzHaarWaves.inferno(4));
+        // The wiki's double-blob waves.
+        Set<Integer> doubleBlob = Set.of(7, 15, 24, 31, 41, 48, 56, 63);
+        for (int i = 1; i <= 66; i++) {
+            assertEquals(doubleBlob.contains(i), count(TzHaarWaves.inferno(i), "jal_ak") == 2, "double blob on wave " + i);
+        }
+        assertEquals(List.of("jal_nib", "jal_nib", "jal_nib", "jal_imkot", "jal_imkot"), TzHaarWaves.inferno(16));
+        assertEquals(List.of("jal_nib", "jal_nib", "jal_nib", "jal_xil", "jal_xil"), TzHaarWaves.inferno(33));
+        assertEquals(List.of("jal_nib", "jal_nib", "jal_nib", "jal_zek", "jal_zek"), TzHaarWaves.inferno(66));
+        assertEquals(List.of("jal_nib", "jal_nib", "jal_nib", "jal_zek", "jal_xil", "jal_imkot", "jal_ak", "jal_ak"),
+                TzHaarWaves.inferno(63));
+        assertEquals(5, TzHaarWaves.infernoJadHealers(67));
+        assertEquals(3, TzHaarWaves.infernoJadHealers(68));
+        assertEquals(480, TzHaarWaves.ZUK_JAD_HP);
+        assertEquals(240, TzHaarWaves.ZUK_HEALER_HP);
         assertEquals(0, waves.subList(0, 8).stream().mapToInt(w -> count(w, "jal_imkot")).sum());
         assertEquals(List.of("jal_nib", "jal_nib", "jal_nib", "jal_imkot"), TzHaarWaves.inferno(9));
         assertTrue(TzHaarWaves.inferno(18).contains("jal_xil"));
@@ -159,6 +178,13 @@ class MinigamesContentTest {
         assertEquals(800, cost(RewardShops.get("brimhaven_agility_arena"), "pirates_hook"));
         assertEquals(75, cost(RewardShops.get("tithe_farm"), "farmers_strawhat"));
         assertEquals(400, cost(RewardShops.get("mahogany_homes"), "carpenters_helmet"));
+        assertEquals(250, cost(RewardShops.get("hallowed_sepulchre"), "hallowed_ring"));
+        assertEquals(1, cost(RewardShops.get("hallowed_sepulchre"), "hallowed_crystal_shard"));
+        assertEquals(4000, cost(RewardShops.get("giants_foundry"), "smiths_tunic"));
+        assertEquals(3500, cost(RewardShops.get("giants_foundry"), "smiths_gloves"));
+        assertEquals(5000, cost(RewardShops.get("giants_foundry"), "colossal_blade"));
+        assertEquals(1350, RewardShops.get("guardians_of_the_rift").entries().stream()
+                .filter(e -> e.item().endsWith("_of_the_eye")).mapToInt(e -> e.costs().get(0).amount()).sum());
         // Affordability uses every currency.
         Map<String, Integer> bal = new HashMap<>();
         bal.put(MinigameCurrencies.BA_ATTACKER, 375);
@@ -198,6 +224,28 @@ class MinigamesContentTest {
         assertEquals(28, MinigameRules.Wintertodt.rolls(50000));
         assertEquals(9900.0, MinigameRules.Wintertodt.completionXp(99));
         assertTrue(MinigameRules.Wintertodt.coldDamage(99, 0, 0) > MinigameRules.Wintertodt.coldDamage(99, 4, 4));
+        // floor((16 - W - 2B) * (H + 1) / 99)
+        assertEquals(16, MinigameRules.Wintertodt.coldDamage(99, 0, 0));
+        assertEquals(10, MinigameRules.Wintertodt.coldDamage(99, 4, 1));
+        assertEquals(10, MinigameRules.Wintertodt.coldDamage(99, 4, 4));
+        assertEquals(6, MinigameRules.Wintertodt.coldDamage(50, 4, 0));
+        assertEquals(1, MinigameRules.Wintertodt.coldDamage(10, 4, 1));
+        // Tithe Farm: a full sack of 100 pays 35 points; golovanova deposit XP 74*60 + 26*120 + 1,500 = 9,060.
+        assertEquals(35, MinigameRules.TitheFarm.points(100));
+        assertEquals(1, MinigameRules.TitheFarm.points(3));
+        double sack = 0;
+        for (int n = 1; n <= 100; n++) {
+            sack += MinigameRules.TitheFarm.depositXp(0, n);
+        }
+        assertEquals(9060.0, sack);
+        assertEquals(460.0 + 5750.0, MinigameRules.TitheFarm.depositXp(2, 75));
+        assertEquals(100, MinigameRules.WarriorsGuild.CYCLOPS_ENTRY_TOKENS);
+        assertEquals(2750.0, MinigameRules.MahoganyHomes.COMPLETION_XP[3]);
+        assertEquals(500.0, MinigameRules.MahoganyHomes.COMPLETION_XP[0]);
+        assertEquals(825.0, MinigameRules.PyramidPlunder.URN_XP[7]);
+        assertEquals(60.0, MinigameRules.PyramidPlunder.URN_XP[0]);
+        assertEquals(550.0, MinigameRules.PyramidPlunder.CHEST_XP[7]);
+        assertEquals(275.0, MinigameRules.PyramidPlunder.SARCOPHAGUS_XP[7]);
         assertEquals(0, MinigameRules.Tempoross.permits(1999));
         assertEquals(1, MinigameRules.Tempoross.permits(2000));
         assertEquals(0.6, MinigameRules.Guardians.raimentBonus(4));

@@ -172,8 +172,9 @@ public final class MinigameManager {
             if (!MinigameRules.WarriorsGuild.canEnter(skills.level(Skill.ATTACK), skills.level(Skill.STRENGTH))) {
                 return "You need a combined Attack and Strength level of 130, or 99 in either, to enter the Warriors' Guild.";
             }
-            if (variant.contains("cyclops") && !Inv.has(player, "warrior_guild_token", MinigameRules.WarriorsGuild.CYCLOPS_TOKENS)) {
-                return "You need at least " + MinigameRules.WarriorsGuild.CYCLOPS_TOKENS + " warrior guild tokens to enter the cyclops room.";
+            if (variant.contains("cyclops") && !Inv.has(player, "warrior_guild_token", MinigameRules.WarriorsGuild.CYCLOPS_ENTRY_TOKENS)) {
+                return "Kamfreena: You need at least " + MinigameRules.WarriorsGuild.CYCLOPS_ENTRY_TOKENS
+                        + " warrior guild tokens to enter the cyclops room.";
             }
             return null;
         }

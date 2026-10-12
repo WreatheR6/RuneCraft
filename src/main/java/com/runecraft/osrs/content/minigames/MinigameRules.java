@@ -135,10 +135,15 @@ public final class MinigameRules {
             return points < MIN_POINTS ? 0 : Math.min(MAX_ROLLS, points / MIN_POINTS);
         }
 
-        /** Cold damage per hit: (16 - warmth - 2 * lit braziers) scaled by Hitpoints level (approx. of the wiki formula). */
-        public static int coldDamage(int hitpointsLevel, int warmItems, int litBraziers) {
-            int base = Math.max(1, 16 - warmItems * 2 - litBraziers * 2);
-            return Math.max(1, base * (hitpointsLevel + 1) / 99);
+        /**
+         * Cold damage per hit (OSRS wiki): floor((16 - W - 2B) * (H + 1) / 99), where W is the number
+         * of warm items worn (max 4), B is 1 when the player is beside a lit brazier and H is the
+         * Hitpoints level. At least 1.
+         */
+        public static int coldDamage(int hitpointsLevel, int warmItems, int litBraziersNearby) {
+            int w = Math.max(0, Math.min(4, warmItems));
+            int b = litBraziersNearby > 0 ? 1 : 0;
+            return Math.max(1, (16 - w - 2 * b) * (hitpointsLevel + 1) / 99);
         }
 
         public static final List<Loot> CRATE = List.of(
@@ -295,8 +300,10 @@ public final class MinigameRules {
         public static final Object[][] ARMOUR = {
                 {"bronze", 11, 10, 2, 5}, {"iron", 23, 20, 3, 10}, {"steel", 46, 40, 5, 15}, {"black", 69, 60, 7, 20},
                 {"mithril", 92, 80, 9, 25}, {"adamant", 113, 99, 11, 30}, {"rune", 138, 118, 14, 40}};
-        /** Tokens to enter the cyclops room and then per minute (100 game ticks). */
+        /** Tokens taken on entering the cyclops room and then every minute (100 game ticks). */
         public static final int CYCLOPS_TOKENS = 10;
+        /** Kamfreena only lets players with at least 100 tokens into the cyclops room. */
+        public static final int CYCLOPS_ENTRY_TOKENS = 100;
         public static final int CYCLOPS_TICKS_PER_CHARGE = 100;
         public static final int DEFENDER_CHANCE = 50;
         public static final int DRAGON_DEFENDER_CHANCE = 100;
@@ -342,8 +349,12 @@ public final class MinigameRules {
     // ---------------------------------------------------------------- Pyramid Plunder
     public static final class PyramidPlunder {
         public static final int[] ROOM_LEVELS = {21, 31, 41, 51, 61, 71, 81, 91};
-        public static final double[] URN_XP = {60, 120, 180, 240, 300, 360, 420, 480};
-        public static final double[] CHEST_XP = {40, 60, 100, 150, 220, 300, 360, 420};
+        /** Thieving XP for looting an urn (3x the snake-check XP), per room. */
+        public static final double[] URN_XP = {60, 90, 150, 210, 300, 450, 675, 825};
+        /** Thieving XP for opening the Grand Gold Chest, per room. */
+        public static final double[] CHEST_XP = {40, 60, 100, 140, 200, 300, 450, 550};
+        /** Strength XP for opening the sarcophagus, per room. */
+        public static final double[] SARCOPHAGUS_XP = {20, 30, 50, 70, 100, 150, 225, 275};
         /** Sceptre chance (1 in N) from the Grand Gold Chest per room (approx.). */
         public static final int[] SCEPTRE_CHANCE = {3500, 2250, 1250, 750, 650, 650, 650, 650};
         public static final int GAME_TICKS = 500;
@@ -388,9 +399,16 @@ public final class MinigameRules {
 
     // ---------------------------------------------------------------- Tithe Farm
     public static final class TitheFarm {
-        public static final double[] PLANT_XP = {3.5, 5.0, 7.0};
-        public static final double[] HARVEST_XP = {12.5, 17.5, 23.5};
-        public static final double[] DEPOSIT_XP = {6.0, 10.0, 15.0};
+        /** Planting XP per seed (approx.; OSRS gives most Tithe XP on harvest and deposit). */
+        public static final double[] PLANT_XP = {3.5, 5.0, 7.0}; // approx
+        /** Farming XP per fruit harvested: golovanova 6, bologano 14, logavano 23. */
+        public static final double[] HARVEST_XP = {6, 14, 23};
+        /** Farming XP per fruit deposited (10x harvest XP); fruit 75-100 of a run pay double. */
+        public static final double[] DEPOSIT_XP = {60, 140, 230};
+        /** Fruit a sack holds per run; the 75th earns a 250x harvest XP bonus. */
+        public static final int SACK_SIZE = 100;
+        public static final int BONUS_FRUIT = 75;
+        public static final int MAX_POINTS = 16_000;
         public static final int WATERINGS = 3;
         public static final int GROW_TICKS = 25;
         public static final int GAME_TICKS = 1000;
@@ -409,9 +427,28 @@ public final class MinigameRules {
             return best;
         }
 
-        /** Points for a delivery: one per fruit, +1 per 25 delivered after the first 74 (approx.). */
+        /** Deposit XP for the n-th fruit (1-based) put in the sack this run. */
+        public static double depositXp(int type, int n) {
+            double xp = n >= BONUS_FRUIT ? DEPOSIT_XP[type] * 2 : DEPOSIT_XP[type];
+            if (n == BONUS_FRUIT) {
+                xp += HARVEST_XP[type] * 250;
+            }
+            return xp;
+        }
+
+        /** Points for the n-th fruit (1-based) of a run: one per third fruit, plus 2 on the 100th. */
+        public static int depositPoints(int n) {
+            int pts = n % 3 == 0 ? 1 : 0;
+            return n == SACK_SIZE ? pts + 2 : pts;
+        }
+
+        /** Points for depositing {@code fruit} fruit in an empty sack (a full sack of 100 pays 35). */
         public static int points(int fruit) {
-            return fruit + Math.max(0, fruit - 74) / 25;
+            int total = 0;
+            for (int n = 1; n <= Math.min(SACK_SIZE, fruit); n++) {
+                total += depositPoints(n);
+            }
+            return total;
         }
     }
 
@@ -421,7 +458,9 @@ public final class MinigameRules {
         public static final String[] PLANKS = {"plank", "oak_plank", "teak_plank", "mahogany_plank"};
         public static final int[] LEVELS = {1, 20, 50, 70};
         public static final int[] POINTS = {2, 3, 4, 5};
-        public static final double[] XP_PER_PLANK = {30, 48, 72, 112};
+        public static final double[] XP_PER_PLANK = {30, 48, 72, 112}; // plank value approx
+        /** Construction XP for completing a contract (not boosted by the carpenter's outfit). */
+        public static final double[] COMPLETION_XP = {500, 1250, 2250, 2750};
         public static final int HOTSPOTS = 4;
 
         private MahoganyHomes() {

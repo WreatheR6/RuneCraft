@@ -62,12 +62,12 @@ public final class RewardShops {
                 .item("coal", 10, TOKKUL, 670)
                 .item("runite_ore", TOKKUL, 4_800);
 
-        // Guardians of the Rift: the Rewards Guardian (abyssal pearls; approx. prices).
+        // Guardians of the Rift: the Rewards Guardian (abyssal pearls; non-outfit prices approx.).
         shop("guardians_of_the_rift", "Rewards Guardian")
                 .item("hat_of_the_eye", PEARLS, 350)
                 .item("robe_top_of_the_eye", PEARLS, 350)
                 .item("robe_bottoms_of_the_eye", PEARLS, 350)
-                .item("boots_of_the_eye", PEARLS, 350)
+                .item("boots_of_the_eye", PEARLS, 300) // full outfit totals 1,350 pearls
                 .item("abyssal_lantern", PEARLS, 100)
                 .itemReq("colossal_pouch", PEARLS, 100, "abyssal_needle")
                 .item("catalytic_talisman", PEARLS, 200)
@@ -117,14 +117,14 @@ public final class RewardShops {
         mta.itemMulti("mages_book", pizazz(500, 550, 6000, 500));
         mta.unlock("bones_to_peaches", "Bones to Peaches", pizazz(200, 300, 2000, 200));
 
-        // Hallowed Sepulchre: Valindor Lisetta (hallowed marks; approx.).
-        shop("hallowed_sepulchre", "Valindor's Hallowed Goods")
+        // Hallowed Sepulchre: Mysterious Hallowed Goods (hallowed marks; crystal shard 1, ring 250 per wiki; others approx.).
+        shop("hallowed_sepulchre", "Mysterious Hallowed Goods")
                 .item("hallowed_crystal_shard", MARKS, 1)
                 .item("hallowed_focus", MARKS, 100)
                 .item("hallowed_symbol", MARKS, 100)
                 .item("hallowed_hammer", MARKS, 100)
                 .item("hallowed_grapple", MARKS, 100)
-                .item("hallowed_ring", MARKS, 100)
+                .item("hallowed_ring", MARKS, 250)
                 .item("dark_dye", MARKS, 300)
                 .item("dark_acorn", MARKS, 3000)
                 .item("strange_old_lockpick", MARKS, 1000);
@@ -154,15 +154,15 @@ public final class RewardShops {
                 .item("seed_box", TITHE, 250)
                 .item("herb_sack", TITHE, 250);
 
-        // Giants' Foundry: Kovac (reputation; approx.).
+        // Giants' Foundry: Kovac (reputation, per the wiki reward shop).
         shop("giants_foundry", "Kovac's Rewards")
-                .item("smiths_tunic", FOUNDRY, 3000)
-                .item("smiths_trousers", FOUNDRY, 3000)
-                .item("smiths_boots", FOUNDRY, 2000)
-                .item("smiths_gloves", FOUNDRY, 2000)
+                .item("smiths_tunic", FOUNDRY, 4000)
+                .item("smiths_trousers", FOUNDRY, 4000)
+                .item("smiths_boots", FOUNDRY, 3500)
+                .item("smiths_gloves", FOUNDRY, 3500)
                 .item("colossal_blade", FOUNDRY, 5000)
                 .item("double_ammo_mould", FOUNDRY, 2000)
-                .item("kovacs_grog", FOUNDRY, 300);
+                .item("kovacs_grog", FOUNDRY, 300); // approx
 
         // Mahogany Homes: Amy's carpenter points shop.
         shop("mahogany_homes", "Amy's Rewards")

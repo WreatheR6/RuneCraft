@@ -60,7 +60,7 @@ public class FightCaveSession extends TzHaarSession {
     protected void gameTick() {
         super.gameTick();
         if (wave == TzHaarWaves.FIGHT_CAVE_WAVES) {
-            checkJadHealers(TzHaarWaves.JAD, 4);
+            checkJadHealers(TzHaarWaves.JAD, TzHaarWaves.FIGHT_CAVE_JAD_HEALERS);
         }
     }
 
