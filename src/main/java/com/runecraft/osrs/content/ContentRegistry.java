@@ -38,6 +38,7 @@ public final class ContentRegistry {
             List<MonsterDef> all = new ArrayList<>();
             Modules.ALL.forEach(m -> all.addAll(m.monsters()));
             all.forEach(com.runecraft.osrs.data.MonsterStatsTable::apply);
+            all.forEach(com.runecraft.osrs.data.MonsterDropsTable::apply);
             monsters = unique(all, d -> d.id, "monster");
         }
         return monsters;

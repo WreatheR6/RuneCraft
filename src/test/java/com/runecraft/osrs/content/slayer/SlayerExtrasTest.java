@@ -112,12 +112,13 @@ class SlayerExtrasTest {
 
     @Test
     void newDrops() {
-        assertEquals(2000, rate("drake", "dragon_thrownaxe"));
-        assertEquals(2000, rate("wyrm", "dragon_knife"));
-        assertEquals(2000, rate("hydra", "dragon_knife"));
-        assertEquals(2000, rate("hydra", "dragon_thrownaxe"));
-        assertEquals(1024, rate("spitting_wyvern", "granite_boots"));
-        assertEquals(1024, rate("taloned_wyvern", "granite_longsword"));
+        // OSRS Wiki rates (MonsterDropsTable): 1/10,000 for the Kebos dragon ammunition, wyvern granite 1/2,560 and 1/512.
+        assertEquals(10000, rate("drake", "dragon_thrownaxe"));
+        assertEquals(10000, rate("wyrm", "dragon_knife"));
+        assertEquals(10001, rate("hydra", "dragon_knife"));
+        assertEquals(10000, rate("hydra", "dragon_thrownaxe"));
+        assertEquals(2560, rate("spitting_wyvern", "granite_boots"));
+        assertEquals(512, rate("taloned_wyvern", "granite_longsword"));
         assertEquals(1, rate("bloodveld", "vile_ashes"));
         assertEquals(1, rate("imp", "fiendish_ashes"));
         assertEquals(1, rate("nechryael", "malicious_ashes"));

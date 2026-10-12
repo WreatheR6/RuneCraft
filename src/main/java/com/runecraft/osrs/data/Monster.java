@@ -92,6 +92,7 @@ public enum Monster {
     private final int slayerLevel;
     private final int color;
     private final List<Drop> drops;
+    private volatile List<Drop> patchedDrops;
 
     Monster(String entity, String name, int combatLevel, int hitpoints, int attack, int strength, int defence,
             int magic, int ranged, int attackSpeed, AttackType style, int defenceBonus, boolean aggressive,
@@ -181,8 +182,14 @@ public enum Monster {
         return color;
     }
 
+    /** Drop table, with the wiki corrections from {@link MonsterDropsTable} applied. */
     public List<Drop> drops() {
-        return drops;
+        List<Drop> d = patchedDrops;
+        if (d == null) {
+            d = List.copyOf(MonsterDropsTable.patched(MonsterDropsTable.key(this), drops));
+            patchedDrops = d;
+        }
+        return d;
     }
 
     /** NPC max hit from strength level (NPCs have no equipment strength bonus by default). */

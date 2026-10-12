@@ -41,7 +41,7 @@ class SlayerContentTest {
         MonsterDef garg = monster("gargoyle");
         assertEquals(111, garg.combatLevel);
         assertEquals(75, garg.slayerLevel);
-        assertTrue(drops(garg, "granite_maul", 512));
+        assertTrue(drops(garg, "granite_maul", 256)); // wiki 1/256
         assertEquals(85, monster("abyssal_demon").slayerLevel);
         assertEquals(93, monster("smoke_devil").slayerLevel);
         assertEquals(95, monster("hydra").slayerLevel);
@@ -244,10 +244,10 @@ class SlayerContentTest {
         assertTrue(drops(monster("hellhound"), "clue_scroll_hard", 64));
         assertTrue(drops(monster("kurask"), "leaf_bladed_battleaxe", 1026));
         MonsterDef hydra = monster("hydra");
-        assertTrue(drops(hydra, "hydras_eye", 512) && drops(hydra, "hydras_fang", 512) && drops(hydra, "hydras_heart", 512));
+        assertTrue(drops(hydra, "hydras_eye", 1801) && drops(hydra, "hydras_fang", 1801) && drops(hydra, "hydras_heart", 1801)); // wiki 1/1,800.72
         assertTrue(hydra.drops.stream().noneMatch(d -> d.item().equals("dragon_sword")));
         assertTrue(drops(monster("green_dragon"), "draconic_visage", 10000));
-        assertTrue(drops(monster("abyssal_demon"), "#rare", 32));
+        assertTrue(drops(monster("abyssal_demon"), "#rare", 65)); // wiki RDT rows imply ~1/64
         for (MonsterDef m : SlayerContent.allMonsters()) {
             for (Drop d : m.drops) {
                 assertTrue(ItemCatalog.exists(d.item()), m.id + " drops unknown " + d.item());
