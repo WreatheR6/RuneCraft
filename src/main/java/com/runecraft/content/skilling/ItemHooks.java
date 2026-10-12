@@ -76,6 +76,7 @@ final class ItemHooks {
         CookingData.BITES.forEach(b -> HANDLED.add(b.full()));
         HerbloreData.POTIONS.forEach(p -> HANDLED.add(p.id()));
         HunterData.IMPLINGS.forEach(i -> HANDLED.add(i.jar()));
+        HANDLED.addAll(java.util.List.of("jar_generator", "imp_in_a_box_2", "imp_in_a_box_1"));
         RunecraftData.POUCHES.forEach(p -> HANDLED.add(p.id()));
         SailingData.BOATS.forEach(b -> HANDLED.add(b.kit()));
         SailingData.WRECKS.forEach(w -> HANDLED.add(w.salvage()));
@@ -134,6 +135,14 @@ final class ItemHooks {
         HunterData.Impling imp = HunterData.implingByJar(id);
         if (imp != null) {
             GatheringHooks.openJar(player, stack, imp);
+            return true;
+        }
+        if (id.equals("jar_generator")) {
+            GatheringHooks.useJarGenerator(player, stack);
+            return true;
+        }
+        if (HunterData.impBoxAfterUse(id) != null) {
+            GatheringHooks.useImpBox(player, stack, hand);
             return true;
         }
         RunecraftData.Pouch pouch = RunecraftData.pouch(id);

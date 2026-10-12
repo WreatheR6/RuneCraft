@@ -299,6 +299,30 @@ final class Cave {
     }
 
     /**
+     * A crop circle entrance at (x, z): a 9x9 patch of standing wheat (hay bales) with a flattened ring
+     * in its middle, levelled at the surface, and a ladder down to floor {@code f} at its centre.
+     */
+    Cave cropCircle(int x, int z, int f) {
+        int s = SURFACE;
+        b.op(StructureDef.Op.Type.FILL_AIR, x - 4, s - 11, z - 4, x + 4, s - 1, z + 4, wall, null);
+        b.fill(x - 4, s, z - 4, x + 4, s, z + 4, mc("grass_block"));
+        b.clear(x - 4, s + 1, z - 4, x + 4, s + 8, z + 4);
+        for (int dx = -4; dx <= 4; dx++) {
+            for (int dz = -4; dz <= 4; dz++) {
+                int d2 = dx * dx + dz * dz;
+                if (d2 >= 5 && d2 <= 10) {
+                    b.set(x + dx, s, z + dz, mc("hay_block[axis=" + (Math.abs(dx) > Math.abs(dz) ? "z" : "x") + "]"));
+                } else if (d2 > 13) {
+                    b.set(x + dx, s + 1, z + dz, mc("hay_block"));
+                }
+            }
+        }
+        ladder(x, z, f + 1, s + 1, autoFacing(x, z), s - 1, s + 1);
+        entrances.add(new Dungeons.Entrance(x - 4, z - 4, x + 4, z + 4, s + 8, true));
+        return this;
+    }
+
+    /**
      * Continues the ladder of an entrance pit another module built: replaces its floor block at
      * (x, theirFloor, z) with ladder and carries the ladder on down to floor {@code f}.
      */

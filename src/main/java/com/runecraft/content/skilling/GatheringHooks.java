@@ -86,13 +86,23 @@ final class GatheringHooks {
             }
             if (world.isClient()) {
                 ItemStack held = player.getMainHandStack();
-                return !held.isEmpty() && Inv.idOf(held).equals("butterfly_net") ? ActionResult.SUCCESS : ActionResult.PASS;
+                String heldId = held.isEmpty() ? "" : Inv.idOf(held);
+                return NETS.contains(heldId) || heldId.equals("magic_box") ? ActionResult.SUCCESS : ActionResult.PASS;
             }
-            if (monster.stats() == null || monster.stats().profile() == null) {
+            if (monster.stats() == null || monster.stats().profile() == null || !(player instanceof ServerPlayerEntity sp)) {
                 return ActionResult.PASS;
             }
-            HunterData.Impling imp = HunterData.impling(monster.stats().profile().id);
-            if (imp == null || !(player instanceof ServerPlayerEntity sp)) {
+            String id = monster.stats().profile().id;
+            if ("imp".equals(id) && SkillingUtil.heldId(sp).equals("magic_box")) {
+                catchImp(sp, monster);
+                return ActionResult.SUCCESS;
+            }
+            HunterData.Impling imp = HunterData.impling(id);
+            if (imp == null) {
+                return ActionResult.PASS;
+            }
+            // Barehanded catches are allowed 10 levels above the impling's; otherwise a net must be held.
+            if (!NETS.contains(SkillingUtil.heldId(sp)) && !sp.getMainHandStack().isEmpty()) {
                 return ActionResult.PASS;
             }
             catchImpling(sp, monster, imp);
@@ -420,6 +430,11 @@ final class GatheringHooks {
             }
             return;
         }
+        if (spot.blockId().equals(HunterData.MANIACAL_MONKEY_BOULDER)
+                && !com.runecraft.quest.QuestApi.isComplete(player, HunterData.MANIACAL_MONKEY_QUEST)) {
+            Msg.game(player, "You need to complete Monkey Madness II to hunt the maniacal monkeys.");
+            return;
+        }
         if (!SkillingUtil.need(player, Skill.HUNTER, spot.level(), "hunt " + SkillingUtil.lower(spot.creature()) + "s")) {
             return;
         }
@@ -511,12 +526,20 @@ final class GatheringHooks {
 
     // ------------------------------------------------------------------ Implings
 
+    /** Nets that catch implings (the magic one adds 20/256 to the catch chance). */
+    private static final java.util.Set<String> NETS = java.util.Set.of("butterfly_net", "magic_butterfly_net");
+    /** Jar generator charges, kept in the stack's NBT (a stack without the tag is new and full). */
+    private static final String JAR_GENERATOR_NBT = "RcJarCharges";
+
     private static void catchImpling(ServerPlayerEntity player, OsrsMonsterEntity entity, HunterData.Impling imp) {
-        if (!Inv.idOf(player.getMainHandStack()).equals("butterfly_net")) {
+        String held = SkillingUtil.heldId(player);
+        boolean barehanded = held.isEmpty();
+        if (!barehanded && !NETS.contains(held)) {
             Msg.game(player, "You need to wield a butterfly net to catch implings.");
             return;
         }
-        if (!SkillingUtil.need(player, Skill.HUNTER, imp.level(), "catch this impling")) {
+        int needed = imp.level() + (barehanded ? HunterData.BAREHANDED_EXTRA_LEVELS : 0);
+        if (!SkillingUtil.need(player, Skill.HUNTER, needed, barehanded ? "catch this impling barehanded" : "catch this impling")) {
             return;
         }
         if (!SkillingUtil.needItem(player, "impling_jar", "You need an empty impling jar to catch implings.")) {
@@ -524,21 +547,27 @@ final class GatheringHooks {
         }
         player.swingHand(Hand.MAIN_HAND, true);
         int level = SkillingUtil.level(player, Skill.HUNTER);
-        double chance = HunterRates.catchChance(imp.name(), imp.level(), level);   // approx: no published impling curve
+        double chance = HunterData.catchChance(imp, level, barehanded || held.equals("magic_butterfly_net"));
         if (player.getRandom().nextDouble() >= chance) {
             Msg.game(player, "You fail to catch the impling.");
             return;
         }
         Inv.remove(player, "impling_jar", 1);
         SkillingUtil.give(player, imp.jar(), 1);
-        XpService.add(player, Skill.HUNTER, imp.xp());
+        boolean puro = com.runecraft.osrs.content.dungeons.PuroPuro.contains(entity.getBlockX(), entity.getBlockY(), entity.getBlockZ());
+        XpService.add(player, Skill.HUNTER, imp.xpFor(puro));
         Msg.action(player, "You manage to catch the impling and squeeze it into a jar.");
         entity.discard();
     }
 
     static void openJar(ServerPlayerEntity player, ItemStack stack, HunterData.Impling imp) {
         stack.decrement(1);
-        Loot l = SkillingUtil.roll(player, imp.loot(), player.getRandom());
+        Loot l;
+        if (imp.id().equals(HunterData.LUCKY)) {
+            l = luckyLoot(player, imp);
+        } else {
+            l = SkillingUtil.roll(player, imp.loot(), player.getRandom());
+        }
         if (player.getRandom().nextInt(10) != 0) {
             Inv.give(player, "impling_jar", 1);
         } else {
@@ -547,6 +576,98 @@ final class GatheringHooks {
         if (l != null) {
             Msg.action(player, "You find " + Msg.article(SkillingUtil.lower(SkillingUtil.name(l.item()))) + " in the jar.");
         }
+    }
+
+    /** A lucky impling jar: one roll on a random clue tier's reward table (its loot lines name the tiers' caskets). */
+    private static Loot luckyLoot(ServerPlayerEntity player, HunterData.Impling imp) {
+        Loot tierLine = Loot.pick(imp.loot(), player.getRandom().nextInt(Loot.totalWeight(imp.loot())));
+        com.runecraft.osrs.content.systems.ClueScrolls.Tier tier = com.runecraft.osrs.content.systems.ClueScrolls.Tier.byCasket(tierLine.item());
+        if (tier == null) {
+            return null;
+        }
+        com.runecraft.osrs.content.systems.ClueRewards.Reward r = com.runecraft.osrs.content.systems.ClueRewards.singleRoll(tier,
+                new java.util.Random(player.getRandom().nextLong()));
+        SkillingUtil.give(player, r.item(), r.count());
+        return Loot.of(r.item(), r.count(), r.count(), 1);
+    }
+
+    /** Jar generator: an impling jar for 3 charges (sneak: a butterfly jar for 1). */
+    static void useJarGenerator(ServerPlayerEntity player, ItemStack stack) {
+        NbtCompound nbt = stack.getOrCreateNbt();
+        int charges = nbt.contains(JAR_GENERATOR_NBT) ? nbt.getInt(JAR_GENERATOR_NBT) : HunterData.JAR_GENERATOR_CHARGES;
+        boolean butterfly = player.isSneaking();
+        int cost = butterfly ? HunterData.JAR_GENERATOR_BUTTERFLY_COST : HunterData.JAR_GENERATOR_IMPLING_COST;
+        if (charges < cost) {
+            Msg.game(player, "Your jar generator doesn't have enough charges left.");
+            if (charges <= 0) {
+                stack.decrement(1);
+            }
+            return;
+        }
+        nbt.putInt(JAR_GENERATOR_NBT, charges - cost);
+        SkillingUtil.give(player, butterfly ? "butterfly_jar" : "impling_jar", 1);
+        Msg.action(player, "Your jar generator makes " + (butterfly ? "a butterfly jar" : "an impling jar") + " (" + (charges - cost)
+                + " charges left).");
+        if (charges - cost <= 0) {
+            stack.decrement(1);
+            Msg.game(player, "Your jar generator crumbles to dust.");
+        }
+    }
+
+    // ------------------------------------------------------------------ Imps (magic box)
+
+    /**
+     * A magic box set beside an imp catches it (wiki: 71 Hunter, 450 XP; a bead adds 3% to the chance). The trap is
+     * set and checked at once here rather than left on the ground (approx).
+     */
+    private static void catchImp(ServerPlayerEntity player, OsrsMonsterEntity imp) {
+        if (!SkillingUtil.need(player, Skill.HUNTER, HunterData.IMP_LEVEL, "catch imps")) {
+            return;
+        }
+        player.swingHand(Hand.MAIN_HAND, true);
+        int level = SkillingUtil.level(player, Skill.HUNTER);
+        String bead = null;
+        for (String b : new String[]{"red_bead", "yellow_bead", "black_bead", "white_bead"}) {
+            if (Inv.has(player, b, 1)) {
+                bead = b;
+                break;
+            }
+        }
+        double chance = HunterRates.catchChance("imp", HunterData.IMP_LEVEL, level) + (bead != null ? HunterData.IMP_BEAD_BONUS : 0);
+        if (player.getRandom().nextDouble() >= chance) {
+            Msg.game(player, "The imp dodges round your magic box.");
+            return;
+        }
+        if (bead != null) {
+            Inv.remove(player, bead, 1);
+        }
+        Inv.remove(player, "magic_box", 1);
+        SkillingUtil.give(player, "imp_in_a_box_2", 1);
+        XpService.add(player, Skill.HUNTER, HunterData.IMP_XP);
+        Msg.action(player, "You catch the imp in your magic box.");
+        imp.discard();
+    }
+
+    /** Imp-in-a-box: the imp takes the item stack in your other hand to your bank. */
+    static void useImpBox(ServerPlayerEntity player, ItemStack box, Hand hand) {
+        String next = HunterData.impBoxAfterUse(Inv.idOf(box));
+        Hand other = hand == Hand.MAIN_HAND ? Hand.OFF_HAND : Hand.MAIN_HAND;
+        ItemStack item = player.getStackInHand(other);
+        if (next == null || item.isEmpty()) {
+            Msg.game(player, "Hold the item for the imp to bank in your other hand.");
+            return;
+        }
+        com.runecraft.osrs.bank.BankModel bank = Players.data(player).bank();
+        long moved = com.runecraft.bank.BankService.depositStack(bank, item, item.getCount(), 0);
+        if (moved <= 0) {
+            Msg.game(player, "Your bank is full.");
+            return;
+        }
+        item.decrement((int) moved);
+        box.decrement(1);
+        Inv.give(player, next, 1);
+        Msg.action(player, next.equals("magic_box") ? "The imp takes your items to the bank and leaves the box."
+                : "The imp takes your items to the bank.");
     }
 
     // ------------------------------------------------------------------ Firemaking

@@ -20,6 +20,10 @@ public final class ZeahBlocks {
     public static final String SUNLIGHT_MOTH_BUSH = "zeah_sunlight_moth_bush";
     public static final String MOONLIGHT_MOTH_BUSH = "zeah_moonlight_moth_bush";
     public static final String JERBOA_BURROW = "zeah_jerboa_burrow";
+    /** The altar at the centre of the Catacombs of Kourend: Darklight + 3 ancient shards make Arclight. */
+    public static final String CATACOMBS_ALTAR = "zeah_catacombs_altar";
+    /** Ancient shards needed to forge Arclight (wiki). */
+    public static final int ARCLIGHT_SHARDS = 3;
 
     public static List<BlockDef> all() {
         return List.of(
@@ -30,6 +34,7 @@ public final class ZeahBlocks {
                 BlockDef.scripted(MOONLIGHT_ANTELOPE_PIT, "Moonlight antelope pit", 0x5A6AA0, "pit"),
                 BlockDef.scripted(SUNLIGHT_MOTH_BUSH, "Sunlight moth bush", 0xE0C040, "young_tree"),
                 BlockDef.scripted(MOONLIGHT_MOTH_BUSH, "Moonlight moth bush", 0x8090D0, "young_tree"),
-                BlockDef.scripted(JERBOA_BURROW, "Embertailed jerboa burrow", 0xC06A3A, "boulder"));
+                BlockDef.scripted(JERBOA_BURROW, "Embertailed jerboa burrow", 0xC06A3A, "boulder"),
+                BlockDef.scripted(CATACOMBS_ALTAR, "Altar", 0x5A5A6A, "altar"));
     }
 }

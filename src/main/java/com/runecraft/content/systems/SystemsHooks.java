@@ -120,7 +120,9 @@ public final class SystemsHooks implements ModuleHooks {
         // Diary perks that live in other systems' mechanics.
         com.runecraft.skill.ThievingService.pickpocketBonus = p -> {
             SysState.SysPlayer sp = SysState.of(p);
-            return DiaryRewards.pickpocketMultiplier(Diaries.tierComplete(sp.diaryDone, "ardougne", Diaries.Tier.MEDIUM),
+            double gloves = sp.wornId(Jewellery.Slot.HANDS).equals("gloves_of_silence")
+                    ? com.runecraft.osrs.content.skilling.HunterData.GLOVES_OF_SILENCE_BONUS : 1.0;
+            return gloves * DiaryRewards.pickpocketMultiplier(Diaries.tierComplete(sp.diaryDone, "ardougne", Diaries.Tier.MEDIUM),
                     Diaries.tierComplete(sp.diaryDone, "ardougne", Diaries.Tier.HARD), DiaryService.inArea(p, "ardougne"));
         };
         com.runecraft.content.dungeons.BarrowsHooks.runeBonus = p -> DiaryRewards.barrowsRuneMultiplier(

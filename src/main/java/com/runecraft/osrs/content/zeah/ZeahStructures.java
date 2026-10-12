@@ -214,6 +214,8 @@ public final class ZeahStructures {
                 b.set(x + 2, f + 1, z + 1, "minecraft:soul_lantern");
             }
         }
+        // The altar at the heart of the catacombs (Darklight + 3 ancient shards -> Arclight).
+        b.set(StructureDef.bx(1639), f + 1, StructureDef.bz(3681), "runecraft:" + ZeahBlocks.CATACOMBS_ALTAR);
         // Stairwell: from the courtyard (tile 1628, 3686) down towards the north into the crypt.
         int sx = StructureDef.bx(1628);
         int sz = StructureDef.bz(3686) + 1;

@@ -43,6 +43,8 @@ public final class Untradeables {
         // Quest rewards.
         add("silverlight", "darklight", "excalibur", "dramen_staff", "lunar_staff", "ibans_staff", "ghostspeak_amulet",
                 "ivandis_flail", "blisterwood_flail", "xerics_talisman", "drakans_medallion");
+        // Arclight, Emberlight and Elnock's Puro-Puro rewards are untradeable in OSRS.
+        add("arclight", "emberlight", "magic_butterfly_net", "jar_generator", "imp_repellent", "imp_in_a_box_2", "imp_in_a_box_1");
         // Treasure trails: the scrolls, reward caskets, puzzle/light boxes and the Bloodhound pet (OSRS wiki: untradeable);
         // the clue reward items themselves are tradeable.
         for (String tier : new String[]{"beginner", "easy", "medium", "hard", "elite", "master"}) {

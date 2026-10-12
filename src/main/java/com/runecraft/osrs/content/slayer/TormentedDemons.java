@@ -45,9 +45,30 @@ public final class TormentedDemons {
     public static final Set<String> DEMONBANE = Set.of("silverlight", "darklight", "arclight", "emberlight", "burning_claws",
             "scorching_bow", "purging_staff");
 
-    /** Demonbane weapon bonuses against demons (accuracy and damage multiplier), wiki "Demonbane weapons". */
-    public static final Map<String, Double> DEMONBANE_BONUS = Map.of("emberlight", 1.70, "scorching_bow", 1.30,
-            "burning_claws", 1.05);
+    /**
+     * Demonbane weapon bonuses against demons (accuracy and damage multiplier), wiki "Demonbane weapons": Silverlight
+     * and Darklight +60%, Arclight and Emberlight +70%, the scorching bow +30%, burning claws +5%.
+     */
+    public static final Map<String, Double> DEMONBANE_BONUS = Map.of("silverlight", 1.60, "darklight", 1.60, "arclight", 1.70,
+            "emberlight", 1.70, "scorching_bow", 1.30, "burning_claws", 1.05);
+    /** Emberlight: Arclight (fully charged) + a tormented synapse at an anvil with a hammer, 74 Smithing (wiki). */
+    public static final int EMBERLIGHT_SMITHING = 74;
+    /** Smithing XP for forging Emberlight (wiki: 730 for the first one, raised from 73). */
+    public static final double EMBERLIGHT_XP = 730.0;
+
+    /** Why this Arclight can't become Emberlight yet, or null: it must be fully charged (wiki). */
+    public static String emberlightProblem(int smithingLevel, int arclightCharges, int arclightMaxCharges, boolean hammer) {
+        if (smithingLevel < EMBERLIGHT_SMITHING) {
+            return "You need a Smithing level of " + EMBERLIGHT_SMITHING + " to forge Emberlight.";
+        }
+        if (!hammer) {
+            return "You need a hammer to forge Emberlight.";
+        }
+        if (arclightCharges < arclightMaxCharges) {
+            return "Your Arclight must be fully charged (" + arclightCharges + "/" + arclightMaxCharges + ") to be reforged.";
+        }
+        return null;
+    }
 
     private TormentedDemons() {
     }
@@ -115,7 +136,8 @@ public final class TormentedDemons {
                 .out("burning_claws", 1).ticks(3).build());
         recipes.accept(Recipe.builder("fletch_scorching_bow", MenuType.FLETCHING, "Scorching bow").skill(Skill.FLETCHING, 74, 0)
                 .in("magic_longbow_u", 1).in("tormented_synapse", 1).out("scorching_bow", 1).ticks(3).build()); // XP approx
-        // Emberlight is Arclight (74 Smithing) + a tormented synapse; Arclight isn't an item in this world yet.
+        // Emberlight (Arclight + a tormented synapse) needs a fully charged Arclight, so it is forged by
+        // TormentedDemonCombat's anvil hook rather than a menu recipe.
     }
 
     static CollectionLogData.Page collectionLog() {

@@ -603,6 +603,7 @@ public final class EquipmentBonuses {
         put("elemental_shield", 0, 0, 0, 0, 0, 0,  0, 0, 0, 6, 0,  0, 0, 0, 0);
         twoH("crystal_bow_quest", 5, 0, 0, 0, 0, 100,  0, 0, 0, 0, 0,  0, 70, 0, 0);
         put("darklight", 5, 10, 16, -2, 0, 0,  0, 3, 2, 2, 0,  13, 0, 0, 0);
+        put("arclight", 4, 10, 38, 0, 0, 0,  0, 3, 2, 2, 0,  8, 0, 0, 0);
         put("initiate_sallet", 0, 0, 0, 0, -6, -3,  13, 14, 11, -1, 13,  0, 0, 0, 3);
         put("mind_shield", 0, 0, 0, 0, 0, 0,  0, 0, 0, 9, 0,  0, 0, 0, 0);
         put("helm_of_neitiznot", 0, 0, 0, 0, 0, 0,  31, 29, 34, 3, 30,  3, 0, 0, 3);

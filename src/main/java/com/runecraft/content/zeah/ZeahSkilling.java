@@ -197,11 +197,12 @@ final class ZeahSkilling {
         String key = key(world, pos);
         long now = ActionManager.gameTick();
         String creature = spot.creature().toLowerCase();
-        if (spot.method() == ZeahHunter.Method.NET) {
+        if (!spot.laid()) {
             if (!need(player, Skill.HUNTER, spot.level(), "catch " + creature + "s")) {
                 return;
             }
-            if (!Inv.idOf(player.getMainHandStack()).equals("butterfly_net")) {
+            String net = Inv.idOf(player.getMainHandStack());
+            if (!net.equals("butterfly_net") && !net.equals("magic_butterfly_net")) {
                 Msg.game(player, "You need to wield a butterfly net to catch moths.");
                 return;
             }
@@ -235,6 +236,7 @@ final class ZeahSkilling {
                 return;
             }
             TRAPS.remove(key);
+            com.runecraft.skill.HunterService.release(world, pos);
             if (player.getRandom().nextDouble() < ZeahHunter.catchChance(level(player, Skill.HUNTER), spot)) {
                 for (String item : spot.loot()) {
                     give(player, item, 1);
@@ -256,6 +258,10 @@ final class ZeahSkilling {
                 return;
             }
         }
+        // Varlamore traps share the Hunter trap limit with every other laid trap (OSRS).
+        if (com.runecraft.skill.HunterService.atTrapLimit(player)) {
+            return;
+        }
         if (spot.consumed() != null) {
             if (!Inv.has(player, spot.consumed(), 1)) {
                 Msg.game(player, "You need some " + name(spot.consumed()) + " to set this trap.");
@@ -265,6 +271,7 @@ final class ZeahSkilling {
         }
         player.swingHand(Hand.MAIN_HAND, true);
         TRAPS.put(key, new LaidTrap(player.getUuid(), now));
+        com.runecraft.skill.HunterService.claim(player, world, pos, false);
         Msg.action(player, spot.method() == ZeahHunter.Method.PITFALL ? "You dig a pit and cover it with logs."
                 : "You set up the box trap by the burrow.");
     }

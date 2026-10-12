@@ -71,8 +71,26 @@ public final class ZeahHooks implements ModuleHooks {
                 PoisonService.cure(player, false, 5, ActionManager.gameTick());
             }
         });
+        BlockHooks.register(ZeahBlocks.CATACOMBS_ALTAR, (player, pos, state) -> catacombsAltar(player));
         ZeahCamps.register();
         GameEvents.onObtain(ZeahHooks::rumourCatch);
+    }
+
+    /** The Catacombs altar: Darklight and 3 ancient shards become Arclight (with its starting 1,000 charges). */
+    private static void catacombsAltar(ServerPlayerEntity player) {
+        if (!Inv.has(player, "darklight", 1)) {
+            Msg.game(player, "The altar hums with the power of the ancient shards. Perhaps a demonic sword could channel it.");
+            return;
+        }
+        if (!Inv.has(player, "ancient_shard", ZeahBlocks.ARCLIGHT_SHARDS)) {
+            Msg.game(player, "You need " + ZeahBlocks.ARCLIGHT_SHARDS + " ancient shards to infuse Darklight.");
+            return;
+        }
+        Inv.remove(player, "darklight", 1);
+        Inv.remove(player, "ancient_shard", ZeahBlocks.ARCLIGHT_SHARDS);
+        Inv.give(player, "arclight", 1);
+        CollectionLog.obtain(player, "arclight");
+        Msg.action(player, "The ancient shards' power flows into Darklight, forging Arclight!");
     }
 
     /** Sneak-talk to buy the next missing piece of Shayzien armour (5). */

@@ -19,8 +19,8 @@ import java.util.WeakHashMap;
 /**
  * Tormented Demon mechanics (see {@link TormentedDemons}): it prays against one combat style and swaps to the style that
  * last damaged it every time it loses 25% of its hitpoints; its fire shield weakens non-demonbane hits except right after
- * the first hit and after each fire bomb. Also the demonbane passives of Emberlight, the scorching bow and burning claws
- * against every demon.
+ * the first hit and after each fire bomb. Also the demonbane passives of Silverlight, Darklight, Arclight, Emberlight, the
+ * scorching bow and burning claws against every demon, and forging Emberlight (a tormented synapse used on an anvil).
  */
 public final class TormentedDemonCombat implements CombatHooks.PlayerAttackModifier {
     private enum Style { MELEE, RANGED, MAGIC }
@@ -42,6 +42,52 @@ public final class TormentedDemonCombat implements CombatHooks.PlayerAttackModif
 
     static void register() {
         CombatHooks.addModifier(new TormentedDemonCombat());
+        // Emberlight: use a tormented synapse on an anvil with a fully charged Arclight and a hammer.
+        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+            if (hand != net.minecraft.util.Hand.MAIN_HAND || player.getMainHandStack().isEmpty()
+                    || !"tormented_synapse".equals(Inv.idOf(player.getMainHandStack()))) {
+                return net.minecraft.util.ActionResult.PASS;
+            }
+            net.minecraft.block.Block block = world.getBlockState(hit.getBlockPos()).getBlock();
+            boolean anvil = block instanceof com.runecraft.block.StationBlock s && s.station() == com.runecraft.osrs.Station.ANVIL
+                    || block == net.minecraft.block.Blocks.ANVIL || block == net.minecraft.block.Blocks.CHIPPED_ANVIL
+                    || block == net.minecraft.block.Blocks.DAMAGED_ANVIL;
+            if (!anvil) {
+                return net.minecraft.util.ActionResult.PASS;
+            }
+            if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+                forgeEmberlight(sp);
+            }
+            return net.minecraft.util.ActionResult.SUCCESS;
+        });
+    }
+
+    private static void forgeEmberlight(ServerPlayerEntity p) {
+        net.minecraft.item.ItemStack arclight = net.minecraft.item.ItemStack.EMPTY;
+        for (net.minecraft.item.ItemStack s : p.getInventory().main) {
+            if (!s.isEmpty() && com.runecraft.osrs.content.systems.Charges.ARCLIGHT.equals(Inv.idOf(s))
+                    && (arclight.isEmpty() || com.runecraft.item.ItemCharges.get(s) > com.runecraft.item.ItemCharges.get(arclight))) {
+                arclight = s;
+            }
+        }
+        if (arclight.isEmpty()) {
+            Msg.game(p, "You need Arclight to reforge with the synapse.");
+            return;
+        }
+        int smithing = com.runecraft.player.Players.data(p).skills().currentLevel(com.runecraft.osrs.Skill.SMITHING);
+        String problem = TormentedDemons.emberlightProblem(smithing, com.runecraft.item.ItemCharges.get(arclight),
+                com.runecraft.osrs.content.systems.Charges.ARCLIGHT_MAX, Inv.has(p, "hammer", 1));
+        if (problem != null) {
+            Msg.game(p, problem);
+            return;
+        }
+        arclight.decrement(1);
+        Inv.remove(p, "tormented_synapse", 1);
+        Inv.give(p, "emberlight", 1);
+        com.runecraft.collection.CollectionLog.obtain(p, "emberlight");
+        com.runecraft.skill.XpService.add(p, com.runecraft.osrs.Skill.SMITHING, TormentedDemons.EMBERLIGHT_XP);
+        p.swingHand(net.minecraft.util.Hand.MAIN_HAND, true);
+        Msg.action(p, "You hammer the tormented synapse into Arclight. It bursts into flame: Emberlight!");
     }
 
     private static boolean isDemon(LivingEntity target) {
