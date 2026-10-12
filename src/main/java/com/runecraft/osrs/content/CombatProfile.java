@@ -171,6 +171,6 @@ public abstract class CombatProfile<T extends CombatProfile<T>> {
     }
 
     public boolean isAggressiveTo(int playerCombatLevel) {
-        return aggressive && playerCombatLevel <= combatLevel * 2 + 1;
+        return aggressive && com.runecraft.osrs.CombatBonuses.aggressiveTo(combatLevel, playerCombatLevel);
     }
 }

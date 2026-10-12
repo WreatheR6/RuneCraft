@@ -70,6 +70,9 @@ final class SlayerCombat {
 
     private static double headgearMultiplier(ServerPlayerEntity player, LivingEntity target, AttackType type, boolean accuracy) {
         boolean melee = type.isMelee();
+        if (com.runecraft.combat.GearEffects.salveActive(player, target, type)) {
+            return 1.0; // a salve amulet's bonus never stacks with slayer headgear
+        }
         if (melee && accuracy && SlayerService.wearingAny(player, SlayerGear.MELEE_BOOST_HEADGEAR)
                 && SlayerService.isOnTask(player, target)) {
             return 7.0 / 6.0;

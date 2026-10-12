@@ -5,6 +5,7 @@ import com.runecraft.action.ActionManager;
 import com.runecraft.entity.OsrsMonsterEntity;
 import com.runecraft.network.ServerNetworking;
 import com.runecraft.osrs.AttackType;
+import com.runecraft.osrs.CombatBonuses;
 import com.runecraft.osrs.CombatFormulas;
 import com.runecraft.osrs.EquipmentStats;
 import com.runecraft.osrs.ItemCatalog;
@@ -101,6 +102,11 @@ public final class MagicService {
 
     public static void autocastAttack(ServerPlayerEntity player) {
         PlayerData data = Players.data(player);
+        String weaponId = Inv.idOf(player.getMainHandStack());
+        if (CombatBonuses.poweredStaffMaxHit(weaponId, data.skills().currentLevel(Skill.MAGIC)) >= 0) {
+            poweredStaffAttack(player, weaponId);
+            return;
+        }
         Spell spell = data.autocast();
         if (spell == null) {
             Msg.action(player, "Choose a combat spell to autocast in your spellbook (press K).");
@@ -118,6 +124,10 @@ public final class MagicService {
                 e -> e instanceof LivingEntity && e.isAlive() && e != player && !e.isSpectator(), SPELL_RANGE * SPELL_RANGE);
         if (hit == null || !(hit.getEntity() instanceof LivingEntity target)) {
             Msg.action(player, "No target.");
+            return;
+        }
+        if (target instanceof ServerPlayerEntity other && !CombatHandler.canAttackPlayer(player, other)) {
+            Msg.game(player, "You can't attack that player.");
             return;
         }
         if (!canCast(player, spell)) {
@@ -140,12 +150,13 @@ public final class MagicService {
         long defenceRoll = CombatHandler.defenceRoll(target, AttackType.MAGIC);
         int maxHit = (int) Math.floor(CombatFormulas.magicMaxHit(spell.maxHit(), eq.magicDamagePercent())
                 * CombatHandler.hookMaxHit(player, target, AttackType.MAGIC));
-        int damage = CombatFormulas.roll(new java.util.Random(player.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
+        boolean splash = player.getRandom().nextDouble() >= com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);
+        int damage = splash ? 0 : player.getRandom().nextInt(Math.max(0, maxHit) + 1);
         damage = CombatHandler.hookAfterRoll(player, target, AttackType.MAGIC, damage);
-        boolean splash = player.getRandom().nextDouble() >= com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll) && damage == 0;
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, AttackType.MAGIC);
         }
+        damage = CombatHandler.protectionAgainstPlayer(target, AttackType.MAGIC, damage);
         if (splash) {
             ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.CLOUD, target.getX(), target.getY() + 1, target.getZ(), 8, 0.3, 0.3, 0.3, 0.02);
         }
@@ -154,6 +165,76 @@ public final class MagicService {
         if (dealt > 0) {
             XpService.addTenths(player, Skill.MAGIC, dealt * 20);
             XpService.addTenths(player, Skill.HITPOINTS, CombatFormulas.hitpointsXpTenths(dealt));
+        }
+    }
+
+    /**
+     * Powered staves (tridents, sanguinesti staff, Tumeken's shadow...): a built-in spell needing no runes,
+     * whose max hit scales with Magic level, at the staff's own attack speed. Gives 2 Magic XP per damage
+     * and no base cast XP.
+     */
+    static void poweredStaffAttack(ServerPlayerEntity player, String weaponId) {
+        PlayerData data = Players.data(player);
+        SkillSet skills = data.skills();
+        int speed = Equipment.weaponSpeed(player, skills);
+        long now = ActionManager.mcTick();
+        if (now - data.lastAttackTick < (long) speed * ActionManager.MC_TICKS_PER_GAME_TICK) {
+            return;
+        }
+        Vec3d eye = player.getEyePos();
+        Vec3d look = player.getRotationVector();
+        Vec3d end = eye.add(look.multiply(SPELL_RANGE));
+        Box box = player.getBoundingBox().stretch(look.multiply(SPELL_RANGE)).expand(1.0);
+        EntityHitResult hit = ProjectileUtil.raycast(player, eye, end, box,
+                e -> e instanceof LivingEntity && e.isAlive() && e != player && !e.isSpectator(), SPELL_RANGE * SPELL_RANGE);
+        if (hit == null || !(hit.getEntity() instanceof LivingEntity target)) {
+            Msg.action(player, "No target.");
+            return;
+        }
+        if (target instanceof ServerPlayerEntity other && !CombatHandler.canAttackPlayer(player, other)) {
+            Msg.game(player, "You can't attack that player.");
+            return;
+        }
+        if (Equipment.weapon(player, skills) == null) {
+            Msg.game(player, "You don't have the Magic level to wield this staff.");
+            return;
+        }
+        data.lastAttackTick = now;
+        player.swingHand(Hand.MAIN_HAND, true);
+        trail((ServerWorld) player.getWorld(), eye, target.getPos().add(0, target.getHeight() / 2, 0), Spell.WATER_SURGE);
+        int magic = skills.currentLevel(Skill.MAGIC);
+        EquipmentStats eq = Equipment.total(player, skills);
+        int magicAttack = eq.magicAttack();
+        int damagePercent = eq.magicDamagePercent();
+        if (weaponId.equals("tumekens_shadow")) {
+            magicAttack *= CombatBonuses.shadowMultiplier(false);
+            damagePercent = CombatBonuses.shadowMagicDamage(damagePercent, false);
+        }
+        int eff = CombatFormulas.effectiveMagic(magic, PrayerService.magic(data));
+        long attackRoll = (long) (CombatFormulas.attackRoll(eff, magicAttack) * CombatHandler.hookAccuracy(player, target, AttackType.MAGIC));
+        long defenceRoll = CombatHandler.defenceRoll(target, AttackType.MAGIC);
+        int base = CombatBonuses.poweredStaffMaxHit(weaponId, magic);
+        int maxHit = (int) Math.floor(CombatFormulas.magicMaxHit(base, damagePercent) * CombatHandler.hookMaxHit(player, target, AttackType.MAGIC));
+        boolean splash = player.getRandom().nextDouble() >= com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);
+        int damage = splash ? 0 : player.getRandom().nextInt(Math.max(0, maxHit) + 1);
+        damage = CombatHandler.hookAfterRoll(player, target, AttackType.MAGIC, damage);
+        if (target instanceof OsrsMonsterEntity monster) {
+            damage = monster.modifyIncoming(player, damage, AttackType.MAGIC);
+        }
+        damage = CombatHandler.protectionAgainstPlayer(target, AttackType.MAGIC, damage);
+        if (splash) {
+            ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.CLOUD, target.getX(), target.getY() + 1, target.getZ(), 8, 0.3, 0.3, 0.3, 0.02);
+        }
+        int dealt = CombatHandler.applyDamage(player, target, damage);
+        CombatHandler.hookAfterHit(player, target, AttackType.MAGIC, dealt);
+        if (dealt > 0) {
+            XpService.addTenths(player, Skill.MAGIC, CombatBonuses.poweredStaffXpTenths(dealt));
+            XpService.addTenths(player, Skill.HITPOINTS, CombatFormulas.hitpointsXpTenths(dealt));
+            if (weaponId.startsWith("trident_of_the_swamp") && player.getRandom().nextInt(4) == 0) {
+                PoisonService.venom(target, ActionManager.gameTick());
+            } else if (weaponId.endsWith("sanguinesti_staff") && player.getRandom().nextInt(6) == 0) {
+                player.heal(dealt / 2f);
+            }
         }
     }
 

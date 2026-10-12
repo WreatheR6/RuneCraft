@@ -309,6 +309,7 @@ public final class SysCombat {
         SysState.SysPlayer sp = SysState.of(p);
         sp.lastCombatTick = ActionManager.gameTick();
         sp.lastTargetId = target.getId();
+        damage = CombatHandler.protectionAgainstPlayer(target, type, damage);
         return CombatHandler.applyDamage(p, target, damage);
     }
 
@@ -346,7 +347,7 @@ public final class SysCombat {
     /** Whether a target can be attacked by this player (Wilderness rules for players). */
     public static boolean canAttack(ServerPlayerEntity p, LivingEntity target) {
         if (target instanceof ServerPlayerEntity other) {
-            return com.runecraft.world.Gielinor.wildernessLevel(other) > 0 && com.runecraft.world.Gielinor.wildernessLevel(p) > 0;
+            return CombatHandler.canAttackPlayer(p, other);
         }
         return !(target instanceof com.runecraft.entity.QuestNpcEntity);
     }

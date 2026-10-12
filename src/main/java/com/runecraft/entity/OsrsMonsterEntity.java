@@ -47,14 +47,24 @@ public class OsrsMonsterEntity extends HostileEntity {
         this.targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, 10, true, false, this::shouldAggro));
     }
 
-    /** OSRS aggression: only attacks players whose combat level is at most double its own (+1). */
+    /**
+     * OSRS aggression: only attacks players whose combat level is at most double its own (any level in the
+     * Wilderness), and stops once the player has been in the area for 10 minutes (tolerance).
+     */
     protected boolean shouldAggro(net.minecraft.entity.LivingEntity entity) {
         MonsterStats s = stats();
         if (s == null || (s.monster() == null && s.profile() == null) || !(entity instanceof ServerPlayerEntity player) || player.isCreative()) {
             return false;
         }
+        boolean aggressive = s.monster() != null ? s.monster().aggressive() : s.profile().aggressive;
+        if (!aggressive || com.runecraft.combat.Aggression.tolerant(player, com.runecraft.action.ActionManager.gameTick())) {
+            return false;
+        }
+        if (com.runecraft.world.Gielinor.wildernessLevel(player) > 0) {
+            return true;
+        }
         int combat = Players.data(player).skills().combatLevel();
-        return s.monster() != null ? s.monster().isAggressiveTo(combat) : s.profile() != null && s.profile().isAggressiveTo(combat);
+        return s.monster() != null ? s.monster().isAggressiveTo(combat) : s.profile().isAggressiveTo(combat);
     }
 
     /** Attack chosen by {@link #chooseStyle} for module creatures with an attack list. */

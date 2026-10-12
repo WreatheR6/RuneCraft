@@ -58,6 +58,7 @@ public final class CombatHandler {
     public static void register() {
         ServerLivingEntityEvents.ALLOW_DAMAGE.register(CombatHandler::allowDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register(CombatHandler::afterDeath);
+        CombatHooks.addModifier(new GearEffects());
     }
 
     private static boolean allowDamage(LivingEntity target, DamageSource source, float amount) {
@@ -73,7 +74,7 @@ public final class CombatHandler {
                 overworldXp(player, target, amount, direct);
                 return true;
             }
-            if (target instanceof PlayerEntity && (Gielinor.wildernessLevel(target) == 0 || Gielinor.wildernessLevel(player) == 0)) {
+            if (target instanceof ServerPlayerEntity other && !canAttackPlayer(player, other)) {
                 return false;
             }
             if (direct instanceof PersistentProjectileEntity arrow) {
@@ -135,6 +136,7 @@ public final class CombatHandler {
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, type);
         }
+        damage = protectionAgainstPlayer(target, type, damage);
         int dealt = applyDamage(player, target, damage);
         CombatHooks.afterHit(player, target, type, dealt);
         awardXp(player, style, dealt, false);
@@ -167,6 +169,7 @@ public final class CombatHandler {
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, AttackType.RANGED);
         }
+        damage = protectionAgainstPlayer(target, AttackType.RANGED, damage);
         int dealt = applyDamage(player, target, damage);
         CombatHooks.afterHit(player, target, AttackType.RANGED, dealt);
         awardXp(player, style, dealt, false);
@@ -200,6 +203,32 @@ public final class CombatHandler {
         return CombatFormulas.npcRoll(level, stats.defenceBonus(type));
     }
 
+    /**
+     * PvP is only allowed in the Wilderness, between players whose combat levels differ by no more than the
+     * Wilderness level.
+     */
+    public static boolean canAttackPlayer(ServerPlayerEntity attacker, ServerPlayerEntity target) {
+        return com.runecraft.osrs.CombatBonuses.canAttackInWilderness(Players.data(attacker).skills().combatLevel(),
+                Players.data(target).skills().combatLevel(), Gielinor.wildernessLevel(attacker), Gielinor.wildernessLevel(target));
+    }
+
+    /** True if the player has the overhead protection prayer for this attack style active. */
+    public static boolean isProtected(PlayerData data, AttackType type) {
+        return switch (type) {
+            case MAGIC -> data.isActive(Prayer.PROTECT_FROM_MAGIC);
+            case RANGED -> data.isActive(Prayer.PROTECT_FROM_MISSILES);
+            default -> data.isActive(Prayer.PROTECT_FROM_MELEE);
+        };
+    }
+
+    /** Protection prayers only block 40% of damage dealt by other players. */
+    public static int protectionAgainstPlayer(LivingEntity target, AttackType type, int damage) {
+        if (damage > 0 && target instanceof ServerPlayerEntity defender && isProtected(Players.data(defender), type)) {
+            return com.runecraft.osrs.CombatBonuses.protectedFromPlayer(damage);
+        }
+        return damage;
+    }
+
     // ---------------- Monsters attacking ----------------
 
     /** Performs one OSRS attack from a monster against a player (respecting attack speed). */
@@ -221,12 +250,7 @@ public final class CombatHandler {
         long defenceRoll = defenceRoll(player, type);
         int maxHit = mob instanceof OsrsMonsterEntity m ? m.maxHitAgainst(player, type) : stats.maxHit();
         int damage = CombatFormulas.roll(new java.util.Random(mob.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
-        boolean protectedHit = switch (type) {
-            case MAGIC -> data.isActive(Prayer.PROTECT_FROM_MAGIC);
-            case RANGED -> data.isActive(Prayer.PROTECT_FROM_MISSILES);
-            default -> data.isActive(Prayer.PROTECT_FROM_MELEE);
-        };
-        if (protectedHit) {
+        if (isProtected(data, type)) {
             damage = mob instanceof OsrsMonsterEntity m ? m.damageThroughPrayer(damage) : 0;
         }
         if (mob instanceof OsrsMonsterEntity m) {
