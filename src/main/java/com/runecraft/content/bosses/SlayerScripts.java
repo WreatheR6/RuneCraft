@@ -151,7 +151,8 @@ final class SlayerScripts {
 
         @Override
         protected int attackDelay(DataBossEntity boss, AttackDef attack) {
-            return queue.isEmpty() ? 4 : 2;
+            // Auto-attacks every 6 ticks (wiki attack speed); the "Grrrrr" triple attack fires its three styles 2 ticks apart.
+            return queue.isEmpty() ? super.attackDelay(boss, attack) : 2;
         }
 
         @Override

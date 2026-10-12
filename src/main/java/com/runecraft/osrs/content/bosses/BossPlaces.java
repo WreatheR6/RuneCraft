@@ -50,7 +50,20 @@ public final class BossPlaces {
                 // Approximate: the Royal Titans' cave beneath the Asgarnian Ice Dungeon.
                 PlaceDef.of("royal_titans_lair", "Royal Titans' lair", 3008, 3150, Style.CAVE, List.of()),
                 PlaceDef.of("watsons_house", "Watson's house", 1645, 3574, Style.TOWN, List.of()),
-                PlaceDef.of("fortis_colosseum", "Fortis Colosseum", 1800, 3105, Style.ARENA, List.of()));
+                PlaceDef.of("fortis_colosseum", "Fortis Colosseum", 1800, 3105, Style.ARENA, List.of()),
+                // 2025-2026 bosses (ModernBosses). Yama's lair lies beneath the Chasm of Fire; the arena stands clear of the
+                // chasm's own entrance (1433, 3671).
+                PlaceDef.of("yamas_lair", "Yama's Lair", 1404, 3712, Style.RUINS, List.of()), // approx
+                // Mokhaiotl's lair is entered from the Tlati jungle north of Tal Teklan.
+                PlaceDef.of("mokhaiotl_lair", "Mokhaiotl's lair", 1262, 3130, Style.CAVE, List.of()), // approx
+                // The Gemstone Crab roams between three Tlati Rainforest mines; this is the western one.
+                PlaceDef.of("gemstone_crab_mine", "Tlati Rainforest mine (Gemstone Crab)", 1288, 3060, Style.CAMP, List.of()), // approx
+                // The Shellbane Gryphon Cave sits at the centre of the Great Conch.
+                PlaceDef.of("shellbane_gryphon_cave", "Shellbane Gryphon Cave", 3190, 2450, Style.CAVE, List.of()), // approx
+                // Brutus' pen in the Lumbridge cow field east of the River Lum.
+                PlaceDef.of("brutus_pen", "Brutus' pen", 3262, 3285, Style.CAMP, List.of()), // approx
+                // The Maggot King's hive in the Vampyrium, reached through Darkmeyer.
+                PlaceDef.of("maggot_kings_hive", "Maggot King's hive", 3660, 3310, Style.CAVE, List.of())); // approx
     }
 
     public static List<BlockDef> blocks() {

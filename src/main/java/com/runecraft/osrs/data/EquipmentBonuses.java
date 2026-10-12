@@ -534,6 +534,15 @@ public final class EquipmentBonuses {
         twoH("noxious_halberd", 5, 80, 132, 0, 0, 0,  0, 0, 0, 0, 0,  142, 0, 0, 0);
         put("dragon_hunter_wand", 4, 0, 0, 0, 16, 0,  0, 0, 0, 16, 0,  0, 0, 10, 0);
         twoH("glacial_temotli", 4, 11, 0, 72, 0, 0,  0, 0, 0, 0, 0,  64, 0, 0, 2);
+        // 2025-2026 boss uniques (wiki DPS calculator equipment data)
+        put("oathplate_helm", 0, 0, 10, 0, -2, -7,  50, 72, 45, 0, 50,  6, 0, 0, 0);
+        put("oathplate_chest", 0, 0, 16, 0, -16, -18,  105, 128, 100, -5, 112,  4, 0, 0, 0);
+        put("oathplate_legs", 0, 0, 12, 0, -12, -14,  75, 100, 73, -3, 81,  2, 0, 0, 0);
+        put("soulflame_horn", 5, 2, 0, 21, 0, 0,  0, 7, 3, 11, 0,  23, 0, 1, 0);
+        put("eye_of_ayak", 3, 0, 0, 0, 30, 0,  1, 5, 5, 10, 0,  0, 0, 0, 2);
+        put("avernic_treads", 0, 5, 5, 5, 11, 15,  21, 25, 25, 10, 10,  4, 2, 1, 0);
+        put("mooleta", 0, 5, 7, 7, -1, -1,  4, 8, 8, -2, -1,  1, 0, 0, 0);
+        twoH("crimson_kisten", 4, 0, 0, 80, 0, 0,  0, 0, 0, 0, 0,  56, 0, 0, 0);
         put("sunfire_fanatic_helm", 0, 0, 0, 0, -6, -3,  30, 32, 27, -1, 30,  0, 0, 0, 6);
         put("sunfire_fanatic_cuirass", 0, 0, 0, 0, -30, -15,  82, 80, 72, -6, 80,  0, 0, 0, 10);
         put("sunfire_fanatic_chausses", 0, 0, 0, 0, -4, -11,  51, 49, 47, -4, 49,  0, 0, 0, 8);

@@ -121,4 +121,80 @@ class BossDropRatesTest {
         assertEquals(5000, Pets.engineRate("corporeal_beast"));
         assertEquals(2560, Pets.engineRate("abyssal_sire"));
     }
+
+    @Test
+    void modernBossStats() {
+        BossDef yama = ContentRegistry.boss("yama");
+        assertEquals(1238, yama.combatLevel);
+        assertEquals(2500, yama.hitpoints);
+        assertEquals(333, yama.defenceBonus(com.runecraft.osrs.AttackType.CRUSH));
+        assertTrue(yama.hasAttribute("demon"));
+        assertEquals(2, yama.phases.size());
+        BossDef doom = ContentRegistry.boss("doom_of_mokhaiotl");
+        assertEquals(908, doom.combatLevel);
+        assertEquals(625, doom.hitpoints);
+        assertEquals(99, doom.attacks.stream().filter(a -> a.name().equals("charge")).findFirst().orElseThrow().maxHit());
+        assertTrue(doom.attacks.stream().filter(a -> a.name().equals("charge")).findFirst().orElseThrow().telegraphTicks() >= 3);
+        assertEquals(50000, ContentRegistry.boss("gemstone_crab").hitpoints);
+        assertFalse(ContentRegistry.boss("gemstone_crab").aggressive);
+        assertEquals(235, ContentRegistry.boss("shellbane_gryphon").combatLevel);
+        assertEquals(51, ContentRegistry.boss("shellbane_gryphon").slayerLevel);
+        assertEquals(30, ContentRegistry.boss("brutus").combatLevel);
+        assertEquals(58, ContentRegistry.boss("brutus").hitpoints);
+        assertEquals(1224, ContentRegistry.boss("demonic_brutus").combatLevel);
+        assertEquals(750, ContentRegistry.boss("demonic_brutus").hitpoints);
+        assertEquals(1500, ContentRegistry.boss("maggot_king").hitpoints);
+        // Amoxliatl is the post-quest boss (520 HP), magic only.
+        assertEquals(520, ContentRegistry.boss("amoxliatl").hitpoints);
+        assertTrue(ContentRegistry.boss("amoxliatl").attacks.stream().allMatch(a -> a.style() == com.runecraft.osrs.AttackType.MAGIC));
+    }
+
+    @Test
+    void modernBossDropRates() {
+        assertEquals(300, rate("yama", "soulflame_horn"));
+        for (String piece : new String[]{"oathplate_helm", "oathplate_chest", "oathplate_legs"}) {
+            assertEquals(600, rate("yama", piece));
+        }
+        assertEquals(17, rate("yama", "dossier"));
+        for (String u : new String[]{"mokhaiotl_cloth", "eye_of_ayak", "avernic_treads"}) {
+            assertEquals(540, rate("doom_of_mokhaiotl", u));
+        }
+        assertEquals(30, rate("brutus", "mooleta"));
+        assertEquals(150, rate("brutus", "cow_slippers"));
+        assertEquals(1, rate("demonic_brutus", "brutus_slippers"));
+        assertEquals(340, rate("maggot_king", "elder_venator_fang"));
+        assertEquals(520, rate("maggot_king", "crimson_kisten"));
+        // Varlamore bosses (solo, full contribution)
+        assertEquals(105, rate("the_hueycoatl", "dragon_hunter_wand"));
+        assertEquals(90, rate("the_hueycoatl", "tome_of_earth"));
+        assertEquals(25, rate("amoxliatl", "pendant_of_ates"));
+        assertEquals(100, rate("amoxliatl", "glacial_temotli"));
+        assertEquals(16, rate("branda_the_fire_queen", "giantsoul_amulet"));
+        assertEquals(75, rate("branda_the_fire_queen", "fire_element_staff_crown"));
+        // Pets
+        assertEquals(2500, Pets.engineRate("yama"));
+        assertEquals(250, Pets.engineRate("doom_of_mokhaiotl"));
+        assertEquals(1000, Pets.engineRate("brutus"));
+        assertEquals(400, Pets.engineRate("demonic_brutus"));
+        assertEquals(3500, Pets.engineRate("maggot_king"));
+        // Their uniques fill collection log pages.
+        assertTrue(CollectionLogData.pages().stream().anyMatch(p -> p.name().equals("Yama")
+                && p.items().containsAll(List.of("soulflame_horn", "oathplate_helm", "oathplate_chest", "oathplate_legs", "pet_yami"))));
+        assertTrue(CollectionLogData.pages().stream().anyMatch(p -> p.name().equals("Doom of Mokhaiotl")
+                && p.items().containsAll(List.of("mokhaiotl_cloth", "eye_of_ayak", "avernic_treads", "pet_dom"))));
+    }
+
+    @Test
+    void modernUniqueStats() {
+        com.runecraft.osrs.EquipmentStats chest = com.runecraft.osrs.ItemCatalog.get("oathplate_chest").equipment().stats();
+        assertEquals(128, chest.slashDefence());
+        assertEquals(4, chest.meleeStrength());
+        com.runecraft.osrs.EquipmentStats eye = com.runecraft.osrs.ItemCatalog.get("eye_of_ayak").equipment().stats();
+        assertEquals(30, eye.magicAttack());
+        assertEquals(3, com.runecraft.osrs.ItemCatalog.get("eye_of_ayak").equipment().attackSpeed());
+        assertEquals(15, com.runecraft.osrs.ItemCatalog.get("avernic_treads").equipment().stats().rangedAttack());
+        assertEquals(56, com.runecraft.osrs.ItemCatalog.get("crimson_kisten").equipment().stats().meleeStrength());
+        assertTrue(com.runecraft.osrs.data.EquipmentBonuses.twoHanded("crimson_kisten"));
+        assertEquals(23, com.runecraft.osrs.ItemCatalog.get("soulflame_horn").equipment().stats().meleeStrength());
+    }
 }

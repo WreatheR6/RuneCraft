@@ -438,6 +438,31 @@ public final class BossItems {
         items.add("sunfire_splinters", "Sunfire splinters", Kind.SIMPLE, "shard", 0xE0A030).value(1).stack(64000)
                 .examine("Smouldering splinters of sunfire.");
         pet(items, "pet_smol_heredit", "Smol heredit", "Sol Heredit", 0xC0A040);
+
+        ModernBosses.items(items);
+    }
+
+    // Package-private access for ModernBosses' item block.
+    static ItemDef weaponItem(ItemSink items, String id, String name, Kind kind, String shape, int color, int value,
+                              EquipmentStats s, int speed, AttackType type, WeaponClass wc, Object... req) {
+        return weapon(items, id, name, kind, shape, color, value, s, speed, type, wc, req);
+    }
+
+    static ItemDef wearItem(ItemSink items, String id, String name, Kind kind, String shape, int color, int value, Slot slot,
+                            EquipmentStats s, Object... req) {
+        return wear(items, id, name, kind, shape, color, value, slot, s, req);
+    }
+
+    static ItemDef simpleItem(ItemSink items, String id, String name, String shape, int color, int value, String examine) {
+        return simple(items, id, name, shape, color, value, examine);
+    }
+
+    static void petItem(ItemSink items, String id, String name, String boss, int color) {
+        pet(items, id, name, boss, color);
+    }
+
+    static void jarItem(ItemSink items, String id, String name, int color) {
+        jar(items, id, name, color);
     }
 
     /** Combinations and crafting of boss uniques. */

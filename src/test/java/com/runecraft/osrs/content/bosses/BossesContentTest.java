@@ -46,7 +46,8 @@ class BossesContentTest {
                 "alchemical_hydra_red", "alchemical_hydra_enraged", "dusk", "dawn", "corporeal_beast", "skotizo", "hespori",
                 "crystalline_hunllef", "corrupted_hunllef", "the_nightmare", "phosanis_nightmare", "phantom_muspah", "duke_sucellus",
                 "the_leviathan", "the_whisperer", "vardorvis", "scurrius", "araxxor", "the_hueycoatl", "amoxliatl",
-                "branda_the_fire_queen", "eldric_the_ice_king", "zalcano", "the_mimic", "sol_heredit"}) {
+                "branda_the_fire_queen", "eldric_the_ice_king", "zalcano", "the_mimic", "sol_heredit", "yama", "doom_of_mokhaiotl",
+                "gemstone_crab", "shellbane_gryphon", "brutus", "demonic_brutus", "maggot_king"}) {
             assertNotNull(ContentRegistry.boss(id), id);
         }
     }
@@ -163,7 +164,8 @@ class BossesContentTest {
                 pets.add(b.pet);
             }
             boolean main = !b.raidOnly || b.id.startsWith("dagannoth");
-            if (main && !b.id.equals("the_mimic") && !b.id.equals("hespori")) {
+            // The Gemstone Crab is an AFK gem boss with no pet or collection log page.
+            if (main && !b.id.equals("the_mimic") && !b.id.equals("hespori") && !b.id.equals("gemstone_crab")) {
                 assertNotNull(b.pet, b.id + " has no pet");
                 if (!b.id.equals("giant_mole")) {
                     assertTrue(b.drops.stream().anyMatch(d -> d.rarity() >= 24), b.id + " has no uniques for its collection log");
@@ -278,7 +280,8 @@ class BossesContentTest {
     void placesAreRealCoordinates() {
         for (PlaceDef p : module.places()) {
             assertTrue(p.osrsX() > 1000 && p.osrsX() < 4000, p.id());
-            assertTrue(p.osrsY() > 2500 && p.osrsY() < 6500, p.id());
+            // The Sailing islands (the Great Conch) lie south of the old map edge.
+            assertTrue(p.osrsY() > 2300 && p.osrsY() < 6500, p.id());
         }
         PlaceDef zul = ContentRegistry.place("zul_andra");
         assertEquals(2200, zul.osrsX());

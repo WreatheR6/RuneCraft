@@ -105,6 +105,11 @@ public final class Pets {
         boss("pet_huberte", "Huberte", "the_hueycoatl", 2.6f, "the_hueycoatl", 400);
         boss("pet_moxi", "Moxi", "amoxliatl", 1.4f, "amoxliatl", 3000);
         boss("pet_bran", "Bran", "branda_the_fire_queen", 2.6f, "branda_the_fire_queen", 3000);
+        boss("pet_yami", "Yami", "yama", 3.4f, "yama", 2500);
+        boss("pet_dom", "Dom", "doom_of_mokhaiotl", 2.4f, "doom_of_mokhaiotl", 250); // delve 9+ rate
+        boss("pet_gull", "Gull", "shellbane_gryphon", 2.0f, "shellbane_gryphon", 3000); // approx
+        boss("pet_beef", "Beef", "brutus", 1.8f, "brutus", 1000, "demonic_brutus", 400);
+        boss("pet_maggot_marquess", "Maggot marquess", "maggot_king", 2.6f, "maggot_king", 3500);
         boss("tzrek_jad", "TzRek-Jad", "jaltok_jad", 2.6f, "tztok_jad", 200);
         // --- Raids (raids module rolls these from its own reward logic) ---
         add("olmlet", "Olmlet", Source.RAID, "great_olm", 2.6f, false, 0, null, "1/53 of a Chambers of Xeric purple", "great_olm", 0);

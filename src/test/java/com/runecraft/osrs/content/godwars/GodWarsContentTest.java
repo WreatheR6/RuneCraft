@@ -107,7 +107,7 @@ class GodWarsContentTest {
         assertEquals(580, kree.combatLevel);
         assertEquals(255, kree.hitpoints);
         assertEquals(3, kree.attackSpeed);
-        assertEquals(71, maxHit(kree, "tornado"));
+        assertEquals(69, maxHit(kree, "tornado")); // wiki infobox: 69 (ranged)
         assertEquals(21, maxHit(kree, "wind blast"));
         assertEquals(26, maxHit(kree, "talon swipe"));
         assertTrue(kree.immuneTo.contains(AttackType.SLASH) && !kree.immuneTo.contains(AttackType.RANGED));
@@ -125,7 +125,7 @@ class GodWarsContentTest {
         BossDef z = boss("commander_zilyana");
         assertEquals(596, z.combatLevel);
         assertEquals(2, z.attackSpeed);
-        assertEquals(31, maxHit(z, "saradomin sword"));
+        assertEquals(27, maxHit(z, "saradomin sword")); // wiki infobox: 27 (melee)
         assertEquals(20, maxHit(z, "saradomin strike"));
         assertEquals(127, rarity(z, "saradomin_sword"));
         assertEquals(254, rarity(z, "saradomins_light"));

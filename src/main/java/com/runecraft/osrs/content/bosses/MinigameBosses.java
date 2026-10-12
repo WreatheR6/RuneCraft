@@ -78,7 +78,8 @@ public final class MinigameBosses {
         return BossDef.of("crystalline_hunllef", "Crystalline Hunllef").level(674).stats(600, 240, 240, 240, 240, 240).speed(5)
                 .defenceBonus(20, 20, 20, 20, 20)
                 .attack(HUNLLEF_RANGED).attack(HUNLLEF_MAGIC).attack(HUNLLEF_STOMP)
-                .drops(Drop.of("crystal_shard", 3, 7, 1), Drop.of("crystal_weapon_seed", 1, 1, 50), Drop.of("crystal_armour_seed", 1, 1, 50),
+                // Wiki: The Gauntlet's chest gives each crystal seed at 1/120 and the enhanced seed at 1/2,000.
+                .drops(Drop.of("crystal_shard", 3, 7, 1), Drop.of("crystal_weapon_seed", 1, 1, 120), Drop.of("crystal_armour_seed", 1, 1, 120),
                         Drop.of("enhanced_crystal_weapon_seed", 1, 1, 2000), Drop.of("runite_bar", 1, 2, 8),
                         Drop.of("death_rune", 50, 100, 8), Drop.of("coins", 5000, 15000, 4), Drop.of("clue_scroll_elite", 1, 1, 23))
                 .pet("pet_youngllef").at("the_gauntlet").arena(12, "ice")
@@ -90,7 +91,7 @@ public final class MinigameBosses {
                 .defenceBonus(90, 90, 90, 90, 90)
                 .attack(CORRUPTED_RANGED).attack(CORRUPTED_MAGIC).attack(HUNLLEF_STOMP)
                 .drops(Drop.of("crystal_shard", 5, 9, 1), Drop.of("gauntlet_cape", 1, 1, 1), Drop.of("crystal_weapon_seed", 1, 1, 50),
-                        Drop.of("crystal_armour_seed", 1, 1, 45), Drop.of("enhanced_crystal_weapon_seed", 1, 1, 400),
+                        Drop.of("crystal_armour_seed", 1, 1, 50), Drop.of("enhanced_crystal_weapon_seed", 1, 1, 400),
                         Drop.of("runite_bar", 2, 4, 8), Drop.of("blood_rune", 100, 200, 8), Drop.of("coins", 10000, 30000, 4),
                         Drop.of("clue_scroll_elite", 1, 1, 20))
                 .pet("pet_youngllef").at("the_gauntlet").arena(12, "lava")
