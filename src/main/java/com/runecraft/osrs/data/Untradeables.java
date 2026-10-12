@@ -50,6 +50,12 @@ public final class Untradeables {
             IDS.add("reward_casket_" + tier);
         }
         add("puzzle_box", "light_box", "bloodhound");
+        // Champions' Challenge: every champion scroll and the Champion's cape (OSRS wiki: untradeable).
+        for (String c : new String[]{"goblin", "imp", "skeleton", "zombie", "ghoul", "giant", "hobgoblin", "jogre", "lesser_demon",
+                "earth_warrior"}) {
+            IDS.add(c + "_champion_scroll");
+        }
+        add("leons_champion_scroll", "champions_cape");
         // Boss/slayer items that become untradeable once made.
         add("slayer_helmet", "slayer_helmet_i", "abyssal_tentacle", "ferocious_gloves", "crystal_helm", "crystal_body",
                 "crystal_legs", "harmonised_nightmare_staff", "volatile_nightmare_staff", "eldritch_nightmare_staff",
