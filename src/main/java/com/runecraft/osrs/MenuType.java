@@ -16,7 +16,9 @@ public enum MenuType {
     SHOP_RUNES("Aubury's Rune Shop"),
     SHOP_WEAPONS("Varrock Swordshop"),
     SHOP_TOOLS("Bob's Brilliant Axes"),
-    SHOP_ARCHERY("Lowe's Archery Emporium");
+    SHOP_ARCHERY("Lowe's Archery Emporium"),
+    /** Fermenting vats (Cooking: brewing). Appended last: menus are sent to the client by ordinal. */
+    BREWING("What would you like to brew?");
 
     private final String title;
 

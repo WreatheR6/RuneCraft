@@ -293,6 +293,8 @@ public final class SysMenus {
     public static void npcContact(ServerPlayerEntity p) {
         SysNet.Screen s = new SysNet.Screen("npc_contact", "NPC Contact");
         s.line("Who would you like to contact?");
+        // OSRS: the Dark Mage in the Abyss repairs essence pouches over NPC Contact.
+        s.button(com.runecraft.osrs.content.skilling.RunecraftData.DARK_MAGE, "Dark Mage");
         int n = 0;
         for (ClueScrolls.Npc npc : ClueService.npcs()) {
             if (n++ >= 24) {
@@ -310,6 +312,12 @@ public final class SysMenus {
         }
         Spellbooks.Spell spell = Spellbooks.get("npc_contact");
         if (!SpellService.canCast(p, spell, false)) {
+            return;
+        }
+        if (npcId.equals(com.runecraft.osrs.content.skilling.RunecraftData.DARK_MAGE)) {
+            SpellService.pay(p, spell);
+            Msg.action(p, "You contact the Dark Mage through the astral plane.");
+            com.runecraft.content.skilling.EssencePouches.darkMage(p);
             return;
         }
         for (Entity e : world.iterateEntities()) {

@@ -7,6 +7,7 @@ import com.runecraft.osrs.Recipe;
 import com.runecraft.osrs.Rune;
 import com.runecraft.osrs.content.BlockDef;
 import com.runecraft.osrs.content.ItemSink;
+import com.runecraft.osrs.content.NpcDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.RuneAltar;
 
@@ -83,6 +84,39 @@ public final class RunecraftData extends SkillingPart {
             new Pouch("small_pouch", "Small pouch", 1, 3), new Pouch("medium_pouch", "Medium pouch", 25, 6),
             new Pouch("large_pouch", "Large pouch", 50, 9), new Pouch("giant_pouch", "Giant pouch", 75, 12),
             new Pouch("colossal_pouch", "Colossal pouch", 85, 40));
+
+    /**
+     * Pouch decay (OSRS Wiki): pouches degrade by the essence stored in them since their last repair. The small
+     * pouch never degrades; the medium holds 3 after 270 essence; the large 7 after 261, then 5 and 3; the giant
+     * loses 3 after 130 and one more every couple of fills. Each stage is {essence stored, capacity}. Approx: the
+     * later large/giant stages and the colossal pouch's thresholds are estimates, and degraded pouches stop at
+     * their last stage instead of disintegrating. The Dark Mage (NPC Contact) repairs them for free.
+     */
+    public static int[][] decayStages(String pouchId) {
+        return switch (pouchId) {
+            case "medium_pouch" -> new int[][]{{270, 3}};
+            case "large_pouch" -> new int[][]{{261, 7}, {324, 5}, {369, 3}};
+            case "giant_pouch" -> new int[][]{{130, 9}, {155, 8}, {180, 7}, {205, 6}, {230, 5}, {255, 4}, {280, 3}};
+            case "colossal_pouch" -> new int[][]{{1020, 35}, {1120, 30}, {1220, 25}, {1320, 20}};
+            default -> new int[0][];
+        };
+    }
+
+    /** Current capacity of a pouch that has stored {@code used} essence since its last repair. */
+    public static int capacity(Pouch p, int used) {
+        int cap = p.capacity();
+        for (int[] stage : decayStages(p.id())) {
+            if (used >= stage[0]) {
+                cap = stage[1];
+            }
+        }
+        return cap;
+    }
+
+    /** True once the pouch has started to decay. */
+    public static boolean degraded(Pouch p, int used) {
+        return capacity(p, used) < p.capacity();
+    }
 
     public static Pouch pouch(String id) {
         for (Pouch p : POUCHES) {
@@ -161,8 +195,19 @@ public final class RunecraftData extends SkillingPart {
         return List.of(BlockDef.scripted("ourania_altar", "Ourania altar", 0x6A4A8A, "altar"));
     }
 
+    /** The Dark Mage, who repairs essence pouches (talk to him, or reach him with NPC Contact). */
+    public static final String DARK_MAGE = "dark_mage";
+
     @Override
     public List<PlaceDef> places() {
-        return List.of(PlaceDef.of("ourania_cave", "Ourania Cave", 2453, 3231, PlaceDef.Style.CAVE, List.of("ourania_altar")));
+        return List.of(PlaceDef.of("ourania_cave", "Ourania Cave", 2453, 3231, PlaceDef.Style.CAVE, List.of("ourania_altar")),
+                // Approx: in OSRS he stands in the centre of the Abyss (NPCs aren't placed underground here), so he waits a
+                // little west of the Abyss shaft by the Mage of Zamorak's spot.
+                PlaceDef.of("abyss_dark_mage", "Dark Mage", 3094, 3557, PlaceDef.Style.NONE, List.of()));
+    }
+
+    @Override
+    public List<NpcDef> npcs() {
+        return List.of(NpcDef.of(DARK_MAGE, "Dark Mage", "abyss_dark_mage", 0, 0, 0xC8A080, 0x2A1A3A, 0x1A1A2A, 0x2A1A3A));
     }
 }

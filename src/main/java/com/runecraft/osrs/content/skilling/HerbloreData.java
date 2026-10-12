@@ -13,8 +13,9 @@ import java.util.function.Consumer;
  * Herblore: super combat, stamina, super energy, super antipoison, antidote+/++, anti-venom(+),
  * combat/agility/fishing/hunter potions, zamorak brew, bastion/battlemage, divine potions, antifire
  * (CommonItems' antifire_potion / extended_antifire) and super antifire, weapon poisons, guthix rest
- * and compost potion, with their secondaries. Levels/XP are OSRS values (XP for 4-dose recipes).
- * Effects are applied by SkillingHooks through {@link Effect}.
+ * and compost potion, Zogre Flesh Eaters' relicym's balm and sanfew serum, serum 207, the huasca prayer
+ * regeneration potion and the barbarian mixes ({@link #MIXES}), with their secondaries. Levels/XP are OSRS
+ * values (XP for 4-dose recipes). Effects are applied by SkillingHooks through {@link Effect}.
  */
 public final class HerbloreData extends SkillingPart {
 
@@ -24,7 +25,19 @@ public final class HerbloreData extends SkillingPart {
         COMBAT, AGILITY, FISHING, HUNTER, ZAMORAK_BREW, BASTION, BATTLEMAGE, DIVINE_SUPER_ATTACK, DIVINE_SUPER_STRENGTH,
         DIVINE_SUPER_DEFENCE, DIVINE_RANGING, DIVINE_MAGIC, DIVINE_SUPER_COMBAT, DIVINE_BASTION, DIVINE_BATTLEMAGE,
         SUPER_ANTIFIRE, EXTENDED_SUPER_ANTIFIRE, WEAPON_POISON, WEAPON_POISON_PLUS, WEAPON_POISON_PLUS_PLUS, GUTHIX_REST,
-        COMPOST;
+        COMPOST,
+        /** Super restore that also cures poison (90 s immunity) and disease. */
+        SANFEW,
+        /** Cures disease (RuneCraft has no disease: clears weakness, hunger and nausea instead). */
+        RELICYMS_BALM,
+        /** Shades of Mort'ton cure for the Afflicted; not drinkable. */
+        SERUM_207,
+        /** One Prayer point every 12 ticks for 8 minutes (66 points per dose). */
+        PRAYER_REGENERATION;
+
+        /** Prayer regeneration: game ticks per Prayer point and duration per dose (OSRS Wiki). */
+        public static final int REGEN_INTERVAL = 12;
+        public static final int REGEN_DURATION = 800;
 
         /** Applies the stat part of one dose (boosts/drains). Returns prayer points restored. */
         public int apply(SkillSet s) {
@@ -53,6 +66,15 @@ public final class HerbloreData extends SkillingPart {
                 case BATTLEMAGE, DIVINE_BATTLEMAGE -> {
                     s.applyBoost(Skill.MAGIC, 4, 0.0);
                     s.applyBoost(Skill.DEFENCE, 5, 0.15);
+                }
+                case SANFEW -> {
+                    // Same restore as a super restore: 8 + 25% of every stat except Hitpoints and Prayer.
+                    for (Skill sk : Skill.values()) {
+                        if (sk != Skill.HITPOINTS && sk != Skill.PRAYER) {
+                            s.restore(sk, 8, 0.25);
+                        }
+                    }
+                    return 8 + s.level(Skill.PRAYER) / 4;
                 }
                 case ZAMORAK_BREW -> {
                     s.applyBoost(Skill.ATTACK, 2, 0.20);
@@ -122,7 +144,61 @@ public final class HerbloreData extends SkillingPart {
             new ModPotion("weapon_poison_plus", "Weapon poison(+)", Effect.WEAPON_POISON_PLUS, 0x2A4A1A, 300),
             new ModPotion("weapon_poison_plus_plus", "Weapon poison(++)", Effect.WEAPON_POISON_PLUS_PLUS, 0x1A3A0A, 500),
             new ModPotion("guthix_rest", "Guthix rest", Effect.GUTHIX_REST, 0xA0C080, 100),
-            new ModPotion("compost_potion", "Compost potion", Effect.COMPOST, 0x8A6A3A, 150));
+            new ModPotion("compost_potion", "Compost potion", Effect.COMPOST, 0x8A6A3A, 150),
+            new ModPotion("sanfew_serum", "Sanfew serum", Effect.SANFEW, 0xD0607A, 300),
+            new ModPotion("relicyms_balm", "Relicym's balm", Effect.RELICYMS_BALM, 0xC0A0D0, 225),
+            new ModPotion("serum_207", "Serum 207", Effect.SERUM_207, 0x6A8AC0, 14),
+            new ModPotion("prayer_regeneration_potion", "Prayer regeneration potion", Effect.PRAYER_REGENERATION, 0x40C0B0, 300));
+
+    /**
+     * A barbarian mix (Barbarian Training's Herblore part): a two-dose potion with roe or caviar added. Each of
+     * its two doses has the base potion's effect and also heals {@code heal} Hitpoints. Roe works up to the
+     * restore mix; caviar works for every mix.
+     */
+    public record Mix(String id, String name, String base, int level, double xp, boolean roe, int heal) {
+    }
+
+    /** OSRS Wiki levels and XP. Heals: 3 for roe mixes and the energy/combat mixes, 6 for the other caviar ones. */
+    public static final List<Mix> MIXES = List.of(
+            new Mix("attack_mix", "Attack mix", "attack_potion", 4, 8.0, true, 3),
+            new Mix("antipoison_mix", "Antipoison mix", "antipoison", 6, 12.0, true, 3),
+            new Mix("relicyms_mix", "Relicym's mix", "relicyms_balm", 9, 14.0, true, 3),
+            new Mix("strength_mix", "Strength mix", "strength_potion", 14, 17.0, true, 3),
+            new Mix("restore_mix", "Restore mix", "restore_potion", 24, 21.0, true, 3),
+            new Mix("energy_mix", "Energy mix", "energy_potion", 29, 23.0, false, 3),
+            new Mix("defence_mix", "Defence mix", "defence_potion", 33, 25.0, false, 6),
+            new Mix("agility_mix", "Agility mix", "agility_potion", 37, 27.0, false, 6),
+            new Mix("combat_mix", "Combat mix", "combat_potion", 40, 28.0, false, 3),
+            new Mix("prayer_mix", "Prayer mix", "prayer_potion", 42, 29.0, false, 6),
+            new Mix("superattack_mix", "Superattack mix", "super_attack", 47, 33.0, false, 6),
+            new Mix("anti_poison_supermix", "Anti-poison supermix", "superantipoison", 51, 35.0, false, 6),
+            new Mix("fishing_mix", "Fishing mix", "fishing_potion", 53, 38.0, false, 6),
+            new Mix("super_energy_mix", "Super energy mix", "super_energy", 56, 39.0, false, 6),
+            new Mix("hunting_mix", "Hunting mix", "hunter_potion", 58, 40.0, false, 6),
+            new Mix("super_str_mix", "Super str. mix", "super_strength", 59, 42.0, false, 6),
+            new Mix("super_restore_mix", "Super restore mix", "super_restore", 67, 48.0, false, 6),
+            new Mix("super_def_mix", "Super def. mix", "super_defence", 71, 50.0, false, 6),
+            new Mix("antidote_plus_mix", "Antidote+ mix", "antidote_plus", 74, 52.0, false, 6),
+            new Mix("antifire_mix", "Antifire mix", "antifire_potion", 75, 53.0, false, 6),
+            new Mix("ranging_mix", "Ranging mix", "ranging_potion", 80, 54.0, false, 6),
+            new Mix("magic_mix", "Magic mix", "magic_potion", 83, 57.0, false, 6),
+            new Mix("zamorak_mix", "Zamorak mix", "zamorak_brew", 85, 58.0, false, 6),
+            new Mix("stamina_mix", "Stamina mix", "stamina_potion", 86, 60.0, false, 6),
+            new Mix("extended_antifire_mix", "Extended antifire mix", "extended_antifire", 91, 61.0, false, 6),
+            new Mix("super_antifire_mix", "Super antifire mix", "super_antifire", 98, 70.0, false, 6),
+            new Mix("extended_super_antifire_mix", "Extended super antifire mix", "extended_super_antifire", 99, 78.0, false, 6));
+
+    /** Doses in a barbarian mix. */
+    public static final int MIX_DOSES = 2;
+
+    public static Mix mix(String id) {
+        for (Mix m : MIXES) {
+            if (m.id().equals(id)) {
+                return m;
+            }
+        }
+        return null;
+    }
 
     public static ModPotion potion(String id) {
         for (ModPotion p : POTIONS) {
@@ -159,7 +235,11 @@ public final class HerbloreData extends SkillingPart {
                 {"poison_ivy_berries", "Poison ivy berries", "3A6A2A", "40"},
                 {"jangerberries", "Jangerberries", "8AA030", "15"},
                 {"volcanic_ash", "Volcanic ash", "5A5A5A", "30"},
-                {"vial_of_blood", "Vial of blood", "8A1010", "150"}};
+                {"vial_of_blood", "Vial of blood", "8A1010", "150"},
+                // Sanfew serum: dropped by nail beasts (Temple Trekking); bought on the Grand Exchange here.
+                {"nail_beast_nails", "Nail beast nails", "C8B8A0", "300"},
+                // Huasca potions: a Mastering Mixology reward; bought on the Grand Exchange here.
+                {"aldarium", "Aldarium", "E0B040", "100"}};
         for (String[] sec : secondaries) {
             simple(s, sec[0], sec[1], "secondary", Integer.parseInt(sec[2], 16), Integer.parseInt(sec[3]));
         }
@@ -170,9 +250,33 @@ public final class HerbloreData extends SkillingPart {
         simple(s, "weapon_poison_plus_plus_unf", "Weapon poison(++) (unf)", "potion_unf", 0x1A3A0A, 60);
         simple(s, "cadantine_blood_potion_unf", "Cadantine blood potion (unf)", "potion_unf", 0x6A1A2A, 80);
         simple(s, "guthix_rest_unf", "Herbal tea mix", "cup", 0xA0C080, 10);
+        simple(s, "rogues_purse_potion_unf", "Rogue's purse potion (unf)", "potion_unf", 0xC0A0D0, 5);
+        simple(s, "mixture_step_1", "Mixture - step 1", "potion", 0xC8607A, 200).stack(1);
+        simple(s, "mixture_step_2", "Mixture - step 2", "potion", 0xCC607A, 250).stack(1);
+        // Ashes left by fires (and dropped by imps); Serum 207's secondary.
+        simple(s, "ashes", "Ashes", "ashes", 0x8A8A8A, 2).examine("A heap of ashes.");
         for (ModPotion p : POTIONS) {
             potion(s, p.id(), p.name(), p.color(), p.value());
         }
+        for (Mix m : MIXES) {
+            potion(s, m.id(), m.name(), mixColor(m), 50 + m.level() * 4).examine("Two doses of " + lower(m.name()) + ".");
+        }
+    }
+
+    /** A mix looks like its base potion, a shade darker. */
+    private static int mixColor(Mix m) {
+        int c = 0x8A8A8A;
+        ModPotion mp = potion(m.base());
+        if (mp != null) {
+            c = mp.color();
+        } else {
+            for (com.runecraft.osrs.data.Potion p : com.runecraft.osrs.data.Potion.values()) {
+                if (p.itemId().equals(m.base())) {
+                    c = p.color();
+                }
+            }
+        }
+        return ((c >> 16 & 0xFF) * 7 / 8) << 16 | ((c >> 8 & 0xFF) * 7 / 8) << 8 | (c & 0xFF) * 7 / 8;
     }
 
     @Override
@@ -236,6 +340,28 @@ public final class HerbloreData extends SkillingPart {
                 .out("anti_venom_plus", 1).ticks(2).build());
         out.accept(r("mix_extended_super_antifire", H, "Extended super antifire", Skill.HERBLORE, 98, 160.0).in("super_antifire", 1)
                 .in("lava_scale_shard", 4).out("extended_super_antifire", 1).ticks(2).build());
+        // Zogre Flesh Eaters: relicym's balm (rogue's purse + snake weed) and the three-step sanfew serum
+        // (OSRS Wiki XP for 4 doses: 57 + 63 + 72).
+        out.accept(r("unf_rogues_purse", H, "Rogue's purse potion (unf)", Skill.HERBLORE, 8, 0).in("rogues_purse", 1)
+                .in("vial_of_water", 1).out("rogues_purse_potion_unf", 1).ticks(1).build());
+        mix(out, "relicyms_balm", 8, 40.0, "rogues_purse_potion_unf", "snake_weed");
+        mix(out, "serum_207", 15, 50.0, "tarromin_potion_unf", "ashes");
+        out.accept(r("mix_sanfew_step_1", H, "Mixture - step 1", Skill.HERBLORE, 65, 57.0).in("super_restore", 1)
+                .in("unicorn_horn_dust", 1).out("mixture_step_1", 1).ticks(2).build());
+        out.accept(r("mix_sanfew_step_2", H, "Mixture - step 2", Skill.HERBLORE, 65, 63.0).in("mixture_step_1", 1)
+                .in("snake_weed", 1).out("mixture_step_2", 1).ticks(2).build());
+        mix(out, "sanfew_serum", 65, 72.0, "mixture_step_2", "nail_beast_nails");
+        // Varlamore: huasca potion (unf) + aldarium.
+        mix(out, "prayer_regeneration_potion", 58, 132.0, "huasca_potion_unf", "aldarium");
+        // Barbarian mixes (roe mixes also take caviar). Approx: the base potion is used whole rather than as a (2).
+        for (Mix m : MIXES) {
+            out.accept(r("mix_" + m.id(), H, m.name(), Skill.HERBLORE, m.level(), m.xp()).in(m.base(), 1)
+                    .in(m.roe() ? "roe" : "caviar", 1).out(m.id(), 1).ticks(1).build());
+            if (m.roe()) {
+                out.accept(r("mix_" + m.id() + "_caviar", H, m.name() + " (caviar)", Skill.HERBLORE, m.level(), m.xp())
+                        .in(m.base(), 1).in("caviar", 1).out(m.id(), 1).ticks(1).build());
+            }
+        }
         // Divine potions: 4-dose base potion + 4 crystal dust (1 per dose); 0.5 XP per dose, 2 XP per potion.
         divine(out, "divine_super_attack", 70, "super_attack");
         divine(out, "divine_super_strength", 70, "super_strength");
