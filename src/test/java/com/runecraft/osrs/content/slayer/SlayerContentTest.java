@@ -173,7 +173,7 @@ class SlayerContentTest {
             assertTrue(ids.add(u.id()), u.id());
             assertTrue(u.target() == null || SlayerCategories.get(u.target()) != null, u.id());
         }
-        assertEquals("pedal_to_the_metals", SlayerRewards.extensionFor("steel_dragons").id());
+        assertEquals("pedal_to_the_metals", SlayerRewards.extensionFor("metal_dragons").id());
         for (List<Drop> table : List.of(SlayerChests.BRIMSTONE_MAIN, SlayerChests.BRIMSTONE_RARE, SlayerChests.LARRAN_MAIN,
                 SlayerChests.LARRAN_RARE)) {
             table.forEach(d -> assertTrue(ItemCatalog.exists(d.item()), d.item()));
@@ -269,7 +269,8 @@ class SlayerContentTest {
         SlayerMasters.Master turael = SlayerMasters.get("turael");
         SlayerMasters.Master spria = SlayerMasters.get("spria");
         assertNotNull(spria);
-        assertEquals(turael.assignments(), spria.assignments().subList(0, turael.assignments().size()));
+        assertEquals(turael.assignments().size() + 1, spria.assignments().size());
+        turael.assignments().forEach(x -> assertNotNull(spria.assignment(x.category()), x.category()));
         assertNotNull(spria.assignment("sourhogs"));
         assertNull(turael.assignment("sourhogs"));
         assertEquals(0, spria.points());

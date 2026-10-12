@@ -120,19 +120,15 @@ public final class SlayerCategories {
         add("waterfiends", "waterfiends", 1, Region.KANDARIN);
         add("earth_warriors", "earth warriors", 1, Region.WILDERNESS);
         add("ice_warriors", "ice warriors", 1, Region.ASGARNIA, Region.WILDERNESS);
-        add("basilisk_knights", "basilisk knights", 60, Region.FREMENNIK_PROVINCE);
         // Dragons
         add("green_dragons", "green dragons", 1, Region.WILDERNESS);
         add("blue_dragons", "blue dragons", 1, Region.ASGARNIA, Region.FELDIP_HILLS);
         add("red_dragons", "red dragons", 1, Region.KARAMJA);
         add("black_dragons", "black dragons", 1, Region.ASGARNIA, Region.WILDERNESS);
         add("lava_dragons", "lava dragons", 1, Region.WILDERNESS);
-        add("bronze_dragons", "bronze dragons", 1, Region.KARAMJA);
-        add("iron_dragons", "iron dragons", 1, Region.KARAMJA);
-        add("steel_dragons", "steel dragons", 1, Region.KARAMJA);
-        add("mithril_dragons", "mithril dragons", 1, Region.KANDARIN);
-        add("adamant_dragons", "adamant dragons", 1, Region.UNCHARTED_ISLES);
-        add("rune_dragons", "rune dragons", 1, Region.UNCHARTED_ISLES);
+        // Bronze, iron, steel, mithril, adamant and rune dragons are one task since August 2025.
+        add("metal_dragons", "metal dragons", 1, Region.KARAMJA, Region.KANDARIN, Region.UNCHARTED_ISLES);
+        add("frost_dragons", "frost dragons", 1, Region.UNCHARTED_ISLES);
         // Provided by other modules (God Wars, TzHaar, Revenants...). Only assigned once such a creature exists.
         add("aviansies", "aviansies", 1, Region.TROLL_COUNTRY);
         add("tzhaar", "TzHaar", 1, Region.KARAMJA);
@@ -153,6 +149,23 @@ public final class SlayerCategories {
         add("mammoths", "mammoths", 1, Region.WILDERNESS);
         add("bandits", "bandits", 1, Region.WILDERNESS, Region.KHARIDIAN_DESERT);
         add("chaos_druids", "chaos druids", 1, Region.WILDERNESS, Region.KANDARIN);
+        // Newer OSRS tasks (wiki master tables). Assigned once one of their creatures exists in RuneCraft.
+        add("crabs", "crabs", 1, Region.FREMENNIK_PROVINCE, Region.UNCHARTED_ISLES);
+        add("werewolves", "werewolves", 1, Region.MORYTANIA);
+        add("gryphons", "gryphons", 51, Region.UNCHARTED_ISLES);
+        add("custodian_stalkers", "custodian stalkers", 54, Region.UNCHARTED_ISLES);
+        add("lesser_nagua", "lesser nagua", 48, Region.UNCHARTED_ISLES);
+        add("warped_creatures", "warped creatures", 56, Region.KANDARIN);
+        add("araxytes", "araxytes", 92, Region.MORYTANIA);
+        add("aquanites", "aquanites", 78, Region.UNCHARTED_ISLES);
+        add("scabarites", "scabarites", 1, Region.KHARIDIAN_DESERT);
+        add("suqahs", "suqahs", 1, Region.UNCHARTED_ISLES);
+        // Krystilia's Wilderness-only tasks.
+        add("black_knights", "black knights", 1, Region.WILDERNESS);
+        add("dark_warriors", "dark warriors", 1, Region.WILDERNESS);
+        add("magic_axes", "magic axes", 1, Region.WILDERNESS);
+        add("pirates", "pirates", 1, Region.WILDERNESS);
+        add("rogues", "rogues", 1, Region.WILDERNESS);
         // Boss tasks ("Like a Boss"): the masters' "bosses" line turns into one boss_<id> task.
         add(SlayerBossTasks.CATEGORY, "bosses", 1, Region.WILDERNESS, Region.TROLL_COUNTRY);
         for (SlayerBossTasks.BossTask t : SlayerBossTasks.all()) {
@@ -174,6 +187,10 @@ public final class SlayerCategories {
         member("zombies", "monkey_zombie");
         member("aviansies", "gwd_aviansie", "gwd_aviansie_elite");
         member("tzhaar", "tzhaar_ket", "tzhaar_xil", "tzhaar_mej", "tzhaar_hur_citizen");
+        member("crabs", "rock_crab", "sand_crab", "king_sand_crab", "ammonite_crab");
+        member("lesser_nagua", "sulphur_nagua", "frost_nagua");
+        member("suqahs", "suqah");
+        member("werewolves", "gwd_werewolf");
         member("revenants", "revenant_imp", "revenant_goblin", "revenant_pyrefiend", "revenant_hobgoblin",
                 "revenant_cyclops", "revenant_hellhound", "revenant_demon", "revenant_ork", "revenant_dark_beast",
                 "revenant_knight", "revenant_dragon");

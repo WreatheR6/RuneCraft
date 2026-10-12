@@ -1,0 +1,14 @@
+# OSRS Wiki "Slayer reward point" table (raw wikitext, July 2026 snapshot from Kiyogitpy/osrs-wiki-data):
+# master|per task|every 10th|every 50th|every 100th|every 250th|every 1,000th|elite diary per task (0 = none).
+# No points for the first four tasks of a streak; Krystilia keeps a separate streak; Turael's task change
+# resets the streak to zero. Elite diaries: Kourend & Kebos for Konar, Western Provinces for Nieve/Steve.
+turael|0|0|0|0|0|0|0
+spria|0|0|0|0|0|0|0
+mazchna|6|30|90|150|210|300|0
+vannaka|8|40|120|200|280|400|0
+chaeldar|10|50|150|250|350|500|0
+nieve|12|60|180|300|420|600|15
+steve|12|60|180|300|420|600|15
+duradel|15|75|225|375|525|750|0
+konar|18|90|270|450|630|900|20
+krystilia|25|125|375|625|875|1250|0

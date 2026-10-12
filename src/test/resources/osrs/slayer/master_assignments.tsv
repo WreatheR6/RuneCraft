@@ -1,0 +1,337 @@
+# OSRS Wiki slayer master assignment tables (Turael, Spria, Mazchna, Vannaka, Chaeldar, Konar quo Maten,
+# Nieve/Steve, Duradel, Krystilia), raw wikitext snapshot of July 2026 (Kiyogitpy/osrs-wiki-data, pages
+# "<Master>" and "<Master>/Slayer assignments"), normalised to RuneCraft task category ids.
+# quests: ids of quests that must be complete; a leading ~ means started/partially completed is enough.
+# other: skill requirements RuneCraft does not enforce. Krystilia's unlock column is derived from the
+# page footnotes (I Wildy More Slayer, Watch the birdie, Like a boss).
+master	wiki_task	category	weight	min	max	ext_min	ext_max	slayer	combat	unlock	quests	other
+turael	Banshees	banshees	8	15	30	0	0	15	20		priest_in_peril	
+turael	Bats	bats	7	15	30	0	0	0	5			
+turael	Bears	bears	7	10	20	0	0	0	13			
+turael	Birds	birds	6	15	30	0	0	0	0			
+turael	Cave bugs	cave_bugs	8	10	30	0	0	7	0			
+turael	Cave crawlers	cave_crawlers	8	15	30	0	0	10	10			
+turael	Cave slime	cave_slime	8	10	20	0	0	17	15			
+turael	Cows	cows	8	15	30	0	0	0	0			
+turael	Crawling Hands	crawling_hands	8	15	30	0	0	5	0		priest_in_peril	
+turael	Dogs	dogs	7	15	30	0	0	0	15			
+turael	Dwarves	dwarves	7	10	25	0	0	0	6			
+turael	Ghosts	ghosts	7	15	30	0	0	0	13			
+turael	Goblins	goblins	7	15	30	0	0	0	0			
+turael	Icefiends	icefiends	8	15	20	0	0	0	20			
+turael	Kalphite	kalphite	6	15	30	0	0	0	15			
+turael	Lizards	lizards	8	15	30	0	0	22	0			
+turael	Minotaurs	minotaurs	7	10	20	0	0	0	7			
+turael	Monkeys	monkeys	6	15	30	0	0	0	0			
+turael	Rats	rats	7	15	30	0	0	0	0			
+turael	Scorpions	scorpions	7	15	30	0	0	0	7			
+turael	Skeletons	skeletons	7	15	30	0	0	0	15			
+turael	Spiders	spiders	6	15	30	0	0	0	0			
+turael	Wolves	wolves	7	15	30	0	0	0	20			
+turael	Zombies	zombies	7	15	30	0	0	0	10			
+spria	Banshees	banshees	8	15	30	0	0	15	20		priest_in_peril	
+spria	Bats	bats	7	15	30	0	0	0	5			
+spria	Bears	bears	7	10	20	0	0	0	13			
+spria	Birds	birds	6	15	30	0	0	0	0			
+spria	Cave bugs	cave_bugs	8	10	30	0	0	7	0			
+spria	Cave crawlers	cave_crawlers	8	15	30	0	0	10	10			
+spria	Cave slime	cave_slime	8	10	20	0	0	17	15			
+spria	Cows	cows	8	15	30	0	0	0	5			
+spria	Crawling Hands	crawling_hands	8	15	30	0	0	5	0		priest_in_peril	
+spria	Dogs	dogs	7	15	30	0	0	0	15			
+spria	Dwarves	dwarves	7	10	25	0	0	0	6			
+spria	Ghosts	ghosts	7	15	30	0	0	0	13			
+spria	Goblins	goblins	7	15	30	0	0	0	0			
+spria	Icefiends	icefiends	8	15	20	0	0	0	20			
+spria	Kalphites	kalphite	6	15	30	0	0	0	15			
+spria	Lizards	lizards	8	15	30	0	0	22	0			
+spria	Minotaurs	minotaurs	7	10	20	0	0	0	7			
+spria	Monkeys	monkeys	6	15	30	0	0	0	0			
+spria	Rats	rats	7	15	30	0	0	0	0			
+spria	Scorpions	scorpions	7	15	30	0	0	0	7			
+spria	Skeletons	skeletons	7	15	30	0	0	0	15			
+spria	Sourhogs	sourhogs	6	15	25	0	0	0	0		a_porcine_of_interest	
+spria	Spiders	spiders	6	15	30	0	0	0	0			
+spria	Wolves	wolves	7	15	30	0	0	0	20			
+spria	Zombies	zombies	7	15	30	0	0	0	10			
+mazchna	Banshees	banshees	8	30	50	0	0	15	20		priest_in_peril	
+mazchna	Bats	bats	7	30	50	0	0	0	5			
+mazchna	Bears	bears	6	30	50	0	0	0	13			
+mazchna	Catablepon	catablepon	8	20	30	0	0	0	35			
+mazchna	Cave bugs	cave_bugs	8	10	20	0	0	7	0			
+mazchna	Cave crawlers	cave_crawlers	8	30	50	0	0	10	10			
+mazchna	Cave slime	cave_slime	8	10	20	0	0	17	15			
+mazchna	Cockatrice	cockatrice	8	30	50	0	0	25	25			defence 20
+mazchna	Crabs	crabs	8	30	50	0	0	1	0			
+mazchna	Crawling Hands	crawling_hands	8	30	50	0	0	5	0		priest_in_peril	
+mazchna	Dogs	dogs	7	30	50	0	0	0	15			
+mazchna	Flesh Crawlers	flesh_crawlers	7	15	25	0	0	0	15			
+mazchna	Ghosts	ghosts	7	30	50	0	0	0	13			
+mazchna	Ghouls	ghouls	7	10	20	0	0	0	25		priest_in_peril	
+mazchna	Hill Giants	hill_giants	7	30	50	0	0	0	25			
+mazchna	Hobgoblins	hobgoblins	7	30	50	0	0	0	20			
+mazchna	Ice warriors	ice_warriors	7	40	50	0	0	0	45			
+mazchna	Kalphite	kalphite	6	30	50	0	0	0	15			
+mazchna	Killerwatts	killerwatts	6	30	50	0	0	37	50		ernest_the_chicken	
+mazchna	Lizards	lizards	8	30	50	0	0	22	0			
+mazchna	Mogres	mogres	8	30	50	0	0	32	30		skippy_and_the_mogres	
+mazchna	Pyrefiends	pyrefiends	8	30	50	0	0	30	25			
+mazchna	Rockslugs	rockslugs	8	30	50	0	0	20	20			
+mazchna	Scorpions	scorpions	7	30	50	0	0	0	7			
+mazchna	Shades	shades	8	30	70	0	0	0	30			
+mazchna	Skeletons	skeletons	7	30	50	0	0	0	15			
+mazchna	Vampyres	vampyres	6	10	20	200	250	0	35		priest_in_peril	
+mazchna	Wall beasts	wall_beasts	7	10	20	0	0	35	30			defence 5
+mazchna	Wolves	wolves	7	30	50	0	0	0	20			
+mazchna	Zombies	zombies	7	30	50	0	0	0	10			
+vannaka	Aberrant spectres	aberrant_spectres	8	40	90	200	250	60	65		priest_in_peril	
+vannaka	Abyssal demons	abyssal_demons	5	40	90	200	250	85	85		priest_in_peril	
+vannaka	Ankou	ankou	8	25	35	91	150	0	40			
+vannaka	Basilisks	basilisks	8	40	90	200	250	40	40			defence 20
+vannaka	Bloodveld	bloodveld	8	40	90	200	250	50	50		priest_in_peril	
+vannaka	Blue dragons	blue_dragons	7	40	90	0	0	0	65		~dragon_slayer_i	
+vannaka	Brine rats	brine_rats	7	40	90	0	0	47	45		~olafs_quest	
+vannaka	Cockatrice	cockatrice	8	40	90	0	0	25	25			defence 20
+vannaka	Crabs	crabs	8	40	90	0	0	0	0			
+vannaka	Crocodiles	crocodiles	6	40	90	0	0	0	50			
+vannaka	Dagannoth	dagannoth	7	40	90	0	0	0	75		horror_from_the_deep	
+vannaka	Dust devils	dust_devils	8	40	90	200	250	65	70		~desert_treasure_i	
+vannaka	Elves	elves	7	30	70	0	0	0	70		regicide	
+vannaka	Fever spiders	fever_spiders	7	30	90	0	0	42	40		~rum_deal	
+vannaka	Fire giants	fire_giants	7	40	90	0	0	0	65			
+vannaka	Gargoyles	gargoyles	5	40	90	200	250	75	80		priest_in_peril	
+vannaka	Ghouls	ghouls	7	10	40	0	0	0	25		priest_in_peril	
+vannaka	Gryphons	gryphons	10	30	80	110	160	51	0		troubled_tortugans	sailing 45
+vannaka	Harpie Bug Swarms	harpie_bug_swarms	8	40	90	0	0	33	45			firemaking 33
+vannaka	Hellhounds	hellhounds	7	30	60	0	0	0	75			
+vannaka	Hill Giants	hill_giants	7	40	90	0	0	0	25			
+vannaka	Hobgoblins	hobgoblins	7	40	90	0	0	0	20			
+vannaka	Ice giants	ice_giants	7	30	80	0	0	0	50			
+vannaka	Ice warriors	ice_warriors	7	40	90	0	0	0	45			
+vannaka	Infernal Mages	infernal_mages	8	40	90	0	0	45	40		priest_in_peril	
+vannaka	Jellies	jellies	8	40	90	0	0	52	57			
+vannaka	Jungle horrors	jungle_horrors	8	40	90	0	0	0	65		cabin_fever	
+vannaka	Kalphite	kalphite	7	40	90	0	0	0	15			
+vannaka	Kurask	kurask	7	40	90	0	0	70	65			
+vannaka	Lesser demons	lesser_demons	7	40	90	0	0	0	60			
+vannaka	Mogres	mogres	7	40	90	0	0	32	30		skippy_and_the_mogres	
+vannaka	Molanisks	molanisks	7	40	50	0	0	39	50		death_to_the_dorgeshuun	
+vannaka	Moss giants	moss_giants	7	40	90	0	0	0	40			
+vannaka	Nechryael	nechryael	5	40	90	200	250	80	85		priest_in_peril	
+vannaka	Ogres	ogres	7	40	90	0	0	0	40			
+vannaka	Otherworldly beings	otherworldly_beings	8	40	90	0	0	0	40		lost_city	
+vannaka	Pyrefiends	pyrefiends	8	40	90	0	0	30	25			
+vannaka	Sea snakes	sea_snakes	6	40	90	0	0	40	50		royal_trouble	
+vannaka	Shades	shades	8	40	90	0	0	0	30			
+vannaka	Shadow warriors	shadow_warriors	8	30	80	0	0	0	60		legends_quest	
+vannaka	Spiritual creatures	spiritual_creatures	8	40	90	181	250	63	60		death_plateau	
+vannaka	Terror dogs	terror_dogs	6	20	45	0	0	40	60		haunted_mine	
+vannaka	Trolls	trolls	7	40	90	0	0	0	60			
+vannaka	Turoth	turoth	8	30	90	0	0	55	60			
+vannaka	Vampyres	vampyres	7	10	20	200	250	0	35		priest_in_peril	
+vannaka	Werewolves	werewolves	7	30	60	0	0	0	60		priest_in_peril	
+chaeldar	Aberrant spectres	aberrant_spectres	8	70	130	200	250	60	65		priest_in_peril	
+chaeldar	Abyssal demons	abyssal_demons	12	70	130	200	250	85	85		priest_in_peril	
+chaeldar	Aviansie	aviansies	9	70	130	130	250	0	0	watch_the_birdie		
+chaeldar	Basilisks	basilisks	7	70	130	200	250	40	40			defence 20
+chaeldar	Black demons	black_demons	10	70	130	200	250	0	80			
+chaeldar	Bloodveld	bloodveld	8	70	130	200	250	50	50		priest_in_peril	
+chaeldar	Blue dragons	blue_dragons	8	70	130	0	0	0	65		~dragon_slayer_i	
+chaeldar	Brine rats	brine_rats	7	70	130	0	0	47	45		olafs_quest	
+chaeldar	Cave horrors	cave_horrors	10	70	130	200	250	58	85		cabin_fever	
+chaeldar	Cave kraken	cave_kraken	12	30	50	150	200	87	80			magic 50
+chaeldar	Crabs	crabs	8	70	130	0	0	1	0			
+chaeldar	Custodian stalker	custodian_stalkers	11	70	130	200	250	54	0		shadows_of_custodia	
+chaeldar	Dagannoth	dagannoth	11	70	130	0	0	0	75		horror_from_the_deep	
+chaeldar	Dust devils	dust_devils	9	70	130	200	250	65	70		~desert_treasure_i	
+chaeldar	Elves	elves	8	70	130	0	0	0	70		regicide	
+chaeldar	Fever spiders	fever_spiders	7	70	130	0	0	42	40		~rum_deal	
+chaeldar	Fire giants	fire_giants	12	70	130	0	0	0	65			
+chaeldar	Fossil Island Wyverns	fossil_island_wyverns	7	10	20	55	75	66	60		bone_voyage,elemental_workshop_i	
+chaeldar	Gargoyles	gargoyles	11	70	130	200	250	75	80		priest_in_peril	
+chaeldar	Greater demons	greater_demons	9	70	130	200	250	0	70			
+chaeldar	Gryphons	gryphons	10	60	100	140	180	51	0		troubled_tortugans	sailing 45
+chaeldar	Hellhounds	hellhounds	9	70	130	0	0	0	75			
+chaeldar	Jellies	jellies	10	70	130	0	0	52	57			
+chaeldar	Jungle horrors	jungle_horrors	10	70	130	0	0	0	65		cabin_fever	
+chaeldar	Kalphite	kalphite	11	70	130	0	0	0	15			
+chaeldar	Kurask	kurask	12	70	130	0	0	70	65			
+chaeldar	Lesser demons	lesser_demons	9	70	130	0	0	0	60			
+chaeldar	Lesser Nagua	lesser_nagua	4	50	100	0	0	48	0		perilous_moons	
+chaeldar	Lizardmen	lizardmen	8	50	90	0	0	0	0	reptile_got_ripped		
+chaeldar	Mutated zygomites	mutated_zygomites	7	8	15	0	0	57	60		lost_city	
+chaeldar	Nechryael	nechryael	12	70	130	200	250	80	85		priest_in_peril	
+chaeldar	Shadow warriors	shadow_warriors	8	70	130	0	0	0	60		legends_quest	
+chaeldar	Skeletal Wyverns	skeletal_wyverns	7	10	20	50	70	72	70		elemental_workshop_i	
+chaeldar	Spiritual creatures	spiritual_creatures	12	70	130	181	250	63	60		death_plateau	
+chaeldar	Trolls	trolls	11	70	130	0	0	0	60			
+chaeldar	Turoth	turoth	10	70	130	0	0	55	60			
+chaeldar	TzHaar	tzhaar	8	90	150	0	0	0	0	hot_stuff		
+chaeldar	Vampyres	vampyres	6	80	100	200	250	0	0	actual_vampyre_slayer		
+chaeldar	Warped creatures	warped_creatures	6	70	130	0	0	0	0	warped_reality		
+chaeldar	Wyrms	wyrms	6	60	100	200	250	62	0			
+konar	Aberrant spectres	aberrant_spectres	6	120	170	200	250	60	65			
+konar	Abyssal demons	abyssal_demons	9	120	170	200	250	85	85		priest_in_peril	
+konar	Ankou	ankou	5	50	50	91	150	0	40			
+konar	Aviansie	aviansies	6	120	170	200	250	0	0	watch_the_birdie		
+konar	Basilisks	basilisks	5	110	170	200	250	40	0	basilocked		
+konar	Black demons	black_demons	9	120	170	200	250	0	80			
+konar	Black dragons	black_dragons	6	10	15	40	60	0	80		~dragon_slayer_i	
+konar	Bloodveld	bloodveld	9	120	170	200	250	50	50			
+konar	Blue dragons	blue_dragons	4	120	170	0	0	0	65		~dragon_slayer_i	
+konar	Bosses	bosses	8	3	35	0	0	0	0	like_a_boss		
+konar	Brine rats	brine_rats	2	120	170	0	0	47	45		olafs_quest	
+konar	Cave kraken	cave_kraken	9	80	100	150	200	87	80			magic 50
+konar	Dagannoth	dagannoth	8	120	170	0	0	0	75		horror_from_the_deep	
+konar	Dark beasts	dark_beasts	5	10	15	110	135	90	90		~mournings_end_part_ii	
+konar	Drakes	drakes	10	75	140	0	0	84	0			
+konar	Dust devils	dust_devils	6	120	170	200	250	65	70		~desert_treasure_i	
+konar	Fire giants	fire_giants	9	120	170	0	0	0	65			
+konar	Fossil Island Wyverns	fossil_island_wyverns	5	15	30	55	75	66	60		bone_voyage,elemental_workshop_i	
+konar	Gargoyles	gargoyles	6	120	170	200	250	75	80		priest_in_peril	
+konar	Greater demons	greater_demons	7	120	170	200	250	0	75			
+konar	Hellhounds	hellhounds	8	120	170	0	0	0	75			
+konar	Hydras	hydras	10	125	190	0	0	95	0			
+konar	Jellies	jellies	6	120	170	0	0	52	57			
+konar	Kalphite	kalphite	9	120	170	0	0	0	15			
+konar	Kurask	kurask	3	120	170	0	0	70	65			
+konar	Lesser Nagua	lesser_nagua	2	55	120	0	0	48	0		perilous_moons	
+konar	Lizardmen	lizardmen	8	90	110	0	0	0	0	reptile_got_ripped		
+konar	Metal dragons	metal_dragons	15	30	40	150	200	0	0		~dragon_slayer_i	
+konar	Mutated Zygomites	mutated_zygomites	2	10	25	0	0	57	60		lost_city	
+konar	Nechryael	nechryael	7	110	110	200	250	80	85			
+konar	Red dragons	red_dragons	5	30	50	0	0	0	68	seeing_red	~dragon_slayer_i	
+konar	Skeletal Wyverns	skeletal_wyverns	5	5	12	50	70	72	70		elemental_workshop_i	
+konar	Smoke devils	smoke_devils	7	120	170	0	0	93	85			
+konar	Trolls	trolls	6	120	170	0	0	0	60			
+konar	Turoth	turoth	3	120	170	0	0	55	60			
+konar	Vampyres	vampyres	4	100	160	200	250	0	0	actual_vampyre_slayer		
+konar	Warped creatures	warped_creatures	4	110	170	0	0	0	0	warped_reality		
+konar	Waterfiends	waterfiends	2	120	170	0	0	0	75			
+konar	Wyrms	wyrms	10	125	190	200	250	62	0			
+nieve	Aberrant spectres	aberrant_spectres	6	120	185	200	250	60	65		priest_in_peril	
+nieve	Abyssal demons	abyssal_demons	9	120	185	200	250	85	85		priest_in_peril	
+nieve	Ankou	ankou	5	50	90	91	150	0	40			
+nieve	Araxytes	araxytes	8	40	60	200	250	92	0		priest_in_peril	
+nieve	Aviansie	aviansies	6	120	185	200	250	0	0	watch_the_birdie		
+nieve	Aquanites	aquanites	5	40	60	150	200	78	0	lured_in		sailing 73
+nieve	Basilisks	basilisks	6	120	185	200	250	40	0	basilocked		
+nieve	Black demons	black_demons	9	120	185	200	250	0	80			
+nieve	Black dragons	black_dragons	6	10	20	40	60	0	80		~dragon_slayer_i	
+nieve	Bloodveld	bloodveld	9	120	185	200	250	50	50		priest_in_peril	
+nieve	Blue dragons	blue_dragons	4	120	185	0	0	0	65		~dragon_slayer_i	
+nieve	Boss	bosses	8	3	35	0	0	0	0	like_a_boss		
+nieve	Brine rats	brine_rats	3	120	185	0	0	47	45		olafs_quest	
+nieve	Cave horrors	cave_horrors	5	120	180	200	250	58	85		cabin_fever	
+nieve	Cave kraken	cave_kraken	6	100	120	150	200	87	80			magic 50
+nieve	Custodian stalker	custodian_stalkers	8	110	170	200	250	54	0		shadows_of_custodia	
+nieve	Dagannoth	dagannoth	8	120	185	0	0	0	75		horror_from_the_deep	
+nieve	Dark beasts	dark_beasts	5	10	20	110	135	90	90		~mournings_end_part_ii	
+nieve	Drakes	drakes	7	30	95	0	0	84	0			
+nieve	Dust devils	dust_devils	6	120	185	200	250	65	70		~desert_treasure_i	
+nieve	Elves	elves	4	60	90	0	0	0	70		regicide	
+nieve	Fire giants	fire_giants	9	120	185	0	0	0	65			
+nieve	Fossil Island Wyverns	fossil_island_wyverns	5	5	25	55	75	66	60		bone_voyage,elemental_workshop_i	
+nieve	Frost dragons	frost_dragons	5	60	100	180	240	0	85			sailing 87
+nieve	Gargoyles	gargoyles	6	120	185	200	250	75	80		priest_in_peril	
+nieve	Greater demons	greater_demons	7	120	185	200	250	0	75			
+nieve	Gryphons	gryphons	7	110	170	190	250	51	0	wings_spread	troubled_tortugans	sailing 45
+nieve	Hellhounds	hellhounds	8	120	185	0	0	0	75			
+nieve	Kalphite	kalphite	9	120	185	0	0	0	15			
+nieve	Kurask	kurask	3	120	185	0	0	70	65			
+nieve	Lizardmen	lizardmen	8	90	120	0	0	0	0	reptile_got_ripped		
+nieve	Metal dragons	metal_dragons	12	30	40	150	200	0	0		~dragon_slayer_i	
+nieve	Mutated Zygomites	mutated_zygomites	2	10	25	0	0	57	60		lost_city	
+nieve	Nechryael	nechryael	7	110	170	200	250	80	85		priest_in_peril	
+nieve	Red dragons	red_dragons	5	30	80	0	0	0	68	seeing_red	~dragon_slayer_i	
+nieve	Scabarites	scabarites	4	30	60	130	170	0	85		~contact	
+nieve	Skeletal Wyverns	skeletal_wyverns	5	5	15	50	70	72	70		elemental_workshop_i	
+nieve	Smoke devils	smoke_devils	7	120	185	0	0	93	85			
+nieve	Spiritual creatures	spiritual_creatures	6	120	185	181	250	63	60		death_plateau	
+nieve	Suqah	suqahs	8	120	185	186	250	0	85		~lunar_diplomacy	
+nieve	Trolls	trolls	6	120	185	0	0	0	60			
+nieve	Turoth	turoth	3	120	185	0	0	55	60			
+nieve	TzHaar	tzhaar	10	110	180	0	0	0	0	hot_stuff		
+nieve	Vampyres	vampyres	6	110	170	200	250	0	0	actual_vampyre_slayer		
+nieve	Warped creatures	warped_creatures	6	120	185	0	0	0	0	warped_reality		
+nieve	Wyrms	wyrms	7	80	145	200	250	62	0			
+duradel	Aberrant Spectres	aberrant_spectres	7	130	200	200	250	60	65		priest_in_peril	
+duradel	Abyssal Demons	abyssal_demons	12	130	200	200	250	85	85		priest_in_peril	
+duradel	Ankou	ankou	5	50	80	91	150	0	40			
+duradel	Aquanites	aquanites	5	30	50	150	200	78	0	lured_in		sailing 73
+duradel	Araxytes	araxytes	10	60	80	200	250	92	0		priest_in_peril	
+duradel	Aviansie	aviansies	8	120	200	200	250	0	0	watch_the_birdie		
+duradel	Basilisks	basilisks	7	130	200	200	250	40	0	basilocked		
+duradel	Black Demons	black_demons	8	130	200	200	250	0	80			
+duradel	Black Dragons	black_dragons	9	10	20	40	60	0	80		~dragon_slayer_i	
+duradel	Bloodveld	bloodveld	8	130	200	200	250	50	50		priest_in_peril	
+duradel	Blue Dragons	blue_dragons	4	110	170	0	0	0	65		~dragon_slayer_i	
+duradel	Boss	bosses	12	3	35	0	0	0	0	like_a_boss		
+duradel	Cave Horrors	cave_horrors	4	130	200	200	250	58	85		cabin_fever	
+duradel	Cave Kraken	cave_kraken	9	100	120	150	200	87	80			magic 50
+duradel	Dagannoth	dagannoth	9	130	200	0	0	0	75		horror_from_the_deep	
+duradel	Dark Beasts	dark_beasts	11	10	20	110	135	90	90		~mournings_end_part_ii	
+duradel	Drakes	drakes	8	50	110	0	0	84	0			
+duradel	Dust Devils	dust_devils	5	130	200	200	250	65	70		~desert_treasure_i	
+duradel	Elves	elves	4	110	170	0	0	0	70		regicide	
+duradel	Fire Giants	fire_giants	7	130	200	0	0	0	65			
+duradel	Fossil Island Wyverns	fossil_island_wyverns	7	20	50	55	75	66	60		bone_voyage,elemental_workshop_i	
+duradel	Frost Dragons	frost_dragons	5	70	120	180	240	0	85			sailing 87
+duradel	Gargoyles	gargoyles	8	130	200	200	250	75	80		priest_in_peril	
+duradel	Greater Demons	greater_demons	9	130	200	200	250	0	75			
+duradel	Gryphons	gryphons	7	100	210	180	290	51	0	wings_spread	troubled_tortugans	sailing 45
+duradel	Hellhounds	hellhounds	10	130	200	0	0	0	75			
+duradel	Kalphite	kalphite	9	130	200	0	0	0	15			
+duradel	Kurask	kurask	4	130	200	0	0	70	65			
+duradel	Lizardmen	lizardmen	10	130	210	0	0	0	0	reptile_got_ripped		
+duradel	Metal Dragons	metal_dragons	14	35	45	150	200	0	0		~dragon_slayer_i	
+duradel	Mutated Zygomites	mutated_zygomites	2	20	30	0	0	57	60		lost_city	
+duradel	Nechryael	nechryael	9	130	200	200	250	80	85		priest_in_peril	
+duradel	Red Dragons	red_dragons	8	30	65	0	0	0	68	seeing_red	~dragon_slayer_i	
+duradel	Skeletal Wyverns	skeletal_wyverns	7	20	40	50	70	72	70		elemental_workshop_i	
+duradel	Smoke Devils	smoke_devils	9	130	200	0	0	93	85			
+duradel	Spiritual Creatures	spiritual_creatures	7	130	200	181	250	63	60		death_plateau	
+duradel	Suqahs	suqahs	8	60	90	186	250	0	85		~lunar_diplomacy	
+duradel	Trolls	trolls	6	130	200	0	0	0	60			
+duradel	TzHaar	tzhaar	10	130	199	0	0	0	0	hot_stuff		
+duradel	Vampyres	vampyres	8	100	210	200	250	0	0	actual_vampyre_slayer		
+duradel	Warped creatures	warped_creatures	8	130	200	0	0	0	0	warped_reality		
+duradel	Waterfiends	waterfiends	2	130	200	0	0	0	75			
+duradel	Wyrms	wyrms	8	100	160	200	250	62	0			
+krystilia	Abyssal demons	abyssal_demons	5	75	125	200	250	0	0	i_wildy_more_slayer		
+krystilia	Ankou	ankou	6	75	125	91	150	0	0			
+krystilia	Aviansie	aviansies	7	75	125	200	250	0	0	watch_the_birdie		
+krystilia	Bandits	bandits	4	75	125	0	0	0	0			
+krystilia	Bears	bears	6	65	100	0	0	0	0			
+krystilia	Black demons	black_demons	7	100	150	200	250	0	0			
+krystilia	Black dragons	black_dragons	4	8	16	40	60	0	0			
+krystilia	Black Knights	black_knights	3	75	125	0	0	0	0			
+krystilia	Bloodveld	bloodveld	4	70	110	200	250	0	0			
+krystilia	Chaos druids	chaos_druids	5	50	90	0	0	0	0			
+krystilia	Dark warriors	dark_warriors	4	75	125	0	0	0	0			
+krystilia	Dust devils	dust_devils	5	75	125	200	250	0	0	i_wildy_more_slayer		
+krystilia	Earth warriors	earth_warriors	6	75	125	0	0	0	0			
+krystilia	Ents	ents	5	35	60	0	0	0	0			
+krystilia	Fire giants	fire_giants	7	75	125	0	0	0	0			
+krystilia	Greater demons	greater_demons	8	100	150	200	250	0	0			
+krystilia	Green dragons	green_dragons	4	65	100	0	0	0	0			
+krystilia	Hellhounds	hellhounds	7	75	125	0	0	0	0			
+krystilia	Hill Giants	hill_giants	3	75	125	0	0	0	0			
+krystilia	Ice giants	ice_giants	6	100	150	0	0	0	0			
+krystilia	Ice warriors	ice_warriors	7	100	150	0	0	0	0			
+krystilia	Jellies	jellies	5	100	150	0	0	0	0	i_wildy_more_slayer		
+krystilia	Lava dragons	lava_dragons	3	35	60	0	0	0	0			
+krystilia	Lesser demons	lesser_demons	6	80	120	0	0	0	0			
+krystilia	Magic axes	magic_axes	7	75	125	0	0	0	0			
+krystilia	Mammoths	mammoths	6	75	125	0	0	0	0			
+krystilia	Moss giants	moss_giants	4	100	150	0	0	0	0			
+krystilia	Nechryael	nechryael	5	75	125	200	250	0	0	i_wildy_more_slayer		
+krystilia	Pirates	pirates	3	62	75	0	0	0	0			
+krystilia	Revenants	revenants	5	40	100	100	150	0	0			
+krystilia	Rogues	rogues	5	75	125	0	0	0	0			
+krystilia	Scorpions	scorpions	6	65	100	0	0	0	0			
+krystilia	Skeletons	skeletons	5	65	100	0	0	0	0			
+krystilia	Spiders	spiders	6	65	100	0	0	0	0			
+krystilia	Spiritual creatures	spiritual_creatures	6	100	150	181	250	0	0			
+krystilia	Zombies	zombies	3	75	125	0	0	0	0			
+krystilia	Wilderness bosses / demi-bosses	bosses	8	3	35	0	0	0	0	like_a_boss		

@@ -116,23 +116,23 @@ final class Dragons {
                 dragon(m("bronze_dragon", "Bronze dragon", 131, 122, 112, 112, 112, 1, 1).speed(4).attack(slash(16)).attack(dragonfire(50, 4))
                         .defenceBonus(50, 70, 70, 50, 120).drops(common(null, Drop.of("bronze_bar", 5, 5, 1), Drop.of("rune_full_helm", 1, 1, 128), Drop.of("adamant_platelegs", 1, 1, 64),
                                 Drop.of("blood_rune", 5, 10, 16), Drop.herbs(14), Drop.gems(32), clue("hard", 128))),
-                        "bronze_dragons", "bronze_dragon", 1.2f).spawn(Region.KARAMJA, 2, 1, 2).underground(),
+                        "metal_dragons", "bronze_dragon", 1.2f).spawn(Region.KARAMJA, 2, 1, 2).underground(),
                 dragon(m("iron_dragon", "Iron dragon", 189, 165, 165, 165, 165, 1, 1).speed(4).attack(slash(21)).attack(dragonfire(50, 4))
                         .defenceBonus(80, 100, 100, 50, 180).drops(common(null, Drop.of("iron_bar", 5, 5, 1),
                                 Drop.of("rune_full_helm", 1, 1, 128), Drop.of("rune_dagger", 1, 1, 64), Drop.of("blood_rune", 5, 10, 16),
-                                Drop.herbs(14), Drop.gems(32), clue("hard", 128))), "iron_dragons", "iron_dragon", 1.3f)
+                                Drop.herbs(14), Drop.gems(32), clue("hard", 128))), "metal_dragons", "iron_dragon", 1.3f)
                         .spawn(Region.KARAMJA, 2, 1, 2).underground(),
                 dragon(m("steel_dragon", "Steel dragon", 246, 210, 215, 215, 215, 1, 1).speed(4).attack(slash(28)).attack(dragonfire(50, 4))
                         .defenceBonus(100, 120, 120, 80, 220).drops(common(null, Drop.of("steel_bar", 5, 5, 1),
                                 Drop.of("rune_full_helm", 1, 1, 64), Drop.of("rune_battleaxe", 1, 1, 128), Drop.of("death_rune", 10, 20, 12),
-                                Drop.herbs(14), Drop.gems(32), clue("elite", 500))), "steel_dragons", "steel_dragon", 1.4f)
+                                Drop.herbs(14), Drop.gems(32), clue("elite", 500))), "metal_dragons", "steel_dragon", 1.4f)
                         .spawn(Region.KARAMJA, 1, 1, 2).underground(),
                 dragon(m("mithril_dragon", "Mithril dragon", 304, 255, 268, 268, 268, 168, 168).speed(5).attack(slash(28))
                         .attack(magic(18, "minecraft:enchanted_hit")).attack(ranged(18, "minecraft:crit")).attack(dragonfire(50, 3))
                         .defenceBonus(140, 160, 160, 100, 240).drops(common(null, Drop.of("mithril_bar", 3, 3, 1),
                                 Drop.of("dragon_full_helm", 1, 1, 32768), Drop.of("rune_battleaxe", 1, 1, 64), Drop.of("rune_full_helm", 1, 1, 64),
                                 Drop.of("blood_rune", 15, 30, 8), Drop.herbs(12), Drop.gems(16), clue("elite", 350))),
-                        "mithril_dragons", "mithril_dragon", 1.5f).spawn(Region.KANDARIN, 1, 1, 2).underground(),
+                        "metal_dragons", "mithril_dragon", 1.5f).spawn(Region.KANDARIN, 1, 1, 2).underground(),
                 dragon(m("adamant_dragon", "Adamant dragon", 338, 295, 250, 250, 300, 200, 200).speed(4).attack(slash(33))
                         .attack(ranged(25, "minecraft:item_slime").special(AttackDef.Special.POISON, 8))
                         .attack(AttackDef.of("acid", AttackType.MAGIC, 20, 8, 2).special(AttackDef.Special.HAZARD, 8)
@@ -140,7 +140,7 @@ final class Dragons {
                         .attack(dragonfire(50, 3)).defenceBonus(150, 170, 170, 150, 200)
                         .drops(common(null, Drop.of("adamantite_bar", 2, 2, 1), Drop.of("dragon_limbs", 1, 1, 1000),
                                 Drop.of("dragon_metal_slice", 1, 1, 1000), Drop.of("wrath_rune", 10, 25, 8), Drop.of("rune_platelegs", 1, 1, 64),
-                                Drop.herbs(10), Drop.gems(16), clue("elite", 256))), "adamant_dragons", "adamant_dragon", 1.6f)
+                                Drop.herbs(10), Drop.gems(16), clue("elite", 256))), "metal_dragons", "adamant_dragon", 1.6f)
                         .spawn(Region.UNCHARTED_ISLES, 1, 1, 1).underground(),
                 dragon(m("rune_dragon", "Rune dragon", 380, 330, 255, 255, 290, 230, 230).speed(4).attack(slash(38))
                         .attack(AttackDef.of("lightning", AttackType.MAGIC, 30, 10, 3).particle("minecraft:electric_spark")
@@ -148,7 +148,7 @@ final class Dragons {
                         .attack(ranged(28, "minecraft:crit")).attack(dragonfire(50, 3)).defenceBonus(160, 180, 180, 160, 240)
                         .drops(common(null, Drop.of("runite_bar", 2, 2, 1), Drop.of("dragon_limbs", 1, 1, 800),
                                 Drop.of("dragon_metal_lump", 1, 1, 5000), Drop.of("wrath_rune", 20, 40, 8), Drop.of("rune_platebody", 1, 1, 64),
-                                Drop.herbs(10), Drop.gems(16), clue("elite", 200))), "rune_dragons", "rune_dragon", 1.7f)
+                                Drop.herbs(10), Drop.gems(16), clue("elite", 200))), "metal_dragons", "rune_dragon", 1.7f)
                         .spawn(Region.UNCHARTED_ISLES, 1, 1, 1).underground());
     }
 }

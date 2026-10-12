@@ -98,11 +98,11 @@ public final class SlayerService {
             return;
         }
         if (p.hasTask()) {
-            // Turael and Spria swap a harder master's task for one of theirs, resetting the streak.
-            boolean easyMaster = master.points() == 0 && !master.wilderness();
+            // Turael (not Spria) swaps another master's task for one of his own, resetting the streak; he
+            // refuses when he could have assigned that task himself (OSRS).
             SlayerMasters.Master current = p.master == null ? null : SlayerMasters.get(p.master);
-            boolean turaelSkip = easyMaster && current != null && current.points() > 0
-                    && master.assignment(p.task) == null;
+            boolean turaelSkip = master.changesTasks() && current != null && !current.changesTasks()
+                    && !current.id().equals("spria") && master.assignment(p.task) == null;
             if (turaelSkip) {
                 say(player, master, "That's a bit much for you, isn't it? I'll give you something easier, but your task streak is reset.");
                 if (current.wilderness()) {
@@ -126,10 +126,13 @@ public final class SlayerService {
                                int slayer) {
         Random random = new Random(player.getRandom().nextLong());
         String previous = p.task;
+        // Every master keeps their own block list (Turael and Spria share one).
+        List<String> blocked = SlayerRewards.blockedFor(p.blocked, master.id());
+        java.util.function.Predicate<String> quests = q -> questMet(player, q);
         SlayerMasters.Assignment a = master.pick(random,
-                x -> SlayerTasks.eligible(x, slayer, combat, p.unlocks, p.blocked, previous));
+                x -> SlayerTasks.eligible(x, slayer, combat, p.unlocks, blocked, previous, quests), p.unlocks);
         if (a == null) {
-            a = master.pick(random, x -> SlayerTasks.eligible(x, slayer, combat, p.unlocks, p.blocked, null));
+            a = master.pick(random, x -> SlayerTasks.eligible(x, slayer, combat, p.unlocks, blocked, null, quests), p.unlocks);
         }
         if (a == null) {
             say(player, master, "I have nothing for you right now.");
@@ -140,7 +143,7 @@ public final class SlayerService {
         SlayerBossTasks.BossTask boss = null;
         if (a.category().equals(SlayerBossTasks.CATEGORY)) {
             // "Like a Boss": one boss with equal chance (Krystilia: Wilderness bosses only).
-            boss = SlayerBossTasks.pick(random, slayer, master.wilderness(), p.blocked, previous);
+            boss = SlayerBossTasks.pick(random, slayer, master.wilderness(), blocked, previous);
             if (boss == null) {
                 say(player, master, "I have nothing for you right now.");
                 return;
@@ -160,6 +163,26 @@ public final class SlayerService {
         say(player, master, "Your new task is to kill " + p.amount + " " + describe(p) + "."
                 + (master.wilderness() ? " They only count in the Wilderness." : ""));
         SlayerNet.sync(player);
+    }
+
+    /**
+     * A task's quest requirement: {@code id} must be complete, {@code ~id} only started. Quests RuneCraft
+     * doesn't have never block a task.
+     */
+    private static boolean questMet(ServerPlayerEntity player, String requirement) {
+        boolean started = requirement.startsWith("~");
+        String id = started ? requirement.substring(1) : requirement;
+        if (ContentRegistry.quest(id) == null) {
+            return true;
+        }
+        return started ? QuestApi.stage(player, id) > 0 || QuestApi.isComplete(player, id) : QuestApi.isComplete(player, id);
+    }
+
+    /** Whether the elite tier of the master's points diary (Konar: Kourend &amp; Kebos; Nieve/Steve: Western) is done. */
+    private static boolean eliteDiary(ServerPlayerEntity player, SlayerMasters.Master master) {
+        return master.diary() != null && com.runecraft.osrs.content.systems.Diaries.tierComplete(
+                com.runecraft.content.systems.SysState.of(player).diaryDone, master.diary(),
+                com.runecraft.osrs.content.systems.Diaries.Tier.ELITE);
     }
 
     /** Kingdom a kill counts in for Konar: a carved dungeon counts as the kingdom it belongs to. */
@@ -275,7 +298,8 @@ public final class SlayerService {
         CombatProfile<?> prof = stats.profile();
         Superiors.Superior superior = prof == null ? null : Superiors.byId(prof.id);
         XpService.add(player, Skill.SLAYER, superior != null ? superior.xp() : stats.hitpoints());
-        p.remaining--;
+        // "Double Trouble": each Grotesque Guardians kill counts twice.
+        p.remaining = Math.max(0, p.remaining - SlayerTasks.killCredit(p.task, p.unlocks));
         Random random = new Random(player.getRandom().nextLong());
         if (master != null && master.locationRestricted() && random.nextInt(SlayerChests.brimstoneKeyChance(stats.combatLevel())) == 0) {
             reward(player, entity, "brimstone_key", "A brimstone key falls to the floor.");
@@ -283,7 +307,8 @@ public final class SlayerService {
         if (master != null && master.wilderness() && random.nextInt(SlayerChests.larranKeyChance(stats.combatLevel())) == 0) {
             reward(player, entity, "larran_key", "A Larran's key falls to the floor.");
         }
-        if (superior == null && prof != null && p.unlocks.contains("bigger_and_badder") && p.remaining > 0
+        // Superiors may also appear on the task's last kill (OSRS).
+        if (superior == null && prof != null && p.unlocks.contains("bigger_and_badder")
                 && random.nextInt(SlayerRewards.SUPERIOR_CHANCE) == 0) {
             Superiors.Superior s = Superiors.forBase(prof.id);
             if (s != null) {
@@ -291,12 +316,13 @@ public final class SlayerService {
             }
         }
         if (p.remaining <= 0) {
-            complete(player, p, master);
+            complete(player, p, master, master != null && eliteDiary(player, master));
         }
         SlayerNet.sync(player);
     }
 
-    private static void complete(ServerPlayerEntity player, SlayerState.Profile p, SlayerMasters.Master master) {
+    private static void complete(ServerPlayerEntity player, SlayerState.Profile p, SlayerMasters.Master master,
+                                 boolean eliteDiary) {
         p.remaining = 0;
         p.completed++;
         // Krystilia's Wilderness tasks keep their own streak (OSRS).
@@ -306,7 +332,7 @@ public final class SlayerService {
         } else {
             streak = ++p.streak;
         }
-        int points = master == null ? 0 : master.pointsFor(streak);
+        int points = master == null ? 0 : master.pointsFor(streak, eliteDiary);
         p.points += points;
         Msg.red(player, "You have completed your task! You've completed " + streak + " tasks in a row"
                 + (points > 0 ? " and received " + points + " points, giving you a total of " + p.points : "")

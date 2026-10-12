@@ -1,0 +1,32 @@
+# OSRS Wiki superior slayer monsters (infobox values of each superior's page, raw wikitext July 2026 snapshot
+# from Kiyogitpy/osrs-wiki-data): id|superior|base creature|combat level|hitpoints|Slayer level|Slayer XP.
+# Spawn chance 1/200 on task with Bigger and Badder; each unique table is rolled at 1/(200-(s+55)^2/125):
+# table 1 imbued heart 1/8, dust battlestaff 7/16, mist battlestaff 7/16; table 2 eternal gem 1/8.
+crushing_hand|Crushing hand|Crawling hand|45|55|5|550
+chasm_crawler|Chasm Crawler|Cave crawler|68|60|10|600
+screaming_banshee|Screaming banshee|Banshee|70|61|15|610
+screaming_twisted_banshee|Screaming twisted banshee|Twisted banshee|144|220|15|2200
+giant_rockslug|Giant rockslug|Rock slug|86|77|20|770
+cockathrice|Cockathrice|Cockatrice|89|95|25|950
+flaming_pyrelord|Flaming pyrelord|Pyrefiend|97|125|30|1250
+monstrous_basilisk|Monstrous basilisk|Basilisk|135|170|40|1700
+malevolent_mage|Malevolent Mage|Infernal mage|162|175|45|1750
+insatiable_bloodveld|Insatiable Bloodveld|Bloodveld|202|290|50|2900
+insatiable_mutated_bloodveld|Insatiable mutated Bloodveld|Mutated bloodveld|278|410|50|4100
+vitreous_jelly|Vitreous Jelly|Jelly|206|190|52|1900
+vitreous_warped_jelly|Vitreous Warped Jelly|Warped jelly|241|220|52|2200
+spiked_turoth|Spiked Turoth|Turoth|244|195|55|1998
+cave_abomination|Cave abomination|Cave horror|206|130|58|1300
+abhorrent_spectre|Abhorrent spectre|Aberrant spectre|253|250|60|2500
+repugnant_spectre|Repugnant spectre|Deviant spectre|335|380|60|4085
+basilisk_sentinel|Basilisk Sentinel|Basilisk knight|358|520|60|5590
+shadow_wyrm|Shadow Wyrm|Wyrm|259|290|62|3520
+choke_devil|Choke devil|Dust devil|264|300|65|3000
+king_kurask|King kurask|Kurask|295|270|70|2767.4
+marble_gargoyle|Marble gargoyle|Gargoyle|349|270|75|2768
+nechryarch|Nechryarch|Nechryael|300|320|80|3280
+guardian_drake|Guardian Drake|Drake|376|590|84|7087
+greater_abyssal_demon|Greater abyssal demon|Abyssal demon|342|400|85|4200
+night_beast|Night beast|Dark beast|374|550|90|6462
+nuclear_smoke_devil|Nuclear smoke devil|Smoke devil|280|240|93|2400
+colossal_hydra|Colossal Hydra|Hydra|309|750|95|8625

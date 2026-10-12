@@ -1,0 +1,70 @@
+# OSRS Wiki "Slayer Rewards" (raw wikitext, July 2026 snapshot from Kiyogitpy/osrs-wiki-data):
+# tab|reward|points. Tabs: unlock, extend, buy (item x amount), task (cancel/block).
+unlock|Gargoyle Smasher|120
+unlock|Slug Salter|10
+unlock|Reptile Freezer|10
+unlock|'Shroom Sprayer|110
+unlock|Malevolent Masquerade|400
+unlock|Ring Bling|150
+unlock|Broader Fletching|300
+unlock|Seeing Red|50
+unlock|Watch the Birdie|80
+unlock|Hot Stuff|100
+unlock|Like a Boss|200
+unlock|Reptile Got Ripped|75
+unlock|Bigger and Badder|50
+unlock|Duly Noted|200
+unlock|Stop the Wyvern|500
+unlock|Double Trouble|500
+unlock|Basilocked|80
+unlock|Actual Vampyre Slayer|80
+unlock|Task Storage|500
+unlock|I Wildy More Slayer|0
+unlock|Warped Reality|60
+unlock|Lured In|80
+unlock|Wings Spread|80
+unlock|Chance of Heavy Frost|100
+extend|Need More Darkness|100
+extend|Ankou Very Much|100
+extend|Suq-a-nother One|100
+extend|Fire & Darkness|50
+extend|Pedal to the Metals|200
+extend|Spiritual Fervour|100
+extend|Augment my Abbies|100
+extend|It's Dark in Here|100
+extend|Greater Challenge|100
+extend|Bleed Me Dry|75
+extend|Smell Ya Later|100
+extend|Birds of a Feather|100
+extend|Horrorific|100
+extend|To Dust You Shall Return|100
+extend|Wyver-nother One|100
+extend|Get Smashed|100
+extend|Nechs Please|100
+extend|Krack On|100
+extend|Get Scabaright on It|50
+extend|Wyver-nother Two|100
+extend|Basilonger|100
+extend|More at Stake|100
+extend|Revenenenenenants|100
+extend|More eyes than sense|150
+extend|Un-restraining Order|100
+extend|Let's Stay All Aquanite|100
+extend|Can of Wyrms|100
+extend|Gryphon and on|50
+extend|I see Dragons|100
+buy|Slayer ring (8)|75
+buy|Broad bolts (x250)|35
+buy|Broad arrows (x250)|35
+buy|Herb sack|750
+buy|Rune pouch|750
+buy|Looting bag|10
+task|Cancel task|30
+task|Block task (Turael, Aya, Spria)|40
+task|Block task (Mazchna, Achtryn)|50
+task|Block task (Vannaka)|60
+task|Block task (Chaeldar)|70
+task|Block task (Konar quo Maten)|80
+task|Block task (Nieve, Steve)|90
+task|Block task (Duradel, Kuradal)|100
+task|Block task (Krystilia)|100

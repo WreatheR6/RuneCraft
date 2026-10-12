@@ -423,6 +423,15 @@ public final class MonsterStatsTable {
         row("colossal_hydra", 309, 750, 1, 1, 100, 250, 250, 6, 100, 200, 200, 200, 20, 0, 0, 0, "dragon");
         // Basilisk Sentinel
         row("basilisk_sentinel", 358, 520, 274, 274, 274, 274, 1, 4, 50, 50, 10, 50, 10, 12, 0, 0);
+        // Screaming twisted banshee
+        row("screaming_twisted_banshee", 144, 220, 103, 110, 80, 1, 1, 4, 25, 25, 25, 0, 25, 0, 0, 0, "spectral", "undead");
+        maxHit("screaming_twisted_banshee", "melee", 12);
+        // Vitreous Warped Jelly
+        row("vitreous_warped_jelly", 241, 220, 200, 180, 250, 180, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        maxHit("vitreous_warped_jelly", "melee", 19);
+        // Repugnant spectre
+        row("repugnant_spectre", 335, 380, 1, 1, 220, 380, 1, 4, 120, 120, 120, 0, 115, 0, 0, 0, "spectral", "undead");
+        maxHit("repugnant_spectre", "magic", 39);
         // Aviansie (Level 79 (1))
         row("gwd_aviansie", 79, 83, 1, 1, 70, 1, 85, 4, 0, 0, 0, 0, 0, 0, 0, 0, "flying");
         maxHit("gwd_aviansie", "feather throw", 9); // was 10

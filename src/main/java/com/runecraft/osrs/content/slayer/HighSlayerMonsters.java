@@ -121,7 +121,7 @@ final class HighSlayerMonsters {
                         .attack(magic(22, "minecraft:enchant")).defenceBonus(200, 200, 200, 100, 200)
                         .drops(Drop.always("big_bones"), Drop.of("basilisk_jaw", 1, 1, 1000), Drop.of("rune_full_helm", 1, 1, 64),
                                 Drop.of("runite_bar", 1, 2, 32), Drop.herbs(8), Drop.gems(16), clue("hard", 128), clue("elite", 1200))
-                        .slayer(60, "basilisk_knights").model("basilisk_knight").size(1.0f, 2.4f, 1.0f)
+                        .slayer(60, "basilisks").model("basilisk_knight").size(1.0f, 2.4f, 1.0f)
                         .spawn(Region.FREMENNIK_PROVINCE, 2, 1, 2).underground());
     }
 }

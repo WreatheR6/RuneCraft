@@ -56,8 +56,6 @@ public final class SlayerGear {
                     Skill.STRENGTH, Skill.DEFENCE, Skill.RANGED, Skill.MAGIC, Skill.AGILITY), "The cockatrice's gaze petrifies you!"),
             new Protection("basilisks", List.of("mirror_shield", "vs_shield"), Where.SHIELD, 12, 3, List.of(Skill.ATTACK,
                     Skill.STRENGTH, Skill.DEFENCE, Skill.RANGED, Skill.MAGIC, Skill.AGILITY), "The basilisk's gaze turns your blood cold!"),
-            new Protection("basilisk_knights", List.of("mirror_shield", "vs_shield"), Where.SHIELD, 20, 4, COMBAT,
-                    "The basilisk knight's gaze petrifies you!"),
             new Protection("killerwatts", List.of("insulated_boots"), Where.FEET, 15, 0, List.of(),
                     "You're shocked by a jolt of electricity through the floor!"),
             new Protection("cave_horrors", List.of("witchwood_icon"), Where.INVENTORY, 10, 0, List.of(),
@@ -70,6 +68,16 @@ public final class SlayerGear {
                     "The volcanic floor of the dungeon burns your feet!"),
             new Protection("hydras", List.of("boots_of_stone", "boots_of_brimstone"), Where.FEET, 4, 0, List.of(),
                     "The volcanic floor of the dungeon burns your feet!"));
+
+    /**
+     * Creatures whose gaze is stronger than their task category's (basilisk knights and their superior count as
+     * basilisks since the Basilocked rework but hit harder), keyed by creature id.
+     */
+    public static final Map<String, Protection> CREATURE_PROTECTION = Map.of(
+            "basilisk_knight", new Protection("basilisks", List.of("mirror_shield", "vs_shield"), Where.SHIELD, 20, 4, COMBAT,
+                    "The basilisk knight's gaze petrifies you!"),
+            "basilisk_sentinel", new Protection("basilisks", List.of("mirror_shield", "vs_shield"), Where.SHIELD, 20, 4, COMBAT,
+                    "The basilisk sentinel's gaze petrifies you!"));
 
     public static final List<Finisher> FINISHERS = List.of(
             new Finisher("gargoyles", "rock_hammer", 9, false, "gargoyle_smasher", "You smash the gargoyle with the rock hammer."),
@@ -95,6 +103,12 @@ public final class SlayerGear {
             }
         }
         return null;
+    }
+
+    /** The protection a creature needs: its own override, else its task category's. */
+    public static Protection protection(String creatureId, String category) {
+        Protection own = creatureId == null ? null : CREATURE_PROTECTION.get(creatureId);
+        return own != null ? own : protection(category);
     }
 
     public static Finisher finisher(String category) {

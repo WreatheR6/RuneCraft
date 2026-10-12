@@ -13,8 +13,11 @@ public final class SlayerRewards {
     public static final int SKIP_COST = 30;
     /** Cost (points) to block a task at Duradel and Krystilia (see {@link #blockCost}). */
     public static final int BLOCK_COST = 100;
-    /** Block list size (OSRS: 6 with enough quest points). */
-    public static final int MAX_BLOCKS = 6;
+    /**
+     * Blocks per master's list: OSRS gives one slot per 50 quest points (6 at 300) plus one for the elite
+     * Lumbridge &amp; Draynor diary; here every list has all 7 (approx).
+     */
+    public static final int MAX_BLOCKS = 7;
     /** Superior slayer creatures spawn at 1/200 on task once "Bigger and Badder" is unlocked. */
     public static final int SUPERIOR_CHANCE = 200;
 
@@ -39,6 +42,10 @@ public final class SlayerRewards {
     public record ShopItem(String item, int price, int slayerLevel) {
     }
 
+    /**
+     * The OSRS Wiki's Slayer Rewards "Unlock" and "Extend" tabs (July 2026; snapshot in
+     * {@code src/test/resources/osrs/slayer/reward_unlocks.tsv}). Not offered: Task Storage and Duly Noted.
+     */
     public static final List<Unlock> UNLOCKS = List.of(
             new Unlock("gargoyle_smasher", "Gargoyle smasher", 120, Kind.FEATURE, null,
                     "Automatically smash gargoyles with a rock hammer when they reach 9 Hitpoints or fewer."),
@@ -49,73 +56,91 @@ public final class SlayerRewards {
             new Unlock("shroom_sprayer", "'Shroom sprayer", 110, Kind.FEATURE, null,
                     "Automatically spray mutated zygomites with fungicide when they're weak enough."),
             new Unlock("broader_fletching", "Broader fletching", 300, Kind.FEATURE, null,
-                    "Learn to fletch broad arrows (52 Fletching) and buy broad arrowheads."),
+                    "Learn to fletch broad arrows (52 Fletching) and broad bolts (55 Fletching)."),
             new Unlock("malevolent_masquerade", "Malevolent masquerade", 400, Kind.FEATURE, null,
                     "Learn to combine slayer protective gear into a slayer helmet (55 Crafting)."),
             new Unlock("ring_bling", "Ring bling", 150, Kind.FEATURE, null,
-                    "Learn to craft slayer rings from a gold bar and an enchanted gem (75 Crafting)."),
-            new Unlock("bigger_and_badder", "Bigger and Badder", 50, Kind.FEATURE, null,
-                    "Superior slayer creatures may appear while you're on task."),
+                    "Learn to craft slayer rings from a gold bar and an enchanted or eternal gem (75 Crafting)."),
             new Unlock("seeing_red", "Seeing red", 50, Kind.TASK_UNLOCK, "red_dragons",
                     "Konar, Nieve and Duradel may assign red dragons."),
-            new Unlock("i_hope_you_mith_me", "I hope you mith me!", 80, Kind.TASK_UNLOCK, "mithril_dragons",
-                    "Konar, Nieve and Duradel may assign mithril dragons."),
             new Unlock("watch_the_birdie", "Watch the birdie", 80, Kind.TASK_UNLOCK, "aviansies",
-                    "Chaeldar, Nieve and Duradel may assign aviansies."),
+                    "Konar, Duradel, Nieve, Chaeldar and Krystilia may assign aviansies."),
             new Unlock("hot_stuff", "Hot stuff", 100, Kind.TASK_UNLOCK, "tzhaar",
                     "Chaeldar, Nieve and Duradel may assign TzHaar."),
-            new Unlock("reptile_got_ripped", "Reptile got ripped", 75, Kind.TASK_UNLOCK, "lizardmen",
-                    "Konar, Chaeldar, Nieve and Duradel may assign lizardmen."),
-            new Unlock("basilocked", "Basilocked", 80, Kind.TASK_UNLOCK, "basilisk_knights",
-                    "Konar, Nieve and Duradel may assign basilisk knights."),
             new Unlock("like_a_boss", "Like a Boss", 200, Kind.TASK_UNLOCK, SlayerBossTasks.CATEGORY,
                     "Konar, Nieve, Steve, Duradel and Krystilia may assign boss monsters as your task."),
-            new Unlock("actual_vampyre_slayer", "Actual Vampyre Slayer", 80, Kind.TASK_UNLOCK, "vampyres",
-                    "Chaeldar, Konar, Nieve and Duradel may assign vampyres."),
+            new Unlock("reptile_got_ripped", "Reptile got ripped", 75, Kind.TASK_UNLOCK, "lizardmen",
+                    "Konar, Chaeldar, Nieve and Duradel may assign lizardmen."),
+            new Unlock("bigger_and_badder", "Bigger and Badder", 50, Kind.FEATURE, null,
+                    "Superior slayer creatures may appear while you're on task."),
             new Unlock("stop_the_wyvern", "Stop the Wyvern", 500, Kind.FEATURE, "fossil_island_wyverns",
                     "Never be assigned Fossil Island wyverns, without using a block slot."),
-            new Unlock("augment_my_abbies", "Augment my abbies", 100, Kind.EXTEND, "abyssal_demons",
-                    "Abyssal demon tasks are longer."),
+            new Unlock("double_trouble", "Double Trouble", 500, Kind.FEATURE, "boss_grotesque_guardians",
+                    "Slaying the Grotesque Guardians counts for two kills towards your task."),
+            new Unlock("basilocked", "Basilocked", 80, Kind.TASK_UNLOCK, "basilisks",
+                    "Konar, Duradel and Nieve may assign basilisks (basilisk knights count)."),
+            new Unlock("actual_vampyre_slayer", "Actual Vampyre Slayer", 80, Kind.TASK_UNLOCK, "vampyres",
+                    "Chaeldar, Konar, Nieve and Duradel may assign vampyres."),
+            new Unlock("i_wildy_more_slayer", "I Wildy More Slayer", 0, Kind.TASK_UNLOCK, null,
+                    "Krystilia may assign jellies, dust devils, nechryael and abyssal demons."),
+            new Unlock("warped_reality", "Warped Reality", 60, Kind.TASK_UNLOCK, "warped_creatures",
+                    "Konar, Duradel, Nieve and Chaeldar may assign warped creatures."),
+            new Unlock("lured_in", "Lured In", 80, Kind.TASK_UNLOCK, "aquanites", "Nieve and Duradel may assign aquanites."),
+            new Unlock("wings_spread", "Wings Spread", 80, Kind.TASK_UNLOCK, "gryphons", "Nieve and Duradel may assign gryphons."),
+            new Unlock("chance_of_heavy_frost", "Chance of Heavy Frost", 100, Kind.FEATURE, "frost_dragons",
+                    "Frost dragon tasks from Nieve and Duradel are more likely (weight 5 to 8)."),
             new Unlock("need_more_darkness", "Need more darkness", 100, Kind.EXTEND, "dark_beasts",
-                    "Dark beast tasks are longer."),
-            new Unlock("ankou_very_much", "Ankou very much", 100, Kind.EXTEND, "ankou", "Ankou tasks are longer."),
+                    "Dark beast tasks are longer (110-135)."),
+            new Unlock("ankou_very_much", "Ankou very much", 100, Kind.EXTEND, "ankou", "Ankou tasks are longer (91-150)."),
+            new Unlock("suq_a_nother_one", "Suq-a-nother one", 100, Kind.EXTEND, "suqahs", "Suqah tasks are longer (186-250)."),
             new Unlock("fire_and_darkness", "Fire & Darkness", 50, Kind.EXTEND, "black_dragons",
-                    "Black dragon tasks are longer."),
-            new Unlock("pedal_to_the_metals", "Pedal to the metals", 100, Kind.EXTEND, "bronze_dragons",
-                    "Bronze, iron and steel dragon tasks are longer."),
-            new Unlock("i_really_mith_you", "I really mith you", 120, Kind.EXTEND, "mithril_dragons",
-                    "Mithril dragon tasks are longer."),
-            new Unlock("adamind_some_more", "Adamind some more", 100, Kind.EXTEND, "adamant_dragons",
-                    "Adamant dragon tasks are longer."),
-            new Unlock("ruuuuune", "RUUUUUNE", 100, Kind.EXTEND, "rune_dragons", "Rune dragon tasks are longer."),
+                    "Black dragon tasks are longer (40-60)."),
+            new Unlock("pedal_to_the_metals", "Pedal to the metals", 200, Kind.EXTEND, "metal_dragons",
+                    "Metal dragon tasks are longer (150-200)."),
             new Unlock("spiritual_fervour", "Spiritual fervour", 100, Kind.EXTEND, "spiritual_creatures",
-                    "Spiritual creature tasks are longer."),
-            new Unlock("greater_challenge", "Greater challenge", 100, Kind.EXTEND, "greater_demons",
-                    "Greater demon tasks are longer."),
+                    "Spiritual creature tasks are longer (181-250)."),
+            new Unlock("augment_my_abbies", "Augment my abbies", 100, Kind.EXTEND, "abyssal_demons",
+                    "Abyssal demon tasks are longer (200-250)."),
             new Unlock("its_dark_in_here", "It's dark in here", 100, Kind.EXTEND, "black_demons",
-                    "Black demon tasks are longer."),
-            new Unlock("bleed_me_dry", "Bleed me dry", 75, Kind.EXTEND, "bloodveld", "Bloodveld tasks are longer."),
+                    "Black demon tasks are longer (200-250)."),
+            new Unlock("greater_challenge", "Greater challenge", 100, Kind.EXTEND, "greater_demons",
+                    "Greater demon tasks are longer (200-250)."),
+            new Unlock("bleed_me_dry", "Bleed me dry", 75, Kind.EXTEND, "bloodveld", "Bloodveld tasks are longer (200-250)."),
             new Unlock("smell_ya_later", "Smell ya later", 100, Kind.EXTEND, "aberrant_spectres",
-                    "Aberrant spectre tasks are longer."),
-            new Unlock("horrorific", "Horrorific", 100, Kind.EXTEND, "cave_horrors", "Cave horror tasks are longer."),
-            new Unlock("to_dust_you_shall_return", "To dust you shall return", 100, Kind.EXTEND, "dust_devils",
-                    "Dust devil tasks are longer."),
-            new Unlock("wyver_nother_one", "Wyver-nother one", 100, Kind.EXTEND, "skeletal_wyverns",
-                    "Skeletal wyvern tasks are longer."),
-            new Unlock("wyver_nother_two", "Wyver-nother two", 100, Kind.EXTEND, "fossil_island_wyverns",
-                    "Fossil Island wyvern tasks are longer."),
-            new Unlock("get_smashed", "Get smashed", 100, Kind.EXTEND, "gargoyles", "Gargoyle tasks are longer."),
-            new Unlock("nechs_please", "Nechs please", 100, Kind.EXTEND, "nechryael", "Nechryael tasks are longer."),
-            new Unlock("krack_on", "Krack on", 100, Kind.EXTEND, "cave_kraken", "Cave kraken tasks are longer."),
-            new Unlock("basilonger", "Basilonger", 100, Kind.EXTEND, "basilisks", "Basilisk tasks are longer."),
-            new Unlock("more_at_stake", "More at stake", 100, Kind.EXTEND, "vampyres",
-                    "Vampyre tasks are longer (200-250)."),
+                    "Aberrant spectre tasks are longer (200-250)."),
             new Unlock("birds_of_a_feather", "Birds of a feather", 100, Kind.EXTEND, "aviansies",
-                    "Aviansie tasks are longer (200-250)."));
+                    "Aviansie tasks are longer (200-250)."),
+            new Unlock("horrorific", "Horrorific", 100, Kind.EXTEND, "cave_horrors", "Cave horror tasks are longer (200-250)."),
+            new Unlock("to_dust_you_shall_return", "To dust you shall return", 100, Kind.EXTEND, "dust_devils",
+                    "Dust devil tasks are longer (200-250)."),
+            new Unlock("wyver_nother_one", "Wyver-nother one", 100, Kind.EXTEND, "skeletal_wyverns",
+                    "Skeletal wyvern tasks are longer (50-70)."),
+            new Unlock("get_smashed", "Get smashed", 100, Kind.EXTEND, "gargoyles", "Gargoyle tasks are longer (200-250)."),
+            new Unlock("nechs_please", "Nechs please", 100, Kind.EXTEND, "nechryael", "Nechryael tasks are longer (200-250)."),
+            new Unlock("krack_on", "Krack on", 100, Kind.EXTEND, "cave_kraken", "Cave kraken tasks are longer (150-200)."),
+            new Unlock("get_scabaright_on_it", "Get scabaright on it", 50, Kind.EXTEND, "scabarites",
+                    "Scabarite tasks are longer (130-170)."),
+            new Unlock("wyver_nother_two", "Wyver-nother two", 100, Kind.EXTEND, "fossil_island_wyverns",
+                    "Fossil Island wyvern tasks are longer (55-75)."),
+            new Unlock("basilonger", "Basilonger", 100, Kind.EXTEND, "basilisks", "Basilisk tasks are longer (200-250)."),
+            new Unlock("more_at_stake", "More at stake", 100, Kind.EXTEND, "vampyres", "Vampyre tasks are longer (200-250)."),
+            new Unlock("revenenenenenants", "Revenenenenenants", 100, Kind.EXTEND, "revenants",
+                    "Revenant tasks are longer (100-150)."),
+            new Unlock("more_eyes_than_sense", "More eyes than sense", 150, Kind.EXTEND, "araxytes",
+                    "Araxyte tasks are longer (200-250)."),
+            new Unlock("un_restraining_order", "Un-restraining Order", 100, Kind.EXTEND, "custodian_stalkers",
+                    "Custodian stalker tasks are longer (200-250)."),
+            new Unlock("lets_stay_all_aquanite", "Let's Stay All Aquanite", 100, Kind.EXTEND, "aquanites",
+                    "Aquanite tasks are longer (150-200)."),
+            new Unlock("can_of_wyrms", "Can of Wyrms", 100, Kind.EXTEND, "wyrms", "Wyrm tasks are longer (200-250)."),
+            new Unlock("gryphon_and_on", "Gryphon and on", 50, Kind.EXTEND, "gryphons", "Gryphon tasks are longer (+80)."),
+            new Unlock("i_see_dragons", "I see Dragons", 100, Kind.EXTEND, "frost_dragons",
+                    "Frost dragon tasks are longer (180-240)."));
 
     public static final List<PointBuy> BUY = List.of(
             new PointBuy("slayer_ring_8", 1, 75, null),
             new PointBuy("broad_arrows", 250, 35, null),
+            new PointBuy("broad_bolts", 250, 35, null),
             new PointBuy("broad_arrowheads", 100, 25, "broader_fletching"),
             new PointBuy("herb_sack", 1, 750, null));
 
@@ -169,6 +194,8 @@ public final class SlayerRewards {
                     new Input("enchanted_gem", 1)), Skill.CRAFTING, 55, 0, "malevolent_masquerade", null),
             new Craft("slayer_ring_8", 1, List.of(new Input("gold_bar", 1), new Input("enchanted_gem", 1)), Skill.CRAFTING,
                     75, 75, "ring_bling", "ring_mould"),
+            new Craft("slayer_ring_eternal", 1, List.of(new Input("gold_bar", 1), new Input("eternal_gem", 1)), Skill.CRAFTING,
+                    75, 75, "ring_bling", "ring_mould"),
             new Craft("bug_lantern", 1, List.of(new Input("unlit_bug_lantern", 1)), Skill.FIREMAKING, 33, 0, null, "tinderbox"),
             new Craft("boots_of_brimstone", 1, List.of(new Input("boots_of_stone", 1), new Input("drakes_claw", 1)),
                     Skill.SLAYER, 44, 0, null, null),
@@ -179,7 +206,6 @@ public final class SlayerRewards {
     /**
      * Points to block the current task, by the master who assigned it (OSRS, August 2025): Turael and
      * Spria 40, Mazchna 50, Vannaka 60, Chaeldar 70, Konar 80, Nieve 90, Duradel and Krystilia 100.
-     * OSRS keeps a block list per master; here one shared list is used.
      */
     public static int blockCost(String masterId) {
         if (masterId == null) {
@@ -196,6 +222,40 @@ public final class SlayerRewards {
         };
     }
 
+    /**
+     * The block list a master uses: since August 2025 every master has its own, except that Turael and Spria
+     * share one (and Steve uses Nieve's).
+     */
+    public static String blockList(String masterId) {
+        if (masterId == null) {
+            return "turael";
+        }
+        return switch (masterId) {
+            case "spria" -> "turael";
+            case "steve" -> "nieve";
+            default -> masterId;
+        };
+    }
+
+    /** A stored block entry: {@code <list>:<category>}. Entries without a list (older saves) block everywhere. */
+    public static String blockKey(String masterId, String category) {
+        return blockList(masterId) + ":" + category;
+    }
+
+    /** The categories blocked on {@code masterId}'s list, given every stored entry. */
+    public static List<String> blockedFor(java.util.Collection<String> entries, String masterId) {
+        String prefix = blockList(masterId) + ":";
+        List<String> out = new java.util.ArrayList<>();
+        for (String e : entries) {
+            if (e.startsWith(prefix)) {
+                out.add(e.substring(prefix.length()));
+            } else if (e.indexOf(':') < 0) {
+                out.add(e);
+            }
+        }
+        return out;
+    }
+
     public static Unlock unlock(String id) {
         for (Unlock u : UNLOCKS) {
             if (u.id().equals(id)) {
@@ -205,11 +265,10 @@ public final class SlayerRewards {
         return null;
     }
 
-    /** The extension unlock for a category (pedal to the metals covers bronze, iron and steel). */
+    /** The extension unlock for a category. */
     public static Unlock extensionFor(String category) {
         for (Unlock u : UNLOCKS) {
-            if (u.kind() == Kind.EXTEND && (category.equals(u.target())
-                    || u.id().equals("pedal_to_the_metals") && (category.equals("iron_dragons") || category.equals("steel_dragons")))) {
+            if (u.kind() == Kind.EXTEND && category.equals(u.target())) {
                 return u;
             }
         }

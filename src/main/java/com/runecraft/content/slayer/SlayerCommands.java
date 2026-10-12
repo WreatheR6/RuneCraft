@@ -50,7 +50,7 @@ final class SlayerCommands {
                 .then(CommandManager.literal("task").executes(ctx -> run(ctx, SlayerService::checkTask, false)))
                 .then(CommandManager.literal("skip").executes(ctx -> run(ctx, SlayerCommands::skip, true)))
                 .then(CommandManager.literal("block").executes(ctx -> run(ctx, SlayerCommands::block, true)))
-                .then(CommandManager.literal("unblock").then(CommandManager.argument("task", StringArgumentType.word())
+                .then(CommandManager.literal("unblock").then(CommandManager.argument("task", StringArgumentType.greedyString())
                         .executes(ctx -> run(ctx, p -> unblock(p, StringArgumentType.getString(ctx, "task")), true))))
                 .then(CommandManager.literal("rewards").executes(ctx -> run(ctx, SlayerCommands::rewards, true)))
                 .then(CommandManager.literal("unlock").then(CommandManager.argument("id", StringArgumentType.word())
@@ -120,14 +120,17 @@ final class SlayerCommands {
         SlayerState.Profile p = SlayerService.profile(player);
         if (!p.hasTask()) {
             Msg.game(player, "You don't have a task to block.");
-        } else if (p.blocked.size() >= SlayerRewards.MAX_BLOCKS) {
-            Msg.game(player, "Your block list is full. Unblock something first: " + String.join(", ", p.blocked));
+        } else if (SlayerRewards.blockedFor(p.blocked, p.master).size() >= SlayerRewards.MAX_BLOCKS) {
+            Msg.game(player, "That master's block list is full. Unblock something first: "
+                    + String.join(", ", SlayerRewards.blockedFor(p.blocked, p.master)));
         } else if (p.points < SlayerRewards.blockCost(p.master)) {
             Msg.game(player, "You need " + SlayerRewards.blockCost(p.master) + " slayer points to block a task.");
         } else {
             p.points -= SlayerRewards.blockCost(p.master);
-            p.blocked.add(p.task);
-            Msg.game(player, "You will no longer be assigned " + SlayerTasks.displayName(p.task) + ".");
+            // Each master keeps their own block list (OSRS, August 2025); Turael and Spria share one.
+            p.blocked.add(SlayerRewards.blockKey(p.master, p.task));
+            Msg.game(player, "You will no longer be assigned " + SlayerTasks.displayName(p.task) + " by "
+                    + masterName(p.master) + ".");
             p.task = null;
             p.remaining = 0;
             p.region = null;
@@ -135,10 +138,21 @@ final class SlayerCommands {
         SlayerNet.sync(player);
     }
 
+    private static String masterName(String masterId) {
+        SlayerMasters.Master m = masterId == null ? null : SlayerMasters.get(masterId);
+        return m == null ? "that master" : m.name();
+    }
+
+    private static String blockLabel(String entry) {
+        int colon = entry.indexOf(':');
+        return colon < 0 ? SlayerTasks.displayName(entry)
+                : SlayerTasks.displayName(entry.substring(colon + 1)) + " (" + masterName(entry.substring(0, colon)) + ")";
+    }
+
     private static void unblock(ServerPlayerEntity player, String task) {
         SlayerState.Profile p = SlayerService.profile(player);
         if (p.blocked.remove(task)) {
-            Msg.game(player, "You may be assigned " + SlayerTasks.displayName(task) + " again.");
+            Msg.game(player, "You may be assigned " + blockLabel(task) + " again.");
         } else {
             Msg.game(player, "That task isn't blocked. Blocked: " + (p.blocked.isEmpty() ? "nothing" : String.join(", ", p.blocked)));
         }
@@ -166,7 +180,7 @@ final class SlayerCommands {
         if (!p.blocked.isEmpty()) {
             MutableText line = Text.literal("Blocked: ").formatted(Formatting.GRAY);
             for (String b : p.blocked) {
-                line.append(SlayerService.button("[" + SlayerTasks.displayName(b) + "]", "/slayer unblock " + b, "Unblock"));
+                line.append(SlayerService.button("[" + blockLabel(b) + "]", "/slayer unblock " + b, "Unblock"));
                 line.append(Text.literal(" "));
             }
             player.sendMessage(line, false);
@@ -178,6 +192,11 @@ final class SlayerCommands {
         SlayerRewards.Unlock u = SlayerRewards.unlock(id);
         if (u == null) {
             Msg.game(player, "There's no such reward.");
+        } else if (p.unlocks.contains(id) && u.cost() == 0) {
+            // Free toggles ("I Wildy More Slayer") can be switched off again.
+            p.unlocks.remove(id);
+            Msg.game(player, u.name() + " is now off.");
+            SlayerNet.sync(player);
         } else if (p.unlocks.contains(id)) {
             Msg.game(player, "You've already unlocked " + u.name() + ".");
         } else if (p.points < u.cost()) {

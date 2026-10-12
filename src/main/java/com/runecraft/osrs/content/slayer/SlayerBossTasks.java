@@ -14,7 +14,9 @@ import java.util.Random;
 
 /**
  * Boss tasks ("Like a Boss", 200 points): Konar, Nieve, Steve and Duradel may assign any of the bosses
- * below, Krystilia only the Wilderness ones. A boss task is drawn from the masters' "bosses" line (weight
+ * below (never the Corporeal Beast, Nex, the Nightmare or Yama), Krystilia only the Wilderness ones (Callisto,
+ * the Chaos Elemental and Fanatic, the Crazy archaeologist, Scorpia, Venenatis and Vet'ion; the King Black
+ * Dragon's lair is not in the Wilderness). A boss task is drawn from the masters' "bosses" line (weight
  * 8, Duradel 12), then one boss is picked with equal chance; each boss is its own task category
  * ({@code boss_<id>}) that counts kills of the listed creature ids (the boss's final form). In OSRS the
  * player picks the amount (3-35); here it is rolled in that range (approx).
@@ -50,7 +52,6 @@ public final class SlayerBossTasks {
         b("chaos_elemental", "Chaos Elemental", 1, true, Region.WILDERNESS, "chaos_elemental");
         b("chaos_fanatic", "Chaos Fanatic", 1, true, Region.WILDERNESS, "chaos_fanatic");
         b("commander_zilyana", "Commander Zilyana", 1, false, Region.TROLL_COUNTRY, "commander_zilyana");
-        b("corporeal_beast", "Corporeal Beast", 1, false, Region.WILDERNESS, "corporeal_beast");
         b("crazy_archaeologist", "Crazy Archaeologist", 1, true, Region.WILDERNESS, "crazy_archaeologist");
         b("dagannoth_kings", "Dagannoth Kings", 1, false, Region.FREMENNIK_PROVINCE, "dagannoth_rex", "dagannoth_prime",
                 "dagannoth_supreme");
@@ -59,7 +60,7 @@ public final class SlayerBossTasks {
         b("giant_mole", "Giant Mole", 1, false, Region.ASGARNIA, "giant_mole");
         b("grotesque_guardians", "Grotesque Guardians", 75, false, Region.MORYTANIA, "dusk");
         b("kalphite_queen", "Kalphite Queen", 1, false, Region.KHARIDIAN_DESERT, "kalphite_queen");
-        b("king_black_dragon", "King Black Dragon", 1, true, Region.WILDERNESS, "king_black_dragon");
+        b("king_black_dragon", "King Black Dragon", 1, false, Region.WILDERNESS, "king_black_dragon");
         b("kraken", "Kraken", 87, false, Region.KANDARIN, "kraken");
         b("kreearra", "Kree'arra", 1, false, Region.TROLL_COUNTRY, "kreearra");
         b("kril_tsutsaroth", "K'ril Tsutsaroth", 1, false, Region.TROLL_COUNTRY, "kril_tsutsaroth");

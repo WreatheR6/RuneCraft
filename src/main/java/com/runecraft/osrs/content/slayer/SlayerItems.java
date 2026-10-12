@@ -92,6 +92,8 @@ public final class SlayerItems {
                 .examine("Used to lure out wall beasts... or so they say.");
         items.add("slayer_ring_8", "Slayer ring (8)", Kind.SLAYER_GEM, "ring", 0x8A30C0).value(87).stack(1)
                 .examine("A ring that tells me my slayer task.");
+        items.add("slayer_ring_eternal", "Slayer ring (eternal)", Kind.SLAYER_GEM, "ring", 0x5A1A8A).value(75).stack(1)
+                .examine("A ring that tells me my slayer task. It never runs out of charges.");
         items.add("herb_sack", "Herb sack", Kind.SIMPLE, "package", 0x5A7A3A).value(750).stack(1)
                 .examine("A sack for storing grimy herbs.");
 

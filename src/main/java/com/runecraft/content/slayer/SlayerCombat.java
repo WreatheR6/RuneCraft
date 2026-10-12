@@ -192,7 +192,9 @@ final class SlayerCombat {
             List<OsrsMonsterEntity> near = player.getWorld().getEntitiesByClass(OsrsMonsterEntity.class,
                     player.getBoundingBox().expand(6), m -> m.isAlive() && m.getTarget() == player);
             for (OsrsMonsterEntity mob : near) {
-                SlayerGear.Protection prot = SlayerGear.protection(category(mob));
+                MonsterStats ms = mob.stats();
+                SlayerGear.Protection prot = SlayerGear.protection(
+                        ms != null && ms.profile() != null ? ms.profile().id : null, category(mob));
                 if (prot == null || isProtected(player, prot)) {
                     continue;
                 }
