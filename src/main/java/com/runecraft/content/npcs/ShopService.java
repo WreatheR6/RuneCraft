@@ -116,16 +116,25 @@ public final class ShopService {
         Map<String, Offer> map = new LinkedHashMap<>();
         for (int i = 0; i < player.getInventory().main.size(); i++) {
             ItemStack s = player.getInventory().main.get(i);
-            if (s.isEmpty() || s.hasNbt()) {
+            boolean note = com.runecraft.bank.Notes.isNote(s) && com.runecraft.bank.Notes.notedTag(s).isEmpty();
+            if (s.isEmpty() || (s.hasNbt() && !note)) {
                 continue;
             }
-            String id = Inv.idOf(s);
+            // Shops buy bank notes as the item they stand for.
+            String id = note ? com.runecraft.bank.Notes.notedId(s) : Inv.idOf(s);
+            int amount = s.getCount();
+            if (note) {
+                s = Inv.stack(id, 1);
+                if (s.isEmpty()) {
+                    continue;
+                }
+            }
             int value = valueOf(stock, s, id);
             if (!stock.accepts(id, value)) {
                 continue;
             }
             Offer prev = map.get(id);
-            int count = (prev == null ? 0 : prev.count()) + s.getCount();
+            int count = (prev == null ? 0 : prev.count()) + amount;
             map.put(id, new Offer(id, name(id), count, stock.priceToSell(id, value)));
         }
         return new ArrayList<>(map.values());
@@ -211,12 +220,12 @@ public final class ShopService {
             Msg.game(player, "You can't sell this item to this shop.");
             return;
         }
-        int have = Inv.count(player, item);
+        int have = com.runecraft.bank.Notes.countWithNotes(player, item);
         int n = Math.min(have, Math.max(1, Math.min(quantity, 10_000)));
         if (n <= 0) {
             return;
         }
-        int removed = Inv.remove(player, item, n);
+        int removed = com.runecraft.bank.Notes.removeWithNotes(player, item, n);
         long paid = stock.sell(item, removed, value);
         if (paid > 0) {
             Inv.give(player, def.currency(), (int) Math.min(Integer.MAX_VALUE, paid));

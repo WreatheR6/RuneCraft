@@ -124,7 +124,9 @@ public final class Interactions {
     /** General stores buy items at 40% of their value. */
     private static void sell(ServerPlayerEntity player) {
         ItemStack held = player.getMainHandStack();
-        ItemDef def = ModItems.def(held);
+        // Bank notes sell as the item they stand for.
+        ItemDef def = com.runecraft.bank.Notes.isNote(held)
+                ? com.runecraft.osrs.ItemCatalog.get(com.runecraft.bank.Notes.notedId(held)) : ModItems.def(held);
         if (def == null || def.id().equals("coins")) {
             Msg.game(player, "Hold the item you want to sell and sneak + right-click the shop.");
             return;

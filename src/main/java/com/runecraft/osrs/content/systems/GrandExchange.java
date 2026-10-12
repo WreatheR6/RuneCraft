@@ -26,8 +26,42 @@ public final class GrandExchange {
 
     /** Buy limit per item (0 = unlimited). Defaults to the OSRS limits. */
     private java.util.function.ToIntFunction<String> buyLimits = GePrices::buyLimit;
-    /** owner|item -> {window start tick, bought in window}. Not persisted (a restart resets limits). */
+    /** owner|item -> {window start tick, bought in window}. Saved with the GE state ({@link #saveBuyLimits}). */
     private final java.util.Map<String, long[]> bought = new java.util.HashMap<>();
+
+    /** A buy-limit window as saved: how many game ticks of the window have passed and how many were bought. */
+    public record LimitWindow(String owner, String item, long elapsedTicks, long bought) {
+    }
+
+    /**
+     * The buy-limit windows still running at game tick {@code now}, with their elapsed time (game ticks restart
+     * at 0 with the server, so absolute ticks can't be saved).
+     */
+    public List<LimitWindow> saveBuyLimits(long now) {
+        List<LimitWindow> out = new ArrayList<>();
+        for (java.util.Map.Entry<String, long[]> e : bought.entrySet()) {
+            long elapsed = Math.max(0, now - e.getValue()[0]);
+            int bar = e.getKey().indexOf('|');
+            if (elapsed < BUY_LIMIT_TICKS && e.getValue()[1] > 0 && bar > 0) {
+                out.add(new LimitWindow(e.getKey().substring(0, bar), e.getKey().substring(bar + 1), elapsed, e.getValue()[1]));
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Restores saved buy-limit windows at game tick {@code now}. {@code offlineTicks} (real time the server was
+     * down, in game ticks) also counts towards the four hours, as OSRS limits run in real time.
+     */
+    public void loadBuyLimits(List<LimitWindow> windows, long now, long offlineTicks) {
+        bought.clear();
+        for (LimitWindow w : windows) {
+            long elapsed = Math.max(0, w.elapsedTicks()) + Math.max(0, offlineTicks);
+            if (elapsed < BUY_LIMIT_TICKS && w.bought() > 0) {
+                bought.put(w.owner() + "|" + w.item(), new long[]{now - elapsed, w.bought()});
+            }
+        }
+    }
 
     public static final class Offer {
         public final long id;

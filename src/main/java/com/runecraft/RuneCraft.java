@@ -47,6 +47,7 @@ public class RuneCraft implements ModInitializer {
         TerrainFeatures.register();
 
         ServerNetworking.register();
+        com.runecraft.bank.BankService.register();
         PlayerEvents.register();
         ActionManager.register();
         CombatHandler.register();

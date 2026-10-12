@@ -8,7 +8,6 @@ import com.runecraft.osrs.SkillSet;
 import com.runecraft.osrs.Spell;
 import com.runecraft.osrs.data.AgilityCourse;
 import com.runecraft.osrs.data.Monster;
-import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -20,6 +19,7 @@ import java.util.Set;
 
 /** Everything RuneCraft remembers about a player. Persisted in {@link PlayerDataState}. */
 public final class PlayerData {
+    /** Pre-2.0 banks were a 54-slot chest; old saves are migrated into {@link #bank()}. */
     public static final int BANK_SIZE = 54;
 
     private final SkillSet skills = new SkillSet();
@@ -34,7 +34,7 @@ public final class PlayerData {
     private int slayerRemaining;
     private int slayerStreak;
     private final int[] agilityProgress = new int[AgilityCourse.values().length];
-    private final SimpleInventory bank = new SimpleInventory(BANK_SIZE);
+    private final com.runecraft.osrs.bank.BankModel bank = new com.runecraft.osrs.bank.BankModel();
     private boolean visitedGielinor;
     private BlockPos returnPos;
     private int questPoints;
@@ -142,7 +142,7 @@ public final class PlayerData {
         agilityProgress[course.ordinal()] = step;
     }
 
-    public SimpleInventory bank() {
+    public com.runecraft.osrs.bank.BankModel bank() {
         return bank;
     }
 
@@ -216,17 +216,7 @@ public final class PlayerData {
         nbt.putInt("SlayerRemaining", slayerRemaining);
         nbt.putInt("SlayerStreak", slayerStreak);
         nbt.putIntArray("Agility", agilityProgress);
-        NbtList bankList = new NbtList();
-        for (int i = 0; i < bank.size(); i++) {
-            ItemStack stack = bank.getStack(i);
-            if (!stack.isEmpty()) {
-                NbtCompound c = new NbtCompound();
-                c.putByte("Slot", (byte) i);
-                stack.writeNbt(c);
-                bankList.add(c);
-            }
-        }
-        nbt.put("Bank", bankList);
+        nbt.put("Bank2", com.runecraft.bank.BankService.write(bank));
         nbt.putBoolean("Visited", visitedGielinor);
         if (returnPos != null) {
             nbt.putLong("ReturnPos", returnPos.asLong());
@@ -266,12 +256,16 @@ public final class PlayerData {
         int[] agility = nbt.getIntArray("Agility");
         System.arraycopy(agility, 0, agilityProgress, 0, Math.min(agility.length, agilityProgress.length));
         bank.clear();
-        NbtList bankList = nbt.getList("Bank", NbtElement.COMPOUND_TYPE);
-        for (int i = 0; i < bankList.size(); i++) {
-            NbtCompound c = bankList.getCompound(i);
-            int slot = c.getByte("Slot") & 0xFF;
-            if (slot < bank.size()) {
-                bank.setStack(slot, ItemStack.fromNbt(c));
+        if (nbt.contains("Bank2")) {
+            com.runecraft.bank.BankService.read(bank, nbt.getCompound("Bank2"));
+        } else {
+            // Old 54-slot chest bank: move every stack into the new bank.
+            NbtList bankList = nbt.getList("Bank", NbtElement.COMPOUND_TYPE);
+            for (int i = 0; i < bankList.size(); i++) {
+                ItemStack stack = ItemStack.fromNbt(bankList.getCompound(i));
+                if (!stack.isEmpty()) {
+                    com.runecraft.bank.BankService.depositStack(bank, stack, stack.getCount(), 0);
+                }
             }
         }
         visitedGielinor = nbt.getBoolean("Visited");
