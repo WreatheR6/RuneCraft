@@ -126,7 +126,7 @@ public final class SlayerBosses {
                 .drops(Drop.of("kraken_tentacle", 1, 1, 400), Drop.of("trident_of_the_seas", 1, 1, 512), Drop.of("jar_of_dirt", 1, 1, 1000),
                         Drop.of("raw_shark", 10, 20, 8), Drop.of("runite_bar", 2, 2, 16), Drop.of("water_rune", 400, 400, 8),
                         Drop.of("coins", 10000, 30000, 4), Drop.of("clue_scroll_elite", 1, 1, 500))
-                .slayer(87, "kraken").pet("pet_kraken").at("kraken_cove").arena(13, "water")
+                .slayer(87, "cave_kraken").pet("pet_kraken").at("kraken_cove").arena(13, "water")
                 .size(1.8f, 1.6f, 2.0f).moveSpeed(0.0);
     }
 

@@ -144,6 +144,20 @@ public final class SlayerCategories {
         add("flesh_crawlers", "flesh crawlers", 1, Region.MISTHALIN);
         add("shades", "shades", 1, Region.MORYTANIA);
         add("jungle_horrors", "jungle horrors", 1, Region.MORYTANIA);
+        // Creatures added by this module's extra set (SlayerExtraMonsters).
+        add("sourhogs", "sourhogs", 1, Region.MISTHALIN);
+        add("crocodiles", "crocodiles", 1, Region.KHARIDIAN_DESERT);
+        add("shadow_warriors", "shadow warriors", 1, Region.KANDARIN);
+        add("otherworldly_beings", "otherworldly beings", 1, Region.LUMBRIDGE_SWAMP);
+        add("ents", "ents", 1, Region.WILDERNESS);
+        add("mammoths", "mammoths", 1, Region.WILDERNESS);
+        add("bandits", "bandits", 1, Region.WILDERNESS, Region.KHARIDIAN_DESERT);
+        add("chaos_druids", "chaos druids", 1, Region.WILDERNESS, Region.KANDARIN);
+        // Boss tasks ("Like a Boss"): the masters' "bosses" line turns into one boss_<id> task.
+        add(SlayerBossTasks.CATEGORY, "bosses", 1, Region.WILDERNESS, Region.TROLL_COUNTRY);
+        for (SlayerBossTasks.BossTask t : SlayerBossTasks.all()) {
+            add(t.id(), t.name(), t.slayerLevel(), t.region());
+        }
 
         // Other modules' creatures that count towards a task without declaring a slayer category themselves.
         member("dogs", "wild_dog");
@@ -152,6 +166,8 @@ public final class SlayerCategories {
         member("flesh_crawlers", "flesh_crawler");
         member("shades", "loar_shade", "phrin_shade", "riyl_shade", "asyn_shade", "fiyr_shade");
         member("jungle_horrors", "jungle_horror");
+        member("bandits", "desert_bandit");
+        member("chaos_druids", "chaos_druid");
         member("goblins", "cave_goblin", "cave_goblin_guard", "gwd_goblin");
         member("hobgoblins", "gwd_hobgoblin");
         member("rats", "giant_rat");

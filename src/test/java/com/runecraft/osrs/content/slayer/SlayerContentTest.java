@@ -269,7 +269,9 @@ class SlayerContentTest {
         SlayerMasters.Master turael = SlayerMasters.get("turael");
         SlayerMasters.Master spria = SlayerMasters.get("spria");
         assertNotNull(spria);
-        assertEquals(turael.assignments(), spria.assignments());
+        assertEquals(turael.assignments(), spria.assignments().subList(0, turael.assignments().size()));
+        assertNotNull(spria.assignment("sourhogs"));
+        assertNull(turael.assignment("sourhogs"));
         assertEquals(0, spria.points());
         assertEquals("a_porcine_of_interest", spria.quest());
         assertEquals("lost_city", SlayerMasters.get("chaeldar").quest());

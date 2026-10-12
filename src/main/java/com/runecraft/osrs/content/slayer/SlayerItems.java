@@ -156,7 +156,7 @@ public final class SlayerItems {
         // Thrown weapons from drakes, wyrms and hydras (OSRS ranged strength: knife 25, thrownaxe 42).
         items.add("dragon_knife", "Dragon knife", Kind.ARROW, "throwing_knife", 0xB02020).value(1200).rangedStrength(25)
                 .tier("dragon").examine("A finely balanced throwing knife.");
-        items.add("dragon_thrownaxe", "Dragon thrownaxe", Kind.ARROW, "thrownaxe", 0xB02020).value(1500).rangedStrength(42)
+        items.add("dragon_thrownaxe", "Dragon thrownaxe", Kind.ARROW, "throwing_axe", 0xB02020).value(1500).rangedStrength(42)
                 .tier("dragon").examine("A finely balanced throwing axe.");
         items.add("dragon_boots", "Dragon boots", Kind.ARMOUR, "boots", 0xA02020).value(40000).stack(1).tier("dragon")
                 .equipment(wear(Slot.FEET, s(0, 0, 0, -3, -1, 16, 17, 18, 0, 0, 4, 0, 0, 0), Skill.DEFENCE, 60));

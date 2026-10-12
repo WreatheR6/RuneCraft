@@ -253,6 +253,22 @@ public final class SpawnTable {
         s("ninja_impling", 3380, 3000, 1, 24, IMPLING);
         s("dragon_impling", 3140, 3790, 1, 24, IMPLING * 6);
         s("lucky_impling", 2320, 3250, 1, 24, IMPLING * 6);
+
+        // ============================================================ Slayer task creatures (slayer module extras)
+        s("sourhog", 3150, 3345, 4, 5);                // Sourhog Cave entrance north of Draynor (cave not built; approx)
+        s("crocodile", 3385, 2960, 4, 6);              // River Elid bank, east of Pollnivneach
+        s("crocodile", 3385, 2885, 3, 6);              // River Elid bank, south towards Nardah
+        s("shadow_warrior", 2732, 3338, 4, 4);         // by the Legends' Guild (its dungeon isn't built)
+        s("otherworldly_being", 3198, 3164, 4, 5);     // Zanaris (this world's Zanaris sits in Lumbridge Swamp)
+        s("ent", 3305, 3612, 3, 6);                    // Wilderness ent grove (approx)
+        s("mammoth", 3170, 3598, 4, 7);                // south-east of the Ferox Enclave
+        s("ice_spider", 2955, 3912, 4, 7);             // Frozen Waste Plateau
+        s("bandit", 3040, 3701, 4, 7, 100);            // Wilderness Bandit Camp (60 s respawn)
+        s("wilderness_bandit", 3036, 3696, 5, 8, 100); // Wilderness Bandit Camp, level 130s
+        // Wilderness God Wars Dungeon (entrance cave; the dungeon itself isn't built)
+        s("spiritual_warrior", 3017, 3745, 2, 5);
+        s("spiritual_ranger", 3021, 3741, 2, 5);
+        s("spiritual_mage", 3013, 3741, 2, 5);
     }
 
     // ------------------------------------------------------------------ monsters that never roam
@@ -293,9 +309,6 @@ public final class SpawnTable {
             m.put("scorpias_offspring", "minion of scorpia");
             m.put("scorpias_guardian", "minion of scorpia");
             m.put("blood_jaguar", "minion of the blood moon");
-            for (String id : List.of("spiritual_ranger", "spiritual_warrior", "spiritual_mage")) {
-                m.put(id, "God Wars Dungeon: the faction gwd_spiritual_* followers spawn there");
-            }
             m.put("cyclops", "God Wars Dungeon: gwd_cyclops spawns there (Warriors' Guild cyclopes are a minigame)");
             m.put("killerwatt", "lives in the Killerwatt plane, which isn't part of this world");
             m.put("sea_snake_young", "lives in the Royal Trouble quest's sea snake cave, which isn't part of this world");

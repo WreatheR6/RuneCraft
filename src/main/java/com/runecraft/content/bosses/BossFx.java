@@ -165,6 +165,8 @@ final class BossFx {
         PlayerData data = Players.data(killer);
         int kc = data.incrementKillCount(def.id);
         Msg.game(killer, "Your " + def.name + " kill count is: " + kc + ".");
+        // The form is discarded rather than killed, so credit the slayer task (hydras, boss tasks) here.
+        com.runecraft.combat.Slayer.onKill(killer, form, com.runecraft.combat.MonsterStats.from(def));
         burst(form, ParticleTypes.EXPLOSION, 6, 1.0);
         sound(form, SoundEvents.ENTITY_GENERIC_EXPLODE, 0.8f);
         form.discard();

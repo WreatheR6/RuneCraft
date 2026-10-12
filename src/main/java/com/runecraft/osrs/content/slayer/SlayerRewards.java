@@ -68,6 +68,12 @@ public final class SlayerRewards {
                     "Konar, Chaeldar, Nieve and Duradel may assign lizardmen."),
             new Unlock("basilocked", "Basilocked", 80, Kind.TASK_UNLOCK, "basilisk_knights",
                     "Konar, Nieve and Duradel may assign basilisk knights."),
+            new Unlock("like_a_boss", "Like a Boss", 200, Kind.TASK_UNLOCK, SlayerBossTasks.CATEGORY,
+                    "Konar, Nieve, Steve, Duradel and Krystilia may assign boss monsters as your task."),
+            new Unlock("actual_vampyre_slayer", "Actual Vampyre Slayer", 80, Kind.TASK_UNLOCK, "vampyres",
+                    "Chaeldar, Konar, Nieve and Duradel may assign vampyres."),
+            new Unlock("stop_the_wyvern", "Stop the Wyvern", 500, Kind.FEATURE, "fossil_island_wyverns",
+                    "Never be assigned Fossil Island wyverns, without using a block slot."),
             new Unlock("augment_my_abbies", "Augment my abbies", 100, Kind.EXTEND, "abyssal_demons",
                     "Abyssal demon tasks are longer."),
             new Unlock("need_more_darkness", "Need more darkness", 100, Kind.EXTEND, "dark_beasts",
@@ -101,7 +107,11 @@ public final class SlayerRewards {
             new Unlock("get_smashed", "Get smashed", 100, Kind.EXTEND, "gargoyles", "Gargoyle tasks are longer."),
             new Unlock("nechs_please", "Nechs please", 100, Kind.EXTEND, "nechryael", "Nechryael tasks are longer."),
             new Unlock("krack_on", "Krack on", 100, Kind.EXTEND, "cave_kraken", "Cave kraken tasks are longer."),
-            new Unlock("basilonger", "Basilonger", 100, Kind.EXTEND, "basilisks", "Basilisk tasks are longer."));
+            new Unlock("basilonger", "Basilonger", 100, Kind.EXTEND, "basilisks", "Basilisk tasks are longer."),
+            new Unlock("more_at_stake", "More at stake", 100, Kind.EXTEND, "vampyres",
+                    "Vampyre tasks are longer (200-250)."),
+            new Unlock("birds_of_a_feather", "Birds of a feather", 100, Kind.EXTEND, "aviansies",
+                    "Aviansie tasks are longer (200-250)."));
 
     public static final List<PointBuy> BUY = List.of(
             new PointBuy("slayer_ring_8", 1, 75, null),
@@ -181,7 +191,7 @@ public final class SlayerRewards {
             case "vannaka" -> 60;
             case "chaeldar" -> 70;
             case "konar" -> 80;
-            case "nieve" -> 90;
+            case "nieve", "steve" -> 90;
             default -> BLOCK_COST;
         };
     }
