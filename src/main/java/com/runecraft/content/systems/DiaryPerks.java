@@ -31,6 +31,29 @@ final class DiaryPerks {
         PENDING.put(p.getUuid(), new Pending(item, SysTicks.now()));
     }
 
+    private static boolean inBonusXp;
+
+    /** Falador medium diary: 10% more Farming XP at the Falador farm patches (paid as a separate XP drop). */
+    static void farmXp(ServerPlayerEntity p, Skill skill, int tenths) {
+        if (skill != Skill.FARMING || inBonusXp || tenths <= 0 || !com.runecraft.world.Gielinor.is(p)) {
+            return;
+        }
+        int[] at = SysTeleport.osrs(p);
+        double mult = DiaryRewards.faladorFarmXp(
+                com.runecraft.osrs.content.systems.Diaries.tierComplete(SysState.of(p).diaryDone, "falador",
+                        com.runecraft.osrs.content.systems.Diaries.Tier.MEDIUM), at[0], at[1]);
+        int bonus = (int) Math.round(tenths * (mult - 1.0));
+        if (bonus <= 0) {
+            return;
+        }
+        inBonusXp = true;
+        try {
+            com.runecraft.skill.XpService.addTenths(p, Skill.FARMING, bonus);
+        } finally {
+            inBonusXp = false;
+        }
+    }
+
     static void onXp(ServerPlayerEntity p, Skill skill) {
         if (skill != Skill.MINING && skill != Skill.FISHING) {
             return;

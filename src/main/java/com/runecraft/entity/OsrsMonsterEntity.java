@@ -29,6 +29,18 @@ public class OsrsMonsterEntity extends HostileEntity {
         this.experiencePoints = 0;
     }
 
+    /**
+     * Replaces this creature's combat stats (raid party/mode scaling). The function receives the type's base
+     * stats, so re-applying it never compounds. Not saved: raid creatures are rescaled when spawned.
+     */
+    public void overrideStats(java.util.function.UnaryOperator<MonsterStats> f) {
+        MonsterStats base = ModEntities.stats(getType());
+        if (base != null) {
+            MonsterStats out = f.apply(base);
+            cachedStats = out == null ? base : out;
+        }
+    }
+
     public MonsterStats stats() {
         if (cachedStats == null) {
             cachedStats = ModEntities.stats(getType());

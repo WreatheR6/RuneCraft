@@ -371,7 +371,7 @@ public final class ClueRewards {
         unique(H, "enchanted_top");
         unique(H, "enchanted_robe");
         unique(H, "amulet_of_glory_t_4");
-        cosmeticArmour(items, H, "pirate_hat", "Pirate hat", "cowl", 0x202020, Slot.HEAD, 20000);
+        cosmeticArmour(items, H, "pirate_hat", "Pirate's hat", "cowl", 0x202020, Slot.HEAD, 20000);
         for (String c : new String[]{"tan", "dark", "black"}) {
             cosmeticArmour(items, H, c + "_cavalier", Defs.cap(c) + " cavalier", "cowl", c.equals("tan") ? 0xC0A070 : c.equals("dark") ? 0x5A4A3A : 0x202020,
                     Slot.HEAD, 20000);

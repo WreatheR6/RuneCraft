@@ -195,6 +195,11 @@ public final class AccessGateService {
         }
 
         @Override
+        public boolean diaryComplete(String area, com.runecraft.osrs.content.systems.Diaries.Tier tier) {
+            return com.runecraft.osrs.content.systems.Diaries.tierComplete(SysState.of(p).diaryDone, area, tier);
+        }
+
+        @Override
         public boolean hasCombatGear() {
             PlayerInventory inv = p.getInventory();
             for (int i = 0; i < inv.size(); i++) {

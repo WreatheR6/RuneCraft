@@ -27,7 +27,30 @@ import java.util.Random;
 public final class RewardShopService {
     private static final Random RANDOM = new Random();
 
+    /** Adjusts a cost for a player, e.g. diary discounts: (player, shop id, amount) -> amount. */
+    public interface CostAdjuster {
+        int adjust(ServerPlayerEntity player, String shopId, int amount);
+    }
+
+    /** Set by other modules (the systems module's Karamja gloves TzHaar discount). */
+    public static CostAdjuster costAdjuster = (p, shop, amount) -> amount;
+    /** Extra reason an item can't be bought (diary requirements), or null: (player, item id) -> reason. */
+    public static java.util.function.BiFunction<ServerPlayerEntity, String, String> extraLock = (p, item) -> null;
+
     private RewardShopService() {
+    }
+
+    /** The entry with its costs adjusted for this player. */
+    private static RewardShop.Entry priced(ServerPlayerEntity player, String shopId, RewardShop.Entry e) {
+        java.util.List<RewardShop.Cost> costs = new java.util.ArrayList<>();
+        boolean changed = false;
+        for (RewardShop.Cost c : e.costs()) {
+            int amount = Math.max(0, costAdjuster.adjust(player, shopId, c.amount()));
+            changed |= amount != c.amount();
+            costs.add(new RewardShop.Cost(c.currency(), amount));
+        }
+        return changed ? new RewardShop.Entry(e.reward(), e.item(), e.count(), costs, e.label(), e.requiredSkill(),
+                e.requiredLevel(), e.requiresItem()) : e;
     }
 
     public static int balance(ServerPlayerEntity player, String currency) {
@@ -86,7 +109,7 @@ public final class RewardShopService {
         if (e.reward() == RewardShop.Reward.UNLOCK && MinigameData.of(player).flag(player.getUuid(), e.item())) {
             return "Already unlocked";
         }
-        return null;
+        return extraLock.apply(player, e.item());
     }
 
     public static void open(ServerPlayerEntity player, String shopId) {
@@ -104,7 +127,8 @@ public final class RewardShopService {
             buf.writeVarInt(bal.get(c));
         }
         buf.writeVarInt(shop.entries().size());
-        for (RewardShop.Entry e : shop.entries()) {
+        for (RewardShop.Entry raw : shop.entries()) {
+            RewardShop.Entry e = priced(player, shop.id(), raw);
             String lock = locked(player, e);
             buf.writeString(label(e));
             buf.writeString(icon(e));
@@ -120,7 +144,7 @@ public final class RewardShopService {
         if (shop == null || index < 0 || index >= shop.entries().size()) {
             return;
         }
-        RewardShop.Entry e = shop.entries().get(index);
+        RewardShop.Entry e = priced(player, shop.id(), shop.entries().get(index));
         int times = e.reward() == RewardShop.Reward.ITEM ? Math.max(1, Math.min(quantity, 100)) : 1;
         String lock = locked(player, e);
         if (lock != null) {

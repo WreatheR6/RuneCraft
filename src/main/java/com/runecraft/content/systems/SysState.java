@@ -45,6 +45,8 @@ public final class SysState extends PersistentState {
         public int geTrades;
         public final Set<String> spellsCast = new LinkedHashSet<>();
         public boolean warnedBook;
+        /** The clue puzzle box / light box in progress: "TIER|S|board" or "TIER|L|box" ({@code CluePuzzles} encoding), or "". */
+        public String cluePuzzle = "";
 
         // Transient combat state (game ticks)
         public boolean vengeance;
@@ -124,6 +126,7 @@ public final class SysState extends PersistentState {
             n.putLong("Day", day);
             n.putInt("GeTrades", geTrades);
             n.put("Spells", strings(spellsCast));
+            n.putString("CluePuzzle", cluePuzzle);
             return n;
         }
 
@@ -176,6 +179,7 @@ public final class SysState extends PersistentState {
             day = n.contains("Day") ? n.getLong("Day") : -1;
             geTrades = n.getInt("GeTrades");
             readStrings(n.getList("Spells", NbtElement.STRING_TYPE), spellsCast);
+            cluePuzzle = n.getString("CluePuzzle");
         }
     }
 

@@ -119,7 +119,7 @@ public final class RaidEffects {
         }
         RaidInstance raid = RaidManager.of(player);
         if (raid != null) {
-            damage = (int) Math.round(damage * raid.damageMultiplier());
+            damage = (int) Math.round(damage * raid.damageMultiplier(source));
         }
         LivingEntity attacker = source != null && source.isAlive() ? source : null;
         int dealt = CombatHandler.applyDamage(attacker, player, damage);

@@ -253,7 +253,7 @@ public final class ClueService {
 
     // ---------------- Puzzle boxes and light boxes ----------------
 
-    /** A puzzle handed over by a clue NPC (kept until the step is done; a restart re-scrambles it). */
+    /** A puzzle handed over by a clue NPC, saved with the player's data until the step is done. */
     private static final class Puzzle {
         final Tier tier;
         final CluePuzzles.Slider slider;
@@ -268,9 +268,38 @@ public final class ClueService {
         boolean solved() {
             return slider != null ? slider.solved() : lights.solved();
         }
+
+        String encode() {
+            return tier.name() + "|" + (slider != null ? "S|" + slider.encode() : "L|" + lights.encode());
+        }
+
+        static Puzzle decode(String s) {
+            String[] parts = s == null ? new String[0] : s.split("\\|", 3);
+            if (parts.length != 3) {
+                return null;
+            }
+            try {
+                Tier tier = Tier.valueOf(parts[0]);
+                if (parts[1].equals("S")) {
+                    CluePuzzles.Slider slider = CluePuzzles.Slider.decode(parts[2]);
+                    return slider == null ? null : new Puzzle(tier, slider, null);
+                }
+                CluePuzzles.LightBox lights = parts[1].equals("L") ? CluePuzzles.LightBox.decode(parts[2]) : null;
+                return lights == null ? null : new Puzzle(tier, null, lights);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
     }
 
-    private static final java.util.Map<java.util.UUID, Puzzle> PUZZLES = new java.util.HashMap<>();
+    /** The player's saved puzzle, or null. */
+    private static Puzzle loadPuzzle(ServerPlayerEntity p) {
+        return Puzzle.decode(SysState.of(p).cluePuzzle);
+    }
+
+    private static void savePuzzle(ServerPlayerEntity p, Puzzle puzzle) {
+        SysState.of(p).cluePuzzle = puzzle == null ? "" : puzzle.encode();
+    }
 
     static void registerPuzzles() {
         for (String id : new String[]{"grid3_puzzle", "grid5_puzzle", "grid5_lights"}) {
@@ -281,10 +310,10 @@ public final class ClueService {
     /** Talking to the NPC of a puzzle step: hands over the box, or takes it back solved. Returns true to advance. */
     private static boolean puzzleTalk(ServerPlayerEntity p, Tier tier, Step step, String speaker) {
         String box = step.item();
-        Puzzle puzzle = PUZZLES.get(p.getUuid());
+        Puzzle puzzle = loadPuzzle(p);
         if (puzzle != null && puzzle.tier == tier && puzzle.solved() && Inv.has(p, box, 1)) {
             Inv.remove(p, box, 1);
-            PUZZLES.remove(p.getUuid());
+            savePuzzle(p, null);
             say(p, speaker, "You've solved it! Well done, here's your next clue.");
             return true;
         }
@@ -300,13 +329,14 @@ public final class ClueService {
     }
 
     private static Puzzle puzzleFor(ServerPlayerEntity p, Tier tier, String box) {
-        Puzzle puzzle = PUZZLES.get(p.getUuid());
+        Puzzle puzzle = loadPuzzle(p);
         boolean light = box.equals(CluePuzzles.LIGHT_BOX);
-        if (puzzle == null || puzzle.tier != tier || (puzzle.lights != null) != light) {
+        if (puzzle == null || puzzle.tier != tier || (puzzle.lights != null) != light
+                || (puzzle.slider != null && puzzle.slider.size() != CluePuzzles.puzzleSize(tier))) {
             java.util.Random r = new java.util.Random(p.getRandom().nextLong());
             puzzle = light ? new Puzzle(tier, null, CluePuzzles.LightBox.scrambled(r))
                     : new Puzzle(tier, CluePuzzles.Slider.scrambled(CluePuzzles.puzzleSize(tier), r), null);
-            PUZZLES.put(p.getUuid(), puzzle);
+            savePuzzle(p, puzzle);
         }
         return puzzle;
     }
@@ -357,7 +387,7 @@ public final class ClueService {
     }
 
     static void puzzleAction(ServerPlayerEntity p, String action, java.util.Map<String, String> fields) {
-        Puzzle puzzle = PUZZLES.get(p.getUuid());
+        Puzzle puzzle = loadPuzzle(p);
         if (puzzle == null || action.length() < 3) {
             return;
         }
@@ -372,6 +402,7 @@ public final class ClueService {
         } else if (action.startsWith("b:") && puzzle.lights != null) {
             puzzle.lights.press(index);
         }
+        savePuzzle(p, puzzle);
         if (puzzle.solved()) {
             Msg.action(p, "You solve the " + (puzzle.slider != null ? "puzzle box" : "light box") + "!");
         }

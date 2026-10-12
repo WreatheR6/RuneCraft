@@ -175,7 +175,7 @@ public class DataBossEntity extends OsrsMonsterEntity {
             return;
         }
         for (Drops.Rolled r : Drops.roll(def.drops, getRandom(), false)) {
-            dropStack(Inv.stack(r.item(), r.count()));
+            dropStack(com.runecraft.combat.CombatHooks.dropStack(player, this, r.item(), r.count()));
             CollectionLog.obtain(player, r.item());
         }
         int petRate = com.runecraft.osrs.content.extras.Pets.engineRate(def.id);

@@ -132,6 +132,7 @@ public final class DiaryService {
             }
         }
         DiaryPerks.onXp(p, skill);
+        DiaryPerks.farmXp(p, skill, tenths);
     }
 
     public static void onKill(ServerPlayerEntity p, LivingEntity e, MonsterStats stats) {

@@ -25,6 +25,9 @@ final class IslandsTravelService {
     /** Chosen destination code per player and network. */
     private static final Map<String, String> DIAL = new HashMap<>();
 
+    /** Whether a player may use fairy rings without a staff (set by the systems module: Lumbridge elite diary). */
+    public static java.util.function.Predicate<ServerPlayerEntity> staffless = p -> false;
+
     private IslandsTravelService() {
     }
 
@@ -58,7 +61,7 @@ final class IslandsTravelService {
         }
         // OSRS: fairy rings only work while wielding a Dramen or Lunar staff.
         String staff = com.runecraft.util.Inv.idOf(player.getMainHandStack());
-        if (fairy && !"dramen_staff".equals(staff) && !"lunar_staff".equals(staff)) {
+        if (fairy && !"dramen_staff".equals(staff) && !"lunar_staff".equals(staff) && !staffless.test(player)) {
             Msg.game(player, "You need to wield a Dramen or Lunar staff to use the fairy rings.");
             return;
         }

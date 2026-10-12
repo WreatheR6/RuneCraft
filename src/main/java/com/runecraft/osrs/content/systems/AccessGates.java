@@ -46,6 +46,11 @@ public final class AccessGates {
 
         /** Carrying or wearing weapons or armour (the Entrana rule, see {@link #entranaBanned}). */
         boolean hasCombatGear();
+
+        /** Whether every task of an achievement diary tier is done. */
+        default boolean diaryComplete(String area, Diaries.Tier tier) {
+            return false;
+        }
     }
 
     // ------------------------------------------------------------------ areas
@@ -189,6 +194,15 @@ public final class AccessGates {
         };
     }
 
+    /** Met when either requirement is met (the first one's message is shown). */
+    public static Req either(Req a, Req b) {
+        return p -> a.unmet(p) == null || b.unmet(p) == null ? null : a.unmet(p);
+    }
+
+    public static Req diary(String area, Diaries.Tier tier, String message) {
+        return p -> p.diaryComplete(area, tier) ? null : message;
+    }
+
     public static Req noCombatGear(String message) {
         return p -> p.hasCombatGear() ? message : null;
     }
@@ -281,7 +295,9 @@ public final class AccessGates {
                 noCombatGear("The monks of Entrana won't let you bring weapons or armour onto their holy island."));
         gate("zanaris", "Zanaris", List.of(new Rect(2368, 4380, 2464, 4480), new Circle(3168.5, 3158.5, 8)), 3202, 3166,
                 questDone("lost_city", "Nothing interesting happens. (You need to complete Lost City to enter Zanaris.)"),
-                carryAny(List.of("dramen_staff", "lunar_staff"), "Nothing interesting happens. You need to wield a Dramen staff to enter Zanaris."));
+                // The elite Lumbridge & Draynor diary lets fairy rings work without a staff (so arriving by ring is allowed).
+                either(carryAny(List.of("dramen_staff", "lunar_staff"), "Nothing interesting happens. You need to wield a Dramen staff to enter Zanaris."),
+                        diary("lumbridge", Diaries.Tier.ELITE, "")));
         gate("fossil_island", "Fossil Island", List.of(new Rect(3640, 3700, 3860, 3910)), 3362, 3445,
                 questDone("bone_voyage", "The barge won't take you to Fossil Island until you have completed Bone Voyage."));
         gate("prifddinas", "Prifddinas", List.of(new Rect(3196, 6036, 3332, 6172)), 2240, 3285,

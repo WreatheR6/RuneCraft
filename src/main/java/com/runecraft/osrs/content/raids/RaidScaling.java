@@ -126,11 +126,52 @@ public final class RaidScaling {
         if (id.equals("olm_left_claw") || id.equals("olm_right_claw")) {
             return 600 + 300 * olmPartyFactor(n);
         }
+        if (COX_SINGLES.contains(id)) {
+            // Solo creatures (vespine soldiers) ignore party size; Challenge Mode raises the scaler by 50%.
+            return Math.max(5, challenge ? baseHp * addPercent(126, 50) / 126 : baseHp);
+        }
         int hp = baseHp + baseHp * (n * 50 / 100);
         if (challenge && !id.equals("vasa_crystal")) {
             hp += hp * 50 / 100;
         }
         return Math.max(1, Math.min(30_000, hp));
+    }
+
+    /** CoX creatures scaled as solo fights (OSRS: scavenger beasts and vespine soldiers). */
+    static final Set<String> COX_SINGLES = Set.of("vespine_soldier");
+    /** CoX creatures whose Magic level is defensive and scales like Defence (OSRS). */
+    static final Set<String> COX_MAGIC_DEFENSIVE = Set.of("tekton", "vespula", "vespula_portal", "deathly_ranger",
+            "vespine_soldier", "olm_left_claw", "olm_right_claw");
+
+    private static int addPercent(int x, int pct) {
+        return x + x * pct / 100;
+    }
+
+    /** Whether a CoX creature's Magic level scales with {@link #coxScaledDefence} (otherwise it is offensive). */
+    public static boolean coxMagicIsDefensive(String id) {
+        return COX_MAGIC_DEFENSIVE.contains(id);
+    }
+
+    /**
+     * Scaled Defence level of a CoX creature for a maxed party (OSRS, as in the wiki DPS calculator): +1% per
+     * integer square root of the extra players plus 0.7% per extra player, then +50% in Challenge Mode (Tekton
+     * +20% below 4 players, +35% from 4; Vasa's crystals unchanged), at least 50. Solo creatures only get the
+     * Challenge Mode bonus. Levels of 1 stay 1.
+     */
+    public static int coxScaledDefence(String id, int baseLevel, int partySize, boolean challenge) {
+        if (baseLevel <= 1) {
+            return baseLevel;
+        }
+        if (COX_SINGLES.contains(id)) {
+            return Math.max(1, challenge ? baseLevel * addPercent(99, 50) / 99 : baseLevel);
+        }
+        int n = clampParty(partySize, 100);
+        int m1 = n - 1;
+        int def = baseLevel * (100 + isqrt(m1) + m1 * 7 / 10) / 100;
+        if (challenge && !id.equals("vasa_crystal")) {
+            def = addPercent(def, id.equals("tekton") ? (n < 4 ? 20 : 35) : 50);
+        }
+        return Math.max(50, Math.min(20_000, def));
     }
 
     /**
@@ -227,7 +268,42 @@ public final class RaidScaling {
             int base = TOB_ENTRY_HP.getOrDefault(id, baseHp * 6 / 10);
             return Math.max(1, base * f[clampParty(partySize, 5) - 1] / 40);
         }
+        if (mode == RaidMode.HARD) {
+            baseHp = TOB_HARD_HP.getOrDefault(id, baseHp);
+        }
         return Math.max(1, (int) (baseHp * tobHp(partySize)));
+    }
+
+    /**
+     * ToB Hard mode base hitpoints that differ from normal mode (OSRS wiki / DPS calculator 5-player values):
+     * the Pestilent Bloat has 20% more (2,000 -> 2,400) and Xarpus 5,000 -> 6,000. The others are unchanged.
+     */
+    public static final Map<String, Integer> TOB_HARD_HP = Map.of(
+            "pestilent_bloat", 2400,
+            "xarpus", 6000);
+
+    /**
+     * ToB Hard mode combat level changes (OSRS wiki): Sotetseg's Attack 250 -> 350 and Xarpus's Defence
+     * 250 -> 200. Returns {attack, strength, defence, magic, ranged}, -1 meaning unchanged, or null.
+     */
+    public static int[] tobHardLevels(String id) {
+        return switch (id) {
+            case "sotetseg" -> new int[]{350, -1, -1, -1, -1};
+            case "xarpus" -> new int[]{-1, -1, 200, -1, -1};
+            default -> null;
+        };
+    }
+
+    /**
+     * ToB Hard mode max hit multiplier (OSRS wiki): Nylocas Vasilias hits up to 105 instead of 70, and Verzik's
+     * second form 44 instead of 47.
+     */
+    public static double tobHardMaxHit(String id) {
+        return switch (id) {
+            case "nylocas_vasilias" -> 105 / 70.0;
+            case "verzik_vitur_p2" -> 44 / 47.0;
+            default -> 1.0;
+        };
     }
 
     /** ToB purple chance: 1/9.1 with every point, reduced proportionally by deaths (OSRS normal mode). */

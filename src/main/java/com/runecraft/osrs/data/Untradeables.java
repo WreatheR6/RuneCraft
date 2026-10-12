@@ -43,6 +43,13 @@ public final class Untradeables {
         // Quest rewards.
         add("silverlight", "darklight", "excalibur", "dramen_staff", "lunar_staff", "ibans_staff", "ghostspeak_amulet",
                 "ivandis_flail", "blisterwood_flail", "xerics_talisman", "drakans_medallion");
+        // Treasure trails: the scrolls, reward caskets, puzzle/light boxes and the Bloodhound pet (OSRS wiki: untradeable);
+        // the clue reward items themselves are tradeable.
+        for (String tier : new String[]{"beginner", "easy", "medium", "hard", "elite", "master"}) {
+            IDS.add("clue_scroll_" + tier);
+            IDS.add("reward_casket_" + tier);
+        }
+        add("puzzle_box", "light_box", "bloodhound");
         // Boss/slayer items that become untradeable once made.
         add("slayer_helmet", "slayer_helmet_i", "abyssal_tentacle", "ferocious_gloves", "crystal_helm", "crystal_body",
                 "crystal_legs", "harmonised_nightmare_staff", "volatile_nightmare_staff", "eldritch_nightmare_staff",

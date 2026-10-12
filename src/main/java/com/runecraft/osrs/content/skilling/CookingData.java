@@ -19,7 +19,7 @@ public final class CookingData extends SkillingPart {
 
     /** The Hosidius kitchen (OSRS tiles, inclusive): its range burns food 5% less often. */
     public static final int[] HOSIDIUS_KITCHEN = {1758, 3612, 1766, 3620};
-    /** Burn reduction of the Hosidius range (10% after the elite Kourend &amp; Kebos diary, not tracked here). */
+    /** Burn reduction of the Hosidius range; the systems module makes it need the easy Kourend &amp; Kebos diary and raises it to 10% with the elite. */
     public static final double HOSIDIUS_BURN_REDUCTION = 0.05;
 
     /** Burn reduction of a range standing on OSRS tile (x, y): the Hosidius kitchen's, else 0. */
