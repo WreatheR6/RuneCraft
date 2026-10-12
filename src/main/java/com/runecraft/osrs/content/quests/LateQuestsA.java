@@ -235,7 +235,9 @@ final class LateQuestsA {
                 .drops(Drop.always("big_bones")).size(1.2f, 2.6f, 1.0f).at("ice_troll_cave").arena(11, "ice"));
         b.quest("the_fremennik_isles", "The Fremennik Isles", Difficulty.EXPERIENCED, 1)
                 .reqQuest("fremennik_trials").req(Skill.CONSTRUCTION, 20).req(Skill.AGILITY, 40)
-                .xp(Skill.CONSTRUCTION, 5000).xp(Skill.CRAFTING, 10000).xp(Skill.WOODCUTTING, 10000).reward("helm_of_neitiznot")
+                .xp(Skill.CONSTRUCTION, 5000).xp(Skill.CRAFTING, 5000).xp(Skill.WOODCUTTING, 10000).reward("helm_of_neitiznot")
+                // Plus two 10,000 XP rewards in Attack, Strength, Defence or Hitpoints (player's choice). // approx: fixed skills
+                .xp(Skill.STRENGTH, 10000).xp(Skill.DEFENCE, 10000)
                 .stage("I can start this quest by speaking to Mord Gunnars on the Rellekka docks. (Requires The Fremennik Trials, 20 Construction, 40 Agility.)")
                 .talk("mord_gunnars").travel("neitiznot").say("To the isles? Neitiznot and Jatizso are at war with each other... and with the ice trolls. Off we go.")
                 .stage("I should speak to Mawnis Burowgar, the Burgher of Neitiznot.")

@@ -109,7 +109,12 @@ final class AsgarniaKandarinQuests {
                 .done("lc_warrior", "You found Zanaris? Incredible!")
                 .done("lc_archer", "Zanaris! Who would have thought it was in a shed?")
                 .done("lc_monk", "Saradomin guided you to the lost city.")
-                .done("lc_wizard", "The magic of Zanaris is astonishing, isn't it?");
+                .done("lc_wizard", "The magic of Zanaris is astonishing, isn't it?")
+                .done("jukat", "Dragon blades, finest in all the realms.");
+        // Jukat's Dragon Sword Shop in the Zanaris market: the only shop selling dragon longswords and daggers.
+        b.npc("jukat", "Jukat", "quest_zanaris", 4, 0, 0x8A3A2A, 0x3A2A2A, 0x2A1A1A, 0xC08A2A);
+        b.shop("jukat", "dragon_dagger", 30000, "lost_city", null, null, 0, "Dragon dagger? 30,000 coins. Finest steel in all the realms!");
+        b.shop("jukat", "dragon_longsword", 100000, "lost_city", null, null, 0, "Dragon longsword? 100,000 coins. Finest steel in all the realms!");
     }
 
     // ---------------------------------------------------------------- Waterfall Quest
@@ -181,7 +186,7 @@ final class AsgarniaKandarinQuests {
                 .talk("candle_maker").stay().unless("black_candle").take("minecraft:honeycomb").give("black_candle")
                 .say("A black candle? I'll need black wax... I'll dye this wax for you. *He lights it for you.*")
                 .missing("Black candles need wax. Bring me some wax from the beehives (a honeycomb).")
-                .drop("minecraft:bat", "bat_bones", 1)
+                .drop("giant_bat", "bat_bones", 1)
                 .drop("minecraft:skeleton", "bat_bones", 6)
                 .talk("thrantax").need("excalibur").take("black_candle", "bat_bones")
                 .say("* You light the candle, drop the bat bones and chant: 'Snarthon Candtrick Termanto!'",

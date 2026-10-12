@@ -118,7 +118,9 @@ public final class Travel {
             List<Dest> dests = new ArrayList<>();
             for (int j = 0; j < CHARTER_PORTS.length; j++) {
                 if (i != j) {
-                    dests.add(Dest.of(CHARTER_PORTS[j], CHARTER_TILES[j][0], CHARTER_TILES[j][1], charterFare(i, j)));
+                    // OSRS: Port Phasmatys (Morytania) needs Priest in Peril; Mos Le'Harmless needs Cabin Fever.
+                    String quest = j == 5 ? "priest_in_peril" : j == 6 ? "cabin_fever" : null;
+                    dests.add(new Dest(CHARTER_PORTS[j], CHARTER_TILES[j][0], CHARTER_TILES[j][1], charterFare(i, j), null, 0, quest));
                 }
             }
             route(charterRoute(i), "sail", dests.toArray(new Dest[0]));

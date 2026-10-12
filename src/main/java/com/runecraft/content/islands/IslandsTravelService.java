@@ -56,6 +56,12 @@ final class IslandsTravelService {
             Msg.game(player, "The fairy ring only works for those who have started Fairytale II - Cure a Queen.");
             return;
         }
+        // OSRS: fairy rings only work while wielding a Dramen or Lunar staff.
+        String staff = com.runecraft.util.Inv.idOf(player.getMainHandStack());
+        if (fairy && !"dramen_staff".equals(staff) && !"lunar_staff".equals(staff)) {
+            Msg.game(player, "You need to wield a Dramen or Lunar staff to use the fairy rings.");
+            return;
+        }
         IslandsTravel.Stop here = here(network, pos);
         String hereCode = here == null ? "" : here.code();
         String key = player.getUuid() + "|" + network.id();

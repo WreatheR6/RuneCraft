@@ -27,7 +27,7 @@ final class QuestShops {
                 return false;
             }
         }
-        if (s.flag() != null && !QuestInterpreter.flag(p, s.flag())) {
+        if (!s.flagsMet(f -> QuestInterpreter.flag(p, f))) {
             return false;
         }
         return s.skill() == null || data.skills().level(s.skill()) >= s.level();

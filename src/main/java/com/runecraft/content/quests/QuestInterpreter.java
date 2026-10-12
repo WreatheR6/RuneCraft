@@ -118,6 +118,9 @@ public final class QuestInterpreter {
         if (t.minQuestPoints > 0 && data.questPoints() < t.minQuestPoints) {
             return "You need " + t.minQuestPoints + " quest points.";
         }
+        if (t.minCombat > 0 && data.skills().combatLevel() < t.minCombat) {
+            return "You need a combat level of " + t.minCombat + ".";
+        }
         for (Map.Entry<Skill, Integer> e : t.skills.entrySet()) {
             if (data.skills().level(e.getKey()) < e.getValue()) {
                 return "You need " + Msg.article(e.getKey().displayName()) + " level of " + e.getValue() + ".";

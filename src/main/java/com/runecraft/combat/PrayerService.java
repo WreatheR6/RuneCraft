@@ -63,6 +63,14 @@ public final class PrayerService {
                 Msg.game(player, "You need a Prayer level of " + prayer.level() + " to use " + prayer.displayName() + ".");
                 return;
             }
+            String locked = com.runecraft.osrs.content.quests.QuestUnlocks.prayer(prayer, data.skills(), id -> {
+                com.runecraft.osrs.QuestInfo q = com.runecraft.osrs.content.ContentRegistry.quest(id);
+                return q == null || data.questComplete(q);
+            });
+            if (locked != null) {
+                Msg.game(player, locked);
+                return;
+            }
             if (data.prayerPoints() <= 0) {
                 Msg.game(player, "You have run out of Prayer points, you can recharge at an altar.");
                 return;

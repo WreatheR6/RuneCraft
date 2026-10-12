@@ -133,6 +133,9 @@ final class F2pQuests {
                         "I'll sell ye a rune platebody whenever ye like. And ye've earned the right to wear one.")
                 .done("oziach", "Ye can wear rune platebodies now, champion.")
                 .done("guildmaster", "The slayer of Elvarg! Welcome, champion.");
+        // Oziach's Armour: rune platebodies for those who have slain Elvarg. 84,500 coins (130% of value). // approx
+        b.shop("oziach", "rune_platebody", 84500, "dragon_slayer_i", null, null, 0,
+                "A rune platebody for the slayer of Elvarg? 84,500 coins, and worth every one.");
     }
 
     // ---------------------------------------------------------------- Black Knights' Fortress
@@ -143,9 +146,9 @@ final class F2pQuests {
                 .qp(12).reward("coins:2500")
                 .stage("I can start this quest by speaking to Sir Amik Varze in the White Knights' Castle in Falador. (Requires 12 quest points.)")
                 .talk("sir_amik_varze").say("The Black Knights are brewing an invincibility potion in their fortress! We need a spy.",
-                        "Disguise yourself as a guard: you'll need an iron chainbody and a bronze helm. Iron plate and a bronze full helm will do.")
-                .stage("I need to infiltrate the Black Knights' Fortress disguised as a guard (bronze full helm and iron platebody).")
-                .reach("black_knights_fortress", 10).need("bronze_full_helm", "iron_platebody")
+                        "Disguise yourself as a guard: you'll need an iron chainbody and a bronze med helm.")
+                .stage("I need to infiltrate the Black Knights' Fortress disguised as a guard (bronze med helm and iron chainbody).")
+                .reach("black_knights_fortress", 10).need("bronze_med_helm", "iron_chainbody")
                 .say("* Wearing your disguise, you slip past the guards. Through a grill you overhear: the potion needs only a cabbage to finish!")
                 .stage("The potion only needs a cabbage. I should sabotage it by dropping a cabbage into the witch's cauldron.")
                 .talk("black_knight_witch").take("cabbage")

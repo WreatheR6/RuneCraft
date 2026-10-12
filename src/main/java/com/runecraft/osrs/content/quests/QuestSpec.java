@@ -233,6 +233,12 @@ public final class QuestSpec {
         return this;
     }
 
+    /** Requires a combat level (Dream Mentor: 85). */
+    public QuestSpec reqCombat(int level) {
+        cur().minCombat = level;
+        return this;
+    }
+
     public QuestSpec reqSkill(Skill skill, int level) {
         cur().skills.put(skill, level);
         return this;
@@ -334,6 +340,7 @@ public final class QuestSpec {
         public final List<String> quests = new ArrayList<>();
         public final Map<Skill, Double> xp = new EnumMap<>(Skill.class);
         public int minQuestPoints;
+        public int minCombat;
         public int next = DEFAULT;
         public int chance = 1;
         public int radius = 8;
