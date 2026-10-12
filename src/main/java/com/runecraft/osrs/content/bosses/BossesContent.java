@@ -32,7 +32,9 @@ public final class BossesContent implements ContentModule {
 
     @Override
     public List<MonsterDef> monsters() {
-        return BossMinions.all();
+        List<MonsterDef> all = new ArrayList<>(BossMinions.all());
+        all.addAll(ModernBosses.minions());
+        return all;
     }
 
     @Override
@@ -44,6 +46,7 @@ public final class BossesContent implements ContentModule {
         all.addAll(MinigameBosses.all());
         all.addAll(Dt2Bosses.all());
         all.addAll(VarlamoreBosses.all());
+        all.addAll(ModernBosses.all());
         for (BossDef b : all) {
             if (b.model == null) {
                 b.model(b.id);

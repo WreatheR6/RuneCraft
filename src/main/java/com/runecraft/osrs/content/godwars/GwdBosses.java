@@ -23,12 +23,12 @@ public final class GwdBosses {
 
     // --- Kree'arra ---
     public static final AttackDef KREE_MELEE = AttackDef.of("talon swipe", AttackType.SLASH, 26, 3.5, 2);
-    public static final AttackDef KREE_TORNADO = AttackDef.of("tornado", AttackType.RANGED, 71, 24, 6)
+    public static final AttackDef KREE_TORNADO = AttackDef.of("tornado", AttackType.RANGED, 69, 24, 6)
             .special(Special.KNOCKBACK, 3).particle("minecraft:cloud");
     public static final AttackDef KREE_WIND = AttackDef.of("wind blast", AttackType.MAGIC, 21, 24, 3).particle("minecraft:sweep_attack");
 
     // --- Commander Zilyana ---
-    public static final AttackDef ZILY_MELEE = AttackDef.of("saradomin sword", AttackType.SLASH, 31, 3.0, 6);
+    public static final AttackDef ZILY_MELEE = AttackDef.of("saradomin sword", AttackType.SLASH, 27, 3.0, 6);
     public static final AttackDef ZILY_MAGIC = AttackDef.of("saradomin strike", AttackType.MAGIC, 20, 24, 3)
             .particle("minecraft:end_rod").message("Commander Zilyana calls down the power of Saradomin!");
 

@@ -980,8 +980,8 @@ public final class MonsterStatsTable {
         maxHit("vardorvis", "axe_swing", 43); // was 35
         // The Hueycoatl (Normal)
         row("the_hueycoatl", 642, 2500, 150, 50, 125, 50, 50, 5, 100, 100, 0, 200, 350, 100, 200, 250, "dragon");
-        // Amoxliatl (Quest)
-        row("amoxliatl", 226, 400, 1, 1, 60, 140, 1, 8, 100, 100, 40, 100, 200, 0, 140, 0, "spectral");
+        // Amoxliatl (Post-quest: the repeatable boss; the 226/400 HP version is the quest fight)
+        row("amoxliatl", 263, 520, 1, 1, 80, 170, 1, 8, 100, 100, 40, 100, 200, 0, 160, 0, "spectral");
         // Branda the Fire Queen
         row("branda_the_fire_queen", 350, 600, 300, 250, 100, 100, 150, 7, 12, 12, 0, 700, 700, 150, 100, 100, "fiery");
         maxHit("branda_the_fire_queen", "molten_fist", 26); // was 35

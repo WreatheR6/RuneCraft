@@ -252,6 +252,9 @@
   "brutal_red_dragon": [
     "head"
   ],
+  "brutus": [
+    "eyes"
+  ],
   "bryophyta": [
     "head",
     "staff_orb"
@@ -543,6 +546,21 @@
     "jaw",
     "brand"
   ],
+  "demonic_brutus": [
+    "body",
+    "hump",
+    "shoulder_l",
+    "shoulder_r",
+    "head",
+    "eyes",
+    "jaw",
+    "breath",
+    "leg_f_l",
+    "leg_f_r",
+    "leg_b_l",
+    "leg_b_r",
+    "tail_tuft"
+  ],
   "dessourt": [
     "head",
     "soul_glow",
@@ -560,6 +578,15 @@
     "head",
     "eye_glow_l",
     "eye_glow_r"
+  ],
+  "doom_of_mokhaiotl": [
+    "body",
+    "plate2",
+    "belly",
+    "eye_cluster",
+    "jaw",
+    "forearm_l",
+    "forearm_r"
   ],
   "dragon_impling": [
     "head",
@@ -760,6 +787,16 @@
     "jaw",
     "core",
     "drips"
+  ],
+  "gemstone_crab": [
+    "gem0",
+    "gem1",
+    "gem2",
+    "gem3",
+    "gem4",
+    "gem5",
+    "gem6",
+    "gem7"
   ],
   "general_graardor": [
     "head"
@@ -1258,6 +1295,16 @@
     "head",
     "sparkle"
   ],
+  "maggot_king": [
+    "sac0",
+    "sac1",
+    "sac2",
+    "sac3",
+    "sac4",
+    "sac5",
+    "jaw",
+    "crown"
+  ],
   "magpie_impling": [
     "head",
     "sparkle"
@@ -1704,6 +1751,9 @@
     "wisp0",
     "wisp1",
     "wisp2"
+  ],
+  "shellbane_gryphon": [
+    "eyes"
   ],
   "shifter": [
     "spikes",
@@ -2271,6 +2321,31 @@
     "pustule3",
     "spit",
     "poison_pool"
+  ],
+  "yama": [
+    "hips",
+    "faulds",
+    "torso",
+    "breastplate",
+    "head",
+    "eyes",
+    "jaw",
+    "crown",
+    "pauldron_l",
+    "pauldron_r",
+    "arm_l",
+    "forearm_l",
+    "forearm_r",
+    "thigh_l",
+    "thigh_r",
+    "greave_l",
+    "greave_r"
+  ],
+  "yama_void_flare": [
+    "core",
+    "shell",
+    "ring",
+    "eye"
   ],
   "young_impling": [
     "head",
