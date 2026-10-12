@@ -50,6 +50,9 @@ public final class ThievingService {
     /** Pickpocket success-chance multiplier (achievement diary perks register theirs; 1.0 = none). */
     public static java.util.function.ToDoubleFunction<ServerPlayerEntity> pickpocketBonus = p -> 1.0;
 
+    /** Whether a failed pickpocket goes unnoticed (Shadow Veil registers its 15% chance; default never). */
+    public static java.util.function.Predicate<ServerPlayerEntity> failUnnoticed = p -> false;
+
     /** A pickpocket success chance after bonuses, capped at 100%. */
     public static double pickpocketChance(ServerPlayerEntity player, double base) {
         return Math.min(1.0, base * pickpocketBonus.applyAsDouble(player));
@@ -78,6 +81,10 @@ public final class ThievingService {
             com.runecraft.network.ServerNetworking.sync(player);
         } else {
             Msg.game(player, "You fail to pick the " + kind.displayName() + "'s pocket.");
+            if (failUnnoticed.test(player)) {
+                Msg.game(player, "Your attempt goes unnoticed.");
+                return;
+            }
             Msg.red(player, "You have been stunned!");
             int damage = 1 + player.getRandom().nextInt(kind.stunDamage());
             target.swingHand(Hand.MAIN_HAND);

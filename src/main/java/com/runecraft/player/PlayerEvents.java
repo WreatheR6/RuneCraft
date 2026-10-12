@@ -124,14 +124,14 @@ public final class PlayerEvents {
         com.runecraft.combat.Aggression.gameTick(player, gameTick);
         com.runecraft.combat.AutoRetaliate.gameTick(player, gameTick);
         // Hitpoints regenerate 1 per minute (twice as fast with Rapid Heal).
-        int regenTicks = data.isActive(Prayer.RAPID_HEAL) ? 50 : 100;
+        int regenTicks = com.runecraft.osrs.PrayerEffects.hitpointsRegenTicks(data.isActive(Prayer.RAPID_HEAL));
         if (gielinor && gameTick % regenTicks == 0 && player.getHealth() < player.getMaxHealth() && player.isAlive()) {
             player.heal(1);
         }
         // Boosted stats fall by 1 level per minute (90 s with Preserve); drained stats recover by 1 level per
         // minute (30 s with Rapid Restore).
-        boolean boostDecay = gameTick % (data.isActive(Prayer.PRESERVE) ? 150 : 100) == 0;
-        boolean drainRestore = gameTick % (data.isActive(Prayer.RAPID_RESTORE) ? 50 : 100) == 0;
+        boolean boostDecay = gameTick % com.runecraft.osrs.PrayerEffects.boostDecayTicks(data.isActive(Prayer.PRESERVE)) == 0;
+        boolean drainRestore = gameTick % com.runecraft.osrs.PrayerEffects.statRestoreTicks(data.isActive(Prayer.RAPID_RESTORE)) == 0;
         if (boostDecay || drainRestore) {
             data.skills().decay(boostDecay, drainRestore, true);
             if (boostDecay) {

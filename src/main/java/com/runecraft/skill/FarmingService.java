@@ -220,6 +220,61 @@ public final class FarmingService {
         world.playSound(null, pos, SoundEvents.ITEM_CROP_PLANT, SoundCategory.BLOCKS, 1.0f, 1.0f);
     }
 
+    // ------------------------------------------------------------------ farming spells (Lunar / Arceuus)
+
+    /** One-line state of a herb or allotment patch (Geomancy). */
+    public static String status(BlockState state, FarmingPatchBlock patch) {
+        int crop = state.get(patch.cropProperty());
+        String kind = patch.isHerbPatch() ? "Herb patch" : "Allotment";
+        if (crop == 0) {
+            return kind + ": empty" + (state.get(FarmingPatchBlock.COMPOST) > 0 ? " (composted)." : ".");
+        }
+        String name = cropName(patch, crop);
+        return switch (state.get(FarmingPatchBlock.DISEASE)) {
+            case 2 -> kind + ": the " + name + " is dead.";
+            case 1 -> kind + ": the " + name + " is diseased.";
+            default -> kind + ": " + name + (state.get(FarmingPatchBlock.STAGE) >= 4 ? ", ready to harvest." : ", growing.");
+        };
+    }
+
+    /** Cure Plant: cures a diseased patch. Returns false (nothing to cure) without changing anything. */
+    public static boolean curePlant(ServerWorld world, BlockPos pos, BlockState state, FarmingPatchBlock patch) {
+        if (state.get(patch.cropProperty()) == 0 || state.get(FarmingPatchBlock.DISEASE) != 1) {
+            return false;
+        }
+        world.setBlockState(pos, state.with(FarmingPatchBlock.DISEASE, 0), Block.NOTIFY_ALL);
+        world.playSound(null, pos, SoundEvents.BLOCK_AZALEA_LEAVES_BREAK, SoundCategory.BLOCKS, 1.0f, 1.2f);
+        return true;
+    }
+
+    /** Fertile Soil: treats the patch with supercompost. Returns false if it can't be treated. */
+    public static boolean fertilise(ServerWorld world, BlockPos pos, BlockState state, FarmingPatchBlock patch) {
+        int crop = state.get(patch.cropProperty());
+        if (state.get(FarmingPatchBlock.COMPOST) > 0 || state.get(FarmingPatchBlock.DISEASE) > 0
+                || (crop > 0 && state.get(FarmingPatchBlock.STAGE) >= 4)) {
+            return false;
+        }
+        world.setBlockState(pos, state.with(FarmingPatchBlock.COMPOST, 2), Block.NOTIFY_ALL);
+        world.playSound(null, pos, SoundEvents.BLOCK_COMPOSTER_FILL, SoundCategory.BLOCKS, 1.0f, 1.0f);
+        return true;
+    }
+
+    /** True if the patch holds a dead crop (Resurrect Crops target). */
+    public static boolean isDead(BlockState state, FarmingPatchBlock patch) {
+        return state.get(patch.cropProperty()) > 0 && state.get(FarmingPatchBlock.DISEASE) == 2;
+    }
+
+    /** Resurrect Crops: brings a dead crop back to health, or clears the patch when the spell fails. */
+    public static void resurrect(ServerWorld world, BlockPos pos, BlockState state, FarmingPatchBlock patch, boolean success) {
+        if (success) {
+            world.setBlockState(pos, state.with(FarmingPatchBlock.DISEASE, 0), Block.NOTIFY_ALL);
+            world.playSound(null, pos, SoundEvents.ITEM_BONE_MEAL_USE, SoundCategory.BLOCKS, 1.0f, 1.0f);
+        } else {
+            world.setBlockState(pos, empty(state, patch), Block.NOTIFY_ALL);
+            world.playSound(null, pos, SoundEvents.BLOCK_GRAVEL_BREAK, SoundCategory.BLOCKS, 1.0f, 1.0f);
+        }
+    }
+
     private static String cropName(FarmingPatchBlock patch, int crop) {
         return patch.isHerbPatch() ? "herb" : Allotment.values()[crop - 1].displayName().toLowerCase(Locale.ROOT);
     }

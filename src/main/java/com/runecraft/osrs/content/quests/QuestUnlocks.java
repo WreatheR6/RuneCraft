@@ -16,8 +16,8 @@ public final class QuestUnlocks {
 
     /**
      * Chivalry and Piety are taught at the Knight Waves training ground, open after King's Ransom
-     * (and need 65 / 70 Defence). Rigour and Augury need 70 Defence (their prayer scrolls aren't
-     * checked here).
+     * (and need 65 / 70 Defence). Rigour and Augury need 70 Defence (their prayer scrolls are
+     * checked by PrayerService).
      */
     public static String prayer(Prayer prayer, SkillSet skills, Predicate<String> questDone) {
         int defence = switch (prayer) {

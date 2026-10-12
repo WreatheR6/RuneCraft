@@ -38,9 +38,16 @@ public final class PrayerService {
         return best(d, Prayer::strengthMultiplier);
     }
 
+    /** Best defence prayer plus Deadeye's / Mystic Vigour's stacking +5%. */
     public static double defence(PlayerData d) {
-        return best(d, Prayer::defenceMultiplier);
+        return Prayer.defenceMultiplier(d.activePrayers());
     }
+
+    /**
+     * Whether the player has read the scroll a prayer needs (Rigour, Augury, Preserve, Deadeye, Mystic Vigour).
+     * The systems module stores the scrolls read; without it every prayer counts as learnt.
+     */
+    public static java.util.function.BiPredicate<ServerPlayerEntity, Prayer> scrollRead = (p, prayer) -> true;
 
     public static double rangedAttack(PlayerData d) {
         return best(d, Prayer::rangedAttackMultiplier);
@@ -71,6 +78,12 @@ public final class PrayerService {
                 Msg.game(player, locked);
                 return;
             }
+            if (prayer.unlockScroll() != null && !scrollRead.test(player, prayer)) {
+                com.runecraft.osrs.ItemDef scroll = com.runecraft.osrs.ItemCatalog.get(prayer.unlockScroll());
+                Msg.game(player, "You need to learn " + prayer.displayName() + " from "
+                        + (scroll == null ? "a prayer scroll" : Msg.article(scroll.name().toLowerCase(java.util.Locale.ROOT))) + " first.");
+                return;
+            }
             if (data.prayerPoints() <= 0) {
                 Msg.game(player, "You have run out of Prayer points, you can recharge at an altar.");
                 return;
@@ -85,6 +98,10 @@ public final class PrayerService {
     /** Called every game tick. */
     public static void gameTick(ServerPlayerEntity player, long gameTick) {
         PlayerData data = Players.data(player);
+        if (data.activePrayers().isEmpty()) {
+            return;
+        }
+        PrayerEffectsService.redemption(player, data);
         if (data.activePrayers().isEmpty()) {
             return;
         }
@@ -123,7 +140,8 @@ public final class PrayerService {
             player.swingHand(net.minecraft.util.Hand.MAIN_HAND, true);
             return;
         }
-        int max = data.skills().currentLevel(Skill.PRAYER);
+        // Altars restore Prayer points to the base level (a boosted or drained level doesn't change the cap).
+        int max = data.skills().level(Skill.PRAYER);
         if (data.prayerPoints() >= max) {
             Msg.game(player, "You already have full Prayer points.");
             return;

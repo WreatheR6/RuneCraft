@@ -53,6 +53,10 @@ final class ThievingHooks {
             ServerNetworking.sync(player);
         } else {
             Msg.game(player, "You fail to pick the " + SkillingUtil.lower(t.name()) + "'s pocket.");
+            if (com.runecraft.skill.ThievingService.failUnnoticed.test(player)) {
+                Msg.game(player, "Your attempt goes unnoticed.");
+                return;
+            }
             Msg.red(player, "You have been stunned!");
             npc.swingHand(Hand.MAIN_HAND);
             CombatHandler.applyDamage(npc, player, 1 + player.getRandom().nextInt(t.stunDamage()));

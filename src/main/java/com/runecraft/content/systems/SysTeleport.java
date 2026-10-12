@@ -17,6 +17,9 @@ public final class SysTeleport {
     public static final int SPELL_WILDERNESS = 20;
     public static final int JEWELLERY_WILDERNESS = 30;
 
+    /** Teleport to House (the extras module's player-owned house registers itself here). */
+    public static java.util.function.Consumer<ServerPlayerEntity> houseTeleport = p -> Msg.game(p, "You don't have a house to teleport to.");
+
     private SysTeleport() {
     }
 

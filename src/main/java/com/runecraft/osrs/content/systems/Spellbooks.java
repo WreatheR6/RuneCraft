@@ -63,7 +63,7 @@ public final class Spellbooks {
     }
 
     private static void tele(Book book, String id, String name, int level, double xp, int x, int y, Map<String, Integer> runes) {
-        Teleports.Destination d = Teleports.at(name.replace(" Teleport", ""), x, y);
+        Teleports.Destination d = Teleports.at(name.replace(" Teleport", "").replace("Tele Group ", ""), x, y);
         SPELLS.put(id, new Spell(id, name, book, level, xp, runes, Kind.TELEPORT, 0, Effect.NONE, 0, false, d, null,
                 "Teleports you to " + d.name() + "."));
     }
@@ -110,6 +110,9 @@ public final class Spellbooks {
         util(S, "enchant_7", "Lvl-7 Enchant", 93, 110, r("cosmic", 1, "blood", 20, "soul", 20), "Enchants zenyte jewellery.");
         tele(S, "kourend_castle_teleport", "Kourend Castle Teleport", 69, 82, 1643, 3673, r("soul", 2, "law", 2, "water", 4, "fire", 5));
         tele(S, "ape_atoll_teleport", "Ape Atoll Teleport", 64, 74, 2769, 2785, r("law", 2, "fire", 2, "water", 2));
+        // Needs Twilight's Promise; lands at the Sunrise Palace. Runes approx (the wiki's portal costs 200 law / 100 earth / 100 fire).
+        tele(S, "civitas_illa_fortis_teleport", "Civitas illa Fortis Teleport", 54, 64, 1681, 3133, r("law", 2, "earth", 1, "fire", 1));
+        util(S, "house_teleport", "Teleport to House", 40, 30, r("law", 1, "air", 1, "earth", 1), "Teleports you to your player-owned house.");
 
         // ======================= Ancient Magicks =======================
         Book A = Book.ANCIENT;
@@ -145,25 +148,44 @@ public final class Spellbooks {
         SPELLS.put("lunar_home_teleport", new Spell("lunar_home_teleport", "Lunar Home Teleport", L, 1, 0, Map.of(), Kind.TELEPORT, 0,
                 Effect.NONE, 0, false, Teleports.LUNAR_HOME, null, "Teleports you to Lunar Isle."));
         util(L, "bake_pie", "Bake Pie", 65, 60, r("astral", 1, "fire", 5, "water", 4), "Bakes the uncooked pies in your inventory.");
+        util(L, "geomancy", "Geomancy", 65, 60, r("astral", 2, "earth", 8, "nature", 3), "Shows the state of the farming patches around you.");
+        util(L, "cure_plant", "Cure Plant", 66, 60, r("astral", 1, "earth", 8), "Cures the diseased patch you are looking at.");
+        util(L, "monster_examine", "Monster Examine", 66, 61, r("astral", 1, "cosmic", 1, "mind", 1), "Shows a monster's combat stats.");
+        util(L, "cure_other", "Cure Other", 68, 65, r("astral", 1, "law", 1, "earth", 10), "Cures another player of poison.");
         util(L, "npc_contact", "NPC Contact", 67, 63, r("astral", 1, "cosmic", 1, "air", 2), "Speak to an NPC from afar.");
         util(L, "humidify", "Humidify", 68, 65, r("astral", 1, "water", 3, "fire", 1), "Fills your empty vials with water.");
         tele(L, "moonclan_teleport", "Moonclan Teleport", 69, 66, 2113, 3917, r("astral", 2, "law", 1, "earth", 2));
         util(L, "cure_me", "Cure Me", 71, 69, r("astral", 2, "cosmic", 2, "law", 1), "Cures poison.");
+        tele(L, "tele_group_moonclan", "Tele Group Moonclan", 70, 67, 2113, 3917, r("astral", 2, "law", 1, "earth", 4));
         tele(L, "ourania_teleport", "Ourania Teleport", 71, 69, 2468, 3246, r("astral", 2, "law", 1, "earth", 6));
         util(L, "hunter_kit", "Hunter Kit", 71, 70, r("astral", 2, "earth", 2), "Creates a kit of hunter gear.");
         tele(L, "waterbirth_teleport", "Waterbirth Teleport", 72, 71, 2546, 3757, r("astral", 2, "law", 1, "water", 1));
+        tele(L, "tele_group_waterbirth", "Tele Group Waterbirth", 73, 72, 2546, 3757, r("astral", 2, "law", 1, "water", 5));
         util(L, "cure_group", "Cure Group", 74, 74, r("astral", 2, "cosmic", 2, "law", 2), "Cures poison for you and nearby players.");
         util(L, "stat_spy", "Stat Spy", 75, 76, r("astral", 2, "cosmic", 2, "body", 5), "Shows another player's stats.");
         tele(L, "barbarian_teleport", "Barbarian Teleport", 75, 76, 2543, 3568, r("astral", 2, "law", 2, "fire", 3));
+        tele(L, "tele_group_barbarian", "Tele Group Barbarian", 76, 77, 2543, 3568, r("astral", 2, "law", 2, "fire", 6));
         util(L, "superglass_make", "Superglass Make", 77, 78, r("astral", 2, "fire", 6, "air", 10), "Turns sand and seaweed into molten glass.");
         util(L, "tan_leather", "Tan Leather", 78, 81, r("astral", 2, "fire", 5, "nature", 1), "Tans hides in your inventory.");
         tele(L, "khazard_teleport", "Khazard Teleport", 78, 80, 2636, 3167, r("astral", 2, "law", 2, "water", 4));
+        tele(L, "tele_group_khazard", "Tele Group Khazard", 79, 81, 2636, 3167, r("astral", 2, "law", 2, "water", 8));
+        util(L, "dream", "Dream", 79, 82, r("astral", 2, "cosmic", 1, "body", 5), "Rest to regenerate Hitpoints twice as fast.");
         util(L, "string_jewellery", "String Jewellery", 80, 83, r("astral", 2, "earth", 10, "water", 5), "Strings the amulets in your inventory.");
+        util(L, "stat_restore_pot_share", "Stat Restore Pot Share", 81, 84, r("astral", 2, "water", 10, "earth", 10),
+                "Shares a dose of your restore potion with nearby players.");
         util(L, "magic_imbue", "Magic Imbue", 82, 86, r("astral", 2, "fire", 7, "water", 7), "Combination runes without talismans for 12 seconds.");
+        util(L, "fertile_soil", "Fertile Soil", 83, 87, r("astral", 3, "nature", 2, "earth", 15), "Treats the patch you are looking at with supercompost.");
+        util(L, "boost_potion_share", "Boost Potion Share", 84, 88, r("astral", 3, "water", 10, "earth", 12),
+                "Shares a dose of your boosting potion with nearby players.");
         tele(L, "fishing_guild_teleport", "Fishing Guild Teleport", 85, 89, 2611, 3393, r("astral", 3, "law", 3, "water", 10));
+        tele(L, "tele_group_fishing_guild", "Tele Group Fishing Guild", 86, 90, 2611, 3393, r("astral", 3, "law", 3, "water", 14));
         util(L, "plank_make", "Plank Make", 86, 90, r("astral", 2, "nature", 1, "earth", 15), "Turns logs into planks.");
         tele(L, "catherby_teleport", "Catherby Teleport", 87, 92, 2804, 3433, r("astral", 3, "law", 3, "water", 10));
+        tele(L, "tele_group_catherby", "Tele Group Catherby", 88, 93, 2804, 3433, r("astral", 3, "law", 3, "water", 15));
+        util(L, "recharge_dragonstone", "Recharge Dragonstone", 89, 97.5, r("astral", 1, "water", 4, "soul", 1),
+                "Recharges the dragonstone jewellery you are wearing.");
         tele(L, "ice_plateau_teleport", "Ice Plateau Teleport", 89, 96, 2973, 3939, r("astral", 3, "law", 3, "water", 8));
+        tele(L, "tele_group_ice_plateau", "Tele Group Ice Plateau", 90, 99, 2973, 3939, r("astral", 3, "law", 3, "water", 16));
         util(L, "energy_transfer", "Energy Transfer", 91, 100, r("astral", 3, "law", 2, "nature", 1), "Gives your special energy and run energy to another player.");
         util(L, "heal_other", "Heal Other", 92, 101, r("astral", 3, "law", 3, "blood", 1), "Transfers 75% of your hitpoints to another player.");
         util(L, "vengeance_other", "Vengeance Other", 93, 108, r("astral", 3, "death", 2, "earth", 10), "Casts Vengeance on another player.");
@@ -188,7 +210,8 @@ public final class Spellbooks {
         tele(R, "salve_graveyard_teleport", "Salve Graveyard Teleport", 40, 30, 3432, 3460, r("law", 1, "soul", 2));
         util(R, "adept_reanimation", "Adept Reanimation", 41, 80, r("body", 4, "nature", 3, "soul", 1), "Reanimates an adept ensouled head.");
         combat(R, "inferior_demonbane", "Inferior Demonbane", 44, 27, 16, Effect.DEMON, 0, false, r("fire", 4, "chaos", 1), "Deals up to 16 damage to demons.");
-        util(R, "shadow_veil", "Shadow Veil", 47, 58, r("earth", 5, "fire", 5, "cosmic", 5), "Your thieving failures go unnoticed.");
+        util(R, "shadow_veil", "Shadow Veil", 47, 58, r("earth", 5, "fire", 5, "cosmic", 5),
+                "Failed pickpockets have a 15% chance to go unnoticed (no stun or damage).");
         tele(R, "fenkenstrains_castle_teleport", "Fenkenstrain's Castle Teleport", 48, 50, 3548, 3528, r("law", 1, "earth", 1, "soul", 1));
         util(R, "dark_lure", "Dark Lure", 50, 60, r("death", 1, "nature", 1), "Lures a monster to attack you.");
         combat(R, "skeletal_grasp", "Skeletal Grasp", 56, 33, 17, Effect.BIND, 8, false, r("death", 1, "earth", 8), "Binds the target for 5 seconds.");
@@ -198,29 +221,92 @@ public final class Spellbooks {
         util(R, "mark_of_darkness", "Mark of Darkness", 59, 70, r("cosmic", 1, "soul", 1), "Increases damage against demons by 25%.");
         tele(R, "west_ardougne_teleport", "West Ardougne Teleport", 61, 68, 2500, 3290, r("law", 2, "soul", 2));
         combat(R, "superior_demonbane", "Superior Demonbane", 62, 36, 23, Effect.DEMON, 0, false, r("fire", 5, "soul", 1), "Deals up to 23 damage to demons.");
-        util(R, "lesser_corruption", "Lesser Corruption", 64, 75, r("death", 1, "soul", 2), "Corrupts nearby enemies' prayer.");
+        util(R, "lesser_corruption", "Lesser Corruption", 64, 75, r("death", 1, "soul", 2),
+                "Your next hit on a player has a 50% chance to drain 1, 2 then 3 of their Prayer points.");
         tele(R, "harmony_island_teleport", "Harmony Island Teleport", 65, 74, 3797, 2866, r("law", 1, "nature", 1, "soul", 1));
         util(R, "vile_vigour", "Vile Vigour", 66, 76, r("air", 3, "soul", 1), "Restores run energy at the cost of prayer.");
         util(R, "degrime", "Degrime", 70, 83, r("earth", 4, "nature", 2), "Cleans all grimy herbs in your inventory.");
         tele(R, "cemetery_teleport", "Cemetery Teleport", 71, 82, 2978, 3763, r("blood", 1, "law", 1, "soul", 1));
         util(R, "expert_reanimation", "Expert Reanimation", 72, 138, r("blood", 1, "nature", 3, "soul", 2), "Reanimates an expert ensouled head.");
-        util(R, "ward_of_arceuus", "Ward of Arceuus", 73, 84, r("cosmic", 1, "nature", 2, "soul", 4), "Reduces damage taken from monsters by 20% for a while.");
+        util(R, "ward_of_arceuus", "Ward of Arceuus", 73, 83, r("cosmic", 1, "nature", 2, "soul", 4),
+                "Binds on you last only 1 tick and you can't be corrupted.");
         util(R, "resurrect_greater_ghost", "Resurrect Greater Ghost", 76, 88, r("fire", 10, "cosmic", 1, "blood", 5), "Summons a greater ghostly thrall.");
         util(R, "resurrect_greater_skeleton", "Resurrect Greater Skeleton", 76, 88, r("fire", 10, "cosmic", 1, "blood", 5), "Summons a greater skeletal thrall.");
         util(R, "resurrect_greater_zombie", "Resurrect Greater Zombie", 76, 88, r("fire", 10, "cosmic", 1, "blood", 5), "Summons a greater zombified thrall.");
+        util(R, "resurrect_crops", "Resurrect Crops", 78, 90, r("earth", 25, "blood", 8, "nature", 12, "soul", 8),
+                "May bring a dead crop back to life (50% at 78 Magic, 75% at 99).");
         combat(R, "undead_grasp", "Undead Grasp", 79, 46.5, 24, Effect.BIND, 12, false, r("blood", 1, "fire", 4), "Binds the target for 7 seconds.");
         util(R, "death_charge", "Death Charge", 80, 90, r("blood", 1, "death", 1, "soul", 1), "Your next kill restores 15% special attack energy.");
         combat(R, "dark_demonbane", "Dark Demonbane", 82, 43.5, 30, Effect.DEMON, 0, false, r("fire", 6, "soul", 2), "Deals up to 30 damage to demons.");
         tele(R, "barrows_teleport", "Barrows Teleport", 83, 90, 3565, 3315, r("blood", 1, "law", 2, "soul", 2));
         util(R, "demonic_offering", "Demonic Offering", 84, 175, r("soul", 1, "wrath", 1), "Sacrifices up to 3 demonic ashes for 300% prayer XP.");
-        util(R, "greater_corruption", "Greater Corruption", 85, 95, r("blood", 1, "soul", 3), "Corrupts nearby enemies' prayer.");
+        util(R, "greater_corruption", "Greater Corruption", 85, 95, r("blood", 1, "soul", 3),
+                "Your next hit on a player has a 50% chance to drain 2, 4 then 6 of their Prayer points.");
         tele(R, "ape_atoll_dungeon_teleport", "Ape Atoll Teleport", 90, 100, 2770, 2703, r("blood", 2, "law", 2, "soul", 2));
         util(R, "master_reanimation", "Master Reanimation", 90, 170, r("blood", 2, "nature", 4, "soul", 4), "Reanimates a master ensouled head.");
         util(R, "sinister_offering", "Sinister Offering", 92, 180, r("blood", 1, "wrath", 1), "Sacrifices up to 3 bones for 300% prayer XP.");
     }
 
+    /** OSRS spells this mod can't support, with the reason (tracked by SpellbookAuditTest). */
+    public static final Map<String, String> UNIMPLEMENTED = new LinkedHashMap<>();
+
+    static {
+        UNIMPLEMENTED.put("Enchant Crossbow Bolt", "the mod has no enchanted (e) bolts or bolt special effects");
+        UNIMPLEMENTED.put("Teleport to Target", "needs Bounty Hunter targets, which the mod doesn't have");
+    }
+
     private Spellbooks() {
     }
+
+    /** True for Lunar "Tele Group" spells, which also take the players next to the caster along. */
+    public static boolean isGroupTeleport(Spell s) {
+        return s.id().startsWith("tele_group_");
+    }
+
+    /** Resurrect Crops success chance: 50% at 78 Magic rising linearly to 75% at 99 (boosts above 99 don't help). */
+    public static double resurrectCropsChance(int magicLevel) {
+        int lvl = Math.max(78, Math.min(99, magicLevel));
+        return 0.50 + 0.25 * (lvl - 78) / 21.0;
+    }
+
+    /** Corruption: Prayer points drained by pulse 0, 1 and 2 (1/2/3, Greater Corruption 2/4/6). */
+    public static int corruptionDrain(boolean greater, int pulse) {
+        return (pulse + 1) * (greater ? 2 : 1);
+    }
+
+    /** Ticks between corruption pulses: 10 (three pulses over 18 s), 5 with Mark of Darkness. */
+    public static int corruptionInterval(boolean markOfDarkness) {
+        return markOfDarkness ? 5 : 10;
+    }
+
+    /** Vile Vigour: prayer points converted 1:1 into run energy percent (only what's missing, at most all prayer). */
+    public static int vileVigourCost(int runEnergyPercent, int prayerPoints) {
+        return Math.max(0, Math.min(100 - runEnergyPercent, prayerPoints));
+    }
+
+    /** Thrall max hit by tier (lesser 1, superior 2, greater 3); thralls always hit and attack every 4 ticks. */
+    public static int thrallMaxHit(int tier) {
+        return Math.max(0, Math.min(3, tier));
+    }
+
+    /** Shadow Veil: chance that a failed pickpocket goes unnoticed. */
+    public static final double SHADOW_VEIL_CHANCE = 0.15;
+
+    /** Potions Stat Restore Pot Share can split (restoring potions). */
+    public static final java.util.Set<String> RESTORE_SHARE = java.util.Set.of("restore_potion", "super_restore", "prayer_potion",
+            "energy_potion");
+    /** Potions Boost Potion Share can split (stat-boosting potions). */
+    public static final java.util.Set<String> BOOST_SHARE = java.util.Set.of("attack_potion", "strength_potion", "defence_potion",
+            "super_attack", "super_strength", "super_defence", "ranging_potion", "magic_potion");
+
+    /** Whether a potion share spell can split this potion. */
+    public static boolean canShare(String spellId, String potionId) {
+        return spellId.equals("stat_restore_pot_share") ? RESTORE_SHARE.contains(potionId)
+                : spellId.equals("boost_potion_share") && BOOST_SHARE.contains(potionId);
+    }
+
+    /** Ticks a bind lasts on a target protected by Ward of Arceuus. */
+    public static final int WARDED_BIND_TICKS = 1;
 
     public static Spell get(String id) {
         return SPELLS.get(id);

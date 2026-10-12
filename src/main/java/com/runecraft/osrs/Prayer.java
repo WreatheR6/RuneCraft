@@ -34,7 +34,12 @@ public enum Prayer {
     CHIVALRY("Chivalry", 60, 24, Group.MELEE_ALL, 0.15, 0.18, 0.20),
     PIETY("Piety", 70, 24, Group.MELEE_ALL, 0.20, 0.23, 0.25),
     RIGOUR("Rigour", 74, 24, Group.RANGED_ALL, 0, 0, 0.25),
-    AUGURY("Augury", 77, 24, Group.MAGIC_ALL, 0, 0, 0.25);
+    AUGURY("Augury", 77, 24, Group.MAGIC_ALL, 0, 0, 0.25),
+    // June 2024 (Varlamore): upgrades of Eagle Eye / Mystic Might taught by prayer scrolls. Appended so the
+    // ordinals saved in player data and sent over the network stay stable. Their +5% Defence adds to a
+    // defence prayer (see defenceMultiplier(Collection)) instead of replacing it.
+    DEADEYE("Deadeye", 62, 12, Group.RANGED, 0, 0, 0),
+    MYSTIC_VIGOUR("Mystic Vigour", 63, 12, Group.MAGIC, 0, 0, 0);
 
     /** Which prayers are mutually exclusive with each other. */
     public enum Group { NONE, ATTACK, STRENGTH, DEFENCE, RANGED, MAGIC, OVERHEAD, MELEE_ALL, RANGED_ALL, MAGIC_ALL }
@@ -90,6 +95,7 @@ public enum Prayer {
             case SHARP_EYE -> 1.05;
             case HAWK_EYE -> 1.10;
             case EAGLE_EYE -> 1.15;
+            case DEADEYE -> 1.18;
             case RIGOUR -> 1.20;
             default -> 1.0;
         };
@@ -100,6 +106,7 @@ public enum Prayer {
             case SHARP_EYE -> 1.05;
             case HAWK_EYE -> 1.10;
             case EAGLE_EYE -> 1.15;
+            case DEADEYE -> 1.18;
             case RIGOUR -> 1.23;
             default -> 1.0;
         };
@@ -110,19 +117,82 @@ public enum Prayer {
             case MYSTIC_WILL -> 1.05;
             case MYSTIC_LORE -> 1.10;
             case MYSTIC_MIGHT -> 1.15;
+            case MYSTIC_VIGOUR -> 1.18;
             case AUGURY -> 1.25;
             default -> 1.0;
         };
     }
 
-    /** Magic damage bonus in percent (May 2024 prayer update): Mystic Lore +1%, Mystic Might +2%, Augury +4%. */
+    /**
+     * Magic damage bonus in percent (May 2024 prayer update): Mystic Lore +1%, Mystic Might +2%, Mystic Vigour +3%,
+     * Augury +4%.
+     */
     public int magicDamagePercent() {
         return switch (this) {
             case MYSTIC_LORE -> 1;
             case MYSTIC_MIGHT -> 2;
+            case MYSTIC_VIGOUR -> 3;
             case AUGURY -> 4;
             default -> 0;
         };
+    }
+
+    /** Deadeye and Mystic Vigour: +5% Defence that stacks additively with a defence prayer. */
+    public double stackingDefenceBonus() {
+        return this == DEADEYE || this == MYSTIC_VIGOUR ? 0.05 : 0;
+    }
+
+    /**
+     * The Defence multiplier of a set of active prayers: the best defence prayer (Thick Skin ... Augury) plus
+     * Deadeye's / Mystic Vigour's stacking +5%.
+     */
+    public static double defenceMultiplier(java.util.Collection<Prayer> active) {
+        double best = 1.0;
+        double extra = 0;
+        for (Prayer p : active) {
+            best = Math.max(best, p.defenceMultiplier());
+            extra = Math.max(extra, p.stackingDefenceBonus());
+        }
+        return best + extra;
+    }
+
+    /** The highest magic damage bonus (percent) among the active prayers. */
+    public static int magicDamagePercent(java.util.Collection<Prayer> active) {
+        int best = 0;
+        for (Prayer p : active) {
+            best = Math.max(best, p.magicDamagePercent());
+        }
+        return best;
+    }
+
+    /**
+     * The item that must have been read before the prayer can be used, or null: Rigour (dexterous prayer scroll),
+     * Augury (arcane prayer scroll), Preserve (torn prayer scroll), Deadeye and Mystic Vigour (their scrolls).
+     */
+    public String unlockScroll() {
+        return switch (this) {
+            case RIGOUR -> "dexterous_prayer_scroll";
+            case AUGURY -> "arcane_prayer_scroll";
+            case PRESERVE -> "torn_prayer_scroll";
+            case DEADEYE -> "deadeye_prayer_scroll";
+            case MYSTIC_VIGOUR -> "mystic_vigour_prayer_scroll";
+            default -> null;
+        };
+    }
+
+    /** The prayer a scroll item teaches, or null. */
+    public static Prayer taughtBy(String itemId) {
+        for (Prayer p : values()) {
+            if (itemId.equals(p.unlockScroll())) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    /** True for the overhead prayers (protection prayers, Retribution, Redemption, Smite). */
+    public boolean isOverhead() {
+        return group == Group.OVERHEAD;
     }
 
     /** Returns true if activating {@code this} should deactivate {@code other}. */

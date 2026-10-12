@@ -22,6 +22,7 @@ public final class ExtrasHooks implements ModuleHooks {
         HouseFurniture.init();
         SailingService.init();
         ExtrasCommands.register();
+        com.runecraft.content.systems.SysTeleport.houseTeleport = HouseService::teleportHome;
         // Teleport to house tablet.
         UseItemCallback.EVENT.register((player, world, hand) -> {
             ItemStack stack = player.getStackInHand(hand);
