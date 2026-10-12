@@ -40,6 +40,7 @@ public final class AmmoRules {
             Map.entry("blurite_bolts", new Ammo(Kind.BOLT, B_BLURITE)),
             Map.entry("jade_bolts", new Ammo(Kind.BOLT, B_BLURITE)),
             Map.entry("iron_bolts", new Ammo(Kind.BOLT, B_IRON)),
+            Map.entry("pearl_bolts", new Ammo(Kind.BOLT, B_IRON)),
             Map.entry("steel_bolts", new Ammo(Kind.BOLT, B_STEEL)),
             Map.entry("topaz_bolts", new Ammo(Kind.BOLT, B_STEEL)),
             Map.entry("mithril_bolts", new Ammo(Kind.BOLT, B_MITHRIL)),
@@ -91,6 +92,18 @@ public final class AmmoRules {
         return id != null && id.endsWith("_antler_bolts");
     }
 
+    /** Enchanted bolts fire like their plain bolts; every gem-tipped dragon bolt needs a dragon-tier crossbow. */
+    private static Ammo ammo(String id) {
+        if (id.endsWith("_e")) {
+            id = id.substring(0, id.length() - 2);
+        }
+        Ammo a = AMMO.get(id);
+        if (a == null && id.endsWith("_dragon_bolts")) {
+            a = new Ammo(Kind.BOLT, B_DRAGON);
+        }
+        return a;
+    }
+
     /** True when {@code weaponId} has an ammunition restriction. */
     public static boolean restricted(String weaponId) {
         return LAUNCHERS.containsKey(weaponId) || "hunters_sunlight_crossbow".equals(weaponId);
@@ -108,7 +121,7 @@ public final class AmmoRules {
         if (l == null) {
             return true;
         }
-        Ammo a = ammoId == null ? null : AMMO.get(ammoId);
+        Ammo a = ammoId == null ? null : ammo(ammoId);
         return a != null && a.kind() == l.kind() && a.rank() <= l.maxRank();
     }
 }

@@ -189,7 +189,11 @@ public final class CombatHandler {
         long defenceRoll = defenceRoll(target, AttackType.RANGED);
         int maxHit = Math.max(1, (int) Math.floor(CombatFormulas.rangedMaxHit(effRangedStr, rangedStrength + eq.rangedStrength())
                 * CombatHooks.maxHit(player, target, AttackType.RANGED)));
-        int damage = CombatFormulas.roll(new java.util.Random(player.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
+        java.util.Random rng = new java.util.Random(player.getRandom().nextLong());
+        boolean accurate = rng.nextDouble() < com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);
+        int damage = accurate ? rng.nextInt(maxHit + 1) : 0;
+        // Enchanted (e) bolt effects (opal to onyx, dragon variants).
+        damage = com.runecraft.content.systems.BoltProcs.apply(player, target, arrowItem, accurate, damage, maxHit);
         damage = CombatHooks.afterRoll(player, target, AttackType.RANGED, damage);
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, AttackType.RANGED);

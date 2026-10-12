@@ -380,6 +380,15 @@ public final class EquipmentBonuses {
         ammo("diamond_bolts", 105);
         ammo("dragonstone_bolts", 117);
         ammo("onyx_bolts", 120);
+        ammo("pearl_bolts", 48);
+        ammo("dragon_bolts", 122);
+        // Enchanted bolts keep their plain bolts' strength; every gem-tipped dragon bolt has 122.
+        for (String[] b : new String[][]{{"opal", "14"}, {"jade", "30"}, {"pearl", "48"}, {"topaz", "66"}, {"sapphire", "83"},
+                {"emerald", "85"}, {"ruby", "103"}, {"diamond", "105"}, {"dragonstone", "117"}, {"onyx", "120"}}) {
+            ammo(b[0] + "_bolts_e", Integer.parseInt(b[1]));
+            ammo(b[0] + "_dragon_bolts", 122);
+            ammo(b[0] + "_dragon_bolts_e", 122);
+        }
         ammo("broad_bolts", 100);
         ammo("amethyst_arrow", 55);
         ammo("dragon_arrow", 60);

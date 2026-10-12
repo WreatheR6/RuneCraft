@@ -3,7 +3,9 @@ package com.runecraft.combat;
 import com.runecraft.network.ServerNetworking;
 import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.data.Bone;
+import com.runecraft.osrs.data.PrayerAltars;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.skill.XpService;
@@ -14,6 +16,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.function.ToDoubleFunction;
 
@@ -128,11 +131,26 @@ public final class PrayerService {
         }
     }
 
-    /** Altar: offer bones held in hand (350% XP) or recharge prayer points. */
+    /** Praying at an altar recharges Prayer points (no bone offering; see {@link #useAltar(ServerPlayerEntity, BlockPos)}). */
     public static void useAltar(ServerPlayerEntity player) {
+        useAltar(player, null);
+    }
+
+    /**
+     * A world altar at {@code pos}: the Chaos Altar (350%, 50% chance to keep the bone) and the Ectofuntus (400%) take the
+     * held bone as an offering; any other altar only recharges Prayer points, as in OSRS (bones there are buried instead).
+     */
+    public static void useAltar(ServerPlayerEntity player, BlockPos pos) {
         PlayerData data = Players.data(player);
-        if (offerHeldBone(player, Bone.ALTAR_MULTIPLIER)) {
-            return;
+        PrayerAltars.Kind kind = pos == null || !Gielinor.is(player) ? PrayerAltars.Kind.REGULAR
+                : PrayerAltars.at(GielinorMap.toOsrsX(pos.getX()), GielinorMap.toOsrsY(pos.getZ()));
+        if (kind != PrayerAltars.Kind.REGULAR) {
+            if (offerHeldBone(player, kind.multiplier, kind == PrayerAltars.Kind.CHAOS ? PrayerAltars.CHAOS_SAVE_CHANCE : 0.0)) {
+                return;
+            }
+        } else if (!player.getMainHandStack().isEmpty() && Bone.byItem(Inv.idOf(player.getMainHandStack())) != null) {
+            Msg.game(player, "The gods won't accept offerings at this altar. Use a gilded altar, the Chaos Altar or the Ectofuntus,"
+                    + " or bury your bones.");
         }
         // Altars restore Prayer points to the base level (a boosted or drained level doesn't change the cap).
         int max = data.skills().level(Skill.PRAYER);
@@ -151,14 +169,24 @@ public final class PrayerService {
      * own multiplier, e.g. 3.5 for a gilded altar with two lit burners). Returns false if no bone is held.
      */
     public static boolean offerHeldBone(ServerPlayerEntity player, double multiplier) {
+        return offerHeldBone(player, multiplier, 0.0);
+    }
+
+    private static boolean offerHeldBone(ServerPlayerEntity player, double multiplier, double saveChance) {
         ItemStack held = player.getMainHandStack();
         Bone bone = held.isEmpty() ? null : Bone.byItem(Inv.idOf(held));
         if (bone == null) {
             return false;
         }
-        held.decrement(1);
+        boolean saved = saveChance > 0 && player.getRandom().nextDouble() < saveChance;
+        if (!saved) {
+            held.decrement(1);
+        }
         XpService.add(player, Skill.PRAYER, bone.xp() * multiplier);
         Msg.action(player, multiplier >= 3 ? "The gods are very pleased with your offering." : "The gods are pleased with your offering.");
+        if (saved) {
+            Msg.game(player, "The Dark Lord spares your bones.");
+        }
         player.swingHand(net.minecraft.util.Hand.MAIN_HAND, true);
         return true;
     }

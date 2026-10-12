@@ -157,6 +157,7 @@ public final class ZulrahVorkath {
                         Drop.of("dragon_bones", 10, 20, 8), Drop.of("rune_kiteshield", 1, 1, 12), Drop.of("dragon_platelegs", 1, 1, 20),
                         Drop.of("runite_ore", 4, 4, 12), Drop.of("magic_logs", 50, 50, 12), Drop.of("death_rune", 150, 150, 12),
                         Drop.of("wrath_rune", 60, 60, 12), Drop.of("coins", 20000, 80000, 6), Drop.of("dragonstone", 2, 2, 16),
+                        Drop.of("dragon_bolts_unf", 50, 100, 19),
                         Drop.of("clue_scroll_elite", 1, 1, 65))
                 .pet("pet_vorki").at("ungael").arena(13, "ice")
                 .size(1.8f, 2.0f, 2.2f).moveSpeed(0.0);
