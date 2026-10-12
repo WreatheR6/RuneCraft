@@ -36,7 +36,14 @@ public final class TaskRegions {
             Map.entry("dng_kalphite_lair", Region.KHARIDIAN_DESERT),
             Map.entry("dng_smoke_dungeon", Region.KHARIDIAN_DESERT),
             Map.entry("dng_slayer_tower_basement", Region.MORYTANIA),
-            Map.entry("dng_barrows", Region.MORYTANIA));
+            Map.entry("dng_barrows", Region.MORYTANIA),
+            Map.entry("dng_tarns_lair", Region.MORYTANIA),
+            Map.entry("dng_shade_catacombs", Region.MORYTANIA),
+            Map.entry("dng_brine_rat_cavern", Region.FREMENNIK_PROVINCE),
+            Map.entry("dng_jormungands_prison", Region.FREMENNIK_PROVINCE),
+            Map.entry("dng_sourhog_cave", Region.MISTHALIN),
+            Map.entry("dng_legends_guild_dungeon", Region.KANDARIN),
+            Map.entry("dng_wilderness_god_wars", Region.WILDERNESS));
 
     /** Blocks around a camp's box that still count as that dungeon. */
     private static final int MARGIN = 8;
