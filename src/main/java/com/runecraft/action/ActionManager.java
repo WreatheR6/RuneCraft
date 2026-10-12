@@ -82,5 +82,6 @@ public final class ActionManager {
             PlayerEvents.gameTick(player, gameTick);
         }
         ACTIONS.keySet().removeIf(uuid -> server.getPlayerManager().getPlayer(uuid) == null);
+        com.runecraft.combat.CombatZones.gameTick(server, gameTick);
     }
 }

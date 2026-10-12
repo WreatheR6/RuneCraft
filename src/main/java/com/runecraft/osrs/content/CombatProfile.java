@@ -23,6 +23,10 @@ public abstract class CombatProfile<T extends CombatProfile<T>> {
     public int ranged = 1;
     public int attackSpeed = 4;
     public final Map<AttackType, Integer> defenceBonus = new EnumMap<>(AttackType.class);
+    /** OSRS monster attack bonuses (accuracy): melee (all three melee styles), magic and ranged. Default 0. */
+    public int meleeAttackBonus;
+    public int magicAttackBonus;
+    public int rangedAttackBonus;
     public final List<AttackDef> attacks = new ArrayList<>();
     public final List<Drop> drops = new ArrayList<>();
     /** Attack styles this creature takes no damage from. */
@@ -80,6 +84,14 @@ public abstract class CombatProfile<T extends CombatProfile<T>> {
         defenceBonus.put(AttackType.CRUSH, crush);
         defenceBonus.put(AttackType.MAGIC, magic);
         defenceBonus.put(AttackType.RANGED, ranged);
+        return self();
+    }
+
+    /** Monster attack bonuses (the "Aggressive stats" accuracy bonuses): melee, magic, ranged. */
+    public T attackBonus(int melee, int magic, int ranged) {
+        this.meleeAttackBonus = melee;
+        this.magicAttackBonus = magic;
+        this.rangedAttackBonus = ranged;
         return self();
     }
 
@@ -154,6 +166,15 @@ public abstract class CombatProfile<T extends CombatProfile<T>> {
 
     public int defenceBonus(AttackType type) {
         return defenceBonus.getOrDefault(type, 0);
+    }
+
+    /** Attack bonus added to the NPC attack roll for an attack style. */
+    public int attackBonus(AttackType type) {
+        return switch (type) {
+            case MAGIC -> magicAttackBonus;
+            case RANGED -> rangedAttackBonus;
+            default -> meleeAttackBonus;
+        };
     }
 
     /** Max hit of the strongest attack (used for NPC displays and defaults). */

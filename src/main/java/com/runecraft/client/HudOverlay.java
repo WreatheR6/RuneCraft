@@ -39,13 +39,19 @@ public final class HudOverlay {
         // Orbs (top right)
         int x = w - 92;
         int y = 4;
-        int hp = (int) Math.ceil(mc.player.getHealth());
+        // Boosted hitpoints (Saradomin brews) are held as absorption.
+        int hp = (int) Math.ceil(mc.player.getHealth() + mc.player.getAbsorptionAmount());
         int maxHp = gielinor ? ClientState.SKILLS.level(Skill.HITPOINTS) : (int) mc.player.getMaxHealth();
-        orb(ctx, tr, x, y, "HP", hp + "/" + maxHp, 0xFFB01818, hp / (float) Math.max(1, maxHp));
+        orb(ctx, tr, x, y, "HP", hp + "/" + maxHp, hp > maxHp ? 0xFFD0A020 : 0xFFB01818, hp / (float) Math.max(1, maxHp));
         int prayerMax = Math.max(1, ClientState.SKILLS.currentLevel(Skill.PRAYER));
         orb(ctx, tr, x, y + 14, "Pr", ClientState.prayerPoints + "/" + prayerMax, 0xFF20A0C0, ClientState.prayerPoints / (float) prayerMax);
         ctx.fill(x, y + 28, x + 88, y + 40, 0xA0201810);
         ctx.drawTextWithShadow(tr, "Cb " + ClientState.SKILLS.combatLevel() + "  " + formatCoins(ClientState.coins) + " gp", x + 3, y + 30, 0xFFFFD700);
+        // Multicombat area: OSRS shows crossed swords.
+        if (gielinor && ClientState.inMulti) {
+            ctx.fill(x - 22, y, x - 2, y + 20, 0xA0201810);
+            OsrsUi.icon(ctx, OsrsUi.tabIcon("combat"), x - 21, y + 1, 18);
+        }
 
         // XP drops (right side, rising)
         long now = System.currentTimeMillis();

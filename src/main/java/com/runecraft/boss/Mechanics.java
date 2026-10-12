@@ -191,7 +191,7 @@ public final class Mechanics {
             }
         }
         Random random = new Random(mob.getRandom().nextLong());
-        long attackRoll = CombatFormulas.npcRoll(attackLevel, 0);
+        long attackRoll = CombatHandler.npcAttackRoll(mob, stats, a.style(), attackLevel);
         long defenceRoll = CombatHandler.defenceRoll(target, a.style());
         boolean alwaysHits = a.special() == AttackDef.Special.DRAGONFIRE || a.special() == AttackDef.Special.AOE
                 || a.special() == AttackDef.Special.SKY_STRIKE;

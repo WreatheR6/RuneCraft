@@ -283,14 +283,33 @@ public final class SpellService {
 
     // ---------------- Combat ----------------
 
+    /** Auto-retaliate with this module's autocast spell (staff wielded); returns false if none is set. */
+    public static boolean retaliate(ServerPlayerEntity p, LivingEntity target) {
+        SysState.SysPlayer sp = SysState.of(p);
+        Spell s = sp.autocast.isEmpty() ? null : Spellbooks.get(sp.autocast);
+        if (s == null || !s.isCombat() || !inBook(sp, s)) {
+            return false;
+        }
+        castCombat(p, s, target);
+        return true;
+    }
+
     static void castCombat(ServerPlayerEntity p, Spell s, LivingEntity target) {
         PlayerData data = Players.data(p);
         if (target == null) {
             Msg.action(p, "No target.");
             return;
         }
-        if (!SysCombat.canAttack(p, target)) {
+        if (target instanceof ServerPlayerEntity other && !CombatHandler.canAttackPlayer(p, other)
+                || target instanceof com.runecraft.entity.QuestNpcEntity) {
             Msg.game(p, "You can't attack that.");
+            return;
+        }
+        if (!CombatHandler.singleWayAllows(p, target)) {
+            return;
+        }
+        if (s.effect() == Effect.TELEBLOCK && !(target instanceof ServerPlayerEntity)) {
+            Msg.game(p, "You can only cast Tele Block on other players.");
             return;
         }
         long now = ActionManager.mcTick();
@@ -316,7 +335,8 @@ public final class SpellService {
         world.playSound(null, p.getBlockPos(), SoundEvents.ENTITY_EVOKER_CAST_SPELL, SoundCategory.PLAYERS, 0.5f, 1.2f);
         List<LivingEntity> targets = new ArrayList<>();
         targets.add(target);
-        if (s.area()) {
+        // Area spells only hit more than one target in multicombat areas.
+        if (s.area() && com.runecraft.combat.CombatZones.isMulti(target)) {
             for (LivingEntity e : world.getEntitiesByClass(LivingEntity.class, target.getBoundingBox().expand(1.6),
                     o -> o != target && o != p && o.isAlive() && SysCombat.canAttack(p, o))) {
                 if (targets.size() < 9) {
@@ -381,8 +401,14 @@ public final class SpellService {
                     SysCombat.poison(t, s.param());
                 }
             }
-            case DRAIN_ATTACK -> SysCombat.drainStat(t, Skill.ATTACK, Math.max(1, SysCombat.statLevel(t, Skill.ATTACK) * s.param() / 100));
-            case DRAIN_DEFENCE -> SysCombat.drainDefence(t, Math.max(1, SysCombat.defenceLevel(t) * s.param() / 100));
+            case DRAIN_ATTACK -> curse(p, s, t, Skill.ATTACK);
+            case DRAIN_DEFENCE -> curse(p, s, t, Skill.DEFENCE);
+            case DRAIN_STRENGTH -> curse(p, s, t, Skill.STRENGTH);
+            case TELEBLOCK -> {
+                if (t instanceof ServerPlayerEntity victim) {
+                    com.runecraft.combat.Teleblock.apply(p, victim);
+                }
+            }
             case DRAIN_MAGIC -> SysCombat.drainStat(t, Skill.MAGIC, Math.max(1, SysCombat.statLevel(t, Skill.MAGIC) * s.param() / 100));
             case DRAIN_PRAYER -> {
                 if (t instanceof ServerPlayerEntity victim) {
@@ -391,13 +417,33 @@ public final class SpellService {
                     ServerNetworking.sync(victim);
                 }
             }
-            case FREEZE, BIND -> SysCombat.freeze(t, s.param());
+            case FREEZE -> SysCombat.freeze(t, s.param());
+            case BIND -> SysCombat.freeze(t, com.runecraft.osrs.CombatEffects.bindTicks(s.param(),
+                    t instanceof ServerPlayerEntity victim && Players.data(victim).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)));
             default -> {
             }
         }
-        if (s.id().equals("weaken") || s.id().equals("enfeeble")) {
-            SysCombat.drainStat(t, Skill.STRENGTH, Math.max(1, SysCombat.statLevel(t, Skill.STRENGTH) * s.param() / 100));
+    }
+
+    /**
+     * Confuse / Weaken / Curse / Vulnerability / Enfeeble / Stun (and Shadow spells, god spells): lower a stat by a
+     * percentage of the target's base level. Standard-book curses don't stack with an existing drain.
+     */
+    private static void curse(ServerPlayerEntity p, Spell s, LivingEntity t, Skill skill) {
+        int base = SysCombat.baseStatLevel(t, skill);
+        int current = SysCombat.drainedStatLevel(t, skill);
+        com.runecraft.osrs.CombatEffects.Curse curse = com.runecraft.osrs.CombatEffects.curse(s.id());
+        int levels;
+        if (curse != null) {
+            levels = com.runecraft.osrs.CombatEffects.curseDrain(base, current, curse.percent());
+            if (levels <= 0) {
+                Msg.game(p, "Your target's " + skill.displayName() + " has already been weakened.");
+                return;
+            }
+        } else {
+            levels = Math.max(1, current * s.param() / 100);
         }
+        SysCombat.drainStat(t, skill, levels);
     }
 
     private static Vector3f colour(Spell s) {

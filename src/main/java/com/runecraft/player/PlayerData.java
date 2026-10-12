@@ -28,6 +28,7 @@ public final class PlayerData {
     private int prayerDrainCounter;
     private CombatStyle style = CombatStyle.ACCURATE;
     private Spell autocast;
+    private boolean autoRetaliate = true;
     private long coins;
     private Monster slayerTask;
     private int slayerRemaining;
@@ -85,6 +86,15 @@ public final class PlayerData {
 
     public void setStyle(CombatStyle style) {
         this.style = style;
+    }
+
+    /** OSRS Auto Retaliate (Combat Options), on by default. */
+    public boolean autoRetaliate() {
+        return autoRetaliate;
+    }
+
+    public void setAutoRetaliate(boolean autoRetaliate) {
+        this.autoRetaliate = autoRetaliate;
     }
 
     public Spell autocast() {
@@ -200,6 +210,7 @@ public final class PlayerData {
         nbt.putInt("ActivePrayers", mask);
         nbt.putString("Style", style.name());
         nbt.putString("Autocast", autocast == null ? "" : autocast.name());
+        nbt.putBoolean("NoAutoRetaliate", !autoRetaliate);
         nbt.putLong("Coins", coins);
         nbt.putString("SlayerTask", slayerTask == null ? "" : slayerTask.name());
         nbt.putInt("SlayerRemaining", slayerRemaining);
@@ -247,6 +258,7 @@ public final class PlayerData {
         }
         style = parse(CombatStyle.class, nbt.getString("Style"), CombatStyle.ACCURATE);
         autocast = parse(Spell.class, nbt.getString("Autocast"), null);
+        autoRetaliate = !nbt.getBoolean("NoAutoRetaliate");
         coins = nbt.getLong("Coins");
         slayerTask = parse(Monster.class, nbt.getString("SlayerTask"), null);
         slayerRemaining = nbt.getInt("SlayerRemaining");

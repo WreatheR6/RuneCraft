@@ -43,6 +43,10 @@ public final class PlayerEvents {
             ServerPlayerEntity player = handler.getPlayer();
             XpService.updateMaxHealth(player);
             ServerNetworking.sync(player);
+            com.runecraft.combat.AutoRetaliate.sendState(player, true);
+        });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            com.runecraft.combat.AutoRetaliate.forget(handler.player.getUuid());
         });
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
             XpService.updateMaxHealth(player);
@@ -54,6 +58,8 @@ public final class PlayerEvents {
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             PlayerData data = Players.data(newPlayer);
             if (!alive) {
+                com.runecraft.combat.Teleblock.forget(newPlayer.getUuid());
+                com.runecraft.combat.AutoRetaliate.stop(newPlayer);
                 data.activePrayers().clear();
                 data.setPrayerPoints(data.skills().level(Skill.PRAYER));
                 for (Skill s : Skill.values()) {
@@ -116,6 +122,7 @@ public final class PlayerEvents {
         boolean gielinor = Gielinor.is(player);
         com.runecraft.combat.PoisonService.tick(player, gameTick);
         com.runecraft.combat.Aggression.gameTick(player, gameTick);
+        com.runecraft.combat.AutoRetaliate.gameTick(player, gameTick);
         // Hitpoints regenerate 1 per minute (twice as fast with Rapid Heal).
         int regenTicks = data.isActive(Prayer.RAPID_HEAL) ? 50 : 100;
         if (gielinor && gameTick % regenTicks == 0 && player.getHealth() < player.getMaxHealth() && player.isAlive()) {
@@ -127,6 +134,9 @@ public final class PlayerEvents {
         boolean drainRestore = gameTick % (data.isActive(Prayer.RAPID_RESTORE) ? 50 : 100) == 0;
         if (boostDecay || drainRestore) {
             data.skills().decay(boostDecay, drainRestore, true);
+            if (boostDecay) {
+                com.runecraft.combat.Overheal.decay(player);
+            }
             ServerNetworking.sync(player);
         }
         if (gameTick % 5 == 0 && gielinor) {

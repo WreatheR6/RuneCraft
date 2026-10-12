@@ -217,6 +217,52 @@ public final class SysCombat {
         }
     }
 
+    /** A monster's attack level for a style after Attack/Magic/Ranged drains (players: unchanged). */
+    public static int drainedAttackLevel(LivingEntity mob, AttackType type, int level) {
+        if (mob instanceof ServerPlayerEntity) {
+            return level;
+        }
+        Drain d = DRAINS.get(mob.getUuid());
+        if (d == null) {
+            return level;
+        }
+        int drain = switch (type) {
+            case MAGIC -> d.magic;
+            case RANGED -> d.ranged;
+            default -> d.attack;
+        };
+        return Math.max(0, level - drain);
+    }
+
+    /** A target's level in a skill after drains (monsters: base level minus this module's drains). */
+    public static int drainedStatLevel(LivingEntity target, Skill skill) {
+        if (target instanceof ServerPlayerEntity p) {
+            return skills(p).currentLevel(skill);
+        }
+        int base = statLevel(target, skill);
+        Drain d = DRAINS.get(target.getUuid());
+        if (d == null) {
+            return base;
+        }
+        int drain = switch (skill) {
+            case ATTACK -> d.attack;
+            case STRENGTH -> d.strength;
+            case MAGIC -> d.magic;
+            case RANGED -> d.ranged;
+            case DEFENCE -> d.defence;
+            default -> 0;
+        };
+        return Math.max(0, base - drain);
+    }
+
+    /** A target's base (undrained) level in a skill. */
+    public static int baseStatLevel(LivingEntity target, Skill skill) {
+        if (target instanceof ServerPlayerEntity p) {
+            return skills(p).level(skill);
+        }
+        return statLevel(target, skill);
+    }
+
     public static int statLevel(LivingEntity target, Skill skill) {
         if (target instanceof ServerPlayerEntity p) {
             return skills(p).currentLevel(skill);
@@ -344,12 +390,15 @@ public final class SysCombat {
         return null;
     }
 
-    /** Whether a target can be attacked by this player (Wilderness rules for players). */
+    /** Whether a target can be attacked by this player (Wilderness rules for players, single-way combat). */
     public static boolean canAttack(ServerPlayerEntity p, LivingEntity target) {
-        if (target instanceof ServerPlayerEntity other) {
-            return CombatHandler.canAttackPlayer(p, other);
+        if (target instanceof ServerPlayerEntity other && !CombatHandler.canAttackPlayer(p, other)) {
+            return false;
         }
-        return !(target instanceof com.runecraft.entity.QuestNpcEntity);
+        if (target instanceof com.runecraft.entity.QuestNpcEntity) {
+            return false;
+        }
+        return com.runecraft.combat.CombatZones.check(p, target) == com.runecraft.osrs.SingleCombat.Verdict.OK;
     }
 
     public static boolean isUndead(LivingEntity target) {

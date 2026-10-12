@@ -131,6 +131,7 @@ public final class ClassicBosses {
 
     static BossDef corporealBeast() {
         return BossDef.of("corporeal_beast", "Corporeal Beast").level(785).stats(2000, 320, 320, 310, 350, 150).speed(4)
+                .attackBonus(50, 0, 0)
                 .defenceBonus(25, 200, 100, 150, 230)
                 .attack(CORP_MELEE).attack(CORP_ORB).attack(CORP_DRAIN).attack(CORP_SPLASH)
                 .phase(75, "The Corporeal Beast releases a dark energy core!", 1.0, false)

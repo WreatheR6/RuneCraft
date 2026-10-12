@@ -101,10 +101,29 @@ public final class MagicService {
     // ---------------- Combat ----------------
 
     public static void autocastAttack(ServerPlayerEntity player) {
+        autocastAttack(player, null);
+    }
+
+    /** The living entity the player is looking at within spell range, or null. */
+    private static LivingEntity lookTarget(ServerPlayerEntity player) {
+        Vec3d eye = player.getEyePos();
+        Vec3d look = player.getRotationVector();
+        Vec3d end = eye.add(look.multiply(SPELL_RANGE));
+        Box box = player.getBoundingBox().stretch(look.multiply(SPELL_RANGE)).expand(1.0);
+        EntityHitResult hit = ProjectileUtil.raycast(player, eye, end, box,
+                e -> e instanceof LivingEntity && e.isAlive() && e != player && !e.isSpectator(), SPELL_RANGE * SPELL_RANGE);
+        return hit != null && hit.getEntity() instanceof LivingEntity l ? l : null;
+    }
+
+    /**
+     * Casts the autocast spell (or the powered staff's spell) at {@code forced}, or at whatever the player is looking
+     * at when {@code forced} is null (auto-retaliate passes the attacker).
+     */
+    public static void autocastAttack(ServerPlayerEntity player, LivingEntity forced) {
         PlayerData data = Players.data(player);
         String weaponId = Inv.idOf(player.getMainHandStack());
         if (CombatBonuses.poweredStaffMaxHit(weaponId, data.skills().currentLevel(Skill.MAGIC)) >= 0) {
-            poweredStaffAttack(player, weaponId);
+            poweredStaffAttack(player, weaponId, forced);
             return;
         }
         Spell spell = data.autocast();
@@ -117,17 +136,16 @@ public final class MagicService {
             return;
         }
         Vec3d eye = player.getEyePos();
-        Vec3d look = player.getRotationVector();
-        Vec3d end = eye.add(look.multiply(SPELL_RANGE));
-        Box box = player.getBoundingBox().stretch(look.multiply(SPELL_RANGE)).expand(1.0);
-        EntityHitResult hit = ProjectileUtil.raycast(player, eye, end, box,
-                e -> e instanceof LivingEntity && e.isAlive() && e != player && !e.isSpectator(), SPELL_RANGE * SPELL_RANGE);
-        if (hit == null || !(hit.getEntity() instanceof LivingEntity target)) {
+        LivingEntity target = forced != null ? forced : lookTarget(player);
+        if (target == null) {
             Msg.action(player, "No target.");
             return;
         }
         if (target instanceof ServerPlayerEntity other && !CombatHandler.canAttackPlayer(player, other)) {
             Msg.game(player, "You can't attack that player.");
+            return;
+        }
+        if (!CombatHandler.singleWayAllows(player, target)) {
             return;
         }
         if (!canCast(player, spell)) {
@@ -173,7 +191,7 @@ public final class MagicService {
      * whose max hit scales with Magic level, at the staff's own attack speed. Gives 2 Magic XP per damage
      * and no base cast XP.
      */
-    static void poweredStaffAttack(ServerPlayerEntity player, String weaponId) {
+    static void poweredStaffAttack(ServerPlayerEntity player, String weaponId, LivingEntity forced) {
         PlayerData data = Players.data(player);
         SkillSet skills = data.skills();
         int speed = Equipment.weaponSpeed(player, skills);
@@ -182,17 +200,16 @@ public final class MagicService {
             return;
         }
         Vec3d eye = player.getEyePos();
-        Vec3d look = player.getRotationVector();
-        Vec3d end = eye.add(look.multiply(SPELL_RANGE));
-        Box box = player.getBoundingBox().stretch(look.multiply(SPELL_RANGE)).expand(1.0);
-        EntityHitResult hit = ProjectileUtil.raycast(player, eye, end, box,
-                e -> e instanceof LivingEntity && e.isAlive() && e != player && !e.isSpectator(), SPELL_RANGE * SPELL_RANGE);
-        if (hit == null || !(hit.getEntity() instanceof LivingEntity target)) {
+        LivingEntity target = forced != null ? forced : lookTarget(player);
+        if (target == null) {
             Msg.action(player, "No target.");
             return;
         }
         if (target instanceof ServerPlayerEntity other && !CombatHandler.canAttackPlayer(player, other)) {
             Msg.game(player, "You can't attack that player.");
+            return;
+        }
+        if (!CombatHandler.singleWayAllows(player, target)) {
             return;
         }
         if (Equipment.weapon(player, skills) == null) {
@@ -278,6 +295,9 @@ public final class MagicService {
 
     private static void teleport(ServerPlayerEntity player, Spell spell) {
         Landmark dest = spell.destination();
+        if (Teleblock.blocked(player)) {
+            return;
+        }
         int wild = Gielinor.wildernessLevel(player);
         if (wild > 20) {
             Msg.game(player, "A mysterious force blocks your teleport spell!");

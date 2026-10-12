@@ -182,6 +182,12 @@ public class RuneScapeScreen extends Screen {
                 clearAndInit();
             }).dimensions(left + 155, top + 40 + i * 24, 135, 20).tooltip(Tooltip.of(Text.literal(rangedInfo[i]))).build());
         }
+        addDrawableChild(ButtonWidget.builder(Text.literal("Auto Retaliate: " + (ClientState.autoRetaliate ? "On" : "Off")), b -> {
+            ClientPlayNetworking.send(Net.TOGGLE_RETALIATE, PacketByteBufs.create());
+            ClientState.autoRetaliate = !ClientState.autoRetaliate;
+            clearAndInit();
+        }).dimensions(left + 155, top + 40 + ranged.length * 24, 135, 20)
+                .tooltip(Tooltip.of(Text.literal("Fight back automatically when attacked."))).build());
     }
 
     // ---------------- Prayer ----------------

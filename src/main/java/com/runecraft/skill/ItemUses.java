@@ -139,12 +139,14 @@ public final class ItemUses {
             data.setPrayerPoints(Math.max(data.prayerPoints(), Math.min(cap, data.prayerPoints() + prayer)));
         }
         int heal = potion.heal(data.skills());
-        if (heal > 0) {
+        if (heal > 0 && potion.overheals() && com.runecraft.world.Gielinor.is(player)) {
+            com.runecraft.combat.Overheal.brew(player, data.skills().level(Skill.HITPOINTS));
+        } else if (heal > 0) {
             player.heal(heal);
         }
         if (potion == Potion.ANTIPOISON) {
             player.removeStatusEffect(StatusEffects.POISON);
-            com.runecraft.combat.PoisonService.cure(player, false, 150, ActionManager.gameTick());
+            com.runecraft.combat.PoisonService.cure(player, false, com.runecraft.osrs.Toxins.ANTIPOISON[0], ActionManager.gameTick());
         } else if (potion == Potion.ENERGY) {
             player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 20 * 60, 0));
         }

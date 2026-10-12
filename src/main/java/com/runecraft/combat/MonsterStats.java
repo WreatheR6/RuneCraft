@@ -11,7 +11,23 @@ import net.minecraft.registry.Registries;
 /** OSRS combat stats for any living entity: from a {@link Monster} definition or derived from vanilla attributes. */
 public record MonsterStats(String name, int combatLevel, int hitpoints, int attack, int strength, int defence,
                            int magic, int ranged, int defenceBonus, int attackSpeed, AttackType style, int maxHit,
-                           Monster monster, com.runecraft.osrs.content.CombatProfile<?> profile) {
+                           Monster monster, com.runecraft.osrs.content.CombatProfile<?> profile,
+                           com.runecraft.osrs.data.Boss boss) {
+
+    public MonsterStats(String name, int combatLevel, int hitpoints, int attack, int strength, int defence, int magic,
+                        int ranged, int defenceBonus, int attackSpeed, AttackType style, int maxHit, Monster monster,
+                        com.runecraft.osrs.content.CombatProfile<?> profile) {
+        this(name, combatLevel, hitpoints, attack, strength, defence, magic, ranged, defenceBonus, attackSpeed, style, maxHit,
+                monster, profile, null);
+    }
+
+    /** OSRS monster attack bonus for a style, added to the NPC attack roll (0 unless the data sets one). */
+    public int attackBonus(AttackType type) {
+        if (profile != null) {
+            return profile.attackBonus(type);
+        }
+        return boss != null ? boss.attackBonus(type) : 0;
+    }
 
     /** Defence bonus against a specific style (module creatures have per-style bonuses). */
     public int defenceBonus(AttackType type) {

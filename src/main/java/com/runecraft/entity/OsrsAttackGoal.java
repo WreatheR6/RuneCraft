@@ -62,7 +62,8 @@ public class OsrsAttackGoal extends Goal {
         }
         long now = ActionManager.mcTick();
         long speed = (long) mob.stats().attackSpeed() * ActionManager.MC_TICKS_PER_GAME_TICK;
-        if (distSq <= range && canSee && now - lastAttack >= speed) {
+        if (distSq <= range && canSee && now - lastAttack >= speed
+                && com.runecraft.combat.CombatZones.npcMayAttack(mob, target)) {
             lastAttack = now;
             mob.performAttack(target, style);
         }

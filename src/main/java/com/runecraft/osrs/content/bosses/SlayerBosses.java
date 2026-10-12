@@ -144,6 +144,7 @@ public final class SlayerBosses {
 
     static BossDef cerberus() {
         return BossDef.of("cerberus", "Cerberus").level(318).stats(600, 220, 220, 100, 220, 220).speed(4)
+                .attackBonus(50, 50, 50)
                 .defenceBonus(50, 100, 25, 100, 100)
                 .attack(CERB_MELEE).attack(CERB_RANGED).attack(CERB_MAGIC).attack(CERB_LAVA)
                 .drops(Drop.of("primordial_crystal", 1, 1, 520), Drop.of("pegasian_crystal", 1, 1, 520),
