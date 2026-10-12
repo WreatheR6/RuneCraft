@@ -283,7 +283,7 @@ public final class BossItems {
                 .examine("A compost bucket that never runs out.");
         for (String[] s : new String[][]{{"iasor_seed", "Iasor seed", "C04A8A"}, {"kronos_seed", "Kronos seed", "8A4A2A"},
                 {"attas_seed", "Attas seed", "4A8AC0"}}) {
-            items.add(s[0], s[1], Kind.SIMPLE, "seed", Integer.parseInt(s[2], 16)).value(1).examine("An anima seed.");
+            items.add(s[0], s[1], Kind.SEED, "seed", Integer.parseInt(s[2], 16)).value(1).examine("An anima seed.");
         }
 
         // ---------------- The Gauntlet (Hunllef) & Zalcano ----------------

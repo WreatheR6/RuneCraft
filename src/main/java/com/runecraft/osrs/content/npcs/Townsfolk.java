@@ -345,5 +345,6 @@ public final class Townsfolk {
         EXTRA_TRADERS.put("AUBURY", "auburys_rune_shop");
         EXTRA_TRADERS.put("candle_maker", "candle_shop");
         EXTRA_TRADERS.put("zambo", "karamja_spirits_bar");
+        EXTRA_TRADERS.put("solihib", "solihibs_food_stall");
     }
 }

@@ -142,13 +142,13 @@ final class EasternMorytania {
         k.house(3471, 3478, 3479, 3485, 2, MORY, "east");
         k.shop(3471, 3489, 3479, 3496, 1, MORY, "east", "runecraft:fur_stall");
         k.house(3472, 3466, 3479, 3472, 1, MORY, "east");
-        // The green: fenced herb patch, dead trees, lantern posts.
+        // The green: fenced garden (OSRS has no herb patch in Canifis), dead trees, lantern posts.
         int hx = bx(3498);
         int hz = bz(3482);
         k.b.walls(hx - 2, g, hz - 2, hx + 2, g, hz + 2, "minecraft:dark_oak_fence");
         k.set(hx, g, hz + 2, "minecraft:dark_oak_fence_gate[facing=south]");
         k.fill(hx - 1, g - 1, hz - 1, hx + 1, g - 1, hz + 1, "minecraft:farmland");
-        k.set(hx, g, hz, "runecraft:herb_patch");
+        k.set(hx, g, hz, "minecraft:potted_dead_bush");
         k.deadTree(3489, 3483, 7);
         k.deadTree(3501, 3494, 6);
         k.deadTree(3490, 3495, 5);

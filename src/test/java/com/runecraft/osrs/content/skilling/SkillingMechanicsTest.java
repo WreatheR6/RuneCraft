@@ -70,9 +70,9 @@ class SkillingMechanicsTest {
     @Test
     void compostReducesDiseaseLikeOsrs() {
         assertEquals(27, FarmingDisease.chance(27, 0));
-        assertEquals(13, FarmingDisease.chance(27, 1));
-        assertEquals(5, FarmingDisease.chance(27, 2));
-        assertEquals(2, FarmingDisease.chance(27, 3));
+        assertEquals(14, FarmingDisease.chance(27, 1)); // wiki table: 27 -> 14 -> 6 -> 3
+        assertEquals(6, FarmingDisease.chance(27, 2));
+        assertEquals(3, FarmingDisease.chance(27, 3));
         assertEquals(0, FarmingDisease.chance(0, 0));
         assertEquals(3, FarmingDisease.compostLives(3));
         assertFalse(FarmingDisease.rollDisease(27, true, fixed(0)), "protected crops never get diseased");
@@ -147,8 +147,10 @@ class SkillingMechanicsTest {
         for (Allotment a : Allotment.values()) {
             assertNotNull(FarmingDisease.payment(a.produceItem()), a.name());
         }
-        for (Map.Entry<String, FarmingDisease.Payment> e : FarmingDisease.payments().entrySet()) {
-            assertNotNull(ItemCatalog.get(e.getValue().item()), e.getKey() + " payment " + e.getValue().item());
+        for (Map.Entry<String, java.util.List<FarmingDisease.Payment>> e : FarmingDisease.payments().entrySet()) {
+            for (FarmingDisease.Payment pay : e.getValue()) {
+                assertNotNull(ItemCatalog.get(pay.item()), e.getKey() + " payment " + pay.item());
+            }
             assertTrue(FarmingData.byId(e.getKey()) != null || isAllotment(e.getKey()), "unknown crop " + e.getKey());
         }
         assertNotNull(ItemCatalog.get("plant_cure"));

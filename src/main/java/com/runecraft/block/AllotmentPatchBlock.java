@@ -31,6 +31,12 @@ public class AllotmentPatchBlock extends FarmingPatchBlock {
     }
 
     @Override
+    protected String cropId(BlockState state) {
+        int crop = state.get(CROP);
+        return crop <= 0 ? null : Allotment.values()[crop - 1].produceItem();
+    }
+
+    @Override
     protected int growthOdds(BlockState state) {
         int crop = state.get(CROP);
         int minutes = crop <= 0 ? 40 : Allotment.values()[crop - 1].growthMinutes();

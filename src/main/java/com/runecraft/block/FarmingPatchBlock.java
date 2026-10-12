@@ -22,10 +22,12 @@ import net.minecraft.world.World;
  * depending on the crop, matching OSRS growth times ({@link com.runecraft.osrs.FarmingYield#randomTickOdds}).
  *
  * <p>Disease (see {@link FarmingDisease}): every growth step may make the crop diseased
- * ({@code disease} 1) instead of growing, with the herb chance of 27/128 cut by the patch's
- * {@code compost} (0-3). A diseased crop dies ({@code disease} 2) at its next growth step unless it
- * is treated with plant cure. A crop the gardener was paid to look after ({@code protected}) never
- * gets diseased.
+ * ({@code disease} 1) instead of growing, with the herb chance of 27/128 (allotments approx. the
+ * same) cut by the patch's {@code compost} (0-3) and a living iasor plant. A diseased crop dies
+ * ({@code disease} 2) at its next growth step unless it is treated with plant cure. A crop the
+ * gardener was paid to look after ({@code protected}, also set for Hosidius crops of players with the
+ * easy Kourend &amp; Kebos diary) never gets diseased, nor does an allotment next to a fully grown
+ * flower that protects it. A living kronos plant sometimes grows a crop two steps at once.
  */
 public abstract class FarmingPatchBlock extends Block {
     public static final IntProperty STAGE = IntProperty.of("stage", 0, 4);
@@ -35,6 +37,16 @@ public abstract class FarmingPatchBlock extends Block {
     public static final IntProperty COMPOST = IntProperty.of("compost", 0, 3);
     public static final BooleanProperty PROTECTED = BooleanProperty.of("protected");
 
+    /** Whether a fully grown flower (or scarecrow) next to an allotment protects its crop (produce id). */
+    public interface FlowerCheck {
+        boolean protects(ServerWorld world, BlockPos pos, String crop);
+    }
+
+    /** Set by the skilling module (flower patches keep their state there). */
+    public static FlowerCheck flowers = (world, pos, crop) -> false;
+    /** Set by the skilling module: the living anima plant ("kronos", "iasor", "attas") or null. */
+    public static java.util.function.Function<ServerWorld, String> anima = world -> null;
+
     protected FarmingPatchBlock(Settings settings) {
         super(settings);
     }
@@ -42,6 +54,11 @@ public abstract class FarmingPatchBlock extends Block {
     public abstract IntProperty cropProperty();
 
     public abstract boolean isHerbPatch();
+
+    /** Produce id of the crop in this state (allotments, for flower protection), or null. */
+    protected String cropId(BlockState state) {
+        return null;
+    }
 
     /** Chance (1 in N) per random tick (~68s on average) to advance one stage, for the crop in this state. */
     protected abstract int growthOdds(BlockState state);
@@ -65,12 +82,17 @@ public abstract class FarmingPatchBlock extends Block {
         }
         boolean free = com.runecraft.world.Gielinor.is(world) && FarmingDisease.diseaseFreeArea(
                 com.runecraft.osrs.GielinorMap.toOsrsX(pos.getX()), com.runecraft.osrs.GielinorMap.toOsrsY(pos.getZ()));
-        int chance = free ? 0 : FarmingDisease.chance(FarmingDisease.BASE_CHANCE, state.get(COMPOST));
-        if (FarmingDisease.rollDisease(chance, state.get(PROTECTED), random::nextInt)) {
+        String plant = anima.apply(world);
+        int base = isHerbPatch() ? FarmingDisease.BASE_CHANCE : FarmingDisease.ALLOTMENT_CHANCE;
+        int chance = free ? 0 : FarmingDisease.chance(base, state.get(COMPOST), "iasor".equals(plant));
+        String crop = cropId(state);
+        boolean safe = state.get(PROTECTED) || (chance > 0 && crop != null && flowers.protects(world, pos, crop));
+        if (FarmingDisease.rollDisease(chance, safe, random::nextInt)) {
             world.setBlockState(pos, state.with(DISEASE, 1), Block.NOTIFY_ALL);
             return;
         }
-        world.setBlockState(pos, state.with(STAGE, state.get(STAGE) + 1), Block.NOTIFY_ALL);
+        int grow = "kronos".equals(plant) && random.nextInt(100) < FarmingDisease.KRONOS_SKIP_PERCENT ? 2 : 1;
+        world.setBlockState(pos, state.with(STAGE, Math.min(4, state.get(STAGE) + grow)), Block.NOTIFY_ALL);
     }
 
     @Override

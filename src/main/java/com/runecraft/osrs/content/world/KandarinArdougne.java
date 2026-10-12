@@ -129,11 +129,11 @@ final class KandarinArdougne {
         k.fill(car.x1() + 2, 0, car.z1() + 2, car.x1() + 2, 1, car.z2() - 2, "minecraft:bookshelf");
         k.tFill(2562, 3259, 2578, 3259, 0, 1, "minecraft:oak_leaves[persistent=true]");
 
-        // --- Herb patch garden ---
+        // --- Garden (East Ardougne's farming patches are north of the city, see the farming module) ---
         k.fence(2643, 3332, 2649, 3337, "minecraft:oak_fence");
         k.tClear(2646, 3332, 2646, 3332, 0, 0);
         k.floor(2644, 3333, 2648, 3336, "minecraft:farmland[moisture=7]");
-        k.tFill(2645, 3334, 2645, 3334, 0, 0, "runecraft:herb_patch");
+        k.tFill(2645, 3334, 2645, 3334, 0, 0, "minecraft:wheat[age=7]");
         k.tFill(2647, 3335, 2647, 3335, 0, 0, "minecraft:wheat[age=7]");
         k.at(2644, 3333, -1, WATER);
 

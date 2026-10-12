@@ -80,6 +80,9 @@ public final class FarmingService {
         // Harvest lives (OSRS): 3 + compost lives, each pick has a level-based chance to save a life.
         int lives = FarmingYield.lives(state.get(FarmingPatchBlock.COMPOST));
         double bonus = Inv.has(player, "magic_secateurs", 1) ? FarmingYield.MAGIC_SECATEURS : 0;
+        if ("attas".equals(FarmingPatchBlock.anima.apply(world))) {
+            bonus += FarmingYield.ATTAS;
+        }
         int yield;
         String item;
         double xp;
@@ -213,8 +216,13 @@ public final class FarmingService {
             return;
         }
         held.decrement(seeds);
+        // Hosidius: disease-free for players who completed the easy Kourend & Kebos diary.
+        boolean diaryFree = com.runecraft.world.Gielinor.is(world) && FarmingDisease.hosidiusFarm(
+                com.runecraft.osrs.GielinorMap.toOsrsX(pos.getX()), com.runecraft.osrs.GielinorMap.toOsrsY(pos.getZ()))
+                && com.runecraft.osrs.content.systems.Diaries.tierComplete(com.runecraft.content.systems.SysState.of(player).diaryDone,
+                "kourend", com.runecraft.osrs.content.systems.Diaries.Tier.EASY);
         world.setBlockState(pos, state.with(patch.cropProperty(), index + 1).with(FarmingPatchBlock.STAGE, 1)
-                .with(FarmingPatchBlock.DISEASE, 0).with(FarmingPatchBlock.PROTECTED, false), Block.NOTIFY_ALL);
+                .with(FarmingPatchBlock.DISEASE, 0).with(FarmingPatchBlock.PROTECTED, diaryFree), Block.NOTIFY_ALL);
         XpService.add(player, Skill.FARMING, xp);
         Msg.game(player, "You plant " + (seeds > 1 ? seeds + " " : "a ") + name + " seed" + (seeds > 1 ? "s" : "") + " in the patch.");
         world.playSound(null, pos, SoundEvents.ITEM_CROP_PLANT, SoundCategory.BLOCKS, 1.0f, 1.0f);

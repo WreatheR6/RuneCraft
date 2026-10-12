@@ -17,45 +17,48 @@ import java.util.function.Consumer;
 
 /**
  * Farming: tree, fruit tree, bush, hops, hardwood, calquat, celastrus, redwood, spirit tree, cactus,
- * seaweed, mushroom, belladonna and grape patches; compost bins (compost, supercompost,
+ * seaweed, mushroom, belladonna, grape, flower, hespori, anima and crystal tree patches; compost bins (compost, supercompost,
  * ultracompost); tree seeds grown into saplings in plant pots; and bird house spaces. Levels, XP
  * and growth times are OSRS values (growth is real-time, measured in world time).
  */
 public final class FarmingData extends SkillingPart {
 
     /**
-     * Patch types with their growth cycle length (minutes), disease chance per cycle (out of 128,
-     * before compost; see {@link FarmingDisease}) and whether a diseased crop is pruned with
+     * Patch types with their growth cycle length (minutes), whether crops in them can get diseased
+     * (the chance per crop is {@link #diseaseBase}) and whether a diseased crop is pruned with
      * secateurs (trees, fruit trees, bushes) instead of treated with plant cure.
      */
     public enum Patch {
-        TREE("tree_patch", "Tree patch", 40, FarmingDisease.BASE_CHANCE, true),            // disease approx.
-        FRUIT_TREE("fruit_tree_patch", "Fruit tree patch", 160, FarmingDisease.BASE_CHANCE, true), // approx.
-        BUSH("bush_patch", "Bush patch", 20, FarmingDisease.BASE_CHANCE, true),             // approx.
-        HOPS("hops_patch", "Hops patch", 10, FarmingDisease.BASE_CHANCE, false),
-        HARDWOOD("hardwood_patch", "Hardwood tree patch", 640, FarmingDisease.BASE_CHANCE, false), // approx.
-        CALQUAT("calquat_patch", "Calquat patch", 160, FarmingDisease.BASE_CHANCE, true),   // approx.
-        CELASTRUS("celastrus_patch", "Celastrus patch", 160, FarmingDisease.BASE_CHANCE, false), // approx.
-        REDWOOD("redwood_patch", "Redwood tree patch", 640, FarmingDisease.BASE_CHANCE, true), // approx.
-        SPIRIT("spirit_tree_patch", "Spirit tree patch", 320, FarmingDisease.BASE_CHANCE, true), // approx.
-        CACTUS("cactus_patch", "Cactus patch", 80, FarmingDisease.BASE_CHANCE, false),     // approx.
-        SEAWEED("seaweed_patch", "Seaweed patch", 10, FarmingDisease.BASE_CHANCE, false),  // approx.
-        MUSHROOM("mushroom_patch", "Mushroom patch", 40, FarmingDisease.BASE_CHANCE, false), // approx.
-        BELLADONNA("belladonna_patch", "Belladonna patch", 80, FarmingDisease.BASE_CHANCE, false), // approx.
-        GRAPE("grape_patch", "Grapevine patch", 5, 0, false),                               // grapevines never get diseased
-        FLOWER("flower_patch", "Flower patch", 5, FarmingDisease.BASE_CHANCE, false);        // disease approx.
+        TREE("tree_patch", "Tree patch", 40, true, true),
+        FRUIT_TREE("fruit_tree_patch", "Fruit tree patch", 160, true, true),
+        BUSH("bush_patch", "Bush patch", 20, true, true),
+        HOPS("hops_patch", "Hops patch", 10, true, false),
+        HARDWOOD("hardwood_patch", "Hardwood tree patch", 640, true, false),
+        CALQUAT("calquat_patch", "Calquat patch", 160, true, true),
+        CELASTRUS("celastrus_patch", "Celastrus patch", 160, true, false),
+        REDWOOD("redwood_patch", "Redwood tree patch", 640, true, true),
+        SPIRIT("spirit_tree_patch", "Spirit tree patch", 320, true, true),
+        CACTUS("cactus_patch", "Cactus patch", 80, true, false),
+        SEAWEED("seaweed_patch", "Seaweed patch", 10, true, false),
+        MUSHROOM("mushroom_patch", "Mushroom patch", 40, true, false),
+        BELLADONNA("belladonna_patch", "Belladonna patch", 80, true, false),
+        GRAPE("grape_patch", "Grapevine patch", 5, false, false),          // grapevines never get diseased
+        FLOWER("flower_patch", "Flower patch", 5, true, false),
+        HESPORI("hespori_patch", "Hespori patch", 640, false, false),      // Hespori can't get diseased
+        ANIMA("anima_patch", "Anima patch", 640, false, false),            // anima plants are immune to disease
+        CRYSTAL("crystal_tree_patch", "Crystal tree patch", 80, false, false); // crystal trees are immune to disease
 
         public final String blockId;
         public final String displayName;
         public final int cycleMinutes;
-        public final int disease128;
+        public final boolean diseases;
         public final boolean pruned;
 
-        Patch(String blockId, String displayName, int cycleMinutes, int disease128, boolean pruned) {
+        Patch(String blockId, String displayName, int cycleMinutes, boolean diseases, boolean pruned) {
             this.blockId = blockId;
             this.displayName = displayName;
             this.cycleMinutes = cycleMinutes;
-            this.disease128 = disease128;
+            this.diseases = diseases;
             this.pruned = pruned;
         }
 
@@ -79,12 +82,38 @@ public final class FarmingData extends SkillingPart {
         return Math.max(1, c.growthMinutes() / cycleMinutes(c));
     }
 
+    /**
+     * Disease chance per growth cycle out of 128 before compost: fruit trees 18 and herbs 27 (wiki),
+     * trees by tree ({@link FarmingDisease#treeChance}), every other crop estimated from its number of
+     * growth cycles ({@link FarmingDisease#estimatedBase}, approx.). 0 = immune (poison ivy, grapevines,
+     * Hespori, anima plants, crystal trees).
+     */
+    public static int diseaseBase(Crop c) {
+        if (!c.patch().diseases || c.id().equals("poison_ivy") || c.harvest() == Harvest.SCARECROW) {
+            return 0;
+        }
+        return switch (c.patch()) {
+            case FRUIT_TREE -> FarmingDisease.FRUIT_TREE_CHANCE;
+            case TREE -> FarmingDisease.treeChance(c.id());
+            default -> FarmingDisease.estimatedBase(stages(c) - 1);
+        };
+    }
+
     /** Disease chance per growth cycle out of 128 with the given compost level (0..3); 0 = disease-free. */
     public static int diseaseChance(Crop c, int compost) {
-        // Poison ivy bushes and grapevines are immune to disease.
-        int base = c.id().equals("poison_ivy") ? 0 : c.patch().disease128;
-        return FarmingDisease.chance(base, compost);
+        return diseaseChance(c, compost, false);
     }
+
+    /** As {@link #diseaseChance(Crop, int)}, with a living iasor anima plant if {@code iasor}. */
+    public static int diseaseChance(Crop c, int compost, boolean iasor) {
+        return FarmingDisease.chance(diseaseBase(c), compost, iasor);
+    }
+
+    /** Anima plants: the crop id of each and its effect. */
+    public static final List<String> ANIMA = List.of("kronos", "iasor", "attas");
+
+    /** Seeds defined by another module (anima seeds drop from Hespori, see the bosses module). */
+    private static final List<String> EXTERNAL_SEEDS = List.of("kronos_seed", "iasor_seed", "attas_seed");
 
     /**
      * Gardeners who look after the patches next to them for a payment (OSRS names; the Farming
@@ -121,7 +150,8 @@ public final class FarmingData extends SkillingPart {
             new Gardener("gardener_dantaera", "Dantaera", "catherby_farm", 0, 0),
             new Gardener("gardener_kragen", "Kragen", "ardougne_farm", 2, 2),
             new Gardener("gardener_lyra", "Lyra", "morytania_farm", 2, 2),
-            new Gardener("gardener_marisi", "Marisi", "hosidius_farm", 0, 0));
+            new Gardener("gardener_marisi", "Marisi", "hosidius_farm", 0, 0),
+            new Gardener("gardener_oswallt", "Oswallt", "prifddinas_farm", -3, 2));
 
     /**
      * Tool leprechauns stand by the allotment patches: talking to one notes the harvested produce in
@@ -138,7 +168,8 @@ public final class FarmingData extends SkillingPart {
             new Leprechaun("tool_leprechaun_hosidius", "hosidius_farm", 3, -2),
             new Leprechaun("tool_leprechaun_farming_guild", "farming_guild", 4, -3),
             new Leprechaun("tool_leprechaun_harmony", "harmony_herb_patch", 2, 2),
-            new Leprechaun("tool_leprechaun_weiss", "weiss_herb_patch", 2, 2));
+            new Leprechaun("tool_leprechaun_weiss", "weiss_herb_patch", 2, 2),
+            new Leprechaun("tool_leprechaun_prifddinas", "prifddinas_farm", 3, 2));
 
     /** Whether a tool leprechaun will note this item: harvested farming produce (not seeds, saplings or tools). */
     public static boolean leprechaunNotes(String item) {
@@ -181,7 +212,15 @@ public final class FarmingData extends SkillingPart {
         /** Harvest everything at once (min..max produce). */
         ALL,
         /** Check health; becomes a spirit tree (teleport network). */
-        SPIRIT
+        SPIRIT,
+        /** Check health for XP, then harvest min..max produce at once and clear the patch (crystal tree). */
+        CHECK_ALL,
+        /** Fully grown Hespori: disturbing it starts the fight; killing it pays the "check" XP. */
+        BOSS,
+        /** Anima plant: its effect lasts from planting until it withers at the end of its growth. */
+        ANIMA,
+        /** A scarecrow placed in a flower patch (protects sweetcorn next to it). */
+        SCARECROW
     }
 
     /**
@@ -227,28 +266,84 @@ public final class FarmingData extends SkillingPart {
     }
 
     /**
+     * Harvest lives save chances (out of 256, before the +1) at Farming level 1 and 99, for the
+     * {@link Harvest#ALL} and picked crops that use harvest lives, or null. Hops are fitted to the
+     * wiki's level-requirement and level-99 chances (barley 40.6% at 3, hammerstone 41.4% at 4,
+     * Asgarnian 44.1% at 8, jute 47.7% at 13, Yanillian 49.2% at 16, wildblood 55.5% at 28, all 70.7%
+     * at 99); Krandorian, seaweed, grapes, cactus and celastrus are approx.
+     */
+    public static int[] harvestChance(Crop c) {
+        return switch (c.id()) {
+            case "barley" -> new int[]{102, 180};
+            case "hammerstone" -> new int[]{103, 180};
+            case "asgarnian" -> new int[]{107, 180};
+            case "jute" -> new int[]{113, 180};
+            case "yanillian" -> new int[]{116, 180};
+            case "krandorian" -> new int[]{121, 180}; // approx
+            case "wildblood" -> new int[]{127, 180};
+            case "seaweed" -> new int[]{149, 208};    // approx
+            case "grape" -> new int[]{139, 206};      // approx
+            case "cactus" -> new int[]{-78, 178};     // approx
+            case "celastrus" -> new int[]{-27, 63};   // approx
+            default -> null;
+        };
+    }
+
+    /** Whether magic secateurs raise this crop's harvest lives save chance (herbs, allotments, hops and grapes). */
+    public static boolean secateursBoost(Crop c) {
+        return c.patch() == Patch.HOPS || c.patch() == Patch.GRAPE;
+    }
+
+    /** Most belladonna a harvest can give: 6 at level 63, rising to 18 at 99 (OSRS; the curve in between approx.). */
+    public static int belladonnaMax(int level) {
+        return 6 + Math.max(0, Math.min(99, level) - 63) / 3;
+    }
+
+    public static int harvestYield(Crop c, int level, int compost, java.util.function.IntUnaryOperator random) {
+        return harvestYield(c, level, compost, 0, random);
+    }
+
+    /**
      * Produce from harvesting a whole patch (Harvest.ALL crops). Flowers give a fixed amount (woad 3
-     * leaves; limpwurt 3 roots plus 0..floor((level - 1) / 10) more) and ignore compost; other crops
-     * give min..max plus one per compost level (approx. of harvest lives).
+     * leaves; limpwurt 3 roots plus 0..floor((level - 1) / 10) more) and ignore compost. Hops, seaweed
+     * and grapes use harvest lives (3 plus compost; {@code bonus} is the save-chance item bonus, e.g.
+     * magic secateurs 0.10 and attas 0.05). Bittercap mushrooms give 6 (more only with attas),
+     * belladonna 6 to {@link #belladonnaMax}; other crops min..max plus one per compost level.
      * {@code random.applyAsInt(n)} must return 0..n-1.
      */
-    public static int harvestYield(Crop c, int level, int compost, java.util.function.IntUnaryOperator random) {
+    public static int harvestYield(Crop c, int level, int compost, double bonus, java.util.function.IntUnaryOperator random) {
         if (c.patch() == Patch.FLOWER) {
             if (c.id().equals("limpwurt")) {
                 return 3 + random.applyAsInt(Math.max(0, Math.min(98, level) - 1) / 10 + 1);
             }
             return c.minYield();
         }
+        if (c.patch() == Patch.BELLADONNA) {
+            return 6 + random.applyAsInt(belladonnaMax(level) - 6 + 1);
+        }
+        if (c.patch() == Patch.MUSHROOM) {
+            return bonus > 0 ? com.runecraft.osrs.FarmingYield.harvest(6,
+                    com.runecraft.osrs.FarmingYield.saveChance(0, 0, level, bonus, 0), random) : 6;
+        }
+        int[] lives = harvestChance(c);
+        if (lives != null) {
+            int chance = com.runecraft.osrs.FarmingYield.saveChance(lives[0], lives[1], level, bonus, 0);
+            return com.runecraft.osrs.FarmingYield.harvest(com.runecraft.osrs.FarmingYield.lives(compost), chance, random);
+        }
         return c.minYield() + random.applyAsInt(c.maxYield() - c.minYield() + 1) + Math.max(0, compost);
     }
 
-    /** Farming XP for a harvest of {@code yield} produce: flowers pay their harvest XP once per harvest. */
+    /** Farming XP for a harvest of {@code yield} produce: flowers and belladonna pay their harvest XP once per harvest. */
     public static double harvestXp(Crop c, int yield) {
-        return c.patch() == Patch.FLOWER ? c.harvestXp() : c.harvestXp() * yield;
+        return c.patch() == Patch.FLOWER || c.patch() == Patch.BELLADONNA ? c.harvestXp() : c.harvestXp() * yield;
     }
 
     private static String seedOf(String id) {
-        return id.equals("oak") ? "acorn" : id + "_seed";
+        return switch (id) {
+            case "oak" -> "acorn";
+            case "crystal" -> "crystal_acorn";
+            default -> id + "_seed";
+        };
     }
 
     static {
@@ -297,9 +392,10 @@ public final class FarmingData extends SkillingPart {
         CROPS.add(new Crop("seaweed", "Giant seaweed", Patch.SEAWEED, Harvest.ALL, 23, 19.0, 0, 21.0, "seaweed_spore",
                 "seaweed_spore", 1, "seaweed", 3, 7, 40, 0, null, 0x3A6A2A));
         CROPS.add(new Crop("bittercap", "Bittercap mushrooms", Patch.MUSHROOM, Harvest.ALL, 53, 61.5, 0, 57.7, "mushroom_spore",
-                "mushroom_spore", 1, "mushroom", 6, 9, 240, 0, null, 0xC0A080));
-        CROPS.add(new Crop("belladonna", "Belladonna", Patch.BELLADONNA, Harvest.ALL, 63, 91.0, 0, 128.0, "belladonna_seed",
-                "belladonna_seed", 1, "cave_nightshade_flower", 1, 1, 320, 0, null, 0x4A2A6A));
+                "mushroom_spore", 1, "mushroom", 6, 6, 240, 0, null, 0xC0A080));
+        // Belladonna gives cave nightshade: 6 to 18 by level, 512 XP per harvest.
+        CROPS.add(new Crop("belladonna", "Belladonna", Patch.BELLADONNA, Harvest.ALL, 63, 91.0, 0, 512.0, "belladonna_seed",
+                "belladonna_seed", 1, "nightshade", 6, 18, 320, 0, null, 0x4A2A6A));
         CROPS.add(new Crop("grape", "Grapevine", Patch.GRAPE, Harvest.ALL, 36, 40.0, 0, 40.0, "grape_seed", "grape_seed", 1,
                 "grapes", 3, 5, 35, 0, null, 0x6A2A8A));
         // Flowers: 4 x 5-minute cycles; harvest XP is per harvest, not per item (woad 3 leaves, limpwurt 3+).
@@ -309,6 +405,27 @@ public final class FarmingData extends SkillingPart {
         flower("woad", "Woad plant", "woad_leaf", 25, 20.5, 115.5, 3, 0x3A5AB0);
         flower("limpwurt", "Limpwurt plant", "limpwurt_root", 26, 21.5, 120.0, 3, 0xC09050);
         flower("white_lily", "White lily", "white_lily", 58, 42.0, 250.0, 1, 0xF0F0F0);
+        // A scarecrow stands in a flower patch to keep birds off the sweetcorn next to it (made at Farming 23).
+        CROPS.add(new Crop("scarecrow", "Scarecrow", Patch.FLOWER, Harvest.SCARECROW, 23, 0, 0, 0, "scarecrow", "scarecrow", 1,
+                null, 0, 0, 5, 0, null, 0xC0A060));
+        // Hespori: 3 x 640-minute cycles in the Farming Guild; killing it pays 12,662 Farming XP.
+        CROPS.add(new Crop("hespori", "Hespori", Patch.HESPORI, Harvest.BOSS, 65, 62.0, 12662.0, 0, "hespori_seed", "hespori_seed",
+                1, null, 0, 0, 1920, 0, null, 0x8A3A6A));
+        // Anima plants (76 Farming, 100 XP for planting): their effect lasts their whole 8 x 640-minute life.
+        CROPS.add(new Crop("kronos", "Kronos", Patch.ANIMA, Harvest.ANIMA, 76, 100.0, 0, 0, "kronos_seed", "kronos_seed", 1, null,
+                0, 0, 5120, 0, null, 0x8A4A2A));
+        CROPS.add(new Crop("iasor", "Iasor", Patch.ANIMA, Harvest.ANIMA, 76, 100.0, 0, 0, "iasor_seed", "iasor_seed", 1, null,
+                0, 0, 5120, 0, null, 0xC04A8A));
+        CROPS.add(new Crop("attas", "Attas", Patch.ANIMA, Harvest.ANIMA, 76, 100.0, 0, 0, "attas_seed", "attas_seed", 1, null,
+                0, 0, 5120, 0, null, 0x4A8AC0));
+        // Crystal tree (Prifddinas, 74 Farming): 6 x 80 minutes; checked for 13,240 XP, then cut for crystal shards (8-10 approx).
+        CROPS.add(new Crop("crystal", "Crystal tree", Patch.CRYSTAL, Harvest.CHECK_ALL, 74, 126.0, 13240.0, 0, "crystal_acorn",
+                "crystal_sapling", 1, "crystal_shard", 8, 10, 480, 0, null, 0x9AD8F0));
+    }
+
+    /** Whether a crop needs no tool to be put in its patch (a scarecrow is simply stood in it). */
+    public static boolean noPlantingTool(Crop c) {
+        return c.harvest() == Harvest.SCARECROW;
     }
 
     public static Crop byPlanted(Patch patch, String item) {
@@ -385,6 +502,9 @@ public final class FarmingData extends SkillingPart {
         simple(s, "bird_nest_ring", "Bird nest (ring)", "nest", 0xB09030, 200).examine("It's a bird's nest with a ring in it.");
         // Seeds, saplings and produce
         for (Crop c : CROPS) {
+            if (EXTERNAL_SEEDS.contains(c.seed()) || c.harvest() == Harvest.SCARECROW) {
+                continue;
+            }
             if (!c.seed().equals(c.planted())) {
                 s.add(c.seed(), seedName(c), Kind.SEED, "seed", c.color()).value(Math.max(5, c.level() * 4));
                 simple(s, c.planted(), title(c.id()) + " sapling", "sapling", c.color(), Math.max(10, c.level() * 6));
@@ -419,11 +539,22 @@ public final class FarmingData extends SkillingPart {
         simple(s, "white_lily", "White lily", "produce", 0xF0F0F0, 10).examine("A beautiful white lily.");
         simple(s, "seed_pack", "Seed pack", "package", 0x8A6A3A, 1)
                 .examine("A pack of seeds, rewarded for completing a farming contract.");
+        // Protection payments and the scarecrow.
+        simple(s, "barley_malt", "Barley malt", "produce", 0xC8A050, 5).examine("Barley that has been cooked on a range.");
+        simple(s, "monkey_nuts", "Monkey nuts", "produce", 0xB08A50, 4).examine("Nuts that monkeys love.");
+        food(s, "monkey_bar", "Monkey bar", "cake", 0x9A7040, 5, 5);
+        simple(s, "ground_tooth", "Ground tooth", "spice", 0xE8E0D0, 10).examine("A ground-up suqah tooth.");
+        simple(s, "empty_sack", "Empty sack", "package", 0xB09A6A, 2).examine("An empty sack, for hay or produce.");
+        simple(s, "hay_sack", "Hay sack", "package", 0xD0B060, 3).examine("A sack full of hay.");
+        simple(s, "scarecrow", "Scarecrow", "stake", 0xC0A060, 10)
+                .examine("Stand it in a flower patch to keep birds off the sweetcorn next to it.");
     }
 
     private static String seedName(Crop c) {
         return switch (c.id()) {
             case "oak" -> "Acorn";
+            case "crystal" -> "Crystal acorn";
+            case "hespori" -> "Hespori seed";
             case "seaweed" -> "Seaweed spore";
             case "bittercap" -> "Mushroom spore";
             case "redwood" -> "Redwood tree seed";
@@ -438,6 +569,14 @@ public final class FarmingData extends SkillingPart {
         // Belladonna flowers are ground into cave nightshade for weapon poison(++).
         out.accept(r("grind_belladonna", MenuType.HERBLORE, "Cave nightshade", Skill.HERBLORE, 1, 0)
                 .in("cave_nightshade_flower", 1).out("nightshade", 1).tool("pestle_and_mortar").ticks(1).build());
+        // Payments: barley malt is barley cooked on a range (no XP); the ground suqah tooth for the spirit
+        // tree's fee; a monkey bar (approx. recipe: banana, monkey nuts and a bucket of milk).
+        out.accept(r("cook_barley_malt", MenuType.COOKING, "Barley malt", Skill.COOKING, 1, 0).in("barley", 1)
+                .out("barley_malt", 1).ticks(2).build());
+        out.accept(r("make_monkey_bar", MenuType.COOKING, "Monkey bar", Skill.COOKING, 1, 0).in("banana", 1).in("monkey_nuts", 1)
+                .in("minecraft:milk_bucket", 1).out("monkey_bar", 1).out("minecraft:bucket", 1).ticks(2).build());
+        out.accept(r("grind_suqah_tooth", MenuType.HERBLORE, "Ground tooth", Skill.HERBLORE, 1, 0)
+                .in("suqah_tooth", 1).out("ground_tooth", 1).tool("pestle_and_mortar").ticks(1).build());
         // Plant cure is sold for 25 gp by farming shops and general stores near patches.
         out.accept(plain("shop_general_plant_cure", MenuType.SHOP_GENERAL, "Plant cure - 25 gp").in("coins", 25)
                 .out("plant_cure", 1).ticks(0).build());
@@ -449,6 +588,8 @@ public final class FarmingData extends SkillingPart {
         for (Gardener g : GARDENERS) {
             list.add(NpcDef.of(g.id(), g.name(), g.place(), g.dx(), g.dz(), 0xD8A880, 0x5A7A3A, 0x4A3A2A, 0x8A6A3A));
         }
+        // Solihib runs the food stall in the Ape Atoll market (monkey nuts and monkey bars for the spirit tree fee).
+        list.add(NpcDef.of("solihib", "Solihib", "ape_atoll_stalls", 3, -2, 0x6A4A2A, 0xC0A060, 0x8A6A3A, 0xC0A060));
         for (Leprechaun l : LEPRECHAUNS) {
             list.add(NpcDef.of(l.id(), "Tool Leprechaun", l.place(), l.dx(), l.dz(), 0xC8E0A0, 0x2A8A2A, 0x2A6A2A, 0x2A8A2A));
         }
@@ -484,8 +625,12 @@ public final class FarmingData extends SkillingPart {
                         List.of("fruit_tree_patch", "compost_bin")),
                 PlaceDef.of("tree_gnome_village_patch", "Tree Gnome Village fruit patch", 2490, 3179, PlaceDef.Style.CAMP,
                         List.of("fruit_tree_patch")),
-                PlaceDef.of("brimhaven_patches", "Brimhaven patches", 2764, 3212, PlaceDef.Style.CAMP,
-                        List.of("fruit_tree_patch", "spirit_tree_patch")),
+                PlaceDef.of("brimhaven_patches", "Brimhaven fruit tree patch", 2764, 3212, PlaceDef.Style.CAMP,
+                        List.of("fruit_tree_patch")),
+                // OSRS spirit tree patch at 2801,3203 is against the Agility Arena's wall; the camp is set
+                // 4 tiles west so its plaza doesn't cut into the arena.
+                PlaceDef.of("brimhaven_spirit_patch", "Brimhaven spirit tree patch", 2797, 3203, PlaceDef.Style.CAMP,
+                        List.of("spirit_tree_patch")),
                 PlaceDef.of("lletya_fruit_patch", "Lletya fruit tree patch", 2346, 3162, PlaceDef.Style.CAMP, List.of("fruit_tree_patch")),
                 PlaceDef.of("champions_guild_bush", "Champions' Guild bush patch", 3181, 3357, PlaceDef.Style.CAMP, List.of("bush_patch")),
                 PlaceDef.of("rimmington_bush", "Rimmington bush patch", 2940, 3221, PlaceDef.Style.CAMP, List.of("bush_patch", "compost_bin")),
@@ -501,7 +646,10 @@ public final class FarmingData extends SkillingPart {
                 new PlaceDef("farming_guild", "Farming Guild", 1249, 3726, PlaceDef.Style.TOWN,
                         List.of(Station.ALLOTMENT_PATCH, Station.ALLOTMENT_PATCH, Station.HERB_PATCH),
                         List.of("flower_patch", "tree_patch", "fruit_tree_patch", "bush_patch", "cactus_patch", "celastrus_patch",
-                                "redwood_patch", "spirit_tree_patch", "compost_bin")),
+                                "redwood_patch", "spirit_tree_patch", "hespori_patch", "anima_patch", "compost_bin")),
+                // Prifddinas: the allotments, flower patch, compost bin and crystal tree patch are part of
+                // the city structure (KandarinElves); this marker places the gardener and leprechaun.
+                PlaceDef.of("prifddinas_farm", "Prifddinas farming patches", 3292, 6118, PlaceDef.Style.NONE, List.of()),
                 // Spirit tree patches (Port Sarim, Hosidius; Etceteria, Brimhaven and the Farming Guild are above).
                 PlaceDef.of("port_sarim_spirit_patch", "Port Sarim spirit tree patch", 3059, 3257, PlaceDef.Style.CAMP,
                         List.of("spirit_tree_patch")),

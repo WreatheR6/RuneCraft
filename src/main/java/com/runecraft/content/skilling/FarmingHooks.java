@@ -67,6 +67,140 @@ final class FarmingHooks {
         for (FarmingData.Leprechaun l : FarmingData.LEPRECHAUNS) {
             QuestScripts.onTalk(l.id(), (player, npc) -> leprechaun(player));
         }
+        QuestScripts.onTalk("solihib", (player, npc) -> {
+            com.runecraft.quest.QuestApi.say(player, "Solihib", "Ook! Food for sale, the finest on Ape Atoll.");
+            com.runecraft.content.npcs.ShopService.open(player, "solihibs_food_stall", npc.getPos());
+        });
+        // Herb and allotment patch blocks ask here for flowers next to them and the living anima plant.
+        com.runecraft.block.FarmingPatchBlock.flowers = FarmingHooks::flowerProtects;
+        com.runecraft.block.FarmingPatchBlock.anima = FarmingHooks::activeAnima;
+        // Hespori: killing the one grown from a seed pays the Farming XP; its summoning stone only works
+        // for a player whose Hespori is fully grown.
+        com.runecraft.content.GameEvents.onKill((player, entity, stats) -> {
+            if (entity instanceof com.runecraft.boss.DataBossEntity boss && boss.def() != null && boss.def().id.equals("hespori")) {
+                hesporiKilled(player);
+            }
+        });
+        com.runecraft.boss.DataBossService.requirement("hespori", (player, def) -> hesporiFromStone(player));
+    }
+
+    // ------------------------------------------------------------------ anima plants
+
+    /** The living anima plant on the server ("kronos", "iasor" or "attas"), or null. */
+    static String activeAnima(ServerWorld world) {
+        SkillingState state = SkillingState.get(world.getServer());
+        if (!state.has("anima", "active")) {
+            return null;
+        }
+        NbtCompound a = state.entry("anima", "active");
+        Crop c = FarmingData.byId(a.getString("crop"));
+        if (c == null || c.patch() != Patch.ANIMA || world.getTime() - a.getLong("planted") >= growthTicks(c)) {
+            return null;
+        }
+        return c.id();
+    }
+
+    private static long growthTicks(Crop c) {
+        return FarmingData.stages(c) * cycleTicks(c);
+    }
+
+    private static String animaName(String id) {
+        return switch (id) {
+            case "kronos" -> "patches have a chance to grow an extra stage";
+            case "iasor" -> "crops are much less likely to become diseased";
+            default -> "crops give a larger harvest";
+        };
+    }
+
+    // ------------------------------------------------------------------ flowers protecting allotments
+
+    /**
+     * Whether a fully grown flower (or a scarecrow) in a flower patch next to an allotment protects
+     * its crop (produce id) from disease, as in OSRS.
+     */
+    static boolean flowerProtects(ServerWorld world, BlockPos pos, String allotment) {
+        SkillingState state = SkillingState.get(world.getServer());
+        for (BlockPos p : BlockPos.iterate(pos.add(-6, -2, -6), pos.add(6, 2, 6))) {
+            if (Patch.byBlock(SkillingUtil.blockId(world.getBlockState(p))) != Patch.FLOWER) {
+                continue;
+            }
+            String key = SkillingUtil.key(world, p);
+            if (!state.has("patches", key)) {
+                continue;
+            }
+            NbtCompound nbt = state.entry("patches", key);
+            Crop flower = nbt.contains("crop") ? FarmingData.byId(nbt.getString("crop")) : null;
+            if (flower == null || !FarmingDisease.flowerProtects(allotment, flower.id())) {
+                continue;
+            }
+            if (flower.harvest() == FarmingData.Harvest.SCARECROW) {
+                return true;
+            }
+            FarmingDisease.Crop h = updateHealth(world, flower, nbt);
+            if (h.grown(world.getTime(), FarmingData.stages(flower), cycleTicks(flower))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ------------------------------------------------------------------ Hespori
+
+    /** A fully grown Hespori is disturbed (from its patch or the summoning stone): it attacks. */
+    private static void hesporiKilled(ServerPlayerEntity player) {
+        SkillingState state = SkillingState.get(player.getServer());
+        String id = player.getUuidAsString();
+        if (!state.has("hespori", id) || !state.entry("hespori", id).getBoolean("fighting")) {
+            return;
+        }
+        state.remove("hespori", id);
+        Crop c = FarmingData.byId("hespori");
+        XpService.add(player, Skill.FARMING, c.checkXp());
+        Msg.action(player, "You have defeated the Hespori. Its seed pods burst open.");
+    }
+
+    /** Summoning stone check: only a player whose Hespori is fully grown can wake it there. */
+    private static boolean hesporiFromStone(ServerPlayerEntity player) {
+        ServerWorld world = (ServerWorld) player.getWorld();
+        SkillingState state = SkillingState.get(player.getServer());
+        String id = player.getUuidAsString();
+        if (state.has("hespori", id)) {
+            NbtCompound h = state.entry("hespori", id);
+            if (h.getBoolean("fighting")) {
+                return true;
+            }
+            String key = h.getString("patch");
+            if (state.has("patches", key)) {
+                NbtCompound nbt = state.entry("patches", key);
+                Crop crop = FarmingData.byId(nbt.getString("crop"));
+                if (crop != null && crop.harvest() == FarmingData.Harvest.BOSS) {
+                    FarmingDisease.Crop health = updateHealth(world, crop, nbt);
+                    if (health.grown(world.getTime(), FarmingData.stages(crop), cycleTicks(crop))) {
+                        clear(world, BlockPos.fromLong(h.getLong("pos")), nbt, state, key);
+                        h.putBoolean("fighting", true);
+                        return true;
+                    }
+                }
+            }
+        }
+        Msg.game(player, "Hespori only awakens from a fully grown Hespori plant. Plant a Hespori seed in the Farming Guild's"
+                + " Hespori patch and come back when it has grown.");
+        return false;
+    }
+
+    private static void disturbHespori(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop, NbtCompound nbt,
+                                       SkillingState state, String key) {
+        com.runecraft.osrs.content.BossDef def = com.runecraft.osrs.content.ContentRegistry.boss("hespori");
+        if (def == null) {
+            Msg.game(player, "The Hespori stirs, but does not wake.");
+            return;
+        }
+        clear(world, pos, nbt, state, key);
+        NbtCompound h = state.entry("hespori", player.getUuidAsString());
+        h.putBoolean("fighting", true);
+        com.runecraft.boss.DataBossService.spawn(world, pos.up().offset(player.getHorizontalFacing().getOpposite(), 2), def, player);
+        world.playSound(null, pos, SoundEvents.ENTITY_WITHER_SPAWN, SoundCategory.HOSTILE, 0.6f, 1.0f);
+        Msg.red(player, "You disturb the Hespori! (level-" + def.combatLevel + ")");
     }
 
     /** A tool leprechaun notes the harvested produce in the player's inventory. */
@@ -115,8 +249,23 @@ final class FarmingHooks {
     private static FarmingDisease.Crop updateHealth(ServerWorld world, Crop crop, NbtCompound nbt) {
         FarmingDisease.Crop h = health(nbt);
         Random random = world.getRandom();
-        h.update(world.getTime(), FarmingData.stages(crop), cycleTicks(crop), FarmingData.diseaseChance(crop, nbt.getInt("compost")),
+        String anima = activeAnima(world);
+        int stages = FarmingData.stages(crop);
+        long cycle = cycleTicks(crop);
+        h.update(world.getTime(), stages, cycle, FarmingData.diseaseChance(crop, nbt.getInt("compost"), "iasor".equals(anima)),
                 nbt.getBoolean("protected"), random::nextInt);
+        // Kronos: every growth cycle that passes has a chance to grow the crop an extra stage.
+        if ("kronos".equals(anima) && crop.patch() != Patch.ANIMA && !h.dead && !h.diseased()) {
+            long cycles = Math.min(stages, Math.max(0, (world.getTime() - h.planted) / cycle));
+            int done = nbt.getInt("kronos");
+            while (done < cycles) {
+                done++;
+                if (random.nextInt(100) < FarmingDisease.KRONOS_SKIP_PERCENT && (world.getTime() - h.planted) / cycle < stages) {
+                    h.planted -= cycle;
+                }
+            }
+            nbt.putInt("kronos", done);
+        }
         saveHealth(nbt, h);
         return h;
     }
@@ -134,7 +283,21 @@ final class FarmingHooks {
             emptyPatch(player, world, pos, patch, nbt, held);
             return;
         }
+        if (crop.harvest() == FarmingData.Harvest.SCARECROW) {
+            if (player.isSneaking() && Inv.has(player, "spade", 1)) {
+                clear(world, pos, nbt, state, key);
+                SkillingUtil.give(player, "scarecrow", 1);
+                Msg.action(player, "You take the scarecrow out of the patch.");
+            } else {
+                Msg.game(player, "A scarecrow keeps the birds off the sweetcorn nearby. Sneak with a spade to remove it.");
+            }
+            return;
+        }
         FarmingDisease.Crop health = updateHealth(world, crop, nbt);
+        if (crop.harvest() == FarmingData.Harvest.ANIMA) {
+            animaPatch(player, world, pos, crop, nbt, state, key, health);
+            return;
+        }
         if (health.dead) {
             deadPatch(player, world, pos, crop, nbt, state, key);
             return;
@@ -158,7 +321,35 @@ final class FarmingHooks {
             case PICK -> pick(player, world, pos, crop, nbt, state, key, now - (health.planted + stages * cycle));
             case ALL -> harvestAll(player, world, pos, crop, nbt, state, key);
             case SPIRIT -> spiritTree(player, crop, nbt);
+            case CHECK_ALL -> {
+                if (!nbt.getBoolean("checked")) {
+                    checkHealth(player, crop, nbt);
+                } else {
+                    harvestAll(player, world, pos, crop, nbt, state, key);
+                }
+            }
+            case BOSS -> disturbHespori(player, world, pos, crop, nbt, state, key);
+            default -> {
+            }
         }
+    }
+
+    /** An anima plant: active from planting until it withers at the end of its growth; then it is dug up. */
+    private static void animaPatch(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop, NbtCompound nbt,
+                                   SkillingState state, String key, FarmingDisease.Crop health) {
+        long left = growthTicks(crop) - (world.getTime() - health.planted);
+        if (left > 0) {
+            long hours = Math.max(1, left / (60 * TICKS_PER_MINUTE));
+            Msg.game(player, "The " + SkillingUtil.lower(crop.name()) + " plant is thriving: " + animaName(crop.id())
+                    + " (about " + hours + " more hour" + (hours == 1 ? "" : "s") + ").");
+            return;
+        }
+        if (!Inv.has(player, "spade", 1)) {
+            Msg.game(player, "The " + SkillingUtil.lower(crop.name()) + " plant has withered. You need a spade to clear the patch.");
+            return;
+        }
+        clear(world, pos, nbt, state, key);
+        Msg.action(player, "You dig up the withered " + SkillingUtil.lower(crop.name()) + " plant.");
     }
 
     private static void deadPatch(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop, NbtCompound nbt,
@@ -237,18 +428,20 @@ final class FarmingHooks {
             if (health.dead || health.diseased() || health.grown(world.getTime(), FarmingData.stages(crop), cycleTicks(crop))) {
                 continue;
             }
-            FarmingDisease.Payment pay = FarmingDisease.payment(crop.id());
-            if (pay == null) {
+            List<FarmingDisease.Payment> fee = FarmingDisease.paymentsFor(crop.id());
+            if (fee.isEmpty()) {
                 continue;
             }
             any = true;
-            if (Inv.has(player, pay.item(), pay.count())) {
-                Inv.remove(player, pay.item(), pay.count());
+            if (fee.stream().allMatch(pay -> Inv.has(player, pay.item(), pay.count()))) {
+                fee.forEach(pay -> Inv.remove(player, pay.item(), pay.count()));
                 nbt.putBoolean("protected", true);
                 Msg.game(player, g.name() + ": That'll do nicely. I'll look after your " + SkillingUtil.lower(crop.name()) + " for you.");
                 return;
             }
-            prices.add(pay.count() + " " + SkillingUtil.lower(SkillingUtil.name(pay.item())) + " for your " + SkillingUtil.lower(crop.name()));
+            List<String> items = new ArrayList<>();
+            fee.forEach(pay -> items.add(pay.count() + " " + SkillingUtil.lower(SkillingUtil.name(pay.item()))));
+            prices.add(String.join(" and ", items) + " for your " + SkillingUtil.lower(crop.name()));
         }
         if (!prices.isEmpty()) {
             Msg.game(player, g.name() + ": I'll protect it from disease for " + String.join(", ", prices) + ".");
@@ -281,7 +474,12 @@ final class FarmingHooks {
         }
         boolean sapling = !crop.seed().equals(crop.planted());
         String tool = sapling ? "spade" : "seed_dibber";
-        if (!SkillingUtil.needItem(player, tool, "You need " + Msg.article(SkillingUtil.lower(SkillingUtil.name(tool))) + " to plant that.")) {
+        if (!FarmingData.noPlantingTool(crop)
+                && !SkillingUtil.needItem(player, tool, "You need " + Msg.article(SkillingUtil.lower(SkillingUtil.name(tool))) + " to plant that.")) {
+            return;
+        }
+        if (crop.patch() == Patch.ANIMA && activeAnima(world) != null) {
+            Msg.game(player, "An anima plant is already growing. Only one can thrive at a time.");
             return;
         }
         if (Inv.count(player, held) < crop.count()) {
@@ -296,12 +494,46 @@ final class FarmingHooks {
         nbt.putInt("rolled", 0);
         nbt.putLong("diseasedAt", -1);
         nbt.putBoolean("dead", false);
-        nbt.putBoolean("protected", false);
+        nbt.putBoolean("protected", hosidiusDiseaseFree(player, world, pos));
+        nbt.putInt("kronos", 0);
         nbt.putInt("picks", crop.minYield() + nbt.getInt("compost"));
-        XpService.add(player, Skill.FARMING, crop.plantXp());
+        if (crop.patch() == Patch.ANIMA) {
+            NbtCompound a = state(player).entry("anima", "active");
+            a.putString("crop", crop.id());
+            a.putLong("planted", world.getTime());
+            a.putString("patch", SkillingUtil.key(world, pos));
+            Msg.game(player, "The " + SkillingUtil.lower(crop.name()) + " seed takes root: " + animaName(crop.id()) + ".");
+        }
+        if (crop.harvest() == FarmingData.Harvest.BOSS) {
+            NbtCompound h = state(player).entry("hespori", player.getUuidAsString());
+            h.putString("patch", SkillingUtil.key(world, pos));
+            h.putLong("pos", pos.asLong());
+            h.putBoolean("fighting", false);
+        }
+        if (crop.plantXp() > 0) {
+            XpService.add(player, Skill.FARMING, crop.plantXp());
+        }
         setVisual(world, pos, crop, 0, nbt);
         world.playSound(null, pos, SoundEvents.ITEM_CROP_PLANT, SoundCategory.BLOCKS, 1f, 1f);
-        Msg.action(player, "You plant the " + SkillingUtil.lower(SkillingUtil.name(held)) + " in the patch.");
+        Msg.action(player, FarmingData.noPlantingTool(crop) ? "You stand the scarecrow in the patch."
+                : "You plant the " + SkillingUtil.lower(SkillingUtil.name(held)) + " in the patch.");
+    }
+
+    private static SkillingState state(ServerPlayerEntity player) {
+        return SkillingState.get(player.getServer());
+    }
+
+    /**
+     * Crops planted in the Hosidius patches by a player who has completed the easy Kourend &amp; Kebos
+     * diary can't get diseased (OSRS).
+     */
+    static boolean hosidiusDiseaseFree(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+        if (!Gielinor.is(world) || !FarmingDisease.hosidiusFarm(com.runecraft.osrs.GielinorMap.toOsrsX(pos.getX()),
+                com.runecraft.osrs.GielinorMap.toOsrsY(pos.getZ()))) {
+            return false;
+        }
+        return com.runecraft.osrs.content.systems.Diaries.tierComplete(com.runecraft.content.systems.SysState.of(player).diaryDone,
+                "kourend", com.runecraft.osrs.content.systems.Diaries.Tier.EASY);
     }
 
     private static String plantHint(Patch patch) {
@@ -408,7 +640,11 @@ final class FarmingHooks {
             Msg.game(player, "You need an axe to harvest celastrus bark.");
             return;
         }
-        nbt.putInt("picks", picks - 1);
+        // Cactus spines and celastrus bark use harvest lives: a saved pick doesn't use up a spine/bark.
+        int[] lives = FarmingData.harvestChance(crop);
+        boolean saved = lives != null && player.getRandom().nextInt(256) < com.runecraft.osrs.FarmingYield.saveChance(lives[0], lives[1],
+                SkillingUtil.level(player, Skill.FARMING), yieldBonus(player, world, crop), 0);
+        nbt.putInt("picks", saved ? picks : picks - 1);
         if (!nbt.contains("regrow")) {
             nbt.putLong("regrow", world.getTime());
         }
@@ -426,13 +662,26 @@ final class FarmingHooks {
             return;
         }
         Random random = player.getRandom();
-        int yield = FarmingData.harvestYield(crop, SkillingUtil.level(player, Skill.FARMING), nbt.getInt("compost"), random::nextInt);
+        int yield = FarmingData.harvestYield(crop, SkillingUtil.level(player, Skill.FARMING), nbt.getInt("compost"),
+                yieldBonus(player, world, crop), random::nextInt);
         SkillingUtil.give(player, crop.produce(), yield);
         XpService.add(player, Skill.FARMING, FarmingData.harvestXp(crop, yield));
         FarmingContractService.harvested(player, crop.id());
         clear(world, pos, nbt, state, key);
         world.playSound(null, pos, SoundEvents.BLOCK_CROP_BREAK, SoundCategory.BLOCKS, 1f, 1f);
         Msg.action(player, "You harvest " + yield + " " + SkillingUtil.lower(SkillingUtil.name(crop.produce())) + " from the patch.");
+    }
+
+    /** Harvest lives item bonus: magic secateurs (hops, grapes) and a living attas plant. */
+    private static double yieldBonus(ServerPlayerEntity player, ServerWorld world, Crop crop) {
+        double bonus = 0;
+        if (FarmingData.secateursBoost(crop) && Inv.has(player, "magic_secateurs", 1)) {
+            bonus += com.runecraft.osrs.FarmingYield.MAGIC_SECATEURS;
+        }
+        if ("attas".equals(activeAnima(world))) {
+            bonus += com.runecraft.osrs.FarmingYield.ATTAS;
+        }
+        return bonus;
     }
 
     private static void spiritTree(ServerPlayerEntity player, Crop crop, NbtCompound nbt) {
@@ -490,7 +739,14 @@ final class FarmingHooks {
                 case CACTUS -> column.add(Blocks.POTTED_CACTUS.getDefaultState());
                 case MUSHROOM -> column.add(Blocks.POTTED_RED_MUSHROOM.getDefaultState());
                 case BELLADONNA -> column.add(Blocks.POTTED_WITHER_ROSE.getDefaultState());
-                case FLOWER -> column.add(flowerPot(crop).getDefaultState());
+                case FLOWER -> column.add(crop.harvest() == FarmingData.Harvest.SCARECROW ? Blocks.CARVED_PUMPKIN.getDefaultState()
+                        : flowerPot(crop).getDefaultState());
+                case CRYSTAL -> {
+                    column.add(Blocks.AMETHYST_BLOCK.getDefaultState());
+                    column.add(Blocks.LARGE_AMETHYST_BUD.getDefaultState());
+                }
+                case HESPORI -> column.add(Blocks.POTTED_CRIMSON_FUNGUS.getDefaultState());
+                case ANIMA -> column.add(Blocks.POTTED_BLUE_ORCHID.getDefaultState());
                 default -> column.add(Blocks.POTTED_BAMBOO.getDefaultState());
             }
         }
@@ -513,7 +769,8 @@ final class FarmingHooks {
 
     private static boolean isVisual(BlockState state) {
         String id = SkillingUtil.blockId(state);
-        return id.startsWith("potted_") || id.endsWith("_log") || id.endsWith("_leaves");
+        return id.startsWith("potted_") || id.endsWith("_log") || id.endsWith("_leaves") || id.equals("carved_pumpkin")
+                || id.equals("amethyst_block") || id.equals("large_amethyst_bud");
     }
 
     private static Block growingPot(Crop c) {
@@ -533,6 +790,10 @@ final class FarmingHooks {
             case CACTUS -> Blocks.POTTED_CACTUS;
             case MUSHROOM -> Blocks.POTTED_BROWN_MUSHROOM;
             case BELLADONNA -> Blocks.POTTED_ALLIUM;
+            case FLOWER -> c.harvest() == FarmingData.Harvest.SCARECROW ? Blocks.CARVED_PUMPKIN : Blocks.POTTED_FERN;
+            case HESPORI -> Blocks.POTTED_CRIMSON_ROOTS;
+            case ANIMA -> Blocks.POTTED_BLUE_ORCHID;
+            case CRYSTAL -> Blocks.POTTED_WARPED_ROOTS;
             default -> Blocks.POTTED_FERN;
         };
     }
