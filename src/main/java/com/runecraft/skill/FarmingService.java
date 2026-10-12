@@ -2,6 +2,9 @@ package com.runecraft.skill;
 
 import com.runecraft.block.FarmingPatchBlock;
 import com.runecraft.collection.CollectionLog;
+import com.runecraft.osrs.FarmingDisease;
+import com.runecraft.osrs.ItemCatalog;
+import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.data.Allotment;
 import com.runecraft.osrs.data.Herb;
@@ -19,8 +22,15 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.Locale;
 
-/** Planting seeds (with a seed dibber), waiting, and harvesting herb and allotment patches. */
+/**
+ * Planting seeds (with a seed dibber), composting, curing disease, waiting, and harvesting herb and
+ * allotment patches. Disease rules are in {@link FarmingDisease}; the patch block rolls them as it grows.
+ */
 public final class FarmingService {
+    /** Compost items by level (1 compost, 2 supercompost, 3 ultracompost); XP for applying each. */
+    private static final String[] COMPOST = {null, "compost", "supercompost", "ultracompost"};
+    private static final double[] COMPOST_XP = {0, 18.0, 26.0, 36.0};
+
     private FarmingService() {
     }
 
@@ -28,15 +38,46 @@ public final class FarmingService {
         int crop = state.get(patch.cropProperty());
         int stage = state.get(FarmingPatchBlock.STAGE);
         int level = Players.data(player).skills().currentLevel(Skill.FARMING);
+        String held = player.getMainHandStack().isEmpty() ? "" : Inv.idOf(player.getMainHandStack());
+        int compost = compostLevel(held);
+        if (compost > 0 && (crop == 0 || stage < 4) && state.get(FarmingPatchBlock.DISEASE) < 2) {
+            applyCompost(player, world, pos, state, compost, held);
+            return;
+        }
         if (crop == 0) {
             plant(player, world, pos, state, patch, level);
             return;
         }
-        if (stage < 4) {
-            Msg.game(player, "The " + cropName(patch, crop) + " is still growing.");
+        int disease = state.get(FarmingPatchBlock.DISEASE);
+        if (disease == 2) {
+            if (!Inv.has(player, "spade", 1)) {
+                Msg.game(player, "The " + cropName(patch, crop) + " has died. You need a spade to clear the patch.");
+                return;
+            }
+            world.setBlockState(pos, empty(state, patch), Block.NOTIFY_ALL);
+            world.playSound(null, pos, SoundEvents.BLOCK_GRAVEL_BREAK, SoundCategory.BLOCKS, 1.0f, 1.0f);
+            Msg.action(player, "You dig up the dead plants and clear the patch.");
             return;
         }
-        // Harvest
+        if (disease == 1) {
+            if (!Inv.has(player, "plant_cure", 1)) {
+                Msg.game(player, "The " + cropName(patch, crop) + " is diseased! Treat it with plant cure before it dies.");
+                return;
+            }
+            Inv.remove(player, "plant_cure", 1);
+            Inv.give(player, "vial", 1);
+            world.setBlockState(pos, state.with(FarmingPatchBlock.DISEASE, 0), Block.NOTIFY_ALL);
+            world.playSound(null, pos, SoundEvents.ITEM_BOTTLE_EMPTY, SoundCategory.BLOCKS, 1.0f, 1.0f);
+            Msg.action(player, "You treat the " + cropName(patch, crop) + " with plant cure. It is restored to health.");
+            return;
+        }
+        if (stage < 4) {
+            Msg.game(player, "The " + cropName(patch, crop) + " is still growing"
+                    + (state.get(FarmingPatchBlock.PROTECTED) ? " (protected by the gardener)." : "."));
+            return;
+        }
+        // Harvest: compost adds harvest lives (+1 / +2 / +3).
+        int lives = FarmingDisease.compostLives(state.get(FarmingPatchBlock.COMPOST));
         int yield;
         String item;
         double xp;
@@ -44,19 +85,74 @@ public final class FarmingService {
             Herb herb = Herb.values()[crop - 1];
             item = herb.grimyItem();
             xp = herb.harvestXp();
-            yield = 3 + player.getRandom().nextInt(4) + level / 33;
+            yield = 3 + player.getRandom().nextInt(4) + level / 33 + lives;
         } else {
             Allotment a = Allotment.values()[crop - 1];
             item = a.produceItem();
             xp = a.harvestXp();
-            yield = 3 + player.getRandom().nextInt(6) + level / 25;
+            yield = 3 + player.getRandom().nextInt(6) + level / 25 + lives;
         }
         Inv.give(player, item, yield);
         CollectionLog.obtain(player, item);
         XpService.add(player, Skill.FARMING, xp * yield);
         Msg.game(player, "You harvest the patch.");
-        world.setBlockState(pos, state.with(patch.cropProperty(), 0).with(FarmingPatchBlock.STAGE, 0), Block.NOTIFY_ALL);
+        world.setBlockState(pos, empty(state, patch), Block.NOTIFY_ALL);
         world.playSound(null, pos, SoundEvents.BLOCK_CROP_BREAK, SoundCategory.BLOCKS, 1.0f, 1.0f);
+    }
+
+    private static BlockState empty(BlockState state, FarmingPatchBlock patch) {
+        return state.with(patch.cropProperty(), 0).with(FarmingPatchBlock.STAGE, 0).with(FarmingPatchBlock.DISEASE, 0)
+                .with(FarmingPatchBlock.COMPOST, 0).with(FarmingPatchBlock.PROTECTED, false);
+    }
+
+    private static int compostLevel(String item) {
+        for (int i = 1; i < COMPOST.length; i++) {
+            if (COMPOST[i].equals(item)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private static void applyCompost(ServerPlayerEntity player, ServerWorld world, BlockPos pos, BlockState state, int compost, String item) {
+        if (state.get(FarmingPatchBlock.COMPOST) > 0) {
+            Msg.game(player, "This patch has already been treated with compost.");
+            return;
+        }
+        Inv.remove(player, item, 1);
+        Inv.give(player, "minecraft:bucket", 1);
+        world.setBlockState(pos, state.with(FarmingPatchBlock.COMPOST, compost), Block.NOTIFY_ALL);
+        XpService.add(player, Skill.FARMING, COMPOST_XP[compost]);
+        ItemDef def = ItemCatalog.get(item);
+        Msg.action(player, "You treat the patch with " + (def == null ? item : def.name().toLowerCase(Locale.ROOT)) + ".");
+        world.playSound(null, pos, SoundEvents.BLOCK_COMPOSTER_FILL, SoundCategory.BLOCKS, 1.0f, 1.0f);
+    }
+
+    /**
+     * A gardener protecting this patch's crop for the OSRS payment (allotments only; herbs can't be
+     * protected). Returns a status: 1 protected now, 0 nothing to protect, -1 can't pay (message sent).
+     */
+    public static int protect(ServerPlayerEntity player, ServerWorld world, BlockPos pos, BlockState state, FarmingPatchBlock patch) {
+        int crop = state.get(patch.cropProperty());
+        if (crop == 0 || patch.isHerbPatch() || state.get(FarmingPatchBlock.STAGE) >= 4 || state.get(FarmingPatchBlock.DISEASE) > 0
+                || state.get(FarmingPatchBlock.PROTECTED)) {
+            return 0;
+        }
+        Allotment a = Allotment.values()[crop - 1];
+        FarmingDisease.Payment pay = FarmingDisease.payment(a.produceItem());
+        if (pay == null) {
+            return 0;
+        }
+        if (!Inv.has(player, pay.item(), pay.count())) {
+            ItemDef def = ItemCatalog.get(pay.item());
+            Msg.game(player, "I'll look after your " + a.displayName().toLowerCase(Locale.ROOT) + " for " + pay.count() + " "
+                    + (def == null ? pay.item() : def.name().toLowerCase(Locale.ROOT)) + ".");
+            return -1;
+        }
+        Inv.remove(player, pay.item(), pay.count());
+        world.setBlockState(pos, state.with(FarmingPatchBlock.PROTECTED, true), Block.NOTIFY_ALL);
+        Msg.game(player, "That'll do nicely. I'll keep an eye on your " + a.displayName().toLowerCase(Locale.ROOT) + " for you.");
+        return 1;
     }
 
     private static void plant(ServerPlayerEntity player, ServerWorld world, BlockPos pos, BlockState state,
@@ -106,7 +202,8 @@ public final class FarmingService {
             return;
         }
         held.decrement(seeds);
-        world.setBlockState(pos, state.with(patch.cropProperty(), index + 1).with(FarmingPatchBlock.STAGE, 1), Block.NOTIFY_ALL);
+        world.setBlockState(pos, state.with(patch.cropProperty(), index + 1).with(FarmingPatchBlock.STAGE, 1)
+                .with(FarmingPatchBlock.DISEASE, 0).with(FarmingPatchBlock.PROTECTED, false), Block.NOTIFY_ALL);
         XpService.add(player, Skill.FARMING, xp);
         Msg.game(player, "You plant " + (seeds > 1 ? seeds + " " : "a ") + name + " seed" + (seeds > 1 ? "s" : "") + " in the patch.");
         world.playSound(null, pos, SoundEvents.ITEM_CROP_PLANT, SoundCategory.BLOCKS, 1.0f, 1.0f);

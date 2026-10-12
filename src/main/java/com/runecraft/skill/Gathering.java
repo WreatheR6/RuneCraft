@@ -18,6 +18,7 @@ import com.runecraft.osrs.data.FishingMethod;
 import com.runecraft.osrs.data.FishingSpot;
 import com.runecraft.osrs.data.Gem;
 import com.runecraft.osrs.data.Rock;
+import com.runecraft.osrs.data.SpecialTool;
 import com.runecraft.osrs.data.ToolTier;
 import com.runecraft.osrs.data.Tree;
 import com.runecraft.player.Players;
@@ -77,7 +78,7 @@ public final class Gathering {
             @Override
             boolean roll(ServerPlayerEntity p, ServerWorld world, BlockState state, Random random) {
                 SkillSet s = Players.data(p).skills();
-                ToolTier best = Tools.bestAxe(p, s);
+                Tools.Tool best = Tools.bestAxeTool(p, s);
                 if (best == null) {
                     return false;
                 }
@@ -91,9 +92,17 @@ public final class Gathering {
                         Msg.game(p, "Your inventory is too full to hold any more logs.");
                         return false;
                     }
-                    Inv.give(p, tree.logItem(), 1);
-                    CollectionLog.obtain(p, tree.logItem());
-                    Msg.action(p, "You get some " + tree.logName().toLowerCase(Locale.ROOT) + ".");
+                    if (best.itemId().equals("infernal_axe") && random.nextDouble() < SpecialTool.INFERNAL_CHANCE) {
+                        // The infernal axe burns a third of the logs it cuts, for half the Firemaking XP.
+                        Msg.action(p, "The infernal axe incinerates some " + tree.logName().toLowerCase(Locale.ROOT) + ".");
+                        XpService.add(p, Skill.FIREMAKING, SpecialTool.infernalFiremakingXp(tree));
+                        world.spawnParticles(net.minecraft.particle.ParticleTypes.FLAME, p.getX(), p.getY() + 1, p.getZ(), 6,
+                                0.2, 0.3, 0.2, 0.01);
+                    } else {
+                        Inv.give(p, tree.logItem(), 1);
+                        CollectionLog.obtain(p, tree.logItem());
+                        Msg.action(p, "You get some " + tree.logName().toLowerCase(Locale.ROOT) + ".");
+                    }
                     XpService.add(p, Skill.WOODCUTTING, tree.xp());
                     birdNest(p, random);
                     if (expired) {
@@ -151,8 +160,9 @@ public final class Gathering {
 
             @Override
             int interval(ServerPlayerEntity p) {
-                ToolTier best = Tools.bestPickaxe(p, Players.data(p).skills());
-                return best == null ? 8 : best.miningTicks();
+                // Dragon/infernal pickaxes have a 1/6 chance of a 2-tick roll, the crystal pickaxe 1/4.
+                Tools.Tool best = Tools.bestPickaxeTool(p, Players.data(p).skills());
+                return best == null ? 8 : best.miningTicks(p.getRandom().nextDouble());
             }
 
             @Override
@@ -171,12 +181,23 @@ public final class Gathering {
                     Msg.game(p, "Your inventory is too full to hold any more ore.");
                     return false;
                 }
-                Inv.give(p, mined, 1);
-                CollectionLog.obtain(p, mined);
-                ItemDef def = ItemCatalog.get(mined);
-                Msg.action(p, rock == Rock.RUNE_ESSENCE || rock == Rock.PURE_ESSENCE ? "You mine an unbound rune stone."
-                        : "You manage to mine some " + (def == null ? "ore" : def.name().toLowerCase(Locale.ROOT)
-                        .replace(" ore", "")) + ".");
+                Tools.Tool pickaxe = Tools.bestPickaxeTool(p, s);
+                com.runecraft.osrs.data.Bar smelted = SpecialTool.infernalBar(mined);
+                if (pickaxe != null && pickaxe.itemId().equals("infernal_pickaxe") && smelted != null
+                        && random.nextDouble() < SpecialTool.INFERNAL_CHANCE) {
+                    // The infernal pickaxe smelts a third of the ore it mines, for half the bar's Smithing XP.
+                    Inv.give(p, smelted.itemId(), 1);
+                    CollectionLog.obtain(p, smelted.itemId());
+                    XpService.add(p, Skill.SMITHING, SpecialTool.infernalSmithingXp(mined));
+                    Msg.action(p, "Your infernal pickaxe smelts the ore into " + Msg.article(smelted.displayName().toLowerCase(Locale.ROOT)) + ".");
+                } else {
+                    Inv.give(p, mined, 1);
+                    CollectionLog.obtain(p, mined);
+                    ItemDef def = ItemCatalog.get(mined);
+                    Msg.action(p, rock == Rock.RUNE_ESSENCE || rock == Rock.PURE_ESSENCE ? "You mine an unbound rune stone."
+                            : "You manage to mine some " + (def == null ? "ore" : def.name().toLowerCase(Locale.ROOT)
+                            .replace(" ore", "")) + ".");
+                }
                 XpService.add(p, Skill.MINING, rock.xp());
                 // Random gems while mining ore (1/256, not from essence or gem rocks): sapphire 1/2,
                 // emerald 1/4, ruby 1/8, diamond 1/8.
@@ -260,7 +281,11 @@ public final class Gathering {
 
             @Override
             boolean roll(ServerPlayerEntity p, ServerWorld world, BlockState state, Random random) {
-                if (!Inv.has(p, method.tool(), 1)) {
+                if (!hasTool(p, method)) {
+                    return false;
+                }
+                if (FishingSpots.tick(world, pos, state) != null) {
+                    Msg.game(p, "The fishing spot has moved.");
                     return false;
                 }
                 if (method.bait() != null && !Inv.has(p, method.bait(), 1)) {
@@ -269,8 +294,11 @@ public final class Gathering {
                 }
                 int level = Players.data(p).skills().currentLevel(Skill.FISHING);
                 world.playSound(null, pos, SoundEvents.ENTITY_FISHING_BOBBER_SPLASH, SoundCategory.PLAYERS, 0.4f, 1.0f);
+                // Dragon/infernal harpoons catch 20% faster, the crystal harpoon 35%.
+                String harpoon = method == FishingMethod.HARPOON ? Tools.bestHarpoon(p, Players.data(p).skills()) : null;
+                double boost = harpoon == null ? 1.0 : SpecialTool.harpoonMultiplier(harpoon);
                 for (Fish f : fish) {
-                    if (level >= f.level() && random.nextDouble() < Chance.lerp(level, f.low(), f.high())) {
+                    if (level >= f.level() && random.nextDouble() < Chance.lerp(level, f.low(), f.high()) * boost) {
                         if (!Inv.hasRoomFor(p, f.rawItem())) {
                             Msg.game(p, "You can't carry any more fish.");
                             return false;
@@ -278,10 +306,17 @@ public final class Gathering {
                         if (method.bait() != null) {
                             Inv.remove(p, method.bait(), 1);
                         }
-                        Inv.give(p, f.rawItem(), 1);
                         CollectionLog.obtain(p, f.rawItem());
-                        Msg.action(p, "You catch " + (f == Fish.SHRIMPS || f == Fish.ANCHOVIES ? "some " : "a ")
-                                + f.cookedName().toLowerCase(Locale.ROOT) + ".");
+                        if ("infernal_harpoon".equals(harpoon) && random.nextDouble() < SpecialTool.INFERNAL_CHANCE) {
+                            // The infernal harpoon cooks a third of its catches, for half the Cooking XP.
+                            Inv.give(p, f.cookedItem(), 1);
+                            XpService.add(p, Skill.COOKING, SpecialTool.infernalCookingXp(f));
+                            Msg.action(p, "Your infernal harpoon cooks the " + f.cookedName().toLowerCase(Locale.ROOT) + ".");
+                        } else {
+                            Inv.give(p, f.rawItem(), 1);
+                            Msg.action(p, "You catch " + (f == Fish.SHRIMPS || f == Fish.ANCHOVIES ? "some " : "a ")
+                                    + f.cookedName().toLowerCase(Locale.ROOT) + ".");
+                        }
                         XpService.add(p, Skill.FISHING, f.xp());
                         if (random.nextInt(1000) == 0) {
                             Msg.red(p, "You feel something weird sneaking into your backpack.");
@@ -305,16 +340,24 @@ public final class Gathering {
         ItemStack held = player.getMainHandStack();
         String heldId = held.isEmpty() ? "" : Inv.idOf(held);
         for (FishingMethod m : spot.catches().keySet()) {
-            if (m.tool().equals(heldId)) {
+            if (m.tool().equals(heldId) || (m == FishingMethod.HARPOON && SpecialTool.isHarpoon(heldId) && hasTool(player, m))) {
                 return m;
             }
         }
         for (FishingMethod m : FishingMethod.values()) {
-            if (spot.catches().containsKey(m) && Inv.has(player, m.tool(), 1)) {
+            if (spot.catches().containsKey(m) && hasTool(player, m)) {
                 return m;
             }
         }
         return null;
+    }
+
+    /** Whether the player carries a tool for a method (any usable harpoon works for harpooning). */
+    private static boolean hasTool(ServerPlayerEntity player, FishingMethod method) {
+        if (method == FishingMethod.HARPOON) {
+            return Tools.bestHarpoon(player, Players.data(player).skills()) != null;
+        }
+        return Inv.has(player, method.tool(), 1);
     }
 
     /** Shared logic for a gathering action at a block: validity, reach and a roll every N game ticks. */
@@ -322,6 +365,7 @@ public final class Gathering {
         final BlockPos pos;
         private final int baseInterval;
         private int counter;
+        private int target;
 
         GatherAction(BlockPos pos, int interval) {
             this.pos = pos;
@@ -344,11 +388,15 @@ public final class Gathering {
                 return false;
             }
             player.swingHand(Hand.MAIN_HAND, true);
+            if (target <= 0) {
+                target = interval(player);
+            }
             counter++;
-            if (counter < interval(player)) {
+            if (counter < target) {
                 return true;
             }
             counter = 0;
+            target = 0;
             return roll(player, world, state, world.getRandom());
         }
     }

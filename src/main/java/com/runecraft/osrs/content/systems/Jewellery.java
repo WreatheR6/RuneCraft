@@ -157,6 +157,8 @@ public final class Jewellery {
         wornExternal("brimstone_ring", Slot.RING, s(4, 4, 4, 6, 4, 0, 0, 0, 0, 0, 4, 0, 0, 0));
         wornExternal("legends_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 0, 0, 0, 0));
         wornExternal("obsidian_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 0, 0, 0, 0));
+        wornExternal("graceful_cape", Slot.CAPE, NONE);   // item defined by the skilling module
+        wornExternal("graceful_gloves", Slot.HANDS, NONE); // item defined by the skilling module
         wornExternal("ectophial", Slot.NECK, NONE);
     }
 

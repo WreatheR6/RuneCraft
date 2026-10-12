@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/common_kebbit_burrow_side",
+    "top": "runecraft:block/module/common_kebbit_burrow_top",
+    "bottom": "runecraft:block/module/common_kebbit_burrow_bottom"
+  }
+}

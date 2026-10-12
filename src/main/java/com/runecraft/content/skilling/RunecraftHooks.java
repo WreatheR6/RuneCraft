@@ -97,8 +97,8 @@ final class RunecraftHooks {
         Inv.remove(player, "pure_essence", n);
         Inv.remove(player, c.rune(), n);
         Inv.remove(player, c.talisman(), 1);
-        // A binding necklace (if another module adds one) guarantees success; otherwise 50% per rune.
-        boolean binding = Inv.has(player, "binding_necklace", 1);
+        // A worn binding necklace guarantees success (one of its 16 charges per trip); otherwise 50% per rune.
+        boolean binding = useBindingCharge(player);
         Random random = player.getRandom();
         int made = 0;
         for (int i = 0; i < n; i++) {
@@ -107,9 +107,29 @@ final class RunecraftHooks {
             }
         }
         SkillingUtil.give(player, c.id(), made);
-        XpService.add(player, Skill.RUNECRAFT, c.xp() * n);
+        XpService.add(player, Skill.RUNECRAFT, c.xp() * made);   // no XP for the essence lost without a binding necklace
         Msg.game(player, "You bind the temple's power into " + made + " " + SkillingUtil.lower(c.name()) + "s.");
         effects(player, pos);
+    }
+
+    /** Uses a charge of a worn binding necklace; returns false if none is worn. */
+    private static boolean useBindingCharge(ServerPlayerEntity player) {
+        com.runecraft.content.systems.SysState.SysPlayer sp = com.runecraft.content.systems.SysState.of(player);
+        com.runecraft.osrs.content.systems.Jewellery.Slot neck = com.runecraft.osrs.content.systems.Jewellery.Slot.NECK;
+        net.minecraft.item.ItemStack worn = sp.worn(neck);
+        if (worn.isEmpty() || !Inv.idOf(worn).equals("binding_necklace")) {
+            return false;
+        }
+        net.minecraft.nbt.NbtCompound nbt = worn.getOrCreateNbt();
+        int left = (nbt.contains(RunecraftData.BINDING_NBT) ? nbt.getInt(RunecraftData.BINDING_NBT) : RunecraftData.BINDING_CHARGES) - 1;
+        if (left <= 0) {
+            sp.worn.remove(neck);
+            Msg.red(player, "Your binding necklace has disintegrated.");
+        } else {
+            nbt.putInt(RunecraftData.BINDING_NBT, left);
+            Msg.game(player, "Your binding necklace has " + left + " charge" + (left == 1 ? "" : "s") + " left.");
+        }
+        return true;
     }
 
     private static void ourania(ServerPlayerEntity player, BlockPos pos) {

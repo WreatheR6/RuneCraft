@@ -21,7 +21,8 @@ import java.util.function.Consumer;
 public final class SkillingContent implements ContentModule {
     public static final List<SkillingPart> PARTS = List.of(new CookingData(), new CraftingData(), new SmithingData(),
             new FletchingData(), new HerbloreData(), new FarmingData(), new HunterData(), new MiningData(), new RunecraftData(),
-            new ConstructionData(), new ThievingData(), new GatheringData(), new SailingData());
+            new ConstructionData(), new ThievingData(), new GatheringData(), new SailingData(), new AgilityData(),
+            new PrayerData());
 
     @Override
     public String id() {

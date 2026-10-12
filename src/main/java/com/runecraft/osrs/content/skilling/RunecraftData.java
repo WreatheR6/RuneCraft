@@ -18,7 +18,8 @@ import java.util.function.Consumer;
 /**
  * Runecraft: talismans, tiaras (bound at the matching altar), combination runes (mist, dust, mud,
  * smoke, steam, lava: talisman + runes + pure essence at an elemental altar, 50% success without a
- * binding necklace), essence pouches and the Ourania (ZMI) altar. Levels/XP are OSRS values.
+ * worn binding necklace, which lasts 16 trips), essence pouches and the Ourania (ZMI) altar.
+ * Levels/XP are OSRS values.
  */
 public final class RunecraftData extends SkillingPart {
 
@@ -40,6 +41,10 @@ public final class RunecraftData extends SkillingPart {
             new Combination("steam_rune", "Steam rune", 19, RuneAltar.FIRE, "water_talisman", "water_rune", 10.0, 0xD0D0E0),
             new Combination("lava_rune", "Lava rune", 23, RuneAltar.EARTH, "fire_talisman", "fire_rune", 10.0, 0xE06020),
             new Combination("lava_rune", "Lava rune", 23, RuneAltar.FIRE, "earth_talisman", "earth_rune", 10.5, 0xE06020));
+
+    /** A binding necklace guarantees combination runes for 16 crafting trips (charges kept in this NBT key). */
+    public static final int BINDING_CHARGES = 16;
+    public static final String BINDING_NBT = "BindingCharges";
 
     /** Tiara binding XP per altar (OSRS). */
     public static double tiaraXp(RuneAltar a) {

@@ -121,6 +121,24 @@ public final class Recipe {
      * crabs without gauntlets) always keeps a small burn chance.
      */
     public double cookingSuccess(int cookingLevel, boolean range, boolean gauntlets) {
+        return cookingSuccess(cookingLevel, range, gauntlets, 0);
+    }
+
+    /**
+     * Cooking success chance with a burn reduction on top, e.g. 0.05 for the Hosidius kitchen range
+     * (5 percentage points less likely to burn, approx.). Food that can never stop burning keeps a
+     * small burn chance.
+     */
+    public double cookingSuccess(int cookingLevel, boolean range, boolean gauntlets, double burnReduction) {
+        double base = cookingSuccessBase(cookingLevel, range, gauntlets);
+        if (burnReduction <= 0 || base >= 1.0) {
+            return base;
+        }
+        int stop = gauntlets && gauntletStopBurn > 0 ? gauntletStopBurn : stopBurn;
+        return Math.min(stop >= 100 ? 0.98 : 1.0, base + burnReduction);
+    }
+
+    private double cookingSuccessBase(int cookingLevel, boolean range, boolean gauntlets) {
         if (stopBurn <= 0) {
             return 1.0;
         }

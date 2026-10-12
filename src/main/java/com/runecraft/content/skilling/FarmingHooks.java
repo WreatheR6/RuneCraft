@@ -2,6 +2,7 @@ package com.runecraft.content.skilling;
 
 import com.runecraft.content.BlockHooks;
 import com.runecraft.osrs.Chance;
+import com.runecraft.osrs.FarmingDisease;
 import com.runecraft.osrs.Landmark;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.skilling.CraftingData;
@@ -12,6 +13,7 @@ import com.runecraft.osrs.content.skilling.Loot;
 import com.runecraft.osrs.data.ToolTier;
 import com.runecraft.osrs.data.Tree;
 import com.runecraft.player.Players;
+import com.runecraft.quest.QuestScripts;
 import com.runecraft.skill.Tools;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
@@ -59,10 +61,36 @@ final class FarmingHooks {
         BlockHooks.register("compost_bin", (player, pos, state) -> useBin(player, pos));
         BlockHooks.register("birdhouse_space", (player, pos, state) -> buildBirdhouse(player, pos));
         BlockHooks.register("birdhouse", (player, pos, state) -> useBirdhouse(player, pos));
+        for (FarmingData.Gardener g : FarmingData.GARDENERS) {
+            QuestScripts.onTalk(g.id(), (player, npc) -> gardener(player, npc, g));
+        }
     }
 
-    private static long growthTicks(Crop c) {
-        return Math.max(20, (long) (c.growthMinutes() * TICKS_PER_MINUTE / GROWTH_SPEED));
+    /** Length of one growth cycle in world ticks. */
+    private static long cycleTicks(Crop c) {
+        return Math.max(1, (long) (FarmingData.cycleMinutes(c) * TICKS_PER_MINUTE / GROWTH_SPEED));
+    }
+
+    private static FarmingDisease.Crop health(NbtCompound nbt) {
+        return new FarmingDisease.Crop(nbt.getLong("planted"), nbt.getInt("rolled"),
+                nbt.contains("diseasedAt") ? nbt.getLong("diseasedAt") : -1, nbt.getBoolean("dead"));
+    }
+
+    private static void saveHealth(NbtCompound nbt, FarmingDisease.Crop h) {
+        nbt.putLong("planted", h.planted);
+        nbt.putInt("rolled", h.rolled);
+        nbt.putLong("diseasedAt", h.diseasedAt);
+        nbt.putBoolean("dead", h.dead);
+    }
+
+    /** Rolls disease for every growth cycle since the patch was last looked at and saves the result. */
+    private static FarmingDisease.Crop updateHealth(ServerWorld world, Crop crop, NbtCompound nbt) {
+        FarmingDisease.Crop h = health(nbt);
+        Random random = world.getRandom();
+        h.update(world.getTime(), FarmingData.stages(crop), cycleTicks(crop), FarmingData.diseaseChance(crop, nbt.getInt("compost")),
+                nbt.getBoolean("protected"), random::nextInt);
+        saveHealth(nbt, h);
+        return h;
     }
 
     // ------------------------------------------------------------------ patches
@@ -78,18 +106,126 @@ final class FarmingHooks {
             emptyPatch(player, world, pos, patch, nbt, held);
             return;
         }
-        long elapsed = world.getTime() - nbt.getLong("planted");
-        long total = growthTicks(crop);
-        if (elapsed < total) {
-            Msg.game(player, "The " + SkillingUtil.lower(crop.name()) + " is still growing (" + (elapsed * 100 / total) + "%).");
+        FarmingDisease.Crop health = updateHealth(world, crop, nbt);
+        if (health.dead) {
+            deadPatch(player, world, pos, crop, nbt, state, key);
+            return;
+        }
+        if (health.diseased()) {
+            diseasedPatch(player, world, pos, crop, nbt, health);
+            return;
+        }
+        int stages = FarmingData.stages(crop);
+        long cycle = cycleTicks(crop);
+        long now = world.getTime();
+        if (!health.grown(now, stages, cycle)) {
+            long done = Math.max(0, now - health.planted);
+            Msg.game(player, "The " + SkillingUtil.lower(crop.name()) + " is still growing (" + Math.min(99, done * 100 / (stages * cycle))
+                    + "%)" + (nbt.getBoolean("protected") ? ", protected by the gardener." : "."));
             return;
         }
         setVisual(world, pos, crop, nbt.getBoolean("stump") ? 2 : 1, nbt);
         switch (crop.harvest()) {
             case CHOP -> chopOrDig(player, world, pos, crop, nbt, state, key);
-            case PICK -> pick(player, world, pos, crop, nbt, state, key, elapsed - total);
+            case PICK -> pick(player, world, pos, crop, nbt, state, key, now - (health.planted + stages * cycle));
             case ALL -> harvestAll(player, world, pos, crop, nbt, state, key);
             case SPIRIT -> spiritTree(player, crop, nbt);
+        }
+    }
+
+    private static void deadPatch(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop, NbtCompound nbt,
+                                  SkillingState state, String key) {
+        if (nbt.getInt("visual") != 4) {
+            nbt.putInt("visual", 4);
+            clearVisual(world, pos);
+            if (world.getBlockState(pos.up()).isAir()) {
+                world.setBlockState(pos.up(), Blocks.POTTED_DEAD_BUSH.getDefaultState(), Block.NOTIFY_LISTENERS);
+            }
+        }
+        if (!Inv.has(player, "spade", 1)) {
+            Msg.game(player, "The " + SkillingUtil.lower(crop.name()) + " has died. You need a spade to clear the patch.");
+            return;
+        }
+        clear(world, pos, nbt, state, key);
+        world.playSound(null, pos, SoundEvents.BLOCK_GRAVEL_BREAK, SoundCategory.BLOCKS, 1f, 1f);
+        Msg.action(player, "You dig up the dead " + SkillingUtil.lower(crop.name()) + " and clear the patch.");
+    }
+
+    private static void diseasedPatch(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop, NbtCompound nbt,
+                                      FarmingDisease.Crop health) {
+        String name = SkillingUtil.lower(crop.name());
+        if (crop.patch().pruned) {
+            if (!Inv.has(player, "secateurs", 1) && !Inv.has(player, "magic_secateurs", 1)) {
+                Msg.game(player, "The " + name + " is diseased! Prune it with secateurs before it dies.");
+                return;
+            }
+            Msg.action(player, "You prune the " + name + " with your secateurs. It is restored to health.");
+        } else {
+            if (!Inv.has(player, "plant_cure", 1)) {
+                Msg.game(player, "The " + name + " is diseased! Treat it with plant cure before it dies.");
+                return;
+            }
+            Inv.remove(player, "plant_cure", 1);
+            Inv.give(player, "vial", 1);
+            Msg.action(player, "You treat the " + name + " with plant cure. It is restored to health.");
+        }
+        health.cure(world.getTime(), cycleTicks(crop));
+        saveHealth(nbt, health);
+        world.playSound(null, pos, SoundEvents.BLOCK_AZALEA_LEAVES_BREAK, SoundCategory.BLOCKS, 1f, 1.2f);
+    }
+
+    /**
+     * A gardener looking after the planted patches around them for the OSRS protection payment.
+     * Talking pays for the first unprotected crop the player can afford; otherwise the gardener
+     * names the price.
+     */
+    static void gardener(ServerPlayerEntity player, com.runecraft.entity.QuestNpcEntity npc, FarmingData.Gardener g) {
+        ServerWorld world = (ServerWorld) player.getWorld();
+        SkillingState state = SkillingState.get(player.getServer());
+        BlockPos centre = npc.getBlockPos();
+        List<String> prices = new ArrayList<>();
+        boolean any = false;
+        for (BlockPos p : BlockPos.iterate(centre.add(-14, -4, -14), centre.add(14, 4, 14))) {
+            BlockState bs = world.getBlockState(p);
+            if (bs.getBlock() instanceof com.runecraft.block.FarmingPatchBlock core) {
+                int r = com.runecraft.skill.FarmingService.protect(player, world, p.toImmutable(), bs, core);
+                if (r == 1) {
+                    return;
+                }
+                any |= r != 0;
+                continue;
+            }
+            Patch patch = Patch.byBlock(SkillingUtil.blockId(bs));
+            String key = SkillingUtil.key(world, p);
+            if (patch == null || !state.has("patches", key)) {
+                continue;
+            }
+            NbtCompound nbt = state.entry("patches", key);
+            Crop crop = nbt.contains("crop") ? FarmingData.byId(nbt.getString("crop")) : null;
+            if (crop == null || nbt.getBoolean("protected")) {
+                continue;
+            }
+            FarmingDisease.Crop health = updateHealth(world, crop, nbt);
+            if (health.dead || health.diseased() || health.grown(world.getTime(), FarmingData.stages(crop), cycleTicks(crop))) {
+                continue;
+            }
+            FarmingDisease.Payment pay = FarmingDisease.payment(crop.id());
+            if (pay == null) {
+                continue;
+            }
+            any = true;
+            if (Inv.has(player, pay.item(), pay.count())) {
+                Inv.remove(player, pay.item(), pay.count());
+                nbt.putBoolean("protected", true);
+                Msg.game(player, g.name() + ": That'll do nicely. I'll look after your " + SkillingUtil.lower(crop.name()) + " for you.");
+                return;
+            }
+            prices.add(pay.count() + " " + SkillingUtil.lower(SkillingUtil.name(pay.item())) + " for your " + SkillingUtil.lower(crop.name()));
+        }
+        if (!prices.isEmpty()) {
+            Msg.game(player, g.name() + ": I'll protect it from disease for " + String.join(", ", prices) + ".");
+        } else if (!any) {
+            Msg.game(player, g.name() + ": Plant something in my patches and I can look after it for you, for a price.");
         }
     }
 
@@ -129,6 +265,10 @@ final class FarmingHooks {
         nbt.putLong("planted", world.getTime());
         nbt.putBoolean("checked", false);
         nbt.putBoolean("stump", false);
+        nbt.putInt("rolled", 0);
+        nbt.putLong("diseasedAt", -1);
+        nbt.putBoolean("dead", false);
+        nbt.putBoolean("protected", false);
         nbt.putInt("picks", crop.minYield() + nbt.getInt("compost"));
         XpService.add(player, Skill.FARMING, crop.plantXp());
         setVisual(world, pos, crop, 0, nbt);

@@ -1,6 +1,7 @@
 package com.runecraft.block;
 
 import com.runecraft.osrs.data.FishingSpot;
+import com.runecraft.skill.FishingSpots;
 import com.runecraft.skill.Gathering;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -11,6 +12,7 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
@@ -24,7 +26,7 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-/** A rippling fishing spot sitting on the water surface. */
+/** A rippling fishing spot sitting on the water surface. It moves now and then, like OSRS spots. */
 public class FishingSpotBlock extends Block implements Waterloggable {
     public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
     private static final VoxelShape OUTLINE = Block.createCuboidShape(0, 12, 0, 16, 15, 16);
@@ -62,6 +64,18 @@ public class FishingSpotBlock extends Block implements Waterloggable {
     @SuppressWarnings("deprecation")
     public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
         return VoxelShapes.empty();
+    }
+
+    /** Spots wander around their fishing area on OSRS-like timers, even while nobody fishes them. */
+    @Override
+    public boolean hasRandomTicks(BlockState state) {
+        return true;
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        FishingSpots.tick(world, pos, state);
     }
 
     @Override
