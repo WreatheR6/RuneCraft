@@ -34,6 +34,11 @@ public final class QuestScripts {
         TALK.put(npcId, handler);
     }
 
+    /** The talk handler currently registered for an NPC, or null (lets a module wrap another's dialogue). */
+    public static BiConsumer<ServerPlayerEntity, QuestNpcEntity> handler(String npcId) {
+        return TALK.get(npcId);
+    }
+
     public static void onKill(KillHook hook) {
         KILLS.add(hook);
     }

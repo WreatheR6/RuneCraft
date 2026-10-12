@@ -171,7 +171,19 @@ public final class SlayerItems {
         items.add("dragon_limbs", "Dragon limbs", Kind.SIMPLE, "shaft", 0xA02020).value(500000).stack(1);
         items.add("dragon_metal_slice", "Dragon metal slice", Kind.SIMPLE, "bar", 0xB02020).value(1000000).stack(1);
         items.add("dragon_metal_lump", "Dragon metal lump", Kind.SIMPLE, "ore", 0xB02020).value(1000000).stack(1);
-        items.add("imbued_heart", "Imbued heart", Kind.SIMPLE, "gem", 0xD02060).value(1).stack(1)
+        items.add("rune_boots", "Rune boots", Kind.ARMOUR, "boots", 0x3A6A8A).value(12500).stack(1).tier("rune")
+                .equipment(wear(Slot.FEET, s(0, 0, 0, -3, -1, 12, 12, 12, 0, 0, 2, 0, 0, 0), Skill.DEFENCE, 40))
+                .examine("These will protect my feet.");
+        items.add("mystic_robe_top_dark", "Mystic robe top (dark)", Kind.ARMOUR, "leather_body", 0x2A2A3A).value(120000).stack(1)
+                .tier("leather").equipment(wear(Slot.CHEST, s(0, 0, 0, 20, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0), Skill.MAGIC, 40,
+                        Skill.DEFENCE, 20))
+                .examine("The upper half of a dark magical robe.");
+        // Key halves from the gem and rare drop tables (combine into a crystal key in OSRS).
+        items.add("loop_half_of_key", "Loop half of key", Kind.SIMPLE, "key", 0xB0A060).value(1).stack(1)
+                .examine("The loop end of a key that has been broken in half.");
+        items.add("tooth_half_of_key", "Tooth half of key", Kind.SIMPLE, "key", 0xB0A060).value(1).stack(1)
+                .examine("The tooth end of a key that has been broken in half.");
+        items.add("imbued_heart","Imbued heart", Kind.SIMPLE, "gem", 0xD02060).value(1).stack(1)
                 .examine("Temporarily boosts your Magic level (from superior slayer creatures).");
         items.add("eternal_gem", "Eternal gem", Kind.SIMPLE, "gem", 0x8A30C0).value(1).stack(1)
                 .examine("An enchanted gem that never runs out of charges.");

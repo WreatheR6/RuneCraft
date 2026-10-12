@@ -105,7 +105,7 @@ final class MidSlayerMonsters {
                         .spawn(Region.TROLL_COUNTRY, 2, 1, 2).underground(),
                 m("dust_devil", "Dust devil", 93, 105, 105, 70, 40, 1, 1).speed(4).attack(crush(8))
                         .defenceBonus(0, 0, 0, 0, 0).drops(Drop.of("dragon_chainbody", 1, 1, 32768),
-                                Drop.of("dust_battlestaff", 1, 1, 5000), Drop.of("chaos_rune", 10, 40, 6), Drop.of("earth_rune", 30, 80, 6),
+                                Drop.of("dust_battlestaff", 1, 1, 4000), Drop.of("chaos_rune", 10, 40, 6), Drop.of("earth_rune", 30, 80, 6),
                                 Drop.of("adamant_dagger", 1, 1, 64), Drop.herbs(16), Drop.gems(32), clue("hard", 128))
                         .slayer(65, "dust_devils").model("dust_devil").size(0.9f, 1.8f, 1.0f).flying()
                         .spawn(Region.KHARIDIAN_DESERT, 5, 2, 4).underground(),

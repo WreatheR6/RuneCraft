@@ -30,6 +30,8 @@ public final class SlayerState extends PersistentState {
         /** Konar's region restriction (Region enum name), or null. */
         public String region;
         public int streak;
+        /** Krystilia's separate task streak. */
+        public int wildyStreak;
         public int points;
         public int completed;
         public final Set<String> unlocks = new LinkedHashSet<>();
@@ -49,6 +51,7 @@ public final class SlayerState extends PersistentState {
             nbt.putString("Master", master == null ? "" : master);
             nbt.putString("Region", region == null ? "" : region);
             nbt.putInt("Streak", streak);
+            nbt.putInt("WildyStreak", wildyStreak);
             nbt.putInt("Points", points);
             nbt.putInt("Completed", completed);
             nbt.putBoolean("Migrated", migrated);
@@ -65,6 +68,7 @@ public final class SlayerState extends PersistentState {
             p.master = emptyToNull(nbt.getString("Master"));
             p.region = emptyToNull(nbt.getString("Region"));
             p.streak = nbt.getInt("Streak");
+            p.wildyStreak = nbt.getInt("WildyStreak");
             p.points = nbt.getInt("Points");
             p.completed = nbt.getInt("Completed");
             p.migrated = nbt.getBoolean("Migrated");

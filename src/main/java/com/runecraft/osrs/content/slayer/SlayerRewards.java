@@ -11,7 +11,7 @@ public final class SlayerRewards {
 
     /** Cost (points) to skip a task. */
     public static final int SKIP_COST = 30;
-    /** Cost (points) to permanently block the current task. */
+    /** Cost (points) to block a task at Duradel and Krystilia (see {@link #blockCost}). */
     public static final int BLOCK_COST = 100;
     /** Block list size (OSRS: 6 with enough quest points). */
     public static final int MAX_BLOCKS = 6;
@@ -42,9 +42,9 @@ public final class SlayerRewards {
     public static final List<Unlock> UNLOCKS = List.of(
             new Unlock("gargoyle_smasher", "Gargoyle smasher", 120, Kind.FEATURE, null,
                     "Automatically smash gargoyles with a rock hammer when they reach 9 Hitpoints or fewer."),
-            new Unlock("slug_salter", "Slug salter", 80, Kind.FEATURE, null,
+            new Unlock("slug_salter", "Slug salter", 10, Kind.FEATURE, null,
                     "Automatically salt rockslugs when they're weak enough, as long as you carry a bag of salt."),
-            new Unlock("reptile_freezer", "Reptile freezer", 90, Kind.FEATURE, null,
+            new Unlock("reptile_freezer", "Reptile freezer", 10, Kind.FEATURE, null,
                     "Automatically freeze desert lizards with an ice cooler when they're weak enough."),
             new Unlock("shroom_sprayer", "'Shroom sprayer", 110, Kind.FEATURE, null,
                     "Automatically spray mutated zygomites with fungicide when they're weak enough."),
@@ -52,12 +52,12 @@ public final class SlayerRewards {
                     "Learn to fletch broad arrows (52 Fletching) and buy broad arrowheads."),
             new Unlock("malevolent_masquerade", "Malevolent masquerade", 400, Kind.FEATURE, null,
                     "Learn to combine slayer protective gear into a slayer helmet (55 Crafting)."),
-            new Unlock("ring_bling", "Ring bling", 300, Kind.FEATURE, null,
+            new Unlock("ring_bling", "Ring bling", 150, Kind.FEATURE, null,
                     "Learn to craft slayer rings from a gold bar and an enchanted gem (75 Crafting)."),
-            new Unlock("bigger_and_badder", "Bigger and Badder", 150, Kind.FEATURE, null,
+            new Unlock("bigger_and_badder", "Bigger and Badder", 50, Kind.FEATURE, null,
                     "Superior slayer creatures may appear while you're on task."),
             new Unlock("seeing_red", "Seeing red", 50, Kind.TASK_UNLOCK, "red_dragons",
-                    "Nieve and Duradel may assign red dragons."),
+                    "Konar, Nieve and Duradel may assign red dragons."),
             new Unlock("i_hope_you_mith_me", "I hope you mith me!", 80, Kind.TASK_UNLOCK, "mithril_dragons",
                     "Konar, Nieve and Duradel may assign mithril dragons."),
             new Unlock("watch_the_birdie", "Watch the birdie", 80, Kind.TASK_UNLOCK, "aviansies",
@@ -165,6 +165,26 @@ public final class SlayerRewards {
             new Craft("brimstone_ring", 1, List.of(new Input("hydras_eye", 1), new Input("hydras_fang", 1),
                     new Input("hydras_heart", 1)), Skill.CRAFTING, 1, 0, null, null),
             new Craft("ferocious_gloves", 1, List.of(new Input("hydra_leather", 1)), Skill.CRAFTING, 1, 0, null, "hammer"));
+
+    /**
+     * Points to block the current task, by the master who assigned it (OSRS, August 2025): Turael and
+     * Spria 40, Mazchna 50, Vannaka 60, Chaeldar 70, Konar 80, Nieve 90, Duradel and Krystilia 100.
+     * OSRS keeps a block list per master; here one shared list is used.
+     */
+    public static int blockCost(String masterId) {
+        if (masterId == null) {
+            return BLOCK_COST;
+        }
+        return switch (masterId) {
+            case "turael", "spria" -> 40;
+            case "mazchna" -> 50;
+            case "vannaka" -> 60;
+            case "chaeldar" -> 70;
+            case "konar" -> 80;
+            case "nieve" -> 90;
+            default -> BLOCK_COST;
+        };
+    }
 
     public static Unlock unlock(String id) {
         for (Unlock u : UNLOCKS) {

@@ -137,6 +137,7 @@ class SlayerContentTest {
         assertEquals("vannaka", SlayerMasters.bestFor(50, 1).id());
         assertEquals("nieve", SlayerMasters.bestFor(100, 49).id());
         assertEquals("duradel", SlayerMasters.bestFor(100, 50).id());
+        assertEquals("vannaka", SlayerMasters.bestFor(80, 1, m -> m.quest() == null).id());
     }
 
     @Test
@@ -213,8 +214,134 @@ class SlayerContentTest {
             assertTrue(sup.combatLevel > base.combatLevel, s.id());
             assertTrue(sup.drops.stream().anyMatch(d -> d.item().equals("imbued_heart")), s.id());
             assertTrue(s.xp() >= sup.hitpoints, s.id());
+            // OSRS superiors give about ten times their hitpoints in Slayer XP.
+            assertEquals(Math.min(Superiors.MAX_HP, s.hp()), sup.hitpoints, s.id());
+            assertTrue(s.xp() >= 8 * s.hp() && s.xp() <= 13 * s.hp(), s.id());
         }
         assertEquals(4200, Superiors.forBase("abyssal_demon").xp());
+        assertEquals(400, monster("greater_abyssal_demon").hitpoints);
+        assertEquals(550, monster("night_beast").hitpoints);
+        assertEquals(6462, Superiors.byId("night_beast").xp());
+        assertEquals(55, monster("crushing_hand").hitpoints);
+        assertEquals(200, SlayerRewards.SUPERIOR_CHANCE);
+    }
+
+    @Test
+    void osrsDropRates() {
+        MonsterDef nech = monster("nechryael");
+        assertTrue(drops(nech, "rune_boots", 116));
+        assertTrue(drops(nech, "rune_full_helm", 39));
+        assertTrue(drops(monster("greater_nechryael"), "rune_boots", 128));
+        MonsterDef smoke = monster("smoke_devil");
+        assertTrue(drops(smoke, "occult_necklace", 512));
+        assertTrue(drops(smoke, "dragon_chainbody", 32768));
+        assertTrue(smoke.drops.stream().noneMatch(d -> d.item().equals("mist_battlestaff")));
+        assertTrue(drops(monster("cave_kraken"), "trident_of_the_seas", 200));
+        assertTrue(drops(monster("gargoyle"), "mystic_robe_top_dark", 512));
+        assertTrue(drops(monster("dust_devil"), "dragon_chainbody", 32768));
+        assertTrue(drops(monster("dust_devil"), "dust_battlestaff", 4000));
+        assertTrue(drops(monster("hellhound"), "smouldering_stone", 32768));
+        assertTrue(drops(monster("hellhound"), "clue_scroll_hard", 64));
+        assertTrue(drops(monster("kurask"), "leaf_bladed_battleaxe", 1026));
+        MonsterDef hydra = monster("hydra");
+        assertTrue(drops(hydra, "hydras_eye", 512) && drops(hydra, "hydras_fang", 512) && drops(hydra, "hydras_heart", 512));
+        assertTrue(hydra.drops.stream().noneMatch(d -> d.item().equals("dragon_sword")));
+        assertTrue(drops(monster("green_dragon"), "draconic_visage", 10000));
+        assertTrue(drops(monster("abyssal_demon"), "#rare", 32));
+        for (MonsterDef m : SlayerContent.allMonsters()) {
+            for (Drop d : m.drops) {
+                assertTrue(ItemCatalog.exists(d.item()), m.id + " drops unknown " + d.item());
+            }
+        }
+    }
+
+    @Test
+    void slayerXpIsHitpoints() {
+        // Ordinary creatures give Slayer XP equal to their hitpoints (SlayerService uses stats.hitpoints()).
+        assertEquals(150, monster("abyssal_demon").hitpoints);
+        assertEquals(105, monster("gargoyle").hitpoints);
+        assertEquals(105, monster("nechryael").hitpoints);
+        assertEquals(116, monster("hellhound").hitpoints);
+    }
+
+    @Test
+    void masterTablesFollowOsrs() {
+        SlayerMasters.Master turael = SlayerMasters.get("turael");
+        SlayerMasters.Master spria = SlayerMasters.get("spria");
+        assertNotNull(spria);
+        assertEquals(turael.assignments(), spria.assignments());
+        assertEquals(0, spria.points());
+        assertEquals("a_porcine_of_interest", spria.quest());
+        assertEquals("lost_city", SlayerMasters.get("chaeldar").quest());
+        for (SlayerMasters.Master m : SlayerMasters.all()) {
+            assertTrue(m.quest() == null || ContentRegistry.quest(m.quest()) != null, m.id() + " " + m.quest());
+        }
+        for (String c : List.of("banshees", "dogs", "dwarves")) {
+            assertNotNull(turael.assignment(c), c);
+        }
+        assertEquals(10, turael.assignment("dwarves").min());
+        assertEquals(25, turael.assignment("dwarves").max());
+        // Vannaka never assigns the low-level crawlers.
+        assertNull(SlayerMasters.get("vannaka").assignment("cave_crawlers"));
+        assertNull(SlayerMasters.get("vannaka").assignment("crawling_hands"));
+        assertNotNull(SlayerMasters.get("vannaka").assignment("shades"));
+        assertNotNull(SlayerMasters.get("mazchna").assignment("catablepon"));
+        // Seeing red is needed for red dragons at every master that assigns them.
+        for (SlayerMasters.Master m : SlayerMasters.all()) {
+            SlayerMasters.Assignment red = m.assignment("red_dragons");
+            if (red != null) {
+                assertEquals("seeing_red", red.unlock(), m.id());
+            }
+        }
+        // Combat / Slayer requirements and base points.
+        int[][] req = {{20, 1, 6}, {40, 1, 8}, {70, 1, 10}, {75, 1, 18}, {85, 1, 12}, {100, 50, 15}};
+        String[] ids = {"mazchna", "vannaka", "chaeldar", "konar", "nieve", "duradel"};
+        for (int i = 0; i < ids.length; i++) {
+            SlayerMasters.Master m = SlayerMasters.get(ids[i]);
+            assertEquals(req[i][0], m.combatLevel(), ids[i]);
+            assertEquals(req[i][1], m.slayerLevel(), ids[i]);
+            assertEquals(req[i][2], m.points(), ids[i]);
+        }
+        assertEquals(25, SlayerMasters.get("krystilia").points());
+        assertTrue(SlayerMasters.get("krystilia").wilderness());
+        assertTrue(SlayerMasters.get("konar").locationRestricted());
+    }
+
+    @Test
+    void otherModulesCreaturesCountTowardsTasks() {
+        assertEquals("dogs", SlayerTasks.categoryOf(monster("wild_dog")));
+        assertEquals("aviansies", SlayerTasks.categoryOf(monster("gwd_aviansie")));
+        assertEquals("tzhaar", SlayerTasks.categoryOf(monster("tzhaar_ket")));
+        assertEquals("revenants", SlayerTasks.categoryOf(monster("revenant_imp")));
+        // A declared category always wins.
+        assertEquals("abyssal_demons", SlayerTasks.categoryOf(monster("abyssal_demon")));
+        for (String id : SlayerCategories.members().keySet()) {
+            assertNotNull(ContentRegistry.monster(id), "member " + id + " is not a monster");
+        }
+        assertTrue(SlayerTasks.available("dogs"));
+        assertTrue(SlayerTasks.available("aviansies"));
+        assertTrue(SlayerTasks.available("shades"));
+    }
+
+    @Test
+    void rewardPricesAndBlockCosts() {
+        assertEquals(50, SlayerRewards.unlock("bigger_and_badder").cost());
+        assertEquals(10, SlayerRewards.unlock("slug_salter").cost());
+        assertEquals(10, SlayerRewards.unlock("reptile_freezer").cost());
+        assertEquals(150, SlayerRewards.unlock("ring_bling").cost());
+        assertEquals(400, SlayerRewards.unlock("malevolent_masquerade").cost());
+        assertEquals(120, SlayerRewards.unlock("gargoyle_smasher").cost());
+        assertEquals(50, SlayerRewards.unlock("seeing_red").cost());
+        assertEquals(30, SlayerRewards.SKIP_COST);
+        assertEquals(40, SlayerRewards.blockCost("turael"));
+        assertEquals(40, SlayerRewards.blockCost("spria"));
+        assertEquals(60, SlayerRewards.blockCost("vannaka"));
+        assertEquals(80, SlayerRewards.blockCost("konar"));
+        assertEquals(90, SlayerRewards.blockCost("nieve"));
+        assertEquals(100, SlayerRewards.blockCost("duradel"));
+        assertEquals(100, SlayerRewards.blockCost("krystilia"));
+        assertEquals(5000, SlayerRewards.shopItem("mirror_shield").price());
+        assertEquals(31000, SlayerRewards.shopItem("leaf_bladed_spear").price());
     }
 
     @Test

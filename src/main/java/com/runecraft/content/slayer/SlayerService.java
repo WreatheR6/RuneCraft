@@ -6,6 +6,7 @@ import com.runecraft.network.ServerNetworking;
 import com.runecraft.osrs.Region;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.CombatProfile;
+import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.slayer.SlayerCategories;
 import com.runecraft.osrs.content.slayer.SlayerChests;
 import com.runecraft.osrs.content.slayer.SlayerGear;
@@ -15,6 +16,7 @@ import com.runecraft.osrs.content.slayer.SlayerTasks;
 import com.runecraft.osrs.content.slayer.Superiors;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
+import com.runecraft.quest.QuestApi;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
@@ -72,7 +74,8 @@ public final class SlayerService {
     /** The generic slayer master station: the best master for the player's levels. */
     public static void talkToStation(ServerPlayerEntity player) {
         PlayerData data = Players.data(player);
-        SlayerMasters.Master m = SlayerMasters.bestFor(data.skills().combatLevel(), data.skills().level(Skill.SLAYER));
+        SlayerMasters.Master m = SlayerMasters.bestFor(data.skills().combatLevel(), data.skills().level(Skill.SLAYER),
+                x -> x.quest() == null || ContentRegistry.quest(x.quest()) == null || QuestApi.isComplete(player, x.quest()));
         talk(player, m);
     }
 
@@ -86,12 +89,25 @@ public final class SlayerService {
                     + master.combatLevel() + (master.slayerLevel() > 1 ? " and a Slayer level of " + master.slayerLevel() : "") + ".");
             return;
         }
+        if (master.quest() != null && ContentRegistry.quest(master.quest()) != null
+                && !QuestApi.isComplete(player, master.quest())) {
+            say(player, master, "I don't take students who haven't completed "
+                    + ContentRegistry.quest(master.quest()).displayName() + ".");
+            return;
+        }
         if (p.hasTask()) {
-            boolean turaelSkip = master.id().equals("turael") && p.master != null && !p.master.equals("turael")
+            // Turael and Spria swap a harder master's task for one of theirs, resetting the streak.
+            boolean easyMaster = master.points() == 0 && !master.wilderness();
+            SlayerMasters.Master current = p.master == null ? null : SlayerMasters.get(p.master);
+            boolean turaelSkip = easyMaster && current != null && current.points() > 0
                     && master.assignment(p.task) == null;
             if (turaelSkip) {
                 say(player, master, "That's a bit much for you, isn't it? I'll give you something easier, but your task streak is reset.");
-                p.streak = 0;
+                if (current.wilderness()) {
+                    p.wildyStreak = 0;
+                } else {
+                    p.streak = 0;
+                }
                 p.task = null;
                 p.remaining = 0;
                 assign(player, master, p, combat, slayer);
@@ -153,7 +169,7 @@ public final class SlayerService {
         MutableText line = Text.literal("Options: ").formatted(Formatting.GRAY);
         line.append(button("[Skip " + SlayerRewards.SKIP_COST + "pts]", "/slayer skip", "Cancel this task for 30 points"));
         line.append(Text.literal(" "));
-        line.append(button("[Block " + SlayerRewards.BLOCK_COST + "pts]", "/slayer block", "Never be assigned this task again"));
+        line.append(button("[Block " + SlayerRewards.blockCost(p.master) + "pts]", "/slayer block", "Never be assigned this task again"));
         line.append(Text.literal(" "));
         line.append(button("[Rewards]", "/slayer rewards", "Spend your " + p.points + " slayer points"));
         line.append(Text.literal(" "));
@@ -189,7 +205,7 @@ public final class SlayerService {
             return null;
         }
         if (stats.profile() != null) {
-            return stats.profile().slayerCategory;
+            return SlayerCategories.categoryOf(stats.profile().id, stats.profile().slayerCategory);
         }
         if (stats.monster() != null) {
             SlayerCategories.Category c = SlayerCategories.ofBuiltIn(stats.monster().name());
@@ -255,11 +271,17 @@ public final class SlayerService {
 
     private static void complete(ServerPlayerEntity player, SlayerState.Profile p, SlayerMasters.Master master) {
         p.remaining = 0;
-        p.streak++;
         p.completed++;
-        int points = master == null ? 0 : master.pointsFor(p.streak);
+        // Krystilia's Wilderness tasks keep their own streak (OSRS).
+        int streak;
+        if (master != null && master.wilderness()) {
+            streak = ++p.wildyStreak;
+        } else {
+            streak = ++p.streak;
+        }
+        int points = master == null ? 0 : master.pointsFor(streak);
         p.points += points;
-        Msg.red(player, "You have completed your task! You've completed " + p.streak + " tasks in a row"
+        Msg.red(player, "You have completed your task! You've completed " + streak + " tasks in a row"
                 + (points > 0 ? " and received " + points + " points, giving you a total of " + p.points : "")
                 + ". Return to a Slayer master.");
         p.region = null;
@@ -306,6 +328,7 @@ public final class SlayerService {
 
     /** Points, streak and unlock bookkeeping for commands. */
     static String summary(SlayerState.Profile p) {
-        return String.format(Locale.ROOT, "Points: %d  Streak: %d  Tasks completed: %d", p.points, p.streak, p.completed);
+        return String.format(Locale.ROOT, "Points: %d  Streak: %d  Wilderness streak: %d  Tasks completed: %d", p.points,
+                p.streak, p.wildyStreak, p.completed);
     }
 }

@@ -25,6 +25,7 @@ public final class SlayerCategories {
     }
 
     private static final Map<String, Category> ALL = new LinkedHashMap<>();
+    private static final Map<String, String> MEMBERS = new LinkedHashMap<>();
 
     private SlayerCategories() {
     }
@@ -137,6 +138,51 @@ public final class SlayerCategories {
         add("tzhaar", "TzHaar", 1, Region.KARAMJA);
         add("revenants", "revenants", 1, Region.WILDERNESS);
         add("vampyres", "vampyres", 1, Region.MORYTANIA);
+        add("dogs", "dogs", 1, Region.KARAMJA);
+        add("dwarves", "dwarves", 1, Region.ASGARNIA);
+        add("catablepon", "catablepon", 1, Region.MISTHALIN);
+        add("flesh_crawlers", "flesh crawlers", 1, Region.MISTHALIN);
+        add("shades", "shades", 1, Region.MORYTANIA);
+        add("jungle_horrors", "jungle horrors", 1, Region.MORYTANIA);
+
+        // Other modules' creatures that count towards a task without declaring a slayer category themselves.
+        member("dogs", "wild_dog");
+        member("dwarves", "dwarf");
+        member("catablepon", "catablepon");
+        member("flesh_crawlers", "flesh_crawler");
+        member("shades", "loar_shade", "phrin_shade", "riyl_shade", "asyn_shade", "fiyr_shade");
+        member("jungle_horrors", "jungle_horror");
+        member("goblins", "cave_goblin", "cave_goblin_guard", "gwd_goblin");
+        member("hobgoblins", "gwd_hobgoblin");
+        member("rats", "giant_rat");
+        member("zombies", "monkey_zombie");
+        member("aviansies", "gwd_aviansie", "gwd_aviansie_elite");
+        member("tzhaar", "tzhaar_ket", "tzhaar_xil", "tzhaar_mej", "tzhaar_hur_citizen");
+        member("revenants", "revenant_imp", "revenant_goblin", "revenant_pyrefiend", "revenant_hobgoblin",
+                "revenant_cyclops", "revenant_hellhound", "revenant_demon", "revenant_ork", "revenant_dark_beast",
+                "revenant_knight", "revenant_dragon");
+    }
+
+    private static void member(String category, String... monsterIds) {
+        if (!ALL.containsKey(category)) {
+            throw new IllegalStateException("Unknown slayer category " + category);
+        }
+        for (String id : monsterIds) {
+            MEMBERS.put(id, category);
+        }
+    }
+
+    /**
+     * The category a module creature counts towards: its own {@code slayerCategory}, else the
+     * category it is listed under here (e.g. the bestiary's wild dogs count as "dogs"), else null.
+     */
+    public static String categoryOf(String monsterId, String declared) {
+        return declared != null ? declared : MEMBERS.get(monsterId);
+    }
+
+    /** Monster id to category for creatures listed by {@link #member}. */
+    public static Map<String, String> members() {
+        return Collections.unmodifiableMap(MEMBERS);
     }
 
     public static Category get(String id) {

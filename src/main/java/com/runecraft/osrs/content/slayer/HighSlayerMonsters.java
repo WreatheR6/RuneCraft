@@ -36,7 +36,7 @@ final class HighSlayerMonsters {
                 m("kurask", "Kurask", 106, 97, 67, 105, 105, 1, 1).speed(4).attack(crush(16))
                         .defenceBonus(20, 20, 10, 0, 20).drops(Drop.always("big_bones"), Drop.of("leaf_bladed_sword", 1, 1, 384),
                                 Drop.of("leaf_bladed_battleaxe", 1, 1, 1026), Drop.of("nature_rune", 10, 30, 12),
-                                Drop.of("rune_longsword", 1, 1, 384), Drop.herbs(4), Drop.seeds(18), Drop.gems(64), clue("hard", 128))
+                                Drop.of("rune_longsword", 1, 1, 384), Drop.herbs(4), Drop.seeds(18), Drop.rare(64), clue("hard", 128))
                         .slayer(70, "kurask").model("kurask").size(1.0f, 2.6f, 1.0f).spawn(Region.FREMENNIK_PROVINCE, 4, 2, 3)
                         .spawn(Region.TIRANNWN, 2, 1, 2).underground(),
                 m("skeletal_wyvern", "Skeletal Wyvern", 140, 210, 125, 120, 120, 125, 125).speed(4).attack(slash(13))
@@ -49,17 +49,20 @@ final class HighSlayerMonsters {
                                 Drop.herbs(14), Drop.gems(32), clue("elite", 350)).slayer(72, "skeletal_wyverns")
                         .model("skeletal_wyvern").size(1.4f, 2.4f, 1.0f).spawn(Region.ASGARNIA, 2, 1, 3).underground(),
                 m("gargoyle", "Gargoyle", 111, 105, 75, 105, 107, 1, 1).speed(4).attack(crush(11))
-                        .defenceBonus(20, 20, 0, 20, 20).drops(Drop.of("granite_maul", 1, 1, 512), Drop.of("rune_full_helm", 1, 1, 128),
+                        .defenceBonus(20, 20, 0, 20, 20).drops(Drop.of("granite_maul", 1, 1, 512),
+                                Drop.of("mystic_robe_top_dark", 1, 1, 512), Drop.of("rune_full_helm", 1, 1, 128),
                                 Drop.of("adamant_platelegs", 1, 1, 64), Drop.of("gold_bar", 2, 4, 12), Drop.of("steel_bar", 2, 4, 12),
-                                Drop.of("mithril_bar", 1, 3, 16), coins(200, 800, 3), Drop.gems(32), clue("hard", 128))
+                                Drop.of("mithril_bar", 1, 3, 16), coins(200, 800, 3), Drop.rare(32), clue("hard", 128))
                         .slayer(75, "gargoyles").model("gargoyle").size(1.0f, 2.2f, 1.0f).spawn(Region.MORYTANIA, 4, 1, 3),
                 m("nechryael", "Nechryael", 115, 105, 97, 97, 105, 1, 1).speed(4).attack(crush(9))
-                        .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("bones"), Drop.of("rune_full_helm", 1, 1, 128),
-                                Drop.of("adamant_kiteshield", 1, 1, 64), Drop.of("death_rune", 5, 15, 8), Drop.of("chaos_rune", 20, 40, 8),
-                                coins(100, 1000, 3), Drop.herbs(12), Drop.gems(20), clue("hard", 128))
+                        .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("bones"), Drop.of("rune_boots", 1, 1, 116),
+                                Drop.of("rune_full_helm", 1, 1, 39), Drop.of("adamant_kiteshield", 1, 1, 64),
+                                Drop.of("death_rune", 5, 15, 8), Drop.of("chaos_rune", 20, 40, 8),
+                                coins(100, 1000, 3), Drop.herbs(12), Drop.rare(20), clue("hard", 128))
                         .slayer(80, "nechryael").model("nechryael").size(1.0f, 2.4f, 1.0f).spawn(Region.MORYTANIA, 4, 1, 3),
                 m("greater_nechryael", "Greater Nechryael", 200, 205, 210, 210, 120, 1, 1).speed(4).attack(crush(18))
-                        .defenceBonus(20, 20, 20, 0, 20).drops(Drop.always("bones"), Drop.of("rune_full_helm", 1, 1, 64),
+                        .defenceBonus(20, 20, 20, 0, 20).drops(Drop.always("bones"), Drop.of("rune_boots", 1, 1, 128),
+                                Drop.of("rune_full_helm", 1, 1, 43),
                                 Drop.of("rune_kiteshield", 1, 1, 128), Drop.of("death_rune", 10, 30, 8), Drop.of("blood_rune", 10, 20, 12),
                                 coins(500, 3000, 3), Drop.herbs(10), Drop.gems(16), clue("hard", 128))
                         .slayer(80, "nechryael").model("nechryael").size(1.0f, 2.4f, 1.3f).spawn(Region.MORYTANIA, 2, 1, 2)
@@ -70,13 +73,13 @@ final class HighSlayerMonsters {
                         .defenceBonus(20, 20, 20, 0, 20).drops(Drop.always("abyssal_ashes"), Drop.of("abyssal_whip", 1, 1, 512),
                                 Drop.of("abyssal_dagger", 1, 1, 32000), Drop.of("abyssal_head", 1, 1, 6000),
                                 Drop.of("rune_full_helm", 1, 1, 128), Drop.of("blood_rune", 7, 7, 12), Drop.of("law_rune", 3, 3, 16),
-                                Drop.of("pure_essence", 60, 60, 16), coins(100, 4000, 3), Drop.herbs(10), Drop.gems(32), clue("hard", 128),
+                                Drop.of("pure_essence", 60, 60, 16), coins(100, 4000, 3), Drop.herbs(10), Drop.rare(32), clue("hard", 128),
                                 clue("elite", 1200)).slayer(85, "abyssal_demons").model("abyssal_demon").size(0.8f, 2.2f, 1.2f)
                         .spawn(Region.MORYTANIA, 4, 1, 2).spawn(Region.WILDERNESS, 3, 1, 2).underground(),
                 m("cave_kraken", "Cave kraken", 127, 125, 1, 1, 150, 120, 1).speed(4)
                         .attack(magic(13, "minecraft:splash").message("The cave kraken casts Water Strike."))
                         .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH).defenceBonus(0, 0, 0, 0, 0)
-                        .drops(Drop.of("trident_of_the_seas", 1, 1, 400), Drop.of("raw_shark", 2, 2, 12),
+                        .drops(Drop.of("trident_of_the_seas", 1, 1, 200), Drop.of("raw_shark", 2, 2, 12),
                                 Drop.of("water_rune", 30, 80, 5), Drop.of("rune_kiteshield", 1, 1, 256), coins(200, 1000, 3),
                                 Drop.herbs(12), Drop.gems(32), clue("hard", 128)).slayer(87, "cave_kraken").model("cave_kraken")
                         .size(1.4f, 1.4f, 1.0f).moveSpeed(0.08).spawn(Region.KANDARIN, 3, 1, 3).underground(),
@@ -85,7 +88,7 @@ final class HighSlayerMonsters {
                         .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("big_bones"), Drop.of("dark_bow", 1, 1, 512),
                                 Drop.of("death_rune", 10, 30, 8), Drop.of("blood_rune", 10, 30, 8), Drop.of("rune_full_helm", 1, 1, 64),
                                 Drop.of("adamantite_bar", 3, 3, 12), Drop.of("runite_bar", 1, 1, 64), coins(150, 2000, 3),
-                                Drop.herbs(10), Drop.gems(16), clue("hard", 128), clue("elite", 1200))
+                                Drop.herbs(10), Drop.rare(16), clue("hard", 128), clue("elite", 1200))
                         .slayer(90, "dark_beasts").model("dark_beast").size(1.2f, 1.8f, 1.0f).spawn(Region.KANDARIN, 3, 1, 3)
                         .underground(),
                 m("drake", "Drake", 192, 250, 140, 140, 70, 108, 140).speed(4).attack(crush(16).message("The drake bites you."))
@@ -98,8 +101,8 @@ final class HighSlayerMonsters {
                         .size(1.2f, 2.2f, 1.0f).spawn(Region.UNCHARTED_ISLES, 3, 1, 2).underground(),
                 m("smoke_devil", "Smoke devil", 160, 185, 140, 140, 255, 140, 140).speed(4)
                         .attack(ranged(8, "minecraft:large_smoke").message("The smoke devil lashes out with smoke."))
-                        .defenceBonus(0, 0, 0, 600, 44).drops(Drop.of("occult_necklace", 1, 1, 350),
-                                Drop.of("dragon_chainbody", 1, 1, 32768), Drop.of("mist_battlestaff", 1, 1, 512),
+                        .defenceBonus(0, 0, 0, 600, 44).drops(Drop.of("occult_necklace", 1, 1, 512),
+                                Drop.of("dragon_chainbody", 1, 1, 32768), Drop.of("rune_chainbody", 1, 1, 64),
                                 Drop.of("fire_rune", 50, 150, 6), Drop.of("air_rune", 50, 150, 6), Drop.of("rune_full_helm", 1, 1, 128),
                                 coins(200, 1500, 3), Drop.herbs(10), Drop.gems(16), clue("hard", 128), clue("elite", 1200))
                         .slayer(93, "smoke_devils").model("smoke_devil").size(1.0f, 1.8f, 1.0f).flying()
@@ -108,7 +111,7 @@ final class HighSlayerMonsters {
                         .attack(ranged(22, "minecraft:item_slime").message("The hydra spits a venomous bolt."))
                         .attack(magic(22, "minecraft:witch")).defenceBonus(100, 100, 100, 50, 100)
                         .drops(Drop.always("hydra_bones"), Drop.of("hydras_eye", 1, 1, 512), Drop.of("hydras_fang", 1, 1, 512),
-                                Drop.of("hydras_heart", 1, 1, 512), Drop.of("dragon_sword", 1, 1, 10000),
+                                Drop.of("hydras_heart", 1, 1, 512), Drop.of("hydra_tail", 1, 1, 512),
                                 Drop.of("runite_bar", 1, 2, 32), Drop.of("rune_kiteshield", 1, 1, 128), Drop.herbs(8), Drop.gems(16),
                                 clue("hard", 128), clue("elite", 512)).slayer(95, "hydras").model("hydra").size(1.4f, 2.2f, 1.0f)
                         .spawn(Region.UNCHARTED_ISLES, 2, 1, 2).underground(),

@@ -11,14 +11,18 @@ import java.util.Map;
 
 /**
  * Superior slayer creatures ("Bigger and Badder"). They never spawn naturally: killing their base
- * creature on task has a 1/200 chance to summon one. Minecraft caps entity health at 1024, so
- * hitpoints are capped at {@link #MAX_HP}; the real OSRS Slayer XP is kept in {@link #xp}.
+ * creature on task has a 1/200 chance to summon one. Unlike ordinary monsters their Slayer XP is
+ * not their hitpoints: OSRS gives roughly ten times the hitpoints (Greater abyssal demon: 400 HP,
+ * 4,200 XP), so both are stored.
  */
 public final class Superiors {
     public static final int MAX_HP = 1000;
 
-    /** @param xp OSRS Slayer XP for the kill (equal to the superior's real hitpoints) */
-    public record Superior(String id, String base, String name, int level, int xp, float scale) {
+    /**
+     * @param hp OSRS hitpoints
+     * @param xp OSRS Slayer XP for the kill (about ten times the hitpoints)
+     */
+    public record Superior(String id, String base, String name, int level, int hp, int xp, float scale) {
     }
 
     private static final Map<String, Superior> BY_BASE = new LinkedHashMap<>();
@@ -27,8 +31,13 @@ public final class Superiors {
     private Superiors() {
     }
 
+    /** A superior whose hitpoints are xp/10 (the usual OSRS ratio; approx where not listed explicitly). */
     private static void add(String base, String id, String name, int level, int xp, float scale) {
-        Superior s = new Superior(id, base, name, level, xp, scale);
+        add(base, id, name, level, Math.round(xp / 10f), xp, scale);
+    }
+
+    private static void add(String base, String id, String name, int level, int hp, int xp, float scale) {
+        Superior s = new Superior(id, base, name, level, hp, xp, scale);
         BY_BASE.put(base, s);
         BY_ID.put(id, s);
     }
@@ -50,12 +59,12 @@ public final class Superiors {
         add("aberrant_spectre", "abhorrent_spectre", "Abhorrent spectre", 253, 2500, 1.4f);
         add("wyrm", "shadow_wyrm", "Shadow Wyrm", 267, 2800, 1.5f);
         add("dust_devil", "choke_devil", "Choke devil", 264, 3000, 1.5f);
-        add("kurask", "king_kurask", "King kurask", 295, 2767, 1.4f);
-        add("gargoyle", "marble_gargoyle", "Marble gargoyle", 349, 3044, 1.5f);
-        add("nechryael", "nechryarch", "Nechryarch", 300, 3068, 1.4f);
+        add("kurask", "king_kurask", "King kurask", 295, 300, 2767, 1.4f); // approx HP
+        add("gargoyle", "marble_gargoyle", "Marble gargoyle", 349, 270, 3044, 1.5f);
+        add("nechryael", "nechryarch", "Nechryarch", 300, 300, 3068, 1.4f);
         add("drake", "guardian_drake", "Guardian Drake", 349, 3050, 1.4f);
-        add("abyssal_demon", "greater_abyssal_demon", "Greater abyssal demon", 342, 4200, 1.5f);
-        add("dark_beast", "night_beast", "Night beast", 374, 6462, 1.5f);
+        add("abyssal_demon", "greater_abyssal_demon", "Greater abyssal demon", 342, 400, 4200, 1.5f);
+        add("dark_beast", "night_beast", "Night beast", 374, 550, 6462, 1.5f);
         add("smoke_devil", "nuclear_smoke_devil", "Nuclear smoke devil", 280, 2400, 1.5f);
         add("hydra", "colossal_hydra", "Colossal Hydra", 349, 3500, 1.4f);
         add("basilisk_knight", "basilisk_sentinel", "Basilisk Sentinel", 358, 2850, 1.3f);
@@ -91,7 +100,7 @@ public final class Superiors {
             }
             double k = Math.max(1.2, s.level() / (double) Math.max(1, base.combatLevel));
             MonsterDef d = MonsterDef.of(s.id(), s.name()).level(s.level())
-                    .stats(Math.min(MAX_HP, s.xp()), boost(base.attack, k), boost(base.strength, k), boost(base.defence, k),
+                    .stats(Math.min(MAX_HP, s.hp()), boost(base.attack, k), boost(base.strength, k), boost(base.defence, k),
                             boost(base.magic, k), boost(base.ranged, k))
                     .speed(base.attackSpeed)
                     .defenceBonus(base.defenceBonus(com.runecraft.osrs.AttackType.STAB) + 20,

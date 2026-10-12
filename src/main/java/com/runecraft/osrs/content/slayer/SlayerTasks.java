@@ -25,7 +25,7 @@ public final class SlayerTasks {
             return true;
         }
         for (MonsterDef m : ContentRegistry.monsters()) {
-            if (category.equals(m.slayerCategory) && Superiors.byId(m.id) == null) {
+            if (category.equals(categoryOf(m)) && Superiors.byId(m.id) == null) {
                 return true;
             }
         }
@@ -36,11 +36,16 @@ public final class SlayerTasks {
     public static List<MonsterDef> creatures(String category) {
         List<MonsterDef> list = new ArrayList<>();
         for (MonsterDef m : ContentRegistry.monsters()) {
-            if (category.equals(m.slayerCategory)) {
+            if (category.equals(categoryOf(m))) {
                 list.add(m);
             }
         }
         return list;
+    }
+
+    /** The task category a module creature counts towards (declared, else {@link SlayerCategories#members()}). */
+    public static String categoryOf(MonsterDef m) {
+        return SlayerCategories.categoryOf(m.id, m.slayerCategory);
     }
 
     /** Regions Konar may restrict a task to: where its creatures spawn, else the category's fallback list. */
