@@ -19,6 +19,16 @@ public final class Tooltips {
     }
 
     public static void append(ItemStack stack, TooltipContext context, List<Text> lines) {
+        if (com.runecraft.bank.Notes.isNote(stack)) {
+            ItemDef inner = com.runecraft.osrs.ItemCatalog.get(com.runecraft.bank.Notes.notedId(stack));
+            lines.add(Text.literal("Bank note").formatted(Formatting.YELLOW));
+            lines.add(Text.literal(com.runecraft.osrs.bank.BankNotes.EXAMINE).formatted(Formatting.GRAY, Formatting.ITALIC));
+            if (inner != null) {
+                lines.add(Text.literal("Value: " + String.format("%,d", inner.value()) + " gp each  (HA " + String.format("%,d", inner.highAlch()) + ")")
+                        .formatted(Formatting.DARK_GRAY));
+            }
+            return;
+        }
         ItemDef def = ModItems.def(stack);
         if (def == null) {
             return;

@@ -256,6 +256,18 @@ public final class SysState extends PersistentState {
         }
         nbt.put("GeOffers", offers);
         nbt.putLong("GeNextId", ge.nextId());
+        // 4-hour buy limits: elapsed game ticks of each running window, plus the wall clock to count downtime.
+        NbtList limits = new NbtList();
+        for (GrandExchange.LimitWindow w : ge.saveBuyLimits(SysTicks.now())) {
+            NbtCompound c = new NbtCompound();
+            c.putString("Owner", w.owner());
+            c.putString("Item", w.item());
+            c.putLong("Elapsed", w.elapsedTicks());
+            c.putLong("Bought", w.bought());
+            limits.add(c);
+        }
+        nbt.put("GeBuyLimits", limits);
+        nbt.putLong("GeSavedAt", System.currentTimeMillis());
         NbtCompound hs = new NbtCompound();
         hiscores.forEach((u, e) -> {
             NbtCompound c = new NbtCompound();
@@ -294,6 +306,15 @@ public final class SysState extends PersistentState {
             s.ge.offers().add(o);
         }
         s.ge.setNextId(Math.max(1, nbt.getLong("GeNextId")));
+        java.util.List<GrandExchange.LimitWindow> windows = new java.util.ArrayList<>();
+        NbtList limits = nbt.getList("GeBuyLimits", NbtElement.COMPOUND_TYPE);
+        for (int i = 0; i < limits.size(); i++) {
+            NbtCompound c = limits.getCompound(i);
+            windows.add(new GrandExchange.LimitWindow(c.getString("Owner"), c.getString("Item"), c.getLong("Elapsed"), c.getLong("Bought")));
+        }
+        long savedAt = nbt.getLong("GeSavedAt");
+        long offline = savedAt <= 0 ? 0 : Math.max(0, System.currentTimeMillis() - savedAt) / 600;
+        s.ge.loadBuyLimits(windows, SysTicks.now(), offline);
         NbtCompound hs = nbt.getCompound("Hiscores");
         for (String k : hs.getKeys()) {
             try {

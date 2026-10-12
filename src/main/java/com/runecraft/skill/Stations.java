@@ -6,13 +6,8 @@ import com.runecraft.menu.MenuService;
 import com.runecraft.osrs.Landmark;
 import com.runecraft.osrs.MenuType;
 import com.runecraft.osrs.Station;
-import com.runecraft.player.PlayerData;
-import com.runecraft.player.Players;
 import com.runecraft.world.Gielinor;
-import net.minecraft.screen.GenericContainerScreenHandler;
-import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 
 /** What happens when a station block is clicked. */
@@ -49,10 +44,8 @@ public final class Stations {
         }
     }
 
+    /** Opens the bank (or exchanges the bank notes in hand for items). */
     public static void openBank(ServerPlayerEntity player) {
-        PlayerData data = Players.data(player);
-        player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
-                (syncId, inv, p) -> GenericContainerScreenHandler.createGeneric9x6(syncId, inv, data.bank()),
-                Text.literal("The Bank of Gielinor")));
+        com.runecraft.bank.BankService.open(player);
     }
 }

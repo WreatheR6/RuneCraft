@@ -73,6 +73,9 @@ public final class ItemCatalog {
 
     private static void build() {
         add("coins", "Coins", Kind.COINS, "coins", 0xE8C030).value(1);
+        // Bank notes: one item whose stack data names the noted item (see osrs/bank/BankNotes).
+        add(com.runecraft.osrs.bank.BankNotes.NOTE_ITEM, "Bank note", Kind.SIMPLE, "note", 0xF0E8C8).value(0).stack(64)
+                .examine(com.runecraft.osrs.bank.BankNotes.EXAMINE);
 
         // --- Woodcutting / Firemaking ---
         for (Tree t : Tree.values()) {

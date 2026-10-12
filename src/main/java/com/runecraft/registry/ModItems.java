@@ -51,6 +51,9 @@ public final class ModItems {
         if (def.tier() != null && (def.tier().equals("dragon") || def.tier().equals("rune") || def.tier().equals("magic"))) {
             settings = settings.rarity(def.tier().equals("dragon") ? Rarity.RARE : Rarity.UNCOMMON);
         }
+        if (def.id().equals(com.runecraft.osrs.bank.BankNotes.NOTE_ITEM)) {
+            return new com.runecraft.item.BankNoteItem(def, settings);
+        }
         MetalTier metal = metal(def.tier());
         return switch (def.kind()) {
             case AXE -> new OsrsEquipmentItems.Axe(def, TOOL_MATERIALS.get(metal), new Item.Settings());

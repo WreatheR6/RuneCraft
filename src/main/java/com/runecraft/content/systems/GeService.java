@@ -74,7 +74,9 @@ public final class GeService {
         SysState state = SysState.get(p.getServer());
         boolean booth = atBooth(p);
         ItemStack held = p.getMainHandStack();
-        String defItem = item != null ? item : held.isEmpty() || ItemCatalog.get(Inv.idOf(held)) == null ? "" : Inv.idOf(held);
+        // A held bank note stands for its item.
+        String heldId = held.isEmpty() ? "" : com.runecraft.bank.Notes.isNote(held) ? com.runecraft.bank.Notes.notedId(held) : Inv.idOf(held);
+        String defItem = item != null ? item : heldId.isEmpty() || ItemCatalog.get(heldId) == null ? "" : heldId;
         ItemDef def = defItem.isEmpty() ? null : ItemCatalog.get(defItem);
         SysNet.Screen s = new SysNet.Screen("ge", "Grand Exchange");
         if (message != null) {
@@ -112,7 +114,7 @@ public final class GeService {
             s.line("Visit a Grand Exchange booth or clerk (Varrock, 3165 3487) to place offers.", 0xFF8080);
         }
         s.field("item", "Item", def == null ? "" : def.id());
-        s.field("qty", "Quantity", held.isEmpty() || def == null || !Inv.idOf(held).equals(def.id()) ? "1" : Integer.toString(held.getCount()));
+        s.field("qty", "Quantity", held.isEmpty() || def == null || !heldId.equals(def.id()) ? "1" : Integer.toString(held.getCount()));
         s.field("price", "Price each", def == null ? "" : Integer.toString(guide(def.id())));
         s.button("lookup", "Look up item", "Show the guide price of the item typed above.", true);
         s.button("buy", "Place buy offer", "Coins are held until the offer completes.", booth);
@@ -193,7 +195,7 @@ public final class GeService {
                     return;
                 }
                 Inv.remove(p, "coins", (int) cost);
-                Inv.give(p, def.id(), qty);
+                com.runecraft.bank.Notes.giveNotedIfMany(p, def.id(), qty);
                 ge.recordBought(uuid, def.id(), qty, SysTicks.now());
                 state.lastPrices().put(def.id(), each);
                 traded(p.getServer(), uuid);
@@ -201,13 +203,13 @@ public final class GeService {
                 open(p, def.id(), "You buy " + qty + " x " + def.name() + " for " + String.format(Locale.ROOT, "%,d", cost) + " coins.");
             }
             case "isell" -> {
-                if (Inv.count(p, def.id()) < qty) {
+                if (com.runecraft.bank.Notes.countWithNotes(p, def.id()) < qty) {
                     open(p, def.id(), "You don't have " + qty + " x " + def.name() + ".");
                     return;
                 }
                 int each = GrandExchange.npcSellPrice(guide(def.id()));
                 long gain = (each - GrandExchange.taxPerItem(each)) * (long) qty;
-                Inv.remove(p, def.id(), qty);
+                com.runecraft.bank.Notes.removeWithNotes(p, def.id(), qty);
                 Inv.give(p, "coins", (int) Math.min(Integer.MAX_VALUE, gain));
                 state.lastPrices().put(def.id(), each);
                 traded(p.getServer(), uuid);
@@ -227,11 +229,11 @@ public final class GeService {
                     }
                     Inv.remove(p, "coins", (int) total);
                 } else {
-                    if (Inv.count(p, def.id()) < qty) {
+                    if (com.runecraft.bank.Notes.countWithNotes(p, def.id()) < qty) {
                         open(p, def.id(), "You don't have " + qty + " x " + def.name() + ".");
                         return;
                     }
-                    Inv.remove(p, def.id(), qty);
+                    com.runecraft.bank.Notes.removeWithNotes(p, def.id(), qty);
                 }
                 Offer offer = ge.create(uuid, def.id(), buy, qty, price, SysTicks.now());
                 List<GrandExchange.Trade> trades = ge.place(offer);
@@ -271,7 +273,8 @@ public final class GeService {
         SysState state = SysState.get(p.getServer());
         for (Offer o : state.ge().offersOf(p.getUuidAsString())) {
             if (o.itemsToCollect > 0) {
-                Inv.give(p, o.item, o.itemsToCollect);
+                // Several non-stackable items come as bank notes, as in OSRS.
+                com.runecraft.bank.Notes.giveNotedIfMany(p, o.item, o.itemsToCollect);
                 o.itemsToCollect = 0;
             }
             if (o.coinsToCollect > 0) {
