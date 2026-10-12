@@ -110,5 +110,8 @@ final class QuestItemsData {
         b.gate("dragon_battleaxe", "heroes_quest");
         b.gate("ibans_staff", "underground_pass");
         b.gate("lunar_staff", "lunar_diplomacy");
+        // Worn items (taken off when worn without the quest).
+        b.gate("rune_platebody", "dragon_slayer_i");
+        b.gate("green_dhide_body", "dragon_slayer_i");
     }
 }

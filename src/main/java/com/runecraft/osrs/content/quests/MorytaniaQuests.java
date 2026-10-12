@@ -324,8 +324,10 @@ final class MorytaniaQuests {
                 .reqQuest("a_taste_of_hope", "VAMPYRE_SLAYER")
                 .req(Skill.WOODCUTTING, 62).req(Skill.FLETCHING, 60).req(Skill.CRAFTING, 56).req(Skill.AGILITY, 52)
                 .req(Skill.ATTACK, 50).req(Skill.SLAYER, 50).req(Skill.MAGIC, 49)
+                // OSRS: a tome of experience, 6 x 15,000 XP in skills of the player's choice (level 60+). // approx: fixed skills
                 .xp(Skill.WOODCUTTING, 15000).xp(Skill.FLETCHING, 15000).xp(Skill.CRAFTING, 15000)
-                .unlock("Access to Darkmeyer")
+                .xp(Skill.AGILITY, 15000).xp(Skill.ATTACK, 15000).xp(Skill.SLAYER, 15000)
+                .unlock("Access to Darkmeyer").unlock("Access to the Hallowed Sepulchre")
                 .stage("I can start this quest by speaking to Veliaf Hurtz in the Myreque hideout. (Requires A Taste of Hope, Vampyre Slayer and more.)")
                 .talk("veliaf_hurtz").say("Vanescula Drakan, Lord Drakan's own sister, wants to meet. It could be a trap... but we must hear her out.")
                 .stage("I should meet Vanescula Drakan in Darkmeyer.")

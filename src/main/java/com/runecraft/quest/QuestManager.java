@@ -205,12 +205,14 @@ public final class QuestManager {
             }
         } else if (npc == QuestNpc.SEDRIDOR) {
             if (s == 1 && Inv.has(p, "air_talisman", 1)) {
-                say(p, npc, "This talisman... it is the key to the lost art of Runecraft! Take this package to Aubury in Varrock.");
+                // OSRS: Sedridor keeps the Duke's talisman to study it; the quest reward is an air talisman.
+                Inv.remove(p, "air_talisman", 1);
+                say(p, npc, "This talisman... it is the key to the lost art of Runecraft! I'll keep it to study. Take this package to Aubury in Varrock.");
                 Inv.give(p, "research_package", 1);
                 set(p, q, 2);
             } else if (s == 3 && Inv.has(p, "research_notes", 1)) {
                 Inv.remove(p, "research_notes", 1);
-                say(p, npc, "Aubury's notes confirm it! You may keep the talisman. Seek out the altars of Gielinor.");
+                say(p, npc, "Aubury's notes confirm it! Take this air talisman. Seek out the altars of Gielinor.");
                 complete(p, q);
             } else {
                 say(p, npc, "The Wizards' Tower has stood for centuries.");

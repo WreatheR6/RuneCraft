@@ -105,6 +105,7 @@ final class ElfQuests {
                 .req(Skill.AGILITY, 70).req(Skill.CONSTRUCTION, 70).req(Skill.FARMING, 70).req(Skill.HERBLORE, 70)
                 .req(Skill.HUNTER, 70).req(Skill.MINING, 70).req(Skill.SMITHING, 70).req(Skill.WOODCUTTING, 70)
                 .xp(Skill.AGILITY, 20000).xp(Skill.FARMING, 20000).xp(Skill.HERBLORE, 20000).xp(Skill.MINING, 20000)
+                .xp(Skill.CONSTRUCTION, 20000).xp(Skill.HUNTER, 20000).xp(Skill.SMITHING, 20000).xp(Skill.WOODCUTTING, 20000)
                 .unlock("Access to Prifddinas, the elven city")
                 .stage("I can start this quest by speaking to Arianwyn in Lletya. (Requires Regicide and the Mourning's End quests; 70 in eight skills.)")
                 .talk("arianwyn").say("The time has come to restore Prifddinas. But Lord Iorwerth's forces still hold the ruins, and something darker stirs beneath.")

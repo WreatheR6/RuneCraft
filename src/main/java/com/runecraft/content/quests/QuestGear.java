@@ -10,7 +10,9 @@ import com.runecraft.osrs.content.quests.QuestBook;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -46,6 +48,14 @@ final class QuestGear {
                 wear(sp, gear, stack);
             }
             return TypedActionResult.success(stack, world.isClient());
+        });
+        // Quest-locked armour and shields (rune platebody, green d'hide body: Dragon Slayer I) can't be worn.
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (server.getTicks() % 20 == 0) {
+                for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+                    enforceWornGates(p);
+                }
+            }
         });
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             @Override
@@ -122,6 +132,31 @@ final class QuestGear {
             }
         }
         return total;
+    }
+
+    private static final EquipmentSlot[] WORN = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET,
+            EquipmentSlot.OFFHAND};
+
+    /** Takes off any worn armour or shield whose quest the player hasn't completed. */
+    static void enforceWornGates(ServerPlayerEntity player) {
+        Map<String, String> gates = QuestBook.get().weaponGates;
+        for (EquipmentSlot slot : WORN) {
+            ItemStack worn = player.getEquippedStack(slot);
+            if (worn.isEmpty()) {
+                continue;
+            }
+            String quest = gates.get(Inv.idOf(worn));
+            QuestInfo q = quest == null ? null : ContentRegistry.quest(quest);
+            if (q == null || Players.data(player).questComplete(q)) {
+                continue;
+            }
+            ItemStack copy = worn.copy();
+            player.equipStack(slot, ItemStack.EMPTY);
+            if (!player.getInventory().insertStack(copy)) {
+                player.dropItem(copy, false);
+            }
+            Msg.red(player, "You need to complete " + q.displayName() + " to wear that.");
+        }
     }
 
     /** True when the wielded weapon needs a quest the player hasn't completed. */

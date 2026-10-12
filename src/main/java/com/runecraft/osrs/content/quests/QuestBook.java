@@ -38,6 +38,28 @@ public final class QuestBook {
      */
     public record Shop(String npc, String item, int price, String quest, String flag, com.runecraft.osrs.Skill skill, int level,
                        String pitch) {
+        /**
+         * Whether the shop's flag condition holds. {@code flag} is a single flag, or
+         * {@code "count:N:a,b,c"} meaning at least N of the listed flags (RFD gloves unlock by the
+         * number of subquests done, in any order).
+         */
+        public boolean flagsMet(java.util.function.Predicate<String> hasFlag) {
+            if (flag == null) {
+                return true;
+            }
+            if (flag.startsWith("count:")) {
+                String[] parts = flag.split(":", 3);
+                int need = Integer.parseInt(parts[1]);
+                int have = 0;
+                for (String f : parts[2].split(",")) {
+                    if (hasFlag.test(f)) {
+                        have++;
+                    }
+                }
+                return have >= need;
+            }
+            return hasFlag.test(flag);
+        }
     }
 
     private static QuestBook instance;

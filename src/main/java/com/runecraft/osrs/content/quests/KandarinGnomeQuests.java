@@ -143,6 +143,11 @@ final class KandarinGnomeQuests {
                 .stage("I should report to King Narnode.")
                 .talk("king_narnode").say("The 10th squad is safe and Glough's plans are ruined again! Take this reward. And the dragon scimitar is now yours to wield.")
                 .done("garkor", "The 10th squad salutes you.")
-                .done("king_awowogei", "Ook. Human. Ook.");
+                .done("king_awowogei", "Ook. Human. Ook.")
+                .done("daga", "Ook! Finest scimitars in Gielinor.");
+        // Daga's Scimitar Smithy on Ape Atoll sells the dragon scimitar once Monkey Madness I is complete.
+        b.npc("daga", "Daga", "ape_atoll", 6, 0, 0x8A6A4A, 0x5A3A1A, 0x3A2A1A, 0xA02020);
+        b.shop("daga", "dragon_scimitar", 100000, "monkey_madness_i", null, null, 0,
+                "Ook! You fought for the 10th squad. Daga sells you a dragon scimitar, 100,000 coins.");
     }
 }

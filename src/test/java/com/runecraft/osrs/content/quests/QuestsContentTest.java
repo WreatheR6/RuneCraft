@@ -141,9 +141,10 @@ class QuestsContentTest {
 
     @Test
     void flagsThatAreNeededAreSet() {
+        // Flags are per player, so a quest may need a flag another quest sets (MM2 needs RFD's rfd_awowogei).
+        Set<String> set = new HashSet<>();
+        BOOK.quests.forEach(q -> q.triggers().forEach(t -> set.addAll(t.setFlags)));
         for (QuestSpec q : BOOK.quests) {
-            Set<String> set = new HashSet<>();
-            q.triggers().forEach(t -> set.addAll(t.setFlags));
             q.triggers().forEach(t -> t.needFlags.forEach(f -> assertTrue(set.contains(f), q.id() + " needs unset flag " + f)));
         }
     }

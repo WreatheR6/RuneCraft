@@ -75,17 +75,17 @@ final class RecipeForDisaster {
                         "I have slowed time to stop him. Free each council member by cooking their favourite dish!")
                 .missing("The Cook needs a bucket of milk, an egg and a pot of flour.")
                 .stage("I must free the eight frozen council members by bringing each the dish that reminds them of who they are.")
-                .talk("rohak").stay().unlessFlag("rfd_dwarf").take("beer:2", "rfd_rock_cake").flag("rfd_dwarf")
+                .talk("rohak").stay().unlessFlag("rfd_dwarf").reqDone("fishing_contest").take("beer:2", "rfd_rock_cake").flag("rfd_dwarf")
                 .grantXp(Skill.COOKING, 1000).grantXp(Skill.SLAYER, 1000)
                 .say("Asgarnian ale and a rock cake! *The Mountain Dwarf is freed from the spell.*")
-                .missing("A dwarf likes his ale. And a good rock cake. Bring me two ales and a rock cake.")
+                .missing("A dwarf likes his ale. And a good rock cake. Bring me two ales and a rock cake. (Requires Fishing Contest.)")
                 .talk("evil_dave").stay().unless("rfd_rock_cake").unlessFlag("rfd_dwarf").give("rfd_rock_cake")
                 .say("Rock cakes? Mother bakes them by the dozen. Take one, just go away.")
-                .talk("general_bentnoze").stay().unlessFlag("rfd_goblins").take("spice", "cake").flag("rfd_goblins")
+                .talk("general_bentnoze").stay().unlessFlag("rfd_goblins").reqDone("goblin_diplomacy").take("spice", "cake").flag("rfd_goblins")
                 .grantXp(Skill.COOKING, 1000).grantXp(Skill.FARMING, 1000).grantXp(Skill.CRAFTING, 1000)
                 .say("Slop of compromise! *The goblin generals stop arguing long enough to be freed.*")
                 .missing("Goblins want slop! Spicy slop with cake in it!")
-                .talk("pirate_pete").stay().unlessFlag("rfd_pete").take("raw_salmon:2").flag("rfd_pete")
+                .talk("pirate_pete").stay().unlessFlag("rfd_pete").reqSkill(Skill.COOKING, 31).take("raw_salmon:2").flag("rfd_pete")
                 .grantXp(Skill.COOKING, 1000).grantXp(Skill.FISHING, 1000).grantXp(Skill.CRAFTING, 1000)
                 .say("Fishcake! Arr, that's what I was missin'. *Pirate Pete is freed.*")
                 .missing("Arr, a fishcake. Bring me two raw salmon and I'll show ye how.")
@@ -102,10 +102,11 @@ final class RecipeForDisaster {
                 .take("raw_bird_meat:2").flag("rfd_skrach").grantXp(Skill.COOKING, 1500).grantXp(Skill.WOODCUTTING, 1500).grantXp(Skill.CRAFTING, 1500)
                 .say("Chompy! Roasted chompy! *Skrach Uglogwee is freed.*")
                 .missing("Skrach want chompy bird. Two. Roasted. (Requires 41 Cooking, 20 Firemaking, Big Chompy Bird Hunting.)")
-                .talk("sir_amik_varze").stay().unlessFlag("rfd_amik").reqDone("lost_city")
+                // OSRS: Lost City and Legends' Quest started; 107 QP (the Legends' start requirement) stands in for "started". // approx
+                .talk("sir_amik_varze").stay().unlessFlag("rfd_amik").reqDone("lost_city").reqQp(107)
                 .take("minecraft:egg", "minecraft:milk_bucket", "pot_of_flour").flag("rfd_amik").grantXp(Skill.COOKING, 4000).grantXp(Skill.HITPOINTS, 4000)
                 .say("Brulee supreme, with an egg from the Evil Chicken of Zanaris! *Sir Amik Varze is freed.*")
-                .missing("A brulee supreme: egg, milk and flour... and you'll need access to Zanaris. (Requires Lost City.)")
+                .missing("A brulee supreme: egg, milk and flour... and you'll need access to Zanaris. (Requires Lost City and Legends' Quest started: 107 quest points.)")
                 .talk("king_awowogei").stay().unlessFlag("rfd_awowogei").reqDone("monkey_madness_i").reqSkill(Skill.COOKING, 70).reqSkill(Skill.AGILITY, 48)
                 .take("raw_shark").flag("rfd_awowogei").grantXp(Skill.COOKING, 10000).grantXp(Skill.AGILITY, 10000)
                 .say("Ook! Stuffed snake! *King Awowogei is freed, and allows a monkey to join the council.*")
@@ -125,9 +126,15 @@ final class RecipeForDisaster {
                 .stage("I should speak to the Gypsy in the dining room.")
                 .talk("rfd_gypsy").say("You did it! The Culinaromancer is gone and the council is free. His chest is yours to plunder: it holds the finest gloves in Gielinor.")
                 .done("rfd_gypsy", "The council thanks you.");
+        // As in OSRS, freeing N council members (in any order) unlocks the N-th glove tier.
+        StringBuilder flags = new StringBuilder();
         for (String[] unlock : GLOVE_UNLOCKS) {
-            b.shop("rfd_gypsy", unlock[1], price(unlock[1]), null, unlock[0], null, 0,
-                    "From the Culinaromancer's chest: " + unlock[1].replace("rfd_", "").replace('_', ' ') + ".");
+            flags.append(flags.length() == 0 ? "" : ",").append(unlock[0]);
+        }
+        for (int i = 0; i < GLOVE_UNLOCKS.length; i++) {
+            String glove = GLOVE_UNLOCKS[i][1];
+            b.shop("rfd_gypsy", glove, price(glove), null, "count:" + (i + 1) + ":" + flags, null, 0,
+                    "From the Culinaromancer's chest: " + glove.replace("rfd_", "").replace('_', ' ') + ".");
         }
         b.shop("rfd_gypsy", "barrows_gloves", 130000, "recipe_for_disaster", null, null, 0,
                 "From the Culinaromancer's chest: Barrows gloves, the finest gloves in Gielinor.");
