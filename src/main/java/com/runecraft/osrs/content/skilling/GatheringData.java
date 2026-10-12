@@ -1,5 +1,8 @@
 package com.runecraft.osrs.content.skilling;
 
+import com.runecraft.osrs.AttackType;
+import com.runecraft.osrs.EquipmentDef;
+import com.runecraft.osrs.ItemDef.Kind;
 import com.runecraft.osrs.MenuType;
 import com.runecraft.osrs.Recipe;
 import com.runecraft.osrs.Skill;
@@ -126,6 +129,27 @@ public final class GatheringData extends SkillingPart {
         simple(s, "oyster", "Oyster", "secondary", 0x9A9A8A, 5);
         simple(s, "empty_oyster", "Empty oyster", "secondary", 0x9A9A8A, 1);
         simple(s, "oyster_pearl", "Oyster pearl", "gem", 0xF0F0F0, 112);
+        // Infernal and crystal tools (bonuses: com.runecraft.osrs.data.SpecialTool). They count as dragon tier.
+        s.add("infernal_axe", "Infernal axe", Kind.AXE, "axe", 0xE04A10).value(56000).stack(1).tier("dragon")
+                .equipment(weapon(stats(-2, 38, 32, 0, 0, 0, 1, 0, 0, 0, 42, 0, 0, 0), 5, AttackType.SLASH,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 60))
+                .examine("A very powerful axe; it burns some of the logs it cuts.");
+        s.add("crystal_axe", "Crystal axe", Kind.AXE, "axe", 0x9AD8F0).value(56000).stack(1).tier("dragon")
+                .equipment(weapon(stats(-2, 38, 32, 0, 0, 0, 1, 0, 0, 0, 42, 0, 0, 0), 5, AttackType.SLASH,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 70))
+                .examine("A crystal axe, lighter and sharper than any metal.");
+        s.add("infernal_pickaxe", "Infernal pickaxe", Kind.PICKAXE, "pickaxe", 0xE04A10).value(70000).stack(1).tier("dragon")
+                .equipment(weapon(stats(38, -2, 32, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 0), 5, AttackType.STAB,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 60))
+                .examine("A very powerful pickaxe; it smelts some of the ore it mines.");
+        s.add("crystal_pickaxe", "Crystal pickaxe", Kind.PICKAXE, "pickaxe", 0x9AD8F0).value(70000).stack(1).tier("dragon")
+                .equipment(weapon(stats(38, -2, 32, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 0), 5, AttackType.STAB,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 70))
+                .examine("A crystal pickaxe that mines faster than any metal.");
+        s.add("infernal_harpoon", "Infernal harpoon", Kind.TOOL, "harpoon", 0xE04A10).value(100000).stack(1).tier("dragon")
+                .examine("A very powerful harpoon; it cooks some of the fish it catches.");
+        s.add("crystal_harpoon", "Crystal harpoon", Kind.TOOL, "harpoon", 0x9AD8F0).value(100000).stack(1).tier("dragon")
+                .examine("A crystal harpoon that catches fish faster than any other.");
     }
 
     @Override
@@ -138,6 +162,19 @@ public final class GatheringData extends SkillingPart {
                 .out("karambwan_vessel", 1).ticks(0).build());
         out.accept(plain("shop_general_barbarian_rod", MenuType.SHOP_GENERAL, "Barbarian rod - 5 gp").in("coins", 5)
                 .out("barbarian_rod", 1).ticks(0).build());
+        // Infernal tools: a smouldering stone fused onto the dragon tool (OSRS: 85 Firemaking/Smithing/Cooking, 350 XP).
+        out.accept(r("make_infernal_axe", MenuType.SMITHING, "Infernal axe", Skill.FIREMAKING, 85, 350.0)
+                .in("dragon_axe", 1).in("smouldering_stone", 1).out("infernal_axe", 1).ticks(3).build());
+        out.accept(r("make_infernal_pickaxe", MenuType.SMITHING, "Infernal pickaxe", Skill.SMITHING, 85, 350.0)
+                .in("dragon_pickaxe", 1).in("smouldering_stone", 1).out("infernal_pickaxe", 1).ticks(3).build());
+        out.accept(r("make_infernal_harpoon", MenuType.SMITHING, "Infernal harpoon", Skill.COOKING, 85, 350.0)
+                .in("dragon_harpoon", 1).in("smouldering_stone", 1).out("infernal_harpoon", 1).ticks(3).build());
+        // Crystal tools: a crystal tool seed and 120 crystal shards sung into shape (OSRS: 76 Smithing and Crafting).
+        for (String tool : new String[]{"crystal_axe", "crystal_pickaxe", "crystal_harpoon"}) {
+            String dragon = tool.equals("crystal_axe") ? "dragon_axe" : tool.equals("crystal_pickaxe") ? "dragon_pickaxe" : "dragon_harpoon";
+            out.accept(r("make_" + tool, MenuType.SMITHING, title(tool), Skill.SMITHING, 76, 0)
+                    .in(dragon, 1).in("crystal_tool_seed", 1).in("crystal_shard", 120).out(tool, 1).ticks(3).build());
+        }
         out.accept(plain("shop_general_oily_fishing_rod", MenuType.SHOP_GENERAL, "Oily fishing rod - 15 gp").in("coins", 15)
                 .out("oily_fishing_rod", 1).ticks(0).build());
     }

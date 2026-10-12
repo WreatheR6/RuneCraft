@@ -12,6 +12,7 @@ import com.runecraft.osrs.content.skilling.GatheringData;
 import com.runecraft.osrs.content.skilling.HunterData;
 import com.runecraft.osrs.content.skilling.Loot;
 import com.runecraft.osrs.content.skilling.MiningData;
+import com.runecraft.osrs.data.SpecialTool;
 import com.runecraft.osrs.data.ToolTier;
 import com.runecraft.osrs.data.Tree;
 import com.runecraft.player.Players;
@@ -116,7 +117,7 @@ final class GatheringHooks {
         SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, tree.blockId(), 4) {
             @Override
             boolean roll(ServerPlayerEntity p, Random random) {
-                ToolTier axe = Tools.bestAxe(p, Players.data(p).skills());
+                Tools.Tool axe = Tools.bestAxeTool(p, Players.data(p).skills());
                 if (axe == null || depleted(world, pos)) {
                     return false;
                 }
@@ -253,8 +254,8 @@ final class GatheringHooks {
         if (!Stun.check(player)) {
             return;
         }
-        if (!SkillingUtil.needItem(player, spot.tool(), "You need " + Msg.article(SkillingUtil.lower(SkillingUtil.name(spot.tool())))
-                + " to fish here.")) {
+        if (!hasFishingTool(player, spot)) {
+            Msg.game(player, "You need " + Msg.article(SkillingUtil.lower(SkillingUtil.name(spot.tool()))) + " to fish here.");
             return;
         }
         int lowest = spot.catches().stream().mapToInt(GatheringData.Catch::level).min().orElse(1);
@@ -275,7 +276,12 @@ final class GatheringHooks {
         SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, spot.blockId(), 5) {
             @Override
             boolean roll(ServerPlayerEntity p, Random random) {
-                if (!Inv.has(p, spot.tool(), 1)) {
+                if (!hasFishingTool(p, spot)) {
+                    return false;
+                }
+                ServerWorld w = (ServerWorld) p.getWorld();
+                if (com.runecraft.skill.FishingSpots.tick(w, pos, w.getBlockState(pos)) != null) {
+                    Msg.game(p, "The fishing spot has moved.");
                     return false;
                 }
                 if (spot.bait() != null && !Inv.has(p, spot.bait(), 1)) {
@@ -291,13 +297,15 @@ final class GatheringHooks {
                     return true;
                 }
                 int fishing = SkillingUtil.level(p, Skill.FISHING);
+                String harpoon = spot.tool().equals("harpoon") ? Tools.bestHarpoon(p, Players.data(p).skills()) : null;
+                double boost = harpoon == null ? 1.0 : SpecialTool.harpoonMultiplier(harpoon);
                 int agility = SkillingUtil.level(p, Skill.AGILITY);
                 int strength = SkillingUtil.level(p, Skill.STRENGTH);
                 for (GatheringData.Catch c : spot.catches()) {
                     if (fishing < c.level() || agility < c.agilityReq() || strength < c.strengthReq()) {
                         continue;
                     }
-                    if (random.nextDouble() < Chance.lerp(fishing, c.low(), c.high())) {
+                    if (random.nextDouble() < Chance.lerp(fishing, c.low(), c.high()) * boost) {
                         if (spot.bait() != null) {
                             Inv.remove(p, spot.bait(), 1);
                         }
@@ -316,10 +324,22 @@ final class GatheringHooks {
         });
     }
 
+    /** The spot's tool; for harpoon spots any usable harpoon (dragon, infernal, crystal) works. */
+    private static boolean hasFishingTool(ServerPlayerEntity player, GatheringData.Spot spot) {
+        if (spot.tool().equals("harpoon")) {
+            return Tools.bestHarpoon(player, Players.data(player).skills()) != null;
+        }
+        return Inv.has(player, spot.tool(), 1);
+    }
+
     // ------------------------------------------------------------------ Hunter traps
 
     private static void trap(ServerPlayerEntity player, BlockPos pos, HunterData.TrapSpot spot) {
         ServerWorld world = (ServerWorld) player.getWorld();
+        if (spot.kind() == HunterData.TrapKind.TRACKING) {
+            track(player, world, pos, spot);
+            return;
+        }
         String key = SkillingUtil.key(world, pos);
         LaidTrap laid = TRAPS.get(key);
         long now = ActionManager.gameTick();
@@ -369,7 +389,39 @@ final class GatheringHooks {
             case NET -> "You set up the net trap.";
             case DEADFALL -> "You set up the deadfall.";
             case PITFALL -> "You dig a pit and cover it with logs.";
+            case TRACKING -> "You search the burrow.";
         });
+    }
+
+    /** Noose-wand tracking: search the burrow and try to catch the kebbit or weasel hiding in it. */
+    private static void track(ServerPlayerEntity player, ServerWorld world, BlockPos pos, HunterData.TrapSpot spot) {
+        if (!Stun.check(player) || !SkillingUtil.need(player, Skill.HUNTER, spot.level(), "hunt " + SkillingUtil.lower(spot.creature()) + "s")) {
+            return;
+        }
+        for (String tool : spot.tools()) {
+            if (!SkillingUtil.needItem(player, tool, "You need " + Msg.article(SkillingUtil.lower(SkillingUtil.name(tool)))
+                    + " to catch " + SkillingUtil.lower(spot.creature()) + "s.")) {
+                return;
+            }
+        }
+        if (depleted(world, pos)) {
+            Msg.game(player, "The tracks lead nowhere. Wait for another " + SkillingUtil.lower(spot.creature()) + " to come by.");
+            return;
+        }
+        player.swingHand(Hand.MAIN_HAND, true);
+        int level = SkillingUtil.level(player, Skill.HUNTER);
+        double chance = Math.min(0.95, 0.55 + (level - spot.level()) * 0.02);   // approx.
+        if (player.getRandom().nextDouble() < chance) {
+            for (String item : spot.loot()) {
+                SkillingUtil.give(player, item, 1);
+            }
+            XpService.add(player, Skill.HUNTER, spot.xp());
+            Msg.action(player, "You've caught " + Msg.article(SkillingUtil.lower(spot.creature())) + "!");
+            world.playSound(null, pos, SoundEvents.ENTITY_RABBIT_HURT, SoundCategory.NEUTRAL, 0.8f, 1.2f);
+        } else {
+            Msg.game(player, "The " + SkillingUtil.lower(spot.creature()) + " escapes your noose.");
+        }
+        deplete(world, pos, 8);
     }
 
     // ------------------------------------------------------------------ Implings

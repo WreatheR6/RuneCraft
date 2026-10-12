@@ -239,8 +239,12 @@ class SkillingFidelityTest {
         assertEquals(570.0, AgilityCourse.SEERS.lapXp());
         assertEquals(889.0, AgilityCourse.ARDOUGNE.lapXp());
         for (AgilityCourse c : AgilityCourse.values()) {
-            assertEquals(c.lapXp(), c.obstacleXp() * c.obstacles() + c.lapBonusXp(), 1e-6, c.name());
-            assertTrue(c.obstacles() <= 8, c + " has more obstacles than the block's step range");
+            double sum = 0;
+            for (int i = 0; i < c.obstacles(); i++) {
+                sum += c.obstacleXp(i);
+            }
+            assertEquals(c.lapXp(), sum, 1e-6, c.name());
+            assertTrue(c.obstacles() <= AgilityCourse.MAX_OBSTACLES, c + " has more obstacles than the block's step range");
         }
     }
 

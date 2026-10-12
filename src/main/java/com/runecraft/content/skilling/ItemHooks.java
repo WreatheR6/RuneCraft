@@ -15,6 +15,7 @@ import com.runecraft.osrs.content.skilling.GatheringData;
 import com.runecraft.osrs.content.skilling.HerbloreData;
 import com.runecraft.osrs.content.skilling.HunterData;
 import com.runecraft.osrs.content.skilling.Loot;
+import com.runecraft.osrs.content.skilling.PrayerData;
 import com.runecraft.osrs.content.skilling.RunecraftData;
 import com.runecraft.osrs.content.skilling.SailingData;
 import com.runecraft.player.PlayerData;
@@ -61,6 +62,15 @@ final class ItemHooks {
     private ItemHooks() {
     }
 
+    /** Scattering demonic ashes for Prayer XP (2 game ticks, like burying bones). */
+    private static void scatter(ServerPlayerEntity player, ItemStack stack, PrayerData.Ashes ashes) {
+        player.getItemCooldownManager().set(stack.getItem(), 2 * ActionManager.MC_TICKS_PER_GAME_TICK);
+        stack.decrement(1);
+        com.runecraft.skill.XpService.add(player, Skill.PRAYER, ashes.xp());
+        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_SAND_BREAK, SoundCategory.PLAYERS, 0.8f, 1.2f);
+        Msg.action(player, "You scatter the ashes.");
+    }
+
     static void init() {
         CookingData.BITES.forEach(b -> HANDLED.add(b.full()));
         HerbloreData.POTIONS.forEach(p -> HANDLED.add(p.id()));
@@ -69,6 +79,7 @@ final class ItemHooks {
         SailingData.BOATS.forEach(b -> HANDLED.add(b.kit()));
         SailingData.WRECKS.forEach(w -> HANDLED.add(w.salvage()));
         HANDLED.addAll(FletchingData.THROWN);
+        PrayerData.ASHES.forEach(a -> HANDLED.add(a.id()));
         HANDLED.addAll(java.util.List.of("casket", "oyster", "bird_nest_seeds", "bird_nest_ring", "infernal_eel", "trawling_net",
                 "unfermented_wine"));
 
@@ -103,6 +114,11 @@ final class ItemHooks {
 
     /** Returns true if handled. */
     private static boolean use(ServerPlayerEntity player, ItemStack stack, Hand hand, String id) {
+        PrayerData.Ashes ashes = PrayerData.ashes(id);
+        if (ashes != null) {
+            scatter(player, stack, ashes);
+            return true;
+        }
         for (CookingData.Bite b : CookingData.BITES) {
             if (b.full().equals(id)) {
                 bite(player, stack, b);

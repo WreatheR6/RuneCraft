@@ -14,7 +14,7 @@ import net.minecraft.world.World;
 /** A numbered obstacle of an agility course; step on them in order to complete a lap. */
 public class AgilityObstacleBlock extends Block {
     public static final IntProperty COURSE = IntProperty.of("course", 0, AgilityCourse.values().length - 1);
-    public static final IntProperty STEP = IntProperty.of("step", 0, 7);
+    public static final IntProperty STEP = IntProperty.of("step", 0, AgilityCourse.MAX_OBSTACLES - 1);
 
     public AgilityObstacleBlock(Settings settings) {
         super(settings);

@@ -17,6 +17,17 @@ import java.util.function.Consumer;
  */
 public final class CookingData extends SkillingPart {
 
+    /** The Hosidius kitchen (OSRS tiles, inclusive): its range burns food 5% less often. */
+    public static final int[] HOSIDIUS_KITCHEN = {1758, 3612, 1766, 3620};
+    /** Burn reduction of the Hosidius range (10% after the elite Kourend &amp; Kebos diary, not tracked here). */
+    public static final double HOSIDIUS_BURN_REDUCTION = 0.05;
+
+    /** Burn reduction of a range standing on OSRS tile (x, y): the Hosidius kitchen's, else 0. */
+    public static double rangeBurnReduction(int osrsX, int osrsY) {
+        int[] k = HOSIDIUS_KITCHEN;
+        return osrsX >= k[0] && osrsX <= k[2] && osrsY >= k[1] && osrsY <= k[3] ? HOSIDIUS_BURN_REDUCTION : 0;
+    }
+
     /** A fish added by this module: fishing level/XP and cooking level/XP/heal/stop-burn. */
     public record NewFish(String id, String name, int fishLevel, double fishXp, int cookLevel, double cookXp, int heal,
                           int stopBurn, int color, int value) {

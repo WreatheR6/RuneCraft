@@ -29,6 +29,7 @@ public final class SkillingHooks implements ModuleHooks {
     @Override
     public void init() {
         ItemHooks.init();
+        AgilityHooks.init();
         GatheringHooks.init();
         FarmingHooks.init();
         RunecraftHooks.init();

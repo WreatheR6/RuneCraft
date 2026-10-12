@@ -11,12 +11,13 @@ public class AllotmentPatchBlock extends FarmingPatchBlock {
 
     public AllotmentPatchBlock(Settings settings) {
         super(settings);
-        setDefaultState(this.stateManager.getDefaultState().with(CROP, 0).with(STAGE, 0));
+        setDefaultState(this.stateManager.getDefaultState().with(CROP, 0).with(STAGE, 0).with(DISEASE, 0).with(COMPOST, 0)
+                .with(PROTECTED, false));
     }
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(CROP, STAGE);
+        builder.add(CROP, STAGE, DISEASE, COMPOST, PROTECTED);
     }
 
     @Override

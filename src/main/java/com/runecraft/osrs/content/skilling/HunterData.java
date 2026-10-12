@@ -19,7 +19,9 @@ import java.util.function.Consumer;
 
 /**
  * Hunter: implings (caught with a butterfly net into impling jars, looted for their OSRS-style loot
- * tables), salamanders (net traps), deadfall kebbits/pyre foxes and pitfall larupias/graahks/kyatts.
+ * tables), salamanders (net traps), deadfall kebbits/pyre foxes, pitfall larupias/graahks/kyatts and
+ * the low-level kebbits and weasels tracked down with a noose wand (polar, common, Feldip weasel,
+ * desert devil, razor-backed).
  * Levels and XP are OSRS values (implings use the open-world XP).
  */
 public final class HunterData extends SkillingPart {
@@ -110,7 +112,8 @@ public final class HunterData extends SkillingPart {
         return null;
     }
 
-    public enum TrapKind { NET, DEADFALL, PITFALL }
+    /** NET, DEADFALL and PITFALL traps are laid and checked later; TRACKING is an immediate noose-wand catch. */
+    public enum TrapKind { NET, DEADFALL, PITFALL, TRACKING }
 
     /**
      * A hunting spot (scripted block placed at the creature's real location). {@code bait} is consumed
@@ -131,6 +134,17 @@ public final class HunterData extends SkillingPart {
                     List.of("black_salamander"), 25),
             new TrapSpot("tecu_salamander_tree", "Tecu salamander", TrapKind.NET, 79, 344.0, List.of("small_fishing_net", "rope"), null,
                     List.of("tecu_salamander"), 25),
+            // Tracking (noose wand): follow the tracks to the burrow and catch the creature.
+            new TrapSpot("polar_kebbit_burrow", "Polar kebbit", TrapKind.TRACKING, 1, 30.0, List.of("noose_wand"), null,
+                    List.of("bones", "polar_kebbit_fur"), 0),
+            new TrapSpot("common_kebbit_burrow", "Common kebbit", TrapKind.TRACKING, 3, 36.0, List.of("noose_wand"), null,
+                    List.of("bones", "common_kebbit_fur"), 0),
+            new TrapSpot("feldip_weasel_burrow", "Feldip weasel", TrapKind.TRACKING, 7, 48.0, List.of("noose_wand"), null,
+                    List.of("bones", "feldip_weasel_fur"), 0),
+            new TrapSpot("desert_devil_burrow", "Desert devil", TrapKind.TRACKING, 13, 66.0, List.of("noose_wand"), null,
+                    List.of("bones", "desert_devil_fur"), 0),
+            new TrapSpot("razor_backed_kebbit_burrow", "Razor-backed kebbit", TrapKind.TRACKING, 49, 348.0, List.of("noose_wand"), null,
+                    List.of("bones", "long_kebbit_spike"), 0),
             new TrapSpot("wild_kebbit_deadfall", "Wild kebbit", TrapKind.DEADFALL, 23, 128.0, List.of("knife"), "logs",
                     List.of("bones", "raw_wild_kebbit"), 20),
             new TrapSpot("barb_tailed_kebbit_deadfall", "Barb-tailed kebbit", TrapKind.DEADFALL, 33, 168.0, List.of("knife"), "logs",
@@ -189,6 +203,11 @@ public final class HunterData extends SkillingPart {
         simple(s, "kebbit_teeth", "Kebbit teeth", "secondary", 0xF0E8D0, 20);
         simple(s, "barb_tail_harpoon_part", "Barb-tail", "secondary", 0x8A6A4A, 10);
         simple(s, "fox_fur", "Fox fur", "fur", 0xD06030, 50);
+        simple(s, "polar_kebbit_fur", "Polar kebbit fur", "fur", 0xF0F0F0, 12);
+        simple(s, "common_kebbit_fur", "Common kebbit fur", "fur", 0xA08060, 12);
+        simple(s, "feldip_weasel_fur", "Feldip weasel fur", "fur", 0x8A6A4A, 12);
+        simple(s, "desert_devil_fur", "Desert devil fur", "fur", 0xD0B080, 12);
+        simple(s, "long_kebbit_spike", "Long kebbit spike", "secondary", 0xE8E0C8, 40);
         simple(s, "larupia_fur", "Larupia fur", "fur", 0xC09040, 100);
         simple(s, "graahk_fur", "Graahk fur", "fur", 0xA08060, 150);
         simple(s, "kyatt_fur", "Kyatt fur", "fur", 0xE0E0E0, 200);
@@ -222,6 +241,10 @@ public final class HunterData extends SkillingPart {
         List<BlockDef> list = new ArrayList<>();
         for (TrapSpot t : TRAPS) {
             String look = t.kind() == TrapKind.NET ? "young_tree" : t.kind() == TrapKind.DEADFALL ? "boulder" : "pit";
+            if (t.kind() == TrapKind.TRACKING) {
+                list.add(BlockDef.scripted(t.blockId(), t.creature() + " burrow", 0x6A5A3A, look));
+                continue;
+            }
             list.add(BlockDef.scripted(t.blockId(), t.creature() + " hunting spot", 0x5A6A3A, look));
         }
         return list;
@@ -241,12 +264,19 @@ public final class HunterData extends SkillingPart {
                 PlaceDef.of("tecu_salamander_hunting", "Varlamore tecu salamanders", 1477, 3093, PlaceDef.Style.CAMP,
                         List.of("tecu_salamander_tree", "tecu_salamander_tree")),
                 PlaceDef.of("piscatoris_hunter_area", "Piscatoris Hunter area", 2340, 3580, PlaceDef.Style.CAMP,
-                        List.of("wild_kebbit_deadfall", "prickly_kebbit_deadfall", "wild_kebbit_deadfall")),
+                        List.of("wild_kebbit_deadfall", "prickly_kebbit_deadfall", "wild_kebbit_deadfall", "common_kebbit_burrow",
+                                "common_kebbit_burrow", "razor_backed_kebbit_burrow")),
                 PlaceDef.of("feldip_hunter_area", "Feldip Hunter area", 2550, 2910, PlaceDef.Style.CAMP,
                         List.of("barb_tailed_kebbit_deadfall", "spined_larupia_pitfall", "horned_graahk_pitfall",
                                 "barb_tailed_kebbit_deadfall")),
+                // Feldip weasels live in the fields north of the Feldip Hunter area (its structure is the islands module's).
+                PlaceDef.of("feldip_weasel_hunting", "Feldip weasel burrows", 2518, 2952, PlaceDef.Style.CAMP,
+                        List.of("feldip_weasel_burrow", "feldip_weasel_burrow")),
                 PlaceDef.of("rellekka_hunter_area", "Rellekka Hunter area", 2730, 3780, PlaceDef.Style.CAMP,
-                        List.of("sabre_toothed_kebbit_deadfall", "sabre_toothed_kyatt_pitfall", "sabre_toothed_kyatt_pitfall")),
+                        List.of("sabre_toothed_kebbit_deadfall", "sabre_toothed_kyatt_pitfall", "sabre_toothed_kyatt_pitfall",
+                                "polar_kebbit_burrow", "polar_kebbit_burrow")),
+                PlaceDef.of("uzer_hunter_area", "Uzer Hunter area", 3440, 3060, PlaceDef.Style.CAMP,
+                        List.of("desert_devil_burrow", "desert_devil_burrow")),
                 PlaceDef.of("avium_savannah", "Avium Savannah", 1630, 2990, PlaceDef.Style.CAMP,
                         List.of("pyre_fox_deadfall", "pyre_fox_deadfall")));
     }

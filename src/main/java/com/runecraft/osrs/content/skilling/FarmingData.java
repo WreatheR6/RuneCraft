@@ -1,11 +1,13 @@
 package com.runecraft.osrs.content.skilling;
 
 import com.runecraft.osrs.ItemDef.Kind;
+import com.runecraft.osrs.FarmingDisease;
 import com.runecraft.osrs.MenuType;
 import com.runecraft.osrs.Recipe;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.BlockDef;
 import com.runecraft.osrs.content.ItemSink;
+import com.runecraft.osrs.content.NpcDef;
 import com.runecraft.osrs.content.PlaceDef;
 
 import java.util.ArrayList;
@@ -20,28 +22,39 @@ import java.util.function.Consumer;
  */
 public final class FarmingData extends SkillingPart {
 
+    /**
+     * Patch types with their growth cycle length (minutes), disease chance per cycle (out of 128,
+     * before compost; see {@link FarmingDisease}) and whether a diseased crop is pruned with
+     * secateurs (trees, fruit trees, bushes) instead of treated with plant cure.
+     */
     public enum Patch {
-        TREE("tree_patch", "Tree patch"),
-        FRUIT_TREE("fruit_tree_patch", "Fruit tree patch"),
-        BUSH("bush_patch", "Bush patch"),
-        HOPS("hops_patch", "Hops patch"),
-        HARDWOOD("hardwood_patch", "Hardwood tree patch"),
-        CALQUAT("calquat_patch", "Calquat patch"),
-        CELASTRUS("celastrus_patch", "Celastrus patch"),
-        REDWOOD("redwood_patch", "Redwood tree patch"),
-        SPIRIT("spirit_tree_patch", "Spirit tree patch"),
-        CACTUS("cactus_patch", "Cactus patch"),
-        SEAWEED("seaweed_patch", "Seaweed patch"),
-        MUSHROOM("mushroom_patch", "Mushroom patch"),
-        BELLADONNA("belladonna_patch", "Belladonna patch"),
-        GRAPE("grape_patch", "Grapevine patch");
+        TREE("tree_patch", "Tree patch", 40, FarmingDisease.BASE_CHANCE, true),            // disease approx.
+        FRUIT_TREE("fruit_tree_patch", "Fruit tree patch", 160, FarmingDisease.BASE_CHANCE, true), // approx.
+        BUSH("bush_patch", "Bush patch", 20, FarmingDisease.BASE_CHANCE, true),             // approx.
+        HOPS("hops_patch", "Hops patch", 10, FarmingDisease.BASE_CHANCE, false),
+        HARDWOOD("hardwood_patch", "Hardwood tree patch", 640, FarmingDisease.BASE_CHANCE, false), // approx.
+        CALQUAT("calquat_patch", "Calquat patch", 160, FarmingDisease.BASE_CHANCE, true),   // approx.
+        CELASTRUS("celastrus_patch", "Celastrus patch", 160, FarmingDisease.BASE_CHANCE, false), // approx.
+        REDWOOD("redwood_patch", "Redwood tree patch", 640, FarmingDisease.BASE_CHANCE, true), // approx.
+        SPIRIT("spirit_tree_patch", "Spirit tree patch", 320, FarmingDisease.BASE_CHANCE, true), // approx.
+        CACTUS("cactus_patch", "Cactus patch", 80, FarmingDisease.BASE_CHANCE, false),     // approx.
+        SEAWEED("seaweed_patch", "Seaweed patch", 10, FarmingDisease.BASE_CHANCE, false),  // approx.
+        MUSHROOM("mushroom_patch", "Mushroom patch", 40, FarmingDisease.BASE_CHANCE, false), // approx.
+        BELLADONNA("belladonna_patch", "Belladonna patch", 80, FarmingDisease.BASE_CHANCE, false), // approx.
+        GRAPE("grape_patch", "Grapevine patch", 5, 0, false);                               // grapevines never get diseased
 
         public final String blockId;
         public final String displayName;
+        public final int cycleMinutes;
+        public final int disease128;
+        public final boolean pruned;
 
-        Patch(String blockId, String displayName) {
+        Patch(String blockId, String displayName, int cycleMinutes, int disease128, boolean pruned) {
             this.blockId = blockId;
             this.displayName = displayName;
+            this.cycleMinutes = cycleMinutes;
+            this.disease128 = disease128;
+            this.pruned = pruned;
         }
 
         public static Patch byBlock(String id) {
@@ -52,6 +65,65 @@ public final class FarmingData extends SkillingPart {
             }
             return null;
         }
+    }
+
+    /** Length of one growth cycle of a crop in minutes (potato cacti grow in 10-minute cycles). */
+    public static int cycleMinutes(Crop c) {
+        return c.id().equals("potato_cactus") ? 10 : c.patch().cycleMinutes;
+    }
+
+    /** Number of growth cycles of a crop (e.g. oak 5, magic 12, fruit trees 6, redberry 5). */
+    public static int stages(Crop c) {
+        return Math.max(1, c.growthMinutes() / cycleMinutes(c));
+    }
+
+    /** Disease chance per growth cycle out of 128 with the given compost level (0..3); 0 = disease-free. */
+    public static int diseaseChance(Crop c, int compost) {
+        // Poison ivy bushes and grapevines are immune to disease.
+        int base = c.id().equals("poison_ivy") ? 0 : c.patch().disease128;
+        return FarmingDisease.chance(base, compost);
+    }
+
+    /**
+     * Gardeners who look after the patches next to them for a payment (OSRS names; the Farming
+     * Guild's patches are all handled by one gardener here).
+     */
+    public record Gardener(String id, String name, String place, int dx, int dz) {
+    }
+
+    public static final List<Gardener> GARDENERS = List.of(
+            new Gardener("gardener_fayeth", "Fayeth", "lumbridge_tree_patch", 2, 2),
+            new Gardener("gardener_treznor", "Treznor", "varrock_tree_patch", 2, 2),
+            new Gardener("gardener_heskel", "Heskel", "falador_tree_patch", 2, 2),
+            new Gardener("gardener_alain", "Alain", "taverley_tree_patch", 2, 2),
+            new Gardener("gardener_prissy_scilla", "Prissy Scilla", "gnome_stronghold_patches", 2, 2),
+            new Gardener("gardener_ellena", "Ellena", "catherby_fruit_patch", 2, 2),
+            new Gardener("gardener_gileth", "Gileth", "tree_gnome_village_patch", 2, 2),
+            new Gardener("gardener_garth", "Garth", "brimhaven_patches", 2, 2),
+            new Gardener("gardener_liliwen", "Liliwen", "lletya_fruit_patch", 2, 2),
+            new Gardener("gardener_dreven", "Dreven", "champions_guild_bush", 2, 2),
+            new Gardener("gardener_taria", "Taria", "rimmington_bush", 2, 2),
+            new Gardener("gardener_torrell", "Torrell", "ardougne_bush", 2, 2),
+            new Gardener("gardener_rhazien", "Rhazien", "etceteria_patches", 2, 2),
+            new Gardener("gardener_vasquen", "Vasquen", "lumbridge_hops", 2, 2),
+            new Gardener("gardener_rhonen", "Rhonen", "seers_hops", 2, 2),
+            new Gardener("gardener_selena", "Selena", "yanille_hops", 2, 2),
+            new Gardener("gardener_francis", "Francis", "entrana_hops", 2, 2),
+            new Gardener("gardener_imiago", "Imiago", "tai_bwo_wannai_calquat", 2, 2),
+            new Gardener("gardener_rosie", "Rosie", "farming_guild", 3, 3),
+            new Gardener("gardener_squirrel", "Squirrel", "fossil_island_hardwood", 2, 2),
+            // Allotment and herb patch gardeners (the core patches next to these towns).
+            new Gardener("gardener_elstan", "Elstan", "DRAYNOR_VILLAGE", 6, 6),
+            new Gardener("gardener_dantaera", "Dantaera", "CATHERBY", 6, 6),
+            new Gardener("gardener_lyra", "Lyra", "CANIFIS", 6, 6));
+
+    public static Gardener gardener(String id) {
+        for (Gardener g : GARDENERS) {
+            if (g.id().equals(id)) {
+                return g;
+            }
+        }
+        return null;
     }
 
     /** How a grown crop is harvested. */
@@ -221,6 +293,8 @@ public final class FarmingData extends SkillingPart {
         tool(s, "secateurs", "Secateurs", "secateurs", 0x9A9AA0, 5);
         tool(s, "gardening_trowel", "Gardening trowel", "trowel", 0x8A8A8A, 5);
         simple(s, "weeds", "Weeds", "produce", 0x5A7A2A, 1);
+        simple(s, "plant_cure", "Plant cure", "potion", 0x8AB060, 25)
+                .examine("Use this on a diseased plant to cure it.");
         for (Compost c : Compost.values()) {
             simple(s, c.item, title(c.item), "bucket", c == Compost.COMPOST ? 0x5A4A2A : c == Compost.SUPERCOMPOST ? 0x3A3A1A : 0x2A2A2A,
                     c == Compost.COMPOST ? 2 : c == Compost.SUPERCOMPOST ? 30 : 200);
@@ -277,6 +351,18 @@ public final class FarmingData extends SkillingPart {
         // Belladonna flowers are ground into cave nightshade for weapon poison(++).
         out.accept(r("grind_belladonna", MenuType.HERBLORE, "Cave nightshade", Skill.HERBLORE, 1, 0)
                 .in("cave_nightshade_flower", 1).out("nightshade", 1).tool("pestle_and_mortar").ticks(1).build());
+        // Plant cure is sold for 25 gp by farming shops and general stores near patches.
+        out.accept(plain("shop_general_plant_cure", MenuType.SHOP_GENERAL, "Plant cure - 25 gp").in("coins", 25)
+                .out("plant_cure", 1).ticks(0).build());
+    }
+
+    @Override
+    public List<NpcDef> npcs() {
+        List<NpcDef> list = new ArrayList<>();
+        for (Gardener g : GARDENERS) {
+            list.add(NpcDef.of(g.id(), g.name(), g.place(), g.dx(), g.dz(), 0xD8A880, 0x5A7A3A, 0x4A3A2A, 0x8A6A3A));
+        }
+        return list;
     }
 
     @Override

@@ -160,8 +160,13 @@ public final class MenuService {
         r.inputs().forEach((item, count) -> Inv.remove(player, item, count));
         double chance = r.successChance();
         if (r.stopBurn() > 0) {
+            BlockPos station = Players.data(player).menuStation;
+            double reduction = range && station != null && com.runecraft.world.Gielinor.is(player)
+                    ? com.runecraft.osrs.content.skilling.CookingData.rangeBurnReduction(
+                            com.runecraft.osrs.GielinorMap.toOsrsX(station.getX()), com.runecraft.osrs.GielinorMap.toOsrsY(station.getZ()))
+                    : 0;
             chance = r.cookingSuccess(skills.currentLevel(r.skill()), range,
-                    r.gauntletStopBurn() > 0 && Inv.has(player, "cooking_gauntlets", 1));
+                    r.gauntletStopBurn() > 0 && Inv.has(player, "cooking_gauntlets", 1), reduction);
         }
         boolean success = player.getRandom().nextDouble() < chance;
         if (success) {
