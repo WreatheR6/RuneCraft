@@ -37,8 +37,8 @@ class QuestUnlocksTest {
 
     @Test
     void questLockedGearAndShops() {
-        assertEquals("dragon_slayer_i", BOOK.weaponGates.get("rune_platebody"));
-        assertEquals("dragon_slayer_i", BOOK.weaponGates.get("green_dhide_body"));
+        assertEquals("dragon_slayer_i", BOOK.armourGates.get("rune_platebody"));
+        assertEquals("dragon_slayer_i", BOOK.armourGates.get("green_dhide_body"));
         assertEquals("lost_city", BOOK.weaponGates.get("dragon_longsword"));
         assertEquals("lost_city", BOOK.weaponGates.get("dragon_dagger"));
         assertEquals("monkey_madness_i", BOOK.weaponGates.get("dragon_scimitar"));
