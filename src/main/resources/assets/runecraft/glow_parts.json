@@ -473,6 +473,11 @@
   "cruor": [
     "orb"
   ],
+  "crystal_impling": [
+    "head",
+    "wing_l",
+    "wing_r"
+  ],
   "crystalline_hunllef": [
     "blade0",
     "blade2",

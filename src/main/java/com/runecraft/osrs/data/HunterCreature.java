@@ -5,21 +5,27 @@ import com.runecraft.osrs.Region;
 import java.util.List;
 import java.util.Set;
 
-/** Hunter creatures caught with bird snares or box traps, and where they live. */
+/**
+ * Hunter creatures caught with bird snares or box traps, and the kingdoms of their OSRS hunting areas:
+ * crimson swifts and tropical wagtails in the Feldip and Karamja jungles (and the Isle of Souls), golden
+ * warblers in the Uzer desert, copper longtails, ferrets and grey chinchompas at Piscatoris (and the
+ * Isle of Souls / Kourend), cerulean twitches in the Rellekka snow area, carnivorous chinchompas in the
+ * Feldip Hills and Isafdar (Gwenith), black chinchompas in the Wilderness. Catch chances: {@link HunterRates}.
+ */
 public enum HunterCreature {
-    CRIMSON_SWIFT("Crimson swift", Trap.BIRD_SNARE, 1, 34.0, Set.of(Region.FELDIP_HILLS, Region.KARAMJA, Region.MISTHALIN, Region.LUMBRIDGE_SWAMP, Region.UNCHARTED_ISLES),
+    CRIMSON_SWIFT("Crimson swift", Trap.BIRD_SNARE, 1, 34.0, Set.of(Region.FELDIP_HILLS, Region.KARAMJA, Region.UNCHARTED_ISLES),
             List.of("bones", "raw_bird_meat", "minecraft:feather")),
     GOLDEN_WARBLER("Golden warbler", Trap.BIRD_SNARE, 5, 47.0, Set.of(Region.KHARIDIAN_DESERT),
             List.of("bones", "raw_bird_meat", "minecraft:feather")),
-    COPPER_LONGTAIL("Copper longtail", Trap.BIRD_SNARE, 9, 61.0, Set.of(Region.KANDARIN, Region.ASGARNIA),
+    COPPER_LONGTAIL("Copper longtail", Trap.BIRD_SNARE, 9, 61.0, Set.of(Region.KANDARIN, Region.UNCHARTED_ISLES),
             List.of("bones", "raw_bird_meat", "minecraft:feather")),
-    CERULEAN_TWITCH("Cerulean twitch", Trap.BIRD_SNARE, 11, 64.7, Set.of(Region.FREMENNIK_PROVINCE, Region.TROLL_COUNTRY),
+    CERULEAN_TWITCH("Cerulean twitch", Trap.BIRD_SNARE, 11, 64.7, Set.of(Region.FREMENNIK_PROVINCE),
             List.of("bones", "raw_bird_meat", "minecraft:feather")),
     TROPICAL_WAGTAIL("Tropical wagtail", Trap.BIRD_SNARE, 19, 95.2, Set.of(Region.FELDIP_HILLS, Region.KARAMJA),
             List.of("bones", "raw_bird_meat", "minecraft:feather")),
-    FERRET("Ferret", Trap.BOX_TRAP, 27, 115.0, Set.of(Region.KANDARIN, Region.FELDIP_HILLS, Region.ASGARNIA, Region.MISTHALIN),
+    FERRET("Ferret", Trap.BOX_TRAP, 27, 115.0, Set.of(Region.KANDARIN),
             List.of("ferret")),
-    GREY_CHINCHOMPA("Grey chinchompa", Trap.BOX_TRAP, 53, 198.4, Set.of(Region.KANDARIN, Region.TIRANNWN),
+    GREY_CHINCHOMPA("Grey chinchompa", Trap.BOX_TRAP, 53, 198.4, Set.of(Region.KANDARIN, Region.UNCHARTED_ISLES),
             List.of("grey_chinchompa")),
     RED_CHINCHOMPA("Red chinchompa", Trap.BOX_TRAP, 63, 265.0, Set.of(Region.FELDIP_HILLS, Region.TIRANNWN),
             List.of("red_chinchompa")),

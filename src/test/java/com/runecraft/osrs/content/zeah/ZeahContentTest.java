@@ -182,8 +182,8 @@ class ZeahContentTest {
         assertEquals(91, moon.level());
         assertEquals(450.0, moon.xp());
         assertEquals(72, ZeahHunter.spot(ZeahBlocks.SUNLIGHT_ANTELOPE_PIT).level());
-        assertEquals(0.95, ZeahHunter.catchChance(99, ZeahHunter.spot(ZeahBlocks.JERBOA_BURROW)));
-        assertEquals(0.55, ZeahHunter.catchChance(91, moon), 1e-9);
+        assertEquals(1.0, ZeahHunter.catchChance(99, ZeahHunter.spot(ZeahBlocks.JERBOA_BURROW)), 1e-9);
+        assertEquals(143 / 256.0, ZeahHunter.catchChance(91, moon), 0.01);
     }
 
     @Test

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "waterlogged=false": {
+      "model": "runecraft:block/shark_fishing_spot"
+    },
+    "waterlogged=true": {
+      "model": "runecraft:block/shark_fishing_spot"
+    }
+  }
+}
