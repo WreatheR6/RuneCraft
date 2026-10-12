@@ -23,7 +23,8 @@ import java.util.UUID;
 /**
  * Tithe Farm in Hosidius: plant the seed for your Farming level (golovanova 34, bologano 54,
  * logavano 74), water it at each of its three growth stages (it dies if left dry), harvest the
- * fruit and deposit it in the sack for points and bonus Farming XP.
+ * fruit and deposit it in the sack for Farming XP (10x the harvest XP per fruit, doubled for fruit
+ * 75-100 plus a bonus on the 75th) and a point for every third fruit (35 for a full sack of 100).
  */
 public class TitheFarmSession extends MinigameSession {
     private static final int PATCHES = 12;
@@ -112,22 +113,38 @@ public class TitheFarmSession extends MinigameSession {
             }
             case "tithe_patch" -> patch(player, patchAt(pos));
             case "tithe_sack" -> {
+                int already = delivered.getOrDefault(player.getUuid(), 0);
                 int fruit = 0;
+                int pts = 0;
                 double bonusXp = 0;
                 for (int t = 0; t < 3; t++) {
-                    int n = Inv.remove(player, MinigameItems.TITHE_PLANTS[t] + "_fruit", 1000);
+                    String id = MinigameItems.TITHE_PLANTS[t] + "_fruit";
+                    int n = Math.min(Inv.count(player, id), TitheFarm.SACK_SIZE - already - fruit);
+                    if (n <= 0) {
+                        continue;
+                    }
+                    Inv.remove(player, id, n);
+                    for (int k = 0; k < n; k++) {
+                        int index = already + fruit + k + 1;
+                        bonusXp += TitheFarm.depositXp(t, index);
+                        pts += TitheFarm.depositPoints(index);
+                    }
                     fruit += n;
-                    bonusXp += n * TitheFarm.DEPOSIT_XP[t];
                 }
                 if (fruit == 0) {
-                    Msg.game(player, "You have no fruit to deposit.");
+                    Msg.game(player, already >= TitheFarm.SACK_SIZE ? "The sack is full. Leave the farm to start a new run."
+                            : "You have no fruit to deposit.");
                     return true;
                 }
-                int pts = TitheFarm.points(fruit);
-                addPoints(player, MinigameCurrencies.TITHE, pts);
+                int have = MinigameData.of(player).points(player.getUuid(), "tithe_farm");
+                pts = Math.max(0, Math.min(pts, TitheFarm.MAX_POINTS - have));
+                if (pts > 0) {
+                    addPoints(player, MinigameCurrencies.TITHE, pts);
+                }
                 xp(player, Skill.FARMING, bonusXp);
                 delivered.merge(player.getUuid(), fruit, Integer::sum);
-                Msg.game(player, "You deposit " + fruit + " fruit and earn " + pts + " points.");
+                Msg.game(player, "You deposit " + fruit + " fruit and earn " + pts + " points. ("
+                        + (already + fruit) + " / " + TitheFarm.SACK_SIZE + " this run)");
             }
             default -> {
                 return false;
@@ -168,8 +185,9 @@ public class TitheFarmSession extends MinigameSession {
         }
         if (stage[i] >= 4) {
             int t = type[i];
-            Inv.give(player, MinigameItems.TITHE_PLANTS[t] + "_fruit", 3);
-            xp(player, Skill.FARMING, TitheFarm.HARVEST_XP[t]);
+            int fruit = 3; // approx: harvest yield
+            Inv.give(player, MinigameItems.TITHE_PLANTS[t] + "_fruit", fruit);
+            xp(player, Skill.FARMING, TitheFarm.HARVEST_XP[t] * fruit);
             type[i] = -1;
             show(i);
             Msg.action(player, "You harvest some fruit.");

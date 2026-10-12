@@ -11,10 +11,9 @@ import java.util.List;
  * 360. Each new tier T contributes the waves [T], [T + every earlier wave], [T, T], giving 2 + 4 +
  * 8 + 16 + 32 = 62 waves, then TzTok-Jad on wave 63.
  *
- * <p>The Inferno has 69 waves: three Jal-Nib nibblers on every regular wave, bats and blobs on
- * waves 1-8, Jal-ImKot from wave 9, Jal-Xil from wave 18, Jal-Zek from wave 35, JalTok-Jad on
- * wave 67, three JalTok-Jads on wave 68 and TzKal-Zuk on wave 69. Each block reuses the earlier
- * waves the way the real Inferno does; individual compositions are approximations.
+ * <p>The Inferno has 69 waves built the same way over Jal-MejRah, Jal-Ak, Jal-ImKot, Jal-Xil and
+ * Jal-Zek (with a nibbler-only wave after each of the first four tiers), three Jal-Nib on every
+ * wave, then JalTok-Jad on wave 67, three JalTok-Jads on wave 68 and TzKal-Zuk on wave 69.
  */
 public final class TzHaarWaves {
     public static final String TZ_KIH = "tz_kih";
@@ -56,26 +55,39 @@ public final class TzHaarWaves {
         waves.add(List.of(JAD));
         FIGHT_CAVES = Collections.unmodifiableList(waves);
 
-        // Inferno: waves 1-8 of bats and blobs.
-        List<List<String>> base = new ArrayList<>();
-        base.add(List.of(JAL_MEJRAH));
-        base.add(List.of(JAL_MEJRAH, JAL_MEJRAH));
-        base.add(List.of(JAL_AK));
-        base.add(List.of(JAL_AK, JAL_MEJRAH));
-        base.add(List.of(JAL_AK, JAL_MEJRAH, JAL_MEJRAH));
-        base.add(List.of(JAL_AK, JAL_AK));
-        base.add(List.of(JAL_AK, JAL_AK, JAL_MEJRAH));
-        base.add(List.of(JAL_AK, JAL_AK, JAL_MEJRAH, JAL_MEJRAH));
-        List<List<String>> inferno = new ArrayList<>(base);
-        // Waves 9-17: a Jal-ImKot alone, then with each of waves 1-8.
-        block(inferno, JAL_IMKOT, 9);
-        // Waves 18-34: a Jal-Xil alone, then with each of waves 1-16.
-        block(inferno, JAL_XIL, 17);
-        // Waves 35-66: a Jal-Zek alone, then with each of waves 1-31.
-        block(inferno, JAL_ZEK, 32);
+        // Inferno: the same counting pattern over bats, blobs, meleers, rangers and magers. Each
+        // tier T contributes [T], [T + every earlier non-empty wave], [T, T]; the first four
+        // tiers are each followed by a nibbler-only wave. That gives waves 1-3 (bat), 4-8 (blob),
+        // 9-17 (Jal-ImKot), 18-34 (Jal-Xil) and 35-66 (Jal-Zek), with the double-blob waves on
+        // 7, 15, 24, 31, 41, 48, 56 and 63 exactly as in OSRS.
+        String[] infernoTiers = {JAL_MEJRAH, JAL_AK, JAL_IMKOT, JAL_XIL, JAL_ZEK};
+        List<List<String>> combos = new ArrayList<>();
+        List<List<String>> inferno = new ArrayList<>();
+        for (int t = 0; t < infernoTiers.length; t++) {
+            String tier = infernoTiers[t];
+            List<List<String>> before = new ArrayList<>(combos);
+            List<List<String>> block = new ArrayList<>();
+            block.add(List.of(tier));
+            for (List<String> w : before) {
+                List<String> combined = new ArrayList<>();
+                combined.add(tier);
+                combined.addAll(w);
+                block.add(List.copyOf(combined));
+            }
+            block.add(List.of(tier, tier));
+            combos.addAll(block);
+            inferno.addAll(block);
+            if (t < infernoTiers.length - 1) {
+                inferno.add(List.of());
+            }
+        }
         List<List<String>> withNibblers = new ArrayList<>();
         for (List<String> w : inferno) {
             List<String> full = new ArrayList<>(List.of(JAL_NIB, JAL_NIB, JAL_NIB));
+            if (w.isEmpty()) {
+                // Nibbler-only waves bring a second group of three.
+                full.addAll(List.of(JAL_NIB, JAL_NIB, JAL_NIB));
+            }
             full.addAll(w);
             withNibblers.add(List.copyOf(full));
         }
@@ -83,17 +95,6 @@ public final class TzHaarWaves {
         withNibblers.add(List.of(JALTOK_JAD, JALTOK_JAD, JALTOK_JAD));
         withNibblers.add(List.of(ZUK));
         INFERNO = Collections.unmodifiableList(withNibblers);
-    }
-
-    private static void block(List<List<String>> waves, String top, int count) {
-        List<List<String>> before = new ArrayList<>(waves);
-        waves.add(List.of(top));
-        for (int i = 0; i < count - 1; i++) {
-            List<String> w = new ArrayList<>();
-            w.add(top);
-            w.addAll(before.get(i));
-            waves.add(List.copyOf(w));
-        }
     }
 
     private TzHaarWaves() {
@@ -133,4 +134,22 @@ public final class TzHaarWaves {
     /** Pet chances on completion (1 in N; halved when on a TzHaar slayer task in OSRS). */
     public static final int JAD_PET_CHANCE = 200;
     public static final int ZUK_PET_CHANCE = 100;
+
+    /** Yt-HurKot that tend the Fight Cave's TzTok-Jad once it drops below half hitpoints. */
+    public static final int FIGHT_CAVE_JAD_HEALERS = 4;
+    /** TzKal-Zuk's hitpoints. */
+    public static final int ZUK_HP = 1200;
+    /** Zuk summons a JalTok-Jad (with three healers) at this many hitpoints. */
+    public static final int ZUK_JAD_HP = 480;
+    /** Four Jal-MejJak arrive to heal Zuk at this many hitpoints. */
+    public static final int ZUK_HEALER_HP = 240;
+    /** The Jal-Xil + Jal-Zek reinforcement timer pauses below this many hitpoints until the Jad dies. */
+    public static final int ZUK_SET_PAUSE_HP = 600;
+    /** Game ticks between Zuk's Jal-Xil + Jal-Zek reinforcements (3:30). */
+    public static final int ZUK_SET_TICKS = 350;
+
+    /** Yt-HurKot each Inferno JalTok-Jad summons below half hitpoints: five on wave 67, three otherwise. */
+    public static int infernoJadHealers(int wave) {
+        return wave == 67 ? 5 : 3;
+    }
 }

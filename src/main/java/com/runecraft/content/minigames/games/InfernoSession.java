@@ -24,8 +24,9 @@ import java.util.List;
  * The Inferno: 69 waves (see {@link TzHaarWaves}). Nibblers chew on the three obsidian pillars,
  * which collapse and hurt anyone beside them; Jal-Ak split into three Jal-AkRek; Jal-ImKot dig
  * towards distant players; Jal-Zek resurrect fallen monsters; JalTok-Jads get healers; TzKal-Zuk
- * (see {@link ZukScript}) hides behind the Ancestral Glyph, summons a JalTok-Jad at 600 hitpoints,
- * Jal-MejJak healers at 240 and reinforcements every 210 seconds. Entry costs a fire cape
+ * (see {@link ZukScript}) hides behind the Ancestral Glyph, summons a JalTok-Jad at 480 hitpoints,
+ * Jal-MejJak healers at 240 and Jal-Xil + Jal-Zek reinforcements every 210 seconds (paused below
+ * 600 hitpoints until the Jad dies). Entry costs a fire cape
  * (sacrificed once); victory pays the infernal cape and 16,440 tokkul.
  */
 public class InfernoSession extends TzHaarSession {
@@ -36,6 +37,7 @@ public class InfernoSession extends TzHaarSession {
     private boolean zukJad;
     private boolean zukHealers;
     private long zukSpawnedAt = -1;
+    private long setTimer;
     private boolean zukDead;
 
     public InfernoSession(int id, int slot, ServerWorld world, String variant) {
@@ -113,6 +115,7 @@ public class InfernoSession extends TzHaarSession {
                 glyph.addCommandTag(com.runecraft.content.minigames.MinigameCombat.INVULNERABLE);
             }
             zukSpawnedAt = ticks;
+            setTimer = 0;
             return spawn(TzHaarWaves.ZUK, rel(0, 1, -18));
         }
         if (id.equals(TzHaarWaves.JAL_NIB)) {
@@ -146,7 +149,7 @@ public class InfernoSession extends TzHaarSession {
         imkotDig();
         zekResurrect();
         if (wave >= 67) {
-            checkJadHealers(TzHaarWaves.JALTOK_JAD, 3);
+            checkJadHealers(TzHaarWaves.JALTOK_JAD, TzHaarWaves.infernoJadHealers(wave));
         }
     }
 
@@ -239,8 +242,9 @@ public class InfernoSession extends TzHaarSession {
         }
         LivingEntity zuk = zuks.get(0);
         float hp = zuk.getHealth();
-        long elapsed = ticks - zukSpawnedAt;
-        if (elapsed > 0 && elapsed % 350 == 0) {
+        boolean paused = hp <= TzHaarWaves.ZUK_SET_PAUSE_HP && (!zukJad || !living(TzHaarWaves.JALTOK_JAD).isEmpty());
+        if (!paused && ++setTimer >= TzHaarWaves.ZUK_SET_TICKS) {
+            setTimer = 0;
             for (String id : new String[]{TzHaarWaves.JAL_XIL, TzHaarWaves.JAL_ZEK}) {
                 MobEntity m = spawn(id, rel(random.nextBoolean() ? -16 : 16, 1, -14));
                 if (m != null) {
@@ -249,7 +253,7 @@ public class InfernoSession extends TzHaarSession {
             }
             broadcastRed("TzKal-Zuk summons reinforcements!");
         }
-        if (!zukJad && hp <= 600) {
+        if (!zukJad && hp <= TzHaarWaves.ZUK_JAD_HP) {
             zukJad = true;
             MobEntity jad = spawn(TzHaarWaves.JALTOK_JAD, rel(0, 1, -2));
             if (jad != null) {
@@ -258,7 +262,7 @@ public class InfernoSession extends TzHaarSession {
             broadcastRed("TzKal-Zuk calls forth a JalTok-Jad!");
         }
         checkJadHealers(TzHaarWaves.JALTOK_JAD, 3);
-        if (!zukHealers && hp <= 240) {
+        if (!zukHealers && hp <= TzHaarWaves.ZUK_HEALER_HP) {
             zukHealers = true;
             for (int i = 0; i < 4; i++) {
                 MobEntity h = spawn("jal_mejjak", rel(-6 + i * 4, 1, -15));

@@ -131,7 +131,7 @@ public class PyramidPlunderSession extends MinigameSession {
                 if (random.nextInt(100) < 30 + str / 2) {
                     sarcophagusOpened = true;
                     reward(player, artefact(), 1);
-                    xp(player, Skill.STRENGTH, 20 + room * 10);
+                    xp(player, Skill.STRENGTH, PyramidPlunder.SARCOPHAGUS_XP[room - 1]);
                     Msg.game(player, "You heave the lid off the sarcophagus.");
                 } else {
                     Msg.game(player, "You fail to move the lid.");

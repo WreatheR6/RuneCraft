@@ -288,6 +288,16 @@ public class WintertodtSession extends MinigameSession {
         return Math.min(4, warm);
     }
 
+    /** Whether the player stands beside a lit brazier (the B term of the cold formula). */
+    private boolean nearLitBrazier(ServerPlayerEntity p) {
+        for (int i = 0; i < 4; i++) {
+            if (braziers[i] == State.LIT && p.getBlockPos().getSquaredDistance(rel(BRAZIERS[i][0], 1, BRAZIERS[i][1])) <= 36) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     protected void gameTick() {
         if (energy <= 0) {
@@ -327,7 +337,7 @@ public class WintertodtSession extends MinigameSession {
         // The cold.
         if (ticks % 12 == 0) {
             for (ServerPlayerEntity p : online()) {
-                int dmg = Wintertodt.coldDamage(level(p, Skill.HITPOINTS), warmth(p), lit());
+                int dmg = Wintertodt.coldDamage(level(p, Skill.HITPOINTS), warmth(p), nearLitBrazier(p) ? 1 : 0);
                 CombatHandler.applyDamage(null, p, dmg);
                 com.runecraft.network.ServerNetworking.hitsplat(p, dmg, com.runecraft.network.Net.SPLAT_DAMAGE);
                 if (random.nextInt(3) == 0) {
