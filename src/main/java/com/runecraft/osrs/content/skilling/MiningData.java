@@ -26,22 +26,63 @@ public final class MiningData extends SkillingPart {
      */
     public record MineRock(String blockId, String name, int level, int low, int high, int respawnTicks, List<Yield> yields,
                            int color) {
+        /** True when each yield rolls its own low/high in turn (sandstone and granite sizes). */
+        public boolean cascades() {
+            return yields.get(0).high() > 0;
+        }
+
+        /**
+         * One mining attempt at a Mining level: the yield mined, or null for a miss. Sandstone and
+         * granite try each size in turn, biggest first, with that size's own low/high (the OSRS
+         * "cascade"); other rocks make one roll with the rock's low/high and then pick a yield by weight.
+         */
+        public Yield attempt(int level, java.util.function.DoubleSupplier random) {
+            if (cascades()) {
+                for (Yield y : yields) {
+                    if (random.getAsDouble() < com.runecraft.osrs.Chance.lerp(level, y.low(), y.high())) {
+                        return y;
+                    }
+                }
+                return null;
+            }
+            if (random.getAsDouble() >= com.runecraft.osrs.Chance.lerp(level, low, high)) {
+                return null;
+            }
+            int total = 0;
+            for (Yield y : yields) {
+                total += y.weight();
+            }
+            int r = (int) Math.floor(random.getAsDouble() * total);
+            for (Yield y : yields) {
+                r -= y.weight();
+                if (r < 0) {
+                    return y;
+                }
+            }
+            return yields.get(yields.size() - 1);
+        }
     }
 
-    public record Yield(String item, int weight, double xp) {
+    /** A possible yield: item, weight (single-roll rocks), XP, and its own low/high for cascading rocks (0/0 otherwise). */
+    public record Yield(String item, int weight, double xp, int low, int high) {
+        public Yield(String item, int weight, double xp) {
+            this(item, weight, xp, 0, 0);
+        }
     }
 
     public static final List<MineRock> ROCKS = List.of(
-            new MineRock("sandstone_rock", "Sandstone rocks", 35, 25, 200, 9, List.of(new Yield("sandstone_1kg", 40, 30.0),
-                    new Yield("sandstone_2kg", 30, 40.0), new Yield("sandstone_5kg", 20, 50.0), new Yield("sandstone_10kg", 10, 60.0)),
-                    0xD8C080),
-            new MineRock("granite_rock", "Granite rocks", 45, 16, 160, 9, List.of(new Yield("granite_500g", 50, 50.0),
-                    new Yield("granite_2kg", 35, 60.0), new Yield("granite_5kg", 15, 75.0)), 0x8A7A70),
+            // Sandstone and granite: each size has its own success curve (OSRS Wiki skilling success chart),
+            // tried from the heaviest down; the rock's own low/high is unused.
+            new MineRock("sandstone_rock", "Sandstone rocks", 35, 25, 200, 9, List.of(new Yield("sandstone_10kg", 1, 60.0, 4, 50),
+                    new Yield("sandstone_5kg", 1, 50.0, 8, 75), new Yield("sandstone_2kg", 1, 40.0, 16, 100),
+                    new Yield("sandstone_1kg", 1, 30.0, 25, 200)), 0xD8C080),
+            new MineRock("granite_rock", "Granite rocks", 45, 16, 100, 9, List.of(new Yield("granite_5kg", 1, 75.0, 6, 64),
+                    new Yield("granite_2kg", 1, 60.0, 8, 75), new Yield("granite_500g", 1, 50.0, 16, 100)), 0x8A7A70),
             new MineRock("blurite_rock", "Blurite rocks", 10, 90, 350, 42, List.of(new Yield("blurite_ore", 1, 17.5)), 0x4A6AC0),
-            // Limestone (10 Mining, 26.5 XP); chiselled into limestone bricks for Construction. Success/respawn approx.
-            new MineRock("limestone_rock", "Limestone rocks", 10, 64, 300, 15, List.of(new Yield("limestone", 1, 26.5)), 0xD8D0B0),
+            // Limestone (10 Mining, 26.5 XP); chiselled into limestone bricks for Construction. Respawn approx.
+            new MineRock("limestone_rock", "Limestone rocks", 10, 95, 350, 15, List.of(new Yield("limestone", 1, 26.5)), 0xD8D0B0),
             new MineRock("ash_pile", "Ash pile", 22, 64, 256, 50, List.of(new Yield("volcanic_ash", 1, 10.0)), 0x5A5A5A),
-            new MineRock("pay_dirt_vein", "Ore vein", 30, 48, 220, 0, List.of(new Yield("pay_dirt", 1, 60.0)), 0x6A5A3A));
+            new MineRock("pay_dirt_vein", "Ore vein", 30, 60, 105, 0, List.of(new Yield("pay_dirt", 1, 60.0)), 0x6A5A3A));
 
     public static MineRock rock(String blockId) {
         for (MineRock r : ROCKS) {

@@ -1,8 +1,9 @@
 package com.runecraft.osrs.data;
 
 /**
- * Mining rocks. Level/XP/respawn (game ticks) are from OSRS; low/high success values out of 256
- * approximate the game's per-roll chance. Essence rocks never deplete.
+ * Mining rocks. Level/XP/respawn (game ticks) are from OSRS; low/high success values out of 256 are
+ * the OSRS Wiki's skilling success chart values (the pickaxe only changes how often you roll; a
+ * negative low, as for amethyst, is part of the wiki curve). Essence rocks never deplete.
  */
 public enum Rock {
     COPPER("copper", "Copper rocks", "copper_ore", "Copper ore", 1, 17.5, 100, 350, 4, 0xC87533, 5),
@@ -14,11 +15,11 @@ public enum Rock {
     PURE_ESSENCE("pure_essence", "Pure essence", "pure_essence", "Pure essence", 30, 5.0, 256, 256, -1, 0xF0F0FF, 6),
     COAL("coal", "Coal rocks", "coal", "Coal", 30, 50.0, 16, 100, 49, 0x202020, 45),
     GOLD("gold", "Gold rocks", "gold_ore", "Gold ore", 40, 65.0, 7, 75, 100, 0xE8C030, 150),
-    GEM("gem", "Gem rocks", null, "Uncut gem", 40, 65.0, 7, 75, 99, 0xB040C0, 0),
+    GEM("gem", "Gem rocks", null, "Uncut gem", 40, 65.0, 28, 70, 99, 0xB040C0, 0),
     MITHRIL("mithril", "Mithril rocks", "mithril_ore", "Mithril ore", 55, 80.0, 4, 50, 200, 0x4A5A9C, 162),
     ADAMANTITE("adamantite", "Adamantite rocks", "adamantite_ore", "Adamantite ore", 70, 95.0, 2, 25, 400, 0x4C7A4C, 400),
     RUNITE("runite", "Runite rocks", "runite_ore", "Runite ore", 85, 125.0, 1, 18, 1200, 0x4FB8C8, 3200),
-    AMETHYST("amethyst", "Amethyst crystals", "amethyst", "Amethyst", 92, 240.0, 1, 12, 125, 0xA070D0, 2000);
+    AMETHYST("amethyst", "Amethyst crystals", "amethyst", "Amethyst", 92, 240.0, -18, 10, 125, 0xA070D0, 2000);
 
     private final String id;
     private final String name;

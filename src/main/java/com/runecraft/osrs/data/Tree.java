@@ -92,6 +92,55 @@ public enum Tree {
         return high;
     }
 
+    /** Multipliers of the bronze-to-rune axes, matching {@link #EXACT}'s columns. */
+    private static final double[] AXE_MULTIPLIERS = {1.0, 1.5, 2.0, 2.25, 2.5, 3.0, 3.5};
+
+    /**
+     * Exact per-axe low/high values (bronze, iron, steel, black, mithril, adamant, rune) of the trees
+     * that have them in the game's woodcutting data; they are not always a clean multiple of the
+     * bronze values (e.g. a yew with an iron axe is 6/19, not 6/18).
+     */
+    private static final int[][][] EXACT = {
+            {{64, 200}, {96, 300}, {128, 400}, {144, 450}, {160, 500}, {192, 600}, {224, 700}},
+            {{32, 100}, {48, 150}, {64, 200}, {72, 225}, {80, 250}, {96, 300}, {112, 350}},
+            {{16, 50}, {24, 75}, {32, 100}, {36, 112}, {40, 125}, {48, 150}, {56, 175}},
+            {{8, 25}, {12, 37}, {16, 50}, {18, 56}, {20, 62}, {24, 75}, {28, 87}},
+            {{4, 12}, {6, 19}, {8, 25}, {9, 28}, {10, 31}, {12, 37}, {14, 44}},
+            {{2, 6}, {3, 9}, {4, 12}, {5, 13}, {5, 15}, {6, 18}, {7, 21}}};
+
+    private int[] exact(double axeMultiplier) {
+        int row = switch (this) {
+            case TREE -> 0;
+            case OAK -> 1;
+            case WILLOW -> 2;
+            case MAPLE -> 3;
+            case YEW -> 4;
+            case MAGIC -> 5;
+            default -> -1;
+        };
+        if (row < 0) {
+            return null;
+        }
+        for (int i = 0; i < AXE_MULTIPLIERS.length; i++) {
+            if (Math.abs(AXE_MULTIPLIERS[i] - axeMultiplier) < 1e-9) {
+                return EXACT[row][i];
+            }
+        }
+        return null;
+    }
+
+    /** Success low value for an axe with this woodcutting multiplier (exact where the game data has one). */
+    public int low(double axeMultiplier) {
+        int[] e = exact(axeMultiplier);
+        return e != null ? e[0] : (int) Math.floor(low * axeMultiplier);
+    }
+
+    /** Success high value for an axe with this woodcutting multiplier (exact where the game data has one). */
+    public int high(double axeMultiplier) {
+        int[] e = exact(axeMultiplier);
+        return e != null ? e[1] : (int) Math.floor(high * axeMultiplier);
+    }
+
     /** Forestry tree timer in game ticks; 0 means the tree falls after a single log. */
     public int despawnTicks() {
         return despawnTicks;

@@ -109,7 +109,8 @@ class DataIntegrityTest {
     void cookingBurnRates() {
         Recipe shrimp = Recipes.get("cook_shrimps");
         assertEquals(1.0, shrimp.cookingSuccess(34, false), 1e-9);
-        assertTrue(shrimp.cookingSuccess(1, false) < 0.5);
+        // Shrimps burn about half the time at level 1: (1 + 128) / 256.
+        assertEquals(129 / 256.0, shrimp.cookingSuccess(1, false), 1e-9);
         Recipe shark = Recipes.get("cook_shark");
         assertTrue(shark.cookingSuccess(99, false) < 1.0);
     }

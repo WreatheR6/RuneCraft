@@ -114,11 +114,10 @@ public final class Recipe {
     }
 
     /**
-     * Cooking success chance. Rises linearly from 45% at the requirement to 100% at the stop-burn
-     * level; ranges burn less than fires (treated as 3 levels higher), like in-game. Cooking
-     * gauntlets lower the stop-burn level of the fish they help (lobster 74 -> 64, swordfish 86 ->
-     * 81, ...). A stop-burn of 100 or more can never be reached: such food (sharks, anglerfish, dark
-     * crabs without gauntlets) always keeps a small burn chance.
+     * Cooking success chance: the OSRS skilling roll with the food's low/high burn values (see
+     * {@link BurnRates}); some foods burn less on a range, and cooking gauntlets help lobster,
+     * swordfish, monkfish, shark and anglerfish. Sharks, sea turtles and manta rays (and other food
+     * with a stop-burn of 100) can never stop burning without gauntlets.
      */
     public double cookingSuccess(int cookingLevel, boolean range, boolean gauntlets) {
         return cookingSuccess(cookingLevel, range, gauntlets, 0);
@@ -142,14 +141,7 @@ public final class Recipe {
         if (stopBurn <= 0) {
             return 1.0;
         }
-        int stop = gauntlets && gauntletStopBurn > 0 ? gauntletStopBurn : stopBurn;
-        int effective = cookingLevel + (range ? 3 : 0);
-        if (stop < 100 && effective >= stop) {
-            return 1.0;
-        }
-        double span = Math.max(1, stop - level);
-        double chance = 0.45 + 0.55 * Math.max(0, effective - level) / span;
-        return Math.min(stop >= 100 ? 0.96 : 1.0, chance);
+        return BurnRates.success(icon(), stopBurn, gauntletStopBurn, cookingLevel, range, gauntlets);
     }
 
     public static Builder builder(String id, MenuType menu, String name) {

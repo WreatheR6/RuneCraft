@@ -244,7 +244,7 @@ public final class ItemUses {
                 }
                 p.swingHand(Hand.MAIN_HAND, true);
                 int lvl = Players.data(p).skills().currentLevel(Skill.FIREMAKING);
-                if (p.getRandom().nextDouble() >= Chance.lerp(lvl, 65, 513)) {
+                if (p.getRandom().nextDouble() >= Chance.lerp(lvl, 64, 512)) {
                     return true;
                 }
                 ServerWorld world = (ServerWorld) p.getWorld();
