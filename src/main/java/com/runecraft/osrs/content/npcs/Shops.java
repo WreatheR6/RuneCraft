@@ -364,10 +364,10 @@ public final class Shops {
         // OSRS Wiki: Candle Shop
         add(specialist("candle_shop", "Candle Shop", "candle_maker").prices(1300, 400, 30).sell("candle", 10)
                 .greeting("Hi! Would you like a candle?"));
-        // OSRS Wiki: Vanessa's Farming shop (not in RuneCraft: Plant pot pack, Compost pack, Empty sack, Sack pack, Basket, Basket pack, Empty bucket pack)
+        // OSRS Wiki: Vanessa's Farming shop (not in RuneCraft: Plant pot pack, Compost pack, Sack pack, Basket, Basket pack, Empty bucket pack)
         add(specialist("vanessas_farming_shop", "Vanessa's Farming Shop", "npc_vanessa").prices(1000, 700, 10).sell("rake", 500)
                 .sell("seed_dibber", 500).sell("secateurs", 500).sell("spade", 500).sell("gardening_trowel", 500)
-                .sell("watering_can", 500, 8).sell("filled_plant_pot", 500).sell("compost", 500)
+                .sell("watering_can", 500, 8).sell("filled_plant_pot", 500).sell("compost", 500).sell("empty_sack", 500)
                 .sell("minecraft:bucket", 100, 2).sell("potato", 0).sell("onion", 0).sell("cabbage", 0).sell("tomato", 0)
                 .sell("sweetcorn", 0).sell("strawberry", 0).sell("watermelon", 0).sell("hammerstone_hops", 0)
                 .sell("asgarnian_hops", 0).sell("yanillian_hops", 0).sell("krandorian_hops", 0).sell("wildblood_hops", 0)
@@ -433,6 +433,11 @@ public final class Shops {
                 .greeting("Good day to you. Are you after some fine gnome produce?"));
 
         // ------------------------------------------------------------- Karamja
+        // Solihib's Food Stall, Ape Atoll (keeper defined by the skilling module; stock approx.): monkey nuts
+        // and monkey bars for the spirit tree protection fee.
+        add(specialist("solihibs_food_stall", "Solihib's Food Stall", "solihib").prices(1000, 600, 10).sell("banana", 10)
+                .sell("monkey_nuts", 10).sell("monkey_bar", 5)
+                .greeting("Ook! Food for sale, the finest on Ape Atoll."));
         // OSRS Wiki: Fernahei's Fishing Hut (not in RuneCraft: Bait pack, Feather pack)
         add(specialist("fernaheis_fishing_hut", "Fernahei's Fishing Hut", "npc_fernahei").prices(1000, 700, 10)
                 .sell("fishing_rod", 5).sell("fly_fishing_rod", 5).sell("fishing_bait", 200).sell("minecraft:feather", 800, 2)

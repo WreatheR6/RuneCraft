@@ -82,7 +82,7 @@ final class ItemHooks {
         HANDLED.addAll(FletchingData.THROWN);
         PrayerData.ASHES.forEach(a -> HANDLED.add(a.id()));
         HANDLED.addAll(java.util.List.of("casket", "oyster", "bird_nest_seeds", "bird_nest_ring", "infernal_eel", "trawling_net",
-                "unfermented_wine"));
+                "unfermented_wine", "empty_sack", "hay_sack"));
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
             ItemStack stack = player.getStackInHand(hand);
@@ -201,6 +201,42 @@ final class ItemHooks {
             }
             case "tinderbox" -> {
                 return GatheringHooks.lightModLogs(player);
+            }
+            case "empty_sack" -> {
+                // Fill a sack with hay from a hay bale next to you (OSRS: haystacks and hay bales).
+                net.minecraft.util.math.BlockPos at = player.getBlockPos();
+                boolean hay = false;
+                for (net.minecraft.util.math.BlockPos p : net.minecraft.util.math.BlockPos.iterate(at.add(-2, -1, -2), at.add(2, 2, 2))) {
+                    if (player.getWorld().getBlockState(p).isOf(net.minecraft.block.Blocks.HAY_BLOCK)) {
+                        hay = true;
+                        break;
+                    }
+                }
+                if (!hay) {
+                    Msg.game(player, "Stand next to some hay to fill the sack.");
+                    return true;
+                }
+                stack.decrement(1);
+                SkillingUtil.give(player, "hay_sack", 1);
+                Msg.action(player, "You fill the sack with hay.");
+                return true;
+            }
+            case "hay_sack" -> {
+                // Scarecrow (OSRS, 23 Farming, 25 XP): a bronze spear through the hay sack, a watermelon for its head.
+                if (!SkillingUtil.need(player, Skill.FARMING, 23, "make a scarecrow")) {
+                    return true;
+                }
+                if (!Inv.has(player, "bronze_spear", 1) || !Inv.has(player, "watermelon", 1)) {
+                    Msg.game(player, "You need a bronze spear and a watermelon to make a scarecrow.");
+                    return true;
+                }
+                stack.decrement(1);
+                Inv.remove(player, "bronze_spear", 1);
+                Inv.remove(player, "watermelon", 1);
+                SkillingUtil.give(player, "scarecrow", 1);
+                XpService.add(player, Skill.FARMING, 25.0);
+                Msg.action(player, "You push the spear through the hay sack and put the watermelon on top. A scarecrow!");
+                return true;
             }
             default -> {
             }

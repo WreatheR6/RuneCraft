@@ -36,7 +36,7 @@ final class AsgarniaKandarinQuests {
         b.place("lumbridge_swamp_camp", "Adventurers' camp", 3150, 3206, PlaceDef.Style.CAMP);
         b.spot("zanaris_shed", "Lumbridge Swamp shed", 3202, 3169);
         // Zanaris is an instanced realm in OSRS (2412, 4434); it is placed beside the shed that leads to it.
-        b.places.add(PlaceDef.town("quest_zanaris", "Zanaris", 3168, 3158, Station.BANK_BOOTH, Station.GENERAL_STORE, Station.HERB_PATCH));
+        b.places.add(PlaceDef.town("quest_zanaris", "Zanaris", 3168, 3158, Station.BANK_BOOTH, Station.GENERAL_STORE));
         b.place("entrana", "Entrana", 2834, 3335, PlaceDef.Style.TOWN);
         b.spot("almeras_house", "Almera's house", 2521, 3495);
         b.spot("hadleys_house", "Hadley's house", 2518, 3429);

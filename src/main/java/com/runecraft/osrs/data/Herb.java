@@ -15,7 +15,9 @@ public enum Herb {
     CADANTINE("cadantine", "Cadantine", 65, 12.5, 67, 106.5, 120.0, 0x5A7A4A, 65),
     LANTADYME("lantadyme", "Lantadyme", 67, 13.1, 73, 134.5, 151.5, 0x7A9A5A, 67),
     DWARF_WEED("dwarf_weed", "Dwarf weed", 70, 13.8, 79, 170.5, 192.0, 0x5A8A2A, 70),
-    TORSTOL("torstol", "Torstol", 75, 15.0, 85, 199.5, 224.5, 0x9A8A3A, 75);
+    TORSTOL("torstol", "Torstol", 75, 15.0, 85, 199.5, 224.5, 0x9A8A3A, 75),
+    /** Varlamore herb (grown in herb patches at Farming 65); cleaning XP approx. Keep last: patch states store the ordinal. */
+    HUASCA("huasca", "Huasca", 58, 11.8, 65, 86.0, 110.0, 0x6A9A4A, 58);
 
     private final String id;
     private final String name;
@@ -97,6 +99,7 @@ public enum Herb {
             case LANTADYME -> 69;
             case DWARF_WEED -> 72;
             case TORSTOL -> 78;
+            case HUASCA -> 58;
         };
     }
 
@@ -121,6 +124,7 @@ public enum Herb {
             case LANTADYME -> 64;
             case DWARF_WEED -> 67;
             case TORSTOL -> 71;
+            case HUASCA -> 60; // approx (between cadantine and lantadyme, like its level)
         };
     }
 

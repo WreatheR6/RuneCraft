@@ -64,7 +64,8 @@ public final class Drops {
             Allotment[] a = Allotment.values();
             return a[Math.min(a.length - 1, (int) Math.floor(Math.pow(random.nextDouble(), 2) * a.length))].seedItem();
         }
-        Herb[] herbs = Herb.values();
+        // Huasca seeds only come from Varlamore (not the general seed drop table).
+        Herb[] herbs = java.util.Arrays.stream(Herb.values()).filter(h -> h != Herb.HUASCA).toArray(Herb[]::new);
         return herbs[Math.min(herbs.length - 1, (int) Math.floor(Math.pow(random.nextDouble(), 2.5) * herbs.length))].seedItem();
     }
 }

@@ -51,7 +51,7 @@ final class KandarinGnomes {
         k.fence(2450, 3436, 2454, 3440, "minecraft:jungle_fence");
         k.tClear(2452, 3440, 2452, 3440, 0, 0);
         k.floor(2451, 3437, 2453, 3439, "minecraft:farmland[moisture=7]");
-        k.tFill(2452, 3438, 2452, 3438, 0, 0, "runecraft:herb_patch");
+        k.tFill(2452, 3438, 2452, 3438, 0, 0, "minecraft:wheat[age=7]"); // a vegetable plot (no herb patch in OSRS)
         k.at(2451, 3437, -1, WATER);
 
         // Gnome huts

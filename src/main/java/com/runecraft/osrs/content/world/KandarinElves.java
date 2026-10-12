@@ -248,6 +248,29 @@ final class KandarinElves {
             }
             k.bigTree(tx, tz, 8, 4, "minecraft:birch_log", "minecraft:cherry_leaves");
         }
+        prifddinasFarm(k);
         return k.build();
+    }
+
+    /**
+     * The Prifddinas farming patches (OSRS: two allotments, a flower patch, a compost bin and the crystal
+     * tree patch, in the north-east of the city; exact spot approx.). Laid out in an open space between
+     * the clan halls (checked against this structure's blocks) so nothing of the city is overwritten.
+     * The gardener and tool leprechaun come from the farming module's "prifddinas_farm" place.
+     */
+    private static void prifddinasFarm(KandarinKit k) {
+        int fx = KandarinKit.X(3290);
+        int fz = KandarinKit.Z(6122);
+        k.fill(fx, -1, fz, fx + 9, -1, fz + 6, "minecraft:coarse_dirt");
+        k.fenceB(fx - 1, fz - 1, fx + 10, fz + 7, "minecraft:birch_fence");
+        k.clear(fx + 4, 0, fz + 7, fx + 5, 0, fz + 7);
+        k.fill(fx + 1, -1, fz + 2, fx + 5, -1, fz + 2, "minecraft:farmland[moisture=7]");
+        k.fill(fx + 1, -1, fz + 4, fx + 5, -1, fz + 4, WATER);
+        k.set(fx + 1, 0, fz + 2, "runecraft:allotment_patch");
+        k.set(fx + 3, 0, fz + 2, "runecraft:flower_patch");
+        k.set(fx + 5, 0, fz + 2, "runecraft:allotment_patch");
+        k.set(fx + 8, 0, fz + 1, "runecraft:compost_bin");
+        k.fill(fx + 7, -1, fz + 4, fx + 9, -1, fz + 6, "minecraft:moss_block");
+        k.set(fx + 8, 0, fz + 5, "runecraft:crystal_tree_patch");
     }
 }

@@ -33,7 +33,8 @@ public final class FarmingContractService {
             QuestApi.say(player, name, "Come back when you have level " + Tier.EASY.level + " Farming and I'll give you a contract.");
             return;
         }
-        Contract current = nbt.contains("crop") ? FarmingContracts.byCrop(nbt.getString("crop")) : null;
+        Tier saved = nbt.contains("tier") ? Tier.values()[Math.max(0, Math.min(Tier.values().length - 1, nbt.getInt("tier")))] : null;
+        Contract current = nbt.contains("crop") ? FarmingContracts.byCrop(nbt.getString("crop"), saved) : null;
         if (current != null && nbt.getBoolean("done")) {
             ItemStack pack = Inv.stack("seed_pack", 1);
             if (!pack.isEmpty()) {
@@ -58,12 +59,13 @@ public final class FarmingContractService {
             tier = t < 0 ? best : Tier.values()[Math.min(t, best.ordinal())];
         }
         Random random = player.getRandom();
-        Contract next = FarmingContracts.assign(tier, farming, random::nextInt);
+        Contract next = FarmingContracts.assign(tier, farming, current == null ? null : current.cropId(), random::nextInt);
         if (next == null) {
             QuestApi.say(player, name, "I don't have a contract for you at the moment.");
             return;
         }
         nbt.putString("crop", next.cropId());
+        nbt.putInt("tier", next.tier().ordinal());
         nbt.putBoolean("done", false);
         QuestApi.say(player, name, "I'd like you to grow " + SkillingUtil.lower(next.name()) + " for me ("
                 + SkillingUtil.lower(next.tier().name()) + " contract). Harvest it from any patch and come back.");
@@ -88,7 +90,7 @@ public final class FarmingContractService {
         int tier = stack.hasNbt() && stack.getNbt().contains(TIER_KEY) ? stack.getNbt().getInt(TIER_KEY) : 3;
         stack.decrement(1);
         Random random = player.getRandom();
-        for (int t : FarmingContracts.rollTiers(tier, random::nextInt)) {
+        for (int t : FarmingContracts.rolls(tier, random::nextInt)) {
             SkillingUtil.roll(player, FarmingContracts.table(t), random);
         }
         Msg.action(player, "You open the seed pack.");

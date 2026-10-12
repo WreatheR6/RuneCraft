@@ -107,12 +107,11 @@ final class AsgarniaNorth {
         k.f(wx - 2, 1, wz, wx - 2, 2, wz, mc("spruce_fence"));
         k.f(wx + 2, 1, wz, wx + 2, 2, wz, mc("spruce_fence"));
         k.f(wx - 2, 3, wz, wx + 2, 3, wz, mc("spruce_slab[type=bottom]"));
-        // herb patch
+        // garden plot (Taverley has no herb patch in OSRS; its farming patch is the tree patch south-east of town)
         k.floor(2903, 3435, 2906, 3437, mc("coarse_dirt"));
         k.fenceRing(2903, 3435, 2906, 3437, mc("spruce_fence"));
         k.clearT(2904, 3437, 2904, 3437, 0, 0);
-        k.st(2905, 3436, 0, rc("herb_patch"));
-        k.st(2903, 3436, 0, rc("compost_bin"));
+        k.st(2905, 3436, 0, mc("potted_fern"));
         // shops
         AsgarniaRoom jatix = k.house(STONE, 2895, 3425, 2901, 3431, 1, "north", PITCHED);
         jatix.shop(rc("apothecary_table"), mc("spruce_slab[type=top]"), mc("brewing_stand"), mc("flower_pot"),

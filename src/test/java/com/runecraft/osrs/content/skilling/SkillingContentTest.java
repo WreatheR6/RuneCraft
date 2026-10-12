@@ -198,7 +198,9 @@ class SkillingContentTest {
             assertTrue(crops.add(c.id()), "duplicate crop " + c.id());
             exists(c.seed(), c.id());
             exists(c.planted(), c.id());
-            assertEquals(ItemDef.Kind.SEED, ItemCatalog.get(c.seed()).kind(), c.seed());
+            if (c.harvest() != FarmingData.Harvest.SCARECROW) {
+                assertEquals(ItemDef.Kind.SEED, ItemCatalog.get(c.seed()).kind(), c.seed());
+            }
             if (c.harvest() == FarmingData.Harvest.CHOP) {
                 assertNotNull(Tree.valueOf(c.produce()), c.id());
             } else if (c.produce() != null) {

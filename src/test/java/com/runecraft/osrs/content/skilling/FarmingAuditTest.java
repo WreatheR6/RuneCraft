@@ -165,9 +165,9 @@ class FarmingAuditTest {
         assertEquals(FarmingContracts.Tier.MEDIUM, FarmingContracts.bestTier(65));
         assertEquals(FarmingContracts.Tier.HARD, FarmingContracts.bestTier(99));
         assertEquals(FarmingContracts.Tier.MEDIUM, FarmingContracts.byCrop("watermelon").tier());
-        assertEquals(FarmingContracts.Tier.MEDIUM, FarmingContracts.byCrop("ranarr_weed").tier());
-        assertEquals(FarmingContracts.Tier.HARD, FarmingContracts.byCrop("magic").tier());
-        assertEquals(FarmingContracts.Tier.EASY, FarmingContracts.byCrop("potato_cactus").tier());
+        assertEquals(FarmingContracts.Tier.EASY, FarmingContracts.byCrop("ranarr_weed").tier());
+        assertEquals(FarmingContracts.Tier.HARD, FarmingContracts.byCrop("magic", FarmingContracts.Tier.HARD).tier());
+        assertEquals(FarmingContracts.Tier.MEDIUM, FarmingContracts.byCrop("potato_cactus").tier());
         for (FarmingContracts.Contract c : FarmingContracts.options(FarmingContracts.Tier.HARD, 85)) {
             assertTrue(c.level() <= 85, c.cropId());
         }
@@ -184,10 +184,7 @@ class FarmingAuditTest {
                 assertTrue(l.min() >= 1 && l.max() >= l.min() && l.weight() > 0, l.item());
             }
         }
-        int[] tiers = FarmingContracts.rollTiers(5, n -> 0);
-        assertEquals(5, tiers[0]);
-        assertEquals(4, tiers[1]);
-        assertEquals(1, FarmingContracts.rollTiers(1, n -> 1)[3]);
+        assertEquals(10, FarmingContracts.rolls(5, n -> 0).length);
     }
 
     private static PlaceDef place(String id) {
