@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "runecraft:block/module/blast_furnace_conveyor"
+    }
+  }
+}

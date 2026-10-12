@@ -182,7 +182,7 @@ public final class ThievingData extends SkillingPart {
                         List.of("fruit_stall", "fruit_stall")),
                 PlaceDef.of("varrock_tea_stall", "Varrock tea stall", 3270, 3410, PlaceDef.Style.TOWN, List.of("tea_stall")),
                 PlaceDef.of("keldagrim_stalls", "Keldagrim market", 2765, 3712, PlaceDef.Style.CAVE,
-                        List.of("crossbow_stall")),
+                        List.of("crossbow_stall", "blast_furnace_stairs")),
                 PlaceDef.of("ape_atoll_stalls", "Ape Atoll market", 2760, 2785, PlaceDef.Style.CAMP,
                         List.of("magic_stall", "scimitar_stall")),
                 PlaceDef.of("lovakengj_ore_stall", "Lovakengj ore stall", 1490, 3770, PlaceDef.Style.TOWN, List.of("ore_stall")));
