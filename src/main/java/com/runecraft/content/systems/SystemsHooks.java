@@ -123,7 +123,35 @@ public final class SystemsHooks implements ModuleHooks {
             return DiaryRewards.pickpocketMultiplier(Diaries.tierComplete(sp.diaryDone, "ardougne", Diaries.Tier.MEDIUM),
                     Diaries.tierComplete(sp.diaryDone, "ardougne", Diaries.Tier.HARD), DiaryService.inArea(p, "ardougne"));
         };
-        com.runecraft.content.dungeons.BarrowsHooks.runeBonus = p -> DiaryRewards.barrowsRuneMultiplier(
+        // Thieving gear in the extra slots: Thieving cape, rogue gloves, the dodgy necklace (25%, 10 charges kept
+        // on the worn necklace) and the Ardougne diary's larger coin pouch stack.
+        com.runecraft.skill.ThievingService.wearingExtra = (p, id) -> SysState.of(p).wearing(id);
+        com.runecraft.skill.ThievingService.dodgyNecklace = p -> {
+            SysState.SysPlayer sp = SysState.of(p);
+            net.minecraft.item.ItemStack neck = sp.worn(Jewellery.Slot.NECK);
+            if (neck.isEmpty() || !com.runecraft.util.Inv.idOf(neck).equals("dodgy_necklace")
+                    || p.getRandom().nextDouble() >= com.runecraft.osrs.data.Thieving.DODGY_NECKLACE_CHANCE) {
+                return false;
+            }
+            net.minecraft.nbt.NbtCompound nbt = neck.getOrCreateNbt();
+            int used = nbt.getInt("DodgyUsed") + 1;
+            if (used >= com.runecraft.osrs.data.Thieving.DODGY_NECKLACE_CHARGES) {
+                sp.worn.remove(Jewellery.Slot.NECK);
+                Msg.red(p, "Your dodgy necklace crumbles to dust.");
+            } else {
+                nbt.putInt("DodgyUsed", used);
+            }
+            SysNet.sendState(p);
+            return true;
+        };
+        com.runecraft.skill.ThievingService.coinPouchLimit = p -> {
+            SysState.SysPlayer sp = SysState.of(p);
+            int tier = Diaries.tierComplete(sp.diaryDone, "ardougne", Diaries.Tier.ELITE) ? 4
+                    : Diaries.tierComplete(sp.diaryDone, "ardougne", Diaries.Tier.HARD) ? 3
+                    : Diaries.tierComplete(sp.diaryDone, "ardougne", Diaries.Tier.MEDIUM) ? 2 : 0;
+            return com.runecraft.osrs.data.Thieving.coinPouchLimit(tier);
+        };
+        com.runecraft.content.dungeons.BarrowsHooks.runeBonus = p ->DiaryRewards.barrowsRuneMultiplier(
                 Diaries.tierComplete(SysState.of(p).diaryDone, "morytania", Diaries.Tier.ELITE));
         com.runecraft.content.minigames.RewardShopService.costAdjuster = (p, shop, amount) -> shop.equals("tzhaar")
                 ? DiaryRewards.tzhaarPrice(amount, SysState.of(p).wornId(Jewellery.Slot.HANDS).startsWith("karamja_gloves_")) : amount;

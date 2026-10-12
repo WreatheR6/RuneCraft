@@ -1,18 +1,17 @@
 package com.runecraft.content.skilling;
 
-import com.runecraft.combat.CombatHandler;
 import com.runecraft.content.BlockHooks;
 import com.runecraft.entity.QuestNpcEntity;
 import com.runecraft.network.ServerNetworking;
-import com.runecraft.osrs.Chance;
+import com.runecraft.osrs.data.Thieving;
+import com.runecraft.osrs.content.skilling.Loot;
+import com.runecraft.skill.ThievingService;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.skilling.ThievingData;
 import com.runecraft.quest.QuestScripts;
 import com.runecraft.skill.Stun;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -32,36 +31,78 @@ final class ThievingHooks {
         for (ThievingData.Container c : ThievingData.CONTAINERS) {
             BlockHooks.register(c.blockId(), (player, pos, state) -> steal(player, pos, c));
         }
+        QuestScripts.onTalk(ThievingData.BLACKJACK_SELLER, (player, npc) -> blackjackSeller(player));
+    }
+
+    /** Knocked-out blackjacking targets: entity -> {game tick they wake, pickpockets left}. */
+    private static final java.util.Map<java.util.UUID, long[]> KNOCKED_OUT = new java.util.HashMap<>();
+
+    /** The blackjack seller in Pollnivneach: sells an ordinary willow blackjack once The Feud is done. */
+    private static void blackjackSeller(ServerPlayerEntity player) {
+        if (!com.runecraft.quest.QuestApi.isComplete(player, "the_feud")) {
+            com.runecraft.quest.QuestApi.say(player, "Blackjack seller", "Blackjacks? Never heard of 'em. Maybe ask around town first.");
+            return;
+        }
+        int price = 192; // approx.
+        if (!com.runecraft.util.Inv.has(player, com.runecraft.util.Inv.COINS, price)) {
+            com.runecraft.quest.QuestApi.say(player, "Blackjack seller", "A willow blackjack is " + price + " coins. Come back when you have it.");
+            return;
+        }
+        com.runecraft.util.Inv.remove(player, com.runecraft.util.Inv.COINS, price);
+        SkillingUtil.give(player, "willow_blackjack", 1);
+        com.runecraft.quest.QuestApi.say(player, "Blackjack seller", "One willow blackjack. Knock 'em out, then help yourself to their pockets.");
+        ServerNetworking.sync(player);
     }
 
     private static void pickpocket(ServerPlayerEntity player, QuestNpcEntity npc, ThievingData.Target t) {
+        long now = com.runecraft.action.ActionManager.gameTick();
+        long[] ko = KNOCKED_OUT.get(npc.getUuid());
+        boolean unconscious = ko != null && ko[0] > now && ko[1] > 0;
+        if (ko != null && !unconscious) {
+            KNOCKED_OUT.remove(npc.getUuid());
+        }
+        // Blackjacking: with a blackjack in hand, knock the target out first; while it is out cold
+        // (two pickpockets) the pickpocket always succeeds.
+        if (!unconscious && ThievingData.BLACKJACK_TARGETS.contains(t.npcId())
+                && ThievingData.BLACKJACKS.contains(com.runecraft.util.Inv.idOf(player.getMainHandStack()))) {
+            knockOut(player, npc, t, now);
+            return;
+        }
+        if (unconscious) {
+            ko[1]--;
+        }
+        ThievingService.attempt(player, npc, new ThievingService.Target(t.name(), t.level(), t.xp(), t.low(), t.high(), t.stunDamage(),
+                Thieving.pouchForNpc(t.npcId())), out -> {
+            for (Loot l : t.always()) {
+                out.accept(l.item(), l.amount(player.getRandom().nextDouble()));
+            }
+            if (!t.table().isEmpty()) {
+                Loot l = Loot.pick(t.table(), player.getRandom().nextInt(Loot.totalWeight(t.table())));
+                out.accept(l.item(), l.amount(player.getRandom().nextDouble()));
+            }
+        }, unconscious);
+    }
+
+    private static void knockOut(ServerPlayerEntity player, QuestNpcEntity npc, ThievingData.Target t, long now) {
         if (!Stun.check(player)) {
             return;
         }
-        if (!SkillingUtil.need(player, Skill.THIEVING, t.level(), "pickpocket the " + SkillingUtil.lower(t.name()))) {
+        if (!com.runecraft.quest.QuestApi.isComplete(player, "the_feud")) {
+            Msg.game(player, "You need to complete The Feud to knock people out with a blackjack.");
             return;
         }
-        Msg.action(player, "You attempt to pick the " + SkillingUtil.lower(t.name()) + "'s pocket.");
+        if (!SkillingUtil.need(player, Skill.THIEVING, t.level(), "knock out the " + SkillingUtil.lower(t.name()))) {
+            return;
+        }
         player.swingHand(Hand.MAIN_HAND, true);
-        int level = SkillingUtil.level(player, Skill.THIEVING);
-        if (player.getRandom().nextDouble() < com.runecraft.skill.ThievingService.pickpocketChance(player,
-                Chance.lerp(level, t.low(), t.high()))) {
-            SkillingUtil.giveAll(player, t.always(), player.getRandom());
-            SkillingUtil.roll(player, t.table(), player.getRandom());
-            XpService.add(player, Skill.THIEVING, t.xp());
-            Msg.action(player, "You pick the " + SkillingUtil.lower(t.name()) + "'s pocket.");
-            ServerNetworking.sync(player);
+        String who = SkillingUtil.lower(t.name());
+        if (player.getRandom().nextDouble() < ThievingData.knockoutChance(t, SkillingUtil.level(player, Skill.THIEVING))) {
+            KNOCKED_OUT.put(npc.getUuid(), new long[]{now + ThievingData.KNOCKOUT_TICKS, 2});
+            Msg.action(player, "You smack the " + who + " over the head and render them unconscious.");
         } else {
-            Msg.game(player, "You fail to pick the " + SkillingUtil.lower(t.name()) + "'s pocket.");
-            if (com.runecraft.skill.ThievingService.failUnnoticed.test(player)) {
-                Msg.game(player, "Your attempt goes unnoticed.");
-                return;
-            }
-            Msg.red(player, "You have been stunned!");
+            Msg.game(player, "Your blow only glances off the " + who + "'s head.");
             npc.swingHand(Hand.MAIN_HAND);
-            CombatHandler.applyDamage(npc, player, 1 + player.getRandom().nextInt(t.stunDamage()));
-            player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 4, false, false));
-            Stun.apply(player, 8);
+            com.runecraft.combat.CombatHandler.applyDamage(npc, player, Math.max(1, t.stunDamage()));
         }
     }
 

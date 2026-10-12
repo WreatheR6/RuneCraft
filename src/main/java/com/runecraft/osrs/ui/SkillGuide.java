@@ -211,6 +211,12 @@ public final class SkillGuide {
         for (ThievingData.Container c : ThievingData.CONTAINERS) {
             b.add(Skill.THIEVING, c.level(), c.name());
         }
+        for (com.runecraft.osrs.content.skilling.AgilityShortcuts.Shortcut s
+                : com.runecraft.osrs.content.skilling.AgilityShortcuts.SHORTCUTS) {
+            if (s.level() > 0) {
+                b.add(Skill.AGILITY, s.level(), "Shortcut: " + s.name());
+            }
+        }
         for (HunterData.Impling i : HunterData.IMPLINGS) {
             b.add(Skill.HUNTER, i.level(), i.name());
         }

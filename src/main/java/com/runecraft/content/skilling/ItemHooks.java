@@ -81,6 +81,7 @@ final class ItemHooks {
         SailingData.WRECKS.forEach(w -> HANDLED.add(w.salvage()));
         HANDLED.addAll(FletchingData.THROWN);
         PrayerData.ASHES.forEach(a -> HANDLED.add(a.id()));
+        com.runecraft.osrs.data.Thieving.COIN_POUCHES.forEach(p -> HANDLED.add(p.itemId()));
         HANDLED.addAll(java.util.List.of("casket", "oyster", "bird_nest_seeds", "bird_nest_ring", "infernal_eel", "trawling_net",
                 "unfermented_wine", "empty_sack", "hay_sack"));
 
@@ -115,6 +116,9 @@ final class ItemHooks {
 
     /** Returns true if handled. */
     private static boolean use(ServerPlayerEntity player, ItemStack stack, Hand hand, String id) {
+        if (com.runecraft.skill.ThievingService.openPouches(player, id)) {
+            return true;
+        }
         PrayerData.Ashes ashes = PrayerData.ashes(id);
         if (ashes != null) {
             scatter(player, stack, ashes);

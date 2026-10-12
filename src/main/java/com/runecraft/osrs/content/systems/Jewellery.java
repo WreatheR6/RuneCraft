@@ -171,6 +171,7 @@ public final class Jewellery {
         wornExternal("obsidian_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 0, 0, 0, 0));
         wornExternal("graceful_cape", Slot.CAPE, NONE);   // item defined by the skilling module
         wornExternal("graceful_gloves", Slot.HANDS, NONE); // item defined by the skilling module
+        wornExternal("rogue_gloves", Slot.HANDS, s(0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0)); // minigames module (Rogues' Den); counts for rogue double loot
         wornExternal("spotted_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0));   // skilling module (Hunter)
         wornExternal("spottier_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0)); // skilling module (Hunter)
         wornExternal("ectophial", Slot.NECK, NONE);

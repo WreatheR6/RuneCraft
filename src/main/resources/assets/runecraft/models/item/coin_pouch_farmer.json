@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "runecraft:item/coin_pouch_farmer"
+  }
+}

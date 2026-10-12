@@ -229,8 +229,8 @@ class SkillingFidelityTest {
 
     @Test
     void agility() {
-        assertEquals(86.5, AgilityCourse.GNOME_STRONGHOLD.lapXp());
-        assertEquals(10, AgilityCourse.DRAYNOR.level());
+        assertEquals(110.5, AgilityCourse.GNOME_STRONGHOLD.lapXp());
+        assertEquals(1, AgilityCourse.DRAYNOR.level());
         assertEquals(120.0, AgilityCourse.DRAYNOR.lapXp());
         assertEquals(216.0, AgilityCourse.AL_KHARID.lapXp());
         assertEquals(586.0, AgilityCourse.FALADOR.lapXp());

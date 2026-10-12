@@ -384,7 +384,8 @@ public final class LandmarkBuilder {
             set(world, new BlockPos(cx, y, cz), Blocks.WATER.getDefaultState());
         }
         AgilityCourse course = AgilityCourse.at(landmark);
-        if (course != null) {
+        // Courses with OSRS obstacle tiles are placed by the skilling module's agility placer instead.
+        if (course != null && com.runecraft.osrs.data.AgilityLayouts.tiles(course).isEmpty()) {
             buildCourse(world, course, cx + radius + 4, y, cz - radius);
         }
         spawnNpcs(world, landmark, cx, y + 1, cz);
