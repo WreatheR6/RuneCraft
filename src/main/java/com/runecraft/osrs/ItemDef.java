@@ -22,6 +22,7 @@ public final class ItemDef {
     private String tier;
     private int rangedStrength;
     private String examine;
+    private double weight;
 
     public ItemDef(String id, String name, Kind kind, String shape, int color) {
         this.id = id;
@@ -66,6 +67,12 @@ public final class ItemDef {
         return this;
     }
 
+    /** OSRS weight in kg (negative for weight-reducing gear such as Graceful). */
+    public ItemDef weight(double kg) {
+        this.weight = kg;
+        return this;
+    }
+
     /** Registry path in the runecraft namespace. */
     public String id() {
         return id;
@@ -94,11 +101,11 @@ public final class ItemDef {
     }
 
     public int lowAlch() {
-        return (int) Math.floor(value * 0.4);
+        return (int) ((long) value * 2 / 5);
     }
 
     public int highAlch() {
-        return (int) Math.floor(value * 0.6);
+        return (int) ((long) value * 3 / 5);
     }
 
     public int maxStack() {
@@ -125,5 +132,10 @@ public final class ItemDef {
 
     public String examine() {
         return examine;
+    }
+
+    /** OSRS weight in kg (0 if unknown). */
+    public double weight() {
+        return weight;
     }
 }

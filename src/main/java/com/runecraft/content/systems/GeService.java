@@ -22,7 +22,8 @@ import java.util.UUID;
 
 /**
  * The Grand Exchange: buy/sell offers matched between players (persisted), plus an NPC market that
- * trades at the guide price (item value) with a 5% margin so solo players can always trade.
+ * trades at the guide price (OSRS Grand Exchange price, else store value) with a 5% margin so solo players
+ * can always trade. Buys are capped by the OSRS 4-hour buy limits.
  */
 public final class GeService {
     /** Where (and when, in game ticks) each player last opened the exchange at a booth or clerk. */
@@ -43,7 +44,7 @@ public final class GeService {
 
     static int guide(String item) {
         ItemDef d = ItemCatalog.get(item);
-        return d == null ? 0 : d.value();
+        return d == null ? 0 : GrandExchange.guidePrice(d.id(), d.value());
     }
 
     /** Resolves an item id or display name. */
@@ -84,6 +85,12 @@ public final class GeService {
             Integer last = state.lastPrices().get(def.id());
             s.line(def.name() + " - guide price " + GrandExchange.formatGp(g) + " gp" + (last != null ? ", last traded " + GrandExchange.formatGp(last) + " gp" : "")
                     + ". Instant: buy " + GrandExchange.npcBuyPrice(g) + " / sell " + GrandExchange.npcSellPrice(g), 0xFFD700);
+            int limit = com.runecraft.osrs.data.GePrices.buyLimit(def.id());
+            if (limit > 0) {
+                s.line("Buy limit: " + String.format(Locale.ROOT, "%,d", limit) + " per 4 hours ("
+                        + String.format(Locale.ROOT, "%,d", Math.min(limit, state.ge().buyLimitRemaining(p.getUuidAsString(), def.id(), SysTicks.now())))
+                        + " left).", 0xC0C0C0);
+            }
         }
         List<Offer> mine = state.ge().offersOf(p.getUuidAsString());
         s.line("Your offers (" + mine.size() + "/" + GrandExchange.MAX_OFFERS + "):", 0xC0C0C0);
@@ -159,7 +166,7 @@ public final class GeService {
             open(p, null, "You can't trade coins.");
             return;
         }
-        if (com.runecraft.osrs.data.Untradeables.untradeable(def.id())) {
+        if (com.runecraft.osrs.data.Untradeables.untradeable(def.id()) || com.runecraft.osrs.data.ItemValues.offGrandExchange(def.id())) {
             open(p, def.id(), "That item can't be traded on the Grand Exchange.");
             return;
         }
@@ -172,6 +179,13 @@ public final class GeService {
         long total = (long) qty * price;
         switch (action) {
             case "ibuy" -> {
+                int left = ge.buyLimitRemaining(uuid, def.id(), SysTicks.now());
+                if (left <= 0) {
+                    long mins = (ge.buyLimitResets(uuid, def.id(), SysTicks.now()) - SysTicks.now()) * 6 / 600;
+                    open(p, def.id(), "You've reached the buy limit for " + def.name() + ". It resets in about " + Math.max(1, mins) + " minutes.");
+                    return;
+                }
+                qty = Math.min(qty, left);
                 int each = GrandExchange.npcBuyPrice(guide(def.id()));
                 long cost = (long) each * qty;
                 if (!Inv.has(p, "coins", (int) Math.min(Integer.MAX_VALUE, cost)) || cost > Integer.MAX_VALUE) {
@@ -180,6 +194,7 @@ public final class GeService {
                 }
                 Inv.remove(p, "coins", (int) cost);
                 Inv.give(p, def.id(), qty);
+                ge.recordBought(uuid, def.id(), qty, SysTicks.now());
                 state.lastPrices().put(def.id(), each);
                 traded(p.getServer(), uuid);
                 ServerNetworking.sync(p);
@@ -221,7 +236,7 @@ public final class GeService {
                 Offer offer = ge.create(uuid, def.id(), buy, qty, price, SysTicks.now());
                 List<GrandExchange.Trade> trades = ge.place(offer);
                 handleTrades(p.getServer(), trades);
-                ge.npcFill(GeService::guide);
+                ge.npcFill(GeService::guide, SysTicks.now());
                 if (offer.complete() && trades.isEmpty()) {
                     state.lastPrices().put(def.id(), buy ? GrandExchange.npcBuyPrice(guide(def.id())) : GrandExchange.npcSellPrice(guide(def.id())));
                     traded(p.getServer(), uuid);
@@ -309,7 +324,7 @@ public final class GeService {
     public static void minute(MinecraftServer server) {
         SysState state = SysState.get(server);
         int before = (int) state.ge().offers().stream().filter(Offer::complete).count();
-        state.ge().npcFill(GeService::guide);
+        state.ge().npcFill(GeService::guide, SysTicks.now());
         int after = (int) state.ge().offers().stream().filter(Offer::complete).count();
         if (after > before) {
             for (Offer o : state.ge().offers()) {

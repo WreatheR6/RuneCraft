@@ -307,6 +307,8 @@ public final class ItemCatalog {
         // --- Reference OSRS bonuses / attack speeds override whatever the defining module wrote ---
         for (ItemDef def : ITEMS.values()) {
             com.runecraft.osrs.data.EquipmentBonuses.apply(def);
+            // Reference OSRS store value, weight, stackability and examine text (osrs/data/ItemValues).
+            com.runecraft.osrs.data.ItemValues.apply(def);
         }
     }
 

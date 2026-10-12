@@ -47,7 +47,7 @@ public final class RunEnergyService {
                         Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.FEET)), cape,
                         sp.wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.HANDS));
         if (p.isSprinting() && p.getVehicle() == null) {
-            sp.runEnergy = Math.max(0, sp.runEnergy - RunEnergy.drain(0, stamina));
+            sp.runEnergy = Math.max(0, sp.runEnergy - RunEnergy.drain(carriedWeight(p, sp), stamina));
             if (sp.runEnergy <= 0) {
                 // Out of energy: slow the player to walking pace (cancels the sprint speed bonus).
                 p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 30, 1, false, false));
@@ -62,6 +62,40 @@ public final class RunEnergyService {
         if (sp.runEnergy / 100 != before / 100) {
             SysNet.sendState(p);
         }
+    }
+
+    /**
+     * Carried weight in whole kg: OSRS weights (osrs/data/ItemValues) of everything in the inventory, armour
+     * slots, off-hand and accessory slots. Each inventory slot counts its item once, since a Minecraft stack
+     * stands in for one OSRS inventory slot (approx); worn Graceful pieces weigh less than nothing.
+     */
+    static int carriedWeight(ServerPlayerEntity p, SysState.SysPlayer sp) {
+        double kg = 0;
+        net.minecraft.entity.player.PlayerInventory inv = p.getInventory();
+        for (ItemStack stack : inv.main) {
+            kg += weightOf(stack, false);
+        }
+        for (ItemStack stack : inv.armor) {
+            kg += weightOf(stack, true);
+        }
+        for (ItemStack stack : inv.offHand) {
+            kg += weightOf(stack, true);
+        }
+        for (ItemStack worn : sp.worn.values()) {
+            kg += weightOf(worn, true);
+        }
+        return (int) Math.floor(kg);
+    }
+
+    private static double weightOf(ItemStack stack, boolean worn) {
+        if (stack == null || stack.isEmpty()) {
+            return 0;
+        }
+        com.runecraft.osrs.ItemDef def = com.runecraft.registry.ModItems.def(stack);
+        if (def == null) {
+            return 0;
+        }
+        return worn ? com.runecraft.osrs.data.ItemValues.wornWeight(def.id()) : def.weight();
     }
 
     /** Stamina potion / super energy / energy potion drinking (items defined by other modules, looked up by id). */
