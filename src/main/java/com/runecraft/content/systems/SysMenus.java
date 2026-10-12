@@ -91,6 +91,7 @@ public final class SysMenus {
             diary(p, area.id(), tier);
         });
         SysNet.onAction("clue", ClueService::action);
+        ClueService.registerPuzzles();
         SysNet.onAction("clues", (p, a, f) -> {
             ClueScrolls.Tier t = ClueScrolls.Tier.byScroll(a);
             if (t != null) {

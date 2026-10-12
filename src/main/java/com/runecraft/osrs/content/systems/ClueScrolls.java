@@ -16,7 +16,9 @@ import java.util.Random;
  * Treasure trails: clue tiers, step generation (coordinate and map digs, hot/cold digs with the strange
  * device, emote clues, anagrams, ciphers, cryptic clues and Charlie-style item fetches) at real Gielinor
  * coordinates and for the NPCs that exist in the world. Step counts and the step types each tier can roll
- * follow the OSRS wiki; puzzle boxes, light boxes and Falo the Bard are not simulated.
+ * follow the OSRS wiki. Medium and harder clues can hand over a puzzle box (a sliding puzzle: 3x3 on medium
+ * clues as a simplification, 5x5 from hard up), elite and master clues a light box, and master clues send
+ * the player to Falo the Bard with the item his song names (see {@link CluePuzzles}).
  */
 public final class ClueScrolls {
     public enum Tier {
@@ -88,7 +90,7 @@ public final class ClueScrolls {
         }
     }
 
-    public enum StepType { COORDINATE, MAP, ANAGRAM, CRYPTIC, CHARLIE, EMOTE, CIPHER, HOT_COLD }
+    public enum StepType { COORDINATE, MAP, ANAGRAM, CRYPTIC, CHARLIE, EMOTE, CIPHER, HOT_COLD, PUZZLE, LIGHT_BOX, FALO }
 
     /**
      * One clue step. Dig and emote steps use (x, y); talk steps use npcId (and item for Charlie steps).
@@ -119,11 +121,11 @@ public final class ClueScrolls {
             case BEGINNER -> List.of(StepType.ANAGRAM, StepType.CRYPTIC, StepType.EMOTE, StepType.HOT_COLD, StepType.MAP, StepType.CHARLIE);
             case EASY -> List.of(StepType.ANAGRAM, StepType.CRYPTIC, StepType.CRYPTIC, StepType.EMOTE, StepType.EMOTE, StepType.MAP);
             case MEDIUM, HARD -> List.of(StepType.ANAGRAM, StepType.CIPHER, StepType.COORDINATE, StepType.COORDINATE, StepType.CRYPTIC,
-                    StepType.EMOTE, StepType.MAP);
+                    StepType.EMOTE, StepType.MAP, StepType.PUZZLE);
             case ELITE -> List.of(StepType.ANAGRAM, StepType.COORDINATE, StepType.COORDINATE, StepType.CRYPTIC, StepType.EMOTE,
-                    StepType.MAP);
+                    StepType.MAP, StepType.PUZZLE, StepType.LIGHT_BOX);
             case MASTER -> List.of(StepType.ANAGRAM, StepType.COORDINATE, StepType.COORDINATE, StepType.CRYPTIC, StepType.EMOTE,
-                    StepType.HOT_COLD);
+                    StepType.HOT_COLD, StepType.PUZZLE, StepType.LIGHT_BOX, StepType.FALO);
         };
     }
 
@@ -239,8 +241,16 @@ public final class ClueScrolls {
         Random random = new Random(seed);
         int n = stepCount(tier, random);
         List<Step> steps = new ArrayList<>();
+        boolean falo = false;
         for (int i = 0; i < n; i++) {
-            steps.add(step(tier, random, npcs));
+            Step s = step(tier, random, npcs);
+            if (s.type() == StepType.FALO) {
+                if (falo) {
+                    s = talkStep(StepType.ANAGRAM, random, npcs, null);
+                }
+                falo = true;
+            }
+            steps.add(s);
         }
         return steps;
     }
@@ -248,10 +258,31 @@ public final class ClueScrolls {
     static Step step(Tier tier, Random random, List<Npc> npcs) {
         List<StepType> types = types(tier);
         StepType type = types.get(random.nextInt(types.size()));
-        if ((type == StepType.ANAGRAM || type == StepType.CRYPTIC || type == StepType.CHARLIE || type == StepType.CIPHER) && npcs.isEmpty()) {
+        if ((type == StepType.ANAGRAM || type == StepType.CRYPTIC || type == StepType.CHARLIE || type == StepType.CIPHER
+                || type == StepType.PUZZLE || type == StepType.LIGHT_BOX || type == StepType.FALO) && npcs.isEmpty()) {
             type = StepType.MAP;
         }
         switch (type) {
+            case PUZZLE -> {
+                return talkStep(type, random, npcs, CluePuzzles.PUZZLE_BOX);
+            }
+            case LIGHT_BOX -> {
+                return talkStep(type, random, npcs, CluePuzzles.LIGHT_BOX);
+            }
+            case FALO -> {
+                Npc falo = null;
+                for (Npc npc : npcs) {
+                    if (npc.id().equals(CluePuzzles.FALO)) {
+                        falo = npc;
+                    }
+                }
+                if (falo == null) {
+                    return talkStep(StepType.ANAGRAM, random, npcs, null);
+                }
+                CluePuzzles.Song song = CluePuzzles.SONGS.get(random.nextInt(CluePuzzles.SONGS.size()));
+                return new Step(type, "A bard's song is written on the scroll: \"" + song.verse() + "\" Bring Falo the Bard what it names.",
+                        falo.x(), falo.y(), falo.id(), falo.name(), song.item());
+            }
             case COORDINATE -> {
                 Spot s = spot(tier, random);
                 int x = s.x() + random.nextInt(9) - 4;
@@ -304,6 +335,18 @@ public final class ClueScrolls {
                         npc.x(), npc.y(), npc.id(), npc.name(), item);
             }
         }
+    }
+
+    /**
+     * A talk step: an anagram or cryptic clue naming an NPC; for puzzle and light box steps the NPC hands
+     * over the box (item) and gives the next clue once it is solved.
+     */
+    static Step talkStep(StepType type, Random random, List<Npc> npcs, String box) {
+        Npc npc = npcs.get(random.nextInt(npcs.size()));
+        String who = random.nextBoolean() ? "This anagram reveals who to speak to next: " + anagram(npc.name(), random) : cryptic(npc);
+        String text = box == null ? who : who + " They will hand you " + (box.equals(CluePuzzles.LIGHT_BOX) ? "a light box" : "a puzzle box")
+                + " to solve.";
+        return new Step(type, text, npc.x(), npc.y(), npc.id(), npc.name(), box);
     }
 
     private static Spot spot(Tier tier, Random random) {
@@ -439,7 +482,30 @@ public final class ClueScrolls {
     /** Dig steps succeed within this many tiles of the spot. */
     public static final int DIG_RADIUS = 4;
 
-    /** Clue scroll drop rate (1 in n) for a monster of the given combat level, or 0. Based on OSRS drop tables. */
+    /**
+     * Clue scroll drop rate (1 in n, 0 = none) for a monster: its OSRS wiki rate from {@link ClueDrops} when the
+     * table knows it, otherwise the combat-level fallback.
+     */
+    public static int dropOneIn(Tier tier, String monsterName, int combatLevel) {
+        int known = ClueDrops.oneIn(tier, monsterName);
+        return known >= 0 ? known : dropOneIn(tier, combatLevel);
+    }
+
+    /** Clue tiers a monster's own drop table already rolls (so the generic clue roll skips them). */
+    public static java.util.Set<Tier> ownClueTiers(java.util.Collection<com.runecraft.osrs.data.Drop> drops) {
+        java.util.Set<Tier> out = java.util.EnumSet.noneOf(Tier.class);
+        if (drops != null) {
+            for (com.runecraft.osrs.data.Drop d : drops) {
+                Tier t = Tier.byScroll(d.item());
+                if (t != null) {
+                    out.add(t);
+                }
+            }
+        }
+        return out;
+    }
+
+    /** Fallback clue scroll drop rate (1 in n) for a monster of the given combat level, or 0 (approx). */
     public static int dropOneIn(Tier tier, int combatLevel) {
         return switch (tier) {
             case BEGINNER -> combatLevel <= 25 ? 64 : 0;

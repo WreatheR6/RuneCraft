@@ -6,6 +6,7 @@ import com.runecraft.entity.QuestNpcEntity;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.content.systems.ClueRewards;
+import com.runecraft.osrs.content.systems.CluePuzzles;
 import com.runecraft.osrs.content.systems.ClueScrolls;
 import com.runecraft.osrs.content.systems.ClueScrolls.Step;
 import com.runecraft.osrs.content.systems.ClueScrolls.Tier;
@@ -86,6 +87,11 @@ public final class ClueService {
             s.button("emote:" + tier.name(), "Perform " + step.emote());
         } else if (step.type() == ClueScrolls.StepType.CHARLIE) {
             s.line("Talk to them while carrying the item.", 0xA0A0A0);
+        } else if (step.type() == ClueScrolls.StepType.FALO) {
+            s.line("Talk to Falo the Bard, north of Seers' Village, while carrying the item.", 0xA0A0A0);
+        } else if (step.type() == ClueScrolls.StepType.PUZZLE || step.type() == ClueScrolls.StepType.LIGHT_BOX) {
+            s.line("Talk to them for the " + (step.type() == ClueScrolls.StepType.PUZZLE ? "puzzle box" : "light box")
+                    + ", solve it, then talk to them again.", 0xA0A0A0);
         } else {
             s.line("Talk to the person this clue points to.", 0xA0A0A0);
         }
@@ -215,7 +221,19 @@ public final class ClueService {
                 continue;
             }
             String speaker = step.npcName() == null ? "Stranger" : step.npcName();
-            if (step.type() == ClueScrolls.StepType.CHARLIE) {
+            if (step.type() == ClueScrolls.StepType.PUZZLE || step.type() == ClueScrolls.StepType.LIGHT_BOX) {
+                if (!puzzleTalk(p, tier, step, speaker)) {
+                    return true;
+                }
+            } else if (step.type() == ClueScrolls.StepType.FALO) {
+                if (!Inv.has(p, step.item(), 1) && !sp.wearing(step.item())) {
+                    ItemDef d = ItemCatalog.get(step.item());
+                    say(p, speaker, "My song is not complete without " + (d == null ? step.item()
+                            : Msg.article(d.name().toLowerCase(Locale.ROOT))) + ". Come back when you have it with you.");
+                    return true;
+                }
+                say(p, speaker, "Ah, a fine " + step.item().replace('_', ' ') + "! The song is complete. Here is your reward.");
+            } else if (step.type() == ClueScrolls.StepType.CHARLIE) {
                 if (!Inv.has(p, step.item(), 1)) {
                     ItemDef d = ItemCatalog.get(step.item());
                     say(p, speaker, "Ah, a treasure hunter! Bring me " + (d == null ? step.item() : Msg.article(d.name().toLowerCase(Locale.ROOT)))
@@ -231,6 +249,133 @@ public final class ClueService {
             return true;
         }
         return false;
+    }
+
+    // ---------------- Puzzle boxes and light boxes ----------------
+
+    /** A puzzle handed over by a clue NPC (kept until the step is done; a restart re-scrambles it). */
+    private static final class Puzzle {
+        final Tier tier;
+        final CluePuzzles.Slider slider;
+        final CluePuzzles.LightBox lights;
+
+        Puzzle(Tier tier, CluePuzzles.Slider slider, CluePuzzles.LightBox lights) {
+            this.tier = tier;
+            this.slider = slider;
+            this.lights = lights;
+        }
+
+        boolean solved() {
+            return slider != null ? slider.solved() : lights.solved();
+        }
+    }
+
+    private static final java.util.Map<java.util.UUID, Puzzle> PUZZLES = new java.util.HashMap<>();
+
+    static void registerPuzzles() {
+        for (String id : new String[]{"grid3_puzzle", "grid5_puzzle", "grid5_lights"}) {
+            SysNet.onAction(id, ClueService::puzzleAction);
+        }
+    }
+
+    /** Talking to the NPC of a puzzle step: hands over the box, or takes it back solved. Returns true to advance. */
+    private static boolean puzzleTalk(ServerPlayerEntity p, Tier tier, Step step, String speaker) {
+        String box = step.item();
+        Puzzle puzzle = PUZZLES.get(p.getUuid());
+        if (puzzle != null && puzzle.tier == tier && puzzle.solved() && Inv.has(p, box, 1)) {
+            Inv.remove(p, box, 1);
+            PUZZLES.remove(p.getUuid());
+            say(p, speaker, "You've solved it! Well done, here's your next clue.");
+            return true;
+        }
+        if (!Inv.has(p, box, 1)) {
+            Inv.give(p, box, 1);
+            say(p, speaker, "Solve this " + (box.equals(CluePuzzles.LIGHT_BOX) ? "light box" : "puzzle box")
+                    + " and bring it back to me.");
+        } else {
+            say(p, speaker, "You haven't solved that yet.");
+        }
+        openPuzzle(p, puzzleFor(p, tier, box));
+        return false;
+    }
+
+    private static Puzzle puzzleFor(ServerPlayerEntity p, Tier tier, String box) {
+        Puzzle puzzle = PUZZLES.get(p.getUuid());
+        boolean light = box.equals(CluePuzzles.LIGHT_BOX);
+        if (puzzle == null || puzzle.tier != tier || (puzzle.lights != null) != light) {
+            java.util.Random r = new java.util.Random(p.getRandom().nextLong());
+            puzzle = light ? new Puzzle(tier, null, CluePuzzles.LightBox.scrambled(r))
+                    : new Puzzle(tier, CluePuzzles.Slider.scrambled(CluePuzzles.puzzleSize(tier), r), null);
+            PUZZLES.put(p.getUuid(), puzzle);
+        }
+        return puzzle;
+    }
+
+    /** Using a puzzle box or light box item: opens the puzzle of the clue step that handed it over. */
+    public static boolean useBox(ServerPlayerEntity p, String box) {
+        SysState.SysPlayer sp = SysState.of(p);
+        for (Tier tier : Tier.values()) {
+            if (!Inv.has(p, tier.scrollItem(), 1) || !sp.clues.containsKey(tier)) {
+                continue;
+            }
+            Step step = current(sp, tier);
+            if (step != null && box.equals(step.item())
+                    && (step.type() == ClueScrolls.StepType.PUZZLE || step.type() == ClueScrolls.StepType.LIGHT_BOX)) {
+                openPuzzle(p, puzzleFor(p, tier, box));
+                return true;
+            }
+        }
+        Msg.game(p, "This box isn't part of any clue you're following.");
+        return true;
+    }
+
+    private static void openPuzzle(ServerPlayerEntity p, Puzzle puzzle) {
+        if (puzzle.slider != null) {
+            int n = puzzle.slider.size();
+            SysNet.Screen s = new SysNet.Screen("grid" + n + "_puzzle", "Puzzle box");
+            s.line(puzzle.solved() ? "Solved! Take the box back to the person who gave it to you."
+                    : "Slide the tiles into order (1 to " + (n * n - 1) + ", gap last): click a tile next to the gap.",
+                    puzzle.solved() ? 0x80FF80 : 0xF0E0A0);
+            for (int i = 0; i < n * n; i++) {
+                int t = puzzle.slider.tile(i);
+                s.button("t:" + i, t == 0 ? " " : Integer.toString(t), "", t != 0 && !puzzle.solved());
+            }
+            s.send(p);
+            return;
+        }
+        SysNet.Screen s = new SysNet.Screen("grid5_lights", "Light box");
+        s.line(puzzle.solved() ? "Every light is on! Take the box back to the person who gave it to you."
+                : "Each button toggles its own set of lights. Turn all " + CluePuzzles.LIGHTS + " lights on ("
+                + puzzle.lights.litCount() + " lit).", puzzle.solved() ? 0x80FF80 : 0xF0E0A0);
+        for (int i = 0; i < CluePuzzles.LIGHTS; i++) {
+            s.button("l:" + i, puzzle.lights.lit(i) ? "\u25A0" : "\u25A1", "", false);
+        }
+        for (int b = 0; b < CluePuzzles.BUTTONS; b++) {
+            s.button("b:" + b, String.valueOf((char) ('A' + b)), "", !puzzle.solved());
+        }
+        s.send(p);
+    }
+
+    static void puzzleAction(ServerPlayerEntity p, String action, java.util.Map<String, String> fields) {
+        Puzzle puzzle = PUZZLES.get(p.getUuid());
+        if (puzzle == null || action.length() < 3) {
+            return;
+        }
+        int index;
+        try {
+            index = Integer.parseInt(action.substring(2));
+        } catch (NumberFormatException e) {
+            return;
+        }
+        if (action.startsWith("t:") && puzzle.slider != null) {
+            puzzle.slider.move(index);
+        } else if (action.startsWith("b:") && puzzle.lights != null) {
+            puzzle.lights.press(index);
+        }
+        if (puzzle.solved()) {
+            Msg.action(p, "You solve the " + (puzzle.slider != null ? "puzzle box" : "light box") + "!");
+        }
+        openPuzzle(p, puzzle);
     }
 
     private static void say(ServerPlayerEntity p, String speaker, String line) {
@@ -288,8 +433,18 @@ public final class ClueService {
             return;
         }
         SysState.SysPlayer sp = SysState.of(p);
+        java.util.Set<Tier> own = java.util.EnumSet.noneOf(Tier.class);
+        if (stats.monster() != null) {
+            own.addAll(ClueScrolls.ownClueTiers(stats.monster().drops()));
+        }
+        if (stats.profile() != null) {
+            own.addAll(ClueScrolls.ownClueTiers(stats.profile().drops));
+        }
+        if (stats.boss() != null) {
+            own.addAll(ClueScrolls.ownClueTiers(stats.boss().drops()));
+        }
         for (Tier tier : Tier.values()) {
-            int oneIn = ClueScrolls.dropOneIn(tier, stats.combatLevel());
+            int oneIn = own.contains(tier) ? 0 : ClueScrolls.dropOneIn(tier, stats.name(), stats.combatLevel());
             if (oneIn <= 0 || Inv.has(p, tier.scrollItem(), 1) || sp.clues.containsKey(tier)) {
                 continue;
             }

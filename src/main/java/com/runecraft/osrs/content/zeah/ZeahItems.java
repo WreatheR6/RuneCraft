@@ -187,10 +187,22 @@ public final class ZeahItems {
         recipes.accept(Recipe.builder("fletch_sunlight_antler_bolts", MenuType.FLETCHING, "Sunlight antler bolts")
                 .skill(Skill.FLETCHING, 87, 12.0).in("sunlight_antler", 1).out("sunlight_antler_bolts", 10).tool("chisel").ticks(3)
                 .build());
+        // Hunters' sunlight crossbow (approx: OSRS fits a sunlight antler to a hunters' crossbow).
+        recipes.accept(Recipe.builder("fletch_hunters_sunlight_crossbow", MenuType.FLETCHING, "Hunters' sunlight crossbow")
+                .skill(Skill.FLETCHING, 62, 100.0).in("sunlight_antler", 2).in("yew_logs", 1).in("bow_string", 1)
+                .out("hunters_sunlight_crossbow", 1).tool("knife").ticks(3).build());
         recipes.accept(Recipe.builder("fletch_moonlight_antler_bolts", MenuType.FLETCHING, "Moonlight antler bolts")
                 .skill(Skill.FLETCHING, 92, 14.0).in("moonlight_antler", 1).out("moonlight_antler_bolts", 10).tool("chisel").ticks(3)
                 .build());
     }
+
+    /** A piece the Shayzien quartermaster sells and its price (approx: OSRS ties the armour to the combat ring). */
+    public record QuartermasterOffer(String item, int price) {
+    }
+
+    public static final List<QuartermasterOffer> QUARTERMASTER = List.of(new QuartermasterOffer("shayzien_helm_5", 4000),
+            new QuartermasterOffer("shayzien_platebody_5", 12000), new QuartermasterOffer("shayzien_greaves_5", 8000),
+            new QuartermasterOffer("shayzien_boots_5", 2000));
 
     public static List<CollectionLogData.Page> collectionLog() {
         return List.of(

@@ -57,10 +57,8 @@ class CollectionLogAuditTest {
         return out;
     }
 
-    /** Items whose game mechanic doesn't exist yet (zeah module: Hunter Guild rewards, Shayzien quartermaster). */
-    static final Set<String> KNOWN_GAPS = Set.of("shayzien_helm_5", "shayzien_platebody_5", "shayzien_greaves_5", "shayzien_boots_5",
-            "guild_hunter_headwear", "guild_hunter_top", "guild_hunter_legs", "guild_hunter_boots", "quetzal_whistle_basic",
-            "quetzal_whistle_enhanced", "quetzal_whistle_perfected", "hunters_sunlight_crossbow");
+    /** Items whose game mechanic doesn't exist yet (none left). */
+    static final Set<String> KNOWN_GAPS = Set.of();
 
     @Test
     void everyItemExistsAndHasASource() throws IOException {

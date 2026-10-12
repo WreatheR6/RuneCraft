@@ -151,6 +151,19 @@ public final class DiaryRewards {
         return tier <= 0 ? 0 : tier * 2;
     }
 
+    /**
+     * Ardougne diary pickpocketing bonus (OSRS): the medium diary gives 10% more pickpocket success in Ardougne,
+     * the hard diary 10% more everywhere. Returns the success-chance multiplier.
+     */
+    public static double pickpocketMultiplier(boolean mediumDone, boolean hardDone, boolean inArdougne) {
+        return hardDone || (mediumDone && inArdougne) ? 1.1 : 1.0;
+    }
+
+    /** Morytania elite diary: 50% more runes from the Barrows chest. */
+    public static double barrowsRuneMultiplier(boolean eliteDone) {
+        return eliteDone ? 1.5 : 1.0;
+    }
+
     /** The skill whose gathering the bonus applies to, for the Minecraft side. */
     public static Skill bonusSkill(String areaId) {
         return switch (areaId) {
@@ -168,8 +181,10 @@ public final class DiaryRewards {
         }
         switch (areaId) {
             case "ardougne" -> {
-                if (tier >= 2) {
-                    out.add("10% more Thieving success in Ardougne"); // approx: not simulated
+                if (tier == 2) {
+                    out.add("10% more pickpocket success in Ardougne");
+                } else if (tier >= 3) {
+                    out.add("10% more pickpocket success everywhere");
                 }
             }
             case "falador" -> out.add("Restore " + faladorRestorePercent(tier) + "% prayer, " + faladorRestoresPerDay(tier) + "/day");
@@ -180,6 +195,11 @@ public final class DiaryRewards {
             case "varrock" -> out.add(VARROCK_BONUS_PERCENT + "% chance of an extra ore/bar up to "
                     + new String[]{"coal/steel", "mithril", "adamantite", "runite"}[Math.max(0, Math.min(3, tier - 1))]);
             case "kourend" -> out.add(radasExtraFishPercent(tier) + "% chance of an extra fish in Kourend & Kebos");
+            case "morytania" -> {
+                if (tier >= 4) {
+                    out.add("50% more runes from the Barrows chest");
+                }
+            }
             case "karamja" -> out.add("Discount at TzHaar shops"); // approx: not simulated
             default -> {
             }

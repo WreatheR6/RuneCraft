@@ -66,6 +66,10 @@ public class SystemsScreen extends Screen {
     }
 
     private int columns() {
+        // Puzzle grids ("grid<n>_..."): n buttons per row (sliding puzzles, light boxes).
+        if (id.length() > 5 && id.startsWith("grid") && Character.isDigit(id.charAt(4))) {
+            return id.charAt(4) - '0';
+        }
         if (buttons.size() > 16) {
             return 3;
         }

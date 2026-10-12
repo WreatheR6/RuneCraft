@@ -57,7 +57,7 @@ import java.util.UUID;
  * "Which item comes next?" puzzle (answered by clicking in chat), living brothers may ambush the
  * player on entering a tunnel room, and tunnel monster kills add reward potential.
  */
-final class BarrowsHooks {
+public final class BarrowsHooks {
     private static final String SPADE = "spade";
     /** OSRS drains prayer every 18 game ticks (12 Minecraft ticks each) in the crypts and tunnels. */
     private static final int DRAIN_INTERVAL = 18 * 12;
@@ -395,6 +395,9 @@ final class BarrowsHooks {
         return false;
     }
 
+    /** Rune quantity multiplier for a player's Barrows chest (Morytania elite diary perk; 1.0 = none). */
+    public static java.util.function.ToDoubleFunction<ServerPlayerEntity> runeBonus = p -> 1.0;
+
     private static void chest(ServerPlayerEntity p, BlockPos pos, BlockState blockState) {
         if (!(p.getWorld() instanceof ServerWorld world)) {
             return;
@@ -417,7 +420,10 @@ final class BarrowsHooks {
                     + (run.quantityPercent() - 100) + "% coins and runes).");
         }
         StringBuilder sb = new StringBuilder();
+        double runes = runeBonus.applyAsDouble(p);
         for (BarrowsRun.Reward r : rewards) {
+            int count = r.item().endsWith("_rune") ? (int) Math.floor(r.count() * runes) : r.count();
+            r = new BarrowsRun.Reward(r.item(), count);
             Inv.give(p, r.item(), r.count());
             CollectionLog.obtain(p, r.item());
             if (sb.length() > 0) {
