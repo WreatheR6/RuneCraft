@@ -352,7 +352,7 @@ class SystemsDataTest {
                 }
                 case VISIT -> assertEquals(3, Diaries.visitTarget(t.target()).length);
                 case HAVE, MAKE -> {
-                    if (!t.target().startsWith("*")) {
+                    if (!t.target().startsWith("*") && !t.target().contains("|")) {
                         assertNotNull(ItemCatalog.get(t.target()), t.id() + " item " + t.target());
                     }
                 }

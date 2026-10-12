@@ -119,16 +119,18 @@ public final class JewelleryService {
         } else {
             s.line("Where would you like to teleport to?");
             List<Teleports.Destination> dests = w.teleports();
+            boolean diary = com.runecraft.osrs.content.systems.DiaryRewards.areaOf(w.id()) != null;
             for (int i = 0; i < dests.size(); i++) {
-                s.button(source + "|" + i, dests.get(i).name());
+                s.button(source + "|" + i, diary ? DiaryService.rewardTeleLabel(p, w.id(), i) : dests.get(i).name());
             }
         }
         if (w.id().startsWith("explorers_ring")) {
             int tier = tierOf(w.id());
             s.line("Run energy restores today: " + DiaryService.dailyLeft(p, "explorer_energy", energyUses(tier)) + ", alchemy casts: "
-                    + DiaryService.dailyLeft(p, "explorer_alch", 30));
+                    + DiaryService.dailyLeft(p, "explorer_alch", com.runecraft.osrs.content.systems.DiaryRewards.EXPLORER_ALCHS_PER_DAY));
             s.button(source + "|energy", "Restore 50% run energy");
-            s.button(source + "|alch", (tier >= 2 ? "High" : "Low") + " alchemy (off-hand item)");
+            s.button(source + "|alch", (com.runecraft.osrs.content.systems.DiaryRewards.explorerHighAlch(tier) ? "High" : "Low")
+                    + " alchemy (off-hand item)");
         }
         if (source.startsWith("hand")) {
             s.button(source + "|wear", "Wear it");
@@ -137,11 +139,7 @@ public final class JewelleryService {
     }
 
     private static int energyUses(int tier) {
-        return switch (tier) {
-            case 1 -> 2;
-            case 2, 3 -> 3;
-            default -> 4;
-        };
+        return com.runecraft.osrs.content.systems.DiaryRewards.explorerEnergyRestores(tier);
     }
 
     static int tierOf(String id) {
@@ -205,7 +203,7 @@ public final class JewelleryService {
                     Msg.game(p, "You have used up your energy restores for today.");
                 }
             }
-            case "alch" -> explorerAlch(p, tierOf(w.id()) >= 2);
+            case "alch" -> explorerAlch(p, com.runecraft.osrs.content.systems.DiaryRewards.explorerHighAlch(tierOf(w.id())));
             default -> {
                 int i;
                 try {
@@ -214,6 +212,10 @@ public final class JewelleryService {
                     return;
                 }
                 if (i < 0 || i >= w.teleports().size() || (w.chargeBase() != null && w.charges() == 0)) {
+                    return;
+                }
+                if (com.runecraft.osrs.content.systems.DiaryRewards.areaOf(w.id()) != null) {
+                    DiaryService.rewardTeleport(p, w.id(), i);
                     return;
                 }
                 if (SysTeleport.teleport(p, w.teleports().get(i), SysTeleport.JEWELLERY_WILDERNESS)) {
@@ -232,7 +234,7 @@ public final class JewelleryService {
             Msg.game(p, "Hold the item you want to alchemise in your off-hand.");
             return;
         }
-        if (!DiaryService.useDaily(p, "explorer_alch", 30)) {
+        if (!DiaryService.useDaily(p, "explorer_alch", com.runecraft.osrs.content.systems.DiaryRewards.EXPLORER_ALCHS_PER_DAY)) {
             Msg.game(p, "Your ring has no alchemy charges left today.");
             return;
         }

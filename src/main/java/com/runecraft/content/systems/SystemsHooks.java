@@ -9,6 +9,7 @@ import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.content.systems.ClueScrolls;
 import com.runecraft.osrs.content.systems.Diaries;
+import com.runecraft.osrs.content.systems.DiaryRewards;
 import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.osrs.content.systems.Spellbooks;
 import com.runecraft.osrs.content.systems.SystemsContent;
@@ -51,6 +52,8 @@ public final class SystemsHooks implements ModuleHooks {
         });
         GameEvents.onXp(DiaryService::onXp);
         GameEvents.onMake(DiaryService::onMake);
+        GameEvents.onObtain(DiaryService::onObtain);
+        GameEvents.onCast(DiaryService::onCast);
 
         SysTicks.everyPlayer((p, tick) -> {
             SpecialAttackService.gameTick(p, tick);
@@ -87,6 +90,7 @@ public final class SystemsHooks implements ModuleHooks {
         BlockHooks.register(SystemsContent.LUNAR_ALTAR, (p, pos, state) -> SysMenus.altar(p, Spellbooks.Book.LUNAR));
         BlockHooks.register(SystemsContent.DARK_ALTAR, (p, pos, state) -> SysMenus.altar(p, Spellbooks.Book.ARCEUUS));
         BlockHooks.register(SystemsContent.DIARY_BOARD, (p, pos, state) -> SysMenus.diaries(p));
+        SysNet.onAction("dtele", SystemsHooks::diaryTeleAction);
 
         // NPCs
         QuestScripts.onTalk("grand_exchange_clerk", (p, npc) -> {
@@ -228,22 +232,31 @@ public final class SystemsHooks implements ModuleHooks {
         }
         if (id.startsWith("falador_shield_")) {
             int tier = JewelleryService.tierOf(id);
-            if (!DiaryService.useDaily(p, "falador_shield", 1)) {
+            if (!DiaryService.useDaily(p, "falador_shield", DiaryRewards.faladorRestoresPerDay(tier))) {
                 Msg.game(p, "You have already used your shield's prayer restore today.");
                 return true;
             }
             PlayerData d = Players.data(p);
-            int max = d.skills().currentLevel(com.runecraft.osrs.Skill.PRAYER);
-            int pct = tier == 1 ? 25 : tier == 2 ? 50 : 100;
-            d.setPrayerPoints(d.prayerPoints() + max * pct / 100);
+            int max = d.skills().level(com.runecraft.osrs.Skill.PRAYER);
+            int pct = DiaryRewards.faladorRestorePercent(tier);
+            d.setPrayerPoints(Math.min(max, d.prayerPoints() + max * pct / 100));
             com.runecraft.network.ServerNetworking.sync(p);
             Msg.action(p, "Your shield recharges your prayer.");
             return true;
         }
         if (sneaking) {
             List<Teleports.Destination> dests = diaryItemTeleports(id);
+            if (dests.size() == 1) {
+                DiaryService.rewardTeleport(p, id, 0);
+                return true;
+            }
             if (!dests.isEmpty()) {
-                SysTeleport.teleport(p, dests.get(dests.size() > 1 && JewelleryService.tierOf(id) >= 3 ? 1 : 0), SysTeleport.JEWELLERY_WILDERNESS);
+                SysNet.Screen s = new SysNet.Screen("dtele", ItemCatalog.get(id) == null ? id : ItemCatalog.get(id).name());
+                s.line("Where would you like to teleport to?");
+                for (int i = 0; i < dests.size(); i++) {
+                    s.button(id + "|" + i, DiaryService.rewardTeleLabel(p, id, i));
+                }
+                s.send(p);
                 return true;
             }
         }
@@ -256,19 +269,28 @@ public final class SystemsHooks implements ModuleHooks {
 
     /** Teleports of diary rewards that are vanilla-wearable armour/weapons (used with sneak + right-click). */
     static List<Teleports.Destination> diaryItemTeleports(String id) {
-        int tier = JewelleryService.tierOf(id);
-        if (id.startsWith("fremennik_sea_boots_") && tier >= 2) {
-            return List.of(Teleports.at("Rellekka", 2660, 3657));
+        Diaries.Area a = DiaryRewards.areaOf(id);
+        if (a == null || Jewellery.worn(id) != null) {
+            return List.of();
         }
-        if (id.startsWith("kandarin_headgear_") && tier >= 3) {
-            return List.of(Teleports.at("Sherlock", 2733, 3415));
+        return DiaryRewards.destinations(a.id(), DiaryRewards.tierOf(id));
+    }
+
+    /** Sneak-teleport menu of a held diary reward: "itemId|index". */
+    static void diaryTeleAction(ServerPlayerEntity p, String action, java.util.Map<String, String> fields) {
+        int bar = action.lastIndexOf('|');
+        if (bar < 0) {
+            return;
         }
-        if (id.startsWith("morytania_legs_") && tier >= 2) {
-            return List.of(Teleports.at("Ectofuntus", 3660, 3522), Teleports.at("Burgh de Rott", 3482, 3231));
+        String id = action.substring(0, bar);
+        if (!Inv.idOf(p.getMainHandStack()).equals(id)) {
+            Msg.game(p, "You are no longer holding that item.");
+            return;
         }
-        if (id.startsWith("wilderness_sword_") && tier >= 3) {
-            return List.of(Teleports.at("Fountain of Rune", 3375, 3893));
+        try {
+            DiaryService.rewardTeleport(p, id, Integer.parseInt(action.substring(bar + 1)));
+        } catch (NumberFormatException ignored) {
+            // bad index
         }
-        return List.of();
     }
 }

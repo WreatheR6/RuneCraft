@@ -313,6 +313,7 @@ public final class MagicService {
         ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.PORTAL, player.getX(), player.getY() + 1, player.getZ(), 60, 0.5, 1, 0.5, 0.5);
         Gielinor.teleport(player, dest);
         player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1f, 1f);
+        com.runecraft.content.GameEvents.fireCast(player, spell.name().toLowerCase(java.util.Locale.ROOT));
     }
 
     private static void alch(ServerPlayerEntity player, Spell spell) {
@@ -333,6 +334,7 @@ public final class MagicService {
         ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.FLAME, player.getX(), player.getY() + 1.2, player.getZ(), 20, 0.3, 0.3, 0.3, 0.05);
         player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_BLAZE_SHOOT, SoundCategory.PLAYERS, 0.6f, 1.2f);
         Msg.action(player, "You receive " + coins + " coins.");
+        com.runecraft.content.GameEvents.fireCast(player, spell.name().toLowerCase(java.util.Locale.ROOT));
         ServerNetworking.sync(player);
     }
 
@@ -355,6 +357,7 @@ public final class MagicService {
             Inv.give(player, bar.itemId(), 1);
             XpService.addTenths(player, Skill.MAGIC, spell.xpTenths());
             XpService.add(player, Skill.SMITHING, bar.xp());
+            com.runecraft.content.GameEvents.fireCast(player, spell.name().toLowerCase(java.util.Locale.ROOT));
             Msg.action(player, "You superheat the ore into " + com.runecraft.util.Msg.article(ItemCatalog.get(bar.itemId()).name().toLowerCase()) + ".");
             return;
         }

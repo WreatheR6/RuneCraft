@@ -1,6 +1,7 @@
 package com.runecraft.content.systems;
 
 import com.runecraft.combat.MonsterStats;
+import com.runecraft.osrs.CombatLevel;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.QuestInfo;
 import com.runecraft.osrs.Recipe;
@@ -12,6 +13,7 @@ import com.runecraft.osrs.content.systems.Diaries.Area;
 import com.runecraft.osrs.content.systems.Diaries.Task;
 import com.runecraft.osrs.content.systems.Diaries.Tier;
 import com.runecraft.osrs.content.systems.Diaries.Type;
+import com.runecraft.osrs.content.systems.DiaryRewards;
 import com.runecraft.osrs.content.systems.Teleports;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
@@ -64,28 +66,38 @@ public final class DiaryService {
 
     // ---------------- Areas ----------------
 
-    static boolean inArea(ServerPlayerEntity p, String areaId) {
-        if (areaId == null) {
+    /** Whether the player is inside a task restriction (null = anywhere, an area id or an "x,y,r" circle). */
+    static boolean inArea(ServerPlayerEntity p, String restrict) {
+        if (restrict == null) {
             return true;
         }
         if (!Gielinor.is(p)) {
             return false;
         }
-        Area a = Diaries.area(areaId);
-        if (a == null) {
-            return true;
-        }
         int[] at = SysTeleport.osrs(p);
-        return a.contains(Gielinor.region(p).name(), at[0], at[1]);
+        return Diaries.restrictContains(restrict, Gielinor.region(p).name(), at[0], at[1]);
+    }
+
+    /** The task's skill requirements (boosts count, as in OSRS). */
+    static boolean meets(ServerPlayerEntity p, Task task) {
+        PlayerData d = Players.data(p);
+        for (Map.Entry<Skill, Integer> e : task.reqs().entrySet()) {
+            int lvl = Math.max(d.skills().level(e.getKey()), d.skills().currentLevel(e.getKey()));
+            if (lvl < e.getValue()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // ---------------- Completion ----------------
 
     static void complete(ServerPlayerEntity p, Task task) {
         SysState.SysPlayer sp = SysState.of(p);
-        if (!sp.diaryDone.add(task.id())) {
+        if (sp.diaryDone.contains(task.id()) || !meets(p, task)) {
             return;
         }
+        sp.diaryDone.add(task.id());
         Area a = Diaries.area(task.area());
         p.sendMessage(Text.literal("Well done! You have completed " + (task.tier() == Tier.EASY || task.tier() == Tier.ELITE ? "an " : "a ")
                 + task.tier().id() + " task in the " + a.name() + " area. Your Achievement Diary has been updated.")
@@ -98,7 +110,7 @@ public final class DiaryService {
 
     private static void count(ServerPlayerEntity p, Task task, int amount) {
         SysState.SysPlayer sp = SysState.of(p);
-        if (sp.diaryDone.contains(task.id())) {
+        if (sp.diaryDone.contains(task.id()) || !meets(p, task)) {
             return;
         }
         int n = sp.diaryCounters.merge(task.id(), amount, Integer::sum);
@@ -119,12 +131,13 @@ public final class DiaryService {
                 complete(p, t);
             }
         }
+        DiaryPerks.onXp(p, skill);
     }
 
     public static void onKill(ServerPlayerEntity p, LivingEntity e, MonsterStats stats) {
         String name = (stats == null ? e.getName().getString() : stats.name()).toLowerCase(Locale.ROOT);
         for (Task t : Diaries.tasks()) {
-            if (t.type() == Type.KILL && name.contains(t.target()) && inArea(p, t.restrict())) {
+            if (t.type() == Type.KILL && Diaries.killMatches(t.target(), name) && inArea(p, t.restrict())) {
                 count(p, t, 1);
             }
         }
@@ -141,11 +154,23 @@ public final class DiaryService {
                 }
             }
         }
+        DiaryPerks.onMake(p, r);
+    }
+
+    /** An item gathered, stolen, dropped or rewarded. */
+    public static void onObtain(ServerPlayerEntity p, String item, int amount) {
+        for (Task t : Diaries.tasks()) {
+            if (t.type() == Type.OBTAIN && Diaries.itemMatches(t.target(), item) && inArea(p, t.restrict())) {
+                count(p, t, Math.max(1, amount));
+            }
+        }
+        DiaryPerks.onObtain(p, item);
     }
 
     public static void onCast(ServerPlayerEntity p, String spell) {
+        SysState.of(p).spellsCast.add(spell);
         for (Task t : Diaries.tasks()) {
-            if (t.type() == Type.CAST && t.target().equals(spell)) {
+            if (t.type() == Type.CAST && Diaries.spellMatches(t.target(), spell)) {
                 complete(p, t);
             }
         }
@@ -163,14 +188,26 @@ public final class DiaryService {
         check(p, Type.GE);
     }
 
+    private static final Type[] PERIODIC = {Type.LEVEL, Type.HAVE, Type.QUEST, Type.VISIT, Type.KC, Type.GE, Type.CLUE, Type.CAST,
+            Type.TOTAL_LEVEL, Type.COMBAT_LEVEL, Type.QUEST_POINTS, Type.SKILLCAPE};
+
     /** Periodic checks for state-based tasks. */
     public static void gameTick(ServerPlayerEntity p, long tick) {
         if ((tick + p.getId()) % 10 != 0) {
             return;
         }
-        for (Type type : new Type[]{Type.LEVEL, Type.HAVE, Type.QUEST, Type.VISIT, Type.KC, Type.GE, Type.CLUE, Type.CAST, Type.TOTAL_LEVEL}) {
+        for (Type type : PERIODIC) {
             check(p, type);
         }
+    }
+
+    private static boolean at(ServerPlayerEntity p, String target) {
+        if (!Gielinor.is(p)) {
+            return false;
+        }
+        int[] v = Diaries.visitTarget(target);
+        int[] pos = SysTeleport.osrs(p);
+        return Teleports.within(pos[0], pos[1], v[0], v[1], v[2]);
     }
 
     static void check(ServerPlayerEntity p, Type type) {
@@ -183,29 +220,32 @@ public final class DiaryService {
             boolean done = switch (type) {
                 case LEVEL -> d.skills().level(Skill.valueOf(t.target())) >= t.level();
                 case TOTAL_LEVEL -> d.skills().totalLevel() >= t.level();
+                case COMBAT_LEVEL -> CombatLevel.of(d.skills()) >= t.level();
                 case HAVE -> inArea(p, t.restrict()) && haveItem(p, t.target(), t.count());
                 case QUEST -> {
                     QuestInfo q = ContentRegistry.quest(t.target());
                     // A quest that doesn't exist in this world can't block the diary.
                     yield q == null || d.questComplete(q);
                 }
-                case VISIT -> {
-                    if (!Gielinor.is(p)) {
-                        yield false;
+                case QUEST_POINTS -> {
+                    if (!t.target().equals("all")) {
+                        yield d.questPoints() >= t.level();
                     }
-                    int[] v = Diaries.visitTarget(t.target());
-                    int[] at = SysTeleport.osrs(p);
-                    yield Teleports.within(at[0], at[1], v[0], v[1], v[2]);
-                }
-                case KC -> {
-                    int kc = 0;
-                    for (Map.Entry<String, Integer> e : d.killCounts().entrySet()) {
-                        if (e.getKey().contains(t.target())) {
-                            kc += e.getValue();
-                        }
+                    boolean all = true;
+                    for (QuestInfo q : ContentRegistry.quests()) {
+                        all &= d.questComplete(q);
                     }
-                    yield kc >= t.count();
+                    yield all;
                 }
+                case VISIT -> at(p, t.target());
+                case SKILLCAPE -> {
+                    boolean cape = false;
+                    for (Skill s : Skill.values()) {
+                        cape |= d.skills().level(s) >= 99;
+                    }
+                    yield cape && at(p, t.target());
+                }
+                case KC -> Diaries.kcMet(t.target(), t.count(), d.killCounts());
                 case GE -> sp.geTrades >= t.count();
                 case CLUE -> {
                     try {
@@ -214,7 +254,7 @@ public final class DiaryService {
                         yield false;
                     }
                 }
-                case CAST -> sp.spellsCast.contains(t.target());
+                case CAST -> sp.spellsCast.stream().anyMatch(s -> Diaries.spellMatches(t.target(), s));
                 default -> false;
             };
             if (done) {
@@ -224,8 +264,8 @@ public final class DiaryService {
     }
 
     private static boolean haveItem(ServerPlayerEntity p, String target, int count) {
-        if (!target.startsWith("*")) {
-            return Inv.count(p, target) >= count;
+        if (!target.startsWith("*") && !target.contains("|")) {
+            return Inv.count(p, target) >= count || SysState.of(p).wearing(target);
         }
         int total = 0;
         for (int i = 0; i < p.getInventory().size(); i++) {
@@ -239,6 +279,46 @@ public final class DiaryService {
 
     // ---------------- Rewards ----------------
 
+    /** The reward teleport at a menu index of a diary reward item, or null. */
+    static DiaryRewards.Tele rewardTele(String itemId, int index) {
+        Area a = DiaryRewards.areaOf(itemId);
+        if (a == null) {
+            return null;
+        }
+        java.util.List<DiaryRewards.Tele> teles = DiaryRewards.teleports(a.id(), DiaryRewards.tierOf(itemId));
+        return index >= 0 && index < teles.size() ? teles.get(index) : null;
+    }
+
+    /** Button label of a reward teleport, with the uses left today for limited ones. */
+    static String rewardTeleLabel(ServerPlayerEntity p, String itemId, int index) {
+        DiaryRewards.Tele t = rewardTele(itemId, index);
+        if (t == null) {
+            return "?";
+        }
+        int perDay = t.perDay(DiaryRewards.tierOf(itemId));
+        return t.dest().name() + (perDay == 0 ? "" : " (" + dailyLeft(p, t.key(), perDay) + "/" + perDay + " today)");
+    }
+
+    /** Uses a diary reward item's teleport, honouring its daily charges. Returns true if the player teleported. */
+    static boolean rewardTeleport(ServerPlayerEntity p, String itemId, int index) {
+        DiaryRewards.Tele t = rewardTele(itemId, index);
+        if (t == null) {
+            return false;
+        }
+        int perDay = t.perDay(DiaryRewards.tierOf(itemId));
+        if (perDay > 0 && dailyLeft(p, t.key(), perDay) <= 0) {
+            Msg.game(p, "You have used all of today's teleports to " + t.dest().name() + ".");
+            return false;
+        }
+        if (!SysTeleport.teleport(p, t.dest(), SysTeleport.JEWELLERY_WILDERNESS)) {
+            return false;
+        }
+        if (perDay > 0) {
+            useDaily(p, t.key(), perDay);
+        }
+        return true;
+    }
+
     public static boolean claimable(SysState.SysPlayer sp, Area a, Tier t) {
         return Diaries.tierComplete(sp.diaryDone, a.id(), t) && !sp.diaryClaimed.contains(a.id() + ":" + t.name());
     }
@@ -250,6 +330,10 @@ public final class DiaryService {
             return;
         }
         String key = a.id() + ":" + t.name();
+        if (t.ordinal() > 0 && !sp.diaryClaimed.contains(a.id() + ":" + Tier.values()[t.ordinal() - 1].name())) {
+            Msg.game(p, "You need to claim your " + Tier.values()[t.ordinal() - 1].id() + " " + a.name() + " reward first.");
+            return;
+        }
         String reward = a.reward(t);
         if (sp.diaryClaimed.contains(key)) {
             // Lost rewards can be reclaimed (if not carried or worn).

@@ -134,39 +134,36 @@ public final class Capes {
     }
 
     private static void diaryReward(ItemSink items, String area, String id, String name, int n) {
-        String ex = "A reward for completing the " + Diaries.area(area).name() + " achievement diary.";
+        List<Teleports.Destination> teles = DiaryRewards.destinations(area, n);
+        List<String> perks = DiaryRewards.perks(area, n);
+        String ex = "A reward for completing the " + Diaries.area(area).name() + " achievement diary."
+                + (perks.isEmpty() ? "" : " " + String.join("; ", perks) + ".");
         switch (area) {
             case "ardougne" -> Defs.worn(items, id, name, "cape", 0x4A8A4A, 1000 * n, Jewellery.Slot.CAPE,
-                    st(0, 0, 0, 0, 0, n, n, n, n, n, 0, 0, 0, n), Map.of(), Jewellery.Perk.NONE,
-                    n >= 2 ? List.of(Teleports.at("Ardougne Monastery", 2606, 3222), Teleports.at("Ardougne Farm", 2673, 3375))
-                            : List.of(Teleports.at("Ardougne Monastery", 2606, 3222))).examine(ex);
+                    st(0, 0, 0, 0, 0, n, n, n, n, n, 0, 0, 0, n), Map.of(), Jewellery.Perk.NONE, teles).examine(ex);
             case "desert" -> Defs.worn(items, id, name, "amulet", 0xD8B060, 1000 * n, Jewellery.Slot.NECK, EquipmentStats.NONE,
-                    Map.of(), Jewellery.Perk.NONE, n >= 2 ? List.of(Teleports.at("Nardah", 3428, 2892)) : List.of()).examine(ex);
+                    Map.of(), Jewellery.Perk.NONE, teles).examine(ex);
             case "falador" -> Defs.armour(items, id, name, "kiteshield", 0xE0E0F0, "steel", 1000 * n, Slot.SHIELD,
-                    st(0, 0, 0, 0, 0, 3 * n, 3 * n, 3 * n, 2 * n, 3 * n, 0, 0, 0, n), Map.of()).examine(ex + " Right-click to recharge prayer once a day.");
+                    st(0, 0, 0, 0, 0, 3 * n, 3 * n, 3 * n, 2 * n, 3 * n, 0, 0, 0, n), Map.of()).examine(ex + " Right-click to recharge prayer.");
             case "fremennik" -> Defs.armour(items, id, name, "boots", 0x6A4A2A, "leather", 1000 * n, Slot.FEET,
-                    st(0, 0, 0, 0, 0, n, n, n, n, n, 0, 0, 0, 0), Map.of()).examine(ex + " Right-click to teleport to Rellekka.");
+                    st(0, 0, 0, 0, 0, n, n, n, n, n, 0, 0, 0, 0), Map.of()).examine(ex + (teles.isEmpty() ? "" : " Sneak + right-click to teleport."));
             case "kandarin" -> Defs.armour(items, id, name, "full_helm", 0x3A5A8A, "steel", 1000 * n, Slot.HEAD,
-                    st(0, 0, 0, 0, 0, 2 * n, 2 * n, 2 * n, n, 2 * n, 0, 0, 0, 0), Map.of()).examine(ex + " Right-click to teleport to Sherlock.");
+                    st(0, 0, 0, 0, 0, 2 * n, 2 * n, 2 * n, n, 2 * n, 0, 0, 0, 0), Map.of()).examine(ex + (teles.isEmpty() ? "" : " Sneak + right-click to teleport."));
             case "karamja" -> Defs.worn(items, id, name, "gloves", 0x3A8A3A, 1000 * n, Jewellery.Slot.HANDS,
-                    st(n, n, n, 0, n, n, n, n, 0, n, n, 0, 0, 0), Map.of(), Jewellery.Perk.NONE,
-                    n >= 3 ? List.of(Teleports.at("Shilo gem mine", 2825, 2997), Teleports.at("Duradel", 2869, 2982)) : List.of()).examine(ex);
+                    st(n, n, n, 0, n, n, n, n, 0, n, n, 0, 0, 0), Map.of(), Jewellery.Perk.NONE, teles).examine(ex);
             case "kourend" -> Defs.worn(items, id, name, "bead", 0xA0C0E0, 1000 * n, Jewellery.Slot.AMMO,
-                    st(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, n == 4 ? 2 : 1), Map.of(), Jewellery.Perk.NONE,
-                    n >= 3 ? List.of(Teleports.at("Kourend Woodland", 1552, 3456), Teleports.at("Mount Karuulm", 1311, 3795))
-                            : List.of(Teleports.at("Kourend Woodland", 1552, 3456))).examine(ex);
+                    st(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, n == 4 ? 2 : 1), Map.of(), Jewellery.Perk.NONE, teles).examine(ex);
             case "lumbridge" -> Defs.worn(items, id, name, "ring", 0x8A6A3A, 1000 * n, Jewellery.Slot.RING, EquipmentStats.NONE,
-                    Map.of(), Jewellery.Perk.NONE, n >= 2 ? List.of(Teleports.at("Cabbage patch", 3052, 3289)) : List.of())
-                    .examine(ex + " Rub it to restore run energy or alchemise items.");
+                    Map.of(), Jewellery.Perk.NONE, teles).examine(ex + " Rub it to restore run energy or alchemise items.");
             case "morytania" -> Defs.armour(items, id, name, "platelegs", 0x5A3A6A, "steel", 1000 * n, Slot.LEGS,
-                    st(0, 0, 0, 0, 0, 2 * n, 2 * n, 2 * n, n, 2 * n, 0, 0, 0, 0), Map.of()).examine(ex + " Right-click to teleport.");
+                    st(0, 0, 0, 0, 0, 2 * n, 2 * n, 2 * n, n, 2 * n, 0, 0, 0, 0), Map.of()).examine(ex + (teles.isEmpty() ? "" : " Sneak + right-click to teleport."));
             case "varrock" -> Defs.armour(items, id, name, "platebody", 0x8A8A9A, "steel", 1000 * n, Slot.CHEST,
                     st(0, 0, 0, -10, -5, 10 * n, 10 * n, 9 * n, -2, 10 * n, 0, 0, 0, 0), Map.of()).examine(ex);
             case "western" -> Defs.worn(items, id, name, "cape", 0x6A8A3A, 1000 * n, Jewellery.Slot.CAPE,
-                    st(0, 0, 0, 0, 0, n, n, n, n, n, 0, 0, 0, 0), Map.of(), Jewellery.Perk.NONE, List.of()).examine(ex);
+                    st(0, 0, 0, 0, 0, n, n, n, n, n, 0, 0, 0, 0), Map.of(), Jewellery.Perk.NONE, teles).examine(ex);
             default -> Defs.melee(items, id, name, "longsword", 0x8A2020, "steel", 1000 * n,
                     st(4 * n, 8 * n, -2, 0, 0, 0, 2, 1, 0, 0, 7 * n, 0, 0, 0), Map.of(), 4, AttackType.SLASH)
-                    .examine(ex + (n >= 3 ? " Right-click to teleport to the Fountain of Rune." : ""));
+                    .examine(ex + (teles.isEmpty() ? "" : " Sneak + right-click to teleport."));
         }
     }
 }

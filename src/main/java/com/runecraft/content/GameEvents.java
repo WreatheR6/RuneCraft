@@ -27,10 +27,15 @@ public final class GameEvents {
         void onObtain(ServerPlayerEntity player, String item, int count);
     }
 
+    public interface CastListener {
+        void onCast(ServerPlayerEntity player, String spellId);
+    }
+
     private static final List<XpListener> XP = new ArrayList<>();
     private static final List<KillListener> KILLS = new ArrayList<>();
     private static final List<MakeListener> MAKES = new ArrayList<>();
     private static final List<ObtainListener> OBTAINS = new ArrayList<>();
+    private static final List<CastListener> CASTS = new ArrayList<>();
 
     private GameEvents() {
     }
@@ -50,6 +55,15 @@ public final class GameEvents {
     /** Fired when a skilling action, drop or reward gives a player an item. */
     public static void onObtain(ObtainListener l) {
         OBTAINS.add(l);
+    }
+
+    /** Fired when a standard-spellbook spell (teleport, alchemy, superheat) is cast; ids are lower-case enum names. */
+    public static void onCast(CastListener l) {
+        CASTS.add(l);
+    }
+
+    public static void fireCast(ServerPlayerEntity p, String spellId) {
+        CASTS.forEach(l -> l.onCast(p, spellId));
     }
 
     public static void fireXp(ServerPlayerEntity p, Skill skill, int tenths) {
