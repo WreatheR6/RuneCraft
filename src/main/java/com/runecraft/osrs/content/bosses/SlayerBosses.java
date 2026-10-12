@@ -36,14 +36,20 @@ public final class SlayerBosses {
     public static final AttackDef HYDRA_FIRE = AttackDef.of("fire_wall", AttackType.MAGIC, 20, 14, 1)
             .special(Special.SKY_STRIKE, 0).telegraph(3, "The Alchemical Hydra breathes a wall of fire!").particle("minecraft:flame");
 
-    /** Colour phases: model/boss id, vent colour that must be used, special attack and head count. */
+    /**
+     * Colour phases: model/boss id, carapace colour, vent colour that must be used, special attack and
+     * head count. As in OSRS the right vent is the colour that beats the carapace: green is lured to the
+     * red vent, blue to the green vent and red to the blue vent.
+     */
     public enum HydraPhase {
-        GREEN("alchemical_hydra", "green", HYDRA_POISON, 4, 75),
-        BLUE("alchemical_hydra_blue", "blue", HYDRA_LIGHTNING, 3, 50),
-        RED("alchemical_hydra_red", "red", HYDRA_FIRE, 2, 25),
-        ENRAGED("alchemical_hydra_enraged", null, HYDRA_POISON, 1, 0);
+        GREEN("alchemical_hydra", "green", "red", HYDRA_POISON, 4, 75),
+        BLUE("alchemical_hydra_blue", "blue", "green", HYDRA_LIGHTNING, 3, 50),
+        RED("alchemical_hydra_red", "red", "blue", HYDRA_FIRE, 2, 25),
+        ENRAGED("alchemical_hydra_enraged", "grey", null, HYDRA_POISON, 1, 0);
 
         public final String bossId;
+        /** Colour of the Hydra's carapace in this phase. */
+        public final String colour;
         /** Vent colour that removes this phase's 75% damage reduction (null: no shield). */
         public final String vent;
         public final AttackDef special;
@@ -51,8 +57,9 @@ public final class SlayerBosses {
         /** Hitpoint percentage at which the next phase begins. */
         public final int endsAtPercent;
 
-        HydraPhase(String bossId, String vent, AttackDef special, int heads, int endsAtPercent) {
+        HydraPhase(String bossId, String colour, String vent, AttackDef special, int heads, int endsAtPercent) {
             this.bossId = bossId;
+            this.colour = colour;
             this.vent = vent;
             this.special = special;
             this.heads = heads;
@@ -118,7 +125,7 @@ public final class SlayerBosses {
                 .attack(AttackDef.of("water_blast", AttackType.MAGIC, 28, 16, 1).particle("minecraft:splash"))
                 .drops(Drop.of("kraken_tentacle", 1, 1, 400), Drop.of("trident_of_the_seas", 1, 1, 512), Drop.of("jar_of_dirt", 1, 1, 1000),
                         Drop.of("raw_shark", 10, 20, 8), Drop.of("runite_bar", 2, 2, 16), Drop.of("water_rune", 400, 400, 8),
-                        Drop.of("coins", 10000, 30000, 4), Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of("coins", 10000, 30000, 4), Drop.of("clue_scroll_elite", 1, 1, 500))
                 .slayer(87, "kraken").pet("pet_kraken").at("kraken_cove").arena(13, "water")
                 .size(1.8f, 1.6f, 2.0f).moveSpeed(0.0);
     }
@@ -130,7 +137,7 @@ public final class SlayerBosses {
                 .drops(Drop.of("occult_necklace", 1, 1, 350), Drop.of("smoke_battlestaff", 1, 1, 512),
                         Drop.of("dragon_chainbody", 1, 1, 2000), Drop.of("jar_of_smoke", 1, 1, 2000), Drop.of("rune_platelegs", 1, 1, 12),
                         Drop.of("air_rune", 300, 300, 8), Drop.of("soul_rune", 50, 50, 10), Drop.of("runite_bar", 2, 2, 16),
-                        Drop.of("coins", 10000, 20000, 4), Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of("coins", 10000, 20000, 4), Drop.of("clue_scroll_elite", 1, 1, 500))
                 .slayer(93, "smoke_devils").pet("pet_smoke_devil").at("smoke_devil_dungeon").arena(11, "void")
                 .flying().size(1.0f, 1.8f, 1.8f).moveSpeed(0.22);
     }
@@ -143,7 +150,7 @@ public final class SlayerBosses {
                         Drop.of("eternal_crystal", 1, 1, 520), Drop.of("smouldering_stone", 1, 1, 520), Drop.of("jar_of_souls", 1, 1, 2000),
                         Drop.of("rune_platebody", 1, 1, 12), Drop.of("rune_2h_sword", 1, 1, 12), Drop.of("runite_ore", 5, 5, 12),
                         Drop.of("death_rune", 100, 100, 12), Drop.of("blood_rune", 60, 60, 12), Drop.of("super_restore", 2, 2, 12),
-                        Drop.of("coal", 120, 120, 16), Drop.of("coins", 10000, 20000, 6), Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of("coal", 120, 120, 16), Drop.of("coins", 10000, 20000, 6), Drop.of("clue_scroll_elite", 1, 1, 100))
                 .slayer(91, "hellhounds").pet("pet_hellpuppy").at("cerberus_lair").arena(13, "lava")
                 .size(1.6f, 1.6f, 2.0f).moveSpeed(0.24);
     }
@@ -154,7 +161,7 @@ public final class SlayerBosses {
                 .attack(SIRE_TENDRIL).attack(SIRE_SLAM).attack(SIRE_MIASMA)
                 .drops(Drop.of("unsired", 1, 1, 100), Drop.of("blood_rune", 75, 125, 8), Drop.of("soul_rune", 100, 100, 10),
                         Drop.of("runite_bar", 3, 3, 12), Drop.of("magic_logs", 50, 50, 12), Drop.of("super_restore", 2, 2, 12),
-                        Drop.of("rune_platebody", 1, 1, 16), Drop.of("coins", 20000, 50000, 6), Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of("rune_platebody", 1, 1, 16), Drop.of("coins", 20000, 50000, 6), Drop.of("clue_scroll_elite", 1, 1, 100)) // approx
                 .slayer(85, "abyssal_demons").pet("pet_abyssal_orphan").at("abyssal_nexus").arena(13, "void")
                 .size(2.0f, 2.6f, 2.0f).moveSpeed(0.12);
     }
@@ -170,7 +177,7 @@ public final class SlayerBosses {
                             Drop.of("hydra_claw", 1, 1, 1001), Drop.of("alchemical_hydra_heads", 1, 1, 256),
                             Drop.of("jar_of_chemicals", 1, 1, 2000), Drop.of("dragon_bones", 5, 10, 8), Drop.of("rune_platelegs", 1, 1, 16),
                             Drop.of("dragon_longsword", 1, 1, 20), Drop.of("runite_bar", 3, 3, 16), Drop.of("blood_rune", 100, 100, 12),
-                            Drop.of("magic_logs", 40, 40, 16), Drop.of("coins", 20000, 40000, 6), Drop.of("clue_scroll_elite", 1, 1, 23))
+                            Drop.of("magic_logs", 40, 40, 16), Drop.of("coins", 20000, 40000, 6), Drop.of("clue_scroll_elite", 1, 1, 256))
                     .pet("pet_ikkle_hydra").at("karuulm_slayer_dungeon").arena(14, "lava");
         } else {
             d.raidOnly();
@@ -182,11 +189,11 @@ public final class SlayerBosses {
         return BossDef.of("dusk", "Dusk").level(328).stats(450, 160, 160, 160, 1, 1).speed(6)
                 .defenceBonus(90, 110, 70, 400, 400).immune(AttackType.MAGIC, AttackType.RANGED)
                 .attack(DUSK_MELEE).attack(GUARDIAN_ROCKFALL)
-                .drops(Drop.of("granite_dust", 50, 100, 1), Drop.of("granite_maul", 1, 1, 250), Drop.of("granite_ring", 1, 1, 250),
-                        Drop.of("granite_gloves", 1, 1, 250), Drop.of("granite_hammer", 1, 1, 750),
-                        Drop.of("black_tourmaline_core", 1, 1, 1000), Drop.of("jar_of_stone", 1, 1, 5000),
+                .drops(Drop.of("granite_dust", 50, 100, 1), Drop.of("granite_maul", 1, 1, 125), Drop.of("granite_ring", 1, 1, 250),
+                        Drop.of("granite_gloves", 1, 1, 250), Drop.of("granite_hammer", 1, 1, 375),
+                        Drop.of("black_tourmaline_core", 1, 1, 500), Drop.of("jar_of_stone", 1, 1, 5000),
                         Drop.of("rune_platebody", 1, 1, 16), Drop.of("adamantite_bar", 10, 10, 12), Drop.of("runite_ore", 3, 3, 16),
-                        Drop.of("death_rune", 100, 100, 12), Drop.of("coins", 10000, 30000, 6), Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of("death_rune", 100, 100, 12), Drop.of("coins", 10000, 30000, 6), Drop.of("clue_scroll_elite", 1, 1, 230)) // approx
                 .slayer(75, "gargoyles").pet("pet_noon").at("slayer_tower_roof").arena(13, "stone")
                 .size(1.0f, 2.2f, 1.7f).moveSpeed(0.22);
     }
@@ -208,7 +215,7 @@ public final class SlayerBosses {
                         Drop.of("echo_crystal", 1, 1, 750), Drop.of("jar_of_venom", 1, 1, 1500),
                         Drop.of("rune_platebody", 1, 1, 12), Drop.of("runite_bar", 4, 4, 12), Drop.of("death_rune", 200, 200, 10),
                         Drop.of("blood_rune", 150, 150, 10), Drop.of("super_restore", 3, 3, 10), Drop.of("coins", 30000, 60000, 6),
-                        Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of("clue_scroll_elite", 1, 1, 250)) // approx
                 .slayer(92, "araxytes").pet("pet_nid").at("araxyte_cave").arena(14, "crypt")
                 .size(2.0f, 1.4f, 2.2f).moveSpeed(0.22);
     }

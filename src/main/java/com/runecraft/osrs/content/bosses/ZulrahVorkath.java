@@ -109,7 +109,7 @@ public final class ZulrahVorkath {
                         Drop.of("jar_of_swamp", 1, 1, 3000), Drop.of("magic_logs", 100, 100, 12), Drop.of("runite_ore", 2, 2, 12),
                         Drop.of("snapdragon_seed", 2, 2, 12), Drop.of("dragon_bones", 30, 30, 12), Drop.of("death_rune", 300, 300, 12),
                         Drop.of("law_rune", 200, 200, 12), Drop.of("coal", 200, 200, 12), Drop.of("raw_shark", 100, 100, 16),
-                        Drop.of("antifire_potion", 5, 5, 16), Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of("antifire_potion", 5, 5, 16), Drop.of("clue_scroll_elite", 1, 1, 75))
                 .pet("pet_snakeling").at("zul_andra").arena(14, "water");
     }
 
@@ -150,12 +150,12 @@ public final class ZulrahVorkath {
                 .attack(VORKATH_CLAW).attack(VORKATH_SPIKE).attack(VORKATH_MAGIC).attack(VORKATH_DRAGONFIRE)
                 .attack(VORKATH_PINK_FIRE).attack(VORKATH_VENOM_FIRE).attack(VORKATH_BOMB)
                 .drops(Drop.of("superior_dragon_bones", 2, 2, 1), Drop.of("blue_dragonhide", 2, 2, 1),
-                        Drop.of("vorkaths_head", 1, 1, 50), Drop.of("skeletal_visage", 1, 1, 5000),
+                        Drop.of("vorkaths_head", 1, 1, 50), Drop.of("skeletal_visage", 1, 1, 5000), Drop.of("draconic_visage", 1, 1, 5000),
                         Drop.of("dragonbone_necklace", 1, 1, 1000), Drop.of("jar_of_decay", 1, 1, 3000),
                         Drop.of("dragon_bones", 10, 20, 8), Drop.of("rune_kiteshield", 1, 1, 12), Drop.of("dragon_platelegs", 1, 1, 20),
                         Drop.of("runite_ore", 4, 4, 12), Drop.of("magic_logs", 50, 50, 12), Drop.of("death_rune", 150, 150, 12),
                         Drop.of("wrath_rune", 60, 60, 12), Drop.of("coins", 20000, 80000, 6), Drop.of("dragonstone", 2, 2, 16),
-                        Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of("clue_scroll_elite", 1, 1, 65))
                 .pet("pet_vorki").at("ungael").arena(13, "ice")
                 .size(1.8f, 2.0f, 2.2f).moveSpeed(0.0);
     }

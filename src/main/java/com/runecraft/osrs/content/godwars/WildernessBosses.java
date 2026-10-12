@@ -184,7 +184,7 @@ public final class WildernessBosses {
                 .drops(Drop.always("dragon_bones"), Drop.always("black_dragonhide"),
                         Drop.of("coins", 1000, 5000, 4), Drop.of("rune_longsword", 1, 1, 16), Drop.of("adamant_platebody", 1, 1, 16),
                         Drop.of("runite_bar", 1, 1, 16), Drop.of("yew_logs", 100, 150, 16), Drop.of("blood_rune", 30, 50, 12),
-                        Drop.of("kbd_heads", 1, 1, 128), Drop.of("dragon_pickaxe", 1, 1, 1500),
+                        Drop.of("kbd_heads", 1, 1, 128), Drop.of("dragon_pickaxe", 1, 1, 1500), Drop.of("draconic_visage", 1, 1, 5000),
                         Drop.of("clue_scroll_elite", 1, 1, 450))
                 .pet("prince_black_dragon").at("kbd_lair").arena(14, "lava").wilderness().category("Wilderness")
                 .size(2.0f, 1.6f, 2.2f));

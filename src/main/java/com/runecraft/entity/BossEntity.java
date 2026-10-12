@@ -86,7 +86,8 @@ public class BossEntity extends OsrsMonsterEntity {
             case MIXED_MAGIC -> adjacent && random.nextBoolean() ? AttackType.CRUSH : AttackType.MAGIC;
             case GRAARDOR -> adjacent && attackCounter % 3 != 2 ? AttackType.CRUSH : AttackType.RANGED;
             case KRIL -> adjacent ? AttackType.SLASH : AttackType.MAGIC;
-            case JAD -> random.nextBoolean() ? AttackType.MAGIC : AttackType.RANGED;
+            case JAD -> boss.meleeWhenAdjacent() && adjacent && random.nextInt(3) == 0 ? AttackType.CRUSH
+                    : random.nextBoolean() ? AttackType.MAGIC : AttackType.RANGED;
             default -> boss.style();
         };
     }
@@ -98,6 +99,9 @@ public class BossEntity extends OsrsMonsterEntity {
         ServerWorld world = (ServerWorld) getWorld();
         switch (boss.mechanic()) {
             case JAD -> {
+                if (type.isMelee()) {
+                    break; // the claw swipe is instant: only the magic and ranged attacks are telegraphed
+                }
                 // Jad telegraphs: rearing up = magic, stomping = ranged. You have 3 game ticks to switch prayers.
                 pendingStyle = type;
                 pendingTarget = target;

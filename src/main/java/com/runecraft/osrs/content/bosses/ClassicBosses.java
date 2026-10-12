@@ -57,7 +57,7 @@ public final class ClassicBosses {
                 .drops(Drop.always("big_bones"), Drop.always("mole_claw"), Drop.of("mole_skin", 1, 3, 1),
                         Drop.of("adamant_longsword", 1, 1, 16), Drop.of("mithril_bar", 1, 1, 16), Drop.of("death_rune", 7, 7, 16),
                         Drop.of("iron_ore", 10, 20, 16), Drop.of("shark", 4, 4, 20), Drop.of("coins", 1500, 3000, 4),
-                        Drop.herbs(16), Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.herbs(16), Drop.of("clue_scroll_elite", 1, 1, 500))
                 .pet("pet_baby_mole").at("falador_mole_hills").arena(12, "jungle")
                 .size(1.2f, 1.0f, 2.2f).moveSpeed(0.22);
     }
@@ -68,10 +68,10 @@ public final class ClassicBosses {
                 .defenceBonus(50, 50, 10, 100, 100)
                 .attack(KQ_MELEE).attack(KQ_SPINES).attack(KQ_MAGIC)
                 .drops(Drop.always("bones"), Drop.of("kq_head", 1, 1, 128), Drop.of("dragon_chainbody", 1, 1, 128),
-                        Drop.of("dragon_2h_sword", 1, 1, 256), Drop.of("jar_of_sand", 1, 1, 2000),
+                        Drop.of("dragon_2h_sword", 1, 1, 256), Drop.of("dragon_pickaxe", 1, 1, 400), Drop.of("jar_of_sand", 1, 1, 2000),
                         Drop.of("rune_platebody", 1, 1, 16), Drop.of("rune_2h_sword", 1, 1, 16), Drop.of("death_rune", 150, 150, 16),
                         Drop.of("blood_rune", 100, 100, 16), Drop.of("magic_logs", 60, 60, 20), Drop.of("runite_bar", 3, 3, 20),
-                        Drop.of("coins", 15000, 20000, 6), Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of("coins", 15000, 20000, 6), Drop.of("clue_scroll_elite", 1, 1, 100))
                 .pet("pet_kalphite_princess").at("kalphite_lair").arena(13, "sand")
                 .size(1.4f, 1.2f, 2.0f).moveSpeed(0.2);
     }
@@ -86,19 +86,19 @@ public final class ClassicBosses {
 
     static BossDef dagannothRex() {
         return dk("dagannoth_rex", "Dagannoth Rex", REX_MELEE, "berserker_ring", "warrior_ring", "pet_dagannoth_rex")
-                .defenceBonus(255, 255, 255, 10, 255).immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH)
+                .defenceBonus(255, 255, 255, 10, 255)
                 .stats(255, 255, 255, 255, 1, 1).at("waterbirth_island");
     }
 
     static BossDef dagannothPrime() {
         return dk("dagannoth_prime", "Dagannoth Prime", PRIME_MAGIC, "seers_ring", "mud_battlestaff", "pet_dagannoth_prime")
-                .defenceBonus(255, 255, 255, 255, 10).immune(AttackType.MAGIC)
+                .defenceBonus(255, 255, 255, 255, 10)
                 .stats(255, 255, 255, 255, 255, 1).raidOnly();
     }
 
     static BossDef dagannothSupreme() {
         return dk("dagannoth_supreme", "Dagannoth Supreme", SUPREME_RANGED, "archers_ring", "seercull", "pet_dagannoth_supreme")
-                .defenceBonus(10, 10, 10, 255, 550).immune(AttackType.RANGED)
+                .defenceBonus(10, 10, 10, 255, 550)
                 .stats(255, 255, 255, 128, 255, 255).raidOnly();
     }
 
@@ -107,7 +107,7 @@ public final class ClassicBosses {
                 .drops(Drop.always("dagannoth_bones"), Drop.of(unique1, 1, 1, 128), Drop.of(unique2, 1, 1, 128),
                         Drop.of("dragon_axe", 1, 1, 128), Drop.of("rune_axe", 1, 1, 16), Drop.of("adamant_platebody", 1, 1, 16),
                         Drop.of("steel_bar", 15, 30, 16), Drop.of("raw_shark", 5, 5, 16), Drop.of("coins", 1000, 10000, 8),
-                        Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of("clue_scroll_elite", 1, 1, 750))
                 .pet(pet).arena(13, "water").size(1.0f, 2.2f, 1.6f).moveSpeed(0.24);
     }
 
@@ -124,7 +124,7 @@ public final class ClassicBosses {
                         Drop.of("giant_egg_sac_full", 1, 1, 20), Drop.of("red_spiders_eggs", 30, 60, 8),
                         Drop.of("snapdragon_seed", 1, 2, 16), Drop.of("ranarr_seed", 1, 2, 16), Drop.of("coal", 50, 50, 16),
                         Drop.of("adamantite_bar", 6, 8, 16), Drop.of("rune_full_helm", 1, 1, 16), Drop.of("coins", 5000, 15000, 6),
-                        Drop.of("clue_scroll_elite", 1, 1, 20))
+                        Drop.of("clue_scroll_elite", 1, 1, 60))
                 .pet("pet_sraracha").at("forthos_dungeon").arena(12, "crypt")
                 .size(1.4f, 1.1f, 1.9f).moveSpeed(0.24);
     }
@@ -138,7 +138,7 @@ public final class ClassicBosses {
                         Drop.of("arcane_sigil", 1, 1, 1365), Drop.of("elysian_sigil", 1, 1, 4095), Drop.of("jar_of_spirits", 1, 1, 1000),
                         Drop.of("death_rune", 300, 300, 8), Drop.of("soul_rune", 250, 250, 8), Drop.of("runite_bar", 10, 10, 16),
                         Drop.of("magic_logs", 75, 75, 16), Drop.of("shark", 70, 70, 16), Drop.of("coins", 20000, 50000, 8),
-                        Drop.of("uncut_onyx", 1, 1, 23), Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of("uncut_onyx", 1, 1, 23), Drop.of("clue_scroll_elite", 1, 1, 200))
                 .pet("pet_dark_core").at("corporeal_beast_lair").arena(14, "void").wilderness()
                 .size(1.6f, 2.2f, 2.0f).moveSpeed(0.2);
     }
@@ -153,7 +153,7 @@ public final class ClassicBosses {
                 .drops(Drop.always("bones"), Drop.of("dark_claw", 1, 1, 25), Drop.of("jar_of_darkness", 1, 1, 200),
                         Drop.of("uncut_onyx", 1, 1, 1000), Drop.of("ancient_shard", 1, 3, 4), Drop.of("dark_totem_base", 1, 1, 8),
                         Drop.of("soul_rune", 100, 200, 8), Drop.of("rune_platebody", 1, 1, 12), Drop.of("coins", 20000, 30000, 4),
-                        Drop.always("clue_scroll_elite"))
+                        Drop.of("clue_scroll_elite", 1, 1, 5))
                 .key("dark_totem").pet("pet_skotos").at("catacombs_of_kourend").arena(12, "crypt")
                 .size(1.2f, 2.4f, 1.8f).moveSpeed(0.22);
     }

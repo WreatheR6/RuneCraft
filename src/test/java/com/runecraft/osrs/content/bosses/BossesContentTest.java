@@ -80,9 +80,13 @@ class BossesContentTest {
 
     @Test
     void immunitiesPerForm() {
-        assertTrue(boss("dagannoth_rex").immuneTo.contains(AttackType.SLASH));
-        assertTrue(boss("dagannoth_prime").immuneTo.contains(AttackType.MAGIC));
-        assertTrue(boss("dagannoth_supreme").immuneTo.contains(AttackType.RANGED));
+        // The Dagannoth Kings have no immunities in OSRS, only huge defence bonuses against two styles.
+        assertTrue(boss("dagannoth_rex").immuneTo.isEmpty());
+        assertTrue(boss("dagannoth_rex").defenceBonus(AttackType.SLASH) > 200 && boss("dagannoth_rex").defenceBonus(AttackType.MAGIC) < 20);
+        assertTrue(boss("dagannoth_prime").defenceBonus(AttackType.MAGIC) > 200
+                && boss("dagannoth_prime").defenceBonus(AttackType.RANGED) < 20);
+        assertTrue(boss("dagannoth_supreme").defenceBonus(AttackType.RANGED) > 500
+                && boss("dagannoth_supreme").defenceBonus(AttackType.SLASH) < 20);
         assertTrue(boss("zulrah").immuneTo.contains(AttackType.STAB));
         assertTrue(boss("dusk").immuneTo.contains(AttackType.MAGIC));
         assertTrue(boss("dawn").immuneTo.contains(AttackType.CRUSH));

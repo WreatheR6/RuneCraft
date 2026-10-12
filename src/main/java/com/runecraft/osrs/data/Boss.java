@@ -33,13 +33,13 @@ public enum Boss {
     GENERAL_GRAARDOR("general_graardor", "General Graardor", 624, 255, 280, 350, 250, 80, 350, 6, AttackType.CRUSH, 60, 90,
             Mechanic.GRAARDOR, 2.2f, 0x5A6A3A, Landmark.GOD_WARS_DUNGEON, null,
             List.of(Drop.always("big_bones"), Drop.of("coins", 5000, 20000, 1), Drop.of("rune_platebody", 1, 1, 8),
-                    Drop.of("bandos_chestplate", 1, 1, 64), Drop.of("bandos_tassets", 1, 1, 64), Drop.of("bandos_boots", 1, 1, 64),
+                    Drop.of("bandos_chestplate", 1, 1, 381), Drop.of("bandos_tassets", 1, 1, 381), Drop.of("bandos_boots", 1, 1, 381),
                     Drop.of("snapdragon_seed", 1, 2, 16))),
     KRIL_TSUTSAROTH("kril_tsutsaroth", "K'ril Tsutsaroth", 650, 255, 340, 300, 270, 200, 1, 6, AttackType.SLASH, 47, 80,
             Mechanic.KRIL, 2.0f, 0x801818, Landmark.GOD_WARS_DUNGEON, null,
             List.of(Drop.always("bones"), Drop.of("coins", 5000, 20000, 1), Drop.of("death_rune", 100, 150, 4),
-                    Drop.of("zamorakian_spear", 1, 1, 64), Drop.of("steam_battlestaff", 1, 1, 64),
-                    Drop.of("staff_of_the_dead", 1, 1, 128), Drop.of("wine_of_zamorak", 3, 6, 8))),
+                    Drop.of("zamorakian_spear", 1, 1, 127), Drop.of("steam_battlestaff", 1, 1, 127),
+                    Drop.of("staff_of_the_dead", 1, 1, 508), Drop.of("wine_of_zamorak", 3, 6, 8))),
     TZTOK_JAD("tztok_jad", "TzTok-Jad", 702, 250, 640, 960, 480, 480, 960, 8, AttackType.MAGIC, 97, 0, Mechanic.JAD, 2.8f,
             0xC04010, Landmark.MOR_UL_REK, null,
             List.of(Drop.always("fire_cape"), Drop.of("tokkul", 8000, 16000, 1), Drop.of("tzrek_jad", 1, 1, 200))),
@@ -187,6 +187,23 @@ public enum Boss {
 
     public List<Drop> drops() {
         return drops;
+    }
+
+    /**
+     * Bodyguards that share the boss's chamber and are summoned with it (God Wars generals each fight
+     * alongside three: a melee, a magic and a ranged bodyguard). Monster ids from the godwars module.
+     */
+    public List<String> bodyguards() {
+        return switch (this) {
+            case GENERAL_GRAARDOR -> List.of("sergeant_strongstack", "sergeant_steelwill", "sergeant_grimspike");
+            case KRIL_TSUTSAROTH -> List.of("tstanon_karlak", "balfrug_kreeyath", "zakln_gritch");
+            default -> List.of();
+        };
+    }
+
+    /** TzTok-Jad also has a melee attack (max 97) that it only uses when its target is next to it. */
+    public boolean meleeWhenAdjacent() {
+        return this == TZTOK_JAD;
     }
 
     /** Whether this boss is fought as part of a quest rather than freely. */

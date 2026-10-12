@@ -312,7 +312,8 @@ final class SlayerScripts {
 
     /**
      * Alchemical Hydra. Each colour phase is a separate form (one head is lost per phase). Its chemical
-     * shield cuts damage by 75% until it is lured next to the vent of its own colour while the vents erupt.
+     * shield cuts damage by 75% until it is lured next to the vent whose colour beats its carapace (green to
+     * red, blue to green, red to blue) while the vents erupt.
      * Ranged and magic alternate every three attacks; every ninth attack is the phase special (poison
      * pools, chasing lightning, fire walls). The final enraged phase has no shield and attacks faster.
      */
@@ -451,7 +452,7 @@ final class SlayerScripts {
                 if (phase == HydraPhase.ENRAGED) {
                     BossFx.say(boss, "The Alchemical Hydra becomes enraged!");
                 } else if (phase != HydraPhase.GREEN) {
-                    BossFx.say(boss, "The Alchemical Hydra's chemical shield reforms as it turns " + phase.vent + "!");
+                    BossFx.say(boss, "The Alchemical Hydra's chemical shield reforms as it turns " + phase.colour + "!");
                 }
             }
             if (phase.vent != null && --ventTimer <= 0) {

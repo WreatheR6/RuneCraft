@@ -27,7 +27,7 @@ public final class CollectionLogData {
             }
             List<String> uniques = new ArrayList<>();
             for (Drop d : b.drops()) {
-                if (d.rarity() >= 24 && !d.item().startsWith("#")) {
+                if (logged(d)) {
                     uniques.add(d.item());
                 }
             }
@@ -58,7 +58,7 @@ public final class CollectionLogData {
         for (com.runecraft.osrs.content.BossDef b : com.runecraft.osrs.content.ContentRegistry.bosses()) {
             List<String> uniques = new ArrayList<>();
             for (Drop d : b.drops) {
-                if (d.rarity() >= 24 && !d.item().startsWith("#") && !uniques.contains(d.item())) {
+                if (logged(d) && !uniques.contains(d.item())) {
                     uniques.add(d.item());
                 }
             }
@@ -77,6 +77,11 @@ public final class CollectionLogData {
     }
 
     private CollectionLogData() {
+    }
+
+    /** A boss drop goes on its log page when rare (1/24 or rarer); tertiary clue scrolls never do. */
+    static boolean logged(Drop d) {
+        return d.rarity() >= 24 && !d.item().startsWith("#") && !d.item().startsWith("clue_scroll");
     }
 
     private static void page(String category, String name, List<String> items) {

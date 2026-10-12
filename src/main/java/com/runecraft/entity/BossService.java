@@ -55,7 +55,27 @@ public final class BossService {
         entity.initialize(world, world.getLocalDifficulty(spawn), SpawnReason.EVENT, null, null);
         entity.setTarget(player);
         world.spawnEntity(entity);
+        spawnBodyguards(world, boss, spawn, player);
         world.playSound(null, pos, SoundEvents.ENTITY_WITHER_SPAWN, SoundCategory.HOSTILE, 0.6f, 1.2f);
         Msg.red(player, boss.displayName() + " (level-" + boss.combatLevel() + ") emerges!");
+    }
+
+    /** Spawns the boss's bodyguards around it (skipping any still alive from an earlier fight). */
+    private static void spawnBodyguards(ServerWorld world, Boss boss, BlockPos center, ServerPlayerEntity player) {
+        int i = 0;
+        for (String id : boss.bodyguards()) {
+            double angle = Math.PI * 2 * i++ / Math.max(1, boss.bodyguards().size());
+            EntityType<?> type = ModEntities.typeById(id);
+            if (type == null || !world.getEntitiesByType(type, new Box(center).expand(48), e -> e.isAlive()).isEmpty()) {
+                continue;
+            }
+            if (type.create(world) instanceof net.minecraft.entity.mob.MobEntity mob) {
+                mob.refreshPositionAndAngles(center.getX() + 0.5 + Math.cos(angle) * 4, center.getY(),
+                        center.getZ() + 0.5 + Math.sin(angle) * 4, 0, 0);
+                mob.initialize(world, world.getLocalDifficulty(mob.getBlockPos()), SpawnReason.EVENT, null, null);
+                mob.setTarget(player);
+                world.spawnEntity(mob);
+            }
+        }
     }
 }
