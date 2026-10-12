@@ -118,6 +118,24 @@ final class Defs {
     /** Plate armour stats per metal: black (10), adamant (30), rune (40). */
     static EquipmentStats plate(String metal, Piece p) {
         return switch (metal) {
+            case "bronze" -> switch (p) {
+                case HELM -> st(0, 0, 0, -6, -2, 4, 5, 3, -1, 4, 0, 0, 0, 0);
+                case BODY -> st(0, 0, 0, -30, -10, 15, 14, 9, -6, 14, 0, 0, 0, 0);
+                case LEGS -> st(0, 0, 0, -21, -7, 8, 7, 6, -4, 7, 0, 0, 0, 0);
+                case SHIELD -> st(0, 0, 0, -8, -2, 5, 7, 6, -1, 6, 0, 0, 0, 0);
+            };
+            case "iron" -> switch (p) {
+                case HELM -> st(0, 0, 0, -6, -2, 6, 7, 5, -1, 6, 0, 0, 0, 0);
+                case BODY -> st(0, 0, 0, -30, -10, 21, 20, 12, -6, 20, 0, 0, 0, 0);
+                case LEGS -> st(0, 0, 0, -21, -7, 11, 10, 10, -4, 10, 0, 0, 0, 0);
+                case SHIELD -> st(0, 0, 0, -8, -2, 8, 9, 8, -1, 8, 0, 0, 0, 0);
+            };
+            case "steel" -> switch (p) {
+                case HELM -> st(0, 0, 0, -6, -2, 9, 10, 7, -1, 9, 0, 0, 0, 0);
+                case BODY -> st(0, 0, 0, -30, -10, 32, 31, 24, -6, 31, 0, 0, 0, 0);
+                case LEGS -> st(0, 0, 0, -21, -7, 17, 16, 15, -4, 16, 0, 0, 0, 0);
+                case SHIELD -> st(0, 0, 0, -8, -2, 12, 14, 13, -1, 13, 0, 0, 0, 0);
+            };
             case "black" -> switch (p) {
                 case HELM -> st(0, 0, 0, -6, -2, 12, 13, 10, -1, 12, 0, 0, 0, 0);
                 case BODY -> st(0, 0, 0, -30, -10, 41, 40, 30, -6, 40, 0, 0, 0, 0);
@@ -147,6 +165,8 @@ final class Defs {
 
     static int plateLevel(String metal) {
         return switch (metal) {
+            case "bronze", "iron" -> 1;
+            case "steel" -> 5;
             case "black" -> 10;
             case "mithril" -> 20;
             case "adamant" -> 30;

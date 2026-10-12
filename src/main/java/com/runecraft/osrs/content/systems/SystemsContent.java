@@ -22,6 +22,9 @@ public final class SystemsContent implements ContentModule {
     public static final String LUNAR_ALTAR = "lunar_altar";
     public static final String DARK_ALTAR = "dark_altar";
     public static final String DIARY_BOARD = "achievement_diary_board";
+    /** Falo the Bard stands on the hill north of Seers' Village (OSRS ~2689, 3550). */
+    public static final int FALO_X = 2689;
+    public static final int FALO_Y = 3550;
 
     @Override
     public String id() {
@@ -33,7 +36,12 @@ public final class SystemsContent implements ContentModule {
         Jewellery.items(items);
         ClueRewards.items(items);
         Capes.items(items);
+        Defs.simple(items, CluePuzzles.PUZZLE_BOX, "Puzzle box", "package", 0x8A6A3A, 1).stack(1)
+                .examine("Slide the pieces into order to solve the puzzle.");
+        Defs.simple(items, CluePuzzles.LIGHT_BOX, "Light box", "package", 0xE0D060, 1).stack(1)
+                .examine("Turn all of the lights on to solve the puzzle.");
     }
+
 
     @Override
     public List<BlockDef> blocks() {
@@ -55,7 +63,8 @@ public final class SystemsContent implements ContentModule {
                 PlaceDef.of("heroes_guild", "Heroes' Guild", 2902, 3510, PlaceDef.Style.TOWN, List.of(FOUNTAIN)),
                 PlaceDef.of("jaldraocht_pyramid", "Jaldraocht Pyramid", 3233, 2898, PlaceDef.Style.RUINS, List.of(ANCIENT_ALTAR)),
                 PlaceDef.of("lunar_isle", "Lunar Isle", 2100, 3914, PlaceDef.Style.TOWN, List.of(LUNAR_ALTAR)),
-                PlaceDef.of("arceuus_dark_altar", "Dark Altar", 1715, 3883, PlaceDef.Style.RUINS, List.of(DARK_ALTAR)));
+                PlaceDef.of("arceuus_dark_altar", "Dark Altar", 1715, 3883, PlaceDef.Style.RUINS, List.of(DARK_ALTAR)),
+                PlaceDef.of(CluePuzzles.FALO, "Falo the Bard", FALO_X, FALO_Y, PlaceDef.Style.NONE, List.of()));
     }
 
     @Override
@@ -64,7 +73,8 @@ public final class SystemsContent implements ContentModule {
                 NpcDef.of("grand_exchange_clerk", "Grand Exchange Clerk", "grand_exchange", 3, 0, 0xE0B090, 0x3A6A3A, 0x2A2A2A, 0x3A6A3A),
                 NpcDef.of("wise_old_man", "Wise Old Man", "grand_exchange", -3, 2, 0xE0B090, 0x3050C0, 0x3050C0, 0xE0E0E0),
                 NpcDef.of("watson", "Watson", "grand_exchange", 0, 4, 0xE0B090, 0x6A4A2A, 0x2A2A2A, 0x6A4A2A),
-                NpcDef.of("achievement_diary_master", "Diary master", "grand_exchange", -4, -2, 0xE0B090, 0x8A6A3A, 0x5A3A2A, 0x8A6A3A));
+                NpcDef.of("achievement_diary_master", "Diary master", "grand_exchange", -4, -2, 0xE0B090, 0x8A6A3A, 0x5A3A2A, 0x8A6A3A),
+                NpcDef.of(CluePuzzles.FALO, "Falo the Bard", CluePuzzles.FALO, 0, 0, 0xE0B090, 0x3A6A9A, 0x5A3A2A, 0xC03030));
     }
 
     @Override

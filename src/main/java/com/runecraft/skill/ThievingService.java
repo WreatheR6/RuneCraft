@@ -47,6 +47,14 @@ public final class ThievingService {
         block.empty(world, pos, state);
     }
 
+    /** Pickpocket success-chance multiplier (achievement diary perks register theirs; 1.0 = none). */
+    public static java.util.function.ToDoubleFunction<ServerPlayerEntity> pickpocketBonus = p -> 1.0;
+
+    /** A pickpocket success chance after bonuses, capped at 100%. */
+    public static double pickpocketChance(ServerPlayerEntity player, double base) {
+        return Math.min(1.0, base * pickpocketBonus.applyAsDouble(player));
+    }
+
     public static void pickpocket(ServerPlayerEntity player, LivingEntity target, Thieving.Pickpocket kind) {
         if (!Stun.check(player)) {
             return;
@@ -58,7 +66,7 @@ public final class ThievingService {
         }
         Msg.action(player, "You attempt to pick the " + kind.displayName() + "'s pocket.");
         player.swingHand(Hand.MAIN_HAND, true);
-        if (player.getRandom().nextDouble() < Chance.lerp(level, kind.low(), kind.high())) {
+        if (player.getRandom().nextDouble() < pickpocketChance(player, Chance.lerp(level, kind.low(), kind.high()))) {
             for (Thieving.Loot l : kind.loot()) {
                 if (l.weight() <= 1 || player.getRandom().nextInt(l.weight()) == 0) {
                     int n = l.min() + (l.max() > l.min() ? player.getRandom().nextInt(l.max() - l.min() + 1) : 0);

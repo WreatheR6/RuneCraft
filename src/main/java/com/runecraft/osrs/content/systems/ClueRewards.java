@@ -268,6 +268,36 @@ public final class ClueRewards {
                 req(Skill.RANGED, 20), 5);
         unique(E, "willow_comp_bow");
         unique(E, "black_pickaxe");
+        trimmedPlate(items, E, "bronze", 0x8A5A2A, 500);
+        trimmedPlate(items, E, "iron", 0x6A6A6A, 800);
+        trimmedPlate(items, E, "steel", 0x9A9AA0, 1500);
+        for (String trim : new String[]{"t", "g"}) {
+            int w = trim.equals("g") ? 0xD8B030 : 0x202020;
+            Defs.armour(items, "black_wizard_hat_" + trim, "Black wizard hat (" + trim + ")", "cowl", w, "leather", 2000, Slot.HEAD,
+                    st(0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0), Map.of());
+            Defs.armour(items, "black_wizard_robe_" + trim, "Black wizard robe (" + trim + ")", "leather_body", w, "leather", 2000,
+                    Slot.CHEST, st(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0), Map.of());
+            unique(E, "black_wizard_hat_" + trim);
+            unique(E, "black_wizard_robe_" + trim);
+        }
+        Defs.armour(items, "leather_body_g", "Leather body (g)", "leather_body", 0xD8B030, "leather", 1000, Slot.CHEST,
+                st(0, 0, 0, -2, 2, 8, 9, 10, 4, 9, 0, 0, 0, 0), req(Skill.DEFENCE, 10));
+        Defs.armour(items, "leather_chaps_g", "Leather chaps (g)", "chaps", 0xD8B030, "leather", 1000, Slot.LEGS,
+                st(0, 0, 0, -2, 4, 2, 2, 2, 3, 2, 0, 0, 0, 0), Map.of());
+        unique(E, "leather_body_g");
+        unique(E, "leather_chaps_g");
+        for (String[] shirt : new String[][]{{"red", "C03030"}, {"blue", "3050C0"}, {"green", "30A030"}, {"black", "202020"},
+                {"purple", "7A3AA0"}}) {
+            cosmeticArmour(items, E, "bobs_" + shirt[0] + "_shirt", "Bob's " + shirt[0] + " shirt", "leather_body",
+                    Integer.parseInt(shirt[1], 16), Slot.CHEST, 2000);
+        }
+        cosmeticArmour(items, E, "a_powdered_wig", "A powdered wig", "cowl", 0xF0F0F0, Slot.HEAD, 2000);
+        cosmeticArmour(items, E, "flared_trousers", "Flared trousers", "chaps", 0x6A4AA0, Slot.LEGS, 2000);
+        cosmeticArmour(items, E, "pantaloons", "Pantaloons", "chaps", 0xE0D0A0, Slot.LEGS, 2000);
+        cosmeticArmour(items, E, "sleeping_cap", "Sleeping cap", "cowl", 0x3050C0, Slot.HEAD, 2000);
+        Defs.melee(items, "ham_joint", "Ham joint", "club", 0xC08070, "iron", 2000, st(0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0),
+                Map.of(), 4, AttackType.CRUSH);
+        unique(E, "ham_joint");
 
         // ---------------- Medium ----------------
         Tier M = Tier.MEDIUM;
@@ -307,6 +337,18 @@ public final class ClueRewards {
         cosmeticArmour(items, M, "penguin_mask", "Penguin mask", "cowl", 0x202020, Slot.HEAD, 5000);
         cosmeticArmour(items, M, "leprechaun_hat", "Leprechaun hat", "cowl", 0x30A030, Slot.HEAD, 5000);
         cosmeticArmour(items, M, "crier_hat", "Crier hat", "cowl", 0x6A2A2A, Slot.HEAD, 5000);
+        cosmeticArmour(items, M, "crier_coat", "Crier coat", "leather_body", 0x6A2A2A, Slot.CHEST, 5000);
+        Defs.melee(items, "crier_bell", "Crier bell", "club", 0xC0A040, "iron", 5000, ZERO, Map.of(), 4, AttackType.CRUSH);
+        unique(M, "crier_bell");
+        cosmeticArmour(items, M, "black_unicorn_mask", "Black unicorn mask", "cowl", 0x202020, Slot.HEAD, 5000);
+        cosmeticArmour(items, M, "white_unicorn_mask", "White unicorn mask", "cowl", 0xF0F0F0, Slot.HEAD, 5000);
+        cosmeticArmour(items, M, "wolf_mask", "Wolf mask", "cowl", 0x6A6A6A, Slot.HEAD, 5000);
+        cosmeticWorn(items, M, "wolf_cloak", "Wolf cloak", "cape", 0x6A6A6A, Jewellery.Slot.CAPE, 5000);
+        cosmeticArmour(items, M, "purple_elegant_shirt", "Purple elegant shirt", "leather_body", 0x7A3AA0, Slot.CHEST, 5000);
+        cosmeticArmour(items, M, "purple_elegant_legs", "Purple elegant legs", "chaps", 0x7A3AA0, Slot.LEGS, 5000);
+        Defs.armour(items, "cabbage_round_shield", "Cabbage round shield", "kiteshield", 0x6AA03A, "leather", 5000, Slot.SHIELD,
+                st(0, 0, 0, 0, 0, 3, 4, 2, 0, 3, 0, 0, 0, 0), Map.of());
+        unique(M, "cabbage_round_shield");
 
         // ---------------- Hard ----------------
         Tier H = Tier.HARD;
@@ -348,6 +390,24 @@ public final class ClueRewards {
                 unique(H, id);
             }
         }
+        godPlate(items, H, "ancient", 0x8A3A3A);
+        godPlate(items, H, "armadyl", 0xE0E0D0);
+        godPlate(items, H, "bandos", 0x6A5A3A);
+        for (String god : new String[]{"saradomin", "zamorak", "guthix"}) {
+            int c = god.equals("saradomin") ? 0x3050C0 : god.equals("zamorak") ? 0xA02020 : 0x30A030;
+            Map<Skill, Integer> r = req(Skill.RANGED, 70, Skill.DEFENCE, 40);
+            Defs.armour(items, god + "_dhide_body", Defs.cap(god) + " d'hide body", "leather_body", c, "leather", 30000, Slot.CHEST,
+                    st(0, 0, 0, -15, 30, 55, 47, 62, 50, 57, 0, 0, 0, 1), r);
+            Defs.armour(items, god + "_chaps", Defs.cap(god) + " chaps", "chaps", c, "leather", 20000, Slot.LEGS,
+                    st(0, 0, 0, -10, 17, 31, 25, 33, 28, 31, 0, 0, 0, 1), req(Skill.RANGED, 70));
+            Defs.armour(items, god + "_coif", Defs.cap(god) + " coif", "cowl", c, "leather", 15000, Slot.HEAD,
+                    st(0, 0, 0, -1, 7, 4, 7, 10, 4, 8, 0, 0, 0, 1), r);
+            unique(H, god + "_dhide_body");
+            unique(H, god + "_chaps");
+            unique(H, god + "_coif");
+        }
+        cosmeticArmour(items, H, "pith_helmet", "Pith helmet", "cowl", 0xD0C090, Slot.HEAD, 20000);
+        cosmeticWorn(items, H, "explorer_backpack", "Explorer backpack", "cape", 0x8A6A3A, Jewellery.Slot.CAPE, 20000);
         thirdAge(items);
 
         // ---------------- Elite ----------------
@@ -395,6 +455,25 @@ public final class ClueRewards {
         unique(L, "ring_of_nature");
         Defs.simple(items, "dragon_scimitar_ornament_kit", "Dragon scimitar ornament kit", "package", 0xC03030, 200000).stack(1);
         unique(L, "dragon_scimitar_ornament_kit");
+        for (String kit : new String[]{"dragon_full_helm", "dragon_chainbody", "dragon_legs_skirt", "dragon_sq_shield"}) {
+            Defs.simple(items, kit + "_ornament_kit", Defs.cap(kit.replace('_', ' ')) + " ornament kit", "package", 0xC03030, 200000)
+                    .stack(1);
+            unique(L, kit + "_ornament_kit");
+        }
+        Defs.melee(items, "dragon_cane", "Dragon cane", "club", 0xC03030, "dragon", 60000,
+                st(0, 0, 45, 0, 0, 0, 0, 0, 0, 0, 44, 0, 0, 0), req(Skill.ATTACK, 60), 4, AttackType.CRUSH); // approx stats
+        unique(L, "dragon_cane");
+        Defs.melee(items, "katana", "Katana", "longsword", 0xC0C0C8, "steel", 30000, st(4, 8, -2, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0),
+                Map.of(), 4, AttackType.SLASH); // approx stats
+        unique(L, "katana");
+        Defs.melee(items, "briefcase", "Briefcase", "club", 0x5A3A2A, "iron", 30000, ZERO, Map.of(), 4, AttackType.CRUSH);
+        unique(L, "briefcase");
+        Defs.melee(items, "giant_boot", "Giant boot", "club", 0x6A4A2A, "iron", 30000, ZERO, Map.of(), 4, AttackType.CRUSH);
+        unique(L, "giant_boot");
+        cosmeticArmour(items, L, "sagacious_spectacles", "Sagacious spectacles", "cowl", 0xC0C0C0, Slot.HEAD, 30000);
+        cosmeticArmour(items, L, "top_hat", "Top hat", "cowl", 0x202020, Slot.HEAD, 30000);
+        cosmeticArmour(items, L, "monocle", "Monocle", "cowl", 0xC0C0C0, Slot.HEAD, 30000);
+        cosmeticArmour(items, L, "uris_hat", "Uri's hat", "cowl", 0x5A3A6A, Slot.HEAD, 30000);
 
         // ---------------- Master ----------------
         Tier S = Tier.MASTER;
@@ -424,6 +503,30 @@ public final class ClueRewards {
         unique(S, "obsidian_cape_r");
         cosmeticArmour(items, S, "samurai_kasa", "Samurai kasa", "cowl", 0xC0A070, Slot.HEAD, 80000);
         cosmeticArmour(items, S, "samurai_shirt", "Samurai shirt", "leather_body", 0x803030, Slot.CHEST, 80000);
+        cosmeticArmour(items, S, "samurai_greaves", "Samurai greaves", "chaps", 0x803030, Slot.LEGS, 80000);
+        cosmeticArmour(items, S, "samurai_boots", "Samurai boots", "boots", 0x803030, Slot.FEET, 80000);
+        cosmeticWorn(items, S, "samurai_gloves", "Samurai gloves", "gloves", 0x803030, Jewellery.Slot.HANDS, 80000);
+        for (String[] mask : new String[][]{{"old_demon", "Old demon", "6A6A5A"}, {"lesser_demon", "Lesser demon", "C02020"},
+                {"greater_demon", "Greater demon", "801818"}, {"black_demon", "Black demon", "202020"},
+                {"jungle_demon", "Jungle demon", "3A6A2A"}}) {
+            cosmeticArmour(items, S, mask[0] + "_mask", mask[1] + " mask", "full_helm", Integer.parseInt(mask[2], 16), Slot.HEAD, 80000);
+        }
+        int dark = 0x2A2A3A;
+        Map<Skill, Integer> darkReq = req(Skill.MAGIC, 40, Skill.DEFENCE, 20);
+        Defs.armour(items, "hood_of_darkness", "Hood of darkness", "cowl", dark, "leather", 80000, Slot.HEAD,
+                st(0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1), darkReq); // approx stats
+        Defs.armour(items, "robe_top_of_darkness", "Robe top of darkness", "leather_body", dark, "leather", 80000, Slot.CHEST,
+                st(0, 0, 0, 20, 0, 0, 0, 0, 20, 0, 0, 0, 0, 2), darkReq); // approx stats
+        Defs.armour(items, "robe_bottom_of_darkness", "Robe bottom of darkness", "chaps", dark, "leather", 80000, Slot.LEGS,
+                st(0, 0, 0, 15, 0, 0, 0, 0, 15, 0, 0, 0, 0, 1), darkReq); // approx stats
+        Defs.armour(items, "boots_of_darkness", "Boots of darkness", "boots", dark, "leather", 80000, Slot.FEET,
+                st(0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0), darkReq); // approx stats
+        Defs.worn(items, "gloves_of_darkness", "Gloves of darkness", "gloves", dark, 80000, Jewellery.Slot.HANDS,
+                st(0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0), darkReq, Jewellery.Perk.NONE, List.of());
+        for (String id : new String[]{"hood_of_darkness", "robe_top_of_darkness", "robe_bottom_of_darkness", "boots_of_darkness",
+                "gloves_of_darkness"}) {
+            unique(S, id);
+        }
         for (String kit : new String[]{"armadyl_godsword", "bandos_godsword", "saradomin_godsword", "zamorak_godsword", "occult",
                 "torture", "anguish", "tormented", "dragon_defender", "dark_infinity_colour", "light_infinity_colour"}) {
             String id = kit + "_ornament_kit";

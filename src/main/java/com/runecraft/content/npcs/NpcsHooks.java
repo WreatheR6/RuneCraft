@@ -163,7 +163,8 @@ public final class NpcsHooks implements ModuleHooks {
         }
         Msg.action(player, "You attempt to pick the " + who + "'s pocket.");
         player.swingHand(Hand.MAIN_HAND, true);
-        if (player.getRandom().nextDouble() < Chance.lerp(level, p.low(), p.high())) {
+        if (player.getRandom().nextDouble() < com.runecraft.skill.ThievingService.pickpocketChance(player,
+                Chance.lerp(level, p.low(), p.high()))) {
             for (TownMonsters.Loot l : p.always()) {
                 give(player, l);
             }

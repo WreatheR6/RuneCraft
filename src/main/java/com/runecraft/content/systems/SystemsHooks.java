@@ -7,6 +7,7 @@ import com.runecraft.content.ModuleHooks;
 import com.runecraft.entity.QuestNpcEntity;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
+import com.runecraft.osrs.content.systems.CluePuzzles;
 import com.runecraft.osrs.content.systems.ClueScrolls;
 import com.runecraft.osrs.content.systems.Diaries;
 import com.runecraft.osrs.content.systems.DiaryRewards;
@@ -109,6 +110,17 @@ public final class SystemsHooks implements ModuleHooks {
         });
         QuestScripts.onTalk("watson", SystemsHooks::watson);
 
+        // Diary perks that live in other systems' mechanics.
+        com.runecraft.skill.ThievingService.pickpocketBonus = p -> {
+            SysState.SysPlayer sp = SysState.of(p);
+            return DiaryRewards.pickpocketMultiplier(Diaries.tierComplete(sp.diaryDone, "ardougne", Diaries.Tier.MEDIUM),
+                    Diaries.tierComplete(sp.diaryDone, "ardougne", Diaries.Tier.HARD), DiaryService.inArea(p, "ardougne"));
+        };
+        com.runecraft.content.dungeons.BarrowsHooks.runeBonus = p -> DiaryRewards.barrowsRuneMultiplier(
+                Diaries.tierComplete(SysState.of(p).diaryDone, "morytania", Diaries.Tier.ELITE));
+        QuestScripts.onTalk(CluePuzzles.FALO, (p, npc) -> QuestApi.say(p, "Falo the Bard",
+                "I'm Falo, the bard. Bring me what my songs ask for and I'll help you on your treasure trail."));
+
         UseItemCallback.EVENT.register(SystemsHooks::useItem);
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (hand != Hand.MAIN_HAND || world.isClient() || !(entity instanceof QuestNpcEntity npc) || !(player instanceof ServerPlayerEntity sp)) {
@@ -139,7 +151,8 @@ public final class SystemsHooks implements ModuleHooks {
     /** Whether an item's right-click is decided purely by its id (so the client can predict it). */
     static boolean deterministic(String id, boolean sneaking) {
         if (ClueScrolls.Tier.byScroll(id) != null || ClueScrolls.Tier.byCasket(id) != null || Spellbooks.tablet(id) != null
-                || id.startsWith("antique_lamp_") || RunEnergyService.isEnergyPotion(id) || id.equals("ectophial")) {
+                || id.startsWith("antique_lamp_") || RunEnergyService.isEnergyPotion(id) || id.equals("ectophial")
+                || id.equals(CluePuzzles.PUZZLE_BOX) || id.equals(CluePuzzles.LIGHT_BOX)) {
             return true;
         }
         if (Jewellery.worn(id) != null && ItemCatalog.get(id) != null) {
@@ -185,6 +198,9 @@ public final class SystemsHooks implements ModuleHooks {
         if (casket != null) {
             ClueService.openCasket(p, stack, casket);
             return true;
+        }
+        if (id.equals(CluePuzzles.PUZZLE_BOX) || id.equals(CluePuzzles.LIGHT_BOX)) {
+            return ClueService.useBox(p, id);
         }
         Spellbooks.Tablet tab = Spellbooks.tablet(id);
         if (tab != null) {

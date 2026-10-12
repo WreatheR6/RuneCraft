@@ -44,7 +44,8 @@ final class ThievingHooks {
         Msg.action(player, "You attempt to pick the " + SkillingUtil.lower(t.name()) + "'s pocket.");
         player.swingHand(Hand.MAIN_HAND, true);
         int level = SkillingUtil.level(player, Skill.THIEVING);
-        if (player.getRandom().nextDouble() < Chance.lerp(level, t.low(), t.high())) {
+        if (player.getRandom().nextDouble() < com.runecraft.skill.ThievingService.pickpocketChance(player,
+                Chance.lerp(level, t.low(), t.high()))) {
             SkillingUtil.giveAll(player, t.always(), player.getRandom());
             SkillingUtil.roll(player, t.table(), player.getRandom());
             XpService.add(player, Skill.THIEVING, t.xp());
