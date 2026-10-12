@@ -21,7 +21,7 @@ import java.util.Map;
  * Fairy rings and Magic Mushtrees: sneak-click to turn the dial to the next destination, click to
  * travel to the chosen one.
  */
-final class IslandsTravelService {
+public final class IslandsTravelService {
     /** Chosen destination code per player and network. */
     private static final Map<String, String> DIAL = new HashMap<>();
 
