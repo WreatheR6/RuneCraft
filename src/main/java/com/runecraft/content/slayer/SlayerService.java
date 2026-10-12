@@ -7,6 +7,7 @@ import com.runecraft.osrs.Region;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.CombatProfile;
 import com.runecraft.osrs.content.ContentRegistry;
+import com.runecraft.osrs.content.slayer.SlayerBossTasks;
 import com.runecraft.osrs.content.slayer.SlayerCategories;
 import com.runecraft.osrs.content.slayer.SlayerChests;
 import com.runecraft.osrs.content.slayer.SlayerGear;
@@ -135,12 +136,21 @@ public final class SlayerService {
         }
         SlayerRewards.Unlock ext = SlayerRewards.extensionFor(a.category());
         boolean extended = ext != null && p.unlocks.contains(ext.id());
-        p.task = a.category();
-        p.amount = SlayerTasks.amount(a, extended, random);
+        SlayerBossTasks.BossTask boss = null;
+        if (a.category().equals(SlayerBossTasks.CATEGORY)) {
+            // "Like a Boss": one boss with equal chance (Krystilia: Wilderness bosses only).
+            boss = SlayerBossTasks.pick(random, slayer, master.wilderness(), p.blocked, previous);
+            if (boss == null) {
+                say(player, master, "I have nothing for you right now.");
+                return;
+            }
+        }
+        p.task = boss != null ? boss.id() : a.category();
+        p.amount = boss != null ? boss.min() + random.nextInt(boss.max() - boss.min() + 1) : SlayerTasks.amount(a, extended, random);
         p.remaining = p.amount;
         p.master = master.id();
         p.region = null;
-        if (master.locationRestricted()) {
+        if (master.locationRestricted() && boss == null) {
             List<Region> regions = SlayerTasks.regions(a.category());
             if (!regions.isEmpty()) {
                 p.region = regions.get(random.nextInt(regions.size())).name();
@@ -214,14 +224,25 @@ public final class SlayerService {
         return null;
     }
 
+    /** True if a kill of this creature counts towards {@code task}: its category, or a boss task for that boss. */
+    static boolean counts(String task, MonsterStats stats) {
+        if (task == null || stats == null) {
+            return false;
+        }
+        if (task.equals(categoryOf(stats))) {
+            return true;
+        }
+        String id = stats.profile() != null ? stats.profile().id : stats.boss() != null ? stats.boss().entityId() : null;
+        return SlayerBossTasks.counts(task, id);
+    }
+
     /** True if the entity counts towards the player's current task right now (location rules included). */
     public static boolean isOnTask(ServerPlayerEntity player, LivingEntity entity) {
         SlayerState.Profile p = profile(player);
         if (!p.hasTask()) {
             return false;
         }
-        String category = categoryOf(MonsterStats.of(entity));
-        if (!p.task.equals(category)) {
+        if (!counts(p.task, MonsterStats.of(entity))) {
             return false;
         }
         SlayerMasters.Master m = p.master == null ? null : SlayerMasters.get(p.master);
@@ -233,7 +254,7 @@ public final class SlayerService {
 
     public static void onKill(ServerPlayerEntity player, LivingEntity entity, MonsterStats stats) {
         SlayerState.Profile p = profile(player);
-        if (!p.hasTask() || !p.task.equals(categoryOf(stats))) {
+        if (!p.hasTask() || !counts(p.task, stats)) {
             return;
         }
         SlayerMasters.Master master = p.master == null ? null : SlayerMasters.get(p.master);

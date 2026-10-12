@@ -5,7 +5,7 @@ import com.runecraft.osrs.content.ItemSink;
 import java.util.List;
 
 /**
- * Demonic ashes, scattered for Prayer XP (OSRS): fiendish 10, vile 25, malicious 65, abyssal 85.
+ * Demonic ashes, scattered for Prayer XP (OSRS): fiendish 10, vile 25, malicious 65, abyssal 85, infernal 110.
  * Abyssal ashes are defined by the slayer module (abyssal demons drop them); the others here.
  */
 public final class PrayerData extends SkillingPart {
@@ -18,7 +18,9 @@ public final class PrayerData extends SkillingPart {
             new Ashes("fiendish_ashes", "Fiendish ashes", 10.0, 0x6A5A5A, 15),
             new Ashes("vile_ashes", "Vile ashes", 25.0, 0x5A4A4A, 60),
             new Ashes("malicious_ashes", "Malicious ashes", 65.0, 0x4A3A3A, 300),
-            new Ashes("abyssal_ashes", "Abyssal ashes", 85.0, 0x4A2A4A, 1000));
+            new Ashes("abyssal_ashes", "Abyssal ashes", 85.0, 0x4A2A4A, 1000),
+            // Cerberus, K'ril Tsutsaroth, Skotizo and tormented demons.
+            new Ashes("infernal_ashes", "Infernal ashes", 110.0, 0x6A2A1A, 1500)); // value approx
 
     public static Ashes ashes(String id) {
         for (Ashes a : ASHES) {

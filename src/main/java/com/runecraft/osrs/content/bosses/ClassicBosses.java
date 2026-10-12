@@ -151,7 +151,7 @@ public final class ClassicBosses {
                 .attack(AttackDef.of("shadow_bolt", AttackType.MAGIC, 38, 12, 4).particle("minecraft:squid_ink"))
                 .phase(50, "Skotizo summons the dead to its side!", 1.0, true)
                 .minion("reanimated_demon_spawn", 3)
-                .drops(Drop.always("bones"), Drop.of("dark_claw", 1, 1, 25), Drop.of("jar_of_darkness", 1, 1, 200),
+                .drops(Drop.always("infernal_ashes"), Drop.of("dark_claw", 1, 1, 25), Drop.of("jar_of_darkness", 1, 1, 200),
                         Drop.of("uncut_onyx", 1, 1, 1000), Drop.of("ancient_shard", 1, 3, 4), Drop.of("dark_totem_base", 1, 1, 8),
                         Drop.of("soul_rune", 100, 200, 8), Drop.of("rune_platebody", 1, 1, 12), Drop.of("coins", 20000, 30000, 4),
                         Drop.of("clue_scroll_elite", 1, 1, 5))

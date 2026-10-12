@@ -114,6 +114,40 @@ public final class SlayerMasters {
                 a("skeletons", 7, 15, 50), a("spiders", 6, 15, 50), a("wolves", 7, 15, 50), a("zombies", 7, 15, 50)};
     }
 
+    /** Spria (A Porcine of Interest): Turael's table plus sourhogs (weight and amount approx). */
+    private static Assignment[] spriaTasks() {
+        List<Assignment> list = new ArrayList<>(List.of(turaelTasks()));
+        list.add(a("sourhogs", 6, 10, 25));
+        return list.toArray(new Assignment[0]);
+    }
+
+    /** Nieve's table; Steve, who replaces her after Monkey Madness II, assigns the same tasks. */
+    private static Assignment[] nieveTasks() {
+        return new Assignment[]{
+                a("aberrant_spectres", 6, 120, 185).ext(200, 250), a("abyssal_demons", 9, 120, 185).ext(200, 250),
+                a("adamant_dragons", 2, 3, 7).ext(20, 30), a("ankou", 5, 50, 90).ext(90, 150),
+                a("aviansies", 6, 120, 185).ext(200, 250).withUnlock("watch_the_birdie"), a("basilisks", 6, 120, 180).ext(200, 250),
+                a("black_demons", 9, 120, 185).ext(200, 250), a("black_dragons", 6, 10, 20).ext(40, 60),
+                a("bloodveld", 9, 120, 185).ext(200, 250), a("blue_dragons", 4, 120, 185),
+                a("brine_rats", 3, 120, 185), a("cave_horrors", 5, 120, 180).ext(200, 250),
+                a("cave_kraken", 6, 100, 120).ext(150, 200), a("dagannoth", 8, 120, 185),
+                a("dark_beasts", 5, 10, 20).ext(110, 135), a("drakes", 7, 30, 95), a("dust_devils", 6, 120, 185).ext(200, 250),
+                a("elves", 4, 60, 90), a("fire_giants", 9, 120, 185), a("fossil_island_wyverns", 5, 5, 25).ext(55, 75),
+                a("gargoyles", 6, 120, 185).ext(200, 250), a("greater_demons", 7, 120, 185).ext(150, 200),
+                a("hellhounds", 8, 120, 185), a("hydras", 10, 125, 190), a("iron_dragons", 5, 25, 60).ext(60, 100),
+                a("kalphite", 9, 120, 185), a("kurask", 3, 120, 185), a("lizardmen", 8, 90, 120).withUnlock("reptile_got_ripped"),
+                a("mithril_dragons", 5, 4, 9).ext(20, 30).withUnlock("i_hope_you_mith_me"),
+                a("mutated_zygomites", 2, 10, 25), a("nechryael", 7, 110, 170).ext(200, 250),
+                a("red_dragons", 5, 30, 80).withUnlock("seeing_red"), a("rune_dragons", 2, 3, 8).ext(30, 60),
+                a("skeletal_wyverns", 5, 5, 15).ext(50, 70), a("smoke_devils", 7, 120, 185),
+                a("spiritual_creatures", 6, 120, 185).ext(181, 250), a("steel_dragons", 5, 30, 60).ext(40, 60),
+                a("trolls", 6, 120, 185), a("turoth", 3, 120, 185), a("tzhaar", 10, 110, 180).withUnlock("hot_stuff"),
+                a("wyrms", 7, 80, 145), a("basilisk_knights", 5, 60, 70).withUnlock("basilocked"),
+                a("vampyres", 6, 110, 170).ext(200, 250).withUnlock("actual_vampyre_slayer"),
+                a(SlayerBossTasks.CATEGORY, 8, 3, 35).withUnlock(SlayerBossTasks.UNLOCK)
+        };
+    }
+
     /**
      * OSRS points per task: base, x5 every 10th task, x15 every 50th, x25 every 100th, x35 every
      * 250th and x50 every 1000th. No points are awarded for the first four tasks.
@@ -142,7 +176,7 @@ public final class SlayerMasters {
 
     static {
         master("turael", "Turael", "turael", 3, 1, 0, false, false, turaelTasks());
-        master("spria", "Spria", "spria", 3, 1, 0, false, false, "a_porcine_of_interest", turaelTasks());
+        master("spria", "Spria", "spria", 3, 1, 0, false, false, "a_porcine_of_interest", spriaTasks());
         master("mazchna", "Mazchna", "mazchna", 20, 1, 6, false, false,
                 a("banshees", 8, 40, 70), a("bats", 7, 40, 70), a("bears", 6, 40, 70), a("catablepon", 8, 20, 30),
                 a("cave_bugs", 8, 10, 20), a("dogs", 7, 40, 70), a("flesh_crawlers", 7, 15, 25), a("shades", 8, 40, 70),
@@ -153,7 +187,7 @@ public final class SlayerMasters {
                 a("killerwatts", 6, 30, 80), a("mogres", 8, 40, 70), a("pyrefiends", 8, 40, 70),
                 a("rockslugs", 8, 40, 70), a("scorpions", 7, 40, 70), a("skeletons", 7, 40, 70),
                 a("wall_beasts", 7, 10, 20), a("wolves", 7, 40, 70), a("zombies", 7, 40, 70),
-                a("vampyres", 6, 10, 20));
+                a("vampyres", 6, 10, 20).ext(200, 250));
         master("vannaka", "Vannaka", "vannaka", 40, 1, 8, false, false,
                 a("aberrant_spectres", 8, 40, 90), a("abyssal_demons", 5, 40, 90), a("ankou", 7, 25, 35),
                 a("basilisks", 8, 40, 90), a("bloodveld", 8, 40, 90), a("blue_dragons", 7, 40, 90),
@@ -168,11 +202,12 @@ public final class SlayerMasters {
                 a("molanisks", 7, 39, 50), a("moss_giants", 7, 40, 90), a("nechryael", 5, 40, 90),
                 a("ogres", 7, 40, 90), a("pyrefiends", 8, 40, 90), a("sea_snakes", 6, 40, 90),
                 a("spiritual_creatures", 8, 40, 90).combat(60), a("terror_dogs", 6, 20, 45), a("trolls", 7, 40, 90),
-                a("turoth", 8, 30, 90), a("vampyres", 7, 10, 20), a("wall_beasts", 6, 10, 20),
-                a("jungle_horrors", 8, 40, 90), a("shades", 8, 40, 90));
+                a("turoth", 8, 30, 90), a("vampyres", 7, 10, 20).ext(200, 250), a("wall_beasts", 6, 10, 20),
+                a("jungle_horrors", 8, 40, 90), a("shades", 8, 40, 90), a("crocodiles", 6, 40, 90),
+                a("otherworldly_beings", 8, 40, 90), a("shadow_warriors", 8, 40, 90));
         master("chaeldar", "Chaeldar", "chaeldar", 70, 1, 10, false, false, "lost_city",
                 a("aberrant_spectres", 8, 70, 130).ext(200, 250), a("abyssal_demons", 12, 70, 130).ext(200, 250),
-                a("aviansies", 9, 70, 130).withUnlock("watch_the_birdie"),
+                a("aviansies", 9, 70, 130).ext(200, 250).withUnlock("watch_the_birdie"),
                 a("basilisks", 7, 70, 130).ext(200, 250), a("black_demons", 10, 70, 130).ext(200, 250),
                 a("bloodveld", 8, 70, 130).ext(200, 250), a("blue_dragons", 8, 70, 130),
                 a("brine_rats", 7, 70, 130), a("cave_horrors", 10, 70, 130).ext(200, 250),
@@ -187,7 +222,7 @@ public final class SlayerMasters {
                 a("nechryael", 12, 70, 130).ext(200, 250), a("skeletal_wyverns", 7, 10, 20).ext(50, 70),
                 a("spiritual_creatures", 12, 70, 130).ext(181, 250), a("trolls", 11, 70, 130),
                 a("turoth", 10, 70, 130), a("tzhaar", 8, 90, 150).withUnlock("hot_stuff"),
-                a("wyrms", 6, 60, 120));
+                a("wyrms", 6, 60, 120), a("vampyres", 6, 80, 120).ext(200, 250).withUnlock("actual_vampyre_slayer"));
         master("konar", "Konar quo Maten", "konar", 75, 1, 18, false, true,
                 a("aberrant_spectres", 6, 120, 170).ext(200, 250), a("abyssal_demons", 9, 120, 170).ext(200, 250),
                 a("adamant_dragons", 5, 3, 6).ext(20, 30), a("ankou", 5, 50, 50).ext(90, 150),
@@ -206,31 +241,15 @@ public final class SlayerMasters {
                 a("skeletal_wyverns", 5, 5, 12).ext(50, 70), a("smoke_devils", 7, 120, 170),
                 a("spiritual_creatures", 4, 120, 170).ext(181, 250), a("steel_dragons", 5, 30, 50).ext(40, 60),
                 a("trolls", 6, 120, 170), a("turoth", 3, 120, 170), a("waterfiends", 2, 120, 170),
-                a("wyrms", 10, 125, 190), a("basilisk_knights", 5, 60, 70).withUnlock("basilocked"));
-        master("nieve", "Nieve", "nieve", 85, 1, 12, false, false,
-                a("aberrant_spectres", 6, 120, 185).ext(200, 250), a("abyssal_demons", 9, 120, 185).ext(200, 250),
-                a("adamant_dragons", 2, 3, 7).ext(20, 30), a("ankou", 5, 50, 90).ext(90, 150),
-                a("aviansies", 6, 120, 185).withUnlock("watch_the_birdie"), a("basilisks", 6, 120, 180).ext(200, 250),
-                a("black_demons", 9, 120, 185).ext(200, 250), a("black_dragons", 6, 10, 20).ext(40, 60),
-                a("bloodveld", 9, 120, 185).ext(200, 250), a("blue_dragons", 4, 120, 185),
-                a("brine_rats", 3, 120, 185), a("cave_horrors", 5, 120, 180).ext(200, 250),
-                a("cave_kraken", 6, 100, 120).ext(150, 200), a("dagannoth", 8, 120, 185),
-                a("dark_beasts", 5, 10, 20).ext(110, 135), a("drakes", 7, 30, 95), a("dust_devils", 6, 120, 185).ext(200, 250),
-                a("elves", 4, 60, 90), a("fire_giants", 9, 120, 185), a("fossil_island_wyverns", 5, 5, 25).ext(55, 75),
-                a("gargoyles", 6, 120, 185).ext(200, 250), a("greater_demons", 7, 120, 185).ext(150, 200),
-                a("hellhounds", 8, 120, 185), a("hydras", 10, 125, 190), a("iron_dragons", 5, 25, 60).ext(60, 100),
-                a("kalphite", 9, 120, 185), a("kurask", 3, 120, 185), a("lizardmen", 8, 90, 120).withUnlock("reptile_got_ripped"),
-                a("mithril_dragons", 5, 4, 9).ext(20, 30).withUnlock("i_hope_you_mith_me"),
-                a("mutated_zygomites", 2, 10, 25), a("nechryael", 7, 110, 170).ext(200, 250),
-                a("red_dragons", 5, 30, 80).withUnlock("seeing_red"), a("rune_dragons", 2, 3, 8).ext(30, 60),
-                a("skeletal_wyverns", 5, 5, 15).ext(50, 70), a("smoke_devils", 7, 120, 185),
-                a("spiritual_creatures", 6, 120, 185).ext(181, 250), a("steel_dragons", 5, 30, 60).ext(40, 60),
-                a("trolls", 6, 120, 185), a("turoth", 3, 120, 185), a("tzhaar", 10, 110, 180).withUnlock("hot_stuff"),
-                a("wyrms", 7, 80, 145), a("basilisk_knights", 5, 60, 70).withUnlock("basilocked"));
+                a("wyrms", 10, 125, 190), a("basilisk_knights", 5, 60, 70).withUnlock("basilocked"),
+                a("vampyres", 4, 100, 160).ext(200, 250).withUnlock("actual_vampyre_slayer"),
+                a(SlayerBossTasks.CATEGORY, 8, 3, 35).withUnlock(SlayerBossTasks.UNLOCK));
+        master("nieve", "Nieve", "nieve", 85, 1, 12, false, false, nieveTasks());
+        master("steve", "Steve", "steve", 85, 1, 12, false, false, "monkey_madness_ii", nieveTasks());
         master("duradel", "Duradel", "duradel", 100, 50, 15, false, false,
                 a("aberrant_spectres", 7, 130, 200).ext(200, 250), a("abyssal_demons", 12, 130, 200).ext(200, 250),
                 a("adamant_dragons", 2, 4, 9).ext(20, 30), a("ankou", 5, 50, 80).ext(91, 150),
-                a("aviansies", 8, 120, 200).withUnlock("watch_the_birdie"), a("basilisks", 7, 130, 200).ext(200, 250),
+                a("aviansies", 8, 120, 200).ext(200, 250).withUnlock("watch_the_birdie"), a("basilisks", 7, 130, 200).ext(200, 250),
                 a("black_demons", 8, 130, 200).ext(200, 250), a("black_dragons", 9, 10, 20).ext(40, 60),
                 a("bloodveld", 8, 130, 200).ext(200, 250), a("blue_dragons", 4, 110, 170),
                 a("cave_horrors", 4, 130, 200).ext(200, 250), a("cave_kraken", 9, 130, 200).ext(150, 200),
@@ -246,7 +265,9 @@ public final class SlayerMasters {
                 a("skeletal_wyverns", 7, 20, 40).ext(50, 70), a("smoke_devils", 9, 130, 200),
                 a("spiritual_creatures", 7, 130, 200).ext(181, 250), a("steel_dragons", 7, 10, 20).ext(40, 60),
                 a("trolls", 6, 130, 200), a("tzhaar", 10, 130, 199).withUnlock("hot_stuff"),
-                a("waterfiends", 2, 130, 200), a("wyrms", 8, 100, 160), a("basilisk_knights", 8, 60, 70).withUnlock("basilocked"));
+                a("waterfiends", 2, 130, 200), a("wyrms", 8, 100, 160), a("basilisk_knights", 8, 60, 70).withUnlock("basilocked"),
+                a("vampyres", 8, 100, 210).ext(200, 250).withUnlock("actual_vampyre_slayer"),
+                a(SlayerBossTasks.CATEGORY, 12, 3, 35).withUnlock(SlayerBossTasks.UNLOCK));
         master("krystilia", "Krystilia", "krystilia", 1, 1, 25, true, false,
                 a("ankou", 6, 75, 125), a("bears", 6, 65, 100), a("black_demons", 7, 100, 150),
                 a("black_dragons", 4, 8, 16), a("dust_devils", 5, 75, 125), a("earth_warriors", 6, 75, 125),
@@ -256,7 +277,9 @@ public final class SlayerMasters {
                 a("lesser_demons", 6, 80, 120), a("moss_giants", 4, 60, 100), a("nechryael", 5, 75, 125),
                 a("revenants", 5, 40, 100), a("scorpions", 6, 65, 100), a("skeletons", 5, 65, 100),
                 a("spiders", 6, 65, 100), a("spiritual_creatures", 6, 100, 150), a("abyssal_demons", 5, 75, 125),
-                a("zombies", 3, 75, 125), a("bats", 4, 65, 100), a("hobgoblins", 4, 75, 125));
+                a("zombies", 3, 75, 125), a("bats", 4, 65, 100), a("hobgoblins", 4, 75, 125),
+                a("bandits", 4, 75, 125), a("chaos_druids", 5, 50, 90), a("ents", 5, 35, 60), a("mammoths", 6, 75, 125),
+                a(SlayerBossTasks.CATEGORY, 8, 3, 35).withUnlock(SlayerBossTasks.UNLOCK));
     }
 
     public static Master get(String id) {

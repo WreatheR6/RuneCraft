@@ -463,6 +463,10 @@
   "crazy_archaeologist": [
     "book_spark"
   ],
+  "crocodile": [
+    "eye_l",
+    "eye_r"
+  ],
   "cruor": [
     "orb"
   ],
@@ -622,6 +626,9 @@
   ],
   "elvarg": [
     "eyes"
+  ],
+  "ent": [
+    "head"
   ],
   "entranan_firebird": [
     "eyes",
@@ -934,6 +941,9 @@
     "icicle3",
     "icicle4",
     "staff_orb"
+  ],
+  "ice_spider": [
+    "eyes"
   ],
   "ice_troll_king": [
     "head",
@@ -1372,6 +1382,9 @@
     "side_crystal_l",
     "side_crystal_r"
   ],
+  "otherworldly_being": [
+    "shimmer"
+  ],
   "penance_fighter": [
     "head"
   ],
@@ -1686,6 +1699,12 @@
     "hand_wisp_l",
     "hand_wisp_r"
   ],
+  "shadow_warrior": [
+    "visor_glow",
+    "wisp0",
+    "wisp1",
+    "wisp2"
+  ],
   "shifter": [
     "spikes",
     "eye_l",
@@ -1736,6 +1755,10 @@
     "head",
     "jaw",
     "orb"
+  ],
+  "sourhog": [
+    "drool",
+    "eyes"
   ],
   "spider": [
     "eyes"
@@ -2208,6 +2231,9 @@
   "waterfiend": [
     "core",
     "head"
+  ],
+  "wilderness_bandit": [
+    "blade_glint"
   ],
   "wingman_skree": [
     "head",

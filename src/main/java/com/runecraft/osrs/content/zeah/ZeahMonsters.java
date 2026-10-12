@@ -60,7 +60,7 @@ public final class ZeahMonsters {
     /** Adds the Catacombs of Kourend shard and totem rolls to a monster's drop table. */
     static MonsterDef catacomb(MonsterDef def) {
         int t = totemPieceRarity(def.combatLevel);
-        return def.drops(Drop.of("ancient_shard", 1, 1, shardRarity(def.combatLevel)), Drop.of("dark_totem_base", 1, 1, t),
+        return def.drops(Drop.always("malicious_ashes"), Drop.always("vile_ashes"), Drop.of("ancient_shard", 1, 1, shardRarity(def.combatLevel)), Drop.of("dark_totem_base", 1, 1, t),
                 Drop.of("dark_totem_middle", 1, 1, t), Drop.of("dark_totem_top", 1, 1, t)).underground();
     }
 
@@ -108,7 +108,7 @@ public final class ZeahMonsters {
                 .slayer(1, "black_demons").skin(0x2A2A2A, 0x1A1A1A, 0x101010, 0xA02020).size(1.1f, 3.0f, 1.3f)));
         list.add(catacomb(m("catacomb_hellhound", "Hellhound", 122, 116, 105, 104, 102, 1, 1).speed(4)
                 .attack(melee(AttackType.STAB, 11)).defenceBonus(0, 0, 0, 0, 0)
-                .drops(Drop.always("bones"), clue("hard", 64)).slayer(1, "hellhounds")
+                .drops(Drop.always("vile_ashes"), clue("hard", 64)).slayer(1, "hellhounds")
                 .skin(0x8A1A1A, 0x5A1010, 0x3A0A0A, 0xF0A020).size(1.0f, 1.4f, 1.2f)));
         list.add(catacomb(m("catacomb_fire_giant", "Fire giant", 86, 111, 65, 65, 65, 1, 1).speed(5)
                 .attack(melee(AttackType.CRUSH, 11)).defenceBonus(0, 0, 0, 0, 0)

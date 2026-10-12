@@ -37,7 +37,7 @@ public enum Boss {
                     Drop.of("snapdragon_seed", 1, 2, 16))),
     KRIL_TSUTSAROTH("kril_tsutsaroth", "K'ril Tsutsaroth", 650, 255, 340, 300, 270, 200, 1, 6, AttackType.SLASH, 47, 80,
             Mechanic.KRIL, 2.0f, 0x801818, Landmark.GOD_WARS_DUNGEON, null,
-            List.of(Drop.always("bones"), Drop.of("coins", 5000, 20000, 1), Drop.of("death_rune", 100, 150, 4),
+            List.of(Drop.always("infernal_ashes"), Drop.of("coins", 5000, 20000, 1), Drop.of("death_rune", 100, 150, 4),
                     Drop.of("zamorakian_spear", 1, 1, 127), Drop.of("steam_battlestaff", 1, 1, 127),
                     Drop.of("staff_of_the_dead", 1, 1, 508), Drop.of("wine_of_zamorak", 3, 6, 8))),
     TZTOK_JAD("tztok_jad", "TzTok-Jad", 702, 250, 640, 960, 480, 480, 960, 8, AttackType.MAGIC, 97, 0, Mechanic.JAD, 2.8f,

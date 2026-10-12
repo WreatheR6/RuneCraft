@@ -85,8 +85,8 @@ public final class Spellbooks {
         util(S, "telekinetic_grab", "Telekinetic Grab", 33, 43, r("law", 1, "air", 1), "Pulls an item on the ground to you.");
         combat(S, "crumble_undead", "Crumble Undead", 39, 24.5, 15, Effect.UNDEAD, 0, false, r("chaos", 1, "earth", 2, "air", 2), "Hits undead for up to 15 damage.");
         util(S, "enchant_3", "Lvl-3 Enchant", 49, 59, r("cosmic", 1, "fire", 5), "Enchants ruby jewellery.");
-        staffSpell("iban_blast", "Iban Blast", 50, 30, 25, Effect.NONE, 0, "iban_staff", r("death", 1, "fire", 5), "Requires Iban's staff. Max hit 25.");
-        staffSpell("magic_dart", "Magic Dart", 50, 30, 19, Effect.NONE, 0, "slayers_staff", r("death", 1, "mind", 4), "Requires a slayer's staff. Max hit 10 + Magic/10.");
+        staffSpell("iban_blast", "Iban Blast", 50, 30, 25, Effect.NONE, 0, "ibans_staff", r("death", 1, "fire", 5), "Requires Iban's staff. Max hit 25.");
+        staffSpell("magic_dart", "Magic Dart", 50, 30, 19, Effect.NONE, 0, "slayer_staff", r("death", 1, "mind", 4), "Requires a slayer's staff. Max hit 10 + Magic/10.");
         combat(S, "snare", "Snare", 50, 60, 3, Effect.BIND, 16, false, r("nature", 3, "earth", 4, "water", 4),
                 "Holds your target in place for 16 ticks (9.6 seconds). Max hit 3.");
         util(S, "charge_water_orb", "Charge Water Orb", 56, 66, r("cosmic", 3, "water", 30), "Charges an unpowered orb at a water obelisk.");

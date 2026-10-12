@@ -175,6 +175,9 @@ public final class FletchingData extends SkillingPart {
         for (MetalTier t : SmithingData.SMITHABLE) {
             THROWN.add(t.id() + "_knife");
         }
+        // Dropped by drakes, wyrms and hydras (slayer module).
+        THROWN.add("dragon_knife");
+        THROWN.add("dragon_thrownaxe");
     }
 
     @Override

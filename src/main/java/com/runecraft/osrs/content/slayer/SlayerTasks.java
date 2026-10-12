@@ -24,6 +24,13 @@ public final class SlayerTasks {
         if (!c.builtIns().isEmpty()) {
             return true;
         }
+        SlayerBossTasks.BossTask boss = SlayerBossTasks.get(category);
+        if (boss != null) {
+            return SlayerBossTasks.exists(boss);
+        }
+        if (category.equals(SlayerBossTasks.CATEGORY)) {
+            return SlayerBossTasks.all().stream().anyMatch(SlayerBossTasks::exists);
+        }
         for (MonsterDef m : ContentRegistry.monsters()) {
             if (category.equals(categoryOf(m)) && Superiors.byId(m.id) == null) {
                 return true;
@@ -86,7 +93,29 @@ public final class SlayerTasks {
         if (blocked.contains(a.category()) || a.category().equals(previous)) {
             return false;
         }
+        // "Stop the Wyvern" removes Fossil Island wyvern tasks without using a block slot.
+        if (a.category().equals("fossil_island_wyverns") && unlocks.contains("stop_the_wyvern")) {
+            return false;
+        }
+        if (a.category().equals(SlayerBossTasks.CATEGORY)) {
+            return !SlayerBossTasks.choices(slayerLevel, false, blocked, previous).isEmpty();
+        }
         return available(a.category());
+    }
+
+    /**
+     * Whether killing a creature counts towards the task: its own slayer category (or listed membership)
+     * matches, or the task is a boss task for that boss (Cerberus counts for both hellhounds and a
+     * Cerberus boss task).
+     */
+    public static boolean countsFor(String task, String creatureId, String declaredCategory) {
+        if (task == null) {
+            return false;
+        }
+        if (task.equals(SlayerCategories.categoryOf(creatureId, declaredCategory))) {
+            return true;
+        }
+        return SlayerBossTasks.counts(task, creatureId);
     }
 
     /** Plural display name of a category ("abyssal demons"). */

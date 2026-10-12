@@ -68,10 +68,7 @@ class DropTablesTest {
     void builtInTableItemsExist() {
         for (String t : List.of("#gems", "#rare", "#mega")) {
             for (DropTables.Entry e : DropTables.table(t)) {
-                // dragon_med_helm / dragon_spear / rune_spear may come from other modules; unknown ids roll nothing.
-                if (!List.of("dragon_med_helm", "dragon_spear", "rune_spear").contains(e.item())) {
-                    assertTrue(ItemCatalog.exists(e.item()), e.item());
-                }
+                assertTrue(ItemCatalog.exists(e.item()), e.item());
             }
         }
     }

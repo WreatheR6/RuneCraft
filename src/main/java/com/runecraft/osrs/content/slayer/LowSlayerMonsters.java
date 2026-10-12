@@ -52,7 +52,7 @@ final class LowSlayerMonsters {
                         .drops(Drop.of("water_rune", 5, 15, 6), Drop.herbs(30), clue("beginner", 70)).slayer(1, "icefiends")
                         .model("icefiend").size(0.7f, 1.3f, 1.0f).flying().spawn(Region.ASGARNIA, 3, 2, 4),
                 m("hobgoblin", "Hobgoblin", 28, 29, 22, 24, 24, 1, 1).speed(6).attack(stab(5))
-                        .drops(Drop.always("bones"), Drop.of("limpwurt_root", 1, 1, 18), coins(5, 60, 4), Drop.herbs(18),
+                        .drops(Drop.of("hobgoblin_champion_scroll", 1, 1, 5000), Drop.always("bones"), Drop.of("limpwurt_root", 1, 1, 18), coins(5, 60, 4), Drop.herbs(18),
                                 Drop.of("iron_dagger", 1, 1, 64), clue("easy", 128)).slayer(1, "hobgoblins")
                         .skin(0x6A8A3A, 0x6A4A2A, 0x4A3A2A, 0x202020).size(0.7f, 2.0f, 1.0f)
                         .spawn(Region.ASGARNIA, 4, 1, 3).spawn(Region.WILDERNESS, 3, 1, 3),
@@ -60,7 +60,7 @@ final class LowSlayerMonsters {
                         .drops(Drop.always("bones")).slayer(1, "monkeys").model("monkey").size(0.6f, 0.8f, 1.0f)
                         .spawn(Region.KARAMJA, 6, 1, 3),
                 m("earth_warrior", "Earth warrior", 51, 54, 42, 42, 42, 1, 1).speed(4).attack(crush(6))
-                        .defenceBonus(20, 20, 20, 0, 20).drops(Drop.always("bones"), Drop.of("earth_rune", 6, 30, 5),
+                        .defenceBonus(20, 20, 20, 0, 20).drops(Drop.of("earth_warrior_champion_scroll", 1, 1, 5000), Drop.always("bones"), Drop.of("earth_rune", 6, 30, 5),
                                 Drop.of("law_rune", 2, 2, 20), Drop.herbs(14), clue("medium", 128)).slayer(1, "earth_warriors")
                         .skin(0x6A5A3A, 0x5A4A2A, 0x4A3A2A, 0x3A2A1A).size(0.7f, 2.0f, 1.0f).spawn(Region.WILDERNESS, 4, 2, 4)
                         .underground(),
