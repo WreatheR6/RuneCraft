@@ -15,9 +15,14 @@ public record Drop(String item, int min, int max, int rarity) {
         return new Drop("#herbs", 1, 1, rarity);
     }
 
-    /** Special marker that rolls the gem table. */
+    /** Special marker that rolls the gem drop table ({@link DropTables#GEM}; about half its slots are empty). */
     public static Drop gems(int rarity) {
         return new Drop("#gems", 1, 1, rarity);
+    }
+
+    /** Special marker that rolls the rare drop table ({@link DropTables#RARE}), which includes the gem table. */
+    public static Drop rare(int rarity) {
+        return new Drop("#rare", 1, 1, rarity);
     }
 
     /** Special marker that rolls the herb seed table. */

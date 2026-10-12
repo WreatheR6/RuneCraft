@@ -1,7 +1,9 @@
 package com.runecraft.skill;
 
 import com.runecraft.osrs.data.Allotment;
+import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.data.Drop;
+import com.runecraft.osrs.data.DropTables;
 import com.runecraft.osrs.data.Gem;
 import com.runecraft.osrs.data.Herb;
 import net.minecraft.util.math.random.Random;
@@ -23,9 +25,16 @@ public final class Drops {
         List<Rolled> out = new ArrayList<>();
         for (Drop d : table) {
             if (d.rarity() <= 1 || random.nextInt(d.rarity()) == 0) {
+                if (d.item().equals("#gems") || d.item().equals("#rare")) {
+                    // Shared OSRS tables: many slots are empty; items not in this build are skipped.
+                    DropTables.Result r = DropTables.roll(d.item(), random::nextInt);
+                    if (r != null && ItemCatalog.get(r.item()) != null) {
+                        out.add(new Rolled(r.item(), r.count()));
+                    }
+                    continue;
+                }
                 String item = switch (d.item()) {
                     case "#herbs" -> rollHerb(random);
-                    case "#gems" -> rollGem(random);
                     case "#seeds" -> rollSeed(random);
                     default -> d.item();
                 };

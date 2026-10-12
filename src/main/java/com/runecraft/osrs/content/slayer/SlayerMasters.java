@@ -41,9 +41,11 @@ public final class SlayerMasters {
      * @param points           base points per task (0 for Turael)
      * @param wilderness       Krystilia: kills only count in the Wilderness
      * @param locationRestricted Konar: kills only count in the assigned region; drops brimstone keys
+     * @param quest            quest that must be complete before the master gives tasks (Chaeldar: Lost City,
+     *                         Spria: A Porcine of Interest), or null
      */
     public record Master(String id, String name, String npcId, int combatLevel, int slayerLevel, int points,
-                         boolean wilderness, boolean locationRestricted, List<Assignment> assignments) {
+                         boolean wilderness, boolean locationRestricted, String quest, List<Assignment> assignments) {
         /** Points for completing a task when the streak (including this task) is {@code streak}. */
         public int pointsFor(int streak) {
             return SlayerMasters.points(points, streak);
@@ -93,7 +95,23 @@ public final class SlayerMasters {
 
     private static void master(String id, String name, String npcId, int combat, int slayer, int points, boolean wildy,
                                boolean konar, Assignment... list) {
-        ALL.put(id, new Master(id, name, npcId, combat, slayer, points, wildy, konar, List.of(list)));
+        master(id, name, npcId, combat, slayer, points, wildy, konar, null, list);
+    }
+
+    private static void master(String id, String name, String npcId, int combat, int slayer, int points, boolean wildy,
+                               boolean konar, String quest, Assignment... list) {
+        ALL.put(id, new Master(id, name, npcId, combat, slayer, points, wildy, konar, quest, List.of(list)));
+    }
+
+    /** Turael's table (Spria in Draynor Village assigns the same tasks). */
+    private static Assignment[] turaelTasks() {
+        return new Assignment[]{
+                a("banshees", 8, 15, 50), a("bats", 7, 15, 50), a("bears", 7, 10, 20), a("birds", 6, 15, 50),
+                a("cave_bugs", 8, 10, 30), a("cave_crawlers", 8, 15, 50), a("cave_slime", 8, 10, 20), a("cows", 8, 15, 50),
+                a("crawling_hands", 8, 15, 50), a("dogs", 7, 15, 50), a("dwarves", 7, 10, 25), a("ghosts", 7, 15, 50),
+                a("goblins", 7, 15, 50), a("icefiends", 8, 15, 20), a("kalphite", 6, 15, 50), a("lizards", 8, 15, 50),
+                a("minotaurs", 7, 10, 20), a("monkeys", 6, 15, 50), a("rats", 7, 15, 50), a("scorpions", 7, 15, 50),
+                a("skeletons", 7, 15, 50), a("spiders", 6, 15, 50), a("wolves", 7, 15, 50), a("zombies", 7, 15, 50)};
     }
 
     /**
@@ -123,16 +141,11 @@ public final class SlayerMasters {
     }
 
     static {
-        master("turael", "Turael", "turael", 3, 1, 0, false, false,
-                a("bats", 7, 15, 50), a("bears", 7, 10, 20), a("birds", 6, 15, 50), a("cave_bugs", 8, 10, 30),
-                a("cave_crawlers", 8, 15, 50), a("cave_slime", 8, 10, 20), a("cows", 8, 15, 50),
-                a("crawling_hands", 8, 15, 50), a("ghosts", 7, 15, 50), a("goblins", 7, 15, 50),
-                a("icefiends", 8, 15, 20), a("kalphite", 6, 15, 50), a("lizards", 8, 15, 50),
-                a("minotaurs", 7, 10, 20), a("monkeys", 6, 15, 50), a("rats", 7, 15, 50),
-                a("scorpions", 7, 15, 50), a("skeletons", 7, 15, 50), a("spiders", 6, 15, 50),
-                a("wolves", 7, 15, 50), a("zombies", 7, 15, 50));
+        master("turael", "Turael", "turael", 3, 1, 0, false, false, turaelTasks());
+        master("spria", "Spria", "spria", 3, 1, 0, false, false, "a_porcine_of_interest", turaelTasks());
         master("mazchna", "Mazchna", "mazchna", 20, 1, 6, false, false,
-                a("banshees", 8, 40, 70), a("bats", 7, 40, 70), a("bears", 6, 40, 70), a("cave_bugs", 8, 10, 20),
+                a("banshees", 8, 40, 70), a("bats", 7, 40, 70), a("bears", 6, 40, 70), a("catablepon", 8, 20, 30),
+                a("cave_bugs", 8, 10, 20), a("dogs", 7, 40, 70), a("flesh_crawlers", 7, 15, 25), a("shades", 8, 40, 70),
                 a("cave_crawlers", 8, 40, 70), a("cave_slime", 8, 10, 20), a("cockatrice", 8, 40, 70),
                 a("crawling_hands", 8, 40, 70), a("lizards", 8, 40, 70), a("earth_warriors", 6, 40, 70),
                 a("ghosts", 7, 40, 70), a("ghouls", 7, 10, 20), a("hill_giants", 7, 40, 70),
@@ -156,8 +169,8 @@ public final class SlayerMasters {
                 a("ogres", 7, 40, 90), a("pyrefiends", 8, 40, 90), a("sea_snakes", 6, 40, 90),
                 a("spiritual_creatures", 8, 40, 90).combat(60), a("terror_dogs", 6, 20, 45), a("trolls", 7, 40, 90),
                 a("turoth", 8, 30, 90), a("vampyres", 7, 10, 20), a("wall_beasts", 6, 10, 20),
-                a("cave_crawlers", 7, 40, 90), a("crawling_hands", 7, 40, 90));
-        master("chaeldar", "Chaeldar", "chaeldar", 70, 1, 10, false, false,
+                a("jungle_horrors", 8, 40, 90), a("shades", 8, 40, 90));
+        master("chaeldar", "Chaeldar", "chaeldar", 70, 1, 10, false, false, "lost_city",
                 a("aberrant_spectres", 8, 70, 130).ext(200, 250), a("abyssal_demons", 12, 70, 130).ext(200, 250),
                 a("aviansies", 9, 70, 130).withUnlock("watch_the_birdie"),
                 a("basilisks", 7, 70, 130).ext(200, 250), a("black_demons", 10, 70, 130).ext(200, 250),
@@ -168,6 +181,7 @@ public final class SlayerMasters {
                 a("fire_giants", 12, 70, 130), a("fossil_island_wyverns", 7, 10, 20).ext(55, 75),
                 a("gargoyles", 11, 70, 130).ext(200, 250), a("greater_demons", 9, 70, 130).ext(150, 200),
                 a("hellhounds", 9, 70, 130), a("infernal_mages", 7, 70, 130), a("jellies", 10, 70, 130),
+                a("jungle_horrors", 10, 70, 130),
                 a("kalphite", 11, 70, 130), a("kurask", 12, 70, 130), a("lesser_demons", 9, 70, 130),
                 a("lizardmen", 8, 50, 110).withUnlock("reptile_got_ripped"), a("mutated_zygomites", 7, 8, 15),
                 a("nechryael", 12, 70, 130).ext(200, 250), a("skeletal_wyverns", 7, 10, 20).ext(50, 70),
@@ -188,7 +202,7 @@ public final class SlayerMasters {
                 a("kalphite", 9, 120, 170), a("kurask", 3, 120, 170), a("lizardmen", 8, 90, 110).withUnlock("reptile_got_ripped"),
                 a("mithril_dragons", 5, 3, 6).ext(20, 30).withUnlock("i_hope_you_mith_me"),
                 a("mutated_zygomites", 2, 10, 25), a("nechryael", 7, 110, 110).ext(200, 250),
-                a("red_dragons", 5, 30, 50), a("rune_dragons", 5, 3, 6).ext(30, 60),
+                a("red_dragons", 5, 30, 50).withUnlock("seeing_red"), a("rune_dragons", 5, 3, 6).ext(30, 60),
                 a("skeletal_wyverns", 5, 5, 12).ext(50, 70), a("smoke_devils", 7, 120, 170),
                 a("spiritual_creatures", 4, 120, 170).ext(181, 250), a("steel_dragons", 5, 30, 50).ext(40, 60),
                 a("trolls", 6, 120, 170), a("turoth", 3, 120, 170), a("waterfiends", 2, 120, 170),
@@ -255,10 +269,15 @@ public final class SlayerMasters {
 
     /** Masters that the generic "Slayer master" station picks between (Konar and Krystilia are NPC-only). */
     public static Master bestFor(int combatLevel, int slayerLevel) {
+        return bestFor(combatLevel, slayerLevel, m -> true);
+    }
+
+    /** As {@link #bestFor(int, int)}, skipping masters the player can't use yet (e.g. Chaeldar before Lost City). */
+    public static Master bestFor(int combatLevel, int slayerLevel, Predicate<Master> usable) {
         Master best = ALL.get("turael");
         for (String id : List.of("turael", "mazchna", "vannaka", "chaeldar", "nieve", "duradel")) {
             Master m = ALL.get(id);
-            if (combatLevel >= m.combatLevel() && slayerLevel >= m.slayerLevel()) {
+            if (combatLevel >= m.combatLevel() && slayerLevel >= m.slayerLevel() && usable.test(m)) {
                 best = m;
             }
         }

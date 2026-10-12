@@ -122,10 +122,10 @@ final class SlayerCommands {
             Msg.game(player, "You don't have a task to block.");
         } else if (p.blocked.size() >= SlayerRewards.MAX_BLOCKS) {
             Msg.game(player, "Your block list is full. Unblock something first: " + String.join(", ", p.blocked));
-        } else if (p.points < SlayerRewards.BLOCK_COST) {
-            Msg.game(player, "You need " + SlayerRewards.BLOCK_COST + " slayer points to block a task.");
+        } else if (p.points < SlayerRewards.blockCost(p.master)) {
+            Msg.game(player, "You need " + SlayerRewards.blockCost(p.master) + " slayer points to block a task.");
         } else {
-            p.points -= SlayerRewards.BLOCK_COST;
+            p.points -= SlayerRewards.blockCost(p.master);
             p.blocked.add(p.task);
             Msg.game(player, "You will no longer be assigned " + SlayerTasks.displayName(p.task) + ".");
             p.task = null;
