@@ -399,6 +399,11 @@ public class RuneScapeScreen extends Screen {
         CollectionLogData.Page p = pages.get(Math.max(0, Math.min(page, pages.size() - 1)));
         long obtained = p.items().stream().filter(ClientState.COLLECTION_LOG::contains).count();
         ctx.drawTextWithShadow(textRenderer, p.category() + " - " + p.name(), left + 8, top + 8, 0xFFFF9800);
+        if (!CollectionLogData.kcKeys(p).isEmpty()) {
+            String kc = (p.category().equals("Clues") || p.category().equals("Raids") ? "Completions: " : "Kills: ")
+                    + CollectionLogData.killCount(p, ClientState.KILL_COUNTS);
+            ctx.drawTextWithShadow(textRenderer, kc, left + PANEL_W - 10 - textRenderer.getWidth(kc), top + 8, 0xFFE0E0E0);
+        }
         ctx.drawTextWithShadow(textRenderer, "Obtained: " + obtained + "/" + p.items().size() + "   Total: "
                 + ClientState.COLLECTION_LOG.size() + "/" + CollectionLogData.totalSlots(), left + 8, top + 20, 0xFFE0E0E0);
         int cols = 8;

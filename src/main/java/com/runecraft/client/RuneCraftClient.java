@@ -148,6 +148,12 @@ public class RuneCraftClient implements ClientModInitializer {
             for (int i = 0; i < logCount; i++) {
                 log.add(buf.readString());
             }
+            java.util.Map<String, Integer> kills = new java.util.HashMap<>();
+            int killCount = buf.isReadable() ? buf.readVarInt() : 0;
+            for (int i = 0; i < killCount; i++) {
+                String key = buf.readString();
+                kills.put(key, buf.readVarInt());
+            }
             client.execute(() -> {
                 ClientState.SKILLS.load(xp, boosts);
                 ClientState.prayerPoints = prayer;
@@ -161,6 +167,8 @@ public class RuneCraftClient implements ClientModInitializer {
                 ClientState.questPoints = qp;
                 ClientState.COLLECTION_LOG.clear();
                 ClientState.COLLECTION_LOG.addAll(log);
+                ClientState.KILL_COUNTS.clear();
+                ClientState.KILL_COUNTS.putAll(kills);
             });
         });
         ClientPlayNetworking.registerGlobalReceiver(Net.XP_DROP, (client, handler, buf, sender) -> {

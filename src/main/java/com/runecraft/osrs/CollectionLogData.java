@@ -12,13 +12,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Collection log pages: each page lists the notable items it tracks. */
+/**
+ * Collection log pages: each page lists the notable items it tracks. Pages are generated from boss drop
+ * tables and module data, then the OSRS pages are laid over them ({@link OsrsPages}): merged boss pages
+ * (Barrows Chests, Dagannoth Kings, Callisto and Artio...), the exact OSRS item lists where the game has the
+ * items, and non-OSRS filler pages removed. Each page also names the kill-count keys shown with it.
+ */
 public final class CollectionLogData {
     public record Page(String category, String name, List<String> items) {
     }
 
     private static final List<Page> PAGES = new ArrayList<>();
     private static final Set<String> TRACKED = new LinkedHashSet<>();
+    private static final Map<String, List<String>> KC = new LinkedHashMap<>();
 
     static {
         for (Boss b : Boss.values()) {
@@ -74,6 +80,35 @@ public final class CollectionLogData {
                 page(p.category(), p.name(), p.items());
             }
         }
+        for (Boss b : Boss.values()) {
+            KC.computeIfAbsent(b.displayName(), k -> new ArrayList<>()).add(b.entityId());
+        }
+        for (com.runecraft.osrs.content.BossDef b : com.runecraft.osrs.content.ContentRegistry.bosses()) {
+            KC.computeIfAbsent(b.name, k -> new ArrayList<>()).add(b.id);
+        }
+        OsrsPages.apply(PAGES, KC);
+        TRACKED.clear();
+        for (Page p : PAGES) {
+            TRACKED.addAll(p.items());
+        }
+    }
+
+    /** Kill-count keys (PlayerData kill counts) shown on a page; summed. Empty if the page has none. */
+    public static List<String> kcKeys(Page page) {
+        return KC.getOrDefault(page.name(), List.of());
+    }
+
+    /** The kill count of a page from a player's kill counts (sum of its keys). */
+    public static int killCount(Page page, Map<String, Integer> killCounts) {
+        int n = 0;
+        for (String key : kcKeys(page)) {
+            for (Map.Entry<String, Integer> e : killCounts.entrySet()) {
+                if (e.getKey().equals(key)) {
+                    n += e.getValue();
+                }
+            }
+        }
+        return n;
     }
 
     private CollectionLogData() {

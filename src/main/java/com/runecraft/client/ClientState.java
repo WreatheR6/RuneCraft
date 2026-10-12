@@ -29,6 +29,8 @@ public final class ClientState {
     public static final int[] QUEST_STAGES = new int[com.runecraft.osrs.content.ContentRegistry.quests().size()];
     public static int questPoints;
     public static final Set<String> COLLECTION_LOG = new HashSet<>();
+    /** Boss/raid/clue kill counts (PlayerData kill-count keys), for the collection log. */
+    public static final java.util.Map<String, Integer> KILL_COUNTS = new java.util.HashMap<>();
 
     public static final List<XpDrop> XP_DROPS = new ArrayList<>();
     public static final Map<Integer, List<Hitsplat>> HITSPLATS = new HashMap<>();
