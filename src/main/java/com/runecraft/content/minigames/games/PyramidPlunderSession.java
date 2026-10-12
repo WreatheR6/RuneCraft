@@ -110,15 +110,17 @@ public class PyramidPlunderSession extends MinigameSession {
                 chestOpened = true;
                 reward(player, artefact(), 1);
                 reward(player, artefact(), 1);
-                xp(player, Skill.THIEVING, PyramidPlunder.CHEST_XP[room - 1]);
                 if (random.nextInt(PyramidPlunder.SCEPTRE_CHANCE[room - 1]) == 0) {
                     reward(player, "pharaohs_sceptre", 1);
                     player.getServer().getPlayerManager().broadcast(Text.literal(player.getName().getString()
                             + " has found the Pharaoh's sceptre!").formatted(Formatting.GOLD), false);
                 }
                 if (random.nextInt(5) == 0) {
+                    // A scarab swarm still leaves the artefact but gives no Thieving XP.
                     Msg.red(player, "A swarm of scarabs pours out of the chest!");
                     hurt(player, 2 + random.nextInt(4));
+                } else {
+                    xp(player, Skill.THIEVING, PyramidPlunder.CHEST_XP[room - 1]);
                 }
                 return true;
             }

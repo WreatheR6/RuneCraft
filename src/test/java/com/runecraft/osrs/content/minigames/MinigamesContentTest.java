@@ -240,6 +240,8 @@ class MinigamesContentTest {
         assertEquals(9060.0, sack);
         assertEquals(460.0 + 5750.0, MinigameRules.TitheFarm.depositXp(2, 75));
         assertEquals(100, MinigameRules.WarriorsGuild.CYCLOPS_ENTRY_TOKENS);
+        assertEquals(2750.0, MinigameRules.MahoganyHomes.COMPLETION_XP[3]);
+        assertEquals(500.0, MinigameRules.MahoganyHomes.COMPLETION_XP[0]);
         assertEquals(825.0, MinigameRules.PyramidPlunder.URN_XP[7]);
         assertEquals(60.0, MinigameRules.PyramidPlunder.URN_XP[0]);
         assertEquals(550.0, MinigameRules.PyramidPlunder.CHEST_XP[7]);

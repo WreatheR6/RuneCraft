@@ -458,7 +458,9 @@ public final class MinigameRules {
         public static final String[] PLANKS = {"plank", "oak_plank", "teak_plank", "mahogany_plank"};
         public static final int[] LEVELS = {1, 20, 50, 70};
         public static final int[] POINTS = {2, 3, 4, 5};
-        public static final double[] XP_PER_PLANK = {30, 48, 72, 112};
+        public static final double[] XP_PER_PLANK = {30, 48, 72, 112}; // plank value approx
+        /** Construction XP for completing a contract (not boosted by the carpenter's outfit). */
+        public static final double[] COMPLETION_XP = {500, 1250, 2250, 2750};
         public static final int HOTSPOTS = 4;
 
         private MahoganyHomes() {

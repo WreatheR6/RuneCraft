@@ -109,7 +109,7 @@ public class MahoganyHomesSession extends MinigameSession {
             for (ServerPlayerEntity p : online()) {
                 addPoints(p, MinigameCurrencies.CARPENTER, MahoganyHomes.POINTS[tier]);
                 reward(p, "coins", 500 * (tier + 1));
-                xp(p, Skill.CONSTRUCTION, 100 * (tier + 1));
+                xp(p, Skill.CONSTRUCTION, MahoganyHomes.COMPLETION_XP[tier]);
                 Msg.game(p, "Contract complete! You earn " + MahoganyHomes.POINTS[tier] + " carpenter points.");
             }
             build();
