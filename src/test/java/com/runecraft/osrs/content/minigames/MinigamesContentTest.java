@@ -220,7 +220,7 @@ class MinigamesContentTest {
     @Test
     void skillingMinigameFormulas() {
         assertEquals(0, MinigameRules.Wintertodt.rolls(499));
-        assertEquals(1, MinigameRules.Wintertodt.rolls(500));
+        assertEquals(2, MinigameRules.Wintertodt.rolls(500));
         assertEquals(28, MinigameRules.Wintertodt.rolls(50000));
         assertEquals(9900.0, MinigameRules.Wintertodt.completionXp(99));
         assertTrue(MinigameRules.Wintertodt.coldDamage(99, 0, 0) > MinigameRules.Wintertodt.coldDamage(99, 4, 4));
@@ -254,7 +254,8 @@ class MinigamesContentTest {
         assertEquals(20, MinigameRules.Tempoross.POINTS_LOAD_RAW);
         assertEquals(55, MinigameRules.Tempoross.POINTS_SPIRIT);
         assertEquals(0.6, MinigameRules.Guardians.raimentBonus(4));
-        assertEquals(0, MinigameRules.Guardians.searches(50, 50));
+        assertEquals(3, MinigameRules.Guardians.searches(3, 5));
+        assertEquals(0, MinigameRules.Guardians.searches(0, 9));
         assertTrue(MinigameRules.WarriorsGuild.canEnter(65, 65));
         assertTrue(MinigameRules.WarriorsGuild.canEnter(99, 1));
         assertFalse(MinigameRules.WarriorsGuild.canEnter(70, 59));
@@ -278,8 +279,7 @@ class MinigamesContentTest {
 
     @Test
     void lootTablesReferenceRealItems() {
-        for (List<MinigameRules.Loot> table : List.of(MinigameRules.Wintertodt.CRATE, MinigameRules.Tempoross.POOL,
-                MinigameRules.Guardians.POUCH, MinigameRules.Shades.CHEST)) {
+        for (List<MinigameRules.Loot> table : List.of(TemporossRewards.OTHER, MinigameRules.Shades.CHEST)) {
             for (MinigameRules.Loot l : table) {
                 assertTrue(ItemCatalog.exists(l.item()), l.item());
                 assertTrue(l.weight() > 0 && l.min() <= l.max(), l.item());
@@ -287,8 +287,8 @@ class MinigamesContentTest {
             assertNotNull(MinigameRules.pick(table, 0.0));
             assertNotNull(MinigameRules.pick(table, 0.9999));
         }
-        for (Object[] u : MinigameRules.Tempoross.UNIQUES) {
-            assertTrue(ItemCatalog.exists((String) u[0]));
+        for (TemporossRewards.Unique u : TemporossRewards.UNIQUES) {
+            assertTrue(ItemCatalog.exists(u.item()), u.item());
         }
         for (Object[] a : MinigameRules.Guardians.ALTARS) {
             assertTrue(ItemCatalog.exists((String) a[1]));

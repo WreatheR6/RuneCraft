@@ -226,6 +226,9 @@ public final class MinigameItems {
         single(items, "catalytic_talisman", "Catalytic talisman", "talisman", 0x8040E0, 1, "A talisman of every catalytic altar.");
         single(items, "elemental_talisman", "Elemental talisman", "talisman", 0xE07040, 1, "A talisman of every elemental altar.");
         pet(items, "abyssal_protector", "Abyssal protector", 0x6A4AE0, "A guardian of the rift, in miniature.");
+        single(items, "abyssal_green_dye", "Abyssal green dye", "potion", 0x40A040, 1, "Dyes the raiments of the eye green.");
+        single(items, "abyssal_blue_dye", "Abyssal blue dye", "potion", 0x4060C0, 1, "Dyes the raiments of the eye blue.");
+        single(items, "abyssal_red_dye", "Abyssal red dye", "potion", 0xC03030, 1, "Dyes the raiments of the eye red.");
     }
 
     // ------------------------------------------------------------------ Barbarian Assault

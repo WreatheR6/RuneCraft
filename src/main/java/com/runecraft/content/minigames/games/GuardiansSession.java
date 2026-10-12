@@ -4,6 +4,7 @@ import com.runecraft.content.minigames.MinigameData;
 import com.runecraft.content.minigames.MinigameItemUse;
 import com.runecraft.content.minigames.MinigameSession;
 import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.minigames.GuardiansRewards;
 import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameRules.Guardians;
 import com.runecraft.util.Inv;
@@ -24,14 +25,15 @@ import java.util.UUID;
 /**
  * Guardians of the Rift: mine guardian fragments from the huge remains, shape them into guardian
  * essence at the workbench, then enter the active elemental or catalytic guardian to craft runes
- * (the raiments of the eye add up to 60% more). Crafting earns energy and guardian stones; place
- * the stones in the Great Guardian to raise his power to 100%. Rewards: intricate pouches (rift
- * searches) for 150+ energy.
+ * (the raiments of the eye add up to 60% more). Each essence imbued gives a guardian stone; each
+ * stone placed in the Great Guardian gives 2 energy of its type and powers him (250 stones per player
+ * to reach 100%). With 150+ energy, every 100 energy of a type is a reward point, and each Rewards
+ * Guardian search costs one elemental and one catalytic point.
  */
 public class GuardiansSession extends MinigameSession {
     private static final int GAME_TICKS = 1000;
     private final Map<UUID, int[]> energy = new HashMap<>();
-    private int power;
+    private double power;
     private int elemental;
     private int catalytic;
 
@@ -155,8 +157,12 @@ public class GuardiansSession extends MinigameSession {
                     Msg.game(player, "The Great Guardian needs guardian stones. Craft runes to earn them.");
                     return true;
                 }
-                power = Math.min(100, power + (el + cat) * Guardians.POWER_PER_STONE);
-                xp(player, Skill.RUNECRAFT, (el + cat) * level(player, Skill.RUNECRAFT) * 0.25);
+                // Each stone gives 2 energy of its type and 5 Runecraft XP (OSRS Wiki); 250 stones per player fill him.
+                int[] e = energy(player);
+                e[0] = Math.min(GuardiansRewards.ENERGY_CAP, e[0] + GuardiansRewards.stoneEnergy(el, 0));
+                e[1] = Math.min(GuardiansRewards.ENERGY_CAP, e[1] + GuardiansRewards.stoneEnergy(cat, 0));
+                power = Math.min(100, power + (el + cat) * GuardiansRewards.powerPerStone(Math.max(1, playerCount())));
+                xp(player, Skill.RUNECRAFT, (el + cat) * GuardiansRewards.XP_PER_STONE);
                 Msg.game(player, "You power the Great Guardian with " + (el + cat) + " stone" + (el + cat > 1 ? "s" : "") + ".");
                 if (power >= 100) {
                     broadcastRed("The Great Guardian successfully closed the rift!");
@@ -196,9 +202,8 @@ public class GuardiansSession extends MinigameSession {
         reward(p, (String) a[1], runes);
         xp(p, Skill.RUNECRAFT, ess * (Double) a[3]);
         boolean cat = (Boolean) a[4];
-        energy(p)[cat ? 1 : 0] += ess;
-        int stones = Math.max(1, ess / 10);
-        Inv.give(p, cat ? "catalytic_guardian_stone" : "elemental_guardian_stone", stones);
+        // One guardian stone per essence imbued; the stones carry the energy to the Great Guardian.
+        Inv.give(p, cat ? "catalytic_guardian_stone" : "elemental_guardian_stone", ess * GuardiansRewards.STONES_PER_ESSENCE);
         Msg.game(p, "You bind the temple's power into " + runes + " " + name(altar).toLowerCase() + " runes.");
     }
 
@@ -224,24 +229,32 @@ public class GuardiansSession extends MinigameSession {
                 continue;
             }
             int[] e = energy(p);
-            int searches = Guardians.searches(e[0], e[1]);
-            if (searches > 0) {
-                for (int i = 0; i < searches; i++) {
-                    Inv.give(p, MinigameItemUse.container("intricate_pouch", 1));
-                }
-                int kc = MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
-                Msg.game(p, "Elemental energy: " + e[0] + ". Catalytic energy: " + e[1] + ". You receive " + searches
-                        + " rift search" + (searches > 1 ? "es" : "") + ". Rifts closed: " + kc + ".");
-            } else {
-                Msg.game(p, "You didn't contribute enough energy (150) for a reward.");
+            if (!GuardiansRewards.qualifies(e[0], e[1])) {
+                Msg.game(p, "You didn't contribute enough energy (" + (e[0] + e[1]) + "/" + GuardiansRewards.MIN_ENERGY
+                        + ") for a reward.");
+                continue;
             }
+            MinigameData data = MinigameData.of(p);
+            int elPts = data.stat(p.getUuid(), "gotr_elemental_points") + GuardiansRewards.points(e[0], random.nextDouble());
+            int catPts = data.stat(p.getUuid(), "gotr_catalytic_points") + GuardiansRewards.points(e[1], random.nextDouble());
+            int searches = Guardians.searches(elPts, catPts);
+            data.setStat(p.getUuid(), "gotr_elemental_points", elPts - searches);
+            data.setStat(p.getUuid(), "gotr_catalytic_points", catPts - searches);
+            for (int i = 0; i < searches; i++) {
+                MinigameItemUse.riftSearch(p);
+            }
+            xp(p, Skill.RUNECRAFT, GuardiansRewards.completionXp(level(p, Skill.RUNECRAFT)));
+            int kc = data.incrementStat(p.getUuid(), "kc:" + game.id());
+            Msg.game(p, "Elemental energy: " + e[0] + ". Catalytic energy: " + e[1] + ". You search the Rewards Guardian "
+                    + searches + " time" + (searches == 1 ? "" : "s") + " (points left: " + (elPts - searches) + " elemental, "
+                    + (catPts - searches) + " catalytic). Rifts closed: " + kc + ".");
         }
     }
 
     @Override
     protected List<String> hud(ServerPlayerEntity player) {
         int[] e = energy(player);
-        return List.of("Guardians of the Rift", "Guardian power: " + power + "%", "Elemental: " + name(elemental) + "  Catalytic: "
+        return List.of("Guardians of the Rift", "Guardian power: " + (int) power + "%", "Elemental: " + name(elemental) + "  Catalytic: "
                 + name(catalytic), "Energy: " + e[0] + " elemental / " + e[1] + " catalytic", "Time left: " + time(GAME_TICKS - ticks));
     }
 }

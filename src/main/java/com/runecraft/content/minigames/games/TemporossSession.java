@@ -6,8 +6,9 @@ import com.runecraft.content.minigames.MinigameData;
 import com.runecraft.content.minigames.MinigameSession;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.minigames.Minigame;
-import com.runecraft.osrs.content.minigames.MinigameRules;
+import com.runecraft.osrs.content.minigames.MinigameReward;
 import com.runecraft.osrs.content.minigames.MinigameRules.Tempoross;
+import com.runecraft.osrs.content.minigames.TemporossRewards;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.minecraft.block.Blocks;
@@ -144,6 +145,7 @@ public class TemporossSession extends MinigameSession {
                     return true;
                 }
                 addPoints(player, Tempoross.POINTS_LOAD_RAW * raw + Tempoross.POINTS_LOAD_COOKED * cooked);
+                xp(player, Skill.FISHING, TemporossRewards.cannonXp(level(player, Skill.FISHING)) * (raw + cooked));
                 if (!vulnerable()) {
                     energy = Math.max(0, energy - raw * Tempoross.RAW_DAMAGE - cooked * Tempoross.COOKED_DAMAGE);
                 }
@@ -176,7 +178,7 @@ public class TemporossSession extends MinigameSession {
                     }
                     essence = Math.max(0, essence - Tempoross.SPIRIT_DAMAGE);
                     addPoints(p, Tempoross.POINTS_SPIRIT);
-                    xp(p, Skill.FISHING, level(p, Skill.FISHING) * 0.5);
+                    xp(p, Skill.FISHING, TemporossRewards.spiritPoolXp(level(p, Skill.FISHING)));
                     if (essence <= 0) {
                         end(true);
                         return false;
@@ -234,11 +236,10 @@ public class TemporossSession extends MinigameSession {
         broadcastRed("Tempoross has been subdued!");
         for (ServerPlayerEntity p : online()) {
             int pts = points.getOrDefault(p.getUuid(), 0);
-            int permits = Tempoross.permits(pts);
+            int permits = Tempoross.permits(pts, random.nextDouble());
             int kc = MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
             if (permits > 0) {
                 reward(p, "reward_permit", permits);
-                xp(p, Skill.FISHING, level(p, Skill.FISHING) * 15.0);
                 Msg.game(p, "You earned " + pts + " points and " + permits + " reward permit" + (permits > 1 ? "s" : "")
                         + ". Your Tempoross subdue count is: " + kc + ".");
             } else {
@@ -262,18 +263,24 @@ public class TemporossSession extends MinigameSession {
             return;
         }
         Inv.remove(player, "reward_permit", permits);
+        int fishing = com.runecraft.player.Players.data(player).skills().level(Skill.FISHING);
+        java.util.Set<String> log = com.runecraft.player.Players.data(player).collectionLog();
+        List<String> owned = new java.util.ArrayList<>();
+        for (String u : TemporossRewards.REPLACED_WHEN_OWNED) {
+            if (log.contains(u) || Inv.has(player, u, 1)) {
+                owned.add(u);
+            }
+        }
         for (int i = 0; i < permits; i++) {
-            MinigameRules.Loot l = MinigameRules.pick(Tempoross.POOL, POOL_RANDOM.nextDouble());
-            Inv.give(player, l.item(), l.min() + POOL_RANDOM.nextInt(l.max() - l.min() + 1));
-            for (Object[] u : Tempoross.UNIQUES) {
-                if (POOL_RANDOM.nextInt((Integer) u[1]) == 0) {
-                    Inv.give(player, (String) u[0], 1);
-                    CollectionLog.obtain(player, (String) u[0]);
-                    if (u[0].equals("tiny_tempor")) {
-                        player.getServer().getPlayerManager().broadcast(Text.literal(player.getName().getString()
-                                + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
-                    }
-                }
+            MinigameReward r = TemporossRewards.roll(fishing, owned, POOL_RANDOM::nextDouble);
+            Inv.give(player, r.item(), r.amount());
+            CollectionLog.obtain(player, r.item());
+            if (TemporossRewards.REPLACED_WHEN_OWNED.contains(r.item()) && !owned.contains(r.item())) {
+                owned.add(r.item());
+            }
+            if (r.item().equals("tiny_tempor")) {
+                player.getServer().getPlayerManager().broadcast(Text.literal(player.getName().getString()
+                        + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
             }
         }
         Msg.game(player, "You search the reward pool " + permits + " time" + (permits > 1 ? "s" : "") + ".");

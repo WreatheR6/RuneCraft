@@ -39,7 +39,8 @@ class CollectionLogAuditTest {
                 String name = f.getFileName().toString();
                 // Minecraft-side game code, plus the pure reward rules it rolls (e.g. MinigameRules' reward pools).
                 boolean core = f.toString().replace('\\', '/').contains("/com/runecraft/osrs/");
-                if (!name.endsWith(".java") || definitionFile(name) || (core && !name.endsWith("Rules.java"))) {
+                boolean rewardRules = name.endsWith("Rules.java") || name.endsWith("Rewards.java");
+                if (!name.endsWith(".java") || definitionFile(name) || (core && !rewardRules)) {
                     continue;
                 }
                 String text = Files.readString(f);

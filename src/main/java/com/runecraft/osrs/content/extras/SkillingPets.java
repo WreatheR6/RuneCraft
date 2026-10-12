@@ -62,6 +62,7 @@ public final class SkillingPets {
         item(ROCK_GOLEM, Skill.MINING, 59_328, "adamantite_ore");
         item(ROCK_GOLEM, Skill.MINING, 42_377, "runite_ore");
         item(ROCK_GOLEM, Skill.MINING, 46_350, "amethyst");
+        item(ROCK_GOLEM, Skill.MINING, 247_200, "pay_dirt"); // Motherlode Mine (per pay-dirt mined)
         item(ROCK_GOLEM, Skill.MINING, 211_886, "uncut_opal", "uncut_jade", "uncut_red_topaz", "uncut_sapphire", "uncut_emerald",
                 "uncut_ruby", "uncut_diamond"); // gem rocks
         // Fishing (Heron): per fish caught.

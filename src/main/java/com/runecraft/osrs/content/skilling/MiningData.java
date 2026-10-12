@@ -93,27 +93,22 @@ public final class MiningData extends SkillingPart {
         return null;
     }
 
-    /** Motherlode sack capacity (before the upgrade). */
-    public static final int SACK_CAPACITY = 108;
+    /** Motherlode sack capacity (before the 200-nugget upgrade to 189). See {@link Motherlode}. */
+    public static final int SACK_CAPACITY = Motherlode.SACK_CAPACITY;
 
     /**
-     * Ore found in one pay-dirt for a Mining level: [coal, gold, mithril, adamantite, runite] weights
-     * (approximation of the OSRS table where better ore unlocks with level).
+     * Ore found in one pay-dirt for a Mining level, as weights per 10,000 (golden nuggets excluded):
+     * coal, gold, mithril, adamantite, runite as unlocked. Derived from {@link Motherlode#distribution(int)}.
      */
     public static List<Loot> payDirtTable(int miningLevel) {
         List<Loot> t = new ArrayList<>();
-        t.add(Loot.of("coal", 70));
-        if (miningLevel >= 40) {
-            t.add(Loot.of("gold_ore", 30));
-        }
-        if (miningLevel >= 55) {
-            t.add(Loot.of("mithril_ore", 20));
-        }
-        if (miningLevel >= 70) {
-            t.add(Loot.of("adamantite_ore", 8));
-        }
-        if (miningLevel >= 85) {
-            t.add(Loot.of("runite_ore", 2));
+        java.util.Map<String, Double> d = Motherlode.distribution(miningLevel);
+        double ore = 1.0 - d.get("golden_nugget");
+        for (String item : new String[]{"coal", "gold_ore", "mithril_ore", "adamantite_ore", "runite_ore"}) {
+            int w = (int) Math.round(d.get(item) / ore * 10_000);
+            if (w > 0) {
+                t.add(Loot.of(item, w));
+            }
         }
         return t;
     }

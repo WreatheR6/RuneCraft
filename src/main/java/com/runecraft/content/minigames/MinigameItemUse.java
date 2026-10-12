@@ -2,8 +2,10 @@ package com.runecraft.content.minigames;
 
 import com.runecraft.collection.CollectionLog;
 import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.minigames.GuardiansRewards;
 import com.runecraft.osrs.content.minigames.MinigameItems;
-import com.runecraft.osrs.content.minigames.MinigameRules;
+import com.runecraft.osrs.content.minigames.MinigameReward;
+import com.runecraft.osrs.content.minigames.WintertodtRewards;
 import com.runecraft.skill.Drops;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
@@ -16,7 +18,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.TypedActionResult;
 
-import java.util.List;
 import java.util.Random;
 
 /** Right-click behaviour of reward containers (supply crates, intricate pouches...) and Bones to Peaches. */
@@ -84,47 +85,54 @@ public final class MinigameItemUse {
         CollectionLog.obtain(p, item);
     }
 
-    private static void roll(ServerPlayerEntity p, List<MinigameRules.Loot> table) {
-        MinigameRules.Loot l = MinigameRules.pick(table, RANDOM.nextDouble());
-        give(p, l.item(), l.min() + RANDOM.nextInt(l.max() - l.min() + 1));
-    }
-
     private static void pet(ServerPlayerEntity p, String pet) {
         give(p, pet, 1);
         p.getServer().getPlayerManager().broadcast(Text.literal(p.getName().getString()
                 + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
     }
 
-    /** Wintertodt supply crate: N rolls on the crate table plus the unique rolls. */
+    /** Wintertodt supply crate: N rolls of the wiki reward table (uniques first, then a skill/coin table). */
     public static void openSupplyCrate(ServerPlayerEntity p, int rolls) {
+        java.util.Set<String> log = com.runecraft.player.Players.data(p).collectionLog();
+        com.runecraft.osrs.SkillSet skills = com.runecraft.player.Players.data(p).skills();
+        WintertodtRewards.Player who = new WintertodtRewards.Player(skills.level(Skill.CRAFTING), skills.level(Skill.HERBLORE),
+                skills.level(Skill.FARMING), skills.level(Skill.WOODCUTTING), skills.level(Skill.MINING), skills.level(Skill.FISHING),
+                log.contains("phoenix") || Inv.has(p, "phoenix", 1), log.contains("warm_gloves"), log.contains("bruma_torch"));
         for (int i = 0; i < rolls; i++) {
-            roll(p, MinigameRules.Wintertodt.CRATE);
-        }
-        if (RANDOM.nextInt(MinigameRules.Wintertodt.OUTFIT_CHANCE) < rolls) {
-            String[] uniques = {"pyromancer_hood", "pyromancer_garb", "pyromancer_robe", "pyromancer_boots", "warm_gloves", "bruma_torch"};
-            give(p, uniques[RANDOM.nextInt(uniques.length)], 1);
-        }
-        if (RANDOM.nextInt(MinigameRules.Wintertodt.TOME_CHANCE) < rolls) {
-            give(p, "tome_of_fire", 1);
-        }
-        if (RANDOM.nextInt(MinigameRules.Wintertodt.DRAGON_AXE_CHANCE) < rolls) {
-            give(p, "dragon_axe", 1);
-        }
-        if (RANDOM.nextInt(MinigameRules.Wintertodt.PHOENIX_CHANCE) == 0) {
-            pet(p, "phoenix");
+            MinigameReward r = WintertodtRewards.roll(who, RANDOM::nextDouble);
+            if (r.item().equals("phoenix")) {
+                pet(p, "phoenix");
+                who = new WintertodtRewards.Player(who.crafting(), who.herblore(), who.farming(), who.woodcutting(), who.mining(),
+                        who.fishing(), true, who.hasWarmGloves(), who.hasBrumaTorch());
+                continue;
+            }
+            give(p, r.item(), r.amount());
         }
         Msg.game(p, "You open the supply crate (" + rolls + " roll" + (rolls == 1 ? "" : "s") + ").");
     }
 
-    /** Guardians of the Rift intricate pouch. */
+    /** Guardians of the Rift intricate pouch (approx. contents; 1/200 blood essence pre-roll). */
     public static void openPouch(ServerPlayerEntity p) {
-        roll(p, MinigameRules.Guardians.POUCH);
-        if (RANDOM.nextInt(MinigameRules.Guardians.NEEDLE_CHANCE) == 0) {
-            give(p, "abyssal_needle", 1);
+        for (MinigameReward r : GuardiansRewards.openIntricatePouch(RANDOM::nextDouble)) {
+            give(p, r.item(), r.amount());
         }
-        if (RANDOM.nextInt(MinigameRules.Guardians.PET_CHANCE) == 0) {
+    }
+
+    /** One Rewards Guardian search (costs one elemental and one catalytic point, paid by the caller). */
+    public static void riftSearch(ServerPlayerEntity p) {
+        java.util.List<String> owned = new java.util.ArrayList<>();
+        for (String pouch : GuardiansRewards.POUCHES) {
+            if (Inv.has(p, pouch, 1) || com.runecraft.player.Players.data(p).collectionLog().contains(pouch)) {
+                owned.add(pouch);
+            }
+        }
+        int rc = com.runecraft.player.Players.data(p).skills().level(Skill.RUNECRAFT);
+        MinigameReward r = GuardiansRewards.search(rc, owned, RANDOM::nextDouble);
+        if (r.item().equals("abyssal_protector")) {
             pet(p, "abyssal_protector");
+            return;
         }
+        give(p, r.item(), r.amount());
     }
 
     /** Gnome Restaurant reward box. */

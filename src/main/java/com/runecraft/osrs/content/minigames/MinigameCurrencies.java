@@ -17,6 +17,7 @@ public final class MinigameCurrencies {
     public static final String TITHE = "pts:tithe_farm";
     public static final String FOUNDRY = "pts:giants_foundry";
     public static final String CARPENTER = "pts:mahogany_homes";
+    public static final String VOLCANIC_MINE = "pts:volcanic_mine";
     public static final String TOKKUL = "item:tokkul";
     public static final String PEARLS = "item:abyssal_pearls";
     public static final String CW_TICKETS = "item:castle_wars_ticket";
@@ -43,6 +44,7 @@ public final class MinigameCurrencies {
         NAMES.put(TITHE, "Tithe Farm points");
         NAMES.put(FOUNDRY, "Foundry reputation");
         NAMES.put(CARPENTER, "Carpenter points");
+        NAMES.put(VOLCANIC_MINE, "Volcanic Mine points");
         NAMES.put(TOKKUL, "Tokkul");
         NAMES.put(PEARLS, "Abyssal pearls");
         NAMES.put(CW_TICKETS, "Castle wars tickets");

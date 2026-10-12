@@ -133,6 +133,9 @@ public final class MinigameWorld {
             // Rogues' Den
             {"rd_obstacle", "Obstacle", "6A6A70", "machine"},
             {"rd_safe", "Wall safe", "5A5A60", "chest"},
+            // Volcanic Mine
+            {"vm_boulder", "Boulder", "5A4A40", "rock"},
+            {"vm_vent", "Gas chamber", "C05020", "fire_lava"},
             // Shared
             {"minigame_exit", "Exit portal", "C0C0FF", "portal_glow"}};
 
@@ -199,6 +202,7 @@ public final class MinigameWorld {
                 case SHADES_OF_MORTTON -> "Mort'ton";
                 case FISHING_TRAWLER -> "Port Khazard";
                 case CHAMPIONS_CHALLENGE -> "Champions' Guild arena";
+                case VOLCANIC_MINE -> "Volcanic Mine entrance";
                 default -> m.displayName();
             };
             list.add(PlaceDef.of(m.place(), name, m.entranceX(), m.entranceY(), m.style(), blocks.get(m.place())));
@@ -280,7 +284,8 @@ public final class MinigameWorld {
                 "tome_of_water", "soaked_page", "dragon_harpoon", "spirit_flakes")));
         pages.add(new CollectionLogData.Page(c, "Guardians of the Rift", List.of("abyssal_protector", "abyssal_needle",
                 "abyssal_lantern", "hat_of_the_eye", "robe_top_of_the_eye", "robe_bottoms_of_the_eye", "boots_of_the_eye",
-                "catalytic_talisman", "elemental_talisman", "abyssal_pearls")));
+                "catalytic_talisman", "elemental_talisman", "abyssal_green_dye", "abyssal_blue_dye", "abyssal_red_dye",
+                "intricate_pouch", "abyssal_pearls")));
         pages.add(new CollectionLogData.Page(c, "Barbarian Assault", List.of("pet_penance_queen", "fighter_torso", "penance_gloves",
                 "penance_skirt", "fighter_hat", "ranger_hat", "runner_hat", "healer_hat", "runner_boots", "granite_body")));
         pages.add(new CollectionLogData.Page(c, "Castle Wars", List.of("saradomin_halo", "zamorak_halo", "saradomin_hood",
