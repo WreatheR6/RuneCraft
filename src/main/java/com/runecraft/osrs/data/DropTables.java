@@ -99,11 +99,9 @@ public final class DropTables {
             e("watermelon_seed", 2, 11),
             e("snape_grass_seed", 2, 8));
 
-    /**
-     * Rare seed drop table (weights derived from the wiki's per-monster rates, out of 1002). The limpwurt seed
-     * slot (131) is left empty because limpwurt seeds are not in RuneCraft.
-     */
+    /** Rare seed drop table (weights derived from the wiki's per-monster rates, out of 1002). */
     public static final List<Entry> RARE_SEEDS = List.of(
+            e("limpwurt_seed", 1, 131),
             e("strawberry_seed", 1, 125),
             e("marrentill_seed", 1, 120),
             e("jangerberry_seed", 1, 88),

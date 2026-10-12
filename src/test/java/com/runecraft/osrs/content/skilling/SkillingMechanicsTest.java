@@ -124,7 +124,7 @@ class SkillingMechanicsTest {
 
     @Test
     void cropStagesAndDiseaseData() {
-        assertEquals(5, FarmingData.stages(FarmingData.byId("oak")));
+        assertEquals(4, FarmingData.stages(FarmingData.byId("oak")));
         assertEquals(12, FarmingData.stages(FarmingData.byId("magic")));
         assertEquals(6, FarmingData.stages(FarmingData.byId("apple")));
         assertEquals(5, FarmingData.stages(FarmingData.byId("redberry")));

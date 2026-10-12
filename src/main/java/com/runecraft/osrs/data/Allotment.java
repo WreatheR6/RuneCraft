@@ -45,6 +45,35 @@ public enum Allotment {
         return level;
     }
 
+    /** OSRS growth time in minutes (10-minute cycles: potato/onion/cabbage/tomato 4, sweetcorn/strawberry 6, snape grass 7, watermelon 8). */
+    public int growthMinutes() {
+        return switch (this) {
+            case POTATO, ONION, CABBAGE, TOMATO -> 40;
+            case SWEETCORN, STRAWBERRY -> 60;
+            case SNAPE_GRASS -> 70;
+            case WATERMELON -> 80;
+        };
+    }
+
+    /** Harvest lives: chance (out of 256, before the +1) to save a life at Farming level 1 (OSRS wiki). */
+    public int harvestLow() {
+        return switch (this) {
+            case POTATO -> 101;
+            case ONION -> 105;
+            case CABBAGE -> 107;
+            case TOMATO -> 112;
+            case SWEETCORN -> 88;
+            case STRAWBERRY -> 103;
+            case WATERMELON -> 126;
+            case SNAPE_GRASS -> 148;
+        };
+    }
+
+    /** Harvest lives: chance (out of 256, before the +1) to save a life at Farming level 99. */
+    public int harvestHigh() {
+        return this == SNAPE_GRASS ? 195 : 180;
+    }
+
     public double plantXp() {
         return plantXp;
     }

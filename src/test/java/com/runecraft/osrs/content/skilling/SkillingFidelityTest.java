@@ -268,11 +268,11 @@ class SkillingFidelityTest {
 
     @Test
     void farming() {
-        assertEquals(200, FarmingData.byId("oak").growthMinutes());
+        assertEquals(160, FarmingData.byId("oak").growthMinutes());
         assertEquals(480, FarmingData.byId("magic").growthMinutes());
         assertEquals(960, FarmingData.byId("palm").growthMinutes());
         assertEquals(1280, FarmingData.byId("calquat").growthMinutes());
-        assertEquals(3520, FarmingData.byId("spirit").growthMinutes());
+        assertEquals(3840, FarmingData.byId("spirit").growthMinutes());
         assertEquals(13768.3, FarmingData.byId("magic").checkXp());
         assertEquals(4, FarmingData.byId("barley").count());
         assertEquals(3, FarmingData.byId("jute").count());

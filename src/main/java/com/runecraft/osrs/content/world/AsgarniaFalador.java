@@ -164,6 +164,7 @@ final class AsgarniaFalador {
         k.st(3046, 3306, 0, rc("allotment_patch"));
         k.st(3056, 3306, 0, rc("allotment_patch"));
         k.st(3051, 3305, 0, rc("herb_patch"));
+        k.st(3053, 3307, 0, rc("flower_patch"));
         k.st(3049, 3307, 0, rc("compost_bin"));
         int[] fl = rect(3045, 3305, 3048, 3305);
         k.f(fl[0], -1, fl[1], fl[2], -1, fl[3], mc("farmland[moisture=7]"));

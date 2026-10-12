@@ -51,6 +51,8 @@ public final class ZeahHooks implements ModuleHooks {
                 QuestScripts.onTalk(npc.id(), (player, entity) -> thirus(player, npc.name()));
             } else if (npc.id().equals("zeah_shayzien_quartermaster")) {
                 QuestScripts.onTalk(npc.id(), (player, entity) -> quartermaster(player, npc.name()));
+            } else if (npc.id().equals("zeah_guildmaster_jane")) {
+                QuestScripts.onTalk(npc.id(), (player, entity) -> com.runecraft.content.skilling.FarmingContractService.talk(player, npc.name()));
             } else if (npc.id().startsWith("zeah_guild_hunter_")) {
                 QuestScripts.onTalk(npc.id(), (player, entity) -> rumour(player, npc.id(), npc.name()));
             } else {

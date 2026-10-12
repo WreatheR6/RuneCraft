@@ -220,9 +220,10 @@ final class KandarinGnomes {
         KandarinKit k = new KandarinKit("gnome_stronghold_patches", "Gnome Stronghold patches").replaces("gnome_stronghold_patches");
         k.fence(2428, 3408, 2441, 3420, "minecraft:jungle_fence");
         k.tClear(2434, 3420, 2435, 3420, 0, 0);
-        for (int[] p : new int[][]{{2430, 3410, 0}, {2439, 3410, 1}, {2430, 3418, 2}}) {
+        // No spirit tree patch here: OSRS spirit tree patches are Port Sarim, Etceteria, Brimhaven, Hosidius and the Farming Guild.
+        for (int[] p : new int[][]{{2430, 3410, 0}, {2439, 3410, 1}}) {
             k.floor(p[0] - 1, p[1] - 1, p[0] + 1, p[1] + 1, "minecraft:podzol");
-            k.at(p[0], p[1], 0, "runecraft:" + new String[]{"tree_patch", "fruit_tree_patch", "spirit_tree_patch"}[p[2]]);
+            k.at(p[0], p[1], 0, "runecraft:" + new String[]{"tree_patch", "fruit_tree_patch"}[p[2]]);
         }
         k.at(2439, 3418, 0, "runecraft:compost_bin");
         return k.build();

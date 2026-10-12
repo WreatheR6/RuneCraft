@@ -104,6 +104,31 @@ public enum Herb {
         return farmingLevel;
     }
 
+    /** Harvest lives: chance (out of 256, before the +1) to save a life at Farming level 1 (OSRS wiki). */
+    public int harvestLow() {
+        return switch (this) {
+            case GUAM -> 25;
+            case MARRENTILL -> 28;
+            case TARROMIN -> 31;
+            case HARRALANDER -> 36;
+            case RANARR -> 39;
+            case TOADFLAX -> 43;
+            case IRIT -> 46;
+            case AVANTOE -> 50;
+            case KWUARM -> 54;
+            case SNAPDRAGON -> 57;
+            case CADANTINE -> 60;
+            case LANTADYME -> 64;
+            case DWARF_WEED -> 67;
+            case TORSTOL -> 71;
+        };
+    }
+
+    /** Harvest lives: chance (out of 256, before the +1) to save a life at Farming level 99; 80 for every herb. */
+    public int harvestHigh() {
+        return 80;
+    }
+
     public double plantXp() {
         return plantXp;
     }

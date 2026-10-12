@@ -488,6 +488,8 @@ final class KandarinNorth {
             k.set(x, 0, z, i % 2 == 0 ? "minecraft:bone_block" : "minecraft:skeleton_skull");
         }
         k.set(KandarinKit.X(2837), 0, KandarinKit.Z(3676), "minecraft:campfire[lit=true]");
+        // Troll Stronghold herb patch (disease-free in OSRS; there it is on the keep's roof, approx. placed by the keep here)
+        k.set(KandarinKit.X(2828), 0, KandarinKit.Z(3687), "runecraft:herb_patch");
         k.flag(KandarinKit.X(2824) + 1, 17, KandarinKit.Z(3704) + 1, "black", "gray");
         return k.build();
     }

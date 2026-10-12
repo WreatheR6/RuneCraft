@@ -168,6 +168,10 @@ final class ItemHooks {
                 Msg.action(player, l.item().equals("oyster_pearl") ? "You find a pearl inside the oyster!" : "The oyster is empty.");
                 return true;
             }
+            case "seed_pack" -> {
+                FarmingContractService.open(player, stack);
+                return true;
+            }
             case "bird_nest_seeds", "bird_nest_ring" -> {
                 stack.decrement(1);
                 Loot l = SkillingUtil.roll(player, id.equals("bird_nest_seeds") ? FarmingHooks.NEST_SEEDS : FarmingHooks.NEST_RINGS,

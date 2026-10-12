@@ -31,7 +31,8 @@ public class HerbPatchBlock extends FarmingPatchBlock {
     }
 
     @Override
-    protected int growthOdds() {
-        return 18;
+    protected int growthOdds(BlockState state) {
+        // 4 x 20-minute cycles, shown as 3 visible growth steps.
+        return com.runecraft.osrs.FarmingYield.randomTickOdds(80, 3);
     }
 }

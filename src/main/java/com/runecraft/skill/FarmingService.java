@@ -3,6 +3,7 @@ package com.runecraft.skill;
 import com.runecraft.block.FarmingPatchBlock;
 import com.runecraft.collection.CollectionLog;
 import com.runecraft.osrs.FarmingDisease;
+import com.runecraft.osrs.FarmingYield;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.Skill;
@@ -76,23 +77,33 @@ public final class FarmingService {
                     + (state.get(FarmingPatchBlock.PROTECTED) ? " (protected by the gardener)." : "."));
             return;
         }
-        // Harvest: compost adds harvest lives (+1 / +2 / +3).
-        int lives = FarmingDisease.compostLives(state.get(FarmingPatchBlock.COMPOST));
+        // Harvest lives (OSRS): 3 + compost lives, each pick has a level-based chance to save a life.
+        int lives = FarmingYield.lives(state.get(FarmingPatchBlock.COMPOST));
+        double bonus = Inv.has(player, "magic_secateurs", 1) ? FarmingYield.MAGIC_SECATEURS : 0;
         int yield;
         String item;
         double xp;
+        int chance;
         if (patch.isHerbPatch()) {
             Herb herb = Herb.values()[crop - 1];
             item = herb.grimyItem();
             xp = herb.harvestXp();
-            yield = 3 + player.getRandom().nextInt(4) + level / 33 + lives;
+            String cape = com.runecraft.content.systems.SysState.of(player)
+                    .wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE);
+            if (cape.startsWith("farming_cape") || cape.equals("max_cape")) {
+                bonus += FarmingYield.FARMING_CAPE;
+            }
+            chance = FarmingYield.saveChance(herb.harvestLow(), herb.harvestHigh(), level, bonus, 0);
         } else {
             Allotment a = Allotment.values()[crop - 1];
             item = a.produceItem();
             xp = a.harvestXp();
-            yield = 3 + player.getRandom().nextInt(6) + level / 25 + lives;
+            chance = FarmingYield.saveChance(a.harvestLow(), a.harvestHigh(), level, bonus, 0);
         }
+        yield = FarmingYield.harvest(lives, chance, player.getRandom()::nextInt);
         Inv.give(player, item, yield);
+        com.runecraft.content.skilling.FarmingContractService.harvested(player,
+                patch.isHerbPatch() ? Herb.values()[crop - 1].cleanItem() : item);
         CollectionLog.obtain(player, item);
         XpService.add(player, Skill.FARMING, xp * yield);
         Msg.game(player, "You harvest the patch.");

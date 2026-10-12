@@ -38,6 +38,16 @@ public final class FarmingDisease {
         };
     }
 
+    /**
+     * Patches that never get diseased in OSRS: the Troll Stronghold and Weiss herb patches, and the
+     * Hosidius farming patches (approx.: OSRS ties those to the Kourend & Kebos easy diary).
+     */
+    public static boolean diseaseFreeArea(int osrsX, int osrsY) {
+        return (osrsX >= 2816 && osrsX <= 2870 && osrsY >= 3662 && osrsY <= 3712)      // Troll Stronghold
+                || (osrsX >= 2830 && osrsX <= 2870 && osrsY >= 3915 && osrsY <= 3950)  // Weiss
+                || (osrsX >= 1725 && osrsX <= 1755 && osrsY >= 3545 && osrsY <= 3585); // Hosidius farm
+    }
+
     /** Extra harvest lives (herbs/allotments/hops...) from compost level 0..3. */
     public static int compostLives(int compost) {
         return Math.max(0, Math.min(3, compost));
@@ -75,12 +85,12 @@ public final class FarmingDisease {
         pay("snape_grass", "jangerberries", 5);
         // Hops
         pay("barley", "compost", 3);
-        pay("hammerstone", "onion", 5);        // approx. (OSRS: 1 marigold; flowers aren't in the game)
+        pay("hammerstone", "marigolds", 1);
         pay("asgarnian", "onion", 5);
         pay("jute", "barley", 6);              // approx. (OSRS: 6 barley malt)
         pay("yanillian", "tomato", 5);
         pay("krandorian", "cabbage", 30);
-        pay("wildblood", "cadava_berries", 10); // approx. (OSRS: 1 nasturtium)
+        pay("wildblood", "nasturtiums", 1);
         // Trees
         pay("oak", "tomato", 5);
         pay("willow", "cooking_apple", 5);

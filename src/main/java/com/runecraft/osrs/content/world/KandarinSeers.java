@@ -556,6 +556,7 @@ final class KandarinSeers {
         k.fill(KandarinKit.X(2804), 0, KandarinKit.Z(3458), KandarinKit.X(2804) + 3, 0, KandarinKit.Z(3458), "runecraft:allotment_patch");
         k.floor(2806, 3461, 2807, 3462, "minecraft:podzol");
         k.tFill(2806, 3461, 2807, 3462, 0, 0, "minecraft:poppy");
+        k.tFill(2809, 3461, 2809, 3461, 0, 0, "runecraft:flower_patch");
         k.tFill(2812, 3461, 2812, 3461, 0, 0, "runecraft:herb_patch");
         k.at(2804, 3461, 0, "runecraft:compost_bin");
 

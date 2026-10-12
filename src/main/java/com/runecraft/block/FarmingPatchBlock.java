@@ -18,8 +18,8 @@ import net.minecraft.world.World;
 
 /**
  * A farming patch. {@code crop} 0 is empty, otherwise the 1-based index of the crop; {@code stage}
- * goes 1 (planted) to 4 (fully grown). Herbs take roughly 80 minutes, allotments 40 minutes,
- * matching OSRS growth times.
+ * goes 1 (planted) to 4 (fully grown). Herbs take about 80 minutes and allotments 40 to 80 minutes
+ * depending on the crop, matching OSRS growth times ({@link com.runecraft.osrs.FarmingYield#randomTickOdds}).
  *
  * <p>Disease (see {@link FarmingDisease}): every growth step may make the crop diseased
  * ({@code disease} 1) instead of growing, with the herb chance of 27/128 cut by the patch's
@@ -43,8 +43,8 @@ public abstract class FarmingPatchBlock extends Block {
 
     public abstract boolean isHerbPatch();
 
-    /** Chance per random tick (~68s on average) to advance one stage. */
-    protected abstract int growthOdds();
+    /** Chance (1 in N) per random tick (~68s on average) to advance one stage, for the crop in this state. */
+    protected abstract int growthOdds(BlockState state);
 
     @Override
     public boolean hasRandomTicks(BlockState state) {
@@ -55,7 +55,7 @@ public abstract class FarmingPatchBlock extends Block {
     @Override
     @SuppressWarnings("deprecation")
     public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-        if (!hasRandomTicks(state) || random.nextInt(growthOdds()) != 0) {
+        if (!hasRandomTicks(state) || random.nextInt(growthOdds(state)) != 0) {
             return;
         }
         if (state.get(DISEASE) == 1) {
@@ -63,7 +63,9 @@ public abstract class FarmingPatchBlock extends Block {
             world.setBlockState(pos, state.with(DISEASE, 2), Block.NOTIFY_ALL);
             return;
         }
-        int chance = FarmingDisease.chance(FarmingDisease.BASE_CHANCE, state.get(COMPOST));
+        boolean free = com.runecraft.world.Gielinor.is(world) && FarmingDisease.diseaseFreeArea(
+                com.runecraft.osrs.GielinorMap.toOsrsX(pos.getX()), com.runecraft.osrs.GielinorMap.toOsrsY(pos.getZ()));
+        int chance = free ? 0 : FarmingDisease.chance(FarmingDisease.BASE_CHANCE, state.get(COMPOST));
         if (FarmingDisease.rollDisease(chance, state.get(PROTECTED), random::nextInt)) {
             world.setBlockState(pos, state.with(DISEASE, 1), Block.NOTIFY_ALL);
             return;

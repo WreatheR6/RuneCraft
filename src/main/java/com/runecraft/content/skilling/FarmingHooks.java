@@ -64,6 +64,34 @@ final class FarmingHooks {
         for (FarmingData.Gardener g : FarmingData.GARDENERS) {
             QuestScripts.onTalk(g.id(), (player, npc) -> gardener(player, npc, g));
         }
+        for (FarmingData.Leprechaun l : FarmingData.LEPRECHAUNS) {
+            QuestScripts.onTalk(l.id(), (player, npc) -> leprechaun(player));
+        }
+    }
+
+    /** A tool leprechaun notes the harvested produce in the player's inventory. */
+    static void leprechaun(ServerPlayerEntity player) {
+        int noted = 0;
+        net.minecraft.entity.player.PlayerInventory inv = player.getInventory();
+        for (int i = 0; i < inv.main.size(); i++) {
+            ItemStack s = inv.main.get(i);
+            if (s.isEmpty() || s.hasNbt()) {
+                continue;
+            }
+            String id = Inv.idOf(s);
+            if (!FarmingData.leprechaunNotes(id) || !com.runecraft.bank.Notes.canNote(id, "")) {
+                continue;
+            }
+            ItemStack note = com.runecraft.bank.Notes.note(id, "", s.getCount());
+            if (note.isEmpty()) {
+                continue;
+            }
+            noted += s.getCount();
+            inv.main.set(i, ItemStack.EMPTY);
+            Inv.give(player, note);
+        }
+        Msg.game(player, noted > 0 ? "Tool Leprechaun: There ye go, I've noted yer produce for ye."
+                : "Tool Leprechaun: Bring me yer harvested produce and I'll note it for ye.");
     }
 
     /** Length of one growth cycle in world ticks. */
@@ -289,6 +317,7 @@ final class FarmingHooks {
     private static void checkHealth(ServerPlayerEntity player, Crop crop, NbtCompound nbt) {
         nbt.putBoolean("checked", true);
         XpService.add(player, Skill.FARMING, crop.checkXp());
+        FarmingContractService.harvested(player, crop.id());
         Msg.action(player, "You examine the " + SkillingUtil.lower(crop.name()) + " for signs of disease and find that it is in perfect health.");
     }
 
@@ -385,6 +414,7 @@ final class FarmingHooks {
         }
         SkillingUtil.give(player, crop.produce(), 1);
         XpService.add(player, Skill.FARMING, crop.harvestXp());
+        FarmingContractService.harvested(player, crop.id());
         world.playSound(null, pos, SoundEvents.BLOCK_SWEET_BERRY_BUSH_PICK_BERRIES, SoundCategory.BLOCKS, 1f, 1f);
         Msg.action(player, "You pick " + Msg.article(SkillingUtil.lower(SkillingUtil.name(crop.produce()))) + ".");
     }
@@ -396,9 +426,10 @@ final class FarmingHooks {
             return;
         }
         Random random = player.getRandom();
-        int yield = crop.minYield() + random.nextInt(crop.maxYield() - crop.minYield() + 1) + nbt.getInt("compost");
+        int yield = FarmingData.harvestYield(crop, SkillingUtil.level(player, Skill.FARMING), nbt.getInt("compost"), random::nextInt);
         SkillingUtil.give(player, crop.produce(), yield);
-        XpService.add(player, Skill.FARMING, crop.harvestXp() * yield);
+        XpService.add(player, Skill.FARMING, FarmingData.harvestXp(crop, yield));
+        FarmingContractService.harvested(player, crop.id());
         clear(world, pos, nbt, state, key);
         world.playSound(null, pos, SoundEvents.BLOCK_CROP_BREAK, SoundCategory.BLOCKS, 1f, 1f);
         Msg.action(player, "You harvest " + yield + " " + SkillingUtil.lower(SkillingUtil.name(crop.produce())) + " from the patch.");
@@ -459,6 +490,7 @@ final class FarmingHooks {
                 case CACTUS -> column.add(Blocks.POTTED_CACTUS.getDefaultState());
                 case MUSHROOM -> column.add(Blocks.POTTED_RED_MUSHROOM.getDefaultState());
                 case BELLADONNA -> column.add(Blocks.POTTED_WITHER_ROSE.getDefaultState());
+                case FLOWER -> column.add(flowerPot(crop).getDefaultState());
                 default -> column.add(Blocks.POTTED_BAMBOO.getDefaultState());
             }
         }
@@ -502,6 +534,17 @@ final class FarmingHooks {
             case MUSHROOM -> Blocks.POTTED_BROWN_MUSHROOM;
             case BELLADONNA -> Blocks.POTTED_ALLIUM;
             default -> Blocks.POTTED_FERN;
+        };
+    }
+
+    private static Block flowerPot(Crop c) {
+        return switch (c.id()) {
+            case "marigold" -> Blocks.POTTED_ORANGE_TULIP;
+            case "nasturtium" -> Blocks.POTTED_RED_TULIP;
+            case "woad" -> Blocks.POTTED_CORNFLOWER;
+            case "white_lily" -> Blocks.POTTED_LILY_OF_THE_VALLEY;
+            case "limpwurt" -> Blocks.POTTED_DANDELION;
+            default -> Blocks.POTTED_AZURE_BLUET;
         };
     }
 

@@ -31,7 +31,9 @@ public class AllotmentPatchBlock extends FarmingPatchBlock {
     }
 
     @Override
-    protected int growthOdds() {
-        return 9;
+    protected int growthOdds(BlockState state) {
+        int crop = state.get(CROP);
+        int minutes = crop <= 0 ? 40 : Allotment.values()[crop - 1].growthMinutes();
+        return com.runecraft.osrs.FarmingYield.randomTickOdds(minutes, 3);
     }
 }

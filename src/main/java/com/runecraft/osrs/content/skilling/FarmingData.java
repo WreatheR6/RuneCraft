@@ -5,6 +5,7 @@ import com.runecraft.osrs.FarmingDisease;
 import com.runecraft.osrs.MenuType;
 import com.runecraft.osrs.Recipe;
 import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.Station;
 import com.runecraft.osrs.content.BlockDef;
 import com.runecraft.osrs.content.ItemSink;
 import com.runecraft.osrs.content.NpcDef;
@@ -41,7 +42,8 @@ public final class FarmingData extends SkillingPart {
         SEAWEED("seaweed_patch", "Seaweed patch", 10, FarmingDisease.BASE_CHANCE, false),  // approx.
         MUSHROOM("mushroom_patch", "Mushroom patch", 40, FarmingDisease.BASE_CHANCE, false), // approx.
         BELLADONNA("belladonna_patch", "Belladonna patch", 80, FarmingDisease.BASE_CHANCE, false), // approx.
-        GRAPE("grape_patch", "Grapevine patch", 5, 0, false);                               // grapevines never get diseased
+        GRAPE("grape_patch", "Grapevine patch", 5, 0, false),                               // grapevines never get diseased
+        FLOWER("flower_patch", "Flower patch", 5, FarmingDisease.BASE_CHANCE, false);        // disease approx.
 
         public final String blockId;
         public final String displayName;
@@ -97,6 +99,8 @@ public final class FarmingData extends SkillingPart {
             new Gardener("gardener_heskel", "Heskel", "falador_tree_patch", 2, 2),
             new Gardener("gardener_alain", "Alain", "taverley_tree_patch", 2, 2),
             new Gardener("gardener_prissy_scilla", "Prissy Scilla", "gnome_stronghold_patches", 2, 2),
+            new Gardener("gardener_bolongo", "Bolongo", "gnome_stronghold_fruit_patch", 2, 2),
+            new Gardener("gardener_frizzy_skernip", "Frizzy Skernip", "port_sarim_spirit_patch", 2, 2),
             new Gardener("gardener_ellena", "Ellena", "catherby_fruit_patch", 2, 2),
             new Gardener("gardener_gileth", "Gileth", "tree_gnome_village_patch", 2, 2),
             new Gardener("gardener_garth", "Garth", "brimhaven_patches", 2, 2),
@@ -112,10 +116,52 @@ public final class FarmingData extends SkillingPart {
             new Gardener("gardener_imiago", "Imiago", "tai_bwo_wannai_calquat", 2, 2),
             new Gardener("gardener_rosie", "Rosie", "farming_guild", 3, 3),
             new Gardener("gardener_squirrel", "Squirrel", "fossil_island_hardwood", 2, 2),
-            // Allotment and herb patch gardeners (the core patches next to these towns).
-            new Gardener("gardener_elstan", "Elstan", "DRAYNOR_VILLAGE", 6, 6),
-            new Gardener("gardener_dantaera", "Dantaera", "CATHERBY", 6, 6),
-            new Gardener("gardener_lyra", "Lyra", "CANIFIS", 6, 6));
+            // Allotment gardeners at the real farming patches (OSRS coordinates).
+            new Gardener("gardener_elstan", "Elstan", "falador_farm", 0, 0),
+            new Gardener("gardener_dantaera", "Dantaera", "catherby_farm", 0, 0),
+            new Gardener("gardener_kragen", "Kragen", "ardougne_farm", 2, 2),
+            new Gardener("gardener_lyra", "Lyra", "morytania_farm", 2, 2),
+            new Gardener("gardener_marisi", "Marisi", "hosidius_farm", 0, 0));
+
+    /**
+     * Tool leprechauns stand by the allotment patches: talking to one notes the harvested produce in
+     * the player's inventory, as in OSRS.
+     */
+    public record Leprechaun(String id, String place, int dx, int dz) {
+    }
+
+    public static final List<Leprechaun> LEPRECHAUNS = List.of(
+            new Leprechaun("tool_leprechaun_falador", "falador_farm", 3, -2),
+            new Leprechaun("tool_leprechaun_catherby", "catherby_farm", 3, -2),
+            new Leprechaun("tool_leprechaun_ardougne", "ardougne_farm", -2, 2),
+            new Leprechaun("tool_leprechaun_morytania", "morytania_farm", -2, 2),
+            new Leprechaun("tool_leprechaun_hosidius", "hosidius_farm", 3, -2),
+            new Leprechaun("tool_leprechaun_farming_guild", "farming_guild", 4, -3),
+            new Leprechaun("tool_leprechaun_harmony", "harmony_herb_patch", 2, 2),
+            new Leprechaun("tool_leprechaun_weiss", "weiss_herb_patch", 2, 2));
+
+    /** Whether a tool leprechaun will note this item: harvested farming produce (not seeds, saplings or tools). */
+    public static boolean leprechaunNotes(String item) {
+        if (item == null || item.isEmpty()) {
+            return false;
+        }
+        for (com.runecraft.osrs.data.Herb h : com.runecraft.osrs.data.Herb.values()) {
+            if (h.grimyItem().equals(item) || h.cleanItem().equals(item)) {
+                return true;
+            }
+        }
+        for (com.runecraft.osrs.data.Allotment a : com.runecraft.osrs.data.Allotment.values()) {
+            if (a.produceItem().equals(item)) {
+                return true;
+            }
+        }
+        for (Crop c : CROPS) {
+            if (c.harvest() != Harvest.CHOP && c.produce() != null && c.produce().equals(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public static Gardener gardener(String id) {
         for (Gardener g : GARDENERS) {
@@ -159,7 +205,7 @@ public final class FarmingData extends SkillingPart {
     private static void fruit(String id, String name, String produce, int level, double plant, double check, double harvest,
                               int color) {
         CROPS.add(new Crop(id, name, Patch.FRUIT_TREE, Harvest.PICK, level, plant, check, harvest, seedOf(id), id + "_sapling",
-                1, produce, 6, 6, 960, 40, null, color));
+                1, produce, 6, 6, 960, 45, null, color));
     }
 
     private static void bush(String id, String name, String produce, int level, double plant, double check, double harvest,
@@ -174,13 +220,40 @@ public final class FarmingData extends SkillingPart {
                 produce, 3, 10, minutes, 0, null, color));
     }
 
+    private static void flower(String id, String name, String produce, int level, double plant, double harvest, int yield,
+                               int color) {
+        CROPS.add(new Crop(id, name, Patch.FLOWER, Harvest.ALL, level, plant, 0, harvest, id + "_seed", id + "_seed", 1, produce,
+                yield, yield, 20, 0, null, color));
+    }
+
+    /**
+     * Produce from harvesting a whole patch (Harvest.ALL crops). Flowers give a fixed amount (woad 3
+     * leaves; limpwurt 3 roots plus 0..floor((level - 1) / 10) more) and ignore compost; other crops
+     * give min..max plus one per compost level (approx. of harvest lives).
+     * {@code random.applyAsInt(n)} must return 0..n-1.
+     */
+    public static int harvestYield(Crop c, int level, int compost, java.util.function.IntUnaryOperator random) {
+        if (c.patch() == Patch.FLOWER) {
+            if (c.id().equals("limpwurt")) {
+                return 3 + random.applyAsInt(Math.max(0, Math.min(98, level) - 1) / 10 + 1);
+            }
+            return c.minYield();
+        }
+        return c.minYield() + random.applyAsInt(c.maxYield() - c.minYield() + 1) + Math.max(0, compost);
+    }
+
+    /** Farming XP for a harvest of {@code yield} produce: flowers pay their harvest XP once per harvest. */
+    public static double harvestXp(Crop c, int yield) {
+        return c.patch() == Patch.FLOWER ? c.harvestXp() : c.harvestXp() * yield;
+    }
+
     private static String seedOf(String id) {
         return id.equals("oak") ? "acorn" : id + "_seed";
     }
 
     static {
-        tree("oak", "Oak tree", "OAK", 15, 14.0, 467.3, 200, "oak_roots", 0x8A6A3A);
-        tree("willow", "Willow tree", "WILLOW", 30, 25.0, 1456.5, 280, "willow_roots", 0x6E7A3A);
+        tree("oak", "Oak tree", "OAK", 15, 14.0, 467.3, 160, "oak_roots", 0x8A6A3A);
+        tree("willow", "Willow tree", "WILLOW", 30, 25.0, 1456.5, 240, "willow_roots", 0x6E7A3A);
         tree("maple", "Maple tree", "MAPLE", 45, 45.0, 3403.4, 320, "maple_roots", 0xA0502A);
         tree("yew", "Yew tree", "YEW", 60, 81.0, 7069.9, 400, "yew_roots", 0x5A4A2A);
         tree("magic", "Magic tree", "MAGIC", 75, 145.5, 13768.3, 480, "magic_roots", 0x3A8AA8);
@@ -203,7 +276,7 @@ public final class FarmingData extends SkillingPart {
         CROPS.add(new Crop("celastrus", "Celastrus tree", Patch.CELASTRUS, Harvest.PICK, 85, 204.0, 14130.0, 23.5,
                 "celastrus_seed", "celastrus_sapling", 1, "celastrus_bark", 3, 5, 800, 40, null, 0xA07A5A));
         CROPS.add(new Crop("spirit", "Spirit tree", Patch.SPIRIT, Harvest.SPIRIT, 83, 199.5, 19301.8, 0, "spirit_seed",
-                "spirit_sapling", 1, null, 0, 0, 3520, 0, null, 0x7A9A5A));
+                "spirit_sapling", 1, null, 0, 0, 3840, 0, null, 0x7A9A5A));
         bush("redberry", "Redberry bush", "redberries", 10, 11.5, 64.0, 4.5, 100, 0xC02040);
         bush("cadavaberry", "Cadavaberry bush", "cadava_berries", 22, 18.0, 102.5, 7.0, 120, 0x8A2A8A);
         bush("dwellberry", "Dwellberry bush", "dwellberries", 36, 31.5, 177.5, 12.0, 140, 0x3A5AA0);
@@ -220,7 +293,7 @@ public final class FarmingData extends SkillingPart {
         CROPS.add(new Crop("cactus", "Cactus", Patch.CACTUS, Harvest.PICK, 55, 66.5, 374.0, 25.0, "cactus_seed", "cactus_seed", 1,
                 "cactus_spine", 3, 3, 560, 20, null, 0x5A8A3A));
         CROPS.add(new Crop("potato_cactus", "Potato cactus", Patch.CACTUS, Harvest.PICK, 64, 68.0, 230.0, 68.0, "potato_cactus_seed",
-                "potato_cactus_seed", 1, "potato_cactus", 6, 6, 70, 10, null, 0x8AA040));
+                "potato_cactus_seed", 1, "potato_cactus", 6, 6, 70, 5, null, 0x8AA040));
         CROPS.add(new Crop("seaweed", "Giant seaweed", Patch.SEAWEED, Harvest.ALL, 23, 19.0, 0, 21.0, "seaweed_spore",
                 "seaweed_spore", 1, "seaweed", 3, 7, 40, 0, null, 0x3A6A2A));
         CROPS.add(new Crop("bittercap", "Bittercap mushrooms", Patch.MUSHROOM, Harvest.ALL, 53, 61.5, 0, 57.7, "mushroom_spore",
@@ -229,6 +302,13 @@ public final class FarmingData extends SkillingPart {
                 "belladonna_seed", 1, "cave_nightshade_flower", 1, 1, 320, 0, null, 0x4A2A6A));
         CROPS.add(new Crop("grape", "Grapevine", Patch.GRAPE, Harvest.ALL, 36, 40.0, 0, 40.0, "grape_seed", "grape_seed", 1,
                 "grapes", 3, 5, 35, 0, null, 0x6A2A8A));
+        // Flowers: 4 x 5-minute cycles; harvest XP is per harvest, not per item (woad 3 leaves, limpwurt 3+).
+        flower("marigold", "Marigold", "marigolds", 2, 8.5, 47.0, 1, 0xF0A020);
+        flower("rosemary", "Rosemary", "rosemary", 11, 12.0, 66.5, 1, 0x6A9A6A);
+        flower("nasturtium", "Nasturtium", "nasturtiums", 24, 19.5, 111.0, 1, 0xE05020);
+        flower("woad", "Woad plant", "woad_leaf", 25, 20.5, 115.5, 3, 0x3A5AB0);
+        flower("limpwurt", "Limpwurt plant", "limpwurt_root", 26, 21.5, 120.0, 3, 0xC09050);
+        flower("white_lily", "White lily", "white_lily", 58, 42.0, 250.0, 1, 0xF0F0F0);
     }
 
     public static Crop byPlanted(Patch patch, String item) {
@@ -332,6 +412,13 @@ public final class FarmingData extends SkillingPart {
         simple(s, "wildblood_hops", "Wildblood hops", "produce", 0xA03A3A, 8);
         simple(s, "mushroom", "Bittercap mushroom", "produce", 0xC0A080, 8);
         simple(s, "cave_nightshade_flower", "Belladonna flower", "herb", 0x4A2A6A, 30);
+        simple(s, "marigolds", "Marigolds", "produce", 0xF0A020, 1).examine("A bunch of marigolds.");
+        simple(s, "rosemary", "Rosemary", "herb", 0x6A9A6A, 1).examine("A sprig of rosemary.");
+        simple(s, "nasturtiums", "Nasturtiums", "produce", 0xE05020, 1).examine("A bunch of nasturtiums.");
+        simple(s, "woad_leaf", "Woad leaf", "herb", 0x3A5AB0, 10).examine("Slightly bluish leaves.");
+        simple(s, "white_lily", "White lily", "produce", 0xF0F0F0, 10).examine("A beautiful white lily.");
+        simple(s, "seed_pack", "Seed pack", "package", 0x8A6A3A, 1)
+                .examine("A pack of seeds, rewarded for completing a farming contract.");
     }
 
     private static String seedName(Crop c) {
@@ -362,6 +449,9 @@ public final class FarmingData extends SkillingPart {
         for (Gardener g : GARDENERS) {
             list.add(NpcDef.of(g.id(), g.name(), g.place(), g.dx(), g.dz(), 0xD8A880, 0x5A7A3A, 0x4A3A2A, 0x8A6A3A));
         }
+        for (Leprechaun l : LEPRECHAUNS) {
+            list.add(NpcDef.of(l.id(), "Tool Leprechaun", l.place(), l.dx(), l.dz(), 0xC8E0A0, 0x2A8A2A, 0x2A6A2A, 0x2A8A2A));
+        }
         return list;
     }
 
@@ -387,7 +477,9 @@ public final class FarmingData extends SkillingPart {
                 PlaceDef.of("falador_tree_patch", "Falador tree patch", 3004, 3373, PlaceDef.Style.CAMP, List.of("tree_patch", "compost_bin")),
                 PlaceDef.of("taverley_tree_patch", "Taverley tree patch", 2936, 3438, PlaceDef.Style.CAMP, List.of("tree_patch")),
                 PlaceDef.of("gnome_stronghold_patches", "Gnome Stronghold patches", 2436, 3415, PlaceDef.Style.CAMP,
-                        List.of("tree_patch", "fruit_tree_patch", "spirit_tree_patch")),
+                        List.of("tree_patch", "fruit_tree_patch")),
+                PlaceDef.of("gnome_stronghold_fruit_patch", "Gnome Stronghold fruit tree patch", 2476, 3446, PlaceDef.Style.CAMP,
+                        List.of("fruit_tree_patch")),
                 PlaceDef.of("catherby_fruit_patch", "Catherby fruit tree patch", 2860, 3433, PlaceDef.Style.CAMP,
                         List.of("fruit_tree_patch", "compost_bin")),
                 PlaceDef.of("tree_gnome_village_patch", "Tree Gnome Village fruit patch", 2490, 3179, PlaceDef.Style.CAMP,
@@ -406,9 +498,29 @@ public final class FarmingData extends SkillingPart {
                 PlaceDef.of("entrana_hops", "Entrana hops patch", 2810, 3336, PlaceDef.Style.CAMP, List.of("hops_patch")),
                 PlaceDef.of("tai_bwo_wannai_calquat", "Tai Bwo Wannai calquat patch", 2796, 3101, PlaceDef.Style.CAMP,
                         List.of("calquat_patch")),
-                PlaceDef.of("farming_guild", "Farming Guild", 1249, 3726, PlaceDef.Style.TOWN,
-                        List.of("tree_patch", "fruit_tree_patch", "bush_patch", "cactus_patch", "celastrus_patch", "redwood_patch",
-                                "spirit_tree_patch", "compost_bin")),
+                new PlaceDef("farming_guild", "Farming Guild", 1249, 3726, PlaceDef.Style.TOWN,
+                        List.of(Station.ALLOTMENT_PATCH, Station.ALLOTMENT_PATCH, Station.HERB_PATCH),
+                        List.of("flower_patch", "tree_patch", "fruit_tree_patch", "bush_patch", "cactus_patch", "celastrus_patch",
+                                "redwood_patch", "spirit_tree_patch", "compost_bin")),
+                // Spirit tree patches (Port Sarim, Hosidius; Etceteria, Brimhaven and the Farming Guild are above).
+                PlaceDef.of("port_sarim_spirit_patch", "Port Sarim spirit tree patch", 3059, 3257, PlaceDef.Style.CAMP,
+                        List.of("spirit_tree_patch")),
+                PlaceDef.of("hosidius_spirit_patch", "Hosidius spirit tree patch", 1693, 3542, PlaceDef.Style.CAMP,
+                        List.of("spirit_tree_patch")),
+                // Allotment / flower / herb farms. Falador, Catherby and Hosidius are built by their towns'
+                // structures (these markers only place the gardener and leprechaun); Ardougne and Port
+                // Phasmatys get a small farm here.
+                PlaceDef.of("falador_farm", "Falador farming patches", 3053, 3308, PlaceDef.Style.NONE, List.of()),
+                PlaceDef.of("catherby_farm", "Catherby farming patches", 2809, 3463, PlaceDef.Style.NONE, List.of()),
+                PlaceDef.of("hosidius_farm", "Hosidius farming patches", 1741, 3577, PlaceDef.Style.NONE, List.of()),
+                new PlaceDef("ardougne_farm", "Ardougne farming patches", 2666, 3374, PlaceDef.Style.CAMP,
+                        List.of(Station.ALLOTMENT_PATCH, Station.ALLOTMENT_PATCH, Station.HERB_PATCH), List.of("flower_patch", "compost_bin")),
+                new PlaceDef("morytania_farm", "Port Phasmatys farming patches", 3601, 3525, PlaceDef.Style.CAMP,
+                        List.of(Station.ALLOTMENT_PATCH, Station.ALLOTMENT_PATCH, Station.HERB_PATCH), List.of("flower_patch", "compost_bin")),
+                // Herb-only patches.
+                new PlaceDef("weiss_herb_patch", "Weiss herb patch", 2847, 3931, PlaceDef.Style.CAMP, List.of(Station.HERB_PATCH),
+                        List.of()),
+                PlaceDef.of("harmony_herb_patch", "Harmony Island herb patch", 3787, 2850, PlaceDef.Style.NONE, List.of()),
                 PlaceDef.of("fossil_island_hardwood", "Fossil Island hardwood patches", 3715, 3835, PlaceDef.Style.CAMP,
                         List.of("hardwood_patch", "hardwood_patch", "hardwood_patch")),
                 PlaceDef.of("fossil_island_verdant_valley", "Verdant Valley bird houses", 3764, 3756, PlaceDef.Style.CAMP,
