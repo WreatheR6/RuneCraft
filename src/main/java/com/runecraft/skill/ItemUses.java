@@ -281,9 +281,13 @@ public final class ItemUses {
             Msg.game(player, "You can't lay a trap here.");
             return;
         }
+        if (HunterService.atTrapLimit(player)) {
+            return;
+        }
         stack.decrement(1);
         player.getWorld().setBlockState(pos, (trap == HunterCreature.Trap.BIRD_SNARE ? ModBlocks.BIRD_SNARE : ModBlocks.BOX_TRAP)
                 .getDefaultState());
+        HunterService.claim(player, (net.minecraft.server.world.ServerWorld) player.getWorld(), pos, true);
         Msg.action(player, "You set up the " + def.name().toLowerCase(Locale.ROOT) + ".");
     }
 

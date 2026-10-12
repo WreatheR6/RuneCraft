@@ -106,7 +106,8 @@ public final class GielinorMap {
         }
         // Asgarnia: Rimmington to Falador, Taverley (east of White Wolf Mountain), Burthorpe with the
         // Warriors' Guild, and in the south Port Sarim's bay and Mudskipper Point.
-        if (in(x, y, 2895, 3070, 3195, WILDERNESS_DITCH) || in(x, y, 2845, 2895, 3245, WILDERNESS_DITCH)
+        // (Catherby's shore runs east to x 2862, so Asgarnia's strip west of Taverley starts at 2865 north of Entrana.)
+        if (in(x, y, 2895, 3070, 3195, WILDERNESS_DITCH) || in(x, y, 2845, 2895, 3245, 3400) || in(x, y, 2865, 2895, 3400, WILDERNESS_DITCH)
                 || in(x, y, 2845, 2944, WILDERNESS_DITCH, 3580) || in(x, y, 2975, 3040, 3080, 3195)
                 || in(x, y, 3040, 3080, 3140, 3195)) {
             return Region.ASGARNIA;
@@ -124,7 +125,8 @@ public final class GielinorMap {
             return Region.TIRANNWN;
         }
         // Kandarin, including the Gnome Stronghold, Eagles' Peak, Piscatoris and Kraken Cove.
-        if (in(x, y, 2350, 2845, 3060, 3560) || in(x, y, 2230, 2490, 3430, 3730) || in(x, y, 2490, 2580, 3560, 3600)) {
+        if (in(x, y, 2350, 2845, 3060, 3560) || in(x, y, 2845, 2865, 3400, 3560) || in(x, y, 2230, 2490, 3430, 3730)
+                || in(x, y, 2490, 2580, 3560, 3600)) {
             return Region.KANDARIN;
         }
         if (in(x, y, 2350, 2700, 2780, 3060)) {

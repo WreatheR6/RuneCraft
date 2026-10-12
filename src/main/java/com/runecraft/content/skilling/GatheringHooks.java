@@ -13,11 +13,13 @@ import com.runecraft.osrs.content.skilling.HunterData;
 import com.runecraft.osrs.content.skilling.Loot;
 import com.runecraft.osrs.content.skilling.MiningData;
 import com.runecraft.osrs.content.skilling.Motherlode;
+import com.runecraft.osrs.data.HunterRates;
 import com.runecraft.osrs.data.SpecialTool;
 import com.runecraft.osrs.data.ToolTier;
 import com.runecraft.osrs.data.Tree;
 import com.runecraft.player.Players;
 import com.runecraft.registry.ModBlocks;
+import com.runecraft.skill.HunterService;
 import com.runecraft.skill.Stun;
 import com.runecraft.skill.Tools;
 import com.runecraft.skill.XpService;
@@ -389,7 +391,7 @@ final class GatheringHooks {
 
     private static void trap(ServerPlayerEntity player, BlockPos pos, HunterData.TrapSpot spot) {
         ServerWorld world = (ServerWorld) player.getWorld();
-        if (spot.kind() == HunterData.TrapKind.TRACKING) {
+        if (!spot.kind().laid()) {
             track(player, world, pos, spot);
             return;
         }
@@ -406,13 +408,11 @@ final class GatheringHooks {
                 return;
             }
             TRAPS.remove(key);
+            HunterService.release(world, pos);
             int level = SkillingUtil.level(player, Skill.HUNTER);
-            double chance = Math.min(0.95, 0.55 + (level - spot.level()) * 0.02);
+            double chance = HunterRates.catchChance(spot.creature(), spot.level(), level);
             if (player.getRandom().nextDouble() < chance) {
-                for (String item : spot.loot()) {
-                    SkillingUtil.give(player, item, 1);
-                }
-                XpService.add(player, Skill.HUNTER, spot.xp());
+                giveCatch(player, spot);
                 Msg.action(player, "You've caught " + Msg.article(SkillingUtil.lower(spot.creature())) + "!");
                 world.playSound(null, pos, SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.PLAYERS, 1f, 1f);
             } else {
@@ -429,6 +429,9 @@ final class GatheringHooks {
                 return;
             }
         }
+        if (HunterService.atTrapLimit(player)) {
+            return;
+        }
         if (spot.bait() != null) {
             if (!SkillingUtil.needItem(player, spot.bait(), "You need some " + SkillingUtil.lower(SkillingUtil.name(spot.bait()))
                     + " to set this trap.")) {
@@ -438,15 +441,30 @@ final class GatheringHooks {
         }
         player.swingHand(Hand.MAIN_HAND, true);
         TRAPS.put(key, new LaidTrap(player.getUuid(), now));
+        HunterService.claim(player, world, pos, false);
         Msg.action(player, switch (spot.kind()) {
             case NET -> "You set up the net trap.";
             case DEADFALL -> "You set up the deadfall.";
             case PITFALL -> "You dig a pit and cover it with logs.";
-            case TRACKING -> "You search the burrow.";
+            default -> "You search the area.";
         });
     }
 
-    /** Noose-wand tracking: search the burrow and try to catch the kebbit or weasel hiding in it. */
+    /** The catch's loot (plus its rare extra, e.g. a tatty fur) and XP. */
+    private static void giveCatch(ServerPlayerEntity player, HunterData.TrapSpot spot) {
+        for (String item : spot.loot()) {
+            SkillingUtil.give(player, item, 1);
+        }
+        if (spot.rareLoot() != null && spot.rareOneIn() > 0 && player.getRandom().nextInt(spot.rareOneIn()) == 0) {
+            SkillingUtil.give(player, spot.rareLoot(), 1);
+        }
+        XpService.add(player, Skill.HUNTER, spot.xp());
+    }
+
+    /**
+     * Immediate catches: noose-wand tracking (search the burrow for the kebbit or weasel), butterflies
+     * (butterfly net, one jar per catch) and falconry (the falcon swoops on the kebbit).
+     */
     private static void track(ServerPlayerEntity player, ServerWorld world, BlockPos pos, HunterData.TrapSpot spot) {
         if (!Stun.check(player) || !SkillingUtil.need(player, Skill.HUNTER, spot.level(), "hunt " + SkillingUtil.lower(spot.creature()) + "s")) {
             return;
@@ -458,23 +476,37 @@ final class GatheringHooks {
             }
         }
         if (depleted(world, pos)) {
-            Msg.game(player, "The tracks lead nowhere. Wait for another " + SkillingUtil.lower(spot.creature()) + " to come by.");
+            Msg.game(player, spot.kind() == HunterData.TrapKind.TRACKING
+                    ? "The tracks lead nowhere. Wait for another " + SkillingUtil.lower(spot.creature()) + " to come by."
+                    : "There's nothing here right now. Wait for another " + SkillingUtil.lower(spot.creature()) + " to come by.");
+            return;
+        }
+        if (spot.bait() != null && !SkillingUtil.needItem(player, spot.bait(), "You need " + Msg.article(SkillingUtil.lower(
+                SkillingUtil.name(spot.bait()))) + " to catch " + SkillingUtil.lower(spot.creature()) + "s.")) {
+            return;
+        }
+        if (spot.kind() == HunterData.TrapKind.FALCONRY && !player.getMainHandStack().isEmpty()) {
+            Msg.game(player, "You need your hands free to handle the falcon.");
             return;
         }
         player.swingHand(Hand.MAIN_HAND, true);
         int level = SkillingUtil.level(player, Skill.HUNTER);
-        double chance = Math.min(0.95, 0.55 + (level - spot.level()) * 0.02);   // approx.
+        double chance = HunterRates.catchChance(spot.creature(), spot.level(), level);
         if (player.getRandom().nextDouble() < chance) {
-            for (String item : spot.loot()) {
-                SkillingUtil.give(player, item, 1);
+            if (spot.bait() != null) {
+                Inv.remove(player, spot.bait(), 1);
             }
-            XpService.add(player, Skill.HUNTER, spot.xp());
+            giveCatch(player, spot);
             Msg.action(player, "You've caught " + Msg.article(SkillingUtil.lower(spot.creature())) + "!");
             world.playSound(null, pos, SoundEvents.ENTITY_RABBIT_HURT, SoundCategory.NEUTRAL, 0.8f, 1.2f);
         } else {
-            Msg.game(player, "The " + SkillingUtil.lower(spot.creature()) + " escapes your noose.");
+            Msg.game(player, switch (spot.kind()) {
+                case BUTTERFLY -> "You fail to catch the butterfly.";
+                case FALCONRY -> "The falcon swoops down on the kebbit, but just misses catching it.";
+                default -> "The " + SkillingUtil.lower(spot.creature()) + " escapes your noose.";
+            });
         }
-        deplete(world, pos, 8);
+        deplete(world, pos, spot.kind() == HunterData.TrapKind.BUTTERFLY ? 4 : 8);
     }
 
     // ------------------------------------------------------------------ Implings
@@ -492,7 +524,7 @@ final class GatheringHooks {
         }
         player.swingHand(Hand.MAIN_HAND, true);
         int level = SkillingUtil.level(player, Skill.HUNTER);
-        double chance = Math.min(0.95, 0.45 + (level - imp.level()) * 0.025);
+        double chance = HunterRates.catchChance(imp.name(), imp.level(), level);   // approx: no published impling curve
         if (player.getRandom().nextDouble() >= chance) {
             Msg.game(player, "You fail to catch the impling.");
             return;

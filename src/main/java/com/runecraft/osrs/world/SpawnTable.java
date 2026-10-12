@@ -271,6 +271,8 @@ public final class SpawnTable {
         s("ninja_impling", 3380, 3000, 1, 24, IMPLING);
         s("dragon_impling", 3140, 3790, 1, 24, IMPLING * 6);
         s("lucky_impling", 2320, 3250, 1, 24, IMPLING * 6);
+        // OSRS: Prifddinas only; its instance lies outside the spawn table's bounds, so they roam Isafdar by its gates (approx).
+        s("crystal_impling", 2250, 3260, 1, 24, IMPLING * 3);
 
         // ============================================================ Slayer task creatures (slayer module extras)
         s("crocodile", 3351, 2927, 6, 10);             // the oasis south of Pollnivneach (7 in OSRS)

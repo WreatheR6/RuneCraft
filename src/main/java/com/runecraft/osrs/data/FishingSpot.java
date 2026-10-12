@@ -14,8 +14,12 @@ public enum FishingSpot {
     CAGE_HARPOON("cage_harpoon_fishing_spot", "Fishing spot (Cage/Harpoon)", Map.of(
             FishingMethod.CAGE, List.of(Fish.LOBSTER),
             FishingMethod.HARPOON, List.of(Fish.SWORDFISH, Fish.TUNA))),
-    NET_HARPOON("net_harpoon_fishing_spot", "Fishing spot (Big Net/Harpoon)", Map.of(
+    /** Piscatoris monkfish spot: small net for monkfish, harpoon for tuna and swordfish. */
+    NET_HARPOON("net_harpoon_fishing_spot", "Fishing spot (Net/Harpoon)", Map.of(
             FishingMethod.NET, List.of(Fish.MONKFISH),
+            FishingMethod.HARPOON, List.of(Fish.SWORDFISH, Fish.TUNA))),
+    /** Shark spot (Catherby, Fishing Guild, Rellekka, Burgh de Rott); its big-net side is the skilling module's big net spot. */
+    SHARK("shark_fishing_spot", "Fishing spot (Big Net/Harpoon)", Map.of(
             FishingMethod.HARPOON, List.of(Fish.SHARK))),
     ANGLER("angler_fishing_spot", "Rod fishing spot (Anglerfish)", Map.of(
             FishingMethod.BAIT, List.of(Fish.ANGLERFISH))),

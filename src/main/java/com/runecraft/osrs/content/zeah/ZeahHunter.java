@@ -102,8 +102,8 @@ public final class ZeahHunter {
         return out;
     }
 
-    /** Catch chance: 55% at the requirement, +2% per level above it, capped at 95% (same curve as core traps). */
+    /** Catch chance: the OSRS skilling curve shared with the core traps ({@link com.runecraft.osrs.data.HunterRates}). */
     public static double catchChance(int level, Spot spot) {
-        return Math.max(0.0, Math.min(0.95, 0.55 + (level - spot.level()) * 0.02));
+        return com.runecraft.osrs.data.HunterRates.catchChance(spot.creature(), spot.level(), level);
     }
 }

@@ -1,0 +1,42 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "runecraft:block/shark_fishing_spot",
+    "ripple": "runecraft:block/shark_fishing_spot"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        13.5,
+        0
+      ],
+      "to": [
+        16,
+        14.5,
+        16
+      ],
+      "shade": false,
+      "faces": {
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#ripple"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#ripple"
+        }
+      }
+    }
+  ]
+}
