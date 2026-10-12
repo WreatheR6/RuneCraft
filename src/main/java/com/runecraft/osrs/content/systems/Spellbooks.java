@@ -75,6 +75,8 @@ public final class Spellbooks {
     static {
         // ======================= Standard spellbook extras =======================
         Book S = Book.STANDARD;
+        util(S, "enchant_crossbow_bolt", "Enchant Crossbow Bolt", 4, 9, r("cosmic", 1, "air", 2),
+                "Enchants 10 gem-tipped crossbow bolts (opal at 4 Magic up to onyx at 87; runes and XP depend on the bolts).");
         util(S, "enchant_1", "Lvl-1 Enchant", 7, 17.5, r("cosmic", 1, "water", 1), "Enchants sapphire jewellery.");
         combat(S, "confuse", "Confuse", 3, 13, 0, Effect.DRAIN_ATTACK, 5, false, r("body", 1, "earth", 2, "water", 3), "Lowers your target's Attack by 5%.");
         util(S, "bones_to_bananas", "Bones to Bananas", 15, 25, r("nature", 1, "water", 2, "earth", 2), "Turns the bones in your inventory into bananas.");
@@ -251,7 +253,6 @@ public final class Spellbooks {
     public static final Map<String, String> UNIMPLEMENTED = new LinkedHashMap<>();
 
     static {
-        UNIMPLEMENTED.put("Enchant Crossbow Bolt", "the mod has no enchanted (e) bolts or bolt special effects");
         UNIMPLEMENTED.put("Teleport to Target", "needs Bounty Hunter targets, which the mod doesn't have");
     }
 

@@ -113,6 +113,12 @@ public final class Jewellery {
                 Perk.NONE, "A melee fighter's amulet.");
         worn("tormented_bracelet", "Tormented bracelet", Slot.HANDS, "bracelet", 0xF0A020, 3000000, s(0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0),
                 Perk.NONE, "A mage's bracelet.");
+        // Upgrades (wiki / DPS calculator bonuses; both need 90 Hitpoints in OSRS).
+        worn("necklace_of_rupture", "Necklace of rupture", Slot.NECK, "necklace", 0xC02040, 4_000_000,
+                s(0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 8, 0, 3), Perk.NONE, "A necklace of anguish set with an elder venator fang.");
+        worn("confliction_gauntlets", "Confliction gauntlets", Slot.HANDS, "bracelet", 0x8A3A9A, 4_000_000,
+                s(0, 0, 0, 20, -4, 15, 18, 7, 5, 5, 0, 0, 7, 2), Perk.NONE,
+                "A tormented bracelet woven with Mokhaiotl cloth. A missed spell makes the next one roll accuracy twice.");
         // ---------- Other worn items ----------
         charged("digsite_pendant", "Digsite pendant", Slot.NECK, "necklace", 0xB08040, 1200, NONE, 5, Teleports.DIGSITE, true);
         charged("necklace_of_passage", "Necklace of passage", Slot.NECK, "necklace", 0x70A0D0, 2000, NONE, 5, Teleports.PASSAGE, true);

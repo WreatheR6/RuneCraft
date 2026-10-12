@@ -15,6 +15,7 @@ import com.runecraft.osrs.Recipe;
 import com.runecraft.osrs.Recipes;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.ContentRegistry;
+import com.runecraft.osrs.content.systems.BoltEffects;
 import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.osrs.content.systems.Spellbooks;
 import com.runecraft.osrs.content.systems.Spellbooks.Book;
@@ -234,6 +235,15 @@ public final class SpellService {
     public static void cast(ServerPlayerEntity p, String spellId) {
         Spell s = Spellbooks.get(spellId);
         if (s == null || !Stun.check(p)) {
+            return;
+        }
+        if (s.id().equals("enchant_crossbow_bolt")) {
+            // Each bolt type has its own level and runes (checked when the bolts are chosen).
+            if (!inBook(SysState.of(p), s)) {
+                Msg.game(p, "That spell is in the " + s.book().displayName + " spellbook.");
+            } else {
+                enchantBolts(p);
+            }
             return;
         }
         if (!canCast(p, s, false)) {
@@ -856,6 +866,56 @@ public final class SpellService {
             }
         }
         return best;
+    }
+
+    /**
+     * Enchant Crossbow Bolt: enchants up to 10 of the held bolts (or else the best bolts in the inventory the player can
+     * enchant), with that bolt type's level, runes and XP.
+     */
+    private static void enchantBolts(ServerPlayerEntity p) {
+        int magic = Players.data(p).skills().currentLevel(Skill.MAGIC);
+        String held = p.getMainHandStack().isEmpty() ? "" : Inv.idOf(p.getMainHandStack());
+        String from = null;
+        BoltEffects.Enchant en = BoltEffects.forPlainBolts(held);
+        if (en != null && Inv.has(p, held, 1)) {
+            from = held;
+        } else {
+            en = null;
+            for (int i = BoltEffects.ENCHANTS.size() - 1; i >= 0 && from == null; i--) {
+                BoltEffects.Enchant e = BoltEffects.ENCHANTS.get(i);
+                if (magic < e.level()) {
+                    continue;
+                }
+                for (String b : new String[]{e.dragonBolts(), e.bolts()}) {
+                    if (Inv.has(p, b, 1)) {
+                        from = b;
+                        en = e;
+                        break;
+                    }
+                }
+            }
+        }
+        if (from == null) {
+            Msg.game(p, "You have no bolts that you can enchant.");
+            return;
+        }
+        Spell cast = new Spell("enchant_crossbow_bolt", "Enchant Crossbow Bolt", Book.STANDARD, en.level(), en.xp(), en.runes(),
+                Spellbooks.Kind.UTILITY, 0, Effect.NONE, 0, false, null, null, "");
+        if (!canCast(p, cast, false)) {
+            return;
+        }
+        String to = BoltEffects.enchantedOf(from);
+        if (ItemCatalog.get(to) == null) {
+            Msg.game(p, "Nothing interesting happens.");
+            return;
+        }
+        int n = Math.min(BoltEffects.BOLTS_PER_CAST, Inv.count(p, from));
+        pay(p, cast);
+        Inv.remove(p, from, n);
+        Inv.give(p, to, n);
+        ((ServerWorld) p.getWorld()).spawnParticles(ParticleTypes.ENCHANT, p.getX(), p.getY() + 1.2, p.getZ(), 30, 0.4, 0.4, 0.4, 0.5);
+        Msg.action(p, "The magic of the runes coaxes out the true nature of the gem tips: you enchant " + n + " "
+                + ItemCatalog.get(from).name().toLowerCase(Locale.ROOT) + ".");
     }
 
     private static void enchant(ServerPlayerEntity p, Spell s, int level) {

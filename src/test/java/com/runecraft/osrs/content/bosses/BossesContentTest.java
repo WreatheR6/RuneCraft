@@ -63,6 +63,19 @@ class BossesContentTest {
         assertEquals(121, attack(boss("vorkath"), "dragonfire_bomb").maxHit());
         assertEquals(2000, boss("corporeal_beast").hitpoints);
         assertEquals(785, boss("corporeal_beast").combatLevel);
+        // Wiki: melee 33 (51 before the rework), magic 65, stat-drain orb 55, stomp 51.
+        assertEquals(33, attack(boss("corporeal_beast"), "crush").maxHit());
+        assertEquals(65, attack(boss("corporeal_beast"), "spectral_orb").maxHit());
+        assertEquals(55, attack(boss("corporeal_beast"), "draining_orb").maxHit());
+        assertEquals(51, ClassicBosses.CORP_STOMP.maxHit());
+        // The Nightmare: melee 50, ranged/magic 33; stab 120, slash 180, crush 40 defence.
+        assertEquals(50, attack(boss("the_nightmare"), "claw_swipe").maxHit());
+        assertEquals(33, attack(boss("the_nightmare"), "dream_blast").maxHit());
+        assertEquals(33, attack(boss("the_nightmare"), "thrown_soul").maxHit());
+        assertEquals(120, boss("the_nightmare").defenceBonus(AttackType.STAB));
+        assertEquals(180, boss("the_nightmare").defenceBonus(AttackType.SLASH));
+        assertEquals(40, boss("the_nightmare").defenceBonus(AttackType.CRUSH));
+        assertEquals(140, boss("the_nightmare").attackBonus(AttackType.SLASH));
         assertEquals(600, boss("cerberus").hitpoints);
         assertEquals(23, attack(boss("cerberus"), "bite").maxHit());
         assertEquals(255, boss("kalphite_queen").hitpoints);

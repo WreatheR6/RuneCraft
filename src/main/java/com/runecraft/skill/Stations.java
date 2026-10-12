@@ -21,7 +21,7 @@ public final class Stations {
             case FURNACE -> MenuService.open(player, MenuType.SMELTING, pos, false);
             case ANVIL -> MenuService.open(player, MenuType.SMITHING, pos, false);
             case RANGE -> MenuService.open(player, MenuType.COOKING, pos, true);
-            case PRAYER_ALTAR -> PrayerService.useAltar(player);
+            case PRAYER_ALTAR -> PrayerService.useAltar(player, pos);
             case GENERAL_STORE -> MenuService.open(player, MenuType.SHOP_GENERAL, pos, false);
             case RUNE_SHOP -> MenuService.open(player, MenuType.SHOP_RUNES, pos, false);
             case WEAPON_SHOP -> MenuService.open(player, MenuType.SHOP_WEAPONS, pos, false);

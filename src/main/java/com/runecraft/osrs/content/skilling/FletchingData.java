@@ -60,18 +60,48 @@ public final class FletchingData extends SkillingPart {
     /** Gem-tipped bolts: gem item, tip cutting level/XP (per gem, 12 tips), base bolts, attach level/XP each, strength. */
     public record GemBolt(String gem, String name, int cutLevel, double cutXp, String baseBolts, int level, double xpEach,
                           int strength, int color) {
+        /** Bolt family prefix: "topaz" for red topaz, "pearl" for oyster pearls, else the gem id. */
+        public String prefix() {
+            return gem.equals("red_topaz") ? "topaz" : gem.equals("oyster_pearl") ? "pearl" : gem;
+        }
+
         public String tips() {
-            return (gem.equals("red_topaz") ? "topaz" : gem) + "_bolt_tips";
+            return prefix() + "_bolt_tips";
         }
 
         public String bolts() {
-            return (gem.equals("red_topaz") ? "topaz" : gem) + "_bolts";
+            return prefix() + "_bolts";
+        }
+
+        /** Tips cut from one gem: 12, or 6 from an oyster pearl. */
+        public int tipsPerGem() {
+            return gem.equals("oyster_pearl") ? 6 : 12;
+        }
+
+        /** Enchanted bolts (Enchant Crossbow Bolt). */
+        public String enchanted() {
+            return bolts() + "_e";
+        }
+
+        /** The same tip on dragon bolts (84 Fletching, 122 ranged strength). */
+        public String dragonBolts() {
+            return prefix() + "_dragon_bolts";
+        }
+
+        public String dragonEnchanted() {
+            return dragonBolts() + "_e";
         }
     }
 
+    /** Dragon bolts: fletching level, XP per bolt and ranged strength (shared by every gem-tipped dragon bolt). */
+    public static final int DRAGON_BOLT_LEVEL = 84;
+    public static final double DRAGON_BOLT_XP = 12.0;
+    public static final int DRAGON_BOLT_STRENGTH = 122;
+
     public static final List<GemBolt> GEM_BOLTS = List.of(
             new GemBolt("opal", "Opal", 11, 1.5, "bronze_bolts", 11, 1.6, 14, 0xE0E0F0),
-            new GemBolt("jade", "Jade", 26, 2.4, "blurite_bolts", 26, 2.4, 28, 0x50C060),
+            new GemBolt("jade", "Jade", 26, 2.4, "blurite_bolts", 26, 2.4, 30, 0x50C060),
+            new GemBolt("oyster_pearl", "Pearl", 41, 2.0, "iron_bolts", 41, 3.2, 48, 0xF0F0F0), // tip cutting XP approx
             new GemBolt("red_topaz", "Topaz", 48, 3.9, "steel_bolts", 48, 3.9, 66, 0xE06050),
             new GemBolt("sapphire", "Sapphire", 56, 4.0, "mithril_bolts", 56, 4.7, 83, 0x3050E0),
             new GemBolt("emerald", "Emerald", 58, 5.5, "mithril_bolts", 58, 5.5, 85, 0x30C050),
@@ -138,7 +168,17 @@ public final class FletchingData extends SkillingPart {
             simple(s, g.tips(), g.name() + " bolt tips", "bolt_tips", g.color(), g.strength() / 3 + 1);
             s.add(g.bolts(), g.name() + " bolts", Kind.ARROW, "bolts", g.color()).value(g.strength() / 2 + 1)
                     .rangedStrength(g.strength()).tier(g.gem());
+            s.add(g.enchanted(), g.name() + " bolts (e)", Kind.ARROW, "bolts", g.color()).value(g.strength() + 2)
+                    .rangedStrength(g.strength()).tier(g.gem()).examine("Enchanted " + lower(g.name()) + " tipped crossbow bolts.");
+            s.add(g.dragonBolts(), g.name() + " dragon bolts", Kind.ARROW, "bolts", g.color()).value(DRAGON_BOLT_STRENGTH)
+                    .rangedStrength(DRAGON_BOLT_STRENGTH).tier("dragon").examine(g.name() + " tipped dragon crossbow bolts.");
+            s.add(g.dragonEnchanted(), g.name() + " dragon bolts (e)", Kind.ARROW, "bolts", g.color()).value(DRAGON_BOLT_STRENGTH + 10)
+                    .rangedStrength(DRAGON_BOLT_STRENGTH).tier("dragon")
+                    .examine("Enchanted " + lower(g.name()) + " tipped dragon crossbow bolts.");
         }
+        simple(s, "dragon_bolts_unf", "Dragon bolts (unf)", "bolts", 0xB02020, 60);
+        s.add("dragon_bolts", "Dragon bolts", Kind.ARROW, "bolts", 0xB02020).value(DRAGON_BOLT_STRENGTH)
+                .rangedStrength(DRAGON_BOLT_STRENGTH).tier("dragon");
         simple(s, "unfinished_broad_bolts", "Unfinished broad bolts", "bolts", 0x8A8A70, 5);
         s.add("broad_bolts", "Broad bolts", Kind.ARROW, "bolts", 0x8A8A70).value(10).rangedStrength(100).tier("broad");
         // broad_arrowheads / broad_arrows are defined by the slayer module.
@@ -205,11 +245,15 @@ public final class FletchingData extends SkillingPart {
                     .in(b.prefix + "_bolts_unf", 10).in("minecraft:feather", 10).out(b.prefix + "_bolts", 10).ticks(2).build());
         }
         for (GemBolt g : GEM_BOLTS) {
-            out.accept(r("cut_" + g.tips(), MenuType.GEM_CUTTING, "12 " + lower(g.name()) + " bolt tips", Skill.FLETCHING, g.cutLevel(),
-                    g.cutXp()).in(g.gem(), 1).out(g.tips(), 12).tool("chisel").ticks(2).build());
+            out.accept(r("cut_" + g.tips(), MenuType.GEM_CUTTING, g.tipsPerGem() + " " + lower(g.name()) + " bolt tips", Skill.FLETCHING,
+                    g.cutLevel(), g.cutXp()).in(g.gem(), 1).out(g.tips(), g.tipsPerGem()).tool("chisel").ticks(2).build());
             out.accept(r("fletch_" + g.bolts(), F, "10 " + lower(g.name()) + " bolts", Skill.FLETCHING, g.level(), g.xpEach() * 10)
                     .in(g.baseBolts(), 10).in(g.tips(), 10).out(g.bolts(), 10).ticks(2).build());
+            out.accept(r("fletch_" + g.dragonBolts(), F, "10 " + lower(g.name()) + " dragon bolts", Skill.FLETCHING, DRAGON_BOLT_LEVEL,
+                    g.xpEach() * 10).in("dragon_bolts", 10).in(g.tips(), 10).out(g.dragonBolts(), 10).ticks(2).build());
         }
+        out.accept(r("fletch_dragon_bolts", F, "10 dragon bolts", Skill.FLETCHING, DRAGON_BOLT_LEVEL, DRAGON_BOLT_XP * 10)
+                .in("dragon_bolts_unf", 10).in("minecraft:feather", 10).out("dragon_bolts", 10).ticks(2).build());
         out.accept(r("fletch_broad_bolts", F, "10 broad bolts", Skill.FLETCHING, 55, 30.0).in("unfinished_broad_bolts", 10)
                 .in("minecraft:feather", 10).out("broad_bolts", 10).ticks(2).build());
         out.accept(r("fletch_broad_arrows", F, "15 broad arrows", Skill.FLETCHING, 52, 150.0).in("headless_arrow", 15)

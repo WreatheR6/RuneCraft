@@ -1,7 +1,6 @@
 package com.runecraft.osrs.content.bosses;
 
 import com.runecraft.osrs.AttackType;
-import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.AttackDef.Special;
 import com.runecraft.osrs.content.BossDef;
@@ -35,10 +34,10 @@ public final class ClassicBosses {
     // ---- Corporeal Beast ----
     public static final AttackDef CORP_STOMP = AttackDef.of("stomp", AttackType.CRUSH, 51, 2.0, 1).special(Special.AOE, 2)
             .message("The Corporeal Beast stomps the ground!");
-    public static final AttackDef CORP_MELEE = AttackDef.of("crush", AttackType.CRUSH, 51, 3.5, 4);
-    public static final AttackDef CORP_ORB = AttackDef.of("spectral_orb", AttackType.MAGIC, 55, 14, 4)
-            .special(Special.DRAIN_STAT, Skill.MAGIC.ordinal()).particle("minecraft:soul_fire_flame");
-    public static final AttackDef CORP_DRAIN = AttackDef.of("draining_orb", AttackType.MAGIC, 55, 14, 3)
+    public static final AttackDef CORP_MELEE = AttackDef.of("crush", AttackType.CRUSH, 33, 3.5, 4); // wiki: 33 (51 before its rework; stomp keeps 51)
+    public static final AttackDef CORP_ORB = AttackDef.of("spectral_orb", AttackType.MAGIC, 65, 14, 4) // wiki: regular magic attack, up to 65
+            .particle("minecraft:soul_fire_flame");
+    public static final AttackDef CORP_DRAIN = AttackDef.of("draining_orb", AttackType.MAGIC, 55, 14, 3) // wiki: up to 55, drains Magic or Prayer
             .special(Special.DRAIN_PRAYER, 12).particle("minecraft:soul");
     public static final AttackDef CORP_SPLASH = AttackDef.of("splash_orb", AttackType.MAGIC, 42, 14, 3)
             .special(Special.SKY_STRIKE, 0).telegraph(3, "The Corporeal Beast hurls an orb that splits apart!")
@@ -148,7 +147,7 @@ public final class ClassicBosses {
                         Drop.of("arcane_sigil", 1, 1, 1365), Drop.of("elysian_sigil", 1, 1, 4095), Drop.of("jar_of_spirits", 1, 1, 1000),
                         Drop.of("death_rune", 300, 300, 8), Drop.of("soul_rune", 250, 250, 8), Drop.of("runite_bar", 10, 10, 16),
                         Drop.of("magic_logs", 75, 75, 16), Drop.of("shark", 70, 70, 16), Drop.of("coins", 20000, 50000, 8),
-                        Drop.of("uncut_onyx", 1, 1, 23), Drop.of("clue_scroll_elite", 1, 1, 200))
+                        Drop.of("uncut_onyx", 1, 1, 23), Drop.of("onyx_bolts_e", 175, 175, 26), Drop.of("clue_scroll_elite", 1, 1, 200))
                 .drops(Drop.of("mystic_robe_top", 1, 1, 28), Drop.of("mystic_robe_bottom", 1, 1, 28),
                         Drop.of("mystic_air_staff", 1, 1, 43), Drop.of("mystic_water_staff", 1, 1, 43),
                         Drop.of("mystic_earth_staff", 1, 1, 43), Drop.of("mystic_fire_staff", 1, 1, 43))

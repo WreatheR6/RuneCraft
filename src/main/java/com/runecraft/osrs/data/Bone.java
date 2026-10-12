@@ -12,7 +12,7 @@ public enum Bone {
     DAGANNOTH_BONES("dagannoth_bones", "Dagannoth bones", 125.0, 0xC8C0B0),
     SUPERIOR_DRAGON_BONES("superior_dragon_bones", "Superior dragon bones", 150.0, 0xC8C0A0);
 
-    /** Using bones on a (lit) altar in a settlement gives 350% XP, like a gilded altar. */
+    /** Best bone-offering multiplier at a gilded altar (both incense burners lit); see {@link PrayerAltars}. */
     public static final double ALTAR_MULTIPLIER = 3.5;
 
     private final String id;

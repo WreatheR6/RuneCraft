@@ -88,6 +88,7 @@ public final class GwdBosses {
                 .drops(Drop.always("big_bones"),
                         Drop.of("coins", 19362, 20073, 4), Drop.of("ranging_potion", 1, 1, 12), Drop.of("super_defence", 1, 1, 12),
                         Drop.of("black_dragonhide", 10, 15, 16), Drop.of("dwarf_weed_seed", 3, 3, 24), Drop.of("runite_ore", 3, 5, 32),
+                        Drop.of("dragonstone_bolts_e", 5, 10, 16),
                         Drop.of("armadyl_helmet", 1, 1, 381), Drop.of("armadyl_chestplate", 1, 1, 381),
                         Drop.of("armadyl_chainskirt", 1, 1, 381), Drop.of("armadyl_hilt", 1, 1, 508),
                         Drop.of("godsword_shard_1", 1, 1, 762), Drop.of("godsword_shard_2", 1, 1, 762),

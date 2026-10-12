@@ -224,6 +224,13 @@ public final class CraftingData extends SkillingPart {
                             AttackType.CRUSH, EquipmentDef.WeaponClass.STAFF, Skill.MAGIC, 30, Skill.ATTACK, 30));
         }
 
+        // Purging staff: a battlestaff empowered by a tormented synapse (osrs/content/CommonItems); wiki / DPS calculator
+        // bonuses, 77 Magic and 50 Attack. Boosts demonbane spells.
+        s.add("purging_staff", "Purging staff", Kind.STAFF, "staff_orb", 0xE05020).value(800_000).stack(1).tier("battlestaff")
+                .equipment(weapon(stats(10, -5, 83, 37, 0, 1, 1, 0, 25, 0, 62, 0, 10, 0), 5, AttackType.CRUSH,
+                        EquipmentDef.WeaponClass.STAFF, Skill.MAGIC, 77, Skill.ATTACK, 50))
+                .examine("A battlestaff burning with a tormented synapse. It empowers demonbane spells.");
+
         // --- Pottery ---
         simple(s, "soft_clay", "Soft clay", "clay", 0xB09070, 2);
         String[][] pottery = {{"pot", "Pot"}, {"pie_dish", "Pie dish"}, {"bowl", "Bowl"}, {"plant_pot", "Plant pot"},
@@ -318,6 +325,10 @@ public final class CraftingData extends SkillingPart {
             out.accept(r("craft_" + o.staff(), L, title(o.element()) + " battlestaff", Skill.CRAFTING, o.craftLevel(), o.craftXp())
                     .in("battlestaff", 1).in(o.orb(), 1).out(o.staff(), 1).ticks(2).build());
         }
+        // Purging staff (74 Crafting and 55 Smithing in OSRS, made at an anvil with a hammer).
+        out.accept(plain("craft_purging_staff", MenuType.SMITHING, "Purging staff").skill(Skill.CRAFTING, 74, 0)
+                .in("battlestaff", 1).in("tormented_synapse", 1).in("iron_bar", 1).out("purging_staff", 1).tool("hammer")
+                .ticks(3).build()); // XP approx (none known)
         // --- Pottery ---
         out.accept(r("make_soft_clay", L, "Soft clay", Skill.CRAFTING, 1, 0).in("clay", 1).in("jug_of_water", 1)
                 .out("soft_clay", 1).out("jug", 1).ticks(1).build());

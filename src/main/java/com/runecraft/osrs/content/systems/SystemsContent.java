@@ -1,6 +1,9 @@
 package com.runecraft.osrs.content.systems;
 
 import com.runecraft.osrs.CollectionLogData;
+import com.runecraft.osrs.MenuType;
+import com.runecraft.osrs.Recipe;
+import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.BlockDef;
 import com.runecraft.osrs.content.ContentModule;
 import com.runecraft.osrs.content.ItemSink;
@@ -9,6 +12,7 @@ import com.runecraft.osrs.content.PlaceDef;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Special attacks, enchanted jewellery and teleport items, the Ancient/Lunar/Arceuus spellbooks, clue
@@ -40,6 +44,20 @@ public final class SystemsContent implements ContentModule {
                 .examine("Slide the pieces into order to solve the puzzle.");
         Defs.simple(items, CluePuzzles.LIGHT_BOX, "Light box", "package", 0xE0D060, 1).stack(1)
                 .examine("Turn all of the lights on to solve the puzzle.");
+    }
+
+    /**
+     * Zenyte upgrades with boss materials from osrs/content/CommonItems: necklace of rupture (84 Crafting, chisel) and
+     * confliction gauntlets (83 Crafting and 70 Smithing in OSRS, plus 10,000 demon tears; made here at an anvil).
+     */
+    @Override
+    public void recipes(Consumer<Recipe> recipes) {
+        recipes.accept(Recipe.builder("make_necklace_of_rupture", MenuType.GEM_CUTTING, "Necklace of rupture")
+                .skill(Skill.CRAFTING, 84, 0).in("necklace_of_anguish", 1).in("elder_venator_fang", 1)
+                .out("necklace_of_rupture", 1).tool("chisel").ticks(3).build()); // XP approx (none known)
+        recipes.accept(Recipe.builder("make_confliction_gauntlets", MenuType.SMITHING, "Confliction gauntlets")
+                .skill(Skill.CRAFTING, 83, 0).in("tormented_bracelet", 1).in("mokhaiotl_cloth", 1).in("demon_tear", 10000)
+                .out("confliction_gauntlets", 1).ticks(3).build()); // XP approx (none known)
     }
 
 

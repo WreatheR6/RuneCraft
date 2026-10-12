@@ -36,10 +36,10 @@ public final class MinigameBosses {
             .particle("minecraft:crimson_spore");
 
     // ---- The Nightmare ----
-    public static final AttackDef NIGHTMARE_MELEE = AttackDef.of("claw_swipe", AttackType.SLASH, 35, 4.5, 4);
-    public static final AttackDef NIGHTMARE_MAGIC = AttackDef.of("dream_blast", AttackType.MAGIC, 35, 14, 3)
+    public static final AttackDef NIGHTMARE_MELEE = AttackDef.of("claw_swipe", AttackType.SLASH, 50, 4.5, 4); // wiki: 50 (60 vs wrong prayer)
+    public static final AttackDef NIGHTMARE_MAGIC = AttackDef.of("dream_blast", AttackType.MAGIC, 33, 14, 3) // wiki: 33
             .telegraph(2, "The Nightmare raises her hands...").particle("minecraft:witch");
-    public static final AttackDef NIGHTMARE_RANGED = AttackDef.of("thrown_soul", AttackType.RANGED, 35, 14, 3)
+    public static final AttackDef NIGHTMARE_RANGED = AttackDef.of("thrown_soul", AttackType.RANGED, 33, 14, 3) // wiki: 33
             .telegraph(2, "The Nightmare winds up a throw...").particle("minecraft:soul");
     public static final AttackDef NIGHTMARE_CLAWS = AttackDef.of("grasping_claws", AttackType.MAGIC, 50, 14, 2)
             .special(Special.SKY_STRIKE, 0).telegraph(4, "Grasping claws reach up from the ground!").particle("minecraft:squid_ink");
@@ -117,7 +117,7 @@ public final class MinigameBosses {
 
     private static BossDef nightmareBase(String id, String name, int level, int hp) {
         return BossDef.of(id, name).level(level).stats(hp, 150, 150, 150, 150, 150).speed(6)
-                .defenceBonus(40, 120, 0, 600, 600)
+                .defenceBonus(120, 180, 40, 600, 600) // wiki/DPS calc: stab 120, slash 180, crush 40, magic/ranged 600
                 .attack(NIGHTMARE_MELEE).attack(NIGHTMARE_MAGIC).attack(NIGHTMARE_RANGED).attack(NIGHTMARE_CLAWS)
                 .phase(66, "The Nightmare's shield reforms! Charge the totems!", 1.0, false,
                         NIGHTMARE_MELEE, NIGHTMARE_MAGIC, NIGHTMARE_RANGED, NIGHTMARE_CLAWS, NIGHTMARE_SPORES, NIGHTMARE_CURSE)
@@ -127,7 +127,7 @@ public final class MinigameBosses {
     }
 
     static BossDef nightmare() {
-        return nightmareBase("the_nightmare", "The Nightmare", 814, 2400)
+        return nightmareBase("the_nightmare", "The Nightmare", 814, 2400).attackBonus(140, 140, 140)
                 .drops(Drop.of("nightmare_staff", 1, 1, 400), Drop.of("inquisitors_great_helm", 1, 1, 600),
                         Drop.of("inquisitors_hauberk", 1, 1, 600), Drop.of("inquisitors_plateskirt", 1, 1, 600),
                         Drop.of("inquisitors_mace", 1, 1, 1200), Drop.of("eldritch_orb", 1, 1, 1200), Drop.of("harmonised_orb", 1, 1, 1200),
@@ -138,7 +138,7 @@ public final class MinigameBosses {
     }
 
     static BossDef phosani() {
-        return nightmareBase("phosanis_nightmare", "Phosani's Nightmare", 1000, 2000)
+        return nightmareBase("phosanis_nightmare", "Phosani's Nightmare", 1000, 2000).attackBonus(220, 220, 220) // max hits approx (shared)
                 .drops(Drop.of("nightmare_staff", 1, 1, 450), Drop.of("inquisitors_great_helm", 1, 1, 700),
                         Drop.of("inquisitors_hauberk", 1, 1, 700), Drop.of("inquisitors_plateskirt", 1, 1, 700),
                         Drop.of("inquisitors_mace", 1, 1, 1400), Drop.of("eldritch_orb", 1, 1, 1400), Drop.of("harmonised_orb", 1, 1, 1400),

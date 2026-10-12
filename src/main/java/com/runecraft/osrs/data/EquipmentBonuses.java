@@ -380,6 +380,15 @@ public final class EquipmentBonuses {
         ammo("diamond_bolts", 105);
         ammo("dragonstone_bolts", 117);
         ammo("onyx_bolts", 120);
+        ammo("pearl_bolts", 48);
+        ammo("dragon_bolts", 122);
+        // Enchanted bolts keep their plain bolts' strength; every gem-tipped dragon bolt has 122.
+        for (String[] b : new String[][]{{"opal", "14"}, {"jade", "30"}, {"pearl", "48"}, {"topaz", "66"}, {"sapphire", "83"},
+                {"emerald", "85"}, {"ruby", "103"}, {"diamond", "105"}, {"dragonstone", "117"}, {"onyx", "120"}}) {
+            ammo(b[0] + "_bolts_e", Integer.parseInt(b[1]));
+            ammo(b[0] + "_dragon_bolts", 122);
+            ammo(b[0] + "_dragon_bolts_e", 122);
+        }
         ammo("broad_bolts", 100);
         ammo("amethyst_arrow", 55);
         ammo("dragon_arrow", 60);
@@ -554,6 +563,13 @@ public final class EquipmentBonuses {
         put("ancestral_robe_top", 0, 0, 0, 0, 35, -8,  42, 31, 51, 28, 0,  0, 0, 3, 0);
         put("ancestral_robe_bottom", 0, 0, 0, 0, 26, -7,  27, 24, 30, 20, 0,  0, 0, 3, 0);
         twoH("dragon_claws", 4, 41, 57, -4, 0, 0,  13, 26, 7, 0, 0,  56, 0, 0, 0);
+        // Tormented Demon uniques and the 2025-26 zenyte upgrades (wiki DPS calculator).
+        twoH("burning_claws", 4, 43, 54, 0, 0, 0,  3, 6, 1, 0, 0,  32, 0, 0, 0);
+        put("emberlight", 4, 63, 70, 0, 0, 0,  0, 3, 2, 5, 0,  13, 0, 0, 0);
+        twoH("scorching_bow", 5, 0, 0, 0, 0, 124,  0, 0, 0, 0, 0,  0, 40, 0, 0);
+        put("purging_staff", 5, 10, -5, 83, 37, 0,  1, 1, 0, 25, 0,  62, 0, 10, 0);
+        put("necklace_of_rupture", 0, 0, 0, 0, 0, 20,  0, 0, 0, 0, 0,  0, 8, 0, 3);
+        put("confliction_gauntlets", 0, 0, 0, 0, 20, -4,  15, 18, 7, 5, 5,  0, 0, 7, 2);
         twoH("elder_maul", 6, 0, 0, 135, 0, 0,  0, 0, 0, 0, 0,  147, 0, 0, 0);
         put("kodai_wand", 4, 0, 0, 0, 28, 0,  0, 3, 3, 20, 0,  0, 0, 15, 0);
         twoH("twisted_bow", 6, 0, 0, 0, 0, 70,  0, 0, 0, 0, 0,  0, 20, 0, 0);
