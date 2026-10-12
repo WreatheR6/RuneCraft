@@ -1,6 +1,7 @@
 package com.runecraft.item;
 
 import com.runecraft.osrs.ItemDef;
+import com.runecraft.osrs.data.AmmoRules;
 import com.runecraft.osrs.data.ArrowTier;
 import com.runecraft.skill.ItemUses;
 import net.minecraft.entity.LivingEntity;
@@ -21,6 +22,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
+
+import java.util.function.Predicate;
 
 /** Vanilla-backed equipment classes that also carry their OSRS {@link ItemDef}. */
 public final class OsrsEquipmentItems {
@@ -97,6 +100,18 @@ public final class OsrsEquipmentItems {
         @Override
         public ItemDef def() {
             return def;
+        }
+
+        /** OSRS ammo restrictions: e.g. a willow bow can't fire adamant arrows and a crossbow fires only bolts. */
+        @Override
+        public Predicate<ItemStack> getProjectiles() {
+            return stack -> {
+                if (!BOW_PROJECTILES.test(stack)) {
+                    return false;
+                }
+                ItemDef ammo = stack.getItem() instanceof OsrsItemLike like ? like.def() : null;
+                return AmmoRules.canFire(def.id(), ammo == null ? null : ammo.id());
+            };
         }
     }
 

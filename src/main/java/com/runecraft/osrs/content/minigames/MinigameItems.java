@@ -93,8 +93,10 @@ public final class MinigameItems {
     // ------------------------------------------------------------------ TzHaar
     private static void tzhaar(ItemSink items) {
         int obsidian = 0x2A2A30;
-        wear(items, "infernal_cape", "Infernal cape", "cape", 0xFF6A10, Slot.SHIELD, 1_000_000,
-                s(4, 4, 4, 1, 1, 12, 12, 12, 12, 12, 8, 0, 0, 2))
+        // Worn in the cape slot (systems module); SIMPLE so it can't be held as an off-hand shield.
+        items.add("infernal_cape", "Infernal cape", Kind.SIMPLE, "cape", 0xFF6A10).value(1_000_000).stack(1)
+                .equipment(new EquipmentDef(Slot.HEAD, s(4, 4, 4, 1, 1, 12, 12, 12, 12, 12, 8, 0, 0, 2), Map.of(), 0,
+                        AttackType.CRUSH, WeaponClass.NONE))
                 .tier("dragon").examine("A cape of solidified lava, earned in the Inferno.");
         pet(items, "jal_nib_rek", "Jal-nib-rek", 0xD05010, "A tiny nibbler from the Inferno.");
         pet(items, "tzrek_zuk", "TzRek-Zuk", 0xE06010, "A miniature TzKal-Zuk.");
@@ -152,7 +154,7 @@ public final class MinigameItems {
                 s(0, 0, 0, 0, 0, 30, 30, 30, 30, 30, 0, 0, 0, 3), req).tier("void")
                 .examine("Elite Void knight leg armour.");
         weapon(items, "void_knight_mace", "Void knight mace", Kind.MELEE_WEAPON, "warhammer", 0x6A6A70, 1,
-                s(22, 0, 41, 8, 0, 0, 0, 0, 2, 0, 38, 0, 0, 0), 5, AttackType.CRUSH, WeaponClass.MELEE, Skill.ATTACK, 42)
+                s(22, 0, 41, 8, 0, 0, 0, 0, 2, 0, 38, 0, 0, 0), 5, AttackType.CRUSH, WeaponClass.MELEE, req)
                 .tier("void");
         single(items, "void_seal", "Void seal", "amulet", 0x8A6AC0, 1, "A seal of the Void Knights. Pests hate it.");
     }
@@ -290,6 +292,7 @@ public final class MinigameItems {
 
     private static void warriorsGuild(ItemSink items) {
         simple(items, "warrior_guild_token", "Warrior guild token", "coins", 0xB08030, 1, "Lets you into the cyclops room.");
+        // Wield requirement is the same Attack and Defence level. Bonuses come from EquipmentBonuses.
         int[][] stats = {
                 {3, 2, 1, 1}, {5, 4, 3, 2}, {6, 5, 4, 3}, {8, 7, 6, 4},
                 {10, 9, 8, 4}, {13, 12, 11, 5}, {20, 19, 18, 5}, {25, 24, 23, 6}};
@@ -301,7 +304,7 @@ public final class MinigameItems {
             wear(items, tier + "_defender", Character.toUpperCase(tier.charAt(0)) + tier.substring(1) + " defender",
                     "kiteshield", colors[i], Slot.SHIELD, values[i],
                     s(st[0], st[1], st[2], -3, -2, st[0], st[1], st[2], -3, -2, st[3], 0, 0, 0),
-                    Skill.DEFENCE, DEFENDER_LEVELS[i]).tier(tier.equals("adamant") ? "adamant" : tier)
+                    Skill.ATTACK, DEFENDER_LEVELS[i], Skill.DEFENCE, DEFENDER_LEVELS[i]).tier(tier.equals("adamant") ? "adamant" : tier)
                     .examine("A defensive weapon from the Warriors' Guild cyclopes.");
         }
     }

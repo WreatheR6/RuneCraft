@@ -159,6 +159,10 @@ public final class GeService {
             open(p, null, "You can't trade coins.");
             return;
         }
+        if (com.runecraft.osrs.data.Untradeables.untradeable(def.id())) {
+            open(p, def.id(), "That item can't be traded on the Grand Exchange.");
+            return;
+        }
         int qty = parse(fields.get("qty"), 1);
         int price = parse(fields.get("price"), guide(def.id()));
         if (qty <= 0 || price <= 0) {

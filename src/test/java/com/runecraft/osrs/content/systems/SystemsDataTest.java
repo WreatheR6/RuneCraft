@@ -406,7 +406,8 @@ class SystemsDataTest {
             assertEquals(99, cape.equipment().requirements().get(s));
             assertEquals(Jewellery.Slot.CAPE, Jewellery.worn(cape.id()).slot());
             assertEquals(9, Jewellery.worn(cape.id()).stats().stabDefence());
-            assertEquals(4, Jewellery.worn(cape.id()).stats().prayer());
+            assertEquals(0, Jewellery.worn(cape.id()).stats().prayer()); // only trimmed capes give +4 prayer
+            assertEquals(4, Jewellery.worn(trimmed.id()).stats().prayer());
         }
         assertNotNull(ItemCatalog.get("max_cape"));
         assertNotNull(ItemCatalog.get("quest_point_cape"));

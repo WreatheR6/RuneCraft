@@ -3,6 +3,7 @@ package com.runecraft.osrs.content.systems;
 import com.runecraft.osrs.EquipmentStats;
 import com.runecraft.osrs.ItemDef.Kind;
 import com.runecraft.osrs.content.ItemSink;
+import com.runecraft.osrs.data.EquipmentBonuses;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -164,7 +165,7 @@ public final class Jewellery {
 
     private static void worn(String id, String name, Slot slot, String shape, int color, int value, EquipmentStats stats, Perk perk,
                              String examine) {
-        WORN.put(id, new Worn(id, name, slot, stats, perk, null, -1, List.of(), false));
+        WORN.put(id, new Worn(id, name, slot, ref(id, stats), perk, null, -1, List.of(), false));
         ITEMS.add(new Item(id, name, shape, color, value, examine));
     }
 
@@ -174,7 +175,7 @@ public final class Jewellery {
     }
 
     private static void wornExternal(String id, Slot slot, EquipmentStats stats) {
-        WORN.putIfAbsent(id, new Worn(id, id, slot, stats, Perk.NONE, null, -1, List.of(), false));
+        WORN.putIfAbsent(id, new Worn(id, id, slot, ref(id, stats), Perk.NONE, null, -1, List.of(), false));
     }
 
     /**
@@ -186,13 +187,13 @@ public final class Jewellery {
         for (int n = max; n >= 1; n--) {
             String id = base + "_" + n;
             Perk perk = base.startsWith("ring_of_wealth") ? Perk.WEALTH : Perk.NONE;
-            WORN.put(id, new Worn(id, name + "(" + n + ")", slot, stats, perk, base, n, dests, crumbles));
+            WORN.put(id, new Worn(id, name + "(" + n + ")", slot, ref(id, stats), perk, base, n, dests, crumbles));
             ITEMS.add(new Item(id, name + "(" + n + ")", shape, color, value, "A " + name.toLowerCase() + " with " + n
                     + " charge" + (n == 1 ? "" : "s") + " left."));
         }
         if (!crumbles) {
             Perk perk = base.startsWith("ring_of_wealth") ? Perk.WEALTH : Perk.NONE;
-            WORN.put(base, new Worn(base, name, slot, stats, perk, base, 0, List.of(), false));
+            WORN.put(base, new Worn(base, name, slot, ref(base, stats), perk, base, 0, List.of(), false));
             ITEMS.add(new Item(base, name, shape, color, value / 2, "It has no charges left; recharge it at the Fountain of Heroes."));
         }
     }
@@ -210,7 +211,14 @@ public final class Jewellery {
 
     /** Lets other data tables (capes, diary rewards) register worn items. */
     public static void register(Worn w) {
-        WORN.put(w.id(), w);
+        EquipmentStats stats = ref(w.id(), w.stats());
+        WORN.put(w.id(), stats.equals(w.stats()) ? w
+                : new Worn(w.id(), w.name(), w.slot(), stats, w.perk(), w.chargeBase(), w.charges(), w.teleports(), w.crumbles()));
+    }
+
+    /** The OSRS reference bonuses for a worn item (see {@link EquipmentBonuses}), else the given stats. */
+    private static EquipmentStats ref(String id, EquipmentStats stats) {
+        return EquipmentBonuses.statsOr(id, stats);
     }
 
     public static Worn worn(String id) {

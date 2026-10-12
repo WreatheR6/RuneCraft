@@ -10,7 +10,9 @@ import com.runecraft.osrs.content.quests.QuestBook;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -80,6 +82,37 @@ final class QuestGear {
                 return 1.0;
             }
         });
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (server.getTicks() % 20 == 0 && !book.armourGates.isEmpty()) {
+                for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+                    enforceArmourGates(player, book);
+                }
+            }
+        });
+    }
+
+    private static final EquipmentSlot[] GATED_SLOTS = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS,
+            EquipmentSlot.FEET, EquipmentSlot.OFFHAND};
+
+    /** Takes off quest-locked armour (rune platebody without Dragon Slayer I...), as OSRS refuses to equip it. */
+    private static void enforceArmourGates(ServerPlayerEntity player, QuestBook book) {
+        for (EquipmentSlot slot : GATED_SLOTS) {
+            ItemStack stack = player.getEquippedStack(slot);
+            if (stack.isEmpty()) {
+                continue;
+            }
+            String quest = book.armourGates.get(Inv.idOf(stack));
+            if (quest == null) {
+                continue;
+            }
+            QuestInfo q = ContentRegistry.quest(quest);
+            if (q == null || Players.data(player).questComplete(q)) {
+                continue;
+            }
+            player.equipStack(slot, ItemStack.EMPTY);
+            Inv.give(player, stack);
+            Msg.red(player, "You need to complete " + q.displayName() + " to wear that.");
+        }
     }
 
     static void wear(ServerPlayerEntity player, QuestBook.Gear gear, ItemStack stack) {

@@ -304,6 +304,10 @@ public final class ItemCatalog {
         for (com.runecraft.osrs.content.ContentModule module : com.runecraft.osrs.content.Modules.ALL) {
             module.items(ItemCatalog::add);
         }
+        // --- Reference OSRS bonuses / attack speeds override whatever the defining module wrote ---
+        for (ItemDef def : ITEMS.values()) {
+            com.runecraft.osrs.data.EquipmentBonuses.apply(def);
+        }
     }
 
     private static EquipmentDef wearable(EquipmentDef.Slot slot, EquipmentStats stats, Object... reqs) {
@@ -342,7 +346,7 @@ public final class ItemCatalog {
         add("mossy_key", "Mossy key", Kind.SIMPLE, "key", 0x4A7A2A).value(1).examine("Opens Bryophyta's lair.");
         add("hill_giant_club", "Hill giant club", Kind.MELEE_WEAPON, "club", 0x8A6A3A).value(200000).stack(1).tier("rune")
                 .equipment(weapon(stats(-4, -4, 65, 0, 0, 0, 0, 0, 0, 0, 70, 0, 0, 0), 7, AttackType.CRUSH,
-                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 65));
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 40));
         add("bryophytas_essence", "Bryophyta's essence", Kind.SIMPLE, "essence", 0x3AAA3A).value(150000);
         // Barrows - Ahrim
         armour("ahrims_hood", "Ahrim's hood", "cowl", 0x3A3A5A, "barrows", 50000,
@@ -421,8 +425,10 @@ public final class ItemCatalog {
                 .equipment(weapon(stats(55, 70, 0, 17, 0, 0, 3, 3, 17, 0, 72, 0, 15, 0), 4, AttackType.SLASH,
                         EquipmentDef.WeaponClass.STAFF, Skill.MAGIC, 75, Skill.ATTACK, 75));
         // Fight Caves
-        add("fire_cape", "Fire cape", Kind.SHIELD, "cape", 0xE05010).value(64000).stack(1).tier("dragon")
-                .equipment(wearable(EquipmentDef.Slot.SHIELD, stats(1, 1, 1, 1, 1, 11, 11, 11, 11, 11, 4, 0, 0, 2)));
+        // Worn in the systems module's cape slot (Jewellery); the HEAD-slot equipment only feeds tooltips, the item
+        // is SIMPLE so it can't be equipped in a vanilla slot (it used to count as an off-hand shield).
+        add("fire_cape", "Fire cape", Kind.SIMPLE, "cape", 0xE05010).value(64000).stack(1).tier("dragon")
+                .equipment(wearable(EquipmentDef.Slot.HEAD, stats(1, 1, 1, 1, 1, 11, 11, 11, 11, 11, 4, 0, 0, 2)));
         add("tokkul", "Tokkul", Kind.SIMPLE, "tokkul", 0x5A3A2A).value(1);
         add("tzrek_jad", "TzRek-Jad", Kind.SIMPLE, "pet", 0xE05010).value(1).stack(1).examine("A pet TzTok-Jad.");
         // Quest items
@@ -448,6 +454,24 @@ public final class ItemCatalog {
                 .equipment(weapon(stats(9, 14, -2, 0, 0, 0, 3, 2, 1, 0, 12, 0, 0, 1), 4, AttackType.SLASH,
                         EquipmentDef.WeaponClass.MELEE));
         add("amulet_of_accuracy", "Amulet of accuracy", Kind.SIMPLE, "amulet", 0x3060E0).value(100).stack(1);
+        // Dragon equipment that is bought or dropped, not smithed (bonuses: data/EquipmentBonuses).
+        // Quest gates (Heroes' Quest, Lost City, Regicide, Legends' Quest) live in the quests module.
+        int dragon = MetalTier.DRAGON.color();
+        armour("dragon_med_helm", "Dragon med helm", "med_helm", dragon, "dragon", 100000,
+                wearable(H, stats(0, 0, 0, -3, 0, 33, 35, 32, -1, 34, 0, 0, 0, 0), Skill.DEFENCE, 60));
+        armour("dragon_plateskirt", "Dragon plateskirt", "plateskirt", dragon, "dragon", 270000,
+                wearable(L, stats(0, 0, 0, -21, -11, 68, 66, 63, -4, 65, 0, 0, 0, 0), Skill.DEFENCE, 60));
+        add("dragon_sq_shield", "Dragon sq shield", Kind.SHIELD, "sq_shield", dragon).value(500000).stack(1).tier("dragon")
+                .equipment(wearable(EquipmentDef.Slot.SHIELD, stats(0, 0, 0, -6, 0, 50, 52, 48, 0, 50, 0, 0, 0, 0), Skill.DEFENCE, 60));
+        add("dragon_mace", "Dragon mace", Kind.MELEE_WEAPON, "mace", dragon).value(50000).stack(1).tier("dragon")
+                .equipment(weapon(stats(40, -2, 60, 0, 0, 0, 0, 0, 0, 0, 55, 0, 0, 5), 4, AttackType.CRUSH,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 60));
+        add("dragon_spear", "Dragon spear", Kind.MELEE_WEAPON, "spear", dragon).value(62400).stack(1).tier("dragon")
+                .equipment(weapon(stats(55, 55, 55, 0, 0, 5, 5, 5, 5, 5, 60, 0, 0, 0), 4, AttackType.STAB,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 60));
+        add("dragon_halberd", "Dragon halberd", Kind.MELEE_WEAPON, "spear", dragon).value(325000).stack(1).tier("dragon")
+                .equipment(weapon(stats(70, 95, 0, -4, 0, -1, 4, 5, 0, 0, 89, 0, 0, 0), 7, AttackType.SLASH,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 60, Skill.STRENGTH, 30));
     }
 
     private static EquipmentDef.Slot slotOf(ArmourType.Slot slot) {

@@ -44,6 +44,9 @@ public final class Tooltips {
                 lines.add(Text.literal("Attack speed: " + eq.attackSpeed() + " ticks (" + eq.attackType().name().toLowerCase() + ")")
                         .formatted(Formatting.YELLOW));
             }
+            if (com.runecraft.osrs.data.EquipmentBonuses.twoHanded(def.id())) {
+                lines.add(Text.literal("Two-handed (no shield bonuses)").formatted(Formatting.YELLOW));
+            }
             line(lines, "Attack", s.stabAttack(), s.slashAttack(), s.crushAttack(), s.magicAttack(), s.rangedAttack());
             line(lines, "Defence", s.stabDefence(), s.slashDefence(), s.crushDefence(), s.magicDefence(), s.rangedDefence());
             StringBuilder other = new StringBuilder();

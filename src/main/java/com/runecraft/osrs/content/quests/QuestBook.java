@@ -54,6 +54,8 @@ public final class QuestBook {
     public final List<Shop> shops = new ArrayList<>();
     /** Weapon item id -> quest id that must be complete to wield it effectively. */
     public final Map<String, String> weaponGates = new LinkedHashMap<>();
+    /** Armour/shield item id -> quest id that must be complete to wear it (rune platebody: Dragon Slayer I...). */
+    public final Map<String, String> armourGates = new LinkedHashMap<>();
 
     private QuestBook() {
     }
@@ -143,7 +145,8 @@ public final class QuestBook {
     }
 
     public void gear(String item, GearSlot slot, EquipmentStats stats, String requiredQuest) {
-        gear.put(item, new Gear(item, slot, stats, requiredQuest));
+        // OSRS reference bonuses win over the hand-entered ones (see EquipmentBonuses).
+        gear.put(item, new Gear(item, slot, com.runecraft.osrs.data.EquipmentBonuses.statsOr(item, stats), requiredQuest));
     }
 
     public void shop(String npc, String item, int price, String quest, String flag, com.runecraft.osrs.Skill skill, int level, String pitch) {
@@ -152,6 +155,10 @@ public final class QuestBook {
 
     public void gate(String weapon, String questId) {
         weaponGates.put(weapon, questId);
+    }
+
+    public void armourGate(String item, String questId) {
+        armourGates.put(item, questId);
     }
 
     // ---------------- Lookups ----------------

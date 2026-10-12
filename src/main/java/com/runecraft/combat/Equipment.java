@@ -5,12 +5,13 @@ import com.runecraft.osrs.EquipmentDef;
 import com.runecraft.osrs.EquipmentStats;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.SkillSet;
+import com.runecraft.osrs.data.EquipmentBonuses;
 import com.runecraft.registry.ModItems;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 
-/** Totals a player's OSRS equipment bonuses (armour slots, main hand weapon, off-hand shield). */
+/** Totals a player's OSRS equipment bonuses (armour slots, main hand weapon, off-hand shield unless two-handed). */
 public final class Equipment {
     private static final EquipmentSlot[] ARMOUR = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
 
@@ -23,8 +24,16 @@ public final class Equipment {
             total = total.plus(stats(player.getEquippedStack(slot), skills, null));
         }
         total = total.plus(stats(player.getMainHandStack(), skills, EquipmentDef.Slot.WEAPON));
-        total = total.plus(stats(player.getOffHandStack(), skills, EquipmentDef.Slot.SHIELD));
+        if (!twoHanded(player)) {
+            total = total.plus(stats(player.getOffHandStack(), skills, EquipmentDef.Slot.SHIELD));
+        }
         return total;
+    }
+
+    /** True when the main-hand weapon is two-handed: like OSRS, an off-hand shield then gives no bonuses. */
+    public static boolean twoHanded(PlayerEntity player) {
+        ItemDef def = ModItems.def(player.getMainHandStack());
+        return def != null && EquipmentBonuses.twoHanded(def.id());
     }
 
     private static EquipmentStats stats(ItemStack stack, SkillSet skills, EquipmentDef.Slot onlySlot) {
