@@ -47,7 +47,7 @@ final class Dragons {
                 // --- Baby dragons (count towards their colour's task) ---
                 dragon(m("baby_green_dragon", "Baby green dragon", 42, 50, 40, 40, 40, 1, 1).speed(4).attack(stab(5))
                         .drops(Drop.always("babydragon_bones"), Drop.herbs(30)), "green_dragons", "green_dragon", 0.5f)
-                        .spawn(Region.WILDERNESS, 2, 1, 2).underground(),
+                        .spawn(Region.KARAMJA, 2, 1, 2).underground(),
                 dragon(m("baby_blue_dragon", "Baby blue dragon", 48, 50, 40, 40, 40, 1, 1).speed(4).attack(stab(5))
                         .drops(Drop.always("babydragon_bones"), Drop.herbs(30)), "blue_dragons", "blue_dragon", 0.5f)
                         .spawn(Region.ASGARNIA, 3, 1, 3).underground(),

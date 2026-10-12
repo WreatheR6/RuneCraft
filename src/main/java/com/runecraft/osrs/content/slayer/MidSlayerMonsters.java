@@ -91,18 +91,18 @@ final class MidSlayerMonsters {
                         .drops(Drop.always("bones"), Drop.of("rune_arrow", 5, 20, 12), Drop.of("adamant_arrow", 10, 30, 8),
                                 Drop.herbs(16), clue("hard", 128)).slayer(63, "spiritual_creatures")
                         .skin(0x5A6A8A, 0x2A4A2A, 0x3A3A2A, 0x6A8A6A).size(0.7f, 2.0f, 1.0f)
-                        .spawn(Region.TROLL_COUNTRY, 3, 1, 3).underground(),
+                        .spawn(Region.TROLL_COUNTRY, 3, 1, 3).spawn(Region.WILDERNESS, 2, 1, 2).underground(),
                 m("spiritual_warrior", "Spiritual warrior", 123, 100, 110, 115, 110, 1, 1).speed(5).attack(slash(16))
                         .defenceBonus(80, 80, 80, 0, 60).drops(Drop.always("bones"), Drop.of("rune_full_helm", 1, 1, 128),
                                 Drop.of("adamant_platebody", 1, 1, 64), Drop.herbs(16), clue("hard", 128))
                         .slayer(68, "spiritual_creatures").skin(0x5A6A8A, 0x8A2A2A, 0x5A2A2A, 0xB0B0B0).size(0.7f, 2.0f, 1.0f)
-                        .spawn(Region.TROLL_COUNTRY, 3, 1, 3).underground(),
+                        .spawn(Region.TROLL_COUNTRY, 3, 1, 3).spawn(Region.WILDERNESS, 2, 1, 2).underground(),
                 m("spiritual_mage", "Spiritual mage", 120, 75, 1, 1, 86, 140, 1).speed(5)
                         .attack(magic(18, "minecraft:witch")).defenceBonus(20, 20, 20, 80, 20)
                         .drops(Drop.always("bones"), Drop.of("dragon_boots", 1, 1, 128), Drop.of("death_rune", 5, 15, 8),
                                 Drop.of("blood_rune", 2, 8, 16), Drop.herbs(16), clue("hard", 128))
                         .slayer(83, "spiritual_creatures").skin(0x5A6A8A, 0x2A2A6A, 0x2A2A4A, 0x8080FF).size(0.7f, 2.0f, 1.0f)
-                        .spawn(Region.TROLL_COUNTRY, 2, 1, 2).underground(),
+                        .spawn(Region.TROLL_COUNTRY, 2, 1, 2).spawn(Region.WILDERNESS, 1, 1, 2).underground(),
                 m("dust_devil", "Dust devil", 93, 105, 105, 70, 40, 1, 1).speed(4).attack(crush(8))
                         .defenceBonus(0, 0, 0, 0, 0).drops(Drop.of("dragon_chainbody", 1, 1, 32768),
                                 Drop.of("dust_battlestaff", 1, 1, 4000), Drop.of("chaos_rune", 10, 40, 6), Drop.of("earth_rune", 30, 80, 6),

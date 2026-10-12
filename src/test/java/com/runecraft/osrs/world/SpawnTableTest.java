@@ -51,6 +51,95 @@ class SpawnTableTest {
         assertTrue(missing.isEmpty(), "hostile monsters that never spawn: " + missing);
     }
 
+    /** Every regular (non-boss, non-raid, non-minigame) monster, hostile or not, lives somewhere. */
+    @Test
+    void everyRegularMonsterHasASpawnPointOrCamp() {
+        Set<String> placed = placed();
+        Map<String, String> encounter = SpawnTable.encounterOnly();
+        List<String> missing = new ArrayList<>();
+        for (Monster m : Monster.values()) {
+            if (!placed.contains(m.entity()) && !encounter.containsKey(m.entity())) {
+                missing.add(m.entity());
+            }
+        }
+        for (MonsterDef d : ContentRegistry.monsters()) {
+            if (!placed.contains(d.id) && !encounter.containsKey(d.id)) {
+                missing.add(d.id);
+            }
+        }
+        assertTrue(missing.isEmpty(), "monsters that never spawn: " + missing);
+        for (String id : encounter.keySet()) {
+            assertTrue(ContentRegistry.boss(id) == null, id + " is a boss, not a monster");
+        }
+    }
+
+    /** A point lies in one of the kingdoms its monster is recorded in (islands and Zeah excepted). */
+    @Test
+    void pointsLieInTheirMonstersRegions() {
+        List<String> wrong = new ArrayList<>();
+        for (SpawnPoint p : SpawnTable.all()) {
+            MonsterDef d = ContentRegistry.monster(p.monster());
+            if (d == null || d.spawns.isEmpty() || p.island()) {
+                continue;
+            }
+            Region region = GielinorMap.regionAt(p.x(), p.y());
+            if (d.spawns.stream().noneMatch(s -> s.region() == region)) {
+                wrong.add(p.key() + " in " + region);
+            }
+        }
+        assertTrue(wrong.isEmpty(), "points outside their monster's regions: " + wrong);
+    }
+
+    /** Underground monsters stay in carved dungeons, except the listed surface stand-ins. */
+    @Test
+    void undergroundMonstersOnlySpawnInDungeons() {
+        Map<String, String> standIns = SpawnTable.surfaceStandIns();
+        List<String> wrong = new ArrayList<>();
+        Set<String> used = new HashSet<>();
+        for (SpawnPoint p : SpawnTable.all()) {
+            MonsterDef d = ContentRegistry.monster(p.monster());
+            if (d == null || !d.underground || !p.surface()) {
+                continue;
+            }
+            if (standIns.containsKey(d.id)) {
+                used.add(d.id);
+            } else {
+                wrong.add(p.key());
+            }
+        }
+        assertTrue(wrong.isEmpty(), "underground monsters on the surface: " + wrong);
+        for (String id : standIns.keySet()) {
+            MonsterDef d = ContentRegistry.monster(id);
+            assertNotNull(d, id);
+            assertTrue(d.underground && used.contains(id), id + " needs no surface stand-in entry");
+        }
+    }
+
+    /** Spawn counts roughly follow OSRS: a field holds about a dozen cows, never fifty. */
+    @Test
+    void densitiesRoughlyMatchOsrs() {
+        assertBetween("minecraft:cow", 3256, 3274, 20, 8, 16);      // Lumbridge east cow field
+        assertBetween("goblin", 3252, 3239, 20, 8, 16);             // Lumbridge goblins east of the Lum
+        assertBetween("minecraft:chicken", 3233, 3297, 12, 6, 14);  // Lumbridge chicken farm
+        assertBetween("minecraft:sheep", 3200, 3266, 12, 6, 14);    // Fred's sheep
+        assertBetween("rock_crab", 2700, 3716, 30, 12, 24);         // Rellekka rock crabs
+        assertBetween("minecraft:zombie", 3165, 3700, 50, 10, 24);  // Graveyard of Shadows
+        for (SpawnPoint p : SpawnTable.all()) {
+            double area = Math.PI * (p.radius() + 1) * (p.radius() + 1);
+            assertTrue(p.count() / area <= 0.35, p.key() + " is packed too densely");
+        }
+    }
+
+    private static void assertBetween(String id, int x, int y, int within, int min, int max) {
+        int n = 0;
+        for (SpawnPoint p : SpawnTable.all()) {
+            if (p.monster().equals(id) && Math.hypot(p.x() - x, p.y() - y) <= within) {
+                n += p.count();
+            }
+        }
+        assertTrue(n >= min && n <= max, id + " near " + x + "," + y + ": " + n + " (expected " + min + "-" + max + ")");
+    }
+
     @Test
     void farmAnimalsAndTownsfolkLiveSomewhere() {
         Set<String> placed = placed();
@@ -96,13 +185,14 @@ class SpawnTableTest {
             } else {
                 assertFalse(region == Region.UNCHARTED_ISLES, p.key() + " is off the mapped kingdoms");
             }
-            assertTrue(p.x() > 1000 && p.x() < 4000 && p.y() > 2500 && p.y() < 4100, p.key());
+            // Gielinor's bounds; only islands (Zanaris at y 4400) lie north of the Wilderness.
+            assertTrue(p.x() > 1000 && p.x() < 4000 && p.y() > 2500 && p.y() < (p.island() ? 4500 : 4000), p.key());
         }
     }
 
     @Test
     void wildernessMonstersStayInTheWilderness() {
-        for (String id : List.of("green_dragon", "lava_dragon", "greater_demon", "king_scorpion", "baby_green_dragon")) {
+        for (String id : List.of("green_dragon", "lava_dragon", "greater_demon", "king_scorpion", "ent", "mammoth")) {
             for (SpawnPoint p : SpawnTable.all()) {
                 if (p.monster().equals(id) && p.surface()) {
                     assertTrue(GielinorMap.wildernessLevel(p.blockX(), p.blockZ()) > 0, p.key());

@@ -29,7 +29,7 @@ final class LowSlayerMonsters {
                 m("giant_bat", "Giant bat", 27, 32, 22, 22, 22, 1, 1).speed(4).attack(stab(4))
                         .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("bones"), clue("easy", 128))
                         .slayer(1, "bats").model("giant_bat").size(0.9f, 0.9f, 1.0f).flying().moveSpeed(0.3)
-                        .spawn(Region.WILDERNESS, 4, 1, 3).spawn(Region.MORYTANIA, 3, 1, 2).spawn(Region.KARAMJA, 2, 1, 2),
+                        .spawn(Region.WILDERNESS, 4, 1, 3).spawn(Region.MORYTANIA, 3, 1, 2).spawn(Region.KANDARIN, 2, 1, 2),
                 m("grizzly_bear", "Grizzly bear", 21, 27, 17, 18, 15, 1, 1).speed(4).attack(slash(3))
                         .drops(Drop.always("bones"), clue("beginner", 70)).slayer(1, "bears").model("grizzly_bear")
                         .size(1.2f, 1.2f, 1.0f).spawn(Region.ASGARNIA, 3, 1, 2).spawn(Region.WILDERNESS, 3, 1, 2)
@@ -39,7 +39,7 @@ final class LowSlayerMonsters {
                         .spawn(Region.KHARIDIAN_DESERT, 6, 1, 3).spawn(Region.MISTHALIN, 2, 1, 2),
                 m("king_scorpion", "King scorpion", 32, 30, 28, 28, 28, 1, 1).speed(4).attack(stab(4))
                         .drops(clue("easy", 128)).slayer(1, "scorpions").model("scorpion").size(0.9f, 0.6f, 1.4f)
-                        .spawn(Region.WILDERNESS, 3, 1, 3).underground(),
+                        .spawn(Region.WILDERNESS, 3, 1, 3).spawn(Region.ASGARNIA, 2, 1, 2).underground(),
                 m("minotaur", "Minotaur", 27, 22, 20, 21, 19, 1, 1).speed(4).attack(crush(4))
                         .drops(Drop.always("bones"), Drop.of("iron_arrow", 5, 10, 8), Drop.of("bronze_arrow", 5, 15, 8),
                                 Drop.herbs(32), clue("beginner", 70)).slayer(1, "minotaurs")
@@ -137,7 +137,7 @@ final class LowSlayerMonsters {
                         .flying().spawn(Region.MISTHALIN, 3, 2, 4).underground(),
                 m("molanisk", "Molanisk", 51, 52, 50, 40, 40, 1, 1).speed(4).attack(crush(5))
                         .drops(Drop.herbs(10), Drop.of("coal", 1, 2, 12), Drop.gems(64), clue("medium", 128))
-                        .slayer(39, "molanisks").model("molanisk").size(1.0f, 0.9f, 1.0f).spawn(Region.MISTHALIN, 3, 1, 3)
+                        .slayer(39, "molanisks").model("molanisk").size(1.0f, 0.9f, 1.0f).spawn(Region.LUMBRIDGE_SWAMP, 3, 1, 3)
                         .underground());
     }
 }
