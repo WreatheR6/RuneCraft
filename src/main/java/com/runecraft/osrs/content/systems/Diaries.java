@@ -729,8 +729,8 @@ public final class Diaries {
         visit("Take the agility shortcut from the Grand Tree to Otto's Grotto", 2486, 3515, 10, AGILITY, 37);
         quest("Travel to the Gnome Stronghold by Spirit Tree", "tree_gnome_village");
         xp("Trap a Spined Larupia", HUNTER, 31);
-        getAt("Fish some Bass on Ape Atoll", "raw_bass", 1, at(2770, 2703, 70), FISHING, 46);
-        getAt("Chop and burn some teak logs on Ape Atoll", "teak_logs", 1, at(2770, 2703, 70), WOODCUTTING, 35, FIREMAKING, 35);
+        getAt("Fish some Bass on Ape Atoll", "raw_bass", 1, at(2755, 2775, 50), FISHING, 46);
+        getAt("Chop and burn some teak logs on Ape Atoll", "teak_logs", 1, at(2755, 2775, 50), WOODCUTTING, 35, FIREMAKING, 35);
         combat("Complete an intermediate game of Pest Control", 70);
         quest("Travel to the Feldip Hills by Gnome Glider", "one_small_favour");
         quest("Claim a Chompy bird hat from Rantz after registering at least 30 kills", "big_chompy_bird_hunting", RANGED, 30);
@@ -744,8 +744,8 @@ public final class Diaries {
         makeHere("Catch and cook a Monkfish in Piscatoris", "monkfish", 1, FISHING, 62, COOKING, 62);
         combat("Complete a Veteran game of Pest Control", 100);
         xpAt("Catch a Dashing Kebbit", HUNTER, 69, null);
-        xpAt("Complete a lap of the Ape Atoll agility course", AGILITY, 48, at(2770, 2703, 70));
-        getAt("Chop and burn some Mahogany logs on Ape Atoll", "mahogany_logs", 1, at(2770, 2703, 70), WOODCUTTING, 50, FIREMAKING, 50);
+        xpAt("Complete a lap of the Ape Atoll agility course", AGILITY, 48, at(2755, 2775, 50));
+        getAt("Chop and burn some Mahogany logs on Ape Atoll", "mahogany_logs", 1, at(2755, 2775, 50), WOODCUTTING, 50, FIREMAKING, 50);
         get("Mine some Adamantite ore in Tirannwn", "adamantite_ore", 1, MINING, 70);
         xpAt("Check the health of your Palm tree in Lletya", FARMING, 68, at(2340, 3170, 40));
         quest("Claim a Chompy bird hat from Rantz after registering at least 125 kills", "big_chompy_bird_hunting", RANGED, 30);
