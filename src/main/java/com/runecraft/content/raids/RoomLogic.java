@@ -61,6 +61,7 @@ public class RoomLogic {
             case "ice_demon" -> new CoxRooms.IceDemon(raid, def, index);
             case "thieving" -> new CoxRooms.Thieving(raid, def, index);
             case "tightrope" -> new CoxRooms.Tightrope(raid, def, index);
+            case "crystal_crabs" -> new CoxRooms.CrystalCrabs(raid, def, index);
             case "olm" -> new CoxRooms.Olm(raid, def, index);
             case "maiden" -> new TobRooms.Maiden(raid, def, index);
             case "bloat" -> new TobRooms.Bloat(raid, def, index);
@@ -87,12 +88,34 @@ public class RoomLogic {
     public void decorate() {
     }
 
+    /**
+     * The creatures this room spawns: CoX Skeletal Mystics and Lizardman shamans grow in number with
+     * the party (OSRS: 3 + 1 per 3 players up to 12, and 2 + 1 per 5 players up to 5).
+     */
+    protected List<String> roomCreatures() {
+        List<String> bosses = def.bosses();
+        int n = switch (def.id()) {
+            case "mystics" -> com.runecraft.osrs.content.raids.RaidScaling.coxMysticCount(raid.partySize());
+            case "shamans" -> com.runecraft.osrs.content.raids.RaidScaling.coxShamanCount(raid.partySize());
+            default -> -1;
+        };
+        if (n < 0 || bosses.isEmpty()) {
+            return bosses;
+        }
+        return java.util.Collections.nCopies(n, bosses.get(0));
+    }
+
     /** The party entered: spawn the room's creatures. */
     public void start() {
-        List<String> bosses = def.bosses();
+        List<String> bosses = roomCreatures();
         for (int i = 0; i < bosses.size(); i++) {
-            double spread = bosses.size() == 1 ? 0 : (i - (bosses.size() - 1) / 2.0) * 7;
-            spawnBoss(bosses.get(i), at(8, (int) Math.round(spread)));
+            // Up to 5 in a line 7 blocks apart; larger groups (12 mystics) form two staggered rows.
+            int row = bosses.size() > 5 ? i % 2 : 0;
+            int perRow = bosses.size() > 5 ? (bosses.size() + 1) / 2 : bosses.size();
+            int col = bosses.size() > 5 ? i / 2 : i;
+            double gap = perRow <= 1 ? 0 : Math.min(7, 32.0 / (perRow - 1));
+            double spread = perRow <= 1 ? 0 : (col - (perRow - 1) / 2.0) * gap;
+            spawnBoss(bosses.get(i), at(8 + row * 4, (int) Math.round(spread)));
         }
     }
 
@@ -140,6 +163,15 @@ public class RoomLogic {
             }
         }
         return null;
+    }
+
+    /** Whether this raid runs in ToB Hard mode. */
+    protected boolean hard() {
+        return raid.mode() == com.runecraft.osrs.content.raids.RaidMode.HARD;
+    }
+
+    /** A party member damaged a creature in this room (after the hit landed). */
+    public void onCreatureHit(ServerPlayerEntity player, LivingEntity target, int damage) {
     }
 
     /** A party member in this room took damage. */

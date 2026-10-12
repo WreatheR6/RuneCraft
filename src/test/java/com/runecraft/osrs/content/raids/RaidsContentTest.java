@@ -76,8 +76,13 @@ class RaidsContentTest {
 
     @Test
     void rewardTablesSum() {
-        assertEquals(69, RaidRewards.totalWeight(RaidRewards.COX_UNIQUES));
+        assertEquals(60, RaidRewards.totalWeight(RaidRewards.COX_UNIQUES));
+        assertEquals(56, RaidRewards.totalWeight(RaidRewards.COX_CM_UNIQUES));
         assertEquals(19, RaidRewards.totalWeight(RaidRewards.TOB_UNIQUES));
+        assertEquals(18, RaidRewards.totalWeight(RaidRewards.TOB_HARD_UNIQUES));
+        assertEquals(99, RaidRewards.COX_COMMONS.stream().mapToInt(RaidRewards.PointsCommon::weight).sum());
+        assertEquals(30, RaidRewards.TOB_COMMONS.stream().mapToInt(RaidRewards.RangeCommon::weight).sum());
+        assertEquals(27, RaidRewards.TOA_COMMONS.size());
         assertEquals(240, RaidRewards.totalWeight(RaidRewards.TOA_UNIQUES));
         assertEquals(2, RaidRewards.COX_UNIQUES.stream().filter(u -> u.item().equals("twisted_bow")).findFirst().orElseThrow().weight());
         assertEquals(1, RaidRewards.TOB_UNIQUES.stream().filter(u -> u.item().equals("scythe_of_vitur")).findFirst().orElseThrow().weight());
@@ -105,6 +110,17 @@ class RaidsContentTest {
             assertTrue(ItemCatalog.exists(c.item()), c.item());
             assertTrue(c.min() <= c.max());
         }
+        for (RaidType t : RaidType.values()) {
+            for (RaidMode m : RaidMode.values()) {
+                for (RaidRewards.ExtraReward x : RaidRewards.extras(t, m)) {
+                    assertTrue(ItemCatalog.exists(x.item()), x.item());
+                }
+                for (RaidRewards.Unique u : RaidRewards.uniques(t, m)) {
+                    assertTrue(ItemCatalog.exists(u.item()), u.item());
+                }
+            }
+        }
+        assertTrue(ItemCatalog.exists("cabbage"));
         for (String item : RaidItems.RAID_ONLY_ITEMS) {
             assertTrue(ItemCatalog.exists(item), item);
         }
@@ -153,9 +169,9 @@ class RaidsContentTest {
 
     @Test
     void scalingFormulas() {
-        assertEquals(570_000 / 867_600.0, RaidScaling.coxPurpleChance(10_000_000), 1e-9);
-        assertEquals(0.01, RaidScaling.coxPurpleChance(8_676), 1e-9);
-        assertEquals(1 / 9.1, RaidScaling.tobPurpleChance(90, 5), 1e-9);
+        assertEquals(570_000 / 867_500.0, RaidScaling.coxPurpleChance(10_000_000), 1e-9);
+        assertEquals(0.01, RaidScaling.coxPurpleChance(8_675), 1e-9);
+        assertEquals(1 / 9.1, RaidScaling.tobPurpleChance(104, 5), 1e-9);
         assertEquals(0.55, RaidScaling.toaPurpleChance(1_000_000, 500), 1e-9);
         assertEquals(20_000 / 4_500.0 / 100.0, RaidScaling.toaPurpleChance(20_000, 300), 1e-9);
         assertEquals(1.0, RaidScaling.tobHp(5));
@@ -193,11 +209,12 @@ class RaidsContentTest {
 
     @Test
     void coxUniqueRolls() {
-        assertEquals(List.of(100_000 / 867_600.0), RaidScaling.coxUniqueRolls(100_000));
+        assertEquals(List.of(100_000 / 867_500.0), RaidScaling.coxUniqueRolls(100_000));
         List<Double> big = RaidScaling.coxUniqueRolls(1_200_000);
         assertEquals(3, big.size());
-        assertEquals(570_000 / 867_600.0, big.get(0), 1e-9);
-        assertEquals(60_000 / 867_600.0, big.get(2), 1e-9);
+        assertEquals(570_000 / 867_500.0, big.get(0), 1e-9);
+        assertEquals(60_000 / 867_500.0, big.get(2), 1e-9);
+        assertEquals(6, RaidScaling.coxUniqueRolls(4_000_000).size(), "at most six unique rolls");
         assertEquals(RaidScaling.COX_MAX_UNIQUES, RaidScaling.coxUniqueRolls(50_000_000).size());
         Map<String, Integer> points = new HashMap<>();
         for (int i = 0; i < 20; i++) {
@@ -222,9 +239,9 @@ class RaidsContentTest {
         assertEquals(2625, RaidScaling.tobScaledHp("the_maiden_of_sugadinti", 3500, 1, RaidMode.NORMAL));
         assertEquals(500, RaidScaling.tobScaledHp("the_maiden_of_sugadinti", 3500, 1, RaidMode.ENTRY));
         assertEquals(2000, RaidScaling.tobScaledHp("the_maiden_of_sugadinti", 3500, 5, RaidMode.ENTRY));
-        assertEquals(0, RaidScaling.tobPurpleChance(90, 5, RaidMode.ENTRY));
-        assertEquals(1 / 7.7, RaidScaling.tobPurpleChance(90, 5, RaidMode.HARD), 1e-9);
-        assertEquals(0.5 / 9.1, RaidScaling.tobPurpleChance(45, 5, RaidMode.NORMAL), 1e-9);
+        assertEquals(0, RaidScaling.tobPurpleChance(104, 5, RaidMode.ENTRY));
+        assertEquals(1 / 7.7, RaidScaling.tobPurpleChance(104, 5, RaidMode.HARD), 1e-9);
+        assertEquals(0.5 / 9.1, RaidScaling.tobPurpleChance(52, 5, RaidMode.NORMAL), 1e-9);
         Random random = new Random(3);
         for (int i = 0; i < 300; i++) {
             RaidRewards.Result r = RaidRewards.roll(RaidType.TOB, RaidMode.ENTRY, Map.of("a", 18, "b", 18), 0, random);
@@ -251,9 +268,11 @@ class RaidsContentTest {
         assertEquals(6, RaidScaling.toaPathLevel(Set.of(Invocation.PATHMASTER, Invocation.WALK_THE_PATH), 3));
         RaidRewards.Unique shadow = RaidRewards.TOA_UNIQUES.stream().filter(u -> u.item().equals("tumekens_shadow")).findFirst().orElseThrow();
         RaidRewards.Unique fang = RaidRewards.TOA_UNIQUES.get(0);
-        assertEquals(350, RaidRewards.toaWeight(fang, 0) / 10);
-        assertEquals(10, RaidRewards.toaWeight(shadow, 0), "shadow is 50x rarer below raid level 50");
-        assertEquals(250, RaidRewards.toaWeight(shadow, 100));
+        assertEquals(70, RaidRewards.toaWeight(fang, 0), "fang is 50x rarer below raid level 50");
+        assertEquals(3500, RaidRewards.toaWeight(fang, 50));
+        assertEquals(10, RaidRewards.toaWeight(shadow, 0), "shadow is 50x rarer below raid level 150");
+        assertEquals(10, RaidRewards.toaWeight(shadow, 100));
+        assertEquals(500, RaidRewards.toaWeight(shadow, 150));
         assertEquals(500, RaidRewards.toaWeight(shadow, 300));
         double purple = RaidScaling.toaPurpleChance(20_000, 300);
         assertTrue(RaidScaling.toaPetChance(20_000, 300) < purple / 30);
@@ -307,5 +326,172 @@ class RaidsContentTest {
             int boxes = spec.parts().stream().mapToInt(p -> p.boxes.size()).sum();
             assertTrue(boxes <= 45, spec.id() + " has " + boxes + " boxes");
         }
+    }
+
+    @Test
+    void coxPointsMath() {
+        assertEquals(50, RaidScaling.coxDamagePoints(5 * 300, 300, 10), "a fresh pool gives 5 points per damage");
+        assertEquals(20, RaidScaling.coxDamagePoints(300, 300, 10), "a drained pool gives pool * dmg / (hp / 2)");
+        assertEquals(1, RaidScaling.coxDamagePoints(10, 300, 1), "a damaging hit is always worth a point");
+        assertEquals(0, RaidScaling.coxDamagePoints(0, 300, 10));
+        assertEquals(0, RaidScaling.coxDamagePoints(1500, 300, 0));
+        int hp = 1000;
+        int pool = hp * RaidScaling.COX_DAMAGE_POOL_PER_HP;
+        int total = 0;
+        for (int dealt = 0; dealt < hp; dealt += 10) {
+            int pr = RaidScaling.coxDamagePoints(pool, hp, 10);
+            pool -= pr;
+            total += pr;
+        }
+        assertTrue(total > 3_900 && total < 4_500, "about 4.1 points per hitpoint over a kill: " + total);
+        assertEquals(3, RaidScaling.coxMysticCount(1));
+        assertEquals(4, RaidScaling.coxMysticCount(3));
+        assertEquals(12, RaidScaling.coxMysticCount(27));
+        assertEquals(12, RaidScaling.coxMysticCount(60));
+        assertEquals(2, RaidScaling.coxShamanCount(1));
+        assertEquals(3, RaidScaling.coxShamanCount(5));
+        assertEquals(5, RaidScaling.coxShamanCount(15));
+        assertEquals(5, RaidScaling.coxShamanCount(100));
+        assertEquals(6_000, RaidScaling.coxIceDemonPointsCap(450));
+        assertEquals(9_000, RaidScaling.coxIceDemonPointsCap(900));
+        assertEquals(4_500, RaidScaling.coxThievingPointsCap(99));
+        assertEquals(11_100, RaidScaling.coxThievingPointsCap(447));
+        assertEquals(30, RaidScaling.olmClenchThreshold(600));
+    }
+
+    @Test
+    void coxCommonLoot() {
+        RaidRewards.PointsCommon death = RaidRewards.COX_COMMONS.get(0);
+        assertEquals("death_rune", death.item());
+        assertEquals(3_640, RaidRewards.coxCommonQuantity(death, 500_000), "capped at 131,071 points");
+        assertEquals(833, RaidRewards.coxCommonQuantity(death, 30_000));
+        RaidRewards.PointsCommon relic = RaidRewards.COX_COMMONS.get(RaidRewards.COX_COMMONS.size() - 1);
+        assertEquals("dark_relic", relic.item());
+        assertEquals(1, RaidRewards.coxCommonQuantity(relic, 100_000));
+        RaidRewards.PointsCommon essence = RaidRewards.COX_COMMONS.stream().filter(c -> c.item().equals("pure_essence")).findFirst()
+                .orElseThrow();
+        assertEquals(65_535, RaidRewards.coxCommonQuantity(essence, 131_071));
+        Random random = new Random(11);
+        for (int i = 0; i < 200; i++) {
+            List<RaidRewards.PointsCommon> two = RaidRewards.pickWeighted(RaidRewards.COX_COMMONS, 2, random);
+            assertEquals(2, two.size());
+            assertFalse(two.get(0).equals(two.get(1)), "two different resources");
+        }
+    }
+
+    @Test
+    void tobPointsAndLoot() {
+        assertEquals(104, RaidScaling.tobMaxPoints(5));
+        assertEquals(32, RaidScaling.tobMaxPoints(1));
+        assertEquals(4, RaidScaling.tobMvpPoints("verzik"));
+        assertEquals(2, RaidScaling.tobMvpPoints("maiden"));
+        assertEquals(0.5, RaidScaling.tobPointsRatio(52, 5), 1e-9);
+        assertEquals(List.of(500, 600), toList(RaidScaling.tobCommonRange(500, 1.0, RaidMode.NORMAL, false)));
+        assertEquals(List.of(575, 690), toList(RaidScaling.tobCommonRange(500, 1.0, RaidMode.HARD, false)));
+        assertEquals(List.of(650, 780), toList(RaidScaling.tobCommonRange(500, 1.0, RaidMode.HARD, true)));
+        assertEquals(List.of(250, 300), toList(RaidScaling.tobCommonRange(500, 0.5, RaidMode.NORMAL, false)));
+        Random random = new Random(5);
+        for (int i = 0; i < 200; i++) {
+            RaidRewards.Result r = RaidRewards.roll(RaidType.TOB, RaidMode.NORMAL, Map.of("a", 32, "b", 0), 0, random);
+            if (!r.purple("b")) {
+                assertEquals(List.of(new RaidRewards.Loot("cabbage", 1)), r.lootFor("b"), "no points, only a cabbage");
+            }
+            for (RaidRewards.Loot l : r.lootFor("a")) {
+                RaidRewards.RangeCommon c = RaidRewards.TOB_COMMONS.stream().filter(x -> x.item().equals(l.item())).findFirst()
+                        .orElse(null);
+                if (c != null) {
+                    int[] range = RaidScaling.tobCommonRange(c.min(), 32 / 50.0, RaidMode.NORMAL, false);
+                    assertTrue(l.count() >= Math.max(1, range[0]) && l.count() <= Math.max(1, range[1]), l.item() + " " + l.count());
+                }
+            }
+        }
+    }
+
+    @Test
+    void modeExtraRewards() {
+        Random random = new Random(21);
+        Map<String, Integer> cox = Map.of("a", 50_000);
+        int dust = 0;
+        int kit = 0;
+        int kitLate = 0;
+        for (int i = 0; i < 20_000; i++) {
+            for (RaidRewards.Loot l : RaidRewards.roll(RaidType.COX, RaidMode.CHALLENGE, cox, 0, true, random).lootFor("a")) {
+                dust += l.item().equals("metamorphic_dust") ? 1 : 0;
+                kit += l.item().equals("twisted_ancestral_colour_kit") ? 1 : 0;
+            }
+            for (RaidRewards.Loot l : RaidRewards.roll(RaidType.COX, RaidMode.CHALLENGE, cox, 0, false, random).lootFor("a")) {
+                kitLate += l.item().equals("twisted_ancestral_colour_kit") ? 1 : 0;
+            }
+            for (RaidRewards.Loot l : RaidRewards.roll(RaidType.COX, RaidMode.NORMAL, cox, 0, true, random).lootFor("a")) {
+                assertFalse(l.item().equals("metamorphic_dust") || l.item().equals("twisted_ancestral_colour_kit"));
+            }
+        }
+        assertTrue(dust > 20 && dust < 90, "metamorphic dust about 1/400: " + dust);
+        assertTrue(kit > 170 && kit < 380, "colour kit about 1/75: " + kit);
+        assertEquals(0, kitLate, "the colour kit needs the target time");
+        int holy = 0;
+        int hardLate = 0;
+        Map<String, Integer> tob = Map.of("a", 32);
+        for (int i = 0; i < 20_000; i++) {
+            for (RaidRewards.Loot l : RaidRewards.roll(RaidType.TOB, RaidMode.HARD, tob, 0, true, random).lootFor("a")) {
+                holy += l.item().equals("holy_ornament_kit") ? 1 : 0;
+            }
+            for (RaidRewards.Loot l : RaidRewards.roll(RaidType.TOB, RaidMode.HARD, tob, 0, false, random).lootFor("a")) {
+                hardLate += RaidRewards.TOB_HARD_EXTRAS.stream().anyMatch(x -> x.item().equals(l.item())) ? 1 : 0;
+            }
+        }
+        assertTrue(holy > 120 && holy < 290, "holy ornament kit about 1/100: " + holy);
+        assertEquals(0, hardLate, "hard mode cosmetics need the challenge time");
+    }
+
+    @Test
+    void toaPointsAndLoot() {
+        assertEquals(0.75, RaidScaling.toaCommonScale(100), 1e-9);
+        assertEquals(1.0, RaidScaling.toaCommonScale(200), 1e-9);
+        assertEquals(1.15, RaidScaling.toaCommonScale(300), 1e-9);
+        assertEquals(1.55, RaidScaling.toaCommonScale(500), 1e-9);
+        assertEquals(1150, RaidScaling.toaCommonQuantity(20_000, 20, 300));
+        assertEquals(2, RaidScaling.toaCommonQuantity(20_000, 7_500, 300));
+        assertEquals(1, RaidScaling.toaCommonQuantity(20_000, 999_999, 300), "one cache of runes");
+        assertEquals(48_000, RaidScaling.toaCommonQuantity(80_000, 1, 100), "points capped at 64,000");
+        assertEquals(361, RaidScaling.toaPurpleLevel(500));
+        assertEquals(378, RaidScaling.toaPurpleLevel(600));
+        assertEquals(300, RaidScaling.toaPurpleLevel(300));
+        assertEquals(10_000 / 328_000.0, RaidScaling.toaPurpleChance(10_000, 500), 1e-12);
+        assertEquals(10_000 / 1_050_000.0, RaidScaling.toaPurpleChance(10_000, 0), 1e-12);
+        assertEquals(433, RaidScaling.toaPetLevel(500));
+        assertEquals(450, RaidScaling.toaPetLevel(600));
+        assertEquals(20_000 / (100.0 * (350_000 - 700 * 300)), RaidScaling.toaPetChance(20_000, 300), 1e-12);
+        assertEquals(0.1, RaidScaling.toaEliteClueChance(20_000), 1e-12);
+        assertEquals(2.0, RaidScaling.toaPointsPerDamage("baba", false));
+        assertEquals(2.5, RaidScaling.toaPointsPerDamage("tumekens_warden", true));
+        assertEquals(0.5, RaidScaling.toaPointsPerDamage("scarab_swarm", false));
+        assertEquals(1.0, RaidScaling.toaPointsPerDamage("akkha", false));
+        RaidRewards.Unique fang = RaidRewards.TOA_UNIQUES.get(0);
+        RaidRewards.Unique lightbearer = RaidRewards.TOA_UNIQUES.get(1);
+        assertEquals(30 * 50, RaidRewards.toaWeight(fang, 550));
+        assertEquals(35 * 50, RaidRewards.toaWeight(lightbearer, 500));
+        assertEquals(45 * 50, RaidRewards.toaWeight(lightbearer, 425));
+        assertEquals(66 * 50, RaidRewards.toaWeight(fang, 320));
+        assertEquals(70 * 50, RaidRewards.toaWeight(fang, 300));
+        assertEquals(220, RaidScaling.toaCoreChargeNeeded(880));
+        assertEquals(440, RaidScaling.toaCoreDamageCap(880));
+        Random random = new Random(8);
+        Map<String, Integer> pts = Map.of("a", 30_000, "b", 30_000);
+        for (int i = 0; i < 500; i++) {
+            RaidRewards.Result r = RaidRewards.roll(RaidType.TOA, RaidMode.NORMAL, pts, 400, false, random);
+            assertTrue(r.purpleRecipients().size() <= 1, "only one ToA unique per raid");
+            for (String p : pts.keySet()) {
+                if (!r.purple(p)) {
+                    long commons = r.lootFor(p).stream().filter(l -> RaidRewards.TOA_COMMONS.stream()
+                            .anyMatch(c -> c.item().equals(l.item()))).count();
+                    assertEquals(3, commons, "three common rolls");
+                }
+            }
+        }
+    }
+
+    private static List<Integer> toList(int[] a) {
+        return List.of(a[0], a[1]);
     }
 }

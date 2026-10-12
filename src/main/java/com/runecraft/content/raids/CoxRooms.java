@@ -585,6 +585,8 @@ final class CoxRooms {
         private int heat;
         private int needed;
         private boolean thawed;
+        /** OSRS: the braziers are worth up to max(6,000, 10 x the party's total Firemaking levels) points. */
+        private int pointsCap;
 
         IceDemon(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -615,6 +617,11 @@ final class CoxRooms {
         @Override
         public void start() {
             needed = 8 + 4 * (raid.partySize() - 1);
+            int firemaking = 0;
+            for (ServerPlayerEntity p : raid.players()) {
+                firemaking += level(p, Skill.FIREMAKING);
+            }
+            pointsCap = RaidScaling.coxIceDemonPointsCap(firemaking);
             demon = spawnBoss("cox_ice_demon", at(0, 0));
             if (demon != null) {
                 demon.setAiDisabled(true);
@@ -672,6 +679,8 @@ final class CoxRooms {
                 }
                 Inv.remove(player, "cox_kindling", n);
                 XpService.add(player, Skill.FIREMAKING, n * 25.0);
+                // The brazier points are shared out over the kindling the room needs.
+                raid.awardActionPoints(player, Math.max(0, Math.min(n, needed - heat)) * pointsCap / Math.max(1, needed));
                 heat += n;
                 RaidBuilder.set(world(), pos.up(), Blocks.CAMPFIRE.getDefaultState());
                 world().spawnParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 20, 0.3, 0.5, 0.3, 0.02);
@@ -695,6 +704,8 @@ final class CoxRooms {
         private final Set<BlockPos> searched = new HashSet<>();
         private int needed;
         private int deposited;
+        /** OSRS: the trough is worth up to max(4,500, 150 per 6 total Thieving levels) points. */
+        private int pointsCap;
 
         Thieving(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -725,6 +736,11 @@ final class CoxRooms {
         @Override
         public void start() {
             needed = 12 + 6 * (raid.partySize() - 1);
+            int thieving = 0;
+            for (ServerPlayerEntity p : raid.players()) {
+                thieving += level(p, Skill.THIEVING);
+            }
+            pointsCap = RaidScaling.coxThievingPointsCap(thieving);
         }
 
         @Override
@@ -774,6 +790,7 @@ final class CoxRooms {
                     return true;
                 }
                 Inv.remove(player, "cavern_grubs", n);
+                raid.awardActionPoints(player, Math.max(0, Math.min(n, needed - deposited)) * pointsCap / Math.max(1, needed));
                 deposited += n;
                 say(player.getName().getString() + " feeds " + n + " grubs to the scavenger. (" + Math.min(deposited, needed) + "/" + needed + ")");
                 if (deposited >= needed) {
@@ -789,6 +806,7 @@ final class CoxRooms {
     /** Tightrope: kill the deathly mages and rangers, then cross the rope over the chasm. */
     static final class Tightrope extends RoomLogic {
         private boolean crossed;
+        private boolean crystalTaken;
 
         Tightrope(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -834,11 +852,27 @@ final class CoxRooms {
                     Msg.red(p, "You fall into the chasm and climb back out.");
                 } else if (p.getX() > center().getX() + 4 && inside(p.getPos())) {
                     crossed = true;
+                    takeCrystal(p);
                 }
             }
             if (crossed && allDead()) {
                 complete();
             }
+        }
+
+        /** OSRS: the first player across claims the crystal on the far side, worth 2,000 points. */
+        private void takeCrystal(ServerPlayerEntity p) {
+            if (!crystalTaken) {
+                crystalTaken = true;
+                raid.awardActionPoints(p, RaidScaling.COX_TIGHTROPE_POINTS);
+                Msg.game(p, "You claim the crystal on the far side of the chasm.");
+            }
+        }
+
+        @Override
+        public void reset() {
+            super.reset();
+            crossed = false;
         }
 
         @Override
@@ -863,11 +897,118 @@ final class CoxRooms {
                 XpService.add(player, Skill.AGILITY, 40);
                 Msg.game(player, "You carefully cross the tightrope.");
                 crossed = true;
+                takeCrystal(player);
             } else {
                 raid.teleport(player, at(0, 3).down(3));
                 Msg.red(player, "You lose your balance!");
             }
             return true;
+        }
+    }
+
+    /**
+     * Crystal crabs, a simplified take on the OSRS light-beam puzzle: four dark crystals stand in the
+     * corners and crystal crabs scuttle about. Striking a crab makes it shimmer for a few seconds (and
+     * knocks it along); a shimmering crab that reaches a dark crystal focuses its light into it. Lighting
+     * every crystal finishes the room. The room is worth 1,600 points (OSRS), 400 to whoever lights each crystal.
+     */
+    static final class CrystalCrabs extends RoomLogic {
+        private static final int SHIMMER_TICKS = 8;
+        private final List<BlockPos> crystals = new ArrayList<>();
+        private final Set<BlockPos> lit = new HashSet<>();
+        private final Map<LivingEntity, Integer> shimmer = new HashMap<>();
+        private final Map<LivingEntity, java.util.UUID> striker = new HashMap<>();
+        private int wanted;
+
+        CrystalCrabs(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void decorate() {
+            crystals.clear();
+            for (int sx = -1; sx <= 1; sx += 2) {
+                for (int sz = -1; sz <= 1; sz += 2) {
+                    BlockPos p = at(sx * 13, sz * 13);
+                    crystals.add(p);
+                    RaidBuilder.set(world(), p, Blocks.TINTED_GLASS.getDefaultState());
+                    RaidBuilder.set(world(), p.up(), Blocks.TINTED_GLASS.getDefaultState());
+                }
+            }
+            RaidBuilder.set(world(), center().up(RaidBuilder.HEIGHT), Blocks.SEA_LANTERN.getDefaultState());
+        }
+
+        @Override
+        public void start() {
+            lit.clear();
+            shimmer.clear();
+            striker.clear();
+            wanted = Math.min(8, 4 + raid.partySize() / 2);
+            for (int i = 0; i < wanted; i++) {
+                spawnCrab();
+            }
+        }
+
+        private void spawnCrab() {
+            spawnMob("cox_crystal_crab", at(rnd().nextInt(13) - 6, rnd().nextInt(13) - 6), true);
+        }
+
+        @Override
+        public void onCreatureHit(ServerPlayerEntity player, LivingEntity target, int damage) {
+            if (!living("cox_crystal_crab").contains(target)) {
+                return;
+            }
+            // The crabs cannot be killed: every strike restores them and makes them shimmer.
+            raid.setCurrentHitpoints(target, raid.maxHitpoints(target));
+            shimmer.put(target, SHIMMER_TICKS);
+            striker.put(target, player.getUuid());
+            world().spawnParticles(ParticleTypes.END_ROD, target.getX(), target.getY() + 0.6, target.getZ(), 12, 0.4, 0.3, 0.4, 0.05);
+            Msg.action(player, "The crystal crab shimmers with light.");
+        }
+
+        @Override
+        public void gameTick(long tick) {
+            List<LivingEntity> crabs = living("cox_crystal_crab");
+            if (crabs.size() < wanted && tick % 10 == 0) {
+                spawnCrab();
+            }
+            for (LivingEntity crab : crabs) {
+                Integer left = shimmer.get(crab);
+                if (left == null || left <= 0) {
+                    continue;
+                }
+                shimmer.put(crab, left - 1);
+                world().spawnParticles(ParticleTypes.GLOW, crab.getX(), crab.getY() + 0.5, crab.getZ(), 3, 0.3, 0.2, 0.3, 0);
+                for (BlockPos c : crystals) {
+                    if (lit.contains(c) || RaidEffects.horizontalDistSq(crab.getPos(), Vec3d.ofBottomCenter(c)) > 2.5 * 2.5) {
+                        continue;
+                    }
+                    lit.add(c);
+                    shimmer.remove(crab);
+                    RaidBuilder.set(world(), c, Blocks.SEA_LANTERN.getDefaultState());
+                    RaidBuilder.set(world(), c.up(), Blocks.SEA_LANTERN.getDefaultState());
+                    ServerPlayerEntity who = world().getServer().getPlayerManager().getPlayer(striker.get(crab));
+                    if (who != null) {
+                        raid.awardActionPoints(who, RaidScaling.COX_CRABS_POINTS / crystals.size());
+                    }
+                    say("A crystal flares with light! (" + lit.size() + "/" + crystals.size() + ")");
+                    break;
+                }
+            }
+            if (!crystals.isEmpty() && lit.size() >= crystals.size()) {
+                say("Every crystal shines - the way onward opens.");
+                complete();
+            }
+        }
+
+        @Override
+        public void reset() {
+            super.reset();
+            for (BlockPos c : crystals) {
+                RaidBuilder.set(world(), c, Blocks.TINTED_GLASS.getDefaultState());
+                RaidBuilder.set(world(), c.up(), Blocks.TINTED_GLASS.getDefaultState());
+            }
+            lit.clear();
         }
     }
 
@@ -886,6 +1027,10 @@ final class CoxRooms {
         private String special;
         private boolean headExposed;
         private int clawSpecial;
+        /** Game tick one claw died while the other lived (-1 when both are alive or both dead). */
+        private long clawDownTick = -1;
+        /** Game ticks the left (melee) claw stays clenched. */
+        private int clenchTicks;
         /** Healing pools: a player standing in one heals the Olm. */
         private final List<Vec3d> pools = new ArrayList<>();
         private int poolTicks;
@@ -926,6 +1071,8 @@ final class CoxRooms {
             right = spawnBoss("olm_right_claw", at(15, -9));
             anchor(left);
             anchor(right);
+            clawDownTick = -1;
+            clenchTicks = 0;
             // OSRS: a phase never repeats the previous phase's type.
             String previous = special;
             do {
@@ -945,6 +1092,66 @@ final class CoxRooms {
         @Override
         public boolean bossVulnerable(DataBossEntity boss) {
             return boss != head || headExposed;
+        }
+
+        /**
+         * OSRS: a heavy melee hit on the left (melee) claw, at least 1/20 of its health, makes it clench:
+         * it takes no damage and the Olm stops its left-claw specials until it lets go after a while or the
+         * right claw is disabled. The claw never clenches in the final phase.
+         */
+        @Override
+        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            if (boss != left) {
+                return damage;
+            }
+            if (clenchTicks > 0) {
+                Msg.game(attacker, "The Great Olm's left claw is clenched shut.");
+                return 0;
+            }
+            boolean melee = type == AttackType.STAB || type == AttackType.SLASH || type == AttackType.CRUSH;
+            if (melee && phase < phases && alive(right) && damage >= RaidScaling.olmClenchThreshold(raid.maxHitpoints(left))) {
+                clenchTicks = RaidScaling.OLM_CLENCH_TICKS;
+                warn("The Great Olm's left claw clenches to protect itself!");
+            }
+            return damage;
+        }
+
+        /**
+         * OSRS: both claws must go down close together; if one stays dead too long while the other lives,
+         * the dead claw regrows at full health.
+         */
+        private void checkClaws(long tick) {
+            if (clenchTicks > 0) {
+                clenchTicks--;
+                if (!alive(right) || clenchTicks == 0) {
+                    clenchTicks = 0;
+                    if (alive(left)) {
+                        say("The Great Olm's left claw unclenches.");
+                    }
+                }
+            }
+            boolean l = alive(left);
+            boolean r = alive(right);
+            if (l == r) {
+                clawDownTick = -1;
+                return;
+            }
+            if (clawDownTick < 0) {
+                clawDownTick = tick;
+                warn("One of the Great Olm's claws is down - finish the other before it regrows!");
+                return;
+            }
+            if (tick - clawDownTick > RaidScaling.OLM_CLAW_REVIVE_TICKS) {
+                if (!l) {
+                    left = spawnBoss("olm_left_claw", at(15, 9));
+                    anchor(left);
+                } else {
+                    right = spawnBoss("olm_right_claw", at(15, -9));
+                    anchor(right);
+                }
+                clawDownTick = -1;
+                warn("The Great Olm's " + (l ? "right" : "left") + " claw regrows! Both claws must fall together.");
+            }
         }
 
         @Override
@@ -1002,10 +1209,11 @@ final class CoxRooms {
                 spheres(players);
             }
             tickPools();
-            if (alive(left) && tick % 20 == 10) {
+            checkClaws(tick);
+            if (alive(left) && clenchTicks == 0 && tick % 20 == 10) {
                 switch (clawSpecial++ % 4) {
                     case 0 -> {
-                        say("The Great Olm's left claw clenches - lightning strikes!");
+                        say("The Great Olm's left claw crackles - lightning strikes!");
                         for (int lane = 0; lane < 2; lane++) {
                             int z = rnd().nextInt(32) - 16;
                             for (int x = -18; x <= 12; x += 2) {

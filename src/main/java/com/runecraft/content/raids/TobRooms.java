@@ -79,6 +79,10 @@ final class TobRooms {
             for (int t : new int[]{70, 50, 30}) {
                 if (hp * 100 <= t && thresholds.add(t)) {
                     int n = Math.min(8, 2 + raid.partySize());
+                    if (hard()) {
+                        // Hard mode: the Maiden summons more Nylocas Matomenos. // approx: +50%
+                        n = Math.min(12, n + n / 2);
+                    }
                     for (int i = 0; i < n; i++) {
                         int z = (i % 2 == 0 ? -1 : 1) * 18;
                         spawnMob("nylocas_matomenos", at(4 + (i / 2) * 3, z), false);
@@ -88,7 +92,7 @@ final class TobRooms {
             }
             healers("nylocas_matomenos", maiden, 1.0, "A Nylocas Matomenos reaches the Maiden and heals her!");
             List<LivingEntity> spawns = living("blood_spawn");
-            if (tick % 20 == 0 && spawns.size() < 3) {
+            if (tick % 20 == 0 && spawns.size() < (hard() ? 5 : 3)) {
                 spawnMob("blood_spawn", at(11, rnd().nextInt(13) - 6), false);
             }
             for (LivingEntity s : spawns) {
@@ -344,6 +348,7 @@ final class TobRooms {
         private UUID runner;
         private int mazeTicks;
         private boolean maze66;
+        private boolean maze50;
         private boolean maze33;
         private int ballCooldown = 20;
 
@@ -379,6 +384,7 @@ final class TobRooms {
         @Override
         public void start() {
             maze66 = false;
+            maze50 = false;
             maze33 = false;
             runner = null;
             sotetseg = spawnBoss("sotetseg", at(13, 0));
@@ -431,8 +437,15 @@ final class TobRooms {
             if ((hp <= 0.66 && !maze66) || (hp <= 0.33 && !maze33)) {
                 if (hp <= 0.33) {
                     maze33 = true;
+                    maze50 = true;
                 }
                 maze66 = true;
+                startMaze();
+                return;
+            }
+            // Hard mode: Sotetseg drags a player into the shadow realm once more, at half health. // approx
+            if (hard() && hp <= 0.5 && !maze50) {
+                maze50 = true;
                 startMaze();
                 return;
             }
@@ -793,10 +806,12 @@ final class TobRooms {
                 return;
             }
             long t = raid.roomTicks();
-            if (t % 30 == 10) {
+            // Hard mode: Verzik spins webs more often and in greater number. // approx
+            if (t % (hard() ? 20 : 30) == 10) {
                 say("Verzik spins sticky webs!");
                 List<BlockPos> webs = new ArrayList<>();
-                for (int i = 0; i < 6 + players.size() * 2; i++) {
+                int count = 6 + players.size() * 2;
+                for (int i = 0; i < (hard() ? count * 3 / 2 : count); i++) {
                     ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
                     BlockPos w = p.getBlockPos().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3);
                     if (world().getBlockState(w).isAir() && inside(Vec3d.ofBottomCenter(w))) {
