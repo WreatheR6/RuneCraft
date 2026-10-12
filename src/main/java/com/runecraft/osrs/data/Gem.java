@@ -56,4 +56,59 @@ public enum Gem {
     public int value() {
         return value;
     }
+
+    /** Item left by a failed cut of a semi-precious gem. */
+    public static final String CRUSHED_GEM = "crushed_gem";
+
+    /**
+     * Crafting level from which semi-precious gems can no longer be crushed (OSRS Wiki: the success
+     * roll is overridden at 50 Crafting since the June 2025 Crafting changes; approx).
+     */
+    public static final int NO_CRUSH_LEVEL = 50;
+
+    /** True if cutting this gem can fail and crush it (opal, jade and red topaz). */
+    public boolean canCrush() {
+        return crushLow() > 0;
+    }
+
+    /**
+     * Cutting success "low" value out of 256 (OSRS Wiki uncut gem pages):
+     * opal (L-1)*122/98+129, jade (L-1)*145/98+101, red topaz (L-1)*150/98+91, all over 256.
+     */
+    public int crushLow() {
+        return switch (this) {
+            case OPAL -> 128;
+            case JADE -> 100;
+            case RED_TOPAZ -> 90;
+            default -> 0;
+        };
+    }
+
+    /** Cutting success "high" value out of 256. */
+    public int crushHigh() {
+        return switch (this) {
+            case OPAL -> 250;
+            case JADE -> 245;
+            case RED_TOPAZ -> 240;
+            default -> 0;
+        };
+    }
+
+    /** Crafting XP for crushing the gem (opal 3.8, jade 5, red topaz 6.3). */
+    public double crushXp() {
+        return switch (this) {
+            case OPAL -> 3.8;
+            case JADE -> 5.0;
+            case RED_TOPAZ -> 6.3;
+            default -> 0;
+        };
+    }
+
+    /** Chance to cut the gem successfully at a Crafting level. */
+    public double cutChance(int crafting) {
+        if (!canCrush() || crafting >= NO_CRUSH_LEVEL) {
+            return 1.0;
+        }
+        return com.runecraft.osrs.Chance.lerp(crafting, crushLow(), crushHigh());
+    }
 }

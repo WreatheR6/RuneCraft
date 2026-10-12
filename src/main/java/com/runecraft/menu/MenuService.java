@@ -164,7 +164,7 @@ public final class MenuService {
     private static void makeOnce(ServerPlayerEntity player, Recipe r, boolean range) {
         SkillSet skills = Players.data(player).skills();
         r.inputs().forEach((item, count) -> Inv.remove(player, item, count));
-        double chance = r.successChance();
+        double chance = r.skill() != null ? r.successChance(skills.currentLevel(r.skill())) : r.successChance();
         if (r.stopBurn() > 0) {
             BlockPos station = Players.data(player).menuStation;
             double reduction = range && station != null && com.runecraft.world.Gielinor.is(player)
@@ -190,9 +190,13 @@ public final class MenuService {
             Msg.action(player, successMessage(r));
             sound(player, r);
         } else {
+            if (r.failXpTenths() > 0 && r.skill() != null) {
+                XpService.addTenths(player, r.skill(), r.failXpTenths());
+            }
             if (r.failItem() != null) {
                 Inv.give(player, r.failItem(), 1);
-                Msg.action(player, "You accidentally burn the " + r.name().toLowerCase(Locale.ROOT) + ".");
+                Msg.action(player, r.stopBurn() > 0 ? "You accidentally burn the " + r.name().toLowerCase(Locale.ROOT) + "."
+                        : "You mis-hit the chisel and smash the " + r.name().toLowerCase(Locale.ROOT) + " to pieces!");
             } else {
                 Msg.action(player, "The ore is too impure and you fail to refine it.");
             }

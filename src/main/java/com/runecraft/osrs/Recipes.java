@@ -93,10 +93,10 @@ public final class Recipes {
             for (ArmourType a : ArmourType.values()) {
                 smith(a.itemId(tier), 1, tier, a.bars(), a.smithingLevel(tier));
             }
+            // Axes can be smithed; pickaxes can't be in OSRS (they are bought or dropped).
             for (ToolTier t : ToolTier.values()) {
                 if (t.metal() == tier) {
                     smith(t.axeId(), 1, tier, 1, tier.smithingLevel(1));
-                    smith(t.pickaxeId(), 1, tier, 2, tier.smithingLevel(5));
                 }
             }
             for (ArrowTier a : ArrowTier.values()) {
@@ -139,7 +139,7 @@ public final class Recipes {
         for (BowWood w : BowWood.values()) {
             for (boolean longbow : new boolean[]{false, true}) {
                 add(Recipe.builder("string_" + w.bowId(longbow, true), MenuType.FLETCHING, w.bowName(longbow, true))
-                        .skill(Skill.FLETCHING, w.level(longbow), w.xp(longbow)).in(w.bowId(longbow, false), 1)
+                        .skill(Skill.FLETCHING, w.level(longbow), w.stringXp(longbow)).in(w.bowId(longbow, false), 1)
                         .in("bow_string", 1).out(w.bowId(longbow, true), 1).ticks(2).build());
             }
         }
@@ -154,9 +154,13 @@ public final class Recipes {
 
         // --- Crafting ---
         for (Gem g : Gem.values()) {
-            add(Recipe.builder("cut_" + g.cutItem(), MenuType.GEM_CUTTING, g.displayName())
+            Recipe.Builder b = Recipe.builder("cut_" + g.cutItem(), MenuType.GEM_CUTTING, g.displayName())
                     .skill(Skill.CRAFTING, g.level(), g.xp()).in(g.uncutItem(), 1).out(g.cutItem(), 1)
-                    .tool("chisel").ticks(2).build());
+                    .tool("chisel").ticks(2);
+            if (g.canCrush()) {
+                b.roll(g.crushLow(), g.crushHigh(), Gem.NO_CRUSH_LEVEL, Gem.CRUSHED_GEM, g.crushXp());
+            }
+            add(b.build());
         }
         leather("leather_boots", 7, 16.3, 1);
         leather("leather_cowl", 9, 18.5, 1);

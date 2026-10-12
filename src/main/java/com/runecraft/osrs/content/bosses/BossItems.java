@@ -468,7 +468,7 @@ public final class BossItems {
     /** Combinations and crafting of boss uniques. */
     public static void recipes(Consumer<Recipe> recipes) {
         // Zulrah
-        recipes.accept(Recipe.builder("make_toxic_blowpipe", MenuType.FLETCHING, "Toxic blowpipe").skill(Skill.FLETCHING, 53, 120)
+        recipes.accept(Recipe.builder("make_toxic_blowpipe", MenuType.FLETCHING, "Toxic blowpipe").skill(Skill.FLETCHING, 78, 120)
                 .in("tanzanite_fang", 1).out("toxic_blowpipe", 1).tool("chisel").ticks(3).build());
         recipes.accept(Recipe.builder("make_serpentine_helm", MenuType.GEM_CUTTING, "Serpentine helm").skill(Skill.CRAFTING, 52, 120)
                 .in("serpentine_visage", 1).out("serpentine_helm", 1).tool("chisel").ticks(3).build());

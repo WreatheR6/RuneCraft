@@ -23,6 +23,10 @@ public final class Recipe {
     private final int stopBurn;
     private final int gauntletStopBurn;
     private final String requiredTool;
+    private final int rollLow;
+    private final int rollHigh;
+    private final int rollCertainAt;
+    private final int failXpTenths;
 
     private Recipe(Builder b) {
         this.id = b.id;
@@ -39,6 +43,10 @@ public final class Recipe {
         this.stopBurn = b.stopBurn;
         this.gauntletStopBurn = b.gauntletStopBurn;
         this.requiredTool = b.requiredTool;
+        this.rollLow = b.rollLow;
+        this.rollHigh = b.rollHigh;
+        this.rollCertainAt = b.rollCertainAt;
+        this.failXpTenths = b.failXpTenths;
     }
 
     public String id() {
@@ -81,6 +89,25 @@ public final class Recipe {
     /** Fixed success chance (e.g. 0.5 for iron bars); 1.0 for most recipes. */
     public double successChance() {
         return successChance;
+    }
+
+    /**
+     * Success chance at a skill level: the level-based skilling roll when the recipe has one (e.g.
+     * cutting opals, jades and red topaz can crush the gem), otherwise {@link #successChance()}.
+     */
+    public double successChance(int level) {
+        if (rollHigh <= 0) {
+            return successChance;
+        }
+        if (rollCertainAt > 0 && level >= rollCertainAt) {
+            return 1.0;
+        }
+        return Chance.lerp(level, rollLow, rollHigh);
+    }
+
+    /** XP (in tenths) granted when the recipe fails (e.g. 3.8 Crafting XP for a crushed opal). */
+    public int failXpTenths() {
+        return failXpTenths;
     }
 
     /** Item given on failure (burnt food), or null. */
@@ -163,6 +190,10 @@ public final class Recipe {
         private int stopBurn;
         private int gauntletStopBurn;
         private String requiredTool;
+        private int rollLow;
+        private int rollHigh;
+        private int rollCertainAt;
+        private int failXpTenths;
 
         private Builder(String id, MenuType menu, String name) {
             this.id = id;
@@ -206,6 +237,20 @@ public final class Recipe {
         /** Stop-burn level with cooking gauntlets (lobster, swordfish, monkfish, shark, anglerfish). */
         public Builder gauntlets(int stopBurn) {
             this.gauntletStopBurn = stopBurn;
+            return this;
+        }
+
+        /**
+         * Level-based success: the OSRS skilling roll between {@code low} (level 1) and {@code high}
+         * (level 99) out of 256, always succeeding from {@code certainAt} (0 = never). A failure
+         * gives {@code failItem} and {@code failXp}.
+         */
+        public Builder roll(int low, int high, int certainAt, String failItem, double failXp) {
+            this.rollLow = low;
+            this.rollHigh = high;
+            this.rollCertainAt = certainAt;
+            this.failItem = failItem;
+            this.failXpTenths = Experience.tenths(failXp);
             return this;
         }
 

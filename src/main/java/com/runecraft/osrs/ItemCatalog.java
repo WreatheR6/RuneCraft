@@ -237,6 +237,8 @@ public final class ItemCatalog {
         for (Gem g : Gem.values()) {
             add(g.cutItem(), g.displayName(), Kind.SIMPLE, "gem", g.color()).value(g.value());
         }
+        add(Gem.CRUSHED_GEM, "Crushed gem", Kind.SIMPLE, "gem", 0xB8B8B0).value(2)
+                .examine("Crushed by a careless crafter.");
         add("gold_ring", "Gold ring", Kind.SIMPLE, "ring", 0xE8C030).value(350);
         add("gold_necklace", "Gold necklace", Kind.SIMPLE, "necklace", 0xE8C030).value(450);
         add("gold_amulet", "Gold amulet", Kind.SIMPLE, "amulet", 0xE8C030).value(350);

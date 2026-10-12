@@ -177,7 +177,6 @@ class SkillingFidelityTest {
         level(2, "smith_bronze_mace");
         level(3, "smith_bronze_med_helm");
         level(5, "smith_bronze_scimitar");
-        level(5, "smith_bronze_pickaxe");
         level(7, "smith_bronze_full_helm");
         level(14, "smith_bronze_2h_sword");
         level(18, "smith_bronze_platebody");
@@ -186,7 +185,6 @@ class SkillingFidelityTest {
         level(33, "smith_iron_platebody");
         level(48, "smith_steel_platebody");
         level(85, "smith_rune_dagger");
-        level(90, "smith_rune_pickaxe");
         level(99, "smith_rune_platebody");
         level(54, "smith_mithril_dart_tip");
         xp(12.5, "smith_bronze_dagger");

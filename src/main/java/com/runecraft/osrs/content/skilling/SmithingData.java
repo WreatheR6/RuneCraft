@@ -137,6 +137,22 @@ public final class SmithingData extends SkillingPart {
             }
             smith(out, t.id() + "_limbs", (t == MetalTier.RUNE ? "Runite" : t.displayName()) + " limbs", 1, t, 1, limbsLevel(t));
         }
+        // Barbarian smithing (Barbarian Training): spears and hastae take one bar plus a log of the tier's wood,
+        // and give twice the tier's XP per bar (bronze 25 ... rune 150).
+        String[] spearLogs = {"logs", "oak_logs", "willow_logs", "maple_logs", "yew_logs", "magic_logs"};
+        for (int i = 0; i < SMITHABLE.length; i++) {
+            MetalTier t = SMITHABLE[i];
+            int level = t.smithingLevel(5);
+            List<String> heads = t == MetalTier.MITHRIL ? List.of("spear", "hasta") : List.of("spear");
+            for (String head : heads) {
+                String id = t.id() + "_" + head;
+                out.accept(r("smith_" + id, MenuType.SMITHING, t.displayName() + " " + head, Skill.SMITHING, level, t.xpPerBar() * 2)
+                        .in(t.bar(), 1).in(spearLogs[i], 1).out(id, 1).tool("hammer").ticks(4).build());
+            }
+        }
+        // Dragon sq shield: both halves joined on an anvil (Legends' Quest gates wearing it).
+        out.accept(r("smith_dragon_sq_shield", MenuType.SMITHING, "Dragon sq shield", Skill.SMITHING, 60, 75.0)
+                .in("shield_left_half", 1).in("shield_right_half", 1).out("dragon_sq_shield", 1).tool("hammer").ticks(4).build());
         smith(out, "steel_studs", "Steel studs", 1, MetalTier.STEEL, 1, 36);
         out.accept(r("smith_cannonball", MenuType.SMELTING, "4 cannonballs", Skill.SMITHING, 35, 25.6).in("steel_bar", 1)
                 .out("cannonball", 4).tool("ammo_mould").ticks(5).build());

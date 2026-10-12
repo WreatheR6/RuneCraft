@@ -215,7 +215,7 @@ public final class HerbloreData extends SkillingPart {
         mix(out, "antidote_plus", 68, 155.0, "antidote_plus_unf", "yew_roots");
         out.accept(r("mix_antifire_potion", H, "Antifire potion", Skill.HERBLORE, 69, 157.5).in("lantadyme_potion_unf", 1)
                 .in("dragon_scale_dust", 1).out("antifire_potion", 1).ticks(2).build());
-        mix(out, "weapon_poison_plus", 73, 165.0, "weapon_poison_plus_unf", "red_spiders_eggs");
+        mix(out, "weapon_poison_plus", 73, 190.0, "weapon_poison_plus_unf", "red_spiders_eggs");
         out.accept(r("mix_stamina_potion", H, "Stamina potion", Skill.HERBLORE, 77, 102.0).in("super_energy", 1)
                 .in("amylase_crystal", 4).out("stamina_potion", 1).ticks(2).build());
         mix(out, "zamorak_brew", 78, 175.0, "torstol_potion_unf", "jangerberries");
@@ -236,10 +236,10 @@ public final class HerbloreData extends SkillingPart {
                 .out("anti_venom_plus", 1).ticks(2).build());
         out.accept(r("mix_extended_super_antifire", H, "Extended super antifire", Skill.HERBLORE, 98, 160.0).in("super_antifire", 1)
                 .in("lava_scale_shard", 4).out("extended_super_antifire", 1).ticks(2).build());
-        // Divine potions: base potion + 2 crystal dust (1.5 XP per dose in-game, 4 doses).
+        // Divine potions: 4-dose base potion + 4 crystal dust (1 per dose); 0.5 XP per dose, 2 XP per potion.
         divine(out, "divine_super_attack", 70, "super_attack");
-        divine(out, "divine_super_strength", 75, "super_strength");
-        divine(out, "divine_super_defence", 76, "super_defence");
+        divine(out, "divine_super_strength", 70, "super_strength");
+        divine(out, "divine_super_defence", 70, "super_defence");
         divine(out, "divine_ranging", 74, "ranging_potion");
         divine(out, "divine_magic", 78, "magic_potion");
         divine(out, "divine_bastion", 86, "bastion_potion");
@@ -260,7 +260,7 @@ public final class HerbloreData extends SkillingPart {
 
     private static void divine(Consumer<Recipe> out, String id, int level, String base) {
         ModPotion p = potion(id);
-        out.accept(r("mix_" + id, MenuType.HERBLORE, p.name(), Skill.HERBLORE, level, 6.0).in(base, 1).in("crystal_dust", 2)
+        out.accept(r("mix_" + id, MenuType.HERBLORE, p.name(), Skill.HERBLORE, level, 2.0).in(base, 1).in("crystal_dust", 4)
                 .out(id, 1).ticks(2).build());
     }
 }

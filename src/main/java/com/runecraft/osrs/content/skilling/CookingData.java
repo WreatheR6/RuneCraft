@@ -52,13 +52,13 @@ public final class CookingData extends SkillingPart {
             new NewFish("sea_turtle", "Sea turtle", 79, 38.0, 82, 211.3, 21, 100, 0x5A7A3A, 900),
             new NewFish("manta_ray", "Manta ray", 81, 46.0, 91, 216.2, 22, 100, 0x3A4A6A, 1100),
             // Sailing deep sea trawling catches (Sailing, Nov 2025): Fishing level/XP per trawling-net catch,
-            // Cooking level and heal from the OSRS Wiki; yellowfin/bluefin Cooking XP and stop-burn levels approx.
+            // Cooking level/XP and heal from the OSRS Wiki (RuneLite skill calculator); stop-burn levels approx.
             new NewFish("giant_krill", "Giant krill", 69, 112.5, 69, 177.5, 17, 89, 0xE07A6A, 10),
-            new NewFish("haddock", "Haddock", 73, 128.5, 73, 180.5, 18, 93, 0xB0A080, 50),
-            new NewFish("yellowfin", "Yellowfin", 79, 155.5, 79, 195.0, 19, 99, 0xD0B030, 160),
+            new NewFish("haddock", "Haddock", 73, 128.5, 73, 180.0, 18, 93, 0xB0A080, 50),
+            new NewFish("yellowfin", "Yellowfin", 79, 155.5, 79, 200.0, 19, 99, 0xD0B030, 160),
             new NewFish("halibut", "Halibut", 83, 195.5, 83, 212.5, 20, 100, 0xA09080, 300),
-            new NewFish("bluefin", "Bluefin", 87, 220.5, 87, 220.0, 22, 100, 0x305080, 600),
-            new NewFish("marlin", "Marlin", 91, 265.5, 91, 225.0, 24, 100, 0x3A5AA0, 1200));
+            new NewFish("bluefin", "Bluefin", 87, 220.5, 87, 215.0, 22, 100, 0x305080, 600),
+            new NewFish("marlin", "Marlin", 91, 265.5, 93, 225.0, 24, 100, 0x3A5AA0, 1200));
 
     /** Foods eaten in two (or three) bites: eating {@code full} heals {@code heal} and leaves {@code next}. */
     public record Bite(String full, String next, int heal) {

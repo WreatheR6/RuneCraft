@@ -56,6 +56,11 @@ public enum BowWood {
         return longbow ? longXp : shortXp;
     }
 
+    /** XP for stringing the bow: same as cutting it, except the maple longbow (58.3 cut, 58.2 strung). */
+    public double stringXp(boolean longbow) {
+        return this == MAPLE && longbow ? 58.2 : xp(longbow);
+    }
+
     public int rangedAttack() {
         return rangedAttack;
     }

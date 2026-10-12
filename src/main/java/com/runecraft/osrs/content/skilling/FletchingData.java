@@ -45,7 +45,7 @@ public final class FletchingData extends SkillingPart {
             new Stock("wooden_stock", "logs", 9, 6.0, 0x6B4A2A), new Stock("oak_stock", "oak_logs", 24, 16.0, 0x8A6A3A),
             new Stock("willow_stock", "willow_logs", 39, 22.0, 0x6E7A3A), new Stock("teak_stock", "teak_logs", 46, 27.0, 0x9C7A4A),
             new Stock("maple_stock", "maple_logs", 54, 32.0, 0xA0502A), new Stock("mahogany_stock", "mahogany_logs", 61, 41.0, 0x6A2A1A),
-            new Stock("yew_stock", "yew_logs", 69, 50.0, 0x5A4A2A), new Stock("magic_stock", "magic_logs", 78, 57.0, 0x3A8AA8)};
+            new Stock("yew_stock", "yew_logs", 69, 50.0, 0x5A4A2A), new Stock("magic_stock", "magic_logs", 78, 70.0, 0x3A8AA8)};
 
     /** Metal bolts: tier prefix, fletching level, XP per bolt, ranged strength. */
     private record Bolt(String prefix, String name, int level, double xpEach, int strength, int color) {
@@ -104,7 +104,7 @@ public final class FletchingData extends SkillingPart {
     private static final Shield[] SHIELDS = {
             new Shield("oak_shield", "Oak shield", "oak_logs", 27, 50.0, 8, 0x8A6A3A),
             new Shield("willow_shield", "Willow shield", "willow_logs", 42, 83.0, 12, 0x6E7A3A),
-            new Shield("maple_shield", "Maple shield", "maple_logs", 57, 100.0, 16, 0xA0502A),
+            new Shield("maple_shield", "Maple shield", "maple_logs", 57, 116.5, 16, 0xA0502A),
             new Shield("yew_shield", "Yew shield", "yew_logs", 72, 150.0, 21, 0x5A4A2A),
             new Shield("magic_shield", "Magic shield", "magic_logs", 87, 183.0, 26, 0x3A8AA8),
             new Shield("redwood_shield", "Redwood shield", "redwood_logs", 92, 216.0, 31, 0xA03A2A)};
