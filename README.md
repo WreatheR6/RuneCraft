@@ -81,6 +81,18 @@ Old School RuneScape for **Minecraft 1.20.1 (Fabric)**. It adds a separate dimen
 * **Player-owned houses:** portals in all eight towns, 18 rooms and 133 furniture pieces. Altars, pools, lecterns, jewellery boxes and portals all work. Use `/house` to build.
 * **Sailing:** buy boats at shipwrights and sail them on water. There are charter docks at 12 ports and voyages that give Sailing XP.
 
+## Accuracy pass (checked against OSRS Wiki data)
+* Monster and boss stats were checked against the wiki DPS-calculator data, and equipment stats against the wiki item data.
+* Item values, alchemy prices, GE prices and buy limits, and shop stock and rates follow wiki data.
+* Skills, combat formulas, prayers and spells, Slayer, quests, minigames, raids, achievement diaries, clue scrolls and the collection log were audited and corrected.
+* Combat now includes:
+  * single- and multi-combat zones and auto-retaliate;
+  * NPC tolerance, poison and venom;
+  * Tele Block and set effects.
+* Barrows equipment degrades and is repaired by Bob, and crystal, trident, blowpipe and similar items use charges.
+* Guilds and restricted areas check their OSRS requirements.
+* Remaining guesses are marked `// approx` in the code.
+
 ## Collection log
 Pages for bosses, raids, clues, minigames, slayer, quests and other activities.
 
