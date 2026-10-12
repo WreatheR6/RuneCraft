@@ -32,12 +32,14 @@ public final class SlayerContent implements ContentModule {
     @Override
     public void items(ItemSink items) {
         SlayerItems.add(items);
+        TormentedDemons.items(items);
     }
 
     @Override
     public void recipes(Consumer<Recipe> recipes) {
         recipes.accept(Recipe.builder("broad_arrows", MenuType.FLETCHING, "Broad arrows").skill(Skill.FLETCHING, 52, 150)
                 .in("headless_arrow", 15).in("broad_arrowheads", 15).out("broad_arrows", 15).ticks(2).build());
+        TormentedDemons.recipes(recipes);
     }
 
     /** Every creature this module adds (natural spawns plus superiors). Built once. */
@@ -50,6 +52,7 @@ public final class SlayerContent implements ContentModule {
             list.addAll(Dragons.all());
             list.addAll(SlayerExtraMonsters.all());
             list.addAll(SpawnVariants.all());
+            list.add(TormentedDemons.monster());
             list.addAll(Superiors.build(list));
             monsters = Collections.unmodifiableList(list);
         }
@@ -104,7 +107,7 @@ public final class SlayerContent implements ContentModule {
     public List<CollectionLogData.Page> collectionLog() {
         Set<String> slayer = new LinkedHashSet<>();
         for (MonsterDef m : allMonsters()) {
-            if (Superiors.byId(m.id) != null) {
+            if (Superiors.byId(m.id) != null || m.id.equals(TormentedDemons.ID)) { // own page
                 continue;
             }
             for (Drop d : m.drops) {
@@ -115,6 +118,7 @@ public final class SlayerContent implements ContentModule {
         }
         return List.of(
                 new CollectionLogData.Page("Other", "Slayer", new ArrayList<>(slayer)),
+                TormentedDemons.collectionLog(),
                 new CollectionLogData.Page("Other", "Superior slayer creatures",
                         List.of("imbued_heart", "eternal_gem", "dust_battlestaff", "mist_battlestaff")),
                 new CollectionLogData.Page("Other", "Dragons", List.of("draconic_visage", "dragon_limbs", "dragon_metal_slice",

@@ -30,6 +30,7 @@ public final class SlayerHooks implements ModuleHooks {
         // once the server starts, she runs the quest until it is complete and gives Slayer tasks after.
         ServerLifecycleEvents.SERVER_STARTED.register(server -> wrapQuestMasters());
         SlayerCombat.register();
+        TormentedDemonCombat.register();
         SlayerCommands.register();
         BlockHooks.register("brimstone_chest", (player, pos, state) -> openChest(player, "brimstone_key",
                 "brimstone chest", SlayerChests.BRIMSTONE_MAIN, SlayerChests.BRIMSTONE_RARE));

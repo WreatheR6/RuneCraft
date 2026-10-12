@@ -11,7 +11,7 @@ import static com.runecraft.osrs.content.dungeons.Cave.rc;
 /**
  * Misthalin's dungeons: the Edgeville Dungeon (with its Wilderness half), the Varrock Sewers, the
  * Stronghold of Security under Barbarian Village, the caves below the Lumbridge Castle cellar with
- * the Dorgesh-Kaan mine and city, the Lumbridge Swamp Caves and the Abyss (entered near the Mage of
+ * the Dorgesh-Kaan mine and city, the Lumbridge Swamp Caves (with the Ancient Guthix Temple) and the Abyss (entered near the Mage of
  * Zamorak in the Wilderness).
  */
 final class DungeonsMisthalin {
@@ -305,7 +305,14 @@ final class DungeonsMisthalin {
         c.room(ex - 70, ez - 30, ex - 44, ez - 4, f, 6);            // cave crawlers
         c.hallZ(ex + 42, ez + 40, ex + 42, ez + 64, f, 3, 4);       // wall beast corridor
         c.room(ex + 30, ez + 64, ex + 60, ez + 82, f, 6);           // the Tears of Guthix pool
+        c.hall(ex + 60, ez + 73, ex + 84, ez + 73, f, 3, 4);        // on past the pool (While Guthix Sleeps)
+        c.room(ex + 84, ez + 60, ex + 116, ez + 88, f, 8);          // the Ancient Guthix Temple: tormented demons
         c.carve();
+        for (int px : new int[]{ex + 88, ex + 112}) {
+            for (int pz : new int[]{ez + 64, ez + 84}) {
+                c.fill(px, f + 1, pz, px, f + 7, pz, mc("chiseled_stone_bricks"));
+            }
+        }
         c.pool(ex - 36, ez + 30, ex - 28, ez + 36, f, mc("water"));
         c.pool(ex + 38, ez + 68, ex + 52, ez + 78, f, mc("water"));
         for (int z = ez + 44; z <= ez + 62; z += 6) {
@@ -317,6 +324,7 @@ final class DungeonsMisthalin {
         c.camp(ex - 38, ez + 28, ex - 14, ez + 44, f, 4, 25, "cave_slime");
         c.camp(ex - 68, ez - 28, ex - 46, ez - 6, f, 4, 25, "cave_crawler");
         c.camp(ex + 41, ez + 42, ex + 43, ez + 62, f, 2, 50, "wall_beast");
+        c.camp(ex + 90, ez + 66, ex + 110, ez + 82, f, 3, 50, "tormented_demon"); // respawn approx
         return c.build();
     }
 

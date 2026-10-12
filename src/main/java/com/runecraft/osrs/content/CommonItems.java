@@ -35,6 +35,17 @@ public final class CommonItems {
             items.add("clue_scroll_" + tier, "Clue scroll (" + tier + ")", Kind.SIMPLE, "note", 0xE8D8A0).value(1).stack(1)
                     .examine("A " + name.toLowerCase() + " clue scroll.");
         }
+        // Boss/slayer materials upgraded by other modules: Doom of Mokhaiotl and Maggot King drops (bosses) become
+        // confliction gauntlets and the necklace of rupture (systems); the tormented synapse (slayer, Tormented Demons)
+        // becomes the purging staff (skilling) and the scorching bow (slayer).
+        items.add("mokhaiotl_cloth", "Mokhaiotl cloth", Kind.SIMPLE, "cloth", 0x6A3A8A).value(30_000_000).stack(1)
+                .examine("Woven from the Doom's flesh. Upgrades a tormented bracelet into confliction gauntlets.");
+        items.add("demon_tear", "Demon tear", Kind.SIMPLE, "gem", 0xC03050).value(1).stack(100000)
+                .examine("Charges the eye of ayak.");
+        items.add("elder_venator_fang", "Elder venator fang", Kind.SIMPLE, "fang", 0xE0D0B0).value(40_000_000).stack(1)
+                .examine("Combine with a necklace of anguish to make a necklace of rupture (84 Crafting).");
+        items.add("tormented_synapse", "Tormented synapse", Kind.SIMPLE, "orb", 0xE05020).value(800_000).stack(1)
+                .examine("A twitching synapse from a tormented demon. Its fiery energy could empower a demonbane weapon.");
         CommonEquipment.add(items);
     }
 }

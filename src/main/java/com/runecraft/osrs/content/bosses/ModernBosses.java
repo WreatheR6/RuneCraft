@@ -220,15 +220,13 @@ public final class ModernBosses {
         BossItems.petItem(items, "pet_yami", "Yami", "Yama", 0x5A2A4A);
 
         // ---------------- Doom of Mokhaiotl ----------------
-        BossItems.simpleItem(items, "mokhaiotl_cloth", "Mokhaiotl cloth", "cloth", 0x6A3A8A, 30_000_000,
-                "Woven from the Doom's flesh. Upgrades a tormented bracelet into confliction gauntlets.");
+        // mokhaiotl_cloth, demon_tear and the Maggot King's elder_venator_fang are in osrs/content/CommonItems (the systems
+        // module upgrades them into confliction gauntlets and the necklace of rupture).
         BossItems.weaponItem(items, "eye_of_ayak", "Eye of ayak", Kind.STAFF, "staff_orb", 0x8A2A6A, 50_000_000,
                 st(0, 0, 0, 30, 0, 1, 5, 5, 10, 0, 0, 0, 0, 2), 3, AttackType.MAGIC, WeaponClass.STAFF, Skill.MAGIC, 82)
                 .examine("A demonic eye on a staff. Charged with demon tears.");
         BossItems.wearItem(items, "avernic_treads", "Avernic treads", Kind.ARMOUR, "boots", 0x8A1A2A, 30_000_000, Slot.FEET,
                 st(5, 5, 5, 11, 15, 21, 25, 25, 10, 10, 4, 2, 1, 0), Skill.DEFENCE, 85).examine("Tribrid boots from the depths.");
-        items.add("demon_tear", "Demon tear", Kind.SIMPLE, "gem", 0xC03050).value(1).stack(100000)
-                .examine("Charges the eye of ayak.");
         BossItems.petItem(items, "pet_dom", "Dom", "Doom of Mokhaiotl", 0x6A3A8A);
 
         // ---------------- Shellbane gryphon ----------------
@@ -249,8 +247,6 @@ public final class ModernBosses {
         BossItems.petItem(items, "pet_beef", "Beef", "Brutus", 0x6A4A2A);
 
         // ---------------- Maggot King ----------------
-        BossItems.simpleItem(items, "elder_venator_fang", "Elder venator fang", "fang", 0xE0D0B0, 40_000_000,
-                "Combine with a necklace of anguish to make a necklace of rupture (84 Crafting).");
         BossItems.weaponItem(items, "crimson_kisten", "Crimson kisten", Kind.MELEE_WEAPON, "club", 0x8A1A2A, 30_000_000,
                 st(0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 56, 0, 0, 0), 4, AttackType.CRUSH, WeaponClass.MELEE, Skill.ATTACK, 80)
                 .examine("A blood-red two-handed club.");
