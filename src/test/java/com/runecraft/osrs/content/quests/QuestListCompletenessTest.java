@@ -27,8 +27,10 @@ class QuestListCompletenessTest {
             Map.entry("children_of_the_sun", 1), Map.entry("twilights_promise", 1), Map.entry("perilous_moons", 2),
             Map.entry("at_first_light", 1), Map.entry("the_ribbiting_tale_of_a_lily_pad_labour_dispute", 1),
             Map.entry("death_on_the_isle", 2), Map.entry("meat_and_greet", 1), Map.entry("the_heart_of_darkness", 2),
-            Map.entry("ethically_acquired_antiquities", 1), Map.entry("scrambled", 1), Map.entry("shadows_of_custodia", 1),
-            Map.entry("the_final_dawn", 2));
+            Map.entry("ethically_acquired_antiquities", 1), Map.entry("scrambled", 1), Map.entry("shadows_of_custodia", 2),
+            Map.entry("the_final_dawn", 3), Map.entry("the_ides_of_milk", 1), Map.entry("prying_times", 1),
+            Map.entry("current_affairs", 1), Map.entry("troubled_tortugans", 1), Map.entry("the_red_reef", 2),
+            Map.entry("fallen_from_grace", 2), Map.entry("the_blood_moon_rises", 4));
 
     private static final String[] MINIQUESTS = {"alfred_grimhands_barcrawl", "enter_the_abyss", "architectural_alliance",
             "barbarian_training", "bear_your_soul", "curse_of_the_empty_lord", "daddys_home", "enchanted_key", "family_pest",
@@ -56,10 +58,12 @@ class QuestListCompletenessTest {
 
     @Test
     void totalQuestPointsMatchOsrs() {
-        // 321 quest points through The Curse of Arrav, plus later releases (Scrambled!, Shadows of Custodia, The Final Dawn, Pandemonium).
-        assertEquals(326, Quest.totalQuestPoints());
-        assertEquals(304, QuestBook.get().questPoints());
-        assertTrue(ContentRegistry.quests().size() >= 196, "quests: " + ContentRegistry.quests().size());
+        // 340 quest points (October 2026): 321 through The Curse of Arrav, then Scrambled! (1), Shadows of Custodia (2),
+        // The Final Dawn (3), Pandemonium (1), The Ides of Milk (1), Prying Times (1), Current Affairs (1),
+        // Troubled Tortugans (1), The Red Reef (2), Fallen from Grace (2) and The Blood Moon Rises (4).
+        assertEquals(340, Quest.totalQuestPoints());
+        assertEquals(318, QuestBook.get().questPoints());
+        assertTrue(ContentRegistry.quests().size() >= 203, "quests: " + ContentRegistry.quests().size());
     }
 
     @Test

@@ -109,6 +109,8 @@ public final class QuestBook {
             VarlamoreQuests.register(b);
             Miniquests.register(b);
             WiseOldMan.register(b);
+            // Registered last: Cast derives NPC colours from declaration order, so earlier NPCs keep theirs.
+            LateQuestsD.register(b);
             b.quests.forEach(QuestSpec::seal);
             instance = b;
         }

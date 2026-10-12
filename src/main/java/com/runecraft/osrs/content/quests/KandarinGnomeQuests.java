@@ -69,7 +69,8 @@ final class KandarinGnomeQuests {
                 .attack(AttackDef.of("claw", AttackType.SLASH, 16, 3, 10))
                 .drops(Drop.always("bones")).size(1.0f, 2.4f, 1.0f).at("grand_tree_mine").arena(10, "crypt"));
         b.quest("the_grand_tree", "The Grand Tree", Difficulty.EXPERIENCED, 5)
-                .req(Skill.AGILITY, 25).xp(Skill.ATTACK, 7900).xp(Skill.AGILITY, 18400).xp(Skill.MAGIC, 2150)
+                .xp(Skill.ATTACK, 18400).xp(Skill.AGILITY, 7900).xp(Skill.MAGIC, 2150) // OSRS (current quest XP rewards)
+                .req(Skill.AGILITY, 25)
                 .stage("I can start this quest by speaking to King Narnode Shareen under the Grand Tree. (Requires 25 Agility.)")
                 .talk("king_narnode").give("bark_sample").say("The Grand Tree is dying! Take this bark sample to the wise gnome Hazelmere, on the island east of Yanille.")
                 .stage("I should take the bark sample to Hazelmere.")

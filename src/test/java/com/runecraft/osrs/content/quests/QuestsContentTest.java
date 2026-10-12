@@ -217,7 +217,7 @@ class QuestsContentTest {
     @Test
     void placesUseRealCoordinates() {
         for (PlaceDef p : BOOK.places) {
-            assertTrue(p.osrsX() > 1000 && p.osrsX() < 4000 && p.osrsY() > 2400 && p.osrsY() < 4100, p.id() + " coordinates");
+            assertTrue(p.osrsX() > 1000 && p.osrsX() < 4000 && p.osrsY() > 2100 && p.osrsY() < 4100, p.id() + " coordinates"); // the Sailing seas reach y 2200
         }
         int qp = 0;
         for (QuestDef d : BOOK.questDefs()) {

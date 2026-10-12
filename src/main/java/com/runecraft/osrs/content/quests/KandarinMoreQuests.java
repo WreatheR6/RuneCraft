@@ -166,10 +166,10 @@ final class KandarinMoreQuests {
                 .drops(Drop.always("big_bones")).skin(0x9AA06B, 0x5A2A6A, 0x3A1A4A, 0xC0A040).size(1.0f, 2.6f, 1.4f)
                 .at("gu_tanoth").arena(9, "jungle"));
         b.quest("watchtower", "Watchtower", Difficulty.INTERMEDIATE, 4)
-                .req(Skill.MAGIC, 14).req(Skill.THIEVING, 15).req(Skill.AGILITY, 25).req(Skill.HERBLORE, 14).req(Skill.MINING, 40)
+                .req(Skill.MAGIC, 15).req(Skill.THIEVING, 15).req(Skill.AGILITY, 25).req(Skill.HERBLORE, 14).req(Skill.MINING, 40)
                 .xp(Skill.MAGIC, 15250).reward("coins:5000")
                 .unlock("The Watchtower Teleport spell")
-                .stage("I can start this quest by speaking to the Watchtower Wizard north of Yanille. (Requires 14 Magic, 15 Thieving, 25 Agility, 14 Herblore, 40 Mining.)")
+                .stage("I can start this quest by speaking to the Watchtower Wizard north of Yanille. (Requires 15 Magic, 15 Thieving, 25 Agility, 14 Herblore, 40 Mining.)")
                 .talk("watchtower_wizard").say("The ogres have stolen the four power crystals of my watchtower's shield! Without them Yanille is defenceless.")
                 .stage("I should win the trust of the ogres of Gu'Tanoth and recover the power crystals. Og knows where they are.")
                 .talk("og_ogre").take("big_bones:2").say("Human bring bones? Og like! Crystals with shamans. Shamans bad. Kill them, Og not care.")
@@ -295,8 +295,8 @@ final class KandarinMoreQuests {
                 .attack(AttackDef.melee(1)).drops(Drop.always("bones"))
                 .skin(0x6A2A6A, 0x4A1A4A, 0x3A0A3A, 0x8A3A8A).size(0.8f, 1.2f, 1.0f).at("glouphrie_cave").arena(7, "void"));
         b.quest("the_eyes_of_glouphrie", "The Eyes of Glouphrie", Difficulty.INTERMEDIATE, 2)
+                .xp(Skill.MAGIC, 12000).xp(Skill.RUNECRAFT, 6000).xp(Skill.WOODCUTTING, 2500).xp(Skill.CONSTRUCTION, 250) // OSRS (current quest XP rewards)
                 .reqQuest("the_grand_tree").req(Skill.CONSTRUCTION, 5).req(Skill.MAGIC, 46)
-                .xp(Skill.MAGIC, 2500).xp(Skill.WOODCUTTING, 6000).xp(Skill.RUNECRAFT, 2500).xp(Skill.CONSTRUCTION, 1000)
                 .stage("I can start this quest by speaking to Brimstail in his cave in the Tree Gnome Stronghold. (Requires The Grand Tree, 5 Construction, 46 Magic.)")
                 .talk("brimstail").say("Oaknock the engineer's old machine is in my cave. It reveals illusions! But it needs repairing: bring maple and oak planks... 4 planks.")
                 .stage("I should repair Oaknock's machine with 4 planks.")
@@ -341,8 +341,8 @@ final class KandarinMoreQuests {
                 .attack(AttackDef.of("shadow_touch", AttackType.SLASH, 11, 2.5, 10).special(Special.DRAIN_PRAYER, 2))
                 .drops(Drop.always("bones")).skin(0x1A1A2A, 0x0A0A1A, 0x0A0A0A, 0x3A3A6A).at("temple_of_light").arena(9, "void"));
         b.quest("mournings_end_part_i", "Mourning's End Part I", Difficulty.MASTER, 2)
+                .xp(Skill.THIEVING, 40000).xp(Skill.HITPOINTS, 25000) // OSRS (current quest XP rewards)
                 .reqQuest("roving_elves", "big_chompy_bird_hunting", "sheep_herder").req(Skill.RANGED, 60).req(Skill.THIEVING, 50)
-                .xp(Skill.THIEVING, 25000).xp(Skill.HITPOINTS, 25000)
                 .stage("I can start this quest by speaking to Islwyn in Tirannwn. (Requires Roving Elves, Big Chompy Bird Hunting, Sheep Herder, 60 Ranged, 50 Thieving.)")
                 .talk("islwyn").say("The mourners of West Ardougne are not what they seem. Arianwyn needs someone to infiltrate them.")
                 .stage("I should get a mourner disguise. The mourners' camp is near the elf camp; one may be careless.")
@@ -354,7 +354,8 @@ final class KandarinMoreQuests {
                 .stage("I should tell Arianwyn what I learned.")
                 .talk("arianwyn").take("coloured_toads").say("The mourners serve Iorwerth! Thank you. We must find out what they are hiding beneath West Ardougne.");
         b.quest("mournings_end_part_ii", "Mourning's End Part II", Difficulty.MASTER, 2)
-                .reqQuest("mournings_end_part_i").xp(Skill.AGILITY, 20000)
+                .xp(Skill.AGILITY, 60000) // OSRS (current quest XP rewards)
+                .reqQuest("mournings_end_part_i")
                 .stage("I can start this quest by speaking to Arianwyn in Lletya. (Requires Mourning's End Part I.)")
                 .talk("arianwyn").give("light_crystal").say("The mourners dig for the Temple of Light, the resting place of the Dark Lord's death altar. Take this talisman and go there first.")
                 .stage("I should enter the Temple of Light beneath the mourner headquarters and solve its light puzzle.")
@@ -370,9 +371,10 @@ final class KandarinMoreQuests {
         b.item("scorpion_cage", "Scorpion cage", "box_trap", 0x8A6A3A, "A cage for kharid scorpions.");
         b.item("kharid_scorpions", "Scorpion cage (full)", "box_trap", 0x8A6A3B, "A cage holding Thormac's three kharid scorpions.");
         b.quest("scorpion_catcher", "Scorpion Catcher", Difficulty.INTERMEDIATE, 1)
+                .reqQuest("alfred_grimhands_barcrawl")
                 .req(Skill.PRAYER, 31).xp(Skill.STRENGTH, 6625)
                 .unlock("Thormac enchants battlestaves into mystic staves for 40,000 coins")
-                .stage("I can start this quest by speaking to Thormac in the Sorcerer's Tower south of Seers' Village. (Requires 31 Prayer.)")
+                .stage("I can start this quest by speaking to Thormac in the Sorcerer's Tower south of Seers' Village. (Requires Alfred Grimhand's Barcrawl, 31 Prayer.)")
                 .talk("thormac").give("scorpion_cage").say("My pet kharid scorpions escaped! There are three of them. The Seers can find them for you.")
                 .stage("I should catch Thormac's three kharid scorpions (Taverley dungeon, the Barbarian Outpost and Monastery).")
                 .kill("minecraft:spider").need("scorpion_cage").take("scorpion_cage").give("kharid_scorpions")

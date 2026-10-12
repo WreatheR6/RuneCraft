@@ -110,9 +110,9 @@ final class DwarfGoblinQuests {
         b.item("goblin_potion", "Goblin potion", "potion", 0x7A9A3A, "A potion that lets a non-goblin pass as one... for a while.");
         b.item("huzamogaarb_whistle", "Huzamogaarb's whistle", "secondary", 0xA0A0A0, "An old goblin priest's whistle.");
         b.quest("land_of_the_goblins", "Land of the Goblins", Difficulty.EXPERIENCED, 2)
+                .xp(Skill.AGILITY, 8000).xp(Skill.FISHING, 8000).xp(Skill.THIEVING, 8000).xp(Skill.HERBLORE, 8000) // OSRS (current quest XP rewards)
                 .reqQuest("another_slice_of_ham", "fishing_contest")
                 .req(Skill.AGILITY, 38).req(Skill.FISHING, 40).req(Skill.THIEVING, 45).req(Skill.HERBLORE, 48)
-                .xp(Skill.AGILITY, 6000).xp(Skill.FISHING, 6000).xp(Skill.THIEVING, 6000).xp(Skill.HERBLORE, 6000) // approximate
                 .unlock("Access to Yu'biusk; goblin transmogrification potions")
                 .stage("I can start this quest by speaking to Zanik in Dorgesh-Kaan. (Requires Another Slice of H.A.M., Fishing Contest, 38 Agility, 40 Fishing, 45 Thieving, 48 Herblore.)")
                 .talk("zanik").say("The goblins of Goblin Village speak of Yu'biusk, the goblins' homeland. I must see it! Will you help me?")

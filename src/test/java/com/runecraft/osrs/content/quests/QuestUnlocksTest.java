@@ -69,7 +69,7 @@ class QuestUnlocksTest {
         QuestSpec sote = BOOK.spec("song_of_the_elves");
         for (Skill s : List.of(Skill.AGILITY, Skill.CONSTRUCTION, Skill.FARMING, Skill.HERBLORE, Skill.HUNTER, Skill.MINING,
                 Skill.SMITHING, Skill.WOODCUTTING)) {
-            assertEquals(20000.0, sote.def.xpRewards().get(s), "Song of the Elves " + s);
+            assertEquals(40000.0, sote.def.xpRewards().get(s), "Song of the Elves " + s); // current OSRS reward
         }
         assertEquals(5000.0, BOOK.spec("the_fremennik_isles").def.xpRewards().get(Skill.CRAFTING));
         // MM2 needs RFD's Awowogei subquest; The Great Brain Robbery needs Pirate Pete; Dream Mentor combat 85.

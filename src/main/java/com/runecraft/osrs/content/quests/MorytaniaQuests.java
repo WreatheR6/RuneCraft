@@ -81,8 +81,9 @@ final class MorytaniaQuests {
         b.npc("nature_spirit", "Nature spirit", "nature_grotto", 0, 2, 0xA0E0A0, 0x5AA05A, 0x3A8A3A, 0xD0F0A0);
         b.item("filliman_journal", "Journal", "book", 0x5A6A3A, "Filliman Tarlock's journal.");
         b.quest("nature_spirit", "Nature Spirit", Difficulty.NOVICE, 2)
+                .xp(Skill.CRAFTING, 3000).xp(Skill.DEFENCE, 2000).xp(Skill.HITPOINTS, 2000) // OSRS (current quest XP rewards)
                 .reqQuest("priest_in_peril", "RESTLESS_GHOST").req(Skill.CRAFTING, 18)
-                .xp(Skill.CRAFTING, 3000).xp(Skill.DEFENCE, 3000).xp(Skill.HITPOINTS, 3000).reward("silver_sickle_b")
+                .reward("silver_sickle_b")
                 .stage("I can start this quest by speaking to Drezel beneath Paterdomus temple. (Requires Priest in Peril, Restless Ghost, 18 Crafting.)")
                 .talk("drezel").say("Filliman Tarlock, a druid, went into the Mort Myre Swamp to fight its evil. I fear for him.")
                 .stage("I should find Filliman Tarlock in the Mort Myre Swamp. I'll need an amulet of ghostspeak.")
@@ -252,8 +253,8 @@ final class MorytaniaQuests {
                 .attack(AttackDef.of("bite", AttackType.STAB, 12, 2.5, 10))
                 .drops(Drop.always("bones")).size(1.0f, 1.2f, 1.0f).at("myreque_hideout").arena(9, "crypt"));
         b.quest("in_search_of_the_myreque", "In Search of the Myreque", Difficulty.INTERMEDIATE, 2)
+                .xp(Skill.ATTACK, 600).xp(Skill.STRENGTH, 600).xp(Skill.DEFENCE, 600).xp(Skill.HITPOINTS, 600).xp(Skill.CRAFTING, 600) // OSRS (current quest XP rewards)
                 .reqQuest("nature_spirit").req(Skill.AGILITY, 25)
-                .xp(Skill.ATTACK, 600).xp(Skill.STRENGTH, 600).xp(Skill.DEFENCE, 600).xp(Skill.HITPOINTS, 600).xp(Skill.CRAFTING, 4600)
                 .stage("I can start this quest by speaking to Vanstrom Klause in the Canifis pub. (Requires Nature Spirit, 25 Agility.)")
                 .talk("vanstrom_disguised").say("The Myreque, a band of vampyre hunters, hide somewhere in Morytania. I have a message for them. Find them for me.")
                 .stage("I should find the Myreque's hideout. The swamp is dangerous; a boat leaves from the Mort Myre.")

@@ -101,8 +101,8 @@ final class MahjarratQuests {
         Cast.npc(b, "kasonde", "Kasonde", "kebos_lowlands", -3, 3, Cast.BROWN, 0x5A6A3A);
         b.item("garden_tablet_fragment", "Stone tablet fragment", "rune", 0x8A8A7A, "A fragment of an ancient stone tablet.");
         b.quest("the_garden_of_death", "The Garden of Death", Difficulty.INTERMEDIATE, 1)
+                .xp(Skill.FARMING, 10000) // OSRS (current quest XP rewards)
                 .req(Skill.FARMING, 20)
-                .xp(Skill.FARMING, 7500) // approximate
                 .unlock("Access to the Garden of Death beneath the Kebos Swamp")
                 .stage("I can start this quest by speaking to Kasonde in the Kebos Lowlands. (Requires 20 Farming.)")
                 .talk("kasonde").say("I'm looking for a garden that was buried long ago, beneath the swamp. The old tablets say it was tended by the dead.")
@@ -119,11 +119,11 @@ final class MahjarratQuests {
         Cast.npc(b, "quest_hazel", "Hazel", "ARDOUGNE", -8, -2, Cast.PALE, 0x3A6A3A);
         Cast.npc(b, "jhallan", "Jhallan", "ghorrock_prison", 2, 2, 0x6A7A8A, 0x2A2A3A);
         b.quest("secrets_of_the_north", "Secrets of the North", Difficulty.MASTER, 2)
-                .reqQuest("making_friends_with_my_arm", "the_generals_shadow", "devious_minds", "the_hand_in_the_sand")
+                .reqQuest("making_friends_with_my_arm", "the_generals_shadow", "devious_minds", "hazeel_cult")
+                .xp(Skill.AGILITY, 60000).xp(Skill.THIEVING, 50000).xp(Skill.HUNTER, 40000) // OSRS (current quest XP rewards)
                 .req(Skill.AGILITY, 69).req(Skill.THIEVING, 64).req(Skill.HUNTER, 56)
-                .xp(Skill.AGILITY, 13000).xp(Skill.THIEVING, 13000).xp(Skill.HUNTER, 13000) // approximate lamp rewards
                 .unlock("The Phantom Muspah boss in the Ghorrock Dungeon")
-                .stage("I can start this quest by speaking to Evelot in East Ardougne. (Requires Making Friends with My Arm, The General's Shadow, Devious Minds, The Hand in the Sand, 69 Agility, 64 Thieving, 56 Hunter.)")
+                .stage("I can start this quest by speaking to Evelot in East Ardougne. (Requires Making Friends with My Arm, The General's Shadow, Devious Minds, Hazeel Cult, 69 Agility, 64 Thieving, 56 Hunter.)")
                 .talk("evelot").say("There's been a murder in my house! The victim's body is covered in frost... in summer. The Ardougne guards are useless.")
                 .stage("I should ask Hazel, the victim's friend, what she knows.")
                 .talk("quest_hazel").say("He spoke of Ghorrock, the old Zarosian fortress in the frozen north... and of someone who kept him prisoner there.")
@@ -213,8 +213,8 @@ final class MahjarratQuests {
                 .drops(Drop.always("big_bones")).skin(0x8A6A3A, 0x6A4A2A, 0x5A3A1A, 0xE0C040).size(2.0f, 2.4f, 1.3f).flying()
                 .at("quest_troll_stronghold_roof").arena(10, "stone"));
         b.quest("my_arms_big_adventure", "My Arm's Big Adventure", Difficulty.INTERMEDIATE, 1)
+                .xp(Skill.HERBLORE, 10000).xp(Skill.FARMING, 5000) // OSRS (current quest XP rewards)
                 .reqQuest("eadgars_ruse", "the_feud", "jungle_potion").req(Skill.WOODCUTTING, 10).req(Skill.FARMING, 29)
-                .xp(Skill.FARMING, 10000).xp(Skill.HERBLORE, 5000)
                 .unlock("My Arm's herb patch on the Troll Stronghold roof")
                 .stage("I can start this quest by speaking to Burntmeat in the Troll Stronghold kitchen. (Requires Eadgar's Ruse, The Feud, Jungle Potion, 10 Woodcutting, 29 Farming.)")
                 .talk("burntmeat").say("My Arm want to grow things on roof! Silly troll. You go help him.")
@@ -241,9 +241,9 @@ final class MahjarratQuests {
                 .drops(Drop.always("big_bones")).skin(0x8A8A78, 0x5A5A4A, 0x4A4A3A, 0xE0E8F0).size(1.4f, 3.0f, 1.3f)
                 .at("quest_weiss").arena(12, "ice"));
         b.quest("making_friends_with_my_arm", "Making Friends with My Arm", Difficulty.MASTER, 2)
+                .xp(Skill.MINING, 50000).xp(Skill.AGILITY, 50000).xp(Skill.FIREMAKING, 40000).xp(Skill.CONSTRUCTION, 10000) // OSRS (current quest XP rewards)
                 .reqQuest("my_arms_big_adventure", "swan_song", "cold_war", "ROMEO_AND_JULIET")
                 .req(Skill.FIREMAKING, 66).req(Skill.MINING, 72).req(Skill.CONSTRUCTION, 35).req(Skill.AGILITY, 68)
-                .xp(Skill.FIREMAKING, 10000).xp(Skill.MINING, 10000).xp(Skill.CONSTRUCTION, 5000).xp(Skill.AGILITY, 10000) // approximate
                 .unlock("Access to Weiss, its salt mine and the Weiss fire pit teleport")
                 .stage("I can start this quest by speaking to My Arm on the Troll Stronghold roof. (Requires My Arm's Big Adventure, Swan Song, Cold War, Romeo & Juliet, 66 Firemaking, 72 Mining, 35 Construction, 68 Agility.)")
                 .talk("my_arm").say("My Arm's old home is Weiss, in the north. My Arm want to go back and see Mother... but trolls there not friendly.")

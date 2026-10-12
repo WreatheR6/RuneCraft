@@ -102,8 +102,8 @@ final class LateQuestsB {
                 .attack(AttackDef.of("sand_spike", AttackType.RANGED, 22, 10, 3).special(Special.SKY_STRIKE, 0).telegraph(2, "The sand ripples beneath you!"))
                 .drops(Drop.always("bones")).size(1.6f, 1.4f, 1.2f).at("necropolis").arena(12, "sand"));
         b.quest("beneath_cursed_sands", "Beneath Cursed Sands", Difficulty.MASTER, 2)
+                .xp(Skill.AGILITY, 50000) // OSRS (current quest XP rewards)
                 .reqQuest("contact").req(Skill.AGILITY, 62).req(Skill.CRAFTING, 55).req(Skill.FIREMAKING, 55)
-                .xp(Skill.AGILITY, 20000).xp(Skill.CRAFTING, 20000).xp(Skill.FIREMAKING, 20000)
                 .unlock("Access to the Necropolis and the Tombs of Amascut")
                 .stage("I can start this quest by speaking to the Priest of Tumeken near the Necropolis, south of Sophanem. (Requires Contact! and more.)")
                 .talk("tumeken_priest").say("The Ruins of Unkah are cursed with sand, and the cult of Amascut stirs. Will you investigate the Necropolis?")
@@ -123,9 +123,9 @@ final class LateQuestsB {
                 .attack(AttackDef.of("water_blast", AttackType.MAGIC, 22, 10, 4).particle("minecraft:splash"))
                 .drops(Drop.always("big_bones")).size(1.2f, 2.6f, 1.0f).at("piscatoris").arena(12, "water"));
         b.quest("swan_song", "Swan Song", Difficulty.MASTER, 2)
+                .xp(Skill.FISHING, 50000).xp(Skill.MAGIC, 15000).xp(Skill.PRAYER, 10000) // OSRS (current quest XP rewards)
                 .qp(100).reqQuest("garden_of_tranquillity").reqQuest("one_small_favour")
                 .req(Skill.MAGIC, 66).req(Skill.COOKING, 62).req(Skill.FISHING, 62).req(Skill.SMITHING, 45).req(Skill.FIREMAKING, 42).req(Skill.CRAFTING, 40)
-                .xp(Skill.MAGIC, 15000).xp(Skill.HITPOINTS, 10000)
                 .unlock("Fishing monkfish at the Piscatoris Fishing Colony")
                 .stage("I can start this quest by speaking to Herman Caranos in the Piscatoris Fishing Colony. (Requires 100 quest points, Garden of Tranquillity and more.)")
                 .talk("herman_caranos").say("Sea trolls are attacking the colony! The wall is broken and we've no food. Help us!")
@@ -247,7 +247,8 @@ final class LateQuestsB {
                 .stage("I should report to Lord Kandur Lovakengj.")
                 .talk("lord_kandur_lovakengj").say("The tower's power flows to our forges! Lovakengj thanks you.");
         b.quest("the_ascent_of_arceuus", "The Ascent of Arceuus", Difficulty.NOVICE, 1)
-                .reqQuest("client_of_kourend").req(Skill.HUNTER, 12).xp(Skill.RUNECRAFT, 1500).xp(Skill.HUNTER, 500)
+                .xp(Skill.HUNTER, 1500).xp(Skill.RUNECRAFT, 500) // OSRS (current quest XP rewards)
+                .reqQuest("client_of_kourend").req(Skill.HUNTER, 12)
                 .stage("I can start this quest by speaking to Lord Trobin Arceuus in Arceuus. (Requires Client of Kourend, 12 Hunter.)")
                 .talk("lord_trobin_arceuus").say("Strange tormented souls are rising near the Dark Altar. My house's magic may be to blame. Investigate.")
                 .stage("I should investigate the Dark Altar and collect dark essence fragments.")
@@ -265,19 +266,18 @@ final class LateQuestsB {
                 .stage("I should report the beast is gone.")
                 .talk("councillor_andrews").give("kourend_favour_letter").say("The farms are safe! Take this letter of thanks from the council.");
         b.quest("a_kingdom_divided", "A Kingdom Divided", Difficulty.EXPERIENCED, 2)
-                .reqQuest("the_depths_of_despair", "the_queen_of_thieves", "tale_of_the_righteous", "the_forsaken_tower", "the_ascent_of_arceuus", "getting_ahead")
+                .reqQuest("the_depths_of_despair", "the_queen_of_thieves", "tale_of_the_righteous", "the_forsaken_tower", "the_ascent_of_arceuus")
                 .req(Skill.AGILITY, 54).req(Skill.THIEVING, 52).req(Skill.WOODCUTTING, 52).req(Skill.HERBLORE, 50)
                 .req(Skill.MINING, 42).req(Skill.CRAFTING, 38).req(Skill.MAGIC, 35)
                 .xp(Skill.AGILITY, 10000).xp(Skill.THIEVING, 10000).xp(Skill.WOODCUTTING, 10000).xp(Skill.HERBLORE, 10000)
                 .unlock("The Kourend Council's favour and the Kebos Lowlands")
-                .stage("I can start this quest by speaking to Councillor Andrews in Port Piscarilius. (Requires all five Kourend house quests and more.)")
+                .stage("I can start this quest by speaking to Councillor Andrews in Port Piscarilius. (Requires the five Kourend house quests and more.)")
                 .talk("councillor_andrews").say("The Kourend Council is being picked off one by one. Someone wants the throne. Investigate the attacks.")
                 .stage("I should speak to Kaht B'alam, the lizardman shaman in the Kebos Lowlands, about the dark magic behind the attacks.")
                 .talk("kaht_bbalam").say("The Judge of Yama, a demon of the void, has been summoned. Its servant hides among your council. Face it, and the kingdom may unite.")
                 .stage("I must defeat the Judge of Yama in the Kebos Lowlands.")
                 .kill("judge_of_yama").say("* The Judge of Yama is banished back to the void!")
                 .stage("I should report to Councillor Andrews.")
-                .talk("councillor_andrews").take("kourend_favour_letter").say("The council is safe and the five houses united. Great Kourend is in your debt.")
-                .missing("Bring the council's royal letter back as proof of your service.");
+                .talk("councillor_andrews").say("The council is safe and the five houses united. Great Kourend is in your debt.");
     }
 }

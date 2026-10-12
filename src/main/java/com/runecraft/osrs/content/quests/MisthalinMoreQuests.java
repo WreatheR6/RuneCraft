@@ -181,7 +181,8 @@ final class MisthalinMoreQuests {
         b.npc("ali_the_operator", "Ali the Operator", "POLLNIVNEACH", -3, 3, 0xA06A41, 0x3A3A3B, 0x2A2A2F, 0x1A1A1E);
         b.items(s -> s.add("desert_disguise_feud", "Kharidian headpiece", Kind.SIMPLE, "cowl", 0xE0D0A0).value(1).examine("A disguise worn by the people of Pollnivneach."));
         b.quest("the_feud", "The Feud", Difficulty.INTERMEDIATE, 1)
-                .req(Skill.THIEVING, 30).xp(Skill.THIEVING, 500).reward("coins:500")
+                .xp(Skill.THIEVING, 15000) // OSRS (current quest XP rewards)
+                .req(Skill.THIEVING, 30).reward("coins:500")
                 .stage("I can start this quest by speaking to Ali Morrisane in Al Kharid... he's in Pollnivneach looking for his nephew. (Requires 30 Thieving.)")
                 .talk("ali_morrisane").give("desert_disguise_feud").say("My nephew vanished in Pollnivneach, a town ruled by two feuding gangs. Wear this disguise and blend in.")
                 .stage("I should infiltrate the Menaphite gang. Ali the Operator runs the local rackets.")
@@ -196,7 +197,8 @@ final class MisthalinMoreQuests {
         b.item("holy_symbol_icthlarin", "Holy symbol of Icthlarin", "amulet", 0xE0C046, "A symbol of the god of the dead.");
         b.item("canopic_jars", "Canopic jars", "pot", 0xC0A061, "Four canopic jars for the mummification ritual.");
         b.quest("icthlarins_little_helper", "Icthlarin's Little Helper", Difficulty.INTERMEDIATE, 2)
-                .reqQuest("gertrudes_cat").xp(Skill.THIEVING, 4500).xp(Skill.AGILITY, 4000).xp(Skill.WOODCUTTING, 1500)
+                .xp(Skill.THIEVING, 4500).xp(Skill.AGILITY, 4000).xp(Skill.WOODCUTTING, 4000) // OSRS (current quest XP rewards)
+                .reqQuest("gertrudes_cat")
                 .unlock("Access to Sophanem")
                 .stage("I can start this quest by speaking to the Wanderer south of the Shantay Pass, with my cat. (Requires Gertrude's Cat.)")
                 .talk("wanderer_sophanem").need("gertrudes_kitten").say("A cat! The cats of Sophanem are sacred. Come, Sophanem is plagued and needs a cat to fulfil a prophecy.")
@@ -285,8 +287,9 @@ final class MisthalinMoreQuests {
                 .attack(AttackDef.of("punch", AttackType.CRUSH, 8, 2.5, 10)).drops(Drop.always("coins"))
                 .skin(0xE8C0A0, 0x8A1A3B, 0x5A1A2B, 0xD0B031).at("chaos_altar_surok").arena(8, "crypt"));
         b.quest("what_lies_below", "What Lies Below", Difficulty.INTERMEDIATE, 1)
+                .req(Skill.MINING, 42)
                 .reqQuest("RUNE_MYSTERIES").req(Skill.RUNECRAFT, 35).xp(Skill.RUNECRAFT, 8000).xp(Skill.DEFENCE, 2000).reward("beacon_ring")
-                .stage("I can start this quest by speaking to Rat Burgiss on the road south of Varrock. (Requires Rune Mysteries, 35 Runecraft.)")
+                .stage("I can start this quest by speaking to Rat Burgiss on the road south of Varrock. (Requires Rune Mysteries, 35 Runecraft, 42 Mining.)")
                 .talk("rat_burgiss").give("rats_letter").say("Outlaws stole my papers! The outlaw camp's west of Varrock. Then take this letter to Surok Magis in Varrock.")
                 .stage("I should deliver Rat's letter to Surok Magis in Varrock.")
                 .talk("surok_magis").take("rats_letter").say("Excellent. Now make me a chaos talisman... no, just leave it. You've been most helpful. *He smirks.*")
@@ -303,9 +306,9 @@ final class MisthalinMoreQuests {
                 .attack(AttackDef.of("zombie_sword", AttackType.SLASH, 22, 2.5, 10))
                 .drops(Drop.always("bones")).skin(0x8AA07B, 0xA08A3A, 0x6A5A2A, 0x5A6A4A).at("varrock_sewers_arrav").arena(10, "crypt"));
         b.quest("defender_of_varrock", "Defender of Varrock", Difficulty.EXPERIENCED, 2)
+                .req(Skill.SMITHING, 55).req(Skill.HUNTER, 52)
                 .reqQuest("shield_of_arrav", "temple_of_ikov", "below_ice_mountain", "family_crest", "what_lies_below", "ROMEO_AND_JULIET", "DEMON_SLAYER")
                 .reqQuest("garden_of_tranquillity")
-                .req(Skill.AGILITY, 51).req(Skill.HUNTER, 52).req(Skill.MINING, 59)
                 .xp(Skill.SMITHING, 15000).xp(Skill.HUNTER, 15000)
                 .stage("I can start this quest by speaking to Captain Rovin in Varrock Palace. (Requires Shield of Arrav, What Lies Below and more.)")
                 .talk("captain_rovin").say("Zombies are rising beneath Varrock! An ancient hero, Arrav, leads them, raised by Zamorakians.")
@@ -393,6 +396,7 @@ final class MisthalinMoreQuests {
     private static void enterTheAbyss(QuestBook b) {
         b.item("scrying_orb", "Scrying orb", "orb", 0x6A2A8A, "An orb that records teleport locations.");
         b.quest("enter_the_abyss", "Enter the Abyss (miniquest)", Difficulty.NOVICE, 0)
+                .xp(Skill.RUNECRAFT, 1000) // OSRS (current quest XP rewards)
                 .reqQuest("RUNE_MYSTERIES")
                 .unlock("Access to the Abyss via the Mage of Zamorak")
                 .stage("I can start this miniquest by speaking to the Mage of Zamorak in the Wilderness... or his acolyte in Varrock. (Requires Rune Mysteries.)")
