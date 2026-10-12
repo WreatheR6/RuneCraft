@@ -150,7 +150,8 @@ final class FremennikQuests {
                 .attack(AttackDef.of("swipe", AttackType.SLASH, 9, 2.5, 10))
                 .drops(Drop.always("bones")).skin(0x6A4A2A, 0x5A3A1A, 0x4A2A1A, 0x3A2A1A).size(0.9f, 2.4f, 1.2f).at("kendal_cave").arena(8, "ice"));
         b.quest("mountain_daughter", "Mountain Daughter", Difficulty.INTERMEDIATE, 2)
-                .req(Skill.AGILITY, 20).xp(Skill.PRAYER, 1000).xp(Skill.ATTACK, 2000).reward("bearhead")
+                .xp(Skill.PRAYER, 2000).xp(Skill.ATTACK, 1000) // OSRS (current quest XP rewards)
+                .req(Skill.AGILITY, 20).reward("bearhead")
                 .stage("I can start this quest by speaking to Hamal the Chieftain at the Mountain Camp east of Rellekka. (Requires 20 Agility.)")
                 .talk("hamal").say("My daughter Asleif is missing. The tribe whispers about the Kendal, a beast in the mountains. Please find her.")
                 .stage("I should ask around the camp: Svidi and Jokul may know something.")

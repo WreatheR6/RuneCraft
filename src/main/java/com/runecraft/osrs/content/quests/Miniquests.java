@@ -74,8 +74,9 @@ final class Miniquests {
                         Map.of(), 4, AttackType.STAB, EquipmentDef.WeaponClass.MELEE))
                 .examine("A barbarian spear that can be wielded with a shield."));
         b.quest("barbarian_training", "Barbarian Training (miniquest)", Difficulty.INTERMEDIATE, 0)
+                .req(Skill.FARMING, 15)
                 .reqQuest("DRUIDIC_RITUAL", "tai_bwo_wannai_trio")
-                .req(Skill.FISHING, 48).req(Skill.AGILITY, 15).req(Skill.STRENGTH, 15).req(Skill.FIREMAKING, 35)
+                .req(Skill.FISHING, 55).req(Skill.AGILITY, 15).req(Skill.STRENGTH, 15).req(Skill.FIREMAKING, 35)
                 .req(Skill.CRAFTING, 11).req(Skill.SMITHING, 5).req(Skill.HERBLORE, 4)
                 .reward("bronze_hasta")
                 .unlock("Barbarian fishing, barbarian firemaking, barbarian herblore mixes and smithing hastae")
@@ -205,6 +206,7 @@ final class Miniquests {
                         Map.of(Skill.ATTACK, 32), 5, AttackType.STAB, EquipmentDef.WeaponClass.MELEE))
                 .examine("The sword of General Khazard's shadow. Hits may drain the target's stats."));
         b.quest("the_generals_shadow", "The General's Shadow (miniquest)", Difficulty.EXPERIENCED, 0)
+                .xp(Skill.SLAYER, 2000) // OSRS (current quest XP rewards)
                 .reqQuest("curse_of_the_empty_lord", "fight_arena")
                 .reward("shadow_sword")
                 .stage("I can start this miniquest by speaking to a gnome Scout in the Gnome Stronghold while wearing a ring of visibility. (Requires Curse of the Empty Lord, Fight Arena.)")
@@ -222,8 +224,8 @@ final class Miniquests {
     private static void hisFaithfulServants(QuestBook b) {
         Cast.npc(b, "quest_strange_old_man_barrows", "Strange Old Man", "BARROWS", 5, -5, Cast.PALE, 0x5A5A3A);
         b.quest("his_faithful_servants", "His Faithful Servants (miniquest)", Difficulty.EXPERIENCED, 0)
+                .xp(Skill.PRAYER, 20000) // OSRS (current quest XP rewards)
                 .reqQuest("priest_in_peril")
-                .xp(Skill.PRAYER, 2000) // approximate
                 .unlock("Barrows crypt tunnels can be cleared more quickly")
                 .stage("I can start this miniquest by speaking to the Strange Old Man at the Barrows. (Requires Priest in Peril.)")
                 .talk("quest_strange_old_man_barrows").say("The brothers serve their master even in death. Defeat all six, and perhaps they'll tell you who that master was.")
@@ -242,9 +244,10 @@ final class Miniquests {
     private static void hopespearsWill(QuestBook b) {
         Cast.npc(b, "quest_hopespear_ghost", "Hopespear", "goblin_village", -3, 3, Cast.GHOST, 0x6A8A5A);
         b.quest("hopespears_will", "Hopespear's Will (miniquest)", Difficulty.EXPERIENCED, 0)
+                .reqQuest("desert_treasure_i", "fairytale_ii_cure_a_queen")
+                .xp(Skill.PRAYER, 38750) // OSRS (current quest XP rewards)
                 .reqQuest("land_of_the_goblins", "RESTLESS_GHOST").req(Skill.PRAYER, 50)
-                .xp(Skill.PRAYER, 7500) // approximate
-                .stage("I can start this miniquest by speaking to Hopespear's ghost in Goblin Village with an amulet of ghostspeak. (Requires Land of the Goblins, The Restless Ghost, 50 Prayer.)")
+                .stage("I can start this miniquest by speaking to Hopespear's ghost in Goblin Village with an amulet of ghostspeak. (Requires Land of the Goblins, Desert Treasure I, Fairytale II, The Restless Ghost, 50 Prayer.)")
                 .talk("quest_hopespear_ghost").need("ghostspeak_amulet").say("Hopespear sees goblins forget the old ways. Take Hopespear's bones to the goblin temple so Hopespear can rest.")
                 .missing("*The ghost gibbers at you. You need an amulet of ghostspeak.*")
                 .stage("I should lay bones to rest at the ancient goblin temple.")
@@ -375,8 +378,9 @@ final class Miniquests {
     private static void skippyAndTheMogres(QuestBook b) {
         Cast.npc(b, "skippy", "Skippy", "mudskipper_point", 3, 3, Cast.FAIR, 0x6A5A3A);
         b.quest("skippy_and_the_mogres", "Skippy and the Mogres (miniquest)", Difficulty.NOVICE, 0)
+                .req(Skill.COOKING, 20)
                 .unlock("Mogres can be lured out of the water with fishing explosives")
-                .stage("I can start this miniquest by speaking to Skippy at Mudskipper Point. (Requires 20 Cooking recommended.)")
+                .stage("I can start this miniquest by speaking to Skippy at Mudskipper Point. (Requires 20 Cooking.)")
                 .talk("skippy").say("*Skippy is drunk.* Mogresh... in the water... *hic*. Throw some water on me. A jug'll do.")
                 .stage("I should sober Skippy up with a jug of water.")
                 .talk("skippy").take("jug_of_water").say("Brrr! Thanks. Now my head hurts. Make me a hangover cure: chocolate dust and snape grass, mixed in... something.")

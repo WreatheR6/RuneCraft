@@ -57,10 +57,11 @@ final class LateQuestsC {
                 .drops(Drop.always("big_bones")).skin(0xC08A3A, 0x8A5A2A, 0x6A4A1A, 0x2A1A0A).size(1.4f, 1.2f, 1.0f)
                 .at("tai_bwo_wannai").arena(9, "jungle"));
         b.quest("tai_bwo_wannai_trio", "Tai Bwo Wannai Trio", Difficulty.INTERMEDIATE, 2)
+                .req(Skill.FIREMAKING, 30)
                 .reqQuest("jungle_potion").req(Skill.AGILITY, 15).req(Skill.COOKING, 30).req(Skill.FISHING, 5)
                 .xp(Skill.ATTACK, 2500).xp(Skill.STRENGTH, 2500).xp(Skill.COOKING, 5000).xp(Skill.FISHING, 5000).xp(Skill.AGILITY, 2500)
                 .unlock("Karambwan fishing with a karambwan vessel; cooking karambwans thoroughly")
-                .stage("I can start this quest by speaking to Timfraku in Tai Bwo Wannai. (Requires Jungle Potion, 15 Agility, 30 Cooking, 5 Fishing.)")
+                .stage("I can start this quest by speaking to Timfraku in Tai Bwo Wannai. (Requires Jungle Potion, 15 Agility, 30 Cooking, 5 Fishing, 30 Firemaking.)")
                 .talk("timfraku").say("My sons Tamayu, Tiadeche and Tinsay each seek greatness and none listen to their father. Help them, and you help the village.")
                 .stage("I should help Tiadeche catch karambwans with a karambwan vessel and karambwanji.")
                 .talk("tiadeche").stay().unlessFlag("tbwt_tiadeche").take("raw_karambwanji:5").need("karambwan_vessel").give("raw_karambwan")
@@ -152,10 +153,10 @@ final class LateQuestsC {
                 .examine("A helmet made from a ram's skull."));
         b.gear("bonesack", QuestBook.GearSlot.CAPE, new EquipmentStats(0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 2), "rag_and_bone_man_ii");
         b.quest("rag_and_bone_man_ii", "Rag and Bone Man II", Difficulty.INTERMEDIATE, 1)
-                .reqQuest("rag_and_bone_man_i", "creature_of_fenkenstrain", "fremennik_trials", "zogre_flesh_eaters", "waterfall_quest")
+                .reqQuest("rag_and_bone_man_i", "skippy_and_the_mogres")
                 .req(Skill.SLAYER, 40).req(Skill.DEFENCE, 20)
                 .xp(Skill.PRAYER, 5000).reward("bonesack", "ram_skull_helm")
-                .stage("I can start this quest by speaking to the Odd Old Man north-east of Varrock. (Requires Rag and Bone Man I, Creature of Fenkenstrain, The Fremennik Trials, Zogre Flesh Eaters, Waterfall Quest, 40 Slayer, 20 Defence.)")
+                .stage("I can start this quest by speaking to the Odd Old Man north-east of Varrock. (Requires Rag and Bone Man I, Skippy and the Mogres, 40 Slayer, 20 Defence.)")
                 .talk("odd_old_man").say("More bones! I need a proper collection now: bats, wyverns, dagannoths, baby dragons... and big beasts.")
                 .stage("I need bones from a giant bat, a skeletal wyvern, a dagannoth and a baby dragon, plus 5 big bones, all cleaned in vinegar.")
                 .drop("giant_bat", "bat_bones", 2)
@@ -238,12 +239,13 @@ final class LateQuestsC {
                 .drops(Drop.always("big_bones")).skin(0x5A7A4A, 0x3A5A2A, 0x2A3A1A, 0xE0C040).size(1.6f, 1.6f, 1.2f)
                 .at("quest_island_of_stone").arena(12, "stone"));
         b.quest("the_fremennik_exiles", "The Fremennik Exiles", Difficulty.MASTER, 2)
+                .req(Skill.MINING, 60)
+                .xp(Skill.SLAYER, 50000).xp(Skill.CRAFTING, 50000).xp(Skill.RUNECRAFT, 30000) // OSRS (current quest XP rewards)
                 .reqQuest("the_fremennik_isles", "lunar_diplomacy", "mountain_daughter", "heroes_quest")
                 .req(Skill.CRAFTING, 65).req(Skill.SLAYER, 60).req(Skill.SMITHING, 60).req(Skill.FISHING, 60).req(Skill.RUNECRAFT, 55)
-                .xp(Skill.SLAYER, 15000).xp(Skill.CRAFTING, 15000).xp(Skill.SMITHING, 15000).xp(Skill.RUNECRAFT, 15000)
                 .reward("vs_shield")
                 .unlock("Basilisk Knights in Jormungand's Prison; the Neitiznot faceguard")
-                .stage("I can start this quest by speaking to Brundt the Chieftain in Rellekka. (Requires The Fremennik Isles, Lunar Diplomacy, Mountain Daughter, Heroes' Quest, 65 Crafting, 60 Slayer, 60 Smithing, 60 Fishing, 55 Runecraft.)")
+                .stage("I can start this quest by speaking to Brundt the Chieftain in Rellekka. (Requires The Fremennik Isles, Lunar Diplomacy, Mountain Daughter, Heroes' Quest, 65 Crafting, 60 Slayer, 60 Smithing, 60 Fishing, 60 Mining, 55 Runecraft.)")
                 .talk("brundt").say("Basilisks attack our fishermen! They come from the Island of Stone. Some say an exile commands them.")
                 .stage("I should sail to the Island of Stone and find the exile.")
                 .talk("quest_lady_v").say("I am V's descendant, exiled for... reasons. The basilisks guard Jormungand's prison, and their young one grows strong. Stop it.")
@@ -323,7 +325,7 @@ final class LateQuestsC {
         b.item("quest_sailing_charts", "Sailing charts", "note", 0xE0D0A0, "Charts of the waters around Port Sarim.");
         // Sailing's introductory quest (2025). Requirements and rewards are approximate.
         b.quest("pandemonium", "Pandemonium", Difficulty.NOVICE, 1)
-                .xp(Skill.SAILING, 1000)
+                .xp(Skill.SAILING, 300) // OSRS (current quest XP rewards)
                 .unlock("Your first boat and the Sailing skill's ports")
                 .stage("I can start this quest by speaking to Captain Dushan in Port Sarim.")
                 .talk("quest_captain_dushan").say("You want to sail? Every sailor starts by swabbing decks. Report to the quartermaster at the docks.")

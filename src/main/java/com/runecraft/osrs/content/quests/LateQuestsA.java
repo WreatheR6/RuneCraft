@@ -136,9 +136,9 @@ final class LateQuestsA {
                 .attack(AttackDef.of("warp_bolt", AttackType.MAGIC, 16, 8, 4).particle("minecraft:portal"))
                 .drops(Drop.always("bones")).size(1.0f, 2.0f, 1.0f).at("glouphrie_tunnels").arena(10, "void"));
         b.quest("the_path_of_glouphrie", "The Path of Glouphrie", Difficulty.EXPERIENCED, 2)
+                .xp(Skill.STRENGTH, 30000).xp(Skill.SLAYER, 20000).xp(Skill.THIEVING, 5000).xp(Skill.MAGIC, 5000) // OSRS (current quest XP rewards)
                 .reqQuest("the_eyes_of_glouphrie", "waterfall_quest", "tree_gnome_village")
                 .req(Skill.STRENGTH, 60).req(Skill.SLAYER, 56).req(Skill.THIEVING, 56).req(Skill.RANGED, 47).req(Skill.AGILITY, 45)
-                .xp(Skill.STRENGTH, 15000).xp(Skill.SLAYER, 15000) // approx: OSRS gives a choice of lamps
                 .stage("I can start this quest by speaking to Longramble west of the Tree Gnome Stronghold. (Requires The Eyes of Glouphrie and more.)")
                 .talk("longramble").say("Glouphrie's warped creatures are spilling out of his old tunnels! Gnomes are going missing. Will you go in?")
                 .stage("I should search Glouphrie's tunnels for the source of the warping.")
@@ -190,8 +190,8 @@ final class LateQuestsA {
         b.npc("riki_the_sculptor", "Riki the sculptor's model", "keldagrim", 3, -2, 0xD8A88B, 0x3A5A8D, 0x2A3A5D, 0x6A3A22);
         b.item("dwarven_lore_book", "Book on dwarven lore", "book", 0x6A3A2A, "A book on the history of the dwarves.");
         b.quest("the_giant_dwarf", "The Giant Dwarf", Difficulty.INTERMEDIATE, 2)
+                .xp(Skill.CRAFTING, 2500).xp(Skill.MINING, 2500).xp(Skill.SMITHING, 2500).xp(Skill.MAGIC, 1500).xp(Skill.FIREMAKING, 1500).xp(Skill.THIEVING, 1500) // OSRS (current quest XP rewards)
                 .req(Skill.CRAFTING, 12).req(Skill.FIREMAKING, 16).req(Skill.MAGIC, 33).req(Skill.THIEVING, 14)
-                .xp(Skill.CRAFTING, 2500).xp(Skill.MINING, 2500).xp(Skill.SMITHING, 2500).xp(Skill.MAGIC, 1500).xp(Skill.FIREMAKING, 1500)
                 .unlock("Access to Keldagrim and the Grand Exchange of the dwarves")
                 .stage("I can start this quest by speaking to Commander Veldaban in Keldagrim. (Requires 12 Crafting, 16 Firemaking, 33 Magic, 14 Thieving.)")
                 .talk("commander_veldaban").say("A human in Keldagrim? You knocked over the statue of King Alvis on your way in! You'll need to repair it... somehow.")
@@ -256,7 +256,8 @@ final class LateQuestsA {
         b.npc("prince_brand", "Prince Brand", "miscellania", -3, -2, 0xE8C0C1, 0x3A5A9A, 0x2A3A6A, 0xE0A04E);
         b.item("ring_of_miscellania", "Royal ring", "ring", 0xE0C04F, "A ring proposing marriage, fit for royalty.");
         b.quest("throne_of_miscellania", "Throne of Miscellania", Difficulty.EXPERIENCED, 1)
-                .reqQuest("heroes_quest", "fremennik_trials").req(Skill.WOODCUTTING, 45).req(Skill.FARMING, 10).req(Skill.MINING, 30).req(Skill.FISHING, 35)
+                .reqNote("One of: 45 Woodcutting, 10 Farming, 30 Mining or 35 Fishing (to manage the kingdom)")
+                .reqQuest("heroes_quest", "fremennik_trials")
                 .unlock("Rule the kingdom of Miscellania (managing the kingdom)")
                 .stage("I can start this quest by speaking to King Vargas in Miscellania castle. (Requires Heroes' Quest, The Fremennik Trials and more.)")
                 .talk("king_vargas").say("I am old and cursed. My kingdom needs a ruler, and whoever marries my son Brand or daughter Astrid will inherit the throne.")
@@ -357,8 +358,8 @@ final class LateQuestsA {
                 .drops(Drop.always("big_bones")).skin(0xC0A080, 0x6A4A2A, 0x4A3A1A, 0x2A1A0A).size(1.0f, 2.6f, 2.0f)
                 .at("grim_tales_tower").arena(11, "stone"));
         b.quest("grim_tales", "Grim Tales", Difficulty.MASTER, 1)
+                .xp(Skill.WOODCUTTING, 60000).xp(Skill.AGILITY, 25000).xp(Skill.THIEVING, 25000).xp(Skill.HERBLORE, 15000).xp(Skill.FARMING, 10000).xp(Skill.HITPOINTS, 5000) // OSRS (current quest XP rewards)
                 .reqQuest("witchs_house").req(Skill.FARMING, 45).req(Skill.HERBLORE, 52).req(Skill.THIEVING, 58).req(Skill.AGILITY, 59).req(Skill.WOODCUTTING, 71)
-                .xp(Skill.FARMING, 4000).xp(Skill.HERBLORE, 5000).xp(Skill.HITPOINTS, 5000)
                 .stage("I can start this quest by speaking to Sylas, north-west of Taverley. (Requires Witch's House and more.)")
                 .talk("sylas").say("The witch Grimgnash has a griffin feather I need for my magic beans... and a giant, Glod, lives above the clouds.")
                 .stage("I should get a griffin feather from Grimgnash's nest.")

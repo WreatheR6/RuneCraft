@@ -101,11 +101,10 @@ final class ElfQuests {
                 .phase(33, "Seren's fragment sings a terrible song!", 1.4, false)
                 .drops(Drop.always("coins")).size(0.8f, 2.4f, 1.3f).at("prifddinas_ruins").arena(14, "void"));
         b.quest("song_of_the_elves", "Song of the Elves", Difficulty.GRANDMASTER, 4)
+                .xp(Skill.AGILITY, 40000).xp(Skill.CONSTRUCTION, 40000).xp(Skill.FARMING, 40000).xp(Skill.HERBLORE, 40000).xp(Skill.HUNTER, 40000).xp(Skill.MINING, 40000).xp(Skill.SMITHING, 40000).xp(Skill.WOODCUTTING, 40000) // OSRS (current quest XP rewards)
                 .reqQuest("regicide", "plague_city").reqQuest("mournings_end_part_ii", "making_history")
                 .req(Skill.AGILITY, 70).req(Skill.CONSTRUCTION, 70).req(Skill.FARMING, 70).req(Skill.HERBLORE, 70)
                 .req(Skill.HUNTER, 70).req(Skill.MINING, 70).req(Skill.SMITHING, 70).req(Skill.WOODCUTTING, 70)
-                .xp(Skill.AGILITY, 20000).xp(Skill.FARMING, 20000).xp(Skill.HERBLORE, 20000).xp(Skill.MINING, 20000)
-                .xp(Skill.CONSTRUCTION, 20000).xp(Skill.HUNTER, 20000).xp(Skill.SMITHING, 20000).xp(Skill.WOODCUTTING, 20000)
                 .unlock("Access to Prifddinas, the elven city")
                 .stage("I can start this quest by speaking to Arianwyn in Lletya. (Requires Regicide and the Mourning's End quests; 70 in eight skills.)")
                 .talk("arianwyn").say("The time has come to restore Prifddinas. But Lord Iorwerth's forces still hold the ruins, and something darker stirs beneath.")

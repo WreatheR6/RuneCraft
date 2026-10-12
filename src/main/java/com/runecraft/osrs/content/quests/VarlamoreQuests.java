@@ -113,9 +113,9 @@ final class VarlamoreQuests {
         Cast.npc(b, "quest_renu_keeper", "Quetzal keeper", "avium_savannah", 2, 2, Cast.BROWN, 0x2A8A6A);
         b.item("quest_quetzal_feed", "Quetzal feed", "bait", 0xC0A040, "Food fit for a quetzal chick.");
         b.quest("at_first_light", "At First Light", Difficulty.INTERMEDIATE, 1)
+                .xp(Skill.HUNTER, 4500).xp(Skill.CONSTRUCTION, 800).xp(Skill.HERBLORE, 500) // OSRS (current quest XP rewards)
                 .reqQuest("children_of_the_sun", "eagles_peak")
                 .req(Skill.HUNTER, 46).req(Skill.HERBLORE, 30).req(Skill.CONSTRUCTION, 27)
-                .xp(Skill.HUNTER, 4500).xp(Skill.HERBLORE, 800).xp(Skill.CONSTRUCTION, 500) // approximate
                 .unlock("Hunter Guild rumours; quetzal whistle")
                 .stage("I can start this quest by speaking to Guildmaster Apatura in the Hunter Guild. (Requires Children of the Sun, Eagles' Peak, 46 Hunter, 30 Herblore, 27 Construction.)")
                 .talk("guildmaster_apatura").say("A quetzal chick has been found alone on the Avium Savannah. Its mother is missing. Help the keeper look after it.")
@@ -154,10 +154,10 @@ final class VarlamoreQuests {
         Cast.npc(b, "quest_aldarin_guard", "Aldarin guard", "zeah_aldarin", 3, 3, Cast.BROWN, 0x8A8A3A);
         b.item("quest_poisoned_goblet", "Goblet", "pot_item", 0xC0A040, "A goblet with a strange residue.");
         b.quest("death_on_the_isle", "Death on the Isle", Difficulty.INTERMEDIATE, 2)
-                .reqQuest("children_of_the_sun").req(Skill.THIEVING, 34).req(Skill.AGILITY, 32).req(Skill.CRAFTING, 22)
-                .xp(Skill.THIEVING, 6000).xp(Skill.AGILITY, 2000).xp(Skill.CRAFTING, 1000) // approximate
+                .xp(Skill.THIEVING, 10000).xp(Skill.AGILITY, 7500).xp(Skill.CRAFTING, 5000) // OSRS (current quest XP rewards)
+                .reqQuest("children_of_the_sun").req(Skill.THIEVING, 34).req(Skill.AGILITY, 32)
                 .unlock("Villa Lucens wine cellar")
-                .stage("I can start this quest by speaking to the Aldarin guard. (Requires Children of the Sun, 34 Thieving, 32 Agility, 22 Crafting.)")
+                .stage("I can start this quest by speaking to the Aldarin guard. (Requires Children of the Sun, 34 Thieving, 32 Agility.)")
                 .talk("quest_aldarin_guard").say("There's been a death at Villa Lucens, at a party of all places. We need someone discreet to look into it.")
                 .stage("I should go to Villa Lucens and question Constantinius, the host.")
                 .talk("constantinius").say("A guest collapsed during the toast. Poison, they say! In my house! Find who did this.")
@@ -172,10 +172,10 @@ final class VarlamoreQuests {
         Cast.npc(b, "quest_civitas_envoy", "Civitas envoy", "zeah_civitas_illa_fortis", -3, 3, Cast.TAN, 0xE0C060);
         b.item("quest_feast_platter", "Feast platter", "meat_cooked", 0xA0603A, "A feast fit for two peoples.");
         b.quest("meat_and_greet", "Meat and Greet", Difficulty.EXPERIENCED, 1)
-                .reqQuest("children_of_the_sun").req(Skill.COOKING, 30)
-                .xp(Skill.COOKING, 7500).xp(Skill.HUNTER, 2500) // approximate
+                .xp(Skill.COOKING, 8000) // OSRS (current quest XP rewards)
+                .reqQuest("children_of_the_sun")
                 .unlock("Trade with Tal Teklan")
-                .stage("I can start this quest by speaking to the Civitas envoy in Civitas illa Fortis. (Requires Children of the Sun, 30 Cooking.)")
+                .stage("I can start this quest by speaking to the Civitas envoy in Civitas illa Fortis. (Requires Children of the Sun.)")
                 .talk("quest_civitas_envoy").say("The people of Tal Teklan distrust the city. A shared feast could change that. Will you cook it?")
                 .stage("I should cook a feast platter (2 lobsters, 2 trout and some bread) for the meeting.")
                 .talk("quest_civitas_envoy").take("lobster:2", "trout:2", "bread").give("quest_feast_platter").say("*You arrange the platter.* That smells wonderful. Take it to Tal Teklan.")
@@ -214,8 +214,8 @@ final class VarlamoreQuests {
         Cast.npc(b, "quest_varlamore_delegate", "Varlamorian delegate", "varrock_museum", -3, -3, Cast.TAN, 0xC0802A);
         b.item("quest_varlamore_relic", "Varlamorian relic", "statue", 0xE0B040, "A relic that belongs to Varlamore.");
         b.quest("ethically_acquired_antiquities", "Ethically Acquired Antiquities", Difficulty.NOVICE, 1)
+                .xp(Skill.THIEVING, 6000) // OSRS (current quest XP rewards)
                 .reqQuest("children_of_the_sun", "shield_of_arrav").req(Skill.THIEVING, 25)
-                .xp(Skill.THIEVING, 5000) // approximate
                 .unlock("New Varlamorian displays in the Varrock Museum")
                 .stage("I can start this quest by speaking to the Varlamorian delegate in the Varrock Museum. (Requires Children of the Sun, Shield of Arrav, 25 Thieving.)")
                 .talk("quest_varlamore_delegate").say("Your museum displays a relic stolen from Varlamore. We want it back, and your curator won't listen.")
@@ -230,9 +230,10 @@ final class VarlamoreQuests {
         b.items(s -> s.add("quest_quetzal_egg", "Quetzal egg", Kind.SIMPLE, "pot_item", 0xE0E0C0).value(0)
                 .examine("A large speckled egg. Handle with care."));
         b.quest("scrambled", "Scrambled!", Difficulty.NOVICE, 1)
+                .req(Skill.CONSTRUCTION, 38).req(Skill.COOKING, 36).req(Skill.SMITHING, 35)
+                .xp(Skill.CONSTRUCTION, 5000).xp(Skill.COOKING, 5000).xp(Skill.SMITHING, 5000) // OSRS (current quest XP rewards)
                 .reqQuest("children_of_the_sun")
-                .xp(Skill.HUNTER, 2000) // approximate
-                .stage("I can start this quest by speaking to the Egg collector at the Hunter Guild. (Requires Children of the Sun.)")
+                .stage("I can start this quest by speaking to the Egg collector at the Hunter Guild. (Requires Children of the Sun, 38 Construction, 36 Cooking, 35 Smithing.)")
                 .talk("quest_egg_collector").say("Someone's been raiding the quetzal nests on the savannah! Find the stolen eggs before they hatch somewhere awful.")
                 .stage("I should search the Avium Savannah for the stolen eggs.")
                 .reach("avium_savannah", 8).give("quest_quetzal_egg:3").say("* Hidden in the grass you find three eggs, still warm.")
@@ -242,11 +243,12 @@ final class VarlamoreQuests {
 
     private static void shadowsOfCustodia(QuestBook b) {
         Cast.npc(b, "quest_custodia_warden", "Custodia warden", "quest_custodia_pass", 0, 2, Cast.BROWN, 0x3A4A3A);
-        b.quest("shadows_of_custodia", "Shadows of Custodia", Difficulty.INTERMEDIATE, 1)
-                .reqQuest("twilights_promise")
-                .xp(Skill.SLAYER, 5000).xp(Skill.HUNTER, 3000) // approximate
+        b.quest("shadows_of_custodia", "Shadows of Custodia", Difficulty.INTERMEDIATE, 2)
+                .reqQuest("children_of_the_sun")
+                .req(Skill.SLAYER, 54).req(Skill.FISHING, 45).req(Skill.CONSTRUCTION, 41).req(Skill.HUNTER, 36)
+                .xp(Skill.SLAYER, 10000).xp(Skill.HUNTER, 4000).xp(Skill.FISHING, 3000).xp(Skill.CONSTRUCTION, 3000) // OSRS (current quest XP rewards)
                 .unlock("Access through the Custodia Pass")
-                .stage("I can start this quest by speaking to the Custodia warden at the Custodia Pass. (Requires Twilight's Promise.)")
+                .stage("I can start this quest by speaking to the Custodia warden at the Custodia Pass. (Requires Children of the Sun, 54 Slayer, 45 Fishing, 41 Construction, 36 Hunter.)")
                 .talk("quest_custodia_warden").say("Shadows move in the pass at night: wolves that don't cast shadows of their own. Clear them out.")
                 .stage("I must hunt down the shadow wolves in the Custodia Pass.")
                 .kill("wolf").say("* The wolf dissolves into smoke. The pass grows quiet.")
@@ -255,11 +257,12 @@ final class VarlamoreQuests {
     }
 
     private static void finalDawn(QuestBook b) {
-        b.quest("the_final_dawn", "The Final Dawn", Difficulty.MASTER, 2)
+        b.quest("the_final_dawn", "The Final Dawn", Difficulty.MASTER, 3)
+                .req(Skill.THIEVING, 66).req(Skill.FLETCHING, 52).req(Skill.RUNECRAFT, 52)
+                .xp(Skill.THIEVING, 55000).xp(Skill.FLETCHING, 25000).xp(Skill.RUNECRAFT, 25000) // OSRS (current quest XP rewards)
                 .reqQuest("the_heart_of_darkness", "perilous_moons")
-                .xp(Skill.SLAYER, 25000).xp(Skill.THIEVING, 25000).xp(Skill.AGILITY, 25000) // approximate
                 .unlock("The conclusion of the Varlamore storyline")
-                .stage("I can start this quest by speaking to Prince Itzla Arkan at the Sunrise Palace. (Requires The Heart of Darkness, Perilous Moons.)")
+                .stage("I can start this quest by speaking to Prince Itzla Arkan at the Sunrise Palace. (Requires The Heart of Darkness, Perilous Moons, 66 Thieving, 52 Fletching, 52 Runecraft.)")
                 .talk("prince_itzla_arkan").say("The Emissaries mean to plunge Varlamore into eternal twilight. This is the final battle. Will you stand with us?")
                 .stage("I should rally the guard of Civitas illa Fortis.")
                 .talk("quest_civitas_guard_captain").say("The guard is ready. To the Fortis Colosseum: the Emissaries gather there.")
