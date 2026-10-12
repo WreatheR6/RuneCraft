@@ -4,11 +4,15 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import com.runecraft.osrs.data.GePrices;
+
 /**
  * The Grand Exchange order book (pure logic). Buy and sell offers are matched like OSRS: the offer that
  * was placed first sets the price, buyers get refunded the difference. Sellers pay a 2% tax (items under
  * 50 gp are exempt; capped at 5M per item). An NPC market fills offers at the guide price with a margin
- * so solo players can trade.
+ * so solo players can trade. Guide prices are the OSRS Grand Exchange prices ({@link GePrices}), and each
+ * player can only buy an item's OSRS buy limit every four hours; a bigger buy offer stays open and fills
+ * the rest once the limit resets.
  */
 public final class GrandExchange {
     public static final int MAX_OFFERS = 8;
@@ -17,6 +21,13 @@ public final class GrandExchange {
     public static final long TAX_CAP = 5_000_000;
     /** NPC market margin: buys at guide +5%, sells at guide -5%. */
     public static final double NPC_MARGIN = 0.05;
+    /** Buy limits reset four hours after the first purchase in a window (4 h = 24,000 game ticks). */
+    public static final long BUY_LIMIT_TICKS = 24_000;
+
+    /** Buy limit per item (0 = unlimited). Defaults to the OSRS limits. */
+    private java.util.function.ToIntFunction<String> buyLimits = GePrices::buyLimit;
+    /** owner|item -> {window start tick, bought in window}. Not persisted (a restart resets limits). */
+    private final java.util.Map<String, long[]> bought = new java.util.HashMap<>();
 
     public static final class Offer {
         public final long id;
@@ -92,6 +103,48 @@ public final class GrandExchange {
         return Math.min(TAX_CAP, (long) Math.floor(price * TAX));
     }
 
+    /** OSRS guide price of an item: its Grand Exchange price, or its store value if the GE has none. */
+    public static int guidePrice(String item, int storeValue) {
+        int g = GePrices.guide(item);
+        return g > 0 ? g : storeValue;
+    }
+
+    public void setBuyLimits(java.util.function.ToIntFunction<String> limits) {
+        this.buyLimits = limits;
+    }
+
+    /** How many more of {@code item} {@code owner} may buy right now (Integer.MAX_VALUE if unlimited). */
+    public int buyLimitRemaining(String owner, String item, long now) {
+        int limit = buyLimits.applyAsInt(item);
+        if (limit <= 0) {
+            return Integer.MAX_VALUE;
+        }
+        long[] w = bought.get(owner + "|" + item);
+        if (w == null || now - w[0] >= BUY_LIMIT_TICKS) {
+            return limit;
+        }
+        return (int) Math.max(0, limit - w[1]);
+    }
+
+    /** Records a purchase against the owner's 4-hour buy limit. */
+    public void recordBought(String owner, String item, int qty, long now) {
+        if (buyLimits.applyAsInt(item) <= 0 || qty <= 0) {
+            return;
+        }
+        long[] w = bought.computeIfAbsent(owner + "|" + item, k -> new long[]{now, 0});
+        if (now - w[0] >= BUY_LIMIT_TICKS) {
+            w[0] = now;
+            w[1] = 0;
+        }
+        w[1] += qty;
+    }
+
+    /** Tick at which the owner's buy limit for an item resets (or {@code now} if it isn't in use). */
+    public long buyLimitResets(String owner, String item, long now) {
+        long[] w = bought.get(owner + "|" + item);
+        return w == null || now - w[0] >= BUY_LIMIT_TICKS ? now : w[0] + BUY_LIMIT_TICKS;
+    }
+
     public static int npcBuyPrice(int guide) {
         return Math.max(1, (int) Math.ceil(guide * (1 + NPC_MARGIN)));
     }
@@ -128,12 +181,20 @@ public final class GrandExchange {
             if (offer.complete()) {
                 break;
             }
-            int qty = Math.min(offer.remaining(), other.remaining());
-            // The older offer sets the price.
-            int price = other.price;
             Offer buyer = offer.buy ? offer : other;
             Offer seller = offer.buy ? other : offer;
+            long now = offer.created;
+            int qty = Math.min(Math.min(offer.remaining(), other.remaining()), buyLimitRemaining(buyer.owner, buyer.item, now));
+            if (qty <= 0) {
+                if (offer.buy) {
+                    break;
+                }
+                continue;
+            }
+            // The older offer sets the price.
+            int price = other.price;
             settle(buyer, seller, qty, price);
+            recordBought(buyer.owner, buyer.item, qty, now);
             trades.add(new Trade(buyer, seller, qty, price));
         }
         return trades;
@@ -155,6 +216,14 @@ public final class GrandExchange {
      * @return number of offers touched
      */
     public int npcFill(java.util.function.ToIntFunction<String> guide) {
+        return npcFill(guide, Long.MIN_VALUE);
+    }
+
+    /**
+     * As {@link #npcFill(java.util.function.ToIntFunction)}, with buy offers limited by each player's 4-hour
+     * buy limit at game tick {@code now} ({@code Long.MIN_VALUE} ignores limits).
+     */
+    public int npcFill(java.util.function.ToIntFunction<String> guide, long now) {
         int touched = 0;
         for (Offer o : offers) {
             if (o.complete()) {
@@ -165,7 +234,13 @@ public final class GrandExchange {
                 continue;
             }
             if (o.buy && o.price >= npcBuyPrice(g)) {
-                int qty = o.remaining();
+                int qty = now == Long.MIN_VALUE ? o.remaining() : Math.min(o.remaining(), buyLimitRemaining(o.owner, o.item, now));
+                if (qty <= 0) {
+                    continue;
+                }
+                if (now != Long.MIN_VALUE) {
+                    recordBought(o.owner, o.item, qty, now);
+                }
                 int price = npcBuyPrice(g);
                 o.filled += qty;
                 o.itemsToCollect += qty;

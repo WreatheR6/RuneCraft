@@ -288,7 +288,9 @@ public final class Recipes {
     private static void shop(MenuType type, String... items) {
         for (String item : items) {
             ItemDef def = ItemCatalog.get(item);
-            int price = def != null ? Math.max(1, def.value()) : vanillaPrice(item);
+            int value = def != null ? Math.max(1, def.value()) : vanillaPrice(item);
+            // OSRS rates at normal stock: general stores sell at 130% of value, specialist shops at 100%.
+            int price = type == MenuType.SHOP_GENERAL ? Math.max(1, value * 13 / 10) : value;
             add(Recipe.builder(type.name().toLowerCase(java.util.Locale.ROOT) + "_" + item.replace("minecraft:", "mc_"), type,
                     name(item) + " - " + String.format(java.util.Locale.ROOT, "%,d", price) + " gp")
                     .in("coins", price).out(item, 1).ticks(0).build());
