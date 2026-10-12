@@ -28,7 +28,8 @@ class SlayerExtrasTest {
             MonsterDef m = ContentRegistry.monster(id);
             assertNotNull(m, id);
             assertTrue(ContentRegistry.models().containsKey(id), id + " has no model");
-            assertTrue(SpawnTable.all().stream().map(SpawnPoint::monster).anyMatch(id::equals), id + " has no spawn point");
+            assertTrue(SpawnTable.all().stream().map(SpawnPoint::monster).anyMatch(id::equals)
+                    || SpawnTable.camps().stream().anyMatch(c -> c.creature().equals(id)), id + " has no spawn point or camp");
         }
         assertEquals(37, ContentRegistry.monster("sourhog").combatLevel);
         assertEquals(63, ContentRegistry.monster("crocodile").combatLevel);

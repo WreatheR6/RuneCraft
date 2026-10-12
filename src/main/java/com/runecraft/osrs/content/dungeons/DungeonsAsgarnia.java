@@ -40,7 +40,9 @@ final class DungeonsAsgarnia {
      * tiles east, where Cerberus' lair now stands): skeletons and ghosts at the entrance, the chaos
      * druids, the blue dragons behind the dusty-key gate to the north-east, baby blue dragons to the
      * east, the caged lesser demons, the hellhounds by the way to Cerberus in the north-west, the
-     * black demons' cavern to the south-west and the poison spiders' pit to the south-east.
+     * black demons' cavern to the south-west and the poison spiders' pit to the south-east. Past the
+     * hellhounds lies the far west (OSRS 2774-2835, 9803-9841): the baby black dragons' cave with two
+     * black dragons, and up a stair the black dragons' upper cavern.
      */
     static Dungeons.Dungeon taverley() {
         Cave c = new Cave("dng_taverley_dungeon", "Taverley Dungeon", mc("stone_bricks"), mc("cobblestone"), mc("glowstone"));
@@ -62,6 +64,14 @@ final class DungeonsAsgarnia {
         c.room(ox - 44, oz + 30, ox - 4, oz + 64, f, 9);               // black demons
         c.hallZ(ox + 37, oz + 8, ox + 37, oz + 36, f, 3, 4);
         c.room(ox + 22, oz + 36, ox + 50, oz + 60, f, 5);              // poison spiders
+        // The far west: the baby black dragons' cave and, up a stair, the black dragons' cavern.
+        int bw = bx(2818);
+        c.hall(ox - 54, oz - 46, bx(2836) + 1, oz - 46, f, 3, 4);
+        c.room(bw, bz(3427), bx(2836) + 1, bz(3411) + 1, f, 6);         // baby black dragons
+        int top = f + 6;
+        c.stairs(bw, bz(3419), 'w', f, top, 3, 5);
+        int bx2 = bw - (top - f) - 1;
+        c.room(bx(2774), bz(3442), bx2, bz(3402) + 1, top, 10);         // black dragons
         c.carve();
         // The dusty-key gate before the blue dragons.
         gate(c, ox + 37, oz - 20, f, 'z');
@@ -79,6 +89,11 @@ final class DungeonsAsgarnia {
             c.set(x, f + 5, oz + 37, mc("cobweb")).set(x + 2, f + 1, oz + 59, mc("cobweb"));
         }
         c.set(ox - 5, f + 1, oz - 5, mc("skeleton_skull[rotation=3]"));
+        for (int x = bx(2780); x < bx2 - 4; x += 16) {
+            c.pillar(x, bz(3434), top, 10, mc("chiseled_stone_bricks"));
+            c.pillar(x, bz(3410), top, 10, mc("chiseled_stone_bricks"));
+        }
+        c.set(bx(2777), top + 1, bz(3405), mc("bone_block[axis=y]")).set(bx(2778), top + 1, bz(3405), mc("skeleton_skull"));
         c.entrance(ox, oz, f, mc("mossy_stone_bricks"), mc("cobblestone"), 'w');
         c.camp(ox - 5, oz - 5, ox + 5, oz + 5, f, 2, 25, "minecraft:skeleton", "ghost");
         c.camp(ox + 31, oz - 7, ox + 43, oz + 7, f, 4, 25, "chaos_druid");
@@ -88,6 +103,8 @@ final class DungeonsAsgarnia {
         c.camp(ox - 52, oz - 60, ox - 20, oz - 32, f, 5, 25, "hellhound");
         c.camp(ox - 42, oz + 32, ox - 6, oz + 62, f, 4, 50, "black_demon");
         c.camp(ox + 24, oz + 38, ox + 48, oz + 58, f, 5, 25, "poison_spider");
+        c.camp(bw + 2, bz(3426), bx(2836) - 1, bz(3412), f, 4, 35, "baby_black_dragon", "baby_black_dragon", "black_dragon");
+        c.camp(bx(2775), bz(3441), bx2 - 2, bz(3403), top, 4, 50, "black_dragon");
         return c.build();
     }
 

@@ -40,7 +40,9 @@ final class DungeonsKaramjaDesert {
     /**
      * The Brimhaven Dungeon, south of Brimhaven (entrance tile 2744, 3132): vines to hack through,
      * the moss giants' cavern, stepping stones across the river, wild dogs and greater demons,
-     * black demons, the red dragons' lair and the bronze, iron and steel dragons in the far east.
+     * black demons, the red dragons' lair and the bronze, iron and steel dragons in the far east, and
+     * the baby green dragons' cave out west past more vines (OSRS 2657-2677, 9570-9582: west and a
+     * little north of the way in).
      */
     static Dungeons.Dungeon brimhaven() {
         Cave c = new Cave("dng_brimhaven_dungeon", "Brimhaven Dungeon", mc("mossy_cobblestone"), mc("moss_block"), mc("glowstone"));
@@ -62,11 +64,17 @@ final class DungeonsKaramjaDesert {
         c.room(ox + 70, oz + 32, ox + 96, oz + 56, f, 8);                 // iron dragons
         c.hallZ(ox + 83, oz + 56, ox + 83, oz + 62, f, 3, 4);
         c.room(ox + 70, oz + 62, ox + 96, oz + 86, f, 8);                 // steel dragons
+        c.hall(ox - 6, oz, bx(2712), oz, f, 3, 4);
+        c.room(bx(2690), bz(3144), bx(2712) + 1, bz(3128) + 1, f, 7);     // baby green dragons
         c.carve();
         // Vines blocking the way in (and before the dragons), hacked through with an axe.
         c.barrier(ox - 1, oz + 10, ox + 1, oz + 10, f, 4, ox, oz + 10, rc(DungeonBlocks.VINES));
         c.barrier(ox + 65, oz + 19, ox + 65, oz + 21, f, 4, ox + 65, oz + 20, rc(DungeonBlocks.VINES));
         c.barrier(ox + 25, oz + 64, ox + 25, oz + 66, f, 4, ox + 25, oz + 65, rc(DungeonBlocks.VINES));
+        c.barrier(bx(2720), oz - 1, bx(2720), oz + 1, f, 4, bx(2720), oz, rc(DungeonBlocks.VINES));
+        for (int x = bx(2692); x <= bx(2710); x += 6) {
+            c.set(x, f + 1, bz(3143), mc("fern")).set(x + 2, f + 1, bz(3129), mc("large_fern[half=lower]"));
+        }
         // The river with its stepping stones.
         c.pool(ox + 10, oz + 25, ox + 24, oz + 29, f, mc("water"));
         for (int x = ox + 11; x <= ox + 23; x += 3) {
@@ -85,6 +93,7 @@ final class DungeonsKaramjaDesert {
         c.camp(ox + 72, oz + 4, ox + 94, oz + 24, f, 2, 50, "bronze_dragon");
         c.camp(ox + 72, oz + 34, ox + 94, oz + 54, f, 2, 50, "iron_dragon");
         c.camp(ox + 72, oz + 64, ox + 94, oz + 84, f, 2, 50, "steel_dragon");
+        c.camp(bx(2691), bz(3143), bx(2712) - 1, bz(3129), f, 4, 35, "baby_green_dragon");
         return c.build();
     }
 

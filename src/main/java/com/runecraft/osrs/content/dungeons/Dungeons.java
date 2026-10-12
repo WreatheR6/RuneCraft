@@ -64,6 +64,7 @@ public final class Dungeons {
             list.addAll(DungeonsKaramjaDesert.all());
             list.addAll(DungeonsEast.all());
             list.addAll(DungeonsZeah.all());
+            list.addAll(DungeonsLairs.all());
             all = Collections.unmodifiableList(list);
         }
         return all;

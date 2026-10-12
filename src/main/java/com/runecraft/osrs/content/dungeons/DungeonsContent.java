@@ -24,7 +24,10 @@ import java.util.Map;
  * the caves below the Lumbridge Castle cellar leading to Dorgesh-Kaan, the Waterfall Dungeon, the
  * Ancient Cavern, the Barrows crypts and tunnels, the Mos Le'Harmless caves, the Lizardman Caves, the Karuulm Slayer Dungeon, the
  * Kraken Cove, the Smoke Devil Dungeon, the Iorwerth Dungeon, the Wyvern Cave, the Lithkren Vault,
- * the Chasm of Fire, the Abyss (with rifts to the rune altars) and the TzHaar city.
+ * the Chasm of Fire, the Abyss (with rifts to the rune altars), the TzHaar city, and the smaller lairs
+ * of {@link DungeonsLairs}: the Haunted Mine with Tarn's Lair, the Mort'ton catacombs, the Brine Rat
+ * Cavern, the Sourhog Cave, the Legends' Guild dungeon, the Wilderness God Wars Dungeon and
+ * Jormungand's Prison.
  */
 public final class DungeonsContent implements ContentModule {
     public static final String FANCY_BOOTS = "fancy_boots";

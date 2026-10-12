@@ -115,7 +115,6 @@ public final class SpawnTable {
     /** Top floor of the Wizards' Tower (MisthalinDraynor): four storeys of 6 blocks. */
     private static final int WIZARDS_TOWER_TOP = StructureDef.GROUND + 18;
     /** Floor heights of built dungeons (see the dungeons and zeah modules' camps). */
-    private static final int TAVERLEY_DUNGEON = 21;
     private static final int BRIMHAVEN_DUNGEON = 25;
     private static final int LUMBRIDGE_SWAMP_CAVES = 23;
     private static final int KOUREND_CATACOMBS = 39;
@@ -167,10 +166,7 @@ public final class SpawnTable {
         s("icefiend", 3003, 3479, 6, 10);              // Ice Mountain summit (10 in OSRS)
         s("minecraft:wolf", 2847, 3488, 4, 10);        // White Wolf Mountain
         f("lesser_demon", 3113, 3162, WIZARDS_TOWER_TOP, 1, 2); // the caged demon atop the Wizards' Tower
-        // Taverley Dungeon's black dragons live in its far west (2830, 9825), which isn't carved: they
-        // share the nearest carved cavern. approx
-        f("black_dragon", 2860, 3375, TAVERLEY_DUNGEON, 2, 4);
-        f("baby_black_dragon", 2862, 3378, TAVERLEY_DUNGEON, 3, 4);
+        // Taverley Dungeon's black dragons and baby black dragons are camps in its far west.
         f("king_scorpion", 3044, 3380, DWARVEN_MINE, 2, 4);     // the scorpion pit in the Dwarven Mine
 
         // ============================================================ Wilderness
@@ -199,16 +195,10 @@ public final class SpawnTable {
         // ============================================================ Morytania
         s("ghoul", 3433, 3463, 8, 10);                 // past the gate north of Paterdomus (10 in OSRS)
         s("giant_bat", 3747, 3397, 6, 12);             // eastern Morytania (6 in OSRS)
-        // Tarn's Lair is an instance beneath the Haunted Mine that isn't built: the dogs stand in
-        // for it outside the mine. approx
-        s("terror_dog", 3424, 3240, 4, 6);
-        // Shades of Mort'ton: loar shades roam the temple ruins (25 in OSRS), the stronger ones its
-        // catacombs (the catacombs aren't built, so they gather around the ruined town; approx).
+        // Terror dogs: Tarn's Lair below the Haunted Mine (a dungeon camp).
+        // Shades of Mort'ton: loar shades roam the temple ruins (25 in OSRS); the stronger ones are
+        // camps in the catacombs below the town.
         s("loar_shade", 3493, 3293, 10, 16);
-        s("phrin_shade", 3478, 3292, 3, 6);
-        s("riyl_shade", 3502, 3288, 3, 6);
-        s("asyn_shade", 3484, 3280, 2, 5);
-        s("fiyr_shade", 3500, 3276, 2, 5);
         // Slayer Tower: ground floor, first floor, second floor (its basement is a dungeon camp).
         f("crawling_hand", 3416, 3550, SLAYER_TOWER_0, 4, 3);
         f("banshee", 3440, 3550, SLAYER_TOWER_0, 4, 3);
@@ -228,7 +218,6 @@ public final class SpawnTable {
         s("minecraft:cave_spider", 2540, 3185, 6, 8);  // spiders in the Tree Gnome Village maze
 
         // ============================================================ Fremennik Province, Troll Country
-        s("brine_rat", 2752, 3735, 3, 6);              // Brine Rat Cavern, east of Rellekka
         s("rock_crab", 2706, 3718, 10, 8);             // rock crabs on the shore north-east of Rellekka (10 in OSRS)
         s("rock_crab", 2675, 3714, 9, 8);              // and on the north-western beach (9 in OSRS)
         si("rock_crab", 2525, 3755, 3, 8);             // Waterbirth Island's beaches (3 in OSRS)
@@ -248,7 +237,6 @@ public final class SpawnTable {
         s("elf_warrior", 2240, 3176, 3, 8);            // Isafdar forest
 
         // ============================================================ islands, Zeah
-        si("basilisk_knight", 2470, 3990, 3, 6);       // Jormungand's Prison, Island of Stone
         // Catacombs of Kourend (the zeah module's crypt beneath the castle)
         fi("greater_nechryael", 1639, 3693, KOUREND_CATACOMBS, 2, 10);
         fi("brutal_black_dragon", 1648, 3686, KOUREND_CATACOMBS, 2, 8);
@@ -258,9 +246,6 @@ public final class SpawnTable {
         f("molanisk", 3141, 3181, LUMBRIDGE_SWAMP_CAVES, 2, 3);
         // Mutated bloodveld: the Catacombs of Kourend (their Meiyerditch laboratory isn't built).
         fi("mutated_bloodveld", 1645, 3680, KOUREND_CATACOMBS, 4, 6);
-        // Baby green dragons: Brimhaven Dungeon (their real cavern, past the fire giants, isn't carved;
-        // they share the nearest carved one. approx)
-        f("baby_green_dragon", 2740, 3112, BRIMHAVEN_DUNGEON, 3, 4);
         // Otherworldly beings haunt the west of Zanaris.
         si("otherworldly_being", 2392, 4416, 4, 4);
 
@@ -287,21 +272,17 @@ public final class SpawnTable {
         s("lucky_impling", 2320, 3250, 1, 24, IMPLING * 6);
 
         // ============================================================ Slayer task creatures (slayer module extras)
-        s("sourhog", 3150, 3345, 4, 5);                // Sourhog Cave entrance north of Draynor (cave not built; approx)
         s("crocodile", 3351, 2927, 6, 10);             // the oasis south of Pollnivneach (7 in OSRS)
         s("crocodile", 3268, 2852, 10, 16);            // the river shallows west of Nardah (20 in OSRS)
         s("crocodile", 3300, 2917, 4, 6);
-        s("shadow_warrior", 2732, 3338, 4, 4);         // by the Legends' Guild (its dungeon isn't built; approx)
         s("ent", 3305, 3612, 3, 12);                   // Wilderness ents (level 101 there)
         s("ent", 3210, 3690, 3, 10);
         s("mammoth", 3167, 3593, 6, 7);                // south-east of the Ferox Enclave (8 in OSRS)
         s("ice_spider", 2962, 3924, 6, 9);             // Frozen Waste Plateau (9 in OSRS)
         s("bandit", 3040, 3701, 4, 7, 100);            // Wilderness Bandit Camp (60 s respawn)
         s("wilderness_bandit", 3036, 3696, 5, 8, 100); // Wilderness Bandit Camp, level 130s
-        // Wilderness God Wars Dungeon (entrance cave; the dungeon itself isn't built)
-        s("spiritual_warrior", 3017, 3745, 2, 5);
-        s("spiritual_ranger", 3021, 3741, 2, 5);
-        s("spiritual_mage", 3013, 3741, 2, 5);
+        // Brine rats, Jormungand's basilisk knights, baby green dragons, sourhogs, shadow warriors and the
+        // Wilderness God Wars Dungeon's spiritual creatures are dungeon camps (DungeonsLairs).
     }
 
     // ------------------------------------------------------------------ monsters that never roam
@@ -362,19 +343,6 @@ public final class SpawnTable {
         m.put("giant_rat", "OSRS giant rats also roam Lumbridge Swamp above ground");
         m.put("chaos_druid", "OSRS chaos druids also live in the Chaos Druid Tower north of Ardougne");
         m.put("loar_shade", "loar shades roam the ruins of Mort'ton above ground in OSRS");
-        String catacombs = "the Mort'ton catacombs aren't built: the shades gather in the ruins above";
-        for (String id : List.of("phrin_shade", "riyl_shade", "asyn_shade", "fiyr_shade")) {
-            m.put(id, catacombs);
-        }
-        m.put("brine_rat", "the Brine Rat Cavern isn't built: they wait at its dig spot east of Rellekka");
-        m.put("terror_dog", "Tarn's Lair isn't built: they wait outside the Haunted Mine");
-        m.put("sourhog", "the Sourhog Cave isn't built: they wait at its entrance");
-        m.put("shadow_warrior", "the Legends' Guild dungeon isn't built: they wait outside the guild");
-        String gwd = "the Wilderness God Wars Dungeon isn't built: they wait at its entrance cave";
-        for (String id : List.of("spiritual_warrior", "spiritual_ranger", "spiritual_mage")) {
-            m.put(id, gwd);
-        }
-        m.put("basilisk_knight", "Jormungand's Prison isn't built: they wait on the Island of Stone above it");
         return Collections.unmodifiableMap(m);
     }
 
