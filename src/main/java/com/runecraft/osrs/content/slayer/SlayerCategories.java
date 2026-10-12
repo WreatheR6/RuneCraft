@@ -55,8 +55,8 @@ public final class SlayerCategories {
         add("moss_giants", "moss giants", 1, List.of("MOSS_GIANT"), Region.MISTHALIN, Region.KARAMJA);
         add("ice_giants", "ice giants", 1, List.of("ICE_GIANT"), Region.ASGARNIA, Region.WILDERNESS);
         add("lesser_demons", "lesser demons", 1, List.of("LESSER_DEMON"), Region.KARAMJA, Region.WILDERNESS);
-        add("greater_demons", "greater demons", 1, List.of("GREATER_DEMON"), Region.KARAMJA, Region.WILDERNESS);
-        add("black_demons", "black demons", 1, List.of("BLACK_DEMON"), Region.ASGARNIA, Region.WILDERNESS);
+        add("greater_demons", "greater demons", 1, List.of("GREATER_DEMON"), Region.KARAMJA, Region.KANDARIN, Region.WILDERNESS);
+        add("black_demons", "black demons", 1, List.of("BLACK_DEMON"), Region.ASGARNIA, Region.KARAMJA, Region.KANDARIN, Region.WILDERNESS);
         // Slayer module creatures (low level)
         add("bats", "bats", 1, Region.WILDERNESS, Region.MORYTANIA);
         add("bears", "bears", 1, Region.ASGARNIA, Region.WILDERNESS);

@@ -123,6 +123,15 @@ public final class GielinorGeography {
             new Ellipse("Pirates' Cove", 2212, 3805, 28, 28),
             new Ellipse("Ungael", 2256, 4048, 30, 30),
             new Ellipse("Iceberg", 2660, 4010, 14, 12),
+            // Sailing-era islands of the Unquiet Ocean, placed and sized around their quest sites (approx)
+            new Ellipse("The Pandemonium", 3050, 2967, 15, 13),
+            new Ellipse("The Great Conch", 3186, 2443, 62, 58),
+            new Ellipse("Little Pearl", 3352, 2212, 16, 14),
+            new Ellipse("Tortugan islet", 2962, 2605, 10, 9),
+            new Ellipse("Red Rock", 2792, 2522, 15, 13),
+            new Ellipse("The Zenith", 2878, 2505, 16, 14),
+            new Ellipse("Last Light", 2855, 2327, 26, 24),
+            new Ellipse("Wyrmscraig", 2566, 2250, 58, 62),
             // instanced areas that the mod places at their OSRS instance coordinates
             new Ellipse("Zanaris", 2412, 4432, 48, 44),
             new Ellipse("Prifddinas", 3180, 6105, 170, 95)

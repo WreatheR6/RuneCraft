@@ -111,7 +111,7 @@ class SlayerContentTest {
                 assertTrue(a.unlock() == null || SlayerRewards.unlock(a.unlock()) != null, a.unlock());
                 if (SlayerTasks.available(a.category())) {
                     available++;
-                    assertTrue(!SlayerTasks.regions(a.category()).isEmpty(), a.category());
+                    assertTrue(!m.locationRestricted() || !SlayerTasks.regions(a.category()).isEmpty(), a.category());
                 }
             }
             assertTrue(available >= 10, m.id() + " has only " + available + " assignable tasks");

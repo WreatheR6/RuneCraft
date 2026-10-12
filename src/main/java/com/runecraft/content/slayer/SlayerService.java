@@ -15,6 +15,7 @@ import com.runecraft.osrs.content.slayer.SlayerMasters;
 import com.runecraft.osrs.content.slayer.SlayerRewards;
 import com.runecraft.osrs.content.slayer.SlayerTasks;
 import com.runecraft.osrs.content.slayer.Superiors;
+import com.runecraft.osrs.world.TaskRegions;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
@@ -161,6 +162,11 @@ public final class SlayerService {
         SlayerNet.sync(player);
     }
 
+    /** Kingdom a kill counts in for Konar: a carved dungeon counts as the kingdom it belongs to. */
+    private static Region taskRegion(Entity entity) {
+        return TaskRegions.at(entity.getBlockPos().getX(), entity.getBlockPos().getY(), entity.getBlockPos().getZ());
+    }
+
     private static String describe(SlayerState.Profile p) {
         String name = SlayerTasks.displayName(p.task);
         if (p.region != null) {
@@ -249,7 +255,7 @@ public final class SlayerService {
         if (m != null && m.wilderness() && Gielinor.wildernessLevel(entity) <= 0) {
             return false;
         }
-        return p.region == null || Gielinor.region(entity).name().equals(p.region);
+        return p.region == null || taskRegion(entity).name().equals(p.region);
     }
 
     public static void onKill(ServerPlayerEntity player, LivingEntity entity, MonsterStats stats) {
@@ -262,7 +268,7 @@ public final class SlayerService {
             Msg.game(player, "Krystilia's tasks only count in the Wilderness.");
             return;
         }
-        if (p.region != null && !Gielinor.region(entity).name().equals(p.region)) {
+        if (p.region != null && !taskRegion(entity).name().equals(p.region)) {
             Msg.game(player, "Konar wants you to kill these in " + Region.valueOf(p.region).displayName() + ".");
             return;
         }

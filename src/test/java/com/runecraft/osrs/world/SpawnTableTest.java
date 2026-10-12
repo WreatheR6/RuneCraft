@@ -123,7 +123,7 @@ class SpawnTableTest {
         assertBetween("minecraft:chicken", 3233, 3297, 12, 6, 14);  // Lumbridge chicken farm
         assertBetween("minecraft:sheep", 3200, 3266, 12, 6, 14);    // Fred's sheep
         assertBetween("rock_crab", 2700, 3716, 30, 12, 24);         // Rellekka rock crabs
-        assertBetween("minecraft:zombie", 3165, 3700, 50, 10, 24);  // Graveyard of Shadows
+        assertBetween("zombie_lvl18", 3165, 3700, 50, 10, 24);      // Graveyard of Shadows
         for (SpawnPoint p : SpawnTable.all()) {
             double area = Math.PI * (p.radius() + 1) * (p.radius() + 1);
             assertTrue(p.count() / area <= 0.35, p.key() + " is packed too densely");

@@ -123,6 +123,19 @@ public final class TownMonsters {
                 .drops(Drop.always("bones"), Drop.of("coins", 1, 10, 3), Drop.of("rope", 1, 1, 20), Drop.herbs(40))
                 .skin(0xC8A080, 0x4A4A3A, 0x3A3A2A, 0x2A2A2A).spawn(Region.MISTHALIN, 1, 1, 1));
 
+        // The Dark Wizards' Tower's level 11 and level 22-23 dark wizards (the built-in Dark wizard is level 7 and
+        // the vanilla witch stands in for level 20). Stats from MonsterStatsTable.
+        add(MonsterDef.of("dark_wizard_lvl11", "Dark wizard").level(11).stats(15, 5, 5, 10, 10, 1).speed(4)
+                .defenceBonus(0, 0, 0, 5, 0).attack(AttackDef.of("magic", AttackType.MAGIC, 5, 10, 10).particle("minecraft:witch"))
+                .drops(Drop.always("bones"), Drop.of("mind_rune", 3, 10, 4), Drop.of("chaos_rune", 1, 5, 8),
+                        Drop.of("body_rune", 2, 8, 8), Drop.of("nature_rune", 1, 3, 25), Drop.herbs(40))
+                .model("dark_wizard").skin(0xC8A080, 0x2A2A4A, 0x1A1A2A, 0x101018).spawn(Region.ASGARNIA, 2, 1, 2));
+        add(MonsterDef.of("dark_wizard_lvl23", "Dark wizard").level(23).stats(25, 20, 10, 20, 25, 1).speed(4)
+                .defenceBonus(0, 0, 0, 5, 0).attack(AttackDef.of("magic", AttackType.MAGIC, 5, 10, 10).particle("minecraft:witch"))
+                .drops(Drop.always("bones"), Drop.of("chaos_rune", 2, 6, 6), Drop.of("nature_rune", 1, 4, 12),
+                        Drop.of("eye_of_newt", 1, 2, 4), Drop.herbs(20))
+                .model("dark_wizard").skin(0xC8A080, 0x4A1A1A, 0x2A1010, 0x101018).spawn(Region.ASGARNIA, 2, 1, 2));
+
         // ------------------------------------------------------------- Ardougne
         add(MonsterDef.of("ardougne_knight", "Knight of Ardougne").level(46).stats(52, 38, 38, 38, 1, 1).speed(4) // approx. att/str/def
                 .defenceBonus(45, 50, 45, -10, 45).attack(AttackDef.of("melee", AttackType.SLASH, 5, 2.5, 10)).passive()

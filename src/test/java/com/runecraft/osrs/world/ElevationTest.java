@@ -85,6 +85,27 @@ class ElevationTest {
         assertTrue(h(2912, 3193) < Elevation.SEA_LEVEL, "strait between Karamja and Rimmington: " + h(2912, 3193));
     }
 
+    /** The Sailing quests' places stand on proper islands, not just on their plaza's islet. */
+    @Test
+    void sailingIslandsHoldTheirQuestSites() {
+        List<String> ids = List.of("quest_the_pandemonium", "quest_tortugan_islet", "quest_great_conch", "quest_gryphon_lair",
+                "quest_little_pearl", "quest_sacred_grove", "quest_red_rock", "quest_last_light", "quest_zenith",
+                "quest_wyrmscraig", "quest_wyrmscraig_landing", "quest_wyrmscraig_cave", "quest_wyrmscraig_cathedral");
+        for (String id : ids) {
+            PlaceDef p = ContentRegistry.place(id);
+            assertTrue(p != null, id);
+            double inland = Elevation.landDistance(p.osrsX(), p.osrsY());
+            assertTrue(inland >= 3, id + " is only " + inland + " tiles from the coast");
+        }
+        // The big islands are islands, with open sea around them.
+        for (double[] land : new double[][]{{3186, 2443}, {3150, 2440}, {3225, 2460}, {2566, 2250}, {2540, 2290}, {2855, 2327}}) {
+            assertTrue(Elevation.landDistance(land[0], land[1]) > 8, "inland " + land[0] + "," + land[1]);
+        }
+        for (double[] sea : new double[][]{{3186, 2560}, {3110, 2440}, {2566, 2350}, {2700, 2400}, {3000, 2967}}) {
+            assertTrue(h(sea[0], sea[1]) < Elevation.SEA_LEVEL - 2, "sea at " + sea[0] + "," + sea[1]);
+        }
+    }
+
     @Test
     void riversCutThroughTheLand() {
         // River Lum east of Lumbridge Castle (inside the town's hand-built channel), north of the town

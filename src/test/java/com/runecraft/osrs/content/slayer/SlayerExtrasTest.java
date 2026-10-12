@@ -35,7 +35,7 @@ class SlayerExtrasTest {
         assertEquals(63, ContentRegistry.monster("crocodile").combatLevel);
         assertEquals(48, ContentRegistry.monster("shadow_warrior").combatLevel);
         assertEquals(64, ContentRegistry.monster("otherworldly_being").combatLevel);
-        assertEquals(86, ContentRegistry.monster("ent").combatLevel);
+        assertEquals(101, ContentRegistry.monster("ent").combatLevel); // the Wilderness ents
         assertEquals(80, ContentRegistry.monster("mammoth").combatLevel);
         assertEquals(61, ContentRegistry.monster("ice_spider").combatLevel);
         assertEquals(130, ContentRegistry.monster("wilderness_bandit").combatLevel);

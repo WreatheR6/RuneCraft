@@ -152,7 +152,7 @@ public final class SpawnTable {
         // Edgeville / Barbarian Village: town residents and the dungeon are camps.
 
         // ============================================================ Asgarnia
-        s("goblin", 2957, 3498, 10, 12);               // Goblin Village (level 5 goblins in OSRS; 23 spawns)
+        s("goblin_lvl5", 2957, 3498, 10, 12);          // Goblin Village (level 5 goblins in OSRS; 23 spawns)
         s("minecraft:chicken", 3014, 3290, 5, 5);      // farm south of Falador
         s("minecraft:pig", 3016, 3309, 3, 3);          // pig pen on the same farm
         s("minecraft:cow", 3029, 3308, 6, 6);          // cow field south of Falador
@@ -161,18 +161,19 @@ public final class SpawnTable {
         s("imp", 3012, 3312, 3, 5);                    // farmland south of Falador
         s("imp", 2947, 3329, 1, 6);                    // west of Falador
         s("imp", 2951, 3360, 1, 6);                    // by Falador's west wall
-        s("dark_wizard", 2908, 3335, 3, 5);            // Dark Wizards' Tower
-        s("minecraft:witch", 2910, 3338, 2, 5);
-        s("icefiend", 3003, 3479, 6, 10);              // Ice Mountain summit (10 in OSRS)
+        s("dark_wizard_lvl11", 2908, 3335, 2, 5);      // Dark Wizards' Tower: two level 11 wizards
+        s("dark_wizard_lvl23", 2910, 3338, 5, 5);      // and five level 22-23 ones (approx: all level 23)
+        s("icefiend", 3003, 3479, 6, 10);              // Ice Mountain summit: level 13 icefiends (10 in OSRS)
         s("minecraft:wolf", 2847, 3488, 4, 10);        // White Wolf Mountain
         f("lesser_demon", 3113, 3162, WIZARDS_TOWER_TOP, 1, 2); // the caged demon atop the Wizards' Tower
         // Taverley Dungeon's black dragons and baby black dragons are camps in its far west.
         f("king_scorpion", 3044, 3380, DWARVEN_MINE, 2, 4);     // the scorpion pit in the Dwarven Mine
 
         // ============================================================ Wilderness
-        s("minecraft:zombie", 3169, 3676, 10, 14);     // Graveyard of Shadows (21 in OSRS)
-        s("minecraft:zombie", 3162, 3734, 8, 12);      // north of the graveyard (15 in OSRS)
-        s("minecraft:skeleton", 3247, 3736, 10, 16);   // Bone Yard (14 in OSRS)
+        s("zombie_lvl18", 3169, 3676, 8, 14);          // Graveyard of Shadows: level 18 zombies (15 in OSRS)
+        s("zombie_lvl24", 3175, 3668, 3, 8);           // and level 24 ones (6 in OSRS)
+        s("zombie_lvl18", 3162, 3734, 8, 12);          // north of the graveyard (15 level 18s in OSRS)
+        s("skeleton_lvl25", 3247, 3736, 9, 16);        // Bone Yard: level 25 skeletons (9 in OSRS)
         s("dark_wizard", 2982, 3568, 4, 6);            // dark wizards' camp north of the Edgeville ditch
         s("minecraft:witch", 2984, 3570, 3, 6);        // and the level 20 ones with them
         s("green_dragon", 2977, 3616, 3, 6);           // west of the Graveyard of Shadows
@@ -213,20 +214,20 @@ public final class SpawnTable {
         s("minecraft:sheep", 2653, 3367, 8, 10);       // sheep north of East Ardougne (10 in OSRS)
         s("chaos_druid", 2562, 3356, 4, 4);            // Chaos Druid Tower
         s("grizzly_bear", 2703, 3336, 6, 12);          // north of the Legends' Guild (9 in OSRS)
-        s("ogre", 2527, 3374, 6, 6);                   // Combat Training Camp (8 in OSRS)
+        s("ogre_lvl63", 2527, 3374, 6, 6);             // Combat Training Camp: level 63 ogres (8 in OSRS)
         s("giant_bat", 2583, 3477, 6, 12);             // by Baxtorian Falls
         s("minecraft:cave_spider", 2540, 3185, 6, 8);  // spiders in the Tree Gnome Village maze
 
         // ============================================================ Fremennik Province, Troll Country
         s("rock_crab", 2706, 3718, 10, 8);             // rock crabs on the shore north-east of Rellekka (10 in OSRS)
         s("rock_crab", 2675, 3714, 9, 8);              // and on the north-western beach (9 in OSRS)
-        si("rock_crab", 2525, 3755, 3, 8);             // Waterbirth Island's beaches (3 in OSRS)
+        s("rock_crab", 2525, 3755, 3, 8);              // Waterbirth Island's beaches (3 in OSRS)
         s("mountain_troll", 2870, 3600, 8, 12);        // Death Plateau (9 in OSRS)
         s("mountain_troll", 2848, 3679, 6, 8);         // outside the Troll Stronghold (8 in OSRS)
 
         // ============================================================ Karamja
         s("harpie_bug_swarm", 2866, 3110, 6, 6);       // swamp south-west of Musa Point
-        si("mogre", 2992, 3120, 2, 4);                 // Mudskipper Point
+        s("mogre", 2992, 3120, 2, 4);                  // Mudskipper Point
         s("monkey", 2921, 3022, 6, 10);                // the jungle south of Musa Point (10 in OSRS)
         s("monkey", 2902, 3079, 4, 8);
         s("monkey", 2834, 3030, 4, 6);                 // north of Tai Bwo Wannai

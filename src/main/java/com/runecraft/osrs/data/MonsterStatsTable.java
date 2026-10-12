@@ -140,7 +140,8 @@ public final class MonsterStatsTable {
         // Ghost (Level 19)
         row("ghost", 19, 25, 13, 13, 18, 1, 1, 4, 5, 5, 5, -5, 5, 0, 0, 0, "spectral", "undead");
         // Icefiend (Level 18)
-        row("icefiend", 18, 20, 12, 16, 19, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, "demon");
+        // Icefiend (Level 13): the Ice Mountain icefiends, the only ones placed (level 18 lives in the God Wars Dungeon)
+        row("icefiend", 13, 15, 10, 10, 12, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, "demon");
         // Hobgoblin (Hobgoblin)
         row("hobgoblin", 28, 29, 22, 24, 24, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
         maxHit("hobgoblin", "melee", 3); // was 5
@@ -255,6 +256,16 @@ public final class MonsterStatsTable {
         maxHit("ice_troll", "melee", 17); // was 9
         // Ogre (Level 53)
         row("ogre", 53, 60, 43, 43, 43, 1, 1, 6, 0, 0, 0, 0, 0, 22, 0, 0);
+        // Level variants placed where OSRS spawns them (slayer module's SpawnVariants)
+        row("ogre_lvl63", 63, 60, 54, 54, 54, 1, 1, 4, 19, 23, 24, 0, 0, 8, 0, 0);
+        row("goblin_lvl5", 5, 12, 3, 1, 4, 1, 1, 6, 0, 0, 0, 0, 0, 12, 0, 0);
+        row("dark_wizard_lvl11", 11, 15, 5, 5, 10, 10, 1, 4, 0, 0, 0, 5, 0, 0, 0, 0);
+        row("dark_wizard_lvl23", 23, 25, 20, 10, 20, 25, 1, 4, 0, 0, 0, 5, 0, 0, 0, 0);
+        row("zombie_lvl18", 18, 24, 13, 13, 18, 1, 1, 5, 0, 0, 0, 0, 0, 5, 0, 0, "undead");
+        row("zombie_lvl24", 24, 30, 19, 21, 16, 1, 1, 5, 9, 8, 12, 10, 11, 5, 0, 0, "undead");
+        row("skeleton_lvl25", 25, 17, 24, 24, 24, 1, 1, 4, 9, 11, -2, 1, 4, 15, 0, 0, "undead");
+        // Ent (Wilderness, level 101): every placed ent is a Wilderness one
+        row("ent", 101, 105, 80, 95, 75, 1, 1, 4, 50, 70, 70, 40, 30, 0, 0, 0);
         // Cyclops (Level 76)
         row("cyclops", 76, 100, 65, 65, 35, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
         maxHit("cyclops", "melee", 7); // was 9

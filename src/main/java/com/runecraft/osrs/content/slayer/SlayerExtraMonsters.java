@@ -51,7 +51,8 @@ final class SlayerExtraMonsters {
                         .drops(Drop.of("cosmic_rune", 2, 8, 8), Drop.of("law_rune", 1, 3, 16), coins(10, 300, 4), Drop.herbs(16),
                                 Drop.seeds(40), clue("hard", 128)) // approx
                         .slayer(1, "otherworldly_beings").size(0.6f, 1.95f, 1.0f).spawn(Region.LUMBRIDGE_SWAMP, 3, 1, 3),
-                // Wilderness and the Woodcutting Guild dungeon. In OSRS the ent leaves a trunk that is chopped for
+                // The Wilderness ents (level 101; stats from MonsterStatsTable). The level 86 Woodcutting Guild ents
+                // aren't placed (the guild's dungeon isn't built). In OSRS the ent leaves a trunk that is chopped for
                 // noted logs; here the logs drop directly (rates approx).
                 m("ent", "Ent", 86, 105, 70, 75, 65, 1, 1).speed(5).attack(crush(10).message("The ent lashes you with a branch."))
                         .defenceBonus(20, 0, 30, 0, 50) // approx
