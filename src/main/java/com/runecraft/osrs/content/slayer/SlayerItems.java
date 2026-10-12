@@ -145,6 +145,19 @@ public final class SlayerItems {
                 .examine("It looks like this could be attached to a shield somehow.");
         items.add("wyvern_visage", "Wyvern visage", Kind.SIMPLE, "visage", 0x8AA0B0).value(10000).stack(1)
                 .examine("It looks like this could be attached to a shield somehow.");
+        // Fossil Island wyverns' granite pieces (stats approx).
+        items.add("granite_boots", "Granite boots", Kind.ARMOUR, "boots", 0x7A7A7A).value(31000).stack(1).tier("rune")
+                .equipment(wear(Slot.FEET, s(0, 0, 0, -3, -1, 7, 8, 9, 0, 6, 3, 0, 0, 0), Skill.DEFENCE, 50,
+                        Skill.STRENGTH, 50));
+        items.add("granite_longsword", "Granite longsword", Kind.MELEE_WEAPON, "longsword", 0x7A7A7A).value(42000).stack(1)
+                .tier("rune").equipment(weapon(s(45, 60, -2, 0, 0, 0, 3, 2, 0, 0, 64, 0, 0, 0), 5, AttackType.SLASH,
+                        WeaponClass.MELEE, Skill.ATTACK, 50, Skill.STRENGTH, 50))
+                .examine("A longsword carved from granite.");
+        // Thrown weapons from drakes, wyrms and hydras (OSRS ranged strength: knife 25, thrownaxe 42).
+        items.add("dragon_knife", "Dragon knife", Kind.ARROW, "throwing_knife", 0xB02020).value(1200).rangedStrength(25)
+                .tier("dragon").examine("A finely balanced throwing knife.");
+        items.add("dragon_thrownaxe", "Dragon thrownaxe", Kind.ARROW, "thrownaxe", 0xB02020).value(1500).rangedStrength(42)
+                .tier("dragon").examine("A finely balanced throwing axe.");
         items.add("dragon_boots", "Dragon boots", Kind.ARMOUR, "boots", 0xA02020).value(40000).stack(1).tier("dragon")
                 .equipment(wear(Slot.FEET, s(0, 0, 0, -3, -1, 16, 17, 18, 0, 0, 4, 0, 0, 0), Skill.DEFENCE, 60));
         items.add("brine_sabre", "Brine sabre", Kind.MELEE_WEAPON, "scimitar", 0x4A8A9A).value(15000).stack(1).tier("mithril")

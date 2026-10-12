@@ -147,7 +147,7 @@ public final class SlayerBosses {
                 .attackBonus(50, 50, 50)
                 .defenceBonus(50, 100, 25, 100, 100)
                 .attack(CERB_MELEE).attack(CERB_RANGED).attack(CERB_MAGIC).attack(CERB_LAVA)
-                .drops(Drop.of("primordial_crystal", 1, 1, 520), Drop.of("pegasian_crystal", 1, 1, 520),
+                .drops(Drop.always("infernal_ashes"), Drop.of("primordial_crystal", 1, 1, 520), Drop.of("pegasian_crystal", 1, 1, 520),
                         Drop.of("eternal_crystal", 1, 1, 520), Drop.of("smouldering_stone", 1, 1, 520), Drop.of("jar_of_souls", 1, 1, 2000),
                         Drop.of("rune_platebody", 1, 1, 12), Drop.of("rune_2h_sword", 1, 1, 12), Drop.of("runite_ore", 5, 5, 12),
                         Drop.of("death_rune", 100, 100, 12), Drop.of("blood_rune", 60, 60, 12), Drop.of("super_restore", 2, 2, 12),
@@ -160,7 +160,7 @@ public final class SlayerBosses {
         return BossDef.of("abyssal_sire", "Abyssal Sire").level(350).stats(400, 180, 136, 250, 200, 1).speed(4)
                 .defenceBonus(40, 60, 50, 20, 60)
                 .attack(SIRE_TENDRIL).attack(SIRE_SLAM).attack(SIRE_MIASMA)
-                .drops(Drop.of("unsired", 1, 1, 100), Drop.of("blood_rune", 75, 125, 8), Drop.of("soul_rune", 100, 100, 10),
+                .drops(Drop.always("abyssal_ashes"), Drop.of("unsired", 1, 1, 100), Drop.of("blood_rune", 75, 125, 8), Drop.of("soul_rune", 100, 100, 10),
                         Drop.of("runite_bar", 3, 3, 12), Drop.of("magic_logs", 50, 50, 12), Drop.of("super_restore", 2, 2, 12),
                         Drop.of("rune_platebody", 1, 1, 16), Drop.of("coins", 20000, 50000, 6), Drop.of("clue_scroll_elite", 1, 1, 100)) // approx
                 .slayer(85, "abyssal_demons").pet("pet_abyssal_orphan").at("abyssal_nexus").arena(13, "void")

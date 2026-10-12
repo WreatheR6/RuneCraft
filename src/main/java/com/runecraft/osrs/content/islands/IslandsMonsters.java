@@ -60,7 +60,9 @@ public final class IslandsMonsters {
                         .attack(AttackDef.of("tail whip", AttackType.CRUSH, 22, 4, 4).special(Special.KNOCKBACK, 1)
                                 .message("The wyvern lashes you with its tail!"))
                         .attack(icyBreath()).defenceBonus(90, 90, 90, 60, 90)
-                        .drops(Drop.always("wyvern_bones"), Drop.of("rune_battleaxe", 1, 1, 128), Drop.herbs(12), Drop.gems(32),
+                        .drops(Drop.always("wyvern_bones"), Drop.of("wyvern_visage", 1, 1, 10000), Drop.of("granite_legs", 1, 1, 512),
+                                Drop.of("granite_boots", 1, 1, 1024), Drop.of("granite_longsword", 1, 1, 1024), // approx. rates
+                                Drop.of("rune_battleaxe", 1, 1, 128), Drop.herbs(12), Drop.gems(32),
                                 clue("hard", 256),
                                 clue("elite", 1200))
                         .slayer(66, "fossil_island_wyverns").model("taloned_wyvern").size(1.4f, 2.4f, 1.05f).underground(),
@@ -68,7 +70,9 @@ public final class IslandsMonsters {
                 m("ancient_wyvern", "Ancient wyvern", 210, 300, 160, 175, 160, 140, 1).speed(4).attack(melee(AttackType.SLASH, 24))
                         .attack(magic(26, "minecraft:snowflake").message("The ancient wyvern blasts you with frost magic."))
                         .attack(icyBreath()).defenceBonus(120, 120, 120, 80, 100)
-                        .drops(Drop.always("wyvern_bones"), Drop.of("rune_2h_sword", 1, 1, 128), Drop.of("dragon_platelegs", 1, 1, 1024),
+                        .drops(Drop.always("wyvern_bones"), Drop.of("wyvern_visage", 1, 1, 10000), Drop.of("granite_legs", 1, 1, 512),
+                                Drop.of("granite_boots", 1, 1, 1024), Drop.of("granite_longsword", 1, 1, 1024), // approx. rates
+                                Drop.of("rune_2h_sword", 1, 1, 128), Drop.of("dragon_platelegs", 1, 1, 1024),
                                 Drop.herbs(10),
                                 Drop.gems(24), clue("elite", 350))
                         .slayer(82, "fossil_island_wyverns").model("spitting_wyvern").size(1.4f, 2.4f, 1.2f).underground(),
@@ -113,7 +117,7 @@ public final class IslandsMonsters {
                         .skin(0x4A6A3A, 0x3A4A2A, 0x3A4A2A, 0xA0A040).size(0.8f, 2.0f, 1.0f),
                 // Kharazi Jungle and Feldip Hills.
                 m("jogre", "Jogre", 53, 60, 43, 43, 43, 1, 1).speed(5).attack(melee(AttackType.CRUSH, 8))
-                        .drops(Drop.always("big_bones"), Drop.of("coins", 5, 100, 4), Drop.of("iron_ore", 1, 1, 16), Drop.herbs(32),
+                        .drops(Drop.of("jogre_champion_scroll", 1, 1, 5000), Drop.always("big_bones"), Drop.of("coins", 5, 100, 4), Drop.of("iron_ore", 1, 1, 16), Drop.herbs(32),
                                 clue("medium", 128))
                         .slayer(1, "ogres").skin(0x7A6A3A, 0x5A4A2A, 0x5A4A2A, 0x6A5A3A).size(0.9f, 2.4f, 1.0f),
                 // Corsair Cove Dungeon.

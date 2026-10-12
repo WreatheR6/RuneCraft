@@ -29,7 +29,7 @@ final class HighSlayerMonsters {
         return List.of(
                 m("wyrm", "Wyrm", 99, 130, 85, 125, 160, 85, 1).speed(5).attack(slash(13))
                         .attack(magic(13, "minecraft:dragon_breath")).defenceBonus(50, 50, 50, 20, 60)
-                        .drops(Drop.always("bones"), Drop.of("dragon_sword", 1, 1, 10000), Drop.of("dragon_harpoon", 1, 1, 10000),
+                        .drops(Drop.always("bones"), Drop.of("dragon_sword", 1, 1, 10000), Drop.of("dragon_harpoon", 1, 1, 10000), Drop.of("dragon_knife", 75, 150, 2000),
                                 Drop.of("death_rune", 5, 15, 8), Drop.of("chaos_rune", 10, 30, 8), Drop.herbs(12), Drop.gems(32),
                                 clue("hard", 128), clue("elite", 1200)).slayer(62, "wyrms").model("wyrm").size(1.0f, 1.4f, 1.3f)
                         .spawn(Region.UNCHARTED_ISLES, 4, 1, 3).underground(),
@@ -55,13 +55,13 @@ final class HighSlayerMonsters {
                                 Drop.of("mithril_bar", 1, 3, 16), coins(200, 800, 3), Drop.rare(32), clue("hard", 128))
                         .slayer(75, "gargoyles").model("gargoyle").size(1.0f, 2.2f, 1.0f).spawn(Region.MORYTANIA, 4, 1, 3),
                 m("nechryael", "Nechryael", 115, 105, 97, 97, 105, 1, 1).speed(4).attack(crush(9))
-                        .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("bones"), Drop.of("rune_boots", 1, 1, 116),
+                        .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("malicious_ashes"), Drop.of("rune_boots", 1, 1, 116),
                                 Drop.of("rune_full_helm", 1, 1, 39), Drop.of("adamant_kiteshield", 1, 1, 64),
                                 Drop.of("death_rune", 5, 15, 8), Drop.of("chaos_rune", 20, 40, 8),
                                 coins(100, 1000, 3), Drop.herbs(12), Drop.rare(20), clue("hard", 128))
                         .slayer(80, "nechryael").model("nechryael").size(1.0f, 2.4f, 1.0f).spawn(Region.MORYTANIA, 4, 1, 3),
                 m("greater_nechryael", "Greater Nechryael", 200, 205, 210, 210, 120, 1, 1).speed(4).attack(crush(18))
-                        .defenceBonus(20, 20, 20, 0, 20).drops(Drop.always("bones"), Drop.of("rune_boots", 1, 1, 128),
+                        .defenceBonus(20, 20, 20, 0, 20).drops(Drop.always("malicious_ashes"), Drop.of("rune_boots", 1, 1, 128),
                                 Drop.of("rune_full_helm", 1, 1, 43),
                                 Drop.of("rune_kiteshield", 1, 1, 128), Drop.of("death_rune", 10, 30, 8), Drop.of("blood_rune", 10, 20, 12),
                                 coins(500, 3000, 3), Drop.herbs(10), Drop.gems(16), clue("hard", 128))
@@ -96,7 +96,7 @@ final class HighSlayerMonsters {
                         .attack(AttackDef.of("dragonfire", AttackType.MAGIC, 30, 6, 2).special(AttackDef.Special.HAZARD, 6)
                                 .telegraph(2, "The drake spews volcanic dragonfire!").particle("minecraft:lava"))
                         .defenceBonus(100, 100, 100, 60, 100).drops(Drop.always("dragon_bones"), Drop.of("drakes_tooth", 1, 1, 512),
-                                Drop.of("drakes_claw", 1, 1, 512), Drop.of("runite_ore", 1, 2, 32), Drop.of("rune_full_helm", 1, 1, 128),
+                                Drop.of("drakes_claw", 1, 1, 512), Drop.of("dragon_thrownaxe", 100, 200, 2000), Drop.of("runite_ore", 1, 2, 32), Drop.of("rune_full_helm", 1, 1, 128),
                                 Drop.herbs(10), Drop.gems(16), clue("hard", 256)).slayer(84, "drakes").model("drake")
                         .size(1.2f, 2.2f, 1.0f).spawn(Region.UNCHARTED_ISLES, 3, 1, 2).underground(),
                 m("smoke_devil", "Smoke devil", 160, 185, 140, 140, 255, 140, 140).speed(4)
@@ -111,7 +111,8 @@ final class HighSlayerMonsters {
                         .attack(ranged(22, "minecraft:item_slime").message("The hydra spits a venomous bolt."))
                         .attack(magic(22, "minecraft:witch")).defenceBonus(100, 100, 100, 50, 100)
                         .drops(Drop.always("hydra_bones"), Drop.of("hydras_eye", 1, 1, 512), Drop.of("hydras_fang", 1, 1, 512),
-                                Drop.of("hydras_heart", 1, 1, 512), Drop.of("hydra_tail", 1, 1, 512),
+                                Drop.of("hydras_heart", 1, 1, 512), Drop.of("hydra_tail", 1, 1, 512), Drop.of("dragon_knife", 200, 400, 2000),
+                                Drop.of("dragon_thrownaxe", 200, 400, 2000),
                                 Drop.of("runite_bar", 1, 2, 32), Drop.of("rune_kiteshield", 1, 1, 128), Drop.herbs(8), Drop.gems(16),
                                 clue("hard", 128), clue("elite", 512)).slayer(95, "hydras").model("hydra").size(1.4f, 2.2f, 1.0f)
                         .spawn(Region.UNCHARTED_ISLES, 2, 1, 2).underground(),

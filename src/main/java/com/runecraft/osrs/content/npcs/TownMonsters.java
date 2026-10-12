@@ -197,7 +197,7 @@ public final class TownMonsters {
                 .spawn(Region.FREMENNIK_PROVINCE, 3, 2, 4));
         add(MonsterDef.of("imp", "Imp").level(2).stats(8, 4, 3, 2, 1, 1).speed(4).defenceBonus(0, 0, 0, 0, 0) // approx. att/str/def
                 .attack(AttackDef.melee(1)).passive()
-                .drops(Drop.of("black_bead", 1, 1, 12), Drop.of("red_bead", 1, 1, 12), Drop.of("white_bead", 1, 1, 12),
+                .drops(Drop.of("imp_champion_scroll", 1, 1, 5000), Drop.always("fiendish_ashes"), Drop.of("black_bead", 1, 1, 12), Drop.of("red_bead", 1, 1, 12), Drop.of("white_bead", 1, 1, 12),
                         Drop.of("yellow_bead", 1, 1, 12), Drop.of("burnt_bread", 1, 1, 16), Drop.of("burnt_meat", 1, 1, 16),
                         Drop.of("cabbage", 1, 1, 20), Drop.of("bread_dough", 1, 1, 24), Drop.of("pot_of_flour", 1, 1, 24),
                         Drop.of("ball_of_wool", 1, 1, 24), Drop.of("jug", 1, 1, 32), Drop.of("empty_cup", 1, 1, 32),

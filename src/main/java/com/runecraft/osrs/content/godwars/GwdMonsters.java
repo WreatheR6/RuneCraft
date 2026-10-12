@@ -122,7 +122,7 @@ public final class GwdMonsters {
         // --- Zamorak ---
         list.add(MonsterDef.of("gwd_imp", "Imp").level(7).stats(10, 5, 5, 5, 1, 1).speed(4)
                 .attack(AttackDef.of("melee", AttackType.CRUSH, 1, 2.5, 10))
-                .drops(followerDrops(Drop.of("fire_rune", 2, 6, 4)))
+                .drops(followerDrops(Drop.always("fiendish_ashes"), Drop.of("fire_rune", 2, 6, 4)))
                 .model("gwd_imp").size(0.5f, 1.0f, 1.0f));
         list.add(MonsterDef.of("gwd_werewolf", "Werewolf").level(93).stats(100, 70, 80, 70, 1, 1).speed(4)
                 .attack(AttackDef.of("claws", AttackType.SLASH, 12, 2.5, 10))
@@ -130,12 +130,12 @@ public final class GwdMonsters {
                 .skin(0x6A5A4A, 0x4A3A2A, 0x3A2A1A, 0xE0E0E0).size(0.7f, 2.2f, 1.1f));
         list.add(MonsterDef.of("gwd_bloodveld", "Bloodveld").level(81).stats(120, 70, 70, 50, 1, 1).speed(4)
                 .attack(AttackDef.of("tongue", AttackType.CRUSH, 9, 3.0, 10).special(Special.PRAYER_PIERCING, 0))
-                .drops(followerDrops(Drop.always("bones"), Drop.of("blood_rune", 5, 15, 12)))
+                .drops(followerDrops(Drop.always("vile_ashes"), Drop.of("blood_rune", 5, 15, 12)))
                 .slayer(50, "bloodveld").skin(0xA03030, 0x802020, 0x601818, 0xE0B0B0).size(0.8f, 1.6f, 1.1f));
         list.add(MonsterDef.of("gwd_hellhound", "Hellhound").level(127).stats(116, 105, 104, 102, 1, 1).speed(4)
                 .defenceBonus(0, 0, 0, 0, 0)
                 .attack(AttackDef.of("bite", AttackType.STAB, 14, 2.5, 10))
-                .drops(followerDrops(Drop.always("bones"), Drop.of("clue_scroll_hard", 1, 1, 64)))
+                .drops(followerDrops(Drop.always("vile_ashes"), Drop.of("clue_scroll_hard", 1, 1, 64)))
                 .model("gwd_hellhound").size(0.9f, 1.2f, 1.3f));
         list.add(MonsterDef.of("gwd_gorak", "Gorak").level(149).stats(128, 130, 140, 140, 1, 1).speed(4) // approx.
                 .defenceBonus(40, 40, 40, 40, 40)

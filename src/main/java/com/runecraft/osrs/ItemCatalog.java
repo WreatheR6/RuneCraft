@@ -453,6 +453,13 @@ public final class ItemCatalog {
         add("silverlight", "Silverlight", Kind.MELEE_WEAPON, "longsword", 0xD8D8F0).value(50).stack(1).tier("rune")
                 .equipment(weapon(stats(9, 14, -2, 0, 0, 0, 3, 2, 1, 0, 12, 0, 0, 1), 4, AttackType.SLASH,
                         EquipmentDef.WeaponClass.MELEE));
+        // Champion scrolls (OSRS: 1/5000 from the champions' kin) open a challenge in the Champions' Guild.
+        for (String[] c : new String[][]{{"goblin", "Goblin"}, {"imp", "Imp"}, {"skeleton", "Skeleton"}, {"zombie", "Zombie"},
+                {"ghoul", "Ghoul"}, {"giant", "Giant"}, {"hobgoblin", "Hobgoblin"}, {"jogre", "Jogre"},
+                {"lesser_demon", "Lesser demon"}, {"earth_warrior", "Earth warrior"}}) {
+            add(c[0] + "_champion_scroll", c[1] + " champion scroll", Kind.SIMPLE, "scroll", 0xE8D8A8).value(1).stack(1)
+                    .examine("A champion scroll. It's a challenge from the " + c[1].toLowerCase() + " champion.");
+        }
         add("amulet_of_accuracy", "Amulet of accuracy", Kind.SIMPLE, "amulet", 0x3060E0).value(100).stack(1);
         // Dragon equipment that is bought or dropped, not smithed (bonuses: data/EquipmentBonuses).
         // Quest gates (Heroes' Quest, Lost City, Regicide, Legends' Quest) live in the quests module.
@@ -469,6 +476,10 @@ public final class ItemCatalog {
         add("dragon_spear", "Dragon spear", Kind.MELEE_WEAPON, "spear", dragon).value(62400).stack(1).tier("dragon")
                 .equipment(weapon(stats(55, 55, 55, 0, 0, 5, 5, 5, 5, 5, 60, 0, 0, 0), 4, AttackType.STAB,
                         EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 60));
+        // Rune spear: only from the rare drop table's mega-rare slot (and a few monsters) in OSRS.
+        add("rune_spear", "Rune spear", Kind.MELEE_WEAPON, "spear", MetalTier.RUNE.color()).value(20800).stack(1).tier("rune")
+                .equipment(weapon(stats(36, 36, 36, 0, 0, 1, 1, 1, 0, 0, 42, 0, 0, 0), 5, AttackType.STAB,
+                        EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 40));
         add("dragon_halberd", "Dragon halberd", Kind.MELEE_WEAPON, "spear", dragon).value(325000).stack(1).tier("dragon")
                 .equipment(weapon(stats(70, 95, 0, -4, 0, -1, 4, 5, 0, 0, 89, 0, 0, 0), 7, AttackType.SLASH,
                         EquipmentDef.WeaponClass.MELEE, Skill.ATTACK, 60, Skill.STRENGTH, 30));
