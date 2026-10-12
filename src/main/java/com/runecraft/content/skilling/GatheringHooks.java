@@ -12,6 +12,7 @@ import com.runecraft.osrs.content.skilling.GatheringData;
 import com.runecraft.osrs.content.skilling.HunterData;
 import com.runecraft.osrs.content.skilling.Loot;
 import com.runecraft.osrs.content.skilling.MiningData;
+import com.runecraft.osrs.content.skilling.Motherlode;
 import com.runecraft.osrs.data.SpecialTool;
 import com.runecraft.osrs.data.ToolTier;
 import com.runecraft.osrs.data.Tree;
@@ -188,48 +189,112 @@ final class GatheringHooks {
     }
 
     private static void hopper(ServerPlayerEntity player) {
+        NbtCompound sacks = SkillingState.get(player.getServer()).section("sacks");
+        String key = player.getUuidAsString();
+        if (player.isSneaking()) {
+            buyUpperLevel(player, sacks, key);
+            return;
+        }
         int carried = Inv.count(player, "pay_dirt");
         if (carried == 0) {
             Msg.game(player, "You don't have any pay-dirt to deposit.");
             return;
         }
-        NbtCompound sacks = SkillingState.get(player.getServer()).section("sacks");
-        String key = player.getUuidAsString();
         int inSack = sacks.getInt(key);
-        int room = MiningData.SACK_CAPACITY - inSack;
-        if (room <= 0) {
+        boolean upgraded = sacks.getBoolean(key + ":upgraded");
+        int n = Motherlode.deposit(carried, inSack, upgraded);
+        if (n <= 0) {
             Msg.game(player, "The sack is full. Collect some ore before depositing more pay-dirt.");
             return;
         }
-        int n = Math.min(room, carried);
         Inv.remove(player, "pay_dirt", n);
+        // The water wheel washes each pay-dirt into an ore (or a golden nugget) for the miner's level.
+        int level = SkillingUtil.level(player, Skill.MINING);
+        Random random = player.getRandom();
+        for (int i = 0; i < n; i++) {
+            String ore = Motherlode.wash(level, random::nextDouble);
+            sacks.putInt(key + ":" + ore, sacks.getInt(key + ":" + ore) + 1);
+        }
         sacks.putInt(key, inSack + n);
-        Msg.game(player, "You deposit " + n + " pay-dirt into the hopper. The sack now holds " + (inSack + n) + ".");
+        Msg.game(player, "You deposit " + n + " pay-dirt into the hopper. The sack now holds " + (inSack + n) + "/"
+                + Motherlode.sackCapacity(upgraded) + ".");
         player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_GRAVEL_BREAK, SoundCategory.BLOCKS, 1f, 0.8f);
+    }
+
+    /** Prospector Percy's one-off upgrades (sneak-use the hopper / sack): upper level access and the bigger sack. */
+    private static void buyUpperLevel(ServerPlayerEntity player, NbtCompound sacks, String key) {
+        if (sacks.getBoolean(key + ":upper")) {
+            Msg.game(player, "You already have access to the upper level of the mine.");
+            return;
+        }
+        if (Players.data(player).skills().level(Skill.MINING) < Motherlode.UPPER_LEVEL_MINING) {
+            Msg.game(player, "You need a Mining level of " + Motherlode.UPPER_LEVEL_MINING + " (unboosted) to use the upper level.");
+            return;
+        }
+        if (Inv.remove(player, "golden_nugget", Motherlode.UPPER_LEVEL_NUGGETS) < Motherlode.UPPER_LEVEL_NUGGETS) {
+            Msg.game(player, "Prospector Percy wants " + Motherlode.UPPER_LEVEL_NUGGETS + " golden nuggets for access to the upper level.");
+            return;
+        }
+        sacks.putBoolean(key + ":upper", true);
+        Msg.game(player, "You pay " + Motherlode.UPPER_LEVEL_NUGGETS + " golden nuggets for permanent access to the upper level.");
+    }
+
+    private static void buyBiggerSack(ServerPlayerEntity player, NbtCompound sacks, String key) {
+        if (sacks.getBoolean(key + ":upgraded")) {
+            Msg.game(player, "Your sack is already as big as it gets (" + Motherlode.SACK_CAPACITY_UPGRADED + " pay-dirt).");
+            return;
+        }
+        if (!Inv.has(player, "golden_nugget", Motherlode.SACK_UPGRADE_NUGGETS)) {
+            Msg.game(player, "Prospector Percy will enlarge your sack for " + Motherlode.SACK_UPGRADE_NUGGETS + " golden nuggets.");
+            return;
+        }
+        Inv.remove(player, "golden_nugget", Motherlode.SACK_UPGRADE_NUGGETS);
+        sacks.putBoolean(key + ":upgraded", true);
+        Msg.game(player, "Your sack can now hold " + Motherlode.SACK_CAPACITY_UPGRADED + " pay-dirt.");
     }
 
     private static void sack(ServerPlayerEntity player) {
         NbtCompound sacks = SkillingState.get(player.getServer()).section("sacks");
         String key = player.getUuidAsString();
+        if (player.isSneaking()) {
+            buyBiggerSack(player, sacks, key);
+            return;
+        }
         int inSack = sacks.getInt(key);
         if (inSack <= 0) {
             Msg.game(player, "The sack is empty.");
             return;
         }
+        int nuggets = 0;
+        int washed = 0;
+        double xp = 0;
+        String[] results = {"golden_nugget", "coal", "gold_ore", "mithril_ore", "adamantite_ore", "runite_ore"};
+        for (String item : results) {
+            int n = sacks.getInt(key + ":" + item);
+            sacks.remove(key + ":" + item);
+            if (n <= 0) {
+                continue;
+            }
+            washed += n;
+            SkillingUtil.give(player, item, n);
+            xp += n * Motherlode.collectXp(item);
+            if (item.equals("golden_nugget")) {
+                nuggets = n;
+            }
+        }
+        // Sacks filled before ores were washed at the hopper: wash the rest now.
         Random random = player.getRandom();
         int level = SkillingUtil.level(player, Skill.MINING);
-        int nuggets = 0;
-        Map<String, Integer> ore = new HashMap<>();
-        for (int i = 0; i < inSack; i++) {
-            Loot l = Loot.pick(MiningData.payDirtTable(level), random.nextInt(Loot.totalWeight(MiningData.payDirtTable(level))));
-            ore.merge(l.item(), 1, Integer::sum);
-            if (random.nextInt(40) == 0) {
+        for (int i = washed; i < inSack; i++) {
+            String item = Motherlode.wash(level, random::nextDouble);
+            SkillingUtil.give(player, item, 1);
+            xp += Motherlode.collectXp(item);
+            if (item.equals("golden_nugget")) {
                 nuggets++;
             }
         }
-        ore.forEach((item, n) -> SkillingUtil.give(player, item, n));
-        if (nuggets > 0) {
-            SkillingUtil.give(player, "golden_nugget", nuggets);
+        if (xp > 0) {
+            XpService.add(player, Skill.MINING, xp);
         }
         sacks.putInt(key, 0);
         Msg.game(player, "You collect your ore from the sack" + (nuggets > 0 ? " and find " + nuggets + " golden nugget"

@@ -32,7 +32,7 @@ import java.util.UUID;
  * Wintertodt's energy. Braziers break (fix with a hammer) and get snuffed out; pyromancers fall and
  * need a rejuvenation potion (bruma herb + crate) before their brazier can be relit. The cold and
  * the Wintertodt's snowfall attacks hurt more with less warm clothing. 500 points earns a supply
- * crate (one roll per 500 points) and bonus Firemaking experience.
+ * crate (2 rolls at 500 points, +1 per further 500, max 28) and bonus Firemaking experience.
  */
 public class WintertodtSession extends MinigameSession {
     private static final int[][] BRAZIERS = {{-8, -8}, {8, -8}, {-8, 8}, {8, 8}};
@@ -376,12 +376,12 @@ public class WintertodtSession extends MinigameSession {
         }
         for (ServerPlayerEntity p : online()) {
             int pts = points.getOrDefault(p.getUuid(), 0);
-            int rolls = Wintertodt.rolls(pts);
+            int rolls = Wintertodt.rolls(pts, random.nextDouble());
             if (rolls > 0) {
                 xp(p, Skill.FIREMAKING, Wintertodt.completionXp(level(p, Skill.FIREMAKING)));
                 Inv.give(p, MinigameItemUse.container("supply_crate", rolls));
                 int kc = MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
-                Msg.game(p, "You have helped to subdue the Wintertodt! You earned " + pts + " points and a supply crate. "
+                Msg.game(p, "You have helped to subdue the Wintertodt! You earned " + pts + " points and a supply crate (" + rolls + " rolls). "
                         + "Your subdued Wintertodt count is: " + kc + ".");
             } else {
                 Msg.game(p, "You didn't earn enough points (" + pts + "/500) for a reward.");

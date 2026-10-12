@@ -6,9 +6,9 @@ import com.runecraft.content.BlockHooks;
 import com.runecraft.content.GameEvents;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.extras.ExtrasContent;
+import com.runecraft.osrs.content.extras.Herbiboar;
 import com.runecraft.osrs.content.extras.Pets;
 import com.runecraft.osrs.content.extras.SkillingPets;
-import com.runecraft.osrs.data.Herb;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
@@ -327,11 +327,11 @@ final class PetService {
     // ------------------------------------------------------------------ Herbiboar
 
     private static void herbiboar(ServerPlayerEntity player, BlockPos pos, BlockState state) {
-        if (ExtrasUtil.level(player, Skill.HUNTER) < 80) {
+        if (ExtrasUtil.level(player, Skill.HUNTER) < Herbiboar.HUNTER_LEVEL) {
             Msg.game(player, "You need a Hunter level of 80 to track the herbiboar.");
             return;
         }
-        if (ExtrasUtil.level(player, Skill.HERBLORE) < 31) {
+        if (ExtrasUtil.level(player, Skill.HERBLORE) < Herbiboar.HERBLORE_LEVEL) {
             Msg.game(player, "You need a Herblore level of 31 to harvest herbs from the herbiboar.");
             return;
         }
@@ -344,17 +344,21 @@ final class PetService {
         HERBIBOAR_COOLDOWN.put(player.getUuid(), now + 50);
         Random random = player.getRandom();
         int hunter = ExtrasUtil.level(player, Skill.HUNTER);
-        // Herbiboar gives Hunter XP scaling with level and 2+ herbs weighted towards low tiers. approx
-        XpService.add(player, Skill.HUNTER, 1950 + (hunter - 80) * 25);
-        int herbs = 2 + random.nextInt(3) + (ExtrasUtil.level(player, Skill.HERBLORE) >= 90 ? 2 : 0);
-        Herb[] all = Herb.values();
-        for (int i = 0; i < herbs; i++) {
-            int idx = Math.min(all.length - 1, (int) (Math.pow(random.nextDouble(), 1.8) * all.length));
-            if (ExtrasUtil.level(player, Skill.HERBLORE) < all[idx].cleanLevel()) {
-                idx = 0;
+        // Trail searches (50 XP each, chance of a fossil), then the harvest (OSRS Wiki, Module:Herbiboar).
+        int searches = Herbiboar.searches(random.nextDouble());
+        for (int i = 0; i < searches; i++) {
+            XpService.add(player, Skill.HUNTER, Herbiboar.SEARCH_XP);
+            String fossil = Herbiboar.searchFossil(random::nextDouble);
+            if (fossil != null) {
+                Inv.give(player, fossil, 1);
+                Msg.game(player, "You find an unidentified fossil while searching the trail.");
             }
-            Inv.give(player, all[idx].grimyItem(), 1);
-            CollectionLog.obtain(player, all[idx].grimyItem());
+        }
+        XpService.add(player, Skill.HUNTER, Herbiboar.harvestXp(hunter));
+        boolean secateurs = Inv.has(player, "magic_secateurs", 1);
+        for (String herb : Herbiboar.harvest(ExtrasUtil.level(player, Skill.HERBLORE), secateurs, random::nextDouble)) {
+            Inv.give(player, herb, 1);
+            CollectionLog.obtain(player, herb);
         }
         ServerWorld world = (ServerWorld) player.getWorld();
         world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 10, 0.4, 0.3, 0.4, 0.01);

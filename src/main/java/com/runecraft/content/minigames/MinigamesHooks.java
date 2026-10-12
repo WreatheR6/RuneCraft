@@ -43,6 +43,9 @@ public final class MinigamesHooks implements ModuleHooks {
         for (Minigame m : Minigame.values()) {
             BlockHooks.register(m.entranceBlock(), (player, pos, state) -> MinigameManager.enter(player, m, m.entranceBlock()));
         }
+        // The Volcanic Mine entrance is a style-NONE place beside the islands module's lobby building: only its portal is built.
+        com.runecraft.world.LandmarkBuilder.registerCustom(Minigame.VOLCANIC_MINE.place(), (world, centre) ->
+                world.setBlockState(centre.up(), Arena.module(Minigame.VOLCANIC_MINE.entranceBlock())));
         for (Map.Entry<String, Minigame> e : MinigameWorld.EXTRA_ENTRANCES.entrySet()) {
             BlockHooks.register(e.getKey(), (player, pos, state) -> MinigameManager.enter(player, e.getValue(), e.getKey()));
         }

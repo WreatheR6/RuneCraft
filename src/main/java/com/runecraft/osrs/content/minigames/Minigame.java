@@ -41,7 +41,13 @@ public enum Minigame {
     ROGUES_DEN("rogues_den", "Rogues' Den", "mg_rogues_den", 2905, 3537, 2913, 3530, PlaceDef.Style.CAVE, 0, 1, Skill.THIEVING, 50),
     /** The arena is in the Champions' Guild basement; the entrance stands just north of the guild. */
     CHAMPIONS_CHALLENGE("champions_challenge", "Champions' Challenge", "mg_champions_guild", 3191, 9758, 3191, 3369,
-            PlaceDef.Style.ARENA, 0, 1, null, 0);
+            PlaceDef.Style.ARENA, 0, 1, null, 0),
+    /**
+     * Below Fossil Island's volcano (instanced; real coordinates approx). The entrance stands just south of
+     * the islands module's Volcanic Mine lobby building and builds nothing else (style NONE).
+     */
+    VOLCANIC_MINE("volcanic_mine", "Volcanic Mine", "mg_volcanic_mine", 3812, 10240, 3820, 3800, PlaceDef.Style.NONE, 20, 30,
+            Skill.MINING, 50);
 
     private final String id;
     private final String displayName;

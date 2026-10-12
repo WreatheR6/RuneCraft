@@ -85,13 +85,9 @@ public final class MinigameRules {
         public static final int POINTS_LIGHT = 25;
         public static final int POINTS_FIX = 25;
         public static final int POINTS_HEAL_PYROMANCER = 30;
-        public static final int MIN_POINTS = 500;
-        public static final int MAX_ROLLS = 28;
+        public static final int MIN_POINTS = WintertodtRewards.MIN_POINTS;
+        public static final int MAX_ROLLS = WintertodtRewards.MAX_ROLLS;
         public static final int BRAZIERS = 4;
-        public static final int PHOENIX_CHANCE = 5000;
-        public static final int TOME_CHANCE = 1000;
-        public static final int DRAGON_AXE_CHANCE = 10000;
-        public static final int OUTFIT_CHANCE = 150;
 
         private Wintertodt() {
         }
@@ -130,9 +126,14 @@ public final class MinigameRules {
             return firemaking * 100.0;
         }
 
-        /** Supply crate rolls: one per 500 points (minimum 500), capped at 28. */
+        /** Guaranteed reward rolls: 2 at 500 points, +1 per further 500 (max 28). See {@link WintertodtRewards}. */
         public static int rolls(int points) {
-            return points < MIN_POINTS ? 0 : Math.min(MAX_ROLLS, points / MIN_POINTS);
+            return WintertodtRewards.rolls(points);
+        }
+
+        /** Reward rolls including the chance of an extra roll for points between 500-point milestones. */
+        public static int rolls(int points, double random) {
+            return WintertodtRewards.rolls(points, random);
         }
 
         /**
@@ -145,20 +146,6 @@ public final class MinigameRules {
             int b = litBraziersNearby > 0 ? 1 : 0;
             return Math.max(1, (16 - w - 2 * b) * (hitpointsLevel + 1) / 99);
         }
-
-        public static final List<Loot> CRATE = List.of(
-                new Loot("oak_logs", 15, 40, 8), new Loot("willow_logs", 15, 40, 8), new Loot("maple_logs", 12, 35, 6),
-                new Loot("yew_logs", 10, 30, 5), new Loot("magic_logs", 6, 20, 3),
-                new Loot("iron_ore", 15, 40, 6), new Loot("coal", 15, 40, 6), new Loot("mithril_ore", 10, 25, 5),
-                new Loot("adamantite_ore", 5, 15, 3), new Loot("runite_ore", 1, 4, 1),
-                new Loot("uncut_sapphire", 2, 6, 4), new Loot("uncut_emerald", 2, 5, 3), new Loot("uncut_ruby", 1, 4, 2),
-                new Loot("uncut_diamond", 1, 3, 1),
-                new Loot("grimy_ranarr_weed", 2, 5, 3), new Loot("grimy_irit_leaf", 2, 6, 3), new Loot("grimy_kwuarm", 2, 5, 2),
-                new Loot("grimy_snapdragon", 1, 4, 1), new Loot("grimy_torstol", 1, 3, 1),
-                new Loot("ranarr_seed", 1, 3, 2), new Loot("snapdragon_seed", 1, 2, 1), new Loot("torstol_seed", 1, 2, 1),
-                new Loot("raw_tuna", 10, 25, 5), new Loot("raw_lobster", 10, 25, 5), new Loot("raw_swordfish", 8, 20, 4),
-                new Loot("raw_shark", 5, 15, 2), new Loot("pure_essence", 50, 150, 5), new Loot("coins", 2000, 8000, 6),
-                new Loot("burnt_page", 7, 30, 4), new Loot("dragon_bones", 2, 6, 1));
     }
 
     // ---------------------------------------------------------------- Tempoross
@@ -187,29 +174,23 @@ public final class MinigameRules {
         private Tempoross() {
         }
 
-        /** Reward permits for a subdued Tempoross: 1 at 2,000 points plus one per 700 above (approx.), max 8. */
+        /** Guaranteed reward permits: 1 at 2,000 points plus one per 700 above. See {@link TemporossRewards}. */
         public static int permits(int points) {
-            return points < MIN_POINTS ? 0 : Math.min(8, 1 + (points - MIN_POINTS) / 700);
+            return TemporossRewards.permits(points);
         }
 
+        public static int permits(int points, double random) {
+            return TemporossRewards.permits(points, random);
+        }
+
+        /** Fishing XP per harpoonfish caught (level-scaled modifier / 100, OSRS Wiki). */
         public static double catchXp(int fishing) {
-            return fishing * 1.0;
+            return TemporossRewards.catchXp(fishing);
         }
 
         public static double cookXp(int cooking) {
-            return cooking * 0.7;
+            return cooking * 0.7; // approx
         }
-
-        public static final List<Loot> POOL = List.of(
-                new Loot("raw_tuna", 15, 40, 12), new Loot("raw_lobster", 10, 30, 10), new Loot("raw_swordfish", 10, 25, 8),
-                new Loot("raw_shark", 5, 15, 5), new Loot("spirit_flakes", 32, 64, 10), new Loot("soaked_page", 7, 30, 8),
-                new Loot("oak_plank", 10, 30, 6), new Loot("teak_plank", 5, 15, 4), new Loot("mahogany_plank", 3, 10, 2),
-                new Loot("coins", 1000, 5000, 6), new Loot("harpoon", 1, 1, 2),
-                new Loot("uncut_sapphire", 1, 3, 3), new Loot("uncut_emerald", 1, 3, 2), new Loot("uncut_ruby", 1, 2, 1));
-        /** Uniques per reward pool roll (1 in N). */
-        public static final Object[][] UNIQUES = {
-                {"fish_barrel", 400}, {"tackle_box", 400}, {"big_harpoonfish", 1600}, {"tome_of_water", 1600},
-                {"dragon_harpoon", 8000}, {"tiny_tempor", 8000}};
     }
 
     // ---------------------------------------------------------------- Guardians of the Rift
@@ -223,11 +204,7 @@ public final class MinigameRules {
                 {"nature", "nature_rune", 44, 9.0, true}, {"law", "law_rune", 54, 9.5, true},
                 {"death", "death_rune", 65, 10.0, true}, {"blood", "blood_rune", 77, 10.5, true}};
         public static final int ALTAR_SWITCH_TICKS = 33;
-        public static final int POWER_PER_STONE = 2;
-        public static final int SEARCH_COST = 100;
-        public static final int NEEDLE_CHANCE = 300;
-        public static final int PET_CHANCE = 4000;
-        public static final int MIN_ENERGY = 150;
+        public static final int MIN_ENERGY = GuardiansRewards.MIN_ENERGY;
 
         private Guardians() {
         }
@@ -237,18 +214,10 @@ public final class MinigameRules {
             return pieces >= 4 ? 0.60 : pieces * 0.10;
         }
 
-        /** Rift searches earned: (elemental + catalytic energy) / 100, at least 1 with 150+ energy. */
-        public static int searches(int elemental, int catalytic) {
-            int total = elemental + catalytic;
-            return total < MIN_ENERGY ? 0 : Math.max(1, total / SEARCH_COST);
+        /** Rewards Guardian searches affordable with stored points (1 elemental + 1 catalytic each). */
+        public static int searches(int elementalPoints, int catalyticPoints) {
+            return GuardiansRewards.searches(elementalPoints, catalyticPoints);
         }
-
-        public static final List<Loot> POUCH = List.of(
-                new Loot("abyssal_pearls", 3, 12, 30), new Loot("air_rune", 50, 150, 6), new Loot("water_rune", 50, 150, 6),
-                new Loot("earth_rune", 50, 150, 6), new Loot("fire_rune", 50, 150, 6), new Loot("mind_rune", 40, 120, 5),
-                new Loot("body_rune", 30, 90, 5), new Loot("cosmic_rune", 15, 45, 4), new Loot("chaos_rune", 15, 45, 4),
-                new Loot("nature_rune", 10, 30, 4), new Loot("law_rune", 8, 25, 3), new Loot("death_rune", 6, 20, 3),
-                new Loot("blood_rune", 4, 15, 2), new Loot("elemental_talisman", 1, 1, 1), new Loot("catalytic_talisman", 1, 1, 1));
     }
 
     // ---------------------------------------------------------------- Barbarian Assault

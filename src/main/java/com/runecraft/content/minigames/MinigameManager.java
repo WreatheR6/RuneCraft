@@ -232,6 +232,7 @@ public final class MinigameManager {
             case FISHING_TRAWLER -> new FishingTrawlerSession(id, slot, world, variant);
             case ROGUES_DEN -> new RoguesDenSession(id, slot, world, variant);
             case CHAMPIONS_CHALLENGE -> new com.runecraft.content.minigames.games.ChampionsSession(id, slot, world, variant);
+            case VOLCANIC_MINE -> new com.runecraft.content.minigames.games.VolcanicMineSession(id, slot, world, variant);
         };
     }
 
