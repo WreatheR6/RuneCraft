@@ -38,10 +38,7 @@ public final class RaidRewards {
         }
     }
 
-    /**
-     * CoX uniques. Twisted bow, Kodai insignia and Elder maul are each 2/69 as in OSRS; the
-     * ancestral robe weights are approximations so the table sums to 69.
-     */
+    /** CoX uniques (OSRS weights out of 69: twisted bow, kodai insignia and elder maul are each 2/69). */
     public static final List<Unique> COX_UNIQUES = List.of(
             new Unique("dexterous_prayer_scroll", 20),
             new Unique("arcane_prayer_scroll", 20),
@@ -111,6 +108,10 @@ public final class RaidRewards {
     public static final int OLMLET_RATE = 53;
     /** Lil' Zik chance per ToB completion (OSRS normal mode: 1/650). */
     public static final int LIL_ZIK_RATE = 650;
+    /** Lil' Zik chance per ToB hard mode completion (OSRS: 1/500). */
+    public static final int LIL_ZIK_HARD_RATE = 500;
+    /** ToA weights are kept as multiples of 1/50 so the rarer low-level weights stay exact. */
+    static final int TOA_WEIGHT_SCALE = 50;
 
     private RaidRewards() {
     }
@@ -140,12 +141,16 @@ public final class RaidRewards {
         };
     }
 
-    /** ToA unique weights at a raid level: below 150 everything but fang and lightbearer is rarer (approximation). */
+    /**
+     * ToA unique weight at a raid level, in fiftieths: below raid level 150 every unique but the fang
+     * and Lightbearer is rarer, 1/50 as likely below level 50 and half as likely from 50 to 149. // approx
+     */
     public static int toaWeight(Unique u, int raidLevel) {
+        int w = u.weight() * TOA_WEIGHT_SCALE;
         if (raidLevel >= 150 || u.item().equals("osmumtens_fang") || u.item().equals("lightbearer")) {
-            return u.weight();
+            return w;
         }
-        return raidLevel < 50 ? Math.max(1, u.weight() / 50) : Math.max(1, u.weight() / 2);
+        return raidLevel < 50 ? w / 50 : w / 2;
     }
 
     static String rollUnique(List<Unique> table, Random random, RaidType type, int raidLevel) {
@@ -165,7 +170,16 @@ public final class RaidRewards {
 
     /** Picks a player weighted by points (everyone equally if nobody has points). */
     static String weightedPlayer(Map<String, Integer> points, Random random) {
+        return weightedPlayer(points, List.of(), random);
+    }
+
+    /** Picks a player weighted by points, skipping {@code exclude}; null if nobody is left. */
+    static String weightedPlayer(Map<String, Integer> points, List<String> exclude, Random random) {
         List<String> players = new ArrayList<>(points.keySet());
+        players.removeAll(exclude);
+        if (players.isEmpty()) {
+            return null;
+        }
         Collections.sort(players);
         long total = 0;
         for (String p : players) {
@@ -191,6 +205,14 @@ public final class RaidRewards {
      * @param raidLevel ToA raid level (ignored for CoX/ToB)
      */
     public static Result roll(RaidType type, Map<String, Integer> points, int raidLevel, Random random) {
+        return roll(type, RaidMode.NORMAL, points, raidLevel, random);
+    }
+
+    /**
+     * Rolls a completed raid's rewards for a mode: CoX gets one unique roll per 570,000 team points
+     * (each player can receive one unique), ToB's chance and pet rate depend on the mode.
+     */
+    public static Result roll(RaidType type, RaidMode mode, Map<String, Integer> points, int raidLevel, Random random) {
         Map<String, List<Loot>> loot = new LinkedHashMap<>();
         List<String> purples = new ArrayList<>();
         List<String> pets = new ArrayList<>();
@@ -201,16 +223,23 @@ public final class RaidRewards {
         for (int p : points.values()) {
             total += Math.max(0, p);
         }
-        double chance = switch (type) {
-            case COX -> RaidScaling.coxPurpleChance(total);
-            case TOB -> RaidScaling.tobPurpleChance(total, points.size());
-            case TOA -> RaidScaling.toaPurpleChance(total, raidLevel);
+        List<Double> rolls = switch (type) {
+            case COX -> RaidScaling.coxUniqueRolls(total);
+            case TOB -> List.of(RaidScaling.tobPurpleChance(total, points.size(), mode));
+            case TOA -> List.of(RaidScaling.toaPurpleChance(total, raidLevel));
         };
+        double chance = rolls.get(0);
         for (String p : points.keySet()) {
             loot.put(p, new ArrayList<>());
         }
-        if (random.nextDouble() < chance) {
-            String who = weightedPlayer(points, random);
+        for (double rollChance : rolls) {
+            if (random.nextDouble() >= rollChance) {
+                continue;
+            }
+            String who = weightedPlayer(points, purples, random);
+            if (who == null) {
+                break;
+            }
             String item = rollUnique(uniques(type), random, type, raidLevel);
             loot.get(who).add(new Loot(item, 1));
             purples.add(who);
@@ -219,13 +248,13 @@ public final class RaidRewards {
                 pets.add(who);
             }
         }
-        if (type == RaidType.TOB && random.nextInt(LIL_ZIK_RATE) == 0) {
+        if (type == RaidType.TOB && mode != RaidMode.ENTRY
+                && random.nextInt(mode == RaidMode.HARD ? LIL_ZIK_HARD_RATE : LIL_ZIK_RATE) == 0) {
             String who = weightedPlayer(points, random);
             loot.get(who).add(new Loot("lil_zik", 1));
             pets.add(who);
         }
-        if (type == RaidType.TOA && random.nextDouble() < chance / 25.0) {
-            // Approximation: the pet is rolled at 1/25 of the purple chance.
+        if (type == RaidType.TOA && random.nextDouble() < RaidScaling.toaPetChance(total, raidLevel)) {
             String who = weightedPlayer(points, random);
             loot.get(who).add(new Loot("tumekens_guardian", 1));
             pets.add(who);
@@ -251,9 +280,11 @@ public final class RaidRewards {
                         continue;
                     }
                     for (RangeCommon c : pick(TOB_COMMONS, 3, random)) {
-                        mine.add(new Loot(c.item(), c.min() + random.nextInt(c.max() - c.min() + 1)));
+                        int n = c.min() + random.nextInt(c.max() - c.min() + 1);
+                        // Entry mode chests hold far less. // approx: a fifth
+                        mine.add(new Loot(c.item(), mode == RaidMode.ENTRY ? Math.max(1, n / 5) : n));
                     }
-                    if (random.nextInt(25) == 0) {
+                    if (mode != RaidMode.ENTRY && random.nextInt(25) == 0) {
                         mine.add(new Loot("clue_scroll_elite", 1));
                     }
                 }

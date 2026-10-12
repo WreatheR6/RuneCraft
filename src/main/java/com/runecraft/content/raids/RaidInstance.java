@@ -9,6 +9,7 @@ import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.content.raids.Invocation;
 import com.runecraft.osrs.content.raids.RaidItems;
 import com.runecraft.osrs.content.raids.RaidLayouts;
+import com.runecraft.osrs.content.raids.RaidMode;
 import com.runecraft.osrs.content.raids.RaidRewards;
 import com.runecraft.osrs.content.raids.RaidScaling;
 import com.runecraft.osrs.content.raids.RaidType;
@@ -20,6 +21,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -78,6 +80,9 @@ public final class RaidInstance {
     private Set<Invocation> invocations = EnumSet.noneOf(Invocation.class);
     private int raidLevel;
     private int retriesLeft = -1;
+    private RaidMode mode = RaidMode.NORMAL;
+    /** ToA paths completed so far (Walk the Path levels the remaining paths). */
+    private int pathsCompleted;
     private final long startTick;
     private long endTick;
     private long roomStartTick;
@@ -202,8 +207,41 @@ public final class RaidInstance {
         };
     }
 
+    /**
+     * Damage multiplier for the raid's creatures: CoX offensive scaling by party size (and Challenge
+     * Mode), weaker ToB Entry mode monsters, ToA raid level and path level.
+     */
     public double damageMultiplier() {
-        return type == RaidType.TOA ? RaidScaling.toaDamage(raidLevel) : 1.0;
+        return switch (type) {
+            case COX -> RaidScaling.coxOffence(partySize, mode == RaidMode.CHALLENGE);
+            case TOB -> mode == RaidMode.ENTRY ? 0.5 : 1.0; // approx: entry-mode max hits are about half
+            case TOA -> RaidScaling.toaDamage(raidLevel)
+                    * (inPath() ? RaidScaling.toaPathMultiplier(pathLevel()) : 1.0);
+        };
+    }
+
+    public RaidMode mode() {
+        return mode;
+    }
+
+    /** Sets the difficulty mode (party leader, before the raid begins). */
+    public boolean setMode(RaidMode m) {
+        if (begun || m == null || !m.availableFor(type)) {
+            return false;
+        }
+        mode = m;
+        return true;
+    }
+
+    /** Whether the current room belongs to a ToA path (puzzle or path boss). */
+    public boolean inPath() {
+        RoomDef r = rooms.get(current);
+        return type == RaidType.TOA && (r.kind() == RoomDef.Kind.COMBAT || r.kind() == RoomDef.Kind.PUZZLE);
+    }
+
+    /** The level of the ToA path being attempted. */
+    public int pathLevel() {
+        return RaidScaling.toaPathLevel(invocations, pathsCompleted);
     }
 
     public int raidLevel() {
@@ -261,13 +299,22 @@ public final class RaidInstance {
         }
     }
 
-    /** Scales a freshly spawned creature's hitpoints for this raid's party size / raid level. */
+    /** Scales a freshly spawned creature's hitpoints for this raid's party size, mode and raid/path level. */
     public void scale(LivingEntity e) {
         int base = Math.round(e.getMaxHealth());
+        String id;
         if (e instanceof DataBossEntity boss && boss.def() != null) {
             base = boss.def().hitpoints;
+            id = boss.def().id;
+        } else {
+            id = Registries.ENTITY_TYPE.getId(e.getType()).getPath();
         }
-        setHitpoints(e, (int) Math.round(base * hpMultiplier()));
+        int hp = switch (type) {
+            case COX -> RaidScaling.coxScaledHp(id, base, partySize, mode == RaidMode.CHALLENGE);
+            case TOB -> RaidScaling.tobScaledHp(id, base, partySize, mode);
+            case TOA -> RaidScaling.toaScaledHp(base, raidLevel, pathLevel(), partySize, inPath());
+        };
+        setHitpoints(e, hp);
     }
 
     /** True hitpoints (including reserve). */
@@ -407,6 +454,9 @@ public final class RaidInstance {
         if (type == RaidType.TOA) {
             say("Raid level: " + raidLevel + " (" + Invocation.presets().get(presetIndex).name() + "). Use the obelisk to change it.",
                     Formatting.YELLOW);
+        } else {
+            say("Mode: " + mode.displayName() + ". The leader can change it with /raids mode "
+                    + (type == RaidType.COX ? "<normal|challenge>" : "<entry|normal|hard>") + ".", Formatting.YELLOW);
         }
     }
 
@@ -427,7 +477,7 @@ public final class RaidInstance {
             retriesLeft = Invocation.roomRetries(invocations);
             say("The raid begins at raid level " + raidLevel + ".", Formatting.GOLD);
         } else {
-            say(player.getName().getString() + " has started the raid. Good luck!", Formatting.GOLD);
+            say(player.getName().getString() + " has started the raid (" + mode.displayName() + "). Good luck!", Formatting.GOLD);
         }
         world.playSound(null, center(0), SoundEvents.BLOCK_END_PORTAL_FRAME_FILL, SoundCategory.BLOCKS, 1f, 0.6f);
     }
@@ -511,6 +561,9 @@ public final class RaidInstance {
         reviveAll(logic.index);
         if (type == RaidType.TOA) {
             retriesLeft = Invocation.roomRetries(invocations);
+            if (def.kind() == RoomDef.Kind.COMBAT) {
+                pathsCompleted++;
+            }
         }
     }
 
@@ -535,7 +588,7 @@ public final class RaidInstance {
         for (UUID u : party) {
             pts.put(u.toString(), points(u));
         }
-        result = RaidRewards.roll(type, pts, raidLevel, random);
+        result = RaidRewards.roll(type, mode, pts, raidLevel, random);
         long secs = elapsedTicks() * 6 / 10;
         say("Congratulations - your raid is complete! Duration: " + secs / 60 + ":" + String.format("%02d", secs % 60),
                 Formatting.GOLD);
