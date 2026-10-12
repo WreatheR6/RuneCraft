@@ -13,8 +13,6 @@ import java.util.List;
 
 /** Rolls OSRS-style drop tables, including the shared herb, seed and gem tables. */
 public final class Drops {
-    private static final int[] HERB_WEIGHTS = {32, 24, 18, 14, 11, 4, 8, 6, 5, 2, 4, 3, 3, 1};
-
     private Drops() {
     }
 
@@ -25,43 +23,26 @@ public final class Drops {
         List<Rolled> out = new ArrayList<>();
         for (Drop d : table) {
             if (d.rarity() <= 1 || random.nextInt(d.rarity()) == 0) {
-                if (d.item().equals("#gems") || d.item().equals("#rare")) {
-                    // Shared OSRS tables: many slots are empty; items not in this build are skipped.
+                if (d.item().startsWith("#")) {
+                    // Shared OSRS tables (gems, rare, herbs, seeds): some slots are empty; items not in this
+                    // build are skipped.
                     DropTables.Result r = DropTables.roll(d.item(), random::nextInt);
                     if (r != null && ItemCatalog.get(r.item()) != null) {
                         out.add(new Rolled(r.item(), r.count()));
                     }
                     continue;
                 }
-                String item = switch (d.item()) {
-                    case "#herbs" -> rollHerb(random);
-                    case "#seeds" -> rollSeed(random);
-                    default -> d.item();
-                };
-                if (item == null) {
-                    continue;
-                }
                 int count = d.min() + (d.max() > d.min() ? random.nextInt(d.max() - d.min() + 1) : 0);
-                out.add(new Rolled(item, count));
+                out.add(new Rolled(d.item(), count));
             }
         }
         return out;
     }
 
+    /** One grimy herb from the OSRS herb drop table. */
     public static String rollHerb(Random random) {
-        int total = 0;
-        for (int w : HERB_WEIGHTS) {
-            total += w;
-        }
-        int r = random.nextInt(total);
-        Herb[] herbs = Herb.values();
-        for (int i = 0; i < herbs.length; i++) {
-            r -= HERB_WEIGHTS[i];
-            if (r < 0) {
-                return herbs[i].grimyItem();
-            }
-        }
-        return Herb.GUAM.grimyItem();
+        DropTables.Result r = DropTables.roll("#herbs", random::nextInt);
+        return r != null ? r.item() : Herb.GUAM.grimyItem();
     }
 
     public static String rollGem(Random random) {
