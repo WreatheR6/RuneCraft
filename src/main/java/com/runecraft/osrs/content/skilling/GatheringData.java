@@ -66,28 +66,28 @@ public final class GatheringData extends SkillingPart {
 
     public static final List<Spot> SPOTS = List.of(
             new Spot("big_net_fishing_spot", "Fishing spot (big net)", "big_fishing_net", null, List.of(
-                    Catch.of("raw_bass", 46, 100.0, 4, 40), Catch.of("raw_cod", 23, 45.0, 8, 64), Catch.of("raw_mackerel", 16, 20.0, 16, 96)),
+                    Catch.of("raw_bass", 46, 100.0, 4, 40), Catch.of("raw_cod", 23, 45.0, 8, 64), Catch.of("raw_mackerel", 16, 20.0, 5, 65)),
                     List.of(Loot.of("seaweed", 1, 2, 60), Loot.of("oyster", 15), Loot.of("casket", 5), Loot.of("leather_boots", 10),
                             Loot.of("leather_gloves", 10)), 10),
             new Spot("barbarian_fishing_spot", "Fishing spot (barbarian)", "barbarian_rod", "fishing_bait", List.of(
-                    new Catch("leaping_sturgeon", 70, 80.0, 4, 50, 7.0, 7.0, 45, 45),
-                    new Catch("leaping_salmon", 58, 70.0, 8, 70, 6.0, 6.0, 30, 30),
-                    new Catch("leaping_trout", 48, 50.0, 32, 190, 5.0, 5.0, 15, 15)), List.of(), 0),
+                    new Catch("leaping_sturgeon", 70, 80.0, 8, 64, 7.0, 7.0, 45, 45),
+                    new Catch("leaping_salmon", 58, 70.0, 16, 96, 6.0, 6.0, 30, 30),
+                    new Catch("leaping_trout", 48, 50.0, 32, 192, 5.0, 5.0, 15, 15)), List.of(), 0),
             new Spot("karambwanji_fishing_spot", "Fishing spot (karambwanji)", "small_fishing_net", null, List.of(
                     Catch.of("raw_karambwanji", 5, 5.0, 100, 250)), List.of(), 0),
             new Spot("karambwan_fishing_spot", "Fishing spot (karambwan)", "karambwan_vessel", "raw_karambwanji", List.of(
-                    Catch.of("raw_karambwan", 65, 50.0, 6, 80)), List.of(), 0),
+                    Catch.of("raw_karambwan", 65, 50.0, 5, 160)), List.of(), 0),
             new Spot("eel_fishing_spot", "Fishing spot (cave eels)", "fishing_rod", "fishing_bait", List.of(
                     Catch.of("raw_cave_eel", 38, 80.0, 10, 80), Catch.of("raw_slimy_eel", 28, 65.0, 10, 80)), List.of(), 0),
             new Spot("lava_eel_fishing_spot", "Fishing spot (lava eels)", "oily_fishing_rod", "fishing_bait", List.of(
                     Catch.of("raw_lava_eel", 53, 60.0, 16, 96)), List.of(), 0),
             new Spot("sacred_eel_fishing_spot", "Fishing spot (sacred eels)", "fishing_rod", "fishing_bait", List.of(
-                    Catch.of("sacred_eel", 87, 105.0, 10, 80)), List.of(), 0),
+                    Catch.of("sacred_eel", 87, 105.0, 0, 60)), List.of(), 0),
             new Spot("infernal_eel_fishing_spot", "Fishing spot (infernal eels)", "oily_fishing_rod", "fishing_bait", List.of(
-                    Catch.of("infernal_eel", 80, 95.0, 20, 100)), List.of(), 0),
+                    Catch.of("infernal_eel", 80, 95.0, 30, 93)), List.of(), 0),
             new Spot("deep_sea_fishing_spot", "Fishing spot (deep sea)", "harpoon", null, List.of(
                     Catch.of("raw_manta_ray", 81, 46.0, 4, 30), Catch.of("raw_sea_turtle", 79, 38.0, 6, 40),
-                    Catch.of("raw_shark", 76, 110.0, 3, 40)), List.of(Loot.of("casket", 1), Loot.of("seaweed", 4)), 4));
+                    Catch.of("raw_shark", 76, 110.0, 4, 54)), List.of(Loot.of("casket", 1), Loot.of("seaweed", 4)), 4));
 
     public static Spot spot(String blockId) {
         for (Spot s : SPOTS) {

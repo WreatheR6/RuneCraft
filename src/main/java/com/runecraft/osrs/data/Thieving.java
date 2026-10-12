@@ -14,8 +14,8 @@ public final class Thieving {
         AL_KHARID_WARRIOR("Al-Kharid warrior", 25, 26.0, 100, 240, 18, 2, List.of(new Loot("coins", 18, 18, 1))),
         GUARD("Guard", 40, 46.8, 50, 240, 30, 2, List.of(new Loot("coins", 30, 30, 1))),
         KNIGHT("Knight of Ardougne", 55, 84.3, 50, 240, 50, 3, List.of(new Loot("coins", 50, 50, 1))),
-        PALADIN("Paladin", 70, 151.8, 50, 230, 80, 3, List.of(new Loot("coins", 80, 80, 1), new Loot("chaos_rune", 2, 2, 8))),
-        HERO("Hero", 80, 273.3, 40, 220, 200, 4, List.of(new Loot("coins", 200, 300, 1), new Loot("death_rune", 2, 2, 8)));
+        PALADIN("Paladin", 70, 151.8, 50, 150, 80, 3, List.of(new Loot("coins", 80, 80, 1), new Loot("chaos_rune", 2, 2, 8))),
+        HERO("Hero", 80, 273.3, 6, 100, 200, 4, List.of(new Loot("coins", 200, 300, 1), new Loot("death_rune", 2, 2, 8)));
 
         private final String name;
         private final int level;

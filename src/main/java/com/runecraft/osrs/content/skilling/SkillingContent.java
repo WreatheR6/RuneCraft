@@ -22,7 +22,7 @@ public final class SkillingContent implements ContentModule {
     public static final List<SkillingPart> PARTS = List.of(new CookingData(), new CraftingData(), new SmithingData(),
             new FletchingData(), new HerbloreData(), new FarmingData(), new HunterData(), new MiningData(), new RunecraftData(),
             new ConstructionData(), new ThievingData(), new GatheringData(), new SailingData(), new AgilityData(),
-            new PrayerData());
+            new PrayerData(), new BlastFurnaceData());
 
     @Override
     public String id() {

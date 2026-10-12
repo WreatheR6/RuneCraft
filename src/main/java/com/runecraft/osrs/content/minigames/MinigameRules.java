@@ -163,11 +163,17 @@ public final class MinigameRules {
 
     // ---------------------------------------------------------------- Tempoross
     public static final class Tempoross {
-        public static final int POINTS_CATCH = 10;
+        /** Points (OSRS Wiki): 5 per harpoonfish caught, 10 per fish cooked, 20 per raw and 65 per cooked fish deposited. */
+        public static final int POINTS_CATCH = 5;
         public static final int POINTS_COOK = 10;
-        public static final int POINTS_LOAD = 10;
-        public static final int POINTS_TETHER = 25;
-        public static final int POINTS_SPIRIT = 25;
+        public static final int POINTS_LOAD_RAW = 20;
+        public static final int POINTS_LOAD_COOKED = 65;
+        /** Surviving a wave (tethered) gives 10 points; repairing a totem/mast or dousing a fire 40. */
+        public static final int POINTS_TETHER = 10;
+        public static final int POINTS_REPAIR = 40;
+        public static final int POINTS_DOUSE = 40;
+        /** Points per harpoon strike on the spirit pool. */
+        public static final int POINTS_SPIRIT = 55;
         public static final int MIN_POINTS = 2000;
         /** Energy damage per raw / cooked harpoonfish loaded into a cannon (approx.). */
         public static final int RAW_DAMAGE = 3;

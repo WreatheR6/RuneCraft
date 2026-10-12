@@ -143,7 +143,7 @@ public class TemporossSession extends MinigameSession {
                     Msg.game(player, "You have no harpoonfish to load.");
                     return true;
                 }
-                addPoints(player, Tempoross.POINTS_LOAD * (raw + cooked));
+                addPoints(player, Tempoross.POINTS_LOAD_RAW * raw + Tempoross.POINTS_LOAD_COOKED * cooked);
                 if (!vulnerable()) {
                     energy = Math.max(0, energy - raw * Tempoross.RAW_DAMAGE - cooked * Tempoross.COOKED_DAMAGE);
                 }

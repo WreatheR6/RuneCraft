@@ -171,21 +171,9 @@ final class GatheringHooks {
                     return false;
                 }
                 world.playSound(null, pos, SoundEvents.BLOCK_STONE_HIT, SoundCategory.PLAYERS, 1.0f, 0.9f);
-                if (random.nextDouble() >= Chance.lerp(SkillingUtil.level(p, Skill.MINING), rock.low(), rock.high())) {
+                MiningData.Yield got = rock.attempt(SkillingUtil.level(p, Skill.MINING), random::nextDouble);
+                if (got == null) {
                     return true;
-                }
-                int total = 0;
-                for (MiningData.Yield y : rock.yields()) {
-                    total += y.weight();
-                }
-                int r = random.nextInt(total);
-                MiningData.Yield got = rock.yields().get(0);
-                for (MiningData.Yield y : rock.yields()) {
-                    if (r < y.weight()) {
-                        got = y;
-                        break;
-                    }
-                    r -= y.weight();
                 }
                 SkillingUtil.give(p, got.item(), 1);
                 XpService.add(p, Skill.MINING, got.xp());
@@ -504,7 +492,7 @@ final class GatheringHooks {
                     return false;
                 }
                 p.swingHand(Hand.MAIN_HAND, true);
-                if (p.getRandom().nextDouble() >= Chance.lerp(SkillingUtil.level(p, Skill.FIREMAKING), 65, 513)) {
+                if (p.getRandom().nextDouble() >= Chance.lerp(SkillingUtil.level(p, Skill.FIREMAKING), 64, 512)) {
                     return true;
                 }
                 BlockPos here = p.getBlockPos();

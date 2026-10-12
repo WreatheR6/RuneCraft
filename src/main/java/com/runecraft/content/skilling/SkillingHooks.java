@@ -36,6 +36,7 @@ public final class SkillingHooks implements ModuleHooks {
         ConstructionHooks.init();
         ThievingHooks.init();
         SailingHooks.init();
+        BlastFurnaceHooks.init();
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (ActionManager.mcTick() % ActionManager.MC_TICKS_PER_GAME_TICK != 0) {
@@ -45,6 +46,7 @@ public final class SkillingHooks implements ModuleHooks {
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 ItemHooks.divineTick(player, gameTick);
                 SailingHooks.boatTick(player);
+                BlastFurnaceHooks.tick(player, gameTick);
                 if (gameTick % 20 == 0) {
                     RunecraftHooks.fermentWine(player);
                 }

@@ -328,8 +328,8 @@ final class FarmingHooks {
                     return false;
                 }
                 world.playSound(null, pos, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.PLAYERS, 1f, 0.9f);
-                double chance = Chance.lerp(SkillingUtil.level(p, Skill.WOODCUTTING), tree.low() * axe.woodcuttingMultiplier(),
-                        tree.high() * axe.woodcuttingMultiplier());
+                double chance = Chance.lerp(SkillingUtil.level(p, Skill.WOODCUTTING), tree.low(axe.woodcuttingMultiplier()),
+                        tree.high(axe.woodcuttingMultiplier()));
                 boolean expired = com.runecraft.skill.Gathering.TREE_TIMERS.chop(key, tree.despawnTicks(),
                         com.runecraft.action.ActionManager.gameTick());
                 if (random.nextDouble() < chance) {

@@ -83,8 +83,8 @@ public final class Gathering {
                     return false;
                 }
                 world.playSound(null, pos, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.PLAYERS, 1.0f, 0.8f + random.nextFloat() * 0.4f);
-                double chance = Chance.lerp(s.currentLevel(Skill.WOODCUTTING), tree.low() * best.woodcuttingMultiplier(),
-                        tree.high() * best.woodcuttingMultiplier());
+                double chance = Chance.lerp(s.currentLevel(Skill.WOODCUTTING), tree.low(best.woodcuttingMultiplier()),
+                        tree.high(best.woodcuttingMultiplier()));
                 String timerKey = treeKey(world, pos);
                 boolean expired = TREE_TIMERS.chop(timerKey, tree.despawnTicks(), ActionManager.gameTick());
                 if (random.nextDouble() < chance) {
