@@ -198,6 +198,7 @@ public final class MinigameWorld {
                 case TROUBLE_BREWING -> "Mos Le'Harmless";
                 case SHADES_OF_MORTTON -> "Mort'ton";
                 case FISHING_TRAWLER -> "Port Khazard";
+                case CHAMPIONS_CHALLENGE -> "Champions' Guild arena";
                 default -> m.displayName();
             };
             list.add(PlaceDef.of(m.place(), name, m.entranceX(), m.entranceY(), m.style(), blocks.get(m.place())));
@@ -238,6 +239,8 @@ public final class MinigameWorld {
                 0xE0C060));
         list.add(NpcDef.of("mg_kovac", "Kovac", Minigame.GIANTS_FOUNDRY.place(), 2, 2, 0xA08060, 0x6A4A2A, 0x4A3A2A, 0x5A3A1A));
         list.add(NpcDef.of("mg_amy", "Amy", Minigame.MAHOGANY_HOMES.place(), 2, 2, 0xC8A080, 0x6A8AA0, 0x4A5A7A, 0xC0A040));
+        list.add(NpcDef.of(ChampionsChallenge.LARXUS, "Larxus", Minigame.CHAMPIONS_CHALLENGE.place(), 2, 2, 0xC8A080, 0x3A4A8A,
+                0x2A2A5A, 0xC0A040));
         list.add(NpcDef.of("mg_murphy", "Murphy", Minigame.FISHING_TRAWLER.place(), 2, 2, 0xC09070, 0x3A6A8A, 0x2A3A4A, 0x3A3A3A));
         list.add(NpcDef.of("mg_brian_orichard", "Brian O'Richard", Minigame.ROGUES_DEN.place(), 2, 2, 0xC8A080, 0x3A3A40, 0x2A2A30,
                 0x2A2A30));
@@ -266,6 +269,7 @@ public final class MinigameWorld {
         List<CollectionLogData.Page> pages = new ArrayList<>();
         String c = "Minigames";
         pages.add(new CollectionLogData.Page(c, "Fight Caves", List.of("fire_cape", "tzrek_jad")));
+        pages.add(ChampionsChallenge.collectionPage(c));
         pages.add(new CollectionLogData.Page(c, "The Inferno", List.of("infernal_cape", "jal_nib_rek")));
         pages.add(new CollectionLogData.Page(c, "Pest Control", List.of("void_knight_top", "void_knight_robe", "void_knight_gloves",
                 "void_mage_helm", "void_ranger_helm", "void_melee_helm", "void_knight_mace", "elite_void_top", "elite_void_robe",

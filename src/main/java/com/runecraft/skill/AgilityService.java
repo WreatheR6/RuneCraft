@@ -21,6 +21,12 @@ import java.util.UUID;
 public final class AgilityService {
     /** Game tick each player last received a Mark of grace (3-minute cooldown; not persisted). */
     private static final Map<UUID, Long> LAST_MARK = new HashMap<>();
+    /** Adjusts a lap's mark of grace chance (Kandarin diary Seers' bonus): (player, course, chance) -> chance. */
+    public static MarkChance markChance = (p, course, chance) -> chance;
+
+    public interface MarkChance {
+        double adjust(ServerPlayerEntity player, AgilityCourse course, double chance);
+    }
 
     private AgilityService() {
     }
@@ -54,7 +60,7 @@ public final class AgilityService {
             long now = ActionManager.gameTick();
             Long last = LAST_MARK.get(player.getUuid());
             boolean cooledDown = last == null || now - last >= AgilityCourse.MARK_COOLDOWN_TICKS;
-            if (cooledDown && player.getRandom().nextDouble() < course.markChance(level)) {
+            if (cooledDown && player.getRandom().nextDouble() < markChance.adjust(player, course, course.markChance(level))) {
                 LAST_MARK.put(player.getUuid(), now);
                 Inv.give(player, "mark_of_grace", 1);
                 CollectionLog.obtain(player, "mark_of_grace");

@@ -50,6 +50,28 @@ public final class CombatHooks {
     private static final List<AttackGate> GATES = new ArrayList<>();
     private static final List<PlayerAttackModifier> MODIFIERS = new ArrayList<>();
     private static final List<PlayerHurtListener> HURT = new ArrayList<>();
+    private static final List<DropTransformer> DROPS = new ArrayList<>();
+
+    /** Changes a monster drop for its killer before it hits the ground (e.g. diary noted bones). */
+    public interface DropTransformer {
+        /** The stack to drop instead, or null to leave the drop alone. */
+        net.minecraft.item.ItemStack transform(ServerPlayerEntity killer, LivingEntity mob, String item, int count);
+    }
+
+    public static void addDropTransformer(DropTransformer t) {
+        DROPS.add(t);
+    }
+
+    /** The stack a killed monster drops for an item of its loot table. */
+    public static net.minecraft.item.ItemStack dropStack(ServerPlayerEntity killer, LivingEntity mob, String item, int count) {
+        for (DropTransformer t : DROPS) {
+            net.minecraft.item.ItemStack s = t.transform(killer, mob, item, count);
+            if (s != null && !s.isEmpty()) {
+                return s;
+            }
+        }
+        return com.runecraft.util.Inv.stack(item, count);
+    }
 
     private CombatHooks() {
     }

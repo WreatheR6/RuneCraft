@@ -347,6 +347,40 @@ public final class RaidInstance {
         };
         setHitpoints(e, hp);
         coxPools.remove(e);
+        scaleLevels(e, id);
+    }
+
+    /** CoX Defence (and defensive Magic) scaling, and ToB Hard mode level changes. */
+    private void scaleLevels(LivingEntity e, String id) {
+        if (!(e instanceof com.runecraft.entity.OsrsMonsterEntity m)) {
+            return;
+        }
+        if (type == RaidType.COX) {
+            boolean cm = mode == RaidMode.CHALLENGE;
+            m.overrideStats(s -> withLevels(s, -1, -1, RaidScaling.coxScaledDefence(id, s.defence(), partySize, cm),
+                    RaidScaling.coxMagicIsDefensive(id) ? RaidScaling.coxScaledDefence(id, s.magic(), partySize, cm) : -1, -1));
+        } else if (type == RaidType.TOB && mode == RaidMode.HARD) {
+            int[] l = RaidScaling.tobHardLevels(id);
+            if (l != null) {
+                m.overrideStats(s -> withLevels(s, l[0], l[1], l[2], l[3], l[4]));
+            }
+        }
+    }
+
+    private static com.runecraft.combat.MonsterStats withLevels(com.runecraft.combat.MonsterStats s, int atk, int str, int def,
+                                                               int mag, int rng) {
+        return new com.runecraft.combat.MonsterStats(s.name(), s.combatLevel(), s.hitpoints(), atk < 0 ? s.attack() : atk,
+                str < 0 ? s.strength() : str, def < 0 ? s.defence() : def, mag < 0 ? s.magic() : mag, rng < 0 ? s.ranged() : rng,
+                s.defenceBonus(), s.attackSpeed(), s.style(), s.maxHit(), s.monster(), s.profile(), s.boss());
+    }
+
+    /** {@link #damageMultiplier()} for a particular creature (ToB Hard mode max hit changes). */
+    public double damageMultiplier(LivingEntity source) {
+        double m = damageMultiplier();
+        if (type == RaidType.TOB && mode == RaidMode.HARD && source != null) {
+            m *= RaidScaling.tobHardMaxHit(creatureId(source));
+        }
+        return m;
     }
 
     /** True hitpoints (including reserve). */

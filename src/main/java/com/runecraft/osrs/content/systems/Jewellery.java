@@ -141,6 +141,7 @@ public final class Jewellery {
         wornExternal("ghostspeak_amulet", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 0, 0, 0, 0));
         wornExternal("fire_cape", Slot.CAPE, s(1, 1, 1, 1, 1, 11, 11, 11, 11, 11, 4, 0, 0, 2));
         wornExternal("infernal_cape", Slot.CAPE, s(4, 4, 4, 1, 1, 12, 12, 12, 12, 12, 8, 0, 0, 2));
+        wornExternal("champions_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
         wornExternal("ava_s_accumulator", Slot.CAPE, s(0, 0, 0, 0, 4, 0, 1, 0, 4, 0, 0, 0, 0, 0));
         wornExternal("avas_accumulator", Slot.CAPE, s(0, 0, 0, 0, 4, 0, 1, 0, 4, 0, 0, 0, 0, 0));
         wornExternal("avas_assembler", Slot.CAPE, s(0, 0, 0, 0, 8, 1, 1, 1, 8, 2, 0, 2, 0, 0));

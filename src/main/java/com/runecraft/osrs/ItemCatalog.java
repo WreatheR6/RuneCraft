@@ -465,6 +465,12 @@ public final class ItemCatalog {
             add(c[0] + "_champion_scroll", c[1] + " champion scroll", Kind.SIMPLE, "scroll", 0xE8D8A8).value(1).stack(1)
                     .examine("A champion scroll. It's a challenge from the " + c[1].toLowerCase() + " champion.");
         }
+        // Larxus hands out Leon's scroll once all ten champions are beaten; Leon d'Cour gives the cape (minigames module).
+        add("leons_champion_scroll", "Leon's champion scroll", Kind.SIMPLE, "scroll", 0xF0E0B0).value(1).stack(1)
+                .examine("It's a challenge from the Human Champion!");
+        // Worn in the systems module's cape slot; no bonuses (OSRS).
+        add("champions_cape", "Champion's cape", Kind.SIMPLE, "cape", 0x2A4AA0).value(2).stack(1)
+                .examine("Formerly owned by Leon d'Cour, the Champion of Champions.");
         add("amulet_of_accuracy", "Amulet of accuracy", Kind.SIMPLE, "amulet", 0x3060E0).value(100).stack(1);
         // Dragon equipment that is bought or dropped, not smithed (bonuses: data/EquipmentBonuses).
         // Quest gates (Heroes' Quest, Lost City, Regicide, Legends' Quest) live in the quests module.

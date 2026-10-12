@@ -118,6 +118,27 @@ public final class SystemsHooks implements ModuleHooks {
         };
         com.runecraft.content.dungeons.BarrowsHooks.runeBonus = p -> DiaryRewards.barrowsRuneMultiplier(
                 Diaries.tierComplete(SysState.of(p).diaryDone, "morytania", Diaries.Tier.ELITE));
+        com.runecraft.content.minigames.RewardShopService.costAdjuster = (p, shop, amount) -> shop.equals("tzhaar")
+                ? DiaryRewards.tzhaarPrice(amount, SysState.of(p).wornId(Jewellery.Slot.HANDS).startsWith("karamja_gloves_")) : amount;
+        com.runecraft.content.minigames.RewardShopService.extraLock = (p, item) ->
+                DiaryRewards.pestControlUnlocked(item, diaryDone(p, "western", Diaries.Tier.HARD)) ? null
+                        : "Requires the hard Western Provinces diary";
+        com.runecraft.skill.AgilityService.markChance = (p, course, chance) -> course == com.runecraft.osrs.data.AgilityCourse.SEERS
+                ? DiaryRewards.seersMarkChance(chance, diaryDone(p, "kandarin", Diaries.Tier.HARD) ? 3
+                : diaryDone(p, "kandarin", Diaries.Tier.MEDIUM) ? 2 : diaryDone(p, "kandarin", Diaries.Tier.EASY) ? 1 : 0)
+                : chance;
+        // Only the Hosidius kitchen range has a burn reduction; its size depends on the Kourend & Kebos diary.
+        com.runecraft.menu.MenuService.rangeBurnReduction = (p, r) -> DiaryRewards.hosidiusBurnReduction(
+                diaryDone(p, "kourend", Diaries.Tier.EASY), diaryDone(p, "kourend", Diaries.Tier.ELITE));
+        com.runecraft.content.islands.IslandsTravelService.staffless = p ->
+                DiaryRewards.fairyRingsWithoutStaff(diaryDone(p, "lumbridge", Diaries.Tier.ELITE));
+        CombatHooks.addDropTransformer((killer, mob, item, count) -> {
+            String monster = mob instanceof com.runecraft.boss.DataBossEntity b && b.def() != null ? b.def().id
+                    : net.minecraft.registry.Registries.ENTITY_TYPE.getId(mob.getType()).getPath();
+            boolean wild = com.runecraft.world.Gielinor.wildernessLevel(mob) > 0;
+            return DiaryRewards.notedDrop(monster, item, wild, (area, tier) -> diaryDone(killer, area, tier))
+                    ? com.runecraft.bank.Notes.note(item, "", count) : null;
+        });
         QuestScripts.onTalk(CluePuzzles.FALO, (p, npc) -> QuestApi.say(p, "Falo the Bard",
                 "I'm Falo, the bard. Bring me what my songs ask for and I'll help you on your treasure trail."));
 
@@ -128,6 +149,10 @@ public final class SystemsHooks implements ModuleHooks {
             }
             return ClueService.talk(sp, npc) ? ActionResult.SUCCESS : ActionResult.PASS;
         });
+    }
+
+    private static boolean diaryDone(ServerPlayerEntity p, String area, Diaries.Tier tier) {
+        return Diaries.tierComplete(SysState.of(p).diaryDone, area, tier);
     }
 
     private static void watson(ServerPlayerEntity p, QuestNpcEntity npc) {

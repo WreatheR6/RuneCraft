@@ -86,6 +86,24 @@ public final class MinigamesHooks implements ModuleHooks {
         }
 
         GameEvents.onKill((player, entity, stats) -> MinigameManager.onKill(player, entity));
+        // Champions' Challenge: Larxus, the champions' rules and the 1/5,000 scrolls for kin whose tables lack one.
+        QuestScripts.onTalk(com.runecraft.osrs.content.minigames.ChampionsChallenge.LARXUS,
+                (player, npc) -> com.runecraft.content.minigames.games.ChampionsSession.larxus(player));
+        com.runecraft.combat.CombatHooks.addAttackGate(com.runecraft.content.minigames.games.ChampionsSession::deniedAttack);
+        GameEvents.onKill((player, entity, stats) -> {
+            if (stats == null) {
+                return;
+            }
+            String scroll = com.runecraft.osrs.content.minigames.ChampionsChallenge.scrollFor(stats.name());
+            java.util.List<com.runecraft.osrs.data.Drop> table = stats.monster() != null ? stats.monster().drops()
+                    : stats.profile() instanceof com.runecraft.osrs.content.MonsterDef md ? md.drops
+                    : stats.profile() instanceof com.runecraft.osrs.content.BossDef bd ? bd.drops : null;
+            if (scroll != null && !com.runecraft.osrs.content.minigames.ChampionsChallenge.tableHas(table, scroll)
+                    && entity.getRandom().nextInt(com.runecraft.osrs.content.minigames.ChampionsChallenge.SCROLL_RATE) == 0) {
+                entity.dropStack(com.runecraft.util.Inv.stack(scroll, 1));
+                com.runecraft.collection.CollectionLog.obtain(player, scroll);
+            }
+        });
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) ->
                 !(entity instanceof ServerPlayerEntity player) || MinigameManager.allowDeath(player));
         ServerTickEvents.END_SERVER_TICK.register(MinigameManager::serverTick);

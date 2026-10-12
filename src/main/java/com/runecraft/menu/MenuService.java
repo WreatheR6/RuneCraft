@@ -32,6 +32,12 @@ import java.util.Map;
 public final class MenuService {
     private static final double STATION_REACH_SQ = 6.0 * 6.0;
 
+    /**
+     * Adjusts a special range's burn reduction for a player (the Hosidius range's Kourend &amp; Kebos diary
+     * requirement and elite bonus): (player, reduction) -> reduction.
+     */
+    public static java.util.function.BiFunction<ServerPlayerEntity, Double, Double> rangeBurnReduction = (p, r) -> r;
+
     private MenuService() {
     }
 
@@ -165,6 +171,9 @@ public final class MenuService {
                     ? com.runecraft.osrs.content.skilling.CookingData.rangeBurnReduction(
                             com.runecraft.osrs.GielinorMap.toOsrsX(station.getX()), com.runecraft.osrs.GielinorMap.toOsrsY(station.getZ()))
                     : 0;
+            if (reduction > 0) {
+                reduction = rangeBurnReduction.apply(player, reduction);
+            }
             chance = r.cookingSuccess(skills.currentLevel(r.skill()), range,
                     r.gauntletStopBurn() > 0 && Inv.has(player, "cooking_gauntlets", 1), reduction);
         }

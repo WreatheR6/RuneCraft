@@ -8,8 +8,10 @@ import java.util.List;
 /**
  * Effects of the achievement diary reward items (tiers 1-4 = easy..elite), after the OSRS wiki: teleports
  * with their daily charges, the Falador shield prayer restore, the Explorer's ring run-energy restores and
- * alchemy, and bonus resources (Varrock armour ores/bars, Rada's blessing fish). Perks the game has no
- * mechanic for are listed in {@link #perks} only.
+ * alchemy, bonus resources (Varrock armour ores/bars, Rada's blessing fish), and perks hooked into other
+ * systems (TzHaar discount, Seers' marks of grace, Hosidius range, Falador farm XP, noted boss/dragon bones,
+ * staffless fairy rings, elite void). Perks the game has no mechanic for (coal trucks, the flax keeper,
+ * chompy birds, the Resource Area fee, desert heat) are not simulated.
  */
 public final class DiaryRewards {
     /** A reward teleport. {@code daily[tier-1]}: -1 = not available at that tier, 0 = unlimited, n = uses per day. */
@@ -164,6 +166,92 @@ public final class DiaryRewards {
         return eliteDone ? 1.5 : 1.0;
     }
 
+    // ------------------------------------------------------------------ perks hooked into other systems
+
+    /**
+     * Karamja gloves (any tier, worn): TzHaar shop prices drop by 13.33% (OSRS wiki: obsidian platebody
+     * 126,000 -> 109,200 tokkul; obsidian cape 90,000 -> 78,000).
+     */
+    public static int tzhaarPrice(int price, boolean karamjaGloves) {
+        return karamjaGloves ? price - price * 2 / 15 : price;
+    }
+
+    /** Fraction of a TzHaar shop price paid (for shops that scale a whole cost list). */
+    public static final double TZHAAR_GLOVES_PRICE = 13 / 15.0;
+
+    /**
+     * Seers' Village Rooftop Course marks of grace (OSRS wiki): a failed mark spawn is rerolled with a 5% /
+     * 10% / 15% chance after the easy / medium / hard Kandarin diary (the elite keeps the hard bonus).
+     */
+    public static double seersMarkChance(double base, int kandarinTiersDone) {
+        double reroll = switch (Math.min(3, Math.max(0, kandarinTiersDone))) {
+            case 1 -> 0.05;
+            case 2 -> 0.10;
+            case 3 -> 0.15;
+            default -> 0;
+        };
+        return base + (1 - base) * reroll;
+    }
+
+    /**
+     * Hosidius kitchen range (OSRS wiki): 5% less burning once the easy Kourend &amp; Kebos diary is done,
+     * 10% with the elite diary; no bonus before the easy diary.
+     */
+    public static double hosidiusBurnReduction(boolean easyDone, boolean eliteDone) {
+        return eliteDone ? 0.10 : easyDone ? 0.05 : 0;
+    }
+
+    /** The Falador farm patches outside the south wall (OSRS tiles, inclusive). */
+    public static final int[] FALADOR_FARM = {3042, 3302, 3060, 3310};
+
+    /**
+     * Falador medium diary (shield 2+, OSRS wiki): 10% more Farming XP from the Falador farm's allotment,
+     * flower and herb patches. Returns the XP multiplier. // approx: the shield need not be worn here
+     */
+    public static double faladorFarmXp(boolean mediumDone, int osrsX, int osrsY) {
+        int[] f = FALADOR_FARM;
+        boolean atFarm = osrsX >= f[0] && osrsX <= f[2] && osrsY >= f[1] && osrsY <= f[3];
+        return mediumDone && atFarm ? 1.1 : 1.0;
+    }
+
+    /** Tier checks for {@link #notedDrop}: (area id, tier) -> completed. */
+    @FunctionalInterface
+    public interface TierDone {
+        boolean done(String area, Diaries.Tier tier);
+    }
+
+    /**
+     * Whether a monster drop arrives as bank notes (OSRS wiki): the Giant Mole's mole skins and claws after the
+     * hard Falador diary, the Dagannoth Kings' dagannoth bones after the elite Fremennik diary, and dragon bones
+     * (and lava dragon bones) from dragons killed in the Wilderness after the elite Wilderness diary.
+     */
+    public static boolean notedDrop(String monsterId, String item, boolean inWilderness, TierDone done) {
+        if (monsterId == null || item == null) {
+            return false;
+        }
+        if (monsterId.equals("giant_mole") && (item.equals("mole_skin") || item.equals("mole_claw"))) {
+            return done.done("falador", Diaries.Tier.HARD);
+        }
+        if ((monsterId.equals("dagannoth_rex") || monsterId.equals("dagannoth_prime") || monsterId.equals("dagannoth_supreme"))
+                && item.equals("dagannoth_bones")) {
+            return done.done("fremennik", Diaries.Tier.ELITE);
+        }
+        if (inWilderness && (item.equals("dragon_bones") || item.equals("lava_dragon_bones"))) {
+            return done.done("wilderness", Diaries.Tier.ELITE);
+        }
+        return false;
+    }
+
+    /** Lumbridge &amp; Draynor elite diary: fairy rings work without a Dramen or Lunar staff (OSRS). */
+    public static boolean fairyRingsWithoutStaff(boolean lumbridgeEliteDone) {
+        return lumbridgeEliteDone;
+    }
+
+    /** Pest Control rewards that need a diary: the elite void top and robe need the hard Western Provinces diary. */
+    public static boolean pestControlUnlocked(String item, boolean westernHardDone) {
+        return !(item.equals("elite_void_top") || item.equals("elite_void_robe")) || westernHardDone;
+    }
+
     /** The skill whose gathering the bonus applies to, for the Minecraft side. */
     public static Skill bonusSkill(String areaId) {
         return switch (areaId) {
@@ -187,20 +275,50 @@ public final class DiaryRewards {
                     out.add("10% more pickpocket success everywhere");
                 }
             }
-            case "falador" -> out.add("Restore " + faladorRestorePercent(tier) + "% prayer, " + faladorRestoresPerDay(tier) + "/day");
+            case "falador" -> {
+                out.add("Restore " + faladorRestorePercent(tier) + "% prayer, " + faladorRestoresPerDay(tier) + "/day");
+                if (tier >= 2) {
+                    out.add("10% more Farming XP at the Falador farm patches");
+                }
+                if (tier >= 3) {
+                    out.add("The Giant Mole drops noted mole skins and claws");
+                }
+            }
             case "lumbridge" -> {
                 out.add(explorerEnergyRestores(tier) + " run energy restores (50%) per day");
                 out.add(EXPLORER_ALCHS_PER_DAY + " free " + (explorerHighAlch(tier) ? "High" : "Low") + " Alchemy casts per day");
+                if (tier >= 4) {
+                    out.add("Use fairy rings without a Dramen staff");
+                }
             }
             case "varrock" -> out.add(VARROCK_BONUS_PERCENT + "% chance of an extra ore/bar up to "
                     + new String[]{"coal/steel", "mithril", "adamantite", "runite"}[Math.max(0, Math.min(3, tier - 1))]);
-            case "kourend" -> out.add(radasExtraFishPercent(tier) + "% chance of an extra fish in Kourend & Kebos");
+            case "kourend" -> {
+                out.add(radasExtraFishPercent(tier) + "% chance of an extra fish in Kourend & Kebos");
+                out.add((tier >= 4 ? 10 : 5) + "% less burning on the Hosidius kitchen range");
+            }
             case "morytania" -> {
                 if (tier >= 4) {
                     out.add("50% more runes from the Barrows chest");
                 }
             }
-            case "karamja" -> out.add("Discount at TzHaar shops"); // approx: not simulated
+            case "karamja" -> out.add("13% off TzHaar shop prices while wearing the gloves");
+            case "kandarin" -> out.add((Math.min(3, tier) * 5) + "% reroll on failed Seers' Village rooftop marks of grace");
+            case "fremennik" -> {
+                if (tier >= 4) {
+                    out.add("The Dagannoth Kings drop noted dagannoth bones");
+                }
+            }
+            case "wilderness" -> {
+                if (tier >= 4) {
+                    out.add("Dragons killed in the Wilderness drop noted bones");
+                }
+            }
+            case "western" -> {
+                if (tier >= 3) {
+                    out.add("Elite void knight equipment available from Pest Control");
+                }
+            }
             default -> {
             }
         }

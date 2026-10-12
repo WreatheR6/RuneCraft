@@ -1722,6 +1722,9 @@
     "head",
     "jaw"
   ],
+  "skeleton_champion": [
+    "skull"
+  ],
   "skotizo": [
     "head",
     "jaw"
@@ -2345,6 +2348,9 @@
     "collar_gem",
     "eye_l",
     "eye_r"
+  ],
+  "zombies_champion": [
+    "head"
   ],
   "zulrah": [
     "eyes"

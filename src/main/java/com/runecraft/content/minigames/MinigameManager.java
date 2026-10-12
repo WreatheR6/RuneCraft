@@ -185,6 +185,9 @@ public final class MinigameManager {
             }
             return null;
         }
+        if (game == Minigame.CHAMPIONS_CHALLENGE) {
+            return com.runecraft.content.minigames.games.ChampionsSession.requirement(player);
+        }
         if (game == Minigame.ROGUES_DEN && skills.level(Skill.AGILITY) < 50) {
             return "You need an Agility level of 50 to enter the Rogues' Den.";
         }
@@ -228,6 +231,7 @@ public final class MinigameManager {
             case MAHOGANY_HOMES -> new MahoganyHomesSession(id, slot, world, variant);
             case FISHING_TRAWLER -> new FishingTrawlerSession(id, slot, world, variant);
             case ROGUES_DEN -> new RoguesDenSession(id, slot, world, variant);
+            case CHAMPIONS_CHALLENGE -> new com.runecraft.content.minigames.games.ChampionsSession(id, slot, world, variant);
         };
     }
 

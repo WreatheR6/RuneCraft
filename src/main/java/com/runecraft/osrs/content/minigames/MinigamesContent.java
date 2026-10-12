@@ -36,7 +36,9 @@ public final class MinigamesContent implements ContentModule {
 
     @Override
     public List<BossDef> bosses() {
-        return MinigameMonsters.bosses();
+        List<BossDef> list = new java.util.ArrayList<>(MinigameMonsters.bosses());
+        list.addAll(ChampionsChallenge.bosses());
+        return list;
     }
 
     @Override

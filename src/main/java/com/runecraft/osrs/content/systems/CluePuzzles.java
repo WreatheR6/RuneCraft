@@ -47,6 +47,40 @@ public final class CluePuzzles {
             return new Slider(n, t);
         }
 
+        /** Saved form: {@code "<n>:t,t,..."}. */
+        public String encode() {
+            StringBuilder b = new StringBuilder().append(n).append(':');
+            for (int i = 0; i < tiles.length; i++) {
+                b.append(i == 0 ? "" : ",").append(tiles[i]);
+            }
+            return b.toString();
+        }
+
+        /** Reads {@link #encode()}; null unless it holds a valid, solvable board. */
+        public static Slider decode(String s) {
+            try {
+                int colon = s.indexOf(':');
+                int n = Integer.parseInt(s.substring(0, colon));
+                String[] parts = s.substring(colon + 1).split(",");
+                if (n < 2 || n > 8 || parts.length != n * n) {
+                    return null;
+                }
+                int[] t = new int[n * n];
+                boolean[] seen = new boolean[n * n];
+                for (int i = 0; i < t.length; i++) {
+                    t[i] = Integer.parseInt(parts[i]);
+                    if (t[i] < 0 || t[i] >= t.length || seen[t[i]]) {
+                        return null;
+                    }
+                    seen[t[i]] = true;
+                }
+                Slider out = new Slider(n, t);
+                return out.solvable() ? out : null;
+            } catch (RuntimeException e) {
+                return null;
+            }
+        }
+
         /** A scrambled board, made by sliding tiles at random from the solved board (so always solvable). */
         public static Slider scrambled(int n, Random random) {
             Slider s = solvedBoard(n);
@@ -195,6 +229,54 @@ public final class CluePuzzles {
                 }
             }
             return box;
+        }
+
+        /** Saved form: 25 lights as 1/0, then each button's lights: {@code "1101...:0,4,7;2,3,..."}. */
+        public String encode() {
+            StringBuilder b = new StringBuilder();
+            for (boolean l : lights) {
+                b.append(l ? '1' : '0');
+            }
+            b.append(':');
+            for (int i = 0; i < buttons.length; i++) {
+                b.append(i == 0 ? "" : ";");
+                for (int j = 0; j < buttons[i].length; j++) {
+                    b.append(j == 0 ? "" : ",").append(buttons[i][j]);
+                }
+            }
+            return b.toString();
+        }
+
+        /** Reads {@link #encode()}; null if malformed. */
+        public static LightBox decode(String s) {
+            try {
+                String[] halves = s.split(":", 2);
+                if (halves.length != 2 || halves[0].length() != LIGHTS) {
+                    return null;
+                }
+                boolean[] l = new boolean[LIGHTS];
+                for (int i = 0; i < LIGHTS; i++) {
+                    l[i] = halves[0].charAt(i) == '1';
+                }
+                String[] bs = halves[1].split(";");
+                if (bs.length != BUTTONS) {
+                    return null;
+                }
+                int[][] buttons = new int[BUTTONS][];
+                for (int b = 0; b < BUTTONS; b++) {
+                    String[] ls = bs[b].split(",");
+                    buttons[b] = new int[ls.length];
+                    for (int j = 0; j < ls.length; j++) {
+                        buttons[b][j] = Integer.parseInt(ls[j]);
+                        if (buttons[b][j] < 0 || buttons[b][j] >= LIGHTS) {
+                            return null;
+                        }
+                    }
+                }
+                return new LightBox(l, buttons);
+            } catch (RuntimeException e) {
+                return null;
+            }
         }
 
         public void press(int button) {

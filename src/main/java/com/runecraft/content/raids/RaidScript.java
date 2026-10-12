@@ -53,7 +53,7 @@ public final class RaidScript implements BossScript {
         }
         RoomLogic r = room(boss);
         int d = r == null ? damage : r.bossOutgoing(boss, player, damage, type);
-        return (int) Math.round(d * raid.damageMultiplier());
+        return (int) Math.round(d * raid.damageMultiplier(boss));
     }
 
     @Override
