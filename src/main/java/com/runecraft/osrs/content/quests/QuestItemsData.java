@@ -110,5 +110,16 @@ final class QuestItemsData {
         b.gate("dragon_battleaxe", "heroes_quest");
         b.gate("ibans_staff", "underground_pass");
         b.gate("lunar_staff", "lunar_diplomacy");
+        b.gate("dragon_mace", "heroes_quest");
+        b.gate("dragon_spear", "lost_city");
+        b.gate("dragon_halberd", "regicide");
+        // Quest-locked armour: the rune platebody, its trimmed/god variants and the green d'hide body need
+        // Dragon Slayer I; the dragon sq shield needs Legends' Quest.
+        for (String body : new String[]{"rune_platebody", "rune_platebody_t", "rune_platebody_g", "saradomin_platebody",
+                "zamorak_platebody", "guthix_platebody", "gilded_platebody", "green_dhide_body", "green_dhide_body_t",
+                "green_dhide_body_g"}) {
+            b.armourGate(body, "dragon_slayer_i");
+        }
+        b.armourGate("dragon_sq_shield", "legends_quest");
     }
 }

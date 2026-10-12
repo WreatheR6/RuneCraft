@@ -19,8 +19,10 @@ import static com.runecraft.osrs.content.systems.Defs.st;
  * module items that don't belong to a bigger table (lamps, ensouled heads, staves, teleport tablets).
  */
 public final class Capes {
-    /** Skillcape bonuses: +9 to every defence and +4 prayer. */
-    public static final EquipmentStats SKILLCAPE = st(0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 0, 0, 0, 4);
+    /** Untrimmed skillcape (and quest point cape) bonuses: +9 to every defence, no prayer. */
+    public static final EquipmentStats SKILLCAPE = st(0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 0, 0, 0, 0);
+    /** Trimmed skillcapes, the max cape and the achievement diary cape add +4 prayer. */
+    public static final EquipmentStats SKILLCAPE_T = st(0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 0, 0, 0, 4);
     public static final int SKILLCAPE_PRICE = 99_000;
     /** The max cape costs 99,000 coins per skill (2,277,000 for 23 skills in OSRS). */
     public static final int MAX_CAPE_PRICE_PER_SKILL = 99_000;
@@ -64,7 +66,7 @@ public final class Capes {
             String name = s.displayName() + " cape";
             Defs.worn(items, capeId(s, false), name, "cape", capeColour(s), SKILLCAPE_PRICE, Jewellery.Slot.CAPE, SKILLCAPE,
                     req(s, 99), Jewellery.Perk.NONE, capeTeleports(s)).examine("The cape worn by masters of " + s.displayName() + ".");
-            Defs.worn(items, capeId(s, true), name + "(t)", "cape", capeColour(s), SKILLCAPE_PRICE, Jewellery.Slot.CAPE, SKILLCAPE,
+            Defs.worn(items, capeId(s, true), name + "(t)", "cape", capeColour(s), SKILLCAPE_PRICE, Jewellery.Slot.CAPE, SKILLCAPE_T,
                     req(s, 99), Jewellery.Perk.NONE, capeTeleports(s)).examine("The trimmed cape worn by masters of " + s.displayName() + ".");
         }
         List<Teleports.Destination> maxTeles = new ArrayList<>();
@@ -76,7 +78,7 @@ public final class Capes {
             }
         }
         Defs.worn(items, "max_cape", "Max cape", "cape", 0xC02020, 2_277_000, Jewellery.Slot.CAPE,
-                st(1, 1, 1, 1, 1, 9, 9, 9, 9, 9, 0, 0, 0, 4), Map.of(), Jewellery.Perk.NONE, maxTeles)
+                SKILLCAPE_T, Map.of(), Jewellery.Perk.NONE, maxTeles)
                 .examine("A cape worn by those who've achieved 99 in all skills.");
         Defs.worn(items, "quest_point_cape", "Quest point cape", "cape", 0x3A60C0, 99_000, Jewellery.Slot.CAPE, SKILLCAPE,
                 Map.of(), Jewellery.Perk.NONE, List.of()).examine("The cape worn by those who've completed every quest.");
@@ -84,7 +86,7 @@ public final class Capes {
         for (Diaries.Area a : Diaries.AREAS) {
             diaryTeles.add(Teleports.at(a.name(), a.x(), a.y()));
         }
-        Defs.worn(items, "achievement_diary_cape", "Achievement diary cape", "cape", 0x8A6A3A, 99_000, Jewellery.Slot.CAPE, SKILLCAPE,
+        Defs.worn(items, "achievement_diary_cape", "Achievement diary cape", "cape", 0x8A6A3A, 99_000, Jewellery.Slot.CAPE, SKILLCAPE_T,
                 Map.of(), Jewellery.Perk.NONE, diaryTeles).examine("A cape worn by those who've completed every achievement diary.");
 
         // ---------------- Achievement diary rewards ----------------

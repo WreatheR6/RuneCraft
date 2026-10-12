@@ -118,7 +118,7 @@ class RaidsContentTest {
         assertEquals(70, tbow.equipment().stats().rangedAttack());
         assertEquals(20, tbow.equipment().stats().rangedStrength());
         ItemDef scythe = ItemCatalog.get("scythe_of_vitur");
-        assertEquals(110, scythe.equipment().stats().slashAttack());
+        assertEquals(125, scythe.equipment().stats().slashAttack());
         assertEquals(75, scythe.equipment().stats().meleeStrength());
         assertEquals(147, ItemCatalog.get("elder_maul").equipment().stats().meleeStrength());
         assertEquals(103, ItemCatalog.get("osmumtens_fang").equipment().stats().meleeStrength());

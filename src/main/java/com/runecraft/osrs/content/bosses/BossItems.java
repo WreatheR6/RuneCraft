@@ -247,7 +247,7 @@ public final class BossItems {
         // ---------------- Corporeal Beast ----------------
         EquipmentStats spirit = st(0, 0, 0, 0, 0, 39, 41, 50, 1, 45, 0, 0, 0, 1);
         wear(items, "spirit_shield", "Spirit shield", Kind.SHIELD, "spirit_shield", 0xC0C0D0, 70000, Slot.SHIELD, spirit,
-                Skill.DEFENCE, 45, Skill.PRAYER, 45).examine("An ethereal shield.");
+                Skill.DEFENCE, 45, Skill.PRAYER, 55).examine("An ethereal shield.");
         simple(items, "holy_elixir", "Holy elixir", "vial", 0xE0E0F0, 1, "A bottle of holy elixir.");
         wear(items, "blessed_spirit_shield", "Blessed spirit shield", Kind.SHIELD, "spirit_shield", 0xE0D8A0, 1400000, Slot.SHIELD,
                 st(0, 0, 0, 0, 0, 53, 55, 73, 2, 52, 0, 0, 0, 3), Skill.DEFENCE, 70, Skill.PRAYER, 60)

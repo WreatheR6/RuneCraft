@@ -275,8 +275,8 @@ class GodWarsContentTest {
         assertEquals(100, ItemCatalog.get("armadyl_crossbow").equipment().stats().rangedAttack());
         assertEquals(82, ItemCatalog.get("saradomin_sword").equipment().stats().meleeStrength());
         assertEquals(142, ItemCatalog.get("torva_platebody").equipment().stats().rangedDefence());
-        assertEquals(6, ItemCatalog.get("odium_ward").equipment().stats().meleeStrength());
-        assertEquals(5, ItemCatalog.get("malediction_ward").equipment().stats().magicDamagePercent());
+        assertEquals(4, ItemCatalog.get("odium_ward").equipment().stats().rangedStrength());
+        assertEquals(2, ItemCatalog.get("malediction_ward").equipment().stats().magicDamagePercent());
         assertTrue(ItemCatalog.exists("dragon_pickaxe"));
     }
 

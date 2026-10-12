@@ -58,6 +58,7 @@ public final class CombatHandler {
     public static void register() {
         ServerLivingEntityEvents.ALLOW_DAMAGE.register(CombatHandler::allowDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register(CombatHandler::afterDeath);
+        SetEffectHooks.register();
     }
 
     private static boolean allowDamage(LivingEntity target, DamageSource source, float amount) {
