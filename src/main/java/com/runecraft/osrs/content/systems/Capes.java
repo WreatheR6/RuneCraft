@@ -159,8 +159,10 @@ public final class Capes {
                     st(0, 0, 0, 0, 0, 2 * n, 2 * n, 2 * n, n, 2 * n, 0, 0, 0, 0), Map.of()).examine(ex + (teles.isEmpty() ? "" : " Sneak + right-click to teleport."));
             case "varrock" -> Defs.armour(items, id, name, "platebody", 0x8A8A9A, "steel", 1000 * n, Slot.CHEST,
                     st(0, 0, 0, -10, -5, 10 * n, 10 * n, 9 * n, -2, 10 * n, 0, 0, 0, 0), Map.of()).examine(ex);
-            case "western" -> Defs.worn(items, id, name, "cape", 0x6A8A3A, 1000 * n, Jewellery.Slot.CAPE,
-                    st(0, 0, 0, 0, 0, n, n, n, n, n, 0, 0, 0, 0), Map.of(), Jewellery.Perk.NONE, teles).examine(ex);
+            // A polestaff in the weapon slot (bonuses from EquipmentBonuses).
+            case "western" -> Defs.melee(items, id, name, "spear", 0x6A8A3A, "steel", 1000 * n,
+                    st(12, 12, 12, 0, 0, 1, 1, 0, 0, 0, 12, 0, 0, 0), Map.of(), 5, AttackType.CRUSH)
+                    .examine(ex + (teles.isEmpty() ? "" : " Sneak + right-click to teleport."));
             default -> Defs.melee(items, id, name, "longsword", 0x8A2020, "steel", 1000 * n,
                     st(4 * n, 8 * n, -2, 0, 0, 0, 2, 1, 0, 0, 7 * n, 0, 0, 0), Map.of(), 4, AttackType.SLASH)
                     .examine(ex + (teles.isEmpty() ? "" : " Sneak + right-click to teleport."));

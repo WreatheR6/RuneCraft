@@ -100,6 +100,7 @@ public final class EquipmentBonuses {
         rows4();
         rows5();
         rows6();
+        rows7();
     }
 
     private static void rows0() {
@@ -148,7 +149,7 @@ public final class EquipmentBonuses {
         put("steel_dagger", 4, 8, 4, -4, 1, 0,  0, 0, 0, 1, 0,  7, 0, 0, 0);
         put("steel_scimitar", 4, 3, 15, -2, 0, 0,  0, 1, 0, 0, 0,  14, 0, 0, 0);
         put("steel_longsword", 5, 9, 14, -2, 0, 0,  0, 3, 2, 0, 0,  16, 0, 0, 0);
-        put("steel_warhammer", 6, -4, -4, 18, -4, 0,  0, 0, 0, 0, 0,  16, 0, 0, 0);
+        put("steel_warhammer", 6, -4, -4, 18, -4, 0,  0, 0, 0, 0, 0,  18, 0, 0, 0);
         put("steel_battleaxe", 6, -2, 16, 11, 0, 0,  0, 0, 0, 0, -1,  20, 0, 0, 0);
         twoH("steel_2h_sword", 7, -4, 21, 16, -4, 0,  0, 0, 0, 0, -1,  22, 0, 0, 0);
         put("steel_full_helm", 0, 0, 0, 0, -6, -3,  9, 10, 7, -1, 9,  0, 0, 0, 0);
@@ -284,7 +285,7 @@ public final class EquipmentBonuses {
         put("green_dhide_body", 0, 0, 0, 0, -15, 15,  18, 27, 24, 20, 35,  0, 0, 0, 0);
         put("green_dhide_chaps", 0, 0, 0, 0, -10, 8,  12, 15, 18, 8, 17,  0, 0, 0, 0);
         put("green_dhide_shield", 0, -15, -15, -11, -10, 4,  14, 12, 11, 9, 11,  0, 0, 0, 0);
-        put("blue_dhide_body", 0, 0, 0, 0, -15, 20,  23, 30, 30, 26, 40,  0, 0, 0, 0);
+        put("blue_dhide_body", 0, 0, 0, 0, -15, 20,  23, 30, 30, 28, 40,  0, 0, 0, 0);
         put("blue_dhide_chaps", 0, 0, 0, 0, -10, 11,  13, 16, 20, 14, 20,  0, 0, 0, 0);
         put("blue_dhide_shield", 0, -15, -15, -11, -10, 5,  16, 14, 12, 12, 12,  0, 0, 0, 0);
         put("red_dhide_body", 0, 0, 0, 0, -15, 25,  26, 34, 36, 36, 45,  0, 0, 0, 0);
@@ -497,7 +498,7 @@ public final class EquipmentBonuses {
         put("occult_necklace", 0, 0, 0, 0, 12, 0,  0, 0, 0, 0, 0,  0, 0, 5, 2);
         put("smoke_battlestaff", 5, 7, -1, 28, 12, 0,  2, 3, 1, 12, 0,  35, 0, 0, 0);
         put("primordial_boots", 0, 2, 2, 2, -4, -1,  22, 22, 22, 0, 0,  5, 0, 0, 0);
-        put("pegasian_boots", 0, 0, 0, 0, -12, 12,  5, 5, 5, 5, 5,  0, 0, 0, 0);
+        put("pegasian_boots", 0, 0, 0, 0, -12, 12,  5, 5, 5, 5, 5,  0, 1, 0, 0);
         put("eternal_boots", 0, 0, 0, 0, 8, 0,  5, 5, 5, 8, 5,  0, 0, 1, 0);
         put("abyssal_dagger", 4, 75, 40, -4, 1, 0,  0, 0, 0, 1, 0,  75, 0, 0, 0);
         twoH("abyssal_bludgeon", 4, 0, 0, 102, 0, 0,  0, 0, 0, 0, 0,  85, 0, 0, 0);
@@ -513,7 +514,7 @@ public final class EquipmentBonuses {
         put("arcane_spirit_shield", 0, 0, 0, 0, 20, 0,  53, 55, 73, 2, 52,  0, 0, 3, 3);
         put("elysian_spirit_shield", 0, 0, 0, 0, 0, 0,  63, 65, 75, 2, 57,  0, 0, 0, 3);
         twoH("bow_of_faerdhinen", 5, 0, 0, 0, 0, 128,  0, 0, 0, 0, 0,  0, 106, 0, 0);
-        put("blade_of_saeldor", 4, 55, 94, 0, 0, 0,  0, 0, 0, 0, 0,  89, 0, 0, 0);
+        put("blade_of_saeldor", 4, 55, 100, 0, 0, 0,  0, 0, 0, 0, 0,  93, 0, 0, 0);
         put("crystal_helm", 0, 0, 0, 0, -10, 9,  12, 8, 14, 10, 18,  0, 0, 0, 2);
         put("crystal_body", 0, 0, 0, 0, -18, 31,  46, 38, 48, 44, 68,  0, 0, 0, 3);
         put("crystal_legs", 0, 0, 0, 0, -12, 18,  26, 21, 30, 34, 38,  0, 0, 0, 2);
@@ -521,9 +522,9 @@ public final class EquipmentBonuses {
         put("harmonised_nightmare_staff", 5, 0, 0, 0, 16, 0,  0, 0, 0, 14, 0,  0, 0, 15, 0);
         put("volatile_nightmare_staff", 5, 0, 0, 0, 16, 0,  0, 0, 0, 14, 0,  0, 0, 15, 0);
         put("eldritch_nightmare_staff", 5, 0, 0, 0, 16, 0,  0, 0, 0, 14, 0,  0, 0, 15, 0);
-        put("inquisitors_great_helm", 0, -2, -2, 8, -5, -5,  19, 10, 21, 0, 12,  4, 0, 0, 1);
-        put("inquisitors_hauberk", 0, -3, -3, 12, -11, -10,  67, 55, 71, 0, 35,  4, 0, 0, 2);
-        put("inquisitors_plateskirt", 0, -3, -3, 12, -9, -5,  42, 30, 49, 0, 22,  2, 0, 0, 2);
+        put("inquisitors_great_helm", 0, 0, 0, 10, -5, -5,  19, 10, 21, 0, 12,  6, 0, 0, 1);
+        put("inquisitors_hauberk", 0, 0, 0, 16, -11, -10,  67, 55, 71, 0, 35,  4, 0, 0, 2);
+        put("inquisitors_plateskirt", 0, 0, 0, 12, -9, -5,  42, 30, 49, 0, 22,  2, 0, 0, 2);
         put("inquisitors_mace", 4, 52, -4, 102, 0, 0,  0, 0, 0, 0, 0,  96, 0, 0, 2);
         twoH("venator_bow", 5, 0, 0, 0, 0, 90,  0, 0, 0, 0, 0,  0, 25, 0, 0);
         put("virtus_mask", 0, 0, 0, 0, 8, -3,  15, 14, 16, 6, 0,  0, 0, 2, 1);
@@ -531,7 +532,7 @@ public final class EquipmentBonuses {
         put("virtus_robe_bottom", 0, 0, 0, 0, 26, -9,  31, 28, 34, 22, 0,  0, 0, 2, 1);
         twoH("soulreaper_axe", 5, 28, 134, 66, 0, 0,  0, 0, 0, 0, 0,  125, 0, 0, 0);
         twoH("noxious_halberd", 5, 80, 132, 0, 0, 0,  0, 0, 0, 0, 0,  142, 0, 0, 0);
-        put("dragon_hunter_wand", 5, 0, 0, 0, 16, 0,  0, 0, 0, 16, 0,  0, 0, 10, 0);
+        put("dragon_hunter_wand", 4, 0, 0, 0, 16, 0,  0, 0, 0, 16, 0,  0, 0, 10, 0);
         twoH("glacial_temotli", 4, 11, 0, 72, 0, 0,  0, 0, 0, 0, 0,  64, 0, 0, 2);
         put("sunfire_fanatic_helm", 0, 0, 0, 0, -6, -3,  30, 32, 27, -1, 30,  0, 0, 0, 6);
         put("sunfire_fanatic_cuirass", 0, 0, 0, 0, -30, -15,  82, 80, 72, -6, 80,  0, 0, 0, 10);
@@ -539,16 +540,16 @@ public final class EquipmentBonuses {
         put("tonalztics_of_ralos", 7, 0, 0, 0, 0, 115,  0, 0, 0, 0, 0,  0, 55, 0, 2);
         put("twisted_buckler", 0, -7, -8, -7, -10, 18,  22, 24, 22, 26, 58,  0, 10, 0, 0);
         put("dragon_hunter_crossbow", 6, 0, 0, 0, 0, 95,  0, 0, 0, 0, 0,  0, 0, 0, 0);
-        twoH("dinhs_bulwark", 0, 0, 0, 124, 0, 0,  106, 109, 109, -10, 148,  38, 0, 0, 0);
+        twoH("dinhs_bulwark", 5, 0, 0, 124, 0, 0,  106, 109, 109, -10, 148,  38, 0, 0, 0);
         put("ancestral_hat", 0, 0, 0, 0, 8, -2,  12, 11, 13, 5, 0,  0, 0, 3, 0);
         put("ancestral_robe_top", 0, 0, 0, 0, 35, -8,  42, 31, 51, 28, 0,  0, 0, 3, 0);
         put("ancestral_robe_bottom", 0, 0, 0, 0, 26, -7,  27, 24, 30, 20, 0,  0, 0, 3, 0);
         twoH("dragon_claws", 4, 41, 57, -4, 0, 0,  13, 26, 7, 0, 0,  56, 0, 0, 0);
-        twoH("elder_maul", 6, 0, 0, 135, -4, 0,  0, 0, 0, 0, 0,  147, 0, 0, 0);
+        twoH("elder_maul", 6, 0, 0, 135, 0, 0,  0, 0, 0, 0, 0,  147, 0, 0, 0);
         put("kodai_wand", 4, 0, 0, 0, 28, 0,  0, 3, 3, 20, 0,  0, 0, 15, 0);
         twoH("twisted_bow", 6, 0, 0, 0, 0, 70,  0, 0, 0, 0, 0,  0, 20, 0, 0);
         put("avernic_defender", 0, 30, 29, 28, -5, -4,  30, 29, 28, -5, -4,  8, 0, 0, 0);
-        put("ghrazi_rapier", 4, 94, 55, 0, 0, 0,  0, 0, 0, 0, 0,  89, 0, 0, 0);
+        put("ghrazi_rapier", 4, 100, 55, 0, 0, 0,  0, 0, 0, 0, 0,  93, 0, 0, 0);
         put("sanguinesti_staff", 4, 0, 0, 0, 25, -4,  2, 3, 1, 15, 0,  0, 0, 0, 0);
         put("justiciar_faceguard", 0, 0, 0, 0, -6, -2,  60, 63, 59, -6, 67,  0, 0, 0, 2);
         put("justiciar_chestguard", 0, 0, 0, 0, -40, -20,  132, 130, 117, -16, 142,  0, 0, 0, 4);
@@ -709,14 +710,14 @@ public final class EquipmentBonuses {
         put("black_full_helm_t", 0, 0, 0, 0, -6, -3,  12, 13, 10, -1, 12,  0, 0, 0, 0);
         put("black_platebody_t", 0, 0, 0, 0, -30, -15,  41, 40, 30, -6, 40,  0, 0, 0, 0);
         put("black_platelegs_t", 0, 0, 0, 0, -21, -11,  21, 20, 19, -4, 20,  0, 0, 0, 0);
-        put("black_kiteshield_t", 0, 0, 0, 0, -8, -3,  17, 19, 18, -1, 18,  0, 0, 0, 0);
+        put("black_kiteshield_t", 0, 0, 0, 0, -8, -2,  17, 19, 18, -1, 18,  0, 0, 0, 0);
         put("black_full_helm_g", 0, 0, 0, 0, -6, -3,  12, 13, 10, -1, 12,  0, 0, 0, 0);
         put("black_platebody_g", 0, 0, 0, 0, -30, -15,  41, 40, 30, -6, 40,  0, 0, 0, 0);
     }
 
     private static void rows4() {
         put("black_platelegs_g", 0, 0, 0, 0, -21, -11,  21, 20, 19, -4, 20,  0, 0, 0, 0);
-        put("black_kiteshield_g", 0, 0, 0, 0, -8, -3,  17, 19, 18, -1, 18,  0, 0, 0, 0);
+        put("black_kiteshield_g", 0, 0, 0, 0, -8, -2,  17, 19, 18, -1, 18,  0, 0, 0, 0);
         put("studded_body_t", 0, 0, 0, 0, -4, 8,  18, 25, 22, 8, 25,  0, 0, 0, 0);
         put("studded_chaps_t", 0, 0, 0, 0, -5, 6,  15, 16, 17, 6, 16,  0, 0, 0, 0);
         put("blue_wizard_hat_t", 0, 0, 0, 0, 2, 0,  0, 0, 0, 2, 0,  0, 0, 0, 0);
@@ -739,11 +740,11 @@ public final class EquipmentBonuses {
         put("adamant_full_helm_t", 0, 0, 0, 0, -6, -3,  19, 21, 16, -1, 19,  0, 0, 0, 0);
         put("adamant_platebody_t", 0, 0, 0, 0, -30, -15,  65, 63, 55, -6, 63,  0, 0, 0, 0);
         put("adamant_platelegs_t", 0, 0, 0, 0, -21, -11,  33, 31, 29, -4, 31,  0, 0, 0, 0);
-        put("adamant_kiteshield_t", 0, 0, 0, 0, -8, -3,  27, 31, 29, -1, 29,  0, 0, 0, 0);
+        put("adamant_kiteshield_t", 0, 0, 0, 0, -8, -2,  27, 31, 29, -1, 29,  0, 0, 0, 0);
         put("adamant_full_helm_g", 0, 0, 0, 0, -6, -3,  19, 21, 16, -1, 19,  0, 0, 0, 0);
         put("adamant_platebody_g", 0, 0, 0, 0, -30, -15,  65, 63, 55, -6, 63,  0, 0, 0, 0);
         put("adamant_platelegs_g", 0, 0, 0, 0, -21, -11,  33, 31, 29, -4, 31,  0, 0, 0, 0);
-        put("adamant_kiteshield_g", 0, 0, 0, 0, -8, -3,  27, 31, 29, -1, 29,  0, 0, 0, 0);
+        put("adamant_kiteshield_g", 0, 0, 0, 0, -8, -2,  27, 31, 29, -1, 29,  0, 0, 0, 0);
         put("green_dhide_body_t", 0, 0, 0, 0, -15, 15,  18, 27, 24, 20, 35,  0, 0, 0, 0);
         put("green_dhide_chaps_t", 0, 0, 0, 0, -10, 8,  12, 15, 18, 8, 17,  0, 0, 0, 0);
         put("green_dhide_body_g", 0, 0, 0, 0, -15, 15,  18, 27, 24, 20, 35,  0, 0, 0, 0);
@@ -785,9 +786,9 @@ public final class EquipmentBonuses {
         put("guthix_platebody", 0, 0, 0, 0, -30, -15,  82, 80, 72, -6, 80,  0, 0, 0, 1);
         put("guthix_platelegs", 0, 0, 0, 0, -21, -11,  51, 49, 47, -4, 49,  0, 0, 0, 1);
         put("guthix_kiteshield", 0, 0, 0, 0, -8, -2,  44, 48, 46, -1, 46,  0, 0, 0, 1);
-        put("blue_dhide_body_t", 0, 0, 0, 0, -15, 20,  23, 30, 30, 26, 40,  0, 0, 0, 0);
+        put("blue_dhide_body_t", 0, 0, 0, 0, -15, 20,  23, 30, 30, 28, 40,  0, 0, 0, 0);
         put("blue_dhide_chaps_t", 0, 0, 0, 0, -10, 11,  13, 16, 20, 14, 20,  0, 0, 0, 0);
-        put("blue_dhide_body_g", 0, 0, 0, 0, -15, 20,  23, 30, 30, 26, 40,  0, 0, 0, 0);
+        put("blue_dhide_body_g", 0, 0, 0, 0, -15, 20,  23, 30, 30, 28, 40,  0, 0, 0, 0);
         put("blue_dhide_chaps_g", 0, 0, 0, 0, -10, 11,  13, 16, 20, 14, 20,  0, 0, 0, 0);
         put("red_dhide_body_t", 0, 0, 0, 0, -15, 25,  26, 34, 36, 36, 45,  0, 0, 0, 0);
         put("red_dhide_chaps_t", 0, 0, 0, 0, -10, 14,  15, 18, 22, 18, 20,  0, 0, 0, 0);
@@ -967,10 +968,10 @@ public final class EquipmentBonuses {
         put("wilderness_sword_2", 4, 11, 8, -2, 0, 0,  0, 2, 1, 0, 0,  12, 0, 0, 0);
         put("wilderness_sword_3", 4, 16, 11, -2, 0, 0,  0, 2, 1, 0, 0,  17, 0, 0, 0);
         put("wilderness_sword_4", 4, 23, 18, -2, 0, 0,  0, 2, 1, 0, 0,  24, 0, 0, 0);
-        put("saradomin_staff", 5, -1, -1, 6, 6, 0,  2, 3, 1, 6, 0,  2, 0, 0, 0);
-        put("guthix_staff", 5, -1, -1, 6, 6, 0,  2, 3, 1, 6, 0,  2, 0, 0, 0);
-        put("zamorak_staff", 5, -1, -1, 6, 6, 0,  2, 3, 1, 6, 0,  2, 0, 0, 0);
-        put("ancient_sceptre", 4, 20, -1, 50, 20, 0,  2, 3, 1, 15, 0,  60, 0, 5, -1);
+        put("saradomin_staff", 4, -1, -1, 6, 6, 0,  2, 3, 1, 6, 0,  2, 0, 0, 0);
+        put("guthix_staff", 4, -1, -1, 6, 6, 0,  2, 3, 1, 6, 0,  2, 0, 0, 0);
+        put("zamorak_staff", 4, -1, -1, 6, 6, 0,  2, 3, 1, 6, 0,  2, 0, 0, 0);
+        put("ancient_sceptre", 4, 20, -1, 50, 20, 0,  2, 3, 1, 15, 0,  60, 0, 10, -1);
         put("saradomin_cape", 0, 0, 0, 0, 10, 0,  1, 1, 2, 10, 0,  0, 0, 0, 0);
         put("guthix_cape", 0, 0, 0, 0, 10, 0,  1, 1, 2, 10, 0,  0, 0, 0, 0);
         put("zamorak_cape", 0, 0, 0, 0, 10, 0,  1, 1, 2, 10, 0,  0, 0, 0, 0);
@@ -1033,7 +1034,7 @@ public final class EquipmentBonuses {
         put("beginner_wand", 4, 0, 0, 0, 5, 0,  0, 0, 0, 5, 0,  0, 0, 0, 0);
         put("apprentice_wand", 4, 0, 0, 0, 10, 0,  0, 0, 0, 10, 0,  0, 0, 0, 0);
         put("teacher_wand", 4, 0, 0, 0, 15, 0,  0, 0, 0, 15, 0,  0, 0, 0, 0);
-        put("master_wand", 4, 0, 0, 0, 20, 0,  0, 0, 0, 20, 0,  0, 0, 0, 0);
+        put("master_wand", 4, 0, 0, 0, 20, 0,  0, 0, 0, 20, 0,  0, 0, 10, 0);
         put("mages_book", 0, 0, 0, 0, 15, 0,  0, 0, 0, 15, 0,  0, 0, 2, 0);
         put("pharaohs_sceptre", 5, 7, -1, 25, 10, 0,  2, 3, 1, 10, 0,  32, 0, 0, 0);
         put("pirates_hook", 0, 0, 0, 0, 0, 0,  1, 5, 3, 0, 0,  0, 0, 0, 0);
@@ -1102,7 +1103,7 @@ public final class EquipmentBonuses {
         put("eclipse_moon_helm", 0, 0, 0, 0, -6, 8,  2, 3, 14, 10, 4,  3, 0, 0, 0);
         put("eclipse_moon_chestplate", 0, 0, 0, 0, -15, 31,  15, 18, 57, 55, 32,  3, 0, 0, 0);
         put("eclipse_moon_tassets", 0, 0, 0, 0, -15, 17,  9, 13, 37, 31, 17,  1, 0, 0, 0);
-        twoH("eclipse_atlatl", 4, 0, 0, 0, 0, 87,  0, 0, 0, 0, 0,  0, 0, 0, 0);
+        twoH("eclipse_atlatl", 4, 0, 0, 0, 0, 87,  0, 0, 0, 0, 0,  40, 0, 0, 0);
         put("fancy_boots", 0, 0, 0, 0, -3, -1,  1, 2, 3, 0, 0,  0, 0, 0, 0);
         put("fighting_boots", 0, 0, 0, 0, -3, -1,  1, 2, 3, 0, 0,  0, 0, 0, 0);
         put("rfd_bronze_gloves", 0, 2, 2, 2, 1, 2,  2, 2, 2, 1, 2,  2, 0, 0, 0);
@@ -1121,5 +1122,100 @@ public final class EquipmentBonuses {
         put("imbued_guthix_cape", 0, 0, 0, 0, 15, 0,  3, 3, 3, 15, 0,  0, 0, 2, 0);
         put("imbued_zamorak_cape", 0, 0, 0, 0, 15, 0,  3, 3, 3, 15, 0,  0, 0, 2, 0);
         put("bonesack", 0, 0, 0, 0, 0, 0,  4, 4, 4, 4, 4,  0, 0, 0, 0);
+    }
+
+    /** Synced with the OSRS Wiki DPS calculator's equipment.json (weirdgloop/osrs-dps-calc, 2026). */
+    private static void rows7() {
+        twoH("rune_spear", 4, 36, 36, 36, 0, 0,  1, 1, 0, 0, 0,  42, 0, 0, 0);
+        put("infernal_pickaxe", 5, 38, -2, 32, 0, 0,  0, 1, 0, 0, 0,  42, 0, 0, 0);
+        put("crystal_pickaxe", 5, 38, -2, 32, 0, 0,  0, 1, 0, 0, 0,  42, 0, 0, 0);
+        put("granite_boots", 0, 0, 0, 0, -3, -1,  15, 16, 17, 0, 8,  3, 0, 0, 0);
+        put("granite_longsword", 5, 56, 65, -2, 0, 0,  0, 3, 2, 0, 0,  62, 0, 0, 0);
+        put("rune_boots", 0, 0, 0, 0, -3, -1,  12, 13, 14, 0, 0,  2, 0, 0, 0);
+        put("damaged_holy_book", 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 5);
+        put("bronze_full_helm_t", 0, 0, 0, 0, -6, -3,  4, 5, 3, -1, 4,  0, 0, 0, 0);
+        put("bronze_platebody_t", 0, 0, 0, 0, -30, -15,  15, 14, 9, -6, 14,  0, 0, 0, 0);
+        put("bronze_platelegs_t", 0, 0, 0, 0, -21, -11,  8, 7, 6, -4, 7,  0, 0, 0, 0);
+        put("bronze_full_helm_g", 0, 0, 0, 0, -6, -3,  4, 5, 3, -1, 4,  0, 0, 0, 0);
+        put("bronze_platebody_g", 0, 0, 0, 0, -30, -15,  15, 14, 9, -6, 14,  0, 0, 0, 0);
+        put("bronze_platelegs_g", 0, 0, 0, 0, -21, -11,  8, 7, 6, -4, 7,  0, 0, 0, 0);
+        put("iron_full_helm_t", 0, 0, 0, 0, -6, -3,  6, 7, 5, -1, 6,  0, 0, 0, 0);
+        put("iron_platebody_t", 0, 0, 0, 0, -30, -15,  21, 20, 12, -6, 20,  0, 0, 0, 0);
+        put("iron_platelegs_t", 0, 0, 0, 0, -21, -11,  11, 10, 10, -4, 10,  0, 0, 0, 0);
+        put("iron_kiteshield_t", 0, 0, 0, 0, -8, -2,  8, 10, 9, -1, 9,  0, 0, 0, 0);
+        put("iron_full_helm_g", 0, 0, 0, 0, -6, -3,  6, 7, 5, -1, 6,  0, 0, 0, 0);
+        put("iron_platebody_g", 0, 0, 0, 0, -30, -15,  21, 20, 12, -6, 20,  0, 0, 0, 0);
+        put("iron_platelegs_g", 0, 0, 0, 0, -21, -11,  11, 10, 10, -4, 10,  0, 0, 0, 0);
+        put("iron_kiteshield_g", 0, 0, 0, 0, -8, -2,  8, 10, 9, -1, 9,  0, 0, 0, 0);
+        put("steel_full_helm_t", 0, 0, 0, 0, -6, -3,  9, 10, 7, -1, 9,  0, 0, 0, 0);
+        put("steel_platebody_t", 0, 0, 0, 0, -30, -15,  32, 31, 24, -6, 31,  0, 0, 0, 0);
+        put("steel_platelegs_t", 0, 0, 0, 0, -21, -11,  17, 16, 15, -4, 16,  0, 0, 0, 0);
+        put("steel_kiteshield_t", 0, 0, 0, 0, -8, -2,  13, 15, 14, -1, 14,  0, 0, 0, 0);
+        put("steel_full_helm_g", 0, 0, 0, 0, -6, -3,  9, 10, 7, -1, 9,  0, 0, 0, 0);
+        put("steel_platebody_g", 0, 0, 0, 0, -30, -15,  32, 31, 24, -6, 31,  0, 0, 0, 0);
+        put("steel_platelegs_g", 0, 0, 0, 0, -21, -11,  17, 16, 15, -4, 16,  0, 0, 0, 0);
+        put("steel_kiteshield_g", 0, 0, 0, 0, -8, -2,  13, 15, 14, -1, 14,  0, 0, 0, 0);
+        put("leather_chaps_g", 0, 0, 0, 0, 0, 4,  2, 2, 1, 0, 0,  0, 0, 0, 0);
+        put("ham_joint", 3, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0);
+        put("mithril_full_helm_t", 0, 0, 0, 0, -6, -3,  13, 14, 11, -1, 13,  0, 0, 0, 0);
+        put("mithril_platebody_t", 0, 0, 0, 0, -30, -15,  46, 44, 38, -6, 44,  0, 0, 0, 0);
+        put("mithril_platelegs_t", 0, 0, 0, 0, -21, -11,  24, 22, 20, -4, 22,  0, 0, 0, 0);
+        put("mithril_kiteshield_t", 0, 0, 0, 0, -8, -2,  18, 22, 20, -1, 20,  0, 0, 0, 0);
+        put("mithril_full_helm_g", 0, 0, 0, 0, -6, -3,  13, 14, 11, -1, 13,  0, 0, 0, 0);
+        put("mithril_platebody_g", 0, 0, 0, 0, -30, -15,  46, 44, 38, -6, 44,  0, 0, 0, 0);
+        put("mithril_platelegs_g", 0, 0, 0, 0, -21, -11,  24, 22, 20, -4, 22,  0, 0, 0, 0);
+        put("mithril_kiteshield_g", 0, 0, 0, 0, -8, -2,  18, 22, 20, -1, 20,  0, 0, 0, 0);
+        put("crier_bell", 4, -100, -100, -50, 0, 0,  0, 0, 0, 0, 0,  -10, 0, 0, 0);
+        put("cabbage_round_shield", 0, 0, 0, 0, -6, -2,  24, 26, 22, 0, 24,  0, 0, 0, 0);
+        put("ancient_full_helm", 0, 0, 0, 0, -6, -3,  30, 32, 27, -1, 30,  0, 0, 0, 1);
+        put("ancient_platebody", 0, 0, 0, 0, -30, -15,  82, 80, 72, -6, 80,  0, 0, 0, 1);
+        put("ancient_platelegs", 0, 0, 0, 0, -21, -11,  51, 49, 47, -4, 49,  0, 0, 0, 1);
+        put("ancient_kiteshield", 0, 0, 0, 0, -8, -2,  44, 48, 46, -1, 46,  0, 0, 0, 1);
+        put("armadyl_full_helm", 0, 0, 0, 0, -6, -3,  30, 32, 27, -1, 30,  0, 0, 0, 1);
+        put("armadyl_platebody", 0, 0, 0, 0, -30, -15,  82, 80, 72, -6, 80,  0, 0, 0, 1);
+        put("armadyl_platelegs", 0, 0, 0, 0, -21, -11,  51, 49, 47, -4, 49,  0, 0, 0, 1);
+        put("armadyl_kiteshield", 0, 0, 0, 0, -8, -2,  44, 48, 46, -1, 46,  0, 0, 0, 1);
+        put("bandos_full_helm", 0, 0, 0, 0, -6, -3,  30, 32, 27, -1, 30,  0, 0, 0, 1);
+        put("bandos_platebody", 0, 0, 0, 0, -30, -15,  82, 80, 72, -6, 80,  0, 0, 0, 1);
+        put("bandos_platelegs", 0, 0, 0, 0, -21, -11,  51, 49, 47, -4, 49,  0, 0, 0, 1);
+        put("bandos_kiteshield", 0, 0, 0, 0, -8, -2,  44, 48, 46, -1, 46,  0, 0, 0, 1);
+        put("saradomin_dhide_body", 0, 0, 0, 0, -15, 30,  55, 47, 60, 50, 55,  0, 0, 0, 1);
+        put("zamorak_dhide_body", 0, 0, 0, 0, -15, 30,  55, 47, 60, 50, 55,  0, 0, 0, 1);
+        put("guthix_dhide_body", 0, 0, 0, 0, -15, 30,  55, 47, 60, 50, 55,  0, 0, 0, 1);
+        put("dragon_cane", 5, 40, -2, 60, 0, 0,  0, 0, 0, 0, 0,  55, 0, 0, 5);
+        twoH("katana", 4, 7, 45, 0, 0, 0,  3, 7, 7, 0, -3,  40, 0, 0, 0);
+        put("samurai_greaves", 0, 0, 0, 0, 0, 0,  42, 40, 38, 3, 40,  0, 0, 0, 0);
+        put("samurai_boots", 0, 0, 0, 0, 0, 0,  11, 12, 13, 1, 0,  0, 0, 0, 0);
+        put("samurai_gloves", 0, 2, 2, 2, 2, 2,  3, 3, 3, 3, 3,  0, 0, 0, 0);
+        put("hood_of_darkness", 0, 0, 0, 0, 4, 0,  0, 0, 0, 4, 0,  0, 0, 0, 0);
+        put("robe_top_of_darkness", 0, 0, 0, 0, 20, 0,  0, 0, 0, 20, 0,  0, 0, 0, 0);
+        put("robe_bottom_of_darkness", 0, 0, 0, 0, 15, 0,  0, 0, 0, 15, 0,  0, 0, 0, 0);
+        put("boots_of_darkness", 0, 0, 0, 0, 3, 0,  0, 0, 0, 3, 0,  0, 0, 0, 0);
+        put("gloves_of_darkness", 0, 0, 0, 0, 3, 0,  0, 0, 0, 3, 0,  0, 0, 0, 0);
+        twoH("bronze_spear", 4, 5, 5, 5, 0, 0,  1, 1, 0, 0, 0,  6, 0, 0, 0);
+        twoH("iron_spear", 4, 8, 8, 8, 0, 0,  1, 1, 0, 0, 0,  10, 0, 0, 0);
+        twoH("steel_spear", 4, 12, 12, 12, 0, 0,  1, 1, 0, 0, 0,  12, 0, 0, 0);
+        twoH("mithril_spear", 4, 17, 17, 17, 0, 0,  1, 1, 0, 0, 0,  18, 0, 0, 0);
+        twoH("adamant_spear", 4, 24, 24, 24, 0, 0,  1, 1, 0, 0, 0,  28, 0, 0, 0);
+        twoH("bronze_halberd", 7, 7, 8, 0, -4, 0,  -1, 1, 2, 0, 0,  8, 0, 0, 0);
+        twoH("iron_halberd", 7, 9, 12, 0, -4, 0,  -1, 1, 2, 0, 0,  12, 0, 0, 0);
+        twoH("rune_halberd", 7, 48, 67, 0, -4, 0,  -1, 4, 5, 0, 0,  68, 0, 0, 0);
+        put("ghostly_robe_bottom", 0, 0, 0, 0, 4, 0,  0, 0, 0, 4, 0,  0, 0, 0, 0);
+        put("shayzien_platebody_5", 0, 0, 0, 0, -10, 10,  20, 24, 28, -4, 27,  0, 0, 0, 0);
+        put("gold_decorative_helm", 0, 0, 0, 0, -3, 0,  14, 15, 13, -1, 14,  0, 0, 0, 0);
+        put("gold_decorative_body", 0, 0, 0, 0, -30, -15,  65, 63, 55, -6, 63,  0, 0, 0, 0);
+        put("gold_decorative_legs", 0, 0, 0, 0, -21, -11,  33, 31, 29, -4, 31,  0, 0, 0, 0);
+        put("gold_decorative_shield", 0, 0, 0, 0, -8, -3,  27, 31, 29, -1, 29,  0, 0, 0, 0);
+        put("gold_decorative_sword", 5, 20, 29, -2, 0, 0,  0, 3, 2, 0, 0,  31, 0, 0, 0);
+        put("red_decorative_helm", 0, 0, 0, 0, -3, 0,  7, 8, 6, -1, 7,  0, 0, 0, 0);
+        put("red_decorative_body", 0, 0, 0, 0, -30, -15,  32, 31, 24, -6, 31,  0, 0, 0, 0);
+        put("red_decorative_legs", 0, 0, 0, 0, -21, -11,  17, 16, 15, -4, 16,  0, 0, 0, 0);
+        put("red_decorative_shield", 0, 0, 0, 0, -8, -3,  13, 15, 14, -1, 14,  0, 0, 0, 0);
+        put("red_decorative_sword", 5, 13, 18, -2, 0, 0,  0, 3, 2, 0, 0,  16, 0, 0, 0);
+        put("white_decorative_helm", 0, 0, 0, 0, -3, 0,  10, 11, 9, -1, 10,  0, 0, 0, 0);
+        put("white_decorative_body", 0, 0, 0, 0, -30, -15,  46, 44, 38, -6, 44,  0, 0, 0, 0);
+        put("white_decorative_legs", 0, 0, 0, 0, -21, -11,  24, 22, 20, -4, 22,  0, 0, 0, 0);
+        put("white_decorative_shield", 0, 0, 0, 0, -8, -3,  18, 22, 20, -1, 20,  0, 0, 0, 0);
+        put("white_decorative_sword", 5, 15, 20, -2, 0, 0,  0, 3, 2, 0, 0,  22, 0, 0, 0);
     }
 }

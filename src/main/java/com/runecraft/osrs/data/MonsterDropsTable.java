@@ -121,7 +121,7 @@ public final class MonsterDropsTable {
         p("minotaur", rm("#herbs"), d("#gems", 1, 1, 101), d("iron_arrow", 5, 14, 10), d("bronze_arrow", 3, 3, 34),
                 d("mind_rune", 1, 1, 101), d("coins", 7, 7, 5), d("coins", 2, 2, 9), d("coins", 5, 84, 14),
                 d("copper_ore", 1, 1, 17), d("tin_ore", 1, 1, 17), d("pure_essence", 15, 15, 20),
-                d("rune_essence", 5, 5, 20));
+                d("rune_essence", 5, 5, 20), d("bronze_spear", 1, 1, 10));
         // Icefiend <- parsed:Icefiend(18)
         p("icefiend", rm("#herbs"), d("#gems", 1, 1, 43), d("air_rune", 1, 5, 128), d("water_rune", 1, 5, 32),
                 d("coins", 1, 30, 32), d("coins", 1, 20, 32), d("frozen_tear", 5, 5, 150));
@@ -131,12 +131,12 @@ public final class MonsterDropsTable {
                 d("fire_rune", 7, 7, 64), d("body_rune", 6, 6, 64), d("chaos_rune", 3, 3, 64),
                 d("nature_rune", 4, 4, 64), d("cosmic_rune", 2, 2, 128), d("coins", 5, 5, 4), d("coins", 15, 15, 8),
                 d("coins", 28, 28, 8), d("coins", 10, 10, 18), d("coins", 62, 62, 32), d("coins", 1, 42, 32),
-                d("limpwurt_root", 1, 1, 6));
+                d("limpwurt_root", 1, 1, 6), d("bronze_spear", 1, 1, 43), d("iron_spear", 1, 1, 64), d("steel_spear", 1, 1, 64));
         // Earth warrior <- parsed:Earth warrior(51)+rebox seeds
         p("earth_warrior", rm(), d("#gems", 1, 1, 64), d("#herbs", 1, 1, 9), d("#rare_seeds", 1, 1, 7),
                 d("earth_rune", 12, 12, 10), d("earth_rune", 60, 60, 43), d("nature_rune", 3, 3, 14),
                 d("chaos_rune", 3, 3, 18), d("law_rune", 2, 2, 21), d("death_rune", 2, 2, 32),
-                d("blood_rune", 2, 2, 128), d("coins", 12, 12, 7));
+                d("blood_rune", 2, 2, 128), d("coins", 12, 12, 7), d("steel_spear", 1, 1, 43));
         // Ice warrior <- parsed:Ice warrior(57)+rebox seeds
         p("ice_warrior", rm("water_rune", "mithril_ore"), d("#gems", 1, 1, 43), d("#herbs", 1, 1, 13),
                 d("#rare_seeds", 1, 1, 7), d("nature_rune", 4, 4, 13), d("chaos_rune", 3, 3, 16),
@@ -158,57 +158,57 @@ public final class MonsterDropsTable {
                 d("nature_rune", 3, 4, 21), d("fire_rune", 12, 12, 26), d("earth_rune", 9, 9, 64),
                 d("coins", 3, 3, 26), d("coins", 8, 8, 43), d("coins", 29, 29, 43), d("coins", 10, 10, 128),
                 d("white_berries", 1, 1, 26), d("unicorn_horn_dust", 1, 1, 64), d("red_spiders_eggs", 1, 1, 128),
-                d("limpwurt_root", 1, 1, 128), d("snape_grass", 1, 1, 128));
+                d("limpwurt_root", 1, 1, 128), d("snape_grass", 1, 1, 128), d("bronze_boots", 1, 1, 128));
         // Banshee <- parsed:Banshee(23)
         p("banshee", rm("#seeds"), d("#gems", 1, 1, 64), d("air_rune", 3, 3, 43), d("cosmic_rune", 2, 2, 43),
                 d("chaos_rune", 3, 3, 64), d("chaos_rune", 7, 7, 128), d("fire_rune", 7, 7, 128),
                 d("coins", 13, 13, 13), d("coins", 26, 26, 16), d("coins", 35, 35, 16), d("pure_essence", 13, 13, 6),
-                d("iron_ore", 1, 1, 128));
+                d("iron_ore", 1, 1, 128), d("mystic_gloves_dark", 1, 1, 512));
         // Cave slime <- parsed:Cave slime(23)
         p("cave_slime", rm("iron_ore"), d("#gems", 1, 1, 32), d("water_rune", 15, 15, 26), d("earth_rune", 5, 5, 43),
                 d("coins", 10, 10, 3), d("coins", 4, 4, 4), d("coins", 22, 22, 13), d("coins", 1, 1, 18),
-                d("coins", 46, 46, 64), d("gold_bar", 1, 1, 64));
+                d("coins", 46, 46, 64), d("gold_bar", 1, 1, 64), d("iron_boots", 1, 1, 128));
         // Rockslug <- parsed:Rockslug(29)+rebox seeds
         p("rockslug", rm("#herbs"), d("#gems", 1, 1, 21), d("#allotment_seeds", 1, 1, 14), d("earth_rune", 5, 5, 4),
                 d("earth_rune", 42, 42, 32), d("chaos_rune", 2, 2, 32), d("coal", 1, 1, 10), d("iron_ore", 1, 1, 6),
                 d("bronze_bar", 1, 1, 64), d("iron_bar", 1, 1, 43), d("copper_ore", 1, 1, 43), d("tin_ore", 1, 1, 16),
-                d("mithril_ore", 1, 1, 128));
+                d("mithril_ore", 1, 1, 128), d("mystic_gloves_light", 1, 1, 512));
         // Lizard <- parsed:Lizard(42)+rebox seeds
         p("lizard", rm(), d("#gems", 1, 1, 21), d("#herbs", 1, 1, 13), d("#allotment_seeds", 1, 1, 14),
                 d("big_bones", 1, 1, 1), d("fire_rune", 5, 5, 4), d("fire_rune", 42, 42, 9),
                 d("nature_rune", 5, 5, 32), d("coal", 1, 1, 10), d("copper_ore", 1, 1, 43), d("iron_ore", 1, 1, 6),
                 d("silver_bar", 1, 1, 64), d("silver_ore", 1, 1, 43), d("tin_ore", 1, 1, 32),
-                d("mithril_ore", 1, 1, 128));
+                d("mithril_ore", 1, 1, 128), d("mystic_gloves_light", 1, 1, 512));
         // Desert Lizard <- parsed:Desert Lizard(24)+rebox seeds
         p("desert_lizard", rm(), d("#gems", 1, 1, 21), d("#herbs", 1, 1, 13), d("#allotment_seeds", 1, 1, 14),
                 d("bones", 1, 1, 1), d("fire_rune", 5, 5, 4), d("fire_rune", 42, 42, 9), d("nature_rune", 5, 5, 32),
                 d("coal", 1, 1, 10), d("copper_ore", 1, 1, 43), d("iron_ore", 1, 1, 6), d("silver_bar", 1, 1, 64),
-                d("silver_ore", 1, 1, 43), d("tin_ore", 1, 1, 32), d("mithril_ore", 1, 1, 128));
+                d("silver_ore", 1, 1, 43), d("tin_ore", 1, 1, 32), d("mithril_ore", 1, 1, 128), d("mystic_gloves_light", 1, 1, 512));
         // Cockatrice <- parsed:Cockatrice(37)+rebox seeds
         p("cockatrice", rm("#seeds"), d("#gems", 1, 1, 64), d("#herbs", 1, 1, 13), d("#allotment_seeds", 1, 1, 7),
                 d("iron_javelin", 5, 5, 128), d("nature_rune", 2, 2, 21), d("nature_rune", 4, 4, 32),
                 d("nature_rune", 6, 6, 64), d("law_rune", 2, 2, 43), d("water_rune", 2, 2, 64),
                 d("fire_rune", 7, 7, 64), d("coins", 15, 15, 8), d("coins", 5, 5, 11), d("coins", 28, 28, 11),
-                d("coins", 62, 62, 32), d("coins", 42, 42, 43), d("coins", 1, 1, 128), d("limpwurt_root", 1, 1, 6));
+                d("coins", 62, 62, 32), d("coins", 42, 42, 43), d("coins", 1, 1, 128), d("limpwurt_root", 1, 1, 6), d("iron_boots", 1, 1, 128), d("mystic_boots_light", 1, 1, 512));
         // Pyrefiend <- parsed:Pyrefiend(43)
         p("pyrefiend", rm("#herbs"), d("#gems", 1, 1, 43), d("fiendish_ashes", 1, 1, 1),
                 d("steel_full_helm", 1, 1, 32), d("fire_rune", 30, 30, 6), d("fire_rune", 60, 60, 16),
                 d("chaos_rune", 12, 12, 26), d("death_rune", 3, 3, 43), d("coins", 40, 40, 5), d("coins", 120, 120, 6),
-                d("coins", 200, 200, 13), d("coins", 10, 10, 18), d("coins", 450, 450, 64), d("gold_ore", 1, 1, 16));
+                d("coins", 200, 200, 13), d("coins", 10, 10, 18), d("coins", 450, 450, 64), d("gold_ore", 1, 1, 16), d("steel_boots", 1, 1, 128));
         // Mogre <- parsed:Mogre(60)+rebox seeds
         p("mogre", rm("#herbs", "raw_lobster"), d("#rare_seeds", 1, 1, 10), d("water_rune", 5, 5, 32),
                 d("water_rune", 7, 7, 32), d("water_rune", 14, 14, 32), d("raw_swordfish", 1, 1, 6),
                 d("raw_tuna", 1, 1, 14), d("raw_pike", 1, 1, 18), d("raw_salmon", 1, 1, 32),
-                d("raw_herring", 1, 1, 43), d("raw_sardine", 1, 1, 43), d("raw_shark", 1, 1, 43));
+                d("raw_herring", 1, 1, 43), d("raw_sardine", 1, 1, 43), d("raw_shark", 1, 1, 43), d("flippers", 1, 1, 64));
         // Harpie Bug Swarm <- parsed:Harpie Bug Swarm(46)
         p("harpie_bug_swarm", rm("#herbs", "#seeds"), d("#gems", 1, 1, 43), d("fire_rune", 30, 30, 6),
                 d("fire_rune", 60, 60, 16), d("chaos_rune", 15, 15, 26), d("death_rune", 3, 3, 43),
                 d("coins", 40, 40, 5), d("coins", 160, 160, 6), d("coins", 230, 230, 13), d("coins", 30, 30, 18),
-                d("coins", 490, 490, 64), d("gold_ore", 1, 1, 16));
+                d("coins", 490, 490, 64), d("gold_ore", 1, 1, 16), d("steel_boots", 1, 1, 128));
         // Wall beast <- parsed:Wall beast(49)
         p("wall_beast", rm("#gems", "steel_longsword"), d("air_rune", 3, 3, 43), d("cosmic_rune", 2, 2, 43),
                 d("chaos_rune", 3, 3, 64), d("chaos_rune", 7, 7, 128), d("grimy_guam_leaf", 1, 1, 4),
-                d("coins", 15, 15, 13));
+                d("coins", 15, 15, 13), d("mystic_hat_light", 1, 1, 512));
         // Killerwatt <- parsed:Killerwatt(55)
         p("killerwatt", rm("cosmic_rune"), d("#gems", 1, 1, 28), d("#herbs", 1, 1, 4),
                 d("fire_battlestaff", 1, 1, 140), d("air_battlestaff", 1, 1, 140), d("air_rune", 5, 5, 47),
@@ -216,7 +216,7 @@ public final class MonsterDropsTable {
                 d("nature_rune", 8, 8, 13), d("nature_rune", 37, 37, 140), d("chaos_rune", 4, 4, 16),
                 d("death_rune", 2, 2, 47), d("steam_rune", 2, 2, 70), d("coins", 44, 44, 5), d("coins", 11, 11, 6),
                 d("coins", 200, 200, 13), d("coins", 76, 76, 140), d("coins", 127, 127, 140),
-                d("energy_potion", 1, 1, 16), d("energy_potion", 10, 10, 40));
+                d("energy_potion", 1, 1, 16), d("energy_potion", 10, 10, 40), d("mystic_fire_staff", 1, 1, 512));
         // Molanisk <- parsed:Molanisk(51)
         p("molanisk", rm("coal"), d("#gems", 1, 1, 18), d("#herbs", 1, 1, 4), d("bones", 1, 1, 1),
                 d("water_rune", 1, 14, 13), d("earth_rune", 1, 20, 13), d("nature_rune", 1, 5, 43),
@@ -226,7 +226,7 @@ public final class MonsterDropsTable {
                 d("rune_dagger", 1, 1, 128), d("water_rune", 75, 75, 16), d("nature_rune", 15, 15, 26),
                 d("nature_rune", 37, 37, 128), d("law_rune", 3, 3, 43), d("adamantite_ore", 1, 1, 43),
                 d("coins", 44, 44, 4), d("coins", 200, 200, 8), d("coins", 132, 132, 26), d("coins", 11, 11, 26),
-                d("coins", 440, 440, 128));
+                d("coins", 440, 440, 128), d("mithril_spear", 1, 1, 64), d("mystic_hat_light", 1, 1, 512));
         // Sea Snake Young <- parsed:Sea Snake Young(90)+rebox seeds
         p("sea_snake_young", rm("bones"), d("#gems", 1, 1, 128), d("#herbs", 1, 1, 26), d("#rare_seeds", 1, 1, 9),
                 d("big_bones", 1, 1, 1), d("water_rune", 15, 15, 64), d("mist_rune", 1, 1, 64),
@@ -251,7 +251,7 @@ public final class MonsterDropsTable {
                 d("air_rune", 10, 10, 43), d("air_rune", 18, 18, 64), d("water_rune", 10, 10, 43),
                 d("water_rune", 18, 18, 64), d("mind_rune", 18, 18, 64), d("body_rune", 18, 18, 64),
                 d("blood_rune", 4, 4, 64), d("death_rune", 7, 7, 7), d("coins", 1, 1, 6), d("coins", 2, 2, 8),
-                d("coins", 4, 4, 14), d("coins", 29, 29, 43));
+                d("coins", 4, 4, 14), d("coins", 29, 29, 43), d("mystic_boots_dark", 1, 1, 512), d("mystic_hat_dark", 1, 1, 512), d("lava_battlestaff", 1, 1, 1000));
         // Brine rat <- parsed:Brine rat(70)
         p("brine_rat", rm(), d("death_rune", 7, 7, 7), d("air_rune", 18, 18, 64), d("earth_rune", 10, 10, 21),
                 d("earth_rune", 36, 36, 32), d("earth_rune", 18, 18, 64), d("water_rune", 10, 10, 43),
@@ -264,7 +264,7 @@ public final class MonsterDropsTable {
                 d("rune_med_helm", 1, 1, 128), d("fire_rune", 60, 60, 16), d("blood_rune", 10, 10, 26),
                 d("blood_rune", 3, 3, 43), d("blood_rune", 30, 30, 128), d("coins", 120, 120, 4),
                 d("coins", 40, 40, 4), d("coins", 200, 200, 13), d("coins", 10, 10, 18), d("coins", 450, 450, 128),
-                d("bones", 1, 1, 13), d("big_bones", 1, 1, 18), d("big_bones", 3, 3, 43), d("gold_ore", 1, 1, 64));
+                d("bones", 1, 1, 13), d("big_bones", 1, 1, 18), d("big_bones", 3, 3, 43), d("gold_ore", 1, 1, 64), d("black_boots", 1, 1, 128));
         // Mutated Bloodveld <- parsed:Mutated Bloodveld(123)
         p("mutated_bloodveld", rm("#herbs", "rune_full_helm"), d("#gems", 1, 1, 64), d("#rare", 1, 1, 43),
                 d("adamant_knife", 2, 2, 43), d("mithril_platebody", 1, 1, 64), d("rune_med_helm", 1, 1, 64),
@@ -274,13 +274,13 @@ public final class MonsterDropsTable {
         // Jelly <- parsed:Jelly(78)
         p("jelly", rm("#herbs"), d("rune_full_helm", 1, 1, 43), d("coins", 102, 102, 3), d("coins", 44, 44, 4),
                 d("coins", 220, 220, 13), d("coins", 11, 11, 18), d("coins", 460, 460, 64),
-                d("chaos_rune", 15, 15, 26), d("death_rune", 5, 5, 43), d("gold_bar", 1, 1, 64));
+                d("chaos_rune", 15, 15, 26), d("death_rune", 5, 5, 43), d("gold_bar", 1, 1, 64), d("mithril_boots", 1, 1, 128));
         // Turoth <- parsed:Turoth(87)
         p("turoth", rm("#seeds"), d("#gems", 1, 1, 26), d("#herbs", 1, 1, 2), d("#uncommon_seeds", 1, 1, 7),
                 d("bones", 1, 1, 1), d("leaf_bladed_sword", 1, 1, 500), d("rune_dagger", 1, 1, 129),
                 d("law_rune", 3, 3, 22), d("nature_rune", 15, 15, 26), d("nature_rune", 37, 37, 129),
                 d("limpwurt_root", 1, 1, 18), d("coins", 44, 44, 4), d("coins", 132, 132, 11),
-                d("coins", 440, 440, 129));
+                d("coins", 440, 440, 129), d("mystic_robe_bottom_light", 1, 1, 512));
         // Mutated Zygomite <- parsed:Zygomite(74)
         p("mutated_zygomite", rm("#seeds", "#herbs"), d("#gems", 1, 1, 29), d("#allotment_seeds", 1, 1, 52),
                 d("nature_rune", 2, 2, 5), d("earth_rune", 15, 15, 29), d("grimy_ranarr_weed", 2, 2, 24),
@@ -295,7 +295,7 @@ public final class MonsterDropsTable {
         // Aberrant spectre <- parsed:Aberrant spectre(96)
         p("aberrant_spectre", rm("#seeds", "steel_longsword", "lantadyme"), d("#gems", 1, 1, 26),
                 d("#uncommon_seeds", 1, 1, 7), d("adamant_platelegs", 1, 1, 128), d("rune_full_helm", 1, 1, 128),
-                d("coins", 460, 460, 128));
+                d("coins", 460, 460, 128), d("lava_battlestaff", 1, 1, 128), d("mystic_robe_bottom_dark", 1, 1, 512));
         // Spiritual ranger <- parsed:Spiritual ranger(115)
         p("spiritual_ranger", rm("#herbs"), d("#gems", 1, 1, 128), d("mithril_arrow", 1, 1, 12),
                 d("steel_arrow", 12, 12, 32), d("iron_arrow", 12, 12, 9), d("bronze_arrow", 16, 16, 10),
@@ -312,7 +312,7 @@ public final class MonsterDropsTable {
                 d("air_rune", 150, 150, 64), d("chaos_rune", 1, 1, 43), d("mind_rune", 1, 1, 18),
                 d("mud_rune", 15, 15, 18), d("nature_rune", 1, 1, 32), d("coins", 400, 499, 14),
                 d("coins", 1300, 1337, 21), d("coins", 1, 1, 64), d("prayer_potion", 1, 1, 14),
-                d("adamantite_bar", 1, 4, 16), d("coal", 1, 10, 16), d("pure_essence", 23, 23, 16));
+                d("adamantite_bar", 1, 4, 16), d("coal", 1, 10, 16), d("pure_essence", 23, 23, 16), d("rune_halberd", 1, 1, 127));
         // Spiritual mage <- parsed:Spiritual mage(120)
         p("spiritual_mage", rm("#herbs"), d("#gems", 1, 1, 64), d("air_rune", 30, 30, 14), d("air_rune", 250, 250, 18),
                 d("air_rune", 50, 50, 64), d("water_rune", 15, 15, 16), d("water_rune", 50, 50, 18),
@@ -335,7 +335,7 @@ public final class MonsterDropsTable {
                 d("dust_rune", 200, 200, 13), d("earth_rune", 300, 300, 13), d("fire_rune", 300, 300, 13),
                 d("fire_rune", 50, 50, 128), d("chaos_rune", 65, 65, 18), d("rune_arrow", 12, 12, 26),
                 d("soul_rune", 15, 15, 32), d("soul_rune", 50, 50, 128), d("coins", 2000, 4000, 5),
-                d("mithril_bar", 10, 10, 43), d("adamantite_bar", 4, 4, 128));
+                d("mithril_bar", 10, 10, 43), d("adamantite_bar", 4, 4, 128), d("mystic_air_staff", 1, 1, 128), d("mystic_earth_staff", 1, 1, 128));
         // Spitting wyvern <- parsed:Spitting Wyvern(139)
         p("spitting_wyvern", rm("#herbs", "#gems", "rune_battleaxe"), d("air_battlestaff", 1, 1, 31),
                 d("battlestaff", 3, 5, 41), d("rune_pickaxe", 1, 1, 61), d("adamant_platebody", 1, 1, 61),
@@ -360,7 +360,7 @@ public final class MonsterDropsTable {
         p("ankou", rm(), d("#gems", 1, 1, 50), d("#herbs", 1, 1, 33), d("#rare_seeds", 1, 1, 100),
                 d("death_rune", 10, 10, 10), d("blood_rune", 11, 11, 17), d("blood_rune", 5, 5, 33),
                 d("adamant_arrow", 5, 14, 25), d("law_rune", 2, 2, 14), d("pure_essence", 15, 15, 20),
-                d("mithril_ore", 3, 7, 50), d("coins", 8, 8, 3), d("coins", 5, 204, 10));
+                d("mithril_ore", 3, 7, 50), d("coins", 8, 8, 3), d("coins", 5, 204, 10), d("black_knife", 1, 1, 100));
         // Hellhound <- parsed:Hellhound(122)
         p("hellhound", rm(), d("death_rune", 10, 10, 8), d("death_rune", 20, 20, 17), d("death_rune", 50, 50, 50));
         // Fire giant <- parsed:Fire giant(86)
@@ -394,7 +394,7 @@ public final class MonsterDropsTable {
         p("ogre", rm("#herbs"), d("#rare_seeds", 1, 1, 7));
         // Cyclops <- parsed:Cyclops(76)
         p("cyclops", rm(), d("#gems", 1, 1, 50), d("#rare", 1, 1, 50), d("#herbs", 1, 1, 33),
-                d("adamant_2h_sword", 1, 1, 100), d("rune_defender", 1, 1, 50));
+                d("adamant_2h_sword", 1, 1, 100), d("rune_defender", 1, 1, 50), d("black_knife", 4, 13, 6));
     }
 
     private static void rows2() {
@@ -403,7 +403,7 @@ public final class MonsterDropsTable {
                 d("water_rune", 15, 15, 32), d("steel_arrow", 15, 15, 64), d("mithril_javelin", 3, 3, 128),
                 d("raw_herring", 3, 3, 32), d("raw_sardine", 5, 5, 32), d("raw_lobster", 1, 1, 64),
                 d("raw_tuna", 1, 1, 64), d("coins", 56, 56, 4), d("coins", 25, 25, 14), d("coins", 44, 44, 16),
-                d("coins", 41, 41, 21));
+                d("coins", 41, 41, 21), d("iron_spear", 1, 1, 21), d("bronze_spear", 1, 1, 26), d("mithril_spear", 1, 1, 128));
         // Elf warrior <- parsed:Elf Warrior(108)
         p("elf_warrior", rm(), d("#gems", 1, 1, 26), d("#herbs", 1, 1, 9), d("green_dhide_body", 1, 1, 32),
                 d("water_rune", 70, 70, 16), d("nature_rune", 12, 12, 26), d("law_rune", 2, 2, 43),
@@ -425,7 +425,7 @@ public final class MonsterDropsTable {
                 d("blood_rune", 17, 17, 43), d("death_rune", 23, 23, 26), d("mist_rune", 25, 75, 64),
                 d("mud_rune", 75, 100, 64), d("steam_rune", 40, 60, 64), d("mithril_ore", 10, 20, 32),
                 d("raw_lobster", 18, 18, 43), d("raw_shark", 8, 8, 43), d("mithril_bar", 10, 15, 128),
-                d("coins", 2000, 3000, 9), d("water_talisman", 1, 1, 32), d("snape_grass", 20, 30, 64));
+                d("coins", 2000, 3000, 9), d("water_talisman", 1, 1, 32), d("snape_grass", 20, 30, 64), d("mystic_water_staff", 1, 1, 128));
         // Wyrm <- parsed:Wyrm(97)
         p("wyrm", rm("death_rune", "chaos_rune"), d("#gems", 1, 1, 76), d("#herbs", 1, 1, 19),
                 d("#uncommon_seeds", 1, 1, 25), d("dragon_knife", 75, 150, 10000),
@@ -439,7 +439,7 @@ public final class MonsterDropsTable {
                 d("bones", 1, 1, 1), d("rune_longsword", 1, 1, 41), d("adamant_platebody", 1, 1, 41),
                 d("rune_axe", 1, 1, 41), d("nature_rune", 10, 10, 12), d("nature_rune", 15, 15, 18),
                 d("nature_rune", 30, 30, 31), d("coins", 2000, 3000, 8), d("coins", 10000, 10000, 25),
-                d("white_berries", 12, 12, 21), d("big_bones", 20, 20, 25));
+                d("white_berries", 12, 12, 21), d("big_bones", 20, 20, 25), d("mystic_robe_top_light", 1, 1, 512));
         // Skeletal Wyvern <- parsed:Skeletal Wyvern(140)
         p("skeletal_wyvern", rm("#gems", "runite_ore"), d("#rare", 1, 1, 43), d("#herbs", 1, 1, 18),
                 d("dragon_plateskirt", 1, 1, 512), d("earth_battlestaff", 1, 1, 32), d("battlestaff", 10, 10, 43),
@@ -456,7 +456,7 @@ public final class MonsterDropsTable {
                 d("fire_rune", 150, 150, 21), d("chaos_rune", 30, 30, 16), d("death_rune", 15, 15, 26),
                 d("gold_ore", 10, 20, 13), d("pure_essence", 150, 150, 21), d("steel_bar", 15, 15, 21),
                 d("gold_bar", 10, 15, 43), d("mithril_bar", 15, 15, 64), d("runite_ore", 1, 1, 64),
-                d("coins", 400, 800, 5), d("coins", 500, 1000, 6), d("coins", 10000, 10000, 26));
+                d("coins", 400, 800, 5), d("coins", 500, 1000, 6), d("coins", 10000, 10000, 26), d("adamant_boots", 1, 1, 128));
         // Nechryael <- parsed:Nechryael(115)
         p("nechryael", rm("#herbs"), d("#gems", 1, 1, 23), d("#rare", 1, 1, 121), d("#uncommon_seeds", 1, 1, 3),
                 d("adamant_platelegs", 1, 1, 29), d("adamant_kiteshield", 1, 1, 58), d("chaos_rune", 37, 37, 14),
@@ -480,7 +480,7 @@ public final class MonsterDropsTable {
                 d("water_rune", 15, 15, 20), d("water_rune", 30, 30, 20), d("water_rune", 75, 75, 20),
                 d("fire_rune", 30, 30, 20), d("death_rune", 30, 30, 12), d("chaos_rune", 50, 50, 12),
                 d("blood_rune", 5, 5, 25), d("coins", 120, 300, 20), d("raw_lobster", 3, 3, 50),
-                d("water_talisman", 1, 1, 50), d("kraken_tentacle", 1, 1, 1200));
+                d("water_talisman", 1, 1, 50), d("kraken_tentacle", 1, 1, 1200), d("adamant_spear", 1, 1, 50), d("mystic_water_staff", 1, 1, 100));
         // Dark beast <- parsed:Dark beast(182)
         p("dark_beast", rm(), d("#gems", 1, 1, 43), d("#rare", 1, 1, 43), d("#herbs", 1, 1, 7),
                 d("#uncommon_seeds", 1, 1, 43), d("rune_chainbody", 1, 1, 128), d("rune_med_helm", 1, 1, 128),
@@ -528,13 +528,13 @@ public final class MonsterDropsTable {
         p("green_dragon", rm(), d("#gems", 1, 1, 26), d("#herbs", 1, 1, 9), d("adamant_full_helm", 1, 1, 128),
                 d("water_rune", 75, 75, 16), d("fire_rune", 37, 37, 128), d("nature_rune", 15, 15, 26),
                 d("law_rune", 3, 3, 43), d("coins", 44, 44, 4), d("coins", 132, 132, 5), d("coins", 200, 200, 13),
-                d("coins", 11, 11, 26), d("coins", 440, 440, 128), d("adamantite_ore", 1, 1, 43));
+                d("coins", 11, 11, 26), d("coins", 440, 440, 128), d("adamantite_ore", 1, 1, 43), d("mithril_spear", 1, 1, 64));
         // Blue dragon <- parsed:Blue dragon(111)
         p("blue_dragon", rm(), d("#gems", 1, 1, 26), d("#herbs", 1, 1, 9), d("adamant_full_helm", 1, 1, 128),
                 d("water_rune", 75, 75, 16), d("nature_rune", 15, 15, 26), d("law_rune", 3, 3, 43),
                 d("fire_rune", 37, 37, 128), d("coins", 44, 44, 4), d("coins", 132, 132, 5), d("coins", 200, 200, 13),
                 d("coins", 11, 11, 26), d("coins", 440, 440, 128), d("adamantite_ore", 1, 1, 43),
-                d("frozen_tear", 8, 8, 100));
+                d("frozen_tear", 8, 8, 100), d("mithril_spear", 1, 1, 64));
         // Red dragon <- parsed:Red dragon(152)
         p("red_dragon", rm("rune_full_helm"), d("#gems", 1, 1, 26), d("#herbs", 1, 1, 64), d("rune_dart", 8, 8, 43),
                 d("mithril_javelin", 20, 20, 128), d("adamant_platebody", 1, 1, 128), d("rune_arrow", 4, 4, 16),
@@ -552,7 +552,7 @@ public final class MonsterDropsTable {
                 d("adamant_knife", 8, 8, 43), d("adamant_kiteshield", 1, 1, 128), d("adamant_platelegs", 1, 1, 128),
                 d("rune_full_helm", 1, 1, 128), d("rune_chainbody", 1, 1, 128), d("blood_rune", 20, 20, 4),
                 d("lava_rune", 35, 35, 16), d("steam_rune", 37, 37, 21), d("adamant_arrow", 8, 8, 43),
-                d("mithril_ore", 5, 5, 43));
+                d("mithril_ore", 5, 5, 43), d("mithril_hasta", 1, 1, 43), d("rune_thrownaxe", 8, 8, 43), d("adamant_spear", 1, 1, 64));
     }
 
     private static void rows3() {
@@ -629,7 +629,7 @@ public final class MonsterDropsTable {
         // Shadow warrior <- parsed:Shadow warrior(48)
         p("shadow_warrior", rm("black_full_helm", "black_kiteshield"), d("#gems", 1, 1, 16), d("#herbs", 1, 1, 7),
                 d("black_longsword", 1, 1, 128), d("cosmic_rune", 3, 3, 14), d("blood_rune", 2, 2, 21),
-                d("air_rune", 45, 45, 32), d("death_rune", 2, 2, 32), d("coins", 8, 8, 3), d("mithril_bar", 1, 1, 32));
+                d("air_rune", 45, 45, 32), d("death_rune", 2, 2, 32), d("coins", 8, 8, 3), d("mithril_bar", 1, 1, 32), d("adamant_spear", 1, 1, 128), d("black_knife", 1, 1, 128));
         // Otherworldly being <- parsed:Otherworldly being(64)
         p("otherworldly_being", rm("#seeds"), d("#gems", 1, 1, 43), d("#herbs", 1, 1, 13), d("nature_rune", 5, 5, 14),
                 d("chaos_rune", 4, 4, 16), d("law_rune", 2, 2, 18), d("cosmic_rune", 2, 2, 26),
@@ -831,7 +831,7 @@ public final class MonsterDropsTable {
                 d("air_rune", 150, 150, 64), d("chaos_rune", 1, 1, 43), d("mind_rune", 1, 1, 18),
                 d("mud_rune", 15, 15, 18), d("nature_rune", 1, 1, 32), d("coins", 400, 499, 14),
                 d("coins", 1300, 1337, 21), d("coins", 1, 1, 64), d("prayer_potion", 1, 1, 14),
-                d("adamantite_bar", 1, 4, 16), d("coal", 1, 10, 16), d("pure_essence", 23, 23, 16));
+                d("adamantite_bar", 1, 4, 16), d("coal", 1, 10, 16), d("pure_essence", 23, 23, 16), d("rune_halberd", 1, 1, 127));
         // Spiritual ranger (Armadyl) <- parsed:Spiritual ranger(127)
         p("gwd_spiritual_ranger_armadyl", rm("#herbs"), d("#gems", 1, 1, 128), d("magic_shortbow", 1, 2, 128),
                 d("mithril_arrow", 1, 1, 12), d("steel_arrow", 12, 12, 32), d("iron_arrow", 12, 12, 9),
@@ -864,11 +864,11 @@ public final class MonsterDropsTable {
                 d("fire_rune", 7, 7, 64), d("body_rune", 6, 6, 64), d("chaos_rune", 3, 3, 64),
                 d("nature_rune", 4, 4, 64), d("cosmic_rune", 2, 2, 128), d("coins", 5, 5, 4), d("coins", 15, 15, 8),
                 d("coins", 28, 28, 8), d("coins", 10, 10, 18), d("coins", 62, 62, 32), d("coins", 1, 42, 32),
-                d("limpwurt_root", 1, 1, 6));
+                d("limpwurt_root", 1, 1, 6), d("bronze_spear", 1, 1, 43), d("iron_spear", 1, 1, 64), d("steel_spear", 1, 1, 64));
         // Ork <- parsed:Ork(107)
         p("gwd_ork", rm("#herbs", "big_bones", "rune_full_helm"), d("bones", 1, 1, 1), d("bronze_dart", 2, 2, 26),
                 d("iron_dart", 2, 2, 26), d("coins", 10, 10, 16), d("coins", 5, 5, 26), d("coins", 8, 8, 26),
-                d("coins", 12, 12, 26), d("coins", 23, 23, 26));
+                d("coins", 12, 12, 26), d("coins", 23, 23, 26), d("iron_spear", 1, 1, 32), d("bronze_halberd", 1, 1, 26));
         // Ogre <- parsed:Ogre(58)+rebox seeds
         p("gwd_ogre", rm("#herbs"), d("#rare_seeds", 1, 1, 7));
     }
@@ -877,17 +877,17 @@ public final class MonsterDropsTable {
         // Jogre <- parsed:Jogre(58)+rebox seeds
         p("gwd_jogre", rm("coins"), d("#gems", 1, 1, 129), d("#herbs", 1, 1, 22), d("#rare_seeds", 1, 1, 9),
                 d("nature_rune", 2, 2, 13), d("nature_rune", 10, 10, 64), d("nature_rune", 5, 5, 64),
-                d("steel_javelin", 5, 5, 64), d("bones", 1, 1, 26), d("big_bones", 1, 1, 43), d("big_bones", 3, 3, 64));
+                d("steel_javelin", 5, 5, 64), d("bones", 1, 1, 26), d("big_bones", 1, 1, 43), d("big_bones", 3, 3, 64), d("bronze_spear", 1, 1, 4), d("iron_spear", 1, 1, 32));
         // Cyclops <- parsed:Cyclops(76)
         p("gwd_cyclops", rm(), d("#gems", 1, 1, 50), d("#rare", 1, 1, 50), d("#herbs", 1, 1, 33),
-                d("adamant_2h_sword", 1, 1, 100), d("rune_defender", 1, 1, 50));
+                d("adamant_2h_sword", 1, 1, 100), d("rune_defender", 1, 1, 50), d("black_knife", 4, 13, 6));
         // Spiritual warrior (Bandos) <- parsed:Spiritual warrior(134)
         p("gwd_spiritual_warrior_bandos", rm("#herbs", "rune_full_helm", "adamant_platebody"), d("#gems", 1, 1, 32),
                 d("adamant_2h_sword", 1, 1, 127), d("rune_longsword", 1, 1, 127), d("rune_kiteshield", 1, 1, 127),
                 d("air_rune", 150, 150, 64), d("chaos_rune", 1, 1, 43), d("mind_rune", 1, 1, 18),
                 d("mud_rune", 15, 15, 18), d("nature_rune", 1, 1, 32), d("coins", 400, 499, 14),
                 d("coins", 1300, 1337, 21), d("coins", 1, 1, 64), d("prayer_potion", 1, 1, 14),
-                d("adamantite_bar", 1, 4, 16), d("coal", 1, 10, 16), d("pure_essence", 23, 23, 16));
+                d("adamantite_bar", 1, 4, 16), d("coal", 1, 10, 16), d("pure_essence", 23, 23, 16), d("rune_halberd", 1, 1, 127));
         // Spiritual ranger (Bandos) <- parsed:Spiritual ranger(115)
         p("gwd_spiritual_ranger_bandos", rm("#herbs"), d("#gems", 1, 1, 128), d("magic_shortbow", 1, 2, 128),
                 d("mithril_arrow", 1, 1, 12), d("steel_arrow", 12, 12, 32), d("iron_arrow", 12, 12, 9),
@@ -920,7 +920,7 @@ public final class MonsterDropsTable {
                 d("air_rune", 150, 150, 64), d("chaos_rune", 1, 1, 43), d("mind_rune", 1, 1, 18),
                 d("mud_rune", 15, 15, 18), d("nature_rune", 1, 1, 32), d("coins", 400, 499, 14),
                 d("coins", 1300, 1337, 21), d("coins", 1, 1, 64), d("prayer_potion", 1, 1, 14),
-                d("adamantite_bar", 1, 4, 16), d("coal", 1, 10, 16), d("pure_essence", 23, 23, 16));
+                d("adamantite_bar", 1, 4, 16), d("coal", 1, 10, 16), d("pure_essence", 23, 23, 16), d("rune_halberd", 1, 1, 127));
         // Spiritual ranger (Saradomin) <- parsed:Spiritual ranger(122)
         p("gwd_spiritual_ranger_saradomin", rm("#herbs"), d("#gems", 1, 1, 128), d("magic_shortbow", 1, 2, 128),
                 d("mithril_arrow", 1, 1, 12), d("steel_arrow", 12, 12, 32), d("iron_arrow", 12, 12, 9),
@@ -948,7 +948,7 @@ public final class MonsterDropsTable {
                 d("coins", 1300, 1337, 21), d("coins", 6900, 6942, 64), d("super_restore", 1, 1, 14),
                 d("adamantite_bar", 1, 4, 16), d("coal", 1, 10, 16));
         // Imp <- parsed:Imp(7)
-        p("gwd_imp", rm("#herbs", "fire_rune", "coins"), d("bronze_bolts", 1, 1, 16), d("mind_talisman", 1, 1, 18));
+        p("gwd_imp", rm("#herbs", "fire_rune", "coins"), d("bronze_bolts", 1, 1, 16), d("mind_talisman", 1, 1, 18), d("blue_wizard_hat", 1, 1, 16));
         // Werewolf <- parsed:Werewolf(93)
         p("gwd_werewolf", rm(), d("#gems", 1, 1, 256), d("#herbs", 1, 1, 171), d("rune_med_helm", 1, 1, 171),
                 d("coins", 10, 10, 6), d("coins", 90, 90, 26), d("coins", 120, 120, 26), d("coins", 222, 222, 26),
@@ -958,12 +958,13 @@ public final class MonsterDropsTable {
                 d("fire_rune", 60, 60, 16), d("blood_rune", 10, 10, 26), d("blood_rune", 3, 3, 43),
                 d("blood_rune", 30, 30, 128), d("coins", 120, 120, 4), d("coins", 40, 40, 4), d("coins", 200, 200, 13),
                 d("coins", 10, 10, 18), d("coins", 450, 450, 128), d("bones", 1, 1, 13), d("big_bones", 1, 1, 18),
-                d("big_bones", 3, 3, 43), d("gold_ore", 1, 1, 64));
+                d("big_bones", 3, 3, 43), d("gold_ore", 1, 1, 64), d("black_boots", 1, 1, 128));
         // Hellhound <- parsed:Hellhound(127)
         p("gwd_hellhound", rm("#herbs", "coins"), d("death_rune", 10, 10, 8), d("death_rune", 20, 20, 17),
                 d("death_rune", 50, 50, 50), d("smouldering_stone", 1, 1, 32768));
         // Gorak <- parsed:Gorak(149)
-        p("gwd_gorak", rm("bones"), d("#gems", 1, 1, 1), d("#herbs", 1, 1, 8), d("big_bones", 1, 1, 1));
+        p("gwd_gorak", rm("bones"), d("#gems", 1, 1, 1), d("#herbs", 1, 1, 8), d("big_bones", 1, 1, 1),
+                d("iron_halberd", 1, 1, 43), d("steel_thrownaxe", 1, 1, 43), d("mithril_thrownaxe", 1, 1, 43));
         // Vampire <- parsed:Feral Vampyre(72)
         p("gwd_vampire", rm(), d("#gems", 1, 1, 32), d("#herbs", 1, 1, 13), d("earth_rune", 4, 4, 13),
                 d("death_rune", 2, 2, 13), d("chaos_rune", 3, 3, 16), d("blood_rune", 1, 1, 26),
@@ -972,7 +973,7 @@ public final class MonsterDropsTable {
         p("gwd_pyrefiend", rm("#herbs"), d("#gems", 1, 1, 43), d("fiendish_ashes", 1, 1, 1), d("fire_rune", 30, 30, 6),
                 d("fire_rune", 60, 60, 16), d("chaos_rune", 12, 12, 26), d("death_rune", 3, 3, 43),
                 d("coins", 40, 40, 5), d("coins", 120, 120, 6), d("coins", 200, 200, 13), d("coins", 10, 10, 18),
-                d("coins", 450, 450, 64), d("gold_ore", 1, 1, 16));
+                d("coins", 450, 450, 64), d("gold_ore", 1, 1, 16), d("steel_boots", 1, 1, 128));
         // Spiritual warrior (Zamorak) <- parsed:Spiritual warrior(115)
         p("gwd_spiritual_warrior_zamorak", rm("#herbs", "rune_full_helm", "adamant_platebody"), d("#gems", 1, 1, 32),
                 d("adamant_2h_sword", 1, 1, 127), d("rune_longsword", 1, 1, 127), d("rune_kiteshield", 1, 1, 127),
@@ -1112,7 +1113,7 @@ public final class MonsterDropsTable {
                 d("coins", 30, 30, 64), d("hammer", 1, 1, 13), d("bronze_bar", 1, 1, 18), d("iron_ore", 1, 1, 32),
                 d("tin_ore", 1, 1, 43), d("copper_ore", 1, 1, 43), d("iron_bar", 1, 1, 43), d("coal", 1, 1, 64));
         // Highwayman <- parsed:Highwayman(5)
-        p("highwayman", rm("coins", "bronze_dagger"), d("iron_bolts", 2, 12, 20));
+        p("highwayman", rm("coins", "bronze_dagger"), d("iron_bolts", 2, 12, 20), d("black_cape", 1, 1, 1));
         // Mugger <- parsed:Mugger(6)
         p("mugger", rm(), d("#herbs", 1, 1, 10), d("bronze_bolts", 2, 12, 5), d("mind_rune", 9, 9, 43),
                 d("water_rune", 6, 6, 64), d("earth_rune", 5, 5, 64), d("coins", 10, 10, 10), d("coins", 5, 5, 11),
@@ -1141,7 +1142,7 @@ public final class MonsterDropsTable {
                 d("obsidian_platelegs", 1, 1, 2000), d("onyx_bolt_tips", 1, 4, 51));
         // TzHaar-Xil <- parsed:TzHaar-Xil(133)
         p("tzhaar_xil", rm(), d("toktz_xil_ak", 1, 1, 683), d("toktz_xil_ek", 1, 1, 683),
-                d("obsidian_cape", 1, 1, 341), d("uncut_diamond", 1, 1, 512));
+                d("obsidian_cape", 1, 1, 341), d("uncut_diamond", 1, 1, 512), d("toktz_xil_ul", 9, 29, 512));
         // TzHaar-Mej <- parsed:TzHaar-Mej(103)
         p("tzhaar_mej", rm(), d("obsidian_cape", 1, 1, 4096), d("toktz_mej_tal", 1, 1, 4096),
                 d("earth_rune", 25, 25, 32), d("fire_rune", 25, 25, 32), d("air_rune", 25, 25, 32),
@@ -1157,7 +1158,7 @@ public final class MonsterDropsTable {
                 d("white_bead", 1, 1, 26), d("yellow_bead", 1, 1, 26), d("bronze_bolts", 1, 1, 16),
                 d("burnt_bread", 1, 1, 32), d("burnt_meat", 1, 1, 32), d("cabbage", 1, 1, 64),
                 d("bread_dough", 1, 1, 64), d("hammer", 1, 1, 16), d("tinderbox", 1, 1, 26), d("jug", 1, 1, 64),
-                d("pot_of_flour", 1, 1, 64), d("ball_of_wool", 1, 1, 16), d("mind_talisman", 1, 1, 18));
+                d("pot_of_flour", 1, 1, 64), d("ball_of_wool", 1, 1, 16), d("mind_talisman", 1, 1, 18), d("blue_wizard_hat", 1, 1, 16));
         // Sand crab <- parsed:Sand Crab(15)
         p("sand_crab", rm(), d("#gems", 1, 1, 128), d("coins", 4, 4, 4), d("coins", 36, 36, 16), d("coins", 8, 8, 21),
                 d("tin_ore", 3, 3, 32), d("iron_ore", 1, 1, 64), d("coal", 2, 2, 64), d("copper_ore", 3, 3, 64));
@@ -1218,7 +1219,7 @@ public final class MonsterDropsTable {
                 d("steel_arrow", 30, 30, 128), d("death_rune", 3, 3, 128), d("blood_rune", 1, 1, 128),
                 d("coins", 5, 5, 4), d("coins", 37, 37, 7), d("coins", 2, 2, 12), d("coins", 119, 119, 13),
                 d("coins", 10, 10, 26), d("coins", 300, 300, 64), d("steel_bar", 1, 1, 21), d("coal", 1, 1, 128),
-                d("mossy_key", 1, 1, 150));
+                d("mossy_key", 1, 1, 150), d("mithril_spear", 1, 1, 64));
         // Hill giant <- parsed:Hill Giant(28)+rebox seeds
         p("catacomb_hill_giant", rm("malicious_ashes", "vile_ashes"), d("#gems", 1, 1, 43), d("#herbs", 1, 1, 18),
                 d("#allotment_seeds", 1, 1, 7), d("iron_arrow", 3, 3, 21), d("fire_rune", 15, 15, 43),
@@ -1232,12 +1233,12 @@ public final class MonsterDropsTable {
                 d("#uncommon_seeds", 1, 1, 7), d("water_rune", 15, 15, 32), d("steel_arrow", 15, 15, 64),
                 d("mithril_javelin", 3, 3, 128), d("raw_herring", 3, 3, 32), d("raw_sardine", 5, 5, 32),
                 d("raw_lobster", 1, 1, 64), d("raw_tuna", 1, 1, 64), d("coins", 56, 56, 4), d("coins", 25, 25, 14),
-                d("coins", 44, 44, 16), d("coins", 41, 41, 21));
+                d("coins", 44, 44, 16), d("coins", 41, 41, 21), d("iron_spear", 1, 1, 21), d("bronze_spear", 1, 1, 26), d("mithril_spear", 1, 1, 128));
         // Ankou <- parsed:Ankou(75)+rebox seeds
         p("catacomb_ankou", rm("malicious_ashes", "vile_ashes"), d("#gems", 1, 1, 50), d("#herbs", 1, 1, 33),
                 d("#rare_seeds", 1, 1, 100), d("blood_rune", 11, 11, 17), d("blood_rune", 5, 5, 33),
                 d("adamant_arrow", 5, 14, 25), d("law_rune", 2, 2, 14), d("pure_essence", 15, 15, 20),
-                d("mithril_ore", 3, 7, 50), d("coins", 8, 8, 3), d("coins", 5, 204, 10));
+                d("mithril_ore", 3, 7, 50), d("coins", 8, 8, 3), d("coins", 5, 204, 10), d("black_knife", 1, 1, 100));
         // Dust devil <- parsed:Dust devil(93)
         p("catacomb_dust_devil", rm("malicious_ashes", "vile_ashes"), d("#gems", 1, 1, 12), d("#herbs", 1, 1, 7),
                 d("bones", 1, 1, 1), d("rune_dagger", 1, 1, 64), d("red_dhide_vambraces", 1, 1, 64),
@@ -1246,7 +1247,7 @@ public final class MonsterDropsTable {
                 d("earth_rune", 300, 300, 13), d("fire_rune", 300, 300, 13), d("fire_rune", 50, 50, 128),
                 d("chaos_rune", 65, 65, 18), d("rune_arrow", 12, 12, 26), d("soul_rune", 15, 15, 32),
                 d("soul_rune", 50, 50, 128), d("coins", 2000, 4000, 5), d("mithril_bar", 10, 10, 43),
-                d("adamantite_bar", 4, 4, 128));
+                d("adamantite_bar", 4, 4, 128), d("mystic_air_staff", 1, 1, 128), d("mystic_earth_staff", 1, 1, 128));
         // Sulphur nagua <- parsed:Sulphur Nagua(98)
         p("sulphur_nagua", rm("#herbs", "coins"), d("#gems", 1, 1, 21), d("chaos_rune", 40, 60, 32),
                 d("death_rune", 40, 60, 128), d("fire_rune", 10, 40, 5), d("fire_rune", 40, 60, 128),
@@ -1340,11 +1341,11 @@ public final class MonsterDropsTable {
                 d("#allotment_seeds", 1, 1, 6), d("iron_javelin", 5, 5, 64), d("nature_rune", 4, 4, 13),
                 d("nature_rune", 2, 2, 18), d("nature_rune", 3, 3, 64), d("death_rune", 1, 1, 26),
                 d("iron_ore", 1, 1, 5), d("teak_logs", 3, 3, 14), d("mahogany_logs", 1, 1, 43),
-                d("big_bones", 1, 1, 43), d("big_bones", 3, 3, 64));
+                d("big_bones", 1, 1, 43), d("big_bones", 3, 3, 64), d("iron_spear", 1, 1, 32));
         // Jogre <- parsed:Jogre(53)+rebox seeds
         p("jogre", rm("coins", "iron_ore"), d("#gems", 1, 1, 129), d("#herbs", 1, 1, 22), d("#rare_seeds", 1, 1, 9),
                 d("nature_rune", 2, 2, 13), d("nature_rune", 10, 10, 64), d("nature_rune", 5, 5, 64),
-                d("steel_javelin", 5, 5, 64), d("bones", 1, 1, 26), d("big_bones", 1, 1, 43), d("big_bones", 3, 3, 64));
+                d("steel_javelin", 5, 5, 64), d("bones", 1, 1, 26), d("big_bones", 1, 1, 43), d("big_bones", 3, 3, 64), d("bronze_spear", 1, 1, 4), d("iron_spear", 1, 1, 32));
         // Ogress Warrior <- parsed:Ogress Warrior(82)
         p("ogress_warrior", rm("#herbs"), d("#gems", 1, 1, 7), d("mithril_arrow", 5, 15, 17),
                 d("chaos_rune", 15, 30, 17), d("law_rune", 8, 15, 17), d("nature_rune", 8, 15, 17),

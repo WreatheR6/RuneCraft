@@ -35,5 +35,6 @@ public final class CommonItems {
             items.add("clue_scroll_" + tier, "Clue scroll (" + tier + ")", Kind.SIMPLE, "note", 0xE8D8A0).value(1).stack(1)
                     .examine("A " + name.toLowerCase() + " clue scroll.");
         }
+        CommonEquipment.add(items);
     }
 }

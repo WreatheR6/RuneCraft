@@ -126,6 +126,8 @@ public final class SlayerBosses {
                 .drops(Drop.of("kraken_tentacle", 1, 1, 400), Drop.of("trident_of_the_seas", 1, 1, 512), Drop.of("jar_of_dirt", 1, 1, 1000),
                         Drop.of("raw_shark", 10, 20, 8), Drop.of("runite_bar", 2, 2, 16), Drop.of("water_rune", 400, 400, 8),
                         Drop.of("coins", 10000, 30000, 4), Drop.of("clue_scroll_elite", 1, 1, 500))
+                .drops(Drop.of("mystic_water_staff", 1, 1, 43), Drop.of("mystic_robe_top", 1, 1, 128),
+                        Drop.of("mystic_robe_bottom", 1, 1, 128))
                 .slayer(87, "cave_kraken").pet("pet_kraken").at("kraken_cove").arena(13, "water")
                 .size(1.8f, 1.6f, 2.0f).moveSpeed(0.0);
     }
@@ -138,6 +140,7 @@ public final class SlayerBosses {
                         Drop.of("dragon_chainbody", 1, 1, 2000), Drop.of("jar_of_smoke", 1, 1, 2000), Drop.of("rune_platelegs", 1, 1, 12),
                         Drop.of("air_rune", 300, 300, 8), Drop.of("soul_rune", 50, 50, 10), Drop.of("runite_bar", 2, 2, 16),
                         Drop.of("coins", 10000, 20000, 4), Drop.of("clue_scroll_elite", 1, 1, 500))
+                .drops(Drop.of("mystic_air_staff", 1, 1, 36), Drop.of("mystic_fire_staff", 1, 1, 36))
                 .slayer(93, "smoke_devils").pet("pet_smoke_devil").at("smoke_devil_dungeon").arena(11, "void")
                 .flying().size(1.0f, 1.8f, 1.8f).moveSpeed(0.22);
     }

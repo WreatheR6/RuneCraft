@@ -457,6 +457,14 @@ public final class BossItems {
         // Vorkath
         recipes.accept(Recipe.builder("make_dragonfire_ward", MenuType.SMITHING, "Dragonfire ward").skill(Skill.SMITHING, 90, 2000)
                 .in("skeletal_visage", 1).in("anti_dragon_shield", 1).out("dragonfire_ward", 1).tool("hammer").ticks(5).build());
+        // King Black Dragon / Vorkath / wyrms: draconic visage forged onto an anti-dragon shield (OSRS: 90 Smithing, 2,000 XP).
+        recipes.accept(Recipe.builder("make_dragonfire_shield", MenuType.SMITHING, "Dragonfire shield").skill(Skill.SMITHING, 90, 2000)
+                .in("draconic_visage", 1).in("anti_dragon_shield", 1).out("dragonfire_shield", 1).tool("hammer").ticks(5).build());
+        // Haunted Mine's salve shard: chiselled and strung into a salve amulet; Tarn's diary enchants it to (e).
+        recipes.accept(Recipe.builder("make_salve_amulet", MenuType.GEM_CUTTING, "Salve amulet")
+                .in("salve_shard", 1).in("ball_of_wool", 1).out("salve_amulet", 1).tool("chisel").ticks(3).build());
+        recipes.accept(Recipe.builder("make_salve_amulet_e", MenuType.GEM_CUTTING, "Salve amulet (e)")
+                .in("salve_amulet", 1).out("salve_amulet_e", 1).tool("tarns_diary").ticks(3).build());
         // Kraken
         recipes.accept(Recipe.builder("make_abyssal_tentacle", MenuType.LEATHERWORKING, "Abyssal tentacle")
                 .in("abyssal_whip", 1).in("kraken_tentacle", 1).out("abyssal_tentacle", 1).build());

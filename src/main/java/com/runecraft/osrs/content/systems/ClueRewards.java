@@ -393,18 +393,35 @@ public final class ClueRewards {
         godPlate(items, H, "ancient", 0x8A3A3A);
         godPlate(items, H, "armadyl", 0xE0E0D0);
         godPlate(items, H, "bandos", 0x6A5A3A);
-        for (String god : new String[]{"saradomin", "zamorak", "guthix"}) {
-            int c = god.equals("saradomin") ? 0x3050C0 : god.equals("zamorak") ? 0xA02020 : 0x30A030;
+        // God d'hide (blessed dragonhide): body, chaps, coif, bracers and shield are hard rewards, boots elite.
+        for (String god : new String[]{"saradomin", "zamorak", "guthix", "bandos", "armadyl", "ancient"}) {
+            int c = switch (god) {
+                case "saradomin" -> 0x3050C0;
+                case "zamorak" -> 0xA02020;
+                case "guthix" -> 0x30A030;
+                case "bandos" -> 0x6A5A3A;
+                case "armadyl" -> 0xE0E0D0;
+                default -> 0x8A3A3A;
+            };
             Map<Skill, Integer> r = req(Skill.RANGED, 70, Skill.DEFENCE, 40);
             Defs.armour(items, god + "_dhide_body", Defs.cap(god) + " d'hide body", "leather_body", c, "leather", 30000, Slot.CHEST,
-                    st(0, 0, 0, -15, 30, 55, 47, 62, 50, 57, 0, 0, 0, 1), r);
+                    st(0, 0, 0, -15, 30, 55, 47, 60, 50, 55, 0, 0, 0, 1), r);
             Defs.armour(items, god + "_chaps", Defs.cap(god) + " chaps", "chaps", c, "leather", 20000, Slot.LEGS,
                     st(0, 0, 0, -10, 17, 31, 25, 33, 28, 31, 0, 0, 0, 1), req(Skill.RANGED, 70));
             Defs.armour(items, god + "_coif", Defs.cap(god) + " coif", "cowl", c, "leather", 15000, Slot.HEAD,
                     st(0, 0, 0, -1, 7, 4, 7, 10, 4, 8, 0, 0, 0, 1), r);
+            Defs.worn(items, god + "_bracers", Defs.cap(god) + " bracers", "vambraces", c, 4000, Jewellery.Slot.HANDS,
+                    st(0, 0, 0, -10, 11, 6, 5, 7, 8, 0, 0, 0, 0, 1), r, Jewellery.Perk.NONE, List.of());
+            Defs.armour(items, god + "_dhide_shield", Defs.cap(god) + " d'hide shield", "shield_round", c, "leather", 28334,
+                    Slot.SHIELD, st(-15, -15, -11, -10, 7, 21, 18, 16, 15, 14, 0, 0, 0, 1), r);
+            Defs.armour(items, god + "_dhide_boots", Defs.cap(god) + " d'hide boots", "boots", c, "leather", 9300, Slot.FEET,
+                    st(0, 0, 0, -10, 7, 4, 4, 4, 4, 4, 0, 0, 0, 1), r);
             unique(H, god + "_dhide_body");
             unique(H, god + "_chaps");
             unique(H, god + "_coif");
+            unique(H, god + "_bracers");
+            unique(H, god + "_dhide_shield");
+            unique(Tier.ELITE, god + "_dhide_boots");
         }
         cosmeticArmour(items, H, "pith_helmet", "Pith helmet", "cowl", 0xD0C090, Slot.HEAD, 20000);
         cosmeticWorn(items, H, "explorer_backpack", "Explorer backpack", "cape", 0x8A6A3A, Jewellery.Slot.CAPE, 20000);
@@ -466,9 +483,9 @@ public final class ClueRewards {
         Defs.melee(items, "katana", "Katana", "longsword", 0xC0C0C8, "steel", 30000, st(4, 8, -2, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0),
                 Map.of(), 4, AttackType.SLASH); // approx stats
         unique(L, "katana");
-        Defs.melee(items, "briefcase", "Briefcase", "club", 0x5A3A2A, "iron", 30000, ZERO, Map.of(), 4, AttackType.CRUSH);
+        Defs.armour(items, "briefcase", "Briefcase", "package", 0x5A3A2A, "iron", 30000, Slot.SHIELD, ZERO, Map.of()); // off-hand slot
         unique(L, "briefcase");
-        Defs.melee(items, "giant_boot", "Giant boot", "club", 0x6A4A2A, "iron", 30000, ZERO, Map.of(), 4, AttackType.CRUSH);
+        Defs.armour(items, "giant_boot", "Giant boot", "boots", 0x6A4A2A, "iron", 30000, Slot.HEAD, ZERO, Map.of()); // worn on the head
         unique(L, "giant_boot");
         cosmeticArmour(items, L, "sagacious_spectacles", "Sagacious spectacles", "cowl", 0xC0C0C0, Slot.HEAD, 30000);
         cosmeticArmour(items, L, "top_hat", "Top hat", "cowl", 0x202020, Slot.HEAD, 30000);

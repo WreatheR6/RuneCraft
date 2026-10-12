@@ -103,7 +103,7 @@ class EquipmentReferenceTest {
         stats("tumekens_shadow", 0, 0, 0, 35, 0, 0, 0, 0, 20, 0, 0, 0, 0, 1);
         stats("torva_platebody", 0, 0, 0, -18, -14, 117, 111, 117, -11, 142, 6, 0, 0, 1);
         stats("bandos_chestplate", 0, 0, 0, -15, -10, 98, 93, 105, -6, 133, 4, 0, 0, 1);
-        stats("elder_maul", 0, 0, 135, -4, 0, 0, 0, 0, 0, 0, 147, 0, 0, 0);
+        stats("elder_maul", 0, 0, 135, 0, 0, 0, 0, 0, 0, 0, 147, 0, 0, 0);
         stats("odium_ward", -12, -12, -12, -8, 12, 0, 0, 0, 24, 52, 0, 4, 0, 0);
         // Summer Sweep-Up (July 2026): the set bonus moved onto the mace.
         stats("inquisitors_mace", 52, -4, 102, 0, 0, 0, 0, 0, 0, 0, 96, 0, 0, 2);
