@@ -49,6 +49,7 @@ public final class SlayerContent implements ContentModule {
             list.addAll(HighSlayerMonsters.all());
             list.addAll(Dragons.all());
             list.addAll(SlayerExtraMonsters.all());
+            list.addAll(SpawnVariants.all());
             list.addAll(Superiors.build(list));
             monsters = Collections.unmodifiableList(list);
         }
