@@ -213,6 +213,9 @@ final class SailingService {
             Msg.game(player, "You need to be at the " + from.name() + " dock to plan a voyage from there.");
             return;
         }
+        if (!pandemoniumDone(player)) {
+            return;
+        }
         int level = ExtrasUtil.level(player, Skill.SAILING);
         if (from == to) {
             Msg.game(player, "You're already at " + to.name() + ".");
@@ -278,7 +281,19 @@ final class SailingService {
         return true;
     }
 
+    /** Sailing your own boat needs the Pandemonium quest (creative players skip it). */
+    static boolean pandemoniumDone(ServerPlayerEntity player) {
+        if (player.getAbilities().creativeMode || com.runecraft.quest.QuestApi.isComplete(player, Seafaring.SAILING_QUEST)) {
+            return true;
+        }
+        Msg.game(player, "You need to complete Pandemonium before you can sail your own boat.");
+        return false;
+    }
+
     private static void launch(ServerPlayerEntity player, ItemStack stack, Seafaring.BoatTier tier) {
+        if (!pandemoniumDone(player)) {
+            return;
+        }
         if (ExtrasUtil.level(player, Skill.SAILING) < tier.level()) {
             Msg.game(player, "You need a Sailing level of " + tier.level() + " to sail " + Msg.article(ExtrasUtil.lower(tier.name())) + ".");
             return;

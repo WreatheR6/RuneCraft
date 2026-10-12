@@ -193,8 +193,16 @@ public final class HouseLayout {
         if (f == null) {
             return "You can't build that there.";
         }
-        if (furnitureAt(x, z, hotspotId) != null) {
+        String built = furnitureAt(x, z, hotspotId);
+        String base = Poh.upgradeOf(furnitureId);
+        if (base == null && built != null) {
             return "There is already something built there.";
+        }
+        if (base != null && !base.equals(built)) {
+            return built == null || !built.equals(furnitureId)
+                    ? "The " + f.name().toLowerCase(java.util.Locale.ROOT) + " is built as an upgrade of " + Poh.article(
+                    Poh.furniture(base).name().toLowerCase(java.util.Locale.ROOT)) + "."
+                    : "There is already something built there.";
         }
         if (constructionLevel < f.level()) {
             return "You need a Construction level of " + f.level() + " to build " + Poh.article(f.name().toLowerCase(java.util.Locale.ROOT)) + ".";
@@ -206,7 +214,23 @@ public final class HouseLayout {
     }
 
     public void buildFurniture(int x, int z, String hotspotId, String furnitureId) {
-        furniture.put(spot(x, z, hotspotId), furnitureId);
+        // An upgrade keeps the old piece's extra data (e.g. the teleports stored in a portal nexus).
+        String extra = furnitureId.equals(furnitureAt(x, z, hotspotId)) || Poh.upgradeOf(furnitureId) == null ? null
+                : extraAt(x, z, hotspotId);
+        furniture.put(spot(x, z, hotspotId), extra == null ? furnitureId : furnitureId + "|" + extra);
+    }
+
+    /** How many built pieces of furniture in the whole house have the given effect (e.g. beds for servants). */
+    public int count(Poh.Effect effect) {
+        int n = 0;
+        for (String v : furniture.values()) {
+            int bar = v.indexOf('|');
+            Poh.Furniture f = Poh.furniture(bar < 0 ? v : v.substring(0, bar));
+            if (f != null && f.effect() == effect) {
+                n++;
+            }
+        }
+        return n;
     }
 
     public boolean removeFurniture(int x, int z, String hotspotId) {

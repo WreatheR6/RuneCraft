@@ -26,22 +26,48 @@ public final class ExtrasContent implements ContentModule {
     public static final String HERBIBOAR_BURROW = "ext_herbiboar_burrow";
     public static final String HERBIBOAR_SITE = "ext_herbiboar_site";
 
-    /** A town with a house portal: place id, OSRS coordinates of the portal. */
-    public record PortalTown(String id, String name, int x, int y) {
+    /**
+     * A town with a house portal: place id, OSRS coordinates of the portal, and the estate agent's Construction level and fee
+     * to move a house there (a quest the move needs, or null).
+     */
+    public record PortalTown(String id, String name, int x, int y, int level, int moveCost, String quest) {
         public String place() {
             return "ext_house_portal_" + id;
         }
     }
 
+    /** New houses start in Rimmington, like OSRS. */
+    public static final String START_TOWN = "rimmington";
+
     public static final List<PortalTown> PORTAL_TOWNS = List.of(
-            new PortalTown("rimmington", "Rimmington", 2953, 3224),
-            new PortalTown("taverley", "Taverley", 2894, 3465),
-            new PortalTown("pollnivneach", "Pollnivneach", 3340, 3003),
-            new PortalTown("rellekka", "Rellekka", 2670, 3631),
-            new PortalTown("brimhaven", "Brimhaven", 2758, 3178),
-            new PortalTown("yanille", "Yanille", 2544, 3095),
-            new PortalTown("hosidius", "Hosidius", 1743, 3517),
-            new PortalTown("prifddinas", "Prifddinas", 3239, 6075));
+            new PortalTown("rimmington", "Rimmington", 2953, 3224, 1, 5_000, null),
+            new PortalTown("taverley", "Taverley", 2894, 3465, 10, 5_000, null),
+            new PortalTown("pollnivneach", "Pollnivneach", 3340, 3003, 20, 7_500, null),
+            new PortalTown("rellekka", "Rellekka", 2670, 3631, 30, 10_000, null),
+            new PortalTown("brimhaven", "Brimhaven", 2758, 3178, 40, 15_000, null),
+            new PortalTown("yanille", "Yanille", 2544, 3095, 50, 25_000, null),
+            new PortalTown("hosidius", "Hosidius", 1743, 3517, 25, 8_750, null),
+            new PortalTown("prifddinas", "Prifddinas", 3239, 6075, 70, 50_000, "song_of_the_elves"));
+
+    /** Why a house can't be moved to {@code to}, or null (boosts don't count in OSRS, so pass the real level). */
+    public static String canMove(PortalTown to, String currentTown, int constructionLevel, boolean questDone, long coins) {
+        if (to == null) {
+            return "There's no house portal there.";
+        }
+        if (to.id().equals(currentTown)) {
+            return "Your house is already in " + to.name() + ".";
+        }
+        if (constructionLevel < to.level()) {
+            return "You need a Construction level of " + to.level() + " to move your house to " + to.name() + ".";
+        }
+        if (to.quest() != null && !questDone) {
+            return "You need to complete a quest before you can move your house to " + to.name() + ".";
+        }
+        if (coins < to.moveCost()) {
+            return "It costs " + String.format(Locale.ROOT, "%,d", to.moveCost()) + " coins to move your house to " + to.name() + ".";
+        }
+        return null;
+    }
 
     public static PortalTown portalTown(String id) {
         for (PortalTown t : PORTAL_TOWNS) {

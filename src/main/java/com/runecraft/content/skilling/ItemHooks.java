@@ -9,6 +9,7 @@ import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.Skill;
+import com.runecraft.skill.XpService;
 import com.runecraft.osrs.content.skilling.CookingData;
 import com.runecraft.osrs.content.skilling.FletchingData;
 import com.runecraft.osrs.content.skilling.GatheringData;
@@ -144,6 +145,7 @@ final class ItemHooks {
         if (wreck != null) {
             stack.decrement(1);
             Loot l = SkillingUtil.roll(player, wreck.loot(), player.getRandom());
+            XpService.add(player, Skill.SAILING, wreck.sortXp()); // OSRS: sorting salvage gives Sailing XP
             Msg.action(player, "You sort through the salvage" + (l == null ? "." : " and find " + SkillingUtil.lower(SkillingUtil.name(l.item())) + "."));
             return true;
         }

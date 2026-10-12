@@ -8,6 +8,7 @@ import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.skilling.CookingData;
 import com.runecraft.osrs.content.skilling.SailingData;
+import com.runecraft.quest.QuestApi;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
@@ -83,7 +84,9 @@ final class SailingHooks {
     // ------------------------------------------------------------------ boats
 
     static void launch(ServerPlayerEntity player, ItemStack stack, SailingData.Boat boat) {
-        if (!SkillingUtil.need(player, Skill.SAILING, boat.level(), "sail " + Msg.article(SkillingUtil.lower(boat.name())))) {
+        String why = SailingData.canSail(pandemoniumDone(player), SkillingUtil.level(player, Skill.SAILING), boat);
+        if (why != null) {
+            Msg.game(player, why);
             return;
         }
         Vec3d eye = player.getEyePos();
@@ -104,6 +107,11 @@ final class SailingHooks {
         stack.decrement(1);
         player.getWorld().playSound(null, entity.getBlockPos(), SoundEvents.ENTITY_GENERIC_SPLASH, SoundCategory.PLAYERS, 1f, 1f);
         Msg.action(player, "You launch your " + SkillingUtil.lower(boat.name()) + ".");
+    }
+
+    /** Sailing is taught by the Pandemonium quest (creative players skip it). */
+    static boolean pandemoniumDone(ServerPlayerEntity player) {
+        return player.getAbilities().creativeMode || QuestApi.isComplete(player, SailingData.SAILING_QUEST);
     }
 
     static SailingData.Boat boatOf(Entity vehicle) {
@@ -267,6 +275,10 @@ final class SailingHooks {
             }
             Msg.game(player, "Your current task: deliver a cargo crate from " + from.name() + " to " + dest.name()
                     + ". (Sneak to abandon it.)");
+            return;
+        }
+        if (!pandemoniumDone(player)) {
+            Msg.game(player, "You need to complete Pandemonium before you can take port tasks.");
             return;
         }
         int level = SkillingUtil.level(player, Skill.SAILING);

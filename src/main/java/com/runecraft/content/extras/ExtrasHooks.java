@@ -20,6 +20,7 @@ public final class ExtrasHooks implements ModuleHooks {
         PetService.init();
         HouseService.init();
         HouseFurniture.init();
+        HouseServants.init();
         SailingService.init();
         ExtrasCommands.register();
         com.runecraft.content.systems.SysTeleport.houseTeleport = HouseService::teleportHome;

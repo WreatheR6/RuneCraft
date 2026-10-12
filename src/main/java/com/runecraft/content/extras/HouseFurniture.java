@@ -3,7 +3,10 @@ package com.runecraft.content.extras;
 import com.runecraft.action.Action;
 import com.runecraft.action.ActionManager;
 import com.runecraft.combat.PoisonService;
+import com.runecraft.combat.PrayerService;
 import com.runecraft.content.BlockHooks;
+import com.runecraft.content.systems.RunEnergyService;
+import com.runecraft.content.systems.SpecialAttackService;
 import com.runecraft.content.systems.SysMenus;
 import com.runecraft.menu.MenuService;
 import com.runecraft.network.ServerNetworking;
@@ -12,6 +15,7 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.SkillSet;
 import com.runecraft.osrs.content.extras.HouseLayout;
 import com.runecraft.osrs.content.extras.Poh;
+import com.runecraft.osrs.content.systems.SpecialAttacks;
 import com.runecraft.osrs.content.systems.Spellbooks;
 import com.runecraft.osrs.data.Bone;
 import com.runecraft.player.PlayerData;
@@ -67,7 +71,17 @@ final class HouseFurniture {
         ServerWorld world = (ServerWorld) player.getWorld();
         HouseService.Spot spot = HouseService.locate(world, pos);
         if (spot != null && spot.hotspot() != null && HouseService.building(player) && spot.owner().equals(player.getUuid())) {
-            List<MutableText> links = List.of(ExtrasUtil.link("Remove " + f.name(), "/house unfurnish " + spot.cx() + " " + spot.cz() + " "
+            List<MutableText> links = new ArrayList<>();
+            for (Poh.Furniture up : spot.hotspot().options()) {
+                if (f.id().equals(Poh.upgradeOf(up.id()))) {
+                    boolean ok = ExtrasUtil.level(player, Skill.CONSTRUCTION) >= up.level() && ExtrasUtil.hasAll(player, up.materials());
+                    links.add(ExtrasUtil.link("Upgrade to " + up.name() + " (" + up.level() + ")", "/house furnish " + spot.cx() + " "
+                            + spot.cz() + " " + spot.hotspot().id() + " " + up.id(), up.name() + "\nLevel " + up.level()
+                            + " Construction\n" + ExtrasUtil.materials(up.materials()) + "\n" + up.xp() + " XP",
+                            ok ? Formatting.GREEN : Formatting.DARK_GRAY));
+                }
+            }
+            links.add(ExtrasUtil.link("Remove " + f.name(), "/house unfurnish " + spot.cx() + " " + spot.cz() + " "
                     + spot.hotspot().id(), "Remove it (materials are not returned)", Formatting.RED));
             ExtrasUtil.options(player, f.name() + ":", links);
             return;
@@ -90,6 +104,8 @@ final class HouseFurniture {
             case WORKBENCH -> MenuService.open(player, MenuType.CONSTRUCTION, pos, false);
             case PET_HOUSE -> PetService.petHouse(player, f.power());
             case SPELLBOOK_ALTAR -> spellbookAltar(player, f);
+            case NEXUS -> nexus(player, spot, f);
+            case BELL_PULL -> HouseServants.ring(player);
             case SEAT -> Msg.game(player, "You sit down for a moment on the " + ExtrasUtil.lower(f.name()) + ".");
             case BED -> Msg.game(player, "The " + ExtrasUtil.lower(f.name()) + " looks comfortable.");
             case CHEST -> Msg.game(player, "The " + ExtrasUtil.lower(f.name()) + " is empty.");
@@ -143,7 +159,9 @@ final class HouseFurniture {
         ServerWorld world = (ServerWorld) player.getWorld();
         Bone first = Bone.byItem(Inv.idOf(player.getMainHandStack()));
         if (first == null) {
+            // Praying at a house altar recharges Prayer points like any altar.
             double mult = Poh.altarMultiplier(f, litBurners(world, pos));
+            PrayerService.useAltar(player);
             Msg.game(player, "Hold bones and click the altar to offer them to the gods (" + Math.round(mult * 100) + "% Prayer XP).");
             return;
         }
@@ -156,16 +174,14 @@ final class HouseFurniture {
                     return true;
                 }
                 counter = 0;
-                Bone bone = Bone.byItem(Inv.idOf(p.getMainHandStack()));
-                if (bone == null || p.squaredDistanceTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5) > 25) {
+                if (p.squaredDistanceTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5) > 25) {
                     return false;
                 }
-                double mult = Poh.altarMultiplier(f, litBurners(world, pos));
-                p.getMainHandStack().decrement(1);
-                p.swingHand(Hand.MAIN_HAND, true);
-                XpService.add(p, Skill.PRAYER, bone.xp() * mult);
+                // The bone offering itself is the shared Prayer one, with this altar's multiplier.
+                if (!PrayerService.offerHeldBone(p, Poh.altarMultiplier(f, litBurners(world, pos)))) {
+                    return false;
+                }
                 world.spawnParticles(ParticleTypes.END_ROD, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 6, 0.2, 0.3, 0.2, 0.02);
-                Msg.action(p, "The gods are pleased with your offering.");
                 return true;
             }
         });
@@ -204,23 +220,26 @@ final class HouseFurniture {
     private static void pool(ServerPlayerEntity player, BlockPos pos, Poh.Furniture f) {
         PlayerData data = Players.data(player);
         SkillSet skills = data.skills();
-        int tier = f.power();
-        player.getHungerManager().add(20, 1.0f); // run energy stands in as food/saturation
-        if (tier >= 2) {
+        Poh.PoolEffects fx = Poh.poolEffects(f.power());
+        if (fx.special()) {
+            SpecialAttackService.restoreEnergy(player, SpecialAttacks.MAX_ENERGY);
+        }
+        if (fx.run()) {
+            RunEnergyService.restore(player, 10000);
+        }
+        if (fx.prayer()) {
+            data.setPrayerPoints(skills.level(Skill.PRAYER));
+        }
+        if (fx.stats()) {
             for (Skill s : Skill.values()) {
                 if (skills.boost(s) < 0 && s != Skill.HITPOINTS && s != Skill.PRAYER) {
                     skills.setBoost(s, 0);
                 }
             }
         }
-        if (tier >= 3) {
-            data.setPrayerPoints(skills.level(Skill.PRAYER));
-        }
-        if (tier >= 4) {
-            PoisonService.cure(player, true, 0, ActionManager.gameTick());
-        }
-        if (tier >= 5) {
+        if (fx.hitpoints()) {
             player.setHealth(player.getMaxHealth());
+            PoisonService.cure(player, true, 0, ActionManager.gameTick());
         }
         ServerWorld world = (ServerWorld) player.getWorld();
         world.spawnParticles(ParticleTypes.SPLASH, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 30, 0.4, 0.2, 0.4, 0.1);
@@ -392,6 +411,14 @@ final class HouseFurniture {
             dests = Poh.jewelleryDests(nearby(player, Poh.Effect.JEWELLERY_BOX));
         } else if (kind.equals("spirit")) {
             dests = nearby(player, Poh.Effect.SPIRIT_TREE) > 0 ? Poh.SPIRIT_TREES : List.of();
+        } else if (kind.equals("nexus")) {
+            HouseService.Spot spot = nexusSpot(player);
+            dests = new ArrayList<>();
+            if (spot != null) {
+                for (String id : Poh.nexusList(spot.layout().extraAt(spot.cx(), spot.cz(), spot.hotspot().id()))) {
+                    dests.add(Poh.nexusDest(id));
+                }
+            }
         } else {
             dests = List.of();
         }
@@ -404,6 +431,96 @@ final class HouseFurniture {
             }
         }
         Msg.game(player, "You need to be next to the right furniture in a house to teleport there.");
+    }
+
+    // ------------------------------------------------------------------ portal nexus
+
+    /** The portal nexus hotspot the player is standing at, or null. */
+    private static HouseService.Spot nexusSpot(ServerPlayerEntity player) {
+        ServerWorld world = (ServerWorld) player.getWorld();
+        BlockPos c = player.getBlockPos();
+        for (BlockPos p : BlockPos.iterate(c.add(-4, -2, -4), c.add(4, 2, 4))) {
+            String id = ExtrasUtil.blockId(world.getBlockState(p));
+            Poh.Furniture f = id == null ? null : Poh.byBlock(id);
+            if (f != null && f.effect() == Poh.Effect.NEXUS) {
+                HouseService.Spot spot = HouseService.locate(world, p.toImmutable());
+                if (spot != null && spot.hotspot() != null) {
+                    return spot;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static Map<String, Integer> nexusCost(Poh.Dest d) {
+        Map<String, Integer> cost = new java.util.LinkedHashMap<>();
+        d.runes().forEach((r, n) -> cost.put(r, n * Poh.NEXUS_CASTS));
+        return cost;
+    }
+
+    private static void nexus(ServerPlayerEntity player, HouseService.Spot spot, Poh.Furniture f) {
+        if (spot == null || spot.hotspot() == null) {
+            return;
+        }
+        List<String> stored = Poh.nexusList(spot.layout().extraAt(spot.cx(), spot.cz(), spot.hotspot().id()));
+        List<Poh.Dest> dests = new ArrayList<>();
+        stored.forEach(id -> dests.add(Poh.nexusDest(id)));
+        if (!dests.isEmpty()) {
+            destinations(player, f.name() + " (" + stored.size() + "/" + Poh.nexusCapacity(f.power()) + "):", dests, "nexus");
+        } else {
+            Msg.game(player, "The portal nexus has no teleports yet.");
+        }
+        if (!spot.owner().equals(player.getUuid())) {
+            return;
+        }
+        int magic = ExtrasUtil.level(player, Skill.MAGIC);
+        List<MutableText> links = new ArrayList<>();
+        for (Poh.Dest d : Poh.NEXUS_DESTS) {
+            if (stored.contains(d.id())) {
+                continue;
+            }
+            Map<String, Integer> cost = nexusCost(d);
+            boolean ok = Poh.canAddToNexus(f.power(), stored, d.id(), magic) == null && ExtrasUtil.hasAll(player, cost);
+            links.add(ExtrasUtil.link(d.name(), "/house nexus " + d.id(), "Add a teleport to " + d.name() + "\nLevel " + d.magic()
+                    + " Magic\n" + ExtrasUtil.materials(cost), ok ? Formatting.GREEN : Formatting.DARK_GRAY));
+        }
+        if (!links.isEmpty()) {
+            ExtrasUtil.options(player, "Add a teleport:", links);
+        }
+    }
+
+    static void addToNexus(ServerPlayerEntity player, String destId) {
+        HouseService.Spot spot = nexusSpot(player);
+        if (spot == null || !spot.owner().equals(player.getUuid())) {
+            Msg.game(player, "You need to be next to the portal nexus in your own house.");
+            return;
+        }
+        String hotspot = spot.hotspot().id();
+        String builtId = spot.layout().furnitureAt(spot.cx(), spot.cz(), hotspot);
+        Poh.Furniture f = builtId == null ? null : Poh.furniture(builtId);
+        if (f == null || f.effect() != Poh.Effect.NEXUS) {
+            return;
+        }
+        List<String> stored = Poh.nexusList(spot.layout().extraAt(spot.cx(), spot.cz(), hotspot));
+        String why = Poh.canAddToNexus(f.power(), stored, destId, ExtrasUtil.level(player, Skill.MAGIC));
+        if (why != null) {
+            Msg.game(player, why);
+            return;
+        }
+        Poh.Dest d = Poh.nexusDest(destId);
+        Map<String, Integer> cost = nexusCost(d);
+        if (!player.getAbilities().creativeMode) {
+            if (!ExtrasUtil.hasAll(player, cost)) {
+                Msg.game(player, "You need " + ExtrasUtil.materials(cost) + " to add that teleport.");
+                return;
+            }
+            ExtrasUtil.removeAll(player, cost);
+        }
+        stored.add(destId);
+        HouseLayout layout = spot.layout();
+        layout.setExtra(spot.cx(), spot.cz(), hotspot, String.join(",", stored));
+        HouseService.save(player.getServer(), player.getUuid(), layout);
+        Msg.action(player, "You add a teleport to " + d.name() + " to your portal nexus.");
     }
 
     /** Highest power of a furniture type within 4 blocks (0 = none). */

@@ -131,13 +131,7 @@ public final class PrayerService {
     /** Altar: offer bones held in hand (350% XP) or recharge prayer points. */
     public static void useAltar(ServerPlayerEntity player) {
         PlayerData data = Players.data(player);
-        ItemStack held = player.getMainHandStack();
-        Bone bone = held.isEmpty() ? null : Bone.byItem(Inv.idOf(held));
-        if (bone != null) {
-            held.decrement(1);
-            XpService.add(player, Skill.PRAYER, bone.xp() * Bone.ALTAR_MULTIPLIER);
-            Msg.action(player, "The gods are very pleased with your offering.");
-            player.swingHand(net.minecraft.util.Hand.MAIN_HAND, true);
+        if (offerHeldBone(player, Bone.ALTAR_MULTIPLIER)) {
             return;
         }
         // Altars restore Prayer points to the base level (a boosted or drained level doesn't change the cap).
@@ -150,6 +144,23 @@ public final class PrayerService {
         player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 0.6f, 1.0f);
         Msg.game(player, "You recharge your Prayer points.");
         ServerNetworking.sync(player);
+    }
+
+    /**
+     * Offers the bone held in the main hand at an altar for {@code multiplier} times its burying XP (house altars pass their
+     * own multiplier, e.g. 3.5 for a gilded altar with two lit burners). Returns false if no bone is held.
+     */
+    public static boolean offerHeldBone(ServerPlayerEntity player, double multiplier) {
+        ItemStack held = player.getMainHandStack();
+        Bone bone = held.isEmpty() ? null : Bone.byItem(Inv.idOf(held));
+        if (bone == null) {
+            return false;
+        }
+        held.decrement(1);
+        XpService.add(player, Skill.PRAYER, bone.xp() * multiplier);
+        Msg.action(player, multiplier >= 3 ? "The gods are very pleased with your offering." : "The gods are pleased with your offering.");
+        player.swingHand(net.minecraft.util.Hand.MAIN_HAND, true);
+        return true;
     }
 
     public static boolean inGielinor(ServerPlayerEntity player) {

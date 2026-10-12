@@ -107,7 +107,8 @@ class ExtrasContentTest {
                 Map.entry("chapel", new int[]{45, 50000}), Map.entry("portal_chamber", new int[]{50, 100000}),
                 Map.entry("throne_room", new int[]{60, 150000}), Map.entry("oubliette", new int[]{65, 150000}),
                 Map.entry("superior_garden", new int[]{65, 75000}), Map.entry("dungeon", new int[]{70, 7500}),
-                Map.entry("treasure_room", new int[]{75, 250000}), Map.entry("achievement_gallery", new int[]{80, 200000}));
+                Map.entry("treasure_room", new int[]{75, 250000}), Map.entry("achievement_gallery", new int[]{80, 200000}),
+                Map.entry("portal_nexus", new int[]{72, 200000}));
         assertEquals(expected.size(), Poh.ROOMS.size());
         expected.forEach((id, lc) -> {
             Poh.Room r = Poh.room(id);
@@ -227,7 +228,7 @@ class ExtrasContentTest {
             assertTrue(ItemCatalog.exists(b.deed()), b.deed());
             b.build().keySet().forEach(m -> assertTrue(ItemCatalog.exists(m), b.id() + " material " + m));
         }
-        assertEquals(12, Seafaring.PORTS.size());
+        assertEquals(15, Seafaring.PORTS.size());
         Set<String> names = new HashSet<>();
         Seafaring.PORTS.forEach(p -> names.add(p.name()));
         for (String n : List.of("Port Sarim", "Catherby", "Brimhaven", "Port Khazard", "Rellekka", "Port Piscarilius", "Land's End",
@@ -241,12 +242,12 @@ class ExtrasContentTest {
         Seafaring.BoatTier sloop = Seafaring.boat("sloop");
         assertTrue(Seafaring.voyageXp(sarim, catherby, sloop) > Seafaring.voyageXp(sarim, catherby, raft));
         assertTrue(Seafaring.voyageXp(sarim, aldarin, raft) > Seafaring.voyageXp(sarim, catherby, raft));
-        assertNull(Seafaring.canVoyage(10, raft, sarim, catherby));
-        assertNotNull(Seafaring.canVoyage(9, raft, sarim, catherby));
+        assertNull(Seafaring.canVoyage(20, raft, sarim, catherby));
+        assertNotNull(Seafaring.canVoyage(19, raft, sarim, catherby));
         assertNotNull(Seafaring.canVoyage(99, null, sarim, catherby));
         assertNotNull(Seafaring.canVoyage(30, sloop, sarim, catherby));
         assertNotNull(Seafaring.canVoyage(99, sloop, sarim, sarim));
         assertTrue(Seafaring.charterFare(sarim, aldarin) > Seafaring.charterFare(sarim, catherby));
-        assertEquals(45, Seafaring.FEATURES.get("Sail a sloop"));
+        assertEquals(50, Seafaring.FEATURES.get("Sail a sloop"));
     }
 }
