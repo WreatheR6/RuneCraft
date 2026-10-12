@@ -13,8 +13,10 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Treasure trails: clue tiers, step generation (coordinate digs, map digs, anagrams, cryptic clues and
- * Charlie-style item fetches) at real Gielinor coordinates and for the NPCs that exist in the world.
+ * Treasure trails: clue tiers, step generation (coordinate and map digs, hot/cold digs with the strange
+ * device, emote clues, anagrams, ciphers, cryptic clues and Charlie-style item fetches) at real Gielinor
+ * coordinates and for the NPCs that exist in the world. Step counts and the step types each tier can roll
+ * follow the OSRS wiki; puzzle boxes, light boxes and Falo the Bard are not simulated.
  */
 public final class ClueScrolls {
     public enum Tier {
@@ -86,13 +88,43 @@ public final class ClueScrolls {
         }
     }
 
-    public enum StepType { COORDINATE, MAP, ANAGRAM, CRYPTIC, CHARLIE }
+    public enum StepType { COORDINATE, MAP, ANAGRAM, CRYPTIC, CHARLIE, EMOTE, CIPHER, HOT_COLD }
 
-    /** One clue step. Dig steps use (x, y); talk steps use npcId (and item for Charlie steps). */
-    public record Step(StepType type, String text, int x, int y, String npcId, String npcName, String item) {
-        public boolean isDig() {
-            return type == StepType.COORDINATE || type == StepType.MAP;
+    /**
+     * One clue step. Dig and emote steps use (x, y); talk steps use npcId (and item for Charlie steps).
+     * Emote steps name the emote and may need an item carried or worn.
+     */
+    public record Step(StepType type, String text, int x, int y, String npcId, String npcName, String item, String emote) {
+        public Step(StepType type, String text, int x, int y, String npcId, String npcName, String item) {
+            this(type, text, x, y, npcId, npcName, item, null);
         }
+
+        public boolean isDig() {
+            return type == StepType.COORDINATE || type == StepType.MAP || type == StepType.HOT_COLD;
+        }
+
+        public boolean isTalk() {
+            return npcId != null;
+        }
+    }
+
+    /** OSRS emotes used by emote clues. */
+    public static final List<String> EMOTES = List.of("Bow", "Wave", "Clap", "Cheer", "Dance", "Jig", "Spin", "Headbang", "Shrug",
+            "Think", "Yawn", "Salute", "Panic", "Beckon", "Cry", "Laugh", "Jump for Joy", "Raspberry", "Blow Kiss", "Angry", "Yes",
+            "No", "Goblin Salute", "Push up", "Idea", "Stamp", "Flap", "Slap Head");
+
+    /** Step types each tier can roll (repeats weight them), after the OSRS wiki. */
+    public static List<StepType> types(Tier tier) {
+        return switch (tier) {
+            case BEGINNER -> List.of(StepType.ANAGRAM, StepType.CRYPTIC, StepType.EMOTE, StepType.HOT_COLD, StepType.MAP, StepType.CHARLIE);
+            case EASY -> List.of(StepType.ANAGRAM, StepType.CRYPTIC, StepType.CRYPTIC, StepType.EMOTE, StepType.EMOTE, StepType.MAP);
+            case MEDIUM, HARD -> List.of(StepType.ANAGRAM, StepType.CIPHER, StepType.COORDINATE, StepType.COORDINATE, StepType.CRYPTIC,
+                    StepType.EMOTE, StepType.MAP);
+            case ELITE -> List.of(StepType.ANAGRAM, StepType.COORDINATE, StepType.COORDINATE, StepType.CRYPTIC, StepType.EMOTE,
+                    StepType.MAP);
+            case MASTER -> List.of(StepType.ANAGRAM, StepType.COORDINATE, StepType.COORDINATE, StepType.CRYPTIC, StepType.EMOTE,
+                    StepType.HOT_COLD);
+        };
     }
 
     /** An NPC that can be the target of a talk step. */
@@ -107,7 +139,7 @@ public final class ClueScrolls {
             new Spot("Draynor Village market", 3081, 3251), new Spot("the Champions' Guild", 3191, 3360),
             new Spot("Varrock Palace garden", 3215, 3474), new Spot("Barbarian Village", 3082, 3420),
             new Spot("Falador Park", 3005, 3376), new Spot("Rimmington mine", 2977, 3240),
-            new Spot("the Port Sarim docks", 3036, 3194), new Spot("the Al Kharid toll gate", 3268, 3227),
+            new Spot("the Port Sarim docks", 3029, 3205), new Spot("the Al Kharid toll gate", 3268, 3227),
             new Spot("the Wizards' Tower", 3109, 3152), new Spot("the Lumbridge Swamp", 3166, 3172),
             new Spot("Edgeville Monastery", 3051, 3484));
     private static final List<Spot> MID = List.of(
@@ -122,7 +154,7 @@ public final class ClueScrolls {
             new Spot("Port Phasmatys", 3687, 3502), new Spot("Lletya", 2340, 3170), new Spot("Nardah", 3428, 2892),
             new Spot("Trollheim", 2890, 3676), new Spot("the Barrows", 3565, 3288), new Spot("the TzHaar entrance", 2845, 3170),
             new Spot("the Wilderness Agility Course", 2998, 3913), new Spot("the Chaos Temple in the Wilderness", 3236, 3635),
-            new Spot("Ape Atoll", 2770, 2703), new Spot("Mort'ton", 3489, 3288));
+            new Spot("Ape Atoll", 2755, 2780), new Spot("Mort'ton", 3489, 3288));
     private static final List<Spot> EXOTIC = List.of(
             new Spot("Lunar Isle", 2100, 3914), new Spot("Zul-Andra", 2197, 3055), new Spot("Fossil Island", 3724, 3808),
             new Spot("Kourend Castle", 1643, 3673), new Spot("the Wintertodt camp", 1630, 3940),
@@ -214,14 +246,9 @@ public final class ClueScrolls {
     }
 
     static Step step(Tier tier, Random random, List<Npc> npcs) {
-        List<StepType> types = switch (tier) {
-            case BEGINNER, EASY -> List.of(StepType.MAP, StepType.ANAGRAM, StepType.CRYPTIC, StepType.CHARLIE);
-            case MEDIUM -> List.of(StepType.COORDINATE, StepType.COORDINATE, StepType.MAP, StepType.ANAGRAM, StepType.CRYPTIC);
-            default -> List.of(StepType.COORDINATE, StepType.COORDINATE, StepType.COORDINATE, StepType.MAP, StepType.ANAGRAM,
-                    StepType.CRYPTIC);
-        };
+        List<StepType> types = types(tier);
         StepType type = types.get(random.nextInt(types.size()));
-        if ((type == StepType.ANAGRAM || type == StepType.CRYPTIC || type == StepType.CHARLIE) && npcs.isEmpty()) {
+        if ((type == StepType.ANAGRAM || type == StepType.CRYPTIC || type == StepType.CHARLIE || type == StepType.CIPHER) && npcs.isEmpty()) {
             type = StepType.MAP;
         }
         switch (type) {
@@ -244,6 +271,30 @@ public final class ClueScrolls {
             case CRYPTIC -> {
                 Npc npc = npcs.get(random.nextInt(npcs.size()));
                 return new Step(type, cryptic(npc), npc.x(), npc.y(), npc.id(), npc.name(), null);
+            }
+            case CIPHER -> {
+                Npc npc = npcs.get(random.nextInt(npcs.size()));
+                return new Step(type, "The cipher reads: " + cipher(npc.name(), 1 + random.nextInt(25)), npc.x(), npc.y(), npc.id(),
+                        npc.name(), null);
+            }
+            case HOT_COLD -> {
+                Spot s = spot(tier, random);
+                int x = s.x() + random.nextInt(9) - 4;
+                int y = s.y() + random.nextInt(9) - 4;
+                return new Step(type, "Buried treasure awaits " + (tier == Tier.BEGINNER ? "somewhere in the lands around Lumbridge"
+                        : "somewhere in Gielinor") + ". Feel the strange device to find out how close you are, then dig.", x, y, null,
+                        null, null);
+            }
+            case EMOTE -> {
+                Spot s = spot(tier, random);
+                String emote = EMOTES.get(random.nextInt(EMOTES.size()));
+                String item = null;
+                if (tier != Tier.BEGINNER) {
+                    List<String> equip = FETCH.get(tier);
+                    item = equip.get(random.nextInt(equip.size()));
+                }
+                return new Step(type, emote + " at " + s.description() + "." + (item == null ? "" : " Equip or carry: "
+                        + item.replace('_', ' ') + "."), s.x(), s.y(), null, null, item, emote);
             }
             default -> {
                 Npc npc = npcs.get(random.nextInt(npcs.size()));
@@ -287,6 +338,62 @@ public final class ClueScrolls {
         String ns = dy > 60 ? "north" : dy < -60 ? "south" : "";
         String ew = dx > 60 ? "east" : dx < -60 ? "west" : "";
         return "far to the " + ns + (ns.isEmpty() || ew.isEmpty() ? "" : "-") + ew + " of Lumbridge";
+    }
+
+    /** OSRS cipher clues: the NPC's name Caesar-shifted by {@code shift} letters, in capitals. */
+    public static String cipher(String name, int shift) {
+        StringBuilder sb = new StringBuilder();
+        for (char c : name.toUpperCase(Locale.ROOT).toCharArray()) {
+            sb.append(c >= 'A' && c <= 'Z' ? (char) ('A' + (c - 'A' + shift) % 26) : c);
+        }
+        return sb.toString();
+    }
+
+    /** Hot/cold strange device reading for a distance in tiles (OSRS temperatures). */
+    public static String temperature(int distance) {
+        if (distance <= 4) {
+            return "incredibly hot";
+        }
+        if (distance <= 10) {
+            return "very hot";
+        }
+        if (distance <= 30) {
+            return "hot";
+        }
+        if (distance <= 70) {
+            return "warm";
+        }
+        if (distance <= 150) {
+            return "cold";
+        }
+        if (distance <= 300) {
+            return "very cold";
+        }
+        return "ice cold";
+    }
+
+    /** Emote steps are performed within this many tiles of the spot. */
+    public static final int EMOTE_RADIUS = 6;
+
+    /** Every dig/emote spot of every tier (for tests). */
+    public static List<int[]> allSpots() {
+        List<int[]> out = new ArrayList<>();
+        for (List<Spot> pool : List.of(NEAR, MID, FAR, EXOTIC)) {
+            for (Spot s : pool) {
+                out.add(new int[]{s.x(), s.y()});
+            }
+        }
+        return out;
+    }
+
+    /** Ids of the characters the hand-written cryptic clues point to (for tests). */
+    public static java.util.Set<String> crypticTargets() {
+        return CRYPTIC.keySet();
+    }
+
+    /** Items emote/Charlie steps can ask for (for tests). */
+    public static List<String> fetchItems(Tier tier) {
+        return FETCH.get(tier);
     }
 
     /** Scrambles a name into an upper-case anagram (never the name itself). */

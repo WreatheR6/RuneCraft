@@ -237,7 +237,7 @@ class SystemsDataTest {
                     if (s.item() != null) {
                         assertNotNull(ItemCatalog.get(s.item()), "fetch item " + s.item());
                     }
-                    if (!s.isDig()) {
+                    if (!s.isDig() && s.type() != ClueScrolls.StepType.EMOTE) {
                         assertNotNull(s.npcId());
                     }
                 }
@@ -274,7 +274,7 @@ class SystemsDataTest {
         assertTrue(ClueRewards.megaRares(ClueScrolls.Tier.MASTER).contains("bloodhound"));
         assertTrue(ClueRewards.uniques(ClueScrolls.Tier.HARD).contains("robin_hood_hat"));
         assertTrue(ClueRewards.uniques(ClueScrolls.Tier.HARD).contains("saradomin_page_1"));
-        assertTrue(ClueRewards.uniques(ClueScrolls.Tier.MEDIUM).contains("holy_sandals"));
+        assertTrue(ClueRewards.megaRares(ClueScrolls.Tier.MEDIUM).contains("holy_sandals"));
         assertEquals(0, ClueRewards.masterClueOneIn(ClueScrolls.Tier.BEGINNER));
         assertEquals(5, ClueRewards.masterClueOneIn(ClueScrolls.Tier.ELITE));
     }
@@ -352,7 +352,7 @@ class SystemsDataTest {
                 }
                 case VISIT -> assertEquals(3, Diaries.visitTarget(t.target()).length);
                 case HAVE, MAKE -> {
-                    if (!t.target().startsWith("*")) {
+                    if (!t.target().startsWith("*") && !t.target().contains("|")) {
                         assertNotNull(ItemCatalog.get(t.target()), t.id() + " item " + t.target());
                     }
                 }

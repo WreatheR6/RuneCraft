@@ -32,14 +32,14 @@ public final class ClueRewards {
 
     /** Uniques per tier (the clue collection log pages). */
     private static final Map<Tier, List<String>> UNIQUES = new EnumMap<>(Tier.class);
-    /** Very rare rewards (3rd age, gilded, ranger boots, bloodhound...). */
-    private static final Map<Tier, List<String>> MEGA = new EnumMap<>(Tier.class);
+    /** Very rare rewards (3rd age, gilded, ranger boots, bloodhound...): item -> 1-in-n chance per casket. */
+    private static final Map<Tier, Map<String, Integer>> MEGA = new EnumMap<>(Tier.class);
     private static final Map<Tier, List<Loot>> STANDARD = new EnumMap<>(Tier.class);
 
     static {
         for (Tier t : Tier.values()) {
             UNIQUES.put(t, new ArrayList<>());
-            MEGA.put(t, new ArrayList<>());
+            MEGA.put(t, new LinkedHashMap<>());
             STANDARD.put(t, new ArrayList<>());
         }
         std(Tier.BEGINNER, "coins", 15, 195, 30);
@@ -138,10 +138,13 @@ public final class ClueRewards {
         }
     }
 
-    private static void mega(Tier t, String id) {
-        if (!MEGA.get(t).contains(id)) {
-            MEGA.get(t).add(id);
-        }
+    /** OSRS per-casket rates of one 3rd age piece (wiki: hard 1/211,250, elite 1/249,262.5, master 1/313,168). */
+    public static final int THIRD_AGE_HARD = 211_250;
+    public static final int THIRD_AGE_ELITE = 249_262;
+    public static final int THIRD_AGE_MASTER = 313_168;
+
+    private static void mega(Tier t, String id, int oneInPerCasket) {
+        MEGA.get(t).putIfAbsent(id, oneInPerCasket);
     }
 
     private static final EquipmentStats ZERO = EquipmentStats.NONE;
@@ -264,20 +267,22 @@ public final class ClueRewards {
         Defs.bow(items, "willow_comp_bow", "Willow comp bow", "shortbow", 0x9A8A4A, 3000, st(0, 0, 0, 0, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0),
                 req(Skill.RANGED, 20), 5);
         unique(E, "willow_comp_bow");
+        unique(E, "black_pickaxe");
 
         // ---------------- Medium ----------------
         Tier M = Tier.MEDIUM;
+        trimmedPlate(items, M, "mithril", 0x4A4A7A, 6000);
         trimmedPlate(items, M, "adamant", 0x3A6A4A, 12000);
         dhideTrim(items, M, "green");
         Defs.armour(items, "ranger_boots", "Ranger boots", "boots", 0x3A7A3A, "leather", 200000, Slot.FEET,
                 st(0, 0, 0, 0, 8, 2, 3, 4, 2, 0, 0, 0, 0, 0), req(Skill.RANGED, 40));
-        mega(M, "ranger_boots");
+        mega(M, "ranger_boots", 1_133); // approx: OSRS ~1/1,133 per casket
         Defs.armour(items, "wizard_boots", "Wizard boots", "boots", 0x3050C0, "leather", 40000, Slot.FEET,
                 st(0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), req(Skill.MAGIC, 20));
         Defs.armour(items, "holy_sandals", "Holy sandals", "boots", 0xE0D090, "leather", 20000, Slot.FEET,
                 st(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3), Map.of());
-        unique(M, "wizard_boots");
-        unique(M, "holy_sandals");
+        mega(M, "wizard_boots", 1_133); // approx
+        mega(M, "holy_sandals", 1_133); // approx
         for (String c : new String[]{"red", "black", "brown"}) {
             int col = c.equals("red") ? 0xC03030 : c.equals("black") ? 0x202020 : 0x6A4A2A;
             Defs.armour(items, c + "_headband", Defs.cap(c) + " headband", "cowl", col, "leather", 5000, Slot.HEAD,
@@ -291,10 +296,10 @@ public final class ClueRewards {
         cosmeticArmour(items, M, "white_elegant_skirt", "White elegant skirt", "chaps", 0xE0E0E0, Slot.LEGS, 5000);
         Defs.armour(items, "climbing_boots_g", "Climbing boots (g)", "boots", 0xD8B030, "leather", 10000, Slot.FEET,
                 st(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0), Map.of());
-        unique(M, "climbing_boots_g");
+        mega(M, "climbing_boots_g", 1_133); // approx
         Defs.armour(items, "spiked_manacles", "Spiked manacles", "boots", 0x6A6A6A, "leather", 10000, Slot.FEET,
                 st(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0), Map.of());
-        unique(M, "spiked_manacles");
+        mega(M, "spiked_manacles", 1_133); // approx
         Defs.melee(items, "adamant_cane", "Adamant cane", "club", 0x3A6A4A, "adamant", 10000, st(0, 0, 25, 0, 0, 0, 0, 0, 0, 0, 23, 0, 0, 0),
                 req(Skill.ATTACK, 30), 4, AttackType.CRUSH);
         unique(M, "adamant_cane");
@@ -351,15 +356,15 @@ public final class ClueRewards {
             String id = "gilded_" + Defs.suffix(p);
             Defs.armour(items, id, "Gilded " + Defs.label(p), Defs.shape(p), 0xE8C030, "rune", 400000, Defs.slot(p),
                     Defs.plate("rune", p), req(Skill.DEFENCE, 40)).examine("Gilded rune armour from a treasure trail.");
-            mega(L, id);
-            mega(H, id);
+            mega(L, id, 20_000); // approx
+            mega(H, id, 30_000); // approx
         }
         Defs.melee(items, "gilded_scimitar", "Gilded scimitar", "scimitar", 0xE8C030, "rune", 300000,
                 st(7, 45, -2, 0, 0, 0, 1, 0, 0, 0, 44, 0, 0, 0), req(Skill.ATTACK, 40), 4, AttackType.SLASH);
         Defs.armour(items, "gilded_boots", "Gilded boots", "boots", 0xE8C030, "rune", 200000, Slot.FEET,
                 st(0, 0, 0, -3, -1, 12, 13, 14, 0, 0, 1, 0, 0, 0), req(Skill.DEFENCE, 40));
-        mega(L, "gilded_scimitar");
-        mega(L, "gilded_boots");
+        mega(L, "gilded_scimitar", 20_000); // approx
+        mega(L, "gilded_boots", 20_000); // approx
         dhideTrim(items, L, "black");
         Defs.armour(items, "rangers_tunic", "Rangers' tunic", "leather_body", 0x3A7A3A, "leather", 100000, Slot.CHEST,
                 st(0, 0, 0, -10, 14, 22, 24, 26, 22, 30, 0, 0, 0, 0), req(Skill.RANGED, 40));
@@ -404,7 +409,7 @@ public final class ClueRewards {
         cosmeticArmour(items, S, "mummys_feet", "Mummy's feet", "boots", 0xD8D0B0, Slot.FEET, 80000);
         cosmeticWorn(items, S, "mummys_hands", "Mummy's hands", "gloves", 0xD8D0B0, Jewellery.Slot.HANDS, 80000);
         items.add("bloodhound", "Bloodhound", Kind.SIMPLE, "pet", 0x8A5A3A).value(1).stack(1).examine("A loyal treasure-seeking hound.");
-        mega(S, "bloodhound");
+        mega(S, "bloodhound", 1_000);
         cosmeticArmour(items, S, "half_moon_spectacles", "Half moon spectacles", "cowl", 0xC0C0C0, Slot.HEAD, 80000);
         Defs.melee(items, "ale_of_the_gods", "Ale of the gods", "beer", 0xC08030, "rune", 80000, ZERO, Map.of(), 4, AttackType.CRUSH);
         unique(S, "ale_of_the_gods");
@@ -460,18 +465,18 @@ public final class ClueRewards {
         for (String id : new String[]{"3rd_age_range_coif", "3rd_age_range_top", "3rd_age_range_legs", "3rd_age_vambraces",
                 "3rd_age_mage_hat", "3rd_age_robe_top", "3rd_age_robe", "3rd_age_amulet", "3rd_age_full_helmet",
                 "3rd_age_platebody", "3rd_age_platelegs", "3rd_age_kiteshield"}) {
-            mega(Tier.HARD, id);
-            mega(Tier.ELITE, id);
-            mega(Tier.MASTER, id);
+            mega(Tier.HARD, id, THIRD_AGE_HARD);
+            mega(Tier.ELITE, id, THIRD_AGE_ELITE);
+            mega(Tier.MASTER, id, THIRD_AGE_MASTER);
         }
         Defs.worn(items, "3rd_age_cloak", "3rd age cloak", "cape", white, 5000000, Jewellery.Slot.CAPE,
                 st(0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 0, 0, 0, 3), Map.of(), Jewellery.Perk.NONE, List.of());
         Defs.staff(items, "3rd_age_wand", "3rd age wand", "staff", white, 5000000, st(0, 0, 0, 15, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0),
                 req(Skill.MAGIC, 65));
-        mega(Tier.ELITE, "3rd_age_cloak");
-        mega(Tier.ELITE, "3rd_age_wand");
-        mega(Tier.MASTER, "3rd_age_cloak");
-        mega(Tier.MASTER, "3rd_age_wand");
+        mega(Tier.ELITE, "3rd_age_cloak", THIRD_AGE_ELITE);
+        mega(Tier.ELITE, "3rd_age_wand", THIRD_AGE_ELITE);
+        mega(Tier.MASTER, "3rd_age_cloak", THIRD_AGE_MASTER);
+        mega(Tier.MASTER, "3rd_age_wand", THIRD_AGE_MASTER);
         Defs.bow(items, "3rd_age_bow", "3rd age bow", "shortbow", white, 20000000, st(0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0),
                 req(Skill.RANGED, 65), 4);
         Defs.melee(items, "3rd_age_longsword", "3rd age longsword", "longsword", white, "dragon", 20000000,
@@ -493,7 +498,7 @@ public final class ClueRewards {
                 st(0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 30, 0, 0, 6), druid);
         for (String id : new String[]{"3rd_age_bow", "3rd_age_longsword", "3rd_age_pickaxe", "3rd_age_axe", "3rd_age_druidic_robe_top",
                 "3rd_age_druidic_robe_bottoms", "3rd_age_druidic_cloak", "3rd_age_druidic_staff"}) {
-            mega(Tier.MASTER, id);
+            mega(Tier.MASTER, id, THIRD_AGE_MASTER);
         }
     }
 
@@ -510,15 +515,10 @@ public final class ClueRewards {
         };
     }
 
-    /** Chance (1 in n) per casket of a mega-rare (0 = none). */
-    public static int megaOneIn(Tier t) {
-        return switch (t) {
-            case BEGINNER, EASY -> 0;
-            case MEDIUM -> 1133;
-            case HARD -> 1625;
-            case ELITE -> 1250;
-            case MASTER -> 1000;
-        };
+    /** Chance (1 in n) per casket of a given mega-rare (0 = not on this tier's table). */
+    public static int megaOneIn(Tier t, String item) {
+        ensureLoaded();
+        return MEGA.get(t).getOrDefault(item, 0);
     }
 
     /** Chance (1 in n) per casket of a master clue scroll (0 = none). */
@@ -550,9 +550,10 @@ public final class ClueRewards {
             Loot l = pick(STANDARD.get(tier), random);
             out.merge(l.item(), l.min() + random.nextInt(l.max() - l.min() + 1), Integer::sum);
         }
-        int mega = megaOneIn(tier);
-        if (mega > 0 && !MEGA.get(tier).isEmpty() && random.nextInt(mega) == 0) {
-            out.merge(MEGA.get(tier).get(random.nextInt(MEGA.get(tier).size())), 1, Integer::sum);
+        for (Map.Entry<String, Integer> m : MEGA.get(tier).entrySet()) {
+            if (random.nextInt(m.getValue()) == 0) {
+                out.merge(m.getKey(), 1, Integer::sum);
+            }
         }
         int master = masterClueOneIn(tier);
         if (master > 0 && random.nextInt(master) == 0) {
@@ -585,7 +586,7 @@ public final class ClueRewards {
 
     public static List<String> megaRares(Tier t) {
         ensureLoaded();
-        return MEGA.get(t);
+        return new ArrayList<>(MEGA.get(t).keySet());
     }
 
     public static List<Loot> standard(Tier t) {
@@ -596,7 +597,7 @@ public final class ClueRewards {
     public static List<String> logItems(Tier t) {
         ensureLoaded();
         List<String> all = new ArrayList<>(UNIQUES.get(t));
-        for (String m : MEGA.get(t)) {
+        for (String m : MEGA.get(t).keySet()) {
             if (!all.contains(m)) {
                 all.add(m);
             }

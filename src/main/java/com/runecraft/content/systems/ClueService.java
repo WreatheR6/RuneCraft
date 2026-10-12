@@ -70,10 +70,20 @@ public final class ClueService {
         }
         s.line("Step " + (index + 1) + " of " + steps.size(), 0xC0C0C0);
         s.line(step.text(), 0xF0E0A0);
+        if (step.type() == ClueScrolls.StepType.HOT_COLD) {
+            s.line("Feel the strange device: the hotter it gets, the closer you are.", 0xA0A0A0);
+            s.button("hint:" + tier.name(), "Feel the device");
+            s.button("dig:" + tier.name(), "Dig here");
+            s.send(p);
+            return;
+        }
         if (step.isDig()) {
             s.line(spadeExists() ? "Dig at the spot with a spade (or use the button while standing there)." : "Dig at the spot (use the button while standing there).",
                     0xA0A0A0);
             s.button("dig:" + tier.name(), "Dig here");
+        } else if (step.type() == ClueScrolls.StepType.EMOTE) {
+            s.line("Stand at the spot and perform the emote.", 0xA0A0A0);
+            s.button("emote:" + tier.name(), "Perform " + step.emote());
         } else if (step.type() == ClueScrolls.StepType.CHARLIE) {
             s.line("Talk to them while carrying the item.", 0xA0A0A0);
         } else {
@@ -91,11 +101,23 @@ public final class ClueService {
         if (action.startsWith("hint:")) {
             try {
                 Step step = current(SysState.of(p), Tier.valueOf(action.substring(5)));
-                if (step != null) {
+                if (step != null && step.type() == ClueScrolls.StepType.HOT_COLD) {
+                    int[] at = SysTeleport.osrs(p);
+                    int dist = Gielinor.is(p) ? (int) Math.sqrt(Math.pow(step.x() - at[0], 2) + Math.pow(step.y() - at[1], 2)) : Integer.MAX_VALUE;
+                    Msg.game(p, "The device is " + ClueScrolls.temperature(dist) + ".");
+                } else if (step != null) {
                     int[] at = SysTeleport.osrs(p);
                     Msg.game(p, Gielinor.is(p) ? "Hint: the next step is " + hint(at[0], at[1], step.x(), step.y()) + "."
                             : "Hint: the next step is in Gielinor near OSRS coordinates " + step.x() + ", " + step.y() + ".");
                 }
+            } catch (IllegalArgumentException ignored) {
+                // bad tier
+            }
+            return;
+        }
+        if (action.startsWith("emote:")) {
+            try {
+                emote(p, Tier.valueOf(action.substring(6)));
             } catch (IllegalArgumentException ignored) {
                 // bad tier
             }
@@ -139,6 +161,36 @@ public final class ClueService {
         Msg.action(p, "You dig a hole...");
         advance(p, tier);
         return true;
+    }
+
+    /** Performs the current emote step: right place, and the required item carried or worn. */
+    static void emote(ServerPlayerEntity p, Tier tier) {
+        if (!Inv.has(p, tier.scrollItem(), 1)) {
+            return;
+        }
+        SysState.SysPlayer sp = SysState.of(p);
+        Step step = current(sp, tier);
+        if (step == null || step.type() != ClueScrolls.StepType.EMOTE) {
+            return;
+        }
+        Msg.action(p, "You perform the " + step.emote() + " emote.");
+        int[] at = SysTeleport.osrs(p);
+        if (!Gielinor.is(p) || !Teleports.within(at[0], at[1], step.x(), step.y(), ClueScrolls.EMOTE_RADIUS)) {
+            Msg.game(p, "Nothing happens. Hint: the spot is " + hint(at[0], at[1], step.x(), step.y()) + ".");
+            return;
+        }
+        if (step.item() != null && !Inv.has(p, step.item(), 1) && !sp.wearing(step.item())
+                && !Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD)).equals(step.item())
+                && !Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST)).equals(step.item())
+                && !Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.LEGS)).equals(step.item())
+                && !Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.FEET)).equals(step.item())) {
+            ItemDef d = ItemCatalog.get(step.item());
+            Msg.game(p, "Uri appears, then shakes his head: you need " + (d == null ? step.item() : Msg.article(d.name().toLowerCase(Locale.ROOT)))
+                    + " with you.");
+            return;
+        }
+        say(p, "Uri", "Once, I was a poor man, but then I found a party hat. Here is your next clue.");
+        advance(p, tier);
     }
 
     /** A rough compass hint (OSRS players use a sextant; this keeps trails solvable in a block world). */
@@ -195,6 +247,7 @@ public final class ClueService {
             sp.clues.remove(tier);
             Inv.give(p, tier.casketItem(), 1);
             int n = sp.cluesCompleted.merge(tier, 1, Integer::sum);
+            com.runecraft.player.Players.data(p).incrementKillCount("clue_" + tier.id());
             Msg.action(p, "You've found a reward casket!");
             p.sendMessage(Text.literal("You have completed " + n + " " + tier.id() + " Treasure Trail" + (n == 1 ? "" : "s") + ".")
                     .formatted(Formatting.GOLD), false);

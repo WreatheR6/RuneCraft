@@ -371,7 +371,26 @@ public final class SysMenus {
             String progress = t.count() > 1 && !done ? " (" + sp.diaryCounters.getOrDefault(t.id(), 0) + "/" + t.count() + ")" : "";
             s.line((done ? "[x] " : "[ ] ") + t.description() + progress, done ? 0x60E060 : 0xE0E0E0);
         }
+        StringBuilder req = new StringBuilder();
+        PlayerData pd = Players.data(p);
+        Diaries.requirements(a.id(), tier).forEach((sk, lvl) -> req.append(req.length() == 0 ? "" : ", ").append(lvl).append(' ')
+                .append(sk.displayName()).append(pd.skills().level(sk) >= lvl ? "" : "*"));
+        if (req.length() > 0) {
+            s.line("Requires: " + req + " (* = not met; boosts count)", 0xA0A0A0);
+        }
+        java.util.Set<String> quests = Diaries.questRequirements(a.id(), tier);
+        if (!quests.isEmpty()) {
+            StringBuilder q = new StringBuilder();
+            for (String id : quests) {
+                com.runecraft.osrs.QuestInfo info = com.runecraft.osrs.content.ContentRegistry.quest(id);
+                q.append(q.length() == 0 ? "" : ", ").append(info == null ? id : info.displayName());
+            }
+            s.line("Quests: " + q, 0xA0A0A0);
+        }
         s.line("Reward: " + a.rewardName() + " " + (tier.ordinal() + 1) + " and an antique lamp (" + tier.lampXp + " XP).", 0xFFD700);
+        for (String perk : com.runecraft.osrs.content.systems.DiaryRewards.perks(a.id(), tier.ordinal() + 1)) {
+            s.line(" - " + perk, 0xE0C060);
+        }
         for (Diaries.Tier t : Diaries.Tier.values()) {
             s.button("tier:" + a.id() + ":" + t.name(), (t == tier ? "> " : "") + t.displayName() + " " + DiaryService.done(sp, a, t) + "/"
                     + Diaries.tasks(a.id(), t).size(), "", true);

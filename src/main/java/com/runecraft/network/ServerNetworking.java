@@ -94,6 +94,11 @@ public final class ServerNetworking {
         for (String item : data.collectionLog()) {
             buf.writeString(item);
         }
+        buf.writeVarInt(data.killCounts().size());
+        data.killCounts().forEach((key, kc) -> {
+            buf.writeString(key);
+            buf.writeVarInt(kc);
+        });
         ServerPlayNetworking.send(player, Net.SYNC, buf);
     }
 
