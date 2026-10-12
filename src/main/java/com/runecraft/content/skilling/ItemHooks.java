@@ -10,6 +10,7 @@ import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.Skill;
 import com.runecraft.skill.XpService;
+import com.runecraft.osrs.content.skilling.BrewingData;
 import com.runecraft.osrs.content.skilling.CookingData;
 import com.runecraft.osrs.content.skilling.FletchingData;
 import com.runecraft.osrs.content.skilling.GatheringData;
@@ -60,6 +61,9 @@ final class ItemHooks {
     private record Divine(HerbloreData.Effect effect, long until) {
     }
 
+    /** Active prayer regeneration potions: player -> game tick the effect ends. */
+    private static final Map<UUID, Long> PRAYER_REGEN = new HashMap<>();
+
     private ItemHooks() {
     }
 
@@ -75,6 +79,8 @@ final class ItemHooks {
     static void init() {
         CookingData.BITES.forEach(b -> HANDLED.add(b.full()));
         HerbloreData.POTIONS.forEach(p -> HANDLED.add(p.id()));
+        HerbloreData.MIXES.forEach(m -> HANDLED.add(m.id()));
+        BrewingData.DRINKS.forEach(d -> HANDLED.add(d.id()));
         HunterData.IMPLINGS.forEach(i -> HANDLED.add(i.jar()));
         HANDLED.addAll(java.util.List.of("jar_generator", "imp_in_a_box_2", "imp_in_a_box_1"));
         RunecraftData.POUCHES.forEach(p -> HANDLED.add(p.id()));
@@ -130,6 +136,16 @@ final class ItemHooks {
         HerbloreData.ModPotion potion = HerbloreData.potion(id);
         if (potion != null) {
             drink(player, stack, hand, potion);
+            return true;
+        }
+        HerbloreData.Mix mix = HerbloreData.mix(id);
+        if (mix != null) {
+            drinkMix(player, stack, hand, mix);
+            return true;
+        }
+        BrewingData.Drink beverage = BrewingData.drink(id);
+        if (beverage != null) {
+            drinkBeverage(player, stack, beverage);
             return true;
         }
         HunterData.Impling imp = HunterData.implingByJar(id);
@@ -289,7 +305,7 @@ final class ItemHooks {
             }
             weapon.getOrCreateNbt().putInt(POISON_NBT, e.poisonDamage());
             Msg.action(player, "You coat the " + SkillingUtil.lower(wdef.name()) + " with poison.");
-            useDose(player, stack, hand, potion, false);
+            useDose(player, stack, hand, potion.name(), 4, false);
             return;
         }
         if (e == HerbloreData.Effect.COMPOST) {
@@ -300,14 +316,34 @@ final class ItemHooks {
             Inv.remove(player, "compost", 1);
             Inv.give(player, "supercompost", 1);
             Msg.action(player, "You pour some of the potion into the compost, turning it into supercompost.");
-            useDose(player, stack, hand, potion, false);
+            useDose(player, stack, hand, potion.name(), 4, false);
             return;
         }
+        if (e == HerbloreData.Effect.SERUM_207) {
+            Msg.game(player, "This serum is meant for the Afflicted of Mort'ton, not for drinking.");
+            return;
+        }
+        applyEffect(player, e, now);
+        useDose(player, stack, hand, potion.name(), 4, true);
+        ServerNetworking.sync(player);
+    }
+
+    /** The effect of one dose of a module potion (also used by barbarian mixes). */
+    private static void applyEffect(ServerPlayerEntity player, HerbloreData.Effect e, long now) {
+        PlayerData data = Players.data(player);
         int prayer = e.apply(data.skills());
         if (prayer > 0) {
             data.setPrayerPoints(Math.min(data.skills().level(Skill.PRAYER), data.prayerPoints() + prayer));
         }
         switch (e) {
+            case SANFEW -> PoisonService.cure(player, false, com.runecraft.osrs.Toxins.ANTIPOISON[0], now);
+            case RELICYMS_BALM -> {
+                // Cures disease: RuneCraft has none, so it clears the closest vanilla ailments.
+                player.removeStatusEffect(StatusEffects.WEAKNESS);
+                player.removeStatusEffect(StatusEffects.HUNGER);
+                player.removeStatusEffect(StatusEffects.NAUSEA);
+            }
+            case PRAYER_REGENERATION -> PRAYER_REGEN.put(player.getUuid(), now + HerbloreData.Effect.REGEN_DURATION);
             case STAMINA -> {
                 player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 20 * 120, 0));
                 player.getHungerManager().add(4, 0.5f);
@@ -339,18 +375,91 @@ final class ItemHooks {
             DIVINE.put(player.getUuid(), new Divine(e, now + 500));
         }
         player.removeStatusEffect(StatusEffects.POISON);
-        useDose(player, stack, hand, potion, true);
+    }
+
+    /** A barbarian mix: the base potion's effect plus a heal, two doses. */
+    private static void drinkMix(ServerPlayerEntity player, ItemStack stack, Hand hand, HerbloreData.Mix mix) {
+        long now = ActionManager.gameTick();
+        PlayerData data = Players.data(player);
+        HerbloreData.ModPotion mod = HerbloreData.potion(mix.base());
+        if (mod != null) {
+            applyEffect(player, mod.effect(), now);
+        } else if (mix.base().equals("antifire_potion") || mix.base().equals("extended_antifire")) {
+            int minutes = mix.base().equals("antifire_potion") ? 6 : 12;
+            player.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, minutes * 60 * 20, 0));
+        } else {
+            for (com.runecraft.osrs.data.Potion p : com.runecraft.osrs.data.Potion.values()) {
+                if (!p.itemId().equals(mix.base())) {
+                    continue;
+                }
+                int prayer = p.apply(data.skills());
+                if (prayer > 0) {
+                    int cap = Math.max(data.skills().level(Skill.PRAYER), data.skills().currentLevel(Skill.PRAYER));
+                    data.setPrayerPoints(Math.max(data.prayerPoints(), Math.min(cap, data.prayerPoints() + prayer)));
+                }
+                if (p == com.runecraft.osrs.data.Potion.ANTIPOISON) {
+                    player.removeStatusEffect(StatusEffects.POISON);
+                    PoisonService.cure(player, false, com.runecraft.osrs.Toxins.ANTIPOISON[0], now);
+                } else if (p == com.runecraft.osrs.data.Potion.ENERGY) {
+                    player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 20 * 60, 0));
+                }
+            }
+        }
+        player.heal(mix.heal());
+        useDose(player, stack, hand, mix.name(), HerbloreData.MIX_DOSES, true);
         ServerNetworking.sync(player);
     }
 
-    private static void useDose(ServerPlayerEntity player, ItemStack stack, Hand hand, HerbloreData.ModPotion potion, boolean drank) {
+    /** Ales, ciders, cocktails and spirits: heal, boosts and drains; the glass is kept. */
+    private static void drinkBeverage(ServerPlayerEntity player, ItemStack stack, BrewingData.Drink drink) {
+        net.minecraft.item.Item item = stack.getItem();
+        stack.decrement(1);
+        drink.apply(Players.data(player).skills());
+        if (drink.heal() > 0) {
+            player.heal(drink.heal());
+            player.getHungerManager().add(Math.max(1, drink.heal() / 2), 0.2f);
+        }
+        String glass = BrewingData.emptyGlass(drink.id());
+        if (glass != null) {
+            Inv.give(player, glass, 1);
+        }
+        player.getItemCooldownManager().set(item, EAT_DELAY);
+        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_DRINK, SoundCategory.PLAYERS, 0.5f, 1.0f);
+        Msg.action(player, "You drink the " + SkillingUtil.lower(drink.name()) + "."
+                + (drink.mods().isEmpty() ? "" : " You feel slightly reinvigorated... and slightly dizzy too."));
+        ServerNetworking.sync(player);
+        ActionManager.cancel(player);
+    }
+
+    /** Prayer regeneration potions: one Prayer point every 12 game ticks while active. Called every game tick. */
+    static void prayerRegenTick(ServerPlayerEntity player, long gameTick) {
+        Long until = PRAYER_REGEN.get(player.getUuid());
+        if (until == null) {
+            return;
+        }
+        if (gameTick >= until) {
+            PRAYER_REGEN.remove(player.getUuid());
+            Msg.red(player, "Your prayer regeneration potion has worn off.");
+            return;
+        }
+        if (gameTick % HerbloreData.Effect.REGEN_INTERVAL == 0) {
+            PlayerData data = Players.data(player);
+            int cap = data.skills().level(Skill.PRAYER);
+            if (data.prayerPoints() < cap) {
+                data.setPrayerPoints(data.prayerPoints() + 1);
+                ServerNetworking.sync(player);
+            }
+        }
+    }
+
+    private static void useDose(ServerPlayerEntity player, ItemStack stack, Hand hand, String name, int doses, boolean drank) {
         int used = stack.getDamage() + 1;
-        int left = 4 - used;
+        int left = doses - used;
         player.getItemCooldownManager().set(stack.getItem(), EAT_DELAY);
         player.getWorld().playSound(null, player.getBlockPos(), drank ? SoundEvents.ENTITY_GENERIC_DRINK : SoundEvents.ITEM_BOTTLE_EMPTY,
                 SoundCategory.PLAYERS, 0.5f, 1.0f);
         if (drank) {
-            Msg.action(player, "You drink some of your " + SkillingUtil.lower(potion.name()) + ". "
+            Msg.action(player, "You drink some of your " + SkillingUtil.lower(name) + ". "
                     + (left > 0 ? "You have " + left + " dose" + (left > 1 ? "s" : "") + " of potion left." : "You have finished your potion."));
         }
         if (left <= 0) {
@@ -414,7 +523,9 @@ final class ItemHooks {
         if (!SkillingUtil.need(player, Skill.RUNECRAFT, pouch.level(), "use this pouch")) {
             return;
         }
-        int room = pouch.capacity() - held;
+        int used = nbt.getInt(EssencePouches.USED_NBT);
+        int capacity = RunecraftData.capacity(pouch, used);
+        int room = capacity - held;
         int add = Math.min(room, Inv.count(player, "pure_essence"));
         if (add <= 0) {
             Msg.game(player, room <= 0 ? "Your pouch is full." : "You don't have any pure essence to put in the pouch.");
@@ -422,7 +533,13 @@ final class ItemHooks {
         }
         Inv.remove(player, "pure_essence", add);
         nbt.putInt(ESSENCE_NBT, held + add);
-        Msg.action(player, "You fill the pouch (" + (held + add) + "/" + pouch.capacity() + ").");
+        // Pouches decay by the essence stored in them (OSRS); the Dark Mage repairs them.
+        nbt.putInt(EssencePouches.USED_NBT, used + add);
+        int after = RunecraftData.capacity(pouch, used + add);
+        Msg.action(player, "You fill the pouch (" + (held + add) + "/" + capacity + ").");
+        if (after < capacity) {
+            Msg.red(player, "Your pouch has decayed through use.");
+        }
     }
 
     /** Empties every essence pouch in the inventory (before crafting at an altar). */

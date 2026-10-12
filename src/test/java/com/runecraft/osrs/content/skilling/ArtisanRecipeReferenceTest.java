@@ -53,7 +53,17 @@ class ArtisanRecipeReferenceTest {
             "make_meat_pizza", "make_anchovy_pizza", "make_pineapple_pizza", "make_chocolate_cake",
             "make_potato_with_cheese", "make_tuna_potato",
             // Wiki: 40.5 (RuneLite rounds to 40); manta ray is 216.25 (wiki shows 216.2, RuneLite 216.3).
-            "make_potato_with_butter", "cook_manta_ray");
+            "make_potato_with_butter", "cook_manta_ray",
+            // OSRS Wiki: 5.8 / 7.9 XP per spike (12 bolts); RuneLite lists 1 / 1.3 per bolt.
+            "fletch_kebbit_bolts", "fletch_long_kebbit_bolts",
+            // RuneLite lists the 3-dose total (160); RuneCraft awards the 4-dose steps 57 + 63 + 72 (checked below).
+            "mix_sanfew_serum");
+
+    /**
+     * Multi-step dishes: XP from the earlier steps of the chain, added before comparing (gnome dishes are
+     * baked half-way for 30 XP first, cocktails are shaken for 30 XP first).
+     */
+    private static final Map<String, Double> PRIOR_XP = new HashMap<>();
 
     /** Recipes that match a reference action by name but are a different method (no check at all). */
     private static final Set<String> SKIP = Set.of(
@@ -62,6 +72,12 @@ class ArtisanRecipeReferenceTest {
             "fletch_arrow_shaft_magic", "fletch_arrow_shaft_redwood");
 
     static {
+        for (BrewingData.GnomeDish d : BrewingData.GNOME_DISHES) {
+            PRIOR_XP.put("cook_" + d.id(), BrewingData.HALF_BAKE_XP);
+        }
+        for (BrewingData.Cocktail c : BrewingData.COCKTAILS) {
+            PRIOR_XP.put("pour_" + c.id(), BrewingData.COCKTAIL_MIX_XP);
+        }
         ALIASES.put("craft_leather_cowl", "COWL");
         ALIASES.put("craft_hard_leather_body", "HARDLEATHER_BODY");
         for (String hide : List.of("green", "blue", "red", "black")) {
@@ -126,8 +142,46 @@ class ArtisanRecipeReferenceTest {
 
     @Test
     void recipesMatchReferenceLevelsAndXp() throws IOException {
-        Map<String, Ref> ref = reference();
         List<String> errors = new ArrayList<>();
+        int checked = check(reference(), errors, new java.util.HashSet<>());
+        assertTrue(errors.isEmpty(), String.join("\n", errors));
+        assertTrue(checked >= 550, "only " + checked + " recipes matched the reference");
+    }
+
+    /**
+     * Brewing, gnome cooking, the Zogre/huasca potions, spinning/weaving, gold tiaras and the javelin/bolt/ogre
+     * arrow fletching that the reference lists all have a matching recipe.
+     */
+    @Test
+    void artisanActionsAreAllCovered() throws IOException {
+        java.util.Set<String> matched = new java.util.HashSet<>();
+        check(reference(), new ArrayList<>(), matched);
+        List<String> missing = new ArrayList<>();
+        for (String key : List.of(
+                "COOKING:CIDER", "COOKING:DWARVEN_STOUT", "COOKING:ASGARNIAN_ALE", "COOKING:GREENMANS_ALE",
+                "COOKING:WIZARDS_MIND_BOMB", "COOKING:DRAGON_BITTER", "COOKING:MOONLIGHT_MEAD", "COOKING:AXEMANS_FOLLY",
+                "COOKING:CHEFS_DELIGHT", "COOKING:SLAYERS_RESPITE",
+                "COOKING:FRUIT_BATTA", "COOKING:TOAD_BATTA", "COOKING:WORM_BATTA", "COOKING:VEGETABLE_BATTA",
+                "COOKING:CHEESE_AND_TOMATO_BATTA", "COOKING:TOAD_CRUNCHIES", "COOKING:SPICY_CRUNCHIES", "COOKING:WORM_CRUNCHIES",
+                "COOKING:CHOCCHIP_CRUNCHIES", "COOKING:WORM_HOLE", "COOKING:VEG_BALL", "COOKING:TANGLED_TOADS_LEGS",
+                "COOKING:CHOCOLATE_BOMB", "COOKING:FRUIT_BLAST", "COOKING:PINEAPPLE_PUNCH", "COOKING:WIZARD_BLIZZARD",
+                "COOKING:SHORT_GREEN_GUY", "COOKING:DRUNK_DRAGON", "COOKING:CHOC_SATURDAY", "COOKING:BLURBERRY_SPECIAL",
+                "HERBLORE:RELICYMS_BALM_3", "HERBLORE:SERUM_207_3", "HERBLORE:SANFEW_SERUM_3",
+                "HERBLORE:PRAYER_REGENERATION_POTION", "HERBLORE:ANTIVENOM_4", "HERBLORE:ANTIVENOM_PLUS_4",
+                "CRAFTING:BALL_OF_WOOL", "CRAFTING:BOW_STRING", "CRAFTING:CROSSBOW_STRING", "CRAFTING:MAGIC_STRING",
+                "CRAFTING:EMPTY_SACK", "CRAFTING:BASKET", "CRAFTING:TIARA", "CRAFTING:GOLD_TIARA",
+                "FLETCHING:DRAGON_JAVELIN", "FLETCHING:AMETHYST_BROAD_BOLTS", "FLETCHING:AMETHYST_ARROW",
+                "FLETCHING:AMETHYST_JAVELIN", "FLETCHING:AMETHYST_DART", "FLETCHING:OGRE_ARROW", "FLETCHING:KEBBIT_BOLTS",
+                "FLETCHING:LONG_KEBBIT_BOLTS")) {
+            if (!matched.contains(key)) {
+                missing.add(key);
+            }
+        }
+        assertTrue(missing.isEmpty(), "no recipe for " + missing);
+    }
+
+    /** Checks every artisan recipe that matches a reference action; returns how many matched. */
+    private static int check(Map<String, Ref> ref, List<String> errors, java.util.Set<String> matched) {
         int checked = 0;
         for (Recipe r : Recipes.all()) {
             if (r.skill() == null || !SKILLS.contains(r.skill()) || r.outputs().isEmpty() || SKIP.contains(r.id())) {
@@ -154,18 +208,18 @@ class ArtisanRecipeReferenceTest {
                 continue;
             }
             checked++;
+            matched.add(key);
             Ref e = ref.get(key);
             if (r.level() != e.level()) {
                 errors.add(r.id() + ": level " + r.level() + " != " + e.level() + " (" + key + ")");
             }
-            double xp = r.xpTenths() / 10.0;
+            double xp = r.xpTenths() / 10.0 + PRIOR_XP.getOrDefault(r.id(), 0.0);
             double perItem = xp / out.getValue();
             if (!XP_EXEMPT.contains(r.id()) && Math.abs(xp - e.xp()) > TOLERANCE && Math.abs(perItem - e.xp()) > TOLERANCE) {
                 errors.add(r.id() + ": xp " + xp + " (" + perItem + " each) != " + e.xp() + " (" + key + ")");
             }
         }
-        assertTrue(errors.isEmpty(), String.join("\n", errors));
-        assertTrue(checked >= 470, "only " + checked + " recipes matched the reference");
+        return checked;
     }
 
     @Test
@@ -250,5 +304,146 @@ class ArtisanRecipeReferenceTest {
         assertEquals(150.0, Recipes.get("smith_rune_spear").xpTenths() / 10.0, 1e-9);
         // OSRS has no pickaxe smithing.
         assertEquals(null, Recipes.get("smith_bronze_pickaxe"));
+    }
+
+    /** Every input and tool of the brewing, gnome cooking, mix and new crafting/fletching recipes has a source item. */
+    @Test
+    void newArtisanInputsExist() {
+        for (Recipe r : Recipes.all()) {
+            String id = r.id();
+            boolean scope = id.startsWith("brew_") || id.startsWith("cook_") || id.startsWith("pour_") || id.startsWith("shake_")
+                    || id.startsWith("bake_half") || id.startsWith("make_raw_") || id.startsWith("weave_") || id.startsWith("spin_")
+                    || id.startsWith("mix_") || id.contains("ogre") || id.contains("kebbit_bolts") || id.contains("javelin")
+                    || id.contains("broad_bolts") || id.equals("craft_gold_tiara");
+            if (!scope) {
+                continue;
+            }
+            for (String in : r.inputs().keySet()) {
+                if (!in.startsWith("minecraft:")) {
+                    assertNotNull(com.runecraft.osrs.ItemCatalog.get(in), id + " input " + in);
+                }
+            }
+            if (r.requiredTool() != null) {
+                assertNotNull(com.runecraft.osrs.ItemCatalog.get(r.requiredTool()), id + " tool " + r.requiredTool());
+            }
+            for (String o : r.outputs().keySet()) {
+                if (!o.startsWith("minecraft:")) {
+                    assertNotNull(com.runecraft.osrs.ItemCatalog.get(o), id + " output " + o);
+                }
+            }
+        }
+    }
+
+    @Test
+    void brewingMakesEightPintsAndMatureAles() {
+        for (BrewingData.Brew b : BrewingData.BREWS) {
+            Recipe r = Recipes.get("brew_" + b.id());
+            assertNotNull(r, b.id());
+            assertEquals(com.runecraft.osrs.MenuType.BREWING, r.menu());
+            assertEquals(BrewingData.PINTS, r.outputs().get(b.id()));
+            assertEquals(BrewingData.PINTS, r.inputs().get("beer_glass"));
+            assertEquals(1, r.inputs().get("ale_yeast"));
+            assertEquals(b.malt() ? Integer.valueOf(2) : null, r.inputs().get("barley_malt"), b.id());
+            assertNotNull(BrewingData.drink(b.id()), b.id());
+            assertNotNull(BrewingData.drink(b.mature()), b.mature());
+            assertEquals(com.runecraft.osrs.ItemDef.Kind.FOOD, com.runecraft.osrs.ItemCatalog.get(b.mature()).kind(), b.mature());
+            assertEquals("beer_glass", BrewingData.emptyGlass(b.mature()));
+        }
+        assertEquals(b("axemans_folly").amount(), 1); // one oak root per vat
+    }
+
+    private static BrewingData.Brew b(String id) {
+        return BrewingData.BREWS.stream().filter(x -> x.id().equals(id)).findFirst().orElseThrow();
+    }
+
+    @Test
+    void drinksBoostAndDrain() {
+        com.runecraft.osrs.SkillSet s = new com.runecraft.osrs.SkillSet();
+        for (Skill sk : new Skill[]{Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.COOKING}) {
+            s.setXpTenths(sk, com.runecraft.osrs.Experience.xpForLevel(50) * 10);
+        }
+        assertEquals(50, s.level(Skill.ATTACK));
+        BrewingData.drink("asgarnian_ale").apply(s);
+        assertEquals(2, s.boost(Skill.STRENGTH));
+        assertEquals(-4, s.boost(Skill.ATTACK));
+        // Drains stack, boosts don't.
+        BrewingData.drink("asgarnian_ale").apply(s);
+        assertEquals(2, s.boost(Skill.STRENGTH));
+        assertEquals(-8, s.boost(Skill.ATTACK));
+        BrewingData.drink("chefs_delight_m").apply(s);
+        assertEquals(2 + 2, s.boost(Skill.COOKING)); // 2 + 5% of 50
+        BrewingData.drink("wizard_blizzard").apply(s);
+        assertEquals(4, s.boost(Skill.STRENGTH)); // 1 + 6% of 50 = 4 replaces the ale's +2
+        assertEquals(-8 - 3 - 3, s.boost(Skill.ATTACK)); // chef's delight -3, then 3 + 2% of the drained level (39)
+        assertEquals(9, BrewingData.drink("fruit_blast").heal());
+        assertEquals(6, BrewingData.drink("moonlight_mead_m").heal());
+    }
+
+    @Test
+    void gnomeDishesAndCocktailsChainToTheirOsrsTotal() {
+        for (BrewingData.GnomeDish d : BrewingData.GNOME_DISHES) {
+            Recipe fin = Recipes.get("cook_" + d.id());
+            assertNotNull(fin, d.id());
+            assertEquals(d.totalXp(), fin.xpTenths() / 10.0 + BrewingData.HALF_BAKE_XP, 1e-9, d.id());
+            assertTrue(fin.inputs().containsKey(d.halfBaked()), d.id());
+            assertEquals(d.heal(), com.runecraft.osrs.ItemCatalog.get(d.id()).heal(), d.id());
+        }
+        for (BrewingData.Cocktail c : BrewingData.COCKTAILS) {
+            Recipe shake = Recipes.get("shake_" + c.mixId());
+            assertEquals("cocktail_shaker", shake.requiredTool(), c.id());
+            Recipe pour = Recipes.get("pour_" + c.id());
+            assertEquals(1, pour.inputs().get("cocktail_glass"));
+            assertEquals(c.totalXp(), (shake.xpTenths() + pour.xpTenths()) / 10.0, 1e-9, c.id());
+            assertNotNull(BrewingData.drink(c.id()), c.id());
+        }
+    }
+
+    @Test
+    void barbarianMixesAndZogrePotions() {
+        for (HerbloreData.Mix m : HerbloreData.MIXES) {
+            Recipe r = Recipes.get("mix_" + m.id());
+            assertNotNull(r, m.id());
+            assertTrue(r.inputs().containsKey(m.roe() ? "roe" : "caviar"), m.id());
+            assertNotNull(com.runecraft.osrs.ItemCatalog.get(m.base()), m.base());
+            assertEquals(com.runecraft.osrs.ItemDef.Kind.POTION, com.runecraft.osrs.ItemCatalog.get(m.id()).kind(), m.id());
+            assertEquals(m.roe() || m.id().equals("energy_mix") || m.id().equals("combat_mix") ? 3 : 6, m.heal(), m.id());
+            assertEquals(m.roe(), Recipes.get("mix_" + m.id() + "_caviar") != null, m.id());
+        }
+        // OSRS Wiki: restore mix is the last roe mix (24), the extended super antifire mix the last of all (99, 78 XP).
+        assertEquals(24, HerbloreData.mix("restore_mix").level());
+        assertEquals(78.0, HerbloreData.mix("extended_super_antifire_mix").xp(), 1e-9);
+        // Sanfew serum: 57 + 63 + 72 XP for the 4-dose steps.
+        double sanfew = (Recipes.get("mix_sanfew_step_1").xpTenths() + Recipes.get("mix_sanfew_step_2").xpTenths()
+                + Recipes.get("mix_sanfew_serum").xpTenths()) / 10.0;
+        assertEquals(192.0, sanfew, 1e-9);
+        assertEquals(65, Recipes.get("mix_sanfew_serum").level());
+        assertTrue(Recipes.get("mix_sanfew_serum").inputs().containsKey("nail_beast_nails"));
+        assertTrue(Recipes.get("mix_relicyms_balm").inputs().containsKey("snake_weed"));
+        assertTrue(Recipes.get("mix_serum_207").inputs().containsKey("ashes"));
+        assertTrue(Recipes.get("mix_prayer_regeneration_potion").inputs().containsKey("huasca_potion_unf"));
+        // Sanfew restores like a super restore.
+        com.runecraft.osrs.SkillSet s = new com.runecraft.osrs.SkillSet();
+        s.setXpTenths(Skill.ATTACK, com.runecraft.osrs.Experience.xpForLevel(80) * 10);
+        s.setBoost(Skill.ATTACK, -30);
+        HerbloreData.Effect.SANFEW.apply(s);
+        assertEquals(-30 + 8 + 20, s.boost(Skill.ATTACK));
+        assertEquals(66, HerbloreData.Effect.REGEN_DURATION / HerbloreData.Effect.REGEN_INTERVAL);
+    }
+
+    @Test
+    void essencePouchesDegradeAndRepair() {
+        RunecraftData.Pouch small = RunecraftData.pouch("small_pouch");
+        RunecraftData.Pouch medium = RunecraftData.pouch("medium_pouch");
+        RunecraftData.Pouch large = RunecraftData.pouch("large_pouch");
+        RunecraftData.Pouch giant = RunecraftData.pouch("giant_pouch");
+        assertEquals(3, RunecraftData.capacity(small, 100_000)); // the small pouch never degrades
+        assertEquals(6, RunecraftData.capacity(medium, 269));
+        assertEquals(3, RunecraftData.capacity(medium, 270));
+        assertEquals(9, RunecraftData.capacity(large, 260));
+        assertEquals(7, RunecraftData.capacity(large, 261));
+        assertEquals(12, RunecraftData.capacity(giant, 129));
+        assertEquals(9, RunecraftData.capacity(giant, 130));
+        assertTrue(RunecraftData.degraded(giant, 130));
+        assertTrue(!RunecraftData.degraded(giant, 0)); // repaired (count reset)
     }
 }

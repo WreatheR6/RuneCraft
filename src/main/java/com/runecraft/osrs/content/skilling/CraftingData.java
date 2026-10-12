@@ -19,12 +19,14 @@ import java.util.function.Consumer;
 /**
  * Crafting: dragonhide, snakeskin and hard/studded leather armour, battlestaves and elemental orbs,
  * pottery, glassblowing, the full gem jewellery table (gold and silver, unstrung and strung),
- * silver items, crossbow string and bird houses. Levels/XP are OSRS values; armour bonuses for
+ * silver items, gold tiaras, spinning (crossbow string from sinew or roots, magic string), weaving at a
+ * loom (strip of cloth, empty sack, basket) and bird houses. Levels/XP are OSRS values; armour bonuses for
  * dragonhide/snakeskin are close approximations of the in-game ones.
  *
  * <p>Menus: tanning at the tanner (TANNING), sewing with a needle or at a crafting table
  * (LEATHERWORKING), shaping on a potter's wheel (SPINNING), firing and molten glass at a pottery
- * oven or furnace (SMELTING), gold/silver jewellery at a furnace (SMELTING).
+ * oven or furnace (SMELTING), gold/silver jewellery at a furnace (SMELTING), weaving at a loom (SPINNING: the
+ * Minecraft looms in Gielinor's buildings open it, see SkillingHooks).
  */
 public final class CraftingData extends SkillingPart {
 
@@ -271,6 +273,10 @@ public final class CraftingData extends SkillingPart {
         simple(s, "unstrung_emblem", "Unstrung emblem", "amulet", 0x8A8A9A, 120).stack(1);
         simple(s, "unpowered_symbol", "Unpowered symbol", "amulet", 0x8A8A9A, 200).stack(1);
         simple(s, "tiara", "Tiara", "tiara", 0xD8D8E8, 100).stack(1);
+        // Gold tiara (42 Crafting): a cosmetic head piece with no bonuses (wiki / DPS calculator).
+        s.add("gold_tiara", "Gold tiara", Kind.ARMOUR, "tiara", 0xE8C030).value(100).stack(1)
+                .equipment(wear(Slot.HEAD, stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)))
+                .examine("Makes me feel like a wealthy Princess.");
         s.add("silver_sickle", "Silver sickle", Kind.MELEE_WEAPON, "sickle", 0xD8D8E8).value(175).stack(1).tier("iron")
                 .equipment(weapon(stats(4, 6, -2, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0), 4, AttackType.SLASH, EquipmentDef.WeaponClass.MELEE));
 
@@ -278,6 +284,12 @@ public final class CraftingData extends SkillingPart {
         simple(s, "crossbow_string", "Crossbow string", "string", 0xD0C0A0, 15);
         simple(s, "rope", "Rope", "rope", 0xB09060, 18);
         simple(s, "bolt_of_cloth", "Bolt of cloth", "cloth", 0xE0D8C8, 650);
+        simple(s, "magic_string", "Magic string", "string", 0x7AB0D8, 1).examine("I could use this to make jewellery.");
+        // --- Weaving (loom) ---
+        simple(s, "strip_of_cloth", "Strip of cloth", "cloth", 0xE8E0D0, 10).examine("A strip of cloth.");
+        simple(s, "basket", "Basket", "bucket", 0xB08A50, 1).examine("An empty fruit basket.");
+        // Cut from a farmed willow tree with secateurs in OSRS; bought on the Grand Exchange here.
+        simple(s, "willow_branch", "Willow branch", "log", 0x7A8A4A, 2).examine("A branch from a willow tree.");
 
         // --- Bird houses ---
         simple(s, "clockwork", "Clockwork", "clockwork", 0xB0B0B8, 100);
@@ -384,6 +396,21 @@ public final class CraftingData extends SkillingPart {
         // --- Spinning ---
         out.accept(r("spin_crossbow_string", MenuType.SPINNING, "Crossbow string", Skill.CRAFTING, 10, 15.0).in("sinew", 1)
                 .out("crossbow_string", 1).ticks(3).build());
+        for (String root : List.of("oak", "willow", "maple", "yew", "magic")) {
+            out.accept(r("spin_crossbow_string_" + root, MenuType.SPINNING, "Crossbow string (" + root + " roots)", Skill.CRAFTING,
+                    10, 15.0).in(root + "_roots", 1).out("crossbow_string", 1).ticks(3).build());
+        }
+        out.accept(r("spin_magic_string", MenuType.SPINNING, "Magic string", Skill.CRAFTING, 19, 30.0).in("magic_roots", 1)
+                .out("magic_string", 1).ticks(3).build());
+        // --- Weaving (loom, OSRS Wiki) ---
+        out.accept(r("weave_strip_of_cloth", MenuType.SPINNING, "Strip of cloth", Skill.CRAFTING, 10, 12.0).in("ball_of_wool", 4)
+                .out("strip_of_cloth", 1).ticks(3).build());
+        out.accept(r("weave_empty_sack", MenuType.SPINNING, "Empty sack", Skill.CRAFTING, 21, 38.0).in("jute_fibre", 4)
+                .out("empty_sack", 1).ticks(3).build());
+        out.accept(r("weave_basket", MenuType.SPINNING, "Basket", Skill.CRAFTING, 36, 56.0).in("willow_branch", 6)
+                .out("basket", 1).ticks(4).build());
+        out.accept(r("craft_gold_tiara", MenuType.SMELTING, "Gold tiara", Skill.CRAFTING, 42, 35.0).in("gold_bar", 1)
+                .out("gold_tiara", 1).tool("tiara_mould").ticks(3).build());
         // --- Bird houses (hammer + chisel) ---
         out.accept(r("craft_clockwork", L, "Clockwork", Skill.CRAFTING, 8, 15.0).in("steel_bar", 1).out("clockwork", 1)
                 .tool("hammer").ticks(3).build());

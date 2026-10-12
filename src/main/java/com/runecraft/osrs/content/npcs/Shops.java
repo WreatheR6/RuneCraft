@@ -111,7 +111,9 @@ public final class Shops {
         // OSRS Wiki: Port Phasmatys General Store (not in RuneCraft: Empty bucket pack, Empty jug pack)
         add(general("port_phasmatys_general_store", "Port Phasmatys General Store", "npc_phasmatys_shopkeeper")
                 .sell("empty_pot", 100).sell("minecraft:bucket", 100, 2).sell("minecraft:shears", 2, 1).sell("jug", 2)
-                .sell("tinderbox", 2).sell("chisel", 2).sell("hammer", 5).greeting("Wooooo... welcome to my shop."));
+                .sell("tinderbox", 2).sell("chisel", 2).sell("hammer", 5)
+                // Approx: in OSRS ale yeast is sold by Metarialus at The Green Ghost inn next door (brewing).
+                .sell("ale_yeast", 20).greeting("Wooooo... welcome to my shop."));
         // OSRS Wiki: Nardah General Store (not in RuneCraft: Empty jug pack, Empty bucket pack)
         add(general("nardah_general_store", "Kazemde's General Store", "npc_kazemde").sell("empty_pot", 5).sell("jug", 2)
                 .sell("minecraft:shears", 2, 1).sell("minecraft:bucket", 3, 2).sell("bowl", 2).sell("cake_tin", 2)
@@ -424,12 +426,16 @@ public final class Shops {
                 .sell("steel_axe", 3).sell("iron_battleaxe", 5).sell("steel_battleaxe", 2).sell("mithril_battleaxe", 1)
                 .sell("bronze_2h_sword", 4).sell("iron_2h_sword", 3).sell("steel_2h_sword", 2).sell("black_2h_sword", 1)
                 .sell("mithril_2h_sword", 1).sell("adamant_2h_sword", 1).greeting("Hello, human. We sell all sorts of weapons."));
-        // OSRS Wiki: Grand Tree Groceries (not in RuneCraft: Spider on stick, Spider on shaft, Bucket of milk, Gianne's cook book, Batta tin, Crunchy tray, Gnomebowl mould)
+        // OSRS Wiki: Grand Tree Groceries (not in RuneCraft: Spider on stick, Spider on shaft, Bucket of milk, Gianne's cook book)
+        // plus Funch's Fine Groceries' spirits and cocktail glasses (Heckel Funch runs both here). Approx: king worms are a
+        // ground spawn in the Gnome Stronghold in OSRS.
         add(specialist("grand_tree_groceries", "Grand Tree Groceries", "npc_heckel_funch").prices(1000, 550, 10)
                 .sell("gianne_dough", 50).sell("equa_leaves", 20).sell("pot_of_flour", 10).sell("gnome_spice", 10)
                 .sell("onion", 10).sell("potato", 10).sell("cabbage", 10).sell("tomato", 10).sell("cheese", 10).sell("lime", 10)
                 .sell("orange", 10).sell("lemon", 10).sell("pineapple", 10).sell("dwellberries", 10).sell("cocktail_shaker", 10)
                 .sell("chocolate_bar", 20).sell("chocolate_dust", 10).sell("pot_of_cream", 5).sell("knife", 5)
+                .sell("batta_tin", 5).sell("crunchy_tray", 5).sell("gnomebowl_mould", 5).sell("brandy", 10).sell("gin", 10)
+                .sell("vodka", 10).sell("whisky", 10).sell("cocktail_glass", 20).sell("king_worm", 20)
                 .greeting("Good day to you. Are you after some fine gnome produce?"));
 
         // ------------------------------------------------------------- Karamja

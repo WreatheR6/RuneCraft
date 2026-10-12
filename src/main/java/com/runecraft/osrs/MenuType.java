@@ -18,7 +18,9 @@ public enum MenuType {
     SHOP_TOOLS("Bob's Brilliant Axes"),
     SHOP_ARCHERY("Lowe's Archery Emporium"),
     /** Elnock Inquisitor's impling jar exchange in Puro-Puro (appended last: the client sends the ordinal). */
-    IMPLING_EXCHANGE("Elnock's Exchange");
+    IMPLING_EXCHANGE("Elnock's Exchange"),
+    /** Fermenting vats (Cooking: brewing). Appended last: menus are sent to the client by ordinal. */
+    BREWING("What would you like to brew?");
 
     private final String title;
 

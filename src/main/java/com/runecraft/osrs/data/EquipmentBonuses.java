@@ -406,6 +406,10 @@ public final class EquipmentBonuses {
         ammo("adamant_javelin", 107);
         ammo("rune_javelin", 124);
         ammo("amethyst_javelin", 135);
+        ammo("dragon_javelin", 150);
+        ammo("amethyst_broad_bolts", 115);
+        ammo("kebbit_bolts", 28);
+        ammo("long_kebbit_bolts", 38);
         put("oak_shield", 0, 0, 0, 0, 0, 0,  5, 6, 4, 1, 5,  0, 0, 0, 0);
         put("willow_shield", 0, 0, 0, 0, 0, 0,  6, 7, 5, 2, 6,  0, 0, 0, 0);
         put("maple_shield", 0, 0, 0, 0, 0, 0,  7, 8, 6, 2, 7,  0, 0, 0, 0);

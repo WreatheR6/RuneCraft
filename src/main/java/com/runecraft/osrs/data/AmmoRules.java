@@ -37,6 +37,9 @@ public final class AmmoRules {
             Map.entry("opal_bolts", new Ammo(Kind.BOLT, B_BRONZE)),
             Map.entry("silver_bolts", new Ammo(Kind.BOLT, B_BRONZE)), // approx: usable from any crossbow
             Map.entry("broad_bolts", new Ammo(Kind.BOLT, B_BRONZE)), // approx: usable from any crossbow
+            Map.entry("amethyst_broad_bolts", new Ammo(Kind.BOLT, B_BRONZE)), // approx: like broad bolts
+            Map.entry("kebbit_bolts", new Ammo(Kind.BOLT, B_BRONZE)),
+            Map.entry("long_kebbit_bolts", new Ammo(Kind.BOLT, B_BRONZE)),
             Map.entry("blurite_bolts", new Ammo(Kind.BOLT, B_BLURITE)),
             Map.entry("jade_bolts", new Ammo(Kind.BOLT, B_BLURITE)),
             Map.entry("iron_bolts", new Ammo(Kind.BOLT, B_IRON)),

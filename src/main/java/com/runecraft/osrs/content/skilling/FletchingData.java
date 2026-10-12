@@ -15,8 +15,9 @@ import java.util.function.Consumer;
 
 /**
  * Fletching: crossbow stocks, unstrung/strung crossbows (bronze to dragon), bolts (metal, gem-tipped,
- * broad), darts, javelins, throwing knives (smithed), broad/amethyst/dragon arrows, wooden shields
- * and celastrus battlestaves. Levels/XP/ranged strength are OSRS values.
+ * broad, amethyst broad, kebbit), darts, javelins (bronze to dragon), throwing knives (smithed),
+ * broad/amethyst/dragon arrows, ogre arrows, wooden shields and celastrus battlestaves. Levels/XP/ranged
+ * strength are OSRS values.
  *
  * <p>Darts, knives and javelins are {@code Kind.ARROW} items: they can be thrown by right-clicking
  * (see SkillingHooks) and also count as ammunition.
@@ -125,7 +126,8 @@ public final class FletchingData extends SkillingPart {
             new Dart("bronze", "Bronze", 3, 1.0, 6, 0xB08D57), new Dart("iron", "Iron", 17, 2.0, 10, 0x8A8A8E),
             new Dart("steel", "Steel", 32, 5.0, 12, 0xB8B8C0), new Dart("mithril", "Mithril", 47, 8.0, 18, 0x4A5A9C),
             new Dart("adamant", "Adamant", 62, 10.0, 28, 0x4C7A4C), new Dart("rune", "Rune", 77, 12.4, 42, 0x4FB8C8),
-            new Dart("amethyst", "Amethyst", 84, 13.5, 55, 0xA070D0)};
+            new Dart("amethyst", "Amethyst", 84, 13.5, 55, 0xA070D0),
+            new Dart("dragon", "Dragon", 92, 15.0, 150, 0xB02020)}; // dragon_javelin_heads: Vorkath / Grand Exchange
 
     /** Wooden shields: log, level, XP (2 logs each). */
     private record Shield(String id, String name, String log, int level, double xp, int def, int color) {
@@ -188,6 +190,22 @@ public final class FletchingData extends SkillingPart {
         simple(s, "amethyst_javelin_heads", "Amethyst javelin heads", "javelin_heads", 0xA070D0, 80);
         simple(s, "amethyst_dart_tip", "Amethyst dart tip", "dart_tip", 0xA070D0, 50);
         simple(s, "dragon_arrowtips", "Dragon arrowtips", "arrowtips", 0xB02020, 400);
+        simple(s, "dragon_javelin_heads", "Dragon javelin heads", "javelin_heads", 0xB02020, 1000)
+                .examine("Needs a shaft.");
+        s.add("amethyst_broad_bolts", "Amethyst broad bolts", Kind.ARROW, "bolts", 0xA070D0).value(240).rangedStrength(115)
+                .tier("broad").examine("Crossbow bolts with amethyst broad tips.");
+        // Kebbit bolts: chiselled from the spikes of spined and razor-backed kebbits (Hunter).
+        s.add("kebbit_bolts", "Kebbit bolts", Kind.ARROW, "bolts", 0xE0D8C0).value(18).rangedStrength(28).tier("kebbit")
+                .examine("Bolts made from the spikes of a prickly kebbit.");
+        s.add("long_kebbit_bolts", "Long kebbit bolts", Kind.ARROW, "bolts", 0xE8E0C8).value(31).rangedStrength(38).tier("kebbit")
+                .examine("Bolts made from the spikes of a razor-backed kebbit.");
+        // Ogre arrows (Big Chompy Bird Hunting): achey shafts, four feathers each, wolfbone tips. The finished
+        // ogre_arrow is the quests module's item.
+        simple(s, "ogre_arrow_shaft", "Ogre arrow shaft", "shaft", 0x8A5A3A, 1).examine("A wooden arrow shaft.");
+        simple(s, "flighted_ogre_arrow", "Flighted ogre arrow", "headless", 0x8A5A3A, 1)
+                .examine("A wooden arrow shaft with four flights attached.");
+        simple(s, "wolfbone_arrowtips", "Wolfbone arrowtips", "arrowtips", 0xE0D8C0, 3).examine("I can make an ogre arrow with these.");
+        simple(s, "wolf_bones", "Wolf bones", "bones", 0xE0D8C8, 1).examine("Bones of a recently slain wolf.");
         s.add("dragon_arrow", "Dragon arrow", Kind.ARROW, "arrow", 0xB02020).value(800).rangedStrength(60).tier("dragon");
         for (Dart d : DARTS) {
             s.add(d.tier + "_dart", d.name + " dart", Kind.ARROW, "dart", d.color).value(Math.max(1, d.strength * 3))
@@ -256,6 +274,23 @@ public final class FletchingData extends SkillingPart {
                 .in("dragon_bolts_unf", 10).in("minecraft:feather", 10).out("dragon_bolts", 10).ticks(2).build());
         out.accept(r("fletch_broad_bolts", F, "10 broad bolts", Skill.FLETCHING, 55, 30.0).in("unfinished_broad_bolts", 10)
                 .in("minecraft:feather", 10).out("broad_bolts", 10).ticks(2).build());
+        // Slayer reward "Broader fletching" unlocks these in OSRS (not checked here).
+        out.accept(r("fletch_amethyst_broad_bolts", F, "10 amethyst broad bolts", Skill.FLETCHING, 76, 106.0).in("broad_bolts", 10)
+                .in("amethyst_bolt_tips", 10).out("amethyst_broad_bolts", 10).ticks(2).build());
+        // OSRS Wiki: 12 bolts per spike for 5.8 / 7.9 XP (RuneLite's calculator lists 1 / 1.3 per bolt).
+        out.accept(r("fletch_kebbit_bolts", MenuType.GEM_CUTTING, "12 kebbit bolts", Skill.FLETCHING, 32, 5.8).in("kebbit_spike", 1)
+                .out("kebbit_bolts", 12).tool("chisel").ticks(3).build());
+        out.accept(r("fletch_long_kebbit_bolts", MenuType.GEM_CUTTING, "12 long kebbit bolts", Skill.FLETCHING, 42, 7.9).in("long_kebbit_spike", 1)
+                .out("long_kebbit_bolts", 12).tool("chisel").ticks(2).build());
+        // Ogre arrows (OSRS Wiki; Big Chompy Bird Hunting must be started in-game, not checked here).
+        out.accept(r("fletch_ogre_arrow_shaft", F, "4 ogre arrow shafts", Skill.FLETCHING, 5, 6.4).in("achey_tree_logs", 1)
+                .out("ogre_arrow_shaft", 4).tool("knife").ticks(3).build());
+        out.accept(r("fletch_flighted_ogre_arrow", F, "6 flighted ogre arrows", Skill.FLETCHING, 5, 5.4).in("ogre_arrow_shaft", 6)
+                .in("minecraft:feather", 24).out("flighted_ogre_arrow", 6).ticks(2).build());
+        out.accept(r("fletch_wolfbone_arrowtips", MenuType.GEM_CUTTING, "4 wolfbone arrowtips", Skill.FLETCHING, 5, 10.0)
+                .in("wolf_bones", 1).out("wolfbone_arrowtips", 4).tool("chisel").ticks(2).build());
+        out.accept(r("fletch_ogre_arrow", F, "6 ogre arrows", Skill.FLETCHING, 5, 6.0).in("flighted_ogre_arrow", 6)
+                .in("wolfbone_arrowtips", 6).out("ogre_arrow", 6).ticks(2).build());
         out.accept(r("fletch_broad_arrows", F, "15 broad arrows", Skill.FLETCHING, 52, 150.0).in("headless_arrow", 15)
                 .in("broad_arrowheads", 15).out("broad_arrows", 15).ticks(2).build());
         // Amethyst (chiselled with Crafting; fletched with Fletching)

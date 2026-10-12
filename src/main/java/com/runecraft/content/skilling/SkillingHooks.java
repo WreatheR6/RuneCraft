@@ -3,12 +3,23 @@ package com.runecraft.content.skilling;
 import com.runecraft.action.ActionManager;
 import com.runecraft.content.GameEvents;
 import com.runecraft.content.ModuleHooks;
+import com.runecraft.menu.MenuService;
+import com.runecraft.osrs.MenuType;
 import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.skilling.BrewingData;
 import com.runecraft.osrs.content.skilling.MiningData;
+import com.runecraft.osrs.content.skilling.RunecraftData;
+import com.runecraft.quest.QuestScripts;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
+import com.runecraft.util.Msg;
+import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 
@@ -46,12 +57,36 @@ public final class SkillingHooks implements ModuleHooks {
             long gameTick = ActionManager.gameTick();
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 ItemHooks.divineTick(player, gameTick);
+                ItemHooks.prayerRegenTick(player, gameTick);
                 SailingHooks.boatTick(player);
                 BlastFurnaceHooks.tick(player, gameTick);
                 if (gameTick % 20 == 0) {
                     RunecraftHooks.fermentWine(player);
                 }
             }
+        });
+
+        // Brewing: a finished vat sometimes turns mature (the (m) ales).
+        GameEvents.onMake((player, recipe) -> {
+            BrewingData.Brew brew = BrewingData.brewByRecipe(recipe.id());
+            if (brew != null && player.getRandom().nextDouble() < BrewingData.MATURE_CHANCE
+                    && Inv.count(player, brew.id()) >= BrewingData.PINTS) {
+                Inv.remove(player, brew.id(), BrewingData.PINTS);
+                Inv.give(player, brew.mature(), BrewingData.PINTS);
+                Msg.action(player, "The brew has matured nicely! You fill your glasses with " + brew.matureName() + ".");
+            }
+        });
+        // The Dark Mage repairs essence pouches (NPC Contact reaches him too, see the systems module).
+        QuestScripts.onTalk(RunecraftData.DARK_MAGE, (player, npc) -> EssencePouches.darkMage(player));
+        // Gielinor's looms (Minecraft looms in the Crafting Guild, Rimmington...) are for weaving.
+        UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+            if (hand != Hand.MAIN_HAND || !world.getBlockState(hit.getBlockPos()).isOf(Blocks.LOOM) || !Gielinor.is(player)) {
+                return ActionResult.PASS;
+            }
+            if (player instanceof ServerPlayerEntity sp) {
+                MenuService.open(sp, MenuType.SPINNING, hit.getBlockPos(), false);
+            }
+            return ActionResult.SUCCESS;
         });
 
         GameEvents.onXp((player, skill, tenths) -> {
