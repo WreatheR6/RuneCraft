@@ -39,6 +39,15 @@ public final class CombatHooks {
         void onHurt(ServerPlayerEntity player, LivingEntity attacker, int damage);
     }
 
+    /**
+     * Can veto a player's attack before it happens (e.g. an uncharged trident or an inactive crystal bow).
+     * Returns the message to show, or null to allow the attack.
+     */
+    public interface AttackGate {
+        String deny(ServerPlayerEntity player, AttackType type);
+    }
+
+    private static final List<AttackGate> GATES = new ArrayList<>();
     private static final List<PlayerAttackModifier> MODIFIERS = new ArrayList<>();
     private static final List<PlayerHurtListener> HURT = new ArrayList<>();
 
@@ -51,6 +60,21 @@ public final class CombatHooks {
 
     public static void addHurtListener(PlayerHurtListener listener) {
         HURT.add(listener);
+    }
+
+    public static void addAttackGate(AttackGate gate) {
+        GATES.add(gate);
+    }
+
+    /** The first gate's refusal for this attack, or null when the attack may go ahead. */
+    public static String deniedAttack(ServerPlayerEntity p, AttackType type) {
+        for (AttackGate g : GATES) {
+            String m = g.deny(p, type);
+            if (m != null) {
+                return m;
+            }
+        }
+        return null;
     }
 
     static double accuracy(ServerPlayerEntity p, LivingEntity t, AttackType type) {

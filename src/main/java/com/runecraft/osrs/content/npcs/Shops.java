@@ -131,7 +131,7 @@ public final class Shops {
                 .sell("adamant_dagger", 2).greeting("Hello, adventurer. Can I interest you in some swords?"));
         add(specialist("thessalias_fine_clothes", "Thessalia's Fine Clothes", "npc_thessalia")
                 .sell("white_apron", 3).sell("leather_body", 12).sell("leather_gloves", 10).sell("leather_boots", 10)
-                .sell("brown_apron", 1).sell("pink_skirt", 5, 2).sell("black_skirt", 3).sell("blue_skirt", 2).sell("red_cape", 4)
+                .sell("brown_apron", 1).sell("chefs_hat", 2).sell("pink_skirt", 5, 2).sell("black_skirt", 3).sell("blue_skirt", 2).sell("red_cape", 4)
                 .sell("silk", 5).sell("priest_gown_top", 3).sell("priest_gown_bottom", 3)
                 .greeting("Would you like to buy any fine clothes?"));
         add(specialist("varrock_tea_stall", "Tea Stall", "npc_tea_seller")

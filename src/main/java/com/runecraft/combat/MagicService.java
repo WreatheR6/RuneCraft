@@ -216,6 +216,12 @@ public final class MagicService {
             Msg.game(player, "You don't have the Magic level to wield this staff.");
             return;
         }
+        String denied = CombatHooks.deniedAttack(player, AttackType.MAGIC);
+        if (denied != null) {
+            data.lastAttackTick = now;
+            Msg.game(player, denied);
+            return;
+        }
         data.lastAttackTick = now;
         player.swingHand(Hand.MAIN_HAND, true);
         trail((ServerWorld) player.getWorld(), eye, target.getPos().add(0, target.getHeight() / 2, 0), Spell.WATER_SURGE);

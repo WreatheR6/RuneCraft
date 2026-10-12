@@ -72,6 +72,10 @@ final class HouseFurniture {
             ExtrasUtil.options(player, f.name() + ":", links);
             return;
         }
+        if ("armour_stand".equals(f.id())) {
+            com.runecraft.content.systems.ChargeService.repair(player, true);
+            return;
+        }
         switch (f.effect()) {
             case EXIT_PORTAL -> HouseService.leave(player);
             case ALTAR -> altar(player, pos, f);
