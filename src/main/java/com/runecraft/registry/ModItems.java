@@ -46,7 +46,8 @@ public final class ModItems {
     }
 
     private static Item create(ItemDef def) {
-        Item.Settings settings = new Item.Settings().maxCount(def.maxStack());
+        // Minecraft 1.20.1 saves stack counts as a byte, so OSRS-style huge stacks (scales, shards) are capped at 64.
+        Item.Settings settings = new Item.Settings().maxCount(Math.min(64, Math.max(1, def.maxStack())));
         if (def.tier() != null && (def.tier().equals("dragon") || def.tier().equals("rune") || def.tier().equals("magic"))) {
             settings = settings.rarity(def.tier().equals("dragon") ? Rarity.RARE : Rarity.UNCOMMON);
         }
