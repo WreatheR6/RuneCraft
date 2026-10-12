@@ -43,31 +43,31 @@ public final class Superiors {
     }
 
     static {
-        add("crawling_hand", "crushing_hand", "Crushing hand", 46, 550, 1.6f);
+        add("crawling_hand", "crushing_hand", "Crushing hand", 45, 550, 1.6f);
         add("cave_crawler", "chasm_crawler", "Chasm Crawler", 68, 600, 1.6f);
         add("banshee", "screaming_banshee", "Screaming banshee", 70, 610, 1.3f);
         add("rockslug", "giant_rockslug", "Giant rockslug", 86, 770, 1.8f);
         add("cockatrice", "cockathrice", "Cockathrice", 89, 950, 1.5f);
         add("pyrefiend", "flaming_pyrelord", "Flaming pyrelord", 97, 1250, 1.6f);
         add("basilisk", "monstrous_basilisk", "Monstrous basilisk", 135, 1700, 1.6f);
-        add("infernal_mage", "malevolent_mage", "Malevolent Mage", 162, 1100, 1.2f);
+        add("infernal_mage", "malevolent_mage", "Malevolent Mage", 162, 175, 1750, 1.2f); // approx XP (~10x HP)
         add("bloodveld", "insatiable_bloodveld", "Insatiable Bloodveld", 202, 2900, 1.4f);
         add("mutated_bloodveld", "insatiable_mutated_bloodveld", "Insatiable mutated Bloodveld", 278, 4100, 1.5f);
         add("jelly", "vitreous_jelly", "Vitreous Jelly", 206, 1900, 1.5f);
-        add("turoth", "spiked_turoth", "Spiked Turoth", 194, 2200, 1.3f);
+        add("turoth", "spiked_turoth", "Spiked Turoth", 244, 195, 2200, 1.3f);
         add("cave_horror", "cave_abomination", "Cave abomination", 206, 1300, 1.3f);
         add("aberrant_spectre", "abhorrent_spectre", "Abhorrent spectre", 253, 2500, 1.4f);
-        add("wyrm", "shadow_wyrm", "Shadow Wyrm", 267, 2800, 1.5f);
+        add("wyrm", "shadow_wyrm", "Shadow Wyrm", 259, 290, 2800, 1.5f);
         add("dust_devil", "choke_devil", "Choke devil", 264, 3000, 1.5f);
-        add("kurask", "king_kurask", "King kurask", 295, 300, 2767, 1.4f); // approx HP
+        add("kurask", "king_kurask", "King kurask", 295, 270, 2767, 1.4f);
         add("gargoyle", "marble_gargoyle", "Marble gargoyle", 349, 270, 3044, 1.5f);
-        add("nechryael", "nechryarch", "Nechryarch", 300, 300, 3068, 1.4f);
-        add("drake", "guardian_drake", "Guardian Drake", 349, 3050, 1.4f);
+        add("nechryael", "nechryarch", "Nechryarch", 300, 320, 3068, 1.4f);
+        add("drake", "guardian_drake", "Guardian Drake", 376, 590, 5900, 1.4f); // approx XP (~10x HP)
         add("abyssal_demon", "greater_abyssal_demon", "Greater abyssal demon", 342, 400, 4200, 1.5f);
         add("dark_beast", "night_beast", "Night beast", 374, 550, 6462, 1.5f);
         add("smoke_devil", "nuclear_smoke_devil", "Nuclear smoke devil", 280, 2400, 1.5f);
-        add("hydra", "colossal_hydra", "Colossal Hydra", 349, 3500, 1.4f);
-        add("basilisk_knight", "basilisk_sentinel", "Basilisk Sentinel", 358, 2850, 1.3f);
+        add("hydra", "colossal_hydra", "Colossal Hydra", 309, 750, 7500, 1.4f); // approx XP (~10x HP)
+        add("basilisk_knight", "basilisk_sentinel", "Basilisk Sentinel", 358, 520, 5200, 1.3f); // approx XP (~10x HP)
     }
 
     public static Superior forBase(String baseId) {

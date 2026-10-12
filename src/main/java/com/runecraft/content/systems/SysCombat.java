@@ -405,13 +405,21 @@ public final class SysCombat {
         if (target.isUndead()) {
             return true;
         }
-        String n = MonsterStats.of(target).name().toLowerCase(java.util.Locale.ROOT);
+        MonsterStats stats = MonsterStats.of(target);
+        if (stats.profile() != null && stats.profile().referenceStats) {
+            return stats.profile().hasAttribute("undead");
+        }
+        String n = stats.name().toLowerCase(java.util.Locale.ROOT);
         return n.contains("zombie") || n.contains("skeleton") || n.contains("ghost") || n.contains("ghoul") || n.contains("shade")
                 || n.contains("revenant") || n.contains("vampyre") || n.contains("ankou") || n.contains("banshee");
     }
 
     public static boolean isDemon(LivingEntity target) {
-        String n = MonsterStats.of(target).name().toLowerCase(java.util.Locale.ROOT);
+        MonsterStats stats = MonsterStats.of(target);
+        if (stats.profile() != null && stats.profile().referenceStats) {
+            return stats.profile().hasAttribute("demon");
+        }
+        String n = stats.name().toLowerCase(java.util.Locale.ROOT);
         return n.contains("demon") || n.contains("imp") || n.contains("hellhound") || n.contains("k'ril") || n.contains("skotizo")
                 || n.contains("nechryael") || n.contains("bloodveld") || n.contains("abyssal");
     }
