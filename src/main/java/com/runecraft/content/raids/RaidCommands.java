@@ -1,7 +1,9 @@
 package com.runecraft.content.raids;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.runecraft.osrs.content.raids.Invocation;
+import com.runecraft.osrs.content.raids.RaidMode;
 import com.runecraft.osrs.content.raids.RaidType;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -12,7 +14,8 @@ import net.minecraft.util.Formatting;
 
 /**
  * {@code /raids}: completion counts (chat + screen), {@code /raids leave}, {@code /raids level <n>}
- * (ToA party leader, before the raid begins) and {@code /raids invocations}.
+ * (ToA party leader, before the raid begins), {@code /raids mode <mode>} (CoX Challenge Mode, ToB
+ * Entry/Hard mode; party leader, before the raid begins) and {@code /raids invocations}.
  */
 final class RaidCommands {
     private RaidCommands() {
@@ -24,6 +27,10 @@ final class RaidCommands {
                         .executes(ctx -> stats(ctx.getSource().getPlayerOrThrow()))
                         .then(CommandManager.literal("leave").executes(ctx -> leave(ctx.getSource().getPlayerOrThrow())))
                         .then(CommandManager.literal("invocations").executes(ctx -> invocations(ctx.getSource().getPlayerOrThrow())))
+                        .then(CommandManager.literal("mode")
+                                .then(CommandManager.argument("mode", StringArgumentType.word())
+                                        .executes(ctx -> mode(ctx.getSource().getPlayerOrThrow(),
+                                                StringArgumentType.getString(ctx, "mode")))))
                         .then(CommandManager.literal("level")
                                 .then(CommandManager.argument("level", IntegerArgumentType.integer(0, 600))
                                         .executes(ctx -> level(ctx.getSource().getPlayerOrThrow(),
@@ -69,6 +76,30 @@ final class RaidCommands {
             sb.append(sb.length() == 0 ? "" : ", ").append(i.displayName()).append(" (").append(i.level()).append(")");
         }
         Msg.game(p, "Raid level " + raid.raidLevel() + ". " + (sb.length() == 0 ? "No invocations." : sb.toString()));
+        return 1;
+    }
+
+    private static int mode(ServerPlayerEntity p, String name) {
+        RaidInstance raid = RaidManager.of(p);
+        if (raid == null) {
+            Msg.game(p, "You must be in a raid lobby to choose the mode.");
+            return 0;
+        }
+        if (raid.begun()) {
+            Msg.game(p, "The raid has already begun.");
+            return 0;
+        }
+        if (!raid.isLeader(p)) {
+            Msg.game(p, "Only the party leader can choose the mode.");
+            return 0;
+        }
+        RaidMode m = RaidMode.byName(name);
+        if (m == null || !raid.setMode(m)) {
+            Msg.game(p, raid.type.displayName() + " modes: " + (raid.type == RaidType.COX ? "normal, challenge"
+                    : raid.type == RaidType.TOB ? "entry, normal, hard" : "normal (use the obelisk to set the raid level)") + ".");
+            return 0;
+        }
+        raid.say("The raid mode is set to " + m.displayName() + ".", Formatting.YELLOW);
         return 1;
     }
 

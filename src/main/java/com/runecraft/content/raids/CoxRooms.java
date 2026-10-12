@@ -7,6 +7,7 @@ import com.runecraft.combat.CombatHandler;
 import com.runecraft.combat.PoisonService;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.raids.RaidScaling;
 import com.runecraft.osrs.content.raids.RaidsContent;
 import com.runecraft.osrs.content.raids.RoomDef;
 import com.runecraft.skill.XpService;
@@ -101,7 +102,8 @@ final class CoxRooms {
 
         @Override
         public int bossOutgoing(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
-            return enrage > 0 ? (int) Math.round(damage * 1.25) : damage;
+            // Enraged Tekton (fresh from the anvil) has a 59 max hit instead of 52 (OSRS).
+            return enrage > 0 ? (int) Math.round(damage * 59 / 52.0) : damage;
         }
     }
 
@@ -884,6 +886,9 @@ final class CoxRooms {
         private String special;
         private boolean headExposed;
         private int clawSpecial;
+        /** Healing pools: a player standing in one heals the Olm. */
+        private final List<Vec3d> pools = new ArrayList<>();
+        private int poolTicks;
 
         Olm(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -905,8 +910,10 @@ final class CoxRooms {
 
         @Override
         public void start() {
-            phases = 3 + (raid.partySize() >= 8 ? 1 : 0);
+            phases = RaidScaling.olmPhases(raid.partySize());
             phase = 0;
+            special = null;
+            pools.clear();
             headExposed = false;
             head = spawnBoss("great_olm", at(15, 0));
             anchor(head);
@@ -919,7 +926,11 @@ final class CoxRooms {
             right = spawnBoss("olm_right_claw", at(15, -9));
             anchor(left);
             anchor(right);
-            special = SPECIALS[rnd().nextInt(SPECIALS.length)];
+            // OSRS: a phase never repeats the previous phase's type.
+            String previous = special;
+            do {
+                special = SPECIALS[rnd().nextInt(SPECIALS.length)];
+            } while (special.equals(previous));
             warn("The Great Olm rises with the power of " + special + ". (Phase " + phase + "/" + phases + ")");
         }
 
@@ -986,8 +997,13 @@ final class CoxRooms {
                 }
             }
             // Left claw specials.
+            // Prayer spheres: every so often the head sends each player an orb to pray against.
+            if (tick % 16 == 8) {
+                spheres(players);
+            }
+            tickPools();
             if (alive(left) && tick % 20 == 10) {
-                switch (clawSpecial++ % 3) {
+                switch (clawSpecial++ % 4) {
                     case 0 -> {
                         say("The Great Olm's left claw clenches - lightning strikes!");
                         for (int lane = 0; lane < 2; lane++) {
@@ -1003,7 +1019,8 @@ final class CoxRooms {
                             RaidEffects.strike(world(), p.getPos(), 1.5, 30, 3, left, ParticleTypes.END_ROD);
                         }
                     }
-                    default -> portals(players);
+                    case 2 -> portals(players);
+                    default -> healingPools(players);
                 }
             }
             if (!alive(left) && !alive(right)) {
@@ -1012,6 +1029,72 @@ final class CoxRooms {
                 } else if (!headExposed) {
                     headExposed = true;
                     warn("The Great Olm's claws are dead - its head is now vulnerable!");
+                }
+            }
+        }
+
+        /**
+         * Spheres: a red (melee), green (ranged) or blue (magic) orb flies at each player; without the
+         * matching protection prayer it hits hard and halves their prayer points.
+         */
+        private void spheres(List<ServerPlayerEntity> players) {
+            AttackType[] styles = {AttackType.CRUSH, AttackType.RANGED, AttackType.MAGIC};
+            String[] names = {"red", "green", "blue"};
+            for (ServerPlayerEntity p : players) {
+                int s = rnd().nextInt(3);
+                Msg.red(p, "The Great Olm fires a " + names[s] + " sphere at you!");
+                world().spawnParticles(s == 0 ? ParticleTypes.FLAME : s == 1 ? ParticleTypes.HAPPY_VILLAGER : ParticleTypes.SOUL_FIRE_FLAME,
+                        head.getX(), head.getY() + 1.5, head.getZ(), 10, 0.4, 0.4, 0.4, 0.02);
+                DataBossEntity source = head;
+                RaidEffects.later(3, () -> {
+                    if (!p.isAlive() || !alive(source)) {
+                        return;
+                    }
+                    if (!RaidEffects.protectedFrom(p, styles[s])) {
+                        var data = com.runecraft.player.Players.data(p);
+                        data.setPrayerPoints(data.prayerPoints() / 2);
+                        Msg.red(p, "The sphere drains your prayer!");
+                    }
+                    RaidEffects.hit(source, p, rnd().nextInt(28), styles[s], false); // approx max hit
+                });
+            }
+        }
+
+        /** Healing pools: marked pools appear around the room; each player standing in one heals the Olm. */
+        private void healingPools(List<ServerPlayerEntity> players) {
+            say("The Great Olm creates healing pools - stay out of them!");
+            pools.clear();
+            for (int i = 0; i < 3 + players.size(); i++) {
+                pools.add(vec(rnd().nextInt(26) - 16, rnd().nextInt(30) - 15));
+            }
+            poolTicks = 20;
+        }
+
+        private void tickPools() {
+            if (poolTicks <= 0) {
+                pools.clear();
+                return;
+            }
+            poolTicks--;
+            for (Vec3d pool : pools) {
+                world().spawnParticles(ParticleTypes.HEART, pool.x, pool.y + 0.2, pool.z, 2, 0.6, 0.05, 0.6, 0);
+                world().spawnParticles(ParticleTypes.GLOW, pool.x, pool.y + 0.1, pool.z, 6, 0.7, 0.02, 0.7, 0);
+            }
+            int standing = 0;
+            for (ServerPlayerEntity p : players()) {
+                for (Vec3d pool : pools) {
+                    if (RaidEffects.horizontalDistSq(p.getPos(), pool) <= 1.2 * 1.2) {
+                        standing++;
+                        break;
+                    }
+                }
+            }
+            if (standing > 0) {
+                // approx: each player in a pool heals the Olm 10 hitpoints per game tick.
+                for (DataBossEntity part : new DataBossEntity[]{head, left, right}) {
+                    if (alive(part) && (part != head || headExposed)) {
+                        raid.heal(part, 10 * standing);
+                    }
                 }
             }
         }

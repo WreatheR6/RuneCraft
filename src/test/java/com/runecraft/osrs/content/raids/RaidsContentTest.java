@@ -167,6 +167,109 @@ class RaidsContentTest {
     }
 
     @Test
+    void coxScaling() {
+        assertEquals(1.0, RaidScaling.coxHp(1));
+        assertEquals(2.0, RaidScaling.coxHp(2));
+        assertEquals(2.0, RaidScaling.coxHp(3));
+        assertEquals(3.0, RaidScaling.coxHp(4));
+        assertEquals(300, RaidScaling.coxScaledHp("tekton", 300, 1, false));
+        assertEquals(600, RaidScaling.coxScaledHp("tekton", 300, 3, false));
+        assertEquals(450, RaidScaling.coxScaledHp("tekton", 300, 1, true));
+        assertEquals(120, RaidScaling.coxScaledHp("vasa_crystal", 120, 1, true), "crystals ignore Challenge Mode");
+        // Great Olm: 800/600 solo; at 8 players the extra phase takes 3 players' worth (factor 7 - 3 = 4).
+        assertEquals(800, RaidScaling.coxScaledHp("great_olm", 800, 1, false));
+        assertEquals(800, RaidScaling.coxScaledHp("great_olm", 800, 1, true), "Olm ignores Challenge Mode");
+        assertEquals(1200, RaidScaling.coxScaledHp("great_olm", 800, 2, false));
+        assertEquals(2400, RaidScaling.coxScaledHp("great_olm", 800, 8, false));
+        assertEquals(1800, RaidScaling.coxScaledHp("olm_left_claw", 600, 8, false));
+        assertEquals(3, RaidScaling.olmPhases(1));
+        assertEquals(3, RaidScaling.olmPhases(7));
+        assertEquals(4, RaidScaling.olmPhases(8));
+        assertEquals(5, RaidScaling.olmPhases(16));
+        assertEquals(1.0, RaidScaling.coxOffence(1, false), 1e-9);
+        assertEquals(1.18, RaidScaling.coxOffence(5, false), 1e-9);
+        assertEquals(1.5, RaidScaling.coxOffence(1, true), 1e-9);
+    }
+
+    @Test
+    void coxUniqueRolls() {
+        assertEquals(List.of(100_000 / 867_600.0), RaidScaling.coxUniqueRolls(100_000));
+        List<Double> big = RaidScaling.coxUniqueRolls(1_200_000);
+        assertEquals(3, big.size());
+        assertEquals(570_000 / 867_600.0, big.get(0), 1e-9);
+        assertEquals(60_000 / 867_600.0, big.get(2), 1e-9);
+        assertEquals(RaidScaling.COX_MAX_UNIQUES, RaidScaling.coxUniqueRolls(50_000_000).size());
+        Map<String, Integer> points = new HashMap<>();
+        for (int i = 0; i < 20; i++) {
+            points.put("p" + i, 120_000);
+        }
+        Random random = new Random(7);
+        int multi = 0;
+        for (int i = 0; i < 500; i++) {
+            RaidRewards.Result r = RaidRewards.roll(RaidType.COX, points, 0, random);
+            assertTrue(r.purpleRecipients().size() <= RaidScaling.COX_MAX_UNIQUES);
+            assertEquals(r.purpleRecipients().size(), new HashSet<>(r.purpleRecipients()).size(), "one unique per player");
+            if (r.purpleRecipients().size() > 1) {
+                multi++;
+            }
+        }
+        assertTrue(multi > 0, "2.4m points gives several unique rolls");
+    }
+
+    @Test
+    void tobModes() {
+        assertEquals(3062, RaidScaling.tobScaledHp("the_maiden_of_sugadinti", 3500, 4, RaidMode.NORMAL));
+        assertEquals(2625, RaidScaling.tobScaledHp("the_maiden_of_sugadinti", 3500, 1, RaidMode.NORMAL));
+        assertEquals(500, RaidScaling.tobScaledHp("the_maiden_of_sugadinti", 3500, 1, RaidMode.ENTRY));
+        assertEquals(2000, RaidScaling.tobScaledHp("the_maiden_of_sugadinti", 3500, 5, RaidMode.ENTRY));
+        assertEquals(0, RaidScaling.tobPurpleChance(90, 5, RaidMode.ENTRY));
+        assertEquals(1 / 7.7, RaidScaling.tobPurpleChance(90, 5, RaidMode.HARD), 1e-9);
+        assertEquals(0.5 / 9.1, RaidScaling.tobPurpleChance(45, 5, RaidMode.NORMAL), 1e-9);
+        Random random = new Random(3);
+        for (int i = 0; i < 300; i++) {
+            RaidRewards.Result r = RaidRewards.roll(RaidType.TOB, RaidMode.ENTRY, Map.of("a", 18, "b", 18), 0, random);
+            assertTrue(r.purpleRecipients().isEmpty() && r.petRecipients().isEmpty(), "entry mode has no uniques or pet");
+        }
+        assertTrue(RaidMode.CHALLENGE.availableFor(RaidType.COX));
+        assertFalse(RaidMode.CHALLENGE.availableFor(RaidType.TOB));
+        assertTrue(RaidMode.HARD.availableFor(RaidType.TOB));
+        assertEquals(RaidMode.CHALLENGE, RaidMode.byName("cm"));
+    }
+
+    @Test
+    void toaScaling() {
+        assertEquals(400, RaidScaling.toaScaledHp(400, 0, 0, 1, true));
+        assertEquals(880, RaidScaling.toaScaledHp(400, 300, 0, 1, true));
+        // Zebak at raid level 150, path level 1, duo: 580 -> 928 -> 1002 -> 1903 -> rounded 1900.
+        assertEquals(1900, RaidScaling.toaScaledHp(580, 150, 1, 2, true));
+        assertEquals(1760, RaidScaling.toaScaledHp(580, 150, 1, 2, false), "path level only affects path monsters");
+        assertEquals(1.08, RaidScaling.toaPathMultiplier(1), 1e-9);
+        assertEquals(1.33, RaidScaling.toaPathMultiplier(6), 1e-9);
+        assertEquals(0, RaidScaling.toaPathLevel(Set.of(), 3));
+        assertEquals(1, RaidScaling.toaPathLevel(Set.of(Invocation.PATHSEEKER), 3));
+        assertEquals(5, RaidScaling.toaPathLevel(Set.of(Invocation.PATHMASTER, Invocation.WALK_THE_PATH), 2));
+        assertEquals(6, RaidScaling.toaPathLevel(Set.of(Invocation.PATHMASTER, Invocation.WALK_THE_PATH), 3));
+        RaidRewards.Unique shadow = RaidRewards.TOA_UNIQUES.stream().filter(u -> u.item().equals("tumekens_shadow")).findFirst().orElseThrow();
+        RaidRewards.Unique fang = RaidRewards.TOA_UNIQUES.get(0);
+        assertEquals(350, RaidRewards.toaWeight(fang, 0) / 10);
+        assertEquals(10, RaidRewards.toaWeight(shadow, 0), "shadow is 50x rarer below raid level 50");
+        assertEquals(250, RaidRewards.toaWeight(shadow, 100));
+        assertEquals(500, RaidRewards.toaWeight(shadow, 300));
+        double purple = RaidScaling.toaPurpleChance(20_000, 300);
+        assertTrue(RaidScaling.toaPetChance(20_000, 300) < purple / 30);
+    }
+
+    @Test
+    void bossStatsMatchOsrs() {
+        assertEquals(3500, ContentRegistry.boss("verzik_vitur_p2").hitpoints);
+        assertEquals(3500, ContentRegistry.boss("verzik_vitur_p3").hitpoints);
+        assertEquals(5000, ContentRegistry.boss("xarpus").hitpoints);
+        assertEquals(800, ContentRegistry.boss("great_olm").hitpoints);
+        assertEquals(250, ContentRegistry.boss("muttadile").hitpoints);
+        assertEquals(100, ContentRegistry.monster("vespine_soldier").hitpoints);
+    }
+
+    @Test
     void invocationPresets() {
         int[] expected = {0, 150, 300, 400, 500};
         List<Invocation.Preset> presets = Invocation.presets();
