@@ -215,12 +215,60 @@ final class HouseService {
                 || findPortal((ServerWorld) player.getWorld(), player.getBlockPos(), 5) != null;
     }
 
+    /** The town a player's house is in (OSRS: Rimmington until moved by an estate agent). */
+    static String location(MinecraftServer server, UUID owner) {
+        String town = ExtrasState.get(server).entry("houses", owner.toString()).getString("location");
+        return ExtrasContent.portalTown(town) == null ? ExtrasContent.START_TOWN : town;
+    }
+
+    /** The house-portal town the player is standing next to, or null. */
+    private static ExtrasContent.PortalTown townHere(ServerPlayerEntity player) {
+        for (ExtrasContent.PortalTown t : ExtrasContent.PORTAL_TOWNS) {
+            double dx = player.getX() - GielinorMap.toBlockX(t.x());
+            double dz = player.getZ() - GielinorMap.toBlockZ(t.y());
+            if (dx * dx + dz * dz <= 12 * 12) {
+                return t;
+            }
+        }
+        return null;
+    }
+
     private static void portalOptions(ServerPlayerEntity player) {
+        ExtrasContent.PortalTown here = townHere(player);
+        ExtrasContent.PortalTown home = ExtrasContent.portalTown(location(player.getServer(), player.getUuid()));
         List<MutableText> links = new ArrayList<>();
-        links.add(ExtrasUtil.link("Go to your house", "/house enter", "Enter your house", Formatting.GOLD));
-        links.add(ExtrasUtil.link("Building mode", "/house enter build", "Enter your house in building mode", Formatting.GOLD));
+        if (here == null || here == home) {
+            links.add(ExtrasUtil.link("Go to your house", "/house enter", "Enter your house", Formatting.GOLD));
+            links.add(ExtrasUtil.link("Building mode", "/house enter build", "Enter your house in building mode", Formatting.GOLD));
+        } else {
+            Msg.game(player, "Your house is in " + home.name() + ". The estate agent can move it here.");
+            links.add(ExtrasUtil.link("Move your house here - " + ExtrasUtil.coins(here.moveCost()), "/house move " + here.id(),
+                    "Move your house to " + here.name() + "\nLevel " + here.level() + " Construction\n" + ExtrasUtil.coins(here.moveCost())
+                            + " coins", Formatting.YELLOW));
+        }
         ExtrasUtil.options(player, "House portal:", links);
-        Msg.game(player, "To visit a friend's house, type /house visit <name> next to the portal.");
+        Msg.game(player, "To visit a friend's house, type /house visit <name> next to the portal of the town their house is in.");
+    }
+
+    /** /house move: the estate agent relocates the player's house to the portal town they are standing at. */
+    static void move(ServerPlayerEntity player, String townId) {
+        ExtrasContent.PortalTown to = ExtrasContent.portalTown(townId);
+        if (to == null || (townHere(player) != to && !player.getAbilities().creativeMode)) {
+            Msg.game(player, "You need to be at the house portal of the town you want to move to.");
+            return;
+        }
+        MinecraftServer server = player.getServer();
+        int level = com.runecraft.player.Players.data(player).skills().level(Skill.CONSTRUCTION); // boosts don't count
+        boolean quest = to.quest() == null || com.runecraft.quest.QuestApi.isComplete(player, to.quest());
+        String why = ExtrasContent.canMove(to, location(server, player.getUuid()), level, quest, Inv.count(player, Inv.COINS));
+        if (why != null) {
+            Msg.game(player, why);
+            return;
+        }
+        Inv.remove(player, Inv.COINS, to.moveCost());
+        ExtrasState.get(server).entry("houses", player.getUuidAsString()).putString("location", to.id());
+        ServerNetworking.sync(player);
+        Msg.action(player, "Your house has been moved to " + to.name() + ".");
     }
 
     // ------------------------------------------------------------------ entering and leaving
@@ -239,6 +287,14 @@ final class HouseService {
         if (!own && !ExtrasState.get(server).has("houses", owner.toString())) {
             Msg.game(player, "That player doesn't have a house.");
             return;
+        }
+        if (fromPortal && !player.getAbilities().creativeMode) {
+            ExtrasContent.PortalTown here = townHere(player);
+            ExtrasContent.PortalTown home = ExtrasContent.portalTown(location(server, owner));
+            if (here != null && here != home) {
+                Msg.game(player, (own ? "Your house is" : "That house is") + " in " + home.name() + ", not " + here.name() + ".");
+                return;
+            }
         }
         // Remember where to come back to (the portal / place the player left from).
         if (!inHouseZone(world, player.getBlockPos()) || player.getWorld() != world) {
@@ -282,7 +338,12 @@ final class HouseService {
         if (world == null) {
             return;
         }
-        if (ret.contains("x")) {
+        Spot in = locate(world, player.getBlockPos());
+        if (in != null && player.getWorld() == world) {
+            // OSRS: the exit portal leads out to the portal of the town the house is in.
+            ExtrasContent.PortalTown town = ExtrasContent.portalTown(location(player.getServer(), in.owner()));
+            ExtrasUtil.teleport(player, town.x(), town.y() - 2);
+        } else if (ret.contains("x")) {
             int x = ret.getInt("x");
             int z = ret.getInt("z");
             BlockPos pos = Gielinor.safeSpot(world, x, z);
@@ -606,7 +667,7 @@ final class HouseService {
             case "chapel" -> Blocks.POLISHED_DIORITE.getDefaultState();
             case "dungeon", "oubliette", "treasure_room" -> Blocks.DEEPSLATE_TILES.getDefaultState();
             case "throne_room", "achievement_gallery" -> Blocks.POLISHED_ANDESITE.getDefaultState();
-            case "portal_chamber" -> Blocks.PURPUR_BLOCK.getDefaultState();
+            case "portal_chamber", "portal_nexus" -> Blocks.PURPUR_BLOCK.getDefaultState();
             case "bedroom", "costume_room" -> Blocks.SPRUCE_PLANKS.getDefaultState();
             case "study", "dining_room" -> Blocks.DARK_OAK_PLANKS.getDefaultState();
             default -> Blocks.OAK_PLANKS.getDefaultState();

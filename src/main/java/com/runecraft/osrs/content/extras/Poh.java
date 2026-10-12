@@ -20,7 +20,7 @@ public final class Poh {
 
     public enum Effect {
         DECOR, SEAT, BED, EXIT_PORTAL, ALTAR, BURNER, POOL, PORTAL_FRAME, LECTERN, JEWELLERY_BOX, SPIRIT_TREE, LARDER,
-        BOOKCASE, STOVE, WORKBENCH, PET_HOUSE, SPELLBOOK_ALTAR, CHEST
+        BOOKCASE, STOVE, WORKBENCH, PET_HOUSE, SPELLBOOK_ALTAR, CHEST, NEXUS, BELL_PULL
     }
 
     /**
@@ -226,12 +226,12 @@ public final class Poh {
         f("carved_oak_bench", "Carved oak bench", 31, 240, Effect.SEAT, 0, OAK, "bench", "oak_plank", 4);
         f("teak_dining_bench", "Teak dining bench", 38, 360, Effect.SEAT, 0, TEAK, "bench", "teak_plank", 4);
         f("carved_teak_bench", "Carved teak bench", 44, 360, Effect.SEAT, 0, TEAK, "bench", "teak_plank", 4);
-        f("mahogany_bench", "Mahogany bench", 52, 560, Effect.SEAT, 0, MAHOG, "bench", "mahogany_plank", 6);
+        f("mahogany_bench", "Mahogany bench", 52, 560, Effect.SEAT, 0, MAHOG, "bench", "mahogany_plank", 4);
         f("gilded_bench", "Gilded bench", 61, 1760, Effect.SEAT, 0, GOLD, "bench", "mahogany_plank", 4, "gold_leaf", 4);
         hotspot("bell_pull", "Bell-pull", 1, 1);
-        f("rope_bell_pull", "Rope bell-pull", 26, 64, Effect.DECOR, 0, OAK, "bell", "oak_plank", 1, "bolt_of_cloth", 2);
-        f("bell_pull", "Bell-pull", 37, 120, Effect.DECOR, 0, TEAK, "bell", "teak_plank", 1, "bolt_of_cloth", 2);
-        f("posh_bell_pull", "Posh bell-pull", 60, 420, Effect.DECOR, 0, GOLD, "bell", "teak_plank", 1, "bolt_of_cloth", 2,
+        f("rope_bell_pull", "Rope bell-pull", 26, 64, Effect.BELL_PULL, 0, OAK, "bell", "oak_plank", 1, "bolt_of_cloth", 2);
+        f("bell_pull", "Bell-pull", 37, 120, Effect.BELL_PULL, 0, TEAK, "bell", "teak_plank", 1, "bolt_of_cloth", 2);
+        f("posh_bell_pull", "Posh bell-pull", 60, 420, Effect.BELL_PULL, 0, GOLD, "bell", "teak_plank", 1, "bolt_of_cloth", 2,
                 "gold_leaf", 1);
         room("dining_room", "Dining room", 10, 5000, false, 0x7A4A2A);
 
@@ -275,8 +275,8 @@ public final class Poh {
         f("oak_wardrobe", "Oak wardrobe", 39, 180, Effect.DECOR, 0, OAK, "wardrobe", "oak_plank", 3);
         f("teak_drawers", "Teak drawers", 51, 180, Effect.DECOR, 0, TEAK, "wardrobe", "teak_plank", 2);
         f("teak_wardrobe", "Teak wardrobe", 63, 270, Effect.DECOR, 0, TEAK, "wardrobe", "teak_plank", 3);
-        f("mahogany_wardrobe", "Mahogany wardrobe", 75, 420, Effect.DECOR, 0, MAHOG, "wardrobe", "mahogany_plank", 2);
-        f("gilded_wardrobe", "Gilded wardrobe", 87, 720, Effect.DECOR, 0, GOLD, "wardrobe", "mahogany_plank", 2, "gold_leaf", 1);
+        f("mahogany_wardrobe", "Mahogany wardrobe", 75, 420, Effect.DECOR, 0, MAHOG, "wardrobe", "mahogany_plank", 3);
+        f("gilded_wardrobe", "Gilded wardrobe", 87, 720, Effect.DECOR, 0, GOLD, "wardrobe", "mahogany_plank", 3, "gold_leaf", 1);
         room("bedroom", "Bedroom", 20, 10000, false, 0x8A3A3A);
 
         // ---------------------------------------------------------------- Combat room (32, 25,000)
@@ -356,10 +356,10 @@ public final class Poh {
         f("teak_altar", "Teak altar", 50, 360, Effect.ALTAR, 120, TEAK, "altar", "teak_plank", 4);
         f("cloth_covered_altar", "Cloth-covered altar", 56, 390, Effect.ALTAR, 130, 0xE0E0F0, "altar", "teak_plank", 4,
                 "bolt_of_cloth", 2);
-        f("mahogany_altar", "Mahogany altar", 60, 590, Effect.ALTAR, 140, MAHOG, "altar", "mahogany_plank", 4);
+        f("mahogany_altar", "Mahogany altar", 60, 590, Effect.ALTAR, 140, MAHOG, "altar", "mahogany_plank", 4, "bolt_of_cloth", 2);
         f("limestone_altar", "Limestone altar", 64, 910, Effect.ALTAR, 150, 0xD8D0B0, "altar", "mahogany_plank", 6, "bolt_of_cloth", 2,
                 "limestone_brick", 2);
-        f("marble_altar", "Marble altar", 70, 1030, Effect.ALTAR, 175, MARBLE, "altar", "marble_block", 2, "bolt_of_cloth", 2);
+        f("marble_altar", "Marble altar", 70, 1030, Effect.ALTAR, 200, MARBLE, "altar", "marble_block", 2, "bolt_of_cloth", 2);
         f("gilded_altar", "Gilded altar", 75, 2230, Effect.ALTAR, 250, GOLD, "altar", "marble_block", 2, "bolt_of_cloth", 2,
                 "gold_leaf", 4);
         for (String side : new String[]{"burner_left", "burner_right"}) {
@@ -412,15 +412,15 @@ public final class Poh {
 
         // ---------------------------------------------------------------- Superior garden (65, 75,000)
         hotspot("pool", "Pool", 5, 5);
-        f("restoration_pool", "Restoration pool", 65, 1500, Effect.POOL, 1, 0x6080C0, "pool", "limestone_brick", 5); // approx
-        f("revitalisation_pool", "Revitalisation pool", 70, 2000, Effect.POOL, 2, 0x5090C0, "pool", "limestone_brick", 5,
-                "marble_block", 1); // approx
-        f("rejuvenation_pool", "Rejuvenation pool", 80, 4000, Effect.POOL, 3, 0x40A0C0, "pool", "limestone_brick", 5,
-                "marble_block", 2, "magic_stone", 1); // approx
-        f("fancy_rejuvenation_pool", "Fancy rejuvenation pool", 85, 6000, Effect.POOL, 4, 0x40B0D0, "pool", "limestone_brick", 2,
-                "marble_block", 5, "magic_stone", 1); // approx
-        f("ornate_rejuvenation_pool", "Ornate rejuvenation pool", 90, 8000, Effect.POOL, 5, 0x40C0E0, "pool", "gold_leaf", 5,
-                "marble_block", 5, "magic_stone", 1); // approx
+        // Each pool is an upgrade of the one before it (OSRS); materials are the upgrade's own.
+        f("restoration_pool", "Restoration pool", 65, 706, Effect.POOL, 1, 0x6080C0, "pool", "limestone_brick", 5,
+                "minecraft:water_bucket", 5, "soul_rune", 1000, "body_rune", 1000);
+        f("revitalisation_pool", "Revitalisation pool", 70, 850, Effect.POOL, 2, 0x5090C0, "pool", "stamina_potion", 10);
+        f("rejuvenation_pool", "Rejuvenation pool", 80, 900, Effect.POOL, 3, 0x40A0C0, "pool", "prayer_potion", 10);
+        f("fancy_rejuvenation_pool", "Fancy rejuvenation pool", 85, 1950, Effect.POOL, 4, 0x40B0D0, "pool", "marble_block", 2,
+                "super_restore", 10);
+        f("ornate_rejuvenation_pool", "Ornate rejuvenation pool", 90, 3107, Effect.POOL, 5, 0x40C0E0, "pool", "gold_leaf", 2,
+                "anti_venom_plus", 10); // approx materials
         hotspot("teleport", "Teleport", 2, 2);
         fx("spirit_tree", "Spirit tree", 75, 199.5, Effect.SPIRIT_TREE, 1, 0x7A9A4A, "spirit_tree", Skill.FARMING, 83,
                 "coins", 250000); // approx: bagged spirit tree
@@ -456,18 +456,29 @@ public final class Poh {
 
         // ---------------------------------------------------------------- Achievement gallery (80, 200,000)
         hotspot("jewellery_box", "Jewellery box", 5, 5);
-        f("basic_jewellery_box", "Basic jewellery box", 81, 485, Effect.JEWELLERY_BOX, 1, OAK, "chest", "teak_plank", 3,
-                "skills_necklace", 1); // approx
-        f("fancy_jewellery_box", "Fancy jewellery box", 86, 995, Effect.JEWELLERY_BOX, 2, TEAK, "chest", "mahogany_plank", 3,
-                "skills_necklace", 1, "combat_bracelet", 1); // approx
-        f("ornate_jewellery_box", "Ornate jewellery box", 91, 2950, Effect.JEWELLERY_BOX, 3, GOLD, "chest", "mahogany_plank", 3,
-                "amulet_of_glory", 1, "ring_of_wealth", 1, "gold_leaf", 1); // approx
+        // Fancy and ornate boxes upgrade the box below them (OSRS); materials are the upgrade's own.
+        f("basic_jewellery_box", "Basic jewellery box", 81, 605, Effect.JEWELLERY_BOX, 1, OAK, "chest", "teak_plank", 2,
+                "ring_of_dueling_8", 8, "games_necklace_8", 8); // approx materials
+        f("fancy_jewellery_box", "Fancy jewellery box", 86, 1215, Effect.JEWELLERY_BOX, 2, TEAK, "chest", "mahogany_plank", 2,
+                "skills_necklace_4", 8, "combat_bracelet_4", 8); // approx xp/materials
+        f("ornate_jewellery_box", "Ornate jewellery box", 91, 2680, Effect.JEWELLERY_BOX, 3, GOLD, "chest", "gold_leaf", 2,
+                "ring_of_wealth_5", 8, "amulet_of_glory_4", 8);
         hotspot("gallery_altar", "Altar space", 2, 5);
-        f("ancient_altar", "Ancient altar", 80, 3, Effect.SPELLBOOK_ALTAR, 1, 0x7A3A9A, "altar", "magic_stone", 1, "marble_block", 1);
-        f("lunar_altar", "Lunar altar", 80, 3, Effect.SPELLBOOK_ALTAR, 2, 0x9AA0C0, "altar", "magic_stone", 1, "marble_block", 1);
-        f("dark_altar", "Dark altar", 80, 3, Effect.SPELLBOOK_ALTAR, 3, 0x3A2A3A, "altar", "magic_stone", 1, "marble_block", 1);
-        f("occult_altar", "Occult altar", 90, 3, Effect.SPELLBOOK_ALTAR, 4, 0x5A3A7A, "altar", "magic_stone", 4, "marble_block", 3);
+        f("ancient_altar", "Ancient altar", 80, 1000, Effect.SPELLBOOK_ALTAR, 1, 0x7A3A9A, "altar", "magic_stone", 1, "marble_block", 1);
+        f("lunar_altar", "Lunar altar", 80, 1000, Effect.SPELLBOOK_ALTAR, 2, 0x9AA0C0, "altar", "magic_stone", 1, "marble_block", 1);
+        f("dark_altar", "Dark altar", 80, 1000, Effect.SPELLBOOK_ALTAR, 3, 0x3A2A3A, "altar", "magic_stone", 1, "marble_block", 1);
+        f("occult_altar", "Occult altar", 90, 3000, Effect.SPELLBOOK_ALTAR, 4, 0x5A3A7A, "altar", "magic_stone", 4, "marble_block", 3);
+        // approx: spellbook altar XP (the wiki values could not be confirmed)
         room("achievement_gallery", "Achievement gallery", 80, 200000, false, 0x8A7A5A);
+
+        // ---------------------------------------------------------------- Portal nexus (72, 200,000)
+        hotspot("nexus", "Portal nexus", 5, 5);
+        f("marble_portal_nexus", "Portal nexus", 72, 3000, Effect.NEXUS, 1, MARBLE, "portal_glow", "marble_block", 4,
+                "magic_stone", 1); // approx xp/materials
+        f("gilded_portal_nexus", "Gilded portal nexus", 82, 1500, Effect.NEXUS, 2, GOLD, "portal_glow", "gold_leaf", 3); // approx
+        f("crystalline_portal_nexus", "Crystalline portal nexus", 92, 3000, Effect.NEXUS, 3, 0xC0E0F0, "portal_glow",
+                "magic_stone", 2); // approx
+        room("portal_nexus", "Portal nexus", 72, 200000, false, 0x3A2A5A);
     }
 
     // ------------------------------------------------------------------ teleports
@@ -548,15 +559,160 @@ public final class Poh {
             new Dest("hosidius", "Hosidius", 1693, 3542, 0, Map.of(), 1),
             new Dest("farming_guild", "Farming Guild", 1251, 3750, 0, Map.of(), 1));
 
-    /** Lectern teleport tablets (soft clay + the spell's runes). Lectern tiers: oak 1, eagle 2, teak 3, mahogany 4. approx tiers */
+    /**
+     * Lectern teleport tablets (soft clay + the spell's runes). Lectern tiers: oak 1, eagle 2, teak 3, mahogany 4. OSRS: Camelot
+     * and Ardougne need a teak eagle lectern, Watchtower and Teleport to house a mahogany eagle lectern; Lumbridge/Falador approx.
+     */
     public static final List<Tablet> TABLETS = List.of(
             new Tablet("varrock_teleport_tablet", "Varrock teleport", 25, 35, 1, runes("law_rune", 1, "air_rune", 3, "fire_rune", 1)),
             new Tablet("lumbridge_teleport_tablet", "Lumbridge teleport", 31, 41, 2, runes("law_rune", 1, "air_rune", 3, "earth_rune", 1)),
             new Tablet("falador_teleport_tablet", "Falador teleport", 37, 48, 2, runes("law_rune", 1, "air_rune", 3, "water_rune", 1)),
-            new Tablet(HOUSE_TABLET, "Teleport to house", 40, 30, 2, runes("law_rune", 1, "air_rune", 1, "earth_rune", 1)),
+            new Tablet(HOUSE_TABLET, "Teleport to house", 40, 30, 4, runes("law_rune", 1, "air_rune", 1, "earth_rune", 1)),
             new Tablet("camelot_teleport_tablet", "Camelot teleport", 45, 55.5, 3, runes("law_rune", 1, "air_rune", 5)),
             new Tablet("ardougne_teleport_tablet", "Ardougne teleport", 51, 61, 3, runes("law_rune", 2, "water_rune", 2)),
             new Tablet("watchtower_teleport_tablet", "Watchtower teleport", 58, 68, 4, runes("law_rune", 2, "earth_rune", 2)));
+
+    // ------------------------------------------------------------------ upgrades, nexus, servants
+
+    /** Furniture that is built as an upgrade of what already stands in the hotspot (OSRS pools and jewellery boxes). */
+    public static final Map<String, String> UPGRADE_OF = Map.of(
+            "revitalisation_pool", "restoration_pool",
+            "rejuvenation_pool", "revitalisation_pool",
+            "fancy_rejuvenation_pool", "rejuvenation_pool",
+            "ornate_rejuvenation_pool", "fancy_rejuvenation_pool",
+            "fancy_jewellery_box", "basic_jewellery_box",
+            "ornate_jewellery_box", "fancy_jewellery_box",
+            "gilded_portal_nexus", "marble_portal_nexus",
+            "crystalline_portal_nexus", "gilded_portal_nexus");
+
+    /** The furniture {@code id} upgrades, or null if it is built on an empty hotspot. */
+    public static String upgradeOf(String id) {
+        return UPGRADE_OF.get(id);
+    }
+
+    /** Portal nexus: adding a teleport costs this many casts of its spell (OSRS: 1,000x the rune cost). */
+    public static final int NEXUS_CASTS = 1000;
+
+    /** Teleports a portal nexus can hold: every portal chamber destination plus a few Lunar/Arceuus/standard ones. */
+    public static final List<Dest> NEXUS_DESTS;
+
+    static {
+        List<Dest> d = new ArrayList<>(PORTAL_DESTS);
+        d.add(new Dest("ape_atoll", "Ape Atoll", 2796, 2791, 64, runes("law_rune", 2, "fire_rune", 2, "water_rune", 2), 1));
+        d.add(new Dest("barrows", "Barrows", 3565, 3315, 83, runes("law_rune", 2, "soul_rune", 2, "blood_rune", 1), 1));
+        d.add(new Dest("fishing_guild", "Fishing Guild", 2611, 3390, 85, runes("law_rune", 3, "astral_rune", 3, "water_rune", 10), 1));
+        d.add(new Dest("catherby", "Catherby", 2802, 3449, 87, runes("law_rune", 3, "astral_rune", 3, "water_rune", 10), 1));
+        NEXUS_DESTS = List.copyOf(d);
+    }
+
+    public static Dest nexusDest(String id) {
+        for (Dest d : NEXUS_DESTS) {
+            if (d.id().equals(id)) {
+                return d;
+            }
+        }
+        return null;
+    }
+
+    /** Teleports a nexus of the given tier can store (marble, gilded, crystalline). approx */
+    public static int nexusCapacity(int tier) {
+        return switch (tier) {
+            case 1 -> 7;
+            case 2 -> 15;
+            case 3 -> NEXUS_DESTS.size();
+            default -> 0;
+        };
+    }
+
+    /** Destinations stored in a nexus ("id,id,..."), unknown ids dropped. */
+    public static List<String> nexusList(String extra) {
+        List<String> out = new ArrayList<>();
+        if (extra == null || extra.isEmpty()) {
+            return out;
+        }
+        for (String id : extra.split(",")) {
+            if (nexusDest(id) != null && !out.contains(id)) {
+                out.add(id);
+            }
+        }
+        return out;
+    }
+
+    /** Why a teleport can't be added to a nexus of {@code tier} that already stores {@code stored}, or null. */
+    public static String canAddToNexus(int tier, List<String> stored, String destId, int magicLevel) {
+        Dest d = nexusDest(destId);
+        if (d == null) {
+            return "There's no such teleport.";
+        }
+        if (stored.contains(destId)) {
+            return "Your portal nexus already has a teleport to " + d.name() + ".";
+        }
+        if (stored.size() >= nexusCapacity(tier)) {
+            return "Your portal nexus can't hold any more teleports.";
+        }
+        if (magicLevel < d.magic()) {
+            return "You need a Magic level of " + d.magic() + " to add a teleport to " + d.name() + ".";
+        }
+        return null;
+    }
+
+    /**
+     * A servant: Construction level to hire, wage (paid every {@link #WAGE_TRIPS} errands), items carried per trip, ticks per
+     * bank or sawmill trip, and whether they will go to the sawmill.
+     */
+    public record Servant(String id, String name, int level, int wage, int capacity, int tripTicks, boolean sawmill) {
+    }
+
+    public static final List<Servant> SERVANTS = List.of(
+            new Servant("rick", "Rick", 20, 500, 6, 100, false),
+            new Servant("maid", "Maid", 25, 1000, 10, 50, false),
+            new Servant("cook", "Cook", 30, 3000, 16, 29, true),
+            new Servant("butler", "Butler", 40, 5000, 20, 20, true),
+            new Servant("demon_butler", "Demon butler", 50, 10000, 26, 12, true));
+
+    /** Servants ask for their wage after this many errands. */
+    public static final int WAGE_TRIPS = 8;
+
+    /** Beds a servant needs in the house before moving in. */
+    public static final int SERVANT_BEDS = 2;
+
+    public static Servant servant(String id) {
+        for (Servant s : SERVANTS) {
+            if (s.id().equals(id)) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    /** Why a servant can't be hired, or null. */
+    public static String canHire(Servant s, int constructionLevel, int beds) {
+        if (s == null) {
+            return "There's no such servant.";
+        }
+        if (constructionLevel < s.level()) {
+            return "You need a Construction level of " + s.level() + " to hire " + (s.id().equals("rick") ? "Rick"
+                    : article(s.name().toLowerCase(java.util.Locale.ROOT))) + ".";
+        }
+        if (beds < SERVANT_BEDS) {
+            return "Your servant needs two beds in your house to move in.";
+        }
+        return null;
+    }
+
+    /** A sawmill conversion: logs to planks and the fee per plank (OSRS sawmill prices). */
+    public record Sawmill(String logs, String plank, int fee) {
+    }
+
+    public static final List<Sawmill> SAWMILL = List.of(
+            new Sawmill("logs", "plank", 100),
+            new Sawmill("oak_logs", "oak_plank", 250),
+            new Sawmill("teak_logs", "teak_plank", 500),
+            new Sawmill("mahogany_logs", "mahogany_plank", 1500));
+
+    /** Building materials a servant can fetch from the bank. */
+    public static final List<String> FETCHABLE = List.of("plank", "oak_plank", "teak_plank", "mahogany_plank", "iron_nails",
+            "steel_bar", "bolt_of_cloth", "limestone_brick", "marble_block", "gold_leaf", "soft_clay");
 
     // ------------------------------------------------------------------ lookups
 
@@ -606,6 +762,18 @@ public final class Poh {
             return 1.0;
         }
         return (altar.power() + Math.min(2, Math.max(0, litBurners)) * 50) / 100.0;
+    }
+
+    /** What drinking from a superior garden pool restores. */
+    public record PoolEffects(boolean special, boolean run, boolean prayer, boolean stats, boolean hitpoints) {
+    }
+
+    /**
+     * OSRS pool tiers: restoration (special attack), revitalisation (+ run energy), rejuvenation (+ prayer), fancy rejuvenation
+     * (+ lowered stats) and ornate rejuvenation (+ hitpoints, curing poison and venom).
+     */
+    public static PoolEffects poolEffects(int tier) {
+        return new PoolEffects(tier >= 1, tier >= 2, tier >= 3, tier >= 4, tier >= 5);
     }
 
     /** Tablets a lectern of the given tier can make. */

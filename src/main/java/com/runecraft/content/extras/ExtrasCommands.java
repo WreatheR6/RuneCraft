@@ -38,7 +38,9 @@ final class ExtrasCommands {
         Msg.game(p, "Player-owned house: click a house portal (Rimmington, Taverley, Pollnivneach, Rellekka, Brimhaven, Yanille, "
                 + "Hosidius, Prifddinas) to enter. In your house: /house build toggles building mode, /house room adds rooms in the "
                 + "direction of your choice, clicking a hotspot lists the furniture you can build (needs a hammer and the materials). "
-                + "/house leave exits. A Teleport to house tablet takes you home from anywhere.");
+                + "/house leave exits. A Teleport to house tablet takes you home from anywhere. Your house starts in Rimmington; "
+                + "click another town's house portal to have it moved there (Construction level and fee). Ring a bell-pull to hire "
+                + "a servant once your house has two beds.");
     }
 
     static void register() {
@@ -105,7 +107,23 @@ final class ExtrasCommands {
                             }))))
                     .then(CommandManager.literal("altar")
                             .then(CommandManager.argument("book", StringArgumentType.word())
-                                    .executes(ctx -> run(ctx, p -> HouseFurniture.occult(p, s(ctx, "book")))))));
+                                    .executes(ctx -> run(ctx, p -> HouseFurniture.occult(p, s(ctx, "book"))))))
+                    .then(CommandManager.literal("move")
+                            .then(CommandManager.argument("town", StringArgumentType.word())
+                                    .executes(ctx -> run(ctx, p -> HouseService.move(p, s(ctx, "town"))))))
+                    .then(CommandManager.literal("nexus")
+                            .then(CommandManager.argument("dest", StringArgumentType.word())
+                                    .executes(ctx -> run(ctx, p -> HouseFurniture.addToNexus(p, s(ctx, "dest"))))))
+                    .then(CommandManager.literal("servant")
+                            .executes(ctx -> run(ctx, HouseServants::ring))
+                            .then(CommandManager.literal("hire")
+                                    .then(CommandManager.argument("who", StringArgumentType.word())
+                                            .executes(ctx -> run(ctx, p -> HouseServants.hire(p, s(ctx, "who"))))))
+                            .then(CommandManager.literal("fetch")
+                                    .then(CommandManager.argument("item", StringArgumentType.word())
+                                            .executes(ctx -> run(ctx, p -> HouseServants.fetch(p, s(ctx, "item"))))))
+                            .then(CommandManager.literal("sawmill").executes(ctx -> run(ctx, HouseServants::sawmill)))
+                            .then(CommandManager.literal("dismiss").executes(ctx -> run(ctx, HouseServants::dismiss)))));
             dispatcher.register(CommandManager.literal("sailing")
                     .executes(ctx -> run(ctx, SailingService::info))
                     .then(CommandManager.literal("info").executes(ctx -> run(ctx, SailingService::info)))

@@ -9,8 +9,10 @@ import java.util.Map;
  * built at a shipwright, sailed as a vehicle on water with speed by tier; ports with charter docks
  * (paid travel for anyone) and voyages (sail your own boat port to port for Sailing XP); level
  * requirements for boats, ports and features. Port tasks, trawling, salvaging and sea charting
- * live in the skilling module and work from these boats too. Exact OSRS Sailing numbers were not
- * all known when this was written, so levels/XP/prices here are marked approx.
+ * live in the skilling module and work from these boats too. Boat levels (raft 1, skiff 15, sloop 50)
+ * and shipwright prices (1,000 / 15,000 / 200,000) and the docking levels of the ports follow the
+ * OSRS Wiki; voyage XP, charter fares and build materials are approx. Sailing your own boat needs
+ * the Pandemonium quest.
  */
 public final class Seafaring {
     /**
@@ -31,12 +33,15 @@ public final class Seafaring {
     }
 
     public static final List<BoatTier> BOATS = List.of(
-            new BoatTier("raft", "Raft", 1, "ext_raft_deed", 5_000, 1, mats("logs", 10, "rope", 4), 1.00, 1.0, "BAMBOO",
-                    0xC0B060), // approx
-            new BoatTier("skiff", "Skiff", 15, "ext_skiff_deed", 75_000, 30, mats("oak_plank", 30, "iron_nails", 40, "bolt_of_cloth", 4,
-                    "rope", 6), 1.02, 1.25, "OAK", 0x9A7A4A), // approx
-            new BoatTier("sloop", "Sloop", 45, "ext_sloop_deed", 400_000, 50, mats("teak_plank", 60, "steel_nails", 80,
-                    "bolt_of_cloth", 10, "rope", 12), 1.04, 1.5, "DARK_OAK", 0x4A3A2A)); // approx
+            new BoatTier("raft", "Raft", 1, "ext_raft_deed", 1_000, 1, mats("logs", 10, "rope", 4), 1.00, 1.0, "BAMBOO",
+                    0xC0B060), // approx build materials
+            new BoatTier("skiff", "Skiff", 15, "ext_skiff_deed", 15_000, 30, mats("oak_plank", 30, "iron_nails", 40, "bolt_of_cloth", 4,
+                    "rope", 6), 1.02, 1.25, "OAK", 0x9A7A4A), // approx build level/materials
+            new BoatTier("sloop", "Sloop", 50, "ext_sloop_deed", 200_000, 50, mats("teak_plank", 60, "steel_nails", 80,
+                    "bolt_of_cloth", 10, "rope", 12), 1.04, 1.5, "DARK_OAK", 0x4A3A2A)); // approx build level/materials
+
+    /** The quest that teaches Sailing and hands out the first boat. */
+    public static final String SAILING_QUEST = "pandemonium";
 
     /** A port with a charter dock: id, OSRS coordinates of the dock, Sailing level to sail there yourself. */
     public record Port(String id, String name, int x, int y, int level, boolean shipwright) {
@@ -45,19 +50,23 @@ public final class Seafaring {
         }
     }
 
+    /** Docking levels from the OSRS Wiki unless marked approx. */
     public static final List<Port> PORTS = List.of(
             new Port("port_sarim", "Port Sarim", 3029, 3217, 1, true),
-            new Port("catherby", "Catherby", 2804, 3421, 10, false),
-            new Port("brimhaven", "Brimhaven", 2772, 3225, 18, false),
-            new Port("port_khazard", "Port Khazard", 2674, 3149, 25, false),
-            new Port("rellekka", "Rellekka", 2629, 3693, 35, true),
-            new Port("port_phasmatys", "Port Phasmatys", 3702, 3487, 45, false),
+            new Port("pandemonium", "The Pandemonium", 3050, 2972, 1, false),
+            new Port("musa_point", "Musa Point", 2954, 3146, 10, false),
+            new Port("catherby", "Catherby", 2804, 3421, 20, false),
+            new Port("brimhaven", "Brimhaven", 2772, 3225, 25, false),
+            new Port("port_khazard", "Port Khazard", 2674, 3149, 30, false),
+            new Port("rellekka", "Rellekka", 2629, 3693, 62, true),
+            new Port("port_phasmatys", "Port Phasmatys", 3702, 3487, 45, false), // approx level
             new Port("port_tyras", "Port Tyras", 2142, 3122, 50, false), // approx level
-            new Port("corsair_cove", "Corsair Cove", 2572, 2861, 55, false),
-            new Port("port_piscarilius", "Port Piscarilius", 1824, 3691, 65, true),
-            new Port("lands_end", "Land's End", 1504, 3399, 68, false), // approx level
-            new Port("sunset_coast", "Sunset Coast", 1514, 2972, 72, false), // approx level and dock
-            new Port("aldarin", "Aldarin", 1393, 2928, 75, true)); // approx level and dock
+            new Port("corsair_cove", "Corsair Cove", 2572, 2861, 40, false),
+            new Port("port_piscarilius", "Port Piscarilius", 1824, 3691, 15, true),
+            new Port("lands_end", "Land's End", 1504, 3399, 5, false),
+            new Port("sunset_coast", "Sunset Coast", 1514, 2972, 44, false), // approx dock
+            new Port("aldarin", "Aldarin", 1393, 2928, 46, true), // approx dock
+            new Port("etceteria", "Etceteria", 2612, 3895, 65, false)); // approx dock
 
     /** Sailing level requirements for features (for the /sailing info list and gating). approx where noted. */
     public static final Map<String, Integer> FEATURES = new LinkedHashMap<>();
@@ -71,7 +80,11 @@ public final class Seafaring {
         FEATURES.put("Sea charting", 1);
         FEATURES.put("Small shipwreck salvaging", 15);
         FEATURES.put("Fisherman's shipwreck salvaging", 26);
+        FEATURES.put("Barracuda shipwreck salvaging", 35);
         FEATURES.put("Large shipwreck salvaging", 53);
+        FEATURES.put("Pirate shipwreck salvaging", 64);
+        FEATURES.put("Mercenary shipwreck salvaging", 73);
+        FEATURES.put("Fremennik shipwreck salvaging", 80);
         FEATURES.put("Merchant shipwreck salvaging", 87);
         for (Port p : PORTS) {
             FEATURES.put("Voyage to " + p.name(), p.level());

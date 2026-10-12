@@ -3,6 +3,9 @@ package com.runecraft.content.skilling;
 import com.runecraft.action.Action;
 import com.runecraft.action.ActionManager;
 import com.runecraft.combat.PoisonService;
+import com.runecraft.combat.PrayerService;
+import com.runecraft.content.systems.RunEnergyService;
+import com.runecraft.content.systems.SpecialAttackService;
 import com.runecraft.content.BlockHooks;
 import com.runecraft.network.ServerNetworking;
 import com.runecraft.osrs.Landmark;
@@ -10,10 +13,10 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.SkillSet;
 import com.runecraft.osrs.content.skilling.ConstructionData;
 import com.runecraft.osrs.content.skilling.ConstructionData.Furniture;
+import com.runecraft.osrs.content.systems.SpecialAttacks;
 import com.runecraft.osrs.data.Bone;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
-import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
@@ -130,6 +133,7 @@ final class ConstructionHooks {
         Bone first = Bone.byItem(SkillingUtil.heldId(player));
         if (first == null) {
             int burners = litBurners((ServerWorld) player.getWorld(), pos);
+            PrayerService.useAltar(player); // praying at the altar recharges Prayer points
             Msg.game(player, "Use bones on the altar to offer them to the gods (" + (f.power() + burners * 50) + "% Prayer XP).");
             return;
         }
@@ -142,18 +146,15 @@ final class ConstructionHooks {
                     return true;
                 }
                 counter = 0;
-                String id = SkillingUtil.heldId(p);
-                Bone bone = Bone.byItem(id);
-                if (bone == null) {
+                ServerWorld world = (ServerWorld) p.getWorld();
+                if (p.squaredDistanceTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5) > 25) {
                     return false;
                 }
-                ServerWorld world = (ServerWorld) p.getWorld();
-                double mult = (f.power() + litBurners(world, pos) * 50) / 100.0;
-                p.getMainHandStack().decrement(1);
-                p.swingHand(Hand.MAIN_HAND, true);
-                XpService.add(p, Skill.PRAYER, bone.xp() * mult);
+                // The shared Prayer bone offering, with this altar's multiplier (gilded + 2 lit burners = 350%).
+                if (!PrayerService.offerHeldBone(p, (f.power() + litBurners(world, pos) * 50) / 100.0)) {
+                    return false;
+                }
                 world.spawnParticles(ParticleTypes.END_ROD, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 6, 0.2, 0.3, 0.2, 0.02);
-                Msg.action(p, "The gods are pleased with your offering.");
                 return true;
             }
         });
@@ -183,22 +184,23 @@ final class ConstructionHooks {
         PlayerData data = Players.data(player);
         SkillSet skills = data.skills();
         int tier = f.power();
-        player.getHungerManager().add(20, 1.0f);
+        SpecialAttackService.restoreEnergy(player, SpecialAttacks.MAX_ENERGY);
         if (tier >= 2) {
+            RunEnergyService.restore(player, 10000);
+        }
+        if (tier >= 3) {
+            data.setPrayerPoints(skills.level(Skill.PRAYER));
+        }
+        if (tier >= 4) {
             for (Skill s : Skill.values()) {
                 if (skills.boost(s) < 0 && s != Skill.HITPOINTS && s != Skill.PRAYER) {
                     skills.setBoost(s, 0);
                 }
             }
         }
-        if (tier >= 3) {
-            data.setPrayerPoints(skills.level(Skill.PRAYER));
-        }
-        if (tier >= 4) {
-            PoisonService.cure(player, true, 0, ActionManager.gameTick());
-        }
         if (tier >= 5) {
             player.setHealth(player.getMaxHealth());
+            PoisonService.cure(player, true, 0, ActionManager.gameTick());
         }
         ServerWorld world = (ServerWorld) player.getWorld();
         world.spawnParticles(ParticleTypes.SPLASH, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 30, 0.4, 0.2, 0.4, 0.1);

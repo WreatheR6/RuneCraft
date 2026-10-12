@@ -95,10 +95,10 @@ public final class ConstructionData extends SkillingPart {
         f("teak_altar", "Teak altar", 50, 360.0, "altar", Use.ALTAR, 120, null, teak, "teak_plank", 4);
         f("cloth_covered_altar", "Cloth-covered altar", 56, 390.0, "altar", Use.ALTAR, 130, null, 0xE0E0F0, "teak_plank", 4,
                 "bolt_of_cloth", 2);
-        f("mahogany_altar", "Mahogany altar", 60, 590.0, "altar", Use.ALTAR, 140, null, mahog, "mahogany_plank", 4);
+        f("mahogany_altar", "Mahogany altar", 60, 590.0, "altar", Use.ALTAR, 140, null, mahog, "mahogany_plank", 4, "bolt_of_cloth", 2);
         f("limestone_altar", "Limestone altar", 64, 910.0, "altar", Use.ALTAR, 150, null, 0xD8D0B0, "mahogany_plank", 6,
                 "bolt_of_cloth", 2, "limestone_brick", 2);
-        f("marble_altar", "Marble altar", 70, 1030.0, "altar", Use.ALTAR, 175, null, 0xF0F0F0, "marble_block", 2, "bolt_of_cloth", 2);
+        f("marble_altar", "Marble altar", 70, 1030.0, "altar", Use.ALTAR, 200, null, 0xF0F0F0, "marble_block", 2, "bolt_of_cloth", 2);
         f("gilded_altar", "Gilded altar", 75, 2230.0, "altar", Use.ALTAR, 250, null, 0xE0C060, "marble_block", 2, "bolt_of_cloth", 2,
                 "gold_leaf", 4);
         // Incense burners (each lit burner adds 50% to an altar within 8 blocks, up to 2)
@@ -106,16 +106,19 @@ public final class ConstructionData extends SkillingPart {
         f("teak_burner", "Teak incense burner", 64, 300.0, "burner", Use.BURNER, 0, null, teak, "teak_plank", 4, "steel_bar", 2);
         f("mahogany_burner", "Mahogany incense burner", 72, 300.0, "burner", Use.BURNER, 0, null, mahog, "mahogany_plank", 4,
                 "steel_bar", 2);
-        // Pools (tier: 1 restore energy, 2 +stats, 3 +prayer, 4 +poison/venom, 5 +hitpoints). Materials/XP approximate.
-        f("restoration_pool", "Restoration pool", 65, 1500.0, "pool", Use.POOL, 1, null, 0x6080C0, "limestone_brick", 5);
-        f("revitalisation_pool", "Revitalisation pool", 70, 2000.0, "pool", Use.POOL, 2, null, 0x5090C0, "limestone_brick", 5,
-                "marble_block", 1);
-        f("rejuvenation_pool", "Rejuvenation pool", 80, 4000.0, "pool", Use.POOL, 3, null, 0x40A0C0, "limestone_brick", 5,
-                "marble_block", 2, "magic_stone", 1);
-        f("fancy_rejuvenation_pool", "Fancy rejuvenation pool", 85, 6000.0, "pool", Use.POOL, 4, null, 0x40B0D0, "limestone_brick", 2,
-                "marble_block", 5, "magic_stone", 1);
-        f("ornate_rejuvenation_pool", "Ornate rejuvenation pool", 90, 8000.0, "pool", Use.POOL, 5, null, 0x40C0E0, "gold_leaf", 5,
-                "marble_block", 5, "magic_stone", 1);
+        // Pools (OSRS superior garden): each is an upgrade of the previous pool, so its flatpack is made from the previous
+        // pool's flatpack plus the upgrade materials. Tier 1 restores special attack, 2 adds run energy, 3 prayer, 4 lowered
+        // stats, 5 hitpoints and cures poison/venom.
+        f("restoration_pool", "Restoration pool", 65, 706.0, "pool", Use.POOL, 1, null, 0x6080C0, "limestone_brick", 5,
+                "minecraft:water_bucket", 5, "soul_rune", 1000, "body_rune", 1000);
+        f("revitalisation_pool", "Revitalisation pool", 70, 850.0, "pool", Use.POOL, 2, null, 0x5090C0,
+                "restoration_pool_flatpack", 1, "stamina_potion", 10);
+        f("rejuvenation_pool", "Rejuvenation pool", 80, 900.0, "pool", Use.POOL, 3, null, 0x40A0C0,
+                "revitalisation_pool_flatpack", 1, "prayer_potion", 10);
+        f("fancy_rejuvenation_pool", "Fancy rejuvenation pool", 85, 1950.0, "pool", Use.POOL, 4, null, 0x40B0D0,
+                "rejuvenation_pool_flatpack", 1, "marble_block", 2, "super_restore", 10);
+        f("ornate_rejuvenation_pool", "Ornate rejuvenation pool", 90, 3107.0, "pool", Use.POOL, 5, null, 0x40C0E0,
+                "fancy_rejuvenation_pool_flatpack", 1, "gold_leaf", 2, "anti_venom_plus", 10); // approx materials
         // Portal chamber (teak portal + focus runes)
         f("varrock_portal", "Varrock portal", 50, 270.0, "portal_glow", Use.PORTAL, 0, Landmark.VARROCK.name(), 0x9070E0,
                 "teak_plank", 3, "law_rune", 100, "air_rune", 300, "fire_rune", 100);
