@@ -40,13 +40,14 @@ public final class CookingData extends SkillingPart {
             new NewFish("karambwan", "Karambwan", 65, 50.0, 30, 190.0, 18, 99, 0x4A8A3A, 300),
             new NewFish("sea_turtle", "Sea turtle", 79, 38.0, 82, 211.3, 21, 100, 0x5A7A3A, 900),
             new NewFish("manta_ray", "Manta ray", 81, 46.0, 91, 216.2, 22, 100, 0x3A4A6A, 1100),
-            // Sailing trawling catches (Sailing, Nov 2025). Levels/XP are approximations.
-            new NewFish("giant_krill", "Giant krill", 10, 30.0, 10, 50.0, 5, 40, 0xE07A6A, 10),
-            new NewFish("haddock", "Haddock", 30, 55.0, 30, 85.0, 9, 62, 0xB0A080, 50),
-            new NewFish("yellowfin", "Yellowfin", 50, 90.0, 50, 120.0, 13, 82, 0xD0B030, 160),
-            new NewFish("halibut", "Halibut", 65, 110.0, 65, 150.0, 16, 92, 0xA09080, 300),
-            new NewFish("bluefin", "Bluefin", 75, 130.0, 75, 190.0, 20, 99, 0x305080, 600),
-            new NewFish("marlin", "Marlin", 88, 150.0, 88, 230.0, 24, 100, 0x3A5AA0, 1200));
+            // Sailing deep sea trawling catches (Sailing, Nov 2025): Fishing level/XP per trawling-net catch,
+            // Cooking level and heal from the OSRS Wiki; yellowfin/bluefin Cooking XP and stop-burn levels approx.
+            new NewFish("giant_krill", "Giant krill", 69, 112.5, 69, 177.5, 17, 89, 0xE07A6A, 10),
+            new NewFish("haddock", "Haddock", 73, 128.5, 73, 180.5, 18, 93, 0xB0A080, 50),
+            new NewFish("yellowfin", "Yellowfin", 79, 155.5, 79, 195.0, 19, 99, 0xD0B030, 160),
+            new NewFish("halibut", "Halibut", 83, 195.5, 83, 212.5, 20, 100, 0xA09080, 300),
+            new NewFish("bluefin", "Bluefin", 87, 220.5, 87, 220.0, 22, 100, 0x305080, 600),
+            new NewFish("marlin", "Marlin", 91, 265.5, 91, 225.0, 24, 100, 0x3A5AA0, 1200));
 
     /** Foods eaten in two (or three) bites: eating {@code full} heals {@code heal} and leaves {@code next}. */
     public record Bite(String full, String next, int heal) {
@@ -164,6 +165,9 @@ public final class CookingData extends SkillingPart {
         // Barbarian fishing products
         food(s, "roe", "Roe", "secondary", 0xE07030, 5, 3);
         food(s, "caviar", "Caviar", "secondary", 0x202020, 20, 5);
+        // Family Crest reward: lowers the burn level of lobster, swordfish, monkfish, shark and anglerfish.
+        s.add("cooking_gauntlets", "Cooking gauntlets", com.runecraft.osrs.ItemDef.Kind.SIMPLE, "gloves", 0xC8C8D0).value(1).stack(1)
+                .examine("These gauntlets empower me when cooking. (They work while carried.)");
     }
 
     @Override
@@ -255,6 +259,11 @@ public final class CookingData extends SkillingPart {
                 .in("bowl", 1).out("tuna_and_corn", 1).ticks(2).build());
         out.accept(r("make_tuna_potato", C, "Tuna potato", Skill.COOKING, 68, 10.0).in("potato_with_butter", 1)
                 .in("tuna_and_corn", 1).out("tuna_potato", 1).out("bowl", 1).ticks(2).build());
+        // Caleb (Family Crest) enchants the steel gauntlets into cooking gauntlets, and back.
+        out.accept(plain("enchant_cooking_gauntlets", C, "Cooking gauntlets (Caleb's enchantment)").in("steel_gauntlets", 1)
+                .out("cooking_gauntlets", 1).ticks(1).build());
+        out.accept(plain("unenchant_cooking_gauntlets", C, "Steel gauntlets (remove enchantment)").in("cooking_gauntlets", 1)
+                .out("steel_gauntlets", 1).ticks(1).build());
         // Wine: ferments in the inventory for 200 XP (see SkillingHooks); making it gives none.
         out.accept(r("make_unfermented_wine", C, "Unfermented wine", Skill.COOKING, 35, 0).in("grapes", 1).in("jug_of_water", 1)
                 .out("unfermented_wine", 1).ticks(2).build());

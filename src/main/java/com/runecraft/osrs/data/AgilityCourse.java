@@ -5,7 +5,10 @@ import com.runecraft.osrs.Landmark;
 /**
  * Agility courses. Each obstacle gives an equal share of 80% of the lap XP and finishing the lap
  * gives the remaining 20%, approximating the per-obstacle split of the real courses. Lap XP is
- * from OSRS. Rooftop courses have a chance to drop a Mark of grace on lap completion.
+ * the current OSRS value (after the May 2024 rooftop rework: Falador 586, Ardougne 889). The
+ * obstacle count is the number of pillars built (at most 8, the block's step range), not always
+ * the real course's (Varrock 9, Pollnivneach 9, Falador 13). Rooftop courses have a chance to drop
+ * a Mark of grace on lap completion.
  */
 public enum AgilityCourse {
     GNOME_STRONGHOLD("Gnome Stronghold Agility Course", 1, 86.5, 7, Landmark.GNOME_STRONGHOLD, false),
@@ -13,11 +16,11 @@ public enum AgilityCourse {
     AL_KHARID("Al Kharid Rooftop Course", 20, 216.0, 8, Landmark.AL_KHARID, true),
     VARROCK("Varrock Rooftop Course", 30, 270.0, 8, Landmark.VARROCK, true),
     CANIFIS("Canifis Rooftop Course", 40, 240.0, 8, Landmark.CANIFIS, true),
-    FALADOR("Falador Rooftop Course", 50, 440.0, 8, Landmark.FALADOR, true),
+    FALADOR("Falador Rooftop Course", 50, 586.0, 8, Landmark.FALADOR, true),
     SEERS("Seers' Village Rooftop Course", 60, 570.0, 6, Landmark.SEERS_VILLAGE, true),
     POLLNIVNEACH("Pollnivneach Rooftop Course", 70, 890.0, 8, Landmark.POLLNIVNEACH, true),
     RELLEKKA("Rellekka Rooftop Course", 80, 780.0, 7, Landmark.RELLEKKA, true),
-    ARDOUGNE("Ardougne Rooftop Course", 90, 793.0, 7, Landmark.ARDOUGNE, true);
+    ARDOUGNE("Ardougne Rooftop Course", 90, 889.0, 7, Landmark.ARDOUGNE, true);
 
     private final String name;
     private final int level;

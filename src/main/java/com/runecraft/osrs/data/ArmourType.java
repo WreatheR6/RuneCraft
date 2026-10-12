@@ -53,7 +53,7 @@ public enum ArmourType {
     }
 
     public int smithingLevel(MetalTier tier) {
-        return Math.min(99, tier.smithingBase() + levelOffset);
+        return tier.smithingLevel(levelOffset);
     }
 
     public double valueFactor() {

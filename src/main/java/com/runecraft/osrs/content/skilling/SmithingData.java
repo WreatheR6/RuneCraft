@@ -127,13 +127,13 @@ public final class SmithingData extends SkillingPart {
         for (MetalTier t : SMITHABLE) {
             for (Piece p : PIECES) {
                 String id = t.id() + "_" + p.suffix;
-                smith(out, id, t.displayName() + " " + p.name, 1, t, p.bars, t.smithingBase() + p.offset);
+                smith(out, id, t.displayName() + " " + p.name, 1, t, p.bars, t.smithingLevel(p.offset));
             }
             for (Ammo a : AMMO) {
                 String id = t.id() + "_" + a.suffix;
                 String name = a.amount + " " + (a.suffix.equals("knife") ? lower(name(t)) + " knives" : lower(t.displayName()) + " " + a.name
                         + (a.suffix.equals("dart_tip") ? "s" : ""));
-                smith(out, id, name, a.amount, t, 1, t.smithingBase() + a.offset);
+                smith(out, id, name, a.amount, t, 1, t.smithingLevel(a.offset));
             }
             smith(out, t.id() + "_limbs", (t == MetalTier.RUNE ? "Runite" : t.displayName()) + " limbs", 1, t, 1, limbsLevel(t));
         }
@@ -150,7 +150,7 @@ public final class SmithingData extends SkillingPart {
     }
 
     private static void smith(Consumer<Recipe> out, String id, String name, int amount, MetalTier tier, int bars, int level) {
-        out.accept(r("smith_" + id, MenuType.SMITHING, name, Skill.SMITHING, Math.min(99, level), tier.xpPerBar() * bars)
+        out.accept(r("smith_" + id, MenuType.SMITHING, name, Skill.SMITHING, Math.max(1, Math.min(99, level)), tier.xpPerBar() * bars)
                 .in(tier.bar(), bars).out(id, amount).tool("hammer").ticks(4).build());
     }
 

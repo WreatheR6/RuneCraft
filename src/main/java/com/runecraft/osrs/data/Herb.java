@@ -77,6 +77,29 @@ public enum Herb {
         return cleanXp;
     }
 
+    /**
+     * Herblore level to make this herb's unfinished potion: the level of the first potion it is
+     * used in (e.g. tarromin 12 for strength potions, ranarr 30 for defence potions), as in-game.
+     */
+    public int unfLevel() {
+        return switch (this) {
+            case GUAM -> 3;
+            case MARRENTILL -> 5;
+            case TARROMIN -> 12;
+            case HARRALANDER -> 22;
+            case RANARR -> 30;
+            case TOADFLAX -> 34;
+            case IRIT -> 45;
+            case AVANTOE -> 50;
+            case KWUARM -> 55;
+            case SNAPDRAGON -> 63;
+            case CADANTINE -> 66;
+            case LANTADYME -> 69;
+            case DWARF_WEED -> 72;
+            case TORSTOL -> 78;
+        };
+    }
+
     public int farmingLevel() {
         return farmingLevel;
     }

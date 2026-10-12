@@ -97,8 +97,8 @@ public final class FarmingData extends SkillingPart {
     }
 
     private static void hops(String id, String name, String produce, int level, double plant, double harvest, int minutes,
-                             int color) {
-        CROPS.add(new Crop(id, name, Patch.HOPS, Harvest.ALL, level, plant, 0, harvest, id + "_seed", id + "_seed", 4,
+                             int seeds, int color) {
+        CROPS.add(new Crop(id, name, Patch.HOPS, Harvest.ALL, level, plant, 0, harvest, id + "_seed", id + "_seed", seeds,
                 produce, 3, 10, minutes, 0, null, color));
     }
 
@@ -127,7 +127,7 @@ public final class FarmingData extends SkillingPart {
         fruit("palm", "Palm tree", "coconut", 68, 110.5, 10150.1, 41.5, 0x8A6A3A);
         fruit("dragonfruit", "Dragonfruit tree", "dragonfruit", 81, 140.0, 17335.0, 70.0, 0xE04080);
         CROPS.add(new Crop("calquat", "Calquat tree", Patch.CALQUAT, Harvest.PICK, 72, 129.5, 12096.0, 48.5, "calquat_tree_seed",
-                "calquat_sapling", 1, "calquat_fruit", 6, 6, 640, 40, null, 0xD06030));
+                "calquat_sapling", 1, "calquat_fruit", 6, 6, 1280, 40, null, 0xD06030));
         CROPS.add(new Crop("celastrus", "Celastrus tree", Patch.CELASTRUS, Harvest.PICK, 85, 204.0, 14130.0, 23.5,
                 "celastrus_seed", "celastrus_sapling", 1, "celastrus_bark", 3, 5, 800, 40, null, 0xA07A5A));
         CROPS.add(new Crop("spirit", "Spirit tree", Patch.SPIRIT, Harvest.SPIRIT, 83, 199.5, 19301.8, 0, "spirit_seed",
@@ -138,13 +138,13 @@ public final class FarmingData extends SkillingPart {
         bush("jangerberry", "Jangerberry bush", "jangerberries", 48, 50.5, 284.5, 19.0, 160, 0x8AA030);
         bush("whiteberry", "Whiteberry bush", "white_berries", 59, 78.0, 437.5, 29.0, 160, 0xF0F0E0);
         bush("poison_ivy", "Poison ivy bush", "poison_ivy_berries", 70, 120.0, 675.0, 45.0, 160, 0x3A6A2A);
-        hops("barley", "Barley", "barley", 3, 8.5, 9.5, 40, 0xD0B060);
-        hops("hammerstone", "Hammerstone hops", "hammerstone_hops", 4, 9.0, 10.0, 40, 0x7A9A4A);
-        hops("asgarnian", "Asgarnian hops", "asgarnian_hops", 8, 10.9, 12.0, 50, 0x6A8A4A);
-        hops("jute", "Jute", "jute_fibre", 13, 13.0, 14.5, 50, 0x9A8A5A);
-        hops("yanillian", "Yanillian hops", "yanillian_hops", 16, 14.5, 16.0, 60, 0x7AAA5A);
-        hops("krandorian", "Krandorian hops", "krandorian_hops", 21, 17.5, 19.5, 70, 0x5A8A3A);
-        hops("wildblood", "Wildblood hops", "wildblood_hops", 28, 23.0, 26.0, 80, 0xA03A3A);
+        hops("barley", "Barley", "barley", 3, 8.5, 9.5, 40, 4, 0xD0B060);
+        hops("hammerstone", "Hammerstone hops", "hammerstone_hops", 4, 9.0, 10.0, 40, 4, 0x7A9A4A);
+        hops("asgarnian", "Asgarnian hops", "asgarnian_hops", 8, 10.9, 12.0, 50, 4, 0x6A8A4A);
+        hops("jute", "Jute", "jute_fibre", 13, 13.0, 14.5, 50, 3, 0x9A8A5A);
+        hops("yanillian", "Yanillian hops", "yanillian_hops", 16, 14.5, 16.0, 60, 4, 0x7AAA5A);
+        hops("krandorian", "Krandorian hops", "krandorian_hops", 21, 17.5, 19.5, 70, 3, 0x5A8A3A);
+        hops("wildblood", "Wildblood hops", "wildblood_hops", 28, 23.0, 26.0, 80, 3, 0xA03A3A);
         CROPS.add(new Crop("cactus", "Cactus", Patch.CACTUS, Harvest.PICK, 55, 66.5, 374.0, 25.0, "cactus_seed", "cactus_seed", 1,
                 "cactus_spine", 3, 3, 560, 20, null, 0x5A8A3A));
         CROPS.add(new Crop("potato_cactus", "Potato cactus", Patch.CACTUS, Harvest.PICK, 64, 68.0, 230.0, 68.0, "potato_cactus_seed",

@@ -12,6 +12,7 @@ import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.SkillSet;
+import com.runecraft.osrs.TreeTimers;
 import com.runecraft.osrs.data.Fish;
 import com.runecraft.osrs.data.FishingMethod;
 import com.runecraft.osrs.data.FishingSpot;
@@ -38,6 +39,8 @@ import java.util.Locale;
 /** Woodcutting, Mining and Fishing. */
 public final class Gathering {
     private static final double REACH_SQ = 5.0 * 5.0;
+    /** Forestry tree timers, shared by every tree in the world (see {@link TreeTimers}). */
+    public static final TreeTimers TREE_TIMERS = new TreeTimers();
 
     private Gathering() {
     }
@@ -81,6 +84,8 @@ public final class Gathering {
                 world.playSound(null, pos, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.PLAYERS, 1.0f, 0.8f + random.nextFloat() * 0.4f);
                 double chance = Chance.lerp(s.currentLevel(Skill.WOODCUTTING), tree.low() * best.woodcuttingMultiplier(),
                         tree.high() * best.woodcuttingMultiplier());
+                String timerKey = treeKey(world, pos);
+                boolean expired = TREE_TIMERS.chop(timerKey, tree.despawnTicks(), ActionManager.gameTick());
                 if (random.nextDouble() < chance) {
                     if (!Inv.hasRoomFor(p, tree.logItem())) {
                         Msg.game(p, "Your inventory is too full to hold any more logs.");
@@ -91,7 +96,8 @@ public final class Gathering {
                     Msg.action(p, "You get some " + tree.logName().toLowerCase(Locale.ROOT) + ".");
                     XpService.add(p, Skill.WOODCUTTING, tree.xp());
                     birdNest(p, random);
-                    if (random.nextDouble() < tree.depleteChance()) {
+                    if (expired) {
+                        TREE_TIMERS.reset(timerKey);
                         ((ResourceBlock) state.getBlock()).deplete(world, pos, state, tree.respawnTicks());
                         world.playSound(null, pos, SoundEvents.BLOCK_WOOD_BREAK, SoundCategory.BLOCKS, 1.0f, 0.8f);
                         return false;
@@ -100,6 +106,11 @@ public final class Gathering {
                 return true;
             }
         });
+    }
+
+    /** Key identifying a tree block for {@link #TREE_TIMERS}. */
+    public static String treeKey(ServerWorld world, BlockPos pos) {
+        return world.getRegistryKey().getValue() + "@" + pos.asLong();
     }
 
     private static void birdNest(ServerPlayerEntity player, Random random) {
@@ -167,8 +178,10 @@ public final class Gathering {
                         : "You manage to mine some " + (def == null ? "ore" : def.name().toLowerCase(Locale.ROOT)
                         .replace(" ore", "")) + ".");
                 XpService.add(p, Skill.MINING, rock.xp());
-                if (random.nextInt(256) == 0) {
-                    String gem = rollGemRock(random);
+                // Random gems while mining ore (1/256, not from essence or gem rocks): sapphire 1/2,
+                // emerald 1/4, ruby 1/8, diamond 1/8.
+                if (rock.oreItem() != null && rock != Rock.RUNE_ESSENCE && rock != Rock.PURE_ESSENCE && random.nextInt(256) == 0) {
+                    String gem = rollMiningGem(random);
                     Inv.give(p, gem, 1);
                     Msg.red(p, "You just found " + com.runecraft.util.Msg.article(ItemCatalog.get(gem).name()) + "!");
                 }
@@ -179,6 +192,12 @@ public final class Gathering {
                 return true;
             }
         });
+    }
+
+    private static String rollMiningGem(Random random) {
+        int r = random.nextInt(8);
+        Gem gem = r < 4 ? Gem.SAPPHIRE : r < 6 ? Gem.EMERALD : r < 7 ? Gem.RUBY : Gem.DIAMOND;
+        return gem.uncutItem();
     }
 
     private static String rollGemRock(Random random) {

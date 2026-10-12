@@ -4,7 +4,9 @@ import com.runecraft.osrs.Rune;
 
 /**
  * Runecrafting altars: level, XP per essence and the levels at which you craft extra runes per
- * essence. Chaos and above require pure essence.
+ * essence. Cosmic and above require pure essence. Blood runes use the True Blood Altar value for
+ * pure essence (10.5); soul runes keep the Arceuus soul altar value (approx, since the mod binds pure
+ * essence rather than dark essence fragments).
  */
 public enum RuneAltar {
     AIR(Rune.AIR, 1, 5.0, false, 11, 22, 33, 44, 55, 66, 77, 88, 99),
@@ -20,7 +22,7 @@ public enum RuneAltar {
     LAW(Rune.LAW, 54, 9.5, true),
     DEATH(Rune.DEATH, 65, 10.0, true),
     WRATH(Rune.WRATH, 95, 8.0, true),
-    BLOOD(Rune.BLOOD, 77, 23.8, true),
+    BLOOD(Rune.BLOOD, 77, 10.5, true),
     SOUL(Rune.SOUL, 90, 29.7, true);
 
     private final Rune rune;

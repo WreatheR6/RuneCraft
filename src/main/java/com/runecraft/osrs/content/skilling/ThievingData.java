@@ -112,6 +112,12 @@ public final class ThievingData extends SkillingPart {
             new Container("wine_stall", "Wine stall", false, 22, 27.0, 27, List.of(),
                     List.of(Loot.of("jug_of_wine", 2), Loot.of("grapes", 3), Loot.of("jug_of_water", 3), Loot.of("jug_of_bad_wine", 2),
                             Loot.of("jug", 2)), "stall", 0x8A1A3A),
+            // Hosidius fruit stall: 25 Thieving, 28.5 XP, respawns in 2.4 s (weights approx; lemons/limes/strange fruit
+            // are not in the game yet).
+            new Container("fruit_stall", "Fruit stall", false, 25, 28.5, 4, List.of(),
+                    List.of(Loot.of("cooking_apple", 40), Loot.of("banana", 20), Loot.of("strawberry", 10), Loot.of("jangerberries", 8),
+                            Loot.of("redberries", 8), Loot.of("pineapple", 6), Loot.of("papaya_fruit", 4), Loot.of("orange", 4)),
+                    "stall", 0xC08030),
             new Container("seed_stall", "Seed stall", false, 27, 10.0, 18, List.of(), SEED_TABLE, "stall", 0x4A7A2A),
             new Container("fish_stall", "Fish stall", false, 42, 42.0, 27, List.of(),
                     List.of(Loot.of("raw_salmon", 4), Loot.of("raw_tuna", 3), Loot.of("raw_lobster", 2)), "stall", 0x5A80A0),
@@ -171,6 +177,8 @@ public final class ThievingData extends SkillingPart {
                         List.of("rogues_castle_chest", "rogues_castle_chest")),
                 PlaceDef.of("draynor_market", "Draynor market", 3080, 3250, PlaceDef.Style.TOWN,
                         List.of("seed_stall", "wine_stall", "vegetable_stall")),
+                PlaceDef.of("hosidius_fruit_stalls", "Hosidius fruit stalls", 1800, 3607, PlaceDef.Style.CAMP,
+                        List.of("fruit_stall", "fruit_stall")),
                 PlaceDef.of("varrock_tea_stall", "Varrock tea stall", 3270, 3410, PlaceDef.Style.TOWN, List.of("tea_stall")),
                 PlaceDef.of("keldagrim_stalls", "Keldagrim market", 2765, 3712, PlaceDef.Style.CAVE,
                         List.of("crossbow_stall")),

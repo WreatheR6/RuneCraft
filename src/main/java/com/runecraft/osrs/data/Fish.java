@@ -9,10 +9,10 @@ public enum Fish {
     SARDINE("sardine", "Sardine", 5, 20.0, 32, 192, 1, 40.0, 4, 38, 0x8098A8, 10),
     HERRING("herring", "Herring", 10, 30.0, 24, 128, 5, 50.0, 5, 41, 0x7A8A9A, 15),
     ANCHOVIES("anchovies", "Anchovies", 15, 40.0, 24, 128, 1, 30.0, 1, 34, 0x5A6A8A, 15),
-    TROUT("trout", "Trout", 20, 50.0, 32, 192, 15, 70.0, 7, 49, 0xC09070, 20),
-    PIKE("pike", "Pike", 25, 60.0, 16, 96, 20, 80.0, 8, 54, 0x8A9A6A, 25),
+    TROUT("trout", "Trout", 20, 50.0, 32, 192, 15, 70.0, 7, 50, 0xC09070, 20),
+    PIKE("pike", "Pike", 25, 60.0, 16, 96, 20, 80.0, 8, 64, 0x8A9A6A, 25),
     SALMON("salmon", "Salmon", 30, 70.0, 16, 96, 25, 90.0, 9, 58, 0xE07050, 50),
-    TUNA("tuna", "Tuna", 35, 80.0, 8, 64, 30, 100.0, 10, 63, 0x7A7AA0, 100),
+    TUNA("tuna", "Tuna", 35, 80.0, 8, 64, 30, 100.0, 10, 64, 0x7A7AA0, 100),
     LOBSTER("lobster", "Lobster", 40, 90.0, 6, 95, 40, 120.0, 12, 74, 0xC03020, 200),
     SWORDFISH("swordfish", "Swordfish", 50, 100.0, 4, 48, 45, 140.0, 14, 86, 0x6A5AA0, 400),
     MONKFISH("monkfish", "Monkfish", 62, 120.0, 48, 90, 62, 150.0, 16, 92, 0x9A7A5A, 300),
@@ -96,6 +96,21 @@ public enum Fish {
     /** Level at which you stop burning on a fire (100 means you can always burn it). */
     public int stopBurn() {
         return stopBurn;
+    }
+
+    /**
+     * Stop-burn level with cooking gauntlets (Family Crest), or 0 when they make no difference:
+     * lobster 64, swordfish 81, monkfish 90, shark 94, anglerfish 98 (approx).
+     */
+    public int gauntletStopBurn() {
+        return switch (this) {
+            case LOBSTER -> 64;
+            case SWORDFISH -> 81;
+            case MONKFISH -> 90;
+            case SHARK -> 94;
+            case ANGLERFISH -> 98;
+            default -> 0;
+        };
     }
 
     public int color() {
