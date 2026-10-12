@@ -108,6 +108,20 @@ public enum Boss {
         return list;
     }
 
+    /**
+     * OSRS monster attack bonus (accuracy) for an attack style, from the wiki's aggressive stats; 0 where the
+     * boss has none or it isn't known.
+     */
+    public int attackBonus(AttackType type) {
+        boolean melee = type.isMelee();
+        return switch (this) {
+            case GENERAL_GRAARDOR -> melee ? 120 : type == AttackType.RANGED ? 100 : 0;
+            case KRIL_TSUTSAROTH -> melee ? 160 : 0;
+            case TZTOK_JAD -> type == AttackType.MAGIC ? 60 : 0;
+            default -> 0;
+        };
+    }
+
     public String entityId() {
         return id;
     }

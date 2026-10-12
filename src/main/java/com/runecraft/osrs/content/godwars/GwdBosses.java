@@ -81,6 +81,7 @@ public final class GwdBosses {
         List<BossDef> list = new ArrayList<>();
 
         list.add(BossDef.of("kreearra", "Kree'arra").level(580).stats(255, 300, 200, 260, 200, 380).speed(3)
+                .attackBonus(136, 0, 120)
                 .defenceBonus(180, 180, 180, 200, 200)
                 .attack(KREE_TORNADO).attack(KREE_WIND).attack(KREE_MELEE)
                 .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH)
@@ -96,6 +97,7 @@ public final class GwdBosses {
                 .size(1.4f, 2.4f, 1.8f));
 
         list.add(BossDef.of("commander_zilyana", "Commander Zilyana").level(596).stats(255, 280, 196, 300, 300, 250).speed(2)
+                .attackBonus(195, 200, 0)
                 .defenceBonus(100, 100, 100, 100, 100)
                 .attack(ZILY_MELEE).attack(ZILY_MAGIC)
                 .drops(Drop.always("bones"),
@@ -112,6 +114,7 @@ public final class GwdBosses {
 
         // Nex: 3400 hitpoints (the script scales damage because Minecraft caps max health at 1024).
         list.add(BossDef.of("nex", "Nex").level(1001).stats(3400, 315, 200, 260, 230, 350).speed(4)
+                .attackBonus(200, 100, 150)
                 .defenceBonus(40, 140, 60, 300, 190) // approx.
                 .attack(NEX_SMOKE).attack(NEX_MELEE)
                 .phase(80, "Fumus, don't fail me!", 1.0, false, NEX_SHADOW, NEX_MELEE)

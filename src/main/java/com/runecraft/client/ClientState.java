@@ -22,6 +22,10 @@ public final class ClientState {
     public static int prayerMask;
     public static CombatStyle style = CombatStyle.ACCURATE;
     public static Spell autocast;
+    /** Combat Options: Auto Retaliate (on by default). */
+    public static boolean autoRetaliate = true;
+    /** Standing in a multicombat area (shows the crossed-swords icon). */
+    public static boolean inMulti;
     public static long coins;
     public static String slayerTask = "";
     public static int slayerRemaining;

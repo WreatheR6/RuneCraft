@@ -12,7 +12,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 
-/** Teleporting to OSRS coordinates with the Wilderness level limits of spells (20) and jewellery (30). */
+/** Teleporting to OSRS coordinates with the Wilderness level limits of spells (20) and jewellery (30), and Tele Block. */
 public final class SysTeleport {
     public static final int SPELL_WILDERNESS = 20;
     public static final int JEWELLERY_WILDERNESS = 30;
@@ -21,6 +21,9 @@ public final class SysTeleport {
     }
 
     public static boolean canTeleport(ServerPlayerEntity p, int maxWilderness) {
+        if (com.runecraft.combat.Teleblock.blocked(p)) {
+            return false;
+        }
         int wild = Gielinor.wildernessLevel(p);
         if (wild > maxWilderness) {
             Msg.game(p, "A mysterious force blocks your teleport!");

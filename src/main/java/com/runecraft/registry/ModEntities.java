@@ -92,7 +92,7 @@ public final class ModEntities {
                     .fireImmune()
                     .build();
             STATS.put(type, new MonsterStats(b.displayName(), b.combatLevel(), b.hitpoints(), b.attack(), b.strength(),
-                    b.defence(), b.magic(), b.ranged(), b.defenceBonus(), b.attackSpeed(), b.style(), b.maxHit(), null, null));
+                    b.defence(), b.magic(), b.ranged(), b.defenceBonus(), b.attackSpeed(), b.style(), b.maxHit(), null, null, b));
             BOSSES.put(type, b);
             Registry.register(Registries.ENTITY_TYPE, RuneCraft.id(b.entityId()), type);
             BOSS_TYPES.put(b, type);

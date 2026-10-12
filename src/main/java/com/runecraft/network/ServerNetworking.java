@@ -55,6 +55,8 @@ public final class ServerNetworking {
                 }
             });
         });
+        ServerPlayNetworking.registerGlobalReceiver(Net.TOGGLE_RETALIATE, (server, player, handler, buf, sender) ->
+                server.execute(() -> com.runecraft.combat.AutoRetaliate.toggle(player)));
         ServerPlayNetworking.registerGlobalReceiver(Net.SET_AUTOCAST, (server, player, handler, buf, sender) -> {
             int ordinal = buf.readVarInt();
             server.execute(() -> MagicService.setAutocast(player, ordinal < 0 || ordinal >= Spell.values().length ? null : Spell.values()[ordinal]));

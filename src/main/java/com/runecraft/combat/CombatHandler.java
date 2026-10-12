@@ -77,6 +77,12 @@ public final class CombatHandler {
             if (target instanceof ServerPlayerEntity other && !canAttackPlayer(player, other)) {
                 return false;
             }
+            if ((direct instanceof PersistentProjectileEntity || direct == player) && !singleWayAllows(player, target)) {
+                if (direct instanceof PersistentProjectileEntity arrow) {
+                    arrow.discard();
+                }
+                return false;
+            }
             if (direct instanceof PersistentProjectileEntity arrow) {
                 playerRanged(player, target, arrow);
                 return false;
@@ -89,6 +95,12 @@ public final class CombatHandler {
         }
         if (target instanceof ServerPlayerEntity player && attacker instanceof LivingEntity mob && !(attacker instanceof PlayerEntity)) {
             if (gielinor || mob instanceof OsrsMonsterEntity) {
+                if (!CombatZones.npcMayAttack(mob, player)) {
+                    if (direct instanceof ProjectileEntity projectile) {
+                        projectile.discard();
+                    }
+                    return false;
+                }
                 MonsterStats stats = MonsterStats.of(mob);
                 AttackType type = direct instanceof ProjectileEntity ? AttackType.RANGED
                         : stats.style().isMelee() ? stats.style() : AttackType.CRUSH;
@@ -212,6 +224,19 @@ public final class CombatHandler {
                 Players.data(target).skills().combatLevel(), Gielinor.wildernessLevel(attacker), Gielinor.wildernessLevel(target));
     }
 
+    /**
+     * Single-way combat check for a player starting an attack; tells the player why not ("Someone else is fighting
+     * that." / "I'm already under attack.").
+     */
+    public static boolean singleWayAllows(ServerPlayerEntity player, LivingEntity target) {
+        com.runecraft.osrs.SingleCombat.Verdict v = CombatZones.check(player, target);
+        if (v != com.runecraft.osrs.SingleCombat.Verdict.OK) {
+            Msg.game(player, v.message);
+            return false;
+        }
+        return true;
+    }
+
     /** True if the player has the overhead protection prayer for this attack style active. */
     public static boolean isProtected(PlayerData data, AttackType type) {
         return switch (type) {
@@ -234,6 +259,9 @@ public final class CombatHandler {
     /** Performs one OSRS attack from a monster against a player (respecting attack speed). */
     public static void npcAttack(LivingEntity mob, ServerPlayerEntity player, AttackType type) {
         MonsterStats stats = MonsterStats.of(mob);
+        if (!CombatZones.npcMayAttack(mob, player)) {
+            return;
+        }
         long now = ActionManager.mcTick();
         Long last = NPC_LAST_ATTACK.get(mob);
         if (last != null && now - last < (long) stats.attackSpeed() * ActionManager.MC_TICKS_PER_GAME_TICK) {
@@ -246,7 +274,7 @@ public final class CombatHandler {
             case RANGED -> stats.ranged();
             default -> stats.attack();
         };
-        long attackRoll = CombatFormulas.npcRoll(attackLevel, 0);
+        long attackRoll = npcAttackRoll(mob, stats, type, attackLevel);
         long defenceRoll = defenceRoll(player, type);
         int maxHit = mob instanceof OsrsMonsterEntity m ? m.maxHitAgainst(player, type) : stats.maxHit();
         int damage = CombatFormulas.roll(new java.util.Random(mob.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
@@ -260,6 +288,15 @@ public final class CombatHandler {
         if (dealtToPlayer > 0) {
             CombatHooks.hurt(player, mob, dealtToPlayer);
         }
+    }
+
+    /**
+     * A monster's attack roll: its attack/ranged/magic level (after curse-spell drains such as Confuse and Stun)
+     * and its OSRS attack bonus for the style.
+     */
+    public static long npcAttackRoll(LivingEntity mob, MonsterStats stats, AttackType type, int level) {
+        int drained = com.runecraft.content.systems.SysCombat.drainedAttackLevel(mob, type, level);
+        return CombatFormulas.npcRoll(drained, stats.attackBonus(type));
     }
 
     /** Combat hook passthroughs for MagicService and module code. */
@@ -301,6 +338,14 @@ public final class CombatHandler {
         }
         if (attacker != null) {
             target.setAttacker(attacker);
+            CombatZones.onHit(attacker, target);
+            if (target instanceof ServerPlayerEntity hurt && attacker != target
+                    && !(attacker instanceof com.runecraft.entity.QuestNpcEntity)) {
+                AutoRetaliate.onHurt(hurt, attacker);
+            }
+            if (attacker instanceof ServerPlayerEntity hitter) {
+                AutoRetaliate.onPlayerAttack(hitter, target);
+            }
         }
         if (damage <= 0) {
             ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS);

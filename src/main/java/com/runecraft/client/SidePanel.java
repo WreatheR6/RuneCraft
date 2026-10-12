@@ -217,8 +217,17 @@ public final class SidePanel {
                 4, 172, 0xFF80A0FF);
         ctx.drawTextWithShadow(tr, "Attack speed: " + Equipment.weaponSpeed(mc.player, ClientState.SKILLS) + " ticks",
                 4, 186, OsrsUi.WHITE);
+        boolean hoverRetaliate = in(mx, my, 2, RETALIATE_Y, 186, 30);
+        OsrsUi.button(ctx, 2, RETALIATE_Y, 186, 30, ClientState.autoRetaliate, hoverRetaliate);
+        OsrsUi.centered(ctx, tr, "Auto Retaliate (" + (ClientState.autoRetaliate ? "On" : "Off") + ")", 95, RETALIATE_Y + 11,
+                ClientState.autoRetaliate ? OsrsUi.WHITE : OsrsUi.ORANGE);
+        if (hoverRetaliate) {
+            tip = List.of("Auto Retaliate", "Fight back automatically when attacked.");
+        }
         return tip;
     }
+
+    private static final int RETALIATE_Y = 204;
 
     private static boolean clickCombat(double mx, double my) {
         for (int i = 0; i < MELEE.length; i++) {
@@ -232,6 +241,11 @@ public final class SidePanel {
                 setStyle(RANGED[i]);
                 return true;
             }
+        }
+        if (in(mx, my, 2, RETALIATE_Y, 186, 30)) {
+            ClientPlayNetworking.send(Net.TOGGLE_RETALIATE, PacketByteBufs.create());
+            ClientState.autoRetaliate = !ClientState.autoRetaliate;
+            return true;
         }
         return false;
     }

@@ -60,6 +60,10 @@ public class OsrsMonsterEntity extends HostileEntity {
         if (!aggressive || com.runecraft.combat.Aggression.tolerant(player, com.runecraft.action.ActionManager.gameTick())) {
             return false;
         }
+        // Single-way combat: don't pick a fight with someone already fighting something else.
+        if (!com.runecraft.combat.CombatZones.npcMayAttack(this, player)) {
+            return false;
+        }
         if (com.runecraft.world.Gielinor.wildernessLevel(player) > 0) {
             return true;
         }

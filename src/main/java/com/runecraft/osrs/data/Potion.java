@@ -95,8 +95,8 @@ public enum Potion {
             case SARADOMIN_BREW -> {
                 skills.applyBoost(Skill.DEFENCE, 2, 0.20);
                 for (Skill s : new Skill[]{Skill.ATTACK, Skill.STRENGTH, Skill.RANGED, Skill.MAGIC}) {
-                    int drain = 2 + (int) Math.floor(skills.currentLevel(s) * 0.10);
-                    skills.setBoost(s, skills.boost(s) - drain);
+                    int drain = com.runecraft.osrs.CombatEffects.brewDrain(skills.currentLevel(s));
+                    skills.setBoost(s, Math.max(-skills.level(s), skills.boost(s) - drain));
                 }
             }
             default -> {
@@ -105,8 +105,16 @@ public enum Potion {
         return 0;
     }
 
-    /** Hitpoints healed per dose (only the Saradomin brew heals). */
+    /**
+     * Hitpoints healed per dose (only the Saradomin brew heals). A brew can boost Hitpoints above the maximum,
+     * up to {@link com.runecraft.osrs.CombatEffects#brewCap}.
+     */
     public int heal(com.runecraft.osrs.SkillSet skills) {
-        return this == SARADOMIN_BREW ? 2 + (int) Math.floor(skills.level(Skill.HITPOINTS) * 0.15) : 0;
+        return this == SARADOMIN_BREW ? com.runecraft.osrs.CombatEffects.brewHeal(skills.level(Skill.HITPOINTS)) : 0;
+    }
+
+    /** True for potions whose heal may boost Hitpoints above the maximum. */
+    public boolean overheals() {
+        return this == SARADOMIN_BREW;
     }
 }

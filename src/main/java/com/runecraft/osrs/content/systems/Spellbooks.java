@@ -28,7 +28,8 @@ public final class Spellbooks {
 
     public enum Kind { COMBAT, TELEPORT, UTILITY }
 
-    public enum Effect { NONE, POISON, DRAIN_ATTACK, HEAL, FREEZE, DRAIN_DEFENCE, DRAIN_PRAYER, DRAIN_MAGIC, UNDEAD, DEMON, BIND }
+    public enum Effect { NONE, POISON, DRAIN_ATTACK, HEAL, FREEZE, DRAIN_DEFENCE, DRAIN_PRAYER, DRAIN_MAGIC, UNDEAD, DEMON, BIND,
+        DRAIN_STRENGTH, TELEBLOCK }
 
     /**
      * One spell. {@code area} spells (bursts and barrages) hit up to 9 enemies around the target.
@@ -77,17 +78,17 @@ public final class Spellbooks {
         util(S, "enchant_1", "Lvl-1 Enchant", 7, 17.5, r("cosmic", 1, "water", 1), "Enchants sapphire jewellery.");
         combat(S, "confuse", "Confuse", 3, 13, 0, Effect.DRAIN_ATTACK, 5, false, r("body", 1, "earth", 2, "water", 3), "Lowers your target's Attack by 5%.");
         util(S, "bones_to_bananas", "Bones to Bananas", 15, 25, r("nature", 1, "water", 2, "earth", 2), "Turns the bones in your inventory into bananas.");
-        combat(S, "weaken", "Weaken", 11, 21, 0, Effect.NONE, 5, false, r("body", 1, "earth", 2, "water", 3), "Lowers your target's Strength by 5%.");
+        combat(S, "weaken", "Weaken", 11, 21, 0, Effect.DRAIN_STRENGTH, 5, false, r("body", 1, "earth", 2, "water", 3), "Lowers your target's Strength by 5%.");
         combat(S, "curse", "Curse", 19, 29, 0, Effect.DRAIN_DEFENCE, 5, false, r("body", 1, "earth", 3, "water", 2), "Lowers your target's Defence by 5%.");
-        combat(S, "bind", "Bind", 20, 30, 0, Effect.BIND, 8, false, r("nature", 2, "earth", 3, "water", 3), "Holds your target in place for 5 seconds.");
+        combat(S, "bind", "Bind", 20, 30, 0, Effect.BIND, 8, false, r("nature", 2, "earth", 3, "water", 3), "Holds your target in place for 8 ticks (4.8 seconds).");
         util(S, "enchant_2", "Lvl-2 Enchant", 27, 37, r("cosmic", 1, "air", 3), "Enchants emerald jewellery.");
         util(S, "telekinetic_grab", "Telekinetic Grab", 33, 43, r("law", 1, "air", 1), "Pulls an item on the ground to you.");
         combat(S, "crumble_undead", "Crumble Undead", 39, 24.5, 15, Effect.UNDEAD, 0, false, r("chaos", 1, "earth", 2, "air", 2), "Hits undead for up to 15 damage.");
         util(S, "enchant_3", "Lvl-3 Enchant", 49, 59, r("cosmic", 1, "fire", 5), "Enchants ruby jewellery.");
         staffSpell("iban_blast", "Iban Blast", 50, 30, 25, Effect.NONE, 0, "iban_staff", r("death", 1, "fire", 5), "Requires Iban's staff. Max hit 25.");
         staffSpell("magic_dart", "Magic Dart", 50, 30, 19, Effect.NONE, 0, "slayers_staff", r("death", 1, "mind", 4), "Requires a slayer's staff. Max hit 10 + Magic/10.");
-        combat(S, "snare", "Snare", 50, 60, 2, // approx max hit
-                Effect.BIND, 16, false, r("nature", 3, "earth", 4, "water", 4), "Holds your target in place for 10 seconds.");
+        combat(S, "snare", "Snare", 50, 60, 3, Effect.BIND, 16, false, r("nature", 3, "earth", 4, "water", 4),
+                "Holds your target in place for 16 ticks (9.6 seconds). Max hit 3.");
         util(S, "charge_water_orb", "Charge Water Orb", 56, 66, r("cosmic", 3, "water", 30), "Charges an unpowered orb at a water obelisk.");
         util(S, "enchant_4", "Lvl-4 Enchant", 57, 67, r("cosmic", 1, "earth", 10), "Enchants diamond jewellery.");
         util(S, "bones_to_peaches", "Bones to Peaches", 60, 35.5, r("nature", 2, "water", 4, "earth", 4), "Turns the bones in your inventory into peaches.");
@@ -99,9 +100,11 @@ public final class Spellbooks {
         combat(S, "vulnerability", "Vulnerability", 66, 76, 0, Effect.DRAIN_DEFENCE, 10, false, r("soul", 1, "earth", 5, "water", 5), "Lowers your target's Defence by 10%.");
         util(S, "charge_air_orb", "Charge Air Orb", 66, 76, r("cosmic", 3, "air", 30), "Charges an unpowered orb at an air obelisk.");
         util(S, "enchant_5", "Lvl-5 Enchant", 68, 78, r("cosmic", 1, "earth", 15, "water", 15), "Enchants dragonstone jewellery.");
-        combat(S, "enfeeble", "Enfeeble", 73, 83, 0, Effect.NONE, 10, false, r("soul", 1, "earth", 8, "water", 8), "Lowers your target's Strength by 10%.");
+        combat(S, "enfeeble", "Enfeeble", 73, 83, 0, Effect.DRAIN_STRENGTH, 10, false, r("soul", 1, "earth", 8, "water", 8), "Lowers your target's Strength by 10%.");
         combat(S, "stun", "Stun", 80, 90, 0, Effect.DRAIN_ATTACK, 10, false, r("soul", 1, "earth", 12, "water", 12), "Lowers your target's Attack by 10%.");
-        combat(S, "entangle", "Entangle", 79, 89, 5, Effect.BIND, 24, false, r("nature", 4, "earth", 5, "water", 5), "Holds your target in place for 24 ticks (14.4 seconds).");
+        combat(S, "entangle", "Entangle", 79, 89, 5, Effect.BIND, 24, false, r("nature", 4, "earth", 5, "water", 5), "Holds your target in place for 24 ticks (14.4 seconds). Max hit 5.");
+        combat(S, "tele_block", "Tele Block", 85, 80, 0, Effect.TELEBLOCK, 500, false, r("law", 1, "chaos", 1, "death", 1),
+                "Stops another player teleporting for 5 minutes (2.5 with Protect from Magic).");
         util(S, "charge", "Charge", 80, 180, r("blood", 3, "fire", 3, "air", 3), "God spells hit up to 30 for 7 minutes.");
         util(S, "enchant_6", "Lvl-6 Enchant", 87, 97, r("cosmic", 1, "earth", 20, "fire", 20), "Enchants onyx jewellery.");
         util(S, "enchant_7", "Lvl-7 Enchant", 93, 110, r("cosmic", 1, "blood", 20, "soul", 20), "Enchants zenyte jewellery.");

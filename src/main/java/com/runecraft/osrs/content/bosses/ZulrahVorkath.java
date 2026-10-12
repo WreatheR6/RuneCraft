@@ -96,6 +96,7 @@ public final class ZulrahVorkath {
 
     private static BossDef zulrahBase(String id) {
         return BossDef.of(id, "Zulrah").level(725).stats(500, 300, 300, 300, 300, 300).speed(4)
+                .attackBonus(0, 50, 50)
                 .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH).poisonous()
                 .size(1.4f, 3.4f, 1.6f).moveSpeed(0.0);
     }
@@ -146,6 +147,7 @@ public final class ZulrahVorkath {
 
     static BossDef vorkath() {
         return BossDef.of("vorkath", "Vorkath").level(732).stats(750, 560, 308, 214, 150, 308).speed(5)
+                .attackBonus(16, 150, 78) // approx.
                 .defenceBonus(26, 108, 108, 240, 26)
                 .attack(VORKATH_CLAW).attack(VORKATH_SPIKE).attack(VORKATH_MAGIC).attack(VORKATH_DRAGONFIRE)
                 .attack(VORKATH_PINK_FIRE).attack(VORKATH_VENOM_FIRE).attack(VORKATH_BOMB)

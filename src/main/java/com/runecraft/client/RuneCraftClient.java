@@ -122,6 +122,14 @@ public class RuneCraftClient implements ClientModInitializer {
     }
 
     private static void registerPackets() {
+        ClientPlayNetworking.registerGlobalReceiver(Net.COMBAT_STATE, (client, handler, buf, sender) -> {
+            boolean retaliate = buf.readBoolean();
+            boolean multi = buf.readBoolean();
+            client.execute(() -> {
+                ClientState.autoRetaliate = retaliate;
+                ClientState.inMulti = multi;
+            });
+        });
         ClientPlayNetworking.registerGlobalReceiver(Net.SYNC, (client, handler, buf, sender) -> {
             int n = buf.readVarInt();
             int[] xp = new int[n];
