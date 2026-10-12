@@ -78,6 +78,11 @@ final class RunecraftHooks {
                 combination(player, c, pos);
                 return true;
             }
+            // Magic Imbue: hold the other element's rune instead of its talisman.
+            if (c.altar() == altar && c.rune().equals(held) && com.runecraft.skill.Runecrafting.imbued.test(player)) {
+                combination(player, c, pos);
+                return true;
+            }
         }
         return false;
     }
@@ -96,7 +101,9 @@ final class RunecraftHooks {
         }
         Inv.remove(player, "pure_essence", n);
         Inv.remove(player, c.rune(), n);
-        Inv.remove(player, c.talisman(), 1);
+        if (!com.runecraft.skill.Runecrafting.imbued.test(player)) {
+            Inv.remove(player, c.talisman(), 1);
+        }
         // A worn binding necklace guarantees success (one of its 16 charges per trip); otherwise 50% per rune.
         boolean binding = useBindingCharge(player);
         Random random = player.getRandom();

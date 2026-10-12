@@ -248,6 +248,21 @@ public final class JewelleryService {
     // ---------------- Fountain of Heroes ----------------
 
     public static void fountain(ServerPlayerEntity p, BlockPos pos, net.minecraft.block.BlockState state) {
+        int charged = rechargeAll(p);
+        if (charged == 0) {
+            Msg.game(p, "You need dragonstone jewellery (glory, skills necklace, combat bracelet or ring of wealth) to recharge.");
+            return;
+        }
+        SysCombat.dust(p, new Vector3f(0.3f, 0.6f, 1.0f), 30);
+        p.getWorld().playSound(null, pos, SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.BLOCKS, 0.8f, 1.2f);
+        Msg.action(p, "You feel a power emanating from the fountain. It recharges your jewellery.");
+    }
+
+    /**
+     * Recharges every rechargeable dragonstone jewellery item carried or worn (Fountain of Heroes, Recharge Dragonstone);
+     * returns how many were recharged.
+     */
+    static int rechargeAll(ServerPlayerEntity p) {
         int charged = 0;
         for (int i = 0; i < p.getInventory().size(); i++) {
             ItemStack s = p.getInventory().getStack(i);
@@ -275,13 +290,7 @@ public final class JewelleryService {
                 }
             }
         }
-        if (charged == 0) {
-            Msg.game(p, "You need dragonstone jewellery (glory, skills necklace, combat bracelet or ring of wealth) to recharge.");
-            return;
-        }
-        SysCombat.dust(p, new Vector3f(0.3f, 0.6f, 1.0f), 30);
-        p.getWorld().playSound(null, pos, SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.BLOCKS, 0.8f, 1.2f);
-        Msg.action(p, "You feel a power emanating from the fountain. It recharges your jewellery.");
+        return charged;
     }
 
     // ---------------- Damage reactions ----------------
@@ -291,8 +300,6 @@ public final class JewelleryService {
         long now = SysTicks.now();
         if (sp.powerOfDeathUntil > now && damage > 1) {
             p.heal(damage / 2f);
-        } else if (sp.wardUntil > now && damage > 4) {
-            p.heal(damage / 5f);
         }
         if (attacker != null && attacker.isAlive()) {
             if (sp.vengeance) {

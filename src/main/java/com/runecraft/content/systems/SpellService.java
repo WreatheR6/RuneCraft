@@ -417,9 +417,18 @@ public final class SpellService {
                     ServerNetworking.sync(victim);
                 }
             }
-            case FREEZE -> SysCombat.freeze(t, s.param());
-            case BIND -> SysCombat.freeze(t, com.runecraft.osrs.CombatEffects.bindTicks(s.param(),
-                    t instanceof ServerPlayerEntity victim && Players.data(victim).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)));
+            // Protect from Magic halves freezes as well as binds (wiki: Freeze).
+            case FREEZE -> SysCombat.freeze(t, com.runecraft.osrs.CombatEffects.bindTicks(s.param(),
+                    t instanceof ServerPlayerEntity fp && Players.data(fp).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)));
+            case BIND -> {
+                // Ward of Arceuus cuts any bind on the warded player to a single tick.
+                if (t instanceof ServerPlayerEntity victim && SysState.of(victim).wardUntil > SysTicks.now()) {
+                    SysCombat.freeze(t, Spellbooks.WARDED_BIND_TICKS);
+                } else {
+                    SysCombat.freeze(t, com.runecraft.osrs.CombatEffects.bindTicks(s.param(),
+                            t instanceof ServerPlayerEntity vp && Players.data(vp).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)));
+                }
+            }
             default -> {
             }
         }
@@ -496,8 +505,22 @@ public final class SpellService {
             });
             return;
         }
+        List<ServerPlayerEntity> group = new ArrayList<>();
+        if (Spellbooks.isGroupTeleport(s)) {
+            // Tele Group: everyone on the 3x3 square around the caster (one OSRS tile = two blocks) who meets the
+            // destination's requirements comes along; the casting cost is the caster's.
+            for (ServerPlayerEntity o : nearbyPlayers(p, 3)) {
+                if (o != p && o.isAlive() && SysTeleport.canTeleport(o, SysTeleport.SPELL_WILDERNESS)) {
+                    group.add(o);
+                }
+            }
+        }
         pay(p, s);
         SysTeleport.teleport(p, s.destination(), SysTeleport.SPELL_WILDERNESS);
+        for (ServerPlayerEntity o : group) {
+            Msg.game(o, p.getName().getString() + " teleports you along.");
+            SysTeleport.teleport(o, s.destination(), SysTeleport.SPELL_WILDERNESS);
+        }
     }
 
     // ---------------- Utility ----------------
@@ -508,7 +531,7 @@ public final class SpellService {
             enchant(p, s, Integer.parseInt(id.substring("enchant_".length())));
             return;
         }
-        if (id.startsWith("resurrect_")) {
+        if (id.startsWith("resurrect_") && !id.equals("resurrect_crops")) {
             thrall(p, s);
             return;
         }
@@ -562,15 +585,76 @@ public final class SpellService {
             }
             case "bake_pie" -> bakePies(p, s);
             case "humidify" -> {
-                int n = Inv.count(p, "vial");
-                if (n == 0) {
+                // Vials, jugs and bowls fill with water and clay softens (wiki); buckets are vanilla items here.
+                String[][] fills = {{"vial", "vial_of_water"}, {"jug", "jug_of_water"}, {"bowl", "bowl_of_water"}, {"clay", "soft_clay"}};
+                int total = 0;
+                for (String[] f : fills) {
+                    if (ItemCatalog.get(f[1]) != null) {
+                        total += Inv.count(p, f[0]);
+                    }
+                }
+                if (total == 0) {
                     Msg.game(p, "You have nothing to fill with water.");
                     return;
                 }
                 pay(p, s);
-                Inv.remove(p, "vial", n);
-                Inv.give(p, "vial_of_water", n);
-                Msg.action(p, "You fill your vials with water.");
+                for (String[] f : fills) {
+                    int n = ItemCatalog.get(f[1]) == null ? 0 : Inv.count(p, f[0]);
+                    if (n > 0) {
+                        Inv.remove(p, f[0], n);
+                        Inv.give(p, f[1], n);
+                    }
+                }
+                Msg.action(p, "You fill your containers with water.");
+            }
+            case "house_teleport" -> {
+                if (!SysTeleport.canTeleport(p, SysTeleport.SPELL_WILDERNESS)) {
+                    return;
+                }
+                pay(p, s);
+                SysTeleport.houseTeleport.accept(p);
+            }
+            case "geomancy" -> geomancy(p, s);
+            case "cure_plant", "fertile_soil", "resurrect_crops" -> farmingSpell(p, s);
+            case "monster_examine" -> {
+                LivingEntity t = SysCombat.lookTarget(p, 16);
+                if (t == null || t instanceof ServerPlayerEntity) {
+                    Msg.game(p, "Look at a monster to examine it.");
+                    return;
+                }
+                pay(p, s);
+                com.runecraft.combat.MonsterStats st = com.runecraft.combat.MonsterStats.of(t);
+                Msg.game(p, st.name() + " (level " + st.combatLevel() + "): " + (int) Math.ceil(t.getHealth()) + "/" + st.hitpoints()
+                        + " Hitpoints, max hit " + st.maxHit() + ", " + st.style().name().toLowerCase(Locale.ROOT) + " attacks every "
+                        + st.attackSpeed() + " ticks.");
+                Msg.game(p, "Attack " + st.attack() + ", Strength " + st.strength() + ", Defence " + st.defence() + ", Magic "
+                        + st.magic() + ", Ranged " + st.ranged() + ".");
+            }
+            case "cure_other" -> {
+                LivingEntity t = SysCombat.lookTarget(p, 16);
+                if (!(t instanceof ServerPlayerEntity other)) {
+                    Msg.game(p, "You can only cast this on another player.");
+                    return;
+                }
+                if (!PoisonService.isPoisoned(other)) {
+                    Msg.game(p, other.getName().getString() + " is not poisoned.");
+                    return;
+                }
+                pay(p, s);
+                PoisonService.cure(other, false, 0, ActionManager.gameTick());
+                Msg.game(other, p.getName().getString() + " has cured you of poison.");
+            }
+            case "dream" -> dream(p, s);
+            case "stat_restore_pot_share", "boost_potion_share" -> potionShare(p, s);
+            case "recharge_dragonstone" -> {
+                int n = JewelleryService.rechargeAll(p);
+                if (n == 0) {
+                    Msg.game(p, "You have no dragonstone jewellery that needs recharging.");
+                    return;
+                }
+                pay(p, s);
+                SysNet.sendState(p);
+                Msg.action(p, "You recharge your dragonstone jewellery.");
             }
             case "cure_me" -> {
                 if (!PoisonService.isPoisoned(p)) {
@@ -653,7 +737,12 @@ public final class SpellService {
             case "spellbook_swap" -> SysMenus.spellbookSwap(p);
             // ---------------- Arceuus ----------------
             case "shadow_veil" -> {
+                if (sp.shadowVeilReadyAt > now) {
+                    Msg.game(p, "You can only cast Shadow Veil every 30 seconds.");
+                    return;
+                }
                 pay(p, s);
+                sp.shadowVeilReadyAt = now + 50;
                 sp.shadowVeilUntil = now + data.skills().currentLevel(Skill.MAGIC);
                 Msg.action(p, "Your thieving abilities have been enhanced.");
             }
@@ -689,10 +778,16 @@ public final class SpellService {
                     Msg.game(p, "Your run energy is already full.");
                     return;
                 }
+                if (sp.vileVigourReadyAt > now) {
+                    Msg.game(p, "You can only cast Vile Vigour every 10 seconds.");
+                    return;
+                }
                 pay(p, s);
-                int restore = Math.min(10000 - sp.runEnergy, data.prayerPoints() * 100);
-                sp.runEnergy += restore;
-                data.setPrayerPoints(data.prayerPoints() - restore / 200);
+                sp.vileVigourReadyAt = now + 17;
+                // One prayer point per 1% run energy, only as much as is missing.
+                int cost = Spellbooks.vileVigourCost(sp.runEnergy / 100, data.prayerPoints());
+                sp.runEnergy = Math.min(10000, sp.runEnergy + cost * 100);
+                data.setPrayerPoints(data.prayerPoints() - cost);
                 ServerNetworking.sync(p);
                 SysNet.sendState(p);
             }
@@ -723,7 +818,12 @@ public final class SpellService {
             }
             case "demonic_offering" -> offering(p, s, true);
             case "sinister_offering" -> offering(p, s, false);
-            case "lesser_corruption", "greater_corruption" -> Msg.game(p, "Corruption only affects other players' prayer in PvP.");
+            case "lesser_corruption", "greater_corruption" -> {
+                pay(p, s);
+                sp.corruptionPending = id.startsWith("greater") ? 2 : 1;
+                sp.corruptionPendingUntil = now + 100;
+                Msg.action(p, "Your next hit on a player may corrupt their prayer.");
+            }
             default -> Msg.game(p, "Nothing interesting happens.");
         }
     }
@@ -1021,7 +1121,17 @@ public final class SpellService {
             Msg.game(p, "You already have a thrall summoned.");
             return;
         }
+        if (sp.thrallReadyAt > now) {
+            Msg.game(p, "You can only resurrect a thrall every 10 seconds.");
+            return;
+        }
+        if (ItemCatalog.get("book_of_the_dead") != null && !Inv.has(p, "book_of_the_dead", 1)
+                && !Inv.idOf(p.getOffHandStack()).equals("book_of_the_dead")) {
+            Msg.game(p, "You need the Book of the Dead to resurrect a thrall.");
+            return;
+        }
         pay(p, s);
+        sp.thrallReadyAt = now + 17;
         sp.thrallTier = Spellbooks.thrallTier(s.id());
         sp.thrallType = s.id().contains("ghost") ? "ghost" : s.id().contains("skeleton") ? "skeleton" : "zombie";
         sp.thrallUntil = now + Players.data(p).skills().currentLevel(Skill.MAGIC);
@@ -1052,7 +1162,7 @@ public final class SpellService {
         if (!(e instanceof LivingEntity target) || !target.isAlive() || target.squaredDistanceTo(p) > 15 * 15) {
             return;
         }
-        int dmg = p.getRandom().nextInt(sp.thrallTier + 1);
+        int dmg = p.getRandom().nextInt(Spellbooks.thrallMaxHit(sp.thrallTier) + 1);
         Vector3f c = switch (sp.thrallType) {
             case "ghost" -> new Vector3f(0.7f, 0.9f, 1.0f);
             case "skeleton" -> new Vector3f(0.9f, 0.9f, 0.8f);
@@ -1125,6 +1235,211 @@ public final class SpellService {
             Msg.action(p, "Some of your special attack energy has been restored.");
         }
         SysCombat.forget(e);
+    }
+
+    // ---------------- Lunar / Arceuus helpers ----------------
+
+    /** The herb or allotment patch the player is looking at (within 6 blocks), or null. */
+    private static net.minecraft.util.math.BlockPos lookPatch(ServerPlayerEntity p) {
+        net.minecraft.util.hit.HitResult hit = p.raycast(6.0, 0f, false);
+        if (hit instanceof net.minecraft.util.hit.BlockHitResult bh && hit.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK) {
+            net.minecraft.util.math.BlockPos pos = bh.getBlockPos();
+            if (p.getWorld().getBlockState(pos).getBlock() instanceof com.runecraft.block.FarmingPatchBlock) {
+                return pos;
+            }
+            if (p.getWorld().getBlockState(pos.down()).getBlock() instanceof com.runecraft.block.FarmingPatchBlock) {
+                return pos.down();
+            }
+        }
+        return null;
+    }
+
+    /** Cure Plant, Fertile Soil and Resurrect Crops on the herb/allotment patch the player looks at. */
+    private static void farmingSpell(ServerPlayerEntity p, Spell s) {
+        net.minecraft.util.math.BlockPos pos = lookPatch(p);
+        if (pos == null) {
+            Msg.game(p, "Look at a herb or allotment patch to cast this spell on it.");
+            return;
+        }
+        ServerWorld world = (ServerWorld) p.getWorld();
+        net.minecraft.block.BlockState state = world.getBlockState(pos);
+        com.runecraft.block.FarmingPatchBlock patch = (com.runecraft.block.FarmingPatchBlock) state.getBlock();
+        switch (s.id()) {
+            case "cure_plant" -> {
+                if (!com.runecraft.skill.FarmingService.curePlant(world, pos, state, patch)) {
+                    Msg.game(p, "This patch isn't diseased.");
+                    return;
+                }
+                pay(p, s);
+                Msg.action(p, "You cure the plant. It is restored to health.");
+            }
+            case "fertile_soil" -> {
+                if (!com.runecraft.skill.FarmingService.fertilise(world, pos, state, patch)) {
+                    Msg.game(p, "This patch can't be treated now.");
+                    return;
+                }
+                pay(p, s);
+                Msg.action(p, "The patch is treated with supercompost.");
+            }
+            default -> {
+                if (!com.runecraft.skill.FarmingService.isDead(state, patch)) {
+                    Msg.game(p, "This spell can only be cast on dead crops.");
+                    return;
+                }
+                pay(p, s);
+                boolean ok = p.getRandom().nextDouble()
+                        < Spellbooks.resurrectCropsChance(Players.data(p).skills().currentLevel(Skill.MAGIC));
+                com.runecraft.skill.FarmingService.resurrect(world, pos, state, patch, ok);
+                Msg.action(p, ok ? "The crop springs back to life!" : "The spell fails and the dead crop crumbles away.");
+            }
+        }
+        world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 12, 0.4, 0.3, 0.4, 0.0);
+    }
+
+    /** Geomancy: the state of the herb and allotment patches within 32 blocks. */
+    private static void geomancy(ServerPlayerEntity p, Spell s) {
+        ServerWorld world = (ServerWorld) p.getWorld();
+        net.minecraft.util.math.BlockPos c = p.getBlockPos();
+        List<String> lines = new ArrayList<>();
+        net.minecraft.util.math.BlockPos.Mutable m = new net.minecraft.util.math.BlockPos.Mutable();
+        for (int dx = -32; dx <= 32 && lines.size() < 8; dx++) {
+            for (int dz = -32; dz <= 32 && lines.size() < 8; dz++) {
+                for (int dy = -6; dy <= 6; dy++) {
+                    m.set(c.getX() + dx, c.getY() + dy, c.getZ() + dz);
+                    net.minecraft.block.BlockState st = world.getBlockState(m);
+                    if (st.getBlock() instanceof com.runecraft.block.FarmingPatchBlock patch) {
+                        lines.add(com.runecraft.skill.FarmingService.status(st, patch));
+                        break;
+                    }
+                }
+            }
+        }
+        if (lines.isEmpty()) {
+            Msg.game(p, "There are no farming patches nearby.");
+            return;
+        }
+        pay(p, s);
+        lines.forEach(l -> Msg.game(p, l));
+    }
+
+    /** Dream: rest to regenerate an extra Hitpoint every minute (twice the natural rate) until healed or moving. */
+    private static void dream(ServerPlayerEntity p, Spell s) {
+        if (p.getHealth() >= p.getMaxHealth()) {
+            Msg.game(p, "You have no need to cast this spell since your hitpoints are already full.");
+            return;
+        }
+        pay(p, s);
+        Msg.action(p, "You lie down to rest...");
+        Vec3d start = p.getPos();
+        ActionManager.start(p, new com.runecraft.action.Action() {
+            int ticks;
+
+            @Override
+            public boolean tick(ServerPlayerEntity pl, long gameTick) {
+                if (pl.getPos().squaredDistanceTo(start) > 0.25 || pl.getHealth() >= pl.getMaxHealth()) {
+                    Msg.game(pl, "You wake up.");
+                    return false;
+                }
+                if (++ticks % com.runecraft.osrs.PrayerEffects.REGEN_TICKS == 0) {
+                    pl.heal(1);
+                }
+                if (ticks % 5 == 0) {
+                    ((ServerWorld) pl.getWorld()).spawnParticles(ParticleTypes.NOTE, pl.getX(), pl.getY() + 1.6, pl.getZ(), 1, 0.2, 0.1, 0.2, 0.0);
+                }
+                return true;
+            }
+        });
+    }
+
+    /** Stat Restore Pot Share / Boost Potion Share: one dose of the held potion each for the caster and players next to them. */
+    private static void potionShare(ServerPlayerEntity p, Spell s) {
+        ItemStack held = p.getMainHandStack();
+        String id = held.isEmpty() ? "" : Inv.idOf(held);
+        com.runecraft.osrs.data.Potion potion = null;
+        for (com.runecraft.osrs.data.Potion pt : com.runecraft.osrs.data.Potion.values()) {
+            if (pt.itemId().equals(id)) {
+                potion = pt;
+            }
+        }
+        if (potion == null || !Spellbooks.canShare(s.id(), id)) {
+            Msg.game(p, s.id().startsWith("stat") ? "Hold a restore, super restore, prayer or energy potion to share it."
+                    : "Hold a stat-boosting potion to share it.");
+            return;
+        }
+        int doses = 4 - held.getDamage();
+        List<ServerPlayerEntity> group = new ArrayList<>();
+        group.add(p);
+        for (ServerPlayerEntity o : nearbyPlayers(p, 3)) {
+            if (o != p && group.size() < doses) {
+                group.add(o);
+            }
+        }
+        pay(p, s);
+        for (ServerPlayerEntity o : group) {
+            PlayerData d = Players.data(o);
+            int prayer = potion.apply(d.skills());
+            if (prayer > 0) {
+                int cap = Math.max(d.skills().level(Skill.PRAYER), d.skills().currentLevel(Skill.PRAYER));
+                d.setPrayerPoints(Math.max(d.prayerPoints(), Math.min(cap, d.prayerPoints() + prayer)));
+            }
+            if (potion == com.runecraft.osrs.data.Potion.ENERGY) {
+                SysState.SysPlayer osp = SysState.of(o);
+                osp.runEnergy = Math.min(10000, osp.runEnergy + 1000);
+                SysNet.sendState(o);
+            }
+            ServerNetworking.sync(o);
+            if (o != p) {
+                Msg.game(o, p.getName().getString() + " shares a dose of " + potion.displayName().toLowerCase(Locale.ROOT) + " with you.");
+            }
+        }
+        int left = doses - group.size();
+        if (left <= 0) {
+            p.setStackInHand(Hand.MAIN_HAND, Inv.stack("vial", 1));
+        } else {
+            held.setDamage(4 - left);
+        }
+        Msg.action(p, "You share your potion between " + group.size() + " player" + (group.size() == 1 ? "." : "s."));
+    }
+
+    /** A corruption spell waiting on the caster's next successful hit against a player (from the attack modifier). */
+    static void corruptOnHit(ServerPlayerEntity p, LivingEntity target, int dealt) {
+        SysState.SysPlayer sp = SysState.of(p);
+        long now = SysTicks.now();
+        if (sp.corruptionPending == 0 || dealt <= 0 || !(target instanceof ServerPlayerEntity victim)) {
+            return;
+        }
+        if (sp.corruptionPendingUntil < now) {
+            sp.corruptionPending = 0;
+            return;
+        }
+        boolean greater = sp.corruptionPending == 2;
+        sp.corruptionPending = 0;
+        SysState.SysPlayer vs = SysState.of(victim);
+        boolean mark = sp.markOfDarknessUntil > now;
+        // 50% chance (always with Mark of Darkness); no effect on the already corrupted or the warded.
+        if (vs.corruptionPulses > 0 || vs.wardUntil > now || (!mark && p.getRandom().nextBoolean())) {
+            return;
+        }
+        vs.corruptionPulses = 3;
+        vs.corruptionGreater = greater;
+        vs.corruptionFast = mark;
+        vs.nextCorruptionPulse = now + Spellbooks.corruptionInterval(mark);
+        Msg.red(victim, "Your prayer has been corrupted!");
+    }
+
+    /** Corruption pulses on a corrupted player (every 10 ticks, 5 with the caster's Mark of Darkness). */
+    public static void corruptionTick(ServerPlayerEntity p, long tick) {
+        SysState.SysPlayer sp = SysState.of(p);
+        if (sp.corruptionPulses <= 0 || tick < sp.nextCorruptionPulse) {
+            return;
+        }
+        int pulse = 3 - sp.corruptionPulses;
+        PlayerData d = Players.data(p);
+        d.setPrayerPoints(Math.max(0, d.prayerPoints() - Spellbooks.corruptionDrain(sp.corruptionGreater, pulse)));
+        sp.corruptionPulses--;
+        sp.nextCorruptionPulse = tick + Spellbooks.corruptionInterval(sp.corruptionFast);
+        SysCombat.dust(p, new Vector3f(0.3f, 0.6f, 0.2f), 10);
+        ServerNetworking.sync(p);
     }
 
     /** All spells shown in the spellbook screen for the player's book. */

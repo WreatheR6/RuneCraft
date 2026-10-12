@@ -59,6 +59,7 @@ public final class CombatHandler {
         ServerLivingEntityEvents.ALLOW_DAMAGE.register(CombatHandler::allowDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register(CombatHandler::afterDeath);
         CombatHooks.addModifier(new GearEffects());
+        PrayerEffectsService.register();
         SetEffectHooks.register();
     }
 

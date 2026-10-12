@@ -64,6 +64,7 @@ public final class SystemsHooks implements ModuleHooks {
             JewelleryService.gameTick(p, tick);
             DiaryService.gameTick(p, tick);
             SpellService.thrallTick(p, tick);
+            SpellService.corruptionTick(p, tick);
             if ((tick + p.getId()) % 200 == 0) {
                 CapeService.snapshot(p);
             }
@@ -109,6 +110,12 @@ public final class SystemsHooks implements ModuleHooks {
             SysMenus.diaries(p);
         });
         QuestScripts.onTalk("watson", SystemsHooks::watson);
+
+        // Spell effects that live in other systems' mechanics.
+        com.runecraft.skill.ThievingService.failUnnoticed = p -> SysState.of(p).shadowVeilUntil > SysTicks.now()
+                && p.getRandom().nextDouble() < com.runecraft.osrs.content.systems.Spellbooks.SHADOW_VEIL_CHANCE;
+        com.runecraft.skill.Runecrafting.imbued = p -> SysState.of(p).magicImbueUntil > SysTicks.now();
+        PrayerScrolls.register();
 
         // Diary perks that live in other systems' mechanics.
         com.runecraft.skill.ThievingService.pickpocketBonus = p -> {

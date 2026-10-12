@@ -344,7 +344,15 @@ public final class MagicService {
         consumeRunes(player, spell);
         XpService.addTenths(player, Skill.MAGIC, spell.xpTenths());
         ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.PORTAL, player.getX(), player.getY() + 1, player.getZ(), 60, 0.5, 1, 0.5, 0.5);
-        Gielinor.teleport(player, dest);
+        int[] tile = spell.tile();
+        if (tile != null && Gielinor.world(player.getServer()) != null) {
+            ServerWorld world = Gielinor.world(player.getServer());
+            net.minecraft.util.math.BlockPos pos = Gielinor.safeSpot(world, com.runecraft.osrs.GielinorMap.toBlockX(tile[0]),
+                    com.runecraft.osrs.GielinorMap.toBlockZ(tile[1]));
+            player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());
+        } else {
+            Gielinor.teleport(player, dest);
+        }
         player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1f, 1f);
         com.runecraft.content.GameEvents.fireCast(player, spell.name().toLowerCase(java.util.Locale.ROOT));
     }

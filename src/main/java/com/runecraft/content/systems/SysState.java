@@ -65,7 +65,20 @@ public final class SysState extends PersistentState {
         public int lastTargetId = -1;
         public long magicImbueUntil;
         public long shadowVeilUntil;
+        public long shadowVeilReadyAt;
         public long wardUntil;
+        public long vileVigourReadyAt;
+        public long thrallReadyAt;
+        /** Corruption spell cast and waiting for the next hit on a player: 0 none, 1 lesser, 2 greater. */
+        public int corruptionPending;
+        public long corruptionPendingUntil;
+        /** Corruption on this player: pulses left (0 = not corrupted), strength and next pulse tick. */
+        public int corruptionPulses;
+        public boolean corruptionGreater;
+        public boolean corruptionFast;
+        public long nextCorruptionPulse;
+        /** Prayer scrolls read (Rigour, Augury, Preserve, Deadeye, Mystic Vigour), by prayer name. */
+        public final Set<String> prayerScrolls = new LinkedHashSet<>();
 
         public ItemStack worn(Jewellery.Slot slot) {
             return worn.getOrDefault(slot, ItemStack.EMPTY);
@@ -126,6 +139,7 @@ public final class SysState extends PersistentState {
             n.putLong("Day", day);
             n.putInt("GeTrades", geTrades);
             n.put("Spells", strings(spellsCast));
+            n.put("PrayerScrolls", strings(prayerScrolls));
             n.putString("CluePuzzle", cluePuzzle);
             return n;
         }
@@ -179,6 +193,7 @@ public final class SysState extends PersistentState {
             day = n.contains("Day") ? n.getLong("Day") : -1;
             geTrades = n.getInt("GeTrades");
             readStrings(n.getList("Spells", NbtElement.STRING_TYPE), spellsCast);
+            readStrings(n.getList("PrayerScrolls", NbtElement.STRING_TYPE), prayerScrolls);
             cluePuzzle = n.getString("CluePuzzle");
         }
     }

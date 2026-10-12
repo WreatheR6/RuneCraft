@@ -85,5 +85,6 @@ public final class SysModifier implements CombatHooks.PlayerAttackModifier {
         sp.lastCombatTick = ActionManager.gameTick();
         sp.lastTargetId = target.getId();
         SpecialAttackService.afterHit(player, target, type, dealt);
+        SpellService.corruptOnHit(player, target, dealt);
     }
 }

@@ -17,6 +17,9 @@ import java.util.Locale;
 
 /** Crafting runes at an altar: every essence in the inventory is bound at once. */
 public final class Runecrafting {
+    /** Whether Magic Imbue is active (combination runes need no talisman); set by the systems module. */
+    public static java.util.function.Predicate<net.minecraft.server.network.ServerPlayerEntity> imbued = p -> false;
+
     private Runecrafting() {
     }
 

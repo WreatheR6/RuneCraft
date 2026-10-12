@@ -90,10 +90,18 @@ public enum Spell {
             case FALADOR_TELEPORT -> Landmark.FALADOR;
             case CAMELOT_TELEPORT -> Landmark.CAMELOT;
             case ARDOUGNE_TELEPORT -> Landmark.ARDOUGNE;
-            case WATCHTOWER_TELEPORT -> Landmark.YANILLE;
+            case WATCHTOWER_TELEPORT -> Landmark.YANILLE; // only with the hard Kandarin diary; see tile()
             case TROLLHEIM_TELEPORT -> Landmark.TROLLHEIM;
             default -> null;
         };
+    }
+
+    /**
+     * An exact OSRS arrival tile {x, y} for teleports that don't land at a town landmark, or null to use
+     * {@link #destination()}. Watchtower Teleport lands on top of the Watchtower north of Yanille.
+     */
+    public int[] tile() {
+        return this == WATCHTOWER_TELEPORT ? new int[]{2549, 3112} : null;
     }
 
     private static Map<Rune, Integer> cost(Object... pairs) {

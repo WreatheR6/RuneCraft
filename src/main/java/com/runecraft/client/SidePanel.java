@@ -258,6 +258,8 @@ public final class SidePanel {
     // ---- Prayer ----
 
     private static final int PRAYER_BOX = 37;
+    /** Row height: 31 prayers make 7 rows, which must fit the 261-pixel content area with the points line. */
+    private static final int PRAYER_ROW = 34;
 
     private static Skill prayerIcon(Prayer p) {
         return switch (p.group()) {
@@ -287,26 +289,26 @@ public final class SidePanel {
         for (int i = 0; i < all.length; i++) {
             Prayer p = all[i];
             int x = 2 + (i % 5) * PRAYER_BOX;
-            int y = 2 + (i / 5) * PRAYER_BOX;
+            int y = 2 + (i / 5) * PRAYER_ROW;
             boolean active = ClientState.prayerActive(p);
             boolean unlocked = level >= p.level();
-            boolean hover = in(mx, my, x, y, PRAYER_BOX - 1, PRAYER_BOX - 1);
+            boolean hover = in(mx, my, x, y, PRAYER_BOX - 1, PRAYER_ROW - 1);
             if (active) {
-                ctx.fill(x + 2, y + 2, x + PRAYER_BOX - 3, y + PRAYER_BOX - 3, 0x90F0E0A0);
+                ctx.fill(x + 2, y + 2, x + PRAYER_BOX - 3, y + PRAYER_ROW - 3, 0x90F0E0A0);
             } else if (hover && unlocked) {
-                ctx.fill(x + 2, y + 2, x + PRAYER_BOX - 3, y + PRAYER_BOX - 3, 0x20FFFFFF);
+                ctx.fill(x + 2, y + 2, x + PRAYER_BOX - 3, y + PRAYER_ROW - 3, 0x20FFFFFF);
             }
-            OsrsUi.icon(ctx, OsrsUi.skillIcon(prayerIcon(p)), x + 8, y + 3, 20);
-            OsrsUi.centered(ctx, tr, initials(p.displayName()), x + 18, y + 25, unlocked ? OsrsUi.WHITE : OsrsUi.GREY);
+            OsrsUi.icon(ctx, OsrsUi.skillIcon(prayerIcon(p)), x + 8, y + 2, 20);
+            OsrsUi.centered(ctx, tr, initials(p.displayName()), x + 18, y + 23, unlocked ? OsrsUi.WHITE : OsrsUi.GREY);
             if (!unlocked) {
-                ctx.fill(x + 1, y + 1, x + PRAYER_BOX - 2, y + PRAYER_BOX - 2, 0x90000000);
+                ctx.fill(x + 1, y + 1, x + PRAYER_BOX - 2, y + PRAYER_ROW - 2, 0x90000000);
             }
             if (hover) {
                 tip = List.of(p.displayName(), "Level " + p.level(), "Drain: " + p.drainEffect());
             }
         }
         OsrsUi.centered(ctx, tr, "Prayer points: " + ClientState.prayerPoints + " / " + ClientState.SKILLS.currentLevel(Skill.PRAYER),
-                center(), 2 + 6 * PRAYER_BOX + 10, 0xFF40E0FF);
+                center(), 2 + ((all.length + 4) / 5) * PRAYER_ROW + 4, 0xFF40E0FF);
         return tip;
     }
 
@@ -314,8 +316,8 @@ public final class SidePanel {
         Prayer[] all = Prayer.values();
         for (int i = 0; i < all.length; i++) {
             int x = 2 + (i % 5) * PRAYER_BOX;
-            int y = 2 + (i / 5) * PRAYER_BOX;
-            if (in(mx, my, x, y, PRAYER_BOX - 1, PRAYER_BOX - 1)) {
+            int y = 2 + (i / 5) * PRAYER_ROW;
+            if (in(mx, my, x, y, PRAYER_BOX - 1, PRAYER_ROW - 1)) {
                 if (ClientState.SKILLS.level(Skill.PRAYER) >= all[i].level()) {
                     send(Net.TOGGLE_PRAYER, all[i].ordinal());
                 }
