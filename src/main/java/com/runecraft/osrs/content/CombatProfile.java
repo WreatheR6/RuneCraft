@@ -46,6 +46,13 @@ public abstract class CombatProfile<T extends CombatProfile<T>> {
     public boolean aggressive = true;
     public boolean flying;
     public boolean poisonous;
+    /**
+     * OSRS monster attributes ("undead", "demon", "dragon", "kalphite", "vampyre", "spectral", "fiery", "golem",
+     * "leafy", "xerician", "shade", "rat", "penance", "flying"), used by salve amulets, demonbane, dragonbane etc.
+     */
+    public final Set<String> attributes = new java.util.TreeSet<>();
+    /** True once {@link com.runecraft.osrs.data.MonsterStatsTable} has applied the wiki reference stats. */
+    public boolean referenceStats;
 
     protected CombatProfile(String id, String name) {
         this.id = id;
@@ -157,6 +164,16 @@ public abstract class CombatProfile<T extends CombatProfile<T>> {
     public T flying() {
         this.flying = true;
         return self();
+    }
+
+    /** Adds OSRS monster attributes such as "undead" or "demon". */
+    public T attributes(String... list) {
+        attributes.addAll(List.of(list));
+        return self();
+    }
+
+    public boolean hasAttribute(String attribute) {
+        return attributes.contains(attribute);
     }
 
     public T poisonous() {

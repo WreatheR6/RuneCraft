@@ -10,11 +10,11 @@ import java.util.List;
  * {@link #lair()}), some requiring a key dropped by regular monsters, just like in-game.
  */
 public enum Boss {
-    OBOR("obor", "Obor", 106, 120, 90, 80, 60, 1, 1, 6, AttackType.CRUSH, 12, 0, Mechanic.NONE, 2.6f, 0xB89070,
+    OBOR("obor", "Obor", 106, 120, 90, 100, 60, 1, 120, 6, AttackType.CRUSH, 22, 0, Mechanic.NONE, 2.6f, 0xB89070,
             Landmark.EDGEVILLE, "giant_key",
             List.of(Drop.always("big_bones"), Drop.of("coins", 500, 3000, 1), Drop.of("law_rune", 15, 30, 4),
                     Drop.of("rune_full_helm", 1, 1, 12), Drop.of("hill_giant_club", 1, 1, 118), Drop.herbs(4))),
-    BRYOPHYTA("bryophyta", "Bryophyta", 128, 115, 100, 100, 100, 100, 1, 6, AttackType.CRUSH, 16, 0, Mechanic.MIXED_MAGIC,
+    BRYOPHYTA("bryophyta", "Bryophyta", 128, 115, 130, 100, 100, 90, 1, 6, AttackType.CRUSH, 16, 0, Mechanic.MIXED_MAGIC,
             2.4f, 0x4A7A2A, Landmark.VARROCK, "mossy_key",
             List.of(Drop.always("big_bones"), Drop.of("coins", 500, 4000, 1), Drop.of("nature_rune", 20, 40, 4),
                     Drop.of("rune_platelegs", 1, 1, 16), Drop.of("bryophytas_essence", 1, 1, 118), Drop.herbs(3))),
@@ -43,9 +43,9 @@ public enum Boss {
     TZTOK_JAD("tztok_jad", "TzTok-Jad", 702, 250, 640, 960, 480, 480, 960, 8, AttackType.MAGIC, 97, 0, Mechanic.JAD, 2.8f,
             0xC04010, Landmark.MOR_UL_REK, null,
             List.of(Drop.always("fire_cape"), Drop.of("tokkul", 8000, 16000, 1), Drop.of("tzrek_jad", 1, 1, 200))),
-    COUNT_DRAYNOR("count_draynor", "Count Draynor", 34, 35, 30, 25, 30, 1, 1, 4, AttackType.CRUSH, 5, 0, Mechanic.VAMPIRE,
+    COUNT_DRAYNOR("count_draynor", "Count Draynor", 34, 35, 30, 25, 30, 1, 1, 4, AttackType.CRUSH, 3, 0, Mechanic.VAMPIRE,
             1.0f, 0x202030, Landmark.DRAYNOR_MANOR, null, List.of(Drop.always("bones"))),
-    DELRITH("delrith", "Delrith", 27, 30, 30, 30, 20, 1, 1, 4, AttackType.SLASH, 4, 0, Mechanic.DEMON, 1.4f, 0xA02020,
+    DELRITH("delrith", "Delrith", 27, 7, 32, 25, 27, 1, 1, 6, AttackType.SLASH, 3, 0, Mechanic.DEMON, 1.4f, 0xA02020,
             Landmark.STONE_CIRCLE, null, List.of(Drop.always("bones")));
 
     public enum Mechanic {

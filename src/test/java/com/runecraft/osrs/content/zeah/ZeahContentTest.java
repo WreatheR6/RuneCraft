@@ -206,7 +206,7 @@ class ZeahContentTest {
     @Test
     void lizardmenAndCrabs() {
         MonsterDef brute = ContentRegistry.monster("lizardman_brute");
-        assertEquals(73, brute.combatLevel);
+        assertEquals(75, brute.combatLevel); // OSRS Wiki (DPS calculator data)
         assertEquals(60, brute.hitpoints);
         assertEquals(250, rarity(brute.drops, "xerics_talisman_inert"));
         assertEquals("lizardmen", brute.slayerCategory);

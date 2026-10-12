@@ -37,6 +37,7 @@ public final class ContentRegistry {
         if (monsters == null) {
             List<MonsterDef> all = new ArrayList<>();
             Modules.ALL.forEach(m -> all.addAll(m.monsters()));
+            all.forEach(com.runecraft.osrs.data.MonsterStatsTable::apply);
             monsters = unique(all, d -> d.id, "monster");
         }
         return monsters;
@@ -46,6 +47,7 @@ public final class ContentRegistry {
         if (bosses == null) {
             List<BossDef> all = new ArrayList<>();
             Modules.ALL.forEach(m -> all.addAll(m.bosses()));
+            all.forEach(com.runecraft.osrs.data.MonsterStatsTable::apply);
             bosses = unique(all, d -> d.id, "boss");
         }
         return bosses;
