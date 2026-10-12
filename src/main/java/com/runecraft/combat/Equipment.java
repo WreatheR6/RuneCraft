@@ -42,6 +42,9 @@ public final class Equipment {
             return EquipmentStats.NONE;
         }
         EquipmentDef eq = def.equipment();
+        if (com.runecraft.item.ItemCharges.depleted(stack)) {
+            return EquipmentStats.NONE; // broken Barrows, inactive crystal, uncharged trident/helm
+        }
         if (onlySlot != null && eq.slot() != onlySlot) {
             return EquipmentStats.NONE;
         }

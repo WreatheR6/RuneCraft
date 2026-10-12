@@ -40,6 +40,8 @@ public final class SystemsHooks implements ModuleHooks {
         SysTicks.register();
         SysMenus.registerHandlers();
         CapeService.registerCommands();
+        AccessGateService.register();
+        ChargeService.register();
 
         CombatHooks.addModifier(new SysModifier());
         CombatHooks.addHurtListener(JewelleryService::onHurt);

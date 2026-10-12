@@ -113,6 +113,8 @@ public final class NpcsContent implements ContentModule {
                 .equipment(wear(EquipmentDef.Slot.CHEST, none())).examine("A mostly clean apron.");
         s.add("brown_apron", "Brown apron", Kind.ARMOUR, "leather_body", 0x7A5A3A).value(2).stack(1)
                 .equipment(wear(EquipmentDef.Slot.CHEST, none())).examine("A mostly clean apron.");
+        s.add("chefs_hat", "Chef's hat", Kind.ARMOUR, "cowl", 0xF0F0F0).value(2).stack(1)
+                .equipment(wear(EquipmentDef.Slot.HEAD, none())).examine("What a silly hat. Needed to enter the Cooks' Guild.");
         s.add("black_skirt", "Black skirt", Kind.ARMOUR, "chaps", 0x2A2A2A).value(2).stack(1)
                 .equipment(wear(EquipmentDef.Slot.LEGS, none())).examine("Clothing favoured by women and dark wizards.");
         s.add("blue_skirt", "Blue skirt", Kind.ARMOUR, "chaps", 0x2A3A9A).value(2).stack(1)

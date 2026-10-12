@@ -1074,6 +1074,7 @@ public final class EquipmentBonuses {
         put("wooden_shield", 0, 0, 0, 0, 0, 0,  4, 5, 3, 1, 4,  0, 0, 0, 0);
         put("white_apron", 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0);
         put("brown_apron", 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0);
+        put("chefs_hat", 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0);
         put("black_skirt", 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0);
         put("blue_skirt", 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0);
         put("wizard_hat", 0, 0, 0, 0, 2, 0,  0, 0, 0, 2, 0,  0, 0, 0, 0);

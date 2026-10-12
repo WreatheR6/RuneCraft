@@ -2,6 +2,14 @@ package com.runecraft.client.content.systems;
 
 import com.runecraft.client.content.ClientModuleHooks;
 import com.runecraft.content.systems.SysNet;
+import com.runecraft.item.ItemCharges;
+import com.runecraft.osrs.content.systems.Charges;
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.Registries;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -42,6 +50,21 @@ public final class SystemsClientHooks implements ClientModuleHooks {
             }
         });
         HudRenderCallback.EVENT.register(SystemsHud::render);
+        ItemTooltipCallback.EVENT.register((stack, context, lines) -> {
+            Identifier id = Registries.ITEM.getId(stack.getItem());
+            if (!id.getNamespace().equals("runecraft")) {
+                return;
+            }
+            Charges.Spec spec = Charges.of(id.getPath());
+            if (spec == null) {
+                return;
+            }
+            NbtCompound nbt = stack.getNbt();
+            int charges = nbt != null && nbt.contains(ItemCharges.KEY) ? Charges.clamp(spec, nbt.getInt(ItemCharges.KEY)) : spec.initial();
+            Formatting color = Charges.depleted(spec, charges) ? Formatting.RED
+                    : charges * 4 < spec.max() ? Formatting.GOLD : Formatting.DARK_AQUA;
+            lines.add(Text.literal(Charges.describe(spec, charges)).formatted(color));
+        });
 
         ClientPlayNetworking.registerGlobalReceiver(SysNet.STATE, (client, handler, buf, sender) -> {
             int spec = buf.readVarInt();

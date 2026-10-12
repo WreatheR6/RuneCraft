@@ -125,6 +125,12 @@ public final class CombatHandler {
         if (now - data.lastAttackTick < (long) speed * ActionManager.MC_TICKS_PER_GAME_TICK) {
             return;
         }
+        String denied = CombatHooks.deniedAttack(player, Equipment.meleeType(player, skills));
+        if (denied != null) {
+            data.lastAttackTick = now;
+            Msg.game(player, denied);
+            return;
+        }
         data.lastAttackTick = now;
         ItemStack held = player.getMainHandStack();
         com.runecraft.osrs.ItemDef heldDef = com.runecraft.registry.ModItems.def(held);
@@ -168,6 +174,11 @@ public final class CombatHandler {
             }
         }
         arrow.discard();
+        String denied = CombatHooks.deniedAttack(player, AttackType.RANGED);
+        if (denied != null) {
+            Msg.game(player, denied);
+            return;
+        }
         CombatStyle style = data.style().forRanged();
         EquipmentStats eq = Equipment.total(player, skills);
         int effRanged = CombatFormulas.effectiveRanged(skills.currentLevel(Skill.RANGED), PrayerService.rangedAttack(data), style);
