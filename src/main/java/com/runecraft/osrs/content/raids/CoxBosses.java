@@ -137,6 +137,10 @@ public final class CoxBosses {
                         .defenceBonus(0, 0, 0, 0, 0)
                         .attack(AttackDef.of("blast", AttackType.MAGIC, 22, 14, 10).particle("minecraft:witch"))
                         .skin(0x3A3A6A, 0x2A2A5A, 0x1A1A3A, 0x8A8AE0).size(0.6f, 1.95f, 1.0f).moveSpeed(0.0),
+                // Crystal crabs room: the crabs cannot be killed; striking one makes it shimmer (puzzle logic).
+                MonsterDef.of("cox_crystal_crab", "Crystal crab").level(1).stats(200, 1, 1, 1, 1, 1).speed(10).passive()
+                        .attack(AttackDef.of("pinch", AttackType.CRUSH, 0, 1, 10)).model("rock_crab")
+                        .skin(0x9AD8E8, 0x6AB8D0, 0x6AB8D0, 0xE0F8FF).size(0.9f, 0.7f, 1.0f).moveSpeed(0.18),
                 MonsterDef.of("vasa_crystal", "Glowing crystal").level(1).stats(120, 1, 1, 100, 100, 1).speed(10).passive()
                         .defenceBonus(-5, 180, 180, 0, 0)
                         .attack(AttackDef.of("hum", AttackType.MAGIC, 0, 1, 10))

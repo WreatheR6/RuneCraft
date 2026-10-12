@@ -21,8 +21,8 @@ public final class RaidLayouts {
     public static final List<List<String>> COX_ROTATIONS = List.of(
             List.of("tekton", "vasa", "guardians", "mystics", "shamans", "muttadiles", "vanguards", "vespula"),
             List.of("tekton", "muttadiles", "guardians", "vespula", "shamans", "vasa", "vanguards", "mystics"));
-    /** CoX puzzle rooms (Crystal crabs are not implemented). */
-    public static final List<String> COX_PUZZLES = List.of("ice_demon", "thieving", "tightrope");
+    /** CoX puzzle rooms. Their points are awarded per action (see the room logic), not on completion. */
+    public static final List<String> COX_PUZZLES = List.of("ice_demon", "thieving", "tightrope", "crystal_crabs");
     /** ToA paths: puzzle room followed by the path's boss. */
     public static final List<List<String>> TOA_PATHS = List.of(
             List.of("scabaras_puzzle", "kephri"),
@@ -42,7 +42,7 @@ public final class RaidLayouts {
                 "The Guardians are made of stone. Only a pickaxe will chip them apart.");
         room("mystics", "Skeletal Mystics", RaidType.COX, Kind.COMBAT, "crypt",
                 List.of("skeletal_mystic", "skeletal_mystic", "skeletal_mystic"), 0,
-                "Three Skeletal Mystics guard this cavern.");
+                "Skeletal Mystics guard this cavern; more of them rise for larger parties.");
         room("shamans", "Lizardman Shamans", RaidType.COX, Kind.COMBAT, "jungle",
                 List.of("cox_lizardman_shaman", "cox_lizardman_shaman", "cox_lizardman_shaman"), 0,
                 "Move when a shaman leaps, and run from the purple spawn before they explode.");
@@ -53,12 +53,14 @@ public final class RaidLayouts {
                 "Keep the three Vanguards' health even: if one falls too far behind, they all reset.");
         room("vespula", "Vespula", RaidType.COX, Kind.COMBAT, "jungle", List.of("vespula", "vespula_portal"), 0,
                 "Destroy the abyssal portal while Vespula and her soldiers defend it.");
-        room("ice_demon", "Ice demon", RaidType.COX, Kind.PUZZLE, "ice", List.of(), 600,
+        room("ice_demon", "Ice demon", RaidType.COX, Kind.PUZZLE, "ice", List.of(), 0,
                 "Chop the saplings for kindling and light the braziers to thaw the Ice demon, then slay it.");
-        room("thieving", "Thieving", RaidType.COX, Kind.PUZZLE, "crypt", List.of(), 500,
+        room("thieving", "Thieving", RaidType.COX, Kind.PUZZLE, "crypt", List.of(), 0,
                 "Search the grubby chests for cavern grubs and feed them to the scavenger's trough.");
-        room("tightrope", "Tightrope", RaidType.COX, Kind.PUZZLE, "void", List.of(), 400,
+        room("tightrope", "Tightrope", RaidType.COX, Kind.PUZZLE, "void", List.of(), 0,
                 "Kill the deathly mages and rangers, then cross the tightrope.");
+        room("crystal_crabs", "Crystal crabs", RaidType.COX, Kind.PUZZLE, "ice", List.of(), 0,
+                "Strike the crystal crabs to make them shimmer, and lead a shimmering crab to each dark crystal to light it.");
         room("olm", "The Great Olm", RaidType.COX, Kind.FINAL, "lava", List.of("great_olm"), 0,
                 "Kill both claws to expose the head. Watch for falling crystals, acid, lightning and portals.");
         room("cox_reward", "Ancient chest", RaidType.COX, Kind.REWARD, "crypt", List.of(), 0,
@@ -85,23 +87,23 @@ public final class RaidLayouts {
         // --- Tombs of Amascut ---
         room("toa_lobby", "Tombs of Amascut", RaidType.TOA, Kind.LOBBY, "sand", List.of(), 0,
                 "Choose your invocations at the obelisk to set the raid level, then begin.");
-        room("scabaras_puzzle", "Path of Scabaras", RaidType.TOA, Kind.PUZZLE, "sand", List.of(), 300,
+        room("scabaras_puzzle", "Path of Scabaras", RaidType.TOA, Kind.PUZZLE, "sand", List.of(), RaidScaling.TOA_ROOM_POINTS,
                 "Watch the order the tiles light up, then step on them in the same order.");
-        room("kephri", "Kephri", RaidType.TOA, Kind.COMBAT, "sand", List.of("kephri"), 0,
+        room("kephri", "Kephri", RaidType.TOA, Kind.COMBAT, "sand", List.of("kephri"), RaidScaling.TOA_ROOM_POINTS,
                 "Kephri's shield regenerates; kill her scarabs before they reach her.");
-        room("het_puzzle", "Path of Het", RaidType.TOA, Kind.PUZZLE, "sand", List.of(), 300,
+        room("het_puzzle", "Path of Het", RaidType.TOA, Kind.PUZZLE, "sand", List.of(), RaidScaling.TOA_ROOM_POINTS,
                 "Mine through Het's seal while the light of the sun burns the room.");
-        room("akkha", "Akkha", RaidType.TOA, Kind.COMBAT, "sand", List.of("akkha"), 0,
+        room("akkha", "Akkha", RaidType.TOA, Kind.COMBAT, "sand", List.of("akkha"), RaidScaling.TOA_ROOM_POINTS,
                 "Akkha switches styles and splits off shadows. Kill his shadow to make him vulnerable.");
-        room("apmeken_puzzle", "Path of Apmeken", RaidType.TOA, Kind.PUZZLE, "jungle", List.of(), 300,
+        room("apmeken_puzzle", "Path of Apmeken", RaidType.TOA, Kind.PUZZLE, "jungle", List.of(), RaidScaling.TOA_ROOM_POINTS,
                 "Listen to Apmeken's sight: repair the pillars, vents and roof supports as they fail.");
-        room("baba", "Ba-Ba", RaidType.TOA, Kind.COMBAT, "jungle", List.of("baba"), 0,
+        room("baba", "Ba-Ba", RaidType.TOA, Kind.COMBAT, "jungle", List.of("baba"), RaidScaling.TOA_ROOM_POINTS,
                 "Destroy the rolling boulders and stay out of the falling rocks.");
-        room("crondis_puzzle", "Path of Crondis", RaidType.TOA, Kind.PUZZLE, "water", List.of(), 300,
+        room("crondis_puzzle", "Path of Crondis", RaidType.TOA, Kind.PUZZLE, "water", List.of(), RaidScaling.TOA_ROOM_POINTS,
                 "Carry water from the container to the Palm of Resourcefulness.");
-        room("zebak", "Zebak", RaidType.TOA, Kind.COMBAT, "water", List.of("zebak"), 0,
+        room("zebak", "Zebak", RaidType.TOA, Kind.COMBAT, "water", List.of("zebak"), RaidScaling.TOA_ROOM_POINTS,
                 "Hide behind the jugs when Zebak sends a wave.");
-        room("wardens", "The Wardens", RaidType.TOA, Kind.FINAL, "sand", List.of("wardens_obelisk"), 0,
+        room("wardens", "The Wardens", RaidType.TOA, Kind.FINAL, "sand", List.of("wardens_obelisk"), RaidScaling.TOA_ROOM_POINTS,
                 "Destroy the obelisk, then defeat the Wardens.");
         room("toa_reward", "Chest room", RaidType.TOA, Kind.REWARD, "sand", List.of(), 0,
                 "Open the sarcophagus chest for your reward.");

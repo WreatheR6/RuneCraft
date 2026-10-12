@@ -69,6 +69,10 @@ public final class RaidInstance {
     private final boolean[] built;
     /** Hidden hitpoints for creatures with more than 1024 HP, plus their true maximum. */
     private final Map<LivingEntity, int[]> reserve = new WeakHashMap<>();
+    /** CoX: points left in each creature's damage pool (5 per hitpoint, OSRS). */
+    private final Map<LivingEntity, Integer> coxPools = new WeakHashMap<>();
+    /** ToB: damage each player dealt in the current room, for the room's MVP points. */
+    private final Map<UUID, Integer> roomDamage = new HashMap<>();
     private final int partySize;
     private UUID leader;
     private int current;
@@ -268,19 +272,49 @@ public final class RaidInstance {
         points.put(u, Math.max(0, Math.min(cap, points.get(u) + amount)));
     }
 
-    /** Points for damage dealt to a creature in this raid. */
+    /** The creature id of a raid entity (boss definition id, or entity type path). */
+    public static String creatureId(LivingEntity e) {
+        if (e instanceof DataBossEntity boss && boss.def() != null) {
+            return boss.def().id;
+        }
+        return Registries.ENTITY_TYPE.getId(e.getType()).getPath();
+    }
+
+    /**
+     * Points for damage dealt to a creature in this raid (OSRS): CoX draws on the creature's pool of 5
+     * points per hitpoint (full value while fresh, decaying as it drains); ToA gives 1 point per damage
+     * times the creature's multiplier; ToB counts the damage towards the room's MVP.
+     */
     public void onDamage(ServerPlayerEntity player, LivingEntity target, int dealt) {
         if (dealt <= 0) {
             return;
         }
-        boolean boss = target instanceof DataBossEntity;
-        int per = switch (type) {
-            case COX -> boss ? 6 : 3;
-            case TOA -> boss ? 2 : 1;
-            case TOB -> 0;
-        };
-        addPoints(player.getUuid(), dealt * per);
+        int room = roomAt(target.getPos());
+        if (room >= 0) {
+            logics[room].onCreatureHit(player, target, dealt);
+        }
+        switch (type) {
+            case COX -> {
+                int max = maxHitpoints(target);
+                int pool = coxPools.getOrDefault(target, max * RaidScaling.COX_DAMAGE_POOL_PER_HP);
+                int earned = RaidScaling.coxDamagePoints(pool, max, dealt);
+                coxPools.put(target, pool - earned);
+                addPoints(player.getUuid(), earned);
+            }
+            case TOA -> {
+                boolean p3 = logics[current] instanceof ToaRooms.Wardens w && w.phaseThree();
+                addPoints(player.getUuid(), (int) Math.floor(dealt * RaidScaling.toaPointsPerDamage(creatureId(target), p3)));
+            }
+            case TOB -> roomDamage.merge(player.getUuid(), dealt, Integer::sum);
+        }
         topUp(target);
+    }
+
+    /** Points a player earned for a CoX puzzle action (kindling, grubs, the tightrope crystal, crabs). */
+    public void awardActionPoints(ServerPlayerEntity player, int amount) {
+        if (amount > 0) {
+            addPoints(player.getUuid(), amount);
+        }
     }
 
     /** Sets a creature's hitpoints, keeping anything above Minecraft's 1024 cap in reserve. */
@@ -302,12 +336,9 @@ public final class RaidInstance {
     /** Scales a freshly spawned creature's hitpoints for this raid's party size, mode and raid/path level. */
     public void scale(LivingEntity e) {
         int base = Math.round(e.getMaxHealth());
-        String id;
+        String id = creatureId(e);
         if (e instanceof DataBossEntity boss && boss.def() != null) {
             base = boss.def().hitpoints;
-            id = boss.def().id;
-        } else {
-            id = Registries.ENTITY_TYPE.getId(e.getType()).getPath();
         }
         int hp = switch (type) {
             case COX -> RaidScaling.coxScaledHp(id, base, partySize, mode == RaidMode.CHALLENGE);
@@ -315,6 +346,7 @@ public final class RaidInstance {
             case TOA -> RaidScaling.toaScaledHp(base, raidLevel, pathLevel(), partySize, inPath());
         };
         setHitpoints(e, hp);
+        coxPools.remove(e);
     }
 
     /** True hitpoints (including reserve). */
@@ -552,10 +584,24 @@ public final class RaidInstance {
                 if (!downed.contains(u)) {
                     points.merge(u, RaidScaling.TOB_POINTS_PER_ROOM, Integer::sum);
                 }
-            } else {
+            } else if (!downed.contains(u)) {
                 addPoints(u, def.completionPoints());
             }
         }
+        if (type == RaidType.TOB && def.combat()) {
+            // OSRS: the room's MVP (most damage dealt) earns bonus points.
+            UUID mvp = null;
+            for (Map.Entry<UUID, Integer> e : roomDamage.entrySet()) {
+                if (party.contains(e.getKey()) && (mvp == null || e.getValue() > roomDamage.get(mvp))) {
+                    mvp = e.getKey();
+                }
+            }
+            if (mvp != null) {
+                points.merge(mvp, RaidScaling.tobMvpPoints(def.id()), Integer::sum);
+                say(name(mvp) + " was the MVP of " + def.name() + ".", Formatting.YELLOW);
+            }
+        }
+        roomDamage.clear();
         RaidBuilder.openExit(world, slot, logic.index);
         world.playSound(null, center(logic.index), SoundEvents.BLOCK_IRON_DOOR_OPEN, SoundCategory.BLOCKS, 1f, 0.8f);
         reviveAll(logic.index);
@@ -588,12 +634,18 @@ public final class RaidInstance {
         for (UUID u : party) {
             pts.put(u.toString(), points(u));
         }
-        result = RaidRewards.roll(type, mode, pts, raidLevel, random);
+        boolean withinTarget = elapsedTicks() <= RaidScaling.targetTicks(type, mode, partySize);
+        result = RaidRewards.roll(type, mode, pts, raidLevel, withinTarget, random);
         long secs = elapsedTicks() * 6 / 10;
         say("Congratulations - your raid is complete! Duration: " + secs / 60 + ":" + String.format("%02d", secs % 60),
                 Formatting.GOLD);
         if (type != RaidType.TOB) {
             say("Total points: " + totalPoints() + ".", Formatting.YELLOW);
+        }
+        if (!RaidRewards.extras(type, mode).isEmpty()) {
+            long target = RaidScaling.targetTicks(type, mode, partySize) * 6 / 10;
+            say(withinTarget ? "You beat the " + mode.displayName() + " target time of " + target / 60 + " minutes!"
+                    : "You missed the " + mode.displayName() + " target time of " + target / 60 + " minutes.", Formatting.YELLOW);
         }
         RaidsState state = RaidsState.get(world.getServer());
         for (ServerPlayerEntity p : players()) {

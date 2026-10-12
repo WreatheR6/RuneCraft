@@ -6,6 +6,7 @@ import com.runecraft.boss.Mechanics;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
+import com.runecraft.osrs.content.raids.RaidScaling;
 import com.runecraft.osrs.content.raids.RaidsContent;
 import com.runecraft.osrs.content.raids.RoomDef;
 import com.runecraft.skill.XpService;
@@ -702,12 +703,26 @@ final class ToaRooms {
         }
     }
 
-    /** The Wardens: the obelisk, then both Wardens with alternating exposed cores, then the enraged survivor. */
+    /**
+     * The Wardens: the obelisk, then both Wardens, then the enraged survivor. In phase 2 a Warden only
+     * loses hitpoints while its core is ejected (OSRS): hitting its body charges it until the core pops
+     * out for a few seconds, and one ejection can take at most half its hitpoints.
+     */
     static final class Wardens extends RoomLogic {
+        /** Game ticks an ejected core stays out. // approx */
+        private static final int CORE_TICKS = 20;
         private DataBossEntity obelisk;
         private DataBossEntity elidinis;
         private DataBossEntity tumeken;
         private int phase;
+        private final java.util.Map<LivingEntity, Integer> charge = new java.util.HashMap<>();
+        private final java.util.Map<LivingEntity, Integer> coreTicks = new java.util.HashMap<>();
+        private final java.util.Map<LivingEntity, Integer> coreDamage = new java.util.HashMap<>();
+
+        /** Whether the fight is in its final (enraged) phase. */
+        boolean phaseThree() {
+            return phase == 3;
+        }
 
         Wardens(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -737,22 +752,47 @@ final class ToaRooms {
             obelisk = null;
         }
 
+        /** The Warden to show and strike at: one with an ejected core, else a living one. */
         private DataBossEntity exposed() {
-            if (!alive(elidinis)) {
-                return tumeken;
-            }
-            if (!alive(tumeken)) {
+            if (coreTicks.getOrDefault(elidinis, 0) > 0 && alive(elidinis)) {
                 return elidinis;
             }
-            return (raid.roomTicks() / 20) % 2 == 0 ? elidinis : tumeken;
+            if (coreTicks.getOrDefault(tumeken, 0) > 0 && alive(tumeken)) {
+                return tumeken;
+            }
+            return alive(elidinis) ? elidinis : tumeken;
+        }
+
+        private boolean coreOut(LivingEntity warden) {
+            return coreTicks.getOrDefault(warden, 0) > 0;
         }
 
         @Override
-        public boolean bossVulnerable(DataBossEntity boss) {
-            if (phase != 2) {
-                return true;
+        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            if (phase != 2 || (boss != elidinis && boss != tumeken) || damage <= 0) {
+                return damage;
             }
-            return boss == exposed();
+            int max = raid.maxHitpoints(boss);
+            if (!coreOut(boss)) {
+                int c = charge.getOrDefault(boss, 0) + damage;
+                if (c >= RaidScaling.toaCoreChargeNeeded(max)) {
+                    charge.put(boss, 0);
+                    coreTicks.put(boss, CORE_TICKS);
+                    coreDamage.put(boss, 0);
+                    warn((boss.def() == null ? "The Warden" : boss.def().name) + " staggers - its core is ejected! Strike it now!");
+                } else {
+                    charge.put(boss, c);
+                }
+                return 0;
+            }
+            int dealt = coreDamage.getOrDefault(boss, 0);
+            int allowed = Math.max(0, Math.min(damage, RaidScaling.toaCoreDamageCap(max) - dealt));
+            coreDamage.put(boss, dealt + allowed);
+            if (dealt + allowed >= RaidScaling.toaCoreDamageCap(max)) {
+                coreTicks.put(boss, 0);
+                say("The Warden's core retreats back into its body.");
+            }
+            return allowed;
         }
 
         @Override
@@ -796,11 +836,17 @@ final class ToaRooms {
                 DataBossEntity survivor = eAlive ? elidinis : tumeken;
                 warn((survivor.def() == null ? "The Warden" : survivor.def().name) + " absorbs its partner's power! The skulls awaken!");
             }
-            DataBossEntity core = exposed();
-            if (phase == 2 && raid.roomTicks() % 20 == 0 && core != null && core.def() != null) {
-                say(core.def().name + "'s core is exposed!");
+            for (DataBossEntity w : new DataBossEntity[]{elidinis, tumeken}) {
+                int t = coreTicks.getOrDefault(w, 0);
+                if (t > 0) {
+                    coreTicks.put(w, t - 1);
+                    if (t == 1 && alive(w)) {
+                        say("The Warden's core retreats back into its body.");
+                    }
+                }
             }
-            if (alive(core)) {
+            DataBossEntity core = exposed();
+            if (phase == 2 && coreOut(core) && alive(core)) {
                 world().spawnParticles(ParticleTypes.END_ROD, core.getX(), core.getY() + core.getHeight() * 0.6, core.getZ(), 3, 0.3, 0.3,
                         0.3, 0.01);
             }

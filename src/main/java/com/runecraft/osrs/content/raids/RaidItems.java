@@ -157,6 +157,36 @@ public final class RaidItems {
         items.add("tumekens_guardian", "Tumeken's guardian", Kind.SIMPLE, "pet", 0xE0B040).value(1).stack(1)
                 .examine("A tiny Warden, sworn to protect you.");
 
+        // ---------------- Challenge Mode / Hard mode rewards ----------------
+        items.add("twisted_ancestral_colour_kit", "Twisted ancestral colour kit", Kind.SIMPLE, "package", 0x5A3A2A).value(1).stack(1)
+                .examine("Use it on ancestral robes to give them a twisted look.");
+        items.add("metamorphic_dust", "Metamorphic dust", Kind.SIMPLE, "secondary", 0xC8B8E0).value(1).stack(1)
+                .examine("Sprinkle it on an Olmlet to change its form.");
+        items.add("sanguine_ornament_kit", "Sanguine ornament kit", Kind.SIMPLE, "package", 0x8A1A2A).value(2_500_000).stack(1)
+                .examine("Use it on a Scythe of vitur to give it a bloody sheen.");
+        items.add("holy_ornament_kit", "Holy ornament kit", Kind.SIMPLE, "package", 0xE8E0C0).value(8_000_000).stack(1)
+                .examine("Use it on a Scythe of vitur, Sanguinesti staff or Ghrazi rapier to make it holy.");
+        items.add("sanguine_dust", "Sanguine dust", Kind.SIMPLE, "secondary", 0xA01A2A).value(80_000_000).stack(1)
+                .examine("Sprinkle it on Lil' Zik to change its form.");
+
+        // ---------------- Common reward items not defined elsewhere ----------------
+        items.add("saltpetre", "Saltpetre", Kind.SIMPLE, "secondary", 0xE8E8D8).value(10)
+                .examine("Used in the making of fertiliser and dynamite.");
+        items.add("torn_prayer_scroll", "Torn prayer scroll", Kind.SIMPLE, "prayer_scroll", 0xC8B890).value(1).stack(1)
+                .examine("Read this to learn the Preserve prayer.");
+        items.add("dark_relic", "Dark relic", Kind.SIMPLE, "orb", 0x3A2A4A).value(1).stack(1)
+                .examine("A relic of Xeric's power. Rub it to gain experience in a skill.");
+        items.add("dragon_dart_tip", "Dragon dart tip", Kind.SIMPLE, "dart_tip", 0xB02A1A).value(1_000)
+                .examine("Fletch with feathers to make dragon darts.");
+        items.add("lily_of_the_sands", "Lily of the sands", Kind.SIMPLE, "herb", 0xE8D890).value(1_000)
+                .examine("A rare desert flower, used in making stamina-restoring brews.");
+        items.add("blood_essence", "Blood essence", Kind.SIMPLE, "orb", 0x9A1A2A).value(25_000)
+                .examine("Use it on a bracelet of ethereum or blood rune essence.");
+        items.add("cache_of_runes", "Cache of runes", Kind.SIMPLE, "pouch", 0x7A5A9A).value(1).stack(1)
+                .examine("A cache of blood, death and soul runes.");
+        items.add("swamp_tar", "Swamp tar", Kind.SIMPLE, "jar", 0x2A2A1A).value(5)
+                .examine("A foul-smelling thick tar-like substance.");
+
         // ---------------- Items used inside raids ----------------
         items.add("cox_kindling", "Kindling", Kind.SIMPLE, "log", 0xA07A40).value(1)
                 .examine("Chopped from a sapling in the Chambers. Burn it in a brazier.");

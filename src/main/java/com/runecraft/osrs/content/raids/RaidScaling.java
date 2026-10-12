@@ -15,14 +15,31 @@ public final class RaidScaling {
     public static final int COX_POINTS_CAP = 131_071;
     /** CoX team points per unique roll: a roll with this many points has its maximum 65.7% chance. */
     public static final int COX_POINTS_PER_ROLL = 570_000;
-    /** Most unique rolls a CoX raid gets (one per 570,000 team points). // approx: the cap */
-    public static final int COX_MAX_UNIQUES = 3;
+    /** CoX team points per 1% unique chance (OSRS wiki: 8,675). */
+    public static final int COX_POINTS_PER_PERCENT = 8_675;
+    /** Most unique rolls a CoX raid gets: one per 570,000 team points, up to 6 (OSRS wiki loot calculator). */
+    public static final int COX_MAX_UNIQUES = 6;
+    /** CoX damage points: each creature holds a pool of 5 points per hitpoint (OSRS). */
+    public static final int COX_DAMAGE_POOL_PER_HP = 5;
+    /** CoX tightrope room: the crystal at the far end is worth 2,000 points (OSRS). */
+    public static final int COX_TIGHTROPE_POINTS = 2_000;
+    /** CoX crystal crabs room: 1,600 points for lighting every crystal (OSRS), split per crystal. */
+    public static final int COX_CRABS_POINTS = 1_600;
+    /** Game ticks after one Olm claw dies within which the other must die, or the dead one regrows. // approx */
+    public static final int OLM_CLAW_REVIVE_TICKS = 20;
+    /** Game ticks the Great Olm's left (melee) claw stays clenched unless the right claw dies first. // approx */
+    public static final int OLM_CLENCH_TICKS = 16;
     /** ToA personal points cap (OSRS: 64,000). */
     public static final int TOA_POINTS_CAP = 64_000;
     /** ToB points a surviving player earns per room (6 rooms = 18 points, as in OSRS). */
     public static final int TOB_POINTS_PER_ROOM = 3;
+    /** ToB bonus points for each room's MVP (OSRS: 14 MVP points per raid; 2 per room, 4 for Verzik). // approx split */
+    public static final int TOB_MVP_POINTS = 2;
+    public static final int TOB_VERZIK_MVP_POINTS = 4;
     /** ToB points lost per death (OSRS: 4). */
     public static final int TOB_DEATH_PENALTY = 4;
+    /** ToA points every surviving player earns per room cleared (OSRS: 300 per room, 9 rooms). */
+    public static final int TOA_ROOM_POINTS = 300;
     /** Highest ToA path level (OSRS: 6). */
     public static final int TOA_MAX_PATH_LEVEL = 6;
 
@@ -37,7 +54,26 @@ public final class RaidScaling {
             "verzik_vitur_p2", 1600,
             "verzik_vitur_p3", 2400);
 
+    /**
+     * Challenge Mode target time for the twisted ancestral colour kit. OSRS scales it by team size;
+     * this mod's rooms are smaller, so one generous target is used. // approx
+     */
+    public static final int COX_CM_TARGET_MINUTES = 50;
+    /** ToB Hard mode challenge time for the ornament kits, sanguine dust and the larger chest. // approx */
+    public static final int TOB_HM_TARGET_MINUTES = 35;
+
     private RaidScaling() {
+    }
+
+    /** The mode's target time in game ticks (0.6 s), or {@link Long#MAX_VALUE} when the mode has none. */
+    public static long targetTicks(RaidType type, RaidMode mode, int partySize) {
+        if (type == RaidType.COX && mode == RaidMode.CHALLENGE) {
+            return COX_CM_TARGET_MINUTES * 100L;
+        }
+        if (type == RaidType.TOB && mode == RaidMode.HARD) {
+            return TOB_HM_TARGET_MINUTES * 100L;
+        }
+        return Long.MAX_VALUE;
     }
 
     private static int clampParty(int partySize, int max) {
@@ -107,9 +143,9 @@ public final class RaidScaling {
         return challenge ? pct * 1.5 : pct;
     }
 
-    /** CoX purple chance of one roll: 1% per 8,676 points, capped at 570,000 points (65.7%). */
+    /** CoX purple chance of one roll: 1% per 8,675 points, capped at 570,000 points (65.7%). */
     public static double coxPurpleChance(int totalPoints) {
-        return Math.min(Math.max(0, totalPoints), COX_POINTS_PER_ROLL) / 867_600.0;
+        return Math.min(Math.max(0, totalPoints), COX_POINTS_PER_ROLL) / (COX_POINTS_PER_PERCENT * 100.0);
     }
 
     /**
@@ -125,6 +161,46 @@ public final class RaidScaling {
             left -= chunk;
         } while (left > 0 && rolls.size() < COX_MAX_UNIQUES);
         return rolls;
+    }
+
+    /**
+     * CoX points for one hit (OSRS): every creature starts with a pool of 5 points per hitpoint; a hit
+     * awards {@code max(1, min(5 * damage, pool * damage / (hp / 2)))}, so damage is worth full points
+     * while the pool is fresh and less and less as it drains (about 4.15 points per hitpoint overall).
+     * The caller subtracts the result from the creature's pool.
+     */
+    public static int coxDamagePoints(int pool, int maxHp, int damage) {
+        if (damage <= 0 || pool <= 0) {
+            return 0;
+        }
+        long half = Math.max(1, maxHp / 2);
+        long decayed = (long) pool * damage / half;
+        return (int) Math.min(pool, Math.max(1, Math.min(5L * damage, decayed)));
+    }
+
+    /** Skeletal Mystics in their room (OSRS): 3, plus one per 3 players, up to 12. */
+    public static int coxMysticCount(int partySize) {
+        return Math.min(12, clampParty(partySize, 100) / 3 + 3);
+    }
+
+    /** Lizardman shamans in their room (OSRS): 2, plus one per 5 players, up to 5. */
+    public static int coxShamanCount(int partySize) {
+        return Math.min(5, clampParty(partySize, 100) / 5 + 2);
+    }
+
+    /** Ice demon room: the braziers give up to max(6,000, 10 x the party's total Firemaking levels) points (OSRS). */
+    public static int coxIceDemonPointsCap(int totalFiremakingLevels) {
+        return Math.max(6_000, 10 * Math.max(0, totalFiremakingLevels));
+    }
+
+    /** Thieving room: the trough gives up to max(4,500, 150 per 6 total Thieving levels) points (OSRS). */
+    public static int coxThievingPointsCap(int totalThievingLevels) {
+        return Math.max(4_500, Math.max(0, totalThievingLevels) / 6 * 150);
+    }
+
+    /** The Great Olm's left claw clenches after a hit of at least 1/20 of its health (OSRS). */
+    public static int olmClenchThreshold(int clawMaxHp) {
+        return Math.max(1, clawMaxHp / 20);
     }
 
     /** CoX: a death costs 40% of your personal points. */
@@ -159,14 +235,38 @@ public final class RaidScaling {
         return tobPurpleChance(teamPoints, partySize, RaidMode.NORMAL);
     }
 
-    /** ToB purple chance by mode: 1/9.1 normal, 1/7.7 hard mode, none in entry mode (scaled by points kept). */
+    /** Most ToB points a party can hold (OSRS): 18 per player plus the 14 MVP points. */
+    public static int tobMaxPoints(int partySize) {
+        return Math.max(1, partySize) * 6 * TOB_POINTS_PER_ROOM + 5 * TOB_MVP_POINTS + TOB_VERZIK_MVP_POINTS;
+    }
+
+    /** ToB MVP bonus for a room (Verzik's is worth more). */
+    public static int tobMvpPoints(String roomId) {
+        return roomId.equals("verzik") ? TOB_VERZIK_MVP_POINTS : TOB_MVP_POINTS;
+    }
+
+    /** ToB purple chance by mode: 1/9.1 normal, 1/7.7 hard mode, none in entry mode (scaled by the share of points kept). */
     public static double tobPurpleChance(int teamPoints, int partySize, RaidMode mode) {
         if (mode == RaidMode.ENTRY) {
             return 0;
         }
-        int max = Math.max(1, partySize) * 6 * TOB_POINTS_PER_ROOM;
         double base = mode == RaidMode.HARD ? 1 / 7.7 : 1 / 9.1;
-        return Math.max(0, Math.min(1.0, teamPoints / (double) max)) * base;
+        return tobPointsRatio(teamPoints, partySize) * base;
+    }
+
+    /** The share of the possible ToB points the party kept (deaths cost 4 each). */
+    public static double tobPointsRatio(int teamPoints, int partySize) {
+        return Math.max(0, Math.min(1.0, teamPoints / (double) tobMaxPoints(partySize)));
+    }
+
+    /**
+     * ToB common quantity bounds (OSRS): {@code floor(min x modeMultiplier x pointsRatio)} up to 1.2 times
+     * that. Hard mode chests hold 15% more, 30% more within the challenge time.
+     */
+    public static int[] tobCommonRange(int min, double ratio, RaidMode mode, boolean withinTarget) {
+        double q = mode == RaidMode.HARD ? (withinTarget ? 1.30 : 1.15) : 1.0;
+        int lo = (int) Math.floor(min * q * ratio);
+        return new int[]{lo, (int) Math.floor(lo * 1.2)};
     }
 
     // ------------------------------------------------------------------ Tombs of Amascut
@@ -237,24 +337,95 @@ public final class RaidScaling {
         return Math.min(TOA_MAX_PATH_LEVEL, level);
     }
 
-    /** ToA's effective raid level for loot: levels above 400 count a third. */
-    static double toaLootLevel(int raidLevel) {
-        return Math.min(raidLevel, 400) + Math.max(0, raidLevel - 400) / 3.0;
+    /**
+     * ToA's effective raid level for the purple chance (OSRS): levels above 430 count half, then
+     * levels above 310 count a third.
+     */
+    static int toaPurpleLevel(int raidLevel) {
+        int level = Math.max(0, raidLevel);
+        if (level > 310) {
+            if (level > 430) {
+                level = 430 + (level - 430) / 2;
+            }
+            level = 310 + (level - 310) / 3;
+        }
+        return level;
+    }
+
+    /** ToA's effective raid level for the pet chance (OSRS): levels above 400 count a third, 450 above 550. */
+    static int toaPetLevel(int raidLevel) {
+        int level = Math.max(0, raidLevel);
+        if (level > 550) {
+            return 450;
+        }
+        return level > 400 ? 400 + (level - 400) / 3 : level;
     }
 
     /**
-     * ToA purple chance (OSRS): points / (10,500 - 20 * (min(level, 400) + max(0, level - 400) / 3)) percent,
-     * capped at 55%.
+     * ToA purple chance (OSRS): team points / (100 x (10,500 - 20 x effective level)), the divisor never
+     * below 150,000, capped at 55%. Only one unique can be awarded per raid.
      */
     public static double toaPurpleChance(int totalPoints, int raidLevel) {
-        double divisor = 10_500 - 20 * toaLootLevel(raidLevel);
-        return Math.min(0.55, Math.max(0, totalPoints) / divisor / 100.0);
+        double divisor = Math.max(150_000, 100.0 * (10_500 - 20 * toaPurpleLevel(raidLevel)));
+        return Math.min(0.55, Math.max(0, totalPoints) / divisor);
     }
 
-    /** Tumeken's guardian chance: points / (350,000 - 700 * effective level) percent. // approx */
+    /** Tumeken's guardian chance (OSRS): team points / (100 x (350,000 - 700 x effective pet level)). */
     public static double toaPetChance(int totalPoints, int raidLevel) {
-        double divisor = 350_000 - 700 * toaLootLevel(raidLevel);
-        return Math.min(1.0, Math.max(0, totalPoints) / divisor / 100.0);
+        double divisor = 100.0 * (350_000 - 700 * toaPetLevel(raidLevel));
+        return Math.min(1.0, Math.max(0, totalPoints) / divisor);
+    }
+
+    /** ToA elite clue chance (OSRS): team points / 200,000. */
+    public static double toaEliteClueChance(int totalPoints) {
+        return Math.min(1.0, Math.max(0, totalPoints) / 200_000.0);
+    }
+
+    /**
+     * ToA common loot multiplier by raid level (OSRS): x0.75 below 150, and from 300 up +15% plus 1%
+     * per 5 levels above 300.
+     */
+    public static double toaCommonScale(int raidLevel) {
+        if (raidLevel < 150) {
+            return 0.75;
+        }
+        if (raidLevel >= 300) {
+            return 1 + ((raidLevel - 300) / 5 + 15) / 100.0;
+        }
+        return 1.0;
+    }
+
+    /** ToA common quantity (OSRS): floor(floor(personal points / divisor) x level scale), at least 1. */
+    public static int toaCommonQuantity(int personalPoints, int divisor, int raidLevel) {
+        int base = Math.max(0, Math.min(personalPoints, TOA_POINTS_CAP)) / Math.max(1, divisor);
+        return Math.max(1, (int) Math.floor(base * toaCommonScale(raidLevel)));
+    }
+
+    /**
+     * ToA points per damage by creature (OSRS wiki loot calculator): Ba-Ba x2, baboons x1.2, Zebak x1.5,
+     * scarabs x0.5, the obelisk x1.5, the Wardens x2 (phase 2) and x2.5 (phase 3); everything else x1.
+     */
+    public static double toaPointsPerDamage(String id, boolean wardenPhaseThree) {
+        return switch (id) {
+            case "baba" -> 2.0;
+            case "zebak" -> 1.5;
+            case "wardens_obelisk" -> 1.5;
+            case "elidinis_warden", "tumekens_warden" -> wardenPhaseThree ? 2.5 : 2.0;
+            default -> id.contains("baboon") ? 1.2 : id.contains("scarab") ? 0.5 : 1.0;
+        };
+    }
+
+    /** Damage a Warden's body must take in phase 2 before its core is ejected: a quarter of its hitpoints. // approx */
+    public static int toaCoreChargeNeeded(int wardenMaxHp) {
+        return Math.max(1, wardenMaxHp / 4);
+    }
+
+    /**
+     * Phase 2 Wardens only lose hitpoints while their core is ejected, and one ejection can take at most
+     * half of the Warden's hitpoints, so each needs at least two "downs" (OSRS). // approx: the exact cap
+     */
+    public static int toaCoreDamageCap(int wardenMaxHp) {
+        return Math.max(1, wardenMaxHp / 2);
     }
 
     /** ToA: a death costs 20% of your personal points (approximation of the OSRS death penalty). */
