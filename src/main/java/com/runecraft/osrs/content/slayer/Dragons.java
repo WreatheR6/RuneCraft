@@ -68,7 +68,7 @@ final class Dragons {
                         .defenceBonus(50, 70, 70, 50, 60).drops(common("blue_dragonhide", Drop.of("rune_dagger", 1, 1, 128),
                                 Drop.of("adamant_full_helm", 1, 1, 64), Drop.of("nature_rune", 5, 15, 12), Drop.of("law_rune", 3, 5, 16),
                                 Drop.herbs(16), Drop.gems(32), clue("hard", 128))), "blue_dragons", "blue_dragon", 1.1f)
-                        .spawn(Region.ASGARNIA, 3, 1, 2).spawn(Region.FELDIP_HILLS, 2, 1, 2).underground(),
+                        .spawn(Region.ASGARNIA, 3, 1, 2).underground(), // Taverley Dungeon (the Ogre Enclave isn't built)
                 dragon(m("red_dragon", "Red dragon", 152, 140, 130, 130, 130, 130, 1).speed(4).attack(slash(15)).attack(dragonfire(50, 4))
                         .defenceBonus(70, 90, 90, 80, 80).drops(common("red_dragonhide", Drop.of("rune_longsword", 1, 1, 128),
                                 Drop.of("rune_full_helm", 1, 1, 128), Drop.of("blood_rune", 5, 10, 16), Drop.of("law_rune", 4, 8, 16),
@@ -90,18 +90,18 @@ final class Dragons {
                         .attack(magic(20, "minecraft:enchanted_hit")).attack(dragonfire(50, 3)).defenceBonus(130, 130, 130, 60, 130)
                         .drops(common(null, Drop.of("blue_dragonhide", 2, 2, 1), Drop.of("rune_platelegs", 1, 1, 128),
                                 Drop.of("death_rune", 15, 30, 8), Drop.herbs(12), Drop.gems(16), clue("hard", 100))),
-                        "blue_dragons", "brutal_blue_dragon", 1.4f).spawn(Region.MORYTANIA, 1, 1, 1).underground(),
+                        "blue_dragons", "brutal_blue_dragon", 1.4f).spawn(Region.UNCHARTED_ISLES, 1, 1, 1).underground(),
                 dragon(m("brutal_red_dragon", "Brutal red dragon", 289, 285, 268, 268, 238, 168, 1).speed(4).attack(slash(24))
                         .attack(magic(22, "minecraft:flame")).attack(dragonfire(50, 3)).defenceBonus(140, 140, 140, 70, 140)
                         .drops(common(null, Drop.of("red_dragonhide", 2, 2, 1), Drop.of("rune_platebody", 1, 1, 256),
                                 Drop.of("blood_rune", 15, 30, 8), Drop.herbs(12), Drop.gems(16), clue("hard", 100))),
-                        "red_dragons", "brutal_red_dragon", 1.45f).spawn(Region.MORYTANIA, 1, 1, 1).underground(),
+                        "red_dragons", "brutal_red_dragon", 1.45f).spawn(Region.UNCHARTED_ISLES, 1, 1, 1).underground(),
                 dragon(m("brutal_black_dragon", "Brutal black dragon", 318, 315, 268, 268, 238, 168, 1).speed(4).attack(slash(28))
                         .attack(magic(25, "minecraft:smoke")).attack(dragonfire(50, 3)).defenceBonus(150, 150, 150, 80, 150)
                         .drops(common(null, Drop.of("black_dragonhide", 2, 2, 1), Drop.of("rune_platebody", 1, 1, 128),
                                 Drop.of("dragon_platelegs", 1, 1, 512), Drop.of("blood_rune", 20, 40, 8), Drop.herbs(12), Drop.gems(16),
                                 clue("elite", 500))), "black_dragons", "brutal_black_dragon", 1.5f)
-                        .spawn(Region.KANDARIN, 1, 1, 1).underground(),
+                        .spawn(Region.UNCHARTED_ISLES, 1, 1, 1).underground(),
 
                 // --- Lava dragons ---
                 m("lava_dragon", "Lava dragon", 252, 230, 240, 240, 220, 220, 1).speed(4).attack(slash(20))

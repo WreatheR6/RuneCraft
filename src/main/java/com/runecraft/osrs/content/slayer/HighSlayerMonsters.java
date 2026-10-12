@@ -59,7 +59,8 @@ final class HighSlayerMonsters {
                                 Drop.of("rune_full_helm", 1, 1, 39), Drop.of("adamant_kiteshield", 1, 1, 64),
                                 Drop.of("death_rune", 5, 15, 8), Drop.of("chaos_rune", 20, 40, 8),
                                 coins(100, 1000, 3), Drop.herbs(12), Drop.rare(20), clue("hard", 128))
-                        .slayer(80, "nechryael").model("nechryael").size(1.0f, 2.4f, 1.0f).spawn(Region.MORYTANIA, 4, 1, 3),
+                        .slayer(80, "nechryael").model("nechryael").size(1.0f, 2.4f, 1.0f).spawn(Region.MORYTANIA, 4, 1, 3)
+                        .spawn(Region.KANDARIN, 2, 1, 2),
                 m("greater_nechryael", "Greater Nechryael", 200, 205, 210, 210, 120, 1, 1).speed(4).attack(crush(18))
                         .defenceBonus(20, 20, 20, 0, 20).drops(Drop.always("malicious_ashes"), Drop.of("rune_boots", 1, 1, 128),
                                 Drop.of("rune_full_helm", 1, 1, 43),
@@ -75,7 +76,7 @@ final class HighSlayerMonsters {
                                 Drop.of("rune_full_helm", 1, 1, 128), Drop.of("blood_rune", 7, 7, 12), Drop.of("law_rune", 3, 3, 16),
                                 Drop.of("pure_essence", 60, 60, 16), coins(100, 4000, 3), Drop.herbs(10), Drop.rare(32), clue("hard", 128),
                                 clue("elite", 1200)).slayer(85, "abyssal_demons").model("abyssal_demon").size(0.8f, 2.2f, 1.2f)
-                        .spawn(Region.MORYTANIA, 4, 1, 2).spawn(Region.WILDERNESS, 3, 1, 2).underground(),
+                        .spawn(Region.MORYTANIA, 4, 1, 2).spawn(Region.KANDARIN, 3, 1, 2).underground(), // Slayer Tower, Stronghold Slayer Cave
                 m("cave_kraken", "Cave kraken", 127, 125, 1, 1, 150, 120, 1).speed(4)
                         .attack(magic(13, "minecraft:splash").message("The cave kraken casts Water Strike."))
                         .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH).defenceBonus(0, 0, 0, 0, 0)
@@ -89,8 +90,8 @@ final class HighSlayerMonsters {
                                 Drop.of("death_rune", 10, 30, 8), Drop.of("blood_rune", 10, 30, 8), Drop.of("rune_full_helm", 1, 1, 64),
                                 Drop.of("adamantite_bar", 3, 3, 12), Drop.of("runite_bar", 1, 1, 64), coins(150, 2000, 3),
                                 Drop.herbs(10), Drop.rare(16), clue("hard", 128), clue("elite", 1200))
-                        .slayer(90, "dark_beasts").model("dark_beast").size(1.2f, 1.8f, 1.0f).spawn(Region.KANDARIN, 3, 1, 3)
-                        .underground(),
+                        .slayer(90, "dark_beasts").model("dark_beast").size(1.2f, 1.8f, 1.0f).spawn(Region.TIRANNWN, 3, 1, 3)
+                        .underground(), // Iorwerth Dungeon (the Mourner Tunnels aren't built)
                 m("drake", "Drake", 192, 250, 140, 140, 70, 108, 140).speed(4).attack(crush(16).message("The drake bites you."))
                         .attack(ranged(14, "minecraft:flame"))
                         .attack(AttackDef.of("dragonfire", AttackType.MAGIC, 30, 6, 2).special(AttackDef.Special.HAZARD, 6)

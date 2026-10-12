@@ -55,7 +55,11 @@ public final class SlayerTasks {
         return SlayerCategories.categoryOf(m.id, m.slayerCategory);
     }
 
-    /** Regions Konar may restrict a task to: where its creatures spawn, else the category's fallback list. */
+    /**
+     * Regions Konar may restrict a task to: where its creatures spawn, else the category's fallback list,
+     * never the Wilderness. Each must hold at least one of the creatures' spawn points or camps
+     * (SpawnTable; a carved dungeon counts as its OSRS kingdom, see {@code TaskRegions}).
+     */
     public static List<Region> regions(String category) {
         Set<Region> set = new LinkedHashSet<>();
         for (MonsterDef m : creatures(category)) {
@@ -67,6 +71,8 @@ public final class SlayerTasks {
         if (set.isEmpty() && c != null) {
             set.addAll(c.regions());
         }
+        // Konar never sends players into the Wilderness (that is Krystilia's job); only boss tasks may go there.
+        set.remove(Region.WILDERNESS);
         return new ArrayList<>(set);
     }
 

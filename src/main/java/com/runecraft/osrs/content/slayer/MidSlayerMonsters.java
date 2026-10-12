@@ -57,7 +57,7 @@ final class MidSlayerMonsters {
                         .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("vile_ashes"), coins(10, 450, 3), Drop.of("fire_rune", 30, 60, 8),
                                 Drop.of("blood_rune", 3, 10, 32), Drop.of("steel_full_helm", 1, 1, 64), Drop.of("rune_full_helm", 1, 1, 1024),
                                 Drop.gems(64), clue("hard", 256)).slayer(50, "bloodveld").model("bloodveld").size(0.9f, 1.8f, 1.0f)
-                        .spawn(Region.MORYTANIA, 5, 1, 3).spawn(Region.TROLL_COUNTRY, 2, 1, 2),
+                        .spawn(Region.MORYTANIA, 5, 1, 3).spawn(Region.TROLL_COUNTRY, 2, 1, 2).spawn(Region.KANDARIN, 2, 1, 2),
                 m("mutated_bloodveld", "Mutated Bloodveld", 123, 170, 110, 110, 70, 1, 1).speed(4).attack(crush(11))
                         .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("vile_ashes"), coins(50, 800, 3), Drop.of("blood_rune", 5, 15, 16),
                                 Drop.of("rune_full_helm", 1, 1, 256), Drop.herbs(12), Drop.gems(32), clue("hard", 256))
@@ -128,17 +128,17 @@ final class MidSlayerMonsters {
                         .drops(Drop.always("bones"), Drop.of("death_rune", 2, 10, 6), Drop.of("blood_rune", 2, 8, 10),
                                 Drop.of("law_rune", 2, 5, 10), Drop.of("adamant_arrow", 5, 15, 12), Drop.herbs(14), clue("hard", 256))
                         .slayer(1, "ankou").skin(0xE0E0D0, 0x2A2A3A, 0x2A2A3A, 0x101010).size(0.7f, 2.1f, 1.0f)
-                        .spawn(Region.WILDERNESS, 3, 1, 3).spawn(Region.MISTHALIN, 2, 1, 3).underground(),
+                        .spawn(Region.WILDERNESS, 3, 1, 3).spawn(Region.MISTHALIN, 2, 1, 3).spawn(Region.KANDARIN, 2, 1, 2).underground(),
                 m("hellhound", "Hellhound", 122, 116, 105, 104, 102, 1, 1).speed(4).attack(stab(11))
                         .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("vile_ashes"), Drop.of("smouldering_stone", 1, 1, 32768),
                                 clue("hard", 64)).slayer(1, "hellhounds").model("hellhound").size(1.0f, 1.3f, 1.0f)
-                        .spawn(Region.ASGARNIA, 4, 1, 3).spawn(Region.WILDERNESS, 3, 1, 3).underground(),
+                        .spawn(Region.ASGARNIA, 4, 1, 3).spawn(Region.WILDERNESS, 3, 1, 3).spawn(Region.KANDARIN, 2, 1, 2).underground(),
                 m("fire_giant", "Fire giant", 86, 111, 65, 65, 65, 1, 1).speed(5).attack(crush(11))
                         .defenceBonus(0, 0, 0, 0, 0).drops(Drop.of("giant_champion_scroll", 1, 1, 5000), Drop.always("big_bones"), coins(10, 600, 3), Drop.of("fire_rune", 50, 150, 6),
                                 Drop.of("rune_scimitar", 1, 1, 128), Drop.of("steel_axe", 1, 1, 32), Drop.of("law_rune", 2, 2, 20),
                                 Drop.of("blood_rune", 5, 5, 32), Drop.herbs(14), Drop.gems(20), clue("hard", 128))
                         .slayer(1, "fire_giants").skin(0xD07040, 0x8A3A1A, 0x5A2A1A, 0xF0A020).size(1.0f, 3.0f, 1.0f)
-                        .spawn(Region.KARAMJA, 4, 1, 3).spawn(Region.KANDARIN, 3, 1, 3).underground(),
+                        .spawn(Region.KANDARIN, 4, 1, 3).spawn(Region.KHARIDIAN_DESERT, 3, 1, 3).underground(),
                 m("kalphite_worker", "Kalphite Worker", 28, 40, 20, 20, 20, 1, 1).speed(4).attack(stab(3))
                         .defenceBonus(10, 10, 10, 0, 10).drops(Drop.herbs(30)).slayer(1, "kalphite").model("kalphite")
                         .size(1.0f, 0.9f, 0.8f).spawn(Region.KHARIDIAN_DESERT, 6, 2, 5).underground(),

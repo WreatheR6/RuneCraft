@@ -231,13 +231,13 @@ public final class SpawnTable {
         s("brine_rat", 2752, 3735, 3, 6);              // Brine Rat Cavern, east of Rellekka
         s("rock_crab", 2706, 3718, 10, 8);             // rock crabs on the shore north-east of Rellekka (10 in OSRS)
         s("rock_crab", 2675, 3714, 9, 8);              // and on the north-western beach (9 in OSRS)
-        si("rock_crab", 2525, 3755, 3, 8);             // Waterbirth Island's beaches (3 in OSRS)
+        s("rock_crab", 2525, 3755, 3, 8);              // Waterbirth Island's beaches (3 in OSRS)
         s("mountain_troll", 2870, 3600, 8, 12);        // Death Plateau (9 in OSRS)
         s("mountain_troll", 2848, 3679, 6, 8);         // outside the Troll Stronghold (8 in OSRS)
 
         // ============================================================ Karamja
         s("harpie_bug_swarm", 2866, 3110, 6, 6);       // swamp south-west of Musa Point
-        si("mogre", 2992, 3120, 2, 4);                 // Mudskipper Point
+        s("mogre", 2992, 3120, 2, 4);                  // Mudskipper Point
         s("monkey", 2921, 3022, 6, 10);                // the jungle south of Musa Point (10 in OSRS)
         s("monkey", 2902, 3079, 4, 8);
         s("monkey", 2834, 3030, 4, 6);                 // north of Tai Bwo Wannai
@@ -248,7 +248,7 @@ public final class SpawnTable {
         s("elf_warrior", 2240, 3176, 3, 8);            // Isafdar forest
 
         // ============================================================ islands, Zeah
-        si("basilisk_knight", 2470, 3990, 3, 6);       // Jormungand's Prison, Island of Stone
+        s("basilisk_knight", 2470, 3990, 3, 6);        // Jormungand's Prison, Island of Stone
         // Catacombs of Kourend (the zeah module's crypt beneath the castle)
         fi("greater_nechryael", 1639, 3693, KOUREND_CATACOMBS, 2, 10);
         fi("brutal_black_dragon", 1648, 3686, KOUREND_CATACOMBS, 2, 8);
