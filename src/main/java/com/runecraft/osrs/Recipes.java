@@ -95,8 +95,8 @@ public final class Recipes {
             }
             for (ToolTier t : ToolTier.values()) {
                 if (t.metal() == tier) {
-                    smith(t.axeId(), 1, tier, 1, Math.min(99, tier.smithingBase() + 1));
-                    smith(t.pickaxeId(), 1, tier, 2, Math.min(99, tier.smithingBase() + 5));
+                    smith(t.axeId(), 1, tier, 1, tier.smithingLevel(1));
+                    smith(t.pickaxeId(), 1, tier, 2, tier.smithingLevel(5));
                 }
             }
             for (ArrowTier a : ArrowTier.values()) {
@@ -110,7 +110,7 @@ public final class Recipes {
         for (Fish f : Fish.values()) {
             add(Recipe.builder("cook_" + f.cookedItem(), MenuType.COOKING, f.cookedName())
                     .skill(Skill.COOKING, f.cookLevel(), f.cookXp()).in(f.rawItem(), 1).out(f.cookedItem(), 1)
-                    .burn(f.stopBurn(), "burnt_fish").ticks(4).build());
+                    .burn(f.stopBurn(), "burnt_fish").gauntlets(f.gauntletStopBurn()).ticks(4).build());
         }
         meat("roast_bird_meat", "raw_bird_meat", 11, 62.5, 44);
         meat("minecraft:cooked_beef", "minecraft:beef", 1, 30.0, 31);
@@ -174,7 +174,7 @@ public final class Recipes {
         // --- Herblore ---
         for (Herb h : Herb.values()) {
             add(Recipe.builder("unf_" + h.unfinishedPotion(), MenuType.HERBLORE, h.shortName() + " potion (unf)")
-                    .skill(Skill.HERBLORE, h.cleanLevel(), 0).in(h.cleanItem(), 1).in("vial_of_water", 1)
+                    .skill(Skill.HERBLORE, h.unfLevel(), 0).in(h.cleanItem(), 1).in("vial_of_water", 1)
                     .out(h.unfinishedPotion(), 1).ticks(1).build());
         }
         for (Potion p : Potion.values()) {

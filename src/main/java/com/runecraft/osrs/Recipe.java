@@ -21,6 +21,7 @@ public final class Recipe {
     private final double successChance;
     private final String failItem;
     private final int stopBurn;
+    private final int gauntletStopBurn;
     private final String requiredTool;
 
     private Recipe(Builder b) {
@@ -36,6 +37,7 @@ public final class Recipe {
         this.successChance = b.successChance;
         this.failItem = b.failItem;
         this.stopBurn = b.stopBurn;
+        this.gauntletStopBurn = b.gauntletStopBurn;
         this.requiredTool = b.requiredTool;
     }
 
@@ -101,20 +103,35 @@ public final class Recipe {
         return outputs.isEmpty() ? inputs.keySet().iterator().next() : outputs.keySet().iterator().next();
     }
 
+    /** Stop-burn level while wearing/carrying cooking gauntlets, or 0 if they don't help. */
+    public int gauntletStopBurn() {
+        return gauntletStopBurn;
+    }
+
+    /** Cooking success chance without cooking gauntlets. */
+    public double cookingSuccess(int cookingLevel, boolean range) {
+        return cookingSuccess(cookingLevel, range, false);
+    }
+
     /**
      * Cooking success chance. Rises linearly from 45% at the requirement to 100% at the stop-burn
-     * level; ranges burn less than fires (treated as 3 levels higher), like in-game.
+     * level; ranges burn less than fires (treated as 3 levels higher), like in-game. Cooking
+     * gauntlets lower the stop-burn level of the fish they help (lobster 74 -> 64, swordfish 86 ->
+     * 81, ...). A stop-burn of 100 or more can never be reached: such food (sharks, anglerfish, dark
+     * crabs without gauntlets) always keeps a small burn chance.
      */
-    public double cookingSuccess(int cookingLevel, boolean range) {
+    public double cookingSuccess(int cookingLevel, boolean range, boolean gauntlets) {
         if (stopBurn <= 0) {
             return 1.0;
         }
+        int stop = gauntlets && gauntletStopBurn > 0 ? gauntletStopBurn : stopBurn;
         int effective = cookingLevel + (range ? 3 : 0);
-        if (effective >= stopBurn) {
+        if (stop < 100 && effective >= stop) {
             return 1.0;
         }
-        double span = Math.max(1, stopBurn - level);
-        return Math.min(1.0, 0.45 + 0.55 * Math.max(0, effective - level) / span);
+        double span = Math.max(1, stop - level);
+        double chance = 0.45 + 0.55 * Math.max(0, effective - level) / span;
+        return Math.min(stop >= 100 ? 0.96 : 1.0, chance);
     }
 
     public static Builder builder(String id, MenuType menu, String name) {
@@ -134,6 +151,7 @@ public final class Recipe {
         private double successChance = 1.0;
         private String failItem;
         private int stopBurn;
+        private int gauntletStopBurn;
         private String requiredTool;
 
         private Builder(String id, MenuType menu, String name) {
@@ -172,6 +190,12 @@ public final class Recipe {
         public Builder burn(int stopBurn, String failItem) {
             this.stopBurn = stopBurn;
             this.failItem = failItem;
+            return this;
+        }
+
+        /** Stop-burn level with cooking gauntlets (lobster, swordfish, monkfish, shark, anglerfish). */
+        public Builder gauntlets(int stopBurn) {
+            this.gauntletStopBurn = stopBurn;
             return this;
         }
 

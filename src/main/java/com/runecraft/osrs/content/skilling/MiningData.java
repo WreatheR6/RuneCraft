@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Mining: sandstone, granite, blurite, volcanic ash and the Motherlode Mine (pay-dirt veins, hopper,
+ * Mining: sandstone, granite, blurite, limestone, volcanic ash and the Motherlode Mine (pay-dirt veins, hopper,
  * sack, golden nuggets and the prospector kit, which boosts Mining XP by up to 2.5%).
  * Levels/XP are OSRS values; success rates are approximations on the usual 1-99 interpolation.
  */
@@ -38,6 +38,8 @@ public final class MiningData extends SkillingPart {
             new MineRock("granite_rock", "Granite rocks", 45, 16, 160, 9, List.of(new Yield("granite_500g", 50, 50.0),
                     new Yield("granite_2kg", 35, 60.0), new Yield("granite_5kg", 15, 75.0)), 0x8A7A70),
             new MineRock("blurite_rock", "Blurite rocks", 10, 90, 350, 42, List.of(new Yield("blurite_ore", 1, 17.5)), 0x4A6AC0),
+            // Limestone (10 Mining, 26.5 XP); chiselled into limestone bricks for Construction. Success/respawn approx.
+            new MineRock("limestone_rock", "Limestone rocks", 10, 64, 300, 15, List.of(new Yield("limestone", 1, 26.5)), 0xD8D0B0),
             new MineRock("ash_pile", "Ash pile", 22, 64, 256, 50, List.of(new Yield("volcanic_ash", 1, 10.0)), 0x5A5A5A),
             new MineRock("pay_dirt_vein", "Ore vein", 30, 48, 220, 0, List.of(new Yield("pay_dirt", 1, 60.0)), 0x6A5A3A));
 
@@ -89,6 +91,7 @@ public final class MiningData extends SkillingPart {
                 }
             }
         }
+        simple(s, "limestone", "Limestone", "ore", 0xD8D0B0, 10);
         simple(s, "pay_dirt", "Pay-dirt", "ore", 0x6A5A3A, 1);
         simple(s, "golden_nugget", "Golden nugget", "nugget", 0xE8C030, 1).examine("Prospector Percy accepts these.");
         simple(s, "bucket_of_sand", "Bucket of sand", "bucket", 0xE0D090, 3);
@@ -117,6 +120,9 @@ public final class MiningData extends SkillingPart {
             out.accept(plain("grind_sandstone_" + k, MenuType.SMELTING, k + " bucket" + (k > 1 ? "s" : "") + " of sand (sandstone)")
                     .in("sandstone_" + k + "kg", 1).in("minecraft:bucket", k).out("bucket_of_sand", k).ticks(2).build());
         }
+        // Limestone is chiselled into limestone bricks (12 Crafting, 6 XP).
+        out.accept(r("chisel_limestone_brick", MenuType.GEM_CUTTING, "Limestone brick", Skill.CRAFTING, 12, 6.0).in("limestone", 1)
+                .out("limestone_brick", 1).tool("chisel").ticks(2).build());
         out.accept(plain("empty_bucket_of_sand", MenuType.SMELTING, "Sand (empty bucket of sand)").in("bucket_of_sand", 1)
                 .out("minecraft:sand", 1).out("minecraft:bucket", 1).ticks(1).build());
         out.accept(r("smelt_molten_glass_bucket", MenuType.SMELTING, "Molten glass (bucket of sand)", Skill.CRAFTING, 1, 20.0)
@@ -142,6 +148,8 @@ public final class MiningData extends SkillingPart {
                                 "pay_dirt_sack")),
                 PlaceDef.of("desert_quarry", "Desert Quarry", 3170, 2910, PlaceDef.Style.ARENA,
                         List.of("sandstone_rock", "sandstone_rock", "granite_rock", "granite_rock", "sandstone_rock", "granite_rock")),
+                PlaceDef.of("paterdomus_limestone", "Limestone mine", 3372, 3498, PlaceDef.Style.CAMP,
+                        List.of("limestone_rock", "limestone_rock", "limestone_rock")),
                 PlaceDef.of("asgarnian_ice_dungeon_blurite", "Blurite rocks", 3049, 3170, PlaceDef.Style.CAVE,
                         List.of("blurite_rock", "blurite_rock")),
                 PlaceDef.of("fossil_island_ash", "Fossil Island ash piles", 3793, 3770, PlaceDef.Style.RUINS,

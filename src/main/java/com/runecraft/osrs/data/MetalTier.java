@@ -2,7 +2,7 @@ package com.runecraft.osrs.data;
 
 /** Metal tiers for weapons, armour and tools. */
 public enum MetalTier {
-    BRONZE("Bronze", 1, 0xB08D57, "bronze_bar", 1, 12.5, 1.0),
+    BRONZE("Bronze", 1, 0xB08D57, "bronze_bar", 0, 12.5, 1.0),
     IRON("Iron", 1, 0x8A8A8E, "iron_bar", 15, 25.0, 3.5),
     STEEL("Steel", 5, 0xB8B8C0, "steel_bar", 30, 37.5, 12.5),
     BLACK("Black", 10, 0x2E2E34, null, 0, 0, 24.0),
@@ -51,8 +51,18 @@ public enum MetalTier {
         return bar != null;
     }
 
+    /**
+     * Base Smithing level of the tier: an item's level is this plus its offset (dagger +0, axe +1,
+     * mace +2, ... platebody +18). Bronze is 0 so a bronze dagger/axe needs level 1 and a bronze
+     * platebody 18, like in-game; use {@link #smithingLevel(int)} to clamp to 1-99.
+     */
     public int smithingBase() {
         return smithingBase;
+    }
+
+    /** Smithing level for an item with the given offset from the tier base, clamped to 1-99. */
+    public int smithingLevel(int offset) {
+        return Math.max(1, Math.min(99, smithingBase + offset));
     }
 
     public double xpPerBar() {

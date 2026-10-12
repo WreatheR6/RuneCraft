@@ -221,6 +221,15 @@ public final class FletchingData extends SkillingPart {
             out.accept(r("fletch_" + d.tier + "_dart", F, "10 " + lower(d.name) + " darts", Skill.FLETCHING, d.level, d.xpEach * 10)
                     .in(d.tier + "_dart_tip", 10).in("minecraft:feather", 10).out(d.tier + "_dart", 10).ticks(2).build());
         }
+        // Arrow shafts from better logs (normal logs are built in): 15 more shafts per tier, 5 more XP.
+        Object[][] shafts = {{"oak_logs", 15, 30, 10.0}, {"willow_logs", 30, 45, 15.0}, {"maple_logs", 45, 60, 20.0},
+                {"yew_logs", 60, 75, 25.0}, {"magic_logs", 75, 90, 30.0}, {"redwood_logs", 90, 105, 35.0}};
+        for (Object[] sh : shafts) {
+            String log = (String) sh[0];
+            out.accept(r("fletch_arrow_shaft_" + log.replace("_logs", ""), F, sh[2] + " arrow shafts (" + lower(title(log)) + ")",
+                    Skill.FLETCHING, (Integer) sh[1], (Double) sh[3]).in(log, 1).out("arrow_shaft", (Integer) sh[2]).tool("knife")
+                    .ticks(3).build());
+        }
         out.accept(r("fletch_javelin_shaft", F, "15 javelin shafts", Skill.FLETCHING, 3, 5.0).in("logs", 1)
                 .out("javelin_shaft", 15).tool("knife").ticks(3).build());
         for (Dart j : JAVELINS) {

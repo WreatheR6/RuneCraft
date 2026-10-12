@@ -190,11 +190,14 @@ final class FarmingHooks {
                 world.playSound(null, pos, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.PLAYERS, 1f, 0.9f);
                 double chance = Chance.lerp(SkillingUtil.level(p, Skill.WOODCUTTING), tree.low() * axe.woodcuttingMultiplier(),
                         tree.high() * axe.woodcuttingMultiplier());
+                boolean expired = com.runecraft.skill.Gathering.TREE_TIMERS.chop(key, tree.despawnTicks(),
+                        com.runecraft.action.ActionManager.gameTick());
                 if (random.nextDouble() < chance) {
                     SkillingUtil.give(p, tree.logItem(), 1);
                     XpService.add(p, Skill.WOODCUTTING, tree.xp());
                     Msg.action(p, "You get some " + SkillingUtil.lower(tree.logName()) + ".");
-                    if (random.nextDouble() < tree.depleteChance()) {
+                    if (expired) {
+                        com.runecraft.skill.Gathering.TREE_TIMERS.reset(key);
                         n.putBoolean("stump", true);
                         setVisual(world, pos, crop, 2, n);
                         Msg.game(p, "You have chopped down the tree. Dig up the stump with a spade to clear the patch.");

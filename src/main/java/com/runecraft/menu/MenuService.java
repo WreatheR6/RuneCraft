@@ -160,7 +160,8 @@ public final class MenuService {
         r.inputs().forEach((item, count) -> Inv.remove(player, item, count));
         double chance = r.successChance();
         if (r.stopBurn() > 0) {
-            chance = r.cookingSuccess(skills.currentLevel(r.skill()), range);
+            chance = r.cookingSuccess(skills.currentLevel(r.skill()), range,
+                    r.gauntletStopBurn() > 0 && Inv.has(player, "cooking_gauntlets", 1));
         }
         boolean success = player.getRandom().nextDouble() < chance;
         if (success) {
