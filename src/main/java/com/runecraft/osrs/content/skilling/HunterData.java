@@ -1,6 +1,7 @@
 package com.runecraft.osrs.content.skilling;
 
 import com.runecraft.osrs.AttackType;
+import com.runecraft.osrs.Chance;
 import com.runecraft.osrs.EquipmentDef;
 import com.runecraft.osrs.ItemDef.Kind;
 import com.runecraft.osrs.MenuType;
@@ -14,7 +15,10 @@ import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.PlaceDef;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -24,88 +28,175 @@ import java.util.function.Consumer;
  * desert devil, razor-backed), butterflies caught with a butterfly net into butterfly jars, falconry
  * kebbits at Piscatoris, and the Hunter gear sold at the Varrock fancy dress shop (camouflage outfits,
  * larupia/graahk/kyatt sets, spotted and spottier capes).
- * Levels and XP are OSRS values (implings award the open-world XP; {@code puroXp} is Puro-Puro's).
+ * Also Puro-Puro's impling spawn weights and Elnock Inquisitor's exchange (the maze itself is the dungeons
+ * module's {@code PuroPuro}), maniacal monkeys (Monkey Madness II), gloves of silence and imp boxes.
+ * Levels and XP are OSRS values (implings award the open-world XP outside Puro-Puro, {@code puroXp} inside).
  * Catch chances: {@link com.runecraft.osrs.data.HunterRates}.
  */
 public final class HunterData extends SkillingPart {
 
     /**
      * An impling: level, open-world XP, Puro-Puro XP (0 = not found there), region weights and loot (one
-     * roll per jar).
+     * roll per jar). OSRS: Puro-Puro catches give less XP (e.g. dragon 65 there, 300 in Gielinor).
      */
     public record Impling(String id, String name, int level, double xp, double puroXp, int color, List<Region> regions, List<Loot> loot) {
         public String jar() {
             return id + "_jar";
         }
+
+        /** XP for a catch, inside or outside Puro-Puro. */
+        public double xpFor(boolean inPuroPuro) {
+            return inPuroPuro && puroXp > 0 ? puroXp : xp;
+        }
     }
 
+    // Loot weights: the wiki's 1/x rarities scaled to integer weights. Where the wiki's exact rarity for a
+    // low-tier line is not known the common/uncommon/rare tiers are approximated as 1/10, 1/50 and 1/250.
+    private static final int C = 100;   // ~1/10
+    private static final int U = 20;    // ~1/50
+    private static final int R = 4;     // ~1/250
+
     public static final List<Impling> IMPLINGS = List.of(
-            new Impling("baby_impling", "Baby impling", 17, 18.0, 20.0, 0xC0A060, List.of(Region.MISTHALIN, Region.ASGARNIA, Region.KANDARIN),
-                    List.of(Loot.of("chisel", 10), Loot.of("minecraft:string", 10), Loot.of("needle", 10), Loot.of("knife", 10),
-                            Loot.of("cheese", 10), Loot.of("hammer", 10), Loot.of("ball_of_wool", 10), Loot.of("raw_anchovies", 10),
-                            Loot.of("spice", 5), Loot.of("flax", 10), Loot.of("seaweed", 5), Loot.of("air_talisman", 5),
-                            Loot.of("silver_bar", 3), Loot.of("sapphire", 3), Loot.of("hard_leather", 4), Loot.of("raw_lobster", 3),
-                            Loot.of("soft_clay", 5))),
-            new Impling("young_impling", "Young impling", 22, 20.0, 22.0, 0xA0B060, List.of(Region.MISTHALIN, Region.ASGARNIA, Region.KANDARIN),
-                    List.of(Loot.of("steel_nails", 5, 5, 10), Loot.of("pure_essence", 10), Loot.of("raw_tuna", 10),
-                            Loot.of("chocolate_slice", 10), Loot.of("steel_axe", 6), Loot.of("meat_pizza", 6), Loot.of("coal", 10),
-                            Loot.of("bow_string", 10), Loot.of("snape_grass", 6), Loot.of("soft_clay", 10), Loot.of("studded_chaps", 4),
-                            Loot.of("steel_full_helm", 4), Loot.of("oak_plank", 6), Loot.of("defence_potion", 4),
-                            Loot.of("mithril_bar", 4), Loot.of("garden_pie", 5), Loot.of("jangerberries", 5))),
-            new Impling("gourmet_impling", "Gourmet impling", 28, 22.0, 24.0, 0xE0A060, List.of(Region.KANDARIN, Region.KARAMJA, Region.MISTHALIN),
-                    List.of(Loot.of("tuna", 12), Loot.of("bass", 10), Loot.of("curry", 6), Loot.of("meat_pie", 10),
-                            Loot.of("chocolate_cake", 8), Loot.of("spice", 6), Loot.of("curry_leaf", 8), Loot.of("lobster", 10),
-                            Loot.of("shark", 4), Loot.of("fish_pie", 6), Loot.of("garden_pie", 8), Loot.of("swordfish", 6),
-                            Loot.of("strawberry", 8), Loot.of("sea_turtle", 2), Loot.of("cooked_karambwan", 4))),
-            new Impling("earth_impling", "Earth impling", 36, 25.0, 27.0, 0x8A5A2A, List.of(Region.ASGARNIA, Region.FREMENNIK_PROVINCE, Region.WILDERNESS),
-                    List.of(Loot.of("fire_talisman", 8), Loot.of("earth_talisman", 10), Loot.of("earth_tiara", 4),
-                            Loot.of("earth_rune", 32, 32, 12), Loot.of("mithril_ore", 10), Loot.of("supercompost", 6),
-                            Loot.of("compost", 8), Loot.of("gold_ore", 8), Loot.of("unicorn_horn_dust", 6), Loot.of("emerald", 4),
-                            Loot.of("uncut_emerald", 6), Loot.of("wildblood_seed", 4), Loot.of("jangerberry_seed", 4),
-                            Loot.of("harralander_seed", 4), Loot.of("coal", 6))),
-            new Impling("essence_impling", "Essence impling", 42, 27.0, 29.0, 0xD0D0E0, List.of(Region.MISTHALIN, Region.WILDERNESS, Region.KHARIDIAN_DESERT),
-                    List.of(Loot.of("pure_essence", 20, 20, 15), Loot.of("water_rune", 30, 30, 10), Loot.of("air_rune", 30, 30, 10),
-                            Loot.of("fire_rune", 50, 50, 10), Loot.of("mind_rune", 25, 25, 10), Loot.of("body_rune", 28, 28, 8),
-                            Loot.of("cosmic_rune", 4, 4, 6), Loot.of("chaos_rune", 4, 4, 6), Loot.of("nature_rune", 13, 13, 5),
-                            Loot.of("law_rune", 13, 13, 5), Loot.of("death_rune", 13, 13, 4), Loot.of("blood_rune", 7, 7, 3))),
-            new Impling("eclectic_impling", "Eclectic impling", 50, 30.0, 32.0, 0x6A9AA0, List.of(Region.KANDARIN, Region.TIRANNWN, Region.WILDERNESS),
-                    List.of(Loot.of("mithril_pickaxe", 8), Loot.of("curry_leaf", 8), Loot.of("snape_grass", 8), Loot.of("oak_plank", 8),
-                            Loot.of("empty_candle_lantern", 6), Loot.of("gold_ore", 8), Loot.of("gold_bar", 6),
-                            Loot.of("unicorn_horn_dust", 6), Loot.of("adamant_kiteshield", 4), Loot.of("blue_dhide_chaps", 4),
-                            Loot.of("red_spiders_eggs", 6), Loot.of("rune_dagger", 3), Loot.of("battlestaff", 3),
-                            Loot.of("adamantite_ore", 6), Loot.of("wild_pie", 3), Loot.of("watermelon_seed", 4), Loot.of("diamond", 2))),
-            new Impling("nature_impling", "Nature impling", 58, 34.0, 34.0, 0x3AA03A, List.of(Region.KANDARIN, Region.FELDIP_HILLS, Region.TIRANNWN),
-                    List.of(Loot.of("jangerberry_seed", 8), Loot.of("belladonna_seed", 6), Loot.of("harralander_seed", 8),
-                            Loot.of("cactus_spine", 8), Loot.of("magic_logs", 6), Loot.of("tarromin", 8), Loot.of("coconut", 8),
-                            Loot.of("irit_seed", 6), Loot.of("curry_seed", 4), Loot.of("orange_seed", 4), Loot.of("snapdragon", 4),
-                            Loot.of("kwuarm_seed", 5), Loot.of("avantoe_seed", 5), Loot.of("willow_seed", 6), Loot.of("torstol_seed", 1),
-                            Loot.of("ranarr_seed", 2), Loot.of("torstol", 2), Loot.of("dwarf_weed_seed", 3))),
-            new Impling("magpie_impling", "Magpie impling", 65, 44.0, 216.0, 0x2A2A3A, List.of(Region.KARAMJA, Region.KANDARIN, Region.WILDERNESS),
-                    List.of(Loot.of("black_dragonhide", 6, 6, 8), Loot.of("diamond_amulet_u", 6), Loot.of("runite_bar", 6),
-                            Loot.of("dragonstone_bolt_tips", 12, 12, 6), Loot.of("uncut_dragonstone", 4), Loot.of("rune_sq_shield", 6),
-                            Loot.of("rune_med_helm", 6), Loot.of("diamond_bracelet", 6), Loot.of("rune_bolts", 10, 10, 8),
-                            Loot.of("nature_rune", 20, 20, 6), Loot.of("dragonstone_ring", 3), Loot.of("onyx_bolt_tips", 6, 6, 2))),
-            new Impling("ninja_impling", "Ninja impling", 74, 52.0, 240.0, 0x1A1A1A, List.of(Region.KHARIDIAN_DESERT, Region.MORYTANIA, Region.WILDERNESS),
-                    List.of(Loot.of("snakeskin_boots", 8), Loot.of("rune_dart", 70, 70, 6), Loot.of("rune_arrow", 70, 70, 6),
-                            Loot.of("rune_dagger", 6), Loot.of("rune_scimitar", 5), Loot.of("rune_knife", 40, 40, 6),
-                            Loot.of("onyx_bolt_tips", 4, 4, 4), Loot.of("dragon_dagger", 2), Loot.of("prayer_potion", 6),
-                            Loot.of("black_dragonhide", 4, 4, 6), Loot.of("rune_crossbow", 2), Loot.of("weapon_poison", 6))),
-            // Prifddinas only (no Puro-Puro spawn); loot approx.
+            new Impling("baby_impling", "Baby impling", 17, 20.0, 18.0, 0xC0A060, List.of(Region.MISTHALIN, Region.ASGARNIA, Region.KANDARIN),
+                    List.of(Loot.of("chisel", C), Loot.of("thread", C), Loot.of("needle", C), Loot.of("knife", C),
+                            Loot.of("cheese", C), Loot.of("hammer", C), Loot.of("ball_of_wool", C), Loot.of("anchovies", C),
+                            Loot.of("spice", U), Loot.of("flax", U), Loot.of("kebab", U), Loot.of("seaweed", U), Loot.of("air_talisman", U),
+                            Loot.of("silver_bar", R), Loot.of("sapphire", R), Loot.of("hard_leather", R), Loot.of("lobster", R),
+                            Loot.of("soft_clay", R))),   // approx: the mud pie / bucket of milk lines (not in this world) -> kebab / omitted
+            new Impling("young_impling", "Young impling", 22, 22.0, 20.0, 0xA0B060, List.of(Region.MISTHALIN, Region.ASGARNIA, Region.KANDARIN),
+                    List.of(Loot.of("steel_nails", 5, 5, C), Loot.of("lockpick", C), Loot.of("pure_essence", C), Loot.of("tuna", C),
+                            Loot.of("chocolate_slice", C), Loot.of("steel_axe", U), Loot.of("meat_pizza", U), Loot.of("coal", U),
+                            Loot.of("bow_string", U), Loot.of("snape_grass", R), Loot.of("soft_clay", R), Loot.of("studded_chaps", R),
+                            Loot.of("steel_full_helm", R), Loot.of("oak_plank", R), Loot.of("defence_potion", R), Loot.of("mithril_bar", R),
+                            Loot.of("yew_longbow", 1), Loot.of("garden_pie", 1), Loot.of("jangerberries", 1))),
+            new Impling("gourmet_impling", "Gourmet impling", 28, 24.0, 22.0, 0xE0A060, List.of(Region.KANDARIN, Region.KARAMJA, Region.MISTHALIN),
+                    List.of(Loot.of("tuna", C), Loot.of("bass", C), Loot.of("curry", C), Loot.of("meat_pie", C), Loot.of("chocolate_cake", C),
+                            Loot.of("spice", U), Loot.of("curry_leaf", U), Loot.of("kebab", U),
+                            Loot.of("lobster", 4, 4, R), Loot.of("shark", 3, 3, R), Loot.of("fish_pie", R), Loot.of("chocolate_bomb", R),
+                            Loot.of("cooked_karambwan", 2, 2, R), Loot.of("swordfish", 3, 3, R), Loot.of("strawberry", 5, 5, R),
+                            Loot.of("sea_turtle", 1), Loot.of("garden_pie", 1))),
+            new Impling("earth_impling", "Earth impling", 36, 27.0, 25.0, 0x8A5A2A, List.of(Region.ASGARNIA, Region.FREMENNIK_PROVINCE, Region.WILDERNESS),
+                    List.of(Loot.of("fire_talisman", C), Loot.of("earth_talisman", C), Loot.of("earth_tiara", C),
+                            Loot.of("earth_rune", 32, 32, C), Loot.of("mithril_ore", C), Loot.of("bucket_of_sand", C),
+                            Loot.of("unicorn_horn_dust", U), Loot.of("compost", 6, 6, U), Loot.of("gold_ore", U), Loot.of("steel_bar", U),
+                            Loot.of("mithril_pickaxe", U), Loot.of("wildblood_seed", 2, 2, R), Loot.of("jangerberry_seed", 2, 2, R),
+                            Loot.of("supercompost", 2, 2, R), Loot.of("mithril_ore", 3, 3, R), Loot.of("harralander_seed", 2, 2, R),
+                            Loot.of("coal", 6, 6, R), Loot.of("emerald", 2, 2, R), Loot.of("uncut_ruby", 1), Loot.of("runite_ore", 1))),
+            new Impling("essence_impling", "Essence impling", 42, 29.0, 27.0, 0xD0D0E0, List.of(Region.MISTHALIN, Region.WILDERNESS, Region.KHARIDIAN_DESERT),
+                    List.of(Loot.of("pure_essence", 20, 20, C), Loot.of("water_rune", 30, 30, C), Loot.of("air_rune", 30, 30, C),
+                            Loot.of("fire_rune", 50, 50, C), Loot.of("mind_rune", 25, 25, C), Loot.of("body_rune", 28, 28, C),
+                            Loot.of("chaos_rune", 4, 4, U), Loot.of("cosmic_rune", 4, 4, U), Loot.of("mind_talisman", U),
+                            Loot.of("pure_essence", 35, 35, R), Loot.of("nature_rune", 13, 13, R), Loot.of("law_rune", 13, 13, R),
+                            Loot.of("death_rune", 13, 13, R), Loot.of("blood_rune", 7, 7, R))),
+            new Impling("eclectic_impling", "Eclectic impling", 50, 32.0, 30.0, 0x6A9AA0, List.of(Region.KANDARIN, Region.TIRANNWN, Region.WILDERNESS),
+                    List.of(Loot.of("mithril_pickaxe", C), Loot.of("curry_leaf", C), Loot.of("snape_grass", C),
+                            Loot.of("air_rune", 30, 58, C), Loot.of("oak_plank", 4, 4, U), Loot.of("empty_candle_lantern", U),
+                            Loot.of("gold_ore", U), Loot.of("gold_bar", 5, 5, U), Loot.of("unicorn_horn_dust", U),
+                            Loot.of("adamant_kiteshield", R), Loot.of("blue_dhide_chaps", R), Loot.of("red_spiders_eggs", R),
+                            Loot.of("rune_dagger", R), Loot.of("battlestaff", R), Loot.of("adamantite_ore", 10, 10, R),
+                            Loot.of("wild_pie", 1), Loot.of("watermelon_seed", 3, 3, 1), Loot.of("diamond", 1))),
+            new Impling("nature_impling", "Nature impling", 58, 36.0, 34.0, 0x3AA03A, List.of(Region.KANDARIN, Region.FELDIP_HILLS, Region.TIRANNWN),
+                    List.of(Loot.of("limpwurt_seed", C), Loot.of("jangerberry_seed", C), Loot.of("belladonna_seed", C),
+                            Loot.of("harralander_seed", C), Loot.of("cactus_spine", C), Loot.of("magic_logs", U), Loot.of("tarromin", 4, 4, U),
+                            Loot.of("coconut", U), Loot.of("irit_seed", U), Loot.of("curry_seed", R), Loot.of("orange_seed", R),
+                            Loot.of("snapdragon", R), Loot.of("kwuarm_seed", R), Loot.of("avantoe_seed", 5, 5, R), Loot.of("willow_seed", R),
+                            Loot.of("torstol_seed", 1), Loot.of("ranarr_seed", 1), Loot.of("torstol", 2, 2, 1),
+                            Loot.of("dwarf_weed_seed", 1))),
+            // Wiki: black dragonhide 2/21, the other lines 1/21 (the key halves and snapdragon seed rarer, approx);
+            // splitbark gauntlets and the sinister key aren't in this world.
+            new Impling("magpie_impling", "Magpie impling", 65, 216.0, 44.0, 0x2A2A3A, List.of(Region.KARAMJA, Region.KANDARIN, Region.WILDERNESS),
+                    List.of(Loot.of("black_dragonhide", 6, 6, 4), Loot.of("diamond_amulet", 3, 3, 2), Loot.of("amulet_of_power", 3, 3, 2),
+                            Loot.of("ring_of_forging", 3, 3, 2), Loot.of("mystic_boots_light", 2), Loot.of("mystic_gloves_light", 2),
+                            Loot.of("rune_warhammer", 2), Loot.of("ring_of_life", 4, 4, 2), Loot.of("rune_sq_shield", 2),
+                            Loot.of("dragon_dagger", 2), Loot.of("nature_tiara", 2), Loot.of("runite_bar", 2, 2, 2), Loot.of("diamond", 4, 4, 2),
+                            Loot.of("pineapple_seed", 2), Loot.of("loop_half_of_key", 1), Loot.of("tooth_half_of_key", 1),
+                            Loot.of("snapdragon_seed", 1))),
+            // Wiki: 19 lines at 1/19 each (splitbark helm, the opal machete and dagannoth hide aren't in this
+            // world: a plain machete stands in, the other two are dropped; dragon dagger (p+) -> dragon dagger).
+            new Impling("ninja_impling", "Ninja impling", 74, 240.0, 50.0, 0x1A1A1A, List.of(Region.KHARIDIAN_DESERT, Region.MORYTANIA, Region.WILDERNESS),
+                    List.of(Loot.of("snakeskin_boots", 1), Loot.of("mystic_boots_dark", 1), Loot.of("rune_chainbody", 1),
+                            Loot.of("mystic_gloves_dark", 1), Loot.of("rune_claws", 1), Loot.of("rune_scimitar", 1), Loot.of("dragon_dagger", 1),
+                            Loot.of("rune_arrow", 70, 70, 1), Loot.of("rune_dart", 70, 70, 1), Loot.of("rune_knife", 40, 40, 1),
+                            Loot.of("rune_thrownaxe", 50, 50, 1), Loot.of("onyx_bolts", 2, 2, 1), Loot.of("onyx_bolt_tips", 4, 4, 1),
+                            Loot.of("black_dragonhide", 10, 10, 1), Loot.of("prayer_potion", 4, 4, 1), Loot.of("weapon_poison_plus", 4, 4, 1),
+                            Loot.of("machete", 1))),
+            // Prifddinas only (no Puro-Puro spawn). Wiki: every line 1/18; the first nine lines are the wiki's,
+            // the rest (and the bolt/arrowtip quantities) approx.
             new Impling("crystal_impling", "Crystal impling", 80, 280.0, 0, 0x9AD8F0, List.of(Region.TIRANNWN),
-                    List.of(Loot.of("crystal_shard", 1, 5, 30), Loot.of("rune_arrow", 25, 25, 8), Loot.of("amulet_of_power", 8),
-                            Loot.of("dragonstone_bolt_tips", 10, 10, 8), Loot.of("uncut_dragonstone", 6), Loot.of("rune_pickaxe", 6),
-                            Loot.of("rune_javelin", 20, 20, 6), Loot.of("dragonstone_amulet", 4), Loot.of("magic_seed", 2),
-                            Loot.of("dragon_dart_tip", 25, 25, 4))),
-            new Impling("dragon_impling", "Dragon impling", 83, 65.0, 300.0, 0xC02020, List.of(Region.WILDERNESS, Region.KARAMJA, Region.MORYTANIA),
-                    List.of(Loot.of("dragon_arrowtips", 30, 60, 10), Loot.of("dragonstone_bolt_tips", 10, 30, 10),
-                            Loot.of("dragon_limbs", 2), Loot.of("babydragon_bones", 25, 35, 8), Loot.of("dragon_bones", 10, 15, 10),
-                            Loot.of("magic_seed", 3), Loot.of("snapdragon_seed", 6), Loot.of("uncut_dragonstone", 4),
-                            Loot.of("dragon_dagger", 4), Loot.of("onyx_bolt_tips", 5, 10, 4), Loot.of("dragon_arrow", 100, 250, 4),
-                            Loot.of("dragon_dart_tip", 25, 35, 8))),
-            new Impling("lucky_impling", "Lucky impling", 89, 80.0, 380.0, 0x30C060, List.of(Region.WILDERNESS, Region.KANDARIN, Region.TIRANNWN),
-                    List.of(Loot.of("clue_scroll_easy", 30), Loot.of("clue_scroll_medium", 25), Loot.of("clue_scroll_hard", 20),
-                            Loot.of("clue_scroll_elite", 10), Loot.of("clue_scroll_master", 2), Loot.of("coins", 5000, 30000, 10),
-                            Loot.of("uncut_onyx", 1))));
+                    List.of(Loot.of("amulet_of_power", 5, 7, 1), Loot.of("crystal_acorn", 1), Loot.of("crystal_shard", 30, 40, 1),
+                            Loot.of("dragonstone_amulet", 1), Loot.of("dragonstone", 2, 2, 1), Loot.of("rune_arrowtips", 50, 100, 1),
+                            Loot.of("ruby_bolt_tips", 50, 125, 1), Loot.of("onyx_bolt_tips", 6, 8, 1), Loot.of("rune_arrow", 400, 750, 1),
+                            Loot.of("dragonstone_bolt_tips", 25, 35, 1), Loot.of("rune_javelin_heads", 25, 35, 1),
+                            Loot.of("rune_dart_tip", 50, 100, 1), Loot.of("uncut_dragonstone", 1), Loot.of("rune_pickaxe", 1),
+                            Loot.of("magic_seed", 1), Loot.of("ranarr_seed", 2, 3, 1), Loot.of("magic_logs", 25, 25, 1),
+                            Loot.of("runite_ore", 3, 3, 1))),
+            // Wiki: 19 lines at 1/19 each (babydragon bones 100-300, dragon bones 50-100, magic seed, 6 snapdragon
+            // seeds, 15 summer pies, dragonstone bolt tips 10-30/36 confirmed; the other quantities approx).
+            new Impling("dragon_impling", "Dragon impling", 83, 300.0, 65.0, 0xC02020, List.of(Region.WILDERNESS, Region.KARAMJA, Region.MORYTANIA),
+                    List.of(Loot.of("dragonstone_bolt_tips", 10, 30, 1), Loot.of("dragonstone_bolt_tips", 36, 36, 1),
+                            Loot.of("dragon_bolts_unf", 10, 20, 1), Loot.of("dragon_arrowtips", 100, 350, 1), Loot.of("dragon_dart_tip", 100, 350, 1),
+                            Loot.of("dragon_arrow", 100, 250, 1), Loot.of("dragon_dart", 100, 250, 1), Loot.of("babydragon_bones", 100, 300, 1),
+                            Loot.of("dragon_bones", 50, 100, 1), Loot.of("magic_seed", 1), Loot.of("snapdragon_seed", 6, 6, 1),
+                            Loot.of("summer_pie", 15, 15, 1), Loot.of("dragonstone", 2, 3, 1), Loot.of("dragon_dagger", 1),
+                            Loot.of("uncut_dragonstone", 1), Loot.of("onyx_bolt_tips", 5, 10, 1), Loot.of("amulet_of_power", 3, 3, 1),
+                            Loot.of("dragonstone_amulet", 1), Loot.of("ranarr_seed", 2, 3, 1))),
+            // Wiki: one roll on the easy/medium/hard/elite/master clue reward table, 1/5 each (never a master clue
+            // scroll or a pet). The casket ids only mark the tier: the Minecraft side rolls ClueRewards.singleRoll.
+            new Impling(HunterData.LUCKY, "Lucky impling", 89, 380.0, 80.0, 0x30C060, List.of(Region.WILDERNESS, Region.KANDARIN, Region.TIRANNWN),
+                    List.of(Loot.of("reward_casket_easy", 1), Loot.of("reward_casket_medium", 1), Loot.of("reward_casket_hard", 1),
+                            Loot.of("reward_casket_elite", 1), Loot.of("reward_casket_master", 1))));
+
+    /** The lucky impling, whose jar holds one clue reward roll. */
+    public static final String LUCKY = "lucky_impling";
+
+    /**
+     * Puro-Puro's invisible spawn points (wiki): a low-tier spawn rolls baby, young, gourmet and earth 20/100
+     * each and essence and eclectic 10/100; a high-tier spawn rolls nature 150/301, magpie 114/301, ninja
+     * 27/301, dragon 9/301 and lucky 1/301. Crystal implings live only in Prifddinas.
+     */
+    public static final Map<String, Integer> PURO_LOW_TIER = weights("baby_impling", 20, "young_impling", 20,
+            "gourmet_impling", 20, "earth_impling", 20, "essence_impling", 10, "eclectic_impling", 10);
+    public static final Map<String, Integer> PURO_HIGH_TIER = weights("nature_impling", 150, "magpie_impling", 114,
+            "ninja_impling", 27, "dragon_impling", 9, "lucky_impling", 1);
+
+    private static Map<String, Integer> weights(Object... kv) {
+        Map<String, Integer> m = new LinkedHashMap<>();
+        for (int i = 0; i < kv.length; i += 2) {
+            m.put((String) kv[i], (Integer) kv[i + 1]);
+        }
+        return Collections.unmodifiableMap(m);
+    }
+
+    /** A spawn table expanded to one entry per unit of weight (camps pick uniformly). */
+    public static List<String> expand(Map<String, Integer> weights) {
+        List<String> out = new ArrayList<>();
+        weights.forEach((id, w) -> {
+            for (int i = 0; i < w; i++) {
+                out.add(id);
+            }
+        });
+        return out;
+    }
+
+    /** Barehanded catches need this many levels above the impling's (wiki: e.g. nature 58, or 68 barehanded). */
+    public static final int BAREHANDED_EXTRA_LEVELS = 10;
+    /** Catch-chance bonus barehanded or with a magic butterfly net (wiki: +7.8%, i.e. 20/256). */
+    public static final double MAGIC_NET_BONUS = 20 / 256.0;
+
+    /**
+     * Chance to catch an impling. The wiki's nature impling chart (about 49% at its level, 79% at 99) is
+     * used for every impling (approx); barehanded or with a magic butterfly net it is 20/256 higher.
+     */
+    public static double catchChance(Impling imp, int hunterLevel, boolean boosted) {
+        if (hunterLevel < imp.level()) {
+            return 0.0;
+        }
+        int req = Math.max(1, Math.min(97, imp.level()));
+        double high = 0.79 * 256 - 1;
+        double atReq = 0.49 * 256 - 1;
+        double low = (atReq * 98 - high * (req - 1)) / (99 - req);
+        return Math.min(1.0, Chance.lerp(hunterLevel, low, high) + (boosted ? MAGIC_NET_BONUS : 0));
+    }
 
     public static Impling impling(String id) {
         for (Impling i : IMPLINGS) {
@@ -123,6 +214,43 @@ public final class HunterData extends SkillingPart {
             }
         }
         return null;
+    }
+
+    // ------------------------------------------------------------------ Elnock Inquisitor (Puro-Puro)
+
+    /** Elnock Inquisitor's exchange counter, at the centre of Puro-Puro (dungeons module). */
+    public static final String ELNOCKS_EXCHANGE = "elnocks_exchange";
+
+    /** Price of an impling jar from Elnock (wiki: 2,000 coins; his 10-a-day limit isn't modelled). */
+    public static final int ELNOCK_JAR_PRICE = 2_000;
+    /** Charges of a new jar generator, and the charges an impling jar / butterfly jar uses (wiki). */
+    public static final int JAR_GENERATOR_CHARGES = 100;
+    public static final int JAR_GENERATOR_IMPLING_COST = 3;
+    public static final int JAR_GENERATOR_BUTTERFLY_COST = 1;
+
+    /**
+     * Elnock's exchange (wiki): 3 baby + 2 young + 1 gourmet impling jar for imp repellent; 3 gourmet + 2
+     * earth + 1 essence for a magic butterfly net; 3 essence + 2 eclectic + 1 nature for a jar generator; any
+     * single impling jar for 3 empty impling jars. Served as the {@link MenuType#IMPLING_EXCHANGE} menu.
+     */
+    public record Exchange(String id, String name, String reward, int rewardCount, Map<String, Integer> jars) {
+    }
+
+    public static final List<Exchange> ELNOCK_EXCHANGES = exchanges();
+
+    private static List<Exchange> exchanges() {
+        List<Exchange> out = new ArrayList<>();
+        out.add(new Exchange("elnock_imp_repellent", "Imp repellent (3 baby, 2 young, 1 gourmet)", "imp_repellent", 1,
+                weights("baby_impling_jar", 3, "young_impling_jar", 2, "gourmet_impling_jar", 1)));
+        out.add(new Exchange("elnock_magic_butterfly_net", "Magic butterfly net (3 gourmet, 2 earth, 1 essence)", "magic_butterfly_net", 1,
+                weights("gourmet_impling_jar", 3, "earth_impling_jar", 2, "essence_impling_jar", 1)));
+        out.add(new Exchange("elnock_jar_generator", "Jar generator (3 essence, 2 eclectic, 1 nature)", "jar_generator", 1,
+                weights("essence_impling_jar", 3, "eclectic_impling_jar", 2, "nature_impling_jar", 1)));
+        for (Impling i : IMPLINGS) {
+            out.add(new Exchange("elnock_jars_" + i.id(), "3 impling jars (1 " + lower(i.name()) + " jar)", "impling_jar", 3,
+                    weights(i.jar(), 1)));
+        }
+        return List.copyOf(out);
     }
 
     /**
@@ -205,7 +333,30 @@ public final class HunterData extends SkillingPart {
             new TrapSpot("dark_kebbit_falconry", "Dark kebbit", TrapKind.FALCONRY, 57, 132.0, List.of(), null,
                     List.of("bones", "dark_kebbit_fur"), 0),
             new TrapSpot("dashing_kebbit_falconry", "Dashing kebbit", TrapKind.FALCONRY, 69, 156.0, List.of(), null,
-                    List.of("bones", "dashing_kebbit_fur"), 0));
+                    List.of("bones", "dashing_kebbit_fur"), 0),
+            // Maniacal monkeys (Kruk's Dungeon, Monkey Madness II): a large boulder deadfall baited with a banana;
+            // the monkey sheds its tail (damaged monkey tail, or an intact one 1/5,000) and escapes (wiki).
+            new TrapSpot(HunterData.MANIACAL_MONKEY_BOULDER, "Maniacal monkey", TrapKind.DEADFALL, 60, 1000.0, List.of(), "banana",
+                    List.of("damaged_monkey_tail"), 20, "monkey_tail", 5000));
+
+    /** The maniacal monkeys' boulder trap (needs Monkey Madness II, see {@link #MANIACAL_MONKEY_QUEST}). */
+    public static final String MANIACAL_MONKEY_BOULDER = "maniacal_monkey_boulder";
+    public static final String MANIACAL_MONKEY_QUEST = "monkey_madness_ii";
+    /** Imps caught in a magic box (wiki: 71 Hunter, 450 XP; a bead in the box adds 3% to the catch chance). */
+    public static final int IMP_LEVEL = 71;
+    public static final double IMP_XP = 450.0;
+    public static final double IMP_BEAD_BONUS = 0.03;
+    /** Gloves of silence: pickpocketing success multiplier while worn (wiki: +5%, approx as a multiplier). */
+    public static final double GLOVES_OF_SILENCE_BONUS = 1.05;
+
+    /** Imp-in-a-box charges by item id: each use banks one item stack; the empty box is a magic box again. */
+    public static String impBoxAfterUse(String id) {
+        return switch (id) {
+            case "imp_in_a_box_2" -> "imp_in_a_box_1";
+            case "imp_in_a_box_1" -> "magic_box";
+            default -> null;
+        };
+    }
 
     public static TrapSpot trap(String blockId) {
         for (TrapSpot t : TRAPS) {
@@ -288,6 +439,25 @@ public final class HunterData extends SkillingPart {
         // Capes (worn in the cape slot, see systems/Jewellery): OSRS weight-reducing capes.
         simple(s, "spotted_cape", "Spotted cape", "cape", 0xB08A50, 400).stack(1).examine("A cape made from spotted kebbit fur.");
         simple(s, "spottier_cape", "Spottier cape", "cape", 0xC06A2A, 800).stack(1).examine("A cape made from dashing kebbit fur.");
+        // Elnock's exchange (Puro-Puro). The magic butterfly net is held like the plain one (OSRS: 17 Hunter to wield).
+        tool(s, "magic_butterfly_net", "Magic butterfly net", "net", 0xA0C0F0, 1000)
+                .examine("It's a magic butterfly net: implings are easier to catch with it.");
+        simple(s, "jar_generator", "Jar generator", "jar", 0x8AC0A0, 600).stack(1)
+                .examine("Makes impling jars (3 charges) and butterfly jars (1 charge). " + JAR_GENERATOR_CHARGES + " charges.");
+        simple(s, "imp_repellent", "Imp repellent", "vial", 0xD0B0E0, 50).stack(1)
+                .examine("Implings can't stand the smell. Dip a butterfly jar in it to make an impling jar.");
+        // Gloves of silence (Crafting, dark kebbit fur): +5% pickpocketing (worn in the hands slot, see systems/Jewellery).
+        simple(s, "gloves_of_silence", "Gloves of silence", "gloves", 0x3A2A1A, 600).stack(1)
+                .examine("Made from dark kebbit fur, these are perfect for tasks of a stealthier nature.");
+        // Imp boxes: a magic box catches an imp (71 Hunter); the imp banks two item stacks for you.
+        simple(s, "magic_box", "Magic box", "box_trap", 0x6A4A8A, 600).stack(1).examine("A magical box for trapping imps.");
+        simple(s, "imp_in_a_box_2", "Imp-in-a-box(2)", "box_trap", 0x8A4A6A, 600).stack(1)
+                .examine("An imp in a box: it will take two items to your bank.");
+        simple(s, "imp_in_a_box_1", "Imp-in-a-box(1)", "box_trap", 0x8A4A6A, 600).stack(1)
+                .examine("An imp in a box: it will take one more item to your bank.");
+        // Maniacal monkey tails (Kruk's Dungeon).
+        simple(s, "damaged_monkey_tail", "Damaged monkey tail", "tail", 0x6A4A2A, 1).examine("It's been bitten off.");
+        simple(s, "monkey_tail", "Monkey tail", "tail", 0x8A6A3A, 1).examine("A whole maniacal monkey tail. Ballista string!");
     }
 
     /** Jarred butterflies: id, name, colour. */
@@ -327,6 +497,23 @@ public final class HunterData extends SkillingPart {
                 .in("spotted_kebbit_fur", 2).in("coins", 400).out("spotted_cape", 1).ticks(0).build());
         out.accept(plain("fancy_spottier_cape", MenuType.TANNING, "Spottier cape (2 dashing kebbit furs, 800 coins)")
                 .in("dashing_kebbit_fur", 2).in("coins", 800).out("spottier_cape", 1).ticks(0).build());
+        // Elnock Inquisitor's exchange in Puro-Puro.
+        for (Exchange e : ELNOCK_EXCHANGES) {
+            Recipe.Builder b = plain(e.id(), MenuType.IMPLING_EXCHANGE, e.name());
+            e.jars().forEach(b::in);
+            out.accept(b.out(e.reward(), e.rewardCount()).ticks(0).build());
+        }
+        out.accept(plain("elnock_buy_impling_jar", MenuType.IMPLING_EXCHANGE, "Impling jar (" + ELNOCK_JAR_PRICE + " coins)")
+                .in("coins", ELNOCK_JAR_PRICE).out("impling_jar", 1).ticks(0).build());
+        // Dipping a butterfly jar into imp repellent makes an impling jar (the repellent is kept, approx).
+        out.accept(plain("dip_impling_jar", MenuType.IMPLING_EXCHANGE, "Impling jar (dip a butterfly jar in imp repellent)")
+                .in("butterfly_jar", 1).tool("imp_repellent").out("impling_jar", 1).ticks(0).build());
+        // Gloves of silence (wiki: 54 Crafting, 60 XP, two dark kebbit furs, needle and thread).
+        out.accept(r("craft_gloves_of_silence", MenuType.LEATHERWORKING, "Gloves of silence", Skill.CRAFTING, 54, 60.0)
+                .in("dark_kebbit_fur", 2).in("minecraft:string", 1).tool("needle").out("gloves_of_silence", 1).ticks(3).build());
+        // A damaged monkey tail cut into sinew with a knife (wiki: 10 Crafting, 15 XP).
+        out.accept(r("cut_monkey_tail_sinew", MenuType.FLETCHING, "Sinew (damaged monkey tail)", Skill.CRAFTING, 10, 15.0)
+                .in("damaged_monkey_tail", 1).tool("knife").out("sinew", 1).ticks(2).build());
     }
 
     @Override
@@ -347,6 +534,7 @@ public final class HunterData extends SkillingPart {
     @Override
     public List<BlockDef> blocks() {
         List<BlockDef> list = new ArrayList<>();
+        list.add(BlockDef.menu(ELNOCKS_EXCHANGE, "Elnock's Exchange", MenuType.IMPLING_EXCHANGE, 0x8A6AA0, "crate"));
         for (TrapSpot t : TRAPS) {
             String look = t.kind() == TrapKind.NET ? "young_tree" : t.kind() == TrapKind.DEADFALL ? "boulder" : "pit";
             if (t.kind() == TrapKind.TRACKING) {
@@ -400,6 +588,10 @@ public final class HunterData extends SkillingPart {
                 PlaceDef.of("uzer_hunter_area", "Uzer Hunter area", 3440, 3060, PlaceDef.Style.CAMP,
                         List.of("desert_devil_burrow", "desert_devil_burrow")),
                 PlaceDef.of("avium_savannah", "Avium Savannah", 1630, 2990, PlaceDef.Style.CAMP,
-                        List.of("pyre_fox_deadfall", "pyre_fox_deadfall")));
+                        List.of("pyre_fox_deadfall", "pyre_fox_deadfall")),
+                // Kruk's Dungeon itself is not built: its maniacal monkey boulders stand in a jungle clearing in the
+                // south-east of Ape Atoll instead (approx).
+                PlaceDef.of("kruks_dungeon_monkeys", "Maniacal monkey hunting grounds", 2790, 2738, PlaceDef.Style.CAMP,
+                        List.of(MANIACAL_MONKEY_BOULDER, MANIACAL_MONKEY_BOULDER, MANIACAL_MONKEY_BOULDER)));
     }
 }

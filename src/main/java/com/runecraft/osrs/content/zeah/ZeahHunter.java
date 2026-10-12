@@ -19,6 +19,14 @@ public final class ZeahHunter {
      */
     public record Spot(String blockId, String creature, Method method, int level, double xp, List<String> tools,
                        String consumed, List<String> loot, int catchTicks) {
+        /**
+         * True for traps that are laid and checked later (pitfalls, box traps): like the core Hunter traps they
+         * count towards the player's shared trap limit ({@link com.runecraft.osrs.data.HunterRates#trapLimit}).
+         * Moths are netted at once.
+         */
+        public boolean laid() {
+            return method != Method.NET;
+        }
     }
 
     public static final List<Spot> SPOTS = List.of(

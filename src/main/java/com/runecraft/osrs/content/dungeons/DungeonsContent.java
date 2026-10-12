@@ -27,7 +27,7 @@ import java.util.Map;
  * the Chasm of Fire, the Abyss (with rifts to the rune altars), the TzHaar city, and the smaller lairs
  * of {@link DungeonsLairs}: the Haunted Mine with Tarn's Lair, the Mort'ton catacombs, the Brine Rat
  * Cavern, the Sourhog Cave, the Legends' Guild dungeon, the Wilderness God Wars Dungeon and
- * Jormungand's Prison.
+ * Jormungand's Prison, and Puro-Puro (the impling maze below Zanaris, {@link PuroPuro}).
  */
 public final class DungeonsContent implements ContentModule {
     public static final String FANCY_BOOTS = "fancy_boots";

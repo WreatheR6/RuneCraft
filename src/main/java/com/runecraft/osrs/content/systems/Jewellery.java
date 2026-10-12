@@ -171,6 +171,7 @@ public final class Jewellery {
         wornExternal("obsidian_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 0, 0, 0, 0));
         wornExternal("graceful_cape", Slot.CAPE, NONE);   // item defined by the skilling module
         wornExternal("graceful_gloves", Slot.HANDS, NONE); // item defined by the skilling module
+        wornExternal("gloves_of_silence", Slot.HANDS, s(0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0)); // skilling module (Hunter)
         wornExternal("spotted_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0));   // skilling module (Hunter)
         wornExternal("spottier_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0)); // skilling module (Hunter)
         wornExternal("ectophial", Slot.NECK, NONE);

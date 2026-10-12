@@ -684,6 +684,20 @@ public final class ClueRewards {
         return list;
     }
 
+    /**
+     * One roll on a tier's reward table (a unique with the tier's unique chance, otherwise a standard line), with
+     * no mega-rare or master clue scroll rolls: what a lucky impling jar holds.
+     */
+    public static Reward singleRoll(Tier tier, Random random) {
+        ensureLoaded();
+        List<String> uniques = UNIQUES.get(tier);
+        if (!uniques.isEmpty() && random.nextInt(uniqueOneIn(tier)) == 0) {
+            return new Reward(uniques.get(random.nextInt(uniques.size())), 1);
+        }
+        Loot l = pick(STANDARD.get(tier), random);
+        return new Reward(l.item(), l.min() + random.nextInt(l.max() - l.min() + 1));
+    }
+
     private static Loot pick(List<Loot> table, Random random) {
         int total = 0;
         for (Loot l : table) {

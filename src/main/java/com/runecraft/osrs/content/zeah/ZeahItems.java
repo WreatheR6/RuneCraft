@@ -86,6 +86,12 @@ public final class ZeahItems {
         items.add("lovakite_bar", "Lovakite bar", Kind.SIMPLE, "bar", 0x5A7A8A).value(120).stack(64)
                 .examine("A bar of lovakite, used to make Shayzien armour.");
         simple(items, "dynamite", "Dynamite", "stake", 0xC03A2A, 40, 64000, "Highly explosive. Light it next to hard rock.");
+        // Arclight: Darklight + 3 ancient shards at the altar in the Catacombs of Kourend (charges: systems/Charges).
+        // OSRS bonuses (wiki DPS calculator), 75 Attack; +70% accuracy and damage against demons.
+        items.add("arclight", "Arclight", Kind.MELEE_WEAPON, "longsword", 0x8AB0E0).value(500).stack(1).tier("rune")
+                .equipment(new EquipmentDef(Slot.WEAPON, new EquipmentStats(10, 38, 0, 0, 0, 0, 3, 2, 2, 0, 8, 0, 0, 0),
+                        Map.of(Skill.ATTACK, 75), 4, AttackType.SLASH, WeaponClass.MELEE))
+                .examine("A magical sword, infused with the power of ancient shards. Especially deadly to demons.");
         int shay = 0x8A2A2A;
         wear(items, "shayzien_helm_5", "Shayzien helm (5)", "full_helm", shay, 2000, Slot.HEAD,
                 st(0, 0, 0, -3, -1, 14, 15, 13, -1, 14, 0, 0, 0, 1), "adamant", Skill.DEFENCE, 20);

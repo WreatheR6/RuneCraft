@@ -16,7 +16,9 @@ public enum MenuType {
     SHOP_RUNES("Aubury's Rune Shop"),
     SHOP_WEAPONS("Varrock Swordshop"),
     SHOP_TOOLS("Bob's Brilliant Axes"),
-    SHOP_ARCHERY("Lowe's Archery Emporium");
+    SHOP_ARCHERY("Lowe's Archery Emporium"),
+    /** Elnock Inquisitor's impling jar exchange in Puro-Puro (appended last: the client sends the ordinal). */
+    IMPLING_EXCHANGE("Elnock's Exchange");
 
     private final String title;
 

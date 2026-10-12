@@ -53,6 +53,10 @@ public final class Charges {
     public static final int SANGUINESTI_MAX = 20_000;
     public static final int SERPENTINE_MAX = 11_000;
     public static final int BLOWPIPE_MAX = 16_383;
+    public static final String ARCLIGHT = "arclight";
+    public static final int ARCLIGHT_MAX = 10_000;
+    public static final int ARCLIGHT_START = 1_000;
+    public static final int ARCLIGHT_PER_3_SHARDS = 1_000;
     /** Game ticks without attacking or being attacked after which a player counts as out of combat (approx). */
     public static final int COMBAT_TIMEOUT_TICKS = 8;
 
@@ -107,6 +111,11 @@ public final class Charges {
         }
         put(new Spec("toxic_blowpipe", "Toxic blowpipe", Kind.BLOWPIPE, BLOWPIPE_MAX, 0, Drain.ATTACK,
                 ordered("zulrahs_scales", 1), 1, 0));
+        // Arclight (wiki): made with 1,000 charges, one used per hit, 1,000 more per 3 ancient shards up to 10,000.
+        // OSRS also takes single shards (333 charges); here shards go in threes. Empty, it can't attack (OSRS: it
+        // becomes inactive, with Darklight's stats) - approx.
+        put(new Spec(ARCLIGHT, "Arclight", Kind.CHARGED, ARCLIGHT_MAX, ARCLIGHT_START, Drain.ATTACK,
+                ordered("ancient_shard", 3), ARCLIGHT_PER_3_SHARDS, 0));
     }
 
     private static Map<String, Integer> ordered(Object... kv) {

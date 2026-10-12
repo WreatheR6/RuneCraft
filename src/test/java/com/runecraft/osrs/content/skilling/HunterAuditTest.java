@@ -127,10 +127,12 @@ class HunterAuditTest {
         HunterData.Impling crystal = HunterData.impling("crystal_impling");
         assertEquals(80, crystal.level());
         assertEquals(280.0, crystal.xp());
-        assertEquals(216.0, HunterData.impling("magpie_impling").puroXp());
-        assertEquals(20.0, HunterData.impling("baby_impling").puroXp());
-        assertEquals(18.0, HunterData.impling("baby_impling").xp());
-        assertEquals(380.0, HunterData.impling("lucky_impling").puroXp());
+        // Wiki: Puro-Puro catches give the lower XP (magpie 44 there, 216 in Gielinor).
+        assertEquals(44.0, HunterData.impling("magpie_impling").puroXp());
+        assertEquals(216.0, HunterData.impling("magpie_impling").xp());
+        assertEquals(18.0, HunterData.impling("baby_impling").puroXp());
+        assertEquals(20.0, HunterData.impling("baby_impling").xp());
+        assertEquals(80.0, HunterData.impling("lucky_impling").puroXp());
         // Every spot's tools, bait, loot and every impling's loot exist; every spot is placed somewhere.
         Set<String> placed = new HashSet<>();
         for (com.runecraft.osrs.content.PlaceDef p : new HunterData().places()) {

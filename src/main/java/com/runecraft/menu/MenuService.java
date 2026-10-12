@@ -215,6 +215,7 @@ public final class MenuService {
             case FLETCHING -> "You carefully make " + (Character.isDigit(n.charAt(0)) ? n : Msg.article(n)) + ".";
             case GEM_CUTTING -> "You cut the " + n + ".";
             case HERBLORE -> "You mix the ingredients to make " + Msg.article(n) + ".";
+            case IMPLING_EXCHANGE -> "Elnock takes your jars and hands you " + n.replaceAll(" \\(.*", "") + ".";
             case CONSTRUCTION -> r.skill() == null ? "The sawmill operator converts your logs." : "You build " + Msg.article(n) + ".";
             default -> r.menu().isShop() ? "You buy " + n.replaceAll(" - .*", "") + "." : "You make " + Msg.article(n) + ".";
         };

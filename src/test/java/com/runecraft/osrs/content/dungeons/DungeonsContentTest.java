@@ -90,7 +90,7 @@ class DungeonsContentTest {
         for (BlockDef b : MODULE.blocks()) {
             assertTrue(b.id().startsWith("dng_"), b.id());
         }
-        assertEquals(35, Dungeons.all().size());
+        assertEquals(36, Dungeons.all().size());
     }
 
     @Test

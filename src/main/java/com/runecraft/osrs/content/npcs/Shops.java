@@ -412,10 +412,10 @@ public final class Shops {
                 .sell("pie_dish", 5).sell("cooking_apple", 2).sell("cake_tin", 2).sell("bowl", 2).sell("potato", 5)
                 .sell("tinderbox", 4).sell("jug", 1).sell("empty_pot", 8).sell("chocolate_bar", 2).sell("pot_of_flour", 8)
                 .sell("empty_cup", 20).greeting("Would you like to buy some cooking equipment?"));
-        // OSRS Wiki: Aleck's Hunter Emporium (not in RuneCraft: Magic box, Unlit torch, Bird snare pack, Box trap pack, Magic imp box pack)
+        // OSRS Wiki: Aleck's Hunter Emporium (not in RuneCraft: Unlit torch, Bird snare pack, Box trap pack, Magic imp box pack)
         add(specialist("alecks_hunter_emporium", "Aleck's Hunter Emporium", "npc_aleck").prices(1200, 700, 20)
                 .sell("butterfly_net", 5).sell("butterfly_jar", 100).sell("noose_wand", 50).sell("bird_snare", 50)
-                .sell("box_trap", 25).sell("teasing_stick", 5).sell("rabbit_snare", 10)
+                .sell("box_trap", 25).sell("teasing_stick", 5).sell("rabbit_snare", 10).sell("magic_box", 20)
                 .greeting("Welcome to my Hunter Emporium. Can I interest you in some hunting gear?"));
         // OSRS Wiki: Gulluck and Sons (not in RuneCraft: Pearl bolts, Crossbow)
         add(specialist("gulluck_and_sons", "Gulluck and Sons", "npc_gulluck").prices(1000, 250, 10).sell("bronze_arrow", 200)
