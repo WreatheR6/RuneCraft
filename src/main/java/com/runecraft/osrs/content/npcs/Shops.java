@@ -239,11 +239,11 @@ public final class Shops {
                 .sell("raw_sardine", 200).sell("raw_herring", 0).sell("raw_anchovies", 0).sell("raw_trout", 0)
                 .sell("raw_pike", 0).sell("raw_salmon", 0).sell("raw_tuna", 0).sell("raw_lobster", 0).sell("raw_swordfish", 0)
                 .greeting("Welcome! You can buy fishing equipment at my store."));
-        // OSRS Wiki: Betty's Magic Emporium (not in RuneCraft: Fire rune pack, Water rune pack, Air rune pack, Earth rune pack, Mind rune pack, Chaos rune pack, Eye of newt pack, Blue wizard hat)
+        // OSRS Wiki: Betty's Magic Emporium (not in RuneCraft: Fire rune pack, Water rune pack, Air rune pack, Earth rune pack, Mind rune pack, Chaos rune pack, Eye of newt pack)
         add(specialist("bettys_magic_emporium", "Betty's Magic Emporium", "npc_betty").prices(1000, 600, 1)
                 .sell("fire_rune", 5000).sell("water_rune", 5000).sell("air_rune", 5000).sell("earth_rune", 5000)
                 .sell("mind_rune", 5000).sell("body_rune", 5000).sell("chaos_rune", 250).sell("death_rune", 250)
-                .sell("eye_of_newt", 300).sell("wizard_hat", 1).greeting("Welcome to the magic emporium."));
+                .sell("eye_of_newt", 300).sell("wizard_hat", 1).sell("blue_wizard_hat", 1).greeting("Welcome to the magic emporium."));
         // OSRS Wiki: Food Store
         add(specialist("wydins_food_store", "Wydin's Food Store", "npc_wydin").prices(1000, 700, 10).sell("pot_of_flour", 3)
                 .sell("minecraft:beef", 1, 1).sell("minecraft:chicken", 1, 1).sell("cabbage", 3).sell("banana", 3)
@@ -460,10 +460,10 @@ public final class Shops {
                 .sell("minecraft:beef", 10, 1).sell("minecraft:chicken", 10, 1).sell("raw_trout", 5).sell("raw_pike", 5)
                 .sell("raw_salmon", 5).sell("raw_shark", 1)
                 .greeting("Grrr... meat! Fresh meat for sale! Raw, just how you like it."));
-        // OSRS Wiki: Barkers' Haberdashery; stock approx. (not in RuneCraft: Grey boots, Grey robe top, Grey robe bottoms, Grey hat, Grey gloves, Red boots, Red robe top, Red robe bottoms, Red hat, Red gloves, Yellow boots, Yellow robe top, Yellow robe bottoms, Yellow hat, Yellow gloves, Teal boots, Teal robe top, Teal robe bottoms, Teal hat, Teal gloves, Purple boots, Purple robe top, Purple robe bottoms, Purple hat, Purple gloves, Black cape, Blue cape, Yellow cape, Green cape)
+        // OSRS Wiki: Barkers' Haberdashery; stock approx. (not in RuneCraft: Grey boots, Grey robe top, Grey robe bottoms, Grey hat, Grey gloves, Red boots, Red robe top, Red robe bottoms, Red hat, Red gloves, Yellow boots, Yellow robe top, Yellow robe bottoms, Yellow hat, Yellow gloves, Teal boots, Teal robe top, Teal robe bottoms, Teal hat, Teal gloves, Purple boots, Purple robe top, Purple robe bottoms, Purple hat, Purple gloves, Blue cape, Yellow cape, Green cape)
         add(specialist("barkers_haberdashery", "Barker's Haberdashery", "npc_barker").prices(1300, 400, 30)
                 .sell("leather_gloves", 5).sell("leather_boots", 5).sell("black_skirt", 3).sell("blue_skirt", 3)
-                .sell("red_cape", 3).greeting("Grrr... hello, would you like to buy some clothes?"));
+                .sell("red_cape", 3).sell("black_cape", 3).greeting("Grrr... hello, would you like to buy some clothes?"));
 
         // ------------------------------------------------------------- Lletya
         // OSRS Wiki: Lletya Food Store

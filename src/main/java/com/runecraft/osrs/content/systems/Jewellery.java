@@ -149,6 +149,11 @@ public final class Jewellery {
         wornExternal("dragon_gloves", Slot.HANDS, s(9, 9, 9, 5, 9, 9, 9, 9, 5, 9, 9, 0, 0, 0));
         wornExternal("ferocious_gloves", Slot.HANDS, s(16, 16, 16, -16, -16, 0, 0, 0, 0, 0, 14, 0, 0, 0));
         wornExternal("occult_necklace", Slot.NECK, s(0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0));
+        // Items defined in osrs/content/CommonEquipment (the salve amulets below are too).
+        wornExternal("mystic_gloves_light", Slot.HANDS, s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0));
+        wornExternal("mystic_gloves_dark", Slot.HANDS, s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0));
+        wornExternal("black_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0));
+        wornExternal("pirates_hook", Slot.HANDS, s(0, 0, 0, 0, 0, 1, 5, 3, 0, 0, 0, 0, 0, 0)); // item defined by the minigames module
         wornExternal("salve_amulet", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3));
         wornExternal("salve_amulet_e", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3));
         wornExternal("berserker_ring", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0));

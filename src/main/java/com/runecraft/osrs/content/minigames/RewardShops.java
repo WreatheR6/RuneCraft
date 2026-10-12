@@ -54,6 +54,7 @@ public final class RewardShops {
                 .item("toktz_xil_ak", TOKKUL, 60_000)
                 .item("toktz_xil_ek", TOKKUL, 37_500)
                 .item("toktz_mej_tal", TOKKUL, 52_500)
+                .item("toktz_xil_ul", TOKKUL, 375) // per ring
                 .item("obsidian_cape", TOKKUL, 90_000)
                 .item("uncut_onyx", TOKKUL, 300_000)
                 .item("chaos_rune", 10, TOKKUL, 1_350)

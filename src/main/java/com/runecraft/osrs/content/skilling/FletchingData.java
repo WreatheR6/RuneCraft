@@ -88,7 +88,8 @@ public final class FletchingData extends SkillingPart {
             new Dart("bronze", "Bronze", 10, 1.8, 1, 0xB08D57), new Dart("iron", "Iron", 22, 3.8, 3, 0x8A8A8E),
             new Dart("steel", "Steel", 37, 7.5, 4, 0xB8B8C0), new Dart("mithril", "Mithril", 52, 11.2, 7, 0x4A5A9C),
             new Dart("adamant", "Adamant", 67, 15.0, 10, 0x4C7A4C), new Dart("rune", "Rune", 81, 18.8, 14, 0x4FB8C8),
-            new Dart("amethyst", "Amethyst", 90, 21.0, 28, 0xA070D0)};
+            new Dart("amethyst", "Amethyst", 90, 21.0, 28, 0xA070D0),
+            new Dart("dragon", "Dragon", 95, 25.0, 35, 0xB02020)}; // dragon_dart_tip: Chambers of Xeric rewards
 
     private static final Dart[] JAVELINS = {
             new Dart("bronze", "Bronze", 3, 1.0, 6, 0xB08D57), new Dart("iron", "Iron", 17, 2.0, 10, 0x8A8A8E),
@@ -178,6 +179,12 @@ public final class FletchingData extends SkillingPart {
         // Dropped by drakes, wyrms and hydras (slayer module).
         THROWN.add("dragon_knife");
         THROWN.add("dragon_thrownaxe");
+        // Thrown weapons from slayer monsters, the Dagannoth Kings and the TzHaar (osrs/content/CommonEquipment).
+        THROWN.add("steel_thrownaxe");
+        THROWN.add("mithril_thrownaxe");
+        THROWN.add("rune_thrownaxe");
+        THROWN.add("black_knife");
+        THROWN.add("toktz_xil_ul");
     }
 
     @Override

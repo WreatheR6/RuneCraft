@@ -66,7 +66,14 @@ public final class MagicService {
         if (id.equals("steam_battlestaff")) {
             return rune == Rune.FIRE || rune == Rune.WATER;
         }
-        return id.equals("staff_of_" + rune.name().toLowerCase(java.util.Locale.ROOT));
+        if (id.equals("lava_battlestaff")) {
+            return rune == Rune.FIRE || rune == Rune.EARTH;
+        }
+        if (id.equals("mud_battlestaff")) {
+            return rune == Rune.WATER || rune == Rune.EARTH;
+        }
+        String element = rune.name().toLowerCase(java.util.Locale.ROOT);
+        return id.equals("staff_of_" + element) || id.equals(element + "_battlestaff") || id.equals("mystic_" + element + "_staff");
     }
 
     private static boolean hasRunes(ServerPlayerEntity player, Spell spell) {
