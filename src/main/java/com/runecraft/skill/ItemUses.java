@@ -134,7 +134,9 @@ public final class ItemUses {
         PlayerData data = Players.data(player);
         int prayer = potion.apply(data.skills());
         if (prayer > 0) {
-            data.setPrayerPoints(data.prayerPoints() + prayer);
+            // Prayer restores never exceed the (possibly boosted) Prayer level.
+            int cap = Math.max(data.skills().level(Skill.PRAYER), data.skills().currentLevel(Skill.PRAYER));
+            data.setPrayerPoints(Math.max(data.prayerPoints(), Math.min(cap, data.prayerPoints() + prayer)));
         }
         int heal = potion.heal(data.skills());
         if (heal > 0) {

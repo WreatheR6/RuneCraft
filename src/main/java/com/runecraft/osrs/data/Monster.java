@@ -194,9 +194,9 @@ public enum Monster {
         return Math.max(1, (effective * 64 + 320) / 640);
     }
 
-    /** Monsters are aggressive to players whose combat level is at most double theirs (+1). */
+    /** Monsters are aggressive to players whose combat level is at most double theirs. */
     public boolean isAggressiveTo(int playerCombatLevel) {
-        return aggressive && playerCombatLevel <= combatLevel * 2 + 1;
+        return aggressive && com.runecraft.osrs.CombatBonuses.aggressiveTo(combatLevel, playerCombatLevel);
     }
 
     public static Monster byEntity(String entityId) {

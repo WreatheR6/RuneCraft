@@ -115,15 +115,18 @@ public final class PlayerEvents {
         PlayerData data = Players.data(player);
         boolean gielinor = Gielinor.is(player);
         com.runecraft.combat.PoisonService.tick(player, gameTick);
+        com.runecraft.combat.Aggression.gameTick(player, gameTick);
         // Hitpoints regenerate 1 per minute (twice as fast with Rapid Heal).
         int regenTicks = data.isActive(Prayer.RAPID_HEAL) ? 50 : 100;
         if (gielinor && gameTick % regenTicks == 0 && player.getHealth() < player.getMaxHealth() && player.isAlive()) {
             player.heal(1);
         }
-        // Boosted and drained stats return to normal by 1 level per minute.
-        int boostTicks = data.isActive(Prayer.PRESERVE) ? 150 : 100;
-        if (gameTick % boostTicks == 0) {
-            data.skills().decayBoosts(true);
+        // Boosted stats fall by 1 level per minute (90 s with Preserve); drained stats recover by 1 level per
+        // minute (30 s with Rapid Restore).
+        boolean boostDecay = gameTick % (data.isActive(Prayer.PRESERVE) ? 150 : 100) == 0;
+        boolean drainRestore = gameTick % (data.isActive(Prayer.RAPID_RESTORE) ? 50 : 100) == 0;
+        if (boostDecay || drainRestore) {
+            data.skills().decay(boostDecay, drainRestore, true);
             ServerNetworking.sync(player);
         }
         if (gameTick % 5 == 0 && gielinor) {

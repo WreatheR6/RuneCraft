@@ -72,13 +72,22 @@ public final class SkillSet {
 
     /** Called once a minute: boosts and drains move one level back toward normal. */
     public void decayBoosts(boolean keepHitpoints) {
+        decay(true, true, keepHitpoints);
+    }
+
+    /**
+     * Moves boosts ({@code boosted}) and/or drains ({@code drained}) one level back toward normal. OSRS
+     * runs the two on separate timers: boosts every minute (90 s with Preserve), drains every minute
+     * (30 s with Rapid Restore, which does not affect Prayer).
+     */
+    public void decay(boolean boosted, boolean drained, boolean keepHitpoints) {
         for (int i = 0; i < boosts.length; i++) {
             if (keepHitpoints && i == Skill.HITPOINTS.ordinal()) {
                 continue;
             }
-            if (boosts[i] > 0) {
+            if (boosted && boosts[i] > 0) {
                 boosts[i]--;
-            } else if (boosts[i] < 0) {
+            } else if (drained && boosts[i] < 0) {
                 boosts[i]++;
             }
         }

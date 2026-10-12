@@ -86,7 +86,8 @@ public final class Spellbooks {
         util(S, "enchant_3", "Lvl-3 Enchant", 49, 59, r("cosmic", 1, "fire", 5), "Enchants ruby jewellery.");
         staffSpell("iban_blast", "Iban Blast", 50, 30, 25, Effect.NONE, 0, "iban_staff", r("death", 1, "fire", 5), "Requires Iban's staff. Max hit 25.");
         staffSpell("magic_dart", "Magic Dart", 50, 30, 19, Effect.NONE, 0, "slayers_staff", r("death", 1, "mind", 4), "Requires a slayer's staff. Max hit 10 + Magic/10.");
-        combat(S, "snare", "Snare", 50, 60, 2, Effect.BIND, 16, false, r("nature", 3, "earth", 4, "water", 4), "Holds your target in place for 10 seconds.");
+        combat(S, "snare", "Snare", 50, 60, 2, // approx max hit
+                Effect.BIND, 16, false, r("nature", 3, "earth", 4, "water", 4), "Holds your target in place for 10 seconds.");
         util(S, "charge_water_orb", "Charge Water Orb", 56, 66, r("cosmic", 3, "water", 30), "Charges an unpowered orb at a water obelisk.");
         util(S, "enchant_4", "Lvl-4 Enchant", 57, 67, r("cosmic", 1, "earth", 10), "Enchants diamond jewellery.");
         util(S, "bones_to_peaches", "Bones to Peaches", 60, 35.5, r("nature", 2, "water", 4, "earth", 4), "Turns the bones in your inventory into peaches.");
@@ -100,7 +101,7 @@ public final class Spellbooks {
         util(S, "enchant_5", "Lvl-5 Enchant", 68, 78, r("cosmic", 1, "earth", 15, "water", 15), "Enchants dragonstone jewellery.");
         combat(S, "enfeeble", "Enfeeble", 73, 83, 0, Effect.NONE, 10, false, r("soul", 1, "earth", 8, "water", 8), "Lowers your target's Strength by 10%.");
         combat(S, "stun", "Stun", 80, 90, 0, Effect.DRAIN_ATTACK, 10, false, r("soul", 1, "earth", 12, "water", 12), "Lowers your target's Attack by 10%.");
-        combat(S, "entangle", "Entangle", 79, 89, 5, Effect.BIND, 25, false, r("nature", 4, "earth", 5, "water", 5), "Holds your target in place for 15 seconds.");
+        combat(S, "entangle", "Entangle", 79, 89, 5, Effect.BIND, 24, false, r("nature", 4, "earth", 5, "water", 5), "Holds your target in place for 24 ticks (14.4 seconds).");
         util(S, "charge", "Charge", 80, 180, r("blood", 3, "fire", 3, "air", 3), "God spells hit up to 30 for 7 minutes.");
         util(S, "enchant_6", "Lvl-6 Enchant", 87, 97, r("cosmic", 1, "earth", 20, "fire", 20), "Enchants onyx jewellery.");
         util(S, "enchant_7", "Lvl-7 Enchant", 93, 110, r("cosmic", 1, "blood", 20, "soul", 20), "Enchants zenyte jewellery.");
@@ -121,19 +122,19 @@ public final class Spellbooks {
         combat(A, "shadow_burst", "Shadow Burst", 64, 37, 18, Effect.DRAIN_ATTACK, 10, true, r("chaos", 4, "death", 2, "air", 1, "soul", 2), "Area attack lowering Attack by 10%.");
         tele(A, "kharyrll_teleport", "Kharyrll Teleport", 66, 76, 3492, 3471, r("law", 2, "blood", 1));
         combat(A, "blood_burst", "Blood Burst", 68, 39, 21, Effect.HEAL, 25, true, r("chaos", 4, "death", 2, "blood", 2), "Area attack healing 25% of damage.");
-        combat(A, "ice_burst", "Ice Burst", 70, 40, 22, Effect.FREEZE, 16, true, r("water", 4, "chaos", 4, "death", 2), "Area attack freezing for 10 seconds.");
+        combat(A, "ice_burst", "Ice Burst", 70, 40, 22, Effect.FREEZE, 16, true, r("water", 4, "chaos", 4, "death", 2), "Area attack freezing for 16 ticks (9.6 seconds).");
         tele(A, "lassar_teleport", "Lassar Teleport", 72, 82, 3006, 3471, r("law", 2, "water", 4));
         combat(A, "smoke_blitz", "Smoke Blitz", 74, 42, 23, Effect.POISON, 4, false, r("blood", 2, "death", 2, "fire", 2, "air", 2), "May poison the target.");
         combat(A, "shadow_blitz", "Shadow Blitz", 76, 43, 24, Effect.DRAIN_ATTACK, 15, false, r("blood", 2, "death", 2, "air", 2, "soul", 2), "Lowers Attack by 15%.");
         tele(A, "dareeyak_teleport", "Dareeyak Teleport", 78, 88, 2966, 3696, r("law", 2, "air", 2, "fire", 3));
         combat(A, "blood_blitz", "Blood Blitz", 80, 45, 25, Effect.HEAL, 25, false, r("blood", 4, "death", 2), "Heals you for 25% of the damage dealt.");
-        combat(A, "ice_blitz", "Ice Blitz", 82, 46, 26, Effect.FREEZE, 25, false, r("blood", 2, "death", 2, "water", 3), "Freezes the target for 15 seconds.");
+        combat(A, "ice_blitz", "Ice Blitz", 82, 46, 26, Effect.FREEZE, 24, false, r("blood", 2, "death", 2, "water", 3), "Freezes the target for 24 ticks (14.4 seconds).");
         tele(A, "carrallanger_teleport", "Carrallanger Teleport", 84, 94, 3157, 3666, r("law", 2, "soul", 2));
         combat(A, "smoke_barrage", "Smoke Barrage", 86, 48, 27, Effect.POISON, 4, true, r("blood", 2, "death", 4, "fire", 4, "air", 4), "Area attack that may poison.");
         combat(A, "shadow_barrage", "Shadow Barrage", 88, 48, 28, Effect.DRAIN_ATTACK, 15, true, r("blood", 2, "death", 4, "air", 4, "soul", 3), "Area attack lowering Attack by 15%.");
         tele(A, "annakarl_teleport", "Annakarl Teleport", 90, 100, 3288, 3886, r("law", 2, "blood", 2));
         combat(A, "blood_barrage", "Blood Barrage", 92, 51, 29, Effect.HEAL, 25, true, r("blood", 4, "death", 4, "soul", 1), "Area attack healing 25% of damage.");
-        combat(A, "ice_barrage", "Ice Barrage", 94, 52, 30, Effect.FREEZE, 33, true, r("blood", 2, "death", 4, "water", 6), "Area attack freezing for 20 seconds.");
+        combat(A, "ice_barrage", "Ice Barrage", 94, 52, 30, Effect.FREEZE, 32, true, r("blood", 2, "death", 4, "water", 6), "Area attack freezing for 32 ticks (19.2 seconds).");
         tele(A, "ghorrock_teleport", "Ghorrock Teleport", 96, 106, 2977, 3873, r("law", 2, "water", 8));
 
         // ======================= Lunar =======================

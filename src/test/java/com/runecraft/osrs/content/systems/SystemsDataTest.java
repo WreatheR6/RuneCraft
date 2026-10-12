@@ -112,7 +112,7 @@ class SystemsDataTest {
         assertEquals(30, barrage.maxHit());
         assertEquals(52.0, barrage.xp(), 1e-9);
         assertTrue(barrage.area());
-        assertEquals(33, Spellbooks.freezeTicks(barrage));
+        assertEquals(32, Spellbooks.freezeTicks(barrage));
         assertEquals(6, barrage.runes().get("water_rune"));
         assertEquals(4, barrage.runes().get("death_rune"));
         assertEquals(2, barrage.runes().get("blood_rune"));

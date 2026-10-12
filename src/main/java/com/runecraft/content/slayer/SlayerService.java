@@ -293,7 +293,8 @@ public final class SlayerService {
 
     /** Black mask / slayer helmet: +16.67% melee max hit against the current task. */
     public static int boostMaxHit(ServerPlayerEntity player, LivingEntity target, int maxHit) {
-        if (target != null && wearingAny(player, SlayerGear.MELEE_BOOST_HEADGEAR) && isOnTask(player, target)) {
+        if (target != null && wearingAny(player, SlayerGear.MELEE_BOOST_HEADGEAR) && isOnTask(player, target)
+                && !com.runecraft.combat.GearEffects.salveActive(player, target, com.runecraft.osrs.AttackType.CRUSH)) {
             return maxHit * 7 / 6;
         }
         return maxHit;

@@ -104,7 +104,7 @@ public final class SpecialAttacks {
         alias("bandos_godsword_or", "bandos_godsword");
         melee("saradomin_godsword", "Healing Blade", 50, 2.0, 1.1, Effect.HEAL_AND_PRAY, 0, "Heals 50% of the damage dealt and restores 25% as prayer.");
         alias("saradomin_godsword_or", "saradomin_godsword");
-        melee("zamorak_godsword", "Ice Cleave", 50, 2.0, 1.1, Effect.FREEZE, 33, "Freezes the target for 20 seconds.");
+        melee("zamorak_godsword", "Ice Cleave", 50, 2.0, 1.1, Effect.FREEZE, 32, "Freezes the target for 32 ticks (19.2 seconds).");
         alias("zamorak_godsword_or", "zamorak_godsword");
         melee("ancient_godsword", "Blood Sacrifice", 50, 2.0, 1.1, Effect.HEAL_PERCENT, 25, "Marks the target; heals you for part of the damage.");
         melee("saradomin_sword", "Saradomin's Lightning", 100, 1.0, 1.1, Effect.LIGHTNING, 16, "+10% damage plus a magic hit of up to 16.");

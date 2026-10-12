@@ -73,7 +73,7 @@ public final class MinigameRules {
             return switch (style) {
                 case 0 -> 1.10;
                 case 1 -> elite ? 1.125 : 1.10;
-                default -> elite ? 1.025 : 1.0;
+                default -> elite ? 1.05 : 1.0; // elite void mage: +5% magic damage since May 2024
             };
         }
     }

@@ -115,6 +115,16 @@ public enum Prayer {
         };
     }
 
+    /** Magic damage bonus in percent (May 2024 prayer update): Mystic Lore +1%, Mystic Might +2%, Augury +4%. */
+    public int magicDamagePercent() {
+        return switch (this) {
+            case MYSTIC_LORE -> 1;
+            case MYSTIC_MIGHT -> 2;
+            case AUGURY -> 4;
+            default -> 0;
+        };
+    }
+
     /** Returns true if activating {@code this} should deactivate {@code other}. */
     public boolean conflictsWith(Prayer other) {
         if (other == this) {
