@@ -34,6 +34,7 @@ public final class PlayerData {
     private int slayerRemaining;
     private int slayerStreak;
     private final int[] agilityProgress = new int[AgilityCourse.values().length];
+    private final int[] agilityLaps = new int[AgilityCourse.values().length];
     private final com.runecraft.osrs.bank.BankModel bank = new com.runecraft.osrs.bank.BankModel();
     private boolean visitedGielinor;
     private BlockPos returnPos;
@@ -142,6 +143,15 @@ public final class PlayerData {
         agilityProgress[course.ordinal()] = step;
     }
 
+    /** Laps completed of a course (OSRS lap count). */
+    public int agilityLaps(AgilityCourse course) {
+        return agilityLaps[course.ordinal()];
+    }
+
+    public int addAgilityLap(AgilityCourse course) {
+        return ++agilityLaps[course.ordinal()];
+    }
+
     public com.runecraft.osrs.bank.BankModel bank() {
         return bank;
     }
@@ -216,6 +226,7 @@ public final class PlayerData {
         nbt.putInt("SlayerRemaining", slayerRemaining);
         nbt.putInt("SlayerStreak", slayerStreak);
         nbt.putIntArray("Agility", agilityProgress);
+        nbt.putIntArray("AgilityLaps", agilityLaps);
         nbt.put("Bank2", com.runecraft.bank.BankService.write(bank));
         nbt.putBoolean("Visited", visitedGielinor);
         if (returnPos != null) {
@@ -255,6 +266,8 @@ public final class PlayerData {
         slayerStreak = nbt.getInt("SlayerStreak");
         int[] agility = nbt.getIntArray("Agility");
         System.arraycopy(agility, 0, agilityProgress, 0, Math.min(agility.length, agilityProgress.length));
+        int[] laps = nbt.getIntArray("AgilityLaps");
+        System.arraycopy(laps, 0, agilityLaps, 0, Math.min(laps.length, agilityLaps.length));
         bank.clear();
         if (nbt.contains("Bank2")) {
             com.runecraft.bank.BankService.read(bank, nbt.getCompound("Bank2"));

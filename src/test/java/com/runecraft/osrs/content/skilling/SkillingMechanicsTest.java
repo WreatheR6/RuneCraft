@@ -178,7 +178,7 @@ class SkillingMechanicsTest {
         assertEquals(9, AgilityCourse.POLLNIVNEACH.obstacles());
         assertEquals(6, AgilityCourse.SEERS.obstacles());
         assertEquals(7.5, AgilityCourse.GNOME_STRONGHOLD.obstacleXp(0));
-        assertEquals(46.5, AgilityCourse.GNOME_STRONGHOLD.lapBonusXp());
+        assertEquals(70.5, AgilityCourse.GNOME_STRONGHOLD.lapBonusXp());
         assertEquals(45.0, AgilityCourse.SEERS.obstacleXp(0));
         assertEquals(435.0, AgilityCourse.SEERS.lapBonusXp());
         assertEquals(540.0, AgilityCourse.POLLNIVNEACH.lapBonusXp());

@@ -16,7 +16,9 @@ import java.util.UUID;
 
 /**
  * Obstacle courses: step on numbered obstacles in order; each gives its own OSRS XP and the last one
- * (which includes the lap bonus) completes a lap. Rooftop laps may give a Mark of grace.
+ * (which includes the lap bonus) completes a lap and counts it. Some obstacles can be failed (see
+ * {@link AgilityCourse#failChance}): the player falls, takes damage and has to start the lap again.
+ * Rooftop laps may give a Mark of grace.
  */
 public final class AgilityService {
     /** Game tick each player last received a Mark of grace (3-minute cooldown; not persisted). */
@@ -53,10 +55,18 @@ public final class AgilityService {
         if (step != expected) {
             return;
         }
+        if (player.getRandom().nextDouble() < course.failChance(step, level)) {
+            data.setAgilityProgress(course, 0);
+            int damage = 1 + player.getRandom().nextInt(Math.max(1, course.failDamage()));
+            com.runecraft.combat.CombatHandler.applyDamage(null, player, damage);
+            Msg.red(player, "You lose your footing and fall!");
+            return;
+        }
         XpService.add(player, Skill.AGILITY, course.obstacleXp(step));
         if (step >= course.obstacles() - 1) {
             data.setAgilityProgress(course, 0);
-            Msg.game(player, "You complete a lap of the " + course.displayName() + ".");
+            int laps = data.addAgilityLap(course);
+            Msg.game(player, "You complete a lap of the " + course.displayName() + ". Your lap count is: " + laps + ".");
             long now = ActionManager.gameTick();
             Long last = LAST_MARK.get(player.getUuid());
             boolean cooledDown = last == null || now - last >= AgilityCourse.MARK_COOLDOWN_TICKS;

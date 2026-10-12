@@ -38,6 +38,19 @@ public final class ThievingData extends SkillingPart {
             Loot.of("dwarf_weed_seed", 1), Loot.of("torstol_seed", 1), Loot.of("mushroom_spore", 10), Loot.of("belladonna_seed", 4),
             Loot.of("cactus_seed", 4), Loot.of("potato_cactus_seed", 2));
 
+    /**
+     * The seed stall's table: allotment, flower and hop seeds (no herb or tree seeds, unlike the master
+     * farmer). Weights approx.
+     */
+    public static final List<Loot> STALL_SEEDS = List.of(
+            Loot.of("potato_seed", 1, 2, 300), Loot.of("onion_seed", 1, 2, 200), Loot.of("cabbage_seed", 1, 2, 150),
+            Loot.of("tomato_seed", 1, 1, 100), Loot.of("sweetcorn_seed", 1, 1, 50), Loot.of("strawberry_seed", 1, 1, 25),
+            Loot.of("watermelon_seed", 1, 1, 10), Loot.of("marigold_seed", 1, 1, 80), Loot.of("rosemary_seed", 1, 1, 40),
+            Loot.of("nasturtium_seed", 1, 1, 40), Loot.of("woad_seed", 1, 1, 20), Loot.of("limpwurt_seed", 1, 1, 10),
+            Loot.of("barley_seed", 1, 2, 100), Loot.of("hammerstone_seed", 1, 2, 80), Loot.of("asgarnian_seed", 1, 1, 60),
+            Loot.of("jute_seed", 1, 2, 60), Loot.of("yanillian_seed", 1, 1, 40), Loot.of("krandorian_seed", 1, 1, 20),
+            Loot.of("wildblood_seed", 1, 1, 10));
+
     public static final List<Target> TARGETS = List.of(
             new Target("rogue_pickpocket", "Rogue", "EDGEVILLE", 5, 4, 32, 36.5, 74, 240, 2,
                     List.of(), List.of(Loot.of("coins", 25, 120, 60), Loot.of("air_rune", 8, 8, 15), Loot.of("jug_of_wine", 10),
@@ -52,8 +65,13 @@ public final class ThievingData extends SkillingPart {
             new Target("watchman", "Watchman", "YANILLE", 4, 4, 65, 137.5, 15, 160, 3,
                     List.of(Loot.of("coins", 60, 60, 1)), List.of(Loot.of("bread", 1, 1, 1), Loot.of("coins", 1, 1, 3)),
                     new int[]{0xC8A080, 0x3A5A8A, 0x2A3A5A, 0x2A2A2A}),
-            new Target("menaphite_thug", "Menaphite Thug", "POLLNIVNEACH", 3, 4, 65, 137.5, 60, 240, 5,
+            new Target("menaphite_thug", "Menaphite Thug", "POLLNIVNEACH", 3, -8, 65, 137.5, 60, 240, 5,
                     List.of(Loot.of("coins", 60, 60, 1)), List.of(), new int[]{0xA07850, 0x8A2A2A, 0x5A3A2A, 0x2A2A2A}),
+            // Pollnivneach bandits (blackjacking targets in the north of the town; stun damage approx.).
+            new Target("bearded_pollnivneach_bandit", "Bearded Pollnivneach bandit", "POLLNIVNEACH", -4, 10, 45, 65.0, 60, 240, 3,
+                    List.of(Loot.of("coins", 40, 40, 1)), List.of(), new int[]{0xA07850, 0x6A5A3A, 0x4A3A2A, 0x3A2A1A}),
+            new Target("pollnivneach_bandit", "Pollnivneach bandit", "POLLNIVNEACH", 4, 12, 55, 84.3, 60, 240, 4,
+                    List.of(Loot.of("coins", 50, 50, 1)), List.of(), new int[]{0xA07850, 0x7A6A4A, 0x4A3A2A, 0x2A2A2A}),
             new Target("gnome_pickpocket", "Gnome", "GNOME_STRONGHOLD", 4, 5, 75, 198.5, 8, 120, 1,
                     List.of(), List.of(Loot.of("coins", 300, 300, 40), Loot.of("earth_rune", 1, 1, 15), Loot.of("gold_ore", 10),
                     Loot.of("fire_orb", 5), Loot.of("uncut_sapphire", 10), Loot.of("mithril_ore", 10)),
@@ -73,6 +91,22 @@ public final class ThievingData extends SkillingPart {
             new Target("tzhaar_hur", "TzHaar-Hur", "MOR_UL_REK", 5, 5, 90, 103.4, 40, 200, 4,
                     List.of(), List.of(Loot.of("tokkul", 3, 14, 70), Loot.of("uncut_sapphire", 6), Loot.of("uncut_emerald", 4),
                     Loot.of("uncut_ruby", 2), Loot.of("uncut_diamond", 1)), new int[]{0x8A3A1A, 0x5A2A1A, 0x4A2A1A, 0xE06010}));
+
+    /** Targets that can be knocked out with a blackjack first (Pollnivneach, after The Feud). */
+    public static final List<String> BLACKJACK_TARGETS = List.of("menaphite_thug", "bearded_pollnivneach_bandit", "pollnivneach_bandit");
+    /** Ordinary blackjacks (no Attack requirement), sold by the blackjack seller in Pollnivneach. */
+    public static final List<String> BLACKJACKS = List.of("oak_blackjack", "willow_blackjack");
+    public static final String BLACKJACK_SELLER = "pollnivneach_blackjack_seller";
+    /** Game ticks a knocked-out target stays unconscious; pickpockets on it always succeed (approx.). */
+    public static final int KNOCKOUT_TICKS = 4;
+
+    /**
+     * Chance a knock-out works: the target's pickpocket chance (the thug's or bandit's low/high
+     * interpolation), approx.; a failure hits the player like a failed pickpocket.
+     */
+    public static double knockoutChance(Target t, int thievingLevel) {
+        return com.runecraft.osrs.Chance.lerp(thievingLevel, t.low(), t.high());
+    }
 
     public static Target target(String npcId) {
         for (Target t : TARGETS) {
@@ -119,7 +153,7 @@ public final class ThievingData extends SkillingPart {
                     List.of(Loot.of("cooking_apple", 40), Loot.of("banana", 20), Loot.of("strawberry", 10), Loot.of("jangerberries", 8),
                             Loot.of("redberries", 8), Loot.of("pineapple", 6), Loot.of("papaya_fruit", 4), Loot.of("orange", 4)),
                     "stall", 0xC08030),
-            new Container("seed_stall", "Seed stall", false, 27, 10.0, 18, List.of(), SEED_TABLE, "stall", 0x4A7A2A),
+            new Container("seed_stall", "Seed stall", false, 27, 10.0, 18, List.of(), STALL_SEEDS, "stall", 0x4A7A2A),
             new Container("fish_stall", "Fish stall", false, 42, 42.0, 27, List.of(),
                     List.of(Loot.of("raw_salmon", 4), Loot.of("raw_tuna", 3), Loot.of("raw_lobster", 2)), "stall", 0x5A80A0),
             new Container("crossbow_stall", "Crossbow stall", false, 49, 52.0, 15, List.of(),
@@ -145,11 +179,18 @@ public final class ThievingData extends SkillingPart {
     @Override
     public void items(ItemSink s) {
         tool(s, "lockpick", "Lockpick", "key", 0x8A8A9A, 20);
+        for (com.runecraft.osrs.data.Thieving.CoinPouch p : com.runecraft.osrs.data.Thieving.COIN_POUCHES) {
+            simple(s, p.itemId(), "Coin pouch", "pouch", 0x9A7A3A, 0)
+                    .examine("Coins stolen from " + p.npc() + ". Open it to take them out.");
+        }
+        tool(s, "oak_blackjack", "Oak blackjack", "club", 0x8A6A3A, 72).examine("A cosh for knocking people out.");
+        tool(s, "willow_blackjack", "Willow blackjack", "club", 0x9A8A4A, 192).examine("A cosh for knocking people out.");
     }
 
     @Override
     public List<NpcDef> npcs() {
         List<NpcDef> list = new ArrayList<>();
+        list.add(NpcDef.of(BLACKJACK_SELLER, "Blackjack seller", "POLLNIVNEACH", -6, -4, 0xA07850, 0x5A4A6A, 0x3A2A2A, 0x2A2A2A));
         for (Target t : TARGETS) {
             int[] c = t.colors();
             list.add(NpcDef.of(t.npcId(), t.name(), t.place(), t.dx(), t.dz(), c[0], c[1], c[2], c[3]));

@@ -3,6 +3,7 @@ package com.runecraft.osrs.content.skilling;
 import com.runecraft.osrs.EquipmentDef.Slot;
 import com.runecraft.osrs.EquipmentStats;
 import com.runecraft.osrs.ItemDef.Kind;
+import com.runecraft.osrs.content.BlockDef;
 import com.runecraft.osrs.content.ItemSink;
 import com.runecraft.osrs.content.NpcDef;
 
@@ -65,6 +66,12 @@ public final class AgilityData extends SkillingPart {
                         .examine("Part of the Graceful outfit: light as a feather.");
             }
         }
+    }
+
+    @Override
+    public List<BlockDef> blocks() {
+        // One block for both ends of every surface shortcut (see AgilityShortcuts).
+        return List.of(BlockDef.scripted(AgilityShortcuts.BLOCK, "Agility shortcut", 0x8A7A5A, "rope"));
     }
 
     @Override
