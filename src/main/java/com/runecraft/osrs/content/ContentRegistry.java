@@ -138,11 +138,37 @@ public final class ContentRegistry {
                     map.put(spec.id(), spec);
                 }
             }
+            // Look-alikes copy a (possibly re-sculpted) registered model under the creature's own id. A variant
+            // whose base is itself a fallback model is resolved after the fallbacks and replaces the fallback
+            // generated for its own id.
+            List<ModelSpec.Variant> pending = new ArrayList<>();
+            for (ContentModule m : Modules.ALL) {
+                for (ModelSpec.Variant v : m.modelVariants()) {
+                    ModelSpec base = map.get(v.base());
+                    if (base == null) {
+                        pending.add(v);
+                    } else {
+                        map.putIfAbsent(v.id(), base.copy(v.id(), v.scale(), v.tint()));
+                    }
+                }
+            }
             // Last, modules may supply models for creatures that still have none (so nothing falls back to
             // the plain biped); they only ever add ids that are not taken yet.
+            java.util.Set<String> fromFallback = new java.util.HashSet<>();
             for (ContentModule m : Modules.ALL) {
                 for (ModelSpec spec : m.fallbackModels(Collections.unmodifiableSet(map.keySet()))) {
-                    map.putIfAbsent(spec.id(), spec);
+                    if (map.putIfAbsent(spec.id(), spec) == null) {
+                        fromFallback.add(spec.id());
+                    }
+                }
+            }
+            for (ModelSpec.Variant v : pending) {
+                ModelSpec base = map.get(v.base());
+                if (base == null) {
+                    throw new IllegalStateException("Model variant " + v.id() + " of unknown model " + v.base());
+                }
+                if (!map.containsKey(v.id()) || fromFallback.contains(v.id())) {
+                    map.put(v.id(), base.copy(v.id(), v.scale(), v.tint()));
                 }
             }
             models = Collections.unmodifiableMap(map);

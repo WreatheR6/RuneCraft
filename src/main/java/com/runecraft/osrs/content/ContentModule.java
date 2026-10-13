@@ -59,6 +59,14 @@ public interface ContentModule {
     }
 
     /**
+     * Look-alike creatures: copies of registered models under new ids (applied after the overrides, so a copy
+     * picks up the re-sculpted look; ids already taken are ignored).
+     */
+    default List<ModelSpec.Variant> modelVariants() {
+        return List.of();
+    }
+
+    /**
      * Models for creatures that have no model yet, given every model id registered so far (applied last;
      * ids already taken are ignored).
      */

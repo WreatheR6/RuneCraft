@@ -242,7 +242,8 @@ final class BestiarySlmLow {
         }
         String t = chain(b, "tail", "body", Role.TAIL, skin, dark, "slime", null, 0, 0.5f, 7, 1, new int[]{6, 4, 2}, new int[]{4, 3, 2},
                 new int[]{3, 3, 2}, new float[]{4, 4, 4}, null);
-        Kit.part(b, "head", "body", Role.HEAD, skin).accent(0xE0D040).at(0, 0, -7).mat("slime").box(-3, -2.5f, -3, 6, 4, 3).add();
+        // a slug's eyes sit on its stalks: no painted face on the head
+        Kit.part(b, "head", "body", Role.HEAD, skin).accent(0xE0D040).at(0, 0, -7).mat("slime").pattern("blank").box(-3, -2.5f, -3, 6, 4, 3).add();
         Kit.part(b, "mouth", "head", Role.JAW, darker(skin, 0.4f)).at(0, 1, -3).mat("slime").box(-1.5f, -0.5f, -0.6f, 3, 1, 1).add();
         for (int s = -1; s <= 1; s += 2) {
             String n = s < 0 ? "stalk_r" : "stalk_l";
