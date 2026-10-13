@@ -275,6 +275,9 @@ public final class RewardShops {
 
         // Last Man Standing: Justine's stuff for the Last Shopper Standing (points; OSRS Wiki).
         LastManStanding.shop(shop(LastManStanding.SHOP, "Justine's stuff for the Last Shopper Standing"));
+
+        // Emir's Arena: Mubariz's PvP Arena Rewards (points; OSRS Wiki).
+        EmirsArena.shop(shop(EmirsArena.SHOP, "PvP Arena Rewards"));
     }
 
     /** Adds the one Penance Queen kill spent on the queen-locked Barbarian Assault rewards. */

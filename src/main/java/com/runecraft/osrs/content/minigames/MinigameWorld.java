@@ -54,6 +54,7 @@ public final class MinigameWorld {
         SHOP_BLOCKS.put("nightmare_zone_rewards", "nightmare_zone");
         SHOP_BLOCKS.put("soul_wars_rewards", "soul_wars");
         SHOP_BLOCKS.put("volcanic_mine_rewards", "volcanic_mine");
+        SHOP_BLOCKS.put("emirs_arena_rewards", EmirsArena.SHOP);
     }
 
     /** Interactive blocks placed inside the instanced arenas: id, name, colour, look. */
@@ -287,6 +288,7 @@ public final class MinigameWorld {
                 case SORCERESS_GARDEN -> "Sorceress's house";
                 case TEMPLE_TREKKING -> "Burgh de Rott (Temple Trekking)";
                 case LAST_MAN_STANDING -> "Ferox Enclave (Last Man Standing)";
+                case EMIRS_ARENA -> "Emir's Arena entrance";
                 default -> m.displayName();
             };
             list.add(PlaceDef.of(m.place(), name, m.entranceX(), m.entranceY(), m.style(), blocks.get(m.place())));
@@ -310,6 +312,11 @@ public final class MinigameWorld {
                 0x6A3A1A));
         list.add(NpcDef.of(LastManStanding.JUSTINE, "Justine", Minigame.LAST_MAN_STANDING.place(), -4, -1, 0xC8A080, 0x2A2A3A,
                 0x3A2A2A, 0xC0A040));
+        // Mubariz (PvP Arena Rewards) and Arena Guard Yon at the Emir's Arena entrance.
+        list.add(NpcDef.of(EmirsArena.MUBARIZ, "Mubariz", Minigame.EMIRS_ARENA.place(), -2, 4, 0xA07850, 0xE0C080, 0x8A6A3A,
+                0xE0E0E0));
+        list.add(NpcDef.of(EmirsArena.GUARD, "Arena Guard Yon", Minigame.EMIRS_ARENA.place(), 3, -2, 0xA07850, 0x8A8A90, 0x5A5A60,
+                0xC0A040));
         list.add(NpcDef.of("mg_tzhaar_ket_rak", "TzHaar-Ket-Rak", Minigame.TZHAAR_KET_RAK.place(), -4, -2, tz, 0x3A1008, 0x2A0808,
                 0xFFB030));
         int trek = 0;

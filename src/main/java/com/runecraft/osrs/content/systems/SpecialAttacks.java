@@ -186,9 +186,9 @@ public final class SpecialAttacks {
         SPECS.put(id, new Spec(id, s.name(), s.cost(), s.style(), s.accuracy(), s.damage(), s.effect(), s.param(), s.skill(), s.description()));
     }
 
-    /** The special attack of a weapon, or null. */
+    /** The special attack of a weapon (an LMS copy uses its base weapon's), or null. */
     public static Spec of(String itemId) {
-        Spec s = SPECS.get(itemId);
+        Spec s = SPECS.get(com.runecraft.osrs.data.EquipmentBonuses.reference(itemId));
         return s == null || s.cost() <= 0 ? null : s;
     }
 

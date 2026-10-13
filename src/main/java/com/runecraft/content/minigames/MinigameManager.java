@@ -304,6 +304,7 @@ public final class MinigameManager {
             case TZHAAR_KET_RAK -> new com.runecraft.content.minigames.games.KetRakSession(id, slot, world, variant);
             case TEMPLE_TREKKING -> new com.runecraft.content.minigames.games.TempleTrekkingSession(id, slot, world, variant);
             case LAST_MAN_STANDING -> new com.runecraft.content.minigames.games.LmsSession(id, slot, world, variant);
+            case EMIRS_ARENA -> new com.runecraft.content.minigames.games.EmirsArenaSession(id, slot, world, variant);
         };
     }
 

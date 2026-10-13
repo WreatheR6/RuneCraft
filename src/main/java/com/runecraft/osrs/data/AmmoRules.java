@@ -123,6 +123,7 @@ public final class AmmoRules {
 
     /** True when {@code weaponId} has an ammunition restriction. */
     public static boolean restricted(String weaponId) {
+        weaponId = EquipmentBonuses.reference(weaponId);
         return LAUNCHERS.containsKey(weaponId) || "hunters_sunlight_crossbow".equals(weaponId) || BALLISTAE.contains(weaponId);
     }
 
@@ -131,6 +132,8 @@ public final class AmmoRules {
      * vanilla arrows).
      */
     public static boolean canFire(String weaponId, String ammoId) {
+        weaponId = EquipmentBonuses.reference(weaponId);
+        ammoId = EquipmentBonuses.reference(ammoId);
         if ("hunters_sunlight_crossbow".equals(weaponId)) {
             return antler(ammoId);
         }

@@ -41,6 +41,7 @@ public final class MinigamesHooks implements ModuleHooks {
         SorceressGardenService.register();
         PitChampionService.register();
         LmsService.register();
+        EmirsArenaService.register();
         BossScripts.register("tzkal_zuk", ZukScript::new);
         BossScripts.register("penance_queen", PenanceQueenScript::new);
 

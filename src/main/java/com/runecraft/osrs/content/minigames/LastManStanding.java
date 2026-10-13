@@ -6,6 +6,7 @@ import com.runecraft.osrs.EquipmentDef.Slot;
 import com.runecraft.osrs.EquipmentDef.WeaponClass;
 import com.runecraft.osrs.EquipmentStats;
 import com.runecraft.osrs.ItemDef.Kind;
+import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.Rune;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.ItemSink;
@@ -213,7 +214,19 @@ public final class LastManStanding {
             this.defence = defence;
         }
 
-        /** The level this build plays at. Prayer is 99 too (all prayers are open, with infinite prayer). */
+        /**
+         * Whether the build may use {@code prayer}. No build may use Rapid Restore, Rapid Heal, Protect Item, Retribution,
+         * Redemption, Smite or Preserve; Zerker and 1 Def Pure can't use Chivalry, Piety, Rigour or Augury (their Defence is
+         * too low). Everything else is open without the usual quest or scroll unlocks.
+         */
+        public boolean allows(Prayer prayer) {
+            if (BANNED_PRAYERS.contains(prayer)) {
+                return false;
+            }
+            return this == MAX_MED || !DEFENCE_PRAYERS.contains(prayer);
+        }
+
+        /** The level this build plays at. Prayer is 99 too (with infinite prayer; see {@link #allows(Prayer)}). */
         public int level(Skill skill) {
             return switch (skill) {
                 case ATTACK -> attack;
@@ -228,6 +241,22 @@ public final class LastManStanding {
             Build[] v = values();
             return v[Math.floorMod(ordinal, v.length)];
         }
+    }
+
+    /** Prayers no Last Man Standing build may use (OSRS Wiki). */
+    public static final java.util.Set<Prayer> BANNED_PRAYERS = java.util.EnumSet.of(Prayer.RAPID_RESTORE, Prayer.RAPID_HEAL,
+            Prayer.PROTECT_ITEM, Prayer.RETRIBUTION, Prayer.REDEMPTION, Prayer.SMITE, Prayer.PRESERVE);
+    /** Prayers only the Max/Med build may use (Zerker and 1 Def Pure lack the Defence). */
+    public static final java.util.Set<Prayer> DEFENCE_PRAYERS = java.util.EnumSet.of(Prayer.CHIVALRY, Prayer.PIETY, Prayer.RIGOUR,
+            Prayer.AUGURY);
+
+    /** The message shown when the build can't use {@code prayer}, or null if it can. */
+    public static String prayerBlocked(Build build, Prayer prayer) {
+        if (build.allows(prayer)) {
+            return null;
+        }
+        return BANNED_PRAYERS.contains(prayer) ? prayer.displayName() + " can't be used in Last Man Standing."
+                : "The " + build.displayName + " build can't use " + prayer.displayName() + ".";
     }
 
     /** The combat skills a build sets for the game. */

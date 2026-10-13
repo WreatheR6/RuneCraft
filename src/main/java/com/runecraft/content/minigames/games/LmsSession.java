@@ -311,6 +311,18 @@ public class LmsSession extends MinigameSession {
         RunEnergyService.restore(p, 10_000);
     }
 
+    /**
+     * The build's prayer rules (see {@link Build#allows}): a message for a prayer the build can't use, "" for one it can (no
+     * quest or scroll unlocks needed on the island), null before the game starts.
+     */
+    public String prayerRule(com.runecraft.osrs.Prayer prayer) {
+        if (!started) {
+            return null;
+        }
+        String blocked = LastManStanding.prayerBlocked(build, prayer);
+        return blocked == null ? "" : blocked;
+    }
+
     @Override
     protected boolean canAttackPlayer(ServerPlayerEntity attacker, ServerPlayerEntity target) {
         if (!started || ticks < LastManStanding.START_TICKS) {

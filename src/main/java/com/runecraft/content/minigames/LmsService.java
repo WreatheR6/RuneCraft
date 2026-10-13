@@ -39,6 +39,17 @@ public final class LmsService {
             }
             return s.canAttackPlayer(attacker, target);
         };
+        // Prayer rules of the minigame the player is in: the LMS build's prayers, or an Emir's Arena No Prayer duel.
+        com.runecraft.combat.PrayerService.minigameRule = (player, prayer) -> {
+            MinigameSession s = MinigameManager.session(player);
+            if (s instanceof com.runecraft.content.minigames.games.LmsSession lms) {
+                return lms.prayerRule(prayer);
+            }
+            if (s instanceof com.runecraft.content.minigames.games.EmirsArenaSession duel) {
+                return duel.prayerRule(prayer);
+            }
+            return null;
+        };
         QuestScripts.onTalk(LastManStanding.LISA, (player, npc) -> lisa(player));
         QuestScripts.onTalk(LastManStanding.JUSTINE, (player, npc) -> justine(player));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {

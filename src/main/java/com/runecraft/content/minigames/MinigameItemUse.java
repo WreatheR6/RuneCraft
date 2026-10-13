@@ -68,6 +68,7 @@ public final class MinigameItemUse {
                     yield false;
                 }
                 case "ring_of_wealth_scroll", "magic_shortbow_scroll" -> LmsService.useImbueScroll(sp, id);
+                case "scroll_of_imbuing" -> EmirsArenaService.useScrollOfImbuing(sp);
                 case "bones_to_peaches_tablet" -> {
                     bonesToPeaches(sp);
                     yield false;

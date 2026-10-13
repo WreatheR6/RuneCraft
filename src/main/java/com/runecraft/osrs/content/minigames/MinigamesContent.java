@@ -29,6 +29,7 @@ public final class MinigamesContent implements ContentModule {
     public void items(ItemSink items) {
         MinigameItems.add(items);
         LastManStanding.items(items);
+        EmirsArena.items(items);
     }
 
     @Override

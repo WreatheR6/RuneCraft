@@ -94,7 +94,7 @@ public final class BoltEffects {
 
     /** The enchantment that an (e) bolt item carries, or null for any other ammo. */
     public static Enchant ofItem(String ammoId) {
-        return ammoId == null ? null : BY_ITEM.get(ammoId);
+        return ammoId == null ? null : BY_ITEM.get(com.runecraft.osrs.data.EquipmentBonuses.reference(ammoId));
     }
 
     /** The table entry for plain (or dragon) bolts that the spell can enchant, or null. */

@@ -52,6 +52,12 @@ public final class PrayerService {
      */
     public static java.util.function.BiPredicate<ServerPlayerEntity, Prayer> scrollRead = (p, prayer) -> true;
 
+    /**
+     * A minigame's prayer rules (Last Man Standing builds, No Prayer duels): null leaves the normal checks, "" allows the prayer
+     * without its quest/scroll unlocks, any other text forbids it with that message. Set by the minigames module.
+     */
+    public static java.util.function.BiFunction<ServerPlayerEntity, Prayer, String> minigameRule = (p, prayer) -> null;
+
     public static double rangedAttack(PlayerData d) {
         return best(d, Prayer::rangedAttackMultiplier);
     }
@@ -73,7 +79,12 @@ public final class PrayerService {
                 Msg.game(player, "You need a Prayer level of " + prayer.level() + " to use " + prayer.displayName() + ".");
                 return;
             }
-            String locked = com.runecraft.osrs.content.quests.QuestUnlocks.prayer(prayer, data.skills(), id -> {
+            String rule = minigameRule.apply(player, prayer);
+            if (rule != null && !rule.isEmpty()) {
+                Msg.game(player, rule);
+                return;
+            }
+            String locked = rule != null ? null : com.runecraft.osrs.content.quests.QuestUnlocks.prayer(prayer, data.skills(), id -> {
                 com.runecraft.osrs.QuestInfo q = com.runecraft.osrs.content.ContentRegistry.quest(id);
                 return q == null || data.questComplete(q);
             });
@@ -81,7 +92,7 @@ public final class PrayerService {
                 Msg.game(player, locked);
                 return;
             }
-            if (prayer.unlockScroll() != null && !scrollRead.test(player, prayer)) {
+            if (rule == null && prayer.unlockScroll() != null && !scrollRead.test(player, prayer)) {
                 com.runecraft.osrs.ItemDef scroll = com.runecraft.osrs.ItemCatalog.get(prayer.unlockScroll());
                 Msg.game(player, "You need to learn " + prayer.displayName() + " from "
                         + (scroll == null ? "a prayer scroll" : Msg.article(scroll.name().toLowerCase(java.util.Locale.ROOT))) + " first.");

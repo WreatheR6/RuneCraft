@@ -42,9 +42,17 @@ public final class EquipmentBonuses {
         return e == null ? fallback : e.stats();
     }
 
+    /**
+     * The real item a minigame copy stands for: Last Man Standing's {@code lms_} items behave like their base item (special
+     * attack, ammunition, two-handedness, bolt effects).
+     */
+    public static String reference(String id) {
+        return id != null && id.startsWith("lms_") ? id.substring(4) : id;
+    }
+
     /** True for weapons that occupy both hands (no shield can be used with them). */
     public static boolean twoHanded(String id) {
-        Entry e = GEAR.get(id);
+        Entry e = GEAR.get(reference(id));
         return e != null && e.twoHanded();
     }
 

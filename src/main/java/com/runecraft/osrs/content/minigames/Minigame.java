@@ -87,7 +87,14 @@ public enum Minigame {
      */
     LAST_MAN_STANDING("last_man_standing", "Last Man Standing", LastManStanding.PLACE, LastManStanding.ISLAND_X,
             LastManStanding.ISLAND_Y, LastManStanding.LOBBY_X, LastManStanding.LOBBY_Y, PlaceDef.Style.NONE, 60,
-            LastManStanding.MAX_PLAYERS, null, 0);
+            LastManStanding.MAX_PLAYERS, null, 0),
+    /**
+     * Emir's Arena (see {@link EmirsArena}): the Al Kharid PvP arena that replaced the Duel Arena. The entrance block by the gate
+     * is the ranked 1v1 queue (two players); legacy duels start when a challenge is accepted. Style NONE: the arena buildings are
+     * built by the world module. Appended last: arena slots use the ordinal.
+     */
+    EMIRS_ARENA("emirs_arena", "Emir's Arena", EmirsArena.PLACE, EmirsArena.ARENA_X, EmirsArena.ARENA_Y, EmirsArena.ENTRANCE_X,
+            EmirsArena.ENTRANCE_Y, PlaceDef.Style.NONE, 30, 2, null, 0);
 
     private final String id;
     private final String displayName;
