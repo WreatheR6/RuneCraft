@@ -102,7 +102,7 @@ public final class CaMenus {
                     done++;
                 }
             }
-            s.button("tier:" + t.name(), t.displayName() + " " + done + "/" + total + " (" + t.points() + " pt" + (t.points() == 1 ? "" : "s")
+            s.button("tier:" + t.name(), t.displayName() + " " + done + "/" + total + " (" + t.points + " pt" + (t.points == 1 ? "" : "s")
                     + " each)", "Rewards at " + CombatAchievements.threshold(t) + " points: " + String.join("; ", CombatAchievements.rewards(t)), true);
         }
         for (Tier t : Tier.values()) {
