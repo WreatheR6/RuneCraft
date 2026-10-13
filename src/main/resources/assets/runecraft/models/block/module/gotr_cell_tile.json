@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/gotr_cell_tile_side",
+    "top": "runecraft:block/module/gotr_cell_tile_top",
+    "bottom": "runecraft:block/module/gotr_cell_tile_bottom"
+  }
+}

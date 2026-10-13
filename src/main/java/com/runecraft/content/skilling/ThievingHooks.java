@@ -149,7 +149,27 @@ final class ThievingHooks {
         if (ThievingData.HOUSE_CONTAINERS.contains(c.blockId()) && !inHouse(player)) {
             return;
         }
+        String key = ThievingData.KEY_CONTAINERS.get(c.blockId());
+        if (key != null && !com.runecraft.util.Inv.has(player, key, 1)) {
+            Msg.game(player, "You need " + Msg.article(SkillingUtil.lower(SkillingUtil.name(key))) + " to open this chest.");
+            return;
+        }
         player.swingHand(Hand.MAIN_HAND, true);
+        double chance = ThievingData.openChance(c.blockId(), SkillingUtil.level(player, Skill.THIEVING),
+                com.runecraft.util.Inv.has(player, "lockpick", 1));
+        if (player.getRandom().nextDouble() >= chance) {
+            Msg.action(player, "You fail to pick the lock.");
+            if (player.getRandom().nextInt(ThievingData.TRAP_CHANCE) == 0) {
+                // OSRS teleports the player out of the dungeon; here the trap just hurts (approx).
+                Msg.red(player, "You trigger a trap!");
+                com.runecraft.combat.CombatHandler.applyDamage(null, player, 2);
+                ServerNetworking.hitsplat(player, 2, com.runecraft.network.Net.SPLAT_DAMAGE);
+            }
+            return;
+        }
+        if (key != null) {
+            com.runecraft.util.Inv.remove(player, key, 1);
+        }
         if (c.chest()) {
             Msg.action(player, "You search the chest for traps... You find a trap on the chest and disable it.");
             world.playSound(null, pos, SoundEvents.BLOCK_CHEST_OPEN, SoundCategory.BLOCKS, 1f, 1f);

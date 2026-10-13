@@ -47,6 +47,8 @@ import java.util.UUID;
 final class GatheringHooks {
     /** Depleted resource positions -> game tick they come back. */
     private static final Map<String, Long> DEPLETED = new HashMap<>();
+    /** Motherlode Mine veins mined since they last respawned: position key -> game tick they deplete. */
+    private static final Map<String, Long> VEIN_EXPIRY = new HashMap<>();
     /** Laid hunter traps: position key -> (owner, game tick laid). */
     private static final Map<String, LaidTrap> TRAPS = new HashMap<>();
 
@@ -72,7 +74,8 @@ final class GatheringHooks {
         for (MiningData.MineRock r : MiningData.ROCKS) {
             BlockHooks.register(r.blockId(), (player, pos, state) -> mine(player, pos, r));
         }
-        BlockHooks.register("pay_dirt_hopper", (player, pos, state) -> hopper(player));
+        BlockHooks.register("pay_dirt_hopper", (player, pos, state) -> hopper(player, false));
+        BlockHooks.register(MiningData.UPPER_HOPPER, (player, pos, state) -> hopper(player, true));
         BlockHooks.register("pay_dirt_sack", (player, pos, state) -> sack(player));
         for (GatheringData.Spot s : GatheringData.SPOTS) {
             BlockHooks.register(s.blockId(), (player, pos, state) -> fish(player, pos, s));
@@ -172,8 +175,16 @@ final class GatheringHooks {
             Msg.game(player, "You need a pickaxe to mine this rock. You do not have a pickaxe which you have the Mining level to use.");
             return;
         }
-        if (rock.blockId().equals("pay_dirt_vein") && Inv.count(player, "pay_dirt") >= 28 * 4) {
-            Msg.game(player, "You should deposit your pay-dirt in the hopper first.");
+        boolean vein = rock.blockId().equals("pay_dirt_vein") || rock.blockId().equals(MiningData.UPPER_VEIN);
+        boolean upper = rock.blockId().equals(MiningData.UPPER_VEIN);
+        if (upper && !Motherlode.canUseUpperLevel(Players.data(player).skills().level(Skill.MINING),
+                SkillingState.get(player.getServer()).section("sacks").getBoolean(player.getUuidAsString() + ":upper"))) {
+            Msg.game(player, "You need " + Motherlode.UPPER_LEVEL_MINING + " Mining (unboosted) and Prospector Percy's permission ("
+                    + Motherlode.UPPER_LEVEL_NUGGETS + " golden nuggets, sneak-use the hopper) to mine the upper level.");
+            return;
+        }
+        if (vein && sackFull(player)) {
+            Msg.game(player, "You have enough pay-dirt to fill your sack. Deposit it in the hopper and empty the sack first.");
             return;
         }
         Msg.action(player, "You swing your pickaxe at the rock.");
@@ -191,6 +202,21 @@ final class GatheringHooks {
                 SkillingUtil.give(p, got.item(), 1);
                 XpService.add(p, Skill.MINING, got.xp());
                 Msg.action(p, "You manage to mine some " + SkillingUtil.lower(SkillingUtil.name(got.item())) + ".");
+                if (vein) {
+                    // A vein's timer starts with its first pay-dirt; one more can be mined once it has run out.
+                    String key = SkillingUtil.key(world, pos);
+                    long now = ActionManager.gameTick();
+                    Long until = VEIN_EXPIRY.get(key);
+                    if (until == null) {
+                        VEIN_EXPIRY.put(key, now + Motherlode.veinLife(upper, random.nextDouble()));
+                    } else if (now >= until) {
+                        VEIN_EXPIRY.remove(key);
+                        deplete(world, pos, Motherlode.VEIN_RESPAWN);
+                        Msg.action(p, "The vein is depleted.");
+                        return false;
+                    }
+                    return !sackFull(p);
+                }
                 if (rock.respawnTicks() > 0) {
                     deplete(world, pos, rock.respawnTicks());
                     return false;
@@ -200,11 +226,27 @@ final class GatheringHooks {
         });
     }
 
-    private static void hopper(ServerPlayerEntity player) {
+    /** True when the pay-dirt carried already fills what's left of the player's sack. */
+    private static boolean sackFull(ServerPlayerEntity player) {
+        NbtCompound sacks = SkillingState.get(player.getServer()).section("sacks");
+        String key = player.getUuidAsString();
+        return Inv.count(player, "pay_dirt") + sacks.getInt(key) >= Motherlode.sackCapacity(sacks.getBoolean(key + ":upgraded"));
+    }
+
+    private static void hopper(ServerPlayerEntity player, boolean upper) {
         NbtCompound sacks = SkillingState.get(player.getServer()).section("sacks");
         String key = player.getUuidAsString();
         if (player.isSneaking()) {
-            buyUpperLevel(player, sacks, key);
+            if (upper) {
+                buyUpperHopper(player, sacks, key);
+            } else {
+                buyUpperLevel(player, sacks, key);
+            }
+            return;
+        }
+        if (upper && !sacks.getBoolean(key + ":upper_hopper")) {
+            Msg.game(player, "Prospector Percy wants " + Motherlode.UPPER_HOPPER_NUGGETS
+                    + " golden nuggets before you can use this hopper (sneak-use it to pay).");
             return;
         }
         int carried = Inv.count(player, "pay_dirt");
@@ -223,12 +265,24 @@ final class GatheringHooks {
         // The water wheel washes each pay-dirt into an ore (or a golden nugget) for the miner's level.
         int level = SkillingUtil.level(player, Skill.MINING);
         Random random = player.getRandom();
+        int nuggets = 0;
+        int lost = 0;
+        double xp = 0;
         for (int i = 0; i < n; i++) {
             String ore = Motherlode.wash(level, random::nextDouble);
+            if (ore.equals("golden_nugget") && ++nuggets > Motherlode.MAX_NUGGETS_PER_DEPOSIT) {
+                lost++;
+                continue;
+            }
+            xp += Motherlode.collectXp(ore);
             sacks.putInt(key + ":" + ore, sacks.getInt(key + ":" + ore) + 1);
         }
-        sacks.putInt(key, inSack + n);
-        Msg.game(player, "You deposit " + n + " pay-dirt into the hopper. The sack now holds " + (inSack + n) + "/"
+        // The bonus XP is awarded as the washed ore reaches the sack, not when it is collected.
+        if (xp > 0) {
+            XpService.add(player, Skill.MINING, xp);
+        }
+        sacks.putInt(key, inSack + n - lost);
+        Msg.game(player, "You deposit " + n + " pay-dirt into the hopper. The sack now holds " + (inSack + n - lost) + "/"
                 + Motherlode.sackCapacity(upgraded) + ".");
         player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_GRAVEL_BREAK, SoundCategory.BLOCKS, 1f, 0.8f);
     }
@@ -243,12 +297,31 @@ final class GatheringHooks {
             Msg.game(player, "You need a Mining level of " + Motherlode.UPPER_LEVEL_MINING + " (unboosted) to use the upper level.");
             return;
         }
-        if (Inv.remove(player, "golden_nugget", Motherlode.UPPER_LEVEL_NUGGETS) < Motherlode.UPPER_LEVEL_NUGGETS) {
+        if (!Inv.has(player, "golden_nugget", Motherlode.UPPER_LEVEL_NUGGETS)) {
             Msg.game(player, "Prospector Percy wants " + Motherlode.UPPER_LEVEL_NUGGETS + " golden nuggets for access to the upper level.");
             return;
         }
+        Inv.remove(player, "golden_nugget", Motherlode.UPPER_LEVEL_NUGGETS);
         sacks.putBoolean(key + ":upper", true);
         Msg.game(player, "You pay " + Motherlode.UPPER_LEVEL_NUGGETS + " golden nuggets for permanent access to the upper level.");
+    }
+
+    private static void buyUpperHopper(ServerPlayerEntity player, NbtCompound sacks, String key) {
+        if (sacks.getBoolean(key + ":upper_hopper")) {
+            Msg.game(player, "You can already use the upper level's hopper.");
+            return;
+        }
+        if (!sacks.getBoolean(key + ":upper")) {
+            Msg.game(player, "You need access to the upper level first (sneak-use the lower hopper).");
+            return;
+        }
+        if (!Inv.has(player, "golden_nugget", Motherlode.UPPER_HOPPER_NUGGETS)) {
+            Msg.game(player, "Prospector Percy wants " + Motherlode.UPPER_HOPPER_NUGGETS + " golden nuggets for the upper hopper.");
+            return;
+        }
+        Inv.remove(player, "golden_nugget", Motherlode.UPPER_HOPPER_NUGGETS);
+        sacks.putBoolean(key + ":upper_hopper", true);
+        Msg.game(player, "You pay " + Motherlode.UPPER_HOPPER_NUGGETS + " golden nuggets: you can now use the upper level's hopper.");
     }
 
     private static void buyBiggerSack(ServerPlayerEntity player, NbtCompound sacks, String key) {
@@ -289,7 +362,6 @@ final class GatheringHooks {
             }
             washed += n;
             SkillingUtil.give(player, item, n);
-            xp += n * Motherlode.collectXp(item);
             if (item.equals("golden_nugget")) {
                 nuggets = n;
             }

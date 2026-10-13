@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "runecraft:block/module/upper_pay_dirt_vein"
+  }
+}

@@ -49,6 +49,7 @@ public final class MinigameWorld {
         SHOP_BLOCKS.put("gnome_restaurant_rewards", "gnome_restaurant");
         SHOP_BLOCKS.put("nightmare_zone_rewards", "nightmare_zone");
         SHOP_BLOCKS.put("soul_wars_rewards", "soul_wars");
+        SHOP_BLOCKS.put("volcanic_mine_rewards", "volcanic_mine");
     }
 
     /** Interactive blocks placed inside the instanced arenas: id, name, colour, look. */
@@ -73,6 +74,10 @@ public final class MinigameWorld {
             {"catalytic_rift", "Catalytic guardian", "8040E0", "portal_glow"},
             {"gotr_great_guardian", "The Great Guardian", "5A4AA0", "obelisk"},
             {"gotr_rift_search", "Rewards guardian", "9A8AE0", "chest"},
+            {"gotr_cell_table", "Uncharged cells", "8A8A9A", "crate"},
+            {"gotr_cell_tile", "Cell tile", "6A6AC0", "pressure_plate"},
+            {"gotr_elemental_essence", "Elemental essence", "E07040", "rock"},
+            {"gotr_catalytic_essence", "Catalytic essence", "8040E0", "rock"},
             // Barbarian Assault
             {"ba_egg_launcher", "Egg launcher", "8A7A5A", "machine"},
             {"ba_healer_spring", "Healing spring", "60A0E0", "portal_glow"},

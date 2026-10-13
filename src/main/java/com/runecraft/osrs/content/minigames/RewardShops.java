@@ -70,17 +70,20 @@ public final class RewardShops {
                 .item("coal", 10, TOKKUL, 670)
                 .item("runite_ore", TOKKUL, 4_800);
 
-        // Guardians of the Rift: the Rewards Guardian (abyssal pearls; non-outfit prices approx.).
-        shop("guardians_of_the_rift", "Rewards Guardian")
-                .item("hat_of_the_eye", PEARLS, 350)
+        // Guardians of the Rift: Apprentice Felix's Temple Supplies (abyssal pearls; OSRS Wiki). The elemental and
+        // catalytic talismans aren't sold. Approx: the colossal pouch stands in for using the abyssal needle on the pouches.
+        shop("guardians_of_the_rift", "Temple Supplies")
+                .item("hat_of_the_eye", PEARLS, 400)
                 .item("robe_top_of_the_eye", PEARLS, 350)
                 .item("robe_bottoms_of_the_eye", PEARLS, 350)
-                .item("boots_of_the_eye", PEARLS, 300) // full outfit totals 1,350 pearls
-                .item("abyssal_lantern", PEARLS, 100)
+                .item("boots_of_the_eye", PEARLS, 250) // full outfit totals 1,350 pearls
+                .item("abyssal_lantern", PEARLS, 1500)
                 .itemReq("colossal_pouch", PEARLS, 100, "abyssal_needle")
-                .item("catalytic_talisman", PEARLS, 200)
-                .item("elemental_talisman", PEARLS, 200)
-                .item("pure_essence", 50, PEARLS, 20);
+                .item("air_talisman", PEARLS, 10).item("water_talisman", PEARLS, 10).item("earth_talisman", PEARLS, 10)
+                .item("fire_talisman", PEARLS, 10).item("mind_talisman", PEARLS, 10).item("body_talisman", PEARLS, 10)
+                .item("chaos_talisman", PEARLS, 30).item("cosmic_talisman", PEARLS, 30)
+                .item("nature_talisman", PEARLS, 50).item("law_talisman", PEARLS, 50)
+                .item("death_talisman", PEARLS, 80).item("blood_talisman", PEARLS, 100);
 
         // Barbarian Assault: Commander Connad (honour points of every role; OSRS Wiki). Items marked
         // "Queen" on the wiki also spend one Penance Queen kill; the granite body costs coins only.
@@ -173,6 +176,24 @@ public final class RewardShops {
             tb.item(c + "_naval_shirt", EIGHT, 1000).item(c + "_tricorn_hat", EIGHT, 500).item(c + "_navy_slacks", EIGHT, 1000);
         }
         tb.item("bottle_of_rum", EIGHT, 20).item("the_stuff", EIGHT, 50);
+
+        // Volcanic Mine: Petrified Pete's Ore Shop (OSRS Wiki prices; ores are noted there). Not stocked here: the
+        // volcanic mine teleport, the larger water container, the ash covered tome and ore packs.
+        shop("volcanic_mine", "Petrified Pete's Ore Shop")
+                .item("iron_ore", VOLCANIC_MINE, 30)
+                .item("silver_ore", VOLCANIC_MINE, 55)
+                .item("coal", VOLCANIC_MINE, 60)
+                .item("gold_ore", VOLCANIC_MINE, 150)
+                .item("mithril_ore", VOLCANIC_MINE, 150)
+                .item("adamantite_ore", VOLCANIC_MINE, 300)
+                .item("runite_ore", VOLCANIC_MINE, 855)
+                .item("volcanic_ash", VOLCANIC_MINE, 40)
+                .item("calcite", VOLCANIC_MINE, 70)
+                .item("pyrophosphite", VOLCANIC_MINE, 70)
+                .item("prospector_helmet", VOLCANIC_MINE, 26_000)
+                .item("prospector_jacket", VOLCANIC_MINE, 39_000)
+                .item("prospector_legs", VOLCANIC_MINE, 34_000)
+                .item("prospector_boots", VOLCANIC_MINE, 21_000);
 
         // Tithe Farm reward shop.
         shop("tithe_farm", "Tithe Farm Rewards")

@@ -121,18 +121,22 @@ public final class MinigameItemUse {
     /** One Rewards Guardian search (costs one elemental and one catalytic point, paid by the caller). */
     public static void riftSearch(ServerPlayerEntity p) {
         java.util.List<String> owned = new java.util.ArrayList<>();
-        for (String pouch : GuardiansRewards.POUCHES) {
-            if (Inv.has(p, pouch, 1) || com.runecraft.player.Players.data(p).collectionLog().contains(pouch)) {
-                owned.add(pouch);
+        java.util.List<String> check = new java.util.ArrayList<>(GuardiansRewards.POUCHES);
+        check.addAll(GuardiansRewards.ONCE_ONLY);
+        check.add("colossal_pouch");
+        for (String item : check) {
+            if (Inv.has(p, item, 1) || com.runecraft.player.Players.data(p).collectionLog().contains(item)) {
+                owned.add(item);
             }
         }
         int rc = com.runecraft.player.Players.data(p).skills().level(Skill.RUNECRAFT);
-        MinigameReward r = GuardiansRewards.search(rc, owned, RANDOM::nextDouble);
-        if (r.item().equals("abyssal_protector")) {
-            pet(p, "abyssal_protector");
-            return;
+        for (MinigameReward r : GuardiansRewards.search(rc, owned, RANDOM::nextDouble)) {
+            if (r.item().equals("abyssal_protector")) {
+                pet(p, "abyssal_protector");
+            } else {
+                give(p, r.item(), r.amount());
+            }
         }
-        give(p, r.item(), r.amount());
     }
 
     /** Gnome Restaurant reward box. */

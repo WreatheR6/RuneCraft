@@ -23,15 +23,17 @@ import java.util.UUID;
 
 /**
  * The Volcanic Mine: Petrified Pete takes 30 numulite (unless permanent access was bought for
- * 3,000), then the team has ten minutes to mine the boulder as it moves down its track before the
+ * 3,000), then the team has ten minutes to mine the boulder through its five sizes before the
  * volcano erupts. Each successful hit gives Mining XP and Ore Shop points, more as the boulder
- * shrinks. Keep the three gas chambers' vents near 50% (block or unblock a chamber by using it) or
- * the mine's stability falls and it collapses.
+ * shrinks; mining it away gives everyone 100 points. Keep the three gas chambers' pressure within
+ * 40-60% (block or unblock a chamber by using it, 50 points a time up to 300) or the mine's stability
+ * falls and it collapses. The mine shifts after five minutes; the last 30 seconds are for leaving.
  */
 public class VolcanicMineSession extends MinigameSession {
     private static final int[] VENT_X = {-12, 0, 12};
     private static final String ACCESS_FLAG = "volcanic_mine_access";
     private final Map<UUID, Integer> points = new HashMap<>();
+    private final Map<UUID, Integer> capped = new HashMap<>();
     private final int[] vents = new int[3];
     private final boolean[] blocked = new boolean[3];
     private int stability = VolcanicMine.START_STABILITY;
@@ -105,10 +107,17 @@ public class VolcanicMineSession extends MinigameSession {
     protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "vm_vent" -> {
+                if (!VolcanicMine.workable(ticks)) {
+                    Msg.game(player, "There's no time left to fix the chambers. Get out!");
+                    return true;
+                }
                 int v = ventIndex(pos);
                 blocked[v] = !blocked[v];
+                int cap = VolcanicMine.capPoints(capped.getOrDefault(player.getUuid(), 0));
+                capped.merge(player.getUuid(), cap, Integer::sum);
+                points.merge(player.getUuid(), cap, Integer::sum);
                 Msg.game(player, (blocked[v] ? "You block" : "You clear") + " gas chamber " + VolcanicMine.VENTS[v]
-                        + ". Vent " + VolcanicMine.VENTS[v] + ": " + vents[v] + "%.");
+                        + ". Vent " + VolcanicMine.VENTS[v] + ": " + vents[v] + "%." + (cap > 0 ? " (+" + cap + " points)" : ""));
                 return true;
             }
             case "vm_boulder" -> {
@@ -117,7 +126,11 @@ public class VolcanicMineSession extends MinigameSession {
                     return true;
                 }
                 repeat(player, p -> {
-                    if (isEnded()) {
+                    if (isEnded() || stage > VolcanicMine.BOULDER_STAGES) {
+                        return false;
+                    }
+                    if (!VolcanicMine.workable(ticks)) {
+                        Msg.game(p, "The volcano is about to erupt! There's no time to mine.");
                         return false;
                     }
                     int mining = level(p, Skill.MINING);
@@ -127,19 +140,34 @@ public class VolcanicMineSession extends MinigameSession {
                     VolcanicMine.Hit hit = VolcanicMine.hit(mining, stage, random::nextDouble);
                     points.merge(p.getUuid(), hit.points(), Integer::sum);
                     xp(p, Skill.MINING, hit.xp());
-                    if (hit.tier() >= 0) {
-                        Msg.action(p, "You mine a level-" + VolcanicMine.FRAGMENT_LEVELS[hit.tier()] + " ore fragment from the boulder.");
+                    for (String byproduct : new String[]{"calcite", "pyrophosphite"}) {
+                        if (random.nextInt(VolcanicMine.BYPRODUCT_CHANCE) == 0) {
+                            reward(p, byproduct, 1 + random.nextInt(4));
+                        }
+                    }
+                    if (hit.tier() < 0) {
+                        Msg.action(p, "You chip off a part of the boulder.");
+                    } else {
+                        Msg.action(p, "You mine " + Msg.article(VolcanicMine.FRAGMENT_NAMES[hit.tier()]) + " fragment from the boulder.");
                         if (random.nextInt(VolcanicMine.petChance(mining)) == 0) {
                             reward(p, "pet_rock_golem", 1);
                             p.getServer().getPlayerManager().broadcast(Text.literal(p.getName().getString()
                                     + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
                         }
                     }
-                    if (++stageHits >= VolcanicMine.hitsPerStage(playerCount()) && stage < VolcanicMine.BOULDER_STAGES) {
+                    if (++stageHits >= VolcanicMine.stageHp(stage, playerCount())) {
                         stage++;
                         stageHits = 0;
-                        broadcast("The boulder breaks apart and rolls further down the track (stage " + stage + "/"
-                                + VolcanicMine.BOULDER_STAGES + ").");
+                        if (stage > VolcanicMine.BOULDER_STAGES) {
+                            broadcastRed("The boulder falls into the lava vortex! Everyone earns "
+                                    + VolcanicMine.COMPLETION_POINTS + " points.");
+                            for (ServerPlayerEntity q : online()) {
+                                points.merge(q.getUuid(), VolcanicMine.COMPLETION_POINTS, Integer::sum);
+                            }
+                            return false;
+                        }
+                        broadcast("The boulder shrinks and floats further down the channel: "
+                                + VolcanicMine.BOULDER_NAMES[stage - 1] + " boulder.");
                     }
                     return true;
                 });
@@ -167,8 +195,14 @@ public class VolcanicMineSession extends MinigameSession {
                 vents[i] = VolcanicMine.ventStep(vents[i], blocked[i]);
             }
         }
+        if (ticks == VolcanicMine.SHIFT_TICK) {
+            for (int i = 0; i < 3; i++) {
+                vents[i] = 20 + random.nextInt(61);
+            }
+            broadcastRed("The mine shifts! Check the vents: the chamber pressures have changed.");
+        }
         if (ticks % 10 == 0) {
-            stability = Math.max(0, Math.min(100, stability + VolcanicMine.stabilityDelta(vents)));
+            stability = VolcanicMine.stability(stability, vents, ticks);
             BlockPos c = rel(0, 2, -16);
             world.spawnParticles(ParticleTypes.LAVA, c.getX() + 0.5, c.getY(), c.getZ() + 0.5, 4, 8, 0.5, 1, 0);
             if (stability <= 0) {
@@ -205,7 +239,8 @@ public class VolcanicMineSession extends MinigameSession {
         return List.of("Volcanic Mine", "Stability: " + stability + "%",
                 "Vents: A " + vents[0] + "%" + (blocked[0] ? "*" : "") + "  B " + vents[1] + "%" + (blocked[1] ? "*" : "")
                         + "  C " + vents[2] + "%" + (blocked[2] ? "*" : ""),
-                "Boulder stage: " + stage + "/" + VolcanicMine.BOULDER_STAGES, "Points: " + points.getOrDefault(player.getUuid(), 0),
+                stage > VolcanicMine.BOULDER_STAGES ? "Boulder: mined away!" : "Boulder: " + VolcanicMine.BOULDER_NAMES[stage - 1]
+                        + " (" + stageHits + "/" + VolcanicMine.stageHp(stage, playerCount()) + ")", "Points: " + points.getOrDefault(player.getUuid(), 0),
                 "Eruption in: " + time(VolcanicMine.GAME_TICKS - ticks));
     }
 }

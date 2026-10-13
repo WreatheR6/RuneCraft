@@ -246,9 +246,34 @@ class AgilityThievingFollowupTest {
                 assertNotNull(ItemCatalog.get(l.item()), c.blockId() + " " + l.item());
             }
             for (Loot l : c.table()) {
-                assertNotNull(ItemCatalog.get(l.item()), c.blockId() + " " + l.item());
+                if (!l.item().startsWith("minecraft:")) {
+                    assertNotNull(ItemCatalog.get(l.item()), c.blockId() + " " + l.item());
+                }
             }
         }
+        // Dorgesh-Kaan chests come back after 90 s and 300 s (OSRS Wiki).
+        assertEquals(150, ThievingData.container("dorgesh_kaan_average_chest").respawnTicks());
+        assertEquals(500, ThievingData.container("dorgesh_kaan_rich_chest").respawnTicks());
+        // Isle of Souls chest: 28 Thieving, 150 XP, a 200-weight table with a 1/200 dark key; the Dark Chest's table is out of 600.
+        ThievingData.Container soul = ThievingData.container(ThievingData.SOUL_CHEST);
+        assertEquals(28, soul.level());
+        assertEquals(150.0, soul.xp(), 1e-9);
+        assertEquals(200, Loot.totalWeight(soul.table()));
+        assertTrue(soul.table().stream().anyMatch(l -> l.item().equals(ThievingData.DARK_KEY) && l.weight() == 1));
+        ThievingData.Container dark = ThievingData.container(ThievingData.DARK_CHEST);
+        assertEquals(1500.0, dark.xp(), 1e-9);
+        assertEquals(603, Loot.totalWeight(dark.table())); // the wiki's x/600 lines add up to 603
+        assertEquals(ThievingData.DARK_KEY, ThievingData.KEY_CONTAINERS.get(ThievingData.DARK_CHEST));
+        assertNotNull(ItemCatalog.get(ThievingData.DARK_KEY));
+        // Picklock: -23/153 on the 1-99 curve, -9% at 1 and 60% at 99 per the wiki prose; a lockpick adds 26.
+        assertEquals(0.60, ThievingData.openChance(ThievingData.SOUL_CHEST, 99, false), 0.01);
+        assertTrue(ThievingData.openChance(ThievingData.SOUL_CHEST, 50, true) > ThievingData.openChance(ThievingData.SOUL_CHEST, 50, false));
+        assertEquals(1.0, ThievingData.openChance("ten_coin_chest", 13, false), 1e-9);
+        assertTrue(ContentRegistry.places().stream().anyMatch(p -> p.blocks().contains(ThievingData.SOUL_CHEST)));
+        assertTrue(ContentRegistry.places().stream().anyMatch(p -> p.blocks().contains(ThievingData.DARK_CHEST)));
+        // The Wilderness course keeps its state across logouts but loses ten laps of streak.
+        assertEquals(15, AgilityRewards.streakAfterLogout(25));
+        assertEquals(0, AgilityRewards.streakAfterLogout(4));
         // The Dorgesh-Kaan chests stand in Dorgesh-Kaan (the dungeons module's city below Lumbridge).
         StructureDef city = ContentRegistry.structures().stream().filter(s -> s.id().equals("dng_lumbridge_cellar_caves"))
                 .findFirst().orElseThrow();

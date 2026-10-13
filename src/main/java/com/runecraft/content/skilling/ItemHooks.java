@@ -63,6 +63,8 @@ final class ItemHooks {
 
     /** Active prayer regeneration potions: player -> game tick the effect ends. */
     private static final Map<UUID, Long> PRAYER_REGEN = new HashMap<>();
+    /** Goading potion: game tick each player's goading wears off. */
+    private static final Map<UUID, Long> GOADING = new HashMap<>();
 
     private ItemHooks() {
     }
@@ -348,6 +350,7 @@ final class ItemHooks {
                 player.removeStatusEffect(StatusEffects.NAUSEA);
             }
             case PRAYER_REGENERATION -> PRAYER_REGEN.put(player.getUuid(), now + HerbloreData.Effect.REGEN_DURATION);
+            case GOADING -> GOADING.put(player.getUuid(), now + HerbloreData.Effect.GOADING_DURATION);
             case STAMINA -> {
                 player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 20 * 120, 0));
                 player.getHungerManager().add(4, 0.5f);
@@ -433,6 +436,29 @@ final class ItemHooks {
                 + (drink.mods().isEmpty() ? "" : " You feel slightly reinvigorated... and slightly dizzy too."));
         ServerNetworking.sync(player);
         ActionManager.cancel(player);
+    }
+
+    /**
+     * Goading potion: every 6 game ticks, monsters within a 9x9-tile area (4 tiles = 8 blocks each way) that aren't
+     * already fighting someone turn on the player. Called every game tick.
+     */
+    static void goadingTick(ServerPlayerEntity player, long gameTick) {
+        Long until = GOADING.get(player.getUuid());
+        if (until == null) {
+            return;
+        }
+        if (gameTick >= until || !player.isAlive()) {
+            GOADING.remove(player.getUuid());
+            Msg.red(player, "Your goading potion has worn off.");
+            return;
+        }
+        if (gameTick % HerbloreData.Effect.GOADING_INTERVAL != 0) {
+            return;
+        }
+        for (com.runecraft.entity.OsrsMonsterEntity mob : player.getWorld().getEntitiesByClass(com.runecraft.entity.OsrsMonsterEntity.class,
+                player.getBoundingBox().expand(8), m -> m.isAlive() && m.getTarget() == null)) {
+            mob.setTarget(player);
+        }
     }
 
     /** Prayer regeneration potions: one Prayer point every 12 game ticks while active. Called every game tick. */

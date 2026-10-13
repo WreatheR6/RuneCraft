@@ -23,6 +23,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -88,6 +89,10 @@ class ArtisanRecipeReferenceTest {
         ALIASES.put("fire_pot", "POT");
         ALIASES.put("shape_plant_pot", "UNFIRED_PLANT_POT");
         ALIASES.put("fire_plant_pot", "EMPTY_PLANT_POT");
+        // Brews go into the vat (no ale output until it has fermented).
+        for (BrewingData.Brew b : BrewingData.BREWS) {
+            ALIASES.put("brew_" + b.id(), b.id().toUpperCase(Locale.ROOT));
+        }
         ALIASES.put("shape_pot_lid", "UNFIRED_POT_LID");
         ALIASES.put("blow_empty_fishbowl", "FISHBOWL");
         ALIASES.put("blow_empty_light_orb", "LIGHT_ORB");
@@ -340,16 +345,32 @@ class ArtisanRecipeReferenceTest {
             Recipe r = Recipes.get("brew_" + b.id());
             assertNotNull(r, b.id());
             assertEquals(com.runecraft.osrs.MenuType.BREWING, r.menu());
-            assertEquals(BrewingData.PINTS, r.outputs().get(b.id()));
-            assertEquals(BrewingData.PINTS, r.inputs().get("beer_glass"));
+            // The brew goes into the vat; the glasses are filled when it has fermented.
+            assertNull(r.outputs().get(b.id()));
+            assertNull(r.inputs().get("beer_glass"));
             assertEquals(1, r.inputs().get("ale_yeast"));
             assertEquals(b.malt() ? Integer.valueOf(2) : null, r.inputs().get("barley_malt"), b.id());
+            assertEquals(b.malt() ? Integer.valueOf(2) : null, r.inputs().get("minecraft:water_bucket"), b.id());
             assertNotNull(BrewingData.drink(b.id()), b.id());
             assertNotNull(BrewingData.drink(b.mature()), b.mature());
             assertEquals(com.runecraft.osrs.ItemDef.Kind.FOOD, com.runecraft.osrs.ItemCatalog.get(b.mature()).kind(), b.mature());
             assertEquals("beer_glass", BrewingData.emptyGlass(b.mature()));
         }
         assertEquals(b("axemans_folly").amount(), 1); // one oak root per vat
+        // Outcomes out of 128: 6 mature / 106 regular / 16 bad, or 82 / 30 / 16 with "the stuff".
+        int[] plain = new int[3];
+        int[] stuff = new int[3];
+        for (int i = 0; i < 128; i++) {
+            plain[BrewingData.outcome(false, (i + 0.5) / 128).ordinal()]++;
+            stuff[BrewingData.outcome(true, (i + 0.5) / 128).ordinal()]++;
+        }
+        assertEquals(java.util.List.of(16, 106, 6), java.util.Arrays.stream(plain).boxed().toList());
+        assertEquals(java.util.List.of(16, 30, 82), java.util.Arrays.stream(stuff).boxed().toList());
+        // Three aligned 640-minute cycles: between 21h20m (+1 minute) and 32h.
+        long cycle = 640L * 1200;
+        assertEquals(3 * cycle, BrewingData.readyAt(0, cycle));
+        assertEquals(4 * cycle, BrewingData.readyAt(cycle + 5, cycle));
+        assertEquals(2 * cycle + 1, BrewingData.readyAt(cycle - 1, cycle) - (cycle - 1));
     }
 
     private static BrewingData.Brew b(String id) {
@@ -374,7 +395,7 @@ class ArtisanRecipeReferenceTest {
         assertEquals(2 + 2, s.boost(Skill.COOKING)); // 2 + 5% of 50
         BrewingData.drink("wizard_blizzard").apply(s);
         assertEquals(4, s.boost(Skill.STRENGTH)); // 1 + 6% of 50 = 4 replaces the ale's +2
-        assertEquals(-8 - 3 - 3, s.boost(Skill.ATTACK)); // chef's delight -3, then 3 + 2% of the drained level (39)
+        assertEquals(-8 - 5 - 3, s.boost(Skill.ATTACK)); // chef's delight(m) 3 + 5% of 42, then 3 + 2% of the drained level (37)
         assertEquals(9, BrewingData.drink("fruit_blast").heal());
         assertEquals(6, BrewingData.drink("moonlight_mead_m").heal());
     }
@@ -411,6 +432,16 @@ class ArtisanRecipeReferenceTest {
         }
         // OSRS Wiki: restore mix is the last roe mix (24), the extended super antifire mix the last of all (99, 78 XP).
         assertEquals(24, HerbloreData.mix("restore_mix").level());
+        // Mixes need Barbarian Training's Herblore part (gated by the quest id below).
+        assertTrue(HerbloreData.isBarbarianMix("mix_attack_mix"));
+        assertTrue(HerbloreData.isBarbarianMix("mix_attack_mix_caviar"));
+        assertTrue(!HerbloreData.isBarbarianMix("mix_super_combat_potion"));
+        assertNotNull(com.runecraft.osrs.content.ContentRegistry.quest(HerbloreData.BARBARIAN_TRAINING));
+        // Goading potion: 54 Herblore, 132 XP, harralander potion (unf) + aldarium.
+        Recipe goading = Recipes.get("mix_goading_potion");
+        assertEquals(54, goading.level());
+        assertEquals(132.0, goading.xpTenths() / 10.0, 1e-9);
+        assertTrue(goading.inputs().containsKey("harralander_potion_unf") && goading.inputs().containsKey("aldarium"));
         assertEquals(78.0, HerbloreData.mix("extended_super_antifire_mix").xp(), 1e-9);
         // Sanfew serum: 57 + 63 + 72 XP for the 4-dose steps.
         double sanfew = (Recipes.get("mix_sanfew_step_1").xpTenths() + Recipes.get("mix_sanfew_step_2").xpTenths()

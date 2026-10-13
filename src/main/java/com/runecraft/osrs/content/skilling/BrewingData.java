@@ -19,11 +19,13 @@ import java.util.function.Consumer;
  * Cooking's brewing and gnome cooking.
  *
  * <p><b>Brewing</b> (fermenting vats at the Port Phasmatys and Keldagrim breweries, menu BREWING): two buckets of
- * water, two barley malt (not for cider), the brew's ingredient and a pot of ale yeast make a vat that fills
- * eight beer glasses. Levels and XP are the OSRS Wiki values (XP per vat). A vat has a {@link #MATURE_CHANCE}
- * chance to turn mature (the (m) ales: stronger boosts). Approx: the brew is ready at once instead of
- * fermenting for several hours. Ale yeast comes from The Green Ghost in Port Phasmatys (sold by the Port
- * Phasmatys general store here) and the Grand Exchange.
+ * water, two barley malt and the brew's ingredient (or four buckets of apple mush for cider) and a pot of ale
+ * yeast start a vat. The Cooking XP (OSRS Wiki values, per vat) comes when the yeast goes in. The brew then
+ * ferments for three 640-minute growth cycles (21h20m to 32h of world time, like farming) and is collected
+ * with eight beer glasses: 6/128 of vats turn mature (82/128 with "the stuff" from Trouble Brewing, not for
+ * cider), 16/128 go bad and the rest are ordinary ale. Each player has their own vat at each brewery. Ale
+ * yeast comes from The Green Ghost in Port Phasmatys (sold by the Port Phasmatys general store here) and the
+ * Grand Exchange. Not modelled: calquat kegs.
  *
  * <p><b>Gnome cooking</b>: Gianne dough baked in a batta tin, crunchy tray or gnomebowl mould (Grand Tree
  * Groceries) is topped and baked again; cocktails are shaken in a cocktail shaker and poured into a cocktail
@@ -33,10 +35,39 @@ import java.util.function.Consumer;
  * <p>Drinks with stat effects ({@link #DRINKS}) are applied by SkillingHooks' ItemHooks.
  */
 public final class BrewingData extends SkillingPart {
-    /** Chance that a vat turns mature. Approx: the wiki gives no exact rate (higher with "the stuff"). */
-    public static final double MATURE_CHANCE = 0.05;
     /** Pints from one vat. */
     public static final int PINTS = 8;
+    /** A brew ferments for three growth cycles of 640 minutes. */
+    public static final int FERMENT_CYCLES = 3;
+    public static final int CYCLE_MINUTES = 640;
+    /** Vat outcomes out of 128 (OSRS Wiki, Mod Ash): mature, regular, bad; with "the stuff" 82/30/16. */
+    public static final int OUTCOME_ROLLS = 128;
+    public static final int MATURE = 6;
+    public static final int MATURE_WITH_STUFF = 82;
+    public static final int BAD = 16;
+    public static final String THE_STUFF = "the_stuff";
+
+    /** A vat's result. */
+    public enum Outcome { BAD, REGULAR, MATURE }
+
+    /** Rolls a vat's result from a random value in [0, 1). */
+    public static Outcome outcome(boolean stuff, double random) {
+        int roll = (int) (random * OUTCOME_ROLLS);
+        int mature = stuff ? MATURE_WITH_STUFF : MATURE;
+        if (roll < mature) {
+            return Outcome.MATURE;
+        }
+        return roll < OUTCOME_ROLLS - BAD ? Outcome.REGULAR : Outcome.BAD;
+    }
+
+    /**
+     * World time a brew started at {@code start} is ready: the third growth-cycle boundary after it
+     * (cycles are aligned to the clock, as in OSRS, so a vat takes between two and three full cycles).
+     */
+    public static long readyAt(long start, long cycleTicks) {
+        long cycle = Math.max(1, cycleTicks);
+        return (Math.floorDiv(start, cycle) + FERMENT_CYCLES) * cycle;
+    }
 
     /** A skill change from a drink: positive boosts by {@code flat + pct * level}, negative drains by as much. */
     public record Mod(Skill skill, int flat, double pct) {
@@ -116,34 +147,37 @@ public final class BrewingData extends SkillingPart {
         return new Mod(s, -flat, pct);
     }
 
-    /** Drinkable items with effects (OSRS Wiki "Ale" and "Drinks"; values marked approx are best guesses). */
+    /** Drinkable items with effects (OSRS Wiki "Brewing" table: heals, boosts, and drains of flat + % of the current level). */
     public static final List<Drink> DRINKS = List.of(
-            new Drink("cider", "Cider", 2, List.of(up(Skill.FARMING, 1), down(ATT, 2), down(STR, 2))),
-            new Drink("mature_cider", "Mature cider", 2, List.of(up(Skill.FARMING, 2), down(ATT, 5), down(STR, 5))), // approx
-            new Drink("dwarven_stout", "Dwarven stout", 1, List.of(up(Skill.MINING, 1), up(Skill.SMITHING, 1), down(ATT, 2),
-                    down(STR, 2), down(DEF, 2))),
+            new Drink("cider", "Cider", 1, List.of(up(Skill.FARMING, 1), down(ATT, 2, 0.02), down(STR, 2, 0.02))),
+            new Drink("mature_cider", "Mature cider", 2, List.of(up(Skill.FARMING, 2), down(ATT, 3, 0.02), down(STR, 3, 0.02))),
+            new Drink("dwarven_stout", "Dwarven stout", 1, List.of(up(Skill.MINING, 1), up(Skill.SMITHING, 1), down(ATT, 2, 0.04),
+                    down(STR, 2, 0.04), down(DEF, 2, 0.04))),
             new Drink("dwarven_stout_m", "Dwarven stout(m)", 2, List.of(up(Skill.MINING, 2), up(Skill.SMITHING, 2),
                     down(ATT, 3, 0.04), down(STR, 3, 0.04), down(DEF, 3, 0.04))),
-            new Drink("asgarnian_ale", "Asgarnian ale", 2, List.of(up(STR, 2), down(ATT, 4))),
-            new Drink("asgarnian_ale_m", "Asgarnian ale(m)", 2, List.of(up(STR, 3), down(ATT, 6))),
-            new Drink("greenmans_ale", "Greenman's ale", 1, List.of(up(Skill.HERBLORE, 1), down(ATT, 3), down(STR, 3), down(DEF, 3))),
+            new Drink("asgarnian_ale", "Asgarnian ale", 1, List.of(up(STR, 2), down(ATT, 2, 0.05))),
+            new Drink("asgarnian_ale_m", "Asgarnian ale(m)", 2, List.of(up(STR, 3), down(ATT, 3, 0.05))),
+            new Drink("greenmans_ale", "Greenman's ale", 1, List.of(up(Skill.HERBLORE, 1), down(ATT, 2, 0.04), down(STR, 2, 0.04),
+                    down(DEF, 2, 0.04))),
             new Drink("greenmans_ale_m", "Greenman's ale(m)", 2, List.of(up(Skill.HERBLORE, 2), down(ATT, 3, 0.04), down(STR, 3, 0.04),
                     down(DEF, 3, 0.04))),
-            // +2 Magic, +3 from level 50 (2% of the level stands in for the step).
-            new Drink("wizards_mind_bomb", "Wizard's mind bomb", 1, List.of(up(Skill.MAGIC, 2, 0.02), down(ATT, 3), down(STR, 4),
-                    down(DEF, 3))),
-            new Drink("wizards_mind_bomb_m", "Mature wmb", 2, List.of(up(Skill.MAGIC, 3, 0.02), down(ATT, 5), down(STR, 5),
-                    down(DEF, 5))), // approx
-            new Drink("dragon_bitter", "Dragon bitter", 1, List.of(up(STR, 2), down(ATT, 6))),
-            new Drink("dragon_bitter_m", "Dragon bitter(m)", 2, List.of(up(STR, 3), down(ATT, 6))), // approx
+            new Drink("wizards_mind_bomb", "Wizard's mind bomb", 1, List.of(up(Skill.MAGIC, 2, 0.02), down(ATT, 1, 0.05),
+                    down(STR, 1, 0.05), down(DEF, 1, 0.05))),
+            new Drink("wizards_mind_bomb_m", "Mature wmb", 2, List.of(up(Skill.MAGIC, 3, 0.02), down(ATT, 2, 0.05), down(STR, 2, 0.05),
+                    down(DEF, 2, 0.05))),
+            new Drink("dragon_bitter", "Dragon bitter", 1, List.of(up(STR, 2), down(ATT, 2, 0.05))),
+            new Drink("dragon_bitter_m", "Dragon bitter(m)", 2, List.of(up(STR, 3), down(ATT, 2, 0.05))),
             new Drink("moonlight_mead", "Moonlight mead", 4, List.of()),
             new Drink("moonlight_mead_m", "Moonlight mead(m)", 6, List.of()),
-            new Drink("axemans_folly", "Axeman's folly", 1, List.of(up(Skill.WOODCUTTING, 1), down(ATT, 3), down(STR, 3))),
-            new Drink("axemans_folly_m", "Axeman's folly(m)", 2, List.of(up(Skill.WOODCUTTING, 2), down(ATT, 4), down(STR, 4))), // approx
-            new Drink("chefs_delight", "Chef's delight", 1, List.of(up(Skill.COOKING, 1, 0.05), down(ATT, 3), down(STR, 3))),
-            new Drink("chefs_delight_m", "Chef's delight(m)", 2, List.of(up(Skill.COOKING, 2, 0.05), down(ATT, 3), down(STR, 3))),
-            new Drink("slayers_respite", "Slayer's respite", 1, List.of(up(Skill.SLAYER, 2), down(ATT, 2), down(STR, 2))),
-            new Drink("slayers_respite_m", "Slayer's respite(m)", 2, List.of(up(Skill.SLAYER, 4), down(ATT, 2), down(STR, 2))),
+            new Drink("axemans_folly", "Axeman's folly", 1, List.of(up(Skill.WOODCUTTING, 1), down(ATT, 2, 0.02), down(STR, 2, 0.02))),
+            new Drink("axemans_folly_m", "Axeman's folly(m)", 2, List.of(up(Skill.WOODCUTTING, 2), down(ATT, 3, 0.02),
+                    down(STR, 3, 0.02))),
+            new Drink("chefs_delight", "Chef's delight", 1, List.of(up(Skill.COOKING, 1, 0.05), down(ATT, 2, 0.05), down(STR, 2, 0.05))),
+            new Drink("chefs_delight_m", "Chef's delight(m)", 2, List.of(up(Skill.COOKING, 2, 0.05), down(ATT, 3, 0.05),
+                    down(STR, 3, 0.05))),
+            new Drink("slayers_respite", "Slayer's respite", 1, List.of(up(Skill.SLAYER, 2), down(ATT, 2, 0.02), down(STR, 2, 0.02))),
+            new Drink("slayers_respite_m", "Slayer's respite(m)", 2, List.of(up(Skill.SLAYER, 4), down(ATT, 3, 0.02),
+                    down(STR, 3, 0.02))),
             // Gnome cocktails: the fruit ones only heal; the alcoholic ones boost Strength by 1 + 6% and lower Attack
             // by 3 + 2% (approx: RSC/RS wiki figures).
             new Drink("fruit_blast", "Fruit blast", 9, List.of()),
@@ -330,12 +364,14 @@ public final class BrewingData extends SkillingPart {
         MenuType B = MenuType.BREWING;
         out.accept(r("press_apple_mush", B, "Apple mush", Skill.COOKING, 14, 0).in("cooking_apple", 4).in("minecraft:bucket", 1)
                 .out("apple_mush", 1).ticks(4).build());
+        // Starting a vat: the ale goes into the player's vat (SkillingHooks' brewing) and is collected once fermented.
         for (Brew b : BREWS) {
             Recipe.Builder rb = r("brew_" + b.id(), B, b.name() + " (8 pints)", Skill.COOKING, b.level(), b.xp())
-                    .in("minecraft:water_bucket", 2).in(b.ingredient(), b.amount()).in("ale_yeast", 1).in("beer_glass", PINTS)
-                    .out(b.id(), PINTS).out("minecraft:bucket", 2).out("empty_pot", 1).ticks(5);
+                    .in(b.ingredient(), b.amount()).in("ale_yeast", 1).out("empty_pot", 1).ticks(5);
             if (b.malt()) {
-                rb.in("barley_malt", 2);
+                rb.in("minecraft:water_bucket", 2).in("barley_malt", 2).out("minecraft:bucket", 2);
+            } else {
+                rb.out("minecraft:bucket", b.amount()); // the apple mush's buckets
             }
             out.accept(rb.build());
         }
@@ -380,7 +416,8 @@ public final class BrewingData extends SkillingPart {
 
     @Override
     public List<BlockDef> blocks() {
-        return List.of(BlockDef.menu("fermenting_vat", "Fermenting vat", MenuType.BREWING, 0x7A5A3A, "vat"));
+        // Scripted: an empty vat opens the BREWING menu, a full one shows its progress or is drained into beer glasses.
+        return List.of(BlockDef.scripted("fermenting_vat", "Fermenting vat", 0x7A5A3A, "vat"));
     }
 
     @Override

@@ -178,8 +178,9 @@ class SkillingMinigameRewardsTest {
         assertEquals(0.4, GuardiansRewards.powerPerStone(1), 1e-9);
         assertEquals(100.0, 250 * GuardiansRewards.powerPerStone(1), 1e-9);
         assertEquals(100.0, 2500 * GuardiansRewards.powerPerStone(10), 1e-9);
-        assertFalse(GuardiansRewards.qualifies(100, 49));
-        assertTrue(GuardiansRewards.qualifies(100, 50));
+        // 300 total energy since November 2024 (150 before).
+        assertFalse(GuardiansRewards.qualifies(200, 99));
+        assertTrue(GuardiansRewards.qualifies(200, 100));
         // 356 energy: 3 points and a 56% chance of a 4th.
         assertEquals(3, GuardiansRewards.points(356));
         assertEquals(4, GuardiansRewards.points(356, 0.55));
@@ -188,51 +189,160 @@ class SkillingMinigameRewardsTest {
         assertEquals(2, GuardiansRewards.searches(2, 7));
         assertEquals(0, GuardiansRewards.searches(-1, 7));
         assertEquals(4455.0, GuardiansRewards.completionXp(99), 1e-9);
+        // Energy caps: 1,000 per type and 1,200 in all.
+        int[] e = new int[2];
+        assertTrue(GuardiansRewards.addEnergy(e, 990, 0));
+        assertTrue(GuardiansRewards.addEnergy(e, 50, 150));
+        assertEquals(1000, e[0]);
+        assertEquals(150, e[1]);
+        assertTrue(GuardiansRewards.addEnergy(e, 0, 500));
+        assertEquals(200, e[1]);
+        assertFalse(GuardiansRewards.addEnergy(e, 10, 10));
     }
 
     @Test
     void guardiansRewardsGuardianTable() {
+        List<String> all = GuardiansRewards.POUCHES;
         assertEquals(140, GuardiansRewards.mainTotal(List.of()));
-        assertEquals(125, GuardiansRewards.mainTotal(GuardiansRewards.POUCHES));
-        assertEquals(4 / 125.0, GuardiansRewards.chance("air_rune", GuardiansRewards.POUCHES), 1e-9);
-        assertEquals(10 / 125.0, GuardiansRewards.chance("blood_rune", GuardiansRewards.POUCHES), 1e-9);
+        assertEquals(125, GuardiansRewards.mainTotal(all));
+        assertEquals(125, GuardiansRewards.mainTotal(List.of("colossal_pouch")));
+        assertEquals(4 / 125.0, GuardiansRewards.chance("air_rune", all), 1e-9);
+        assertEquals(10 / 125.0, GuardiansRewards.chance("blood_rune", all), 1e-9);
+        assertEquals(16 / 140.0, GuardiansRewards.chance(GuardiansRewards.TALISMANS, List.of()), 1e-9);
+        assertEquals(15 / 140.0, GuardiansRewards.chance(GuardiansRewards.POUCH, List.of()), 1e-9);
+        assertEquals(5 / 140.0, GuardiansRewards.chance("intricate_pouch", List.of()), 1e-9);
         // Pearls 18/140: one search in 7.78 without pouches owned, 6.94 with them all.
         assertEquals(7.778, 1 / GuardiansRewards.chance("abyssal_pearls", List.of()), 0.01);
-        assertEquals(6.944, 1 / GuardiansRewards.chance("abyssal_pearls", GuardiansRewards.POUCHES), 0.01);
-        assertEquals(0.0, GuardiansRewards.chance("giant_pouch", GuardiansRewards.POUCHES), 1e-9);
+        assertEquals(6.944, 1 / GuardiansRewards.chance("abyssal_pearls", all), 0.01);
+        assertEquals(0.0, GuardiansRewards.chance(GuardiansRewards.POUCH, all), 1e-9);
+        int talismanWeight = 0;
+        for (Object[] row : GuardiansRewards.TALISMAN_TABLE) {
+            talismanWeight += (Integer) row[1];
+        }
+        assertEquals(35, talismanWeight);
         assertEquals(Integer.valueOf(77), GuardiansRewards.runeLevel("blood_rune"));
         assertNull(GuardiansRewards.runeLevel("abyssal_pearls"));
         for (String id : GuardiansRewards.allItems()) {
             assertTrue(ItemCatalog.exists(id), id);
         }
         Random r = new Random(5);
-        int needles = 0;
-        int pets = 0;
+        Map<String, Integer> seen = new HashMap<>();
         int n = 400_000;
+        List<String> owned = List.of("small_pouch", "medium_pouch", "large_pouch", "giant_pouch", "atlaxs_diary");
         for (int i = 0; i < n; i++) {
-            MinigameReward rw = GuardiansRewards.search(99, GuardiansRewards.POUCHES, r::nextDouble);
-            assertFalse(GuardiansRewards.POUCHES.contains(rw.item()), rw.item());
-            if (rw.item().equals("abyssal_needle")) {
-                needles++;
-            }
-            if (rw.item().equals("abyssal_protector")) {
-                pets++;
-            }
-            if (rw.item().equals("air_rune")) {
-                assertTrue(rw.amount() >= 400 && rw.amount() <= 500);
+            for (MinigameReward rw : GuardiansRewards.search(99, owned, r::nextDouble)) {
+                assertFalse(GuardiansRewards.POUCHES.contains(rw.item()), rw.item());
+                seen.merge(rw.item(), 1, Integer::sum);
+                if (rw.item().equals("air_rune")) {
+                    assertTrue(rw.amount() >= 400 && rw.amount() <= 500);
+                }
+                if (rw.item().equals("abyssal_pearls")) {
+                    assertTrue(rw.amount() >= 14 && rw.amount() <= 16);
+                }
             }
         }
-        assertEquals(1 / 300.0, needles / (double) n, 0.0006);
-        assertEquals(1 / 4000.0, pets / (double) n, 0.0001);
-        // Runes above the player's level come in smaller stacks.
+        assertEquals(0, seen.getOrDefault("atlaxs_diary", 0));
+        assertEquals(1 / 300.0, seen.getOrDefault("abyssal_needle", 0) / (double) n, 0.0006);
+        assertEquals(1 / 4000.0, seen.getOrDefault("abyssal_protector", 0) / (double) n, 0.0001);
+        assertEquals(1 / 200.0, seen.getOrDefault("catalytic_talisman", 0) / (double) n, 0.0006);
+        // Elemental talismans only come from the talisman table: 16/125 x 1/35.
+        assertEquals(16 / 125.0 / 35 * (1 - 1 / 200.0 - 1 / 300.0), seen.getOrDefault("elemental_talisman", 0) / (double) n, 0.0002);
+        // A new player gets their first missing pouch (small first) and Atlax's diary.
+        Random fresh = new Random(3);
+        Map<String, Integer> first = new HashMap<>();
+        for (int i = 0; i < 20_000; i++) {
+            for (MinigameReward rw : GuardiansRewards.search(99, List.of(), fresh::nextDouble)) {
+                first.merge(rw.item(), 1, Integer::sum);
+            }
+        }
+        assertTrue(first.getOrDefault("small_pouch", 0) > 0);
+        assertEquals(0, first.getOrDefault("medium_pouch", 0));
+        assertEquals(1 / 20.0, first.getOrDefault("atlaxs_diary", 0) / 20_000.0, 0.005);
+        // Runes above the player's level: amount x (level / required)^4, at least a tenth.
         Random low = new Random(1);
         for (int i = 0; i < 5000; i++) {
-            MinigameReward rw = GuardiansRewards.search(27, GuardiansRewards.POUCHES, low::nextDouble);
-            if (rw.item().equals("death_rune")) {
-                assertTrue(rw.amount() <= 60, "" + rw.amount());
+            for (MinigameReward rw : GuardiansRewards.search(27, all, low::nextDouble)) {
+                if (rw.item().equals("death_rune")) {
+                    assertTrue(rw.amount() <= 36, "" + rw.amount());
+                }
             }
         }
         assertFalse(GuardiansRewards.openIntricatePouch(new Random(2)::nextDouble).isEmpty());
+    }
+
+    @Test
+    void guardiansCellsAndBarriers() {
+        assertEquals(GuardiansRift.Cell.WEAK, GuardiansRift.cellFor("air"));
+        assertEquals(GuardiansRift.Cell.WEAK, GuardiansRift.cellFor("body"));
+        assertEquals(GuardiansRift.Cell.MEDIUM, GuardiansRift.cellFor("chaos"));
+        assertEquals(GuardiansRift.Cell.STRONG, GuardiansRift.cellFor("law"));
+        assertEquals(GuardiansRift.Cell.OVERCHARGED, GuardiansRift.cellFor("blood"));
+        for (Object[] a : MinigameRules.Guardians.ALTARS) {
+            assertNotNull(GuardiansRift.cellFor((String) a[0]));
+        }
+        for (GuardiansRift.Cell c : GuardiansRift.Cell.values()) {
+            assertTrue(ItemCatalog.exists(c.item), c.item);
+            // Creating a guardian gives 2x+1 energy, x being the strengthening energy (weak: 2.5).
+            if (c != GuardiansRift.Cell.WEAK) {
+                assertEquals(2 * c.strengthenEnergy + 1, c.guardianEnergy);
+            }
+        }
+        assertTrue(ItemCatalog.exists(GuardiansRift.UNCHARGED_CELL));
+        GuardiansRift rift = new GuardiansRift();
+        // Any cell on an inactive tile raises a weak barrier for 2 energy of each type.
+        GuardiansRift.Use u = rift.useCell(0, GuardiansRift.Cell.STRONG, 0, 0);
+        assertEquals(2, u.elemental());
+        assertEquals(2, u.catalytic());
+        assertEquals(180.0, u.xp(), 1e-9);
+        assertEquals(50, rift.hp(0));
+        // A higher-tier cell strengthens one tier at a time.
+        u = rift.useCell(0, GuardiansRift.Cell.OVERCHARGED, 0, 0);
+        assertEquals(22, u.elemental());
+        assertEquals(GuardiansRift.Cell.MEDIUM.ordinal(), rift.tier(0));
+        assertEquals(100, rift.hp(0));
+        // A lower or equal cell recharges: weak heals 10 for 2 energy, within the per-game caps.
+        for (int t = 0; t < 1000; t++) {
+            rift.tick(GuardiansRift.PREP_TICKS + t * GuardiansRift.ATTACK_INTERVAL, 1, 0, () -> 0.0);
+            if (rift.hp(0) <= 80) {
+                break;
+            }
+        }
+        int before = rift.hp(0);
+        u = rift.useCell(0, GuardiansRift.Cell.WEAK, 0, 0);
+        assertEquals(2, u.elemental());
+        assertEquals(Math.min(100, before + 10), rift.hp(0));
+        assertEquals(0, rift.useCell(0, GuardiansRift.Cell.WEAK, 0, GuardiansRift.RECHARGE_ENERGY_CAP).elemental());
+        assertEquals(0.0, rift.useCell(0, GuardiansRift.Cell.WEAK, GuardiansRift.RECHARGE_XP_CAP, 0).xp(), 1e-9);
+        // Rift guardians give energy of one type only.
+        u = rift.assemble(GuardiansRift.Cell.MEDIUM, true);
+        assertEquals(0, u.elemental());
+        assertEquals(15, u.catalytic());
+        assertEquals(1, rift.activeRiftGuardians());
+        // No damage during the two-minute preparation.
+        GuardiansRift calm = new GuardiansRift();
+        calm.useCell(1, GuardiansRift.Cell.WEAK, 0, 0);
+        for (long t = 0; t < GuardiansRift.PREP_TICKS; t++) {
+            calm.tick(t, 5, 0, () -> 0.0);
+        }
+        assertEquals(50, calm.hp(1));
+        // Unprotected, the barrier breaks, the tile needs 12 fragments, then the Great Guardian takes the hits.
+        long t = GuardiansRift.PREP_TICKS;
+        while (calm.tier(1) != -2) {
+            calm.tick(t++, 5, 0, () -> 0.0);
+        }
+        assertEquals("broken", calm.describe(1));
+        assertFalse(calm.useCell(1, GuardiansRift.Cell.WEAK, 0, 0).ok());
+        assertEquals(GuardiansRift.REPAIR_ENERGY, calm.repair(1).elemental());
+        assertEquals("inactive", calm.describe(1));
+        while (calm.guardianHealth() > 0) {
+            calm.tick(t++, 5, 0, () -> 0.0);
+        }
+        // The 60% surge damages every barrier by 50.
+        GuardiansRift surge = new GuardiansRift();
+        surge.useCell(2, GuardiansRift.Cell.WEAK, 0, 0);
+        surge.useCell(2, GuardiansRift.Cell.STRONG, 0, 0);
+        surge.tick(1, 1, 60, () -> 0.0);
+        assertEquals(50, surge.hp(2));
     }
 
     // ------------------------------------------------------------------ Volcanic Mine
@@ -244,28 +354,74 @@ class SkillingMinigameRewardsTest {
         assertEquals(3000, VolcanicMine.PERMANENT_ACCESS_NUMULITE);
         assertEquals(1000, VolcanicMine.GAME_TICKS);
         assertEquals(-1, VolcanicMine.maxTier(49));
-        assertEquals(0, VolcanicMine.maxTier(50));
-        assertEquals(7, VolcanicMine.maxTier(85));
-        assertEquals(7, VolcanicMine.maxTier(99));
-        assertEquals(15, VolcanicMine.FRAGMENT_POINTS[0]);
+        assertEquals(3, VolcanicMine.maxTier(50));
+        assertEquals(4, VolcanicMine.maxTier(69));
+        assertEquals(6, VolcanicMine.maxTier(85));
+        assertEquals(6, VolcanicMine.maxTier(99));
+        // Fragment table (OSRS Wiki): iron 15/10, silver 20/20, coal 25/30, gold 34/40, mithril 44/60, adamantite 55/100, runite 70/150.
+        assertEquals(List.of(15, 20, 25, 34, 44, 55, 70), java.util.Arrays.stream(VolcanicMine.FRAGMENT_POINTS).boxed().toList());
         assertEquals(10.0, VolcanicMine.FRAGMENT_XP[0], 1e-9);
-        assertEquals(70, VolcanicMine.FRAGMENT_POINTS[7]);
-        assertEquals(150.0, VolcanicMine.FRAGMENT_XP[7], 1e-9);
-        VolcanicMine.Hit miss = VolcanicMine.hit(49, 6, () -> 0.0);
+        assertEquals(150.0, VolcanicMine.FRAGMENT_XP[6], 1e-9);
+        VolcanicMine.Hit miss = VolcanicMine.hit(49, 5, () -> 0.0);
         assertEquals(-1, miss.tier());
         assertEquals(1, miss.points());
         assertEquals(5.0, miss.xp(), 1e-9);
+        // Fragment chance by boulder size: 1/20, 1/12, 1/8, 1/5, 1/3.
+        assertEquals(1 / 20.0, VolcanicMine.fragmentChance(1), 1e-9);
+        assertEquals(1 / 3.0, VolcanicMine.fragmentChance(5), 1e-9);
+        assertEquals(40, VolcanicMine.stageHp(1, 1));
+        assertEquals(120, VolcanicMine.stageHp(4, 3));
+        assertEquals(180, VolcanicMine.stageHp(5, 3));
         Random r = new Random(9);
-        for (int i = 0; i < 2000; i++) {
-            VolcanicMine.Hit h = VolcanicMine.hit(60, 1 + i % 6, r::nextDouble);
+        int[] seen = new int[7];
+        for (int i = 0; i < 200_000; i++) {
+            VolcanicMine.Hit h = VolcanicMine.hit(60, 1 + i % 5, r::nextDouble);
             assertTrue(h.tier() <= VolcanicMine.maxTier(60));
+            if (h.tier() >= 0) {
+                seen[h.tier()]++;
+            }
         }
-        assertTrue(VolcanicMine.fragmentChance(6) > VolcanicMine.fragmentChance(1));
+        assertEquals(0, seen[5]);
+        assertTrue(seen[0] > 0 && seen[4] > 0);
+        // At 99 a fragment is runite with the runite roll's chance (low/high -10/80).
+        Random r99 = new Random(2);
+        int runite = 0;
+        int n = 100_000;
+        for (int i = 0; i < n; i++) {
+            if (VolcanicMine.fragmentTier(99, r99::nextDouble) == 6) {
+                runite++;
+            }
+        }
+        assertEquals(com.runecraft.osrs.Chance.lerp(99, -10, 80), runite / (double) n, 0.004);
+        assertTrue(VolcanicMine.fragmentChance(5) > VolcanicMine.fragmentChance(1));
         assertEquals(57_525, VolcanicMine.petChance(99));
-        assertEquals(2, VolcanicMine.stabilityDelta(new int[]{50, 50, 50}));
-        assertEquals(-1, VolcanicMine.stabilityDelta(new int[]{0, 100, 50}));
+        // Pressure within 40-60% keeps the mine stable; each 10% outside costs a point.
+        assertEquals(1, VolcanicMine.stabilityDelta(new int[]{40, 50, 60}));
+        assertEquals(-1, VolcanicMine.stabilityDelta(new int[]{35, 50, 50}));
+        assertEquals(-8, VolcanicMine.stabilityDelta(new int[]{0, 100, 50}));
+        // The last 30 seconds: no mining, stability pinned at 5%.
+        assertTrue(VolcanicMine.workable(949));
+        assertFalse(VolcanicMine.workable(950));
+        assertEquals(5, VolcanicMine.stability(80, new int[]{50, 50, 50}, 960));
+        assertEquals(81, VolcanicMine.stability(80, new int[]{50, 50, 50}, 100));
+        // Capping: 50 points a time, 300 a game.
+        assertEquals(50, VolcanicMine.capPoints(0));
+        assertEquals(0, VolcanicMine.capPoints(300));
+        assertEquals(100, VolcanicMine.COMPLETION_POINTS);
         assertEquals(100, VolcanicMine.ventStep(99, true));
         assertEquals(0, VolcanicMine.ventStep(1, false));
+        // Petrified Pete's Ore Shop prices.
+        RewardShop pete = RewardShops.get("volcanic_mine");
+        assertNotNull(pete);
+        Map<String, Integer> prices = new HashMap<>();
+        for (RewardShop.Entry e : pete.entries()) {
+            assertTrue(ItemCatalog.exists(e.item()), e.item());
+            prices.put(e.item(), e.costs().get(0).amount());
+            assertEquals(MinigameCurrencies.VOLCANIC_MINE, e.costs().get(0).currency());
+        }
+        assertEquals(855, prices.get("runite_ore"));
+        assertEquals(30, prices.get("iron_ore"));
+        assertEquals(39_000, prices.get("prospector_jacket"));
         Minigame vm = Minigame.VOLCANIC_MINE;
         assertEquals(Skill.MINING, vm.skill());
         assertEquals(50, vm.level());

@@ -190,6 +190,19 @@ final class DungeonsAsgarnia {
             c.set(ml1x + 46, f + 4, mlz + d, mc("stripped_spruce_wood"));
         }
         c.fill(ml1x + 2, f + 1, mlz, ml1x + 24, f + 1, mlz, mc("rail[shape=east_west]"));
+        // The upper level (57 Mining, 100 nuggets to Prospector Percy): a raised ledge with closely packed veins and its
+        // own hopper, reached by steps on its east side. Approx: 16 of the real level's 64 veins.
+        c.fill(ml1x + 4, f + 1, mlz - 20, ml1x + 20, f + 3, mlz - 10, mc("stone"));
+        for (int x = ml1x + 5; x <= ml1x + 19; x += 2) {
+            c.set(x, f + 4, mlz - 20, rc("upper_pay_dirt_vein")).set(x, f + 4, mlz - 16, rc("upper_pay_dirt_vein"));
+        }
+        c.set(ml1x + 18, f + 4, mlz - 11, rc("upper_pay_dirt_hopper"));
+        for (int d = 0; d < 3; d++) {
+            if (d > 0) {
+                c.fill(ml1x + 23 - d, f + 1, mlz - 12, ml1x + 23 - d, f + d, mlz - 11, mc("stone"));
+            }
+            c.fill(ml1x + 23 - d, f + 1 + d, mlz - 12, ml1x + 23 - d, f + 1 + d, mlz - 11, mc("stone_brick_stairs[facing=west]"));
+        }
         c.link(ix, iz, 55, f, "south");
         c.link(fx, fz, 55, f, "south");
         c.link(gx, gz, 54, f, "north");
