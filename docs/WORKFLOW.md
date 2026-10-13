@@ -132,13 +132,18 @@ Recurring conflict spots:
   - Dagannoth Kings fought in their sublevel-6 lair (surface arena removed), circular doors with pet rock, door-supports, Lighthouse exit; deep rooms (< y 34) no longer raise a seabed shelf (`TerrainAnchors.DEEP_UNDERGROUND_BELOW`); Kruk's western hordes; Ape Atoll falling rocks and traps.
   - Last Man Standing (`Minigame.LAST_MAN_STANDING`): builds, loadouts, chest tables, fog, keys, safe deaths with stash (`runecraft_minigames_lms`), points/rank, reward shop, ring of wealth (i) and magic shortbow (i) scrolls; `CombatHandler.pvpOverride` gives Fight Pit and Castle Wars ranged/magic PvP.
 
+- **Session 2, round 7: Emir's Arena, quest and diary snapshot audits:**
+  - Emir's Arena (`Minigame.EMIRS_ARENA`): duel options/slots/presets, ranked queue, PvP Arena Rewards shop, scroll of imbuing; `lms_*` copies use base specs/ammo/2h via `EquipmentBonuses.reference`; LMS build prayer rules via `PrayerService.minigameRule`.
+  - Quests: `quest_reference.tsv` (202 quests from the wiki + quest-helper) and `QuestReferenceTest`; 87 fixes (difficulty, requirements, prerequisites, XP); Learning the Ropes added; 341 QP (= OSRS).
+  - Diaries: `diary_tasks.tsv` (492 wiki tasks) and `DiaryReferenceTest`; wilderness diary rework, 27 requirement fixes, 76 quest requirements enforced, `approx()` marker (407 faithful / 85 approx), place-bound spell tasks; Falador shield, Explorer's ring, sea boots, Morytania legs, Varrock armour and Rada's blessing perks fixed.
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
   - 208 tasks untracked: awakened DT2 bosses, Doom delve levels, Yama contracts, Colosseum waves, Gauntlet prep, raid room/puzzle mechanics, heals/burrows, gear weight or value, movement tiles; missing items (Gauntlet and Hueycoatl armour, ratbane weapons).
   - Rewards not wired (feature missing): cannon capacity, instance fees, ecumenical key rate, DHCB (b)/(t), cosmetic slayer helms, bracelet recharge, extra Jad/Zuk slayer kills.
 - **Minigames:**
-  - Not built: Last Man Standing, Emir's Arena.
+  - Emir's Arena: ranked duels use own gear (no account builds), no fun weapons, blighted surge sack inert, no tournaments.
   - LMS: competitive starts at 4 players, no High Stakes, no per-build prayer limits, `lms_*` copies lack specs (map `lms_` → base in `SpecialAttacks.of`).
   - Ket-Rak healer counts guessed; JalRek-Jad metamorphosis is only a flag.
   - Temple Trekking: event weights guessed, safe instead of dangerous, no boat event, tomes give XP directly.
@@ -154,6 +159,7 @@ Recurring conflict spots:
   - Brews come as 4 doses (OSRS 3).
   - Dungeon herb, seed and Varlamore crops; coral.
   - Seed pack contents are partly guessed.
+- **Diaries:** 85 tasks approximated (missing monsters: vulture, duck, terrorbird, swordchick, deathwing, locust rider, shadow hound; missing items: snelm, Guthix balance, bark, rune hasta; NPC-talk and minigame-internal tasks). Wilderness lava eel task impossible (no Lava Maze spot).
 - **Thieving and Agility:** the Dorgesh-Kaan course is missing; Isle of Souls chests sit on the surface (their real tiles are in the dungeon/tower basement); leaving the Wilderness course doesn't forfeit the fee.
 - **World:**
   - Kruk's Dungeon: the western plane-1 hordes are carved at y -10 under the atoll (own shift, ladder from the lower north-west hall); the other plane-1 clusters (east of 2500, about 120 monkeys/archers) and the plane-0 clusters west of 2600 are still missing.
@@ -172,5 +178,5 @@ Recurring conflict spots:
   - Spined/rock-shell/skeletal helms and Fremennik boots (need dagannoth hide crafting); potions with fewer than 4 doses; boss tables not patched by `MonsterDropsTable`; feathers, edible seaweed, demon contracts, slayer heads still missing as drop items.
   - Skull timers are in memory only (lost on restart). Heavy ballista wield doesn't check MM2 training; uncut zenyte is a gem-cutting recipe.
   - Seers ring magic damage (0.2%/0.5%) can't be represented with whole-percent magic damage.
-  - Imbue scrolls from LMS/Emir's/Bounty Hunter missing (minigames don't exist).
+  - Ring of the gods imbue should need a holy wrench (nowhere modelled).
 - **Untested in game:** much of the Minecraft-side code has only passed CI's boot test. A play-test pass would be the most valuable round once the data rounds slow down. Use `/run` or the client smoke screenshots.
