@@ -4110,3 +4110,58 @@ zuriel's robe top (bh)|body|0|0|0,0,0,58,-10,63,45,74,35,0,0,0,3,0
 zuriel's robe top (deadman mode)|body|0|0|0,0,0,33,-10,11,7,13,12,0,0,0,3,0
 zuriel's staff (bh)|weapon|5|0|13,-1,65,18,0,5,7,4,18,0,72,0,10,0
 zuriel's staff (deadman mode)|weapon|5|0|13,-1,65,18,0,5,7,4,18,0,72,0,10,0
+# RuneCraft aliases for charged jewellery, camouflage outfits and the quest crystal bow (round C sweep).
+polar camo top|body|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+polar camo legs|legs|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+wood camo top|body|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+wood camo legs|legs|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+jungle camo top|body|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+jungle camo legs|legs|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+desert camo top|body|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+desert camo legs|legs|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+new crystal bow|weapon|5|1|0,0,0,0,100,0,0,0,0,0,0,70,0,0
+ring of dueling(1)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ring of dueling(2)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ring of dueling(3)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ring of dueling(4)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ring of dueling(5)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ring of dueling(6)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ring of dueling(7)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ring of dueling(8)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+abyssal bracelet(1)|hands|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+abyssal bracelet(2)|hands|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+abyssal bracelet(3)|hands|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+abyssal bracelet(4)|hands|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+abyssal bracelet(5)|hands|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ring of wealth(1)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ring of wealth(2)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ring of wealth(3)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ring of wealth(4)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ring of wealth(5)|ring|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+skills necklace(1)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+skills necklace(2)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+skills necklace(3)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+skills necklace(4)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+skills necklace(5)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+skills necklace(6)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+combat bracelet(1)|hands|0|0|7,7,7,3,7,5,5,5,3,5,6,0,0,0
+combat bracelet(2)|hands|0|0|7,7,7,3,7,5,5,5,3,5,6,0,0,0
+combat bracelet(3)|hands|0|0|7,7,7,3,7,5,5,5,3,5,6,0,0,0
+combat bracelet(4)|hands|0|0|7,7,7,3,7,5,5,5,3,5,6,0,0,0
+combat bracelet(5)|hands|0|0|7,7,7,3,7,5,5,5,3,5,6,0,0,0
+combat bracelet(6)|hands|0|0|7,7,7,3,7,5,5,5,3,5,6,0,0,0
+digsite pendant(1)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+digsite pendant(2)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+digsite pendant(3)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+digsite pendant(4)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+digsite pendant(5)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+necklace of passage(1)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+necklace of passage(2)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+necklace of passage(3)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+necklace of passage(4)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+necklace of passage(5)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+burning amulet(1)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+burning amulet(2)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+burning amulet(3)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+burning amulet(4)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0
+burning amulet(5)|neck|0|0|0,0,0,0,0,0,0,0,0,0,0,0,0,0

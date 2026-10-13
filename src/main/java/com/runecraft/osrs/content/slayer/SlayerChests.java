@@ -48,7 +48,13 @@ public final class SlayerChests {
     public static final List<Drop> BRIMSTONE_RARE = List.of(
             Drop.of("dragon_harpoon", 1, 1, 200),
             Drop.of("dragon_sword", 1, 1, 200),
-            Drop.of("abyssal_dagger", 1, 1, 1000));
+            Drop.of("abyssal_dagger", 1, 1, 1000),
+            // Dusk mystic robes (CommonEquipment): 1/1,000 each (OSRS Wiki).
+            Drop.of("mystic_hat_dusk", 1, 1, 1000),
+            Drop.of("mystic_robe_top_dusk", 1, 1, 1000),
+            Drop.of("mystic_robe_bottom_dusk", 1, 1, 1000),
+            Drop.of("mystic_gloves_dusk", 1, 1, 1000),
+            Drop.of("mystic_boots_dusk", 1, 1, 1000));
 
     public static final List<Drop> LARRAN_MAIN = List.of(
             Drop.of("coins", 75000, 175000, 5),

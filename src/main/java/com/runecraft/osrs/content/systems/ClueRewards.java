@@ -426,6 +426,7 @@ public final class ClueRewards {
         cosmeticArmour(items, H, "pith_helmet", "Pith helmet", "cowl", 0xD0C090, Slot.HEAD, 20000);
         cosmeticWorn(items, H, "explorer_backpack", "Explorer backpack", "cape", 0x8A6A3A, Jewellery.Slot.CAPE, 20000);
         thirdAge(items);
+        vestments(items);
 
         // ---------------- Elite ----------------
         Tier L = Tier.ELITE;
@@ -622,6 +623,64 @@ public final class ClueRewards {
         }
     }
 
+    /**
+     * God vestments (prayer armour) for the six gods: robe top and legs are easy rewards; mitre and cloak medium;
+     * crozier and stole hard for Saradomin, Zamorak and Guthix but medium for Armadyl, Bandos and Ancient (OSRS Wiki
+     * vestment set pages). Bonuses and requirements are the wiki's.
+     */
+    private static void vestments(ItemSink items) {
+        for (String god : new String[]{"saradomin", "zamorak", "guthix", "armadyl", "bandos", "ancient"}) {
+            int c = switch (god) {
+                case "saradomin" -> 0xE0E0F0;
+                case "zamorak" -> 0xA02020;
+                case "guthix" -> 0x30A030;
+                case "armadyl" -> 0xD8D8C8;
+                case "bandos" -> 0x6A5A3A;
+                default -> 0x8A3A3A;
+            };
+            String g = Defs.cap(god);
+            String a = god.startsWith("a") ? "An " : "A ";
+            boolean classic = god.equals("saradomin") || god.equals("zamorak") || god.equals("guthix");
+            Tier top = classic ? Tier.HARD : Tier.MEDIUM;
+            Defs.armour(items, god + "_robe_top", g + " robe top", "robe_top", c, "leather", 7000, Slot.CHEST,
+                    st(0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 6), req(Skill.PRAYER, 20)).examine(g + " Vestments.");
+            Defs.armour(items, god + "_robe_legs", g + " robe legs", "robe_bottom", c, "leather", 7000, Slot.LEGS,
+                    st(0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 5), req(Skill.PRAYER, 20)).examine("Leggings from the " + g + " Vestments.");
+            Defs.armour(items, god + "_mitre", g + " mitre", "hood", c, "leather", 5000, Slot.HEAD,
+                    st(0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 5), req(Skill.PRAYER, 40, Skill.MAGIC, 40)).examine(a + g + " mitre.");
+            Defs.worn(items, god + "_cloak", g + " cloak", "cape", c, 2000, Jewellery.Slot.CAPE,
+                    st(0, 0, 0, 1, 0, 3, 3, 3, 3, 3, 0, 0, 0, 3), req(Skill.PRAYER, 40), Jewellery.Perk.NONE, List.of())
+                    .examine(a + g + " cloak.");
+            Defs.worn(items, god + "_stole", g + " stole", "necklace", c, 2500, Jewellery.Slot.NECK,
+                    st(0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 10), req(Skill.PRAYER, 60), Jewellery.Perk.NONE, List.of())
+                    .examine(a + g + " stole.");
+            Defs.melee(items, god + "_crozier", g + " crozier", "staff", c, "rune", 5000,
+                    st(7, -1, 25, 10, 0, 2, 3, 1, 10, 0, 32, 0, 0, 6), req(Skill.PRAYER, 60), 5, AttackType.CRUSH)
+                    .examine(a + g + " crozier.");
+            unique(Tier.EASY, god + "_robe_top");
+            unique(Tier.EASY, god + "_robe_legs");
+            unique(Tier.MEDIUM, god + "_mitre");
+            unique(Tier.MEDIUM, god + "_cloak");
+            unique(top, god + "_crozier");
+            unique(top, god + "_stole");
+        }
+    }
+
+    /**
+     * God pages are "universal" Treasure Trail rewards (every tier but beginner). Hard caskets have them on the unique
+     * table; easy, medium, elite and master caskets roll one with this chance per reward roll. // approx: rate unknown
+     */
+    public static final int SHARED_PAGE_ONE_IN = 60;
+    private static final String[] PAGE_GODS = {"saradomin", "zamorak", "guthix", "bandos", "armadyl", "ancient"};
+
+    private static boolean sharedPages(Tier t) {
+        return t == Tier.EASY || t == Tier.MEDIUM || t == Tier.ELITE || t == Tier.MASTER;
+    }
+
+    private static String randomPage(Random random) {
+        return PAGE_GODS[random.nextInt(PAGE_GODS.length)] + "_page_" + (1 + random.nextInt(4));
+    }
+
     // ---------------- Rolling ----------------
 
     /** Chance (1 in n) per roll of hitting the tier's unique table. */
@@ -665,6 +724,10 @@ public final class ClueRewards {
         for (int i = 0; i < rolls; i++) {
             if (!uniques.isEmpty() && random.nextInt(uniqueOneIn(tier)) == 0) {
                 out.merge(uniques.get(random.nextInt(uniques.size())), 1, Integer::sum);
+                continue;
+            }
+            if (sharedPages(tier) && random.nextInt(SHARED_PAGE_ONE_IN) == 0) {
+                out.merge(randomPage(random), 1, Integer::sum);
                 continue;
             }
             Loot l = pick(STANDARD.get(tier), random);

@@ -490,6 +490,9 @@ public final class BossItems {
                 .in("salve_shard", 1).in("ball_of_wool", 1).out("salve_amulet", 1).tool("chisel").ticks(3).build());
         recipes.accept(Recipe.builder("make_salve_amulet_e", MenuType.GEM_CUTTING, "Salve amulet (e)")
                 .in("salve_amulet", 1).out("salve_amulet_e", 1).tool("tarns_diary").ticks(3).build());
+        // OSRS Wiki "Imbuing first": Tarn's diary also enchants an imbued salve amulet(i) into the salve amulet(ei).
+        recipes.accept(Recipe.builder("make_salve_amulet_ei", MenuType.GEM_CUTTING, "Salve amulet(ei)")
+                .in("salve_amulet_i", 1).out("salve_amulet_ei", 1).tool("tarns_diary").ticks(3).build());
         // Kraken
         recipes.accept(Recipe.builder("make_abyssal_tentacle", MenuType.LEATHERWORKING, "Abyssal tentacle")
                 .in("abyssal_whip", 1).in("kraken_tentacle", 1).out("abyssal_tentacle", 1).build());

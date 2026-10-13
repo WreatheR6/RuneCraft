@@ -193,6 +193,17 @@ public final class CommonEquipment {
         items.add("salve_amulet_e", "Salve amulet (e)", Kind.SIMPLE, "amulet", 0x6AF0B0).value(300).stack(1)
                 .equipment(wear(Slot.HEAD, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3)))
                 .examine("Increases the wearer's Strength and accuracy by 20% when fighting the undead.");
+        // Imbued salve amulets: Nightmare Zone / Soul Wars imbues (minigames) of the salve amulet (e), and Tarn's diary
+        // on the salve amulet(i) (bosses). Worn in the systems module's neck slot.
+        items.add("salve_amulet_i", "Salve amulet(i)", Kind.SIMPLE, "amulet", 0x7AE0B0).value(1).stack(1)
+                .equipment(wear(Slot.HEAD, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3)))
+                .examine("An imbued salve amulet: also boosts Ranged and Magic against the undead.");
+        items.add("salve_amulet_ei", "Salve amulet(ei)", Kind.SIMPLE, "amulet", 0x5AF0A0).value(1).stack(1)
+                .equipment(wear(Slot.HEAD, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3)))
+                .examine("An imbued, enchanted salve amulet: +20% in every style against the undead.");
+        mystic(items);
+        godBooks(items);
+        ballistae(items);
         // Thrown weapons: Kind.ARROW items thrown on right-click (FletchingData.THROWN).
         items.add("steel_thrownaxe", "Steel thrownaxe", Kind.ARROW, "throwing_axe", 0xB8B8C0).value(26).rangedStrength(11).tier("steel")
                 .examine("A finely balanced throwing axe.");
@@ -204,5 +215,98 @@ public final class CommonEquipment {
                 .examine("A finely balanced throwing knife.");
         items.add("toktz_xil_ul", "Toktz-xil-ul", Kind.ARROW, "chakram", 0x3A2A2A).value(250).rangedStrength(49).tier("obsidian")
                 .examine("A razor sharp ring of obsidian.");
+    }
+
+    /**
+     * The mystic pieces the mod lacked: blue hat, gloves and boots (Magic Guild Store, Wizards' Guild) and the dusk set
+     * (Brimstone chest, 1/1,000 each). Every mystic piece needs 40 Magic and 20 Defence. Gloves are worn in the systems
+     * module's hands slot (Jewellery); their HEAD-slot equipment only feeds tooltips.
+     */
+    private static void mystic(ItemSink items) {
+        EquipmentStats hat = s(0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0);
+        EquipmentStats top = s(0, 0, 0, 20, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0);
+        EquipmentStats bottom = s(0, 0, 0, 15, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0);
+        EquipmentStats hands = s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0);
+        items.add("mystic_hat", "Mystic hat", Kind.ARMOUR, "hood", 0x3050C0).value(15000).stack(1).tier("mystic")
+                .equipment(wear(Slot.HEAD, hat, Skill.MAGIC, 40, Skill.DEFENCE, 20))
+                .examine("A magical hat.");
+        items.add("mystic_gloves", "Mystic gloves", Kind.SIMPLE, "gloves", 0x3050C0).value(10000).stack(1)
+                .equipment(wear(Slot.HEAD, hands, Skill.MAGIC, 40, Skill.DEFENCE, 20))
+                .examine("Magical gloves.");
+        items.add("mystic_boots", "Mystic boots", Kind.ARMOUR, "boots", 0x3050C0).value(10000).stack(1).tier("mystic")
+                .equipment(wear(Slot.FEET, hands, Skill.MAGIC, 40, Skill.DEFENCE, 20))
+                .examine("Magical boots.");
+        int dusk = 0x5A4A6A;
+        items.add("mystic_hat_dusk", "Mystic hat (dusk)", Kind.ARMOUR, "hood", dusk).value(15000).stack(1).tier("mystic")
+                .equipment(wear(Slot.HEAD, hat, Skill.MAGIC, 40, Skill.DEFENCE, 20))
+                .examine("A dusky magical hat.");
+        items.add("mystic_robe_top_dusk", "Mystic robe top (dusk)", Kind.ARMOUR, "robe_top", dusk).value(120000).stack(1).tier("mystic")
+                .equipment(wear(Slot.CHEST, top, Skill.MAGIC, 40, Skill.DEFENCE, 20))
+                .examine("The upper half of a dusky magical robe.");
+        items.add("mystic_robe_bottom_dusk", "Mystic robe bottom (dusk)", Kind.ARMOUR, "robe_bottom", dusk).value(80000).stack(1).tier("mystic")
+                .equipment(wear(Slot.LEGS, bottom, Skill.MAGIC, 40, Skill.DEFENCE, 20))
+                .examine("The lower half of a dusky magical robe.");
+        items.add("mystic_gloves_dusk", "Mystic gloves (dusk)", Kind.SIMPLE, "gloves", dusk).value(10000).stack(1)
+                .equipment(wear(Slot.HEAD, hands, Skill.MAGIC, 40, Skill.DEFENCE, 20))
+                .examine("Dusky magical gloves.");
+        items.add("mystic_boots_dusk", "Mystic boots (dusk)", Kind.ARMOUR, "boots", dusk).value(10000).stack(1).tier("mystic")
+                .equipment(wear(Slot.FEET, hands, Skill.MAGIC, 40, Skill.DEFENCE, 20))
+                .examine("Dusky magical boots.");
+    }
+
+    /** God book ids: damaged book, completed book, display name of the completed book, god, examine, colour. */
+    public static final String[][] GOD_BOOKS = {
+            {"damaged_holy_book", "holy_book", "Holy book", "Saradomin", "The holy book of Saradomin.", "E0E0F0"},
+            {"damaged_unholy_book", "unholy_book", "Unholy book", "Zamorak", "The unholy book of Zamorak.", "A02020"},
+            {"damaged_book_of_balance", "book_of_balance", "Book of balance", "Guthix", "The holy book of Guthix.", "30A030"},
+            {"damaged_book_of_war", "book_of_war", "Book of war", "Bandos", "The short book of the wisdom of Bandos.", "6A5A3A"},
+            {"damaged_book_of_law", "book_of_law", "Book of law", "Armadyl", "The book of Armadyl's Law.", "C0C8D8"},
+            {"damaged_book_of_darkness", "book_of_darkness", "Book of darkness", "Ancient", "The dark book of a forgotten god.", "5A2A6A"}};
+
+    /**
+     * God books (shield slot). The damaged books come from Horror from the Deep and Jossik (quests module); adding the
+     * god's four pages (clue scroll rewards, systems module) completes them. Bonuses are the wiki's; no requirements.
+     */
+    private static void godBooks(ItemSink items) {
+        for (String[] b : GOD_BOOKS) {
+            int color = Integer.parseInt(b[5], 16);
+            items.add(b[0], "Damaged book (" + b[3] + ")", Kind.SHIELD, "book", color).value(200).stack(1)
+                    .equipment(wear(Slot.SHIELD, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5)))
+                    .examine("An incomplete book of " + (b[3].equals("Ancient") ? "a forgotten god" : b[3]) + ".");
+            EquipmentStats full = switch (b[1]) {
+                case "holy_book" -> s(0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 0, 0, 0, 5);
+                case "unholy_book" -> s(8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0, 5);
+                case "book_of_balance" -> s(4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 5);
+                case "book_of_war" -> s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 5);
+                case "book_of_law" -> s(0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 5);
+                default -> s(0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5);
+            };
+            items.add(b[1], b[2], Kind.SHIELD, "book", color).value(200).stack(1)
+                    .equipment(wear(Slot.SHIELD, full))
+                    .examine(b[4]);
+        }
+    }
+
+    /**
+     * Ballistae (Monkey Madness II): ballista limbs on a light/heavy frame (47/72 Fletching), then a ballista spring,
+     * then a monkey tail (skilling module recipes). The frames, limbs and spring are defined in {@link CommonItems} so a
+     * demonic gorilla drop table can use them. They fire javelins only ({@code AmmoRules}); the heavy ballista needs
+     * Monkey Madness II to wield (quests module gate). Two-handed, speed 7 ({@code EquipmentBonuses}).
+     */
+    private static void ballistae(ItemSink items) {
+        items.add("incomplete_light_ballista", "Incomplete light ballista", Kind.SIMPLE, "crossbow_u", 0x8A6A3A).value(50000).stack(1)
+                .examine("The limbs have been attached to the frame.");
+        items.add("incomplete_heavy_ballista", "Incomplete heavy ballista", Kind.SIMPLE, "crossbow_u", 0x5A4A3A).value(50000).stack(1)
+                .examine("The limbs have been attached to the frame.");
+        items.add("unstrung_light_ballista", "Unstrung light ballista", Kind.SIMPLE, "crossbow_u", 0x8A6A3A).value(50000).stack(1)
+                .examine("Needs a suitably simian rope.");
+        items.add("unstrung_heavy_ballista", "Unstrung heavy ballista", Kind.SIMPLE, "crossbow_u", 0x5A4A3A).value(50000).stack(1)
+                .examine("Needs a suitably simian rope.");
+        items.add("light_ballista", "Light ballista", Kind.BOW, "crossbow", 0x8A6A3A).value(125000).stack(1).tier("magic")
+                .equipment(weapon(s(0, 0, 0, 0, 110, 0, 0, 0, 0, 0, 0, 0, 0, 0), 7, AttackType.RANGED, WeaponClass.BOW, Skill.RANGED, 65))
+                .examine("A weapon forged from the wreckage of an airship.");
+        items.add("heavy_ballista", "Heavy ballista", Kind.BOW, "crossbow", 0x5A4A3A).value(950000).stack(1).tier("magic")
+                .equipment(weapon(s(0, 0, 0, 0, 125, 0, 0, 0, 0, 0, 0, 15, 0, 0), 7, AttackType.RANGED, WeaponClass.BOW, Skill.RANGED, 75))
+                .examine("A powerful weapon forged from the wreckage of an airship.");
     }
 }

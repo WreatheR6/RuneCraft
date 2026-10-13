@@ -61,6 +61,18 @@ public final class SystemsContent implements ContentModule {
         recipes.accept(Recipe.builder("make_confliction_gauntlets", MenuType.SMITHING, "Confliction gauntlets")
                 .skill(Skill.CRAFTING, 83, 0).in("tormented_bracelet", 1).in("mokhaiotl_cloth", 1).in("demon_tear", 10000)
                 .out("confliction_gauntlets", 1).ticks(3).build()); // XP approx (none known)
+        // God books: the god's four clue scroll pages complete a damaged book (CommonEquipment). OSRS adds the pages one at a
+        // time by using them on the book; here all four are bound at once in the needle menu. // approx
+        String[] gods = {"saradomin", "zamorak", "guthix", "bandos", "armadyl", "ancient"};
+        for (int i = 0; i < gods.length; i++) {
+            String[] book = com.runecraft.osrs.content.CommonEquipment.GOD_BOOKS[i];
+            Recipe.Builder b = Recipe.builder("complete_" + book[1], MenuType.LEATHERWORKING, book[2] + " (4 " + book[3] + " pages)")
+                    .in(book[0], 1).out(book[1], 1).ticks(2);
+            for (int page = 1; page <= 4; page++) {
+                b.in(gods[i] + "_page_" + page, 1);
+            }
+            recipes.accept(b.build());
+        }
     }
 
 

@@ -108,6 +108,27 @@ class EquipmentWikiSyncTest {
         assertTrue(bad.isEmpty(), bad.size() + " wearables differ from the OSRS Wiki:\n" + String.join("\n", bad));
     }
 
+    /** Arrows, bolts, darts, knives, thrownaxes and javelins have the wiki's ranged strength (ammo or weapon row). */
+    @Test
+    void ammunitionMatchesTheWikiRangedStrength() throws IOException {
+        Map<String, Ref> ref = reference();
+        List<String> bad = new ArrayList<>();
+        int compared = 0;
+        for (ItemDef def : ItemCatalog.all()) {
+            Ref r = ref.get(def.name().toLowerCase(Locale.ROOT));
+            // The atlatl dart has no ranged strength in OSRS (the eclipse atlatl scales with Strength); RuneCraft gives it 40.
+            if (def.kind() != ItemDef.Kind.ARROW || r == null || def.id().equals("atlatl_dart")) {
+                continue;
+            }
+            compared++;
+            if (def.rangedStrength() != r.stats()[11]) {
+                bad.add(def.id() + ": ranged strength " + def.rangedStrength() + " (wiki " + r.stats()[11] + ")");
+            }
+        }
+        assertTrue(compared > 40, "only " + compared + " ammunition items matched the wiki snapshot");
+        assertTrue(bad.isEmpty(), bad.size() + " ammunition items differ from the OSRS Wiki:\n" + String.join("\n", bad));
+    }
+
     @Test
     void commonEquipmentIsObtainable() {
         List<String> ids = new ArrayList<>();

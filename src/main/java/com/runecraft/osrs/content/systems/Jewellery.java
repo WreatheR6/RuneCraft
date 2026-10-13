@@ -158,6 +158,8 @@ public final class Jewellery {
         // Items defined in osrs/content/CommonEquipment (the salve amulets below are too).
         wornExternal("mystic_gloves_light", Slot.HANDS, s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0));
         wornExternal("mystic_gloves_dark", Slot.HANDS, s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0));
+        wornExternal("mystic_gloves", Slot.HANDS, s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0));
+        wornExternal("mystic_gloves_dusk", Slot.HANDS, s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0));
         wornExternal("black_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0));
         wornExternal("pirates_hook", Slot.HANDS, s(0, 0, 0, 0, 0, 1, 5, 3, 0, 0, 0, 0, 0, 0)); // item defined by the minigames module
         wornExternal("salve_amulet", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3));
