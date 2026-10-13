@@ -69,7 +69,7 @@ public final class ZeahMonsters {
         // ---- Kourend coast ----
         list.add(m("sand_crab", "Sand crab", 15, 60, 1, 1, 1, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 1))
                 .defenceBonus(0, 0, 0, 0, 0).drops(Drop.of("coins", 1, 20, 4), clue("easy", 500)) // approx.
-                .model("sand_crab").size(1.0f, 0.7f, 1.0f).spawn(Region.UNCHARTED_ISLES, 2, 1, 3));
+                .model("sand_crab").size(1.0f, 0.7f, 1.0f).spawn(Region.KOUREND, 2, 1, 3));
         list.add(m("king_sand_crab", "King sand crab", 107, 150, 90, 90, 100, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 9))
                 .defenceBonus(30, 30, 30, 0, 30).drops(Drop.of("coins", 20, 200, 3), Drop.gems(32), clue("medium", 128)) // approx.
                 .model("sand_crab").size(1.4f, 1.0f, 1.8f));

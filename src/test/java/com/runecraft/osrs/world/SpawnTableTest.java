@@ -181,9 +181,9 @@ class SpawnTableTest {
         for (SpawnPoint p : SpawnTable.all()) {
             Region region = GielinorMap.regionAt(p.x(), p.y());
             if (p.island()) {
-                assertEquals(Region.UNCHARTED_ISLES, region, p.key() + " is inside a kingdom: drop the island flag");
+                assertFalse(region.mainland(), p.key() + " is inside a kingdom: drop the island flag");
             } else {
-                assertFalse(region == Region.UNCHARTED_ISLES, p.key() + " is off the mapped kingdoms");
+                assertTrue(region.mainland(), p.key() + " is off the mapped kingdoms");
             }
             // Gielinor's bounds; only islands (Zanaris at y 4400) lie north of the Wilderness.
             assertTrue(p.x() > 1000 && p.x() < 4000 && p.y() > 2500 && p.y() < (p.island() ? 4500 : 4000), p.key());

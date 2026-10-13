@@ -62,7 +62,7 @@ final class MidSlayerMonsters {
                         .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("vile_ashes"), coins(50, 800, 3), Drop.of("blood_rune", 5, 15, 16),
                                 Drop.of("rune_full_helm", 1, 1, 256), Drop.herbs(12), Drop.gems(32), clue("hard", 256))
                         .slayer(50, "bloodveld").model("mutated_bloodveld").size(1.0f, 2.0f, 1.0f)
-                        .spawn(Region.MORYTANIA, 3, 1, 2).underground(),
+                        .spawn(Region.KOUREND, 3, 1, 2).underground(),
                 m("jelly", "Jelly", 78, 75, 45, 45, 120, 1, 1).speed(4).attack(crush(9))
                         .defenceBonus(0, 0, 0, 0, 0).drops(Drop.herbs(8), coins(20, 300, 4), Drop.of("chaos_rune", 5, 15, 12),
                                 Drop.gems(32), clue("hard", 128)).slayer(52, "jellies").model("jelly").size(1.0f, 1.6f, 1.0f)
@@ -116,14 +116,14 @@ final class MidSlayerMonsters {
                         .defenceBonus(80, 80, 80, 60, 90).drops(Drop.always("wyvern_bones"), Drop.of("wyvern_visage", 1, 1, 10000),
                                 Drop.of("granite_legs", 1, 1, 512), Drop.of("granite_boots", 1, 1, 1024), Drop.of("granite_longsword", 1, 1, 1024), Drop.of("rune_battleaxe", 1, 1, 128), Drop.herbs(12), Drop.gems(32),
                                 clue("hard", 256), clue("elite", 1200)).slayer(66, "fossil_island_wyverns").model("spitting_wyvern")
-                        .size(1.4f, 2.4f, 1.0f).spawn(Region.UNCHARTED_ISLES, 2, 1, 2).underground(),
+                        .size(1.4f, 2.4f, 1.0f).spawn(Region.FOSSIL_ISLAND, 2, 1, 2).underground(),
                 m("taloned_wyvern", "Taloned wyvern", 147, 200, 110, 110, 120, 1, 1).speed(4).attack(slash(16))
                         .attack(AttackDef.of("icy breath", AttackType.MAGIC, 40, 4, 2).special(AttackDef.Special.DRAGONFIRE, 0)
                                 .particle("minecraft:snowflake").message("The wyvern breathes icy breath!"))
                         .defenceBonus(90, 90, 90, 60, 80).drops(Drop.always("wyvern_bones"), Drop.of("wyvern_visage", 1, 1, 10000),
                                 Drop.of("granite_legs", 1, 1, 512), Drop.of("granite_boots", 1, 1, 1024), Drop.of("granite_longsword", 1, 1, 1024), Drop.of("rune_battleaxe", 1, 1, 128), Drop.herbs(12), Drop.gems(32),
                                 clue("hard", 256), clue("elite", 1200)).slayer(66, "fossil_island_wyverns").model("taloned_wyvern")
-                        .size(1.4f, 2.4f, 1.0f).spawn(Region.UNCHARTED_ISLES, 2, 1, 2).underground(),
+                        .size(1.4f, 2.4f, 1.0f).spawn(Region.FOSSIL_ISLAND, 2, 1, 2).underground(),
                 m("ankou", "Ankou", 75, 60, 60, 60, 60, 1, 1).speed(4).attack(crush(8))
                         .drops(Drop.always("bones"), Drop.of("death_rune", 2, 10, 6), Drop.of("blood_rune", 2, 8, 10),
                                 Drop.of("law_rune", 2, 5, 10), Drop.of("adamant_arrow", 5, 15, 12), Drop.herbs(14), clue("hard", 256))
@@ -178,7 +178,7 @@ final class MidSlayerMonsters {
                         .attack(stab(7)).attack(AttackDef.of("acid", AttackType.RANGED, 6, 8, 5)
                                 .special(AttackDef.Special.POISON, 4).particle("minecraft:item_slime"))
                         .drops(Drop.always("bones"), Drop.herbs(10), Drop.seeds(18), clue("medium", 128)).slayer(1, "lizardmen")
-                        .model("lizardman").size(0.8f, 2.0f, 1.0f).spawn(Region.UNCHARTED_ISLES, 4, 2, 4),
+                        .model("lizardman").size(0.8f, 2.0f, 1.0f).spawn(Region.KOUREND, 4, 2, 4),
                 m("lizardman_shaman", "Lizardman shaman", 150, 150, 120, 120, 140, 50, 120).speed(4)
                         .attack(stab(18)).attack(AttackDef.of("acid spit", AttackType.RANGED, 21, 8, 6)
                                 .special(AttackDef.Special.POISON, 10).particle("minecraft:item_slime"))
@@ -186,7 +186,7 @@ final class MidSlayerMonsters {
                                 .telegraph(3, "The shaman leaps into the air!"))
                         .defenceBonus(100, 100, 100, 50, 100).drops(Drop.always("bones"), Drop.of("dragon_warhammer", 1, 1, 5000),
                                 Drop.herbs(8), Drop.seeds(12), Drop.gems(32), clue("hard", 256)).slayer(1, "lizardmen")
-                        .model("lizardman").size(0.9f, 2.2f, 1.2f).spawn(Region.UNCHARTED_ISLES, 2, 1, 2),
+                        .model("lizardman").size(0.9f, 2.2f, 1.2f).spawn(Region.KOUREND, 2, 1, 2),
                 m("waterfiend", "Waterfiend", 115, 128, 105, 105, 70, 105, 105).speed(4)
                         .attack(magic(14, "minecraft:splash")).attack(ranged(14, "minecraft:splash"))
                         .defenceBonus(80, 80, 80, 0, 80).drops(Drop.of("water_rune", 50, 150, 5), Drop.of("blood_rune", 5, 15, 16),

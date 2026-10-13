@@ -45,7 +45,7 @@ public final class SlayerBossTasks {
 
     static {
         b("abyssal_sire", "Abyssal Sire", 85, false, Region.MISTHALIN, "abyssal_sire");
-        b("alchemical_hydra", "Alchemical Hydra", 95, false, Region.UNCHARTED_ISLES, "alchemical_hydra");
+        b("alchemical_hydra", "Alchemical Hydra", 95, false, Region.KOUREND, "alchemical_hydra");
         b("araxxor", "Araxxor", 92, false, Region.MORYTANIA, "araxxor");
         b("callisto", "Callisto and Artio", 1, true, Region.WILDERNESS, "callisto", "artio");
         b("cerberus", "Cerberus", 91, false, Region.ASGARNIA, "cerberus");

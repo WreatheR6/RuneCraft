@@ -27,6 +27,7 @@ final class DungeonsKandarin {
         out.add(fremennikSlayerDungeon());
         out.add(iorwerthDungeon());
         out.add(CrashSiteCavern.build());
+        out.add(KruksDungeon.build());
         return out;
     }
 

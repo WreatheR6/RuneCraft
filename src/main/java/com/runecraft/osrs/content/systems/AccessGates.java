@@ -298,17 +298,20 @@ public final class AccessGates {
                 // The elite Lumbridge & Draynor diary lets fairy rings work without a staff (so arriving by ring is allowed).
                 either(carryAny(List.of("dramen_staff", "lunar_staff"), "Nothing interesting happens. You need to wield a Dramen staff to enter Zanaris."),
                         diary("lumbridge", Diaries.Tier.ELITE, "")));
-        gate("fossil_island", "Fossil Island", List.of(new Rect(3640, 3700, 3860, 3910)), 3362, 3445,
+        gate("fossil_island", "Fossil Island", List.of(new Rect(3630, 3690, 3860, 3910)), 3362, 3445,
                 questDone("bone_voyage", "The barge won't take you to Fossil Island until you have completed Bone Voyage."));
         gate("prifddinas", "Prifddinas", List.of(new Rect(3196, 6036, 3332, 6172)), 2240, 3285,
                 questDone("song_of_the_elves", "The crystal gates of Prifddinas stay sealed. You need to complete Song of the Elves."));
-        gate("ape_atoll", "Ape Atoll", List.of(new Rect(2690, 2690, 2820, 2820)), 2465, 3495,
+        gate("ape_atoll", "Ape Atoll", List.of(new Rect(2685, 2678, 2820, 2820)), 2465, 3495,
                 questStarted("monkey_madness_i", "You can't reach Ape Atoll yet. Start Monkey Madness I first."));
         gate("lunar_isle", "Lunar Isle", List.of(new Rect(2060, 3850, 2180, 3970)), 2213, 3800,
                 questStarted("lunar_diplomacy", "The Lunar Isle is hidden from you. Start Lunar Diplomacy first."));
         // The hut over the Crash Site Cavern ladder (dungeons module, CrashSiteCavern).
         gate("crash_site_cavern", "Crash Site Cavern", List.of(new Rect(2437, 3527, 2439, 3529)), 2438, 3523,
                 questDone("monkey_madness_ii", "Why would you want to go in there? (You need to complete Monkey Madness II.)"));
+        // The hut over the hole into Kruk's Dungeon west of Marim (dungeons module, KruksDungeon).
+        gate("kruks_dungeon", "Kruk's Dungeon", List.of(new Rect(2714, 2788, 2716, 2790)), 2719, 2789,
+                questStarted("monkey_madness_ii", "You see nothing but jungle grass. (You need to start Monkey Madness II.)"));
 
         // ---- guilds (rectangles are the hand-built buildings / grounds in osrs/content/world)
         gate("heroes_guild", "Heroes' Guild", List.of(new Rect(2890, 3504, 2901, 3516)),

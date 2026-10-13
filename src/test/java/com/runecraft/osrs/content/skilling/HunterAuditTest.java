@@ -138,6 +138,14 @@ class HunterAuditTest {
         for (com.runecraft.osrs.content.PlaceDef p : new HunterData().places()) {
             placed.addAll(p.blocks());
         }
+        // ... or set inside a dungeon (the maniacal monkey boulders in Kruk's Dungeon).
+        for (com.runecraft.osrs.world.StructureDef s : com.runecraft.osrs.content.ContentRegistry.structures()) {
+            for (com.runecraft.osrs.world.StructureDef.Op op : s.ops()) {
+                if (op.block() != null && op.block().startsWith("runecraft:")) {
+                    placed.add(op.block().substring("runecraft:".length()));
+                }
+            }
+        }
         for (HunterData.TrapSpot t : HunterData.TRAPS) {
             for (String i : t.tools()) {
                 assertTrue(ItemCatalog.exists(i), i);

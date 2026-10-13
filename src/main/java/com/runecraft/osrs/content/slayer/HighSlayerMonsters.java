@@ -32,7 +32,7 @@ final class HighSlayerMonsters {
                         .drops(Drop.always("bones"), Drop.of("dragon_sword", 1, 1, 10000), Drop.of("dragon_harpoon", 1, 1, 10000), Drop.of("dragon_knife", 75, 150, 2000),
                                 Drop.of("death_rune", 5, 15, 8), Drop.of("chaos_rune", 10, 30, 8), Drop.herbs(12), Drop.gems(32),
                                 clue("hard", 128), clue("elite", 1200)).slayer(62, "wyrms").model("wyrm").size(1.0f, 1.4f, 1.3f)
-                        .spawn(Region.UNCHARTED_ISLES, 4, 1, 3).underground(),
+                        .spawn(Region.KOUREND, 4, 1, 3).underground(),
                 m("kurask", "Kurask", 106, 97, 67, 105, 105, 1, 1).speed(4).attack(crush(16))
                         .defenceBonus(20, 20, 10, 0, 20).drops(Drop.always("big_bones"), Drop.of("leaf_bladed_sword", 1, 1, 384),
                                 Drop.of("leaf_bladed_battleaxe", 1, 1, 1026), Drop.of("nature_rune", 10, 30, 12),
@@ -66,7 +66,7 @@ final class HighSlayerMonsters {
                                 Drop.of("rune_full_helm", 1, 1, 43),
                                 Drop.of("rune_kiteshield", 1, 1, 128), Drop.of("death_rune", 10, 30, 8), Drop.of("blood_rune", 10, 20, 12),
                                 coins(500, 3000, 3), Drop.herbs(10), Drop.gems(16), clue("hard", 128))
-                        .slayer(80, "nechryael").model("nechryael").size(1.0f, 2.4f, 1.3f).spawn(Region.MORYTANIA, 2, 1, 2)
+                        .slayer(80, "nechryael").model("nechryael").size(1.0f, 2.4f, 1.3f).spawn(Region.KOUREND, 2, 1, 2)
                         .underground(),
                 m("abyssal_demon", "Abyssal demon", 124, 150, 97, 67, 135, 1, 1).speed(4).attack(stab(8))
                         .attack(AttackDef.of("teleport", AttackType.STAB, 8, 12, 1).special(AttackDef.Special.BLINK, 0)
@@ -99,7 +99,7 @@ final class HighSlayerMonsters {
                         .defenceBonus(100, 100, 100, 60, 100).drops(Drop.always("dragon_bones"), Drop.of("drakes_tooth", 1, 1, 512),
                                 Drop.of("drakes_claw", 1, 1, 512), Drop.of("dragon_thrownaxe", 100, 200, 2000), Drop.of("runite_ore", 1, 2, 32), Drop.of("rune_full_helm", 1, 1, 128),
                                 Drop.herbs(10), Drop.gems(16), clue("hard", 256)).slayer(84, "drakes").model("drake")
-                        .size(1.2f, 2.2f, 1.0f).spawn(Region.UNCHARTED_ISLES, 3, 1, 2).underground(),
+                        .size(1.2f, 2.2f, 1.0f).spawn(Region.KOUREND, 3, 1, 2).underground(),
                 m("smoke_devil", "Smoke devil", 160, 185, 140, 140, 255, 140, 140).speed(4)
                         .attack(ranged(8, "minecraft:large_smoke").message("The smoke devil lashes out with smoke."))
                         .defenceBonus(0, 0, 0, 600, 44).drops(Drop.of("occult_necklace", 1, 1, 512),
@@ -116,7 +116,7 @@ final class HighSlayerMonsters {
                                 Drop.of("dragon_thrownaxe", 200, 400, 2000),
                                 Drop.of("runite_bar", 1, 2, 32), Drop.of("rune_kiteshield", 1, 1, 128), Drop.herbs(8), Drop.gems(16),
                                 clue("hard", 128), clue("elite", 512)).slayer(95, "hydras").model("hydra").size(1.4f, 2.2f, 1.0f)
-                        .spawn(Region.UNCHARTED_ISLES, 2, 1, 2).underground(),
+                        .spawn(Region.KOUREND, 2, 1, 2).underground(),
                 m("basilisk_knight", "Basilisk Knight", 204, 300, 200, 200, 200, 180, 1).speed(4).attack(slash(26))
                         .attack(magic(22, "minecraft:enchant")).defenceBonus(200, 200, 200, 100, 200)
                         .drops(Drop.always("big_bones"), Drop.of("basilisk_jaw", 1, 1, 1000), Drop.of("rune_full_helm", 1, 1, 64),

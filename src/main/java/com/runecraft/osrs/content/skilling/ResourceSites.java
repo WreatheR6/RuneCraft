@@ -81,7 +81,7 @@ public final class ResourceSites {
             fish("burgh_de_rott_shark", "Burgh de Rott coast (big net/harpoon)", SHARK, Region.MORYTANIA, 3472, 3196, 3476, 3191),
             fish("wilderness_dark_crabs", "Wilderness Resource Area dark crabs", "dark_crab_fishing_spot", Region.WILDERNESS,
                     3181, 3926, 3185, 3926, 3350, 3817),
-            fish("piscarilius_anglerfish", "Port Piscarilius anglerfish", "angler_fishing_spot", Region.UNCHARTED_ISLES,
+            fish("piscarilius_anglerfish", "Port Piscarilius anglerfish", "angler_fishing_spot", Region.KOUREND,
                     1826, 3770, 1833, 3769),
             // ---------------------------------------------------------------- trees
             tree("varrock_palace_yews", "Varrock Palace yews", "yew", Region.MISTHALIN, 3205, 3503, 3210, 3503, 3220, 3502),   // approx

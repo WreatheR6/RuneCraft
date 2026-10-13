@@ -588,10 +588,7 @@ public final class HunterData extends SkillingPart {
                 PlaceDef.of("uzer_hunter_area", "Uzer Hunter area", 3440, 3060, PlaceDef.Style.CAMP,
                         List.of("desert_devil_burrow", "desert_devil_burrow")),
                 PlaceDef.of("avium_savannah", "Avium Savannah", 1630, 2990, PlaceDef.Style.CAMP,
-                        List.of("pyre_fox_deadfall", "pyre_fox_deadfall")),
-                // Kruk's Dungeon itself is not built: its maniacal monkey boulders stand in a jungle clearing in the
-                // south-east of Ape Atoll instead (approx).
-                PlaceDef.of("kruks_dungeon_monkeys", "Maniacal monkey hunting grounds", 2790, 2738, PlaceDef.Style.CAMP,
-                        List.of(MANIACAL_MONKEY_BOULDER, MANIACAL_MONKEY_BOULDER, MANIACAL_MONKEY_BOULDER)));
+                        List.of("pyre_fox_deadfall", "pyre_fox_deadfall")));
+        // The maniacal monkey boulders stand in Glough's laboratory inside Kruk's Dungeon (dungeons module).
     }
 }

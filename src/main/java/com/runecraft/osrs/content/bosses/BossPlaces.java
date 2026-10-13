@@ -68,8 +68,9 @@ public final class BossPlaces {
                 // Brutus' spawn in the Lumbridge cow field east of the River Lum (wiki location tile).
                 PlaceDef.of("brutus_pen", "Brutus' pen", 3263, 3297, Style.CAMP, List.of()),
                 // The Deranged archaeologist spawns at cache tile 3683, 3706 (mejrs NPCList_OSRS.json), the south end of the Tar
-                // Swamp; GielinorGeography's coarse Fossil Island coast ends at about y 3727 there, so the clearing sits just inside it.
-                PlaceDef.of(DERANGED_SWAMP, "Deranged archaeologist's clearing", 3683, 3735, Style.NONE, List.of()), // approx
+                // Swamp. Arenas are built 14 + radius blocks east of their place (ArenaLayout), so the place sits 11.5 tiles
+                // west of that tile; with the snap to chunk centres his arena is centred within 5 tiles of it.
+                PlaceDef.of(DERANGED_SWAMP, "Deranged archaeologist's clearing", 3672, 3706, Style.NONE, List.of()),
                 // The Maggot King's hive in the Vampyrium, reached through Darkmeyer.
                 PlaceDef.of("maggot_kings_hive", "Maggot King's hive", 3660, 3310, Style.CAVE, List.of())); // approx
     }

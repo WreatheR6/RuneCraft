@@ -14,7 +14,12 @@ public enum Region {
     TROLL_COUNTRY("Troll Country"),
     KARAMJA("Karamja"),
     TIRANNWN("Tirannwn"),
-    UNCHARTED_ISLES("Uncharted Isles");
+    UNCHARTED_ISLES("Uncharted Isles"),
+    // Appended (ordinals are stable): the regions off the main continent that Konar quo Maten names.
+    KOUREND("Kourend & Kebos"),
+    VARLAMORE("Varlamore"),
+    FOSSIL_ISLAND("Fossil Island"),
+    LITHKREN("Lithkren");
 
     private final String displayName;
 
@@ -24,6 +29,11 @@ public enum Region {
 
     public String displayName() {
         return displayName;
+    }
+
+    /** Whether this is one of the kingdoms of the main continent (not Zeah, Varlamore or an island). */
+    public boolean mainland() {
+        return ordinal() < UNCHARTED_ISLES.ordinal();
     }
 
     public String id() {
