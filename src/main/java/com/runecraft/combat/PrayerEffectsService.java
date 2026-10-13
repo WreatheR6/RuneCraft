@@ -149,7 +149,7 @@ public final class PrayerEffectsService {
             return;
         }
         boolean protect = Players.data(player).isActive(Prayer.PROTECT_ITEM);
-        int keep = PrayerEffects.itemsKept(false, protect); // the mod has no PvP skull
+        int keep = SkullService.itemsKept(player, protect); // 0 (+1) while skulled
         PlayerInventory inv = player.getInventory();
         List<PrayerEffects.Carried> carried = new ArrayList<>();
         for (int i = 0; i < inv.size(); i++) {

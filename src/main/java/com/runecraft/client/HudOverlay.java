@@ -52,6 +52,12 @@ public final class HudOverlay {
             ctx.fill(x - 22, y, x - 2, y + 20, 0xA0201810);
             OsrsUi.icon(ctx, OsrsUi.tabIcon("combat"), x - 21, y + 1, 18);
         }
+        // PvP skull: the server puts skulled players on a scoreboard team (SkullService).
+        net.minecraft.scoreboard.AbstractTeam skullTeam = mc.player.getScoreboardTeam();
+        if (gielinor && skullTeam != null && com.runecraft.osrs.PvpSkull.TEAM.equals(skullTeam.getName())) {
+            ctx.fill(x - 44, y, x - 24, y + 20, 0xA0201810);
+            ctx.drawCenteredTextWithShadow(tr, "☠", x - 34, y + 6, 0xFFE8E8E8);
+        }
 
         // XP drops (right side, rising)
         long now = System.currentTimeMillis();

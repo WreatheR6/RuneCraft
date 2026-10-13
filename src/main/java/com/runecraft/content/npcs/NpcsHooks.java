@@ -42,6 +42,8 @@ public final class NpcsHooks implements ModuleHooks {
         for (TownNpc n : Townsfolk.all()) {
             QuestScripts.onTalk(n.id(), (player, entity) -> talk(player, entity, n));
         }
+        QuestScripts.onTalk("npc_emblem_trader", (player, entity) ->
+                com.runecraft.combat.SkullService.emblemTrader(player, entity.getName().getString()));
         for (String placeId : NpcPlacement.placeIds()) {
             LandmarkBuilder.registerCustom(placeId, (world, centre) -> NpcPlacement.settlePlace(world, centre, placeId));
         }
