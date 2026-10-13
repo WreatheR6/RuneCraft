@@ -27,6 +27,9 @@ import java.util.Map;
  * dragon defender (1/100).
  */
 public class WarriorsGuildSession extends MinigameSession {
+    /** Token multiplier for animated armour (the systems module applies the Combat Achievement bonus). */
+    public static java.util.function.ToIntFunction<ServerPlayerEntity> tokenMultiplier = p -> 1;
+
     private final boolean cyclopsRoom;
     /** Animated armour entity id -> (owner, tier) so the armour can be returned. */
     private final Map<Integer, Object[]> animated = new HashMap<>();
@@ -147,7 +150,7 @@ public class WarriorsGuildSession extends MinigameSession {
             Inv.give(player, tier + "_full_helm", 1);
             Inv.give(player, tier + "_platebody", 1);
             Inv.give(player, tier + "_platelegs", 1);
-            int tokens = WarriorsGuild.tokens(tier);
+            int tokens = WarriorsGuild.tokens(tier) * tokenMultiplier.applyAsInt(player);
             reward(player, "warrior_guild_token", tokens);
             Msg.game(player, "The animated armour collapses. You collect your armour and " + tokens + " tokens.");
             return;

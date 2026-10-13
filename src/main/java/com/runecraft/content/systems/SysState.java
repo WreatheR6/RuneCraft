@@ -40,6 +40,10 @@ public final class SysState extends PersistentState {
         public final Set<String> diaryDone = new LinkedHashSet<>();
         public final Map<String, Integer> diaryCounters = new HashMap<>();
         public final Set<String> diaryClaimed = new LinkedHashSet<>();
+        /** Combat Achievements: completed task ids, progress of multi-kill tasks and claimed tiers (enum names). */
+        public final Set<String> caDone = new LinkedHashSet<>();
+        public final Map<String, Integer> caCounters = new HashMap<>();
+        public final Set<String> caClaimed = new LinkedHashSet<>();
         public final Map<String, Integer> dailyUses = new HashMap<>();
         public long day = -1;
         public int geTrades;
@@ -133,6 +137,11 @@ public final class SysState extends PersistentState {
             diaryCounters.forEach(counters::putInt);
             n.put("DiaryCounters", counters);
             n.put("DiaryClaimed", strings(diaryClaimed));
+            n.put("CaDone", strings(caDone));
+            NbtCompound caCount = new NbtCompound();
+            caCounters.forEach(caCount::putInt);
+            n.put("CaCounters", caCount);
+            n.put("CaClaimed", strings(caClaimed));
             NbtCompound daily = new NbtCompound();
             dailyUses.forEach(daily::putInt);
             n.put("Daily", daily);
@@ -185,6 +194,13 @@ public final class SysState extends PersistentState {
                 diaryCounters.put(k, dc.getInt(k));
             }
             readStrings(n.getList("DiaryClaimed", NbtElement.STRING_TYPE), diaryClaimed);
+            readStrings(n.getList("CaDone", NbtElement.STRING_TYPE), caDone);
+            caCounters.clear();
+            NbtCompound cc = n.getCompound("CaCounters");
+            for (String k : cc.getKeys()) {
+                caCounters.put(k, cc.getInt(k));
+            }
+            readStrings(n.getList("CaClaimed", NbtElement.STRING_TYPE), caClaimed);
             dailyUses.clear();
             NbtCompound d = n.getCompound("Daily");
             for (String k : d.getKeys()) {

@@ -72,7 +72,7 @@ final class ZeahSkilling {
 
     private static void give(ServerPlayerEntity player, String item, int count) {
         Inv.give(player, item, count);
-        CollectionLog.obtain(player, item);
+        CollectionLog.record(player, item);
         GameEvents.fireObtain(player, item, count);
     }
 

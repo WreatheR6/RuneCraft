@@ -148,6 +148,9 @@ public final class ChargeService {
         if (s.kind() == Charges.Kind.BLOWPIPE) {
             amount = Charges.blowpipeScales(fight(p).blowpipeShots++);
         }
+        if (CombatAchievementService.pennySavesCharge(p)) {
+            return;
+        }
         if (ItemCharges.drain(weapon, amount)) {
             Msg.red(p, "Your " + name(s) + " has run out of charges.");
         }
@@ -161,7 +164,8 @@ public final class ChargeService {
         for (EquipmentSlot slot : ARMOUR) {
             ItemStack stack = p.getEquippedStack(slot);
             Charges.Spec s = ItemCharges.spec(stack);
-            if (s != null && s.drain() == Charges.Drain.HIT_TAKEN && ItemCharges.drain(stack, 1)) {
+            if (s != null && s.drain() == Charges.Drain.HIT_TAKEN && !CombatAchievementService.pennySavesCharge(p)
+                    && ItemCharges.drain(stack, 1)) {
                 Msg.red(p, "Your " + name(s) + " has run out of charges.");
             }
         }

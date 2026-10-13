@@ -189,15 +189,12 @@ public final class DiaryService {
         check(p, Type.GE);
     }
 
-    private static final Type[] PERIODIC = {Type.LEVEL, Type.HAVE, Type.QUEST, Type.VISIT, Type.KC, Type.GE, Type.CLUE, Type.CAST,
-            Type.TOTAL_LEVEL, Type.COMBAT_LEVEL, Type.QUEST_POINTS, Type.SKILLCAPE};
-
     /** Periodic checks for state-based tasks. */
     public static void gameTick(ServerPlayerEntity p, long tick) {
         if ((tick + p.getId()) % 10 != 0) {
             return;
         }
-        for (Type type : PERIODIC) {
+        for (Type type : Diaries.PERIODIC_TYPES) {
             check(p, type);
         }
     }
@@ -267,6 +264,12 @@ public final class DiaryService {
     private static boolean haveItem(ServerPlayerEntity p, String target, int count) {
         if (!target.startsWith("*") && !target.contains("|")) {
             return Inv.count(p, target) >= count || SysState.of(p).wearing(target);
+        }
+        // Items worn in the extra slots (capes, rings, amulets...) count too, e.g. a Fire cape worn in TzHaar City.
+        for (net.minecraft.item.ItemStack worn : SysState.of(p).worn.values()) {
+            if (!worn.isEmpty() && Diaries.itemMatches(target, Inv.idOf(worn))) {
+                return true;
+            }
         }
         int total = 0;
         for (int i = 0; i < p.getInventory().size(); i++) {

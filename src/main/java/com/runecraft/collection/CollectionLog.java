@@ -15,8 +15,14 @@ public final class CollectionLog {
     private CollectionLog() {
     }
 
+    /** Logs an item and fires the obtain event for one of it. */
     public static void obtain(ServerPlayerEntity player, String item) {
         com.runecraft.content.GameEvents.fireObtain(player, item, 1);
+        record(player, item);
+    }
+
+    /** Logs an item without firing the obtain event (for callers that fire it themselves with the real amount). */
+    public static void record(ServerPlayerEntity player, String item) {
         if (!CollectionLogData.tracked(item)) {
             return;
         }

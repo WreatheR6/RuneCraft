@@ -25,6 +25,11 @@ public final class Untradeables {
         // Warriors' Guild defenders, Theatre of Blood's avernic defender.
         add("bronze_defender", "iron_defender", "steel_defender", "black_defender", "mithril_defender", "adamant_defender",
                 "rune_defender", "dragon_defender", "avernic_defender");
+        // Combat Achievement rewards.
+        add("ghommals_hilt_1", "ghommals_hilt_2", "ghommals_hilt_3", "ghommals_hilt_4", "ghommals_hilt_5", "ghommals_hilt_6",
+                "ghommals_lucky_penny", "ghommals_avernic_defender_5", "ghommals_avernic_defender_6", "ca_antique_lamp_easy",
+                "ca_antique_lamp_medium", "ca_antique_lamp_hard", "ca_antique_lamp_elite", "ca_antique_lamp_master",
+                "ca_antique_lamp_grandmaster");
         // Pest Control and Barbarian Assault.
         add("void_knight_top", "void_knight_robe", "void_melee_helm", "void_ranger_helm", "void_mage_helm", "elite_void_top",
                 "elite_void_robe", "void_knight_mace", "void_knight_gloves", "fighter_torso", "penance_skirt", "fighter_hat",

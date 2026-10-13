@@ -80,6 +80,13 @@ public final class Diaries {
         }
     }
 
+    /** Types completed by periodic state checks (levels, items held, quests, places, kill counts...). */
+    public static final List<Type> PERIODIC_TYPES = List.of(Type.LEVEL, Type.HAVE, Type.QUEST, Type.VISIT, Type.KC, Type.GE, Type.CLUE,
+            Type.CAST, Type.TOTAL_LEVEL, Type.COMBAT_LEVEL, Type.QUEST_POINTS, Type.SKILLCAPE);
+
+    /** Types completed by game events (kills, XP drops, makes, obtains, casts, clues, GE trades). */
+    public static final List<Type> EVENT_TYPES = List.of(Type.XP_IN, Type.KILL, Type.MAKE, Type.OBTAIN, Type.CAST, Type.CLUE, Type.GE);
+
     public enum Type {
         LEVEL, XP_IN, KILL, MAKE, HAVE, QUEST, VISIT, CLUE, GE, KC, CAST, TOTAL_LEVEL,
         /** Receive an item from a skilling action, drop or reward. */
@@ -342,7 +349,8 @@ public final class Diaries {
         visit("Get a Haircut from the Falador hairdresser", 2944, 3380, 8);
         have("Fill a bucket from the pump north of Falador West Bank", "*vial_of_water|bucket_of_water"); // approx
         visit("Kill a duck in Falador Park", 2993, 3378, 12); // approx: no ducks
-        make("Make a Mind Tiara", "mind_tiara", 1);
+        // Tiaras are bound at the altar (an obtain event), not made through a make menu.
+        getAt("Make a Mind Tiara", "mind_tiara", 1, null);
         visit("Take the boat to Entrana", 2834, 3335, 15);
         xp("Repair a broken strut in the Motherlode Mine", MINING, 30); // approx
         visit("Claim a security book from the Security Guard upstairs at Port Sarim jail", 3013, 3192, 8);
@@ -491,7 +499,7 @@ public final class Diaries {
         quest("Visit the Isle of Crandor via the dungeon below the volcano", "dragon_slayer_i");
         quest("Use Vigroy and Hajedy's cart service", "shilo_village");
         quest("Earn 100% favour in the village of Tai Bwo Wannai", "jungle_potion", WOODCUTTING, 10); // approx
-        make("Cook a spider on a stick", "*spider", 1, COOKING, 16); // approx
+        xp("Cook a spider on a stick", COOKING, 16); // approx: no spider on a stick; cook something in Karamja
         visit("Charter the Lady of the Waves from Cairn Isle to Port Khazard", 2675, 3150, 12);
         get("Cut a log from a teak tree", "teak_logs", 1, WOODCUTTING, 35);
         get("Cut a log from a mahogany tree", "mahogany_logs", 1, WOODCUTTING, 50);
@@ -508,7 +516,7 @@ public final class Diaries {
         in("karamja", Tier.HARD);
         visit("Become the Champion of the Fight Pits", 2845, 3170, 12); // approx
         killAny("Kill a Ket-Zek in the Fight Caves", "ket-zek", 1);
-        make("Eat an oomlie wrap", "*wrap", 1, COOKING, 50); // approx
+        xp("Eat an oomlie wrap", COOKING, 50); // approx: no oomlie wrap; cook something in Karamja
         getAt("Craft some nature runes", "nature_rune", 1, null, RUNECRAFT, 44);
         make("Cook a karambwan thoroughly", "cooked_karambwan", 1, COOKING, 30);
         quest("Kill a deathwing in the dungeon under the Kharazi Jungle", "legends_quest"); // approx
@@ -610,7 +618,8 @@ public final class Diaries {
         get("Pick some Belladonna from the farming patch at Draynor Manor", "*belladonna", 1, FARMING, 63); // approx
         xp("Light your mining helmet in the Lumbridge castle basement", FIREMAKING, 65);
         visit("Recharge your prayer at the Emir's Arena with Smite activated", 3369, 3170, 15, PRAYER, 52);
-        make("Craft, string and enchant an Amulet of Power in Lumbridge", "amulet_of_power", 1, CRAFTING, 70, MAGIC, 57);
+        // Enchanting is a spell (an obtain event), not a make-menu product.
+        get("Craft, string and enchant an Amulet of Power in Lumbridge", "amulet_of_power", 1, CRAFTING, 70, MAGIC, 57);
         in("lumbridge", Tier.ELITE);
         quest("Steal from a Dorgesh-Kaan rich chest", "death_to_the_dorgeshuun", THIEVING, 78); // approx
         quest("Grapple across a pylon on the Dorgesh-Kaan Agility Course", "death_to_the_dorgeshuun", AGILITY, 70, RANGED, 70,

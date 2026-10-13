@@ -943,6 +943,8 @@ public final class SpellService {
         pay(p, s);
         Inv.remove(p, from, 1);
         Inv.give(p, to, 1);
+        // Enchanted jewellery counts as obtained (diary tasks, collection log).
+        com.runecraft.collection.CollectionLog.obtain(p, to);
         ((ServerWorld) p.getWorld()).spawnParticles(ParticleTypes.ENCHANT, p.getX(), p.getY() + 1.2, p.getZ(), 30, 0.4, 0.4, 0.4, 0.5);
         Msg.action(p, "You enchant the " + ItemCatalog.get(from).name().toLowerCase(Locale.ROOT) + " into "
                 + Msg.article(ItemCatalog.get(to).name()) + ".");
@@ -1194,7 +1196,9 @@ public final class SpellService {
         sp.thrallReadyAt = now + 17;
         sp.thrallTier = Spellbooks.thrallTier(s.id());
         sp.thrallType = s.id().contains("ghost") ? "ghost" : s.id().contains("skeleton") ? "skeleton" : "zombie";
-        sp.thrallUntil = now + Players.data(p).skills().currentLevel(Skill.MAGIC);
+        // Thralls last 0.6 s per Magic level; twice as long from the master Combat Achievement tier.
+        sp.thrallUntil = now + (long) (Players.data(p).skills().currentLevel(Skill.MAGIC)
+                * com.runecraft.osrs.content.systems.CombatAchievements.thrallDurationMultiplier(CombatAchievementService.tier(p)));
         sp.nextThrallAttack = now + 4;
         SysCombat.dust(p, new Vector3f(0.4f, 0.8f, 0.6f), 30);
         Msg.action(p, "You resurrect a " + (sp.thrallTier == 3 ? "greater" : sp.thrallTier == 2 ? "superior" : "lesser") + " "

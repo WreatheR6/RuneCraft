@@ -36,6 +36,7 @@ public final class SysMenus {
                 case "worn" -> worn(p);
                 case "spellbook" -> spellbook(p, 0);
                 case "diaries" -> diaries(p);
+                case "combat" -> CaMenus.overview(p);
                 case "clues" -> clues(p);
                 case "ge" -> GeService.open(p, null, null);
                 case "hiscores" -> hiscores(p, null);
@@ -131,6 +132,8 @@ public final class SysMenus {
         s.line("Spellbook: " + sp.book.displayName + (sp.autocast.isEmpty() ? "" : " - autocasting " + Spellbooks.get(sp.autocast).name()));
         int diaryDone = sp.diaryDone.size();
         s.line("Achievement diary tasks: " + diaryDone + "/" + Diaries.tasks().size() + "   Quest points: " + d.questPoints());
+        s.line("Combat Achievement points: " + CombatAchievementService.points(p) + "/"
+                + com.runecraft.osrs.content.systems.CombatAchievements.totalPoints(), 0xE0A060);
         StringBuilder clues = new StringBuilder("Treasure trails completed:");
         for (ClueScrolls.Tier t : ClueScrolls.Tier.values()) {
             clues.append(' ').append(t.id()).append(' ').append(sp.cluesCompleted.getOrDefault(t, 0));
@@ -139,6 +142,7 @@ public final class SysMenus {
         s.button("worn", "Worn equipment", "Rings, amulets, capes, gloves and blessings.", true);
         s.button("spellbook", "Spellbook", "Ancient, Lunar and Arceuus spells (B).", true);
         s.button("diaries", "Achievement diaries", "", true);
+        s.button("combat", "Combat achievements", "Boss tasks, points and Ghommal's rewards.", true);
         s.button("clues", "Clue scrolls", "", true);
         s.button("ge", "Grand Exchange", "View and collect your offers.", true);
         s.button("hiscores", "Hiscores", "", true);

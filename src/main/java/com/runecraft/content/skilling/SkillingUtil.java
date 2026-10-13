@@ -59,7 +59,7 @@ final class SkillingUtil {
         }
         Inv.give(player, item, count);
         if (!item.equals(Inv.COINS)) {
-            CollectionLog.obtain(player, item);
+            CollectionLog.record(player, item);
         }
         GameEvents.fireObtain(player, item, count);
     }
