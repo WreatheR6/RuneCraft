@@ -37,11 +37,21 @@ class KruksDungeonTest {
             assertEquals(1, c.creatures().size(), c.toString());
             caps.merge(c.creatures().get(0), c.cap(), Integer::sum);
             assertEquals(KruksDungeon.RESPAWN, c.respawnTicks());
-            assertTrue(c.feetY() == KruksDungeon.LOWER + 1 || c.feetY() == KruksDungeon.UPPER + 1, c.toString());
+            assertTrue(c.feetY() == KruksDungeon.LOWER + 1 || c.feetY() == KruksDungeon.UPPER + 1
+                    || c.feetY() == KruksDungeon.HORDE + 1, c.toString());
         }
-        // Cache (mejrs NPCList_OSRS.json): halls 11+12+6+5 monkeys and 7+4+4+6 archers, the gallery 6 and 4.
-        assertEquals(40, caps.get("maniacal_monkey"));
-        assertEquals(25, caps.get("maniacal_monkey_archer"));
+        // Cache (mejrs NPCList_OSRS.json): halls 11+12+6+5 monkeys and 7+4+4+6 archers, the gallery 6 and 4, and the
+        // western hordes of plane 1 (2311-2452, 9135-9275) 204 monkeys and 54 archers.
+        assertEquals(40 + 204, caps.get("maniacal_monkey"));
+        assertEquals(25 + 54, caps.get("maniacal_monkey_archer"));
+        int monkeys = 0;
+        int archers = 0;
+        for (KruksDungeon.Cluster k : KruksDungeon.HORDES) {
+            monkeys += k.monkeys();
+            archers += k.archers();
+        }
+        assertEquals(204, monkeys);
+        assertEquals(54, archers);
     }
 
     @Test
@@ -57,10 +67,16 @@ class KruksDungeonTest {
         assertEquals(200, a.ranged);
     }
 
-    /** The whole dungeon lies under Ape Atoll's land, so the sea floor around the island is left alone. */
+    /**
+     * The dungeon lies under Ape Atoll's land, so the sea floor around the island is left alone; only rooms deep enough
+     * to need no raised sea bed (the hordes, below {@code TerrainAnchors.DEEP_UNDERGROUND_BELOW}) reach under the sea.
+     */
     @Test
     void dungeonLiesUnderTheIsland() {
         for (StructureDef.Op op : kruk().structure().ops()) {
+            if (op.y2() < com.runecraft.osrs.world.TerrainAnchors.DEEP_UNDERGROUND_BELOW && op.y1() <= KruksDungeon.HORDE + 8) {
+                continue;
+            }
             for (int[] p : new int[][]{{op.x1(), op.z1()}, {op.x2(), op.z2()}, {op.x1(), op.z2()}, {op.x2(), op.z1()}}) {
                 assertTrue(Elevation.coastDistance(p[0], p[1]) > 2, "under the sea at " + GielinorMap.toOsrsX(p[0]) + ","
                         + GielinorMap.toOsrsY(p[1]) + ": " + op);

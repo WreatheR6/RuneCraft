@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/dng_lighthouse_ladder_side",
+    "top": "runecraft:block/module/dng_lighthouse_ladder_top",
+    "bottom": "runecraft:block/module/dng_lighthouse_ladder_bottom"
+  }
+}

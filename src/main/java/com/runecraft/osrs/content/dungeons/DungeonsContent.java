@@ -33,6 +33,7 @@ import java.util.Map;
 public final class DungeonsContent implements ContentModule {
     public static final String FANCY_BOOTS = "fancy_boots";
     public static final String FIGHTING_BOOTS = "fighting_boots";
+    public static final String PET_ROCK = "pet_rock";
 
     @Override
     public String id() {
@@ -49,6 +50,10 @@ public final class DungeonsContent implements ContentModule {
         items.add(FIGHTING_BOOTS, "Fighting boots", Kind.ARMOUR, "boots", 0x8A2A2A).value(0).stack(1)
                 .equipment(new EquipmentDef(Slot.FEET, none, Map.of(), 0, AttackType.CRUSH, WeaponClass.NONE))
                 .examine("Ready for a fight.");
+        // Holds the Waterbirth Island Dungeon's circular doors open (OSRS: from Askeladden in Rellekka; here from the
+        // dungeon's rock pile, approx).
+        items.add(PET_ROCK, "Pet rock", Kind.SIMPLE, "ore", 0x8A8A82).value(0).stack(1)
+                .examine("A very sensible pet.");
     }
 
     @Override

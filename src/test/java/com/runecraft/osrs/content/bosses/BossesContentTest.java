@@ -129,7 +129,12 @@ class BossesContentTest {
         for (BossDef b : bosses) {
             assertEquals(b.id, b.model, b.id);
             assertTrue(models.containsKey(b.id), "no model for " + b.id);
-            if (!b.raidOnly) {
+            if (!b.raidOnly && b.place == null) {
+                // No surface arena: its summoning stone must stand in a lair of some structure (the Dagannoth Kings').
+                String stone = "runecraft:" + b.summonBlockId();
+                assertTrue(ContentRegistry.structures().stream().anyMatch(s -> s.ops().stream().anyMatch(op -> stone.equals(op.block()))),
+                        b.id + " has neither a place nor a placed summoning stone");
+            } else if (!b.raidOnly) {
                 assertTrue(Landmark.byName(b.place) != null || ContentRegistry.place(b.place) != null, b.id + " place " + b.place);
             }
         }

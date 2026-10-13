@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -406,8 +408,37 @@ class DungeonsContentTest {
                 ladders++;
             }
         }
-        assertEquals(1, ladders, "the Kings' ladder");
+        assertEquals(2, ladders, "the Kings' ladder and its other end in the lair");
         assertNotNull(ContentRegistry.boss("dagannoth_rex"));
+        assertEquals(11, caps.get("spinolyp"));
+        // The ladder links the great hall and the lair both ways; the lair holds the Kings' summoning stone.
+        int[] lair = DungeonBlocks.kingsLadderTarget(WaterbirthDungeon.hallArrival()[0], WaterbirthDungeon.P0 + 1,
+                WaterbirthDungeon.hallArrival()[2]);
+        assertArrayEquals(WaterbirthDungeon.lairArrival(), lair);
+        assertArrayEquals(WaterbirthDungeon.hallArrival(), DungeonBlocks.kingsLadderTarget(lair[0], lair[1], lair[2]));
+        long stones = dungeon("dng_waterbirth_dungeon").structure().ops().stream()
+                .filter(op -> "runecraft:dagannoth_rex_summoning_stone".equals(op.block())
+                        && WaterbirthDungeon.inLair(op.x1(), op.y1(), op.z1())).count();
+        assertEquals(1, stones);
+        // Three circular doors and six door-support blocks on each of their two layers; one Lighthouse ladder.
+        Map<String, Integer> blocks = new HashMap<>();
+        for (Op op : dungeon("dng_waterbirth_dungeon").structure().ops()) {
+            if (op.block() != null && op.block().startsWith("runecraft:dng_")) {
+                blocks.merge(op.block().substring("runecraft:".length()), 1, Integer::sum);
+            }
+        }
+        assertEquals(6, blocks.get(DungeonBlocks.CIRCULAR_DOOR));
+        assertEquals(12, blocks.get(DungeonBlocks.DOOR_SUPPORT));
+        assertEquals(1, blocks.get(DungeonBlocks.LIGHTHOUSE_LADDER));
+        assertEquals(1, blocks.get(DungeonBlocks.ROCK_PILE));
+        assertTrue(DungeonBlocks.outsideCircularDoor(WaterbirthDungeon.doorX() - 2));
+        assertFalse(DungeonBlocks.outsideCircularDoor(WaterbirthDungeon.doorX() + 2));
+        // The whole dungeon lies deep enough to leave the sea bed above it untouched.
+        for (Op op : dungeon("dng_waterbirth_dungeon").structure().ops()) {
+            if (op.y2() < com.runecraft.osrs.world.TerrainAnchors.UNDERGROUND_BELOW) {
+                assertTrue(op.y2() < com.runecraft.osrs.world.TerrainAnchors.DEEP_UNDERGROUND_BELOW, op.toString());
+            }
+        }
     }
 
     @Test
@@ -419,6 +450,23 @@ class DungeonsContentTest {
         assertEquals(29, temple.get("monkey_zombie_lvl82"));
         assertEquals(5, temple.get("monkey_zombie"));
         assertEquals(7, temple.get("monkey_zombie_lvl129"));
+        // The trapped tunnel's traps stand on its floor, and the rock ledges shelter from falling rocks.
+        int traps = 0;
+        for (Op op : dungeon("dng_temple_of_marimbo_dungeon").structure().ops()) {
+            if ("minecraft:polished_blackstone_pressure_plate".equals(op.block())) {
+                assertTrue(DungeonBlocks.apeAtollTrap(op.x1(), op.y1(), op.z1()), op.toString());
+                traps++;
+            }
+        }
+        assertEquals(3, traps);
+        int[] ledge = ApeAtollDungeons.LEDGES[0];
+        int lx = StructureDef.bx(ledge[0] + ApeAtollDungeons.DX);
+        int lz = StructureDef.bz(ledge[1] + ApeAtollDungeons.DY);
+        assertFalse(DungeonBlocks.apeAtollFallingRocks(lx + 1, ApeAtollDungeons.FLOOR + 1, lz));
+        assertTrue(DungeonBlocks.apeAtollFallingRocks(lx + 8, ApeAtollDungeons.FLOOR + 1, lz));
+        assertFalse(DungeonBlocks.apeAtollFallingRocks(lx + 8, ApeAtollDungeons.FLOOR + 30, lz));
+        assertTrue(DungeonBlocks.breaksDoorSupport("magic_shortbow") && DungeonBlocks.breaksDoorSupport("staff_of_air"));
+        assertFalse(DungeonBlocks.breaksDoorSupport("rune_scimitar"));
     }
 
     /** The Mort'ton catacombs' key doors stand in their halls, one per metal, each guarding a crypt with its shades. */

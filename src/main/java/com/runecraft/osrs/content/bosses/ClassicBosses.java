@@ -89,7 +89,8 @@ public final class ClassicBosses {
                 .drops(Drop.of("rock_shell_plate", 1, 1, 128), Drop.of("rock_shell_legs", 1, 1, 128),
                         Drop.of("fremennik_blade", 1, 1, 64))
                 .defenceBonus(255, 255, 255, 10, 255)
-                .stats(255, 255, 255, 255, 1, 1).at("waterbirth_island");
+                // No surface arena: the summoning stone stands in the Kings' lair below the Waterbirth Island Dungeon (dungeons module).
+                .stats(255, 255, 255, 255, 1, 1);
     }
 
     static BossDef dagannothPrime() {

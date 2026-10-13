@@ -150,8 +150,8 @@ Recurring conflict spots:
   - Seed pack contents are partly guessed.
 - **Thieving and Agility:** the Dorgesh-Kaan course is missing; Isle of Souls chests sit on the surface (their real tiles are in the dungeon/tower basement); leaving the Wilderness course doesn't forfeit the fee.
 - **World:**
-  - Kruk's Dungeon is only its core halls (the western plane-1 hordes would sit under open sea; needs a placement decision).
-  - Waterbirth: circular doors open, no Kings' sublevel 6, no lighthouse exit; seabed shelf at y 56 over the dungeon. Ape Atoll dungeons are boxes around cache clusters.
+  - Kruk's Dungeon: the western plane-1 hordes are carved at y -10 under the atoll (own shift, ladder from the lower north-west hall); the other plane-1 clusters (east of 2500, about 120 monkeys/archers) and the plane-0 clusters west of 2600 are still missing.
+  - Waterbirth: the Lighthouse ladder is one-way (nothing in the Lighthouse leads down); doors/supports let one player through per use; the Kings are summoned at the stone rather than always present; the lair is not a multicombat area; Bardur and the Askeladden exit missing; the pet rock comes from a rock pile, not Askeladden. Ape Atoll dungeons are boxes around cache clusters; Zooknock still stands on the surface (quests module); no hot-rock cave or locked doors.
   - Many drop items are missing from the catalog (Fremennik/spined/berserker/warrior helms, rock-shell gloves/boots, monkey bones variants, Ape Atoll bones), so those drop lines are skipped. Trek vampyre juvinates don't count for the vampyres task (it would make Konar assign it with no spawns).
   - Remaining spawn stand-ins: Braindeath (off-map), Mudskipper Point (cache mudskippers are underground at 2950,9525), Jatizso ice trolls (cache tiles 2387-2418, 3853-3869 lie north of the traced coast), Fortis guards (snapshot has no Varlamore).
   - Zeah multicombat polygons are from 2018; Varlamore has none.

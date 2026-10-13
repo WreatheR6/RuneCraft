@@ -17,6 +17,12 @@ import static com.runecraft.osrs.content.dungeons.Cave.rc;
  * cache's number of maniacal monkeys and maniacal monkey archers. The upper gallery copies a plane-1 cluster the same
  * way, and the laboratory holds the Hunter area's banana boulders (cache tiles 2902-2920, 9112-9137, shifted east).
  * Entering needs Monkey Madness II (systems module's access gate on the hut).
+ *
+ * <p>The western hordes of the upper floor (cache plane 1, 2311-2452, 9135-9275: 204 maniacal monkeys and 54 archers)
+ * would lie under open sea with the main shift, so they are carved deeper ({@link #HORDE}) with their own shift
+ * ({@link #DXH}, {@link #DYH}) that centres them under the atoll, keeping their relative layout; a ladder from the lower
+ * north-west hall leads down to them (approx: in OSRS they are reached through the upper floor's western passages).
+ * Each {@link #HORDES} hall is a box around one cache cluster with exactly its monsters.
  */
 final class KruksDungeon {
     /** OSRS surface tile of the entrance. */
@@ -28,6 +34,13 @@ final class KruksDungeon {
     /** Floor heights: the upper floor and the dark lower floor. */
     static final int UPPER = 36;
     static final int LOWER = 22;
+    /** The western hordes' floor (below Ape Atoll's undead dungeons at 6) and their shift to the atoll's tiles. */
+    static final int HORDE = -10;
+    static final int DXH = 369;
+    static final int DYH = -6455;
+    /** Cache tile of the lower north-west hall where the ladder down to the hordes stands. */
+    static final int HORDE_LADDER_X = 2641;
+    static final int HORDE_LADDER_Y = 9200;
     /** Maniacal monkeys come back 25 ticks after dying (wiki: respawn 25 ticks), approx for the archers. */
     static final int RESPAWN = 25;
 
@@ -46,6 +59,20 @@ final class KruksDungeon {
             new Cluster("upper gallery", 1, 2626, 9135, 2646, 9139, 6, 4),
     };
 
+    /** The western hordes' halls (cache plane 1; every monster of the region is counted in exactly one hall). */
+    static final Cluster[] HORDES = {
+            new Cluster("south-west horde", 1, 2311, 9135, 2349, 9150, 29, 0),
+            new Cluster("south-west horde (east)", 1, 2327, 9151, 2365, 9184, 33, 0),
+            new Cluster("south-west horde (passage)", 1, 2353, 9148, 2377, 9163, 7, 0),
+            new Cluster("south-west horde (corner)", 1, 2366, 9164, 2387, 9184, 5, 0),
+            new Cluster("southern horde", 1, 2390, 9157, 2431, 9180, 31, 0),
+            new Cluster("south-east horde", 1, 2427, 9157, 2452, 9189, 41, 0),
+            new Cluster("north-west horde", 1, 2337, 9225, 2373, 9268, 41, 0),
+            new Cluster("archers' gallery (south)", 1, 2376, 9190, 2420, 9231, 0, 26),
+            new Cluster("archers' gallery (north)", 1, 2376, 9232, 2420, 9262, 0, 28),
+            new Cluster("northern horde", 1, 2376, 9263, 2420, 9275, 17, 0),
+    };
+
     private KruksDungeon() {
     }
 
@@ -55,6 +82,25 @@ final class KruksDungeon {
 
     private static int z(int caveY) {
         return StructureDef.bz(caveY + DY);
+    }
+
+    /** The hordes' cache tile to block. */
+    private static int xh(int caveX) {
+        return StructureDef.bx(caveX + DXH);
+    }
+
+    private static int zh(int caveY) {
+        return StructureDef.bz(caveY + DYH);
+    }
+
+    /** A horde hall over the cache tile rectangle (inclusive). */
+    private static void hordeRoom(Cave c, Cluster k) {
+        c.room(xh(k.x1()), zh(k.y2()), xh(k.x2()) + 1, zh(k.y1()) + 1, HORDE, 7);
+    }
+
+    /** A 3-wide passage between two horde tiles. */
+    private static void hordeHall(Cave c, int ax, int ay, int bx, int by) {
+        c.hall(xh(ax), zh(ay), xh(bx), zh(by), HORDE, 3, 5);
     }
 
     /** A room over the cache tile rectangle (inclusive) on floor f. */
@@ -98,10 +144,23 @@ final class KruksDungeon {
         int ly2 = 9189;
         hall(c, 2669, 9152, 2690, 9163, LOWER);
         room(c, lx1, ly1, lx2, ly2, LOWER, 7);
+        // ---- the western hordes, deeper down, joined where their clusters meet
+        for (Cluster k : HORDES) {
+            hordeRoom(c, k);
+        }
+        hordeHall(c, 2387, 9170, 2390, 9170);
+        hordeHall(c, 2400, 9180, 2400, 9190);
+        hordeHall(c, 2373, 9245, 2376, 9245);
         c.carve();
 
         // The way down: a ladder through the vine hole.
         c.ladderUp(x(holeX), z(holeY), LOWER, UPPER);
+        // The ladder from the lower north-west hall down to the hordes; jungle roots and bones in their halls.
+        c.ladderUp(x(HORDE_LADDER_X), z(HORDE_LADDER_Y), HORDE, LOWER);
+        for (int[] p : new int[][]{{2330, 9142}, {2346, 9168}, {2410, 9168}, {2440, 9173}, {2355, 9240}, {2398, 9210}, {2398, 9247}}) {
+            c.pillar(xh(p[0]), zh(p[1]), HORDE, 7, mc("jungle_log[axis=y]"));
+        }
+        c.set(xh(2345), HORDE + 1, zh(9255), mc("bone_block[axis=x]"));
         // Jungle roots and old bones in the halls; the laboratory's ruined benches.
         for (int[] p : new int[][]{{2636, 9110}, {2662, 9152}, {2641, 9196}, {2668, 9201}}) {
             c.pillar(x(p[0]), z(p[1]), LOWER, 7, mc("jungle_log[axis=y]"));
@@ -121,6 +180,14 @@ final class KruksDungeon {
             int f = k.plane() == 0 ? LOWER : UPPER;
             c.camp(x(k.x1()), z(k.y2()), x(k.x2()) + 1, z(k.y1()) + 1, f, k.monkeys(), RESPAWN, "maniacal_monkey");
             c.camp(x(k.x1()), z(k.y2()), x(k.x2()) + 1, z(k.y1()) + 1, f, k.archers(), RESPAWN, "maniacal_monkey_archer");
+        }
+        for (Cluster k : HORDES) {
+            if (k.monkeys() > 0) {
+                c.camp(xh(k.x1()), zh(k.y2()), xh(k.x2()) + 1, zh(k.y1()) + 1, HORDE, k.monkeys(), RESPAWN, "maniacal_monkey");
+            }
+            if (k.archers() > 0) {
+                c.camp(xh(k.x1()), zh(k.y2()), xh(k.x2()) + 1, zh(k.y1()) + 1, HORDE, k.archers(), RESPAWN, "maniacal_monkey_archer");
+            }
         }
         return c.build();
     }

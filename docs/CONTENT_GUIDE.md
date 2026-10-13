@@ -169,7 +169,8 @@ The terrain adapts to content automatically (`TerrainAnchors`):
 * Places with a plaza (any style except `NONE`) and their boss arenas get a small flat terrace at
   their natural height. Style `NONE` places build nothing and leave the terrain alone.
 * Rooms under y 56 (dungeons) always have at least 5 blocks of rock above them, and the surface over
-  them stays at y 56 or higher.
+  them stays at y 56 or higher, except over rooms whose top is below y 34 (`DEEP_UNDERGROUND_BELOW`):
+  those only need the rock cover, so a dungeon carved that deep under the sea leaves the sea bed alone.
 * Large water fills at sea level (harbours, moats, river channels) stay open water. Natural rivers stop
   at the edge of a town's levelled ground, so extend a town's own river channel to the edge of its
   `tFlatten` box.
