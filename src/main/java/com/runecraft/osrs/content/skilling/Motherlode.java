@@ -5,20 +5,22 @@ import java.util.Map;
 import java.util.function.DoubleSupplier;
 
 /**
- * The Motherlode Mine (OSRS Wiki: Motherlode Mine, Pay-dirt, Sack).
+ * The Motherlode Mine (OSRS Wiki: Motherlode Mine, Pay-dirt, Ore vein, Sack).
  *
  * <ul>
- *   <li>Mining a pay-dirt vein (30 Mining) gives 60 XP per pay-dirt.</li>
+ *   <li>Mining a pay-dirt vein (30 Mining) gives 60 XP per pay-dirt. A vein depletes 23-27 seconds after
+ *       its first pay-dirt (36-40 seconds on the upper level) and respawns after 100 ticks (lower level outer
+ *       ring and upper level; 150 ticks for the lower level's inner ring).</li>
  *   <li>Washed pay-dirt reaches the sack, which holds 108 (189 after the 200-nugget upgrade; since
- *       May 2024 it can no longer be overfilled). Collecting ore gives bonus XP per ore: coal 0,
- *       gold 15, mithril 30, adamantite 45, runite 75.</li>
- *   <li>Each pay-dirt is a golden nugget 1/32 of the time; otherwise the ore is rolled from the best
- *       tier the Mining level allows downwards (runite 85, adamantite 70, mithril 55, gold 40, else
- *       coal). At 99 the wiki gives coal 24.6%, nugget 3.13%, gold 24.22%, mithril 26.93%,
- *       adamantite 18.18% and runite 2.27%; below 99 each ore's chance scales down to a third of its
- *       level-99 value at its requirement (approx, matching the wiki's average bonus XP per pay-dirt
- *       of 16.84 at 85 and 21.9 at 99).</li>
- *   <li>The upper level needs 72 Mining (not boostable) and a one-off 100 golden nuggets.</li>
+ *       May 2024 it can no longer be overfilled). Washing gives bonus XP per ore: coal 15 (since the
+ *       May 2024 rebalance), gold 15, mithril 30, adamantite 45, runite 75.</li>
+ *   <li>Each pay-dirt rolls, in order, a golden nugget (low/high 7/7 = 1/32), then runite (85, -20/5),
+ *       adamantite (70, -90/50), mithril (55, -19/90) and gold (40, -40/126) on the standard 1-99 skilling
+ *       curve (the wiki's cascading success chart); coal when every roll fails. At 99 this gives coal
+ *       24.6%, nugget 3.13%, gold 24.22%, mithril 26.93%, adamantite 18.85% and runite 2.27% (the wiki's
+ *       prose says 18.18% for adamantite, a typo: its row then sums to 99.33%).</li>
+ *   <li>The upper level needs 57 Mining (not boostable; 72 before the 2022 change) and a one-off 100
+ *       golden nuggets; its hopper costs another 50.</li>
  * </ul>
  */
 public final class Motherlode {
@@ -30,22 +32,44 @@ public final class Motherlode {
     public static final int SACK_CAPACITY = 108;
     public static final int SACK_CAPACITY_UPGRADED = 189;
     public static final int SACK_UPGRADE_NUGGETS = 200;
-    public static final int UPPER_LEVEL_MINING = 72;
+    public static final int UPPER_LEVEL_MINING = 57;
     public static final int UPPER_LEVEL_NUGGETS = 100;
-    /** 1/32 per pay-dirt (Pay-dirt page; the Motherlode Mine page still lists 7/255). */
+    public static final int UPPER_HOPPER_NUGGETS = 50;
+    /** 1/32 per pay-dirt (low/high 7/7 on the 1-99 curve). */
     public static final int NUGGET_CHANCE = 32;
+    /** Vein life after its first pay-dirt, in game ticks: 23-27 s lower, 36-40 s upper. */
+    public static final int[] LOWER_VEIN_LIFE = {38, 45};
+    public static final int[] UPPER_VEIN_LIFE = {60, 67};
+    /** Depleted vein respawn in game ticks (upper level and lower outer ring 100; the lower inner ring's 150 isn't modelled). */
+    public static final int VEIN_RESPAWN = 100;
+    /** At most three golden nuggets reach the sack per hopper deposit. */
+    public static final int MAX_NUGGETS_PER_DEPOSIT = 3;
 
-    /** An ore from pay-dirt: item, Mining level, bonus XP when collected, conditional chance at 99. */
-    public record Ore(String item, int level, double xp, double chanceAt99) {
+    /** An ore from pay-dirt: item, Mining level, bonus XP when washed, low/high of its roll. */
+    public record Ore(String item, int level, double xp, int low, int high) {
+        /** Chance of this roll succeeding at a Mining level (0 below the requirement). */
+        public double chance(int miningLevel) {
+            return miningLevel < level ? 0 : com.runecraft.osrs.Chance.lerp(miningLevel, low, high);
+        }
     }
 
-    /** Best tier first. The conditional chances reproduce the wiki's level-99 percentages. */
+    public static final Ore NUGGET = new Ore("golden_nugget", 30, 0, 7, 7);
+    /** Best tier first, as rolled. */
     public static final Ore[] ORES = {
-            new Ore("runite_ore", 85, 75, 0.02343), new Ore("adamantite_ore", 70, 45, 0.19217),
-            new Ore("mithril_ore", 55, 30, 0.3524), new Ore("gold_ore", 40, 15, 0.4894)};
-    public static final Ore COAL = new Ore("coal", 30, 0, 1.0);
-    /** Fraction of the level-99 chance an ore has at its own level requirement (approx). */
-    public static final double CHANCE_AT_REQUIREMENT = 1.0 / 3.0;
+            new Ore("runite_ore", 85, 75, -20, 5), new Ore("adamantite_ore", 70, 45, -90, 50),
+            new Ore("mithril_ore", 55, 30, -19, 90), new Ore("gold_ore", 40, 15, -40, 126)};
+    public static final Ore COAL = new Ore("coal", 30, 15, 0, 0);
+
+    /** Ticks a vein lasts after its first pay-dirt, from a random value in [0, 1). */
+    public static int veinLife(boolean upper, double random) {
+        int[] r = upper ? UPPER_VEIN_LIFE : LOWER_VEIN_LIFE;
+        return r[0] + (int) (random * (r[1] - r[0] + 1));
+    }
+
+    /** Nuggets that reach the sack from one deposit (the rest are lost). */
+    public static int nuggetsKept(int washed) {
+        return Math.min(MAX_NUGGETS_PER_DEPOSIT, washed);
+    }
 
     public static int sackCapacity(boolean upgraded) {
         return upgraded ? SACK_CAPACITY_UPGRADED : SACK_CAPACITY;
@@ -62,19 +86,14 @@ public final class Motherlode {
 
     /** Conditional chance of an ore once the better tiers have missed. */
     public static double conditional(Ore ore, int level) {
-        if (level < ore.level()) {
-            return 0;
-        }
-        int l = Math.min(99, level);
-        double f = CHANCE_AT_REQUIREMENT + (1 - CHANCE_AT_REQUIREMENT) * (l - ore.level()) / (99.0 - ore.level());
-        return ore.chanceAt99() * f;
+        return ore.chance(level);
     }
 
     /** Probability of each result per pay-dirt at a level: golden_nugget, the four ores and coal (sums to 1). */
     public static Map<String, Double> distribution(int level) {
         Map<String, Double> out = new LinkedHashMap<>();
-        double nugget = 1.0 / NUGGET_CHANCE;
-        out.put("golden_nugget", nugget);
+        double nugget = NUGGET.chance(level);
+        out.put(NUGGET.item(), nugget);
         double rem = 1.0 - nugget;
         for (Ore o : ORES) {
             double p = rem * conditional(o, level);
@@ -87,8 +106,8 @@ public final class Motherlode {
 
     /** What one pay-dirt washes into: "golden_nugget" or an ore id. */
     public static String wash(int level, DoubleSupplier random) {
-        if (random.getAsDouble() < 1.0 / NUGGET_CHANCE) {
-            return "golden_nugget";
+        if (random.getAsDouble() < NUGGET.chance(level)) {
+            return NUGGET.item();
         }
         for (Ore o : ORES) {
             if (random.getAsDouble() < conditional(o, level)) {
@@ -98,8 +117,11 @@ public final class Motherlode {
         return COAL.item();
     }
 
-    /** Bonus Mining XP for collecting an item from the sack (0 for coal and nuggets). */
+    /** Bonus Mining XP for an item washed into the sack (0 for nuggets). */
     public static double collectXp(String item) {
+        if (item.equals(COAL.item())) {
+            return COAL.xp();
+        }
         for (Ore o : ORES) {
             if (o.item().equals(item)) {
                 return o.xp();
@@ -108,7 +130,7 @@ public final class Motherlode {
         return 0;
     }
 
-    /** Average bonus XP per pay-dirt at a level (the wiki gives 16.84 at 85 and 21.9 at 99). */
+    /** Average bonus XP per pay-dirt at a level (the wiki's 16.84 at 85 and 21.9 at 99 predate coal's 15 XP). */
     public static double averageCollectXp(int level) {
         double xp = 0;
         for (Map.Entry<String, Double> e : distribution(level).entrySet()) {

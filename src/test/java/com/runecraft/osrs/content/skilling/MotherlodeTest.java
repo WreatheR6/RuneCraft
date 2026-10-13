@@ -18,13 +18,14 @@ class MotherlodeTest {
     @Test
     void levelNinetyNineMatchesTheWiki() {
         Map<String, Double> d = Motherlode.distribution(99);
-        // The wiki row sums to 99.33%; coal takes the remainder here.
-        assertEquals(0.246, d.get("coal"), 0.008);
-        assertEquals(0.0313, d.get("golden_nugget"), 0.0005);
-        assertEquals(0.2422, d.get("gold_ore"), 0.002);
-        assertEquals(0.2693, d.get("mithril_ore"), 0.002);
-        assertEquals(0.1818, d.get("adamantite_ore"), 0.002);
-        assertEquals(0.0227, d.get("runite_ore"), 0.001);
+        // The wiki's cascading chart (low/high per ore) reproduces its level-99 row exactly; its prose has
+        // 18.18% for adamantite, a typo for 18.85% (the row then sums to 100%).
+        assertEquals(0.2460, d.get("coal"), 0.0001);
+        assertEquals(0.03125, d.get("golden_nugget"), 1e-9);
+        assertEquals(0.2422, d.get("gold_ore"), 0.0001);
+        assertEquals(0.2693, d.get("mithril_ore"), 0.0001);
+        assertEquals(0.1885, d.get("adamantite_ore"), 0.0001);
+        assertEquals(0.0227, d.get("runite_ore"), 0.0001);
     }
 
     @Test
@@ -53,15 +54,17 @@ class MotherlodeTest {
     @Test
     void collectionExperience() {
         assertEquals(60.0, Motherlode.PAY_DIRT_XP);
-        assertEquals(0.0, Motherlode.collectXp("coal"));
+        // Coal gives 15 XP since the May 2024 rebalance.
+        assertEquals(15.0, Motherlode.collectXp("coal"));
         assertEquals(15.0, Motherlode.collectXp("gold_ore"));
         assertEquals(30.0, Motherlode.collectXp("mithril_ore"));
         assertEquals(45.0, Motherlode.collectXp("adamantite_ore"));
         assertEquals(75.0, Motherlode.collectXp("runite_ore"));
         assertEquals(0.0, Motherlode.collectXp("golden_nugget"));
-        // Wiki: average bonus XP per pay-dirt is 16.84 at 85 and 21.9 at 99.
-        assertEquals(16.84, Motherlode.averageCollectXp(85), 0.5);
-        assertEquals(21.9, Motherlode.averageCollectXp(99), 0.5);
+        // Wiki: average bonus XP per pay-dirt is 16.84 at 85 and 21.9 at 99, from before coal gave 15 XP.
+        Map<String, Double> d85 = Motherlode.distribution(85);
+        assertEquals(16.84, Motherlode.averageCollectXp(85) - 15 * d85.get("coal"), 0.3);
+        assertEquals(21.9, Motherlode.averageCollectXp(99) - 15 * Motherlode.distribution(99).get("coal"), 0.05);
         MiningData.MineRock vein = MiningData.rock("pay_dirt_vein");
         assertNotNull(vein);
         assertEquals(30, vein.level());
@@ -77,8 +80,17 @@ class MotherlodeTest {
         assertEquals(8, Motherlode.deposit(28, 100, false));
         assertEquals(28, Motherlode.deposit(28, 100, true));
         assertEquals(0, Motherlode.deposit(28, 108, false));
-        assertFalse(Motherlode.canUseUpperLevel(71, true));
-        assertTrue(Motherlode.canUseUpperLevel(72, true));
+        // 57 Mining since the 2022 change (72 before).
+        assertFalse(Motherlode.canUseUpperLevel(56, true));
+        assertTrue(Motherlode.canUseUpperLevel(57, true));
+        assertEquals(50, Motherlode.UPPER_HOPPER_NUGGETS);
+        assertNotNull(MiningData.rock(MiningData.UPPER_VEIN));
+        // Veins last 23-27 s (38-45 ticks) below and 36-40 s (60-67 ticks) on the upper level.
+        assertEquals(38, Motherlode.veinLife(false, 0.0));
+        assertEquals(45, Motherlode.veinLife(false, 0.9999));
+        assertEquals(60, Motherlode.veinLife(true, 0.0));
+        assertEquals(67, Motherlode.veinLife(true, 0.9999));
+        assertEquals(3, Motherlode.nuggetsKept(5));
         assertFalse(Motherlode.canUseUpperLevel(99, false));
         assertEquals(100, Motherlode.UPPER_LEVEL_NUGGETS);
     }
