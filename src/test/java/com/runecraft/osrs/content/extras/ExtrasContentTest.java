@@ -228,7 +228,7 @@ class ExtrasContentTest {
             assertTrue(ItemCatalog.exists(b.deed()), b.deed());
             b.build().keySet().forEach(m -> assertTrue(ItemCatalog.exists(m), b.id() + " material " + m));
         }
-        assertEquals(18, Seafaring.PORTS.size());
+        assertEquals(31, Seafaring.PORTS.size());
         Set<String> names = new HashSet<>();
         Seafaring.PORTS.forEach(p -> names.add(p.name()));
         for (String n : List.of("Port Sarim", "Catherby", "Brimhaven", "Port Khazard", "Rellekka", "Port Piscarilius", "Land's End",

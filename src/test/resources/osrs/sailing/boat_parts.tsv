@@ -1,0 +1,79 @@
+# Source: OSRS Wiki wikitext dump (Kiyogitpy/osrs-wiki-data, July 2026), page "Hull, Mast and sails, Helm, Keel".
+# part	boat	sailing level	construction level	name	materials	construction xp	stat (hull speed | trim xp | helm rapids | keel armour)
+hull	raft	1	1	Wooden raft	logs:10;rope:6;swamp_tar:10	19	1.5
+hull	raft	20	8	Oak raft	oak_logs:10;rope:6;swamp_tar:10	27	1.5
+hull	raft	31	23	Teak raft	teak_logs:10;rope:6;swamp_tar:10;lead_bar:5	41	2.0
+hull	raft	48	41	Mahogany raft	mahogany_logs:10;rope:6;swamp_tar:10;lead_bar:5	46	2.0
+hull	raft	67	59	Camphor raft	camphor_logs:10;rope:6;swamp_tar:10;lead_bar:5	70	2.5
+hull	raft	81	75	Ironwood raft	ironwood_logs:10;rope:6;swamp_tar:10;cupronickel_bar:5	84	2.5
+hull	raft	93	84	Rosewood raft	rosewood_logs:10;rope:6;swamp_tar:10;cupronickel_bar:5	93	3.0
+hull	skiff	15	1	Wooden skiff	wooden_hull_parts:10;bronze_nails:300;swamp_tar:20	128	1.5
+hull	skiff	20	8	Oak skiff	oak_hull_parts:10;iron_nails:300;swamp_tar:20	238	1.5
+hull	skiff	31	23	Teak skiff	teak_hull_parts:10;steel_nails:300;swamp_tar:20;lead_bar:5	345	2.0
+hull	skiff	48	41	Mahogany skiff	mahogany_hull_parts:10;mithril_nails:300;swamp_tar:20;lead_bar:5	588	2.0
+hull	skiff	67	59	Camphor skiff	camphor_hull_parts:10;adamantite_nails:300;swamp_tar:20;lead_bar:5	881	2.5
+hull	skiff	81	75	Ironwood skiff	ironwood_hull_parts:10;rune_nails:300;swamp_tar:20;cupronickel_bar:5	1771	2.5
+hull	skiff	93	84	Rosewood skiff	rosewood_hull_parts:10;dragon_nails:300;swamp_tar:20;cupronickel_bar:5	2839	3.0
+hull	sloop	50	1	Wooden sloop	large_wooden_hull_parts:16;bronze_nails:600;swamp_tar:25	199	1.5
+hull	sloop	50	8	Oak sloop	large_oak_hull_parts:16;iron_nails:600;swamp_tar:25	373	1.5
+hull	sloop	50	23	Teak sloop	large_teak_hull_parts:16;steel_nails:600;swamp_tar:25;lead_bar:5	538	2.0
+hull	sloop	50	41	Mahogany sloop	large_mahogany_hull_parts:16;mithril_nails:600;swamp_tar:25;lead_bar:5	919	2.0
+hull	sloop	67	59	Camphor sloop	large_camphor_hull_parts:16;adamantite_nails:600;swamp_tar:25;lead_bar:5	1380	2.5
+hull	sloop	81	75	Ironwood sloop	large_ironwood_hull_parts:16;rune_nails:600;swamp_tar:25;cupronickel_bar:5	2779	2.5
+hull	sloop	93	84	Rosewood sloop	large_rosewood_hull_parts:16;dragon_nails:600;swamp_tar:25;cupronickel_bar:5	4474	3.0
+sails	raft	1	1	Wooden mast and linen sails	logs:5;bronze_nails:20;bolt_of_linen:5	20	10.5
+sails	raft	24	11	Oak mast and linen sails	oak_logs:5;iron_nails:20;bolt_of_linen:5	28	19.5
+sails	raft	36	26	Teak mast and canvas sails	teak_logs:5;steel_nails:20;bolt_of_canvas:5	41	30
+sails	raft	52	45	Mahogany mast and canvas sails	mahogany_logs:5;mithril_nails:20;bolt_of_canvas:5	55	48
+sails	raft	68	60	Camphor mast and canvas sails	camphor_logs:5;adamantite_nails:20;bolt_of_canvas:5	85	64
+sails	raft	83	77	Ironwood mast and cotton sails	ironwood_logs:5;rune_nails:20;bolt_of_cotton:5	152	80
+sails	raft	94	85	Rosewood mast and cotton sails	rosewood_logs:5;dragon_nails:20;bolt_of_cotton:5	175	125
+sails	skiff	1	1	Wooden mast and linen sails	logs:10;bronze_nails:40;bolt_of_linen:5	24	10.5
+sails	skiff	24	11	Oak mast and linen sails	oak_logs:10;iron_nails:40;bolt_of_linen:5	36	19.5
+sails	skiff	36	26	Teak mast and canvas sails	teak_logs:10;steel_nails:40;bolt_of_canvas:5	49	30
+sails	skiff	52	45	Mahogany mast and canvas sails	mahogany_logs:10;mithril_nails:40;bolt_of_canvas:5	70	48
+sails	skiff	68	60	Camphor mast and canvas sails	camphor_logs:10;adamantite_nails:40;bolt_of_canvas:5	110	64
+sails	skiff	83	77	Ironwood mast and cotton sails	ironwood_logs:10;rune_nails:40;bolt_of_cotton:5	197	80
+sails	skiff	94	85	Rosewood mast and cotton sails	rosewood_logs:10;dragon_nails:40;bolt_of_cotton:5	231	125
+sails	sloop	50	1	Wooden mast and linen sails	logs:15;bronze_nails:60;bolt_of_linen:10	31	10.5
+sails	sloop	50	11	Oak mast and linen sails	oak_logs:15;iron_nails:60;bolt_of_linen:10	46	19.5
+sails	sloop	50	26	Teak mast and canvas sails	teak_logs:15;steel_nails:60;bolt_of_canvas:10	65	30
+sails	sloop	52	45	Mahogany mast and canvas sails	mahogany_logs:15;mithril_nails:60;bolt_of_canvas:10	90	48
+sails	sloop	68	60	Camphor mast and canvas sails	camphor_logs:15;adamantite_nails:60;bolt_of_canvas:10	139	64
+sails	sloop	83	77	Ironwood mast and cotton sails	ironwood_logs:15;rune_nails:60;bolt_of_cotton:10	250	80
+sails	sloop	94	85	Rosewood mast and cotton sails	rosewood_logs:15;dragon_nails:60;bolt_of_cotton:10	291	125
+helm	raft	1	1	Bronze helm	plank:2;bronze_bar:4	76	None
+helm	raft	17	14	Iron helm	oak_plank:2;iron_bar:4	160	Gentle
+helm	raft	38	30	Steel helm	teak_plank:2;steel_bar:4	260	Gentle
+helm	raft	55	47	Mithril helm	mahogany_plank:2;mithril_bar:4	400	Strong
+helm	raft	72	59	Adamant helm	camphor_plank:2;adamantite_bar:4	480	Strong
+helm	raft	87	81	Rune helm	ironwood_plank:2;runite_bar:4	650	Powerful
+helm	raft	96	86	Dragon helm	rosewood_plank:2;dragon_metal_sheet:4	780	Deadly
+helm	skiff	1	1	Bronze helm	plank:3;bronze_bar:6	114	None
+helm	skiff	17	14	Iron helm	oak_plank:3;iron_bar:6	240	Gentle
+helm	skiff	38	30	Steel helm	teak_plank:3;steel_bar:6	390	Gentle
+helm	skiff	55	47	Mithril helm	mahogany_plank:3;mithril_bar:6	600	Strong
+helm	skiff	72	59	Adamant helm	camphor_plank:3;adamantite_bar:6	720	Strong
+helm	skiff	87	81	Rune helm	ironwood_plank:3;runite_bar:6	975	Powerful
+helm	skiff	96	86	Dragon helm	rosewood_plank:3;dragon_metal_sheet:6	1410	Deadly
+helm	sloop	1	1	Bronze helm	plank:4;bronze_bar:8	152	None
+helm	sloop	17	14	Iron helm	oak_plank:4;iron_bar:8	320	Gentle
+helm	sloop	38	30	Steel helm	teak_plank:4;steel_bar:8	520	Gentle
+helm	sloop	55	47	Mithril helm	mahogany_plank:4;mithril_bar:8	800	Strong
+helm	sloop	72	59	Adamant helm	camphor_plank:4;adamantite_bar:8	960	Strong
+helm	sloop	87	81	Rune helm	ironwood_plank:4;runite_bar:8	1300	Powerful
+helm	sloop	96	86	Dragon helm	rosewood_plank:4;dragon_metal_sheet:8	1560	Deadly
+keel	skiff	15	1	Bronze skiff keel	bronze_keel_parts:10	100	100
+keel	skiff	22	17	Iron skiff keel	iron_keel_parts:10	200	200
+keel	skiff	39	32	Steel skiff keel	steel_keel_parts:10;lead_bar:5	311	300
+keel	skiff	54	50	Mithril skiff keel	mithril_keel_parts:10;lead_bar:5	511	400
+keel	skiff	66	62	Adamant skiff keel	adamant_keel_parts:10;lead_bar:5	761	600
+keel	skiff	85	78	Rune skiff keel	rune_keel_parts:10;cupronickel_bar:5	1511	800
+keel	skiff	97	87	Dragon skiff keel	dragon_keel_parts:10;cupronickel_bar:5	2511	1000
+keel	sloop	50	1	Bronze sloop keel	large_bronze_keel_parts:16	160	100
+keel	sloop	50	17	Iron sloop keel	large_iron_keel_parts:16	320	200
+keel	sloop	50	32	Steel sloop keel	large_steel_keel_parts:16;lead_bar:5	491	300
+keel	sloop	54	50	Mithril sloop keel	large_mithril_keel_parts:16;lead_bar:5	811	400
+keel	sloop	66	62	Adamant sloop keel	large_adamant_keel_parts:16;lead_bar:5	1211	600
+keel	sloop	85	78	Rune sloop keel	large_rune_keel_parts:16;cupronickel_bar:5	2411	800
+keel	sloop	97	87	Dragon sloop keel	large_dragon_keel_parts:16;cupronickel_bar:5	4011	1000

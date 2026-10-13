@@ -12,18 +12,21 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Sailing (released November 2025), faithful in spirit: boats built at a workbench and launched on
- * water (raft, skiff, sloop; better boats need more Sailing and give bonus XP while sailing),
- * salvaging shipwrecks with a salvaging hook, sea charting with a spyglass, port courier tasks
- * between port task boards, and trawling for fish from a boat. Sailing needs the Pandemonium quest
- * (it gives the raft). Boat levels (raft 1, skiff 15, sloop 50), shipwreck levels with their salvage
- * and sorting XP, port docking levels and trawled fish levels follow the OSRS Wiki; charting XP,
- * courier pay and salvage loot are approximations.
+ * Sailing (released November 2025): boats launched on water (raft 1, skiff 15, sloop 50), shipwreck
+ * salvaging and sorting (wiki levels and XP, one wiki spot per wreck type), sea charting (the wiki's
+ * 358 tasks, see {@link SailingTraining}), courier tasks between port notice boards (the wiki's 439
+ * tasks and their XP), trawling from a boat, boat parts and facilities built at boat schematics, and
+ * the Barracuda Trials. Sailing needs the Pandemonium quest (it gives the raft). Salvage loot and the
+ * shop sources of Sailing-island materials are approximations.
  */
 public final class SailingData extends SkillingPart {
 
-    /** Boats: kit item, Sailing level to sail, bonus Sailing XP per 32 blocks, vanilla boat variant. */
+    /** Boats: kit item, Sailing level to sail, (unused since sail trimming) bonus XP, vanilla boat variant. */
     public record Boat(String kit, String name, int level, double bonusXp, String variant) {
+        /** The boat type id used for parts and trials ("raft", "skiff", "sloop"). */
+        public String type() {
+            return kit.replace("_kit", "");
+        }
     }
 
     public static final List<Boat> BOATS = List.of(
@@ -105,36 +108,6 @@ public final class SailingData extends SkillingPart {
         return null;
     }
 
-    /** Sea charting points: place id, name, OSRS coords, Sailing level, XP (once per player). */
-    public record ChartPoint(String placeId, String name, int x, int y, int level, double xp) {
-    }
-
-    public static final List<ChartPoint> CHART_POINTS = List.of(
-            new ChartPoint("chart_mudskipper_point", "Mudskipper Point", 2995, 3115, 1, 60),
-            new ChartPoint("chart_musa_point", "Musa Point waters", 2925, 3135, 5, 90),
-            new ChartPoint("chart_crandor", "Crandor", 2850, 3240, 12, 150),
-            new ChartPoint("chart_entrana", "Entrana", 2830, 3360, 18, 220),
-            new ChartPoint("chart_catherby_bay", "Catherby bay", 2840, 3420, 24, 300),
-            new ChartPoint("chart_fishing_platform", "Fishing Platform", 2780, 3285, 30, 380),
-            new ChartPoint("chart_port_khazard", "Port Khazard", 2670, 3150, 35, 450),
-            new ChartPoint("chart_rellekka", "Rellekka waters", 2640, 3700, 45, 600),
-            new ChartPoint("chart_miscellania", "Miscellania", 2560, 3870, 52, 720),
-            new ChartPoint("chart_waterbirth", "Waterbirth Island", 2540, 3760, 58, 850),
-            new ChartPoint("chart_lunar_isle", "Lunar Isle", 2110, 3910, 65, 1000),
-            new ChartPoint("chart_iceberg", "The Iceberg", 2660, 4010, 72, 1200),
-            new ChartPoint("chart_ape_atoll", "Ape Atoll", 2700, 2780, 80, 1450),
-            new ChartPoint("chart_fossil_island", "Fossil Island", 3730, 3880, 86, 1700),
-            new ChartPoint("chart_void_outpost", "Void Knights' Outpost", 2660, 2650, 90, 2000));
-
-    public static ChartPoint chart(String placeId) {
-        for (ChartPoint c : CHART_POINTS) {
-            if (c.placeId().equals(placeId)) {
-                return c;
-            }
-        }
-        return null;
-    }
-
     /** Ports with a task board: block id (one block per port), name, OSRS coords, Sailing level to take tasks there. */
     public record Port(String id, String name, int x, int y, int level) {
         public String board() {
@@ -142,7 +115,10 @@ public final class SailingData extends SkillingPart {
         }
     }
 
-    /** Docking levels from the OSRS Wiki; Port Phasmatys approx. */
+    /**
+     * Port task levels from the OSRS Wiki (Sailing level up table); notice board tiles from the wiki's notice board map
+     * where the port has one. Port Phasmatys has no OSRS port tasks (kept for its charter dock).
+     */
     public static final List<Port> PORTS = List.of(
             new Port("port_sarim", "Port Sarim", 3043, 3200, 1),
             new Port("musa_point", "Musa Point", 2955, 3150, 10),
@@ -152,7 +128,33 @@ public final class SailingData extends SkillingPart {
             new Port("rellekka", "Rellekka", 2630, 3690, 62),
             new Port("port_phasmatys", "Port Phasmatys", 3702, 3503, 45), // approx
             new Port("corsair_cove", "Corsair Cove", 2570, 2860, 40),
-            new Port("port_piscarilius", "Port Piscarilius", 1824, 3690, 15));
+            new Port("port_piscarilius", "Port Piscarilius", 1824, 3690, 15),
+            // Courier ports added with the wiki task list (round 8).
+            new Port("pandemonium", "The Pandemonium", 3058, 2985, 1),
+            new Port("lands_end", "Land's End", 1502, 3407, 5),
+            new Port("hosidius", "Hosidius", 1762, 3460, 5), // approx dock (no notice board)
+            new Port("ardougne", "Ardougne", 2676, 3276, 28),
+            new Port("entrana", "Entrana", 2834, 3335, 36), // approx dock (no notice board)
+            new Port("civitas_illa_fortis", "Civitas illa Fortis", 1782, 3142, 38),
+            new Port("cairn_isle", "Cairn Isle", 2766, 2975, 42), // approx dock (no notice board)
+            new Port("sunset_coast", "Sunset Coast", 1514, 2972, 44), // approx dock (no notice board)
+            new Port("the_summer_shore", "The Summer Shore", 3183, 2368, 45),
+            new Port("aldarin", "Aldarin", 1438, 2969, 46),
+            new Port("ruins_of_unkah", "Ruins of Unkah", 3145, 2828, 48),
+            new Port("void_knights_outpost", "Void Knights' Outpost", 2659, 2672, 50),
+            new Port("port_roberts", "Port Roberts", 1872, 3303, 50),
+            new Port("red_rock", "Red Rock", 2806, 2511, 52), // approx level (lowest courier task there)
+            new Port("etceteria", "Etceteria", 2617, 3849, 65),
+            new Port("port_tyras", "Port Tyras", 2146, 3123, 66),
+            new Port("deepfin_point", "Deepfin Point", 1931, 2761, 67),
+            new Port("jatizso", "Jatizso", 2420, 3781, 68), // approx dock (no notice board)
+            new Port("neitiznot", "Neitiznot", 2311, 3781, 68), // approx dock (no notice board)
+            new Port("prifddinas", "Prifddinas", 2163, 3326, 70),
+            new Port("piscatoris", "Piscatoris", 2341, 3690, 75), // approx dock (no notice board)
+            new Port("lunar_isle", "Lunar Isle", 2139, 3884, 76));
+
+    /** Ports whose task-board places predate round 8 and are built as camps with a plaza. */
+    static final int CAMP_PORTS = 9;
 
     public static Port port(String id) {
         for (Port p : PORTS) {
@@ -172,18 +174,6 @@ public final class SailingData extends SkillingPart {
         return null;
     }
 
-    /** Courier reward: Sailing XP and coins for a delivery over {@code tiles} OSRS tiles. */
-    public static double courierXp(int tiles, int destLevel) {
-        return 40 + tiles * 0.5 + destLevel * 3;
-    }
-
-    public static int courierCoins(int tiles) {
-        return 50 + tiles / 2;
-    }
-
-    /** Trawling: Sailing XP per catch on top of the fish's Fishing XP. approx (the wiki lists roughly 9-13 combined) */
-    public static final double TRAWL_SAILING_XP = 8.0;
-
     /** Why a player can't take a boat out, or null: Pandemonium must be done and the boat's Sailing level met. */
     public static String canSail(boolean pandemoniumDone, int sailingLevel, Boat boat) {
         if (!pandemoniumDone) {
@@ -201,7 +191,28 @@ public final class SailingData extends SkillingPart {
         tool(s, "spyglass", "Spyglass", "spyglass", 0xB09040, 50);
         tool(s, "salvaging_hook", "Salvaging hook", "hook", 0x8A8A9A, 40);
         tool(s, "trawling_net", "Trawling net", "net", 0x8A7A5A, 60);
-        simple(s, "cargo_crate", "Cargo crate", "crate", 0x8A6A3A, 1).stack(1).examine("A courier delivery for another port.");
+        simple(s, "cargo_crate", "Cargo crate", "crate", 0x8A6A3A, 1).examine("A courier delivery for another port.");
+        // Sea charting tools (OSRS: crowbar from Prying Times, current duck from Current Affairs; sold here, approx).
+        tool(s, "crowbar", "Crowbar", "crowbar", 0x6A6A7A, 30).examine("Good for prying open sealed crates.");
+        tool(s, "current_duck", "Current duck", "duck", 0xE0C030, 40).examine("Follows the currents of the sea.");
+        tool(s, "diving_apparatus", "Diving apparatus", "helmet", 0xB0C0D0, 200).examine("A fishbowl helmet and air pump for diving.");
+        tool(s, "portable_weather_station", "Portable weather station", "machine", 0x9AA0A8, 100)
+                .examine("Takes readings of the local weather.");
+        // Shipbuilding materials of the Sailing islands (OSRS: Sailing woods, lead and nickel ores; sold by shipwrights here, approx).
+        String[][] woods = {{"camphor", "Camphor", "8A6A4A"}, {"ironwood", "Ironwood", "5A4A40"}, {"rosewood", "Rosewood", "9A4A4A"}};
+        for (String[] w : woods) {
+            int c = Integer.parseInt(w[2], 16);
+            simple(s, w[0] + "_logs", w[1] + " logs", "log", c, 150).examine("Logs cut from " + w[0] + " trees.");
+            simple(s, w[0] + "_plank", w[1] + " plank", "plank", c, 600).examine("A plank of fine " + w[0] + ".");
+        }
+        simple(s, "lead_bar", "Lead bar", "bar", 0x6A6A78, 120).examine("A bar of lead.");
+        simple(s, "cupronickel_bar", "Cupronickel bar", "bar", 0xB08A6A, 400).examine("An alloy of copper and nickel.");
+        simple(s, "bolt_of_linen", "Bolt of linen", "cloth", 0xE0D8C0, 150).examine("A bolt of linen for sails.");
+        simple(s, "bolt_of_canvas", "Bolt of canvas", "cloth", 0xC8B890, 400).examine("A bolt of canvas for sails.");
+        simple(s, "bolt_of_cotton", "Bolt of cotton", "cloth", 0xF4F0E8, 900).examine("A bolt of cotton for sails.");
+        simple(s, "dragon_nails", "Dragon nails", "nails", 0xA02020, 1500).examine("Keeps things in place very permanently.");
+        simple(s, "dragon_metal_sheet", "Dragon metal sheet", "bar", 0xB02A2A, 30000).examine("A sheet of dragon metal.");
+        simple(s, "heart_of_ithell", "Heart of Ithell", "orb", 0x80E0D0, 1).examine("A crystal heart from the Gwenith Glide.");
         for (Boat b : BOATS) {
             simple(s, b.kit(), b.name() + " kit", "boat", b.variant().equals("BAMBOO") ? 0xC0B060
                     : b.variant().equals("OAK") ? 0x9A7A4A : 0x4A3A2A, 100 + b.level() * 50).stack(1)
@@ -221,12 +232,25 @@ public final class SailingData extends SkillingPart {
                 .in("iron_nails", 30).in("bolt_of_cloth", 2).in("rope", 4).out("skiff_kit", 1).tool("hammer").ticks(4).build());
         out.accept(r("build_sloop_kit", MenuType.CONSTRUCTION, "Sloop kit", Skill.CONSTRUCTION, 50, 900.0).in("teak_plank", 40)
                 .in("steel_nails", 60).in("bolt_of_cloth", 6).in("rope", 8).out("sloop_kit", 1).tool("hammer").ticks(4).build());
-        Object[][] shop = {{"spyglass", 50}, {"salvaging_hook", 40}, {"trawling_net", 60}, {"rope", 18}};
+        Object[][] shop = {{"spyglass", 50}, {"salvaging_hook", 40}, {"trawling_net", 60}, {"rope", 18}, {"crowbar", 30},
+                {"current_duck", 40}, {"diving_apparatus", 200}, {"portable_weather_station", 100}};
         for (Object[] o : shop) {
             out.accept(plain("shop_tools_" + o[0], MenuType.SHOP_TOOLS, title((String) o[0]) + " - " + o[1] + " gp")
                     .in("coins", (Integer) o[1]).out((String) o[0], 1).ticks(0).build());
         }
+        for (Object[] o : SHIPWRIGHT_SUPPLIES) {
+            if (!o[0].equals("swamp_paste")) {
+                out.accept(plain("shop_tools_" + o[0], MenuType.SHOP_TOOLS, title((String) o[0]) + " - " + o[1] + " gp")
+                        .in("coins", (Integer) o[1]).out((String) o[0], 1).ticks(0).build());
+            }
+        }
     }
+
+    /** Shipwright supplies: Sailing materials that have no source in RuneCraft's world yet (approx prices). */
+    public static final Object[][] SHIPWRIGHT_SUPPLIES = {{"camphor_logs", 150}, {"ironwood_logs", 300}, {"rosewood_logs", 500},
+            {"camphor_plank", 600}, {"ironwood_plank", 1200}, {"rosewood_plank", 2000}, {"lead_bar", 120}, {"cupronickel_bar", 400},
+            {"bolt_of_linen", 150}, {"bolt_of_canvas", 400}, {"bolt_of_cotton", 900}, {"dragon_nails", 1500},
+            {"dragon_metal_sheet", 30000}, {"swamp_paste", 30}};
 
     @Override
     public List<BlockDef> blocks() {
@@ -235,6 +259,8 @@ public final class SailingData extends SkillingPart {
             list.add(BlockDef.scripted(w.blockId(), w.name(), 0x5A4A3A, "shipwreck"));
         }
         list.add(BlockDef.scripted("sea_chart_marker", "Charting buoy", 0xD04030, "buoy"));
+        list.add(BlockDef.scripted("boat_schematics", "Boat schematics", 0x6A5A3A, "notice_board"));
+        list.add(BlockDef.scripted("barracuda_trial_buoy", "Barracuda trial master's buoy", 0x3080C0, "buoy"));
         for (Port p : PORTS) {
             list.add(BlockDef.scripted(p.board(), p.name() + " port task board", 0x8A6A3A, "notice_board"));
         }
@@ -245,17 +271,30 @@ public final class SailingData extends SkillingPart {
     public List<PlaceDef> places() {
         List<PlaceDef> list = new ArrayList<>();
         // Shipwrecks sit out at sea; SkillingHooks places the wreck block on the water surface.
-        int[][] wreckCoords = {{3060, 3150}, {2960, 3190}, {2860, 3170}, {2760, 3300}, {2700, 3200}, {2600, 3500}, {2560, 3800},
-                {2440, 3100}};
+        // One of each type's wiki map pins (OSRS has 6 spots per area and several areas per type).
+        int[][] wreckCoords = {{3095, 2928}, {2752, 3324}, {2477, 2964}, {2809, 3996}, {2659, 2556}, {2114, 2217}, {2571, 4152},
+                {1861, 2163}};
         for (int i = 0; i < WRECKS.size(); i++) {
             Wreck w = WRECKS.get(i);
             list.add(PlaceDef.of(w.blockId() + "_site", w.name(), wreckCoords[i][0], wreckCoords[i][1], PlaceDef.Style.NONE, List.of()));
         }
-        for (ChartPoint c : CHART_POINTS) {
-            list.add(PlaceDef.of(c.placeId(), "Charting point: " + c.name(), c.x(), c.y(), PlaceDef.Style.NONE, List.of()));
+        for (SailingTraining.ChartTask c : SailingTraining.CHARTS) {
+            if (!c.underground()) {
+                // Task 45's buoy would sit on the Taverley Dungeon entrance; it moves a few tiles west, onto the water.
+                int dx = c.id() == 45 ? -6 : 0;
+                list.add(PlaceDef.of(c.placeId(), "Charting: " + c.sea(), c.x() + dx, c.y(), PlaceDef.Style.NONE, List.of()));
+            }
         }
-        for (Port p : PORTS) {
-            list.add(PlaceDef.of(p.id() + "_docks", p.name() + " docks", p.x(), p.y(), PlaceDef.Style.CAMP, List.of(p.board())));
+        // The Current Affairs quest charts the duck's course near Entrana (old charting point).
+        list.add(PlaceDef.of("chart_entrana", "Charting point: Entrana", 2830, 3360, PlaceDef.Style.NONE, List.of()));
+        for (SailingTraining.Trial t : SailingTraining.TRIALS) {
+            list.add(PlaceDef.of(t.placeId(), t.name(), t.objectiveB()[0], t.objectiveB()[1], PlaceDef.Style.NONE, List.of()));
+        }
+        for (int i = 0; i < PORTS.size(); i++) {
+            Port p = PORTS.get(i);
+            // Older ports keep their camp plaza; the rest get a board (and schematics) placed by SailingHooks.
+            list.add(PlaceDef.of(p.id() + "_docks", p.name() + " docks", p.x(), p.y(), i < CAMP_PORTS ? PlaceDef.Style.CAMP
+                    : PlaceDef.Style.NONE, i < CAMP_PORTS ? List.of(p.board()) : List.of()));
         }
         return list;
     }
