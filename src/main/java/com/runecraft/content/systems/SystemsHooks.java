@@ -170,6 +170,8 @@ public final class SystemsHooks implements ModuleHooks {
                 Diaries.tierComplete(SysState.of(p).diaryDone, "morytania", Diaries.Tier.ELITE));
         com.runecraft.content.minigames.RewardShopService.costAdjuster = (p, shop, amount) -> shop.equals("tzhaar")
                 ? DiaryRewards.tzhaarPrice(amount, SysState.of(p).wornId(Jewellery.Slot.HANDS).startsWith("karamja_gloves_")) : amount;
+        com.runecraft.content.minigames.RewardShopService.imbueCost = (p, amount) ->
+                CombatAchievements.imbueCost(amount, CombatAchievementService.tier(p));
         com.runecraft.content.minigames.RewardShopService.extraLock = (p, item) ->
                 DiaryRewards.pestControlUnlocked(item, diaryDone(p, "western", Diaries.Tier.HARD)) ? null
                         : "Requires the hard Western Provinces diary";

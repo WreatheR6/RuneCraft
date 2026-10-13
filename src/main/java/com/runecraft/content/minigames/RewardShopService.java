@@ -35,6 +35,8 @@ public final class RewardShopService {
     public static CostAdjuster costAdjuster = (p, shop, amount) -> amount;
     /** Extra reason an item can't be bought (diary requirements), or null: (player, item id) -> reason. */
     public static java.util.function.BiFunction<ServerPlayerEntity, String, String> extraLock = (p, item) -> null;
+    /** Adjusts Nightmare Zone / Soul Wars imbue costs (Combat Achievements hard tier halves them): (player, cost) -> cost. */
+    public static java.util.function.BiFunction<ServerPlayerEntity, Integer, Integer> imbueCost = (p, amount) -> amount;
 
     private RewardShopService() {
     }
@@ -45,6 +47,9 @@ public final class RewardShopService {
         boolean changed = false;
         for (RewardShop.Cost c : e.costs()) {
             int amount = Math.max(0, costAdjuster.adjust(player, shopId, c.amount()));
+            if (e.reward() == RewardShop.Reward.UPGRADE && (shopId.equals("nightmare_zone") || shopId.equals("soul_wars"))) {
+                amount = Math.max(0, imbueCost.apply(player, amount));
+            }
             changed |= amount != c.amount();
             costs.add(new RewardShop.Cost(c.currency(), amount));
         }

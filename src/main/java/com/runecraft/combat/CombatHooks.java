@@ -47,6 +47,44 @@ public final class CombatHooks {
         String deny(ServerPlayerEntity player, AttackType type);
     }
 
+    /**
+     * Sees every damage roll against a player (misses included) with the name and style of the attack when known
+     * (a boss attack's {@code AttackDef} name, a monster's style, "hazard" or "poison"; null for scripted damage).
+     */
+    public interface PlayerDamageListener {
+        void onDamage(ServerPlayerEntity player, LivingEntity attacker, String attack, AttackType style, int damage);
+    }
+
+    private static final List<PlayerDamageListener> DAMAGE = new ArrayList<>();
+    private static String attackName;
+    private static AttackType attackStyle;
+
+    public static void addDamageListener(PlayerDamageListener listener) {
+        DAMAGE.add(listener);
+    }
+
+    /** Names the attack whose damage {@link CombatHandler#applyDamage} applies next. */
+    public static void nameAttack(String name, AttackType style) {
+        attackName = name;
+        attackStyle = style;
+    }
+
+    static void damaged(ServerPlayerEntity p, LivingEntity attacker, int damage) {
+        String name = attackName;
+        AttackType style = attackStyle;
+        attackName = null;
+        attackStyle = null;
+        for (PlayerDamageListener l : DAMAGE) {
+            l.onDamage(p, attacker, name, style, damage);
+        }
+    }
+
+    /** Forgets an attack name that didn't reach a player. */
+    static void clearAttackName() {
+        attackName = null;
+        attackStyle = null;
+    }
+
     private static final List<AttackGate> GATES = new ArrayList<>();
     private static final List<PlayerAttackModifier> MODIFIERS = new ArrayList<>();
     private static final List<PlayerHurtListener> HURT = new ArrayList<>();

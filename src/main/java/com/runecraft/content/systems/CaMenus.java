@@ -117,9 +117,10 @@ public final class CaMenus {
         s.send(p);
     }
 
-    private static String line(SysState.SysPlayer sp, Task t) {
+    private static String line(ServerPlayerEntity p, SysState.SysPlayer sp, Task t) {
         boolean done = sp.caDone.contains(t.id());
-        String progress = t.track() == Track.KILLS && t.count() > 1 && !done ? " (" + sp.caCounters.getOrDefault(t.id(), 0) + "/" + t.count() + ")" : "";
+        boolean counted = t.track() == Track.KILLS || t.track() == Track.RAID || t.track() == Track.RUN || t.track() == Track.STREAK;
+        String progress = counted && t.count() > 1 && !done ? " (" + CombatAchievementService.progress(p, t) + "/" + t.count() + ")" : "";
         return (done ? "[x] " : t.track() == Track.UNTRACKED ? "[-] " : "[ ] ") + t.name() + " - " + t.description() + progress;
     }
 
@@ -136,7 +137,7 @@ public final class CaMenus {
         s.line("[x] done   [ ] tracked   [-] not tracked in this world yet", 0xA0A0A0);
         for (int i = page * TASKS_PER_PAGE; i < Math.min(tasks.size(), (page + 1) * TASKS_PER_PAGE); i++) {
             Task t = tasks.get(i);
-            s.line(line(sp, t) + " [" + t.monster() + ", " + t.type().label + "]", color(sp, t));
+            s.line(line(p, sp, t) + " [" + t.monster() + ", " + t.type().label + "]", color(sp, t));
         }
         if (page > 0) {
             s.button("page:" + tier.name() + ":" + (page - 1), "< Previous page", "", true);
@@ -177,7 +178,7 @@ public final class CaMenus {
         }
         SysNet.Screen s = new SysNet.Screen("cabosstasks", monster + " - Combat Achievements");
         for (Task t : tasks) {
-            s.line(line(sp, t) + " [" + t.tier().displayName() + "]", color(sp, t));
+            s.line(line(p, sp, t) + " [" + t.tier().displayName() + "]", color(sp, t));
             if (t.track() != Track.UNTRACKED && !sp.caDone.contains(t.id())) {
                 s.line("    " + t.track().hint, 0x909090);
             }

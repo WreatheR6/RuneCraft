@@ -25,8 +25,11 @@ import java.util.regex.Pattern;
  *   <li>{@link Track#KILLS}: killing a number of regular monsters;</li>
  *   <li>fight tasks ({@link Track#SPEED}, {@link Track#NO_DAMAGE}, {@link Track#PRAYED}, {@link Track#NO_PRAYER_LOSS},
  *       {@link Track#STYLE}): a single kill of a boss or monster meeting a condition measured during the fight;</li>
- *   <li>{@link Track#UNTRACKED}: mechanics the game doesn't model yet (raid modes, group sizes, room puzzles,
- *       multi-kill streaks). These stay visible in the task list but can't be completed.</li>
+ *   <li>{@link Track#RULE}, {@link Track#STREAK}, {@link Track#WINDOW}, {@link Track#AVERAGE}, {@link Track#RAID} and
+ *       {@link Track#RUN}: tasks with conditions from {@link CombatAchievementRules} (damage from named attacks, group
+ *       size, supplies, gear, raid modes and invocations, kill streaks, kills within a time, minigame runs);</li>
+ *   <li>{@link Track#UNTRACKED}: mechanics the game doesn't model yet (room puzzles, awakened bosses, delve levels,
+ *       TzHaar-Ket-Rak's challenges...). These stay visible in the task list but can't be completed.</li>
  * </ul>
  * Points-based rewards as in OSRS: a tier's rewards unlock at its cumulative point total (the grandmaster tier
  * needs every task), regardless of which tiers the points came from.
@@ -99,7 +102,13 @@ public final class CombatAchievements {
         STYLE("Tracked: only damage the target with the allowed attack style."),
         WEAPON("Tracked: only hit the target with the named weapons."),
         FINISH("Tracked: land the killing blow with the named weapons."),
-        UNTRACKED("Not tracked in this world yet.");
+        UNTRACKED("Not tracked in this world yet."),
+        RULE("Tracked: one kill meeting the task's conditions."),
+        STREAK("Tracked: kills in a row without dying or leaving the area (64 blocks)."),
+        WINDOW("Tracked: the kills must all land within the time limit."),
+        AVERAGE("Tracked: average kill time over your most recent kills."),
+        RAID("Tracked: raid completions meeting the task's conditions (mode, team size, time, deaths, invocations)."),
+        RUN("Tracked: a whole minigame run, from entering to the final kill, meeting the conditions.");
 
         public final String hint;
 
@@ -119,11 +128,25 @@ public final class CombatAchievements {
      * or a fight key for fight tracks (a canonical boss id, or "kill:" + lower-case monster name). {@code ticks} is
      * the time limit of SPEED tasks, {@code style} the allowed attack style of STYLE tasks or the weapon ids of
      * WEAPON/FINISH tasks ('|' alternatives, a leading '*' matches ids containing the rest, "fists" an empty hand).
+     * {@code rule} holds the {@link CombatAchievementRules} conditions of the rule-based tracks.
      */
     public record Task(String id, int wikiId, String name, String description, Tier tier, String monster, Type type, Track track,
-                       String target, int count, int ticks, String style) {
+                       String target, int count, int ticks, String style, String rule) {
         public int points() {
             return tier.points;
+        }
+
+        /** Whether a fight key (or kill key) is one of this task's targets ('|' alternatives). */
+        public boolean targets(String key) {
+            if (target == null || key == null) {
+                return false;
+            }
+            for (String t : target.split("\\|")) {
+                if (t.equals(key)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -433,12 +456,21 @@ public final class CombatAchievements {
             default -> {
             }
         }
+        String rule = null;
+        CombatAchievementRules.Spec spec = CombatAchievementRules.spec(wikiId);
+        if (track == Track.UNTRACKED && spec != null) {
+            track = spec.track();
+            target = spec.target();
+            count = spec.count();
+            rule = spec.rule();
+            ticks = (int) CombatAchievementRules.timeLimit(rule);
+        }
         if (track == Track.UNTRACKED) {
             count = 1;
             ticks = 0;
             style = null;
         }
-        return new Task("ca_" + wikiId, wikiId, name, description, tier, monster, type, track, target, count, ticks, style);
+        return new Task("ca_" + wikiId, wikiId, name, description, tier, monster, type, track, target, count, ticks, style, rule);
     }
 
     private static final List<Task> TASKS = new ArrayList<>();
@@ -685,6 +717,30 @@ public final class CombatAchievements {
         return unlocked == null ? 0 : 5 * (unlocked.ordinal() + 1);
     }
 
+    /** Most kills a boss slayer task can have: 35, plus the "Like a boss" extension of the unlocked tier. */
+    public static int bossTaskMax(int base, Tier unlocked) {
+        return base + likeABossExtra(unlocked);
+    }
+
+    /** Superior slayer monsters: 1/200 becomes 1/150 from the elite tier. */
+    public static int superiorChance(int base, Tier unlocked) {
+        return unlocked != null && unlocked.ordinal() >= Tier.ELITE.ordinal() ? base * 3 / 4 : base;
+    }
+
+    /** Nightmare Zone and Soul Wars imbues cost half from the hard tier. */
+    public static int imbueCost(int cost, Tier unlocked) {
+        return unlocked != null && unlocked.ordinal() >= Tier.HARD.ordinal() ? cost / 2 : cost;
+    }
+
+    /**
+     * From the medium tier, Barrows no longer drains Prayer while a Ghommal's hilt (or Ghommal's avernic defender) is
+     * equipped.
+     */
+    public static boolean barrowsDrainNullified(Tier unlocked, String offHandId) {
+        return unlocked != null && unlocked.ordinal() >= Tier.MEDIUM.ordinal() && offHandId != null
+                && (hiltTier(offHandId) > 0 || offHandId.startsWith("ghommals_avernic_defender_"));
+    }
+
     /** TzTok-Jad / TzKal-Zuk slayer task size: 1, 2 from master, 3 from grandmaster. */
     public static int tzhaarTaskKills(Tier unlocked) {
         return unlocked == Tier.GRANDMASTER ? 3 : unlocked == Tier.MASTER ? 2 : 1;
@@ -718,13 +774,16 @@ public final class CombatAchievements {
                     "+1 Void Knight commendation point per Pest Control game", "100% bonus Warrior guild tokens");
             case MEDIUM -> List.of("Antique lamp: 10,000 XP in a skill of level 30+", "Ghommal's hilt 2: 5 daily God Wars Dungeon teleports",
                     "5% higher medium clue scroll drop chance", "Like a boss: up to 45 boss kills per task",
-                    "+2 Void Knight commendation points per Pest Control game", "200% bonus Warrior guild tokens");
+                    "+2 Void Knight commendation points per Pest Control game", "200% bonus Warrior guild tokens",
+                    "No Barrows Prayer drain while a Ghommal's hilt is equipped");
             case HARD -> List.of("Antique lamp: 15,000 XP in a skill of level 40+", "Ghommal's hilt 3: unlimited God Wars Dungeon teleports",
                     "5% higher hard clue scroll drop chance", "Like a boss: up to 50 boss kills per task",
-                    "God Wars Dungeon boss rooms need 35 kill count", "+3 Void Knight commendation points per Pest Control game");
+                    "God Wars Dungeon boss rooms need 35 kill count", "+3 Void Knight commendation points per Pest Control game",
+                    "Nightmare Zone and Soul Wars imbues cost half");
             case ELITE -> List.of("Antique lamp: 25,000 XP in a skill of level 50+", "Ghommal's hilt 4: 3 daily teleports to Mor Ul Rek",
                     "5% higher elite clue scroll drop chance", "Like a boss: up to 55 boss kills per task",
-                    "God Wars Dungeon boss rooms need 30 kill count");
+                    "God Wars Dungeon boss rooms need 30 kill count",
+                    "Superior slayer monsters appear 1/150 instead of 1/200");
             case MASTER -> List.of("Antique lamp: 35,000 XP in a skill of level 60+", "Ghommal's hilt 5: 5 daily teleports to Mor Ul Rek",
                     "Ghommal's lucky penny: 5% chance not to use a charge of a charged item",
                     "Combine the hilt with an avernic defender into Ghommal's avernic defender 5",

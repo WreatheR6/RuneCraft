@@ -478,6 +478,25 @@ public final class RaidInstance {
         return finished;
     }
 
+    /** Deaths of one party member so far (for Combat Achievements). */
+    public int deaths(UUID u) {
+        return deaths.getOrDefault(u, 0);
+    }
+
+    /** Deaths of the whole party so far. */
+    public int totalDeaths() {
+        int sum = 0;
+        for (int d : deaths.values()) {
+            sum += d;
+        }
+        return sum;
+    }
+
+    /** Whether anyone took supplies from the storage unit / Helpful Spirit. */
+    public boolean suppliesTaken() {
+        return !suppliesTaken.isEmpty();
+    }
+
     public long elapsedTicks() {
         return (finished ? endTick : ActionManager.gameTick()) - startTick;
     }

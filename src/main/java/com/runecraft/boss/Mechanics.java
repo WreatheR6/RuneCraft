@@ -205,6 +205,7 @@ public final class Mechanics {
             damage = 0;
         }
         damage = mob.onHitPlayer(target, damage, a.style());
+        com.runecraft.combat.CombatHooks.nameAttack(a.name(), a.style());
         int dealt = CombatHandler.applyDamage(mob, target, damage);
         long tick = ActionManager.gameTick();
         switch (a.special()) {
@@ -260,6 +261,7 @@ public final class Mechanics {
             }
             h.world().spawnParticles(ParticleTypes.SNEEZE, h.pos().x, h.pos().y + 0.1, h.pos().z, 6, 0.5, 0.02, 0.5, 0.0);
             for (ServerPlayerEntity p : h.world().getPlayers(pl -> pl.isAlive() && pl.getPos().squaredDistanceTo(h.pos()) < 1.0)) {
+                com.runecraft.combat.CombatHooks.nameAttack("hazard", null);
                 CombatHandler.applyDamage(h.owner() != null && h.owner().isAlive() ? h.owner() : null, p,
                         1 + p.getRandom().nextInt(h.damage()));
             }

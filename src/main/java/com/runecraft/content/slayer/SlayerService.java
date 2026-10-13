@@ -150,7 +150,9 @@ public final class SlayerService {
             }
         }
         p.task = boss != null ? boss.id() : a.category();
-        p.amount = boss != null ? boss.min() + random.nextInt(boss.max() - boss.min() + 1) : SlayerTasks.amount(a, extended, random);
+        // Combat Achievement tiers raise the boss task maximum ("Like a boss": 35, +5 per tier).
+        int bossMax = boss == null ? 0 : com.runecraft.content.systems.CombatAchievementService.bossTaskMax(player, boss.max());
+        p.amount = boss != null ? boss.min() + random.nextInt(bossMax - boss.min() + 1) : SlayerTasks.amount(a, extended, random);
         p.remaining = p.amount;
         p.master = master.id();
         p.region = null;
@@ -309,7 +311,7 @@ public final class SlayerService {
         }
         // Superiors may also appear on the task's last kill (OSRS).
         if (superior == null && prof != null && p.unlocks.contains("bigger_and_badder")
-                && random.nextInt(SlayerRewards.SUPERIOR_CHANCE) == 0) {
+                && random.nextInt(com.runecraft.content.systems.CombatAchievementService.superiorChance(player, SlayerRewards.SUPERIOR_CHANCE)) == 0) {
             Superiors.Superior s = Superiors.forBase(prof.id);
             if (s != null) {
                 spawnSuperior(player, entity, s);

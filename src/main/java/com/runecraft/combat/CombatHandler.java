@@ -302,6 +302,7 @@ public final class CombatHandler {
         if (mob instanceof OsrsMonsterEntity m) {
             damage = m.onHitPlayer(player, damage, type);
         }
+        CombatHooks.nameAttack(type.name().toLowerCase(java.util.Locale.ROOT), type);
         int dealtToPlayer = applyDamage(mob, player, damage);
         if (dealtToPlayer > 0) {
             CombatHooks.hurt(player, mob, dealtToPlayer);
@@ -367,6 +368,11 @@ public final class CombatHandler {
                     SkullService.onPlayerAttack(hitter, victim);
                 }
             }
+        }
+        if (target instanceof ServerPlayerEntity damaged) {
+            CombatHooks.damaged(damaged, attacker, Math.max(0, damage));
+        } else {
+            CombatHooks.clearAttackName();
         }
         if (damage <= 0) {
             ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS);

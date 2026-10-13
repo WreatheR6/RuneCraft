@@ -9,6 +9,7 @@ import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.NpcDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.content.minigames.Minigame;
+import com.runecraft.osrs.content.raids.RaidType;
 import com.runecraft.osrs.content.systems.CombatAchievements.FightResult;
 import com.runecraft.osrs.content.systems.CombatAchievements.Task;
 import com.runecraft.osrs.content.systems.CombatAchievements.Tier;
@@ -124,11 +125,24 @@ class CombatAchievementsTest {
                         }
                     }
                 }
+                case RAID -> {
+                    try {
+                        RaidType.valueOf(t.target());
+                    } catch (IllegalArgumentException e) {
+                        problems.add(t.name() + ": no raid " + t.target());
+                    }
+                }
+                case RUN -> {
+                    if (!t.target().startsWith("mg:") || !minigames.contains(t.target().substring(3))) {
+                        problems.add(t.name() + ": no minigame " + t.target());
+                    }
+                }
                 default -> {
-                    String key = t.target();
-                    boolean ok = key.startsWith("kill:") ? monsters.contains(key.substring(5)) : bosses.contains(key);
-                    if (!ok) {
-                        problems.add(t.name() + ": no fight target " + key);
+                    for (String key : t.target().split("[|]")) {
+                        boolean ok = key.startsWith("kill:") ? monsters.contains(key.substring(5)) : bosses.contains(key);
+                        if (!ok) {
+                            problems.add(t.name() + ": no fight target " + key);
+                        }
                     }
                     if (t.track() == Track.SPEED) {
                         assertTrue(t.ticks() > 0, t.name());
@@ -203,11 +217,14 @@ class CombatAchievementsTest {
                 .findFirst().orElseThrow();
         assertEquals(Track.STYLE, stab.track());
         assertEquals("king_black_dragon", stab.target());
-        // Raid runs, group sizes and awakened bosses aren't modelled.
+        // Awakened bosses and delve levels aren't modelled; raid runs and group sizes are.
         for (Task t : CombatAchievements.tasks()) {
             String d = t.description();
-            if (d.contains("(Trio)") || d.contains("5-scale") || d.contains("Awakened") || d.contains("Challenge Mode")) {
+            if (d.contains("Awakened") || d.contains("delve level")) {
                 assertEquals(Track.UNTRACKED, t.track(), t.description());
+            }
+            if (d.startsWith("Complete a Chambers of Xeric") && d.contains("(Trio)")) {
+                assertEquals(Track.RAID, t.track(), t.description());
             }
         }
     }

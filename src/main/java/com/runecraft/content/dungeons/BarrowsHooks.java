@@ -167,7 +167,8 @@ public final class BarrowsHooks {
                         ROOMS.remove(p.getUuid());
                     }
                 }
-                if (drain && alive && Barrows.underground(at.getX(), at.getY(), at.getZ())) {
+                if (drain && alive && Barrows.underground(at.getX(), at.getY(), at.getZ())
+                        && !com.runecraft.content.systems.CombatAchievementService.barrowsDrainNullified(p)) {
                     drainPrayer(p);
                 }
             }

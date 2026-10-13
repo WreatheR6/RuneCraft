@@ -85,6 +85,7 @@ public final class PoisonService {
         boolean venom = s.envenomed();
         int damage = Toxins.tick(s, gameTick);
         if (damage > 0) {
+            CombatHooks.nameAttack("poison", null);
             CombatHandler.applyDamage(null, entity, damage);
             ServerNetworking.hitsplat(entity, damage, venom ? Net.SPLAT_VENOM : Net.SPLAT_POISON);
             if (!s.active() && entity instanceof ServerPlayerEntity p) {
