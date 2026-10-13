@@ -159,6 +159,8 @@ Minecraft's climate noise. `GielinorGeography` holds the coastlines, islands, mo
 rivers, lakes and swamps in OSRS tile coordinates. `Elevation.height(blockX, blockZ)` gives the
 surface height, and the dimension samples it through the `runecraft:gielinor_terrain` density
 function. Run `bash tools/render_terrain.sh` to redraw `docs/previews/terrain_map.png`.
+Zeah, Varlamore, Fossil Island and Ape Atoll are traced from the map squares (coasts as polygons, lakes as
+`TRACED_LAKES` polygons with their islands, streams as `RIVERS`); a place on such a coast must sit on a real land tile.
 
 The terrain adapts to content automatically (`TerrainAnchors`):
 * Every `FLATTEN` op levels its box exactly to its `ground()`. The terrain then stays within ±6

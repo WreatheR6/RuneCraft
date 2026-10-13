@@ -1,0 +1,86 @@
+{
+  "has_precipitation": true,
+  "temperature": 0.75,
+  "downfall": 0.5,
+  "effects": {
+    "sky_color": 7907327,
+    "fog_color": 12638463,
+    "water_color": 4159204,
+    "water_fog_color": 329011,
+    "grass_color": 8109900,
+    "foliage_color": 5810222,
+    "mood_sound": {
+      "sound": "minecraft:ambient.cave",
+      "tick_delay": 6000,
+      "block_search_extent": 8,
+      "offset": 2.0
+    }
+  },
+  "spawners": {
+    "monster": [],
+    "creature": [],
+    "ambient": [],
+    "axolotls": [],
+    "underground_water_creature": [],
+    "water_creature": [],
+    "water_ambient": [],
+    "misc": []
+  },
+  "spawn_costs": {},
+  "carvers": {
+    "air": [
+      "minecraft:cave",
+      "minecraft:canyon"
+    ]
+  },
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "minecraft:ore_dirt",
+      "minecraft:ore_gravel",
+      "runecraft:copper_rock_ore",
+      "runecraft:tin_rock_ore",
+      "runecraft:clay_rock_ore",
+      "runecraft:iron_rock_ore",
+      "runecraft:silver_rock_ore",
+      "runecraft:coal_rock_ore",
+      "runecraft:mithril_rock_ore",
+      "runecraft:adamantite_rock_ore"
+    ],
+    [],
+    [
+      "minecraft:spring_water"
+    ],
+    [
+      "runecraft:net_bait_fishing_spot",
+      "runecraft:lure_bait_fishing_spot",
+      "runecraft:cage_harpoon_fishing_spot",
+      "runecraft:angler_fishing_spot",
+      "runecraft:copper_rock_surface",
+      "runecraft:tin_rock_surface",
+      "runecraft:clay_rock_surface",
+      "runecraft:iron_rock_surface",
+      "runecraft:silver_rock_surface",
+      "runecraft:coal_rock_surface",
+      "runecraft:mithril_rock_surface",
+      "runecraft:adamantite_rock_surface",
+      "runecraft:tree_tree",
+      "runecraft:oak_tree",
+      "runecraft:willow_tree",
+      "runecraft:maple_tree",
+      "runecraft:yew_tree",
+      "runecraft:magic_tree",
+      "runecraft:redwood_tree",
+      "minecraft:flower_default",
+      "minecraft:patch_grass_plain",
+      "minecraft:brown_mushroom_normal",
+      "minecraft:red_mushroom_normal"
+    ],
+    []
+  ]
+}

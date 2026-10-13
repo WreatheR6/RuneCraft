@@ -28,7 +28,7 @@ public final class TerrainPreview {
     public static void main(String[] args) throws IOException {
         String out = args.length > 0 ? args[0] : "docs/previews/terrain_map.png";
         double tpp = args.length > 1 ? Double.parseDouble(args[1]) : 2;
-        double minX = 1120, minY = 2620, maxX = 3880, maxY = 4080;
+        double minX = 1060, minY = 2620, maxX = 3880, maxY = 4100;
         if (args.length > 5) {
             minX = Double.parseDouble(args[2]);
             minY = Double.parseDouble(args[3]);

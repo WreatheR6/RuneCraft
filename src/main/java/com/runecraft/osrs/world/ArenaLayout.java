@@ -151,7 +151,7 @@ public final class ArenaLayout {
                 return false;
             }
         }
-        return true;
+        return Elevation.lakeDistance(tx, ty, pad + 1) < -pad;
     }
 
     private static double segDist(double px, double py, double ax, double ay, double bx, double by) {

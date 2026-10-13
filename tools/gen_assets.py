@@ -6837,7 +6837,8 @@ def gen_data_boss_stones(cat, names):
 # ----------------------------------------------------------------------------------------------
 
 BIOMES = ["misthalin", "lumbridge_swamp", "asgarnia", "wilderness", "kharidian_desert", "morytania", "kandarin",
-          "feldip_hills", "fremennik_province", "troll_country", "karamja", "tirannwn", "uncharted_isles"]
+          "feldip_hills", "fremennik_province", "troll_country", "karamja", "tirannwn", "uncharted_isles",
+          "kourend", "varlamore", "fossil_island", "lithkren"]
 
 
 def gen_lang(cat, block_names, entity_names):

@@ -31,7 +31,8 @@ write("runecraft/dimension_type/gielinor.json", {
 })
 
 REGIONS = ["misthalin", "lumbridge_swamp", "asgarnia", "wilderness", "kharidian_desert", "morytania", "kandarin",
-           "feldip_hills", "fremennik_province", "troll_country", "karamja", "tirannwn", "uncharted_isles"]
+           "feldip_hills", "fremennik_province", "troll_country", "karamja", "tirannwn", "uncharted_isles",
+           "kourend", "varlamore", "fossil_island", "lithkren"]
 # Terrain biomes chosen by GielinorBiomeSource from the elevation model (open sea, snowy mountain tops).
 TERRAIN_BIOMES = ["sea", "mountain_peaks"]
 
@@ -362,6 +363,28 @@ BIOMES = {
                             feats=COMMON + trees("tree", "oak", "redwood") + rocks("copper", "tin", "iron", "coal", "amethyst")
                             + spots("angler", "net_bait") + ["minecraft:patch_grass_plain"],
                             monsters=[("runecraft:goblin", 6, 1, 3)], creatures=FARM),
+    # Great Kourend and the Kebos Lowlands: the lush green farmland of Hosidius and the Kourend Woodland.
+    "kourend": dict(temp=0.75, down=0.5, grass=0x7BBF4C, foliage=0x58A82E, sky=0x78A7FF, fog=0xC0D8FF, water=0x3F76E4,
+                    feats=COMMON + trees("tree", "oak", "willow", "maple", "yew", "magic", "redwood")
+                    + rocks("copper", "tin", "clay", "iron", "coal", "silver", "mithril", "adamantite")
+                    + spots("net_bait", "lure_bait", "cage_harpoon", "angler") + ["minecraft:flower_default", "minecraft:patch_grass_plain"],
+                    monsters=[], creatures=FARM),
+    # Varlamore: warm savanna round Civitas illa Fortis and the Avium Savannah, jungle in the Tlati Rainforest.
+    "varlamore": dict(temp=1.0, down=0.6, grass=0x98BC4A, foliage=0x74AE2E, sky=0x7AB0FF, fog=0xD8E8F0, water=0x3A90CC,
+                      feats=COMMON + trees("tree", "oak", "teak", "mahogany", "maple", "yew")
+                      + rocks("copper", "tin", "clay", "iron", "coal", "silver", "gold", "gem")
+                      + spots("net_bait", "lure_bait", "cage_harpoon")
+                      + ["minecraft:patch_grass_jungle", "minecraft:patch_tall_grass_2", "minecraft:patch_sugar_cane", "minecraft:flower_default"],
+                      monsters=[], creatures=FARM),
+    # Fossil Island: dark volcanic greens, the Tar Swamp's murky water and an ash-hazed sky.
+    "fossil_island": dict(temp=0.85, down=0.7, grass=0x6A963A, foliage=0x4C8428, sky=0x8FA6C4, fog=0xB8C0B0, water=0x3C7A80,
+                          feats=COMMON + trees("tree", "oak", "teak", "mahogany") + rocks("iron", "coal", "mithril", "adamantite")
+                          + spots("net_bait", "lure_bait") + ["minecraft:flower_swamp", "minecraft:patch_large_fern", "minecraft:patch_grass_jungle"],
+                          monsters=[], creatures=[]),
+    # Lithkren: bare grey rock with sparse, washed-out grass.
+    "lithkren": dict(temp=0.5, down=0.4, grass=0x8C9A7A, foliage=0x6E7E5C, sky=0x8AA0B8, fog=0xB0B8C0, water=0x3D57D6,
+                     feats=COMMON + rocks("coal", "mithril", "adamantite") + ["minecraft:patch_dead_bush_2"],
+                     monsters=[], creatures=[]),
 }
 
 # Module monsters (from build/catalog.json) join their kingdoms' spawn lists.
