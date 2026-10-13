@@ -59,7 +59,7 @@ public final class BossPlaces {
                 // chasm's own entrance (1433, 3671).
                 PlaceDef.of("yamas_lair", "Yama's Lair", 1404, 3712, Style.RUINS, List.of()), // approx
                 // Mokhaiotl's lair is entered from the Tlati jungle north of Tal Teklan.
-                PlaceDef.of("mokhaiotl_lair", "Mokhaiotl's lair", 1262, 3130, Style.CAVE, List.of()), // approx
+                PlaceDef.of("mokhaiotl_lair", "Mokhaiotl's lair", 1282, 3128, Style.CAVE, List.of()), // approx: the crater at the head of the stream
                 // The Gemstone Crab moves between three Tlati Rainforest spawns (wiki: 1275,3160, 1351,3110 and 1237,3042); this is
                 // the south-western one.
                 PlaceDef.of("gemstone_crab_mine", "Tlati Rainforest mine (Gemstone Crab)", 1237, 3042, Style.CAMP, List.of()),

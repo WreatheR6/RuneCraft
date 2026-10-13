@@ -22,4 +22,23 @@ class MultiCombatMapTest {
         assertFalse(MultiCombat.isMulti(3165, 3485), "Grand Exchange");
         assertFalse(MultiCombat.isMulti(2757, 3477), "Camelot");
     }
+
+    @Test
+    void zeahZonesAndSingleWayPockets() {
+        assertTrue(MultiCombat.isMulti(1639, 3675), "Kourend Castle");
+        assertTrue(MultiCombat.isMulti(1500, 3600), "Shayzien");
+        assertFalse(MultiCombat.isMulti(1505, 3617), "Shayzien bank");
+        assertTrue(MultiCombat.isMulti(1505, 3780), "Lovakengj");
+        assertTrue(MultiCombat.isMulti(1436, 3708), "lizardman shamans");
+        assertTrue(MultiCombat.isMulti(1860, 3560), "eastern Hosidius");
+        assertTrue(MultiCombat.isMulti(1750, 3475), "Hosidius sand crab beach");
+        assertTrue(MultiCombat.isMulti(3655, 3875), "Fossil Island ammonite crabs");
+        assertFalse(MultiCombat.isMulti(1680, 3130), "Civitas illa Fortis");
+        assertFalse(MultiCombat.isMulti(1762, 3620), "Hosidius' square");
+        // Falador is multi, except the ground floor of the castle's south-west corner
+        assertTrue(MultiCombat.isMulti(2970, 3340), "Falador Castle");
+        assertFalse(MultiCombat.isMulti(2963, 3332), "Falador Castle's south-west corner");
+        assertFalse(MultiCombat.isMulti(2960, 3328), "its corner tile");
+        assertTrue(MultiCombat.isMulti(2968, 3336), "just outside the pocket");
+    }
 }

@@ -124,6 +124,9 @@ public final class Elevation {
                 return true;
             }
         }
+        if (lakeDistance(ox, oy, 7) >= -6) {
+            return true;
+        }
         for (TerrainAnchors.WaterBox w : TerrainAnchors.get().water()) {
             if (blockX >= w.x1() - 4 && blockX <= w.x2() + 4 && blockZ >= w.z1() - 4 && blockZ <= w.z2() + 4) {
                 return true;
@@ -282,8 +285,10 @@ public final class Elevation {
     /** Natural landscape at OSRS coordinates: {height, coastDistance}. */
     static double[] natural(double ox, double oy) {
         // Coastline, warped a little so it isn't made of straight segments.
-        double wx = fbm(ox / 40, oy / 40, 11, 3) * 5 + noise(ox / 9, oy / 9, 12) * 1.5;
-        double wy = fbm(ox / 40, oy / 40, 13, 3) * 5 + noise(ox / 9, oy / 9, 14) * 1.5;
+        // Zeah's and Varlamore's coasts are traced tile-accurately from the map squares, so they wobble less.
+        double warp = ox < 2000 ? 0.35 : ox < 2040 ? 0.35 + 0.65 * (ox - 2000) / 40 : 1;
+        double wx = (fbm(ox / 40, oy / 40, 11, 3) * 5 + noise(ox / 9, oy / 9, 12) * 1.5) * warp;
+        double wy = (fbm(ox / 40, oy / 40, 13, 3) * 5 + noise(ox / 9, oy / 9, 14) * 1.5) * warp;
         double sd = landDistance(ox + wx, oy + wy);
         double h;
         if (sd >= 0) {
@@ -349,28 +354,71 @@ public final class Elevation {
     private static final GielinorGeography.Polygon[] POLYGONS = GielinorGeography.POLYGONS.toArray(new GielinorGeography.Polygon[0]);
     private static final double[][] POLYGON_BOUNDS = new double[POLYGONS.length][];
 
+    /** Traced lakes: the water outline, its islands, and the bounding boxes of both, by index. */
+    private static final GielinorGeography.Lake[] LAKES = GielinorGeography.TRACED_LAKES.toArray(new GielinorGeography.Lake[0]);
+    private static final double[][] LAKE_BOUNDS = new double[LAKES.length][];
+    private static final double[][][] LAKE_ISLAND_BOUNDS = new double[LAKES.length][][];
+    /** Bounding box of each river's centre line {minX, minY, maxX, maxY}, by index into RIVERS. */
+    private static final double[][] RIVER_BOUNDS = new double[GielinorGeography.RIVERS.size()][];
+
     static {
         for (int k = 0; k < POLYGONS.length; k++) {
-            double[] xy = POLYGONS[k].xy();
-            double a = Double.MAX_VALUE, b = Double.MAX_VALUE, c = -Double.MAX_VALUE, d = -Double.MAX_VALUE;
-            for (int i = 0; i < xy.length; i += 2) {
-                a = Math.min(a, xy[i]);
-                b = Math.min(b, xy[i + 1]);
-                c = Math.max(c, xy[i]);
-                d = Math.max(d, xy[i + 1]);
+            POLYGON_BOUNDS[k] = bounds(POLYGONS[k].xy());
+        }
+        for (int k = 0; k < LAKES.length; k++) {
+            LAKE_BOUNDS[k] = bounds(LAKES[k].xy());
+            LAKE_ISLAND_BOUNDS[k] = new double[LAKES[k].islands().length][];
+            for (int i = 0; i < LAKES[k].islands().length; i++) {
+                LAKE_ISLAND_BOUNDS[k][i] = bounds(LAKES[k].islands()[i]);
             }
-            POLYGON_BOUNDS[k] = new double[]{a, b, c, d};
+        }
+        for (int k = 0; k < RIVER_BOUNDS.length; k++) {
+            RIVER_BOUNDS[k] = bounds(GielinorGeography.RIVERS.get(k).xy());
         }
     }
 
+    private static double[] bounds(double[] xy) {
+        double a = Double.MAX_VALUE, b = Double.MAX_VALUE, c = -Double.MAX_VALUE, d = -Double.MAX_VALUE;
+        for (int i = 0; i < xy.length; i += 2) {
+            a = Math.min(a, xy[i]);
+            b = Math.min(b, xy[i + 1]);
+            c = Math.max(c, xy[i]);
+            d = Math.max(d, xy[i + 1]);
+        }
+        return new double[]{a, b, c, d};
+    }
+
+    /**
+     * Signed distance (tiles) into the open water of a traced lake: positive on the water, negative on its shores
+     * and on its islands. Values at or below {@code -far} only bound the distance (every lake is further away).
+     */
+    static double lakeDistance(double x, double y, double far) {
+        double best = -far;
+        for (int k = 0; k < LAKES.length; k++) {
+            double w = polygonDistance(LAKES[k].xy(), LAKE_BOUNDS[k], x, y, far);
+            if (w <= best) {
+                continue;
+            }
+            double[][] isl = LAKES[k].islands();
+            for (int i = 0; i < isl.length; i++) {
+                w = Math.min(w, -polygonDistance(isl[i], LAKE_ISLAND_BOUNDS[k][i], x, y, Math.max(0, w) + 1));
+            }
+            best = Math.max(best, w);
+        }
+        return best;
+    }
+
     private static double polygonDistance(GielinorGeography.Polygon p, double[] bb, double x, double y, double far) {
+        return polygonDistance(p.xy(), bb, x, y, far);
+    }
+
+    private static double polygonDistance(double[] xy, double[] bb, double x, double y, double far) {
         double bdx = Math.max(0, Math.max(bb[0] - x, x - bb[2]));
         double bdy = Math.max(0, Math.max(bb[1] - y, y - bb[3]));
         double bd = Math.hypot(bdx, bdy);
         if (bd > far) {
             return -bd;
         }
-        double[] xy = p.xy();
         int n = xy.length / 2;
         boolean inside = false;
         double best = Double.MAX_VALUE;
@@ -526,7 +574,15 @@ public final class Elevation {
     }
 
     static double carveNatural(double h, double ox, double oy) {
-        for (GielinorGeography.River r : GielinorGeography.RIVERS) {
+        // Zeah's traced streams and lakes lie in valleys and on plateaus as the map draws them: keep their banks short
+        // so they don't cut a gorge through every mountain they touch.
+        double maxBank = ox < 2000 ? TRACED_BANK : Double.MAX_VALUE;
+        for (int k = 0; k < RIVER_BOUNDS.length; k++) {
+            double[] bb = RIVER_BOUNDS[k];
+            if (ox < bb[0] - 45 || ox > bb[2] + 45 || oy < bb[1] - 45 || oy > bb[3] + 45) {
+                continue;
+            }
+            GielinorGeography.River r = GielinorGeography.RIVERS.get(k);
             double half = r.width() / 2;
             double[] p = r.xy();
             double d = Double.MAX_VALUE;
@@ -537,18 +593,32 @@ public final class Elevation {
                 }
                 d = Math.min(d, segDist(ox, oy, p[i], p[i + 1], p[i + 2], p[i + 3]));
             }
-            h = carve(h, d, half);
+            h = carve(h, d, half, maxBank);
         }
         for (GielinorGeography.Ellipse l : GielinorGeography.LAKES) {
             double k = ellipseK(l, ox, oy);
             double r = Math.min(l.rx(), l.ry());
             h = carve(h, Math.max(0, (k - 1) * r + r), r);
         }
+        // traced lakes: the shore is at sea level and the bed deepens over the first few tiles out
+        double w = lakeDistance(ox, oy, 45);
+        if (w > -45) {
+            h = carve(h, Math.max(0, LAKE_SHELF - w), LAKE_SHELF, maxBank);
+        }
         return h;
     }
 
+    /** Tiles from a traced lake's shore to its full depth. */
+    static final double LAKE_SHELF = 4;
+    /** Widest bank (tiles) of Zeah's traced streams and lakes. */
+    static final double TRACED_BANK = 12;
+
     /** Cuts a channel of half-width {@code half} (tiles) at distance {@code d}, with banks sloping back up. */
     private static double carve(double h, double d, double half) {
+        return carve(h, d, half, Double.MAX_VALUE);
+    }
+
+    private static double carve(double h, double d, double half, double maxBank) {
         if (d >= half + 40) {
             return h;
         }
@@ -556,7 +626,7 @@ public final class Elevation {
             double t = d / half;
             return Math.min(h, 57.5 + 3.5 * t * t);
         }
-        double bank = 2.5 + Math.max(0, h - 63) * 0.7;
+        double bank = Math.min(maxBank, 2.5 + Math.max(0, h - 63) * 0.7);
         double t = (d - half) / bank;
         if (t >= 1) {
             return h;

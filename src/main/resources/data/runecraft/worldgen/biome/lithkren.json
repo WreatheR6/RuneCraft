@@ -1,0 +1,64 @@
+{
+  "has_precipitation": true,
+  "temperature": 0.5,
+  "downfall": 0.4,
+  "effects": {
+    "sky_color": 9085112,
+    "fog_color": 11581632,
+    "water_color": 4020182,
+    "water_fog_color": 329011,
+    "grass_color": 9214586,
+    "foliage_color": 7241308,
+    "mood_sound": {
+      "sound": "minecraft:ambient.cave",
+      "tick_delay": 6000,
+      "block_search_extent": 8,
+      "offset": 2.0
+    }
+  },
+  "spawners": {
+    "monster": [],
+    "creature": [],
+    "ambient": [],
+    "axolotls": [],
+    "underground_water_creature": [],
+    "water_creature": [],
+    "water_ambient": [],
+    "misc": []
+  },
+  "spawn_costs": {},
+  "carvers": {
+    "air": [
+      "minecraft:cave",
+      "minecraft:canyon"
+    ]
+  },
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "minecraft:ore_dirt",
+      "minecraft:ore_gravel",
+      "runecraft:coal_rock_ore",
+      "runecraft:mithril_rock_ore",
+      "runecraft:adamantite_rock_ore"
+    ],
+    [],
+    [
+      "minecraft:spring_water"
+    ],
+    [
+      "runecraft:coal_rock_surface",
+      "runecraft:mithril_rock_surface",
+      "runecraft:adamantite_rock_surface",
+      "minecraft:patch_dead_bush_2",
+      "minecraft:brown_mushroom_normal",
+      "minecraft:red_mushroom_normal"
+    ],
+    []
+  ]
+}

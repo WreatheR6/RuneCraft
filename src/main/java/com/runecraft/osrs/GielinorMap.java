@@ -72,7 +72,7 @@ public final class GielinorMap {
      * Ape Atoll, the Sailing islands...) are the Uncharted Isles.
      */
     public static Region regionAt(double x, double y) {
-        if (x >= 1050 && x < 2000 && y >= 2840 && y < 4120) {
+        if (x >= 1050 && x < 2000 && y >= 2810 && y < 4120) {
             return y >= (x < 1408 ? 3456 : 3392) ? Region.KOUREND : Region.VARLAMORE;
         }
         if (in(x, y, 3600, 3900, 3680, 3940)) {
