@@ -61,6 +61,8 @@ Recurring conflict spots:
 >
 > Rules: stay within your scope's files where possible; small edits to shared files are OK but keep diffs minimal (other agents work in parallel). A module may not reference another module's items (move shared items into CommonItems). Classes used from another package must be public. Don't touch tools/gen_assets.py, models/textures, structures or terrain unless your scope says so. If you add items/blocks/models, run tools/loop/verify.sh (it runs gen_assets validation).
 >
+> Compile caveat: `check_compile.py` cannot see errors inside expressions whose receiver or arguments involve a Minecraft type (javac skips attributing them), e.g. `screen.button("x" + tier.points())` with a misnamed member passes offline but fails in CI. In Minecraft-side code, grep every field/method you call on our own types (field vs method, exact name, arity, static vs instance) and every import.
+>
 > Verify: `TMPDIR=<your scratch dir> bash tools/loop/verify.sh` must print VERIFY OK. Commit on your branch (in stages if large). Do not push. Report: what you checked, what was wrong and fixed (before→after for important values), what's still missing or approximate, shared files touched, and the commit hash.
 
 ## Round log
