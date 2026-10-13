@@ -274,8 +274,10 @@ class SkillingContentTest {
             assertTrue(b.id().matches("[a-z0-9_]+"), b.id());
             assertNotNull(b.look(), b.id());
         }
-        for (SailingData.ChartPoint c : SailingData.CHART_POINTS) {
-            assertNotNull(ContentRegistry.place(c.placeId()), c.placeId());
+        for (SailingTraining.ChartTask c : SailingTraining.CHARTS) {
+            if (!c.underground()) {
+                assertNotNull(ContentRegistry.place(c.placeId()), c.placeId());
+            }
         }
         for (SailingData.Port p : SailingData.PORTS) {
             assertTrue(blockExists(p.board()), p.board());

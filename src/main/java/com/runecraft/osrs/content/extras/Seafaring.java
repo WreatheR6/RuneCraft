@@ -60,17 +60,31 @@ public final class Seafaring {
             new Port("port_khazard", "Port Khazard", 2674, 3149, 30, false),
             new Port("rellekka", "Rellekka", 2629, 3693, 62, true),
             new Port("port_phasmatys", "Port Phasmatys", 3702, 3487, 45, false), // approx level
-            new Port("port_tyras", "Port Tyras", 2142, 3122, 50, false), // approx level
+            new Port("port_tyras", "Port Tyras", 2146, 3123, 66, false),
             new Port("corsair_cove", "Corsair Cove", 2572, 2861, 40, false),
             new Port("port_piscarilius", "Port Piscarilius", 1824, 3691, 15, true),
             new Port("lands_end", "Land's End", 1504, 3399, 5, false),
             new Port("sunset_coast", "Sunset Coast", 1514, 2972, 44, false), // approx dock
-            new Port("aldarin", "Aldarin", 1393, 2928, 46, true), // approx dock
-            new Port("etceteria", "Etceteria", 2612, 3895, 65, false), // approx dock
+            new Port("aldarin", "Aldarin", 1438, 2969, 46, true), // notice board tile
+            new Port("etceteria", "Etceteria", 2617, 3849, 65, false), // notice board tile
             // Charter docks of the Sailing ports (shortest-path charter tiles); Port Roberts is a floating platform.
             new Port("port_roberts", "Port Roberts", 1871, 3309, 50, false),
             new Port("deepfin_point", "Deepfin Point", 1943, 2757, 67, false),
-            new Port("the_summer_shore", "The Summer Shore", 3189, 2369, 45, false));
+            new Port("the_summer_shore", "The Summer Shore", 3189, 2369, 45, false),
+            // Docking levels of the other courier ports (wiki level up table; notice board tiles, approx where no board).
+            new Port("hosidius", "Hosidius", 1762, 3460, 5, false), // approx dock
+            new Port("ardougne", "Ardougne", 2676, 3276, 28, false),
+            new Port("entrana", "Entrana", 2834, 3335, 36, false), // approx dock
+            new Port("civitas_illa_fortis", "Civitas illa Fortis", 1782, 3142, 38, false),
+            new Port("cairn_isle", "Cairn Isle", 2766, 2975, 42, false), // approx dock
+            new Port("ruins_of_unkah", "Ruins of Unkah", 3145, 2828, 48, false),
+            new Port("void_knights_outpost", "Void Knights' Outpost", 2659, 2672, 50, false),
+            new Port("red_rock", "Red Rock", 2806, 2511, 52, false), // approx level
+            new Port("jatizso", "Jatizso", 2420, 3781, 68, false), // approx dock
+            new Port("neitiznot", "Neitiznot", 2311, 3781, 68, false), // approx dock
+            new Port("prifddinas", "Prifddinas", 2163, 3326, 70, false),
+            new Port("piscatoris", "Piscatoris", 2341, 3690, 75, false), // approx dock
+            new Port("lunar_isle", "Lunar Isle", 2139, 3884, 76, false));
 
     /** Sailing level requirements for features (for the /sailing info list and gating). approx where noted. */
     public static final Map<String, Integer> FEATURES = new LinkedHashMap<>();
@@ -90,6 +104,15 @@ public final class Seafaring {
         FEATURES.put("Mercenary shipwreck salvaging", 73);
         FEATURES.put("Fremennik shipwreck salvaging", 80);
         FEATURES.put("Merchant shipwreck salvaging", 87);
+        FEATURES.put("Crate charting (crowbar)", 12);
+        FEATURES.put("Current charting (current duck)", 22);
+        FEATURES.put("Diving charting", 38);
+        FEATURES.put("Weather charting", 57);
+        FEATURES.put("Barracuda Trials: The Tempor Tantrum", 30);
+        FEATURES.put("Barracuda Trials: The Jubbly Jive", 55);
+        FEATURES.put("Barracuda Trials: The Gwenith Glide", 72);
+        FEATURES.put("Deep sea trawling (rope net)", 56);
+        FEATURES.put("Crystal extractor", 73);
         for (Port p : PORTS) {
             FEATURES.put("Voyage to " + p.name(), p.level());
         }

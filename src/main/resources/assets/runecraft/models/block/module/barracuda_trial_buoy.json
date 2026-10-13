@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/barracuda_trial_buoy_side",
+    "top": "runecraft:block/module/barracuda_trial_buoy_top",
+    "bottom": "runecraft:block/module/barracuda_trial_buoy_bottom"
+  }
+}

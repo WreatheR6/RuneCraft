@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "runecraft:block/module/ardougne_task_board"
+    }
+  }
+}

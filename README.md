@@ -44,7 +44,7 @@ Old School RuneScape for **Minecraft 1.20.1 (Fabric)**. It adds a separate dimen
 | Hunter | Bird snares and box traps, with the creature depending on your kingdom and level. |
 | Slayer | Five masters, assigned by combat level. Each kill gives Slayer XP equal to the monster's HP. |
 | Construction | Sawmill planks and furniture building at a workbench (XP only for now). |
-| Sailing | **Placeholder:** XP for travelling by boat in Gielinor. |
+| Sailing | Needs Pandemonium. Raft 1, skiff 15, sloop 50. Trains from sail trimming, 358 wiki sea-charting tasks with sea and ocean bonuses, 439 wiki courier tasks between 30 ports, shipwreck salvaging and sorting, the three Barracuda Trials, deep sea trawling nets and the crystal extractor. Hulls, sails, helms, keels and facilities are built with Construction at boat schematics. |
 
 ## World
 * **Map:** Lumbridge is at (0, 0), and one OSRS tile is two blocks. Kingdom borders follow the OSRS map. The Wilderness starts at the ditch and shows its level.
@@ -79,7 +79,7 @@ Old School RuneScape for **Minecraft 1.20.1 (Fabric)**. It adds a separate dimen
 ## Pets, houses and Sailing
 * **Pets:** boss, raid, minigame and skilling pets drop at OSRS rates, with an "All Pets" log page. Pets follow their owner.
 * **Player-owned houses:** portals in all eight towns, 18 rooms and 133 furniture pieces. Altars, pools, lecterns, jewellery boxes and portals all work. Use `/house` to build.
-* **Sailing:** buy boats at shipwrights and sail them on water. There are charter docks at 12 ports and voyages that give Sailing XP.
+* **Sailing:** buy boats at shipwrights and sail them on water. Charter docks at 31 ports; notice boards offer the wiki's courier tasks; boat schematics at the shipyards (Port Sarim, Rellekka, Port Piscarilius, Aldarin) upgrade each boat's hull, sails, helm and keel and build facilities; Barracuda Trials start from buoys in the Storm Tempor, the Backwater and Porth Gwenith. Use `/sailing info` for level requirements.
 
 ## Accuracy pass (checked against OSRS Wiki data)
 * Monster and boss stats were checked against the wiki DPS-calculator data, and equipment stats against the wiki item data.

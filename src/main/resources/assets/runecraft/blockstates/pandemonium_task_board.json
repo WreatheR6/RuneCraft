@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "runecraft:block/module/pandemonium_task_board"
+    }
+  }
+}

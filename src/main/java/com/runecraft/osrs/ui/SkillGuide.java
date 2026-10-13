@@ -15,6 +15,7 @@ import com.runecraft.osrs.content.skilling.HunterData;
 import com.runecraft.osrs.content.skilling.MiningData;
 import com.runecraft.osrs.content.skilling.RunecraftData;
 import com.runecraft.osrs.content.skilling.SailingData;
+import com.runecraft.osrs.content.skilling.SailingTraining;
 import com.runecraft.osrs.content.skilling.ThievingData;
 import com.runecraft.osrs.content.slayer.SlayerCategories;
 import com.runecraft.osrs.data.AgilityCourse;
@@ -247,8 +248,20 @@ public final class SkillGuide {
         for (SailingData.Wreck w : SailingData.WRECKS) {
             b.add(Skill.SAILING, w.level(), "Salvage: " + w.name());
         }
-        for (SailingData.ChartPoint c : SailingData.CHART_POINTS) {
-            b.add(Skill.SAILING, c.level(), "Chart: " + c.name());
+        for (SailingTraining.ChartType c : SailingTraining.ChartType.values()) {
+            b.add(Skill.SAILING, c.level, "Sea charting: " + lower(c.name()) + " tasks");
+        }
+        for (SailingTraining.Trial t : SailingTraining.TRIALS) {
+            b.add(Skill.SAILING, t.level(), "Barracuda Trials: " + t.name());
+        }
+        for (SailingTraining.Facility f : SailingTraining.FACILITIES) {
+            b.add(Skill.SAILING, f.sailing(), "Build: " + f.name());
+        }
+        for (SailingTraining.Part p : SailingTraining.PARTS) {
+            if (p.tier() > 0 && !p.boat().equals("raft")) {
+                b.add(Skill.SAILING, p.sailing(), "Build: " + p.name() + (p.type() == SailingTraining.PartType.KEEL ? ""
+                        : " (" + p.boat() + ")"));
+            }
         }
         for (SailingData.Port p : SailingData.PORTS) {
             b.add(Skill.SAILING, p.level(), "Port tasks: " + p.name());

@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "runecraft:block/module/lands_end_task_board"
+    }
+  }
+}

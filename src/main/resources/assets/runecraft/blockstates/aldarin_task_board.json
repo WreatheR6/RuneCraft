@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "runecraft:block/module/aldarin_task_board"
+    }
+  }
+}
