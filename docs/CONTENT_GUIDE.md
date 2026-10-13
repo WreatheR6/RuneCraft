@@ -70,7 +70,9 @@ Implement the methods you need on your module class (`ContentModule`):
 - `models()`: return `List<ModelSpec>`, built with `ModelSpec.builder(id).scale(s).shadow(r).part(name, parentOrNull, Role, rgb).pivot(x, y, z).rotate(pitch, yaw, roll).box(x, y, z, w, h, d).pattern("eyes|scales|plates|spots|stripes|glow|none")...build()`.
   - Units are model pixels (16 per block). Y grows downward and Y=24 is the ground, as in vanilla entity models.
   - Roles animate automatically: HEAD looks at the player; NECK sways; JAW opens on attack; LEG_* walk; LEG_EXTRA uses insect gait; ARM_* swing and attack; WING_* flap; TAIL, TENTACLE and FIN sway; SPIN rotates; FLOAT bobs; BODY breathes.
-  - Use `pattern("eyes")` on heads (the generator paints eyes on the front face).
+  - Use `pattern("eyes")` on heads (the generator paints eyes on the front face). Other face patterns: `eyes_animal` (small dark eyes), `face` (human face), `skull`, `visor`; `blank` stops the generator painting a face on a HEAD (slugs, insects whose eyes are separate parts).
+  - The painter also lights the whole model from above (a top-to-bottom gradient and a contact shadow at the feet), so don't darken lower parts by hand.
+  - `modelVariants()`: `ModelSpec.Variant.of(id, baseModel[, scale])` (or `new ModelSpec.Variant(id, base, scale, tint)`) copies a registered model, after overrides, for creatures that look the same in OSRS (Nightmare Zone bosses, champions, God Wars ogres).
   - Keep each model under about 40 boxes.
 - `collectionLog()`: extra `CollectionLogData.Page`s.
 

@@ -669,7 +669,62 @@ def paint_jaw(arr, faces, R, base):
         sub[:, ::max(2, R)] *= 0.8
 
 
-def paint_box(arr, glow, model_id, part, bi, box, R, material, eyes_mode):
+def _rot(axis, a):
+    c, s = math.cos(a), math.sin(a)
+    if axis == "x":
+        return np.array([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]], dtype=np.float64)
+    if axis == "y":
+        return np.array([[c, 0, s, 0], [0, 1, 0, 0], [-s, 0, c, 0], [0, 0, 0, 1]], dtype=np.float64)
+    return np.array([[c, -s, 0, 0], [s, c, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], dtype=np.float64)
+
+
+def part_matrices(m):
+    """Model-space transform of every part in its rest pose (pivot chain, Rz*Ry*Rx as in Minecraft's ModelPart)."""
+    parts = {p["name"]: p for p in m.get("parts", [])}
+    cache = {}
+
+    def get(name):
+        if name not in cache:
+            p = parts[name]
+            par = get(p["parent"]) if p.get("parent") in parts else np.eye(4)
+            t = np.eye(4)
+            t[:3, 3] = (p.get("px", 0.0), p.get("py", 0.0), p.get("pz", 0.0))
+            cache[name] = par @ t @ _rot("z", p.get("roll", 0.0)) @ _rot("y", p.get("yaw", 0.0)) @ _rot("x", p.get("pitch", 0.0))
+        return cache[name]
+
+    for n in parts:
+        get(n)
+    return cache
+
+
+def model_light(m):
+    """(part matrices, top Y, bottom Y) of the model at rest, for the model-wide top-to-bottom light."""
+    mats = part_matrices(m)
+    ys = []
+    for p in m.get("parts", []):
+        M = mats[p["name"]]
+        for b in p.get("boxes", []):
+            for cx in (0, b["w"]):
+                for cy in (0, b["h"]):
+                    for cz in (0, b["d"]):
+                        v = M @ np.array([b.get("x", 0.0) + cx, b.get("y", 0.0) + cy, b.get("z", 0.0) + cz, 1.0])
+                        ys.append(v[1])
+    if not ys:
+        return mats, 0.0, 24.0
+    return mats, min(ys), max(ys)
+
+
+def body_light(Y, y0, y1):
+    """Model-wide light factor at model-space height Y (Y grows down): the top of the creature catches the light,
+    its lower body falls into shade, and the last two pixels above the ground get a contact shadow."""
+    t = np.clip((Y - y0) / max(1e-3, y1 - y0), 0, 1)
+    g = 1.06 - 0.16 * t
+    if y1 > 21.5:
+        g = g * (1 - 0.14 * np.clip((Y - (y1 - 2.5)) / 2.5, 0, 1))
+    return g
+
+
+def paint_box(arr, glow, model_id, part, bi, box, R, material, eyes_mode, light=None):
     w, h, d, u, v = box["w"], box["h"], box["d"], box["u"], box["v"]
     base = rgb(part.get("color", 0x808080))
     if lum(base) < 30:
@@ -713,6 +768,10 @@ def paint_box(arr, glow, model_id, part, bi, box, R, material, eyes_mode):
         if fw * fh >= 2:
             f = f * np.where(top_e | left_e, 1 + 0.10 * bevel_k, 1.0)
             f = f * np.where(bot_e | right_e, 1 - 0.20 * bevel_k, 1.0)
+        if light is not None:
+            M, y0, y1 = light
+            Y = M[1, 0] * P[0] + M[1, 1] * P[1] + M[1, 2] * P[2] + M[1, 3]
+            f = f * body_light(Y, y0, y1)
         col = np.clip(col * f[..., None] + np.where(f[..., None] > 1, (f[..., None] - 1) * 40, 0), 0, 255)
         sl = (slice(fy * R, fy * R + H), slice(fx * R, fx * R + W))
         # limb tips (claws/hooves) for animal legs
@@ -860,6 +919,7 @@ def model_texture(m):
     parts = m.get("parts", [])
     any_face = any((p.get("pattern") or "").lower() in ("eyes", "face", "skull", "eyes_animal") or (p.get("material") or "") == "face"
                    for p in parts)
+    mats, top_y, bottom_y = model_light(m)
     for p in parts:
         boxes = p.get("boxes", [])
         material = infer_material(m["id"], p)
@@ -867,7 +927,8 @@ def model_texture(m):
         is_face = material == "face" or pat == "face"
         is_skull = pat == "skull"
         is_animal = pat == "eyes_animal"
-        wants_eyes = pat == "eyes" or is_face or is_skull or is_animal or (not any_face and p.get("role") == "HEAD")
+        # "blank": a head with no painted face (slugs and insects whose eyes are separate parts)
+        wants_eyes = pat == "eyes" or is_face or is_skull or is_animal or (not any_face and p.get("role") == "HEAD" and pat != "blank")
         eye_box = None
         if wants_eyes and boxes:
             eye_box = max(range(len(boxes)), key=lambda k: (boxes[k]["w"] * boxes[k]["h"], -k))
@@ -878,7 +939,8 @@ def model_texture(m):
                 mode = "snout"
             else:
                 mode = None
-            paint_box(arr, glow, m["id"], p, bi, b, R, "skin" if material == "face" else material, mode)
+            paint_box(arr, glow, m["id"], p, bi, b, R, "skin" if material == "face" else material, mode,
+                      light=(mats[p["name"]], top_y, bottom_y))
             for face, (fx, fy, fw, fh) in box_faces(b["u"], b["v"], b["w"], b["h"], b["d"]).items():
                 if fw > 0 and fh > 0:
                     alpha[fy * R:(fy + fh) * R, fx * R:(fx + fw) * R] = 255

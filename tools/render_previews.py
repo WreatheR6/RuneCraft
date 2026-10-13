@@ -111,7 +111,8 @@ def render_model(model, tex, size=160, yaw=-35.0, pitch=22.0, glow=None):
     sub = max(1, k // 2) if size <= 200 else k
     step = k // sub
     gpx = glow.load() if glow is not None else None
-    view = mat_mul(rot_x(math.radians(-pitch)), rot_y(math.radians(yaw)))
+    # Model Y grows downward, so a positive pitch tilts the top of the model towards the viewer (seen from above).
+    view = mat_mul(rot_x(math.radians(pitch)), rot_y(math.radians(yaw)))
     tris = []
     texpx = tex.load()
     tw, th = tex.size

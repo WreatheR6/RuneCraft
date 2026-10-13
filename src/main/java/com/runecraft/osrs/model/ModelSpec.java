@@ -55,7 +55,10 @@ public final class ModelSpec {
         public float roll;
         public final List<Box> boxes = new ArrayList<>();
         public final List<int[]> uvs = new ArrayList<>();
-        /** Face detail painted by the texture generator: "eyes", "scales", "stripes", "spots", "plates", "glow", "none". */
+        /**
+         * Face detail painted by the texture generator: "eyes", "eyes_animal", "face", "skull", "visor", "scales",
+         * "stripes", "spots", "plates", "glow", "none", or "blank" (a HEAD that gets no painted face at all).
+         */
         public String pattern = "none";
         /** For LEG_EXTRA: index used to alternate the gait. */
         public int index;
@@ -178,6 +181,41 @@ public final class ModelSpec {
 
     public static Builder builder(String id) {
         return new Builder(id);
+    }
+
+    /**
+     * A creature that looks exactly like another one in OSRS (Nightmare Zone bosses, Champions' Challenge
+     * champions, God Wars followers...): a copy of the registered model {@code base} under the id {@code id},
+     * scaled by {@code scale} and with every part colour passed through {@code tint} (null keeps the colours).
+     */
+    public record Variant(String id, String base, float scale, java.util.function.IntUnaryOperator tint) {
+        public static Variant of(String id, String base) {
+            return new Variant(id, base, 1.0f, null);
+        }
+
+        public static Variant of(String id, String base, float scale) {
+            return new Variant(id, base, scale, null);
+        }
+    }
+
+    /** This model under another id, scaled by {@code scaleMul}, colours passed through {@code tint} (may be null). */
+    public ModelSpec copy(String newId, float scaleMul, java.util.function.IntUnaryOperator tint) {
+        Builder b = builder(newId).scale(scale * scaleMul).shadow(shadow * scaleMul);
+        for (Part p : parts) {
+            int c = tint == null ? p.color : tint.applyAsInt(p.color);
+            int a = tint == null ? p.accent : tint.applyAsInt(p.accent);
+            b.part(p.name, p.parent, p.role, c, a).pivot(p.px, p.py, p.pz);
+            b.current.pitch = p.pitch;
+            b.current.yaw = p.yaw;
+            b.current.roll = p.roll;
+            b.current.index = p.index;
+            for (Box x : p.boxes) {
+                b.box(x.x(), x.y(), x.z(), x.w(), x.h(), x.d(), x.dilation());
+            }
+            b.pattern(p.pattern).glow(p.glow);
+            b.current.material = p.material;
+        }
+        return b.build();
     }
 
     public static final class Builder {

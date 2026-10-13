@@ -487,8 +487,7 @@
   ],
   "crystal_impling": [
     "head",
-    "wing_l",
-    "wing_r"
+    "sparkle"
   ],
   "crystalline_hunllef": [
     "blade0",
@@ -651,6 +650,9 @@
   "earth_warrior": [
     "head"
   ],
+  "earth_warrior_champion": [
+    "head"
+  ],
   "eclectic_impling": [
     "head",
     "sparkle"
@@ -779,6 +781,9 @@
     "hand_light_l",
     "hand_light_r"
   ],
+  "frost_nagua": [
+    "head"
+  ],
   "fumus": [
     "orb"
   ],
@@ -896,6 +901,18 @@
   "guthan": [
     "head"
   ],
+  "gwd_aviansie": [
+    "head"
+  ],
+  "gwd_aviansie_elite": [
+    "head"
+  ],
+  "gwd_cyclops": [
+    "pupil"
+  ],
+  "gwd_gorak": [
+    "head"
+  ],
   "gwd_imp": [
     "head"
   ],
@@ -912,7 +929,7 @@
   ],
   "gwd_spiritual_mage_armadyl": [
     "head",
-    "w_orb"
+    "staff_orb"
   ],
   "gwd_spiritual_mage_bandos": [
     "head",
@@ -951,6 +968,9 @@
     "head"
   ],
   "gwd_vampire": [
+    "head"
+  ],
+  "gwd_werewolf": [
     "head"
   ],
   "harpie_bug_swarm": [
@@ -1014,6 +1034,9 @@
     "head"
   ],
   "imp": [
+    "eyes"
+  ],
+  "imp_champion": [
     "eyes"
   ],
   "infernal_mage": [
@@ -1167,8 +1190,7 @@
     "jaw"
   ],
   "kalphite": [
-    "eye_l",
-    "eye_r"
+    "eyes"
   ],
   "kalphite_queen": [
     "eyes"
@@ -1305,6 +1327,9 @@
   "lesser_demon": [
     "head"
   ],
+  "lesser_demon_champion": [
+    "head"
+  ],
   "lizard": [
     "head"
   ],
@@ -1413,14 +1438,49 @@
     "head",
     "sparkle"
   ],
-  "nmz_black_knight_titan": [
+  "nmz_arrg": [
     "head"
+  ],
+  "nmz_black_knight_titan": [
+    "titan_eyes"
+  ],
+  "nmz_bouncer": [
+    "chest",
+    "loin",
+    "neck",
+    "head",
+    "eyes",
+    "jaw",
+    "leg_f_l",
+    "leg_f_r",
+    "leg_b_r",
+    "tail_fire"
   ],
   "nmz_count_draynor": [
     "head"
   ],
-  "nmz_me": [
+  "nmz_dad": [
     "head"
+  ],
+  "nmz_elvarg": [
+    "eyes"
+  ],
+  "nmz_glod": [
+    "head"
+  ],
+  "nmz_king_roald": [
+    "head",
+    "crown_gem",
+    "possession"
+  ],
+  "nmz_me": [
+    "head",
+    "soul_glow",
+    "hand_wisp_l",
+    "hand_wisp_r"
+  ],
+  "nmz_the_kendal": [
+    "eyes"
   ],
   "nmz_tree_spirit": [
     "head"
@@ -1616,6 +1676,9 @@
   "quest_giant_roc": [
     "eyes"
   ],
+  "quest_gryphon": [
+    "eyes"
+  ],
   "quest_kolodion": [
     "staff_orb",
     "orb_left"
@@ -1629,6 +1692,9 @@
     "sword_fire"
   ],
   "quest_shaikahan": [
+    "eyes"
+  ],
+  "quest_shellbane_gryphon": [
     "eyes"
   ],
   "quest_skeleton_hellhound": [
@@ -1804,9 +1870,6 @@
     "head",
     "jaw"
   ],
-  "skeleton_champion": [
-    "skull"
-  ],
   "skotizo": [
     "head",
     "jaw"
@@ -1902,6 +1965,9 @@
     "uni_horn"
   ],
   "steel_dragon": [
+    "head"
+  ],
+  "sulphur_nagua": [
     "head"
   ],
   "summer_elemental": [
@@ -2056,6 +2122,10 @@
     "fireball",
     "flame_trail",
     "back_flames"
+  ],
+  "tormented_demon": [
+    "head",
+    "jaw"
   ],
   "tortured_gorilla": [
     "eyes"
@@ -2470,9 +2540,6 @@
     "collar_gem",
     "eye_l",
     "eye_r"
-  ],
-  "zombies_champion": [
-    "head"
   ],
   "zulrah": [
     "eyes"

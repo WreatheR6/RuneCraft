@@ -21,6 +21,7 @@ final class Overrides {
         l.addAll(BestiaryWld.overrides());
         l.addAll(BestiaryHum.overrides());
         l.addAll(BestiaryQbm.overrides());
+        l.addAll(BestiaryLookalikes.overrides());
         return l;
     }
 }
