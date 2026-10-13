@@ -56,6 +56,8 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("the_leviathan", EncounterScripts.Leviathan::new);
         BossScripts.register("the_whisperer", EncounterScripts.Whisperer::new);
         BossScripts.register("vardorvis", EncounterScripts.Vardorvis::new);
+        AwakenedService.init();
+        DoomDelveService.init();
         BossScripts.register("the_hueycoatl", EncounterScripts.Hueycoatl::new);
         BossScripts.register("branda_the_fire_queen", EncounterScripts.RoyalTitans::new);
 

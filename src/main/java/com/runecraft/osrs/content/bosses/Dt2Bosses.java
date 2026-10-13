@@ -59,12 +59,20 @@ public final class Dt2Bosses {
         return List.of(duke(), leviathan(), whisperer(), vardorvis());
     }
 
-    private static List<Drop> dt2Drops(String vestige, String axePiece) {
-        List<Drop> d = new ArrayList<>(List.of(Drop.of("chromium_ingot", 1, 1, 88), Drop.of(vestige, 1, 1, 1088),
-                Drop.of(axePiece, 1, 1, 1088), Drop.of("virtus_mask", 1, 1, 2000), Drop.of("virtus_robe_top", 1, 1, 2000),
-                Drop.of("virtus_robe_bottom", 1, 1, 2000), Drop.of("awakeners_orb", 1, 1, 12), Drop.of("runite_bar", 4, 8, 8),
+    /**
+     * OSRS (Desert Treasure II - Tweaks and Drop Rates): a 1/n roll for the tradeable unique table, which gives a vestige
+     * roll 3/8 (three rolls make the vestige), a chromium ingot 3/8, the boss's axe piece/weapon 1/8 and a virtus piece
+     * 1/8 (each of the three equally); the awakener's orb is rolled next. Awakened kills roll the unique table at 3/n
+     * ({@link AwakenedBosses#drops}).
+     */
+    static List<Drop> dt2Drops(String bossId, String vestige, String axePiece) {
+        int n = AwakenedBosses.uniqueTableRate(bossId);
+        List<Drop> d = new ArrayList<>(List.of(Drop.of("chromium_ingot", 1, 1, Math.round(8 * n / 3f)), Drop.of(vestige, 1, 1, 8 * n),
+                Drop.of(axePiece, 1, 1, 8 * n), Drop.of("virtus_mask", 1, 1, 24 * n), Drop.of("virtus_robe_top", 1, 1, 24 * n),
+                Drop.of("virtus_robe_bottom", 1, 1, 24 * n), Drop.of(AwakenedBosses.ORB, 1, 1, AwakenedBosses.orbRate(bossId)),
+                Drop.of("runite_bar", 4, 8, 8), // approx: the standard table below is a simplification
                 Drop.of("death_rune", 200, 300, 8), Drop.of("soul_rune", 150, 250, 8), Drop.of("dragon_platelegs", 1, 1, 16),
-                Drop.of("coins", 30000, 90000, 4), Drop.of("clue_scroll_elite", 1, 1, 23)));
+                Drop.of("coins", 30000, 90000, 4), Drop.of("clue_scroll_elite", 1, 1, 160)));
         return d;
     }
 
@@ -73,7 +81,7 @@ public final class Dt2Bosses {
                 .defenceBonus(20, 250, 250, 300, 300)
                 .attack(DUKE_SLAM).attack(DUKE_MAGIC).attack(DUKE_GAZE).attack(DUKE_VENTS)
                 .pet("pet_baron").at("ghorrock_prison").arena(13, "ice").size(1.8f, 2.4f, 2.0f).moveSpeed(0.0);
-        b.drops.addAll(dt2Drops("magus_vestige", "eye_of_the_duke"));
+        b.drops.addAll(dt2Drops(b.id, "magus_vestige", "eye_of_the_duke"));
         return b;
     }
 
@@ -82,7 +90,7 @@ public final class Dt2Bosses {
                 .defenceBonus(300, 300, 300, 200, 40)
                 .attack(LEVI_RANGED).attack(LEVI_MAGIC).attack(LEVI_MELEE).attack(LEVI_DEBRIS)
                 .pet("pet_lilviathan").at("the_scar").arena(14, "water").size(2.2f, 2.2f, 2.0f).moveSpeed(0.0);
-        b.drops.addAll(dt2Drops("venator_vestige", "leviathans_lure"));
+        b.drops.addAll(dt2Drops(b.id, "venator_vestige", "leviathans_lure"));
         return b;
     }
 
@@ -92,7 +100,7 @@ public final class Dt2Bosses {
                 .attack(WHISPER_MAGIC).attack(WHISPER_RANGED).attack(WHISPER_SIPHON)
                 .phase(50, "The Whisperer drags you into the Shadow Realm!", 1.1, false)
                 .pet("pet_wisp").at("lassar_undercity").arena(13, "void").flying().size(1.8f, 2.6f, 2.0f).moveSpeed(0.18);
-        b.drops.addAll(dt2Drops("bellator_vestige", "sirens_staff"));
+        b.drops.addAll(dt2Drops(b.id, "bellator_vestige", "sirens_staff"));
         return b;
     }
 
@@ -101,7 +109,7 @@ public final class Dt2Bosses {
                 .defenceBonus(40, 200, 200, 300, 300)
                 .attack(VARD_SLASH).attack(VARD_AXES).attack(VARD_BLOOD)
                 .pet("pet_butch").at("stranglewood").arena(12, "crypt").size(0.9f, 2.4f, 1.6f).moveSpeed(0.28);
-        b.drops.addAll(dt2Drops("ultor_vestige", "executioners_axe_head"));
+        b.drops.addAll(dt2Drops(b.id, "ultor_vestige", "executioners_axe_head"));
         return b;
     }
 }

@@ -85,6 +85,10 @@ public final class CollectionLogData {
         }
         for (com.runecraft.osrs.content.BossDef b : com.runecraft.osrs.content.ContentRegistry.bosses()) {
             KC.computeIfAbsent(b.name, k -> new ArrayList<>()).add(b.id);
+            if (com.runecraft.osrs.content.bosses.AwakenedBosses.isDt2(b.id)) {
+                // Awakened kills have their own kill count but share the boss's log page.
+                KC.get(b.name).add(com.runecraft.osrs.content.bosses.AwakenedBosses.kcKey(b.id));
+            }
         }
         OsrsPages.apply(PAGES, KC);
         TRACKED.clear();

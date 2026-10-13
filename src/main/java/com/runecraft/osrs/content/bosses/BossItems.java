@@ -353,7 +353,10 @@ public final class BossItems {
 
         // ---------------- Desert Treasure II ----------------
         simple(items, "chromium_ingot", "Chromium ingot", "bar", 0x9AB0C0, 1, "Three are needed to forge a DT2 ring.");
-        simple(items, "awakeners_orb", "Awakener's orb", "orb", 0xC03A3A, 1, "Awakens a Desert Treasure II boss.");
+        simple(items, "awakeners_orb", "Awakener's orb", "orb", 0xC03A3A, 1,
+                "A mysterious orb of unknown power. Use it on a Desert Treasure II boss's summoning stone to awaken the boss.");
+        simple(items, AwakenedBosses.BLOOD_KIT, "Ancient blood ornament kit", "package", 0x8A1A1A, 1,
+                "Earned by defeating all four awakened bosses. Turns Torva armour into sanguine Torva.");
         for (String[] v : new String[][]{{"ultor", "8A2A2A"}, {"magus", "3A3AA0"}, {"venator", "3A8A3A"}, {"bellator", "A08A3A"}}) {
             String cap = Character.toUpperCase(v[0].charAt(0)) + v[0].substring(1);
             simple(items, v[0] + "_vestige", cap + " vestige", "gem", Integer.parseInt(v[1], 16), 1,

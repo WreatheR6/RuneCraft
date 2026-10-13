@@ -281,6 +281,10 @@ public final class CombatAchievements {
         CANONICAL.put("alchemical_hydra_enraged", "alchemical_hydra");
         CANONICAL.put("kalphite_queen_airborne", "kalphite_queen");
         CANONICAL.put("dawn", "dusk");
+        // Awakened DT2 kills have their own kill count; a fight with an awakened boss ends when it goes up.
+        for (String dt2 : com.runecraft.osrs.content.bosses.AwakenedBosses.BOSSES) {
+            CANONICAL.put(com.runecraft.osrs.content.bosses.AwakenedBosses.kcKey(dt2), dt2);
+        }
         CANONICAL.put("eldric_the_ice_king", "branda_the_fire_queen");
         CANONICAL.put("verzik_vitur", "verzik_vitur_p3");
         CANONICAL.put("verzik_vitur_p2", "verzik_vitur_p3");

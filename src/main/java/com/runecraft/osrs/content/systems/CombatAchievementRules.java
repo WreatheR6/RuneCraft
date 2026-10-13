@@ -44,6 +44,9 @@ import java.util.Set;
  *       {@code deathless} (nobody died), {@code nodeath} (you didn't die), {@code inv=A,B} (ToA invocations),
  *       {@code path>=N}, {@code target} (within the CoX CM / ToB HM target time), {@code points>N},
  *       {@code nospirit} (no Helpful Spirit supplies taken).</li>
+ *   <li>Boss variants: {@code awakened} (an awakened Desert Treasure II boss), {@code delve=N}/{@code delve>=N} (the Doom of
+ *       Mokhaiotl's delve level; on a delve run, the level just completed).</li>
+ *   <li>{@code noprayrestore} (prayer points never went up), {@code onehand} (no two-handed weapon used on the target).</li>
  *   <li>Minigame runs: {@code stage=N} (which challenge or difficulty the run was, e.g. TzHaar-Ket-Rak's challenge number),
  *       {@code flag=NAME} (a condition the minigame itself judged, e.g. an empty inventory throughout).</li>
  *   <li>{@link Track#WINDOW}: {@code distinct} (different targets) and {@code fromstart} (time from the first fight's
@@ -106,6 +109,11 @@ public final class CombatAchievementRules {
         public int stage;
         /** Minigame runs: conditions the minigame judged itself (see {@code MinigameSession.caFlags}). */
         public final Set<String> flags = new HashSet<>();
+        /** Boss variants: an awakened Desert Treasure II boss, and the Doom of Mokhaiotl's delve level (0: none). */
+        public boolean awakened;
+        public int delve;
+        /** Prayer points went up at some point (potions, altars, restores). */
+        public boolean prayerRestored;
 
         public void took(Hit h) {
             taken.add(h);
@@ -328,6 +336,10 @@ public final class CombatAchievementRules {
             case "nospirit" -> r != null && !r.spiritSupplies();
             case "stage" -> compare(m.stage, op, number(v));
             case "flag" -> m.flags.contains(v);
+            case "awakened" -> m.awakened;
+            case "delve" -> compare(m.delve, op, number(v));
+            case "noprayrestore" -> !m.prayerRestored;
+            case "onehand" -> !m.weapons.isEmpty() && m.weapons.stream().noneMatch(com.runecraft.osrs.data.EquipmentBonuses::twoHanded);
             case "distinct", "fromstart" -> true;
             default -> throw new IllegalArgumentException("Unknown combat achievement condition: " + token);
         };
@@ -406,7 +418,8 @@ public final class CombatAchievementRules {
     /**
      * wikiId;track;target;count;rule. Targets: fight keys (boss ids or "kill:" + monster name, '|' alternatives) for
      * RULE/STREAK/WINDOW/AVERAGE, a {@link com.runecraft.osrs.content.raids.RaidType} name for RAID, "mg:" + minigame id
-     * for RUN, monster names for KILLS. Conditions marked approx in comments are stricter or looser than OSRS where
+     * for RUN (or "delve:" + boss id for a delve run, judged at each level completed), monster names for KILLS.
+     * Conditions marked approx in comments are stricter or looser than OSRS where
      * the exact mechanic isn't modelled (e.g. "perfect" kills read as "no scripted, ground or off-prayer damage";
      * "anyone in the team" reads as yourself; "without leaving" means staying within 64 blocks).
      */
@@ -489,6 +502,20 @@ public final class CombatAchievementRules {
             23;STREAK;general_graardor;15;
             180;RULE;giant_mole;1;hits<=4
             182;RULE;giant_mole;1;nodmg=boss
+            610;RULE;doom_of_mokhaiotl;1;delve>=3
+            611;RULE;doom_of_mokhaiotl;1;delve>=8
+            612;RULE;doom_of_mokhaiotl;1;delve>=16
+            621;RULE;doom_of_mokhaiotl;1;delve=1 t<0:30
+            622;RUN;delve:doom_of_mokhaiotl;1;delve=8 t<10:00
+            623;RUN;delve:doom_of_mokhaiotl;1;delve=8 t<7:15
+            616;RUN;delve:doom_of_mokhaiotl;1;delve=8 nodmg=boss,hazard
+            617;RUN;delve:doom_of_mokhaiotl;1;delve=8 noprayrestore
+            618;RUN;delve:doom_of_mokhaiotl;1;delve=8 style=melee onehand
+            619;RUN;delve:doom_of_mokhaiotl;1;delve=8 noweapon=DEMONBANE
+            517;RULE;duke_sucellus;1;awakened
+            508;RULE;the_leviathan;1;awakened
+            499;RULE;the_whisperer;1;awakened
+            490;RULE;vardorvis;1;awakened
             86;RULE;dusk;1;nodmg=falling_rocks
             95;STREAK;dusk;10;
             96;STREAK;dusk;20;

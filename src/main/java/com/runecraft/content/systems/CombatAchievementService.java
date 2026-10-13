@@ -75,6 +75,8 @@ public final class CombatAchievementService {
         boolean credited;
         /** The minigame session of a run (it reports the challenge played and conditions it judged itself). */
         MinigameSession session;
+        /** Delve runs: the fight key of the boss being delved (its hits count as the target's). */
+        String target;
 
         Tracker(String key, long now) {
             this.key = key;
@@ -83,7 +85,7 @@ public final class CombatAchievementService {
         }
 
         boolean fight() {
-            return !key.startsWith("mg:") && !key.equals("raid");
+            return !key.startsWith("mg:") && !key.equals("raid") && !key.startsWith("delve:");
         }
     }
 
@@ -101,6 +103,8 @@ public final class CombatAchievementService {
 
     private static final Map<UUID, Tracker> FIGHTS = new HashMap<>();
     private static final Map<UUID, Tracker> RUNS = new HashMap<>();
+    /** Doom of Mokhaiotl delve runs: from the delve 1 fight on, judged at every level completed. */
+    private static final Map<UUID, Tracker> DELVES = new HashMap<>();
     private static final Map<UUID, Map<String, Streak>> STREAKS = new HashMap<>();
     private static final Map<UUID, Map<String, List<Kill>>> WINDOWS = new HashMap<>();
     private static final Map<UUID, Map<String, List<Long>>> DURATIONS = new HashMap<>();
@@ -188,6 +192,16 @@ public final class CombatAchievementService {
             }
             f.m.startPlayers = playersNear(p);
             f.m.maxPlayers = f.m.startPlayers;
+            if (other instanceof com.runecraft.boss.DataBossEntity boss) {
+                f.m.awakened = boss.awakened();
+                f.m.delve = boss.delve();
+                if (boss.delve() == 1) {
+                    Tracker run = new Tracker("delve:" + key, now);
+                    run.target = key;
+                    start(p, run);
+                    DELVES.put(p.getUuid(), run);
+                }
+            }
             RaidInstance raid = RaidManager.of(p);
             if (raid != null) {
                 f.raid = raid;
@@ -275,6 +289,10 @@ public final class CombatAchievementService {
         if (run != null) {
             record(run.m, type, weapon, spell, spec);
         }
+        Tracker delve = DELVES.get(p.getUuid());
+        if (delve != null && delve.target.equals(fightKey(target))) {
+            record(delve.m, type, weapon, spell, spec);
+        }
     }
 
     private static void record(Metrics m, AttackType type, String weapon, String spell, boolean spec) {
@@ -297,7 +315,7 @@ public final class CombatAchievementService {
         String attackerName = nameOf(attacker);
         boolean prayed = protectedFrom(p, style);
         for (Tracker t : trackers(p)) {
-            boolean fromTarget = t.fight() && t.key.equals(attackerKey);
+            boolean fromTarget = t.fight() ? t.key.equals(attackerKey) : t.target != null && t.target.equals(attackerKey);
             if (attacker != null) {
                 t.m.attackers.add(attackerName);
                 if (fromTarget) {
@@ -321,6 +339,10 @@ public final class CombatAchievementService {
         if (r != null) {
             list.add(r);
         }
+        Tracker d = DELVES.get(p.getUuid());
+        if (d != null) {
+            list.add(d);
+        }
         return list;
     }
 
@@ -330,6 +352,7 @@ public final class CombatAchievementService {
         if (!p.isAlive()) {
             FIGHTS.remove(p.getUuid());
             STREAKS.remove(p.getUuid());
+            DELVES.remove(p.getUuid());
             return;
         }
         Tracker f = FIGHTS.get(p.getUuid());
@@ -422,6 +445,8 @@ public final class CombatAchievementService {
         m.minHp = Math.min(m.minHp, hp);
         if (s.prayer() < t.prayer) {
             m.prayerLost = true;
+        } else if (s.prayer() > t.prayer) {
+            m.prayerRestored = true;
         }
         t.prayer = s.prayer();
         if (t.food != null) {
@@ -511,6 +536,9 @@ public final class CombatAchievementService {
         }
         CombatAchievements.FightResult r = m.result();
         SysState.SysPlayer sp = SysState.of(p);
+        if (m.delve > 0) {
+            completeDelve(p, sp, m.delve, now);
+        }
         List<Long> durations = DURATIONS.computeIfAbsent(p.getUuid(), u -> new HashMap<>()).computeIfAbsent(f.key, k -> new ArrayList<>());
         durations.add(m.ticks);
         if (durations.size() > 10) {
@@ -686,6 +714,25 @@ public final class CombatAchievementService {
         m.wornAtEnd.clear();
         m.wornAtEnd.addAll(worn(p));
         SysState.SysPlayer sp = SysState.of(p);
+        for (Task t : CombatAchievements.tasks()) {
+            if (t.track() == Track.RUN && !sp.caDone.contains(t.id()) && t.target().equals(run.key)
+                    && CombatAchievementRules.meets(t.rule(), m)) {
+                counted(p, sp, t);
+            }
+        }
+    }
+
+    /** A delve level was completed: judges the delve run so far (time from the delve 1 fight, conditions over every level). */
+    private static void completeDelve(ServerPlayerEntity p, SysState.SysPlayer sp, int level, long now) {
+        Tracker run = DELVES.get(p.getUuid());
+        if (run == null) {
+            return;
+        }
+        Metrics m = run.m;
+        m.delve = level;
+        m.ticks = now - run.start;
+        m.wornAtEnd.clear();
+        m.wornAtEnd.addAll(worn(p));
         for (Task t : CombatAchievements.tasks()) {
             if (t.track() == Track.RUN && !sp.caDone.contains(t.id()) && t.target().equals(run.key)
                     && CombatAchievementRules.meets(t.rule(), m)) {
