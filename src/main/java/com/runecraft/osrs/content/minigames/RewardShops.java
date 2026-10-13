@@ -39,9 +39,9 @@ public final class RewardShops {
                 .itemReq("elite_void_top", PEST_CONTROL, 200, "void_knight_top")
                 .itemReq("elite_void_robe", PEST_CONTROL, 200, "void_knight_robe")
                 .item("void_seal", PEST_CONTROL, 10)
-                .item("#herbs", 1, PEST_CONTROL, 30)
-                .item("#seeds", 1, PEST_CONTROL, 15)
-                .item("#ores", 1, PEST_CONTROL, 15);
+                .itemSkill("#herbs", 1, PEST_CONTROL, 30, Skill.HERBLORE, 25)
+                .itemSkill("#seeds", 1, PEST_CONTROL, 15, Skill.FARMING, 25)
+                .itemSkill("#ores", 1, PEST_CONTROL, 15, Skill.MINING, 25);
 
         // TzHaar shops (TzHaar-Hur-Tel's equipment and TzHaar-Hur-Lek's ore and gem store), tokkul prices.
         shop("tzhaar", "TzHaar-Hur-Tel's Equipment Store")
@@ -75,34 +75,33 @@ public final class RewardShops {
                 .item("elemental_talisman", PEARLS, 200)
                 .item("pure_essence", 50, PEARLS, 20);
 
-        // Barbarian Assault: Commander Connad (honour points of every role).
+        // Barbarian Assault: Commander Connad (honour points of every role; OSRS Wiki). Items marked
+        // "Queen" on the wiki also spend one Penance Queen kill; the granite body costs coins only.
         RewardShop ba = shop("barbarian_assault", "Commander Connad's Rewards");
-        ba.itemMulti("fighter_torso", allRoles(375));
+        ba.itemMulti("fighter_torso", queen(allRoles(375)));
         ba.itemMulti("penance_gloves", allRoles(150));
-        ba.itemMulti("penance_skirt", allRoles(375));
-        ba.itemMulti("fighter_hat", allRoles(275));
-        ba.itemMulti("ranger_hat", allRoles(275));
-        ba.itemMulti("runner_hat", allRoles(275));
-        ba.itemMulti("healer_hat", allRoles(275));
+        ba.itemMulti("penance_skirt", queen(allRoles(375)));
+        ba.itemMulti("fighter_hat", queen(allRoles(275)));
+        ba.itemMulti("ranger_hat", queen(allRoles(275)));
+        ba.itemMulti("runner_hat", queen(allRoles(275)));
+        ba.itemMulti("healer_hat", queen(allRoles(275)));
         ba.itemMulti("runner_boots", allRoles(100));
-        List<Cost> granite = new ArrayList<>(allRoles(95));
-        granite.add(new Cost(COINS, 95_000));
-        ba.itemMulti("granite_body", granite);
+        ba.itemMulti("granite_body", queen(List.of(new Cost(COINS, 95_000))));
 
-        // Castle Wars: Lanthus (tickets; decorative tiers approx.).
-        RewardShop cw = shop("castle_wars", "Lanthus' Castle Wars Rewards");
+        // Castle Wars: Lanthus' Castle Wars Ticket Exchange (OSRS Wiki prices; each decorative tier
+        // costs ten times the one before).
+        RewardShop cw = shop("castle_wars", "Castle Wars Ticket Exchange");
         String[] tiers = {"red", "white", "gold"};
         for (int i = 0; i < tiers.length; i++) {
-            int m = i + 1;
-            cw.item(tiers[i] + "_decorative_helm", CW_TICKETS, 60 * m)
-                    .item(tiers[i] + "_decorative_body", CW_TICKETS, 120 * m)
-                    .item(tiers[i] + "_decorative_legs", CW_TICKETS, 80 * m)
-                    .item(tiers[i] + "_decorative_shield", CW_TICKETS, 100 * m)
-                    .item(tiers[i] + "_decorative_sword", CW_TICKETS, 50 * m);
+            int m = i == 0 ? 1 : i == 1 ? 10 : 100;
+            cw.item(tiers[i] + "_decorative_helm", CW_TICKETS, (i == 1 ? 4 : 5) * m) // full helm: 5 / 40 / 500
+                    .item(tiers[i] + "_decorative_body", CW_TICKETS, 8 * m)
+                    .item(tiers[i] + "_decorative_legs", CW_TICKETS, 6 * m)
+                    .item(tiers[i] + "_decorative_shield", CW_TICKETS, 6 * m)
+                    .item(tiers[i] + "_decorative_sword", CW_TICKETS, 5 * m);
         }
-        cw.item("saradomin_halo", CW_TICKETS, 75).item("zamorak_halo", CW_TICKETS, 75)
-                .item("saradomin_hood", CW_TICKETS, 10).item("zamorak_hood", CW_TICKETS, 10)
-                .item("castlewars_brace", CW_TICKETS, 30);
+        cw.item("saradomin_halo", CW_TICKETS, 75).item("zamorak_halo", CW_TICKETS, 75).item("guthix_halo", CW_TICKETS, 75)
+                .item("saradomin_hood", CW_TICKETS, 10).item("zamorak_hood", CW_TICKETS, 10);
 
         // Mage Training Arena: Rewards Guardian (telekinetic / alchemist / enchantment / graveyard pizazz).
         RewardShop mta = shop("mage_training_arena", "Mage Training Arena Rewards");
@@ -112,11 +111,29 @@ public final class RewardShops {
         mta.itemMulti("infinity_boots", pizazz(120, 120, 1200, 120));
         mta.itemMulti("infinity_gloves", pizazz(175, 225, 1500, 175));
         mta.itemMulti("beginner_wand", pizazz(30, 30, 300, 30));
-        mta.itemMulti("apprentice_wand", pizazz(60, 60, 600, 60));
-        mta.itemMulti("teacher_wand", pizazz(150, 200, 1500, 150));
-        mta.itemMulti("master_wand", pizazz(240, 240, 2400, 240));
+        // Each wand is an upgrade of the one before it (the old wand is handed in).
+        mta.upgrade("beginner_wand", "apprentice_wand", pizazz(60, 60, 600, 60));
+        mta.upgrade("apprentice_wand", "teacher_wand", pizazz(150, 200, 1500, 150));
+        mta.upgrade("teacher_wand", "master_wand", pizazz(240, 240, 2400, 240));
         mta.itemMulti("mages_book", pizazz(500, 550, 6000, 500));
         mta.unlock("bones_to_peaches", "Bones to Peaches", pizazz(200, 300, 2000, 200));
+        // Runes (per rune; a currency costing 0 points is left out).
+        String[][] runes = {{"mist_rune", "1", "1", "15", "1"}, {"dust_rune", "1", "1", "15", "1"}, {"mud_rune", "1", "1", "15", "1"},
+                {"smoke_rune", "1", "1", "15", "1"}, {"steam_rune", "1", "1", "15", "1"}, {"lava_rune", "1", "1", "15", "1"},
+                {"cosmic_rune", "0", "0", "5", "0"}, {"chaos_rune", "0", "1", "5", "1"}, {"nature_rune", "0", "1", "0", "1"},
+                {"death_rune", "2", "1", "20", "1"}, {"law_rune", "2", "0", "0", "0"}, {"soul_rune", "2", "2", "25", "2"},
+                {"blood_rune", "2", "2", "25", "2"}};
+        for (String[] r : runes) {
+            List<Cost> costs = new ArrayList<>();
+            String[] cur = {MTA_TELEKINETIC, MTA_ALCHEMIST, MTA_ENCHANTMENT, MTA_GRAVEYARD};
+            for (int i = 0; i < 4; i++) {
+                int n = Integer.parseInt(r[i + 1]);
+                if (n > 0) {
+                    costs.add(new Cost(cur[i], n));
+                }
+            }
+            mta.itemMulti(r[0], costs);
+        }
 
         // Hallowed Sepulchre: Mysterious Hallowed Goods (hallowed marks; crystal shard 1, ring 250 per wiki; others approx.).
         shop("hallowed_sepulchre", "Mysterious Hallowed Goods")
@@ -138,10 +155,11 @@ public final class RewardShops {
                 .item("toadflax", ARENA_TICKETS, 3)
                 .item("snapdragon", ARENA_TICKETS, 10);
 
-        // Trouble Brewing: Honest Jimmy (pieces of eight; approx.).
-        RewardShop tb = shop("trouble_brewing", "Honest Jimmy's Rewards");
-        for (String c : new String[]{"blue", "green", "red", "purple"}) {
-            tb.item(c + "_naval_shirt", EIGHT, 10).item(c + "_tricorn_hat", EIGHT, 5).item(c + "_navy_slacks", EIGHT, 10);
+        // Trouble Brewing: Honest Jimmy's House of Stuff (pieces of eight; OSRS Wiki: ten times each item's value,
+        // rum 20).
+        RewardShop tb = shop("trouble_brewing", "Honest Jimmy's House of Stuff");
+        for (String c : MinigameItems.NAVAL_COLOURS) {
+            tb.item(c + "_naval_shirt", EIGHT, 1000).item(c + "_tricorn_hat", EIGHT, 500).item(c + "_navy_slacks", EIGHT, 1000);
         }
         tb.item("bottle_of_rum", EIGHT, 20).item("the_stuff", EIGHT, 50);
 
@@ -176,12 +194,50 @@ public final class RewardShops {
                 .item("hosidius_blueprints", CARPENTER, 2000)
                 .item("steel_nails", 100, CARPENTER, 5);
 
-        // Gnome Restaurant: Aluft Gianne snr.
-        shop("gnome_restaurant", "Aluft Gianne's Rewards")
-                .item("aluft_aloft_box", GNOME_TOKENS, 1)
-                .item("gnome_scarf", GNOME_TOKENS, 10)
-                .item("gnome_goggles", GNOME_TOKENS, 10)
-                .item("mint_cake", GNOME_TOKENS, 1);
+        // Gnome Restaurant: a reward token (12 delivery points) is cashed in for one gnome dish delivered to you.
+        // The scarf, goggles and mint cake are tips from customers (MinigameRules.GnomeRestaurant.TIPS).
+        RewardShop gnome = shop("gnome_restaurant", "Aluft Aloft reward token");
+        for (Object[] dish : MinigameItems.GNOME_DISHES) {
+            gnome.item((String) dish[0], GNOME_TOKENS, 1);
+        }
+
+        // Nightmare Zone: Dom Onion's Reward Shop (OSRS Wiki). Resources and imbues; the potion benefits are not modelled.
+        RewardShop nmz = shop("nightmare_zone", "Dom Onion's Reward Shop")
+                .item("flax", NIGHTMARE_ZONE, 75)
+                .item("bucket_of_sand", NIGHTMARE_ZONE, 200)
+                .item("seaweed", NIGHTMARE_ZONE, 200)
+                .item("compost_potion", NIGHTMARE_ZONE, 5000)
+                .item("air_rune", NIGHTMARE_ZONE, 25)
+                .item("water_rune", NIGHTMARE_ZONE, 25)
+                .item("earth_rune", NIGHTMARE_ZONE, 25)
+                .item("fire_rune", NIGHTMARE_ZONE, 25)
+                .item("rune_essence", NIGHTMARE_ZONE, 60)
+                .item("pure_essence", NIGHTMARE_ZONE, 70)
+                .item("vial_of_water", NIGHTMARE_ZONE, 145);
+        for (Object[] imbue : MinigameRules.Imbues.ITEMS) {
+            nmz.upgrade((String) imbue[0], (String) imbue[1], NIGHTMARE_ZONE, (Integer) imbue[2]);
+        }
+
+        // Soul Wars: Nomad's Soul Wars Reward Shop (zeal; OSRS Wiki). Experience needs level 30 and has no bulk bonus.
+        RewardShop sw = shop("soul_wars", "Soul Wars Reward Shop");
+        for (Skill s : new Skill[]{Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.HITPOINTS}) {
+            sw.xp(s, 30, ZEAL, 1, 30).xp(s, 30, ZEAL, 10, 30).xp(s, 30, ZEAL, 100, 30);
+        }
+        for (Skill s : new Skill[]{Skill.RANGED, Skill.MAGIC}) {
+            sw.xp(s, 27, ZEAL, 1, 30).xp(s, 27, ZEAL, 10, 30).xp(s, 27, ZEAL, 100, 30);
+        }
+        sw.xp(Skill.PRAYER, 14, ZEAL, 1, 30).xp(Skill.PRAYER, 14, ZEAL, 10, 30).xp(Skill.PRAYER, 14, ZEAL, 100, 30);
+        sw.item("soul_cape", ZEAL, 2500);
+        for (Object[] imbue : MinigameRules.Imbues.ITEMS) {
+            sw.upgrade((String) imbue[0], (String) imbue[1], ZEAL, (Integer) imbue[3]);
+        }
+    }
+
+    /** Adds the one Penance Queen kill spent on the queen-locked Barbarian Assault rewards. */
+    private static List<Cost> queen(List<Cost> costs) {
+        List<Cost> list = new ArrayList<>(costs);
+        list.add(new Cost(BA_QUEEN, 1));
+        return list;
     }
 
     private RewardShops() {

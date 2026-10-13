@@ -33,6 +33,7 @@ public final class MinigameWorld {
             EXTRA_ENTRANCES.put("mta_" + room + "_entrance", Minigame.MAGE_TRAINING_ARENA);
         }
         EXTRA_ENTRANCES.put("warriors_guild_cyclops_entrance", Minigame.WARRIORS_GUILD);
+        EXTRA_ENTRANCES.put("nightmare_zone_hard_entrance", Minigame.NIGHTMARE_ZONE);
         SHOP_BLOCKS.put("tzhaar_store", "tzhaar");
         SHOP_BLOCKS.put("pest_control_rewards", "pest_control");
         SHOP_BLOCKS.put("guardians_of_the_rift_rewards", "guardians_of_the_rift");
@@ -46,6 +47,8 @@ public final class MinigameWorld {
         SHOP_BLOCKS.put("giants_foundry_rewards", "giants_foundry");
         SHOP_BLOCKS.put("mahogany_homes_rewards", "mahogany_homes");
         SHOP_BLOCKS.put("gnome_restaurant_rewards", "gnome_restaurant");
+        SHOP_BLOCKS.put("nightmare_zone_rewards", "nightmare_zone");
+        SHOP_BLOCKS.put("soul_wars_rewards", "soul_wars");
     }
 
     /** Interactive blocks placed inside the instanced arenas: id, name, colour, look. */
@@ -136,6 +139,11 @@ public final class MinigameWorld {
             // Volcanic Mine
             {"vm_boulder", "Boulder", "5A4A40", "rock"},
             {"vm_vent", "Gas chamber", "C05020", "fire_lava"},
+            // Soul Wars
+            {"sw_soul_obelisk", "Soul Obelisk", "8A3AC0", "obelisk"},
+            {"sw_graveyard", "Graveyard", "6A6A6A", "statue"},
+            // Tears of Guthix
+            {"tog_weeping_wall", "Weeping wall", "4A6A8A", "water_spot"},
             // Shared
             {"minigame_exit", "Exit portal", "C0C0FF", "portal_glow"}};
 
@@ -203,6 +211,9 @@ public final class MinigameWorld {
                 case FISHING_TRAWLER -> "Port Khazard";
                 case CHAMPIONS_CHALLENGE -> "Champions' Guild arena";
                 case VOLCANIC_MINE -> "Volcanic Mine entrance";
+                case NIGHTMARE_ZONE -> "Nightmare Zone";
+                case SOUL_WARS -> "Isle of Souls";
+                case TEARS_OF_GUTHIX -> "Chasm of Tears entrance";
                 default -> m.displayName();
             };
             list.add(PlaceDef.of(m.place(), name, m.entranceX(), m.entranceY(), m.style(), blocks.get(m.place())));
@@ -248,6 +259,9 @@ public final class MinigameWorld {
         list.add(NpcDef.of("mg_murphy", "Murphy", Minigame.FISHING_TRAWLER.place(), 2, 2, 0xC09070, 0x3A6A8A, 0x2A3A4A, 0x3A3A3A));
         list.add(NpcDef.of("mg_brian_orichard", "Brian O'Richard", Minigame.ROGUES_DEN.place(), 2, 2, 0xC8A080, 0x3A3A40, 0x2A2A30,
                 0x2A2A30));
+        list.add(NpcDef.of("mg_dominic_onion", "Dominic Onion", Minigame.NIGHTMARE_ZONE.place(), 2, 2, 0xC8A080, 0x4A6AA0, 0x3A4A7A,
+                0xE0E0E0));
+        list.add(NpcDef.of("mg_nomad", "Nomad", Minigame.SOUL_WARS.place(), 2, 2, 0xC09070, 0x5A3A8A, 0x3A2A5A, 0x2A2A2A));
         list.add(NpcDef.of("mg_mortton_priest", "Ulsquire Shauncy", Minigame.SHADES_OF_MORTTON.place(), 2, 2, 0xB0B0A0, 0x3A3A3A,
                 0x2A2A2A, 0x8A8A8A));
         return list;
@@ -267,7 +281,9 @@ public final class MinigameWorld {
             Map.entry("mg_honest_jimmy", "trouble_brewing"),
             Map.entry("mg_farmer_gricoller", "tithe_farm"),
             Map.entry("mg_kovac", "giants_foundry"),
-            Map.entry("mg_amy", "mahogany_homes"));
+            Map.entry("mg_amy", "mahogany_homes"),
+            Map.entry("mg_dominic_onion", "nightmare_zone"),
+            Map.entry("mg_nomad", "soul_wars"));
 
     public static List<CollectionLogData.Page> collectionLog() {
         List<CollectionLogData.Page> pages = new ArrayList<>();
@@ -289,7 +305,7 @@ public final class MinigameWorld {
         pages.add(new CollectionLogData.Page(c, "Barbarian Assault", List.of("pet_penance_queen", "fighter_torso", "penance_gloves",
                 "penance_skirt", "fighter_hat", "ranger_hat", "runner_hat", "healer_hat", "runner_boots", "granite_body")));
         pages.add(new CollectionLogData.Page(c, "Castle Wars", List.of("saradomin_halo", "zamorak_halo", "saradomin_hood",
-                "zamorak_hood", "castlewars_brace", "red_decorative_helm", "red_decorative_body", "white_decorative_helm",
+                "zamorak_hood", "guthix_halo", "red_decorative_helm", "red_decorative_body", "white_decorative_helm",
                 "white_decorative_body", "gold_decorative_helm", "gold_decorative_body")));
         List<String> defenders = new ArrayList<>();
         for (String t : MinigameItems.DEFENDER_TIERS) {
@@ -305,8 +321,12 @@ public final class MinigameWorld {
                 "hallowed_ring", "strange_old_lockpick")));
         pages.add(new CollectionLogData.Page(c, "Brimhaven Agility Arena", List.of("pirates_hook")));
         pages.add(new CollectionLogData.Page(c, "Gnome Restaurant", List.of("gnome_scarf", "gnome_goggles", "mint_cake")));
-        pages.add(new CollectionLogData.Page(c, "Trouble Brewing", List.of("blue_naval_shirt", "blue_tricorn_hat", "blue_navy_slacks",
-                "green_naval_shirt", "red_naval_shirt", "purple_naval_shirt", "the_stuff")));
+        List<String> naval = new ArrayList<>();
+        for (String colour : MinigameItems.NAVAL_COLOURS) {
+            naval.addAll(List.of(colour + "_naval_shirt", colour + "_tricorn_hat", colour + "_navy_slacks"));
+        }
+        naval.add("the_stuff");
+        pages.add(new CollectionLogData.Page(c, "Trouble Brewing", naval));
         pages.add(new CollectionLogData.Page(c, "Shades of Mort'ton", List.of("flamtaer_hammer", "gold_shade_key")));
         pages.add(new CollectionLogData.Page(c, "Tithe Farm", List.of("farmers_strawhat", "farmers_jacket", "farmers_boro_trousers",
                 "farmers_boots", "gricollers_can", "seed_box", "herb_sack")));
@@ -315,6 +335,7 @@ public final class MinigameWorld {
         pages.add(new CollectionLogData.Page(c, "Mahogany Homes", List.of("carpenters_helmet", "carpenters_shirt", "carpenters_trousers",
                 "carpenters_boots", "plank_sack", "amys_saw", "hosidius_blueprints")));
         pages.add(new CollectionLogData.Page(c, "Fishing Trawler", List.of("angler_hat", "angler_top", "angler_waders", "angler_boots")));
+        pages.add(new CollectionLogData.Page(c, "Soul Wars", List.of("soul_cape")));
         pages.add(new CollectionLogData.Page(c, "Rogues' Den", List.of("rogue_mask", "rogue_top", "rogue_trousers", "rogue_gloves",
                 "rogue_boots")));
         return pages;

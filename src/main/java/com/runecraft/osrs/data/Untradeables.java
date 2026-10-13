@@ -34,6 +34,9 @@ public final class Untradeables {
         add("void_knight_top", "void_knight_robe", "void_melee_helm", "void_ranger_helm", "void_mage_helm", "elite_void_top",
                 "elite_void_robe", "void_knight_mace", "void_knight_gloves", "fighter_torso", "penance_skirt", "fighter_hat",
                 "ranger_hat", "runner_hat", "healer_hat", "runner_boots");
+        // Nightmare Zone / Soul Wars imbues and the soul cape.
+        add("berserker_ring_i", "archers_ring_i", "seers_ring_i", "warrior_ring_i", "tyrannical_ring_i", "treasonous_ring_i",
+                "ring_of_the_gods_i", "granite_ring_i", "ring_of_suffering_i", "salve_amulet_i", "salve_amulet_ei", "soul_cape");
         // Recipe for Disaster gloves.
         add("rfd_bronze_gloves", "rfd_iron_gloves", "rfd_steel_gloves", "rfd_black_gloves", "rfd_mithril_gloves",
                 "rfd_adamant_gloves", "rfd_rune_gloves", "rfd_dragon_gloves", "barrows_gloves");

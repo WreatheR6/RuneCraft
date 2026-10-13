@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "runecraft:item/grey_navy_slacks"
+  }
+}

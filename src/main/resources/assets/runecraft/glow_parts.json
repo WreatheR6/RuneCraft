@@ -124,6 +124,14 @@
   "artio": [
     "eyes"
   ],
+  "avatar_of_creation": [
+    "core",
+    "head"
+  ],
+  "avatar_of_destruction": [
+    "core",
+    "head"
+  ],
   "baba": [
     "eye_l",
     "eye_r",
@@ -1397,6 +1405,18 @@
   "ninja_impling": [
     "head",
     "sparkle"
+  ],
+  "nmz_black_knight_titan": [
+    "head"
+  ],
+  "nmz_count_draynor": [
+    "head"
+  ],
+  "nmz_me": [
+    "head"
+  ],
+  "nmz_tree_spirit": [
+    "head"
   ],
   "nylocas_athanatos": [
     "eyes_main"

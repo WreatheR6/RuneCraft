@@ -20,13 +20,16 @@ import java.util.List;
  * The Mage Training Arena's four rooms (entered from separate entrances):
  * <ul>
  * <li>Telekinetic Theatre: Telekinetic Grab (1 law, 1 air) the guardian statue three times to
- * solve a maze: 2 points, +8 every fifth maze. Magic 33.</li>
- * <li>Alchemists' Playground: find the item in the cupboards and High Alchemy it (1 nature, 5
- * fire) into the coin collector: 1 point per 100 coins. Magic 55.</li>
- * <li>Enchanting Chamber: take shapes from the piles and enchant them into the hole (1 cosmic
- * each): 2 points per shape. Magic 7.</li>
- * <li>Creature Graveyard: gather bones from the piles while dodging falling bones and cast Bones
- * to Bananas (1 nature, 2 water, 2 earth) into the food chute: 1 point per 4 bones. Magic 15.</li>
+ * solve a maze: 2 points, +8 points and 10 law runes every fifth maze. Magic 33.</li>
+ * <li>Alchemists' Playground: find the item in the cupboards and alch it (Low Level Alchemy from
+ * 21, High from 55) into the coin collector. Items are worth 1, 5, 8, 15 or 30 coins, rotating
+ * every minute; 1 point and 10 coins per 100 coins deposited, plus 2 Magic XP per coin.</li>
+ * <li>Enchanting Chamber: take shapes from the piles and enchant them with your best enchantment
+ * spell (1 cosmic each): points equal to the spell's level, doubled every tenth shape, +2 for the
+ * indicated shape. Magic 7.</li>
+ * <li>Creature Graveyard: gather bones while dodging falling bones (2 damage) and cast Bones to
+ * Bananas (or Bones to Peaches once unlocked) into the food chute: 1 point per 16 bananas or 8
+ * peaches, at most 3 per deposit. Magic 15.</li>
  * </ul>
  */
 public class MageArenaSession extends MinigameSession {
@@ -35,6 +38,9 @@ public class MageArenaSession extends MinigameSession {
     private int mazes;
     private int cupboard;
     private int[] statue = {0, 0};
+    private int enchanted;
+    /** Alchemy value index (into MageArena.ALCHEMY_VALUES) of the cupboard item right now. */
+    private int alchValue;
 
     public MageArenaSession(int id, int slot, ServerWorld world, String variant) {
         super(Minigame.MAGE_TRAINING_ARENA, id, slot, world, variant);
@@ -57,7 +63,7 @@ public class MageArenaSession extends MinigameSession {
         return 14;
     }
 
-    private static final int[] MAGIC = {33, 55, 7, 15};
+    private static final int[] MAGIC = MageArena.ROOM_MAGIC;
 
     @Override
     protected void build() {
@@ -133,6 +139,12 @@ public class MageArenaSession extends MinigameSession {
     }
 
     private void points(ServerPlayerEntity p, String currency, int amount) {
+        int have = MinigameData.of(p).points(p.getUuid(), MinigameCurrencies.key(currency));
+        amount = Math.max(0, Math.min(amount, MageArena.MAX_POINTS[room] - have));
+        if (amount == 0) {
+            Msg.game(p, "You can't hold any more " + MinigameCurrencies.name(currency) + ".");
+            return;
+        }
         addPoints(p, currency, amount);
         Msg.action(p, "+" + amount + " " + MinigameCurrencies.name(currency));
     }
@@ -149,8 +161,12 @@ public class MageArenaSession extends MinigameSession {
                 if (++statueHits >= 3) {
                     statueHits = 0;
                     mazes++;
-                    int pts = MageArena.TELEKINETIC_MAZE + (mazes % MageArena.TELEKINETIC_BONUS_EVERY == 0 ? MageArena.TELEKINETIC_BONUS : 0);
+                    boolean bonus = mazes % MageArena.TELEKINETIC_BONUS_EVERY == 0;
+                    int pts = MageArena.TELEKINETIC_MAZE + (bonus ? MageArena.TELEKINETIC_BONUS : 0);
                     points(player, MinigameCurrencies.MTA_TELEKINETIC, pts);
+                    if (bonus) {
+                        reward(player, "law_rune", MageArena.TELEKINETIC_BONUS_LAWS);
+                    }
                     Msg.game(player, "Congratulations, you have solved the maze!");
                     xp(player, Skill.MAGIC, 8 * level(player, Skill.MAGIC) / 10.0);
                 }
@@ -174,17 +190,17 @@ public class MageArenaSession extends MinigameSession {
                     Msg.game(player, "Search the cupboards for items to alchemise.");
                     return true;
                 }
-                if (!runes(player, "nature_rune", items, "fire_rune", 5 * items)) {
+                boolean high = level(player, Skill.MAGIC) >= 55;
+                if (!runes(player, "nature_rune", items, "fire_rune", (high ? 5 : 3) * items)) {
                     return true;
                 }
                 Inv.remove(player, "alchemy_item", items);
-                int coins = 0;
-                for (int i = 0; i < items; i++) {
-                    coins += 300 + random.nextInt(900);
-                }
-                xp(player, Skill.MAGIC, 65 * items);
-                points(player, MinigameCurrencies.MTA_ALCHEMIST, Math.max(1, coins / MageArena.ALCHEMY_COINS_PER_POINT));
-                reward(player, "coins", coins / 10);
+                int coins = items * MageArena.ALCHEMY_VALUES[alchValue];
+                xp(player, Skill.MAGIC, (high ? 65 : 31) * items + MageArena.ALCHEMY_XP_PER_COIN * coins);
+                int pts = MageArena.alchemistPoints(coins, random.nextDouble());
+                points(player, MinigameCurrencies.MTA_ALCHEMIST, pts);
+                reward(player, "coins", pts * MageArena.ALCHEMY_COINS_REWARD);
+                Msg.game(player, "You alch " + items + " item" + (items > 1 ? "s" : "") + " for " + coins + " coins and deposit them.");
                 return true;
             }
             case "mta_shape_pile" -> {
@@ -204,8 +220,13 @@ public class MageArenaSession extends MinigameSession {
                 }
                 Inv.remove(player, "cosmic_rune", cosmic);
                 Inv.remove(player, "enchantment_shape", cosmic);
-                xp(player, Skill.MAGIC, 17.5 * cosmic);
-                points(player, MinigameCurrencies.MTA_ENCHANTMENT, 2 * cosmic / MageArena.ENCHANT_SHAPES_PER_POINT);
+                int spell = Math.max(1, MageArena.enchantLevel(level(player, Skill.MAGIC)));
+                xp(player, Skill.MAGIC, MageArena.ENCHANT_XP[spell - 1] * cosmic);
+                int pts = 0;
+                for (int i = 0; i < cosmic; i++) {
+                    pts += MageArena.enchantPoints(spell, ++enchanted, random.nextInt(4) == 0, false);
+                }
+                points(player, MinigameCurrencies.MTA_ENCHANTMENT, pts);
                 return true;
             }
             case "mta_bone_pile" -> {
@@ -214,16 +235,24 @@ public class MageArenaSession extends MinigameSession {
             }
             case "mta_food_chute" -> {
                 int bones = Inv.count(player, "graveyard_bones");
-                if (bones < MageArena.GRAVEYARD_BONES_PER_POINT) {
-                    Msg.game(player, "You need at least " + MageArena.GRAVEYARD_BONES_PER_POINT + " bones.");
+                if (bones == 0) {
+                    Msg.game(player, "Gather bones from the piles first.");
                     return true;
                 }
-                if (!runes(player, "nature_rune", 1, "water_rune", 2, "earth_rune", 2)) {
+                boolean peaches = MinigameData.of(player).flag(player.getUuid(), "bones_to_peaches") && level(player, Skill.MAGIC) >= 60;
+                if (peaches ? !runes(player, "nature_rune", 2, "water_rune", 4, "earth_rune", 4)
+                        : !runes(player, "nature_rune", 1, "water_rune", 2, "earth_rune", 2)) {
                     return true;
                 }
                 Inv.remove(player, "graveyard_bones", bones);
-                xp(player, Skill.MAGIC, 25);
-                points(player, MinigameCurrencies.MTA_GRAVEYARD, bones / MageArena.GRAVEYARD_BONES_PER_POINT);
+                int fruit = 0;
+                for (int i = 0; i < bones; i++) {
+                    fruit += 1 + random.nextInt(4); // each bone type turns into 1-4 fruit
+                }
+                xp(player, Skill.MAGIC, peaches ? 35.5 : 25);
+                int pts = MageArena.graveyardPoints(fruit, peaches, random.nextDouble());
+                points(player, MinigameCurrencies.MTA_GRAVEYARD, pts);
+                Msg.game(player, "You deposit " + fruit + (peaches ? " peaches." : " bananas."));
                 return true;
             }
             default -> {
@@ -234,15 +263,30 @@ public class MageArenaSession extends MinigameSession {
 
     @Override
     protected void gameTick() {
+        if (room == 1 && ticks % MageArena.ALCHEMY_ROTATE_TICKS == 0) {
+            alchValue = random.nextInt(MageArena.ALCHEMY_VALUES.length);
+            cupboard = random.nextInt(8);
+            broadcast("The Alchemy Guardian rearranges the cupboards: items are now worth "
+                    + MageArena.ALCHEMY_VALUES[alchValue] + " coins.");
+        }
         if (room == 3 && ticks % 8 == 0) {
             for (ServerPlayerEntity p : online()) {
                 if (random.nextInt(3) == 0) {
                     world.spawnParticles(ParticleTypes.WHITE_ASH, p.getX(), p.getY() + 3, p.getZ(), 15, 0.5, 0.5, 0.5, 0);
-                    hurt(p, 1 + random.nextInt(2));
+                    hurt(p, MageArena.GRAVEYARD_BONE_DAMAGE);
                     Msg.action(p, "You're hit by falling bones!");
                 }
             }
         }
+    }
+
+    @Override
+    protected void onDeath(ServerPlayerEntity player) {
+        if (room == 3) {
+            int have = MinigameData.of(player).points(player.getUuid(), "mta_graveyard");
+            addPoints(player, MinigameCurrencies.MTA_GRAVEYARD, -Math.min(have, MageArena.GRAVEYARD_DEATH_PENALTY));
+        }
+        super.onDeath(player);
     }
 
     @Override

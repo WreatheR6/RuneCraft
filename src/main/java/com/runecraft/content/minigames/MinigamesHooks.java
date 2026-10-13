@@ -43,9 +43,20 @@ public final class MinigamesHooks implements ModuleHooks {
         for (Minigame m : Minigame.values()) {
             BlockHooks.register(m.entranceBlock(), (player, pos, state) -> MinigameManager.enter(player, m, m.entranceBlock()));
         }
-        // The Volcanic Mine entrance is a style-NONE place beside the islands module's lobby building: only its portal is built.
-        com.runecraft.world.LandmarkBuilder.registerCustom(Minigame.VOLCANIC_MINE.place(), (world, centre) ->
-                world.setBlockState(centre.up(), Arena.module(Minigame.VOLCANIC_MINE.entranceBlock())));
+        // Style-NONE entrances (Volcanic Mine beside the islands module's lobby, Nightmare Zone by Yanille, the Chasm of
+        // Tears beside Juna) build nothing but their portals and reward chests, in a row.
+        java.util.Map<String, java.util.List<String>> placeBlocks = MinigameWorld.placeBlocks();
+        for (Minigame m : Minigame.values()) {
+            if (m.style() != com.runecraft.osrs.content.PlaceDef.Style.NONE) {
+                continue;
+            }
+            java.util.List<String> blocks = placeBlocks.get(m.place());
+            com.runecraft.world.LandmarkBuilder.registerCustom(m.place(), (world, centre) -> {
+                for (int i = 0; i < blocks.size(); i++) {
+                    world.setBlockState(centre.up().east(i * 2), Arena.module(blocks.get(i)));
+                }
+            });
+        }
         for (Map.Entry<String, Minigame> e : MinigameWorld.EXTRA_ENTRANCES.entrySet()) {
             BlockHooks.register(e.getKey(), (player, pos, state) -> MinigameManager.enter(player, e.getValue(), e.getKey()));
         }

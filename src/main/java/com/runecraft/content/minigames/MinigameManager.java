@@ -166,6 +166,9 @@ public final class MinigameManager {
             if (skills.combatLevel() < need) {
                 return "You need a combat level of " + need + " to board the " + MinigameRules.PestControl.TIERS[tier] + " lander.";
             }
+            if (MinigameData.of(player).points(player.getUuid(), "pest_control") >= MinigameRules.PestControl.MAX_POINTS) {
+                return "Squire: You have " + MinigameRules.PestControl.MAX_POINTS + " commendation points already. Spend some first!";
+            }
             return null;
         }
         if (game == Minigame.WARRIORS_GUILD) {
@@ -188,8 +191,21 @@ public final class MinigameManager {
         if (game == Minigame.CHAMPIONS_CHALLENGE) {
             return com.runecraft.content.minigames.games.ChampionsSession.requirement(player);
         }
-        if (game == Minigame.ROGUES_DEN && skills.level(Skill.AGILITY) < 50) {
-            return "You need an Agility level of 50 to enter the Rogues' Den.";
+        if (game == Minigame.ROGUES_DEN && skills.level(Skill.AGILITY) < MinigameRules.RoguesDen.LEVEL) {
+            return "You need an Agility level of " + MinigameRules.RoguesDen.LEVEL + " to enter the Rogues' Den maze.";
+        }
+        if (game == Minigame.NIGHTMARE_ZONE) {
+            return com.runecraft.content.minigames.games.NightmareZoneSession.requirement(player, variant);
+        }
+        if (game == Minigame.SOUL_WARS) {
+            if (skills.combatLevel() < MinigameRules.SoulWars.COMBAT_LEVEL || skills.totalLevel() < MinigameRules.SoulWars.TOTAL_LEVEL) {
+                return "You need a combat level of " + MinigameRules.SoulWars.COMBAT_LEVEL + " and a total level of "
+                        + MinigameRules.SoulWars.TOTAL_LEVEL + " to play Soul Wars.";
+            }
+            return null;
+        }
+        if (game == Minigame.TEARS_OF_GUTHIX) {
+            return com.runecraft.content.minigames.games.TearsOfGuthixSession.requirement(player);
         }
         if (game.skill() != null && skills.level(game.skill()) < game.level()) {
             return "You need " + Msg.article(game.skill().displayName())
@@ -233,6 +249,9 @@ public final class MinigameManager {
             case ROGUES_DEN -> new RoguesDenSession(id, slot, world, variant);
             case CHAMPIONS_CHALLENGE -> new com.runecraft.content.minigames.games.ChampionsSession(id, slot, world, variant);
             case VOLCANIC_MINE -> new com.runecraft.content.minigames.games.VolcanicMineSession(id, slot, world, variant);
+            case NIGHTMARE_ZONE -> new com.runecraft.content.minigames.games.NightmareZoneSession(id, slot, world, variant);
+            case SOUL_WARS -> new com.runecraft.content.minigames.games.SoulWarsSession(id, slot, world, variant);
+            case TEARS_OF_GUTHIX -> new com.runecraft.content.minigames.games.TearsOfGuthixSession(id, slot, world, variant);
         };
     }
 

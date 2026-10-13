@@ -171,8 +171,8 @@ class MinigamesContentTest {
         assertEquals(200, cost(pc, "elite_void_top"));
         RewardShop ba = RewardShops.get("barbarian_assault");
         RewardShop.Entry torso = entry(ba, "fighter_torso");
-        assertEquals(4, torso.costs().size());
-        torso.costs().forEach(c -> assertEquals(375, c.amount()));
+        assertEquals(5, torso.costs().size()); // four roles + one Penance Queen kill
+        torso.costs().stream().filter(c -> !c.currency().equals(MinigameCurrencies.BA_QUEEN)).forEach(c -> assertEquals(375, c.amount()));
         RewardShop mta = RewardShops.get("mage_training_arena");
         assertEquals(List.of(240, 240, 2400, 240), entry(mta, "master_wand").costs().stream().map(RewardShop.Cost::amount).toList());
         assertEquals(800, cost(RewardShops.get("brimhaven_agility_arena"), "pirates_hook"));
@@ -192,6 +192,8 @@ class MinigamesContentTest {
         bal.put(MinigameCurrencies.BA_COLLECTOR, 375);
         assertFalse(torso.affordable(bal, 1));
         bal.put(MinigameCurrencies.BA_HEALER, 400);
+        assertFalse(torso.affordable(bal, 1));
+        bal.put(MinigameCurrencies.BA_QUEEN, 1);
         assertTrue(torso.affordable(bal, 1));
         assertFalse(torso.affordable(bal, 2));
     }
@@ -268,7 +270,7 @@ class MinigamesContentTest {
         assertEquals(-1, MinigameRules.TitheFarm.seedFor(30));
         assertEquals(3, MinigameRules.MahoganyHomes.tierFor(70));
         assertEquals(10, MinigameRules.BarbarianAssault.WAVES);
-        assertEquals(110, MinigameRules.BarbarianAssault.fullGameHonour());
+        assertEquals(370, MinigameRules.BarbarianAssault.fullGameHonour(0));
         for (int r = 1; r <= 8; r++) {
             for (double x = 0; x < 1; x += 0.1) {
                 int a = MinigameRules.PyramidPlunder.artefact(r, x);

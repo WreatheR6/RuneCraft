@@ -88,6 +88,32 @@ public final class MinigameItems {
         mahoganyHomes(items);
         trawler(items);
         roguesDen(items);
+        imbues(items);
+    }
+
+    // ------------------------------------------------------------------ Nightmare Zone / Soul Wars
+    /**
+     * Imbued items made at the Nightmare Zone or Soul Wars (black mask (i) and slayer helmet (i)
+     * belong to the slayer module). They're worn in the ring/neck slots through the systems module.
+     */
+    private static void imbues(ItemSink items) {
+        String[][] rings = {{"berserker_ring_i", "Berserker ring (i)", "8A2A2A"}, {"archers_ring_i", "Archers ring (i)", "3A8A3A"},
+                {"seers_ring_i", "Seers ring (i)", "3A3A9A"}, {"warrior_ring_i", "Warrior ring (i)", "A0A0A0"},
+                {"tyrannical_ring_i", "Tyrannical ring (i)", "B04A20"}, {"treasonous_ring_i", "Treasonous ring (i)", "3A8A3A"},
+                {"ring_of_the_gods_i", "Ring of the gods (i)", "E0C040"}, {"granite_ring_i", "Granite ring (i)", "7A7A7A"},
+                {"ring_of_suffering_i", "Ring of suffering (i)", "F0A020"}};
+        for (String[] r : rings) {
+            items.add(r[0], r[1], Kind.SIMPLE, "ring", Integer.parseInt(r[2], 16)).value(1).stack(1)
+                    .examine("An imbued ring: its bonuses are doubled.");
+        }
+        items.add("salve_amulet_i", "Salve amulet(i)", Kind.SIMPLE, "amulet", 0x7AE0B0).value(1).stack(1)
+                .examine("An imbued salve amulet: also boosts Ranged and Magic against the undead.");
+        items.add("salve_amulet_ei", "Salve amulet(ei)", Kind.SIMPLE, "amulet", 0x5AF0A0).value(1).stack(1)
+                .examine("An imbued, enchanted salve amulet: +20% in every style against the undead.");
+        items.add("soul_cape", "Soul cape", Kind.SIMPLE, "cape", 0x8A3AC0).value(1).stack(1)
+                .examine("A cape from the Isle of Souls. (2,500 zeal)");
+        simple(items, "soul_fragment", "Soul fragment", "shard", 0xB080FF, 0, "Lightly pulsing with energy. Offer it at the Soul Obelisk.");
+        simple(items, "soul_wars_bones", "Bones", "bones", 0xE8E0D0, 0, "Bury these in your graveyard to strengthen your Avatar.");
     }
 
     // ------------------------------------------------------------------ TzHaar
@@ -140,7 +166,7 @@ public final class MinigameItems {
                 s(0, 0, 0, 0, 0, 30, 30, 30, 30, 30, 0, 0, 0, 0), req).tier("void")
                 .examine("Leg armour from the order of the Void Knights.");
         single(items, "void_knight_gloves", "Void knight gloves", "boots", 0x4A4A4A, 1,
-                "Gloves from the order of the Void Knights. (Counts towards the Void set while carried.)");
+                "Gloves from the order of the Void Knights. Worn in the hands slot; part of the Void set.");
         wear(items, "void_melee_helm", "Void melee helm", "full_helm", 0x6A3A2A, Slot.HEAD, 1,
                 s(0, 0, 0, 0, 0, 6, 6, 6, 6, 6, 0, 0, 0, 0), req).tier("void");
         wear(items, "void_ranger_helm", "Void ranger helm", "full_helm", 0x3A6A2A, Slot.HEAD, 1,
@@ -278,12 +304,16 @@ public final class MinigameItems {
                     s(38, 47, -2, 0, 0, 0, 3, 2, 0, 0, 49, 0, 0, 0), 5, AttackType.SLASH, WeaponClass.MELEE, Skill.ATTACK, 40)
                     .tier("decorative");
         }
-        wear(items, "saradomin_halo", "Saradomin halo", "full_helm", 0xE0E0FF, Slot.HEAD, 1,
-                s(0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 0, 0, 0, 0)).examine("Castle Wars: worth 100 tickets.");
-        wear(items, "zamorak_halo", "Zamorak halo", "full_helm", 0xE04040, Slot.HEAD, 1,
-                s(0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 0, 0, 0, 0)).examine("Castle Wars: worth 100 tickets.");
+        EquipmentStats halo = s(0, 0, 0, 0, 0, 11, 12, 10, 11, -1, 0, 0, 0, 3);
+        wear(items, "saradomin_halo", "Saradomin halo", "full_helm", 0xE0E0FF, Slot.HEAD, 1, halo)
+                .examine("A halo of Saradomin. (75 Castle Wars tickets)");
+        wear(items, "zamorak_halo", "Zamorak halo", "full_helm", 0xE04040, Slot.HEAD, 1, halo)
+                .examine("A halo of Zamorak. (75 Castle Wars tickets)");
+        wear(items, "guthix_halo", "Guthix halo", "full_helm", 0x40C040, Slot.HEAD, 1, halo)
+                .examine("A halo of Guthix. (75 Castle Wars tickets)");
+        // Legacy carried copy; the real (wearable, enchanted emerald) bracelet is castle_wars_bracelet.
         single(items, "castlewars_brace", "Castle wars bracelet", "ring", 0xE0C060, 1,
-                "+20% damage against flag carriers while carried.");
+                "+20% damage against flag carriers.");
         wear(items, "saradomin_hood", "Saradomin hood", "cowl", 0x3060E0, Slot.HEAD, 1, EquipmentStats.NONE);
         wear(items, "zamorak_hood", "Zamorak hood", "cowl", 0xC02020, Slot.HEAD, 1, EquipmentStats.NONE);
     }
@@ -320,7 +350,7 @@ public final class MinigameItems {
         wear(items, "infinity_top", "Infinity top", "leather_body", inf, Slot.CHEST, 1, s(0, 0, 0, 22, 0, 0, 0, 0, 22, 0, 0, 0, 0, 0), req);
         wear(items, "infinity_bottoms", "Infinity bottoms", "chaps", inf, Slot.LEGS, 1, s(0, 0, 0, 17, 0, 0, 0, 0, 17, 0, 0, 0, 0, 0), req);
         wear(items, "infinity_boots", "Infinity boots", "boots", inf, Slot.FEET, 1, s(0, 0, 0, 5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0), req);
-        single(items, "infinity_gloves", "Infinity gloves", "boots", inf, 1, "Magical gloves (+5 Magic while carried in spirit).");
+        single(items, "infinity_gloves", "Infinity gloves", "boots", inf, 1, "Magical gloves. Worn in the hands slot.");
         String[][] wands = {{"beginner_wand", "Beginner wand", "5", "1"}, {"apprentice_wand", "Apprentice wand", "10", "1"},
                 {"teacher_wand", "Teacher wand", "15", "1"}, {"master_wand", "Master wand", "20", "50"}};
         for (String[] w : wands) {
@@ -404,13 +434,18 @@ public final class MinigameItems {
     }
 
     // ------------------------------------------------------------------ Trouble Brewing
+    /** Honest Jimmy's seven naval clothing colours. */
+    public static final List<String> NAVAL_COLOURS = List.of("blue", "green", "red", "brown", "black", "purple", "grey");
+    private static final String[] NAVAL_RGB = {"3050C0", "30A040", "C03030", "6A4A2A", "2A2A2A", "8030A0", "8A8A8A"};
+
     private static void troubleBrewing(ItemSink items) {
         simple(items, "pieces_of_eight", "Pieces of eight", "coins", 0xE0C030, 1, "Pirate currency from Mos Le'Harmless.");
         simple(items, "bitternut", "Bitternut", "produce", 0x6A4A2A, 0, "A brewing ingredient.");
         simple(items, "scrapey_tree_bark", "Scrapey tree bark", "log", 0x8A6A4A, 0, "A brewing ingredient.");
         simple(items, "sweetgrubs", "Sweetgrubs", "bait", 0xE0D080, 0, "A brewing ingredient.");
         items.add("bottle_of_rum", "Karamjan rum", Kind.FOOD, "beer", 0xA04020).value(30).heal(5).stack(16);
-        for (String[] c : new String[][]{{"blue", "3050C0"}, {"green", "30A040"}, {"red", "C03030"}, {"purple", "8030A0"}}) {
+        for (int i = 0; i < NAVAL_COLOURS.size(); i++) {
+            String[] c = {NAVAL_COLOURS.get(i), NAVAL_RGB[i]};
             int col = Integer.parseInt(c[1], 16);
             String cap = Character.toUpperCase(c[0].charAt(0)) + c[0].substring(1);
             wear(items, c[0] + "_naval_shirt", cap + " naval shirt", "leather_body", col, Slot.CHEST, 1, EquipmentStats.NONE);

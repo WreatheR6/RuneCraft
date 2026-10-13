@@ -21,8 +21,8 @@ import java.util.UUID;
 /**
  * Castle Wars: Saradomin against Zamorak. Steal the enemy standard from their castle and bring it
  * to your own flag stand while your own standard is home. Players on opposing teams fight with
- * OSRS melee; a carrier who dies drops the standard and it returns to its stand. Winners get two
- * tickets, everyone else one.
+ * OSRS melee; a carrier who dies drops the standard and it returns to its stand. Tickets follow
+ * OSRS: 3 for a shut-out win, 2 for another win or a scoring draw, 1 for a loss or a 0-0 draw.
  */
 public class CastleWarsSession extends MinigameSession {
     private static final int SARA = 0;
@@ -116,7 +116,8 @@ public class CastleWarsSession extends MinigameSession {
 
     @Override
     protected double damageMultiplier(ServerPlayerEntity player, LivingEntity target, AttackType type) {
-        if (target instanceof ServerPlayerEntity t && Inv.has(player, "castlewars_brace", 1)
+        if (target instanceof ServerPlayerEntity t && (Inv.has(player, "castlewars_brace", 1) || com.runecraft.content.systems.SysState.of(player)
+                .wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.HANDS).startsWith("castle_wars_bracelet"))
                 && (Inv.has(t, STANDARD[0], 1) || Inv.has(t, STANDARD[1], 1))) {
             return 1.2;
         }
@@ -199,7 +200,8 @@ public class CastleWarsSession extends MinigameSession {
     protected void onEnd(boolean success) {
         int winner = score[SARA] == score[ZAM] ? -1 : score[SARA] > score[ZAM] ? SARA : ZAM;
         for (ServerPlayerEntity p : online()) {
-            int tickets = winner < 0 ? CastleWars.TICKETS_DRAW : winner == team(p) ? CastleWars.TICKETS_WIN : CastleWars.TICKETS_LOSS;
+            int t = team(p);
+            int tickets = CastleWars.tickets(score[t], score[1 - t]);
             reward(p, "castle_wars_ticket", tickets);
             MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
             Msg.game(p, (winner < 0 ? "It's a draw!" : TEAM[winner] + " wins!") + " You receive " + tickets + " ticket"
