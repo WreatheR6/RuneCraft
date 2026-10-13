@@ -79,6 +79,14 @@ public final class CommonItems {
                         .examine("A " + metal + " key with a " + c + " painted eyelet (opens chests found in the Mort'ton catacombs).");
             }
         }
+        // Monster drops whose lines the wiki drop sweep used to skip (MonsterDropsTable): long and curved bones (1/400
+        // and 1/5,012 from most big-bone monsters; Construction bones sold to Barlak - approx: not buryable here),
+        // oyster pearls (Waterbirth and lighthouse dagannoth) and unicorn horns (implings, Varlamore; ground to dust).
+        items.add("long_bone", "Long bone", Kind.SIMPLE, "bones", 0xE0D8C0).value(5).examine("A Construction bone.");
+        items.add("curved_bone", "Curved bone", Kind.SIMPLE, "bones", 0xD8D0B0).value(7).examine("A curved Construction bone.");
+        items.add("oyster_pearls", "Oyster pearls", Kind.SIMPLE, "bead", 0xF0F0E8).value(1400)
+                .examine("I could work wonders with a chisel on these pearls.");
+        items.add("unicorn_horn", "Unicorn horn", Kind.SIMPLE, "tail", 0xF0F0F0).value(20).examine("This horn has restorative properties.");
         CommonEquipment.add(items);
     }
 }

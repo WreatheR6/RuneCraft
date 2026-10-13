@@ -43,6 +43,7 @@ public final class MonsterDropsTable {
         rows7();
         rows8();
         rows9();
+        rows10();
     }
 
     private MonsterDropsTable() {
@@ -1472,13 +1473,18 @@ public final class MonsterDropsTable {
     private static void rows9() {
         // Dagannoth (Waterbirth Island) Level 88 <- wiki "Drops (Level 88)"
         p("dagannoth_lvl88", rm(), d("mithril_javelin", 1, 3, 64), d("archer_helm", 1, 1, 2048),
-                d("farseer_helm", 1, 1, 2048), d("casket", 1, 1, 26), d("oyster_pearl", 1, 1, 26),
-                d("opal_bolt_tips", 1, 20, 13), d("seaweed", 1, 10, 4), d("raw_bass", 1, 1, 26));
+                d("farseer_helm", 1, 1, 2048), d("casket", 1, 1, 26), d("oyster_pearls", 1, 1, 26),
+                d("opal_bolt_tips", 1, 20, 13), d("seaweed", 1, 10, 4), d("raw_bass", 1, 1, 26),
+                d("berserker_helm", 1, 1, 2048), d("warrior_helm", 1, 1, 2048), d("fremennik_gloves", 1, 1, 64),
+                d("fremennik_brown_shirt", 1, 1, 64), d("fremennik_brown_cloak", 1, 1, 64), d("spined_boots", 1, 1, 64),
+                d("spined_gloves", 1, 1, 64));
         // Dagannoth (Waterbirth Island) Level 90 <- wiki "Drops (Level 90)"
         p("dagannoth_lvl90", rm(), d("mithril_javelin", 3, 3, 13), d("steel_arrow", 15, 15, 26),
                 d("archer_helm", 1, 1, 2048), d("farseer_helm", 1, 1, 2048), d("tinderbox", 1, 1, 13),
                 d("oyster_pearl", 1, 1, 18), d("coins", 3, 3, 64), d("coins", 26, 26, 64), d("coins", 38, 38, 64),
-                d("coins", 47, 47, 64), d("coins", 81, 81, 64));
+                d("coins", 47, 47, 64), d("coins", 81, 81, 64), d("berserker_helm", 1, 1, 2048),
+                d("warrior_helm", 1, 1, 2048), d("fremennik_gloves", 1, 1, 64), d("fremennik_brown_shirt", 1, 1, 64),
+                d("fremennik_brown_cloak", 1, 1, 43));
         // Dagannoth (Level 92) shares the wiki's Dagannoth table with level 74
         PATCHES.put("dagannoth_lvl92", PATCHES.get("dagannoth"));
         // Giant Rock Crab <- wiki
@@ -1490,5 +1496,214 @@ public final class MonsterDropsTable {
         p("tortured_gorilla", rm(), d("shark", 1, 1, 11), d("coins", 1000, 2000, 10), d("prayer_potion", 1, 1, 16),
                 d("javelin_shaft", 100, 300, 12), d("adamantite_bar", 1, 2, 19), d("ruby", 2, 3, 19),
                 d("rune_javelin_heads", 10, 10, 22), d("dragon_javelin_heads", 5, 5, 22), d("#rare", 1, 1, 143));
+    }
+
+    /**
+     * Drops whose items were missing from the catalog when the sweep ran (rows0-rows9 skipped them), added once the items
+     * existed: long and curved bones, monster bones (monkey, jogre, wyrm, drake), Fremennik-set gloves and boots,
+     * ceremonial robes, granite helm, black robe, coloured gloves, oyster pearls and unicorn horns, plus lines the sweep
+     * missed because RuneCraft names the item differently (javelin "tips" are javelin heads, "steel cannonball" is
+     * cannonball, "runite crossbow (u)" is rune_crossbow_u). Generated from the same parsed-osrs tables; each line adds
+     * to the monster's existing patch.
+     */
+    private static void rows10() {
+        // Earth impling <- parsed:Earth impling(0)
+        add("earth_impling", rm(), d("unicorn_horn", 1, 1, 10));
+        // Eclectic impling <- parsed:Eclectic impling(0)
+        add("eclectic_impling", rm(), d("unicorn_horn", 1, 1, 10));
+        // Crystal impling <- parsed:Crystal impling(0)
+        add("crystal_impling", rm(), d("rune_javelin_heads", 20, 60, 18));
+        // Dragon impling <- parsed:Dragon impling(0)
+        add("dragon_impling", rm(), d("dragon_javelin_heads", 25, 35, 19));
+        // Monkey <- parsed:Monkey (monster)(3)
+        add("monkey", rm("bones"), d("monkey_bones", 1, 1, 1));
+        // Crawling Hand <- parsed:Crawling Hand(8)
+        add("crawling_hand", rm(), d("purple_gloves", 1, 1, 64), d("yellow_gloves", 1, 1, 64), d("red_gloves", 1, 1, 64),
+                d("teal_gloves", 1, 1, 64));
+        // Lizard <- parsed:Lizard(42)
+        add("lizard", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Mogre <- parsed:Mogre(60)
+        add("mogre", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Killerwatt <- parsed:Killerwatt(55)
+        add("killerwatt", rm(), d("cannonball", 3, 3, 70));
+        // Sea Snake Young <- parsed:Sea Snake Young(90)
+        add("sea_snake_young", rm(), d("oyster_pearls", 1, 1, 128), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Terror dog <- parsed:Terror dog(100)
+        add("terror_dog", rm(), d("granite_helm", 1, 1, 128), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Cave horror <- parsed:Cave horror(80)
+        add("cave_horror", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // (The wiki's spiritual creature pages list the ancient ceremonial robes, but only the Ancient Prison's drop them;
+        // the slayer module's spiritual creatures are the Wilderness God Wars ones, so they get none.)
+        // Ankou <- parsed:Ankou(75)
+        add("ankou", rm(), d("black_robe", 1, 1, 100));
+        // Fire giant <- parsed:Fire giant(86)
+        add("fire_giant", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Mountain troll <- parsed:Mountain troll(69)
+        add("mountain_troll", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Ice troll <- parsed:Ice troll(120)
+        add("ice_troll", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Ogre <- parsed:Ogre(53)
+        add("ogre", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Cyclops <- parsed:Cyclops(76)
+        add("cyclops", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Dagannoth <- parsed:Dagannoth(74)
+        add("dagannoth", rm(), d("oyster_pearls", 1, 1, 128));
+        // Lizardman shaman <- parsed:Lizardman shaman(150)
+        add("lizardman_shaman", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Wyrm <- parsed:Wyrm(97)
+        add("wyrm", rm("bones"), d("wyrm_bones", 1, 1, 1));
+        // Skeletal Wyvern <- parsed:Skeletal Wyvern(140)
+        add("skeletal_wyvern", rm(), d("rune_crossbow_u", 1, 1, 64));
+        // Cave kraken <- parsed:Cave kraken(127)
+        add("cave_kraken", rm(), d("antidote_plus_plus", 1, 1, 33));
+        // Dark beast <- parsed:Dark beast(182)
+        add("dark_beast", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Drake <- parsed:Drake(192)
+        add("drake", rm(), d("drake_bones", 1, 1, 1));
+        // Basilisk Knight <- parsed:Basilisk Knight(204)
+        add("basilisk_knight", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Red dragon <- parsed:Red dragon(152)
+        add("red_dragon", rm(), d("dragon_javelin_heads", 10, 10, 13));
+        // Black dragon <- parsed:Black dragon(227)
+        add("black_dragon", rm(), d("dragon_javelin_heads", 10, 10, 21));
+        // Brutal green dragon <- parsed:Brutal green dragon(227)
+        add("brutal_green_dragon", rm(), d("dragon_javelin_heads", 12, 12, 13));
+        // Brutal blue dragon <- parsed:Brutal blue dragon(271)
+        add("brutal_blue_dragon", rm(), d("dragon_javelin_heads", 12, 12, 128));
+        // Brutal red dragon <- parsed:Brutal red dragon(289)
+        add("brutal_red_dragon", rm(), d("dragon_javelin_heads", 25, 25, 64));
+        // Brutal black dragon <- parsed:Brutal black dragon(318)
+        add("brutal_black_dragon", rm(), d("dragon_javelin_heads", 40, 40, 64));
+        // Lava dragon <- parsed:Lava dragon(252)
+        add("lava_dragon", rm(), d("dragon_javelin_heads", 15, 15, 18));
+        // Steel dragon <- parsed:Steel dragon(246)
+        add("steel_dragon", rm(), d("dragon_javelin_heads", 12, 12, 26));
+        // Mithril dragon <- parsed:Mithril dragon(304)
+        add("mithril_dragon", rm(), d("dragon_javelin_heads", 15, 15, 18));
+        // Adamant dragon <- parsed:Adamant dragon(338)
+        add("adamant_dragon", rm(), d("adamant_javelin_heads", 40, 50, 14), d("dragon_javelin_heads", 20, 30, 16));
+        // Rune dragon <- parsed:Rune dragon(380)
+        add("rune_dragon", rm(), d("rune_javelin_heads", 20, 30, 8), d("dragon_javelin_heads", 30, 40, 25));
+        // Sourhog <- parsed:Sourhog(37)
+        add("sourhog", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Shadow warrior <- parsed:Shadow warrior(48)
+        add("shadow_warrior", rm(), d("black_robe", 1, 1, 128));
+        // Mammoth <- parsed:Mammoth(80)
+        add("mammoth", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Ogre <- parsed:Ogre(63)
+        add("ogre_lvl63", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Tortured gorilla <- parsed:Tortured gorilla(141)
+        add("tortured_gorilla", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Crushing hand <- parsed:Crushing hand(45)
+        add("crushing_hand", rm(), d("purple_gloves", 1, 1, 64), d("yellow_gloves", 1, 1, 64), d("red_gloves", 1, 1, 64),
+                d("teal_gloves", 1, 1, 64));
+        // Cave abomination <- parsed:Cave abomination(206)
+        add("cave_abomination", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Basilisk Sentinel <- parsed:Basilisk Sentinel(358)
+        add("basilisk_sentinel", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Shadow Wyrm <- parsed:Shadow Wyrm(259)
+        add("shadow_wyrm", rm("bones"), d("wyrm_bones", 1, 1, 1));
+        // Guardian Drake <- parsed:Guardian Drake(376)
+        add("guardian_drake", rm(), d("drake_bones", 1, 1, 1));
+        // Night beast <- parsed:Night beast(374)
+        add("night_beast", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Ogre <- parsed:Ogre(58)
+        add("gwd_ogre", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Jogre <- parsed:Jogre(58)
+        add("gwd_jogre", rm(), d("jogre_bones", 1, 1, 1));
+        // Cyclops <- parsed:Cyclops(76)
+        add("gwd_cyclops", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Gorak <- parsed:Gorak(149)
+        add("gwd_gorak", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Starlight <- parsed:Starlight(149)
+        add("starlight", rm(), d("unicorn_horn", 6, 6, 16));
+        // Growler <- parsed:Growler(139)
+        add("growler", rm(), d("unicorn_horn", 6, 6, 16));
+        // Bree <- parsed:Bree(146)
+        add("bree", rm(), d("unicorn_horn", 6, 6, 16));
+        // Blood reaver <- parsed:Blood Reaver(161)
+        add("blood_reaver", rm(), d("ancient_ceremonial_mask", 1, 1, 640), d("ancient_ceremonial_top", 1, 1, 640),
+                d("ancient_ceremonial_legs", 1, 1, 640), d("ancient_ceremonial_gloves", 1, 1, 640),
+                d("ancient_ceremonial_boots", 1, 1, 640));
+        // Cyclops <- parsed:Cyclops(56)
+        add("warriors_guild_cyclops", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Cyclops <- parsed:Cyclops(106)
+        add("cyclops_elite", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Dad <- parsed:Dad(101)
+        add("nmz_dad", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Glod <- parsed:Glod(138)
+        add("nmz_glod", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Forgotten Soul <- parsed:Forgotten Soul(20)
+        add("forgotten_soul", rm(), d("black_robe", 1, 1, 128));
+        // Nail beast <- parsed:Nail beast(69)
+        add("trek_nail_beast_1", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Nail beast <- parsed:Nail beast(98)
+        add("trek_nail_beast_2", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Nail beast <- parsed:Nail beast(141)
+        add("trek_nail_beast_3", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Dark wizard <- parsed:Dark wizard(11)
+        add("dark_wizard_lvl11", rm(), d("black_robe", 1, 1, 43));
+        // Dark wizard <- parsed:Dark wizard(23)
+        add("dark_wizard_lvl23", rm(), d("black_robe", 1, 1, 43));
+        // King sand crab <- parsed:King Sand Crab(107)
+        add("king_sand_crab", rm(), d("rock_shell_gloves", 1, 1, 64), d("rock_shell_boots", 1, 1, 64));
+        // Fire giant <- parsed:Fire giant(86)
+        add("catacomb_fire_giant", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Moss giant <- parsed:Moss giant(42)
+        add("catacomb_moss_giant", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Hill giant <- parsed:Hill Giant(28)
+        add("catacomb_hill_giant", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Dagannoth <- parsed:Dagannoth(74)
+        add("catacomb_dagannoth", rm(), d("oyster_pearls", 1, 1, 128));
+        // Ankou <- parsed:Ankou(75)
+        add("catacomb_ankou", rm(), d("black_robe", 1, 1, 100));
+        // Maniacal monkey <- parsed:Maniacal monkey(140)
+        add("maniacal_monkey", rm("bones"), d("small_ninja_monkey_bones", 1, 1, 1));
+        // Maniacal Monkey Archer <- parsed:Maniacal Monkey Archer(132)
+        add("maniacal_monkey_archer", rm("bones"), d("small_ninja_monkey_bones", 1, 1, 1));
+        // Giant Rock Crab <- parsed:Giant Rock Crab(137)
+        add("giant_rock_crab", rm(), d("rock_shell_gloves", 1, 1, 64), d("rock_shell_boots", 1, 1, 64));
+        // Dagannoth <- parsed:Dagannoth(92)
+        add("dagannoth_lvl92", rm(), d("oyster_pearls", 1, 1, 128));
+        // Ancient wyvern <- parsed:Ancient Wyvern(210)
+        add("ancient_wyvern", rm(), d("rune_crossbow_u", 1, 1, 44));
+        // Monkey Archer <- parsed:Monkey Archer(86)
+        add("monkey_archer", rm("bones"), d("small_ninja_monkey_bones", 1, 1, 1));
+        // Suqah <- parsed:Suqah(111)
+        add("suqah", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Wallasalki <- parsed:Wallasalki(98)
+        add("wallasalki", rm(), d("skeletal_gloves", 1, 1, 64), d("skeletal_boots", 1, 1, 64));
+        // Jogre <- parsed:Jogre(53)
+        add("jogre", rm(), d("jogre_bones", 1, 1, 1));
+        // Ogress Warrior <- parsed:Ogress Warrior(82)
+        add("ogress_warrior", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Ogress Shaman <- parsed:Ogress Shaman(82)
+        add("ogress_shaman", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Dark wizard <- parsed:Dark wizard(7)
+        add("Monster.DARK_WIZARD", rm(), d("black_robe", 1, 1, 43));
+        // Hill Giant <- parsed:Hill Giant(28)
+        add("Monster.HILL_GIANT", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Moss giant <- parsed:Moss giant(42)
+        add("Monster.MOSS_GIANT", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Ice giant <- parsed:Ice giant(53)
+        add("Monster.ICE_GIANT", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Dark wizard <- parsed:Dark wizard(20)
+        add("Monster.WITCH", rm(), d("black_robe", 1, 1, 43));
+        // Monkey Zombie: the small and large versions drop small or large zombie monkey bones (approx: by level).
+        add("monkey_zombie_lvl82", rm("bones"), d("small_zombie_monkey_bones", 1, 1, 1));
+        add("monkey_zombie", rm("bones"), d("small_zombie_monkey_bones", 1, 1, 1));
+        add("monkey_zombie_lvl129", rm("big_bones"), d("large_zombie_monkey_bones", 1, 1, 1));
+        // Monkey Guard: gorilla or bearded gorilla bones by appearance (approx: always plain gorilla bones).
+        add("monkey_guard", rm("big_bones", "bones"), d("gorilla_bones", 1, 1, 1));
+    }
+
+    /** Adds lines (and removals) to the patch for {@code key}, creating it when there is none. */
+    private static void add(String key, String[] remove, Drop... put) {
+        Patch old = PATCHES.get(key);
+        List<Drop> lines = new ArrayList<>(old == null ? List.of() : old.put());
+        lines.addAll(List.of(put));
+        Set<String> removed = new LinkedHashSet<>(old == null ? Set.of() : old.remove());
+        removed.addAll(List.of(remove));
+        PATCHES.put(key, new Patch(List.copyOf(lines), Set.copyOf(removed)));
     }
 }

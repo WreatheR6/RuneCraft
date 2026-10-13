@@ -108,6 +108,26 @@ class EquipmentWikiSyncTest {
         assertTrue(bad.isEmpty(), bad.size() + " wearables differ from the OSRS Wiki:\n" + String.join("\n", bad));
     }
 
+    /** The monster-drop wearables added for the drop-table follow-up are in the snapshot and match it (worn slot included). */
+    @Test
+    void monsterDropWearablesAreInTheSnapshot() throws IOException {
+        Map<String, Ref> ref = reference();
+        for (String id : List.of("berserker_helm", "warrior_helm", "spined_gloves", "spined_boots", "rock_shell_gloves",
+                "rock_shell_boots", "skeletal_gloves", "skeletal_boots", "fremennik_gloves", "fremennik_brown_shirt",
+                "fremennik_brown_cloak", "ancient_ceremonial_mask", "ancient_ceremonial_top", "ancient_ceremonial_legs",
+                "ancient_ceremonial_gloves", "ancient_ceremonial_boots", "granite_helm", "black_robe", "purple_gloves",
+                "red_gloves", "teal_gloves", "yellow_gloves")) {
+            ItemDef def = ItemCatalog.get(id);
+            assertTrue(def != null, id);
+            Ref r = ref.get(def.name().toLowerCase(Locale.ROOT));
+            assertTrue(r != null, id + " is not in the snapshot");
+            Jewellery.Worn worn = Jewellery.worn(id);
+            String slot = worn != null ? worn.slot().name().toLowerCase(Locale.ROOT) : osrsSlot(def.equipment().slot());
+            assertTrue(slot.equals(r.slot()), id + " slot " + slot);
+            assertTrue(java.util.Arrays.equals(line(worn != null ? worn.stats() : def.equipment().stats()), r.stats()), id);
+        }
+    }
+
     /** Arrows, bolts, darts, knives, thrownaxes and javelins have the wiki's ranged strength (ammo or weapon row). */
     @Test
     void ammunitionMatchesTheWikiRangedStrength() throws IOException {

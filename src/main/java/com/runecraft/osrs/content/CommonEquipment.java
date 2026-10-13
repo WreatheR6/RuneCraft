@@ -204,6 +204,7 @@ public final class CommonEquipment {
         mystic(items);
         godBooks(items);
         ballistae(items);
+        fremennikDrops(items);
         // Thrown weapons: Kind.ARROW items thrown on right-click (FletchingData.THROWN).
         items.add("steel_thrownaxe", "Steel thrownaxe", Kind.ARROW, "throwing_axe", 0xB8B8C0).value(26).rangedStrength(11).tier("steel")
                 .examine("A finely balanced throwing axe.");
@@ -308,5 +309,68 @@ public final class CommonEquipment {
         items.add("heavy_ballista", "Heavy ballista", Kind.BOW, "crossbow", 0x5A4A3A).value(950000).stack(1).tier("magic")
                 .equipment(weapon(s(0, 0, 0, 0, 125, 0, 0, 0, 0, 0, 0, 15, 0, 0), 7, AttackType.RANGED, WeaponClass.BOW, Skill.RANGED, 75))
                 .examine("A powerful weapon forged from the wreckage of an airship.");
+    }
+
+    /**
+     * Wearables dropped by monsters whose drop lines were skipped until now (OSRS Wiki drop tables, see
+     * {@link com.runecraft.osrs.data.MonsterDropsTable}): the Waterbirth dagannoth's Fremennik clothing, spined pieces and
+     * Neitiznot helms, the rock-shell and skeletal gloves and boots of giant rock crabs and wallasalki, the Ancient
+     * Prison's ceremonial robes, the terror dog's granite helm, the dark wizards' black robe and the crawling hands'
+     * coloured gloves. Bonuses are the wiki's ({@code EquipmentWikiSyncTest}); gloves and capes are worn in the systems
+     * module's hands/cape slots (Jewellery). The Fremennik Trials requirement of the helms is not enforced (approx). The
+     * spined, rock-shell and skeletal helms (made by Rellekka's craftsmen from dagannoth hide) are still missing.
+     */
+    private static void fremennikDrops(ItemSink items) {
+        items.add("berserker_helm", "Berserker helm", Kind.ARMOUR, "full_helm", 0x8A8A9A).value(60000).stack(1).tier("rune")
+                .equipment(wear(Slot.HEAD, s(0, 0, 0, -5, -5, 31, 29, 33, 0, 30, 3, 0, 0, 0), Skill.DEFENCE, 45))
+                .examine("This helmet is worn by berserkers.");
+        items.add("warrior_helm", "Warrior helm", Kind.ARMOUR, "full_helm", 0x9A7A5A).value(60000).stack(1).tier("rune")
+                .equipment(wear(Slot.HEAD, s(0, 5, 0, -5, -5, 31, 33, 29, 0, 30, 0, 0, 0, 0), Skill.DEFENCE, 45))
+                .examine("This helmet is worn by warriors.");
+        EquipmentStats hands = s(0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0);
+        EquipmentStats feet = s(0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0);
+        String[][] pieces = {
+                {"spined", "Spined", "6A8A6A", "spined dagannoth hide", "Some finely crafted Fremennik boots, made from spined dagannoth hide."},
+                {"rock_shell", "Rock-shell", "8A7A5A", "rock crab shell shards", "Some Fremennik boots, made from the shards of a rock crab's shell."},
+                {"skeletal", "Skeletal", "D8D0B8", "wallasalki bones fragments", "Some finely crafted Fremennik boots, made from the bones of a wallasalki."}};
+        for (String[] f : pieces) {
+            int rgb = Integer.parseInt(f[2], 16);
+            items.add(f[0] + "_gloves", f[1] + " gloves", Kind.SIMPLE, "gloves", rgb).value(650).stack(1)
+                    .equipment(wear(Slot.HEAD, hands)).examine("Fremennik gloves stitched together from " + f[3] + ".");
+            items.add(f[0] + "_boots", f[1] + " boots", Kind.ARMOUR, "boots", rgb).value(650).stack(1).tier("leather")
+                    .equipment(wear(Slot.FEET, feet)).examine(f[4]);
+        }
+        items.add("fremennik_gloves", "Fremennik gloves", Kind.SIMPLE, "gloves", 0x8A6A4A).value(500).stack(1)
+                .equipment(wear(Slot.HEAD, hands)).examine("These will keep my hands warm!");
+        items.add("fremennik_brown_shirt", "Fremennik brown shirt", Kind.ARMOUR, "robe_top", 0x7A5A3A).value(250).stack(1).tier("leather")
+                .equipment(wear(Slot.CHEST, s(0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0))).examine("The latest in Fremennik fashion.");
+        items.add("fremennik_brown_cloak", "Fremennik brown cloak", Kind.SIMPLE, "cape", 0x7A5A3A).value(250).stack(1)
+                .equipment(wear(Slot.HEAD, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0))).examine("The latest fashion in Rellekka.");
+        int ceremonial = 0x5A3A6A;
+        items.add("ancient_ceremonial_mask", "Ancient ceremonial mask", Kind.ARMOUR, "hood", ceremonial).value(50000).stack(1).tier("mystic")
+                .equipment(wear(Slot.HEAD, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2)))
+                .examine("A ceremonial mask dedicated to an ancient god.");
+        items.add("ancient_ceremonial_top", "Ancient ceremonial top", Kind.ARMOUR, "robe_top", ceremonial).value(100000).stack(1).tier("mystic")
+                .equipment(wear(Slot.CHEST, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6)))
+                .examine("Some ceremonial robes dedicated to an ancient god.");
+        items.add("ancient_ceremonial_legs", "Ancient ceremonial legs", Kind.ARMOUR, "robe_bottom", ceremonial).value(80000).stack(1).tier("mystic")
+                .equipment(wear(Slot.LEGS, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5)))
+                .examine("Some ceremonial robes dedicated to an ancient god.");
+        items.add("ancient_ceremonial_gloves", "Ancient ceremonial gloves", Kind.SIMPLE, "gloves", ceremonial).value(40000).stack(1)
+                .equipment(wear(Slot.HEAD, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)))
+                .examine("Some ceremonial gloves dedicated to an ancient god.");
+        items.add("ancient_ceremonial_boots", "Ancient ceremonial boots", Kind.ARMOUR, "boots", ceremonial).value(40000).stack(1).tier("mystic")
+                .equipment(wear(Slot.FEET, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)))
+                .examine("Some ceremonial boots dedicated to an ancient god.");
+        items.add("granite_helm", "Granite helm", Kind.ARMOUR, "full_helm", 0x7A7A80).value(46000).stack(1).tier("rune")
+                .equipment(wear(Slot.HEAD, s(0, 0, 0, -9, -7, 31, 33, 29, -1, 39, 0, 0, 0, 0), Skill.DEFENCE, 50, Skill.STRENGTH, 50))
+                .examine("A stone helmet.");
+        items.add("black_robe", "Black robe", Kind.ARMOUR, "robe_top", 0x2A2A2A).value(13).stack(1).tier("mystic")
+                .equipment(wear(Slot.CHEST, s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0))).examine("I can do magic better in this.");
+        for (String[] g : new String[][]{{"purple", "Purple", "6A3A8A"}, {"red", "Red", "A02A2A"}, {"teal", "Teal", "2A8A8A"},
+                {"yellow", "Yellow", "D0B030"}}) {
+            items.add(g[0] + "_gloves", g[1] + " gloves", Kind.SIMPLE, "gloves", Integer.parseInt(g[2], 16)).value(500).stack(1)
+                    .equipment(wear(Slot.HEAD, hands)).examine("These will keep my hands warm!");
+        }
     }
 }
