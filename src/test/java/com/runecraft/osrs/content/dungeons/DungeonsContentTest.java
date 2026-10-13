@@ -373,4 +373,89 @@ class DungeonsContentTest {
             }
         }
     }
+
+    private static Dungeons.Dungeon dungeon(String id) {
+        return Dungeons.all().stream().filter(d -> d.id().equals(id)).findFirst().orElseThrow();
+    }
+
+    private static Map<String, Integer> caps(Dungeons.Dungeon d) {
+        Map<String, Integer> out = new HashMap<>();
+        for (Dungeons.Camp c : d.camps()) {
+            for (String id : c.creatures()) {
+                out.merge(id, c.cap(), Integer::sum);
+            }
+        }
+        return out;
+    }
+
+    /** Waterbirth Island Dungeon keeps the cache's monster counts (mejrs/data_osrs, sublevels 1-5). */
+    @Test
+    void waterbirthDungeonHasTheCacheCounts() {
+        Map<String, Integer> caps = caps(dungeon("dng_waterbirth_dungeon"));
+        assertEquals(81, caps.get("dagannoth_lvl90"));
+        assertEquals(58, caps.get("dagannoth_lvl88"));
+        assertEquals(47, caps.get("wallasalki"));
+        assertEquals(41, caps.get("giant_rock_crab"));
+        assertEquals(24, caps.get("rock_lobster"));
+        assertEquals(33, caps.get("dagannoth_spawn"));
+        assertEquals(5, caps.get("dagannoth_fledgeling"));
+        assertEquals(18, caps.get("rock_crab"));
+        int ladders = 0;
+        for (Op op : dungeon("dng_waterbirth_dungeon").structure().ops()) {
+            if (op.block() != null && op.block().equals("runecraft:" + DungeonBlocks.KINGS_LADDER)) {
+                ladders++;
+            }
+        }
+        assertEquals(1, ladders, "the Kings' ladder");
+        assertNotNull(ContentRegistry.boss("dagannoth_rex"));
+    }
+
+    @Test
+    void apeAtollDungeonsHaveTheCacheCounts() {
+        Map<String, Integer> caps = caps(dungeon("dng_ape_atoll_dungeon"));
+        assertEquals(17, caps.get("skeleton_lvl142"));
+        assertEquals(30, caps.get("monkey_zombie"));
+        Map<String, Integer> temple = caps(dungeon("dng_temple_of_marimbo_dungeon"));
+        assertEquals(29, temple.get("monkey_zombie_lvl82"));
+        assertEquals(5, temple.get("monkey_zombie"));
+        assertEquals(7, temple.get("monkey_zombie_lvl129"));
+    }
+
+    /** The Mort'ton catacombs' key doors stand in their halls, one per metal, each guarding a crypt with its shades. */
+    @Test
+    void shadeCatacombDoors() {
+        Dungeons.Dungeon d = dungeon("dng_shade_catacombs");
+        List<ShadeCatacombs.Door> doors = ShadeCatacombs.doors();
+        assertEquals(5, doors.size());
+        Set<String> blocks = new HashSet<>();
+        for (BlockDef b : MODULE.blocks()) {
+            blocks.add(b.id());
+        }
+        for (int i = 0; i < doors.size(); i++) {
+            ShadeCatacombs.Door door = doors.get(i);
+            assertEquals(com.runecraft.osrs.content.CommonItems.SHADE_KEY_METALS[i], door.metal());
+            assertTrue(blocks.contains(door.block()), door.block());
+            Op placed = null;
+            for (Op op : d.structure().ops()) {
+                if (op.block() != null && op.block().equals("runecraft:" + door.block())) {
+                    placed = op;
+                }
+            }
+            assertNotNull(placed, door.block());
+            assertEquals(door.x(), placed.x1());
+            assertEquals(door.z(), placed.z1());
+            assertEquals(ShadeCatacombs.FLOOR + 1, placed.y1());
+            assertTrue(door.inside(door.x() + 0.5 + door.dx() * 2, door.z() + 0.5 + door.dz() * 2));
+            assertTrue(!door.inside(door.x() + 0.5 - door.dx() * 2, door.z() + 0.5 - door.dz() * 2));
+            assertEquals(door, ShadeCatacombs.doorAt(door.x(), door.z()));
+        }
+        // Every shade of the rework lives in the catacombs, the urium shades behind the gold doors.
+        Map<String, Integer> caps = caps(d);
+        for (String shade : new String[]{"phrin_shade", "riyl_shade", "asyn_shade", "fiyr_shade", "urium_shade"}) {
+            assertTrue(caps.getOrDefault(shade, 0) > 0, shade);
+        }
+        // The keys are shared items with unchanged ids.
+        assertTrue(com.runecraft.osrs.ItemCatalog.exists("bronze_shade_key"));
+        assertTrue(com.runecraft.osrs.ItemCatalog.exists("gold_shade_key_purple"));
+    }
 }
