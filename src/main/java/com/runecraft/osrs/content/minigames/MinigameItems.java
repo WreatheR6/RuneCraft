@@ -235,6 +235,13 @@ public final class MinigameItems {
         simple(items, "catalytic_guardian_stone", "Catalytic guardian stone", "ore", 0x8040E0, 0, "Powers the Great Guardian.");
         simple(items, "abyssal_pearls", "Abyssal pearls", "bead", 0xE0E0F8, 1, "Currency of the Temple of the Eye.");
         single(items, "intricate_pouch", "Intricate pouch", "package", 0x6A4AA0, 1, "Guardians of the Rift rewards. Right-click to open.");
+        // Cells: taken uncharged from the table, charged at the active altar, used on cell tiles or made into rift guardians.
+        simple(items, GuardiansRift.UNCHARGED_CELL, "Uncharged cell", "orb", 0x8A8A9A, 0, "A cell waiting to be charged with runic energy.");
+        int[] cellColours = {0x80C0E0, 0x60A0E0, 0x4060E0, 0xE04060};
+        for (GuardiansRift.Cell c : GuardiansRift.Cell.values()) {
+            single(items, c.item, c.label + " cell", "orb", cellColours[c.ordinal()], 0, "A magical cell charged with runic energy.");
+        }
+        single(items, "atlaxs_diary", "Atlax's diary", "book", 0x6A4A8A, 1, "An old diary of someone's experiences at the Temple of the Eye.");
         wear(items, "hat_of_the_eye", "Hat of the eye", "cowl", 0x8A2A8A, Slot.HEAD, 1,
                 s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0)).examine("+10% runes crafted (+60% with the full raiments).");
         wear(items, "robe_top_of_the_eye", "Robe top of the eye", "leather_body", 0x8A2A8A, Slot.CHEST, 1,
