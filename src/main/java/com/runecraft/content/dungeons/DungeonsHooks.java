@@ -5,9 +5,12 @@ import com.runecraft.content.ModuleHooks;
 import com.runecraft.network.ServerNetworking;
 import com.runecraft.osrs.Landmark;
 import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.CommonItems;
 import com.runecraft.osrs.content.dungeons.DungeonBlocks;
 import com.runecraft.osrs.content.dungeons.Dungeons;
 import com.runecraft.osrs.content.dungeons.DungeonsContent;
+import com.runecraft.osrs.content.dungeons.ShadeCatacombs;
+import com.runecraft.osrs.world.ArenaLayout;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
@@ -55,6 +58,10 @@ public final class DungeonsHooks implements ModuleHooks {
             passThrough(player, pos);
         });
         BlockHooks.register(DungeonBlocks.RIFT, DungeonsHooks::rift);
+        for (String metal : CommonItems.SHADE_KEY_METALS) {
+            BlockHooks.register(DungeonBlocks.shadeDoor(metal), DungeonsHooks::shadeDoor);
+        }
+        BlockHooks.register(DungeonBlocks.KINGS_LADDER, DungeonsHooks::kingsLadder);
         DungeonCamps.register();
         BarrowsHooks.register();
     }
@@ -165,6 +172,42 @@ public final class DungeonsHooks implements ModuleHooks {
             return;
         }
         passThrough(player, pos);
+    }
+
+    /** A Mort'ton catacomb door: entering the crypt needs any shade key of the door's metal (kept); leaving is free. */
+    private static void shadeDoor(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+        ShadeCatacombs.Door door = ShadeCatacombs.doorAt(pos.getX(), pos.getZ());
+        if (door == null) {
+            passThrough(player, pos);
+            return;
+        }
+        if (!door.inside(player.getX(), player.getZ())) {
+            boolean hasKey = false;
+            for (String colour : CommonItems.SHADE_KEY_COLOURS) {
+                if (Inv.has(player, CommonItems.shadeKey(door.metal(), colour), 1)) {
+                    hasKey = true;
+                    break;
+                }
+            }
+            if (!hasKey) {
+                Msg.game(player, "The doors are locked. You need " + Msg.article(door.metal()) + " key to open them.");
+                return;
+            }
+            Msg.game(player, "You unlock the doors with your " + door.metal() + " key.");
+        }
+        passThrough(player, pos);
+    }
+
+    /** The Waterbirth Island Dungeon's ladder down to the Dagannoth Kings: their arena (bosses module). */
+    private static void kingsLadder(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+        ArenaLayout.Arena arena = ArenaLayout.of("dagannoth_rex");
+        if (arena == null || !(player.getWorld() instanceof ServerWorld world)) {
+            Msg.game(player, "The ladder leads nowhere.");
+            return;
+        }
+        Msg.game(player, "You climb down into the lair of the Dagannoth Kings...");
+        BlockPos to = Gielinor.safeSpot(world, arena.x(), arena.z() - arena.radius() + 4);
+        player.teleport(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYaw(), player.getPitch());
     }
 
     private static void rift(ServerPlayerEntity player, BlockPos pos, BlockState state) {

@@ -296,10 +296,6 @@ public final class TownMonsters {
         spawn("gnome_guard", 2461, 3385, 2, 6); // Stronghold gate
         spawn("desert_bandit", 3171, 2976, 5, 8); // Bandit Camp
         spawn("pirate", 2790, 3175, 3, 8);      // Brimhaven
-        spawn("tzhaar_hur_citizen", 2832, 3170, 3, 8); // TzHaar city
-        spawn("tzhaar_ket", 2836, 3176, 2, 8);
-        spawn("tzhaar_xil", 2826, 3166, 2, 8);
-        spawn("tzhaar_mej", 2838, 3164, 2, 8);
         // Prifddinas guards at their cache tiles (plane 0); the south gate's pair stands in this city's south gate,
         // 14 tiles north of the real one (approx).
         spawn("prifddinas_guard", 3264, 6040, 2, 2);
