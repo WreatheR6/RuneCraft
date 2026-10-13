@@ -138,7 +138,7 @@ public final class GielinorGeography {
             new Ellipse("Harmony Island", 3795, 2861, 30, 30),
             new Ellipse("Mos Le'Harmless", 3712, 2985, 66, 62),
             new Ellipse("Dragontooth Island", 3808, 3555, 26, 26),
-            new Ellipse("Lithkren", 3548, 3998, 32, 30),
+            new Ellipse("Lithkren", 3563, 3995, 36, 30), // OSRS map: 3537-3600, 3965-4025
             new Ellipse("Miscellania", 2534, 3868, 54, 32),
             new Ellipse("Etceteria", 2618, 3880, 24, 24),
             new Ellipse("Waterbirth Island", 2530, 3748, 26, 32),
