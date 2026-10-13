@@ -70,6 +70,16 @@ public final class QuestInterpreter {
         });
     }
 
+    /** Self-test hook ({@code com.runecraft.selftest}): talks to a quest NPC through the real dialogue dispatcher. */
+    public static void selfTestTalk(ServerPlayerEntity p, String npcId) {
+        talk(p, npcId);
+    }
+
+    /** Self-test hook: executes a trigger as if its objective (reach a place, a drop) had just happened. */
+    public static void selfTestFire(ServerPlayerEntity p, QuestSpec q, Trigger t) {
+        fire(p, q, t, npcName(t.target));
+    }
+
     // ---------------------------------------------------------------- State helpers
 
     static int stage(ServerPlayerEntity p, QuestSpec q) {

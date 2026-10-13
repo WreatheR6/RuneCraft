@@ -78,6 +78,16 @@ public final class RaidManager {
         raid.shutdown();
     }
 
+    /** Self-test hook ({@code com.runecraft.selftest}): runs every room of a raid briefly; see RaidInstance. */
+    public static int selfTestRun(RaidInstance raid, int ticks) {
+        return raid.selfTestRun(ticks);
+    }
+
+    /** Self-test hook: closes a raid (party sent home, instance released). */
+    public static void selfTestClose(RaidInstance raid) {
+        close(raid);
+    }
+
     // ------------------------------------------------------------------ registration
 
     public static void register() {

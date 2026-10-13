@@ -605,6 +605,29 @@ public final class RaidInstance {
         RaidNet.sendHud(this);
     }
 
+    /**
+     * Self-test hook ({@code com.runecraft.selftest}, via {@link RaidManager#selfTestRun}): ticks the lobby, then
+     * starts every room in turn (the reward room last) and runs its logic for up to {@code ticks} game ticks,
+     * letting exceptions through. Returns how many rooms were started.
+     */
+    int selfTestRun(int ticks) {
+        long tick = ActionManager.gameTick();
+        for (int i = 0; i < ticks && !closed; i++) {
+            gameTick(tick + i);
+        }
+        int ran = 0;
+        for (int r = 1; r < rooms.size() && !closed; r++) {
+            logics[current].complete();
+            startRoom(r);
+            ran++;
+            RoomLogic logic = logics[r];
+            for (int i = 0; i < ticks && !logic.done && !closed; i++) {
+                logic.gameTick(tick + i);
+            }
+        }
+        return ran;
+    }
+
     private void startRoom(int i) {
         current = i;
         roomStartTick = ActionManager.gameTick();

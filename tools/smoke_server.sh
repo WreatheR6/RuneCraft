@@ -101,15 +101,27 @@ feed() {
         echo "$G if block $x $y $z minecraft:air"
         sleep 1
     done
+    # In-game self-test (com.runecraft.selftest, "/rc selftest [filter]"): menus, recipes, quests, minigames,
+    # raids, bosses, teleports and save/load exercised against a fake player. Reported below; not blocking yet.
+    if [ -n "${SELFTEST_FILTER:-}" ]; then echo "rc selftest $SELFTEST_FILTER"; else echo "rc selftest"; fi
+    for _ in $(seq 1 "${SELFTEST_TIMEOUT:-1200}"); do
+        grep -q 'SELFTEST END' "$LOG" && break
+        grep -q 'Crash report saved\|Exception in server tick loop' "$LOG" && break
+        sleep 1
+    done
     sleep 5
     echo "save-all"
     sleep 5
     echo "stop"
     sleep 60
 }
-feed | timeout 1500 java -Xmx4G -jar server.jar nogui >> "$LOG" 2>&1
+feed | timeout 2700 java -Xmx4G -jar server.jar nogui >> "$LOG" 2>&1
+# The self-test provokes failures on purpose: what is logged between its BEGIN and END markers is reported
+# in its own section and kept out of the blocking checks below (a crash still fails the job).
+awk '/SELFTEST BEGIN/ { skip = 1 } !skip { print } /SELFTEST END/ { skip = 0 }' "$LOG" > strict.log
+awk '/SELFTEST BEGIN/ { on = 1 } on { print } /SELFTEST END/ { on = 0 }' "$LOG" > selftest.log
 echo "---- RuneCraft / error lines ----"
-grep -n 'runecraft\|RuneCraft\|ERROR\|Exception\|Caused by' "$LOG" | grep -v 'Loading\|- runecraft\|SMOKE-CHECK' | head -200
+grep -n 'runecraft\|RuneCraft\|ERROR\|Exception\|Caused by' strict.log | grep -v 'Loading\|- runecraft\|SMOKE-CHECK' | head -200
 
 # Match every SMOKE-CHECK marker with the "Test passed"/"Test failed" line that follows it.
 awk '/SMOKE-CHECK/ { if (cur != "") print cur " => NO RESULT"; cur = substr($0, index($0, "SMOKE-CHECK") + 12); next }
@@ -122,9 +134,9 @@ cat checks.txt
 fail=0
 grep -q 'Done (' "$LOG" || { echo "FAIL: server never finished starting"; fail=1; }
 grep -q 'Crash report saved\|Exception in server tick loop' "$LOG" && { echo "FAIL: server crashed"; fail=1; }
-grep -q 'Failed to place structure\|Failed to build\|Custom builder for .* failed\|could not be parsed' "$LOG" && { echo "FAIL: RuneCraft reported build errors"; fail=1; }
-grep -E '\[(Server thread|main)/ERROR\]' "$LOG" | grep -qi 'runecraft' && { echo "FAIL: RuneCraft logged errors"; fail=1; }
-grep -q '^\s*at com\.runecraft\.' "$LOG" && { echo "FAIL: exception thrown through RuneCraft code:"; grep -n -B3 -m5 '^\s*at com\.runecraft\.' "$LOG"; fail=1; }
+grep -q 'Failed to place structure\|Failed to build\|Custom builder for .* failed\|could not be parsed' strict.log && { echo "FAIL: RuneCraft reported build errors"; fail=1; }
+grep -E '\[(Server thread|main)/ERROR\]' strict.log | grep -qi 'runecraft' && { echo "FAIL: RuneCraft logged errors"; fail=1; }
+grep -q '^\s*at com\.runecraft\.' strict.log && { echo "FAIL: exception thrown through RuneCraft code:"; grep -n -B3 -m5 '^\s*at com\.runecraft\.' strict.log; fail=1; }
 stations_run=$(grep -c '^station ' checks.txt)
 # A station passes if it is there on the first look or on the later recheck.
 stations_bad=0
@@ -140,5 +152,23 @@ done < <(grep '^station ' checks.txt)
 [ "$stations_bad" -eq 0 ] || { echo "FAIL: $stations_bad station block check(s) failed on both looks"; fail=1; }
 entities_bad=$(grep '^entity ' checks.txt | grep -vc '=> PASS$')
 [ "$entities_bad" -eq 0 ] || { echo "WARN: $entities_bad summoned creature(s) not found after 20s (died or despawned?):"; grep '^entity ' checks.txt | grep -v '=> PASS$'; }
+# Self-test report (informational for now: failing checks don't fail the job).
+echo "---- in-game self-test: every check ----"
+grep -v 'SELFTEST-SUMMARY\|SELFTEST END' selftest.log | grep -o 'SELFTEST .*'
+echo "---- in-game self-test: errors and warnings logged while it ran ----"
+grep -n -A10 '/ERROR\]' selftest.log | grep -v 'SELFTEST' | head -300
+grep 'Failed to place structure\|Failed to build\|Custom builder for .* failed\|could not be parsed' selftest.log | head -40
+grep '/WARN\]' selftest.log | sed 's/^\[[^]]*\] //' | sort | uniq -c | sort -rn | head -60
+echo "---- in-game self-test: summary ----"
+if grep -q 'SELFTEST END' selftest.log; then
+    grep -o 'SELFTEST [0-9]* passed, [0-9]* failed.*' selftest.log | tail -1
+    grep -o 'SELFTEST-SUMMARY .*' selftest.log | sed 's/^SELFTEST-SUMMARY //'
+elif grep -q 'SELFTEST BEGIN' selftest.log; then
+    echo "WARN: the self-test did not finish; last lines:"; grep -o 'SELFTEST .*' selftest.log | tail -5
+    echo "SELFTEST $(grep -c 'SELFTEST PASS' selftest.log) passed, $(grep -c 'SELFTEST FAIL' selftest.log) failed (unfinished)"
+    grep -o 'SELFTEST FAIL .*' selftest.log
+else
+    echo "WARN: the self-test never started (is /rc selftest registered?)"
+fi
 [ $fail = 0 ] && echo "Smoke test passed ($stations_run station checks)"
 exit $fail

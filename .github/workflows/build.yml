@@ -43,6 +43,7 @@ jobs:
             build/smoke/server.log
             build/smoke/probes.txt
             build/smoke/checks.txt
+            build/smoke/selftest.log
           retention-days: 7
       # Real client under a virtual display with software OpenGL, on the world the server smoke test
       # generated. Not blocking yet: the result and screenshot list go to the job summary.

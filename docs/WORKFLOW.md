@@ -8,6 +8,7 @@ This file is the shared memory of that loop. Update the round log and backlog at
 - **Branch:** `claude/busy-cray-anf3uw` is the integration branch. Every push to it runs CI (`.github/workflows/build.yml`), which does three things:
   - builds the jar;
   - boots a real dedicated server (`tools/smoke_server.sh`), which force-loads Gielinor, checks every station block (strict), and summons bosses and monsters;
+  - then runs the in-game self-test (`/rc selftest [filter]`, package `com.runecraft.selftest`) against a Fabric fake player: every menu opens, one recipe per menu is made, every quest is walked and completed, every minigame and raid runs, every boss ticks and is killed, every teleport lands on a safe spot, player data survives save/load. The job log ends with `SELFTEST n passed, m failed` and the `SELFTEST FAIL` lines (with stack frames); failures don't fail the job yet;
   - runs an xvfb client walkthrough (`tools/smoke_client.sh`, continue-on-error).
 
   Each green run publishes the jar to the `dev-latest` release.
