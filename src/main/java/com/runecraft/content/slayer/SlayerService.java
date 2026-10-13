@@ -263,6 +263,10 @@ public final class SlayerService {
         if (task.equals(categoryOf(stats))) {
             return true;
         }
+        if (stats.profile() != null
+                && SlayerCategories.counts(task, stats.profile().id, stats.profile().slayerCategory)) {
+            return true;
+        }
         String id = stats.profile() != null ? stats.profile().id : stats.boss() != null ? stats.boss().entityId() : null;
         return SlayerBossTasks.counts(task, id);
     }

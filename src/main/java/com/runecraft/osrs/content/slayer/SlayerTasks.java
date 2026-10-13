@@ -33,7 +33,7 @@ public final class SlayerTasks {
             return SlayerBossTasks.all().stream().anyMatch(SlayerBossTasks::exists);
         }
         for (MonsterDef m : ContentRegistry.monsters()) {
-            if (category.equals(categoryOf(m)) && Superiors.byId(m.id) == null) {
+            if (SlayerCategories.counts(category, m.id, m.slayerCategory) && Superiors.byId(m.id) == null) {
                 return true;
             }
         }
@@ -44,7 +44,7 @@ public final class SlayerTasks {
     public static List<MonsterDef> creatures(String category) {
         List<MonsterDef> list = new ArrayList<>();
         for (MonsterDef m : ContentRegistry.monsters()) {
-            if (category.equals(categoryOf(m))) {
+            if (SlayerCategories.counts(category, m.id, m.slayerCategory)) {
                 list.add(m);
             }
         }
@@ -146,7 +146,7 @@ public final class SlayerTasks {
         if (task == null) {
             return false;
         }
-        if (task.equals(SlayerCategories.categoryOf(creatureId, declaredCategory))) {
+        if (SlayerCategories.counts(task, creatureId, declaredCategory)) {
             return true;
         }
         return SlayerBossTasks.counts(task, creatureId);

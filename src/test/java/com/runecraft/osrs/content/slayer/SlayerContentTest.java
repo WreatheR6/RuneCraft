@@ -324,6 +324,26 @@ class SlayerContentTest {
         assertTrue(SlayerTasks.available("dogs"));
         assertTrue(SlayerTasks.available("aviansies"));
         assertTrue(SlayerTasks.available("shades"));
+        // creatures the wiki lists under two tasks count for both
+        for (String id : new String[]{"monkey_zombie", "monkey_zombie_lvl82", "monkey_zombie_lvl129"}) {
+            assertTrue(SlayerTasks.countsFor("zombies", id, monster(id).slayerCategory), id);
+            assertTrue(SlayerTasks.countsFor("monkeys", id, monster(id).slayerCategory), id);
+        }
+        assertTrue(SlayerTasks.countsFor("monkeys", "demonic_gorilla", monster("demonic_gorilla").slayerCategory));
+        assertTrue(SlayerTasks.countsFor("black_demons", "demonic_gorilla", monster("demonic_gorilla").slayerCategory));
+        assertTrue(SlayerTasks.creatures("zombies").contains(monster("monkey_zombie_lvl82")));
+        for (String id : new String[]{"dagannoth_lvl88", "dagannoth_lvl90", "dagannoth_lvl92", "dagannoth_spawn",
+                "dagannoth_fledgeling"}) {
+            assertTrue(SlayerTasks.countsFor("dagannoth", id, monster(id).slayerCategory), id);
+        }
+        assertTrue(SlayerTasks.countsFor("skeletons", "skeleton_lvl142", monster("skeleton_lvl142").slayerCategory));
+        assertTrue(SlayerTasks.countsFor("shades", "urium_shade", null));
+        assertTrue(SlayerTasks.countsFor("shades", "trek_shade_2", null));
+        assertTrue(SlayerTasks.countsFor("crabs", "giant_rock_crab", null));
+        assertTrue(SlayerTasks.countsFor("monkeys", "maniacal_monkey_archer", null));
+        for (String id : SlayerCategories.secondCategories().keySet()) {
+            assertNotNull(ContentRegistry.monster(id), "second category of " + id + ": not a monster");
+        }
     }
 
     @Test

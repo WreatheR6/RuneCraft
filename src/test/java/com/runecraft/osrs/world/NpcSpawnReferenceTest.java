@@ -30,7 +30,9 @@ class NpcSpawnReferenceTest {
             "sand_crab", List.of("Sandy rocks"),
             "king_sand_crab", List.of("Sandy boulder"),
             "ammonite_crab", List.of("Fossil Rock"),
-            "elf_warrior", List.of("Elf Warrior", "Iorwerth Warrior"));
+            "elf_warrior", List.of("Elf Warrior", "Iorwerth Warrior"),
+            // Jatizso's and the Fremennik Isles' trolls are runts, males, females and grunts in the cache
+            "ice_troll", List.of("Ice troll", "Ice troll runt", "Ice troll male", "Ice troll female", "Ice troll grunt"));
 
     /**
      * Known stand-ins, by creature id (any spawn) or {@code id@campSource}: monsters whose OSRS home is a dungeon or
@@ -40,8 +42,8 @@ class NpcSpawnReferenceTest {
             Map.entry("fever_spider@braindeath_island", "Braindeath Island's brewery lies off the main map"),
             Map.entry("pirate@braindeath_island", "Braindeath Island lies off the main map"),
             Map.entry("mudskipper@isl_mudskipper_point", "the cache has no Mudskipper Point spawns (they appear when fished up)"),
-            Map.entry("ice_troll@jatizso", "Jatizso's trolls are runts, males and females in the cache"),
-            Map.entry("fortis_guard", "Varlamore's city guards are named after their posts in the cache"));
+            Map.entry("ice_troll@jatizso", "the cache's Jatizso trolls (2387-2418, 3853-3869) sit north of the island's traced coast"),
+            Map.entry("fortis_guard", "the cache snapshot has no Varlamore spawns, and plain \"Guard\" would match guards elsewhere"));
 
     private static Map<String, List<int[]>> cache() throws IOException {
         Path p = Path.of("src/test/resources", FIXTURE);

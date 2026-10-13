@@ -40,6 +40,7 @@ public final class MonsterStatsTable {
         rows3();
         rows4();
         rows5();
+        rows6();
     }
 
     private MonsterStatsTable() {
@@ -1252,5 +1253,69 @@ public final class MonsterStatsTable {
         row("eclipse_moon", 329, 500, 258, 100, 60, 100, 1, 6, 0, 100, 100, 500, 500, 100, 0, 0);
         // Blood Moon
         row("blood_moon", 329, 500, 258, 100, 60, 100, 1, 6, 100, 0, 100, 500, 500, 100, 0, 0);
+    }
+
+    /** Dungeon, minigame and lair creatures added after the first sweep (same source, matched by hand). */
+    private static void rows6() {
+        // Dagannoth (Waterbirth Island, Level 88)
+        row("dagannoth_lvl88", 88, 85, 10, 10, 75, 1, 100, 3, 10, 10, 90, 200, 150, 0, 0, 0);
+        // Dagannoth (Waterbirth Island, Level 90)
+        row("dagannoth_lvl90", 90, 95, 76, 78, 65, 1, 1, 4, 50, 50, 50, 50, 50, 50, 0, 0);
+        // Dagannoth (Level 92)
+        row("dagannoth_lvl92", 92, 120, 68, 70, 71, 1, 1, 4, 0, 0, 0, 50, 50, 0, 0, 0);
+        // Dagannoth spawn
+        row("dagannoth_spawn", 42, 35, 50, 35, 25, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        // Dagannoth fledgeling
+        row("dagannoth_fledgeling", 70, 100, 50, 50, 50, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        // Giant Rock Crab
+        row("giant_rock_crab", 137, 180, 50, 80, 200, 1, 1, 4, 225, 200, 175, 10, 250, 0, 0, 0);
+        // Monkey Zombie (Level 82)
+        row("monkey_zombie_lvl82", 82, 60, 100, 60, 60, 60, 1, 4, 0, 0, 0, 0, 0, 15, 0, 0, "undead");
+        // Monkey Zombie (Level 129)
+        row("monkey_zombie_lvl129", 129, 90, 150, 110, 90, 90, 1, 4, 0, 0, 0, 0, 0, 35, 0, 0, "undead");
+        // Skeleton (Ape Atoll)
+        row("skeleton_lvl142", 142, 77, 180, 90, 110, 110, 1, 4, 0, 0, 0, 0, 0, 50, 0, 0, "undead");
+        // Maniacal monkey
+        row("maniacal_monkey", 140, 65, 200, 175, 10, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        // Maniacal Monkey Archer
+        row("maniacal_monkey_archer", 132, 60, 120, 80, 80, 1, 200, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        // Guard (Prifddinas)
+        row("prifddinas_guard", 108, 105, 95, 95, 80, 1, 1, 4, 50, 70, 70, 60, 50, 0, 0, 0);
+        // Urium Shade (Shade)
+        row("urium_shade", 140, 130, 138, 116, 100, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, "shade", "spectral", "undead");
+        // Demonic gorilla
+        row("demonic_gorilla", 275, 380, 205, 195, 200, 195, 195, 5, 0, 0, 0, 20, 0, 43, 40, 43, "demon");
+        // Tortured gorilla (Level 141)
+        row("tortured_gorilla", 141, 210, 105, 95, 95, 95, 95, 5, 0, 0, 0, 25, 0, 22, 20, 22);
+        // Temple Trekking: Vampyre Juvinate (Level 59 / 90 / 119)
+        row("trek_vampyre_juvinate_1", 59, 50, 95, 16, 45, 50, 50, 4, 0, 0, 0, 0, 0, 0, 0, 0, "vampyre");
+        row("trek_vampyre_juvinate_2", 90, 100, 113, 46, 55, 50, 50, 4, 0, 0, 0, 0, 0, 0, 0, 0, "vampyre");
+        row("trek_vampyre_juvinate_3", 119, 150, 127, 76, 65, 50, 50, 4, 0, 0, 0, 0, 0, 0, 0, 0, "vampyre");
+        // Ghast (Level 79 / 109 / 139)
+        row("trek_ghast_1", 79, 115, 80, 30, 60, 30, 30, 8, 0, 0, 0, 0, 0, 0, 0, 0, "spectral");
+        row("trek_ghast_2", 109, 135, 110, 70, 70, 30, 30, 8, 0, 0, 0, 0, 0, 0, 0, 0, "spectral");
+        row("trek_ghast_3", 139, 160, 135, 110, 80, 30, 30, 8, 0, 0, 0, 0, 0, 0, 0, 0, "spectral");
+        // Riyl shadow, Asyn shadow (Temple Trekking), Shade (Level 140)
+        row("trek_shade_1", 80, 76, 87, 56, 60, 50, 50, 4, 0, 0, 0, 0, 0, 0, 0, 0, "spectral", "undead");
+        row("trek_shade_2", 110, 94, 110, 96, 80, 50, 50, 4, 0, 0, 0, 0, 0, 0, 0, 0, "spectral", "undead");
+        row("trek_shade_3", 140, 115, 130, 136, 100, 50, 50, 4, 0, 0, 0, 0, 0, 0, 0, 0, "spectral", "undead");
+        // Swamp snake (Level 80 / 109 / 139)
+        row("trek_swamp_snake_1", 80, 120, 50, 50, 70, 30, 30, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        row("trek_swamp_snake_2", 109, 125, 70, 110, 80, 30, 30, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        row("trek_swamp_snake_3", 139, 130, 90, 170, 90, 30, 30, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        // Giant snail (Level 80 / 109 / 139)
+        row("trek_giant_snail_1", 80, 125, 30, 30, 60, 30, 70, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        row("trek_giant_snail_2", 109, 150, 30, 30, 75, 30, 110, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        row("trek_giant_snail_3", 139, 160, 30, 30, 86, 30, 160, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        // Nail beast (Level 69 / 98 / 141); the wiki max hit is per hit of a three-hit attack
+        row("trek_nail_beast_1", 69, 55, 150, 6, 2, 1, 1, 8, 0, 0, 0, 0, 0, 0, 0, 0);
+        row("trek_nail_beast_2", 98, 65, 215, 16, 30, 1, 1, 8, 0, 0, 0, 0, 0, 0, 0, 0);
+        row("trek_nail_beast_3", 141, 75, 320, 26, 40, 1, 1, 8, 0, 0, 0, 0, 0, 0, 0, 0);
+        // Undead Lumberjack (Level 30 / 50 / 70)
+        row("trek_undead_lumberjack_1", 30, 10, 73, 6, 10, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, "undead");
+        row("trek_undead_lumberjack_2", 50, 14, 117, 16, 14, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, "undead");
+        row("trek_undead_lumberjack_3", 70, 18, 163, 26, 18, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, "undead");
+        // Zombie (Level 13)
+        row("trek_zombie", 13, 22, 8, 9, 10, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, "undead");
     }
 }

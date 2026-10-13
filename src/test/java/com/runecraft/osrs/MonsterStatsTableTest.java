@@ -64,6 +64,11 @@ class MonsterStatsTableTest {
         assertLine("kalphite_queen_airborne", 333, 255, 300, 300, 300, 150, 1, 4, 100, 100, 100, 10, 10, 0, 0, 0);
         assertLine("ice_troll", 82, 80, 80, 80, 40, 1, 1, 4, 30, 60, 30, 0, 0, 60, 0, 0);
         assertLine("ankou", 75, 60, 70, 70, 60, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        assertLine("dagannoth_lvl88", 88, 85, 10, 10, 75, 1, 100, 3, 10, 10, 90, 200, 150, 0, 0, 0);
+        assertLine("giant_rock_crab", 137, 180, 50, 80, 200, 1, 1, 4, 225, 200, 175, 10, 250, 0, 0, 0);
+        assertLine("prifddinas_guard", 108, 105, 95, 95, 80, 1, 1, 4, 50, 70, 70, 60, 50, 0, 0, 0);
+        assertTrue(creature("monkey_zombie_lvl129").hasAttribute("undead"));
+        assertTrue(creature("urium_shade").hasAttribute("shade"));
     }
 
     @Test

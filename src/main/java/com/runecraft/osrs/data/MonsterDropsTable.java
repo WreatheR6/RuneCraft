@@ -42,6 +42,7 @@ public final class MonsterDropsTable {
         rows6();
         rows7();
         rows8();
+        rows9();
     }
 
     private MonsterDropsTable() {
@@ -1465,5 +1466,29 @@ public final class MonsterDropsTable {
                 d("law_rune", 3, 3, 128), d("coins", 1, 1, 8), d("coins", 2, 2, 8), d("coins", 4, 4, 18),
                 d("coins", 29, 29, 43), d("coins", 30, 30, 128), d("water_talisman", 1, 1, 128),
                 d("fire_talisman", 1, 1, 128));
+    }
+
+    /** Dungeon and lair monsters added after the sweep, matched by hand against the wiki pages. */
+    private static void rows9() {
+        // Dagannoth (Waterbirth Island) Level 88 <- wiki "Drops (Level 88)"
+        p("dagannoth_lvl88", rm(), d("mithril_javelin", 1, 3, 64), d("archer_helm", 1, 1, 2048),
+                d("farseer_helm", 1, 1, 2048), d("casket", 1, 1, 26), d("oyster_pearl", 1, 1, 26),
+                d("opal_bolt_tips", 1, 20, 13), d("seaweed", 1, 10, 4), d("raw_bass", 1, 1, 26));
+        // Dagannoth (Waterbirth Island) Level 90 <- wiki "Drops (Level 90)"
+        p("dagannoth_lvl90", rm(), d("mithril_javelin", 3, 3, 13), d("steel_arrow", 15, 15, 26),
+                d("archer_helm", 1, 1, 2048), d("farseer_helm", 1, 1, 2048), d("tinderbox", 1, 1, 13),
+                d("oyster_pearl", 1, 1, 18), d("coins", 3, 3, 64), d("coins", 26, 26, 64), d("coins", 38, 38, 64),
+                d("coins", 47, 47, 64), d("coins", 81, 81, 64));
+        // Dagannoth (Level 92) shares the wiki's Dagannoth table with level 74
+        PATCHES.put("dagannoth_lvl92", PATCHES.get("dagannoth"));
+        // Giant Rock Crab <- wiki
+        p("giant_rock_crab", rm(), d("black_claws", 1, 1, 26), d("raw_bass", 1, 1, 13), d("casket", 1, 1, 64));
+        // Maniacal monkey / archer <- wiki (2/20 prayer potion(1) and antipoison(2))
+        p("maniacal_monkey", rm(), d("prayer_potion", 1, 1, 10), d("antipoison", 1, 1, 10));
+        p("maniacal_monkey_archer", rm(), d("prayer_potion", 1, 1, 10), d("antipoison", 1, 1, 10));
+        // Tortured gorilla (Level 141) <- wiki (rates out of 1000)
+        p("tortured_gorilla", rm(), d("shark", 1, 1, 11), d("coins", 1000, 2000, 10), d("prayer_potion", 1, 1, 16),
+                d("javelin_shaft", 100, 300, 12), d("adamantite_bar", 1, 2, 19), d("ruby", 2, 3, 19),
+                d("rune_javelin_heads", 10, 10, 22), d("dragon_javelin_heads", 5, 5, 22), d("#rare", 1, 1, 143));
     }
 }

@@ -26,6 +26,8 @@ public final class SlayerCategories {
 
     private static final Map<String, Category> ALL = new LinkedHashMap<>();
     private static final Map<String, String> MEMBERS = new LinkedHashMap<>();
+    /** Second categories of creatures that count towards two tasks (monkey zombies: monkeys and zombies). */
+    private static final Map<String, String> ALSO = new LinkedHashMap<>();
 
     private SlayerCategories() {
     }
@@ -184,7 +186,14 @@ public final class SlayerCategories {
         member("goblins", "cave_goblin", "cave_goblin_guard", "gwd_goblin");
         member("hobgoblins", "gwd_hobgoblin");
         member("rats", "giant_rat");
-        member("zombies", "monkey_zombie");
+        member("zombies", "trek_zombie", "trek_undead_lumberjack_1", "trek_undead_lumberjack_2",
+                "trek_undead_lumberjack_3");
+        member("shades", "trek_shade_1", "trek_shade_2", "trek_shade_3");
+        member("monkeys", "maniacal_monkey_archer");
+        member("crabs", "giant_rock_crab");
+        // Wiki "cat = Monkeys, Zombies" / "Black Demons, Monkeys": a second task the creature also counts for.
+        also("zombies", "monkey_zombie", "monkey_zombie_lvl82", "monkey_zombie_lvl129");
+        also("monkeys", "demonic_gorilla");
         member("aviansies", "gwd_aviansie", "gwd_aviansie_elite");
         member("tzhaar", "tzhaar_ket", "tzhaar_xil", "tzhaar_mej", "tzhaar_hur_citizen");
         member("crabs", "rock_crab", "sand_crab", "king_sand_crab", "ammonite_crab");
@@ -203,6 +212,25 @@ public final class SlayerCategories {
         for (String id : monsterIds) {
             MEMBERS.put(id, category);
         }
+    }
+
+    private static void also(String category, String... monsterIds) {
+        if (!ALL.containsKey(category)) {
+            throw new IllegalStateException("Unknown slayer category " + category);
+        }
+        for (String id : monsterIds) {
+            ALSO.put(id, category);
+        }
+    }
+
+    /** Second categories (monster id to category) of creatures that count towards two tasks. */
+    public static Map<String, String> secondCategories() {
+        return Collections.unmodifiableMap(ALSO);
+    }
+
+    /** Whether a module creature counts towards {@code category}: its main category or its second one. */
+    public static boolean counts(String category, String monsterId, String declared) {
+        return category != null && (category.equals(categoryOf(monsterId, declared)) || category.equals(ALSO.get(monsterId)));
     }
 
     /**

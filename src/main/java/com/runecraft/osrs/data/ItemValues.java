@@ -1243,7 +1243,7 @@ public final class ItemValues {
             unlit_bug_lantern|-1|2.267|gt|
             bug_lantern|-1|2.267||
             slayer_bell|-1|0.028|gt|
-            slayer_ring_8|1000|0.01||
+            slayer_ring_8|1000|0.01|gt|
             herb_sack|1|1||
             leaf_bladed_spear|-1|2.267||
             leaf_bladed_sword|-1|1.814|gt|

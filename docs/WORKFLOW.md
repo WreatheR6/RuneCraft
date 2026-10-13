@@ -134,7 +134,7 @@ Recurring conflict spots:
   - Unfinished features: BA role levels and gambles; NMZ potions and power-ups; Soul Wars spoils.
 - **Transport:**
   - Missing: pharaoh's sceptre, ring of the elements, ring of returning, giantsoul amulet and pendant of ates teleports; fairy rings in realms that aren't built; dialling DIQ for the house ring.
-  - The skilling module's `SailingData.PORTS` lacks the three new ports. `ItemValues` marks slayer ring (8) untradeable (it is tradeable).
+  - The skilling module's `SailingData.PORTS` lacks the three new ports.
 - **Skilling:**
   - GotR: Rewards Guardian block not placed, no 25-pearl search, abyssal creatures are abstract, polyelemental stones and portal talismans missing.
   - Volcanic Mine: no lava/water vessel, vents or lava beasts. Motherlode: ores rolled at deposit; upper floor has 16 of 64 veins.
@@ -145,8 +145,8 @@ Recurring conflict spots:
 - **World:**
   - Kruk's Dungeon is only its core halls (the western plane-1 hordes would sit under open sea; needs a placement decision).
   - Waterbirth: circular doors open, no Kings' sublevel 6, no lighthouse exit; seabed shelf at y 56 over the dungeon. Ape Atoll dungeons are boxes around cache clusters.
-  - New dungeon monsters are not in `MonsterStatsTable`/`MonsterDropsTable`; slayer `zombies` lacks the monkey zombie variants.
-  - Remaining spawn stand-ins: Braindeath, Mudskipper Point, Jatizso ice trolls, Fortis guards.
+  - Many drop items are missing from the catalog (Fremennik/spined/berserker/warrior helms, rock-shell gloves/boots, monkey bones variants, Ape Atoll bones), so those drop lines are skipped. Trek vampyre juvinates don't count for the vampyres task (it would make Konar assign it with no spawns).
+  - Remaining spawn stand-ins: Braindeath (off-map), Mudskipper Point (cache mudskippers are underground at 2950,9525), Jatizso ice trolls (cache tiles 2387-2418, 3853-3869 lie north of the traced coast), Fortis guards (snapshot has no Varlamore).
   - Zeah multicombat polygons are from 2018; Varlamore has none.
   - Overworld implings don't roam.
 - **Models:** remaining humanoid fallbacks (GWD orks/vampires/knights, Bandos/Sara/Zammy spiritual creatures, bloodveld/pyrefiend GWD variants, seasonal/titan elementals, quest giant lobster). Old single-model previews (`bst_*`, `slm_*`) were rendered from below.
