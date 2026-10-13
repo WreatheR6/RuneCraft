@@ -231,13 +231,7 @@ public final class DemonicGorillas {
     }
 
     static void items(ItemSink items) {
-        items.add("zenyte_shard", "Zenyte shard", Kind.SIMPLE, "shard", 0xF0A020).value(75_000)
-                .examine("A shard of unstable zenyte.");
-        items.add("ballista_limbs", "Ballista limbs", Kind.SIMPLE, "limbs", 0x8A6A4A).value(50_000).examine("Sturdy struts.");
-        items.add("ballista_spring", "Ballista spring", Kind.SIMPLE, "clockwork", 0x9A9AA0).value(50_000)
-                .examine("A spring-loaded mechanism.");
-        items.add("light_frame", "Light frame", Kind.SIMPLE, "stock", 0xA0784A).value(50_000).examine("A light wooden frame.");
-        items.add("heavy_frame", "Heavy frame", Kind.SIMPLE, "stock", 0x6A4A2A).value(50_000).examine("A heavy wooden frame.");
+        // zenyte_shard, ballista_limbs, ballista_spring, light_frame and heavy_frame are in osrs/content/CommonItems.
         items.add("incomplete_light_ballista", "Incomplete light ballista", Kind.SIMPLE, "crossbow_u", 0xA0784A).value(50_000)
                 .examine("The limbs have been attached to the frame.");
         items.add("incomplete_heavy_ballista", "Incomplete heavy ballista", Kind.SIMPLE, "crossbow_u", 0x6A4A2A).value(50_000)

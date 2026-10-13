@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * The Deranged archaeologist (Fossil Island, September 2017), at the south end of the Tar Swamp (cache tile 3683, 3706).
  * Stats are the wiki DPS calculator's; drops are his 131-slot table as independent 1/x rolls. His "Learn to read!"
- * book shower is run by {@code com.runecraft.content.bosses.DerangedArchaeologistScript}.
+ * book shower is run by the bosses module's Minecraft-side DerangedArchaeologistScript.
  */
 public final class IslandBosses {
     private IslandBosses() {
