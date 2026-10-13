@@ -49,6 +49,7 @@ public final class MinigameWorld {
         SHOP_BLOCKS.put("gnome_restaurant_rewards", "gnome_restaurant");
         SHOP_BLOCKS.put("nightmare_zone_rewards", "nightmare_zone");
         SHOP_BLOCKS.put("soul_wars_rewards", "soul_wars");
+        SHOP_BLOCKS.put("volcanic_mine_rewards", "volcanic_mine");
     }
 
     /** Interactive blocks placed inside the instanced arenas: id, name, colour, look. */

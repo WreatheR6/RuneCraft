@@ -354,28 +354,74 @@ class SkillingMinigameRewardsTest {
         assertEquals(3000, VolcanicMine.PERMANENT_ACCESS_NUMULITE);
         assertEquals(1000, VolcanicMine.GAME_TICKS);
         assertEquals(-1, VolcanicMine.maxTier(49));
-        assertEquals(0, VolcanicMine.maxTier(50));
-        assertEquals(7, VolcanicMine.maxTier(85));
-        assertEquals(7, VolcanicMine.maxTier(99));
-        assertEquals(15, VolcanicMine.FRAGMENT_POINTS[0]);
+        assertEquals(3, VolcanicMine.maxTier(50));
+        assertEquals(4, VolcanicMine.maxTier(69));
+        assertEquals(6, VolcanicMine.maxTier(85));
+        assertEquals(6, VolcanicMine.maxTier(99));
+        // Fragment table (OSRS Wiki): iron 15/10, silver 20/20, coal 25/30, gold 34/40, mithril 44/60, adamantite 55/100, runite 70/150.
+        assertEquals(List.of(15, 20, 25, 34, 44, 55, 70), java.util.Arrays.stream(VolcanicMine.FRAGMENT_POINTS).boxed().toList());
         assertEquals(10.0, VolcanicMine.FRAGMENT_XP[0], 1e-9);
-        assertEquals(70, VolcanicMine.FRAGMENT_POINTS[7]);
-        assertEquals(150.0, VolcanicMine.FRAGMENT_XP[7], 1e-9);
-        VolcanicMine.Hit miss = VolcanicMine.hit(49, 6, () -> 0.0);
+        assertEquals(150.0, VolcanicMine.FRAGMENT_XP[6], 1e-9);
+        VolcanicMine.Hit miss = VolcanicMine.hit(49, 5, () -> 0.0);
         assertEquals(-1, miss.tier());
         assertEquals(1, miss.points());
         assertEquals(5.0, miss.xp(), 1e-9);
+        // Fragment chance by boulder size: 1/20, 1/12, 1/8, 1/5, 1/3.
+        assertEquals(1 / 20.0, VolcanicMine.fragmentChance(1), 1e-9);
+        assertEquals(1 / 3.0, VolcanicMine.fragmentChance(5), 1e-9);
+        assertEquals(40, VolcanicMine.stageHp(1, 1));
+        assertEquals(120, VolcanicMine.stageHp(4, 3));
+        assertEquals(180, VolcanicMine.stageHp(5, 3));
         Random r = new Random(9);
-        for (int i = 0; i < 2000; i++) {
-            VolcanicMine.Hit h = VolcanicMine.hit(60, 1 + i % 6, r::nextDouble);
+        int[] seen = new int[7];
+        for (int i = 0; i < 200_000; i++) {
+            VolcanicMine.Hit h = VolcanicMine.hit(60, 1 + i % 5, r::nextDouble);
             assertTrue(h.tier() <= VolcanicMine.maxTier(60));
+            if (h.tier() >= 0) {
+                seen[h.tier()]++;
+            }
         }
-        assertTrue(VolcanicMine.fragmentChance(6) > VolcanicMine.fragmentChance(1));
+        assertEquals(0, seen[5]);
+        assertTrue(seen[0] > 0 && seen[4] > 0);
+        // At 99 a fragment is runite with the runite roll's chance (low/high -10/80).
+        Random r99 = new Random(2);
+        int runite = 0;
+        int n = 100_000;
+        for (int i = 0; i < n; i++) {
+            if (VolcanicMine.fragmentTier(99, r99::nextDouble) == 6) {
+                runite++;
+            }
+        }
+        assertEquals(com.runecraft.osrs.Chance.lerp(99, -10, 80), runite / (double) n, 0.004);
+        assertTrue(VolcanicMine.fragmentChance(5) > VolcanicMine.fragmentChance(1));
         assertEquals(57_525, VolcanicMine.petChance(99));
-        assertEquals(2, VolcanicMine.stabilityDelta(new int[]{50, 50, 50}));
-        assertEquals(-1, VolcanicMine.stabilityDelta(new int[]{0, 100, 50}));
+        // Pressure within 40-60% keeps the mine stable; each 10% outside costs a point.
+        assertEquals(1, VolcanicMine.stabilityDelta(new int[]{40, 50, 60}));
+        assertEquals(-1, VolcanicMine.stabilityDelta(new int[]{35, 50, 50}));
+        assertEquals(-8, VolcanicMine.stabilityDelta(new int[]{0, 100, 50}));
+        // The last 30 seconds: no mining, stability pinned at 5%.
+        assertTrue(VolcanicMine.workable(949));
+        assertFalse(VolcanicMine.workable(950));
+        assertEquals(5, VolcanicMine.stability(80, new int[]{50, 50, 50}, 960));
+        assertEquals(81, VolcanicMine.stability(80, new int[]{50, 50, 50}, 100));
+        // Capping: 50 points a time, 300 a game.
+        assertEquals(50, VolcanicMine.capPoints(0));
+        assertEquals(0, VolcanicMine.capPoints(300));
+        assertEquals(100, VolcanicMine.COMPLETION_POINTS);
         assertEquals(100, VolcanicMine.ventStep(99, true));
         assertEquals(0, VolcanicMine.ventStep(1, false));
+        // Petrified Pete's Ore Shop prices.
+        RewardShop pete = RewardShops.get("volcanic_mine");
+        assertNotNull(pete);
+        Map<String, Integer> prices = new HashMap<>();
+        for (RewardShop.Entry e : pete.entries()) {
+            assertTrue(ItemCatalog.exists(e.item()), e.item());
+            prices.put(e.item(), e.costs().get(0).amount());
+            assertEquals(MinigameCurrencies.VOLCANIC_MINE, e.costs().get(0).currency());
+        }
+        assertEquals(855, prices.get("runite_ore"));
+        assertEquals(30, prices.get("iron_ore"));
+        assertEquals(39_000, prices.get("prospector_jacket"));
         Minigame vm = Minigame.VOLCANIC_MINE;
         assertEquals(Skill.MINING, vm.skill());
         assertEquals(50, vm.level());

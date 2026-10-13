@@ -241,6 +241,9 @@ public final class MinigameItems {
         for (GuardiansRift.Cell c : GuardiansRift.Cell.values()) {
             single(items, c.item, c.label + " cell", "orb", cellColours[c.ordinal()], 0, "A magical cell charged with runic energy.");
         }
+        // Volcanic Mine boulder byproducts (also sold in Petrified Pete's Ore Shop).
+        simple(items, "calcite", "Calcite", "ore", 0xE8E0C8, 100, "A white crystalline mineral.");
+        simple(items, "pyrophosphite", "Pyrophosphite", "ore", 0xC06A3A, 100, "A crystalline mineral that shines with an inner light.");
         single(items, "atlaxs_diary", "Atlax's diary", "book", 0x6A4A8A, 1, "An old diary of someone's experiences at the Temple of the Eye.");
         wear(items, "hat_of_the_eye", "Hat of the eye", "cowl", 0x8A2A8A, Slot.HEAD, 1,
                 s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0)).examine("+10% runes crafted (+60% with the full raiments).");

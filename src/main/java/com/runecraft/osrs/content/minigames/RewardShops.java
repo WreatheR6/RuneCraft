@@ -177,6 +177,24 @@ public final class RewardShops {
         }
         tb.item("bottle_of_rum", EIGHT, 20).item("the_stuff", EIGHT, 50);
 
+        // Volcanic Mine: Petrified Pete's Ore Shop (OSRS Wiki prices; ores are noted there). Not stocked here: the
+        // volcanic mine teleport, the larger water container, the ash covered tome and ore packs.
+        shop("volcanic_mine", "Petrified Pete's Ore Shop")
+                .item("iron_ore", VOLCANIC_MINE, 30)
+                .item("silver_ore", VOLCANIC_MINE, 55)
+                .item("coal", VOLCANIC_MINE, 60)
+                .item("gold_ore", VOLCANIC_MINE, 150)
+                .item("mithril_ore", VOLCANIC_MINE, 150)
+                .item("adamantite_ore", VOLCANIC_MINE, 300)
+                .item("runite_ore", VOLCANIC_MINE, 855)
+                .item("volcanic_ash", VOLCANIC_MINE, 40)
+                .item("calcite", VOLCANIC_MINE, 70)
+                .item("pyrophosphite", VOLCANIC_MINE, 70)
+                .item("prospector_helmet", VOLCANIC_MINE, 26_000)
+                .item("prospector_jacket", VOLCANIC_MINE, 39_000)
+                .item("prospector_legs", VOLCANIC_MINE, 34_000)
+                .item("prospector_boots", VOLCANIC_MINE, 21_000);
+
         // Tithe Farm reward shop.
         shop("tithe_farm", "Tithe Farm Rewards")
                 .item("farmers_strawhat", TITHE, 75)
