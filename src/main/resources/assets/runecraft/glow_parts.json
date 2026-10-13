@@ -574,6 +574,9 @@
     "leg_b_r",
     "tail_tuft"
   ],
+  "demonic_gorilla": [
+    "eyes"
+  ],
   "dessourt": [
     "head",
     "soul_glow",
@@ -2041,6 +2044,9 @@
     "fireball",
     "flame_trail",
     "back_flames"
+  ],
+  "tortured_gorilla": [
+    "eyes"
   ],
   "tree_spirit": [
     "head"

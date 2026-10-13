@@ -52,7 +52,8 @@ public final class SlayerBossTasks {
         b("chaos_elemental", "Chaos Elemental", 1, true, Region.WILDERNESS, "chaos_elemental");
         b("chaos_fanatic", "Chaos Fanatic", 1, true, Region.WILDERNESS, "chaos_fanatic");
         b("commander_zilyana", "Commander Zilyana", 1, false, Region.TROLL_COUNTRY, "commander_zilyana");
-        b("crazy_archaeologist", "Crazy Archaeologist", 1, true, Region.WILDERNESS, "crazy_archaeologist");
+        b("crazy_archaeologist", "Crazy Archaeologist", 1, true, Region.WILDERNESS, "crazy_archaeologist",
+                "deranged_archaeologist"); // the Deranged archaeologist counts unless Krystilia (Wilderness) set it
         b("dagannoth_kings", "Dagannoth Kings", 1, false, Region.FREMENNIK_PROVINCE, "dagannoth_rex", "dagannoth_prime",
                 "dagannoth_supreme");
         b("duke_sucellus", "Duke Sucellus", 1, false, Region.FREMENNIK_PROVINCE, "duke_sucellus");

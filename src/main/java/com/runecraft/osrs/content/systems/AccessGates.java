@@ -306,6 +306,9 @@ public final class AccessGates {
                 questStarted("monkey_madness_i", "You can't reach Ape Atoll yet. Start Monkey Madness I first."));
         gate("lunar_isle", "Lunar Isle", List.of(new Rect(2060, 3850, 2180, 3970)), 2213, 3800,
                 questStarted("lunar_diplomacy", "The Lunar Isle is hidden from you. Start Lunar Diplomacy first."));
+        // The hut over the Crash Site Cavern ladder (dungeons module, CrashSiteCavern).
+        gate("crash_site_cavern", "Crash Site Cavern", List.of(new Rect(2437, 3527, 2439, 3529)), 2438, 3523,
+                questDone("monkey_madness_ii", "Why would you want to go in there? (You need to complete Monkey Madness II.)"));
 
         // ---- guilds (rectangles are the hand-built buildings / grounds in osrs/content/world)
         gate("heroes_guild", "Heroes' Guild", List.of(new Rect(2890, 3504, 2901, 3516)),

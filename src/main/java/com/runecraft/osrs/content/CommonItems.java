@@ -46,16 +46,16 @@ public final class CommonItems {
                 .examine("Combine with a necklace of anguish to make a necklace of rupture (84 Crafting).");
         items.add("tormented_synapse", "Tormented synapse", Kind.SIMPLE, "orb", 0xE05020).value(800_000).stack(1)
                 .examine("A twitching synapse from a tormented demon. Its fiery energy could empower a demonbane weapon.");
-        // Ballista parts (Monkey Madness II): demonic and tortured gorilla drops in OSRS; assembled by the skilling module
-        // into the ballistae of CommonEquipment.
-        items.add("ballista_limbs", "Ballista limbs", Kind.SIMPLE, "limbs", 0x6A5A4A).value(50000).stack(1)
-                .examine("Sturdy struts.");
-        items.add("ballista_spring", "Ballista spring", Kind.SIMPLE, "core", 0x8A8A9A).value(50000).stack(1)
+        // Caught from maniacal monkeys (skilling, Hunter) and dropped by demonic gorillas (slayer); strings a ballista.
+        items.add("monkey_tail", "Monkey tail", Kind.SIMPLE, "tail", 0x8A6A3A).value(1).examine("A whole maniacal monkey tail. Ballista string!");
+        // Demonic gorilla uniques (slayer module drops them; ballistae are fletched from them, uncut zenyte crafted).
+        items.add("zenyte_shard", "Zenyte shard", Kind.SIMPLE, "shard", 0xF0A020).value(75_000)
+                .examine("A shard of unstable zenyte.");
+        items.add("ballista_limbs", "Ballista limbs", Kind.SIMPLE, "limbs", 0x8A6A4A).value(50_000).examine("Sturdy struts.");
+        items.add("ballista_spring", "Ballista spring", Kind.SIMPLE, "clockwork", 0x9A9AA0).value(50_000)
                 .examine("A spring-loaded mechanism.");
-        items.add("light_frame", "Light frame", Kind.SIMPLE, "stock", 0x9A7A4A).value(50000).stack(1)
-                .examine("A light wooden frame.");
-        items.add("heavy_frame", "Heavy frame", Kind.SIMPLE, "stock", 0x5A4A3A).value(50000).stack(1)
-                .examine("A heavy wooden frame.");
+        items.add("light_frame", "Light frame", Kind.SIMPLE, "stock", 0xA0784A).value(50_000).examine("A light wooden frame.");
+        items.add("heavy_frame", "Heavy frame", Kind.SIMPLE, "stock", 0x6A4A2A).value(50_000).examine("A heavy wooden frame.");
         CommonEquipment.add(items);
     }
 }

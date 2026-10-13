@@ -1,0 +1,10 @@
+# weirdgloop/osrs-dps-calc cdn/json/monsters.json (October 2026) for the scope-A creatures; see BossReferenceStatsTest.
+# id|name|level|hp|att|str|def|magic|ranged|speed|dstab|dslash|dcrush|dmagic|dranged(standard)|amelee|amagic|aranged|attributes|max_hit
+brutus|Brutus|30|58|12|25|10|8|1|5|-7|-7|-7|-3|-7|0|0|0||3 (melee)
+demonic_brutus|Demonic Brutus|1224|750|380|418|200|272|1|5|182|65|216|520|418|0|0|0||43 (Melee)
+demonic_gorilla|Demonic gorilla|275|380|205|195|200|195|195|5|0|0|0|20|0|43|40|43|demon|31 (normal)
+deranged_archaeologist|Deranged archaeologist|276|200|280|160|280|1|320|3|20|20|50|300|300|280|0|90||25 (melee)
+phosanis_nightmare|Phosani's Nightmare|1024|3200|150|150|150|150|150|6|120|180|40|600|600|220|220|220||73 (melee)
+shellbane_gryphon|Shellbane gryphon|235|400|160|210|120|100|150|5|10|20|40|100|60|0|0|20||22 ; 64 (whirlwinds) ; 30 (knockback)
+the_nightmare|The Nightmare|814|2400|150|150|150|150|150|6|120|180|40|600|600|140|140|140||50/60 (Melee)
+tortured_gorilla|Tortured gorilla|141|210|105|95|95|95|95|5|0|0|0|25|0|22|20|22||13

@@ -247,8 +247,10 @@ public final class CombatAchievements {
         monster("Skeletal Wyvern", "skeletal wyvern");
         monster("Tormented Demon", "tormented demon");
         monster("Wyrm", "wyrm");
-        // Not in this world yet: Demonic gorillas, the Deranged archaeologist, TzHaar-Ket-Rak's challenges and the
-        // raid challenge/hard/expert modes. Their tasks stay untracked.
+        monster("Demonic Gorilla", "demonic gorilla");
+        boss("Deranged Archaeologist", "deranged_archaeologist");
+        // Not in this world yet: TzHaar-Ket-Rak's challenges and the raid challenge/hard/expert modes. Their tasks stay
+        // untracked.
 
         CANONICAL.put("zulrah_magma", "zulrah");
         CANONICAL.put("zulrah_tanzanite", "zulrah");

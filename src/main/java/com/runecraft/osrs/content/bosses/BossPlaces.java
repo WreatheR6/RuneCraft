@@ -15,6 +15,10 @@ public final class BossPlaces {
     }
 
     public static final String FONT_OF_CONSUMPTION = "font_of_consumption";
+    /** The growth in the Scar: pluck it for abyssal potatoes (after Desert Treasure II). */
+    public static final String SCAR_GROWTH = "scar_growth";
+    /** The Deranged archaeologist's clearing at the south end of Fossil Island's Tar Swamp. */
+    public static final String DERANGED_SWAMP = "deranged_archaeologist_swamp";
 
     public static List<PlaceDef> all() {
         return List.of(
@@ -40,7 +44,7 @@ public final class BossPlaces {
                 PlaceDef.of("ghorrock_dungeon", "Ghorrock Dungeon", 2911, 3950, Style.CAVE, List.of()),
                 PlaceDef.of("ghorrock_prison", "Ghorrock Prison", 2938, 3965, Style.RUINS, List.of()),
                 // The Scar is reached from the Ruins of Ullek; the Lassar Undercity through the Ancient Vault by the Digsite.
-                PlaceDef.of("the_scar", "The Scar", 3418, 2790, Style.RUINS, List.of()),
+                PlaceDef.of("the_scar", "The Scar", 3418, 2790, Style.RUINS, List.of(SCAR_GROWTH)),
                 PlaceDef.of("lassar_undercity", "Lassar Undercity", 3360, 3432, Style.RUINS, List.of()),
                 PlaceDef.of("stranglewood", "The Stranglewood", 1160, 3430, Style.RUINS, List.of()),
                 PlaceDef.of("varrock_sewers", "Varrock Sewers (Scurrius)", 3237, 3458, Style.CAVE, List.of()),
@@ -56,17 +60,22 @@ public final class BossPlaces {
                 PlaceDef.of("yamas_lair", "Yama's Lair", 1404, 3712, Style.RUINS, List.of()), // approx
                 // Mokhaiotl's lair is entered from the Tlati jungle north of Tal Teklan.
                 PlaceDef.of("mokhaiotl_lair", "Mokhaiotl's lair", 1262, 3130, Style.CAVE, List.of()), // approx
-                // The Gemstone Crab roams between three Tlati Rainforest mines; this is the western one.
-                PlaceDef.of("gemstone_crab_mine", "Tlati Rainforest mine (Gemstone Crab)", 1288, 3060, Style.CAMP, List.of()), // approx
-                // The Shellbane Gryphon Cave sits at the centre of the Great Conch.
-                PlaceDef.of("shellbane_gryphon_cave", "Shellbane Gryphon Cave", 3190, 2450, Style.CAVE, List.of()), // approx
-                // Brutus' pen in the Lumbridge cow field east of the River Lum.
-                PlaceDef.of("brutus_pen", "Brutus' pen", 3262, 3285, Style.CAMP, List.of()), // approx
+                // The Gemstone Crab moves between three Tlati Rainforest spawns (wiki: 1275,3160, 1351,3110 and 1237,3042); this is
+                // the south-western one.
+                PlaceDef.of("gemstone_crab_mine", "Tlati Rainforest mine (Gemstone Crab)", 1237, 3042, Style.CAMP, List.of()),
+                // The Shellbane Gryphon Cave entrance in the centre of the Great Conch, north of fairy ring CJQ (wiki map pin).
+                PlaceDef.of("shellbane_gryphon_cave", "Shellbane Gryphon Cave", 3176, 2477, Style.CAVE, List.of()),
+                // Brutus' spawn in the Lumbridge cow field east of the River Lum (wiki location tile).
+                PlaceDef.of("brutus_pen", "Brutus' pen", 3263, 3297, Style.CAMP, List.of()),
+                // The Deranged archaeologist spawns at cache tile 3683, 3706 (mejrs NPCList_OSRS.json), the south end of the Tar
+                // Swamp; GielinorGeography's coarse Fossil Island coast ends at about y 3727 there, so the clearing sits just inside it.
+                PlaceDef.of(DERANGED_SWAMP, "Deranged archaeologist's clearing", 3683, 3735, Style.NONE, List.of()), // approx
                 // The Maggot King's hive in the Vampyrium, reached through Darkmeyer.
                 PlaceDef.of("maggot_kings_hive", "Maggot King's hive", 3660, 3310, Style.CAVE, List.of())); // approx
     }
 
     public static List<BlockDef> blocks() {
-        return List.of(BlockDef.scripted(FONT_OF_CONSUMPTION, "Font of Consumption", 0x6A1A3A, "altar"));
+        return List.of(BlockDef.scripted(FONT_OF_CONSUMPTION, "Font of Consumption", 0x6A1A3A, "altar"),
+                BlockDef.scripted(SCAR_GROWTH, "Growth", 0x4A2A4A, "plant"));
     }
 }

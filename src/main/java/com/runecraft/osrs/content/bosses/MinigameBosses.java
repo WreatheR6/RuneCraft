@@ -49,6 +49,15 @@ public final class MinigameBosses {
             .telegraph(4, "The Nightmare prepares to surge across the arena!").particle("minecraft:portal");
     public static final AttackDef NIGHTMARE_CURSE = AttackDef.of("curse", AttackType.MAGIC, 0, 14, 1)
             .message("The Nightmare curses you, shuffling your prayers!").particle("minecraft:enchant");
+    // Phosani's Nightmare: the right protection prayer blocks her standard attacks fully, but they hit far harder (wiki:
+    // melee 73, magic and ranged 80, the surge ~85).
+    public static final AttackDef PHOSANI_MELEE = AttackDef.of("claw_swipe", AttackType.SLASH, 73, 4.5, 4);
+    public static final AttackDef PHOSANI_MAGIC = AttackDef.of("dream_blast", AttackType.MAGIC, 80, 14, 3)
+            .telegraph(2, "Phosani's Nightmare raises her hands...").particle("minecraft:witch");
+    public static final AttackDef PHOSANI_RANGED = AttackDef.of("thrown_soul", AttackType.RANGED, 80, 14, 3)
+            .telegraph(2, "Phosani's Nightmare winds up a throw...").particle("minecraft:soul");
+    public static final AttackDef PHOSANI_SURGE = AttackDef.of("surge", AttackType.MAGIC, 85, 14, 1).special(Special.BLINK, 0) // approx (~85)
+            .telegraph(4, "Phosani's Nightmare prepares to surge across the arena!").particle("minecraft:portal");
 
     // ---- Phantom Muspah ----
     public static final AttackDef MUSPAH_RANGED = AttackDef.of("ice_shard", AttackType.RANGED, 33, 14, 5).particle("minecraft:snowflake");
@@ -115,19 +124,21 @@ public final class MinigameBosses {
                 .size(1.4f, 2.6f, 1.8f).moveSpeed(0.0);
     }
 
-    private static BossDef nightmareBase(String id, String name, int level, int hp) {
+    private static BossDef nightmareBase(String id, String name, int level, int hp, AttackDef melee, AttackDef magic, AttackDef ranged,
+                                         AttackDef surge) {
         return BossDef.of(id, name).level(level).stats(hp, 150, 150, 150, 150, 150).speed(6)
                 .defenceBonus(120, 180, 40, 600, 600) // wiki/DPS calc: stab 120, slash 180, crush 40, magic/ranged 600
-                .attack(NIGHTMARE_MELEE).attack(NIGHTMARE_MAGIC).attack(NIGHTMARE_RANGED).attack(NIGHTMARE_CLAWS)
+                .attack(melee).attack(magic).attack(ranged).attack(NIGHTMARE_CLAWS)
                 .phase(66, "The Nightmare's shield reforms! Charge the totems!", 1.0, false,
-                        NIGHTMARE_MELEE, NIGHTMARE_MAGIC, NIGHTMARE_RANGED, NIGHTMARE_CLAWS, NIGHTMARE_SPORES, NIGHTMARE_CURSE)
+                        melee, magic, ranged, NIGHTMARE_CLAWS, NIGHTMARE_SPORES, NIGHTMARE_CURSE)
                 .phase(33, "The Nightmare's shield reforms once more!", 1.1, false,
-                        NIGHTMARE_MELEE, NIGHTMARE_MAGIC, NIGHTMARE_RANGED, NIGHTMARE_CLAWS, NIGHTMARE_SURGE, NIGHTMARE_SPORES)
+                        melee, magic, ranged, NIGHTMARE_CLAWS, surge, NIGHTMARE_SPORES)
                 .at("sisterhood_sanctuary").arena(14, "crypt").size(1.4f, 3.2f, 1.8f).moveSpeed(0.2);
     }
 
     static BossDef nightmare() {
-        return nightmareBase("the_nightmare", "The Nightmare", 814, 2400).attackBonus(140, 140, 140)
+        return nightmareBase("the_nightmare", "The Nightmare", 814, 2400, NIGHTMARE_MELEE, NIGHTMARE_MAGIC, NIGHTMARE_RANGED,
+                NIGHTMARE_SURGE).attackBonus(140, 140, 140)
                 .drops(Drop.of("nightmare_staff", 1, 1, 400), Drop.of("inquisitors_great_helm", 1, 1, 600),
                         Drop.of("inquisitors_hauberk", 1, 1, 600), Drop.of("inquisitors_plateskirt", 1, 1, 600),
                         Drop.of("inquisitors_mace", 1, 1, 1200), Drop.of("eldritch_orb", 1, 1, 1200), Drop.of("harmonised_orb", 1, 1, 1200),
@@ -138,13 +149,17 @@ public final class MinigameBosses {
     }
 
     static BossDef phosani() {
-        return nightmareBase("phosanis_nightmare", "Phosani's Nightmare", 1000, 2000).attackBonus(220, 220, 220) // max hits approx (shared)
-                .drops(Drop.of("nightmare_staff", 1, 1, 450), Drop.of("inquisitors_great_helm", 1, 1, 700),
+        // Wiki/DPS calculator: level 1,024, 3,200 hitpoints. Uniques per kill: staff 69/35,000, mace 31/35,000, armour 1/700
+        // each, orbs 1/1,600 each; parasitic egg 1/200, jar 1/4,000, clue 1/35 (Mod Arcane). Commons follow the wiki's /100 table.
+        return nightmareBase("phosanis_nightmare", "Phosani's Nightmare", 1024, 3200, PHOSANI_MELEE, PHOSANI_MAGIC, PHOSANI_RANGED,
+                PHOSANI_SURGE).attackBonus(220, 220, 220)
+                .drops(Drop.always("big_bones"), Drop.of("nightmare_staff", 1, 1, 507), Drop.of("inquisitors_great_helm", 1, 1, 700),
                         Drop.of("inquisitors_hauberk", 1, 1, 700), Drop.of("inquisitors_plateskirt", 1, 1, 700),
-                        Drop.of("inquisitors_mace", 1, 1, 1400), Drop.of("eldritch_orb", 1, 1, 1400), Drop.of("harmonised_orb", 1, 1, 1400),
-                        Drop.of("volatile_orb", 1, 1, 1400), Drop.of("parasitic_egg", 1, 1, 200), Drop.of("jar_of_dreams", 1, 1, 4000),
-                        Drop.of("runite_ore", 10, 10, 8), Drop.of("blood_rune", 300, 300, 8), Drop.of("coins", 30000, 80000, 4),
-                        Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of("inquisitors_mace", 1, 1, 1129), Drop.of("eldritch_orb", 1, 1, 1600), Drop.of("harmonised_orb", 1, 1, 1600),
+                        Drop.of("volatile_orb", 1, 1, 1600), Drop.of("parasitic_egg", 1, 1, 200), Drop.of("jar_of_dreams", 1, 1, 4000),
+                        Drop.of("runite_ore", 11, 26, 50), Drop.of("blood_rune", 343, 765, 25), Drop.of("soul_rune", 110, 228, 25),
+                        Drop.of("death_rune", 165, 305, 25), Drop.of("magic_logs", 40, 95, 25), Drop.of("shark", 13, 26, 17),
+                        Drop.of("coins", 41417, 74500, 50), Drop.of("clue_scroll_elite", 1, 1, 35))
                 .pet("pet_little_nightmare");
     }
 

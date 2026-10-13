@@ -363,6 +363,8 @@ public final class EquipmentBonuses {
         put("adamant_crossbow", 6, 0, 0, 0, 0, 78,  0, 0, 0, 0, 0,  0, 0, 0, 0);
         put("rune_crossbow", 6, 0, 0, 0, 0, 90,  0, 0, 0, 0, 0,  0, 0, 0, 0);
         put("dragon_crossbow", 6, 0, 0, 0, 0, 94,  0, 0, 0, 0, 0,  0, 0, 0, 0);
+        twoH("light_ballista", 7, 0, 0, 0, 0, 110,  0, 0, 0, 0, 0,  0, 0, 0, 0);
+        twoH("heavy_ballista", 7, 0, 0, 0, 0, 125,  0, 0, 0, 0, 0,  0, 15, 0, 0);
         ammo("bronze_bolts", 10);
         ammo("blurite_bolts", 28);
         ammo("iron_bolts", 46);
@@ -409,8 +411,6 @@ public final class EquipmentBonuses {
         ammo("dragon_javelin", 150);
         ammo("dragon_knife", 30);
         ammo("dragon_thrownaxe", 47);
-        twoH("light_ballista", 7, 0, 0, 0, 0, 110,  0, 0, 0, 0, 0,  0, 0, 0, 0);
-        twoH("heavy_ballista", 7, 0, 0, 0, 0, 125,  0, 0, 0, 0, 0,  0, 15, 0, 0);
         ammo("amethyst_broad_bolts", 115);
         ammo("kebbit_bolts", 28);
         ammo("long_kebbit_bolts", 38);
@@ -498,6 +498,7 @@ public final class EquipmentBonuses {
         put("accursed_sceptre", 4, 0, 0, 0, 22, 0,  0, 0, 0, 20, 0,  0, 0, 0, 0);
         put("dragon_chainbody", 0, 0, 0, 0, -15, 0,  81, 93, 98, -3, 82,  0, 0, 0, 0);
         put("berserker_ring", 0, 0, 0, 0, 0, 0,  0, 0, 4, 0, 0,  4, 0, 0, 0);
+        put("steel_ring", 0, 0, 0, 0, 0, 0,  24, 24, 24, 0, 0,  0, 0, 0, 0);
         put("warrior_ring", 0, 0, 4, 0, 0, 0,  0, 4, 0, 0, 0,  0, 0, 0, 0);
         put("seers_ring", 0, 0, 0, 0, 6, 0,  0, 0, 0, 6, 0,  0, 0, 0, 0);
         put("archers_ring", 0, 0, 0, 0, 0, 4,  0, 0, 0, 0, 4,  0, 0, 0, 0);
