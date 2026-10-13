@@ -431,4 +431,29 @@ class SkillingMinigameRewardsTest {
         assertTrue(ItemCatalog.exists("pet_rock_golem"));
         assertEquals("Volcanic Mine points", MinigameCurrencies.name(MinigameCurrencies.VOLCANIC_MINE));
     }
+
+    @Test
+    void rewardsGuardianPortalTalismansAndVolcanicExtras() {
+        // Searches: a point of each type first, else 25 abyssal pearls; big-search does five.
+        assertEquals(GuardiansRewards.Payment.POINTS, GuardiansRewards.payment(1, 1, 0));
+        assertEquals(GuardiansRewards.Payment.PEARLS, GuardiansRewards.payment(3, 0, 25));
+        assertEquals(GuardiansRewards.Payment.NONE, GuardiansRewards.payment(0, 5, 24));
+        assertEquals(5, GuardiansRewards.BIG_SEARCH);
+        // Polyelemental stones give 3 energy; portal talismans 1/250 per essence.
+        assertEquals(3, GuardiansRewards.stoneEnergy(0, 1));
+        assertEquals(250, GuardiansRewards.PORTAL_TALISMAN_CHANCE);
+        for (Object[] a : MinigameRules.Guardians.ALTARS) {
+            assertTrue(ItemCatalog.exists(GuardiansRewards.portalTalisman((String) a[0])), (String) a[0]);
+        }
+        assertTrue(ItemCatalog.exists(GuardiansRewards.POLY_STONE));
+        for (Object[] c : GuardiansRewards.COMBINATIONS) {
+            assertTrue(ItemCatalog.exists((String) c[3]), (String) c[3]);
+        }
+        // Lava beast: 60 hp -> 6 points + 3 for the kill; Petrified Pete's ores come noted.
+        assertEquals(9, VolcanicMine.lavaBeastPoints());
+        assertEquals(0.0, VolcanicMine.earthquakeChance(80), 1e-9);
+        assertTrue(VolcanicMine.earthquakeChance(10) > VolcanicMine.earthquakeChance(40));
+        assertTrue(RewardShops.noted("volcanic_mine", "runite_ore"));
+        assertFalse(RewardShops.noted("volcanic_mine", "prospector_helmet"));
+    }
 }

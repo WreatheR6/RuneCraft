@@ -67,8 +67,7 @@ final class LateQuestsA {
         b.npc("malignius_mortifer", "Malignius Mortifer", "lumbridge_swamp_camp", -3, 3, 0xC8C0C0, 0x2A1A3A, 0x1A0A2A, 0x1A1A20);
         b.items(s -> s.add("magic_secateurs", "Magic secateurs", Kind.TOOL, "knife", 0xA060E0).value(1).stack(1)
                 .examine("Magic secateurs. Increase the yield of herbs, allotments and hops by 10%."));
-        b.item("star_flower", "Star flower", "herb", 0xE0E080, "A rare flower, ingredient of the Fairy Queen's cure.");
-        b.item("gorak_claws", "Gorak claws", "bones", 0x6A3A6A, "Claws from a gorak.");
+        // star_flower and gorak_claws live in CommonItems (Herblore makes magic essence from them).
         b.item("queens_secateurs", "Queen's secateurs", "knife", 0xE0C047, "The Fairy Queen's secateurs.");
         b.boss(BossDef.of("tanglefoot", "Tanglefoot").level(111).stats(102, 90, 90, 90, 1, 1).speed(5)
                 .attack(AttackDef.of("vine_whip", AttackType.CRUSH, 15, 3, 7))

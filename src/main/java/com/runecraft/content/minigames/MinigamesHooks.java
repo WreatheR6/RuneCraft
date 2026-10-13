@@ -6,6 +6,7 @@ import com.runecraft.boss.BossScripts;
 import com.runecraft.content.BlockHooks;
 import com.runecraft.content.GameEvents;
 import com.runecraft.content.ModuleHooks;
+import com.runecraft.content.minigames.games.GuardiansSession;
 import com.runecraft.content.minigames.games.PenanceQueenScript;
 import com.runecraft.content.minigames.games.PyramidPlunderSession;
 import com.runecraft.content.minigames.games.RoguesDenSession;
@@ -87,6 +88,7 @@ public final class MinigamesHooks implements ModuleHooks {
         BlockHooks.register("pyramid_plunder_artefact_trader", (player, pos, state) -> PyramidPlunderSession.sellArtefacts(player));
         BlockHooks.register("rogues_den_jewel_trader", (player, pos, state) -> RoguesDenSession.tradeJewel(player));
         BlockHooks.register("tempoross_reward_pool", (player, pos, state) -> TemporossSession.rewardPool(player));
+        BlockHooks.register("gotr_rift_search", (player, pos, state) -> GuardiansSession.rewardsGuardian(player));
         QuestScripts.onTalk("mg_simon_templeton", (player, npc) -> PyramidPlunderSession.sellArtefacts(player));
         QuestScripts.onTalk("mg_brian_orichard", (player, npc) -> RoguesDenSession.tradeJewel(player));
         talk("mg_tzhaar_mej_jal", "TzHaar-Mej-Jal", "You want to challenge the Fight Cave, JalYt? Sixty-three waves of TzHaar await. "

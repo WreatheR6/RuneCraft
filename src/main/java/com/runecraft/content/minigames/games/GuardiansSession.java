@@ -28,8 +28,13 @@ import java.util.UUID;
  * essence at the workbench, then enter the active elemental or catalytic guardian to craft runes
  * (the raiments of the eye add up to 60% more). Each essence imbued gives a guardian stone; each
  * stone placed in the Great Guardian gives 2 energy of its type and powers him (250 stones per player
- * to reach 100%). With 300+ energy, every 100 energy of a type is a reward point, and each Rewards
- * Guardian search costs one elemental and one catalytic point.
+ * to reach 100%). With 300+ energy, every 100 energy of a type is a reward point. Points are kept: the
+ * Rewards Guardian (in the temple and at its entrance) is searched by hand for one elemental and one
+ * catalytic point, or 25 abyssal pearls; sneak-use for a big search of five.
+ *
+ * <p>Combination runes: entering an elemental guardian with another element's talisman and its runes makes
+ * combination runes (polyelemental stones, 3 energy each). Portal talismans (1/250 per essence) open an
+ * inactive guardian of their altar: hold one in the main hand when entering that kind of guardian.
  *
  * <p>Defence ({@link GuardiansRift}): uncharged cells from the cell table are charged at the active altar;
  * a charged cell on a cell tile raises, strengthens or recharges a barrier, or with a chisel at an essence
@@ -73,6 +78,7 @@ public class GuardiansSession extends MinigameSession {
         place(14, 6, "gotr_elemental_essence");
         place(-12, 6, "gotr_catalytic_essence");
         place(0, 20, "minigame_exit");
+        place(16, 16, "gotr_rift_search");
     }
 
     @Override
@@ -254,18 +260,37 @@ public class GuardiansSession extends MinigameSession {
                 return true;
             }
             case "elemental_rift", "catalytic_rift" -> {
-                craft(player, blockId.startsWith("elemental") ? elemental : catalytic);
+                boolean cat = blockId.startsWith("catalytic");
+                int altar = cat ? catalytic : elemental;
+                // A portal talisman held in the main hand opens its (inactive) guardian of this kind and is used up.
+                String held = Inv.idOf(player.getMainHandStack());
+                for (int i = 0; i < Guardians.ALTARS.length; i++) {
+                    if ((Boolean) Guardians.ALTARS[i][4] == cat && i != altar
+                            && held.equals(GuardiansRewards.portalTalisman((String) Guardians.ALTARS[i][0]))) {
+                        Inv.remove(player, held, 1);
+                        altar = i;
+                        Msg.game(player, "The portal talisman crumbles as the Guardian of " + name(i) + " lets you in.");
+                        break;
+                    }
+                }
+                craft(player, altar);
+                return true;
+            }
+            case "gotr_rift_search" -> {
+                rewardsGuardian(player);
                 return true;
             }
             case "gotr_great_guardian" -> {
                 int el = Inv.remove(player, "elemental_guardian_stone", 1000);
                 int cat = Inv.remove(player, "catalytic_guardian_stone", 1000);
+                int poly = Inv.remove(player, GuardiansRewards.POLY_STONE, 1000);
+                el += poly;
                 if (el + cat == 0) {
                     Msg.game(player, "The Great Guardian needs guardian stones. Craft runes to earn them.");
                     return true;
                 }
                 // Each stone gives 2 energy of its type and 5 Runecraft XP (OSRS Wiki); 250 stones per player fill him.
-                gain(player, GuardiansRewards.stoneEnergy(el, 0), GuardiansRewards.stoneEnergy(cat, 0));
+                gain(player, GuardiansRewards.stoneEnergy(el - poly, poly), GuardiansRewards.stoneEnergy(cat, 0));
                 power = Math.min(100, power + (el + cat) * GuardiansRewards.powerPerStone(Math.max(1, playerCount())));
                 xp(player, Skill.RUNECRAFT, (el + cat) * GuardiansRewards.XP_PER_STONE);
                 Msg.game(player, "You power the Great Guardian with " + (el + cat) + " stone" + (el + cat > 1 ? "s" : "") + ".");
@@ -309,7 +334,47 @@ public class GuardiansSession extends MinigameSession {
             Msg.game(p, "You need guardian essence to craft runes here.");
             return;
         }
+        // A portal talisman for this altar: 1/250 per essence while none for it is held.
+        String portal = GuardiansRewards.portalTalisman((String) a[0]);
+        if (!Inv.has(p, portal, 1)) {
+            for (int i = 0; i < ess; i++) {
+                if (random.nextInt(GuardiansRewards.PORTAL_TALISMAN_CHANCE) == 0) {
+                    Inv.give(p, portal, 1);
+                    Msg.game(p, "You discover a strange talisman during the runecrafting process!");
+                    break;
+                }
+            }
+        }
         double bonus = Guardians.raimentBonus(raiments(p));
+        // Combination runes: another element's talisman and one of its runes per essence (polyelemental stones).
+        for (Object[] c : GuardiansRewards.COMBINATIONS) {
+            if (!c[0].equals(a[0]) || level(p, Skill.RUNECRAFT) < (Integer) c[4] || !Inv.has(p, (String) c[1], 1)) {
+                continue;
+            }
+            int n = Math.min(ess, Inv.count(p, (String) c[2]));
+            if (n == 0) {
+                continue;
+            }
+            Inv.remove(p, (String) c[2], n);
+            int made = 0;
+            for (int i = 0; i < n; i++) {
+                if (random.nextDouble() < GuardiansRewards.COMBINATION_SUCCESS) {
+                    made++;
+                }
+            }
+            int combo = (int) Math.floor(made * (1 + bonus) + random.nextDouble());
+            if (combo > 0) {
+                reward(p, (String) c[3], combo);
+            }
+            xp(p, Skill.RUNECRAFT, made * (Double) c[5]);
+            Inv.give(p, GuardiansRewards.POLY_STONE, n * GuardiansRewards.STONES_PER_ESSENCE);
+            Msg.game(p, "You bind " + n + " essence into " + combo + " " + ((String) c[3]).replace('_', ' ') + "s.");
+            ess -= n;
+            break;
+        }
+        if (ess == 0) {
+            return;
+        }
         int runes = (int) Math.floor(ess * (1 + bonus) + random.nextDouble());
         reward(p, (String) a[1], runes);
         xp(p, Skill.RUNECRAFT, ess * (Double) a[3]);
@@ -344,6 +409,10 @@ public class GuardiansSession extends MinigameSession {
             Inv.remove(p, "guardian_essence", 1000);
             Inv.remove(p, "elemental_guardian_stone", 1000);
             Inv.remove(p, "catalytic_guardian_stone", 1000);
+            Inv.remove(p, GuardiansRewards.POLY_STONE, 1000);
+            for (Object[] a : Guardians.ALTARS) {
+                Inv.remove(p, GuardiansRewards.portalTalisman((String) a[0]), 1000);
+            }
             Inv.remove(p, GuardiansRift.UNCHARGED_CELL, 1000);
             for (GuardiansRift.Cell c : GuardiansRift.Cell.values()) {
                 Inv.remove(p, c.item, 1000);
@@ -360,18 +429,51 @@ public class GuardiansSession extends MinigameSession {
             MinigameData data = MinigameData.of(p);
             int elPts = data.stat(p.getUuid(), "gotr_elemental_points") + GuardiansRewards.points(e[0], random.nextDouble());
             int catPts = data.stat(p.getUuid(), "gotr_catalytic_points") + GuardiansRewards.points(e[1], random.nextDouble());
-            int searches = Guardians.searches(elPts, catPts);
-            data.setStat(p.getUuid(), "gotr_elemental_points", elPts - searches);
-            data.setStat(p.getUuid(), "gotr_catalytic_points", catPts - searches);
-            for (int i = 0; i < searches; i++) {
-                MinigameItemUse.riftSearch(p);
-            }
+            data.setStat(p.getUuid(), "gotr_elemental_points", elPts);
+            data.setStat(p.getUuid(), "gotr_catalytic_points", catPts);
             xp(p, Skill.RUNECRAFT, GuardiansRewards.completionXp(level(p, Skill.RUNECRAFT)));
             int kc = data.incrementStat(p.getUuid(), "kc:" + game.id());
-            Msg.game(p, "Elemental energy: " + e[0] + ". Catalytic energy: " + e[1] + ". You search the Rewards Guardian "
-                    + searches + " time" + (searches == 1 ? "" : "s") + " (points left: " + (elPts - searches) + " elemental, "
-                    + (catPts - searches) + " catalytic). Rifts closed: " + kc + ".");
+            Msg.game(p, "Elemental energy: " + e[0] + ". Catalytic energy: " + e[1] + ". Total reward points: " + elPts
+                    + " elemental, " + catPts + " catalytic: search the Rewards Guardian to claim them. Rifts closed: " + kc + ".");
         }
+    }
+
+    /**
+     * The Rewards Guardian: one search per click (sneak-use for a big search of five), each paid with one
+     * elemental and one catalytic point, or with 25 abyssal pearls when the points have run out.
+     */
+    public static void rewardsGuardian(ServerPlayerEntity p) {
+        MinigameData data = MinigameData.of(p);
+        UUID id = p.getUuid();
+        int wanted = p.isSneaking() ? GuardiansRewards.BIG_SEARCH : 1;
+        int done = 0;
+        for (int i = 0; i < wanted; i++) {
+            int el = data.stat(id, "gotr_elemental_points");
+            int cat = data.stat(id, "gotr_catalytic_points");
+            GuardiansRewards.Payment pay = GuardiansRewards.payment(el, cat, Inv.count(p, "abyssal_pearls"));
+            if (pay == GuardiansRewards.Payment.NONE) {
+                break;
+            }
+            if (pay == GuardiansRewards.Payment.POINTS) {
+                data.setStat(id, "gotr_elemental_points", el - 1);
+                data.setStat(id, "gotr_catalytic_points", cat - 1);
+            } else {
+                Inv.remove(p, "abyssal_pearls", GuardiansRewards.PEARL_SEARCH_COST);
+            }
+            MinigameItemUse.riftSearch(p);
+            done++;
+        }
+        int searched = data.stat(id, "gotr_searches") + done;
+        data.setStat(id, "gotr_searches", searched);
+        String points = data.stat(id, "gotr_elemental_points") + " elemental and " + data.stat(id, "gotr_catalytic_points")
+                + " catalytic points";
+        if (done == 0) {
+            Msg.game(p, "You have " + points + ". A search needs one of each, or " + GuardiansRewards.PEARL_SEARCH_COST
+                    + " abyssal pearls. Close rifts with 300+ energy to earn points.");
+            return;
+        }
+        Msg.game(p, "You search the rift " + done + " time" + (done == 1 ? "" : "s") + ". You have " + points + " left ("
+                + searched + " searches in all).");
     }
 
     @Override

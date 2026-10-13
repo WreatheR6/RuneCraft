@@ -175,8 +175,9 @@ final class GatheringHooks {
             Msg.game(player, "You need a pickaxe to mine this rock. You do not have a pickaxe which you have the Mining level to use.");
             return;
         }
-        boolean vein = rock.blockId().equals("pay_dirt_vein") || rock.blockId().equals(MiningData.UPPER_VEIN);
+        boolean vein = MiningData.isPayDirtVein(rock.blockId());
         boolean upper = rock.blockId().equals(MiningData.UPPER_VEIN);
+        boolean inner = rock.blockId().equals(MiningData.INNER_VEIN);
         if (upper && !Motherlode.canUseUpperLevel(Players.data(player).skills().level(Skill.MINING),
                 SkillingState.get(player.getServer()).section("sacks").getBoolean(player.getUuidAsString() + ":upper"))) {
             Msg.game(player, "You need " + Motherlode.UPPER_LEVEL_MINING + " Mining (unboosted) and Prospector Percy's permission ("
@@ -201,6 +202,15 @@ final class GatheringHooks {
                 }
                 SkillingUtil.give(p, got.item(), 1);
                 XpService.add(p, Skill.MINING, got.xp());
+                if (vein) {
+                    // The pay-dirt's ore is decided now, at the current (boosted) level; the hopper only washes it.
+                    NbtCompound sacks = SkillingState.get(p.getServer()).section("sacks");
+                    String qk = p.getUuidAsString() + ":pending";
+                    String ore = Motherlode.wash(SkillingUtil.level(p, Skill.MINING), random::nextDouble);
+                    String q = sacks.getString(qk) + Motherlode.code(ore);
+                    int held = Inv.count(p, "pay_dirt");
+                    sacks.putString(qk, q.length() > held ? q.substring(q.length() - held) : q);
+                }
                 Msg.action(p, "You manage to mine some " + SkillingUtil.lower(SkillingUtil.name(got.item())) + ".");
                 if (vein) {
                     // A vein's timer starts with its first pay-dirt; one more can be mined once it has run out.
@@ -211,7 +221,7 @@ final class GatheringHooks {
                         VEIN_EXPIRY.put(key, now + Motherlode.veinLife(upper, random.nextDouble()));
                     } else if (now >= until) {
                         VEIN_EXPIRY.remove(key);
-                        deplete(world, pos, Motherlode.VEIN_RESPAWN);
+                        deplete(world, pos, Motherlode.veinRespawn(inner));
                         Msg.action(p, "The vein is depleted.");
                         return false;
                     }
@@ -262,14 +272,17 @@ final class GatheringHooks {
             return;
         }
         Inv.remove(player, "pay_dirt", n);
-        // The water wheel washes each pay-dirt into an ore (or a golden nugget) for the miner's level.
+        // The water wheel washes each pay-dirt into the ore (or golden nugget) rolled when it was mined. Pay-dirt
+        // with no recorded roll (mined before this was tracked, or bought) rolls at the current level.
+        String qk = key + ":pending";
+        String pending = sacks.getString(qk);
         int level = SkillingUtil.level(player, Skill.MINING);
         Random random = player.getRandom();
         int nuggets = 0;
         int lost = 0;
         double xp = 0;
         for (int i = 0; i < n; i++) {
-            String ore = Motherlode.wash(level, random::nextDouble);
+            String ore = i < pending.length() ? Motherlode.decode(pending.charAt(i)) : Motherlode.wash(level, random::nextDouble);
             if (ore.equals("golden_nugget") && ++nuggets > Motherlode.MAX_NUGGETS_PER_DEPOSIT) {
                 lost++;
                 continue;
@@ -277,6 +290,13 @@ final class GatheringHooks {
             xp += Motherlode.collectXp(ore);
             sacks.putInt(key + ":" + ore, sacks.getInt(key + ":" + ore) + 1);
         }
+        // Rolls left over belong to pay-dirt still carried; with none left (dropped or banked) they are discarded.
+        String rest = pending.length() > n ? pending.substring(n) : "";
+        int still = Inv.count(player, "pay_dirt");
+        if (rest.length() > still) {
+            rest = rest.substring(rest.length() - still);
+        }
+        sacks.putString(qk, rest);
         // The bonus XP is awarded as the washed ore reaches the sack, not when it is collected.
         if (xp > 0) {
             XpService.add(player, Skill.MINING, xp);

@@ -194,8 +194,24 @@ public final class RewardShopService {
         }
         switch (e.reward()) {
             case ITEM -> {
-                for (int i = 0; i < times; i++) {
-                    giveItem(player, e);
+                if (RewardShops.noted(shop.id(), e.item())
+                        && com.runecraft.osrs.bank.BankNotes.canNote(e.item())) {
+                    // Handed out as bank notes; whatever doesn't fit drops at the player's feet.
+                    int n = e.count() * times;
+                    net.minecraft.item.ItemStack note = com.runecraft.bank.Notes.note(e.item(), "", 1);
+                    int in = note.isEmpty() ? 0 : com.runecraft.bank.Notes.insert(player, note, n);
+                    if (note.isEmpty()) {
+                        give(player, e.item(), n);
+                    } else {
+                        if (in < n) {
+                            player.dropItem(note.copyWithCount(n - in), false);
+                        }
+                        CollectionLog.obtain(player, e.item());
+                    }
+                } else {
+                    for (int i = 0; i < times; i++) {
+                        giveItem(player, e);
+                    }
                 }
                 Msg.game(player, "You buy " + label(e) + (times > 1 ? " x" + times : "") + ".");
             }

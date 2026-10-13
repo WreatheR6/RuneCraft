@@ -234,6 +234,14 @@ public final class MinigameItems {
         simple(items, "guardian_essence", "Guardian essence", "essence", 0x9A8AE0, 0, "Essence for crafting runes in the Temple of the Eye.");
         simple(items, "elemental_guardian_stone", "Elemental guardian stone", "ore", 0xE07040, 0, "Powers the Great Guardian.");
         simple(items, "catalytic_guardian_stone", "Catalytic guardian stone", "ore", 0x8040E0, 0, "Powers the Great Guardian.");
+        simple(items, "polyelemental_guardian_stone", "Polyelemental guardian stone", "ore", 0xE0A060, 0,
+                "Powers the Great Guardian (3 elemental energy).");
+        for (Object[] a : MinigameRules.Guardians.ALTARS) {
+            String altar = (String) a[0];
+            simple(items, GuardiansRewards.portalTalisman(altar), Character.toUpperCase(altar.charAt(0)) + altar.substring(1)
+                    + " portal talisman", "talisman", (Boolean) a[4] ? 0x8040E0 : 0xE07040, 0,
+                    "Opens the Guardian of " + Character.toUpperCase(altar.charAt(0)) + altar.substring(1) + " while it is inactive.");
+        }
         simple(items, "abyssal_pearls", "Abyssal pearls", "bead", 0xE0E0F8, 1, "Currency of the Temple of the Eye.");
         single(items, "intricate_pouch", "Intricate pouch", "package", 0x6A4AA0, 1, "Guardians of the Rift rewards. Right-click to open.");
         // Cells: taken uncharged from the table, charged at the active altar, used on cell tiles or made into rift guardians.

@@ -83,12 +83,21 @@ public final class MiningData extends SkillingPart {
             new MineRock("limestone_rock", "Limestone rocks", 10, 95, 350, 15, List.of(new Yield("limestone", 1, 26.5)), 0xD8D0B0),
             new MineRock("ash_pile", "Ash pile", 22, 64, 256, 50, List.of(new Yield("volcanic_ash", 1, 10.0)), 0x5A5A5A),
             new MineRock("pay_dirt_vein", "Ore vein", 30, 60, 105, 0, List.of(new Yield("pay_dirt", 1, 60.0)), 0x6A5A3A),
+            // The lower level's inner ring (around the central pillar): respawns after 150 ticks instead of 100.
+            new MineRock("inner_pay_dirt_vein", "Ore vein (inner ring)", 30, 60, 105, 0, List.of(new Yield("pay_dirt", 1, 60.0)), 0x5A4A30),
             // The Motherlode Mine's upper level (57 Mining and 100 nuggets paid to Prospector Percy; veins last longer).
             new MineRock("upper_pay_dirt_vein", "Ore vein (upper level)", 30, 60, 105, 0, List.of(new Yield("pay_dirt", 1, 60.0)), 0x7A6A4A));
 
     /** Block ids of the upper-level vein and hopper of the Motherlode Mine. */
     public static final String UPPER_VEIN = "upper_pay_dirt_vein";
     public static final String UPPER_HOPPER = "upper_pay_dirt_hopper";
+    /** Block id of the lower level's inner-ring vein (150-tick respawn). */
+    public static final String INNER_VEIN = "inner_pay_dirt_vein";
+
+    /** True for any Motherlode Mine pay-dirt vein block. */
+    public static boolean isPayDirtVein(String blockId) {
+        return blockId.equals("pay_dirt_vein") || blockId.equals(UPPER_VEIN) || blockId.equals(INNER_VEIN);
+    }
 
     public static MineRock rock(String blockId) {
         for (MineRock r : ROCKS) {

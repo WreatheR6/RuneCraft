@@ -137,6 +137,11 @@ public final class MinigameMonsters {
         list.add(m("tempoross", "Tempoross", 0).stats(255, 1, 1, 1, 1, 1).passive().moveSpeed(0.0)
                 .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.MAGIC, AttackType.RANGED)
                 .attack(NONE).size(2.5f, 4.0f, 2.5f).skin(0x3A6A9A, 0x2A5A8A, 0x1A4A7A, 0xE0F0FF));
+        // Volcanic Mine lava beast (OSRS Wiki: 60 hitpoints, 70 Defence, 20 Magic, ranged max hit 18 every 6 ticks,
+        // defence stab 20 / slash 140 / crush 50 / magic -30).
+        list.add(MonsterDef.of(VolcanicMine.LAVA_BEAST, "Lava beast").level(0).stats(VolcanicMine.LAVA_BEAST_HP, 1, 1, 70, 20, 1)
+                .speed(6).defenceBonus(20, 140, 50, -30, 0).attack(ranged(18, 8).particle("minecraft:lava"))
+                .size(1.4f, 1.4f, 1.3f).skin(0xC04010, 0x802008, 0x601008, 0xFFB030));
         list.add(m("great_guardian", "The Great Guardian", 0).stats(255, 1, 1, 1, 1, 1).passive().moveSpeed(0.0)
                 .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.MAGIC, AttackType.RANGED)
                 .attack(NONE).size(1.5f, 3.5f, 1.8f).skin(0x5A4AA0, 0x3A2A80, 0x2A1A60, 0xC0A0FF));

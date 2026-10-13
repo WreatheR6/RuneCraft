@@ -24,6 +24,15 @@ public final class RewardShops {
      * player carries into the set with this suffix (e.g. {@code #graceful_agility_arena}).
      */
     public static final String GRACEFUL_RECOLOUR = "#graceful";
+
+    /** Items a shop hands out as bank notes: Petrified Pete's ores and minerals (OSRS Wiki: "noted"). */
+    private static final Map<String, List<String>> NOTED = Map.of("volcanic_mine", List.of("iron_ore", "silver_ore", "coal",
+            "gold_ore", "mithril_ore", "adamantite_ore", "runite_ore", "volcanic_ash", "calcite", "pyrophosphite"));
+
+    /** True when {@code shopId} sells {@code item} noted. */
+    public static boolean noted(String shopId, String item) {
+        return NOTED.getOrDefault(shopId, List.of()).contains(item);
+    }
     private static final Map<String, RewardShop> SHOPS = new LinkedHashMap<>();
 
     static {
@@ -177,7 +186,7 @@ public final class RewardShops {
         }
         tb.item("bottle_of_rum", EIGHT, 20).item("the_stuff", EIGHT, 50);
 
-        // Volcanic Mine: Petrified Pete's Ore Shop (OSRS Wiki prices; ores are noted there). Not stocked here: the
+        // Volcanic Mine: Petrified Pete's Ore Shop (OSRS Wiki prices; ores and minerals come noted, see NOTED). Not stocked here: the
         // volcanic mine teleport, the larger water container, the ash covered tome and ore packs.
         shop("volcanic_mine", "Petrified Pete's Ore Shop")
                 .item("iron_ore", VOLCANIC_MINE, 30)

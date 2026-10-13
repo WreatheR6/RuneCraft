@@ -135,8 +135,7 @@ public final class GwdItems {
                 .examine("Vambraces of Zarosian make. (+18 ranged attack, +2 ranged strength, +1 prayer; needs 80 Ranged and 45 Defence.)");
         items.add("nihil_horn", "Nihil horn", Kind.SIMPLE, "horn", 0x5A2A6A).value(3000000).stack(1)
                 .examine("The horn of a nihil. It could be fused with an armadyl crossbow.");
-        items.add("nihil_shard", "Nihil shard", Kind.SIMPLE, "shard", 0x7A3A9A).value(400).stack(64)
-                .examine("A shard of a nihil.");
+        // nihil_shard lives in CommonItems (ground into nihil dust for ancient brews by the skilling module).
         items.add("zaryte_crossbow", "Zaryte crossbow", Kind.BOW, "crossbow", 0x7A4A9A).value(4000000).stack(1).tier("zaryte")
                 .equipment(weapon(stats(0, 0, 0, 0, 110, 14, 14, 14, 15, 16, 0, 0, 0, 1), Map.of(Skill.RANGED, 80), 6,
                         AttackType.RANGED, WeaponClass.BOW))

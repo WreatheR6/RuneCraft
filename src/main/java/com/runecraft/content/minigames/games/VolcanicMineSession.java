@@ -9,6 +9,8 @@ import com.runecraft.osrs.content.minigames.VolcanicMine;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -16,6 +18,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +30,10 @@ import java.util.UUID;
  * volcano erupts. Each successful hit gives Mining XP and Ore Shop points, more as the boulder
  * shrinks; mining it away gives everyone 100 points. Keep the three gas chambers' pressure within
  * 40-60% (block or unblock a chamber by using it, 50 points a time up to 300) or the mine's stability
- * falls and it collapses. The mine shifts after five minutes; the last 30 seconds are for leaving.
+ * falls and it collapses. A chamber's pressure is unknown until someone checks one of its vents; the
+ * mine shifts after five minutes, randomising the pressures and hiding them again. Lava beasts climb
+ * out of the lava and attack, and earthquakes strike more often as stability falls. The last 30
+ * seconds are for leaving.
  */
 public class VolcanicMineSession extends MinigameSession {
     private static final int[] VENT_X = {-12, 0, 12};
@@ -36,6 +42,9 @@ public class VolcanicMineSession extends MinigameSession {
     private final Map<UUID, Integer> capped = new HashMap<>();
     private final int[] vents = new int[3];
     private final boolean[] blocked = new boolean[3];
+    /** Chambers whose pressure a vent check has revealed (since the start or the shift). */
+    private final boolean[] known = new boolean[3];
+    private final List<MobEntity> beasts = new ArrayList<>();
     private int stability = VolcanicMine.START_STABILITY;
     private int stage = 1;
     private int stageHits;
@@ -56,7 +65,8 @@ public class VolcanicMineSession extends MinigameSession {
             set(x, 0, -2, Blocks.MAGMA_BLOCK.getDefaultState());
         }
         for (int i = 0; i < 3; i++) {
-            place(VENT_X[i], -16, "vm_vent");
+            place(VENT_X[i], -16, "vm_chamber");
+            place(VENT_X[i] + 2, 8, "vm_vent");
         }
         place(-18, 0, "vm_boulder");
         place(0, 20, "minigame_exit");
@@ -107,6 +117,13 @@ public class VolcanicMineSession extends MinigameSession {
     protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "vm_vent" -> {
+                int v = ventIndex(pos);
+                known[v] = true;
+                broadcast(player.getName().getString() + " checks vent " + VolcanicMine.VENTS[v] + ": chamber "
+                        + VolcanicMine.VENTS[v] + " pressure is " + vents[v] + "% and " + (blocked[v] ? "rising (blocked)." : "falling (open)."));
+                return true;
+            }
+            case "vm_chamber" -> {
                 if (!VolcanicMine.workable(ticks)) {
                     Msg.game(player, "There's no time left to fix the chambers. Get out!");
                     return true;
@@ -117,7 +134,8 @@ public class VolcanicMineSession extends MinigameSession {
                 capped.merge(player.getUuid(), cap, Integer::sum);
                 points.merge(player.getUuid(), cap, Integer::sum);
                 Msg.game(player, (blocked[v] ? "You block" : "You clear") + " gas chamber " + VolcanicMine.VENTS[v]
-                        + ". Vent " + VolcanicMine.VENTS[v] + ": " + vents[v] + "%." + (cap > 0 ? " (+" + cap + " points)" : ""));
+                        + "." + (known[v] ? " Pressure: " + vents[v] + "%." : " Check a vent to see its pressure.")
+                        + (cap > 0 ? " (+" + cap + " points)" : ""));
                 return true;
             }
             case "vm_boulder" -> {
@@ -199,16 +217,33 @@ public class VolcanicMineSession extends MinigameSession {
             for (int i = 0; i < 3; i++) {
                 vents[i] = 20 + random.nextInt(61);
             }
+            java.util.Arrays.fill(known, false);
             broadcastRed("The mine shifts! Check the vents: the chamber pressures have changed.");
         }
         if (ticks % 10 == 0) {
             stability = VolcanicMine.stability(stability, vents, ticks);
             BlockPos c = rel(0, 2, -16);
             world.spawnParticles(ParticleTypes.LAVA, c.getX() + 0.5, c.getY(), c.getZ() + 0.5, 4, 8, 0.5, 1, 0);
+            if (VolcanicMine.workable(ticks) && random.nextDouble() < VolcanicMine.earthquakeChance(stability)) {
+                List<ServerPlayerEntity> in = online();
+                if (!in.isEmpty()) {
+                    broadcastRed("A sudden earthquake strikes the cavern!");
+                    hurt(in.get(random.nextInt(in.size())), 1 + random.nextInt(VolcanicMine.EARTHQUAKE_MAX_HIT));
+                }
+            }
             if (stability <= 0) {
                 broadcastRed("The mine collapses! You scramble out with what you've earned.");
                 end(true);
                 return;
+            }
+        }
+        if (ticks > 0 && ticks % VolcanicMine.LAVA_BEAST_INTERVAL == 0 && VolcanicMine.workable(ticks)) {
+            beasts.removeIf(b -> !b.isAlive());
+            if (beasts.size() < VolcanicMine.maxLavaBeasts(playerCount())) {
+                MobEntity b = spawn(VolcanicMine.LAVA_BEAST, rel(random.nextInt(31) - 15, 1, -4));
+                if (b != null) {
+                    beasts.add(b);
+                }
             }
         }
         if (ticks == VolcanicMine.GAME_TICKS - VolcanicMine.ERUPTION_WARNING) {
@@ -218,6 +253,19 @@ public class VolcanicMineSession extends MinigameSession {
             broadcastRed("The volcano erupts! Petrified Pete pulls everyone out.");
             end(true);
         }
+    }
+
+    @Override
+    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+        if (VolcanicMine.LAVA_BEAST.equals(creatureId)) {
+            int pts = VolcanicMine.lavaBeastPoints();
+            points.merge(player.getUuid(), pts, Integer::sum);
+            Msg.game(player, "You slay the lava beast (+" + pts + " points).");
+        }
+    }
+
+    private String vent(int i) {
+        return VolcanicMine.VENTS[i] + " " + (known[i] ? vents[i] + "%" : "?") + (blocked[i] ? "*" : "");
     }
 
     @Override
@@ -237,8 +285,7 @@ public class VolcanicMineSession extends MinigameSession {
     @Override
     protected List<String> hud(ServerPlayerEntity player) {
         return List.of("Volcanic Mine", "Stability: " + stability + "%",
-                "Vents: A " + vents[0] + "%" + (blocked[0] ? "*" : "") + "  B " + vents[1] + "%" + (blocked[1] ? "*" : "")
-                        + "  C " + vents[2] + "%" + (blocked[2] ? "*" : ""),
+                "Chambers: " + vent(0) + "  " + vent(1) + "  " + vent(2),
                 stage > VolcanicMine.BOULDER_STAGES ? "Boulder: mined away!" : "Boulder: " + VolcanicMine.BOULDER_NAMES[stage - 1]
                         + " (" + stageHits + "/" + VolcanicMine.stageHp(stage, playerCount()) + ")", "Points: " + points.getOrDefault(player.getUuid(), 0),
                 "Eruption in: " + time(VolcanicMine.GAME_TICKS - ticks));

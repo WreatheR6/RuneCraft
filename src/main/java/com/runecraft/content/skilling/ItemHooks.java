@@ -83,6 +83,10 @@ final class ItemHooks {
         HerbloreData.POTIONS.forEach(p -> HANDLED.add(p.id()));
         HerbloreData.MIXES.forEach(m -> HANDLED.add(m.id()));
         BrewingData.DRINKS.forEach(d -> HANDLED.add(d.id()));
+        BrewingData.BREWS.forEach(b -> {
+            HANDLED.add(BrewingData.kegOf(b.id()));
+            HANDLED.add(BrewingData.kegOf(b.mature()));
+        });
         HunterData.IMPLINGS.forEach(i -> HANDLED.add(i.jar()));
         HANDLED.addAll(java.util.List.of("jar_generator", "imp_in_a_box_2", "imp_in_a_box_1"));
         RunecraftData.POUCHES.forEach(p -> HANDLED.add(p.id()));
@@ -147,6 +151,11 @@ final class ItemHooks {
         HerbloreData.Mix mix = HerbloreData.mix(id);
         if (mix != null) {
             drinkMix(player, stack, hand, mix);
+            return true;
+        }
+        String kegPint = BrewingData.pintOfKeg(id);
+        if (kegPint != null) {
+            drinkFromKeg(player, stack, hand, BrewingData.drink(kegPint));
             return true;
         }
         BrewingData.Drink beverage = BrewingData.drink(id);
@@ -415,6 +424,28 @@ final class ItemHooks {
         player.heal(mix.heal());
         useDose(player, stack, hand, mix.name(), HerbloreData.MIX_DOSES, true);
         ServerNetworking.sync(player);
+    }
+
+    /** A keg of ale: one pint per sip; the empty calquat keg is kept after the fourth. */
+    private static void drinkFromKeg(ServerPlayerEntity player, ItemStack stack, Hand hand, BrewingData.Drink drink) {
+        drink.apply(Players.data(player).skills());
+        if (drink.heal() > 0) {
+            player.heal(drink.heal());
+            player.getHungerManager().add(Math.max(1, drink.heal() / 2), 0.2f);
+        }
+        int used = stack.getDamage() + 1;
+        player.getItemCooldownManager().set(stack.getItem(), EAT_DELAY);
+        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_DRINK, SoundCategory.PLAYERS, 0.5f, 1.0f);
+        int left = BrewingData.KEG_PINTS - used;
+        Msg.action(player, "You drink from the keg of " + SkillingUtil.lower(drink.name()) + "."
+                + (left > 0 ? " It has " + left + " pint" + (left > 1 ? "s" : "") + " left." : " The keg is empty."));
+        if (left <= 0) {
+            player.setStackInHand(hand, Inv.stack(BrewingData.KEG, 1));
+        } else {
+            stack.setDamage(used);
+        }
+        ServerNetworking.sync(player);
+        ActionManager.cancel(player);
     }
 
     /** Ales, ciders, cocktails and spirits: heal, boosts and drains; the glass is kept. */

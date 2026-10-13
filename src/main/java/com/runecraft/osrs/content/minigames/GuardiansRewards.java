@@ -13,8 +13,13 @@ import java.util.function.DoubleSupplier;
  * Guardian gives 2 energy of its type (3 for poly stones) and powers him; points and experience
  * depend on the essence crafted, not on the altar's tier. At the end of a closed rift, players
  * with at least 150 total energy get one point per 100 energy of each type, the remainder giving a
- * proportional chance of one more point. One search of the Rewards Guardian costs one elemental
- * and one catalytic point.
+ * proportional chance of one more point. Points are kept until the player searches the Rewards
+ * Guardian: one search costs one elemental and one catalytic point, or 25 abyssal pearls instead
+ * (same table, pet included); "Big-search" does up to five at once.
+ *
+ * <p>Combination runes crafted at an elemental altar give polyelemental guardian stones (3 elemental
+ * energy each). A portal talisman (1/250 per essence crafted at an altar, while the player doesn't
+ * hold one for it) lets its holder enter that altar while it is inactive; it is consumed then.
  *
  * <p>Since November 2024 points and the end-of-game Runecraft XP need 300 total energy (150 before),
  * energy is capped at 1,000 per type and 1,200 in all per game, and pearls come 14-16 at a time.
@@ -83,6 +88,51 @@ public final class GuardiansRewards {
         int base = e / ENERGY_PER_POINT;
         return random < (e % ENERGY_PER_POINT) / (double) ENERGY_PER_POINT ? base + 1 : base;
     }
+
+    /** "Big-search": searches done per click. */
+    public static final int BIG_SEARCH = 5;
+
+    /** How a search is paid for. */
+    public enum Payment { POINTS, PEARLS, NONE }
+
+    /** Points first (one of each type), otherwise 25 abyssal pearls. */
+    public static Payment payment(int elementalPoints, int catalyticPoints, int pearls) {
+        if (elementalPoints >= 1 && catalyticPoints >= 1) {
+            return Payment.POINTS;
+        }
+        return pearls >= PEARL_SEARCH_COST ? Payment.PEARLS : Payment.NONE;
+    }
+
+    // ------------------------------------------------------------------ polyelemental stones and portal talismans
+
+    public static final String POLY_STONE = "polyelemental_guardian_stone";
+    /** 1 in 250 per guardian essence crafted (OSRS Wiki, Mod Ash), only while none for that altar is held. */
+    public static final int PORTAL_TALISMAN_CHANCE = 250;
+
+    /** The portal talisman of a temple altar ("air" ... "blood"). */
+    public static String portalTalisman(String altar) {
+        return "portal_talisman_" + altar;
+    }
+
+    /**
+     * Combination runes in the temple: altar, talisman, rune used per essence, result, Runecraft level, XP per
+     * rune (OSRS Wiki, same as outside the temple). Approx: without the binding necklace modelled, each
+     * essence has a 50% chance; a failed one is lost with its rune.
+     */
+    public static final Object[][] COMBINATIONS = {
+            {"air", "water_talisman", "water_rune", "mist_rune", 6, 8.0},
+            {"water", "air_talisman", "air_rune", "mist_rune", 6, 8.5},
+            {"air", "earth_talisman", "earth_rune", "dust_rune", 10, 8.3},
+            {"earth", "air_talisman", "air_rune", "dust_rune", 10, 9.0},
+            {"water", "earth_talisman", "earth_rune", "mud_rune", 13, 9.3},
+            {"earth", "water_talisman", "water_rune", "mud_rune", 13, 9.5},
+            {"air", "fire_talisman", "fire_rune", "smoke_rune", 15, 8.5},
+            {"fire", "air_talisman", "air_rune", "smoke_rune", 15, 9.5},
+            {"water", "fire_talisman", "fire_rune", "steam_rune", 19, 9.5},
+            {"fire", "water_talisman", "water_rune", "steam_rune", 19, 10.0},
+            {"earth", "fire_talisman", "fire_rune", "lava_rune", 23, 10.0},
+            {"fire", "earth_talisman", "earth_rune", "lava_rune", 23, 10.5}};
+    public static final double COMBINATION_SUCCESS = 0.5;
 
     /** Searches affordable with stored points (one elemental + one catalytic point each). */
     public static int searches(int elementalPoints, int catalyticPoints) {

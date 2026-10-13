@@ -19,7 +19,13 @@ import java.util.function.DoubleSupplier;
  * and the pressures are randomised. In the last 30 seconds the boulder and chambers can't be used and
  * stability drops to 5% and stays there until the eruption. Rock golem: 1/(60,000 - 25 x level).
  *
- * <p>Approx: how fast pressure moves and how much stability a bad chamber costs are not published.
+ * <p>A chamber's pressure is only known once one of its vents has been checked (shown to everyone); the
+ * shift hides them again. Lava beasts (60 hitpoints, 70 Defence, ranged hits up to 18, weak to water)
+ * come out of the lava and attack; damaging one gives a point per 10 damage and the killing blow 3 more.
+ * As stability drops, earthquakes strike more often (stalactites hit for up to 25).
+ *
+ * <p>Approx: how fast pressure moves, how much stability a bad chamber costs, how often lava beasts
+ * appear and earthquakes strike are not published.
  */
 public final class VolcanicMine {
     private VolcanicMine() {
@@ -53,6 +59,30 @@ public final class VolcanicMine {
     public static final int PET_BASE = 60_000;
     public static final String[] VENTS = {"A", "B", "C"};
     public static final int START_STABILITY = 50;
+    /** Lava beasts: hitpoints, kill bonus, damage per point; spawn interval and cap per player (approx). */
+    public static final String LAVA_BEAST = "lava_beast";
+    public static final int LAVA_BEAST_HP = 60;
+    public static final int LAVA_BEAST_KILL_POINTS = 3;
+    public static final int LAVA_BEAST_DAMAGE_PER_POINT = 10;
+    public static final int LAVA_BEAST_INTERVAL = 50; // approx
+    /** Stalactites from an earthquake hit for up to this much. */
+    public static final int EARTHQUAKE_MAX_HIT = 25;
+
+    /** Points for killing a lava beast: one per 10 damage dealt (the whole beast here) plus the final blow. */
+    public static int lavaBeastPoints() {
+        return LAVA_BEAST_HP / LAVA_BEAST_DAMAGE_PER_POINT + LAVA_BEAST_KILL_POINTS;
+    }
+
+    /** Lava beasts alive at once (approx: one more than the players). */
+    public static int maxLavaBeasts(int players) {
+        return 1 + Math.max(1, players);
+    }
+
+    /** Chance (0-1) of an earthquake per 10-tick stability update: none above 60%, rising as it falls (approx). */
+    public static double earthquakeChance(int stability) {
+        return Math.max(0, Math.min(1, (60 - stability) / 150.0));
+    }
+
     /** Chamber pressure that keeps the mine stable. */
     public static final int SAFE_LOW = 40;
     public static final int SAFE_HIGH = 60;

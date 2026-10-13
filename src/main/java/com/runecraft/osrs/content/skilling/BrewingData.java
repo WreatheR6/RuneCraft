@@ -25,7 +25,8 @@ import java.util.function.Consumer;
  * with eight beer glasses: 6/128 of vats turn mature (82/128 with "the stuff" from Trouble Brewing, not for
  * cider), 16/128 go bad and the rest are ordinary ale. Each player has their own vat at each brewery. Ale
  * yeast comes from The Green Ghost in Port Phasmatys (sold by the Port Phasmatys general store here) and the
- * Grand Exchange. Not modelled: calquat kegs.
+ * Grand Exchange. A vat can instead be emptied into two calquat kegs (a knife on a calquat fruit), each holding
+ * four pints that are drunk straight from the keg; the empty keg is kept.
  *
  * <p><b>Gnome cooking</b>: Gianne dough baked in a batta tin, crunchy tray or gnomebowl mould (Grand Tree
  * Groceries) is topped and baked again; cocktails are shaken in a cocktail shaker and poured into a cocktail
@@ -37,6 +38,29 @@ import java.util.function.Consumer;
 public final class BrewingData extends SkillingPart {
     /** Pints from one vat. */
     public static final int PINTS = 8;
+    /** The calquat keg: a knife on a calquat fruit (OSRS Wiki). Two empty a vat, four pints each. */
+    public static final String KEG = "calquat_keg";
+    public static final int KEGS_PER_VAT = 2;
+    public static final int KEG_PINTS = 4;
+
+    /** The keg version of a pint (ale or mature ale). */
+    public static String kegOf(String pint) {
+        return pint + "_keg";
+    }
+
+    /** The pint a full keg holds, or null when {@code id} isn't a keg of ale. */
+    public static String pintOfKeg(String id) {
+        for (Brew b : BREWS) {
+            if (kegOf(b.id()).equals(id)) {
+                return b.id();
+            }
+            if (kegOf(b.mature()).equals(id)) {
+                return b.mature();
+            }
+        }
+        return null;
+    }
+
     /** A brew ferments for three growth cycles of 640 minutes. */
     public static final int FERMENT_CYCLES = 3;
     public static final int CYCLE_MINUTES = 640;
@@ -315,7 +339,13 @@ public final class BrewingData extends SkillingPart {
             Drink dm = drink(b.mature());
             s.add(b.mature(), b.matureName(), Kind.FOOD, "beer", darker(b.color())).value(4).heal(dm.heal()).stack(1)
                     .examine("This looks a good deal stronger than normal " + lower(b.name()) + ".");
+            // Kegs: four pints each (a POTION's four doses). Approx value: four pints.
+            s.add(kegOf(b.id()), b.name() + " keg", Kind.POTION, "keg", b.color()).value(12).stack(1)
+                    .examine("A calquat keg of " + lower(b.name()) + ".");
+            s.add(kegOf(b.mature()), b.matureName() + " keg", Kind.POTION, "keg", darker(b.color())).value(16).stack(1)
+                    .examine("A calquat keg of " + lower(b.matureName()) + ".");
         }
+        simple(s, KEG, "Calquat keg", "keg", 0xC08040, 1).stack(1).examine("Sliced and hollowed out to form a keg.");
         // Gnome cooking tools and ingredients (Grand Tree Groceries).
         tool(s, "batta_tin", "Batta tin", "cake_tin", 0xA0A0A8, 10).examine("A deep tin used for baking gnome battas in.");
         tool(s, "crunchy_tray", "Crunchy tray", "cake_tin", 0x9A9AA0, 10).examine("A shallow tray used for baking crunchies in.");
@@ -364,6 +394,8 @@ public final class BrewingData extends SkillingPart {
         MenuType B = MenuType.BREWING;
         out.accept(r("press_apple_mush", B, "Apple mush", Skill.COOKING, 14, 0).in("cooking_apple", 4).in("minecraft:bucket", 1)
                 .out("apple_mush", 1).ticks(4).build());
+        // A knife on a calquat fruit makes an empty keg (no skill, no XP).
+        out.accept(plain("cut_calquat_keg", B, "Calquat keg").in("calquat_fruit", 1).out(KEG, 1).tool("knife").ticks(1).build());
         // Starting a vat: the ale goes into the player's vat (SkillingHooks' brewing) and is collected once fermented.
         for (Brew b : BREWS) {
             Recipe.Builder rb = r("brew_" + b.id(), B, b.name() + " (8 pints)", Skill.COOKING, b.level(), b.xp())

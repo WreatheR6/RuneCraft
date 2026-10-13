@@ -10,11 +10,11 @@ import java.util.function.DoubleSupplier;
  * <ul>
  *   <li>Mining a pay-dirt vein (30 Mining) gives 60 XP per pay-dirt. A vein depletes 23-27 seconds after
  *       its first pay-dirt (36-40 seconds on the upper level) and respawns after 100 ticks (lower level outer
- *       ring and upper level; 150 ticks for the lower level's inner ring).</li>
+ *       ring and upper level; 150 ticks for the lower level's inner ring). The upper level has 64 veins.</li>
  *   <li>Washed pay-dirt reaches the sack, which holds 108 (189 after the 200-nugget upgrade; since
  *       May 2024 it can no longer be overfilled). Washing gives bonus XP per ore: coal 15 (since the
  *       May 2024 rebalance), gold 15, mithril 30, adamantite 45, runite 75.</li>
- *   <li>Each pay-dirt rolls, in order, a golden nugget (low/high 7/7 = 1/32), then runite (85, -20/5),
+ *   <li>Each pay-dirt rolls (when it is mined, not when it is cleaned), in order, a golden nugget (low/high 7/7 = 1/32), then runite (85, -20/5),
  *       adamantite (70, -90/50), mithril (55, -19/90) and gold (40, -40/126) on the standard 1-99 skilling
  *       curve (the wiki's cascading success chart); coal when every roll fails. At 99 this gives coal
  *       24.6%, nugget 3.13%, gold 24.22%, mithril 26.93%, adamantite 18.85% and runite 2.27% (the wiki's
@@ -40,8 +40,12 @@ public final class Motherlode {
     /** Vein life after its first pay-dirt, in game ticks: 23-27 s lower, 36-40 s upper. */
     public static final int[] LOWER_VEIN_LIFE = {38, 45};
     public static final int[] UPPER_VEIN_LIFE = {60, 67};
-    /** Depleted vein respawn in game ticks (upper level and lower outer ring 100; the lower inner ring's 150 isn't modelled). */
+    /** Depleted vein respawn in game ticks: upper level and the lower level's outer ring. */
     public static final int VEIN_RESPAWN = 100;
+    /** Depleted vein respawn in game ticks for the lower level's inner ring (around the central pillar). */
+    public static final int INNER_VEIN_RESPAWN = 150;
+    /** Ore veins on the upper level (OSRS Wiki: "The upper level consists of 64 ore veins"). */
+    public static final int UPPER_LEVEL_VEINS = 64;
     /** At most three golden nuggets reach the sack per hopper deposit. */
     public static final int MAX_NUGGETS_PER_DEPOSIT = 3;
 
@@ -104,7 +108,16 @@ public final class Motherlode {
         return out;
     }
 
-    /** What one pay-dirt washes into: "golden_nugget" or an ore id. */
+    /** Respawn ticks of a depleted vein. */
+    public static int veinRespawn(boolean innerRing) {
+        return innerRing ? INNER_VEIN_RESPAWN : VEIN_RESPAWN;
+    }
+
+    /**
+     * What one pay-dirt washes into: "golden_nugget" or an ore id. Rolled when the pay-dirt is mined, at the
+     * miner's (boosted) level then (OSRS Wiki, Mod Ash: "It'd stay as runite even if your level drops before
+     * you clean it"); the hopper only washes it.
+     */
     public static String wash(int level, DoubleSupplier random) {
         if (random.getAsDouble() < NUGGET.chance(level)) {
             return NUGGET.item();
@@ -115,6 +128,26 @@ public final class Motherlode {
             }
         }
         return COAL.item();
+    }
+
+    /** Results in a compact per-player queue: one character per mined pay-dirt (n, c, g, m, a, r). */
+    private static final String CODES = "ncgmar";
+    private static final String[] CODED = {"golden_nugget", "coal", "gold_ore", "mithril_ore", "adamantite_ore", "runite_ore"};
+
+    /** The queue character for a roll result. */
+    public static char code(String item) {
+        for (int i = 0; i < CODED.length; i++) {
+            if (CODED[i].equals(item)) {
+                return CODES.charAt(i);
+            }
+        }
+        return 'c';
+    }
+
+    /** The roll result a queue character stands for. */
+    public static String decode(char code) {
+        int i = CODES.indexOf(code);
+        return i < 0 ? COAL.item() : CODED[i];
     }
 
     /** Bonus Mining XP for an item washed into the sack (0 for nuggets). */

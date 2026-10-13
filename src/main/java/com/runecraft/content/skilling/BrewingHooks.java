@@ -102,9 +102,20 @@ final class BrewingHooks {
             Msg.game(player, "The " + SkillingUtil.lower(brew.name()) + " has gone bad. You turn the valve and drain the vat.");
             return;
         }
+        boolean matured = o == BrewingData.Outcome.MATURE.ordinal();
+        if (Inv.has(player, BrewingData.KEG, BrewingData.KEGS_PER_VAT)) {
+            // Two calquat kegs take the whole vat, four pints each.
+            Inv.remove(player, BrewingData.KEG, BrewingData.KEGS_PER_VAT);
+            SkillingUtil.give(player, BrewingData.kegOf(matured ? brew.mature() : brew.id()), BrewingData.KEGS_PER_VAT);
+            all.remove(key);
+            Msg.game(player, "You turn the valve and fill your calquat kegs with "
+                    + (matured ? brew.matureName() : brew.name()) + ".");
+            return;
+        }
         if (!Inv.has(player, "beer_glass", BrewingData.PINTS)) {
             Msg.game(player, "The vat is full of " + (o == BrewingData.Outcome.MATURE.ordinal() ? SkillingUtil.lower(brew.matureName())
-                    : SkillingUtil.lower(brew.name())) + ". You need " + BrewingData.PINTS + " beer glasses to collect it.");
+                    : SkillingUtil.lower(brew.name())) + ". You need " + BrewingData.PINTS + " beer glasses (or "
+                    + BrewingData.KEGS_PER_VAT + " calquat kegs) to collect it.");
             return;
         }
         Inv.remove(player, "beer_glass", BrewingData.PINTS);

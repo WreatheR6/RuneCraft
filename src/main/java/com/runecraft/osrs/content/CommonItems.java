@@ -79,6 +79,13 @@ public final class CommonItems {
                         .examine("A " + metal + " key with a " + c + " painted eyelet (opens chests found in the Mort'ton catacombs).");
             }
         }
+        // Herblore secondaries from other modules (skilling grinds and brews them): the nihil shard (godwars, Nex)
+        // becomes nihil dust for ancient brews; the star flower and gorak claws (quests, Fairytale II) make magic essence.
+        items.add("nihil_shard", "Nihil shard", Kind.SIMPLE, "shard", 0x7A3A9A).value(400).stack(64)
+                .examine("A shard of a nihil.");
+        items.add("star_flower", "Star flower", Kind.SIMPLE, "herb", 0xE0E080).value(0)
+                .examine("A rare flower, ingredient of the Fairy Queen's cure.");
+        items.add("gorak_claws", "Gorak claws", Kind.SIMPLE, "bones", 0x6A3A6A).value(0).examine("Claws from a gorak.");
         CommonEquipment.add(items);
     }
 }

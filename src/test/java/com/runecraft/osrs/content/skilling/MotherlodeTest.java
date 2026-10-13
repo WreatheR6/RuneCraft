@@ -112,4 +112,44 @@ class MotherlodeTest {
         assertNotNull(pet);
         assertEquals(247_200, pet.base());
     }
+
+    @Test
+    void oreIsRolledWhenMinedAndInnerRingRespawnsSlower() {
+        // Every roll result survives the per-player queue unchanged (rolled at mining, washed at the hopper).
+        for (String item : new String[]{"golden_nugget", "coal", "gold_ore", "mithril_ore", "adamantite_ore", "runite_ore"}) {
+            assertEquals(item, Motherlode.decode(Motherlode.code(item)));
+        }
+        assertEquals(100, Motherlode.veinRespawn(false));
+        assertEquals(150, Motherlode.veinRespawn(true));
+        assertEquals(64, Motherlode.UPPER_LEVEL_VEINS);
+        assertNotNull(MiningData.rock(MiningData.INNER_VEIN));
+        assertTrue(MiningData.isPayDirtVein("pay_dirt_vein") && MiningData.isPayDirtVein(MiningData.UPPER_VEIN)
+                && MiningData.isPayDirtVein(MiningData.INNER_VEIN));
+        assertFalse(MiningData.isPayDirtVein("coal_rock"));
+    }
+
+    @Test
+    void mixesBrewsAndKegs() {
+        // OSRS Wiki: ancient brew 85 / 190 XP (dwarf weed unf + nihil dust); magic essence 57 / 130 XP;
+        // ancient mix 92 / 63 XP and magic essence mix 61 / 43 XP, both caviar, 6 hp.
+        com.runecraft.osrs.Recipe brew = com.runecraft.osrs.Recipes.get("mix_ancient_brew");
+        assertEquals(85, brew.level());
+        assertEquals(190.0, brew.xpTenths() / 10.0, 1e-9);
+        assertTrue(brew.inputs().containsKey("dwarf_weed_potion_unf") && brew.inputs().containsKey("nihil_dust"));
+        assertEquals(130.0, com.runecraft.osrs.Recipes.get("mix_magic_essence").xpTenths() / 10.0, 1e-9);
+        assertTrue(com.runecraft.osrs.Recipes.get("grind_nihil_shard") != null && com.runecraft.osrs.Recipes.get("grind_gorak_claws") != null);
+        assertEquals(92, HerbloreData.mix("ancient_mix").level());
+        assertEquals(63.0, HerbloreData.mix("ancient_mix").xp(), 1e-9);
+        assertEquals(61, HerbloreData.mix("magic_essence_mix").level());
+        assertEquals(43.0, HerbloreData.mix("magic_essence_mix").xp(), 1e-9);
+        com.runecraft.osrs.SkillSet s = new com.runecraft.osrs.SkillSet();
+        int prayer = HerbloreData.Effect.ANCIENT_BREW.apply(s);
+        assertEquals(2, prayer); // 2 + 10% of Prayer 1
+        // Calquat keg: a knife on a calquat fruit; two kegs take a vat, four pints each.
+        com.runecraft.osrs.Recipe keg = com.runecraft.osrs.Recipes.get("cut_calquat_keg");
+        assertEquals("knife", keg.requiredTool());
+        assertEquals(BrewingData.PINTS, BrewingData.KEGS_PER_VAT * BrewingData.KEG_PINTS);
+        assertEquals("dragon_bitter_m", BrewingData.pintOfKeg(BrewingData.kegOf("dragon_bitter_m")));
+        assertTrue(ItemCatalog.exists(BrewingData.kegOf("asgarnian_ale")));
+    }
 }

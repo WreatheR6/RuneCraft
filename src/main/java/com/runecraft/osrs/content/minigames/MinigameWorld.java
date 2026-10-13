@@ -155,7 +155,8 @@ public final class MinigameWorld {
             {"rd_safe", "Wall safe", "5A5A60", "chest"},
             // Volcanic Mine
             {"vm_boulder", "Boulder", "5A4A40", "rock"},
-            {"vm_vent", "Gas chamber", "C05020", "fire_lava"},
+            {"vm_vent", "Volcanic vent", "C05020", "fire_lava"},
+            {"vm_chamber", "Gas chamber", "6A3A2A", "rock"},
             // Soul Wars
             {"sw_soul_obelisk", "Soul Obelisk", "8A3AC0", "obelisk"},
             {"sw_graveyard", "Graveyard", "6A6A6A", "statue"},
@@ -243,6 +244,7 @@ public final class MinigameWorld {
         map.get(Minigame.PYRAMID_PLUNDER.place()).add("pyramid_plunder_artefact_trader");
         map.get(Minigame.ROGUES_DEN.place()).add("rogues_den_jewel_trader");
         map.get(Minigame.TEMPOROSS.place()).add("tempoross_reward_pool");
+        map.get(Minigame.GUARDIANS_OF_THE_RIFT.place()).add("gotr_rift_search");
         map.get(Minigame.SORCERESS_GARDEN.place()).add(SORCERESS_SHELVES);
         map.get(Minigame.SHADES_OF_MORTTON.place()).addAll(MORTTON_BLOCKS);
         map.get(Minigame.TZHAAR_KET_RAK.place()).add(KET_RAK_SCOREBOARD);

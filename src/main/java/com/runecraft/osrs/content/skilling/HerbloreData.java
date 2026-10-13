@@ -35,7 +35,14 @@ public final class HerbloreData extends SkillingPart {
         /** One Prayer point every 12 ticks for 8 minutes (66 points per dose). */
         PRAYER_REGENERATION,
         /** Goading potion: nearby monsters turn aggressive for 6 minutes (checked every 6 ticks). */
-        GOADING;
+        GOADING,
+        /** Magic essence: +3 Magic. */
+        MAGIC_ESSENCE,
+        /**
+         * Ancient brew: Magic +2 + 5%, Prayer 2 + 10% of base restored, Attack, Strength and Defence drained by
+         * 2 + 10% of their current level. Approx: the restore stops at the base Prayer level (OSRS allows 5% over).
+         */
+        ANCIENT_BREW;
 
         /** Goading potion: duration per dose and how often nearby monsters are goaded, in game ticks (OSRS Wiki). */
         public static final int GOADING_DURATION = 600;
@@ -81,6 +88,15 @@ public final class HerbloreData extends SkillingPart {
                         }
                     }
                     return 8 + s.level(Skill.PRAYER) / 4;
+                }
+                case MAGIC_ESSENCE -> s.applyBoost(Skill.MAGIC, 3, 0.0);
+                case ANCIENT_BREW -> {
+                    s.applyBoost(Skill.MAGIC, 2, 0.05);
+                    for (Skill sk : new Skill[]{Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE}) {
+                        int drain = 2 + (int) Math.floor(s.currentLevel(sk) * 0.10);
+                        s.setBoost(sk, s.boost(sk) - drain);
+                    }
+                    return 2 + s.level(Skill.PRAYER) / 10;
                 }
                 case ZAMORAK_BREW -> {
                     s.applyBoost(Skill.ATTACK, 2, 0.20);
@@ -155,7 +171,9 @@ public final class HerbloreData extends SkillingPart {
             new ModPotion("relicyms_balm", "Relicym's balm", Effect.RELICYMS_BALM, 0xC0A0D0, 225),
             new ModPotion("serum_207", "Serum 207", Effect.SERUM_207, 0x6A8AC0, 14),
             new ModPotion("prayer_regeneration_potion", "Prayer regeneration potion", Effect.PRAYER_REGENERATION, 0x40C0B0, 300),
-            new ModPotion("goading_potion", "Goading potion", Effect.GOADING, 0xA0B040, 300));
+            new ModPotion("goading_potion", "Goading potion", Effect.GOADING, 0xA0B040, 300),
+            new ModPotion("magic_essence", "Magic essence", Effect.MAGIC_ESSENCE, 0xE0D060, 280),
+            new ModPotion("ancient_brew", "Ancient brew", Effect.ANCIENT_BREW, 0x7A3A9A, 200));
 
     /** The miniquest whose Herblore part (Otto Godblessed) teaches barbarian mixes. */
     public static final String BARBARIAN_TRAINING = "barbarian_training";
@@ -196,6 +214,7 @@ public final class HerbloreData extends SkillingPart {
             new Mix("super_energy_mix", "Super energy mix", "super_energy", 56, 39.0, false, 6),
             new Mix("hunting_mix", "Hunting mix", "hunter_potion", 58, 40.0, false, 6),
             new Mix("super_str_mix", "Super str. mix", "super_strength", 59, 42.0, false, 6),
+            new Mix("magic_essence_mix", "Magic essence mix", "magic_essence", 61, 43.0, false, 6),
             new Mix("super_restore_mix", "Super restore mix", "super_restore", 67, 48.0, false, 6),
             new Mix("super_def_mix", "Super def. mix", "super_defence", 71, 50.0, false, 6),
             new Mix("antidote_plus_mix", "Antidote+ mix", "antidote_plus", 74, 52.0, false, 6),
@@ -205,6 +224,7 @@ public final class HerbloreData extends SkillingPart {
             new Mix("zamorak_mix", "Zamorak mix", "zamorak_brew", 85, 58.0, false, 6),
             new Mix("stamina_mix", "Stamina mix", "stamina_potion", 86, 60.0, false, 6),
             new Mix("extended_antifire_mix", "Extended antifire mix", "extended_antifire", 91, 61.0, false, 6),
+            new Mix("ancient_mix", "Ancient mix", "ancient_brew", 92, 63.0, false, 6),
             new Mix("super_antifire_mix", "Super antifire mix", "super_antifire", 98, 70.0, false, 6),
             new Mix("extended_super_antifire_mix", "Extended super antifire mix", "extended_super_antifire", 99, 78.0, false, 6));
 
@@ -259,7 +279,11 @@ public final class HerbloreData extends SkillingPart {
                 // Sanfew serum: dropped by nail beasts (Temple Trekking); bought on the Grand Exchange here.
                 {"nail_beast_nails", "Nail beast nails", "C8B8A0", "300"},
                 // Huasca potions: a Mastering Mixology reward; bought on the Grand Exchange here.
-                {"aldarium", "Aldarium", "E0B040", "100"}};
+                {"aldarium", "Aldarium", "E0B040", "100"},
+                // Ancient brew: a nihil shard (Nex) crushed with a pestle and mortar.
+                {"nihil_dust", "Nihil dust", "8A4AAA", "500"},
+                // Magic essence: gorak claws crushed with a pestle and mortar.
+                {"gorak_claw_powder", "Gorak claw powder", "8A5A8A", "1"}}; // approx value
         for (String[] sec : secondaries) {
             simple(s, sec[0], sec[1], "secondary", Integer.parseInt(sec[2], 16), Integer.parseInt(sec[3]));
         }
@@ -270,6 +294,8 @@ public final class HerbloreData extends SkillingPart {
         simple(s, "weapon_poison_plus_plus_unf", "Weapon poison(++) (unf)", "potion_unf", 0x1A3A0A, 60);
         simple(s, "cadantine_blood_potion_unf", "Cadantine blood potion (unf)", "potion_unf", 0x6A1A2A, 80);
         simple(s, "guthix_rest_unf", "Herbal tea mix", "cup", 0xA0C080, 10);
+        simple(s, "magic_essence_unf", "Magic essence (unf)", "potion_unf", 0xE0D060, 75)
+                .examine("I need another ingredient to finish this magic essence potion.");
         simple(s, "rogues_purse_potion_unf", "Rogue's purse potion (unf)", "potion_unf", 0xC0A0D0, 5);
         simple(s, "mixture_step_1", "Mixture - step 1", "potion", 0xC8607A, 200).stack(1);
         simple(s, "mixture_step_2", "Mixture - step 2", "potion", 0xCC607A, 250).stack(1);
@@ -375,6 +401,15 @@ public final class HerbloreData extends SkillingPart {
         mix(out, "prayer_regeneration_potion", 58, 132.0, "huasca_potion_unf", "aldarium");
         // Goading potion: harralander potion (unf) + aldarium, 54 Herblore, 132 XP (OSRS: makes a 3-dose potion; 4 here).
         mix(out, "goading_potion", 54, 132.0, "harralander_potion_unf", "aldarium");
+        // Ancient brew: nihil dust (crushed nihil shard) in a dwarf weed potion (unf), 85 Herblore, 190 XP. Magic
+        // essence (Fairytale II): star flower in a vial of water (57, no XP) then gorak claw powder, 130 XP.
+        // Approx: OSRS makes 3-dose potions; 4 here.
+        grind(out, "nihil_shard", "nihil_dust");
+        grind(out, "gorak_claws", "gorak_claw_powder");
+        mix(out, "ancient_brew", 85, 190.0, "dwarf_weed_potion_unf", "nihil_dust");
+        out.accept(r("mix_magic_essence_unf", H, "Magic essence (unf)", Skill.HERBLORE, 57, 0).in("vial_of_water", 1)
+                .in("star_flower", 1).out("magic_essence_unf", 1).ticks(1).build());
+        mix(out, "magic_essence", 57, 130.0, "magic_essence_unf", "gorak_claw_powder");
         // Barbarian mixes (roe mixes also take caviar). Approx: the base potion is used whole rather than as a (2).
         for (Mix m : MIXES) {
             out.accept(r("mix_" + m.id(), H, m.name(), Skill.HERBLORE, m.level(), m.xp()).in(m.base(), 1)
