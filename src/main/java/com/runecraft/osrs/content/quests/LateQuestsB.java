@@ -161,7 +161,7 @@ final class LateQuestsB {
 
     private static void shadesOfMortton(QuestBook b) {
         b.npc("razmire_keelgan", "Razmire Keelgan", "mort_ton", 0, 3, 0xD8C8B8, 0x6A6A41, 0x4A4A31, 0x6A4A24);
-        b.item("sacred_oil", "Sacred oil", "potion", 0xE0E0A0, "Blessed olive oil, for the pyre.");
+        // sacred_oil is in CommonItems (also made and used for pyre logs by the minigames module).
         b.quest("shades_of_mortton", "Shades of Mort'ton", Difficulty.INTERMEDIATE, 3)
                 .reqQuest("priest_in_peril").req(Skill.CRAFTING, 20).req(Skill.HERBLORE, 15).req(Skill.FIREMAKING, 5)
                 .xp(Skill.CRAFTING, 2000).xp(Skill.HERBLORE, 2000).xp(Skill.HITPOINTS, 2000)

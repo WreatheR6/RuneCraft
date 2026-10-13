@@ -886,18 +886,4 @@ public final class MinigameRules {
         }
     }
 
-    // ---------------------------------------------------------------- Shades of Mort'ton
-    public static final class Shades {
-        /** Shade key dropped by each shade tier (1 in 4 chance, approx.). */
-        public static final String[] KEYS = {"bronze_shade_key", "steel_shade_key", "black_shade_key", "silver_shade_key",
-                "gold_shade_key"};
-        public static final List<Loot> CHEST = List.of(
-                new Loot("coins", 200, 3000, 10), new Loot("uncut_sapphire", 1, 2, 4), new Loot("uncut_emerald", 1, 2, 3),
-                new Loot("uncut_ruby", 1, 1, 2), new Loot("uncut_diamond", 1, 1, 1), new Loot("rune_full_helm", 1, 1, 1),
-                new Loot("adamant_platelegs", 1, 1, 1), new Loot("law_rune", 5, 20, 3), new Loot("death_rune", 5, 15, 2),
-                new Loot("flamtaer_hammer", 1, 1, 1));
-
-        private Shades() {
-        }
-    }
 }

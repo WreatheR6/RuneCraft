@@ -56,6 +56,11 @@ public final class CommonItems {
                 .examine("A spring-loaded mechanism.");
         items.add("light_frame", "Light frame", Kind.SIMPLE, "stock", 0xA0784A).value(50_000).examine("A light wooden frame.");
         items.add("heavy_frame", "Heavy frame", Kind.SIMPLE, "stock", 0x6A4A2A).value(50_000).examine("A heavy wooden frame.");
+        // Construction material also used to repair the Mort'ton temple (minigames); sacred oil, made at the temple's
+        // fire altar and turned into pyre logs (minigames), is also a Shades of Mort'ton quest item (quests).
+        items.add("limestone_brick", "Limestone brick", Kind.SIMPLE, "brick", 0xD8D0B0).value(21);
+        items.add("sacred_oil", "Sacred oil", Kind.POTION, "potion", 0xE0E0A0).value(100).stack(1)
+                .examine("4 doses of sacred oil.");
         CommonEquipment.add(items);
     }
 }

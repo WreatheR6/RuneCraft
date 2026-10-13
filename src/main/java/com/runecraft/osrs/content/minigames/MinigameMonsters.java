@@ -159,15 +159,13 @@ public final class MinigameMonsters {
         list.add(m("cyclops_elite", "Cyclops", 106).model("cyclops").stats(75, 90, 105, 90, 1, 1).speed(5)
                 .attack(melee(AttackType.CRUSH, 11)).size(0.9f, 2.4f, 1.5f).skin(0x907050, 0x5A3A2A, 0x3A2A1A, 0x202020));
         // ---------------- Shades of Mort'ton ----------------
-        int[] shadeHp = {38, 56, 76, 90, 110};
-        int[] shadeMax = {6, 8, 11, 14, 17};
-        for (int i = 0; i < MinigameItems.SHADES.length; i++) {
-            Object[] s = MinigameItems.SHADES[i];
-            String id = s[0] + "_shade";
-            int lvl = (Integer) s[2];
-            list.add(MonsterDef.of(id, s[1] + " shade").level(lvl).model("shade").stats(shadeHp[i], lvl, lvl, lvl, lvl, 1).speed(4)
-                    .attack(melee(AttackType.SLASH, shadeMax[i])).flying()
-                    .drops(Drop.always(s[0] + "_remains"), Drop.of(MinigameRules.Shades.KEYS[i], 1, 1, 4))
+        // OSRS Wiki / dps-calc: crush, 4-tick; shades drop only their remains (keys come from cremating them).
+        for (ShadesOfMortton.Shade s : ShadesOfMortton.Shade.values()) {
+            int lvl = s.level();
+            list.add(MonsterDef.of(s.creature(), s.displayName() + " shade").level(lvl).model("shade")
+                    .stats(s.hitpoints(), s.attack(), s.strength(), s.defence(), 1, 1).speed(4)
+                    .attack(melee(AttackType.CRUSH, s.maxHit())).flying()
+                    .drops(Drop.always(s.remains()))
                     .size(0.7f, 2.0f, 1.0f).skin(0x2A2A3A, 0x1A1A2A, 0x10101A, 0x8080FF)
                     .spawn(Region.MORYTANIA, 2, 1, 2).underground());
         }
@@ -216,6 +214,14 @@ public final class MinigameMonsters {
                 .stats(MinigameRules.SoulWars.AVATAR_HP, 160, 320, 10, 10, 1).speed(6)
                 .defenceBonus(20, 20, 20, 20, 20).attack(melee(AttackType.CRUSH, 54))
                 .size(1.8f, 4.0f, 2.2f).skin(0x1A3A6A, 0x10204A, 0x08102A, 0x40A0FF));
+        // ---------------- Sorceress's Garden ----------------
+        // The seasonal elementals can't be attacked; they patrol their garden (moved by the session) and teleport intruders out.
+        for (SorceressGarden.Season s : SorceressGarden.Season.values()) {
+            list.add(MonsterDef.of(s.elemental(), s.displayName() + " Elemental").level(0).stats(255, 1, 1, 1, 1, 1).passive()
+                    .moveSpeed(0.0).immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.MAGIC, AttackType.RANGED)
+                    .attack(NONE).flying().size(0.7f, 1.9f, 1.0f)
+                    .skin(s.juiceColor(), s.fruitColor(), s.fruitColor(), 0xFFFFFF));
+        }
         return list;
     }
 

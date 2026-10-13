@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/shade_door_black_side",
+    "top": "runecraft:block/module/shade_door_black_top",
+    "bottom": "runecraft:block/module/shade_door_black_bottom"
+  }
+}

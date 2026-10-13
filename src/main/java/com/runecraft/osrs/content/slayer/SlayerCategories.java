@@ -177,7 +177,7 @@ public final class SlayerCategories {
         member("dwarves", "dwarf");
         member("catablepon", "catablepon");
         member("flesh_crawlers", "flesh_crawler");
-        member("shades", "loar_shade", "phrin_shade", "riyl_shade", "asyn_shade", "fiyr_shade");
+        member("shades", "loar_shade", "phrin_shade", "riyl_shade", "asyn_shade", "fiyr_shade", "urium_shade");
         member("jungle_horrors", "jungle_horror");
         member("bandits", "desert_bandit");
         member("chaos_druids", "chaos_druid");

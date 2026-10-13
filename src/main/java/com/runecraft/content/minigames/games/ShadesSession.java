@@ -1,126 +1,216 @@
 package com.runecraft.content.minigames.games;
 
 import com.runecraft.content.minigames.MinigameSession;
-import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.ItemCatalog;
+import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.minigames.Minigame;
-import com.runecraft.osrs.content.minigames.MinigameItems;
-import com.runecraft.osrs.content.minigames.MinigameRules.Shades;
+import com.runecraft.osrs.content.minigames.MinigameReward;
+import com.runecraft.osrs.content.minigames.ShadeChestRewards;
+import com.runecraft.osrs.content.minigames.ShadesOfMortton;
+import com.runecraft.osrs.content.minigames.ShadesOfMortton.Shade;
+import com.runecraft.player.Players;
+import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
- * Shades of Mort'ton: fight the shades in the catacombs beneath Mort'ton, burn their remains on a
- * funeral pyre (with logs) for Prayer XP, and use the keys they drop on the shade chest. Shades
- * match your combat level (Loar 40 ... Fiyr 120).
+ * The Shade Catacombs below Mort'ton: an entrance hall, then five crypts behind key doors - bronze
+ * (Phrin shades), steel (Riyl), black (Asyn), silver (Fiyr) and gold (Urium) - each with its metal's
+ * chest. A door needs any key of its metal (kept); a chest uses up a key of its metal: the one held,
+ * otherwise the lowest colour carried. Shades drop their remains, which are cremated on the funeral
+ * pyres in town for keys (see ShadesService).
  */
 public class ShadesSession extends MinigameSession {
-    private static final String[] LOGS = {"logs", "oak_logs", "willow_logs", "maple_logs", "yew_logs", "magic_logs", "teak_logs",
-            "mahogany_logs"};
+    /** Crypt width (x) and the first crypt's west wall; the entrance hall is west of it. */
+    private static final int CRYPT = 13;
+    private static final int FIRST = -26;
+    private static final String[] CHESTS = {"shade_chest", "shade_chest_steel", "shade_chest_black", "shade_chest_silver",
+            "shade_chest_gold"};
 
     public ShadesSession(int id, int slot, ServerWorld world, String variant) {
         super(Minigame.SHADES_OF_MORTTON, id, slot, world, variant);
     }
 
+    /** Entry check: the minigame follows the Shades of Mort'ton quest. */
+    public static String requirement(ServerPlayerEntity player) {
+        if (ContentRegistry.quest(ShadesOfMortton.QUEST) != null && !QuestApi.isComplete(player, ShadesOfMortton.QUEST)) {
+            return "You need to complete the Shades of Mort'ton quest to enter the catacombs.";
+        }
+        return null;
+    }
+
+    @Override
+    protected int halfX() {
+        return 40;
+    }
+
+    @Override
+    protected int halfZ() {
+        return 9;
+    }
+
+    @Override
+    protected int height() {
+        return 6;
+    }
+
+    /** West wall x of crypt {@code i} (0 bronze .. 4 gold). */
+    private static int wall(int i) {
+        return FIRST + i * CRYPT;
+    }
+
+    /** The crypt (0..4) a relative x lies in, or -1 for the entrance hall. */
+    private static int crypt(int dx) {
+        return dx <= FIRST ? -1 : Math.min(4, (dx - FIRST - 1) / CRYPT);
+    }
+
     @Override
     protected void build() {
-        room(Blocks.TUFF, Blocks.DEEPSLATE_BRICKS, Blocks.SOUL_SOIL);
-        place(-18, 18, "funeral_pyre");
-        place(18, 18, "shade_chest");
-        place(0, 22, "minigame_exit");
-        for (int i = 0; i < 12; i++) {
-            int x = random.nextInt(40) - 20;
-            int z = random.nextInt(30) - 20;
-            set(x, 1, z, Blocks.COBWEB.getDefaultState());
+        room(Blocks.DEEPSLATE_TILES, Blocks.DEEPSLATE_BRICKS, Blocks.SOUL_SOIL);
+        for (int i = 0; i < ShadesOfMortton.METALS.length; i++) {
+            int x = wall(i);
+            for (int dz = -halfZ(); dz <= halfZ(); dz++) {
+                for (int y = 1; y <= height(); y++) {
+                    set(x, y, dz, Blocks.DEEPSLATE_BRICKS.getDefaultState());
+                }
+            }
+            place(x, 0, "shade_door_" + ShadesOfMortton.METALS[i]);
+            int mid = x + CRYPT / 2 + 1;
+            place(mid, -halfZ() + 1, CHESTS[i]);
+            // Coffins along the crypt walls, a soul fire and cobwebs.
+            for (int cx = x + 2; cx < x + CRYPT - 1; cx += 4) {
+                set(cx, 1, halfZ(), Blocks.POLISHED_DEEPSLATE_SLAB.getDefaultState());
+                set(cx, 1, halfZ() - 1, Blocks.POLISHED_DEEPSLATE_SLAB.getDefaultState());
+            }
+            set(mid, 1, 4, Blocks.SOUL_CAMPFIRE.getDefaultState());
+            set(x + 2, height(), -halfZ() + 1, Blocks.COBWEB.getDefaultState());
         }
+        place(-halfX() + 2, 0, "minigame_exit");
     }
 
     @Override
     protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
-        return rel(index % 3 - 1, 1, 19);
+        return rel(-halfX() + 4, 1, index % 3 - 1);
     }
 
-    private int tier() {
-        int best = 0;
-        for (ServerPlayerEntity p : online()) {
-            int cmb = com.runecraft.player.Players.data(p).skills().combatLevel();
-            best = Math.max(best, Math.min(4, Math.max(0, (cmb - 30) / 20)));
-        }
-        return best;
+    @Override
+    protected void start() {
+        broadcast("You descend into the Shade Catacombs. The doors need a key of their metal; the chests take one.");
     }
 
     @Override
     protected void gameTick() {
-        if (ticks % 15 == 0 && mobsAlive() < 3 + playerCount()) {
-            int t = Math.max(0, tier() - random.nextInt(2));
-            MobEntity shade = spawn(MinigameItems.SHADES[t][0] + "_shade", randomFloor(0, -8, 12));
-            if (shade != null) {
-                aggro(shade);
+        if (ticks % 10 != 0) {
+            return;
+        }
+        Shade[] shades = Shade.values();
+        for (int i = 0; i < ShadesOfMortton.METALS.length; i++) {
+            Shade shade = shades[i + 1];
+            if (living(shade.creature()).size() < 2 + playerCount()) {
+                int x = wall(i) + 2 + random.nextInt(CRYPT - 3);
+                int z = random.nextInt(2 * halfZ() - 3) - halfZ() + 2;
+                spawn(shade.creature(), rel(x, 1, z));
             }
         }
     }
 
     @Override
     protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
-        switch (blockId) {
-            case "funeral_pyre" -> {
-                String log = null;
-                for (String l : LOGS) {
-                    if (Inv.has(player, l, 1)) {
-                        log = l;
-                        break;
-                    }
-                }
-                if (log == null) {
-                    Msg.game(player, "You need logs to build a funeral pyre.");
-                    return true;
-                }
-                for (int i = MinigameItems.SHADES.length - 1; i >= 0; i--) {
-                    String remains = MinigameItems.SHADES[i][0] + "_remains";
-                    if (Inv.remove(player, remains, 1) > 0) {
-                        Inv.remove(player, log, 1);
-                        xp(player, Skill.PRAYER, (Double) MinigameItems.SHADES[i][3]);
-                        xp(player, Skill.FIREMAKING, 10 + i * 10);
-                        world.spawnParticles(ParticleTypes.SOUL_FIRE_FLAME, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 20, 0.3, 0.5, 0.3, 0.02);
-                        Msg.game(player, "You lay the " + MinigameItems.SHADES[i][1] + " remains to rest.");
-                        return true;
-                    }
-                }
-                Msg.game(player, "You have no shade remains to burn.");
+        for (int i = 0; i < ShadesOfMortton.METALS.length; i++) {
+            String metal = ShadesOfMortton.METALS[i];
+            if (blockId.equals("shade_door_" + metal)) {
+                door(player, i);
                 return true;
             }
-            case "shade_chest" -> {
-                for (int i = Shades.KEYS.length - 1; i >= 0; i--) {
-                    if (Inv.remove(player, Shades.KEYS[i], 1) > 0) {
-                        for (int r = 0; r <= i; r++) {
-                            rollLoot(player, Shades.CHEST);
-                        }
-                        Msg.game(player, "You unlock the chest.");
-                        return true;
-                    }
-                }
-                Msg.game(player, "The chest is locked. Shades sometimes drop keys.");
+            if (blockId.equals(CHESTS[i])) {
+                chest(player, metal);
                 return true;
-            }
-            default -> {
-                return false;
             }
         }
+        return false;
+    }
+
+    private static boolean hasKey(ServerPlayerEntity player, String metal) {
+        for (String c : ShadesOfMortton.COLOURS) {
+            if (Inv.has(player, ShadesOfMortton.key(metal, c), 1)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void door(ServerPlayerEntity player, int i) {
+        String metal = ShadesOfMortton.METALS[i];
+        int x = wall(i);
+        boolean west = relPos(player).getX() < x;
+        if (west && !hasKey(player, metal)) {
+            Msg.game(player, "The doors are locked. You need " + Msg.article(metal) + " key to open them.");
+            return;
+        }
+        BlockPos to = rel(west ? x + 2 : x - 2, 1, 0);
+        player.teleport(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYaw(), player.getPitch());
+        if (west) {
+            Msg.game(player, "You unlock the doors with your " + metal + " key.");
+        }
+    }
+
+    private void chest(ServerPlayerEntity player, String metal) {
+        String key = null;
+        ItemStack held = player.getMainHandStack();
+        String[] heldParts = held.isEmpty() ? null : ShadesOfMortton.keyParts(Inv.idOf(held));
+        if (heldParts != null && heldParts[0].equals(metal)) {
+            key = Inv.idOf(held);
+        } else {
+            for (String c : ShadesOfMortton.COLOURS) {
+                if (Inv.has(player, ShadesOfMortton.key(metal, c), 1)) {
+                    key = ShadesOfMortton.key(metal, c);
+                    break;
+                }
+            }
+        }
+        if (key == null) {
+            Msg.game(player, "The " + metal + " chest is locked. You need " + Msg.article(metal) + " key; hold the colour you want to use.");
+            return;
+        }
+        String colour = ShadesOfMortton.keyParts(key)[1];
+        Inv.remove(player, key, 1);
+        Set<String> owned = new HashSet<>(Players.data(player).collectionLog());
+        for (String piece : List.of("flamtaer_bag", "zealots_boots", "zealots_helm", "zealots_robe_bottom", "zealots_robe_top")) {
+            if (Inv.has(player, piece, 1)) {
+                owned.add(piece);
+            }
+        }
+        ShadesOfMortton.Opening o = ShadesOfMortton.open(ShadesOfMortton.chest(metal, colour), owned,
+                id -> ItemCatalog.exists(id) ? ItemCatalog.get(id).value() : 0, random::nextDouble);
+        for (MinigameReward r : o.items()) {
+            reward(player, r.item(), r.amount());
+            if (ShadeChestRewards.UNIQUES.contains(r.item())) {
+                broadcast(player.getName().getString() + " finds " + ItemCatalog.get(r.item()).name() + " in a " + metal + " chest!");
+            }
+        }
+        world.spawnParticles(ParticleTypes.SOUL, player.getX(), player.getY() + 1, player.getZ(), 8, 0.4, 0.4, 0.4, 0.02);
+        Msg.game(player, "The " + colour + " " + metal + " key dissolves in the lock as the chest opens.");
     }
 
     @Override
     protected List<String> hud(ServerPlayerEntity player) {
+        int c = crypt(relPos(player).getX());
+        String where = c < 0 ? "Entrance hall" : Character.toUpperCase(ShadesOfMortton.METALS[c].charAt(0))
+                + ShadesOfMortton.METALS[c].substring(1) + " crypt (" + Shade.values()[c + 1].displayName() + " shades)";
         int remains = 0;
-        for (Object[] s : MinigameItems.SHADES) {
-            remains += Inv.count(player, s[0] + "_remains");
+        for (Shade s : Shade.values()) {
+            remains += Inv.count(player, s.remains());
         }
-        return List.of("Shades of Mort'ton", "Shades: " + mobsAlive(), "Remains carried: " + remains);
+        return List.of("Shade Catacombs", where, "Remains carried: " + remains);
     }
 }

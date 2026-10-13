@@ -219,6 +219,12 @@ public final class MinigameManager {
         if (game == Minigame.TEARS_OF_GUTHIX) {
             return com.runecraft.content.minigames.games.TearsOfGuthixSession.requirement(player);
         }
+        if (game == Minigame.SHADES_OF_MORTTON) {
+            return ShadesSession.requirement(player);
+        }
+        if (game == Minigame.SORCERESS_GARDEN) {
+            return com.runecraft.content.minigames.games.SorceressGardenSession.requirement(player);
+        }
         if (game.skill() != null && skills.level(game.skill()) < game.level()) {
             return "You need " + Msg.article(game.skill().displayName())
                     + " level of " + game.level() + " to take part in " + game.displayName() + ".";
@@ -264,6 +270,8 @@ public final class MinigameManager {
             case NIGHTMARE_ZONE -> new com.runecraft.content.minigames.games.NightmareZoneSession(id, slot, world, variant);
             case SOUL_WARS -> new com.runecraft.content.minigames.games.SoulWarsSession(id, slot, world, variant);
             case TEARS_OF_GUTHIX -> new com.runecraft.content.minigames.games.TearsOfGuthixSession(id, slot, world, variant);
+            case SORCERESS_GARDEN -> new com.runecraft.content.minigames.games.SorceressGardenSession(id, slot, world, variant);
+            case FIGHT_PITS -> new com.runecraft.content.minigames.games.FightPitsSession(id, slot, world, variant);
         };
     }
 

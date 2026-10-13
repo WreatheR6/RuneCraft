@@ -113,7 +113,16 @@ public final class MinigameWorld {
             {"tb_brewing_vat", "Brewing vat", "8A6A3A", "machine"},
             // Shades of Mort'ton
             {"funeral_pyre", "Funeral pyre", "6A4A2A", "fire_pyre"},
-            {"shade_chest", "Shade chest", "4A4A6A", "chest"},
+            {"shade_chest", "Bronze chest", "8A5A2A", "chest"},
+            {"shade_chest_steel", "Steel chest", "9A9AA0", "chest"},
+            {"shade_chest_black", "Black chest", "2A2A2A", "chest"},
+            {"shade_chest_silver", "Silver chest", "D0D0E0", "chest"},
+            {"shade_chest_gold", "Gold chest", "E0B030", "chest"},
+            {"shade_door_bronze", "Wooden doors (bronze lock)", "6A4A2A", "portal_door"},
+            {"shade_door_steel", "Wooden doors (steel lock)", "6A4A2A", "portal_door"},
+            {"shade_door_black", "Wooden doors (black lock)", "6A4A2A", "portal_door"},
+            {"shade_door_silver", "Wooden doors (silver lock)", "6A4A2A", "portal_door"},
+            {"shade_door_gold", "Wooden doors (gold lock)", "6A4A2A", "portal_door"},
             // Tithe Farm
             {"tithe_patch", "Tithe patch", "5A3A1A", "soil"},
             {"tithe_water_barrel", "Water barrel", "4080C0", "pot"},
@@ -144,8 +153,32 @@ public final class MinigameWorld {
             {"sw_graveyard", "Graveyard", "6A6A6A", "statue"},
             // Tears of Guthix
             {"tog_weeping_wall", "Weeping wall", "4A6A8A", "water_spot"},
+            // Sorceress's Garden (gate, sq'irk tree and herb patch per season; see SorceressGarden.Season)
+            {"sg_fountain", "Fountain", "6AA0E0", "statue"},
+            {"sg_gate_winter", "Winter garden gate", "9AC8E8", "portal_door"},
+            {"sg_gate_spring", "Spring garden gate", "6AC050", "portal_door"},
+            {"sg_gate_autumn", "Autumn garden gate", "C07020", "portal_door"},
+            {"sg_gate_summer", "Summer garden gate", "E04040", "portal_door"},
+            {"sg_sqirk_tree_winter", "Sq'irk tree", "8AA0B0", "tree"},
+            {"sg_sqirk_tree_spring", "Sq'irk tree", "4A9A3A", "tree"},
+            {"sg_sqirk_tree_autumn", "Sq'irk tree", "A06020", "tree"},
+            {"sg_sqirk_tree_summer", "Sq'irk tree", "3A8A2A", "tree"},
+            {"sg_herbs_winter", "Herbs", "6A8A7A", "farming_patch"},
+            {"sg_herbs_spring", "Herbs", "4A9A3A", "farming_patch"},
+            {"sg_herbs_autumn", "Herbs", "8A7A2A", "farming_patch"},
+            {"sg_herbs_summer", "Herbs", "3A8A2A", "farming_patch"},
             // Shared
             {"minigame_exit", "Exit portal", "C0C0FF", "portal_glow"}};
+
+    /**
+     * Mort'ton's town objects beside the catacombs entrance: a funeral pyre, the Flamtaer temple's wall (repairs) and
+     * sacred fire (olive oil to sacred oil), and Razmire's general store (olive oil) and builders' merchant.
+     */
+    public static final List<String> MORTTON_BLOCKS = List.of("funeral_pyre", "flamtaer_temple", "flamtaer_altar",
+            "razmire_general_store", "razmire_builders_merchant");
+
+    /** Shelves in the sorceress's house: free beer glasses for the sq'irkjuice. */
+    public static final String SORCERESS_SHELVES = "sg_shelves";
 
     public static List<BlockDef> blocks() {
         List<BlockDef> list = new ArrayList<>();
@@ -162,6 +195,11 @@ public final class MinigameWorld {
         }
         list.add(BlockDef.scripted("pyramid_plunder_artefact_trader", "Simon Templeton's artefact crate", 0xC0A060, "chest"));
         list.add(BlockDef.scripted("rogues_den_jewel_trader", "Brian O'Richard's crate", 0x5A5A60, "chest"));
+        list.add(BlockDef.scripted(SORCERESS_SHELVES, "Shelves", 0x8A6A3A, "crate"));
+        list.add(BlockDef.scripted("flamtaer_temple", "Flamtaer temple wall", 0xB0A890, "rock"));
+        list.add(BlockDef.scripted("flamtaer_altar", "Sacred fire", 0xE08030, "fire_brazier"));
+        list.add(BlockDef.scripted("razmire_general_store", "Razmire's general store", 0x8A6A3A, "crate"));
+        list.add(BlockDef.scripted("razmire_builders_merchant", "Razmire's builders' merchant", 0x9A7A4A, "crate"));
         for (String[] b : ARENA_BLOCKS) {
             list.add(BlockDef.scripted(b[0], b[1], Integer.parseInt(b[2], 16), b[3]));
         }
@@ -185,6 +223,8 @@ public final class MinigameWorld {
         map.get(Minigame.PYRAMID_PLUNDER.place()).add("pyramid_plunder_artefact_trader");
         map.get(Minigame.ROGUES_DEN.place()).add("rogues_den_jewel_trader");
         map.get(Minigame.TEMPOROSS.place()).add("tempoross_reward_pool");
+        map.get(Minigame.SORCERESS_GARDEN.place()).add(SORCERESS_SHELVES);
+        map.get(Minigame.SHADES_OF_MORTTON.place()).addAll(MORTTON_BLOCKS);
         return map;
     }
 
@@ -214,6 +254,7 @@ public final class MinigameWorld {
                 case NIGHTMARE_ZONE -> "Nightmare Zone";
                 case SOUL_WARS -> "Isle of Souls";
                 case TEARS_OF_GUTHIX -> "Chasm of Tears entrance";
+                case SORCERESS_GARDEN -> "Sorceress's house";
                 default -> m.displayName();
             };
             list.add(PlaceDef.of(m.place(), name, m.entranceX(), m.entranceY(), m.style(), blocks.get(m.place())));
@@ -226,6 +267,8 @@ public final class MinigameWorld {
         int tz = 0x6A2A10;
         list.add(NpcDef.of("mg_tzhaar_mej_jal", "TzHaar-Mej-Jal", Minigame.FIGHT_CAVES.place(), 2, 2, tz, 0x4A1808, 0x3A1008, 0xFF8030));
         list.add(NpcDef.of("mg_tzhaar_hur_tel", "TzHaar-Hur-Tel", Minigame.FIGHT_CAVES.place(), -2, 2, tz, 0x5A2010, 0x3A1008, 0xFFA040));
+        list.add(NpcDef.of("mg_tzhaar_mej_kah", "TzHaar-Mej-Kah", Minigame.FIGHT_PITS.place(), 4, -2, tz, 0x4A1808, 0x3A1008,
+                0xFF9040));
         list.add(NpcDef.of("mg_tzhaar_ket_keh", "TzHaar-Ket-Keh", Minigame.FIGHT_CAVES.place(), 0, -2, tz, 0x3A1008, 0x2A0808, 0xFF6020));
         list.add(NpcDef.of("mg_void_knight_squire", "Squire", Minigame.PEST_CONTROL.place(), 2, 2, 0xC8A080, 0x6A6A70, 0x4A4A50, 0xA0A0A8));
         list.add(NpcDef.of("mg_ignisia", "Ignisia", Minigame.WINTERTODT.place(), 2, 2, 0xC8A080, 0xB04020, 0x6A2010, 0xE06020));
@@ -262,6 +305,8 @@ public final class MinigameWorld {
         list.add(NpcDef.of("mg_dominic_onion", "Dominic Onion", Minigame.NIGHTMARE_ZONE.place(), 2, 2, 0xC8A080, 0x4A6AA0, 0x3A4A7A,
                 0xE0E0E0));
         list.add(NpcDef.of("mg_nomad", "Nomad", Minigame.SOUL_WARS.place(), 2, 2, 0xC09070, 0x5A3A8A, 0x3A2A5A, 0x2A2A2A));
+        list.add(NpcDef.of("mg_sorceress_apprentice", "Apprentice", Minigame.SORCERESS_GARDEN.place(), 2, 2, 0xC09070, 0x6A3A8A,
+                0x4A2A6A, 0x2A1A1A));
         list.add(NpcDef.of("mg_mortton_priest", "Ulsquire Shauncy", Minigame.SHADES_OF_MORTTON.place(), 2, 2, 0xB0B0A0, 0x3A3A3A,
                 0x2A2A2A, 0x8A8A8A));
         return list;
@@ -327,7 +372,9 @@ public final class MinigameWorld {
         }
         naval.add("the_stuff");
         pages.add(new CollectionLogData.Page(c, "Trouble Brewing", naval));
-        pages.add(new CollectionLogData.Page(c, "Shades of Mort'ton", List.of("flamtaer_hammer", "gold_shade_key")));
+        pages.add(new CollectionLogData.Page(c, "Shades of Mort'ton", List.of("amulet_of_the_damned", "flamtaer_bag", "fine_cloth",
+                "bronze_locks", "steel_locks", "black_locks", "silver_locks", "gold_locks", "runescroll_of_swampbark",
+                "runescroll_of_bloodbark", "zealots_helm", "zealots_robe_top", "zealots_robe_bottom", "zealots_boots")));
         pages.add(new CollectionLogData.Page(c, "Tithe Farm", List.of("farmers_strawhat", "farmers_jacket", "farmers_boro_trousers",
                 "farmers_boots", "gricollers_can", "seed_box", "herb_sack")));
         pages.add(new CollectionLogData.Page(c, "Giants' Foundry", List.of("smiths_tunic", "smiths_trousers", "smiths_boots",

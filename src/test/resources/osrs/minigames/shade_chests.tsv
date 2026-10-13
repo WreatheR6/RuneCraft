@@ -1,0 +1,961 @@
+# Shade chests (OSRS Wiki "<Metal> Chest (<colour>)" pages, July 2026 dump). metal	colour	section	wiki name	item	min	max	noted	rarity
+bronze	red	Locks	Bronze locks	bronze_locks	1	1		1/63
+bronze	red	Weapons	Black dagger(p)	black_dagger	1	1		5/98.56
+bronze	red	Weapons	Steel axe	steel_axe	1	1		6/98.56
+bronze	red	Weapons	Mithril dagger(p)	mithril_dagger	1	1		4/98.56
+bronze	red	Weapons	Magic staff	magic_staff	1	1		6/98.56
+bronze	red	Weapons	Steel spear	steel_spear	1	1		4/98.56
+bronze	red	Weapons	Steel spear(p)	steel_spear	1	1		4/98.56
+bronze	red	Weapons	Steel mace	steel_mace	1	1		3/98.56
+bronze	red	Weapons	Steel scimitar	steel_scimitar	1	1		3/98.56
+bronze	red	Weapons	Steel sword	steel_sword	1	1		4/98.56
+bronze	red	Weapons	Black axe	black_axe	1	1		1/98.56
+bronze	red	Weapons	Black dagger	black_dagger	1	1		6/98.56
+bronze	red	Weapons	Black mace	black_mace	1	1		2/98.56
+bronze	red	Weapons	Mithril dagger	mithril_dagger	1	1		5/98.56
+bronze	red	Weapons	Steel longsword	steel_longsword	1	1		1/3055.5
+bronze	red	Weapons	Black spear	black_spear	1	1		1/3055.5
+bronze	red	Other	Steel med helm	steel_med_helm	1	1		5/98.56
+bronze	red	Other	Chaos rune	chaos_rune	12	29		14/98.56
+bronze	red	Other	Amulet of defence	amulet_of_defence	1	1		7/98.56
+bronze	red	Other	Sapphire ring	sapphire_ring	1	1		2/98.62
+bronze	red	Other	Silver bar	silver_bar	3	3		6/98.56
+bronze	red	Other	Gold bar	gold_bar	3	3		5/98.56
+bronze	red	Other	Mithril bar	mithril_bar	3	3		5/98.56
+bronze	red	Other	Clue scroll (easy)	clue_scroll_easy	1	1		2/98.56
+bronze	red	Tertiary	Coins	coins	1	270		Common
+bronze	red	Tertiary	Swamp paste	swamp_paste	5	10		Always
+bronze	brown	Locks	Bronze locks	bronze_locks	1	1		1/62
+bronze	brown	Weapons	Black dagger(p)	black_dagger	1	1		5/98.59
+bronze	brown	Weapons	Steel axe	steel_axe	1	1		6/98.59
+bronze	brown	Weapons	Mithril dagger(p)	mithril_dagger	1	1		4/98.59
+bronze	brown	Weapons	Magic staff	magic_staff	1	1		6/98.59
+bronze	brown	Weapons	Steel spear	steel_spear	1	1		4/98.59
+bronze	brown	Weapons	Steel spear(p)	steel_spear	1	1		4/98.59
+bronze	brown	Weapons	Steel mace	steel_mace	1	1		3/98.59
+bronze	brown	Weapons	Steel scimitar	steel_scimitar	1	1		3/98.59
+bronze	brown	Weapons	Steel sword	steel_sword	1	1		4/98.59
+bronze	brown	Weapons	Black axe	black_axe	1	1		1/98.59
+bronze	brown	Weapons	Black dagger	black_dagger	1	1		6/98.59
+bronze	brown	Weapons	Black mace	black_mace	1	1		2/98.59
+bronze	brown	Weapons	Mithril dagger	mithril_dagger	1	1		5/98.59
+bronze	brown	Weapons	Steel longsword	steel_longsword	1	1		1/3056.3
+bronze	brown	Weapons	Black spear	black_spear	1	1		1/3056.3
+bronze	brown	Other	Steel med helm	steel_med_helm	1	1		5/98.59
+bronze	brown	Other	Chaos rune	chaos_rune	12	29		13/98.59
+bronze	brown	Other	Amulet of defence	amulet_of_defence	1	1		7/98.59
+bronze	brown	Other	Sapphire ring	sapphire_ring	1	1		1/98.59
+bronze	brown	Other	Silver bar	silver_bar	3	3		6/98.59
+bronze	brown	Other	Gold bar	gold_bar	3	3		5/98.59
+bronze	brown	Other	Mithril bar	mithril_bar	3	3		5/98.59
+bronze	brown	Other	Clue scroll (easy)	clue_scroll_easy	1	1		2/98.59
+bronze	brown	Tertiary	Coins	coins	1	270		Common
+bronze	brown	Tertiary	Swamp paste	swamp_paste	5	10		Always
+bronze	crimson	Locks	Bronze locks	bronze_locks	1	1		1/61
+bronze	crimson	Weapons	Black dagger(p)	black_dagger	1	1		5/98.62
+bronze	crimson	Weapons	Steel axe	steel_axe	1	1		6/98.62
+bronze	crimson	Weapons	Mithril dagger(p)	mithril_dagger	1	1		4/98.62
+bronze	crimson	Weapons	Magic staff	magic_staff	1	1		6/98.62
+bronze	crimson	Weapons	Steel spear	steel_spear	1	1		4/98.62
+bronze	crimson	Weapons	Steel spear(p)	steel_spear	1	1		4/98.62
+bronze	crimson	Weapons	Steel mace	steel_mace	1	1		3/98.62
+bronze	crimson	Weapons	Steel scimitar	steel_scimitar	1	1		3/98.62
+bronze	crimson	Weapons	Steel sword	steel_sword	1	1		4/98.62
+bronze	crimson	Weapons	Black axe	black_axe	1	1		1/98.62
+bronze	crimson	Weapons	Black dagger	black_dagger	1	1		6/98.62
+bronze	crimson	Weapons	Black mace	black_mace	1	1		2/98.62
+bronze	crimson	Weapons	Mithril dagger	mithril_dagger	1	1		5/98.62
+bronze	crimson	Weapons	Steel longsword	steel_longsword	1	1		1/3055.5
+bronze	crimson	Weapons	Black spear	black_spear	1	1		1/3055.5
+bronze	crimson	Other	Steel med helm	steel_med_helm	1	1		5/98.62
+bronze	crimson	Other	Chaos rune	chaos_rune	12	29		13/98.62
+bronze	crimson	Other	Amulet of defence	amulet_of_defence	1	1		7/98.62
+bronze	crimson	Other	Sapphire ring	sapphire_ring	1	1		2/98.62
+bronze	crimson	Other	Silver bar	silver_bar	3	3		6/98.62
+bronze	crimson	Other	Gold bar	gold_bar	3	3		5/98.62
+bronze	crimson	Other	Mithril bar	mithril_bar	3	3		5/98.62
+bronze	crimson	Other	Clue scroll (easy)	clue_scroll_easy	1	1		2/98.62
+bronze	crimson	Tertiary	Coins	coins	1	270		Common
+bronze	crimson	Tertiary	Swamp paste	swamp_paste	5	10		Always
+bronze	black	Locks	Bronze locks	bronze_locks	1	1		1/60
+bronze	black	Weapons	Black dagger(p)	black_dagger	1	1		5/98.64
+bronze	black	Weapons	Steel axe	steel_axe	1	1		6/98.64
+bronze	black	Weapons	Mithril dagger(p)	mithril_dagger	1	1		4/98.64
+bronze	black	Weapons	Magic staff	magic_staff	1	1		6/98.64
+bronze	black	Weapons	Steel spear	steel_spear	1	1		4/98.64
+bronze	black	Weapons	Steel spear(p)	steel_spear	1	1		4/98.64
+bronze	black	Weapons	Steel mace	steel_mace	1	1		3/98.64
+bronze	black	Weapons	Steel scimitar	steel_scimitar	1	1		3/98.64
+bronze	black	Weapons	Steel sword	steel_sword	1	1		4/98.64
+bronze	black	Weapons	Black axe	black_axe	1	1		1/98.64
+bronze	black	Weapons	Black dagger	black_dagger	1	1		6/98.64
+bronze	black	Weapons	Black mace	black_mace	1	1		2/98.64
+bronze	black	Weapons	Mithril dagger	mithril_dagger	1	1		5/98.64
+bronze	black	Weapons	Steel longsword	steel_longsword	1	1		1/3057.97
+bronze	black	Weapons	Black spear	black_spear	1	1		1/3057.97
+bronze	black	Other	Steel med helm	steel_med_helm	1	1		5/98.64
+bronze	black	Other	Chaos rune	chaos_rune	12	29		13/98.64
+bronze	black	Other	Amulet of defence	amulet_of_defence	1	1		7/98.64
+bronze	black	Other	Sapphire ring	sapphire_ring	1	1		3/98.64
+bronze	black	Other	Silver bar	silver_bar	3	3		6/98.64
+bronze	black	Other	Gold bar	gold_bar	3	3		5/98.64
+bronze	black	Other	Mithril bar	mithril_bar	3	3		5/98.64
+bronze	black	Other	Clue scroll (easy)	clue_scroll_easy	1	1		2/98.64
+bronze	black	Tertiary	Coins	coins	1	270		Common
+bronze	black	Tertiary	Swamp paste	swamp_paste	5	10		Always
+bronze	purple	Locks	Bronze locks	bronze_locks	1	1		1/59
+bronze	purple	Weapons	Black dagger(p)	black_dagger	1	1		5/98.67
+bronze	purple	Weapons	Steel axe	steel_axe	1	1		6/98.67
+bronze	purple	Weapons	Mithril dagger(p)	mithril_dagger	1	1		4/98.67
+bronze	purple	Weapons	Magic staff	magic_staff	1	1		6/98.67
+bronze	purple	Weapons	Steel spear	steel_spear	1	1		4/98.67
+bronze	purple	Weapons	Steel spear(p)	steel_spear	1	1		4/98.67
+bronze	purple	Weapons	Steel mace	steel_mace	1	1		3/98.67
+bronze	purple	Weapons	Steel scimitar	steel_scimitar	1	1		3/98.67
+bronze	purple	Weapons	Steel sword	steel_sword	1	1		4/98.67
+bronze	purple	Weapons	Black axe	black_axe	1	1		1/98.67
+bronze	purple	Weapons	Black dagger	black_dagger	1	1		6/98.67
+bronze	purple	Weapons	Black mace	black_mace	1	1		2/98.67
+bronze	purple	Weapons	Mithril dagger	mithril_dagger	1	1		5/98.67
+bronze	purple	Weapons	Steel longsword	steel_longsword	1	1		1/3058.84
+bronze	purple	Weapons	Black spear	black_spear	1	1		1/3058.84
+bronze	purple	Other	Steel med helm	steel_med_helm	1	1		5/98.67
+bronze	purple	Other	Chaos rune	chaos_rune	12	29		10/98.67
+bronze	purple	Other	Amulet of defence	amulet_of_defence	1	1		7/98.67
+bronze	purple	Other	Sapphire ring	sapphire_ring	1	1		4/98.67
+bronze	purple	Other	Silver bar	silver_bar	3	3		6/98.67
+bronze	purple	Other	Gold bar	gold_bar	3	3		5/98.67
+bronze	purple	Other	Mithril bar	mithril_bar	3	3		5/98.67
+bronze	purple	Other	Clue scroll (easy)	clue_scroll_easy	1	1		2/98.67
+bronze	purple	Tertiary	Coins	coins	1	270		Common
+bronze	purple	Tertiary	Swamp paste	swamp_paste	5	10		Always
+steel	red	Locks	Steel locks	steel_locks	1	1		1/63
+steel	red	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/1217.32
+steel	red	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/1217.32
+steel	red	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/1217.32
+steel	red	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/1217.32
+steel	red	Weapons	Steel 2h sword	steel_2h_sword	1	1		1/134.35
+steel	red	Weapons	Steel warhammer	steel_warhammer	1	1		6/134.35
+steel	red	Weapons	Steel battleaxe	steel_battleaxe	1	1		5/134.35
+steel	red	Weapons	Black warhammer	black_warhammer	1	1		6/134.35
+steel	red	Weapons	Black spear	black_spear	1	1		1/134.35
+steel	red	Weapons	Black scimitar	black_scimitar	1	1		10/134.35
+steel	red	Weapons	Black sword	black_sword	1	1		3/134.35
+steel	red	Weapons	Black longsword	black_longsword	1	1		2/134.35
+steel	red	Weapons	Black spear	black_spear	1	1		1/134.35
+steel	red	Weapons	Mithril mace	mithril_mace	1	1		7/134.35
+steel	red	Weapons	Mithril spear	mithril_spear	1	1		4/134.35
+steel	red	Weapons	Mithril spear(p)	mithril_spear	1	1		4/134.35
+steel	red	Weapons	Mithril sword	mithril_sword	1	1		3/134.35
+steel	red	Weapons	Adamant dagger	adamant_dagger	1	1		4/134.35
+steel	red	Weapons	Adamant dagger(p)	adamant_dagger	1	1		1/134.35
+steel	red	Armour	Studded chaps	studded_chaps	1	1		5/134.35
+steel	red	Armour	Steel chainbody	steel_chainbody	1	1		5/134.35
+steel	red	Armour	Steel kiteshield	steel_kiteshield	1	1		2/134.35
+steel	red	Armour	Black med helm	black_med_helm	1	1		7/134.35
+steel	red	Armour	Mithril med helm	mithril_med_helm	1	1		3/134.35
+steel	red	Other	Adamantite bar	adamantite_bar	3	3		6/134.35
+steel	red	Other	Emerald ring	emerald_ring	1	1		2/134.35
+steel	red	Other	Amulet of strength	amulet_of_strength	1	1		6/134.35
+steel	red	Other	Chaos rune	chaos_rune	10	29		11/134.35
+steel	red	Other	Nature rune	nature_rune	10	29		15/134.35
+steel	red	Other	Willow logs	willow_logs	5	14	noted	10/134.35
+steel	red	Other	Clue scroll (medium)	clue_scroll_medium	1	1		3/134.35
+steel	red	Other	Fine cloth	fine_cloth	1	1		1/1679.42
+steel	red	Tertiary	Coins	coins	1	700		Common
+steel	red	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+steel	red	Tertiary	Swamp paste	swamp_paste	15	30		Always
+steel	brown	Locks	Steel locks	steel_locks	1	1		1/62
+steel	brown	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/1215.61
+steel	brown	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/1215.61
+steel	brown	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/1215.61
+steel	brown	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/1215.61
+steel	brown	Weapons	Steel 2h sword	steel_2h_sword	1	1		1/134.39
+steel	brown	Weapons	Steel warhammer	steel_warhammer	1	1		6/134.39
+steel	brown	Weapons	Steel battleaxe	steel_battleaxe	1	1		5/134.39
+steel	brown	Weapons	Black warhammer	black_warhammer	1	1		6/134.39
+steel	brown	Weapons	Black spear	black_spear	1	1		1/134.39
+steel	brown	Weapons	Black scimitar	black_scimitar	1	1		10/134.39
+steel	brown	Weapons	Black sword	black_sword	1	1		3/134.39
+steel	brown	Weapons	Black longsword	black_longsword	1	1		2/134.39
+steel	brown	Weapons	Black spear	black_spear	1	1		1/134.39
+steel	brown	Weapons	Mithril mace	mithril_mace	1	1		7/134.39
+steel	brown	Weapons	Mithril spear	mithril_spear	1	1		4/134.39
+steel	brown	Weapons	Mithril spear(p)	mithril_spear	1	1		4/134.39
+steel	brown	Weapons	Mithril sword	mithril_sword	1	1		3/134.39
+steel	brown	Weapons	Adamant dagger	adamant_dagger	1	1		4/134.39
+steel	brown	Weapons	Adamant dagger(p)	adamant_dagger	1	1		1/134.39
+steel	brown	Armour	Studded chaps	studded_chaps	1	1		5/134.39
+steel	brown	Armour	Steel chainbody	steel_chainbody	1	1		5/134.39
+steel	brown	Armour	Steel kiteshield	steel_kiteshield	1	1		2/134.39
+steel	brown	Armour	Black med helm	black_med_helm	1	1		7/134.39
+steel	brown	Armour	Mithril med helm	mithril_med_helm	1	1		3/134.39
+steel	brown	Other	Fine cloth	fine_cloth	1	1		1/134.39
+steel	brown	Other	Adamantite bar	adamantite_bar	3	3		6/134.39
+steel	brown	Other	Emerald ring	emerald_ring	1	1		2/134.39
+steel	brown	Other	Amulet of strength	amulet_of_strength	1	1		6/134.39
+steel	brown	Other	Chaos rune	chaos_rune	10	29		11/134.39
+steel	brown	Other	Nature rune	nature_rune	10	29		14/134.39
+steel	brown	Other	Willow logs	willow_logs	5	14	noted	10/134.39
+steel	brown	Other	Clue scroll (medium)	clue_scroll_medium	1	1		3/134.39
+steel	brown	Tertiary	Coins	coins	1	700		Common
+steel	brown	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+steel	brown	Tertiary	Swamp paste	swamp_paste	15	30		Always
+steel	crimson	Locks	Steel locks	steel_locks	1	1		1/61
+steel	crimson	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/1213.9
+steel	crimson	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/1213.9
+steel	crimson	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/1213.9
+steel	crimson	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/1213.9
+steel	crimson	Weapons	Steel 2h sword	steel_2h_sword	1	1		1/134.43
+steel	crimson	Weapons	Steel warhammer	steel_warhammer	1	1		6/134.43
+steel	crimson	Weapons	Steel battleaxe	steel_battleaxe	1	1		5/134.43
+steel	crimson	Weapons	Black warhammer	black_warhammer	1	1		6/134.43
+steel	crimson	Weapons	Black spear	black_spear	1	1		1/134.43
+steel	crimson	Weapons	Black scimitar	black_scimitar	1	1		10/134.43
+steel	crimson	Weapons	Black sword	black_sword	1	1		3/134.43
+steel	crimson	Weapons	Black longsword	black_longsword	1	1		2/134.43
+steel	crimson	Weapons	Black spear	black_spear	1	1		1/134.43
+steel	crimson	Weapons	Mithril mace	mithril_mace	1	1		7/134.43
+steel	crimson	Weapons	Mithril spear	mithril_spear	1	1		4/134.43
+steel	crimson	Weapons	Mithril spear(p)	mithril_spear	1	1		4/134.43
+steel	crimson	Weapons	Mithril sword	mithril_sword	1	1		3/134.43
+steel	crimson	Weapons	Adamant dagger	adamant_dagger	1	1		4/134.43
+steel	crimson	Weapons	Adamant dagger(p)	adamant_dagger	1	1		1/134.43
+steel	crimson	Armour	Studded chaps	studded_chaps	1	1		5/134.43
+steel	crimson	Armour	Steel chainbody	steel_chainbody	1	1		5/134.43
+steel	crimson	Armour	Steel kiteshield	steel_kiteshield	1	1		2/134.43
+steel	crimson	Armour	Black med helm	black_med_helm	1	1		7/134.43
+steel	crimson	Armour	Mithril med helm	mithril_med_helm	1	1		3/134.43
+steel	crimson	Other	Fine cloth	fine_cloth	1	1		2/134.43
+steel	crimson	Other	Adamantite bar	adamantite_bar	3	3		6/134.43
+steel	crimson	Other	Emerald ring	emerald_ring	1	1		2/134.43
+steel	crimson	Other	Amulet of strength	amulet_of_strength	1	1		6/134.43
+steel	crimson	Other	Chaos rune	chaos_rune	10	29		11/134.43
+steel	crimson	Other	Nature rune	nature_rune	10	29		13/134.43
+steel	crimson	Other	Willow logs	willow_logs	5	14	noted	10/134.43
+steel	crimson	Other	Clue scroll (medium)	clue_scroll_medium	1	1		3/134.43
+steel	crimson	Tertiary	Coins	coins	1	700		Common
+steel	crimson	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+steel	crimson	Tertiary	Swamp paste	swamp_paste	15	30		Always
+steel	black	Locks	Steel locks	steel_locks	1	1		1/60
+steel	black	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/1212.2
+steel	black	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/1212.2
+steel	black	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/1212.2
+steel	black	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/1212.2
+steel	black	Weapons	Steel 2h sword	steel_2h_sword	1	1		1/134.46
+steel	black	Weapons	Steel warhammer	steel_warhammer	1	1		6/134.46
+steel	black	Weapons	Steel battleaxe	steel_battleaxe	1	1		5/134.46
+steel	black	Weapons	Black warhammer	black_warhammer	1	1		6/134.46
+steel	black	Weapons	Black spear	black_spear	1	1		1/134.46
+steel	black	Weapons	Black scimitar	black_scimitar	1	1		10/134.46
+steel	black	Weapons	Black sword	black_sword	1	1		3/134.46
+steel	black	Weapons	Black longsword	black_longsword	1	1		2/134.46
+steel	black	Weapons	Black spear	black_spear	1	1		1/134.46
+steel	black	Weapons	Mithril mace	mithril_mace	1	1		7/134.46
+steel	black	Weapons	Mithril spear	mithril_spear	1	1		4/134.46
+steel	black	Weapons	Mithril spear(p)	mithril_spear	1	1		4/134.46
+steel	black	Weapons	Mithril sword	mithril_sword	1	1		3/134.46
+steel	black	Weapons	Adamant dagger	adamant_dagger	1	1		4/134.46
+steel	black	Weapons	Adamant dagger(p)	adamant_dagger	1	1		1/134.46
+steel	black	Armour	Studded chaps	studded_chaps	1	1		5/134.46
+steel	black	Armour	Steel chainbody	steel_chainbody	1	1		5/134.46
+steel	black	Armour	Steel kiteshield	steel_kiteshield	1	1		2/134.46
+steel	black	Armour	Black med helm	black_med_helm	1	1		7/134.46
+steel	black	Armour	Mithril med helm	mithril_med_helm	1	1		3/134.46
+steel	black	Other	Fine cloth	fine_cloth	1	1		3/134.46
+steel	black	Other	Adamantite bar	adamantite_bar	3	3		6/134.46
+steel	black	Other	Emerald ring	emerald_ring	1	1		2/134.46
+steel	black	Other	Amulet of strength	amulet_of_strength	1	1		6/134.46
+steel	black	Other	Chaos rune	chaos_rune	10	29		11/134.46
+steel	black	Other	Nature rune	nature_rune	10	29		12/134.46
+steel	black	Other	Willow logs	willow_logs	5	14	noted	10/134.46
+steel	black	Other	Clue scroll (medium)	clue_scroll_medium	1	1		3/134.46
+steel	black	Tertiary	Coins	coins	1	700		Common
+steel	black	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+steel	black	Tertiary	Swamp paste	swamp_paste	15	30		Always
+steel	purple	Locks	Steel locks	steel_locks	1	1		1/59
+steel	purple	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/1210.52
+steel	purple	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/1210.52
+steel	purple	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/1210.52
+steel	purple	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/1210.52
+steel	purple	Weapons	Steel 2h sword	steel_2h_sword	1	1		1/134.5
+steel	purple	Weapons	Steel warhammer	steel_warhammer	1	1		6/134.5
+steel	purple	Weapons	Steel battleaxe	steel_battleaxe	1	1		5/134.5
+steel	purple	Weapons	Black warhammer	black_warhammer	1	1		6/134.5
+steel	purple	Weapons	Black spear	black_spear	1	1		1/134.5
+steel	purple	Weapons	Black scimitar	black_scimitar	1	1		10/134.5
+steel	purple	Weapons	Black sword	black_sword	1	1		3/134.5
+steel	purple	Weapons	Black longsword	black_longsword	1	1		2/134.5
+steel	purple	Weapons	Black spear	black_spear	1	1		1/134.5
+steel	purple	Weapons	Mithril mace	mithril_mace	1	1		7/134.5
+steel	purple	Weapons	Mithril spear	mithril_spear	1	1		4/134.5
+steel	purple	Weapons	Mithril spear(p)	mithril_spear	1	1		4/134.5
+steel	purple	Weapons	Mithril sword	mithril_sword	1	1		3/134.5
+steel	purple	Weapons	Adamant dagger	adamant_dagger	1	1		4/134.5
+steel	purple	Weapons	Adamant dagger(p)	adamant_dagger	1	1		1/134.5
+steel	purple	Armour	Studded chaps	studded_chaps	1	1		5/134.5
+steel	purple	Armour	Steel chainbody	steel_chainbody	1	1		5/134.5
+steel	purple	Armour	Steel kiteshield	steel_kiteshield	1	1		2/134.5
+steel	purple	Armour	Black med helm	black_med_helm	1	1		7/134.5
+steel	purple	Armour	Mithril med helm	mithril_med_helm	1	1		3/134.5
+steel	purple	Other	Fine cloth	fine_cloth	1	1		4/134.5
+steel	purple	Other	Adamantite bar	adamantite_bar	3	3		6/134.5
+steel	purple	Other	Emerald ring	emerald_ring	1	1		2/134.5
+steel	purple	Other	Amulet of strength	amulet_of_strength	1	1		6/134.5
+steel	purple	Other	Chaos rune	chaos_rune	10	29		11/134.5
+steel	purple	Other	Nature rune	nature_rune	10	29		11/134.5
+steel	purple	Other	Willow logs	willow_logs	5	14	noted	10/134.5
+steel	purple	Other	Clue scroll (medium)	clue_scroll_medium	1	1		3/134.5
+steel	purple	Tertiary	Coins	coins	1	700		Common
+steel	purple	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+steel	purple	Tertiary	Swamp paste	swamp_paste	15	30		Always
+black	red	Locks	Black locks	black_locks	1	1		1/63
+black	red	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/378
+black	red	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/378
+black	red	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/378
+black	red	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/378
+black	red	Weapons	Staff of air	staff_of_air	1	1		1/140.98
+black	red	Weapons	Staff of water	staff_of_water	1	1		1/140.98
+black	red	Weapons	Staff of earth	staff_of_earth	1	1		1/140.98
+black	red	Weapons	Staff of fire	staff_of_fire	1	1		1/140.98
+black	red	Weapons	Mithril 2h sword	mithril_2h_sword	1	1		2/140.98
+black	red	Weapons	Mithril warhammer	mithril_warhammer	1	1		2/140.98
+black	red	Weapons	Mithril battleaxe	mithril_battleaxe	1	1		2/140.98
+black	red	Weapons	Mithril longsword	mithril_longsword	1	1		6/140.98
+black	red	Weapons	Mithril scimitar	mithril_scimitar	1	1		2/140.98
+black	red	Weapons	Adamant scimitar	adamant_scimitar	1	1		2/140.98
+black	red	Weapons	Adamant mace	adamant_mace	1	1		6/140.98
+black	red	Weapons	Adamant sword	adamant_sword	1	1		2/140.98
+black	red	Weapons	Adamant axe	adamant_axe	1	1		6/140.98
+black	red	Weapons	Black spear	black_spear	1	1		4/140.98
+black	red	Weapons	Black battleaxe	black_battleaxe	1	1		3/140.98
+black	red	Weapons	Black 2h sword	black_2h_sword	1	1		2/140.98
+black	red	Armour	Steel platebody	steel_platebody	1	1		2/140.98
+black	red	Armour	Black chainbody	black_chainbody	1	1		5/140.98
+black	red	Armour	Black kiteshield	black_kiteshield	1	1		6/140.98
+black	red	Armour	Black sq shield	black_sq_shield	1	1		9/140.98
+black	red	Armour	Black platelegs	black_platelegs	1	1		2/140.98
+black	red	Armour	Black plateskirt	black_plateskirt	1	1		2/140.98
+black	red	Armour	Black full helm	black_full_helm	1	1		3/140.98
+black	red	Armour	Mithril kiteshield	mithril_kiteshield	1	1		2/140.98
+black	red	Armour	Mithril sq shield	mithril_sq_shield	1	1		4/140.98
+black	red	Armour	Mithril full helm	mithril_full_helm	1	1		6/140.98
+black	red	Armour	Mithril platelegs	mithril_platelegs	1	1		2/140.98
+black	red	Armour	Mithril chainbody	mithril_chainbody	1	1		2/140.98
+black	red	Armour	Adamant med helm	adamant_med_helm	1	1		2/140.98
+black	red	Other	Fine cloth	fine_cloth	1	1		7/140.98
+black	red	Other	Ruby ring	ruby_ring	1	1		7/140.98
+black	red	Other	Amulet of magic	amulet_of_magic	1	1		2/140.98
+black	red	Other	Nature rune	nature_rune	10	29		6.6/140.98
+black	red	Other	Death rune	death_rune	10	29		4.4/140.98
+black	red	Other	Willow logs	willow_logs	5	14	noted	9.6/140.98
+black	red	Other	Yew logs	yew_logs	5	14	noted	6.4/140.98
+black	red	Other	Clue scroll (medium)	clue_scroll_medium	1	1		4/140.98
+black	red	Other	Flamtaer hammer	flamtaer_hammer	1	1		1/140.98
+black	red	Tertiary	Coins	coins	1	1000		Common
+black	red	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+black	red	Tertiary	Swamp paste	swamp_paste	25	40		Always
+black	brown	Locks	Black locks	black_locks	1	1		1/62
+black	brown	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/376.07
+black	brown	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/376.07
+black	brown	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/376.07
+black	brown	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/376.07
+black	brown	Weapons	Staff of air	staff_of_air	1	1		1/141.02
+black	brown	Weapons	Staff of water	staff_of_water	1	1		1/141.02
+black	brown	Weapons	Staff of earth	staff_of_earth	1	1		1/141.02
+black	brown	Weapons	Staff of fire	staff_of_fire	1	1		1/141.02
+black	brown	Weapons	Mithril 2h sword	mithril_2h_sword	1	1		2/141.02
+black	brown	Weapons	Mithril warhammer	mithril_warhammer	1	1		2/141.02
+black	brown	Weapons	Mithril battleaxe	mithril_battleaxe	1	1		2/141.02
+black	brown	Weapons	Mithril longsword	mithril_longsword	1	1		6/141.02
+black	brown	Weapons	Mithril scimitar	mithril_scimitar	1	1		2/141.02
+black	brown	Weapons	Adamant scimitar	adamant_scimitar	1	1		2/141.02
+black	brown	Weapons	Adamant mace	adamant_mace	1	1		6/141.02
+black	brown	Weapons	Adamant sword	adamant_sword	1	1		2/141.02
+black	brown	Weapons	Adamant axe	adamant_axe	1	1		6/141.02
+black	brown	Weapons	Black spear	black_spear	1	1		4/141.02
+black	brown	Weapons	Black battleaxe	black_battleaxe	1	1		3/141.02
+black	brown	Weapons	Black 2h sword	black_2h_sword	1	1		2/141.02
+black	brown	Armour	Steel platebody	steel_platebody	1	1		2/141.02
+black	brown	Armour	Black chainbody	black_chainbody	1	1		5/141.02
+black	brown	Armour	Black kiteshield	black_kiteshield	1	1		6/141.02
+black	brown	Armour	Black sq shield	black_sq_shield	1	1		9/141.02
+black	brown	Armour	Black platelegs	black_platelegs	1	1		2/141.02
+black	brown	Armour	Black plateskirt	black_plateskirt	1	1		2/141.02
+black	brown	Armour	Black full helm	black_full_helm	1	1		3/141.02
+black	brown	Armour	Mithril kiteshield	mithril_kiteshield	1	1		2/141.02
+black	brown	Armour	Mithril sq shield	mithril_sq_shield	1	1		4/141.02
+black	brown	Armour	Mithril full helm	mithril_full_helm	1	1		6/141.02
+black	brown	Armour	Mithril platelegs	mithril_platelegs	1	1		2/141.02
+black	brown	Armour	Mithril chainbody	mithril_chainbody	1	1		2/141.02
+black	brown	Armour	Adamant med helm	adamant_med_helm	1	1		2/141.02
+black	brown	Other	Fine cloth	fine_cloth	1	1		8/141.02
+black	brown	Other	Ruby ring	ruby_ring	1	1		7/141.02
+black	brown	Other	Amulet of magic	amulet_of_magic	1	1		2/141.02
+black	brown	Other	Nature rune	nature_rune	10	29		6.6/141.02
+black	brown	Other	Death rune	death_rune	10	29		4.4/141.02
+black	brown	Other	Willow logs	willow_logs	5	14	noted	9/141.02
+black	brown	Other	Yew logs	yew_logs	5	14	noted	6/141.02
+black	brown	Other	Clue scroll (medium)	clue_scroll_medium	1	1		4/141.02
+black	brown	Other	Flamtaer hammer	flamtaer_hammer	1	1		1/141.02
+black	brown	Tertiary	Coins	coins	1	1000		Common
+black	brown	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+black	brown	Tertiary	Swamp paste	swamp_paste	25	40		Always
+black	crimson	Locks	Black locks	black_locks	1	1		1/61
+black	crimson	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/374.13
+black	crimson	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/374.13
+black	crimson	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/374.13
+black	crimson	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/374.13
+black	crimson	Weapons	Staff of air	staff_of_air	1	1		1/141.07
+black	crimson	Weapons	Staff of water	staff_of_water	1	1		1/141.07
+black	crimson	Weapons	Staff of earth	staff_of_earth	1	1		1/141.07
+black	crimson	Weapons	Staff of fire	staff_of_fire	1	1		1/141.07
+black	crimson	Weapons	Mithril 2h sword	mithril_2h_sword	1	1		2/141.07
+black	crimson	Weapons	Mithril warhammer	mithril_warhammer	1	1		2/141.07
+black	crimson	Weapons	Mithril battleaxe	mithril_battleaxe	1	1		2/141.07
+black	crimson	Weapons	Mithril longsword	mithril_longsword	1	1		6/141.07
+black	crimson	Weapons	Mithril scimitar	mithril_scimitar	1	1		2/141.07
+black	crimson	Weapons	Adamant scimitar	adamant_scimitar	1	1		2/141.07
+black	crimson	Weapons	Adamant mace	adamant_mace	1	1		6/141.07
+black	crimson	Weapons	Adamant sword	adamant_sword	1	1		2/141.07
+black	crimson	Weapons	Adamant axe	adamant_axe	1	1		6/141.07
+black	crimson	Weapons	Black spear	black_spear	1	1		4/141.07
+black	crimson	Weapons	Black battleaxe	black_battleaxe	1	1		3/141.07
+black	crimson	Weapons	Black 2h sword	black_2h_sword	1	1		2/141.07
+black	crimson	Armour	Steel platebody	steel_platebody	1	1		2/141.07
+black	crimson	Armour	Black chainbody	black_chainbody	1	1		5/141.07
+black	crimson	Armour	Black kiteshield	black_kiteshield	1	1		6/141.07
+black	crimson	Armour	Black sq shield	black_sq_shield	1	1		9/141.07
+black	crimson	Armour	Black platelegs	black_platelegs	1	1		2/141.07
+black	crimson	Armour	Black plateskirt	black_plateskirt	1	1		2/141.07
+black	crimson	Armour	Black full helm	black_full_helm	1	1		3/141.07
+black	crimson	Armour	Mithril kiteshield	mithril_kiteshield	1	1		2/141.07
+black	crimson	Armour	Mithril sq shield	mithril_sq_shield	1	1		4/141.07
+black	crimson	Armour	Mithril full helm	mithril_full_helm	1	1		6/141.07
+black	crimson	Armour	Mithril platelegs	mithril_platelegs	1	1		2/141.07
+black	crimson	Armour	Mithril chainbody	mithril_chainbody	1	1		2/141.07
+black	crimson	Armour	Adamant med helm	adamant_med_helm	1	1		2/141.07
+black	crimson	Other	Fine cloth	fine_cloth	1	1		9/141.07
+black	crimson	Other	Ruby ring	ruby_ring	1	1		7/141.07
+black	crimson	Other	Amulet of magic	amulet_of_magic	1	1		2/141.07
+black	crimson	Other	Nature rune	nature_rune	10	29		6.6/141.07
+black	crimson	Other	Death rune	death_rune	10	29		4.4/141.07
+black	crimson	Other	Willow logs	willow_logs	5	14	noted	8.4/141.07
+black	crimson	Other	Yew logs	yew_logs	5	14	noted	5.6/141.07
+black	crimson	Other	Clue scroll (medium)	clue_scroll_medium	1	1		4/141.07
+black	crimson	Other	Flamtaer hammer	flamtaer_hammer	1	1		1/141.07
+black	crimson	Tertiary	Coins	coins	1	1000		Common
+black	crimson	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+black	crimson	Tertiary	Swamp paste	swamp_paste	25	40		Always
+black	black	Locks	Black locks	black_locks	1	1		1/60
+black	black	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/372.2
+black	black	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/372.2
+black	black	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/372.2
+black	black	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/372.2
+black	black	Weapons	Staff of air	staff_of_air	1	1		1/141.11
+black	black	Weapons	Staff of water	staff_of_water	1	1		1/141.11
+black	black	Weapons	Staff of earth	staff_of_earth	1	1		1/141.11
+black	black	Weapons	Staff of fire	staff_of_fire	1	1		1/141.11
+black	black	Weapons	Mithril 2h sword	mithril_2h_sword	1	1		2/141.11
+black	black	Weapons	Mithril warhammer	mithril_warhammer	1	1		2/141.11
+black	black	Weapons	Mithril battleaxe	mithril_battleaxe	1	1		2/141.11
+black	black	Weapons	Mithril longsword	mithril_longsword	1	1		6/141.11
+black	black	Weapons	Mithril scimitar	mithril_scimitar	1	1		2/141.11
+black	black	Weapons	Adamant scimitar	adamant_scimitar	1	1		2/141.11
+black	black	Weapons	Adamant mace	adamant_mace	1	1		6/141.11
+black	black	Weapons	Adamant sword	adamant_sword	1	1		2/141.11
+black	black	Weapons	Adamant axe	adamant_axe	1	1		6/141.11
+black	black	Weapons	Black spear	black_spear	1	1		4/141.11
+black	black	Weapons	Black battleaxe	black_battleaxe	1	1		3/141.11
+black	black	Weapons	Black 2h sword	black_2h_sword	1	1		2/141.11
+black	black	Armour	Steel platebody	steel_platebody	1	1		2/141.11
+black	black	Armour	Black chainbody	black_chainbody	1	1		5/141.11
+black	black	Armour	Black kiteshield	black_kiteshield	1	1		6/141.11
+black	black	Armour	Black sq shield	black_sq_shield	1	1		9/141.11
+black	black	Armour	Black platelegs	black_platelegs	1	1		2/141.11
+black	black	Armour	Black plateskirt	black_plateskirt	1	1		2/141.11
+black	black	Armour	Black full helm	black_full_helm	1	1		3/141.11
+black	black	Armour	Mithril kiteshield	mithril_kiteshield	1	1		2/141.11
+black	black	Armour	Mithril sq shield	mithril_sq_shield	1	1		4/141.11
+black	black	Armour	Mithril full helm	mithril_full_helm	1	1		6/141.11
+black	black	Armour	Mithril platelegs	mithril_platelegs	1	1		2/141.11
+black	black	Armour	Mithril chainbody	mithril_chainbody	1	1		2/141.11
+black	black	Armour	Adamant med helm	adamant_med_helm	1	1		2/141.11
+black	black	Other	Fine cloth	fine_cloth	1	1		10/141.11
+black	black	Other	Ruby ring	ruby_ring	1	1		7/141.11
+black	black	Other	Amulet of magic	amulet_of_magic	1	1		2/141.11
+black	black	Other	Nature rune	nature_rune	10	29		6.6/141.11
+black	black	Other	Death rune	death_rune	10	29		4.4/141.11
+black	black	Other	Willow logs	willow_logs	5	14	noted	7.8/141.11
+black	black	Other	Yew logs	yew_logs	5	14	noted	5.2/141.11
+black	black	Other	Clue scroll (medium)	clue_scroll_medium	1	1		4/141.11
+black	black	Other	Flamtaer hammer	flamtaer_hammer	1	1		1/141.11
+black	black	Tertiary	Coins	coins	1	1000		Common
+black	black	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+black	black	Tertiary	Swamp paste	swamp_paste	25	40		Always
+black	purple	Locks	Black locks	black_locks	1	1		1/59
+black	purple	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/370.28
+black	purple	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/370.28
+black	purple	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/370.28
+black	purple	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/370.28
+black	purple	Weapons	Staff of air	staff_of_air	1	1		1/141.15
+black	purple	Weapons	Staff of water	staff_of_water	1	1		1/141.15
+black	purple	Weapons	Staff of earth	staff_of_earth	1	1		1/141.15
+black	purple	Weapons	Staff of fire	staff_of_fire	1	1		1/141.15
+black	purple	Weapons	Mithril 2h sword	mithril_2h_sword	1	1		2/141.15
+black	purple	Weapons	Mithril warhammer	mithril_warhammer	1	1		2/141.15
+black	purple	Weapons	Mithril battleaxe	mithril_battleaxe	1	1		2/141.15
+black	purple	Weapons	Mithril longsword	mithril_longsword	1	1		6/141.15
+black	purple	Weapons	Mithril scimitar	mithril_scimitar	1	1		2/141.15
+black	purple	Weapons	Adamant scimitar	adamant_scimitar	1	1		2/141.15
+black	purple	Weapons	Adamant mace	adamant_mace	1	1		6/141.15
+black	purple	Weapons	Adamant sword	adamant_sword	1	1		2/141.15
+black	purple	Weapons	Adamant axe	adamant_axe	1	1		6/141.15
+black	purple	Weapons	Black spear	black_spear	1	1		4/141.15
+black	purple	Weapons	Black battleaxe	black_battleaxe	1	1		3/141.15
+black	purple	Weapons	Black 2h sword	black_2h_sword	1	1		2/141.15
+black	purple	Armour	Steel platebody	steel_platebody	1	1		2/141.15
+black	purple	Armour	Black chainbody	black_chainbody	1	1		5/141.15
+black	purple	Armour	Black kiteshield	black_kiteshield	1	1		6/141.15
+black	purple	Armour	Black sq shield	black_sq_shield	1	1		9/141.15
+black	purple	Armour	Black platelegs	black_platelegs	1	1		2/141.15
+black	purple	Armour	Black plateskirt	black_plateskirt	1	1		2/141.15
+black	purple	Armour	Black full helm	black_full_helm	1	1		3/141.15
+black	purple	Armour	Mithril kiteshield	mithril_kiteshield	1	1		2/141.15
+black	purple	Armour	Mithril sq shield	mithril_sq_shield	1	1		4/141.15
+black	purple	Armour	Mithril full helm	mithril_full_helm	1	1		6/141.15
+black	purple	Armour	Mithril platelegs	mithril_platelegs	1	1		2/141.15
+black	purple	Armour	Mithril chainbody	mithril_chainbody	1	1		2/141.15
+black	purple	Armour	Adamant med helm	adamant_med_helm	1	1		2/141.15
+black	purple	Other	Fine cloth	fine_cloth	1	1		11/141.15
+black	purple	Other	Ruby ring	ruby_ring	1	1		7/141.15
+black	purple	Other	Amulet of magic	amulet_of_magic	1	1		2/141.15
+black	purple	Other	Nature rune	nature_rune	10	29		6.6/141.15
+black	purple	Other	Death rune	death_rune	10	29		4.4/141.15
+black	purple	Other	Willow logs	willow_logs	5	14	noted	7.2/141.15
+black	purple	Other	Yew logs	yew_logs	5	14	noted	4.8/141.15
+black	purple	Other	Clue scroll (medium)	clue_scroll_medium	1	1		4/141.15
+black	purple	Other	Flamtaer hammer	flamtaer_hammer	1	1		1/141.15
+black	purple	Tertiary	Coins	coins	1	1000		Common
+black	purple	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+black	purple	Tertiary	Swamp paste	swamp_paste	25	40		Always
+silver	red	Locks	Silver locks	silver_locks	1	1		1/63
+silver	red	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/154.45
+silver	red	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/154.45
+silver	red	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/154.45
+silver	red	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/154.45
+silver	red	Weapons	Adamant spear	adamant_spear	1	1		11/152.39
+silver	red	Weapons	Adamant spear(p)	adamant_spear	1	1		11/152.39
+silver	red	Weapons	Black spear	black_spear	1	1		6/152.39
+silver	red	Weapons	Rune sword	rune_sword	1	1		3/152.39
+silver	red	Weapons	Battlestaff	battlestaff	1	1		9/152.39
+silver	red	Weapons	Adamant warhammer	adamant_warhammer	1	1		3/152.39
+silver	red	Weapons	Adamant battleaxe	adamant_battleaxe	1	1		3/152.39
+silver	red	Weapons	Adamant 2h sword	adamant_2h_sword	1	1		3/152.39
+silver	red	Weapons	Adamant longsword	adamant_longsword	1	1		3/152.39
+silver	red	Weapons	Rune scimitar	rune_scimitar	1	1		2/152.39
+silver	red	Weapons	Rune longsword	rune_longsword	1	1		1/152.39
+silver	red	Armour	Black platebody	black_platebody	1	1		4/152.39
+silver	red	Armour	Mithril plateskirt	mithril_plateskirt	1	1		4/152.39
+silver	red	Armour	Rune med helm	rune_med_helm	1	1		3/152.39
+silver	red	Armour	Adamant chainbody	adamant_chainbody	1	1		3/152.39
+silver	red	Armour	Adamant platelegs	adamant_platelegs	1	1		3/152.39
+silver	red	Armour	Adamant plateskirt	adamant_plateskirt	1	1		3/152.39
+silver	red	Armour	Adamant kiteshield	adamant_kiteshield	1	1		3/152.39
+silver	red	Armour	Adamant platebody	adamant_platebody	1	1		2/152.39
+silver	red	Armour	Adamant sq shield	adamant_sq_shield	1	1		2/152.39
+silver	red	Armour	Mithril platebody	mithril_platebody	1	1		2/152.39
+silver	red	Armour	Rune chainbody	rune_chainbody	1	1		1/152.39
+silver	red	Other	Fine cloth	fine_cloth	1	1		16/152.39
+silver	red	Other	Amulet of the damned (full)	amulet_of_the_damned	1	1		10/152.39
+silver	red	Other	Diamond ring	diamond_ring	1	1		6/152.39
+silver	red	Other	Amulet of power	amulet_of_power	1	1		2/152.39
+silver	red	Other	Death rune	death_rune	10	30		9/152.39
+silver	red	Other	Blood rune	blood_rune	10	30		6/152.39
+silver	red	Other	Flamtaer hammer	flamtaer_hammer	1	1		11/152.39
+silver	red	Other	Yew logs	yew_logs	5	10	noted	3/152.39
+silver	red	Other	Magic logs	magic_logs	5	10	noted	2/152.39
+silver	red	Other	Clue scroll (hard)	clue_scroll_hard	1	1		2/152.39
+silver	red	Tertiary	Coins	coins	1	2326		Common
+silver	red	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+silver	red	Tertiary	Swamp paste	swamp_paste	25	40		Always
+silver	brown	Locks	Silver locks	silver_locks	1	1		1/62
+silver	brown	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/152.46
+silver	brown	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/152.46
+silver	brown	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/152.46
+silver	brown	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/152.46
+silver	brown	Weapons	Adamant spear	adamant_spear	1	1		11/152.46
+silver	brown	Weapons	Adamant spear(p)	adamant_spear	1	1		11/152.46
+silver	brown	Weapons	Black spear	black_spear	1	1		6/152.46
+silver	brown	Weapons	Rune sword	rune_sword	1	1		3/152.46
+silver	brown	Weapons	Battlestaff	battlestaff	1	1		9/152.46
+silver	brown	Weapons	Adamant warhammer	adamant_warhammer	1	1		3/152.46
+silver	brown	Weapons	Adamant battleaxe	adamant_battleaxe	1	1		3/152.46
+silver	brown	Weapons	Adamant 2h sword	adamant_2h_sword	1	1		3/152.46
+silver	brown	Weapons	Adamant longsword	adamant_longsword	1	1		3/152.46
+silver	brown	Weapons	Rune scimitar	rune_scimitar	1	1		2/152.46
+silver	brown	Weapons	Rune longsword	rune_longsword	1	1		1/152.46
+silver	brown	Armour	Black platebody	black_platebody	1	1		4/152.46
+silver	brown	Armour	Mithril plateskirt	mithril_plateskirt	1	1		4/152.46
+silver	brown	Armour	Rune med helm	rune_med_helm	1	1		3/152.46
+silver	brown	Armour	Adamant chainbody	adamant_chainbody	1	1		3/152.46
+silver	brown	Armour	Adamant platelegs	adamant_platelegs	1	1		3/152.46
+silver	brown	Armour	Adamant plateskirt	adamant_plateskirt	1	1		3/152.46
+silver	brown	Armour	Adamant kiteshield	adamant_kiteshield	1	1		3/152.46
+silver	brown	Armour	Adamant platebody	adamant_platebody	1	1		2/152.46
+silver	brown	Armour	Adamant sq shield	adamant_sq_shield	1	1		2/152.46
+silver	brown	Armour	Mithril platebody	mithril_platebody	1	1		2/152.46
+silver	brown	Armour	Rune chainbody	rune_chainbody	1	1		1/152.46
+silver	brown	Other	Fine cloth	fine_cloth	1	1		17/152.46
+silver	brown	Other	Amulet of the damned (full)	amulet_of_the_damned	1	1		10/152.46
+silver	brown	Other	Diamond ring	diamond_ring	1	1		6/152.46
+silver	brown	Other	Amulet of power	amulet_of_power	1	1		2/152.46
+silver	brown	Other	Death rune	death_rune	10	30		9/152.46
+silver	brown	Other	Blood rune	blood_rune	10	30		6/152.46
+silver	brown	Other	Flamtaer hammer	flamtaer_hammer	1	1		11/152.46
+silver	brown	Other	Yew logs	yew_logs	5	10	noted	2.4/152.46
+silver	brown	Other	Magic logs	magic_logs	5	10	noted	1.6/152.46
+silver	brown	Other	Clue scroll (hard)	clue_scroll_hard	1	1		2/152.46
+silver	brown	Tertiary	Coins	coins	1	2326		Common
+silver	brown	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+silver	brown	Tertiary	Swamp paste	swamp_paste	25	40		Always
+silver	crimson	Locks	Silver locks	silver_locks	1	1		1/61
+silver	crimson	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/150.5
+silver	crimson	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/150.5
+silver	crimson	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/150.5
+silver	crimson	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/150.5
+silver	crimson	Weapons	Adamant spear	adamant_spear	1	1		11/152.53
+silver	crimson	Weapons	Adamant spear(p)	adamant_spear	1	1		11/152.53
+silver	crimson	Weapons	Black spear	black_spear	1	1		6/152.53
+silver	crimson	Weapons	Rune sword	rune_sword	1	1		3/152.53
+silver	crimson	Weapons	Battlestaff	battlestaff	1	1		9/152.53
+silver	crimson	Weapons	Adamant warhammer	adamant_warhammer	1	1		3/152.53
+silver	crimson	Weapons	Adamant battleaxe	adamant_battleaxe	1	1		3/152.53
+silver	crimson	Weapons	Adamant 2h sword	adamant_2h_sword	1	1		3/152.53
+silver	crimson	Weapons	Adamant longsword	adamant_longsword	1	1		3/152.53
+silver	crimson	Weapons	Rune scimitar	rune_scimitar	1	1		2/152.53
+silver	crimson	Weapons	Rune longsword	rune_longsword	1	1		1/152.53
+silver	crimson	Armour	Black platebody	black_platebody	1	1		4/152.53
+silver	crimson	Armour	Mithril plateskirt	mithril_plateskirt	1	1		4/152.53
+silver	crimson	Armour	Rune med helm	rune_med_helm	1	1		3/152.53
+silver	crimson	Armour	Adamant chainbody	adamant_chainbody	1	1		3/152.53
+silver	crimson	Armour	Adamant platelegs	adamant_platelegs	1	1		3/152.53
+silver	crimson	Armour	Adamant plateskirt	adamant_plateskirt	1	1		3/152.53
+silver	crimson	Armour	Adamant kiteshield	adamant_kiteshield	1	1		3/152.53
+silver	crimson	Armour	Adamant platebody	adamant_platebody	1	1		2/152.53
+silver	crimson	Armour	Adamant sq shield	adamant_sq_shield	1	1		2/152.53
+silver	crimson	Armour	Mithril platebody	mithril_platebody	1	1		2/152.53
+silver	crimson	Armour	Rune chainbody	rune_chainbody	1	1		1/152.53
+silver	crimson	Other	Fine cloth	fine_cloth	1	1		18/152.53
+silver	crimson	Other	Amulet of the damned (full)	amulet_of_the_damned	1	1		10/152.53
+silver	crimson	Other	Diamond ring	diamond_ring	1	1		6/152.53
+silver	crimson	Other	Amulet of power	amulet_of_power	1	1		2/152.53
+silver	crimson	Other	Death rune	death_rune	10	30		9/152.53
+silver	crimson	Other	Blood rune	blood_rune	10	30		6/152.53
+silver	crimson	Other	Flamtaer hammer	flamtaer_hammer	1	1		11/152.53
+silver	crimson	Other	Yew logs	yew_logs	5	10	noted	1.8/152.53
+silver	crimson	Other	Magic logs	magic_logs	5	10	noted	1.2/152.53
+silver	crimson	Other	Clue scroll (hard)	clue_scroll_hard	1	1		2/152.53
+silver	crimson	Tertiary	Coins	coins	1	2326		Common
+silver	crimson	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+silver	crimson	Tertiary	Swamp paste	swamp_paste	25	40		Always
+silver	black	Locks	Silver locks	silver_locks	1	1		1/60
+silver	black	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/148.47
+silver	black	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/148.47
+silver	black	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/148.47
+silver	black	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/148.47
+silver	black	Weapons	Adamant spear	adamant_spear	1	1		11/152.6
+silver	black	Weapons	Adamant spear(p)	adamant_spear	1	1		11/152.6
+silver	black	Weapons	Black spear	black_spear	1	1		6/152.6
+silver	black	Weapons	Rune sword	rune_sword	1	1		3/152.6
+silver	black	Weapons	Battlestaff	battlestaff	1	1		9/152.6
+silver	black	Weapons	Adamant warhammer	adamant_warhammer	1	1		3/152.6
+silver	black	Weapons	Adamant battleaxe	adamant_battleaxe	1	1		3/152.6
+silver	black	Weapons	Adamant 2h sword	adamant_2h_sword	1	1		3/152.6
+silver	black	Weapons	Adamant longsword	adamant_longsword	1	1		3/152.6
+silver	black	Weapons	Rune scimitar	rune_scimitar	1	1		2/152.6
+silver	black	Weapons	Rune longsword	rune_longsword	1	1		1/152.6
+silver	black	Armour	Black platebody	black_platebody	1	1		4/152.6
+silver	black	Armour	Mithril plateskirt	mithril_plateskirt	1	1		4/152.6
+silver	black	Armour	Rune med helm	rune_med_helm	1	1		3/152.6
+silver	black	Armour	Adamant chainbody	adamant_chainbody	1	1		3/152.6
+silver	black	Armour	Adamant platelegs	adamant_platelegs	1	1		3/152.6
+silver	black	Armour	Adamant plateskirt	adamant_plateskirt	1	1		3/152.6
+silver	black	Armour	Adamant kiteshield	adamant_kiteshield	1	1		3/152.6
+silver	black	Armour	Adamant platebody	adamant_platebody	1	1		2/152.6
+silver	black	Armour	Adamant sq shield	adamant_sq_shield	1	1		2/152.6
+silver	black	Armour	Mithril platebody	mithril_platebody	1	1		2/152.6
+silver	black	Armour	Rune chainbody	rune_chainbody	1	1		1/152.6
+silver	black	Other	Fine cloth	fine_cloth	1	1		19/152.6
+silver	black	Other	Amulet of the damned (full)	amulet_of_the_damned	1	1		10/152.6
+silver	black	Other	Diamond ring	diamond_ring	1	1		6/152.6
+silver	black	Other	Amulet of power	amulet_of_power	1	1		2/152.6
+silver	black	Other	Death rune	death_rune	10	30		9/152.6
+silver	black	Other	Blood rune	blood_rune	10	30		6/152.6
+silver	black	Other	Flamtaer hammer	flamtaer_hammer	1	1		11/152.6
+silver	black	Other	Yew logs	yew_logs	5	10	noted	1.2/152.6
+silver	black	Other	Magic logs	magic_logs	5	10	noted	0.8/152.6
+silver	black	Other	Clue scroll (hard)	clue_scroll_hard	1	1		2/152.6
+silver	black	Tertiary	Coins	coins	1	2326		Common
+silver	black	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+silver	black	Tertiary	Swamp paste	swamp_paste	25	40		Always
+silver	purple	Locks	Silver locks	silver_locks	1	1		1/59
+silver	purple	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/146.48
+silver	purple	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/146.48
+silver	purple	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/146.48
+silver	purple	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/146.48
+silver	purple	Weapons	Adamant spear	adamant_spear	1	1		11/152.67
+silver	purple	Weapons	Adamant spear(p)	adamant_spear	1	1		11/152.67
+silver	purple	Weapons	Black spear	black_spear	1	1		6/152.67
+silver	purple	Weapons	Rune sword	rune_sword	1	1		3/152.67
+silver	purple	Weapons	Battlestaff	battlestaff	1	1		9/152.67
+silver	purple	Weapons	Adamant warhammer	adamant_warhammer	1	1		3/152.67
+silver	purple	Weapons	Adamant battleaxe	adamant_battleaxe	1	1		3/152.67
+silver	purple	Weapons	Adamant 2h sword	adamant_2h_sword	1	1		3/152.67
+silver	purple	Weapons	Adamant longsword	adamant_longsword	1	1		3/152.67
+silver	purple	Weapons	Rune scimitar	rune_scimitar	1	1		2/152.67
+silver	purple	Weapons	Rune longsword	rune_longsword	1	1		1/152.67
+silver	purple	Armour	Black platebody	black_platebody	1	1		4/152.67
+silver	purple	Armour	Mithril plateskirt	mithril_plateskirt	1	1		4/152.67
+silver	purple	Armour	Rune med helm	rune_med_helm	1	1		3/152.67
+silver	purple	Armour	Adamant chainbody	adamant_chainbody	1	1		3/152.67
+silver	purple	Armour	Adamant platelegs	adamant_platelegs	1	1		3/152.67
+silver	purple	Armour	Adamant plateskirt	adamant_plateskirt	1	1		3/152.67
+silver	purple	Armour	Adamant kiteshield	adamant_kiteshield	1	1		3/152.67
+silver	purple	Armour	Adamant platebody	adamant_platebody	1	1		2/152.67
+silver	purple	Armour	Adamant sq shield	adamant_sq_shield	1	1		2/152.67
+silver	purple	Armour	Mithril platebody	mithril_platebody	1	1		2/152.67
+silver	purple	Armour	Rune chainbody	rune_chainbody	1	1		1/152.67
+silver	purple	Other	Fine cloth	fine_cloth	1	1		20/152.67
+silver	purple	Other	Amulet of the damned (full)	amulet_of_the_damned	1	1		10/152.67
+silver	purple	Other	Diamond ring	diamond_ring	1	1		6/152.67
+silver	purple	Other	Amulet of power	amulet_of_power	1	1		2/152.67
+silver	purple	Other	Death rune	death_rune	10	30		9/152.67
+silver	purple	Other	Blood rune	blood_rune	10	30		6/152.67
+silver	purple	Other	Flamtaer hammer	flamtaer_hammer	1	1		11/152.67
+silver	purple	Other	Yew logs	yew_logs	5	10	noted	0.6/152.67
+silver	purple	Other	Magic logs	magic_logs	5	10	noted	0.4/152.67
+silver	purple	Other	Clue scroll (hard)	clue_scroll_hard	1	1		2/152.67
+silver	purple	Tertiary	Coins	coins	1	2326		Common
+silver	purple	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+silver	purple	Tertiary	Swamp paste	swamp_paste	25	40		Always
+gold	red	Zealot robes	Zealot's boots	zealots_boots	1	1		1/128
+gold	red	Zealot robes	Zealot's helm	zealots_helm	1	1		1/128
+gold	red	Zealot robes	Zealot's robe bottom	zealots_robe_bottom	1	1		1/128
+gold	red	Zealot robes	Zealot's robe top	zealots_robe_top	1	1		1/128
+gold	red	Locks	Gold locks	gold_locks	1	1		1/63
+gold	red	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/109.74
+gold	red	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/109.74
+gold	red	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/109.74
+gold	red	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/109.74
+gold	red	Weapons	Adamant spear	adamant_spear	1	1		7/143.91
+gold	red	Weapons	Adamant spear(p)	adamant_spear	1	1		6/143.91
+gold	red	Weapons	Rune sword	rune_sword	1	1		3/143.91
+gold	red	Weapons	Adamant longsword	adamant_longsword	1	1		3/143.91
+gold	red	Weapons	Battlestaff	battlestaff	3	3	noted	11/143.91
+gold	red	Weapons	Rune scimitar	rune_scimitar	1	1		3/143.91
+gold	red	Weapons	Rune longsword	rune_longsword	1	1		5/143.91
+gold	red	Weapons	Dragon dagger	dragon_dagger	1	1		2/143.91
+gold	red	Weapons	Dragon longsword	dragon_longsword	1	1		1/143.91
+gold	red	Weapons	Dragon mace	dragon_mace	1	1		1/143.91
+gold	red	Armour	Adamant full helm	adamant_full_helm	1	1		8/143.91
+gold	red	Armour	Mithril plateskirt	mithril_plateskirt	1	1		5/143.91
+gold	red	Armour	Rune med helm	rune_med_helm	1	1		3/143.91
+gold	red	Armour	Adamant chainbody	adamant_chainbody	1	1		4/143.91
+gold	red	Armour	Adamant platelegs	adamant_platelegs	1	1		3/143.91
+gold	red	Armour	Adamant plateskirt	adamant_plateskirt	1	1		3/143.91
+gold	red	Armour	Adamant kiteshield	adamant_kiteshield	1	1		2/143.91
+gold	red	Armour	Adamant platebody	adamant_platebody	1	1		3/143.91
+gold	red	Armour	Rune chainbody	rune_chainbody	1	1		2/143.91
+gold	red	Armour	Rune platebody	rune_platebody	1	1		2/143.91
+gold	red	Armour	Rune platelegs	rune_platelegs	1	1		2/143.91
+gold	red	Armour	Rune plateskirt	rune_plateskirt	1	1		2/143.91
+gold	red	Other	Fine cloth	fine_cloth	1	1		21/143.91
+gold	red	Other	Amulet of the damned (full)	amulet_of_the_damned	1	1		6/143.91
+gold	red	Other	Dragonstone	dragonstone	1	1		2/143.91
+gold	red	Other	Dragonstone ring	dragonstone_ring	1	1		3/143.91
+gold	red	Other	Death rune	death_rune	10	29		9/143.91
+gold	red	Other	Soul rune	soul_rune	10	29		6/143.91
+gold	red	Other	Flamtaer hammer	flamtaer_hammer	1	1		4/143.91
+gold	red	Other	Yew logs	yew_logs	5	14	noted	3.6/143.91
+gold	red	Other	Redwood logs	redwood_logs	5	14	noted	2.4/143.91
+gold	red	Other	Clue scroll (elite)	clue_scroll_elite	1	1		1/139
+gold	red	Tertiary	Coins	coins	1	3160		Common
+gold	red	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+gold	red	Tertiary	Swamp paste	swamp_paste	40	70		Always
+gold	brown	Zealot robes	Zealot's boots	zealots_boots	1	1		1/128
+gold	brown	Zealot robes	Zealot's helm	zealots_helm	1	1		1/128
+gold	brown	Zealot robes	Zealot's robe bottom	zealots_robe_bottom	1	1		1/128
+gold	brown	Zealot robes	Zealot's robe top	zealots_robe_top	1	1		1/128
+gold	brown	Locks	Gold locks	gold_locks	1	1		1/62
+gold	brown	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/107.73
+gold	brown	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/107.73
+gold	brown	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/107.73
+gold	brown	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/107.73
+gold	brown	Weapons	Adamant spear	adamant_spear	1	1		7/143.99
+gold	brown	Weapons	Adamant spear(p)	adamant_spear	1	1		6/143.99
+gold	brown	Weapons	Rune sword	rune_sword	1	1		3/143.99
+gold	brown	Weapons	Adamant longsword	adamant_longsword	1	1		3/143.99
+gold	brown	Weapons	Battlestaff	battlestaff	3	3	noted	11/143.99
+gold	brown	Weapons	Rune scimitar	rune_scimitar	1	1		3/143.99
+gold	brown	Weapons	Rune longsword	rune_longsword	1	1		5/143.99
+gold	brown	Weapons	Dragon dagger	dragon_dagger	1	1		2/143.99
+gold	brown	Weapons	Dragon longsword	dragon_longsword	1	1		1/143.99
+gold	brown	Weapons	Dragon mace	dragon_mace	1	1		1/143.99
+gold	brown	Armour	Adamant full helm	adamant_full_helm	1	1		8/143.99
+gold	brown	Armour	Mithril plateskirt	mithril_plateskirt	1	1		5/143.99
+gold	brown	Armour	Rune med helm	rune_med_helm	1	1		3/143.99
+gold	brown	Armour	Adamant chainbody	adamant_chainbody	1	1		4/143.99
+gold	brown	Armour	Adamant platelegs	adamant_platelegs	1	1		3/143.99
+gold	brown	Armour	Adamant plateskirt	adamant_plateskirt	1	1		3/143.99
+gold	brown	Armour	Adamant kiteshield	adamant_kiteshield	1	1		2/143.99
+gold	brown	Armour	Adamant platebody	adamant_platebody	1	1		3/143.99
+gold	brown	Armour	Rune chainbody	rune_chainbody	1	1		2/143.99
+gold	brown	Armour	Rune platebody	rune_platebody	1	1		2/143.99
+gold	brown	Armour	Rune platelegs	rune_platelegs	1	1		2/143.99
+gold	brown	Armour	Rune plateskirt	rune_plateskirt	1	1		2/143.99
+gold	brown	Other	Fine cloth	fine_cloth	1	1		22/143.99
+gold	brown	Other	Amulet of the damned (full)	amulet_of_the_damned	1	1		6/143.99
+gold	brown	Other	Dragonstone	dragonstone	1	1		2/143.99
+gold	brown	Other	Dragonstone ring	dragonstone_ring	1	1		3/143.99
+gold	brown	Other	Death rune	death_rune	10	29		9/143.99
+gold	brown	Other	Soul rune	soul_rune	10	29		6/143.99
+gold	brown	Other	Flamtaer hammer	flamtaer_hammer	1	1		4/143.99
+gold	brown	Other	Yew logs	yew_logs	5	14	noted	3/143.99
+gold	brown	Other	Redwood logs	redwood_logs	5	14	noted	2/143.99
+gold	brown	Other	Clue scroll (elite)	clue_scroll_elite	1	1		1/139
+gold	brown	Tertiary	Coins	coins	1	3160		Common
+gold	brown	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+gold	brown	Tertiary	Swamp paste	swamp_paste	40	70		Always
+gold	crimson	Zealot robes	Zealot's boots	zealots_boots	1	1		1/128
+gold	crimson	Zealot robes	Zealot's helm	zealots_helm	1	1		1/128
+gold	crimson	Zealot robes	Zealot's robe bottom	zealots_robe_bottom	1	1		1/128
+gold	crimson	Zealot robes	Zealot's robe top	zealots_robe_top	1	1		1/128
+gold	crimson	Locks	Gold locks	gold_locks	1	1		1/61
+gold	crimson	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/105.73
+gold	crimson	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/105.73
+gold	crimson	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/105.73
+gold	crimson	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/105.73
+gold	crimson	Weapons	Adamant spear	adamant_spear	1	1		7/144.08
+gold	crimson	Weapons	Adamant spear(p)	adamant_spear	1	1		6/144.08
+gold	crimson	Weapons	Rune sword	rune_sword	1	1		3/144.08
+gold	crimson	Weapons	Adamant longsword	adamant_longsword	1	1		3/144.08
+gold	crimson	Weapons	Battlestaff	battlestaff	3	3	noted	11/144.08
+gold	crimson	Weapons	Rune scimitar	rune_scimitar	1	1		3/144.08
+gold	crimson	Weapons	Rune longsword	rune_longsword	1	1		5/144.08
+gold	crimson	Weapons	Dragon dagger	dragon_dagger	1	1		2/144.08
+gold	crimson	Weapons	Dragon longsword	dragon_longsword	1	1		1/144.08
+gold	crimson	Weapons	Dragon mace	dragon_mace	1	1		1/144.08
+gold	crimson	Armour	Adamant full helm	adamant_full_helm	1	1		8/144.08
+gold	crimson	Armour	Mithril plateskirt	mithril_plateskirt	1	1		5/144.08
+gold	crimson	Armour	Rune med helm	rune_med_helm	1	1		3/144.08
+gold	crimson	Armour	Adamant chainbody	adamant_chainbody	1	1		4/144.08
+gold	crimson	Armour	Adamant platelegs	adamant_platelegs	1	1		3/144.08
+gold	crimson	Armour	Adamant plateskirt	adamant_plateskirt	1	1		3/144.08
+gold	crimson	Armour	Adamant kiteshield	adamant_kiteshield	1	1		2/144.08
+gold	crimson	Armour	Adamant platebody	adamant_platebody	1	1		3/144.08
+gold	crimson	Armour	Rune chainbody	rune_chainbody	1	1		2/144.08
+gold	crimson	Armour	Rune platebody	rune_platebody	1	1		2/144.08
+gold	crimson	Armour	Rune platelegs	rune_platelegs	1	1		2/144.08
+gold	crimson	Armour	Rune plateskirt	rune_plateskirt	1	1		2/144.08
+gold	crimson	Other	Fine cloth	fine_cloth	1	1		23/144.08
+gold	crimson	Other	Amulet of the damned (full)	amulet_of_the_damned	1	1		6/144.08
+gold	crimson	Other	Dragonstone	dragonstone	1	1		2/144.08
+gold	crimson	Other	Dragonstone ring	dragonstone_ring	1	1		3/144.08
+gold	crimson	Other	Death rune	death_rune	10	29		9/144.08
+gold	crimson	Other	Soul rune	soul_rune	10	29		6/144.08
+gold	crimson	Other	Flamtaer hammer	flamtaer_hammer	1	1		4/144.08
+gold	crimson	Other	Yew logs	yew_logs	5	14	noted	2.4/144.08
+gold	crimson	Other	Redwood logs	redwood_logs	5	14	noted	1.6/144.08
+gold	crimson	Other	Clue scroll (elite)	clue_scroll_elite	1	1		1/139
+gold	crimson	Tertiary	Coins	coins	1	3160		Common
+gold	crimson	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+gold	crimson	Tertiary	Swamp paste	swamp_paste	40	70		Always
+gold	black	Zealot robes	Zealot's boots	zealots_boots	1	1		1/128
+gold	black	Zealot robes	Zealot's helm	zealots_helm	1	1		1/128
+gold	black	Zealot robes	Zealot's robe bottom	zealots_robe_bottom	1	1		1/128
+gold	black	Zealot robes	Zealot's robe top	zealots_robe_top	1	1		1/128
+gold	black	Locks	Gold locks	gold_locks	1	1		1/60
+gold	black	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/103.73
+gold	black	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/103.73
+gold	black	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/103.73
+gold	black	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/103.73
+gold	black	Weapons	Adamant spear	adamant_spear	1	1		7/144.18
+gold	black	Weapons	Adamant spear(p)	adamant_spear	1	1		6/144.18
+gold	black	Weapons	Rune sword	rune_sword	1	1		3/144.18
+gold	black	Weapons	Adamant longsword	adamant_longsword	1	1		3/144.18
+gold	black	Weapons	Battlestaff	battlestaff	3	3	noted	11/144.18
+gold	black	Weapons	Rune scimitar	rune_scimitar	1	1		3/144.18
+gold	black	Weapons	Rune longsword	rune_longsword	1	1		5/144.18
+gold	black	Weapons	Dragon dagger	dragon_dagger	1	1		2/144.18
+gold	black	Weapons	Dragon longsword	dragon_longsword	1	1		1/144.18
+gold	black	Weapons	Dragon mace	dragon_mace	1	1		1/144.18
+gold	black	Armour	Adamant full helm	adamant_full_helm	1	1		8/144.18
+gold	black	Armour	Mithril plateskirt	mithril_plateskirt	1	1		5/144.18
+gold	black	Armour	Rune med helm	rune_med_helm	1	1		3/144.18
+gold	black	Armour	Adamant chainbody	adamant_chainbody	1	1		4/144.18
+gold	black	Armour	Adamant platelegs	adamant_platelegs	1	1		3/144.18
+gold	black	Armour	Adamant plateskirt	adamant_plateskirt	1	1		3/144.18
+gold	black	Armour	Adamant kiteshield	adamant_kiteshield	1	1		2/144.18
+gold	black	Armour	Adamant platebody	adamant_platebody	1	1		3/144.18
+gold	black	Armour	Rune chainbody	rune_chainbody	1	1		2/144.18
+gold	black	Armour	Rune platebody	rune_platebody	1	1		2/144.18
+gold	black	Armour	Rune platelegs	rune_platelegs	1	1		2/144.18
+gold	black	Armour	Rune plateskirt	rune_plateskirt	1	1		2/144.18
+gold	black	Other	Fine cloth	fine_cloth	1	1		24/144.18
+gold	black	Other	Amulet of the damned (full)	amulet_of_the_damned	1	1		6/144.18
+gold	black	Other	Dragonstone	dragonstone	1	1		2/144.18
+gold	black	Other	Dragonstone ring	dragonstone_ring	1	1		3/144.18
+gold	black	Other	Death rune	death_rune	10	29		9/144.18
+gold	black	Other	Soul rune	soul_rune	10	29		6/144.18
+gold	black	Other	Flamtaer hammer	flamtaer_hammer	1	1		4/144.18
+gold	black	Other	Yew logs	yew_logs	5	14	noted	1.8/144.18
+gold	black	Other	Redwood logs	redwood_logs	5	14	noted	1.2/144.18
+gold	black	Other	Clue scroll (elite)	clue_scroll_elite	1	1		1/139
+gold	black	Tertiary	Coins	coins	1	3160		Common
+gold	black	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+gold	black	Tertiary	Swamp paste	swamp_paste	40	70		Always
+gold	purple	Zealot robes	Zealot's boots	zealots_boots	1	1		1/128
+gold	purple	Zealot robes	Zealot's helm	zealots_helm	1	1		1/128
+gold	purple	Zealot robes	Zealot's robe bottom	zealots_robe_bottom	1	1		1/128
+gold	purple	Zealot robes	Zealot's robe top	zealots_robe_top	1	1		1/128
+gold	purple	Locks	Gold locks	gold_locks	1	1		1/59
+gold	purple	Splitbark scrolls	Tree wizards' journal	runescroll_of_swampbark	1	1		1/101.72
+gold	purple	Splitbark scrolls	Runescroll of swampbark	runescroll_of_swampbark	1	1		1/101.72
+gold	purple	Splitbark scrolls	Bloody notes	runescroll_of_bloodbark	1	1		1/101.72
+gold	purple	Splitbark scrolls	Runescroll of bloodbark	runescroll_of_bloodbark	1	1		1/101.72
+gold	purple	Weapons	Adamant spear	adamant_spear	1	1		7/144.28
+gold	purple	Weapons	Adamant spear(p)	adamant_spear	1	1		6/144.28
+gold	purple	Weapons	Rune sword	rune_sword	1	1		3/144.28
+gold	purple	Weapons	Adamant longsword	adamant_longsword	1	1		3/144.28
+gold	purple	Weapons	Battlestaff	battlestaff	3	3	noted	11/144.28
+gold	purple	Weapons	Rune scimitar	rune_scimitar	1	1		3/144.28
+gold	purple	Weapons	Rune longsword	rune_longsword	1	1		5/144.28
+gold	purple	Weapons	Dragon dagger	dragon_dagger	1	1		2/144.28
+gold	purple	Weapons	Dragon longsword	dragon_longsword	1	1		1/144.28
+gold	purple	Weapons	Dragon mace	dragon_mace	1	1		1/144.28
+gold	purple	Armour	Adamant full helm	adamant_full_helm	1	1		8/144.28
+gold	purple	Armour	Mithril plateskirt	mithril_plateskirt	1	1		5/144.28
+gold	purple	Armour	Rune med helm	rune_med_helm	1	1		3/144.28
+gold	purple	Armour	Adamant chainbody	adamant_chainbody	1	1		4/144.28
+gold	purple	Armour	Adamant platelegs	adamant_platelegs	1	1		3/144.28
+gold	purple	Armour	Adamant plateskirt	adamant_plateskirt	1	1		3/144.28
+gold	purple	Armour	Adamant kiteshield	adamant_kiteshield	1	1		2/144.28
+gold	purple	Armour	Adamant platebody	adamant_platebody	1	1		3/144.28
+gold	purple	Armour	Rune chainbody	rune_chainbody	1	1		2/144.28
+gold	purple	Armour	Rune platebody	rune_platebody	1	1		2/144.28
+gold	purple	Armour	Rune platelegs	rune_platelegs	1	1		2/144.28
+gold	purple	Armour	Rune plateskirt	rune_plateskirt	1	1		2/144.28
+gold	purple	Other	Fine cloth	fine_cloth	1	1		25/144.28
+gold	purple	Other	Amulet of the damned (full)	amulet_of_the_damned	1	1		6/144.28
+gold	purple	Other	Dragonstone	dragonstone	1	1		2/144.28
+gold	purple	Other	Dragonstone ring	dragonstone_ring	1	1		3/144.28
+gold	purple	Other	Death rune	death_rune	10	29		9/144.28
+gold	purple	Other	Soul rune	soul_rune	10	29		6/144.28
+gold	purple	Other	Flamtaer hammer	flamtaer_hammer	1	1		4/144.28
+gold	purple	Other	Yew logs	yew_logs	5	14	noted	1.2/144.28
+gold	purple	Other	Redwood logs	redwood_logs	5	14	noted	0.8/144.28
+gold	purple	Other	Clue scroll (elite)	clue_scroll_elite	1	1		1/139
+gold	purple	Tertiary	Coins	coins	1	3160		Common
+gold	purple	Tertiary	Flamtaer bag	flamtaer_bag	1	1		1/2
+gold	purple	Tertiary	Swamp paste	swamp_paste	40	70		Always

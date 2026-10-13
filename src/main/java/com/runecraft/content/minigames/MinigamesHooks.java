@@ -36,6 +36,7 @@ public final class MinigamesHooks implements ModuleHooks {
         MinigameNet.register();
         MinigameCombat.register();
         MinigameItemUse.register();
+        SorceressGardenService.register();
         BossScripts.register("tzkal_zuk", ZukScript::new);
         BossScripts.register("penance_queen", PenanceQueenScript::new);
 
@@ -79,6 +80,8 @@ public final class MinigamesHooks implements ModuleHooks {
                 + "Survive, and TzTok-Jad himself will face you. The fire cape is the prize.");
         talk("mg_tzhaar_ket_keh", "TzHaar-Ket-Keh", "The Inferno is no place for JalYt. Sacrifice a fire cape and face TzKal-Zuk... "
                 + "if you dare. The infernal cape will be yours if you survive sixty-nine waves.");
+        talk("mg_tzhaar_mej_kah", "TzHaar-Mej-Kah", "The Fight Pit is where JalYt fight each other. Last one standing is champion: "
+                + "tokkul for every fighter beaten and the red skull. Fight Cave creatures join if you are slow, then the gas.");
         talk("mg_ignisia", "Ignisia", "The Wintertodt stirs. Chop bruma roots, fletch them into kindling and feed the braziers. "
                 + "Fix broken braziers with a hammer and keep the pyromancers alive. Earn 500 points for a supply crate.");
         talk("mg_first_mate_deri", "First Mate Deri", "Tempoross brews a storm! Harpoon the harpoonfish, load the cannons, "
@@ -88,8 +91,9 @@ public final class MinigamesHooks implements ModuleHooks {
         talk("mg_guardian_mummy", "Guardian mummy", "You may plunder the pyramid for five minutes. Urns, chests and the sarcophagus "
                 + "hold treasure... and the Pharaoh's sceptre itself, for the lucky.");
         talk("mg_murphy", "Murphy", "The Fishing Trawler sails soon. Patch leaks, bail water and keep her afloat for the net to fill.");
-        talk("mg_mortton_priest", "Ulsquire Shauncy", "The shades plague the catacombs. Burn their remains on a funeral pyre to lay "
-                + "them to rest, and their keys may open the old chests.");
+        talk("mg_mortton_priest", "Ulsquire Shauncy", "The shades plague Mort'ton. Repair the temple and slay the shades to earn "
+                + "sanctity, bless olive oil in the sacred fire and coat logs with it. Burn shade remains on a pyre of those logs: "
+                + "the spirits leave keys that open the chests in the catacombs.");
 
         // Arena objects.
         for (String[] b : MinigameWorld.ARENA_BLOCKS) {
@@ -98,6 +102,9 @@ public final class MinigamesHooks implements ModuleHooks {
             }
             BlockHooks.register(b[0], (player, pos, state) -> MinigameManager.onBlock(player, b[0], pos));
         }
+
+        // Mort'ton's town objects (the funeral pyre too, which used to live in the arena) are handled outside the instance.
+        ShadesService.register();
 
         GameEvents.onKill((player, entity, stats) -> MinigameManager.onKill(player, entity));
         // Champions' Challenge: Larxus, the champions' rules and the 1/5,000 scrolls for kin whose tables lack one.

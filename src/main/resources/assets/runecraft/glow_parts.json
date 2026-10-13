@@ -124,6 +124,10 @@
   "artio": [
     "eyes"
   ],
+  "autumn_elemental": [
+    "core",
+    "head"
+  ],
   "avatar_of_creation": [
     "core",
     "head"
@@ -1890,10 +1894,18 @@
     "drip",
     "glow_cracks"
   ],
+  "spring_elemental": [
+    "core",
+    "head"
+  ],
   "starlight": [
     "uni_horn"
   ],
   "steel_dragon": [
+    "head"
+  ],
+  "summer_elemental": [
+    "core",
     "head"
   ],
   "taloned_wyvern": [
@@ -2322,6 +2334,10 @@
   "wingman_skree": [
     "head",
     "staff_orb"
+  ],
+  "winter_elemental": [
+    "core",
+    "head"
   ],
   "wintertodt": [
     "blizzard",

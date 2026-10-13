@@ -152,6 +152,7 @@ public final class Jewellery {
                 Perk.NONE, "A trimmed amulet of power.");
         // Worn core/common items (stats only).
         wornExternal("amulet_of_accuracy", Slot.NECK, s(4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        wornExternal("amulet_of_the_damned", Slot.NECK, s(10, 10, 10, 10, 10, 3, 3, 3, 3, 3, 6, 0, 0, 3)); // minigames module
         wornExternal("ghostspeak_amulet", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 0, 0, 0, 0));
         wornExternal("fire_cape", Slot.CAPE, s(1, 1, 1, 1, 1, 11, 11, 11, 11, 11, 4, 0, 0, 2));
         wornExternal("infernal_cape", Slot.CAPE, s(4, 4, 4, 1, 1, 12, 12, 12, 12, 12, 8, 0, 0, 2));

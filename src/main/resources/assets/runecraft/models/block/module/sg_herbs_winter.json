@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/sg_herbs_winter_side",
+    "top": "runecraft:block/module/sg_herbs_winter_top",
+    "bottom": "runecraft:block/module/sg_herbs_winter_bottom"
+  }
+}

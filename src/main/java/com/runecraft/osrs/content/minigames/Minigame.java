@@ -31,7 +31,8 @@ public enum Minigame {
             Skill.COOKING, 29),
     TROUBLE_BREWING("trouble_brewing", "Trouble Brewing", "mg_mos_le_harmless_brewery", 3810, 3022, 3810, 3022, PlaceDef.Style.RUINS, 20, 10,
             Skill.COOKING, 40),
-    SHADES_OF_MORTTON("shades_of_mortton", "Shades of Mort'ton", "mg_mortton", 3500, 3290, 3500, 3290, PlaceDef.Style.RUINS, 0, 1, null, 0),
+    /** Mort'ton (pyres, temple and Razmire's shops by the entrance); the Shade Catacombs are at 3493, 9725 (bronze chests). */
+    SHADES_OF_MORTTON("shades_of_mortton", "Shades of Mort'ton", "mg_mortton", 3493, 9725, 3500, 3290, PlaceDef.Style.RUINS, 0, 1, null, 0),
     TITHE_FARM("tithe_farm", "Tithe Farm", "mg_tithe_farm", 1802, 3501, 1802, 3501, PlaceDef.Style.CAMP, 0, 1, Skill.FARMING, 34),
     GIANTS_FOUNDRY("giants_foundry", "Giants' Foundry", "mg_giants_foundry", 3361, 3149, 3361, 3149, PlaceDef.Style.CAVE, 0, 1, Skill.SMITHING, 15),
     MAHOGANY_HOMES("mahogany_homes", "Mahogany Homes", "mg_mahogany_homes_office", 2989, 3366, 2989, 3366, PlaceDef.Style.TOWN, 0, 1,
@@ -57,7 +58,16 @@ public enum Minigame {
     SOUL_WARS("soul_wars", "Soul Wars", "mg_isle_of_souls", 2136, 2900, 2210, 2880, PlaceDef.Style.CAMP, 20, 30, null, 0),
     /** Juna's Chasm of Tears below Lumbridge Swamp (after the Tears of Guthix quest); the portal stands beside Juna. */
     TEARS_OF_GUTHIX("tears_of_guthix", "Tears of Guthix", "mg_chasm_of_tears", 3257, 9517, 3255, 3178, PlaceDef.Style.NONE, 0, 1,
-            null, 0);
+            null, 0),
+    /**
+     * The Sorceress's Garden (an instance at 2912, 5472), entered through the sorceress's apprentice in the house north-east
+     * of the Shantay Pass (3320, 3139); needs Prince Ali Rescue (checked by the manager). Appended last: arena slots use the
+     * ordinal.
+     */
+    SORCERESS_GARDEN("sorceress_garden", "Sorceress's Garden", "mg_sorceress_house", SorceressGarden.GARDEN_X,
+            SorceressGarden.GARDEN_Y, SorceressGarden.HOUSE_X, SorceressGarden.HOUSE_Y, PlaceDef.Style.NONE, 0, 1, null, 0),
+    /** The TzHaar Fight Pit in Mor Ul Rek (2398, 5151): a safe last-man-standing PvP arena, entered beside the Fight Cave. */
+    FIGHT_PITS("fight_pits", "TzHaar Fight Pit", "mg_tzhaar_city", 2398, 5151, 2832, 3170, PlaceDef.Style.CAVE, 30, 50, null, 0);
 
     private final String id;
     private final String displayName;

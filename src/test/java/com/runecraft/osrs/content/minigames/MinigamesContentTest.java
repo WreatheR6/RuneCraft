@@ -281,7 +281,7 @@ class MinigamesContentTest {
 
     @Test
     void lootTablesReferenceRealItems() {
-        for (List<MinigameRules.Loot> table : List.of(TemporossRewards.OTHER, MinigameRules.Shades.CHEST)) {
+        for (List<MinigameRules.Loot> table : List.of(TemporossRewards.OTHER)) {
             for (MinigameRules.Loot l : table) {
                 assertTrue(ItemCatalog.exists(l.item()), l.item());
                 assertTrue(l.weight() > 0 && l.min() <= l.max(), l.item());
