@@ -60,6 +60,44 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("branda_the_fire_queen", EncounterScripts.RoyalTitans::new);
 
         BlockHooks.register(BossPlaces.FONT_OF_CONSUMPTION, BossesHooks::offerUnsired);
+
+        BossScripts.register(com.runecraft.osrs.content.bosses.IslandBosses.DERANGED, DerangedArchaeologistScript::new);
+        // Brutus is fought after The Ides of Milk; Demonic Brutus also needs an abyssal potato (the boss key, plucked in the
+        // Scar after Desert Treasure II).
+        com.runecraft.boss.DataBossService.requirement("brutus", (player, def) -> questDone(player, "the_ides_of_milk",
+                "You need to complete The Ides of Milk to fight Brutus."));
+        com.runecraft.boss.DataBossService.requirement("demonic_brutus", (player, def) -> questDone(player, "the_ides_of_milk",
+                "You need to complete The Ides of Milk to fight Brutus.") && questDone(player, "desert_treasure_ii",
+                "Brutus won't eat anything that hasn't been touched by the Abyss. (Desert Treasure II)"));
+        // The Shellbane gryphon is a Slayer boss: only on a gryphon task (or a boss task for it).
+        com.runecraft.boss.DataBossService.requirement("shellbane_gryphon", (player, def) -> {
+            String task = com.runecraft.content.slayer.SlayerService.profile(player).hasTask()
+                    ? com.runecraft.content.slayer.SlayerService.profile(player).task : null;
+            if ("gryphons".equals(task) || com.runecraft.osrs.content.slayer.SlayerBossTasks.counts(task, "shellbane_gryphon")) {
+                return true;
+            }
+            Msg.game(player, "Elder Nama: Only those hunting gryphons for a Slayer master may face the shellbane gryphon.");
+            return false;
+        });
+        BlockHooks.register(BossPlaces.SCAR_GROWTH, BossesHooks::pluckGrowth);
+    }
+
+    private static boolean questDone(ServerPlayerEntity player, String questId, String message) {
+        var quest = com.runecraft.osrs.content.ContentRegistry.quest(questId);
+        if (quest != null && com.runecraft.player.Players.data(player).questComplete(quest)) {
+            return true;
+        }
+        Msg.game(player, message);
+        return false;
+    }
+
+    /** The growth in the Scar gives abyssal potatoes once Desert Treasure II is complete. */
+    private static void pluckGrowth(ServerPlayerEntity player, BlockPos pos, net.minecraft.block.BlockState state) {
+        if (!questDone(player, "desert_treasure_ii", "The growth recoils from your touch. (Complete Desert Treasure II.)")) {
+            return;
+        }
+        Inv.give(player, "abyssal_potato", 1);
+        Msg.game(player, "You harvest an odd looking object. It kind of looks like a potato.");
     }
 
     /** Offering an unsired to the Font of Consumption rolls the Abyssal Sire's unique table. */

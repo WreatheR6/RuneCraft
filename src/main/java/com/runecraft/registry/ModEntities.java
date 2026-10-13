@@ -100,8 +100,11 @@ public final class ModEntities {
         for (com.runecraft.osrs.content.MonsterDef m : com.runecraft.osrs.content.ContentRegistry.monsters()) {
             float sc = m.scale;
             // rock crabs lie disguised as rocks until a player comes close
+            // demonic and tortured gorillas switch prayers and attack styles (slayer module)
             EntityType.EntityFactory<OsrsMonsterEntity> factory = "rock_crab".equals(m.id)
-                    ? com.runecraft.entity.RockCrabEntity::new : OsrsMonsterEntity::new;
+                    ? com.runecraft.entity.RockCrabEntity::new
+                    : "demonic_gorilla".equals(m.id) || "tortured_gorilla".equals(m.id)
+                    ? com.runecraft.content.slayer.GorillaEntity::new : OsrsMonsterEntity::new;
             EntityType<OsrsMonsterEntity> type = FabricEntityTypeBuilder.<OsrsMonsterEntity>createMob()
                     .spawnGroup(SpawnGroup.MONSTER)
                     .entityFactory(factory)
