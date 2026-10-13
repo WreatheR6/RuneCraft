@@ -330,6 +330,30 @@ public final class MinigameManager {
         }
     }
 
+    /**
+     * Self-test hook ({@code com.runecraft.selftest}): starts a session for one player straight away (no lobby or
+     * requirements) and lets exceptions through instead of logging them.
+     */
+    public static MinigameSession selfTestStart(Minigame game, String variant, ServerPlayerEntity player) {
+        ServerWorld world = Gielinor.world(player.getServer());
+        MinigameSession s = create(game, nextId++, allocateSlot(game), world, variant);
+        SESSIONS.put(s.id, s);
+        BY_PLAYER.put(player.getUuid(), s);
+        CHOSEN.put(player.getUuid(), variant);
+        try {
+            s.begin(List.of(player));
+        } catch (RuntimeException e) {
+            s.end(false);
+            throw e;
+        }
+        return s;
+    }
+
+    /** Self-test hook: runs one OSRS game tick of a session, letting exceptions through. */
+    public static void selfTestTick(MinigameSession s) {
+        s.tick();
+    }
+
     /** Leaves a session or lobby (exit portal, command). */
     public static void leave(ServerPlayerEntity player) {
         for (Lobby l : LOBBIES.values()) {

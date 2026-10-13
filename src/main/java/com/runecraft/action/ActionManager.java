@@ -58,6 +58,23 @@ public final class ActionManager {
         }
     }
 
+    /**
+     * Self-test hook ({@code com.runecraft.selftest}): advances a player's current action by one game tick right now,
+     * for test players that are not in the server's player list. Returns whether the action is still running.
+     */
+    public static boolean tickNow(ServerPlayerEntity player) {
+        Running running = ACTIONS.get(player.getUuid());
+        if (running == null) {
+            return false;
+        }
+        if (!running.action().tick(player, gameTick)) {
+            ACTIONS.remove(player.getUuid());
+            running.action().stop(player);
+            return false;
+        }
+        return true;
+    }
+
     public static boolean isBusy(ServerPlayerEntity player) {
         return ACTIONS.containsKey(player.getUuid());
     }

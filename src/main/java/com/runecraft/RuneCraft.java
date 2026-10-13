@@ -56,6 +56,7 @@ public class RuneCraft implements ModInitializer {
         LandmarkBuilder.register();
         LocationSpawner.register();
         RuneCraftCommands.register();
+        com.runecraft.selftest.SelfTest.register();
         com.runecraft.boss.Mechanics.register();
         for (com.runecraft.content.ModuleHooks hooks : com.runecraft.content.ModuleHooksRegistry.ALL) {
             hooks.init();
