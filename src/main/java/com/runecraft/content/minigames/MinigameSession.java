@@ -130,6 +130,16 @@ public abstract class MinigameSession {
         return false;
     }
 
+    /** Combat Achievement runs: the challenge or difficulty played (0 = none). Still read after the session ends. */
+    public int caStage() {
+        return 0;
+    }
+
+    /** Combat Achievement runs: conditions the session judged itself for this player. Still read after the session ends. */
+    public java.util.Set<String> caFlags(ServerPlayerEntity player) {
+        return java.util.Set.of();
+    }
+
     /** Overlay lines shown to a player. */
     protected List<String> hud(ServerPlayerEntity player) {
         return List.of(game.displayName());

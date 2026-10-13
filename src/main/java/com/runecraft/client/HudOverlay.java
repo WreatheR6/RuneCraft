@@ -57,6 +57,10 @@ public final class HudOverlay {
         if (gielinor && skullTeam != null && com.runecraft.osrs.PvpSkull.TEAM.equals(skullTeam.getName())) {
             ctx.fill(x - 44, y, x - 24, y + 20, 0xA0201810);
             ctx.drawCenteredTextWithShadow(tr, "☠", x - 34, y + 6, 0xFFE8E8E8);
+        } else if (gielinor && skullTeam != null && com.runecraft.osrs.PvpSkull.CHAMPION_TEAM.equals(skullTeam.getName())) {
+            // The TzHaar Fight Pit champion's red skull.
+            ctx.fill(x - 44, y, x - 24, y + 20, 0xA0201810);
+            ctx.drawCenteredTextWithShadow(tr, "☠", x - 34, y + 6, 0xFFD02020);
         }
 
         // XP drops (right side, rising)

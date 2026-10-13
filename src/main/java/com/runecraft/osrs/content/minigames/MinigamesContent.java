@@ -16,7 +16,8 @@ import java.util.List;
  * Minigames: TzHaar Fight Cave and Inferno, Pest Control, Wintertodt, Tempoross, Guardians of the
  * Rift, Barbarian Assault, Castle Wars, Warriors' Guild, Mage Training Arena, Pyramid Plunder,
  * Hallowed Sepulchre, Brimhaven Agility Arena, Gnome Restaurant, Trouble Brewing, Shades of
- * Mort'ton, Tithe Farm, Giants' Foundry, Mahogany Homes, Fishing Trawler and Rogues' Den.
+ * Mort'ton, Tithe Farm, Giants' Foundry, Mahogany Homes, Fishing Trawler, Rogues' Den, TzHaar-Ket-Rak's Challenges and
+ * Temple Trekking.
  */
 public final class MinigamesContent implements ContentModule {
     @Override

@@ -67,7 +67,19 @@ public enum Minigame {
     SORCERESS_GARDEN("sorceress_garden", "Sorceress's Garden", "mg_sorceress_house", SorceressGarden.GARDEN_X,
             SorceressGarden.GARDEN_Y, SorceressGarden.HOUSE_X, SorceressGarden.HOUSE_Y, PlaceDef.Style.NONE, 0, 1, null, 0),
     /** The TzHaar Fight Pit in Mor Ul Rek (2398, 5151): a safe last-man-standing PvP arena, entered beside the Fight Cave. */
-    FIGHT_PITS("fight_pits", "TzHaar Fight Pit", "mg_tzhaar_city", 2398, 5151, 2832, 3170, PlaceDef.Style.CAVE, 30, 50, null, 0);
+    FIGHT_PITS("fight_pits", "TzHaar Fight Pit", "mg_tzhaar_city", 2398, 5151, 2832, 3170, PlaceDef.Style.CAVE, 30, 50, null, 0),
+    /**
+     * TzHaar-Ket-Rak's Challenges (see {@link KetRakChallenges}): TzHaar-Ket-Rak sits at 2545, 5110 in Mor Ul Rek; the
+     * challenge entrances stand with the other TzHaar entrances on the volcano. Appended last: arena slots use the ordinal.
+     */
+    TZHAAR_KET_RAK("tzhaar_ket_rak", "TzHaar-Ket-Rak's Challenges", "mg_tzhaar_city", KetRakChallenges.KET_RAK_X,
+            KetRakChallenges.KET_RAK_Y, 2832, 3170, PlaceDef.Style.CAVE, 0, 1, null, 0),
+    /**
+     * Temple Trekking (see {@link TempleTrekking}): escorts from Burgh de Rott to Paterdomus (and the Burgh de Rott Ramble back,
+     * entered outside Paterdomus). Needs In Aid of the Myreque (checked by the manager).
+     */
+    TEMPLE_TREKKING("temple_trekking", "Temple Trekking", TempleTrekking.PLACE, TempleTrekking.MAP_X, TempleTrekking.MAP_Y,
+            TempleTrekking.BURGH_X, TempleTrekking.BURGH_Y, PlaceDef.Style.NONE, 0, 1, null, 0);
 
     private final String id;
     private final String displayName;

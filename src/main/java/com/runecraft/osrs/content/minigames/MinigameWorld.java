@@ -34,6 +34,9 @@ public final class MinigameWorld {
         }
         EXTRA_ENTRANCES.put("warriors_guild_cyclops_entrance", Minigame.WARRIORS_GUILD);
         EXTRA_ENTRANCES.put("nightmare_zone_hard_entrance", Minigame.NIGHTMARE_ZONE);
+        for (String entrance : KetRakChallenges.extraEntrances()) {
+            EXTRA_ENTRANCES.put(entrance, Minigame.TZHAAR_KET_RAK);
+        }
         SHOP_BLOCKS.put("tzhaar_store", "tzhaar");
         SHOP_BLOCKS.put("pest_control_rewards", "pest_control");
         SHOP_BLOCKS.put("guardians_of_the_rift_rewards", "guardians_of_the_rift");
@@ -172,8 +175,18 @@ public final class MinigameWorld {
             {"sg_herbs_spring", "Herbs", "4A9A3A", "farming_patch"},
             {"sg_herbs_autumn", "Herbs", "8A7A2A", "farming_patch"},
             {"sg_herbs_summer", "Herbs", "3A8A2A", "farming_patch"},
+            // Temple Trekking (see TempleTrekking): the event area's paths, the bridge and the river
+            {"trek_continue", "Continue-trek path", "8A7A5A", "pressure_plate"},
+            {"trek_evade", "Evade-event path", "5A7A8A", "pressure_plate"},
+            {"trek_bridge_gap", "Broken bridge", "4A3A2A", "crate"},
+            {"trek_tree", "Tree", "5A4A2A", "tree"},
+            {"trek_vine_tree", "Small tree", "3A6A2A", "tree"},
+            {"trek_swing_tree", "Large tree", "4A3A1A", "tree"},
             // Shared
             {"minigame_exit", "Exit portal", "C0C0FF", "portal_glow"}};
+
+    /** The scoreboard beside TzHaar-Ket-Rak: personal best times, completions and deaths for each challenge. */
+    public static final String KET_RAK_SCOREBOARD = "ket_rak_scoreboard";
 
     /**
      * Mort'ton's town objects beside the catacombs entrance: a funeral pyre, the Flamtaer temple's wall (repairs) and
@@ -201,6 +214,8 @@ public final class MinigameWorld {
         list.add(BlockDef.scripted("pyramid_plunder_artefact_trader", "Simon Templeton's artefact crate", 0xC0A060, "chest"));
         list.add(BlockDef.scripted("rogues_den_jewel_trader", "Brian O'Richard's crate", 0x5A5A60, "chest"));
         list.add(BlockDef.scripted(SORCERESS_SHELVES, "Shelves", 0x8A6A3A, "crate"));
+        list.add(BlockDef.scripted(KET_RAK_SCOREBOARD, "Scoreboard (TzHaar-Ket-Rak)", 0x6A2A10, "statue"));
+        list.add(BlockDef.scripted(TempleTrekking.RAMBLE_ENTRANCE, "Burgh de Rott Ramble entrance", 0x8060C0, "portal_glow"));
         list.add(BlockDef.scripted("flamtaer_temple", "Flamtaer temple wall", 0xB0A890, "rock"));
         list.add(BlockDef.scripted("flamtaer_altar", "Sacred fire", 0xE08030, "fire_brazier"));
         list.add(BlockDef.scripted("razmire_general_store", "Razmire's general store", 0x8A6A3A, "crate"));
@@ -230,6 +245,8 @@ public final class MinigameWorld {
         map.get(Minigame.TEMPOROSS.place()).add("tempoross_reward_pool");
         map.get(Minigame.SORCERESS_GARDEN.place()).add(SORCERESS_SHELVES);
         map.get(Minigame.SHADES_OF_MORTTON.place()).addAll(MORTTON_BLOCKS);
+        map.get(Minigame.TZHAAR_KET_RAK.place()).add(KET_RAK_SCOREBOARD);
+        map.put(TempleTrekking.RAMBLE_PLACE, new ArrayList<>(List.of(TempleTrekking.RAMBLE_ENTRANCE)));
         return map;
     }
 
@@ -260,10 +277,14 @@ public final class MinigameWorld {
                 case SOUL_WARS -> "Isle of Souls";
                 case TEARS_OF_GUTHIX -> "Chasm of Tears entrance";
                 case SORCERESS_GARDEN -> "Sorceress's house";
+                case TEMPLE_TREKKING -> "Burgh de Rott (Temple Trekking)";
                 default -> m.displayName();
             };
             list.add(PlaceDef.of(m.place(), name, m.entranceX(), m.entranceY(), m.style(), blocks.get(m.place())));
         }
+        // The Burgh de Rott Ramble starts outside Paterdomus (style NONE: only its entrance portal is built).
+        list.add(PlaceDef.of(TempleTrekking.RAMBLE_PLACE, "Paterdomus (Burgh de Rott Ramble)", TempleTrekking.PATERDOMUS_X,
+                TempleTrekking.PATERDOMUS_Y, PlaceDef.Style.NONE, blocks.get(TempleTrekking.RAMBLE_PLACE)));
         return list;
     }
 
@@ -275,6 +296,15 @@ public final class MinigameWorld {
         list.add(NpcDef.of("mg_tzhaar_mej_kah", "TzHaar-Mej-Kah", Minigame.FIGHT_PITS.place(), 4, -2, tz, 0x4A1808, 0x3A1008,
                 0xFF9040));
         list.add(NpcDef.of("mg_tzhaar_ket_keh", "TzHaar-Ket-Keh", Minigame.FIGHT_CAVES.place(), 0, -2, tz, 0x3A1008, 0x2A0808, 0xFF6020));
+        list.add(NpcDef.of("mg_tzhaar_ket_rak", "TzHaar-Ket-Rak", Minigame.TZHAAR_KET_RAK.place(), -4, -2, tz, 0x3A1008, 0x2A0808,
+                0xFFB030));
+        int trek = 0;
+        int ramble = 0;
+        for (TempleTrekking.Follower f : TempleTrekking.Follower.values()) {
+            String place = f.ramble ? TempleTrekking.RAMBLE_PLACE : TempleTrekking.PLACE;
+            int i = f.ramble ? ramble++ : trek++;
+            list.add(NpcDef.of(f.npc(), f.displayName, place, -5 + 2 * i, 3, 0xC8A080, f.colour, 0x3A2A1A, f.colour));
+        }
         list.add(NpcDef.of("mg_void_knight_squire", "Squire", Minigame.PEST_CONTROL.place(), 2, 2, 0xC8A080, 0x6A6A70, 0x4A4A50, 0xA0A0A8));
         list.add(NpcDef.of("mg_ignisia", "Ignisia", Minigame.WINTERTODT.place(), 2, 2, 0xC8A080, 0xB04020, 0x6A2010, 0xE06020));
         list.add(NpcDef.of("mg_first_mate_deri", "First Mate Deri", Minigame.TEMPOROSS.place(), 2, 2, 0xC09070, 0x3A5A8A, 0x2A2A3A, 0x2A2A2A));
@@ -388,6 +418,7 @@ public final class MinigameWorld {
                 "carpenters_boots", "plank_sack", "amys_saw", "hosidius_blueprints")));
         pages.add(new CollectionLogData.Page(c, "Fishing Trawler", List.of("angler_hat", "angler_top", "angler_waders", "angler_boots")));
         pages.add(new CollectionLogData.Page(c, "Soul Wars", List.of("soul_cape")));
+        pages.add(new CollectionLogData.Page(c, "Temple Trekking", TempleTrekking.LUMBERJACK));
         pages.add(new CollectionLogData.Page(c, "Rogues' Den", List.of("rogue_mask", "rogue_top", "rogue_trousers", "rogue_gloves",
                 "rogue_boots")));
         return pages;

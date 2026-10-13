@@ -28,8 +28,8 @@ import java.util.regex.Pattern;
  *   <li>{@link Track#RULE}, {@link Track#STREAK}, {@link Track#WINDOW}, {@link Track#AVERAGE}, {@link Track#RAID} and
  *       {@link Track#RUN}: tasks with conditions from {@link CombatAchievementRules} (damage from named attacks, group
  *       size, supplies, gear, raid modes and invocations, kill streaks, kills within a time, minigame runs);</li>
- *   <li>{@link Track#UNTRACKED}: mechanics the game doesn't model yet (room puzzles, awakened bosses, delve levels,
- *       TzHaar-Ket-Rak's challenges...). These stay visible in the task list but can't be completed.</li>
+ *   <li>{@link Track#UNTRACKED}: mechanics the game doesn't model yet (room puzzles, awakened bosses, delve
+ *       levels...). These stay visible in the task list but can't be completed.</li>
  * </ul>
  * Points-based rewards as in OSRS: a tier's rewards unlock at its cumulative point total (the grandmaster tier
  * needs every task), regardless of which tiers the points came from.
@@ -272,8 +272,7 @@ public final class CombatAchievements {
         monster("Wyrm", "wyrm");
         monster("Demonic Gorilla", "demonic gorilla");
         boss("Deranged Archaeologist", "deranged_archaeologist");
-        // Not in this world yet: TzHaar-Ket-Rak's challenges and the raid challenge/hard/expert modes. Their tasks stay
-        // untracked.
+        // TzHaar-Ket-Rak's challenges are minigame runs (rules in CombatAchievementRules, "stage" = the challenge).
 
         CANONICAL.put("zulrah_magma", "zulrah");
         CANONICAL.put("zulrah_tanzanite", "zulrah");

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/tzhaar_ket_rak_entrance_side",
+    "top": "runecraft:block/module/tzhaar_ket_rak_entrance_top",
+    "bottom": "runecraft:block/module/tzhaar_ket_rak_entrance_bottom"
+  }
+}

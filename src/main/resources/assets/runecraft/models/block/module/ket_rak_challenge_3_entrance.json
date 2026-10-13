@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/ket_rak_challenge_3_entrance_side",
+    "top": "runecraft:block/module/ket_rak_challenge_3_entrance_top",
+    "bottom": "runecraft:block/module/ket_rak_challenge_3_entrance_bottom"
+  }
+}

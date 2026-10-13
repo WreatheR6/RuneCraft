@@ -33,4 +33,17 @@ class FightPitsTest {
         assertEquals(5151, Minigame.FIGHT_PITS.realY());
         assertEquals(3600, FightPits.SKULL_TICKS * 6 / 10);
     }
+
+    @Test
+    void championSkullIsLostTheWikiWays() {
+        long until = 1000 + FightPits.SKULL_TICKS;
+        assertEquals(null, FightPits.skullLoss(1000, until, 5, true, false, false));
+        assertEquals(FightPits.SkullLoss.EXPIRED, FightPits.skullLoss(until, until, 0, true, false, false));
+        assertEquals(FightPits.SkullLoss.TELEPORT, FightPits.skullLoss(1000, until, 500, true, false, false));
+        assertEquals(FightPits.SkullLoss.TELEPORT, FightPits.skullLoss(1000, until, 0, false, false, false));
+        assertEquals(FightPits.SkullLoss.GEAR, FightPits.skullLoss(1000, until, 0, true, true, false));
+        assertEquals(FightPits.SkullLoss.OVERHEAD_PRAYER, FightPits.skullLoss(1000, until, 0, true, false, true));
+        // The champion's skull is a team of its own, separate from the PvP skull (which decides items kept on death).
+        assertTrue(!com.runecraft.osrs.PvpSkull.CHAMPION_TEAM.equals(com.runecraft.osrs.PvpSkull.TEAM));
+    }
 }

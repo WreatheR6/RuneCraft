@@ -200,6 +200,12 @@ public final class MinigameManager {
             }
             return null;
         }
+        if (game == Minigame.TZHAAR_KET_RAK) {
+            return ketRakRequirement(player, variant);
+        }
+        if (game == Minigame.TEMPLE_TREKKING) {
+            return com.runecraft.content.minigames.games.TempleTrekkingSession.requirement(player, variant);
+        }
         if (game == Minigame.CHAMPIONS_CHALLENGE) {
             return com.runecraft.content.minigames.games.ChampionsSession.requirement(player);
         }
@@ -228,6 +234,26 @@ public final class MinigameManager {
         if (game.skill() != null && skills.level(game.skill()) < game.level()) {
             return "You need " + Msg.article(game.skill().displayName())
                     + " level of " + game.level() + " to take part in " + game.displayName() + ".";
+        }
+        return null;
+    }
+
+    /**
+     * TzHaar-Ket-Rak's challenges: the first two need access to the inner city of Mor Ul Rek (a fire cape earned), the rest
+     * an Inferno completion.
+     */
+    static String ketRakRequirement(ServerPlayerEntity player, String variant) {
+        MinigameData data = MinigameData.of(player);
+        int challenge = com.runecraft.osrs.content.minigames.KetRakChallenges.challengeOf(variant);
+        if (com.runecraft.osrs.content.minigames.KetRakChallenges.requiresInferno(challenge)
+                && data.stat(player.getUuid(), "kc:" + Minigame.INFERNO.id()) < 1) {
+            return "TzHaar-Ket-Rak: Only those who have defeated TzKal-Zuk in the Inferno may face this challenge, JalYt.";
+        }
+        boolean fireCape = data.stat(player.getUuid(), "kc:" + Minigame.FIGHT_CAVES.id()) > 0
+                || data.flag(player.getUuid(), "inferno_cape_sacrificed") || Inv.has(player, "fire_cape", 1)
+                || Players.data(player).collectionLog().contains("fire_cape");
+        if (!fireCape) {
+            return "TzHaar-Ket-Rak: Only JalYt who have earned a fire cape may enter the inner city and take my challenges.";
         }
         return null;
     }
@@ -272,6 +298,8 @@ public final class MinigameManager {
             case TEARS_OF_GUTHIX -> new com.runecraft.content.minigames.games.TearsOfGuthixSession(id, slot, world, variant);
             case SORCERESS_GARDEN -> new com.runecraft.content.minigames.games.SorceressGardenSession(id, slot, world, variant);
             case FIGHT_PITS -> new com.runecraft.content.minigames.games.FightPitsSession(id, slot, world, variant);
+            case TZHAAR_KET_RAK -> new com.runecraft.content.minigames.games.KetRakSession(id, slot, world, variant);
+            case TEMPLE_TREKKING -> new com.runecraft.content.minigames.games.TempleTrekkingSession(id, slot, world, variant);
         };
     }
 

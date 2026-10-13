@@ -44,6 +44,8 @@ import java.util.Set;
  *       {@code deathless} (nobody died), {@code nodeath} (you didn't die), {@code inv=A,B} (ToA invocations),
  *       {@code path>=N}, {@code target} (within the CoX CM / ToB HM target time), {@code points>N},
  *       {@code nospirit} (no Helpful Spirit supplies taken).</li>
+ *   <li>Minigame runs: {@code stage=N} (which challenge or difficulty the run was, e.g. TzHaar-Ket-Rak's challenge number),
+ *       {@code flag=NAME} (a condition the minigame itself judged, e.g. an empty inventory throughout).</li>
  *   <li>{@link Track#WINDOW}: {@code distinct} (different targets) and {@code fromstart} (time from the first fight's
  *       start rather than its kill).</li>
  * </ul>
@@ -100,6 +102,10 @@ public final class CombatAchievementRules {
         public String killedId;
         public Raid raid;
         public boolean died;
+        /** Minigame runs: the challenge or difficulty played (0 when the minigame has none). */
+        public int stage;
+        /** Minigame runs: conditions the minigame judged itself (see {@code MinigameSession.caFlags}). */
+        public final Set<String> flags = new HashSet<>();
 
         public void took(Hit h) {
             taken.add(h);
@@ -320,6 +326,8 @@ public final class CombatAchievementRules {
             case "target" -> r != null && r.withinTarget();
             case "points" -> r != null && compare(r.points(), op, number(v));
             case "nospirit" -> r != null && !r.spiritSupplies();
+            case "stage" -> compare(m.stage, op, number(v));
+            case "flag" -> m.flags.contains(v);
             case "distinct", "fromstart" -> true;
             default -> throw new IllegalArgumentException("Unknown combat achievement condition: " + token);
         };
@@ -606,6 +614,17 @@ public final class CombatAchievementRules {
             349;RUN;mg:inferno;1;style=melee,ranged
             351;RUN;mg:inferno;1;nokill=kill:jaltok-jad
             352;RUN;mg:inferno;1;t<65:00
+            361;RUN;mg:tzhaar_ket_rak;1;stage=2
+            362;RUN;mg:tzhaar_ket_rak;1;stage=4
+            363;RUN;mg:tzhaar_ket_rak;1;stage=6
+            364;RUN;mg:tzhaar_ket_rak;1;stage=1 t<0:45
+            365;RUN;mg:tzhaar_ket_rak;1;stage=3 t<3:00
+            366;RUN;mg:tzhaar_ket_rak;1;stage=5 t<5:00
+            367;RUN;mg:tzhaar_ket_rak;1;stage=2 style=melee
+            368;RUN;mg:tzhaar_ket_rak;1;stage=4 style=melee
+            369;RUN;mg:tzhaar_ket_rak;1;stage=3 flag=noinv
+            370;RUN;mg:tzhaar_ket_rak;1;stage=6 flag=fluke
+            371;RUN;mg:tzhaar_ket_rak;1;stage=3 flag=multistyle
             149;RUN;mg:fight_caves;1;offprayerhitby=tztok-jad
             152;RUN;mg:fight_caves;1;noattacker=tz-kih
             153;RUN;mg:fight_caves;1;style=melee

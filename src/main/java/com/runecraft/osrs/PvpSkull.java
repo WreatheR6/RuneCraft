@@ -16,6 +16,11 @@ import java.util.UUID;
 public final class PvpSkull {
     /** Scoreboard team holding skulled players: its prefix draws the skull above their heads, the HUD reads it. */
     public static final String TEAM = "rc_skulled";
+    /**
+     * Scoreboard team of TzHaar Fight Pit champions: a red skull shown to others (see FightPits). It is not a PvP skull: it
+     * never changes the items kept on death.
+     */
+    public static final String CHAMPION_TEAM = "rc_pit_champion";
     /** 30 minutes after attacking a player. */
     public static final int ATTACK_TICKS = 3000;
     /** Skull from the Emblem Trader's "Skull" option. // approx: the wiki gives no duration; 20 minutes assumed */

@@ -1,5 +1,6 @@
 package com.runecraft.content.minigames;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.runecraft.boss.BossScripts;
 import com.runecraft.content.BlockHooks;
@@ -37,6 +38,7 @@ public final class MinigamesHooks implements ModuleHooks {
         MinigameCombat.register();
         MinigameItemUse.register();
         SorceressGardenService.register();
+        PitChampionService.register();
         BossScripts.register("tzkal_zuk", ZukScript::new);
         BossScripts.register("penance_queen", PenanceQueenScript::new);
 
@@ -58,6 +60,17 @@ public final class MinigamesHooks implements ModuleHooks {
                 }
             });
         }
+        // The Burgh de Rott Ramble's portal outside Paterdomus (a style-NONE place of its own).
+        com.runecraft.world.LandmarkBuilder.registerCustom(com.runecraft.osrs.content.minigames.TempleTrekking.RAMBLE_PLACE,
+                (world, centre) -> world.setBlockState(centre.up(), Arena.module(com.runecraft.osrs.content.minigames.TempleTrekking.RAMBLE_ENTRANCE)));
+        BlockHooks.register(com.runecraft.osrs.content.minigames.TempleTrekking.RAMBLE_ENTRANCE, (player, pos, state) -> Msg.game(player,
+                "Talk to one of the mercenaries here to choose who to escort to Burgh de Rott and which route to take."));
+        for (com.runecraft.osrs.content.minigames.TempleTrekking.Follower f : com.runecraft.osrs.content.minigames.TempleTrekking.Follower.values()) {
+            QuestScripts.onTalk(f.npc(), (player, npc) -> com.runecraft.content.minigames.games.TempleTrekkingSession.talk(player, f));
+        }
+        // TzHaar-Ket-Rak and his scoreboard.
+        QuestScripts.onTalk("mg_tzhaar_ket_rak", (player, npc) -> ketRak(player));
+        BlockHooks.register(MinigameWorld.KET_RAK_SCOREBOARD, (player, pos, state) -> ketRakScoreboard(player));
         for (Map.Entry<String, Minigame> e : MinigameWorld.EXTRA_ENTRANCES.entrySet()) {
             BlockHooks.register(e.getKey(), (player, pos, state) -> MinigameManager.enter(player, e.getValue(), e.getKey()));
         }
@@ -143,6 +156,24 @@ public final class MinigamesHooks implements ModuleHooks {
                             }
                             return 1;
                         }))
+                        .then(CommandManager.literal("trek").then(CommandManager.argument("follower", StringArgumentType.word())
+                                .then(CommandManager.argument("route", IntegerArgumentType.integer(1, 3)).executes(ctx -> {
+                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    if (p != null) {
+                                        com.runecraft.content.minigames.games.TempleTrekkingSession.choose(p,
+                                                StringArgumentType.getString(ctx, "follower"), IntegerArgumentType.getInteger(ctx, "route"));
+                                    }
+                                    return 1;
+                                }))))
+                        .then(CommandManager.literal("token").then(CommandManager.argument("reward", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    if (p != null) {
+                                        com.runecraft.content.minigames.games.TempleTrekkingSession.claim(p,
+                                                StringArgumentType.getString(ctx, "reward"));
+                                    }
+                                    return 1;
+                                })))
                         .then(CommandManager.literal("points").executes(ctx -> {
                             ServerPlayerEntity p = ctx.getSource().getPlayer();
                             if (p != null) {
@@ -162,6 +193,36 @@ public final class MinigamesHooks implements ModuleHooks {
 
     private static void talk(String npc, String name, String line) {
         QuestScripts.onTalk(npc, (player, entity) -> QuestApi.say(player, name, line));
+    }
+
+    /** TzHaar-Ket-Rak: the challenges, what unlocks them and the JalRek-Jad metamorphosis. */
+    private static void ketRak(ServerPlayerEntity p) {
+        MinigameData data = MinigameData.of(p);
+        boolean inferno = data.stat(p.getUuid(), "kc:" + Minigame.INFERNO.id()) > 0;
+        QuestApi.say(p, "TzHaar-Ket-Rak", "The JalTok-Jads grow in number, JalYt. Help me thin them out: my first challenge is one Jad, "
+                + "the second two, and so on up to six at once. " + (inferno ? "You have bested TzKal-Zuk, so all my challenges are open to you,"
+                + " even the final one, where they never stop coming."
+                : "Defeat TzKal-Zuk in the Inferno and I will offer you the third challenge and beyond."));
+        if (data.flag(p.getUuid(), com.runecraft.osrs.content.minigames.KetRakChallenges.METAMORPHOSIS)) {
+            QuestApi.say(p, "TzHaar-Ket-Rak", "You have completed every challenge. Your TzRek-Jad may take the form of a JalRek-Jad.");
+        }
+    }
+
+    /** The scoreboard beside TzHaar-Ket-Rak: completions, best time and deaths per challenge, and the endurance record. */
+    private static void ketRakScoreboard(ServerPlayerEntity p) {
+        MinigameData data = MinigameData.of(p);
+        java.util.UUID u = p.getUuid();
+        Msg.game(p, "--- TzHaar-Ket-Rak's Challenges ---");
+        for (int c = 1; c <= com.runecraft.osrs.content.minigames.KetRakChallenges.CHALLENGES; c++) {
+            int best = data.stat(u, com.runecraft.osrs.content.minigames.KetRakChallenges.BEST_PREFIX + c);
+            long seconds = best * 6L / 10;
+            Msg.game(p, "Challenge " + c + ": " + data.stat(u, com.runecraft.osrs.content.minigames.KetRakChallenges.KC_PREFIX + c)
+                    + " completed, best " + (best > 0 ? String.format("%d:%02d", seconds / 60, seconds % 60) : "-") + ", "
+                    + data.stat(u, com.runecraft.osrs.content.minigames.KetRakChallenges.DEATHS_PREFIX + c) + " deaths");
+        }
+        int f = com.runecraft.osrs.content.minigames.KetRakChallenges.FINAL;
+        Msg.game(p, "Final challenge: most JalTok-Jads slain " + data.stat(u, com.runecraft.osrs.content.minigames.KetRakChallenges.FINAL_RECORD)
+                + ", " + data.stat(u, com.runecraft.osrs.content.minigames.KetRakChallenges.DEATHS_PREFIX + f) + " attempts");
     }
 
     private static void showPoints(ServerPlayerEntity p) {

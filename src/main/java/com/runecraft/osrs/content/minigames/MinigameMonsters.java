@@ -222,6 +222,7 @@ public final class MinigameMonsters {
                     .attack(NONE).flying().size(0.7f, 1.9f, 1.0f)
                     .skin(s.juiceColor(), s.fruitColor(), s.fruitColor(), 0xFFFFFF));
         }
+        list.addAll(TempleTrekking.monsters());
         return list;
     }
 

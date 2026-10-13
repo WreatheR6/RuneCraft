@@ -25,11 +25,17 @@ import java.util.UUID;
  * above their head and in the player list; the HUD shows the player's own skull), a skulled death keeps no items
  * (see {@link PrayerEffectsService}) and dying removes the skull. The Emblem Trader skulls on request. Skull timers
  * live in memory: a server restart clears them.
+ *
+ * <p>The TzHaar Fight Pit champion's red skull uses the {@link PvpSkull#CHAMPION_TEAM} team instead: it is shown to others
+ * the same way but is not a PvP skull (items kept on death are unaffected). A Wilderness skull takes precedence while both
+ * apply. The minigames module decides when a champion gains or loses it ({@link #setChampionSkull}).
  */
 public final class SkullService {
     private static final PvpSkull SKULLS = new PvpSkull();
     /** Players who asked the Emblem Trader for a skull: world time of the question (confirm by talking again). */
     private static final Map<UUID, Long> EMBLEM_ASKED = new HashMap<>();
+    /** Players showing the Fight Pit champion's red skull. */
+    private static final java.util.Set<UUID> CHAMPIONS = new java.util.HashSet<>();
 
     private SkullService() {
     }
@@ -44,6 +50,7 @@ public final class SkullService {
                 if (p != null) {
                     removeFromTeam(p);
                     Msg.game(p, "Your PK skull has faded.");
+                    showChampion(p);
                 }
             }
         });
@@ -51,6 +58,7 @@ public final class SkullService {
             if (!alive) {
                 SKULLS.clear(newPlayer.getUuid());
                 removeFromTeam(newPlayer);
+                showChampion(newPlayer);
             }
         });
         // The scoreboard team is saved with the world but the timers are not: drop stale skulls on join.
@@ -58,6 +66,9 @@ public final class SkullService {
             ServerPlayerEntity p = handler.getPlayer();
             if (!SKULLS.isSkulled(p.getUuid(), ActionManager.gameTick())) {
                 removeFromTeam(p);
+            }
+            if (!CHAMPIONS.contains(p.getUuid())) {
+                removeFromTeam(p, PvpSkull.CHAMPION_TEAM);
             }
         });
     }
@@ -104,22 +115,55 @@ public final class SkullService {
         Msg.red(player, "You are now skulled.");
     }
 
-    private static Team team(MinecraftServer server) {
+    /**
+     * Shows or hides the TzHaar Fight Pit champion's red skull above a player's head. It doesn't count as a PvP skull, and a
+     * Wilderness skull is shown instead while the player has one.
+     */
+    public static void setChampionSkull(ServerPlayerEntity player, boolean on) {
+        if (on) {
+            CHAMPIONS.add(player.getUuid());
+            showChampion(player);
+        } else {
+            CHAMPIONS.remove(player.getUuid());
+            removeFromTeam(player, PvpSkull.CHAMPION_TEAM);
+        }
+    }
+
+    public static boolean hasChampionSkull(ServerPlayerEntity player) {
+        return CHAMPIONS.contains(player.getUuid());
+    }
+
+    private static void showChampion(ServerPlayerEntity player) {
+        if (CHAMPIONS.contains(player.getUuid()) && !isSkulled(player)) {
+            addToTeam(player, PvpSkull.CHAMPION_TEAM);
+        }
+    }
+
+    private static Team team(MinecraftServer server, String name) {
         ServerScoreboard board = server.getScoreboard();
-        Team team = board.getTeam(PvpSkull.TEAM);
+        Team team = board.getTeam(name);
         if (team == null) {
-            team = board.addTeam(PvpSkull.TEAM);
-            team.setPrefix(Text.literal("☠ ").formatted(Formatting.RED));
+            team = board.addTeam(name);
+            if (name.equals(PvpSkull.CHAMPION_TEAM)) {
+                team.setPrefix(Text.literal("☠ ").formatted(Formatting.DARK_RED));
+                team.setColor(Formatting.DARK_RED);
+            } else {
+                team.setPrefix(Text.literal("☠ ").formatted(Formatting.RED));
+            }
         }
         return team;
     }
 
     private static void addToTeam(ServerPlayerEntity player) {
+        addToTeam(player, PvpSkull.TEAM);
+    }
+
+    private static void addToTeam(ServerPlayerEntity player, String teamName) {
         MinecraftServer server = player.getServer();
         if (server == null) {
             return;
         }
-        Team team = team(server);
+        Team team = team(server, teamName);
         String name = player.getGameProfile().getName();
         if (server.getScoreboard().getPlayerTeam(name) != team) {
             server.getScoreboard().addPlayerToTeam(name, team);
@@ -127,12 +171,16 @@ public final class SkullService {
     }
 
     private static void removeFromTeam(ServerPlayerEntity player) {
+        removeFromTeam(player, PvpSkull.TEAM);
+    }
+
+    private static void removeFromTeam(ServerPlayerEntity player, String teamName) {
         MinecraftServer server = player.getServer();
         if (server == null) {
             return;
         }
         ServerScoreboard board = server.getScoreboard();
-        Team team = board.getTeam(PvpSkull.TEAM);
+        Team team = board.getTeam(teamName);
         String name = player.getGameProfile().getName();
         if (team != null && board.getPlayerTeam(name) == team) {
             board.removePlayerFromTeam(name, team);

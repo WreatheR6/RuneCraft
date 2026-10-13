@@ -26,6 +26,45 @@ public final class FightPits {
     public static final int GAS_DAMAGE = 1;
     /** The champion's red skull lasts an hour (6,000 game ticks). */
     public static final int SKULL_TICKS = 6000;
+    /**
+     * Moving further than this many blocks between two one-second checks (or changing dimension) counts as a teleport,
+     * which removes the champion's skull. // approx: running covers about 6 blocks a second
+     */
+    public static final double TELEPORT_BLOCKS = 24;
+
+    /** Why a champion loses the red skull (OSRS Wiki, "TzHaar Fight Pit" rewards), or null if they keep it. */
+    public enum SkullLoss {
+        EXPIRED("Your Fight Pit champion's skull has faded."),
+        TELEPORT("Your Fight Pit champion's skull vanishes as you teleport."),
+        GEAR("Your Fight Pit champion's skull vanishes as you change your equipment."),
+        OVERHEAD_PRAYER("Your Fight Pit champion's skull vanishes as you activate an overhead prayer."),
+        MONSTER_DAMAGE("Your Fight Pit champion's skull vanishes as a monster hurts you."),
+        DEFEATED("You have lost your Fight Pit champion's skull.");
+
+        public final String message;
+
+        SkullLoss(String message) {
+            this.message = message;
+        }
+    }
+
+    /**
+     * The champion's skull lasts an hour unless they teleport, change their weapons or armour after leaving the pit, turn on an
+     * overhead prayer, or take damage from a monster (logging out and being defeated also remove it).
+     */
+    public static SkullLoss skullLoss(long now, long until, double movedBlocks, boolean sameWorld, boolean gearChanged,
+                                      boolean overheadPrayer) {
+        if (now >= until) {
+            return SkullLoss.EXPIRED;
+        }
+        if (!sameWorld || movedBlocks > TELEPORT_BLOCKS) {
+            return SkullLoss.TELEPORT;
+        }
+        if (gearChanged) {
+            return SkullLoss.GEAR;
+        }
+        return overheadPrayer ? SkullLoss.OVERHEAD_PRAYER : null;
+    }
     /** Ticks between monster spawns once they've started (approx: the wiki gives no rate). */
     public static final int SPAWN_INTERVAL = 25;
 

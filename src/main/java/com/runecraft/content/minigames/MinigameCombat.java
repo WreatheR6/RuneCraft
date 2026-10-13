@@ -42,7 +42,8 @@ public final class MinigameCombat {
             Skill.FIREMAKING, new String[]{"pyromancer_hood", "pyromancer_garb", "pyromancer_robe", "pyromancer_boots"},
             Skill.FISHING, new String[]{"angler_hat", "angler_top", "angler_waders", "angler_boots"},
             Skill.FARMING, new String[]{"farmers_strawhat", "farmers_jacket", "farmers_boro_trousers", "farmers_boots"},
-            Skill.CONSTRUCTION, new String[]{"carpenters_helmet", "carpenters_shirt", "carpenters_trousers", "carpenters_boots"});
+            Skill.CONSTRUCTION, new String[]{"carpenters_helmet", "carpenters_shirt", "carpenters_trousers", "carpenters_boots"},
+            Skill.WOODCUTTING, new String[]{"lumberjack_hat", "lumberjack_top", "lumberjack_legs", "lumberjack_boots"});
     /** OSRS outfit bonus per piece (hat, top, legs, boots); the full set gives 2.5%. */
     private static final double[] PIECE_BONUS = {0.004, 0.008, 0.006, 0.002};
     private static final EquipmentSlot[] SLOTS = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};

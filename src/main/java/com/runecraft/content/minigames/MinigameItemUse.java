@@ -63,6 +63,10 @@ public final class MinigameItemUse {
                     openAluftBox(sp);
                     yield true;
                 }
+                case "reward_token_blue", "reward_token_yellow", "reward_token_red" -> {
+                    com.runecraft.content.minigames.games.TempleTrekkingSession.openToken(sp, stack);
+                    yield false;
+                }
                 case "bones_to_peaches_tablet" -> {
                     bonesToPeaches(sp);
                     yield false;

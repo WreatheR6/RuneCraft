@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/burgh_de_rott_ramble_entrance_side",
+    "top": "runecraft:block/module/burgh_de_rott_ramble_entrance_top",
+    "bottom": "runecraft:block/module/burgh_de_rott_ramble_entrance_bottom"
+  }
+}

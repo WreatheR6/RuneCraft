@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/temple_trekking_entrance_side",
+    "top": "runecraft:block/module/temple_trekking_entrance_top",
+    "bottom": "runecraft:block/module/temple_trekking_entrance_bottom"
+  }
+}

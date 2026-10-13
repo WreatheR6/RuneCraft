@@ -2,6 +2,7 @@ package com.runecraft.content.minigames.games;
 
 import com.runecraft.content.minigames.MinigameData;
 import com.runecraft.content.minigames.MinigameSession;
+import com.runecraft.content.minigames.PitChampionService;
 import com.runecraft.osrs.content.minigames.FightPits;
 import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.TzHaarWaves;
@@ -10,8 +11,6 @@ import com.runecraft.player.Players;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Msg;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -25,12 +24,14 @@ import java.util.List;
 /**
  * The TzHaar Fight Pit: a safe last-man-standing free-for-all (see {@link FightPits}). Defeated players
  * are sent back out; the last one standing wins tokkul equal to the defeated players' combined combat
- * levels and the champion's red skull (a glow lasting an hour here, approx). Fight Cave monsters join as
- * the match drags on and TzHaar gas ends stalemates.
+ * levels and the champion's red skull ({@link PitChampionService}: shown above their head for an hour, lost when
+ * they are defeated or leave a game early, teleport, change armour, pray overhead or take monster damage). Fight Cave
+ * monsters join as the match drags on and TzHaar gas ends stalemates.
  */
 public class FightPitsSession extends MinigameSession {
     private final List<Integer> defeated = new ArrayList<>();
     private int starters;
+    private java.util.UUID champion;
 
     public FightPitsSession(int id, int slot, ServerWorld world, String variant) {
         super(Minigame.FIGHT_PITS, id, slot, world, variant);
@@ -118,6 +119,14 @@ public class FightPitsSession extends MinigameSession {
     }
 
     @Override
+    protected void onLeave(ServerPlayerEntity player) {
+        // Defeated, or left before the end: a reigning champion loses the red skull.
+        if (starters >= FightPits.MIN_PLAYERS && !player.getUuid().equals(champion)) {
+            PitChampionService.clear(player, FightPits.SkullLoss.DEFEATED);
+        }
+    }
+
+    @Override
     protected void onDeath(ServerPlayerEntity player) {
         defeated.add(Players.data(player).skills().combatLevel());
         Msg.red(player, "You have been defeated! You return to the waiting area.");
@@ -134,10 +143,11 @@ public class FightPitsSession extends MinigameSession {
             return;
         }
         ServerPlayerEntity champion = left.get(0);
+        this.champion = champion.getUuid();
         int tokkul = FightPits.tokkul(defeated);
         reward(champion, "tokkul", tokkul);
         MinigameData.of(champion).incrementStat(champion.getUuid(), "kc:" + game.id());
-        champion.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, FightPits.SKULL_TICKS * 12, 0, false, false, true));
+        PitChampionService.crown(champion);
         Msg.game(champion, "You are the champion! You receive " + tokkul + " tokkul.");
         champion.getServer().getPlayerManager().broadcast(Text.literal(champion.getName().getString()
                 + " is the new champion of the TzHaar Fight Pit!").formatted(Formatting.RED), false);

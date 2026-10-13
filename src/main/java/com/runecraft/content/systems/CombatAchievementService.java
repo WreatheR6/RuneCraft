@@ -73,6 +73,8 @@ public final class CombatAchievementService {
         int raidDeathsAtStart;
         int myRaidDeathsAtStart;
         boolean credited;
+        /** The minigame session of a run (it reports the challenge played and conditions it judged itself). */
+        MinigameSession session;
 
         Tracker(String key, long now) {
             this.key = key;
@@ -651,6 +653,7 @@ public final class CombatAchievementService {
         }
         if (run == null && key != null) {
             run = new Tracker(key, SysTicks.now());
+            run.session = session;
             run.kcAtStart = kc(p, key);
             start(p, run);
             RUNS.put(u, run);
@@ -676,6 +679,10 @@ public final class CombatAchievementService {
     private static void completeRun(ServerPlayerEntity p, Tracker run) {
         Metrics m = run.m;
         m.ticks = SysTicks.now() - run.start;
+        if (run.session != null) {
+            m.stage = run.session.caStage();
+            m.flags.addAll(run.session.caFlags(p));
+        }
         m.wornAtEnd.clear();
         m.wornAtEnd.addAll(worn(p));
         SysState.SysPlayer sp = SysState.of(p);

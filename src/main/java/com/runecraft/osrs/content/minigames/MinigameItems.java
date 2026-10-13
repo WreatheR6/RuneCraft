@@ -90,6 +90,7 @@ public final class MinigameItems {
         roguesDen(items);
         imbues(items);
         SorceressGarden.items(items);
+        TempleTrekking.items(items);
     }
 
     // ------------------------------------------------------------------ Nightmare Zone / Soul Wars
