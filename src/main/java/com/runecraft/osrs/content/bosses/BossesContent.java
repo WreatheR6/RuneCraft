@@ -47,6 +47,7 @@ public final class BossesContent implements ContentModule {
         all.addAll(Dt2Bosses.all());
         all.addAll(VarlamoreBosses.all());
         all.addAll(ModernBosses.all());
+        all.addAll(IslandBosses.all());
         for (BossDef b : all) {
             if (b.model == null) {
                 b.model(b.id);

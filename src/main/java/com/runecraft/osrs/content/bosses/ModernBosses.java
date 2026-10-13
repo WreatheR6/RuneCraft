@@ -151,11 +151,12 @@ public final class ModernBosses {
     }
 
     static BossDef shellbane() {
-        // A Slayer boss: OSRS only lets it be fought on a gryphon task (or for its elite clue step).
+        // A Slayer boss: OSRS only lets it be fought on a gryphon task (or for its elite clue step); kills count for the task.
+        // The task-only rule is enforced by the Minecraft side (BossesHooks).
         return BossDef.of("shellbane_gryphon", "Shellbane gryphon").level(235).stats(400, 160, 210, 120, 100, 150).speed(5)
                 .attackBonus(0, 0, 20).defenceBonus(10, 20, 40, 100, 60).flying()
                 .attack(SHELLBANE_MELEE).attack(SHELLBANE_RANGED).attack(SHELLBANE_WHIRLWIND).attack(SHELLBANE_KNOCKBACK)
-                .slayer(51, null)
+                .slayer(51, "gryphons")
                 .drops(Drop.of("belles_folly_tarnished", 1, 1, 75), Drop.of("jar_of_feathers", 1, 1, 1300), // approx
                         Drop.of("big_bones", 1, 1, 1), Drop.of("rune_arrow", 30, 60, 8), Drop.of("rune_full_helm", 1, 1, 16),
                         Drop.of("adamantite_bar", 3, 6, 12), Drop.of("coins", 3000, 12000, 4), Drop.herbs(10), Drop.seeds(18),
@@ -168,24 +169,29 @@ public final class ModernBosses {
         return BossDef.of("brutus", "Brutus").level(30).stats(58, 12, 25, 10, 8, 1).speed(5)
                 .defenceBonus(-7, -7, -7, -3, -7)
                 .attack(BRUTUS_HEADBUTT).attack(BRUTUS_CHARGE)
-                .drops(Drop.always("big_bones"), Drop.of("cowhide", 1, 3, 1), Drop.of("mooleta", 1, 1, 30),
+                // Wiki: bull bones and a raw t-bone steak always (big bones stand in; approx), pre-roll mooleta 5/150, bottomless
+                // milk bucket 4/150, cow slippers 1/150, then the 81-slot members' table; beginner clue 1/15, easy clue 1/40.
+                .drops(Drop.always("big_bones"), Drop.of("mooleta", 1, 1, 30),
                         Drop.of("bottomless_milk_bucket", 1, 1, 38), Drop.of("cow_slippers", 1, 1, 150),
-                        Drop.of("iron_platebody", 1, 1, 12), Drop.of("mind_rune", 15, 40, 8), Drop.of("coins", 50, 400, 3),
-                        Drop.of("clue_scroll_beginner", 1, 1, 40)) // approx (commons)
+                        Drop.of("iron_full_helm", 1, 1, 40), Drop.of("iron_platebody", 1, 1, 40), Drop.of("iron_platelegs", 1, 1, 81),
+                        Drop.of("iron_plateskirt", 1, 1, 81), Drop.of("iron_arrow", 14, 14, 8), Drop.of("air_rune", 29, 29, 8),
+                        Drop.of("mind_rune", 18, 18, 10), Drop.of("chaos_rune", 12, 12, 40), Drop.of("potato_seed", 3, 3, 8),
+                        Drop.of("acorn", 2, 2, 16), Drop.of("cowhide", 1, 1, 8), Drop.of("oak_logs", 2, 2, 16), Drop.of("logs", 2, 2, 16),
+                        Drop.of("coins", 60, 120, 3), // F2P coin rows
+                        Drop.of("clue_scroll_beginner", 1, 1, 15), Drop.of("clue_scroll_easy", 1, 1, 40))
                 .pet("pet_beef").at("brutus_pen").arena(11, "jungle").size(1.4f, 1.8f, 1.4f).moveSpeed(0.24);
     }
 
     static BossDef demonicBrutus() {
-        // Hard mode (Desert Treasure II and an abyssal potato): only the Brutus slippers are guaranteed; Beef 1/400.
+        // Hard mode: feed Brutus an abyssal potato (plucked in the Scar after Desert Treasure II). Its only drop is the Brutus
+        // slippers (always); Beef 1/400 is rolled by the pet engine. Despite the name it is not a demon (wiki, DPS calculator).
         return BossDef.of("demonic_brutus", "Demonic Brutus").level(1224).stats(750, 380, 418, 200, 272, 1).speed(5)
-                .defenceBonus(182, 65, 216, 520, 418).attributes("demon")
+                .defenceBonus(182, 65, 216, 520, 418)
                 .attack(DEMONIC_HORNS).attack(DEMONIC_CHARGE).attack(DEMONIC_STOMP).attack(DEMONIC_FIRE)
                 .phase(50, "Demonic Brutus is wreathed in hellfire!", 1.15, false, DEMONIC_HORNS, DEMONIC_CHARGE, DEMONIC_STOMP,
                         DEMONIC_FIRE)
-                .drops(Drop.always("brutus_slippers"), Drop.of("cow_slippers", 1, 1, 50), Drop.of("mooleta", 1, 1, 30), // approx
-                        Drop.of("bottomless_milk_bucket", 1, 1, 38), Drop.of("infernal_ashes", 3, 6, 4), Drop.of("coins", 20000, 60000, 4),
-                        Drop.of("clue_scroll_elite", 1, 1, 60)) // approx
-                .pet("pet_beef").at("brutus_pen").arena(12, "lava").size(1.6f, 2.2f, 1.7f).moveSpeed(0.26);
+                .drops(Drop.always("brutus_slippers"))
+                .key("abyssal_potato").pet("pet_beef").at("brutus_pen").arena(12, "lava").size(1.6f, 2.2f, 1.7f).moveSpeed(0.26);
     }
 
     static BossDef maggotKing() {

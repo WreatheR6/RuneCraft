@@ -457,7 +457,7 @@ public final class HunterData extends SkillingPart {
                 .examine("An imp in a box: it will take one more item to your bank.");
         // Maniacal monkey tails (Kruk's Dungeon).
         simple(s, "damaged_monkey_tail", "Damaged monkey tail", "tail", 0x6A4A2A, 1).examine("It's been bitten off.");
-        simple(s, "monkey_tail", "Monkey tail", "tail", 0x8A6A3A, 1).examine("A whole maniacal monkey tail. Ballista string!");
+        // monkey_tail (the rare maniacal monkey catch) is in osrs/content/CommonItems: demonic gorillas drop it too.
     }
 
     /** Jarred butterflies: id, name, colour. */

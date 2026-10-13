@@ -42,6 +42,7 @@ public final class BestiaryContent implements ContentModule {
         list.addAll(BestiaryQbm.fresh());
         list.addAll(BestiaryMcd.all());
         list.addAll(BestiaryModern.all());
+        list.addAll(BestiaryCrashFossil.all());
         return list;
     }
 

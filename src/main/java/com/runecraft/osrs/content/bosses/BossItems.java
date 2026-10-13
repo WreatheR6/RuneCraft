@@ -104,6 +104,9 @@ public final class BossItems {
                 st(0, 0, 0, 0, 0, 4, 4, 4, 0, 0, 4, 0, 0, 0), "A ring reputed to bring out a berserk fury in its wearer.");
         accessory(items, "warrior_ring", "Warrior ring", "ring", 0xA0A0A0, 140000, "ring",
                 st(0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0), "A ring reputed to bring out a warrior's spirit.");
+        // ---------------- Deranged archaeologist (IslandBosses) ----------------
+        accessory(items, "steel_ring", "Steel ring", "ring", 0x9AA0A8, 15000, "ring",
+                st(0, 0, 0, 0, 0, 24, 24, 24, 0, 0, 0, 0, 0, 0), "A very old enchanted ring.");
         accessory(items, "seers_ring", "Seers ring", "ring", 0x3A6AC0, 160000, "ring",
                 st(0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0), "A mysterious ring that can fill the wearer with magical power.");
         accessory(items, "archers_ring", "Archers ring", "ring", 0x3A8A3A, 160000, "ring",
@@ -440,6 +443,7 @@ public final class BossItems {
         pet(items, "pet_smol_heredit", "Smol heredit", "Sol Heredit", 0xC0A040);
 
         ModernBosses.items(items);
+        IslandBosses.items(items);
     }
 
     // Package-private access for ModernBosses' item block.

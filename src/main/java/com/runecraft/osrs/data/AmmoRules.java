@@ -90,6 +90,9 @@ public final class AmmoRules {
             Map.entry("armadyl_crossbow", new Launcher(Kind.BOLT, B_DRAGON)),
             Map.entry("zaryte_crossbow", new Launcher(Kind.BOLT, B_DRAGON)));
 
+    /** The light and heavy ballista fire javelins of any metal, and nothing else. */
+    private static final java.util.Set<String> BALLISTAE = java.util.Set.of("light_ballista", "heavy_ballista");
+
     /** Antler bolts are only fired by the Hunters' sunlight crossbow, which fires nothing else. */
     private static boolean antler(String id) {
         return id != null && id.endsWith("_antler_bolts");
@@ -109,7 +112,7 @@ public final class AmmoRules {
 
     /** True when {@code weaponId} has an ammunition restriction. */
     public static boolean restricted(String weaponId) {
-        return LAUNCHERS.containsKey(weaponId) || "hunters_sunlight_crossbow".equals(weaponId);
+        return LAUNCHERS.containsKey(weaponId) || "hunters_sunlight_crossbow".equals(weaponId) || BALLISTAE.contains(weaponId);
     }
 
     /**
@@ -119,6 +122,9 @@ public final class AmmoRules {
     public static boolean canFire(String weaponId, String ammoId) {
         if ("hunters_sunlight_crossbow".equals(weaponId)) {
             return antler(ammoId);
+        }
+        if (BALLISTAE.contains(weaponId)) {
+            return ammoId != null && ammoId.endsWith("_javelin");
         }
         Launcher l = LAUNCHERS.get(weaponId);
         if (l == null) {

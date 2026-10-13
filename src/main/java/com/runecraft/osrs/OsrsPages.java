@@ -70,6 +70,7 @@ final class OsrsPages {
                 l("dagannoth_rex", "dagannoth_prime", "dagannoth_supreme"), "pet_dagannoth_prime", "pet_dagannoth_supreme",
                 "pet_dagannoth_rex", "berserker_ring", "archers_ring", "seers_ring", "warrior_ring", "dragon_axe", "seercull",
                 "mud_battlestaff");
+        boss("Deranged Archaeologist", l("Deranged archaeologist"), l("deranged_archaeologist"), "steel_ring");
         boss("The Gauntlet", l("Crystalline Hunllef", "Corrupted Hunllef"), l("crystalline_hunllef", "corrupted_hunllef"),
                 "pet_youngllef", "crystal_armour_seed", "crystal_weapon_seed", "enhanced_crystal_weapon_seed", "gauntlet_cape");
         boss("General Graardor", shards("pet_general_graardor", "bandos_chestplate", "bandos_tassets", "bandos_boots", "bandos_hilt"));

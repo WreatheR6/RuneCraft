@@ -46,6 +46,8 @@ public final class CommonItems {
                 .examine("Combine with a necklace of anguish to make a necklace of rupture (84 Crafting).");
         items.add("tormented_synapse", "Tormented synapse", Kind.SIMPLE, "orb", 0xE05020).value(800_000).stack(1)
                 .examine("A twitching synapse from a tormented demon. Its fiery energy could empower a demonbane weapon.");
+        // Caught from maniacal monkeys (skilling, Hunter) and dropped by demonic gorillas (slayer); strings a ballista.
+        items.add("monkey_tail", "Monkey tail", Kind.SIMPLE, "tail", 0x8A6A3A).value(1).examine("A whole maniacal monkey tail. Ballista string!");
         CommonEquipment.add(items);
     }
 }

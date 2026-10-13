@@ -178,9 +178,13 @@ class BossesContentTest {
             }
             boolean main = !b.raidOnly || b.id.startsWith("dagannoth");
             // The Gemstone Crab is an AFK gem boss with no pet or collection log page.
+            // The Deranged archaeologist has no pet (only the steel ring on its page); Demonic Brutus' only drop is its
+            // guaranteed slippers.
             if (main && !b.id.equals("the_mimic") && !b.id.equals("hespori") && !b.id.equals("gemstone_crab")) {
-                assertNotNull(b.pet, b.id + " has no pet");
-                if (!b.id.equals("giant_mole")) {
+                if (!b.id.equals("deranged_archaeologist")) {
+                    assertNotNull(b.pet, b.id + " has no pet");
+                }
+                if (!b.id.equals("giant_mole") && !b.id.equals("demonic_brutus")) {
                     assertTrue(b.drops.stream().anyMatch(d -> d.rarity() >= 24), b.id + " has no uniques for its collection log");
                 }
             }

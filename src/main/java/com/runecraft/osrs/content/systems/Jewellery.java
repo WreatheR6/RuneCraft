@@ -166,6 +166,7 @@ public final class Jewellery {
         wornExternal("archers_ring", Slot.RING, s(0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0));
         wornExternal("seers_ring", Slot.RING, s(0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0));
         wornExternal("warrior_ring", Slot.RING, s(0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        wornExternal("steel_ring", Slot.RING, s(0, 0, 0, 0, 0, 24, 24, 24, 0, 0, 0, 0, 0, 0)); // item defined by the bosses module
         // Imbued items (minigames module: Nightmare Zone / Soul Wars imbues; stats per the wiki DPS calculator).
         wornExternal("granite_ring", Slot.RING, s(0, 0, 0, 0, 0, 2, 2, 2, -2, 12, 0, 0, 0, 0)); // item defined by the bosses module
         wornExternal("berserker_ring_i", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 8, 0, 0, 0));
