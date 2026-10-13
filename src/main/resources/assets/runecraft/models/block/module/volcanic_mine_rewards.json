@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/volcanic_mine_rewards_side",
+    "top": "runecraft:block/module/volcanic_mine_rewards_top",
+    "bottom": "runecraft:block/module/volcanic_mine_rewards_bottom"
+  }
+}
