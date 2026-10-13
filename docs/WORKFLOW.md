@@ -109,11 +109,17 @@ Recurring conflict spots:
   - Blue and dusk mystic, 36 god vestments, 12 god books, ballistae with javelin-only ammo, salve (ei) via Tarn's diary; 3 ranged-strength fixes; PvP skull system (30 min, 0/1 items kept, Emblem Trader).
   - Sorceress's Garden (4 seasons, wiki XP), Shades of Mort'ton rework (25 keys and wiki chest tables, pyre logs, temple sanctity, Urium shade), TzHaar Fight Pit.
 
+- **Session 2, round 2: world, skilling minigames, Combat Achievements, models:**
+  - Fossil Island and Ape Atoll coasts traced from the map; Kruk's Dungeon with cache-tile maniacal monkeys; Prifddinas guards, implings and animals; Konar regions KOUREND, VARLAMORE, FOSSIL_ISLAND, LITHKREN (appended to `Region`); surface spawns diffed against 4,305 cache spawns (`NpcSpawnReferenceTest`); multicombat boxes from RuneLite polygons.
+  - Motherlode (57 upper level, wiki ore chart, vein depletion), GotR cells/barriers and the wiki reward table, Volcanic Mine fragments/boulder/ore shop, brewing fermentation over world time, barbarian mixes need Barbarian Training, goading potion, Wilderness course persistence, Isle of Souls and Dark chests.
+  - Combat Achievements: 216 → 438 tasks tracked via fight `Metrics` and a rule language (`CombatAchievementRules`); "Like a boss", elite superior rate, hilt 2 Barrows, half-price imbues.
+  - Models: ~55 creatures off the generic humanoid fallback (tormented demon, gorak, werewolf, minotaur, kalphites, aviansies, animated armour…), `ModelSpec.Variant` look-alikes, painter lighting, previews rendered from above (`docs/previews/models/`).
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
-  - 440 tasks untracked. They need boss mechanic hooks: raid HM/CM/expert, group size, awakened bosses, delve levels, streaks.
-  - Rewards not wired: slayer "Like a boss", hilt 2 Barrows drain removal, imbue and instance cost changes.
+  - 208 tasks untracked: awakened DT2 bosses, Doom delve levels, Yama contracts, Colosseum waves, Gauntlet prep, raid room/puzzle mechanics, heals/burrows, gear weight or value, movement tiles; missing items (Gauntlet and Hueycoatl armour, ratbane weapons).
+  - Rewards not wired (feature missing): cannon capacity, instance fees, ecumenical key rate, DHCB (b)/(t), cosmetic slayer helms, bracelet recharge, extra Jad/Zuk slayer kills.
 - **Minigames:**
   - Not built: Last Man Standing, Emir's Arena, Temple Trekking, TzHaar-Ket-Rak's Challenges (needs a `Minigame` value and an Inferno-completion gate).
   - Fight Pit: use the new skull system for the red champion skull; PvP is melee only.
@@ -124,20 +130,17 @@ Recurring conflict spots:
   - Missing: pharaoh's sceptre, ring of the elements, ring of returning, giantsoul amulet and pendant of ates teleports; fairy rings in realms that aren't built; dialling DIQ for the house ring.
   - The skilling module's `SailingData.PORTS` lacks the three new ports. `ItemValues` marks slayer ring (8) untradeable (it is tradeable).
 - **Skilling:**
-  - GotR cells and barriers.
-  - Motherlode upper floor.
-  - Volcanic Mine ore shop and full eruption model.
-  - Brewing finishes instantly (real vats ferment for hours).
-  - Barbarian mixes ignore Barbarian Training.
-  - Goading potion; ancient and magic essence mixes.
+  - GotR: Rewards Guardian block not placed, no 25-pearl search, abyssal creatures are abstract, polyelemental stones and portal talismans missing.
+  - Volcanic Mine: no lava/water vessel, vents or lava beasts. Motherlode: ores rolled at deposit; upper floor has 16 of 64 veins.
+  - Ancient and magic essence mixes (cross-module ingredients). Calquat kegs.
   - Dungeon herb, seed and Varlamore crops; coral.
   - Seed pack contents are partly guessed.
-- **Thieving and Agility:** the Dorgesh-Kaan course and Isle of Souls chests are missing, and Wilderness course state is lost on logout.
+- **Thieving and Agility:** the Dorgesh-Kaan course is missing; Isle of Souls chests sit on the surface (their real tiles are in the dungeon/tower basement); leaving the Wilderness course doesn't forfeit the fee.
 - **World:**
-  - Kruk's Dungeon (maniacal monkeys are on the surface).
-  - Prifddinas real coordinates for spawns.
-  - Region rectangles are coarse.
-  - Zeah, Fossil Island and Lithkren are "Uncharted Isles" for Konar.
+  - Kruk's Dungeon is only its core halls. Waterbirth Island Dungeon and Ape Atoll Dungeon missing (their monsters are surface stand-ins).
+  - Zeah/Varlamore coast is a coarse hull; Zeah multicombat zones missing; new regions need biome JSON in `tools/gen_worldgen.py`.
+  - Overworld implings don't roam.
+- **Models:** remaining humanoid fallbacks (GWD orks/vampires/knights, Bandos/Sara/Zammy spiritual creatures, bloodveld/pyrefiend GWD variants, seasonal/titan elementals, quest giant lobster). Old single-model previews (`bst_*`, `slm_*`) were rendered from below.
 - **Bosses:**
   - Yama, Doom, Maggot King and Royal Titans lairs are approx (no cache surface tile).
   - Deranged archaeologist sits at 3683,3735 because Fossil Island's coast polygon stops short of his real tile (3683,3706).
