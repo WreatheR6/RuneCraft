@@ -72,6 +72,11 @@ public final class RewardShopService {
         if (e.label() != null) {
             return e.label();
         }
+        if (e.item().startsWith(com.runecraft.osrs.content.minigames.RewardShops.GRACEFUL_RECOLOUR)) {
+            ItemDef hood = ItemCatalog.get("graceful_hood" + e.item().substring(
+                    com.runecraft.osrs.content.minigames.RewardShops.GRACEFUL_RECOLOUR.length()));
+            return "Graceful recolour" + (hood == null ? "" : hood.name().substring("Graceful hood".length()));
+        }
         return switch (e.item()) {
             case "#herbs" -> "Herb pack";
             case "#seeds" -> "Seed pack";
@@ -92,7 +97,10 @@ public final class RewardShopService {
                 case "#herbs" -> RuneCraft.resolve("grimy_ranarr_weed").toString();
                 case "#seeds" -> RuneCraft.resolve("ranarr_seed").toString();
                 case "#ores" -> RuneCraft.resolve("coal").toString();
-                default -> RuneCraft.resolve(e.item()).toString();
+                default -> e.item().startsWith(com.runecraft.osrs.content.minigames.RewardShops.GRACEFUL_RECOLOUR)
+                        ? RuneCraft.resolve("graceful_hood" + e.item().substring(
+                                com.runecraft.osrs.content.minigames.RewardShops.GRACEFUL_RECOLOUR.length())).toString()
+                        : RuneCraft.resolve(e.item()).toString();
             };
         };
     }
@@ -105,6 +113,13 @@ public final class RewardShopService {
         if (e.requiresItem() != null && !Inv.has(player, e.requiresItem(), 1)) {
             ItemDef def = ItemCatalog.get(e.requiresItem());
             return "Requires " + (def == null ? e.requiresItem() : def.name());
+        }
+        if (e.item().startsWith(com.runecraft.osrs.content.minigames.RewardShops.GRACEFUL_RECOLOUR)) {
+            for (com.runecraft.osrs.content.skilling.AgilityData.Piece p : com.runecraft.osrs.content.skilling.AgilityData.GRACEFUL) {
+                if (!Inv.has(player, p.id(), 1)) {
+                    return "Requires a full Graceful set in your inventory";
+                }
+            }
         }
         if (e.reward() == RewardShop.Reward.UNLOCK && MinigameData.of(player).flag(player.getUuid(), e.item())) {
             return "Already unlocked";
@@ -145,7 +160,9 @@ public final class RewardShopService {
             return;
         }
         RewardShop.Entry e = priced(player, shop.id(), shop.entries().get(index));
-        int times = e.reward() == RewardShop.Reward.ITEM ? Math.max(1, Math.min(quantity, 100)) : 1;
+        int times = e.reward() == RewardShop.Reward.ITEM
+                && !e.item().startsWith(com.runecraft.osrs.content.minigames.RewardShops.GRACEFUL_RECOLOUR)
+                ? Math.max(1, Math.min(quantity, 100)) : 1;
         String lock = locked(player, e);
         if (lock != null) {
             Msg.game(player, lock + ".");
@@ -180,8 +197,7 @@ public final class RewardShopService {
             case XP -> {
                 Skill skill = Skill.valueOf(e.item());
                 int level = Players.data(player).skills().level(skill);
-                int amount = e.costs().get(0).amount();
-                int xp = MinigameRules.PestControl.xpFor(level, e.count(), amount);
+                double xp = RewardShop.xpFor(e, level);
                 XpService.add(player, skill, xp);
                 Msg.game(player, "You gain " + String.format("%,d", xp) + " " + skill.displayName() + " experience.");
             }
@@ -213,7 +229,18 @@ public final class RewardShopService {
                 String[] ores = {"coal", "iron_ore", "mithril_ore", "adamantite_ore"};
                 give(player, ores[RANDOM.nextInt(ores.length)], 10 + RANDOM.nextInt(15));
             }
-            default -> give(player, e.item(), e.count());
+            default -> {
+                if (e.item().startsWith(com.runecraft.osrs.content.minigames.RewardShops.GRACEFUL_RECOLOUR)) {
+                    // Recolour the carried plain Graceful set (checked in locked()).
+                    String suffix = e.item().substring(com.runecraft.osrs.content.minigames.RewardShops.GRACEFUL_RECOLOUR.length());
+                    for (com.runecraft.osrs.content.skilling.AgilityData.Piece p : com.runecraft.osrs.content.skilling.AgilityData.GRACEFUL) {
+                        Inv.remove(player, p.id(), 1);
+                        give(player, p.id() + suffix, 1);
+                    }
+                } else {
+                    give(player, e.item(), e.count());
+                }
+            }
         }
     }
 

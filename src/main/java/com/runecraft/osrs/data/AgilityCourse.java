@@ -12,9 +12,11 @@ import com.runecraft.osrs.Landmark;
  * match the real courses (Varrock 9, Falador 13, Pollnivneach 9...).
  *
  * <p>Lap XP matches the wiki/RuneLite calculator values (Gnome 110.5, Barbarian 152.5, Shayzien
- * 153.5/508, Wilderness 571.4, Colossal Wyrm 504.1/749.6, Prifddinas 1,337). Not modelled: the
- * Werewolf (underground) and Penguin (instanced) courses, Dorgesh-Kaan, and the Hallowed Sepulchre
- * (a minigame).
+ * 153.5/508, Wilderness 571.4, Colossal Wyrm 504.1/749.6, Prifddinas 1,337, Werewolf 350 plus 380 for
+ * the stick = 730, Penguin 540). The Werewolf course (below Canifis: 60 Agility, Creature of
+ * Fenkenstrain and a ring of charos) and the Penguin course (below the Iceberg: 30 Agility, Cold War
+ * started) are carved into the dungeons module's caves. Not modelled: Dorgesh-Kaan, and the
+ * Hallowed Sepulchre (a minigame).
  *
  * <p>Rooftop courses spawn Marks of grace: a 1/3 chance per lap (Canifis 2/3), cut to 20% once the
  * player is 20+ levels above the course (not at Canifis), and at most one every 3 minutes.
@@ -73,10 +75,23 @@ public enum AgilityCourse {
     // Prifddinas: ladder, tightrope, chimney, roof edge, dark hole, ladder, rope bridge, tightrope, rope bridge,
     // tightrope, dark hole (lap 1,337; split approx).
     PRIFDDINAS("Prifddinas Agility Course", 75, 1337.0, null, false, false,
-            new int[]{1, 7, 9}, 6, 10, 40, 40, 40, 40, 10, 50, 50, 50, 50, 957);
+            new int[]{1, 7, 9}, 6, 10, 40, 40, 40, 40, 10, 50, 50, 50, 50, 957),
+    // Werewolf course below Canifis: stepping stones 50, hurdles 3x20, pipe 15, skull slope 25, deathslide 200 (lap 350;
+    // handing the Agility Trainer the stick at the end adds STICK_XP = 380, 730 a lap). Only the deathslide can be failed.
+    WEREWOLF("Werewolf Agility Course", 60, 350.0, null, true, false,
+            new int[]{6}, 6, 50, 20, 20, 20, 15, 25, 200),
+    // Penguin course below the Iceberg: stepping stones 80, four icicles 40 each, ice slope 180 + lap bonus (lap 540;
+    // the split of the bonus approx). Its obstacles can be failed at any level (approx.: here up to level 65).
+    PENGUIN("Penguin Agility Course", 30, 540.0, null, true, false,
+            new int[]{0, 1, 2, 3, 4}, 3, 80, 40, 40, 40, 40, 300);
 
     /** Obstacle steps the obstacle block can represent (its {@code step} property is 0..MAX_OBSTACLES-1). */
     public static final int MAX_OBSTACLES = 16;
+    /** Bonus XP for handing the stick to the Werewolf course's Agility Trainer at the end of a lap. */
+    public static final double STICK_XP = 380.0;
+    /** Item the Werewolf course's Agility Trainer throws at the start of a lap and takes back at the end. */
+    public static final String WEREWOLF_STICK = "werewolf_stick";
+
     /** Shortest time between two Marks of grace, in game ticks (3 minutes). */
     public static final int MARK_COOLDOWN_TICKS = 300;
 
@@ -184,11 +199,12 @@ public enum AgilityCourse {
     }
 
     /**
-     * Chance that finishing a lap spawns a Mark of grace (0 on non-rooftop courses): 1/3, or 2/3 at
-     * Canifis; a fifth of that once the player is 20 or more levels above the course (not Canifis).
+     * Chance that finishing a lap spawns a Mark of grace (0 on non-rooftop courses except Prifddinas):
+     * 1/3, or 2/3 at Canifis; a fifth of that once the player is 20 or more levels above the course
+     * (not Canifis). Prifddinas' rate is approx. the rooftops'.
      */
     public double markChance(int agilityLevel) {
-        if (!rooftop) {
+        if (!rooftop && this != PRIFDDINAS) {
             return 0;
         }
         if (this == CANIFIS) {
@@ -198,6 +214,25 @@ public enum AgilityCourse {
         // Draynor kept its old level-10 threshold when the requirement was removed (approx.).
         int penaltyFrom = (this == DRAYNOR ? 10 : level) + 20;
         return agilityLevel >= penaltyFrom ? chance * 0.2 : chance;
+    }
+
+    /** Quest this course needs (complete, or only started - see {@link #questStartedEnough()}), or null. */
+    public String requiredQuest() {
+        return switch (this) {
+            case WEREWOLF -> "creature_of_fenkenstrain";
+            case PENGUIN -> "cold_war";
+            default -> null;
+        };
+    }
+
+    /** True if having started the required quest is enough (the Penguin course opens partway through Cold War). */
+    public boolean questStartedEnough() {
+        return this == PENGUIN;
+    }
+
+    /** Item the player must carry or wear to use the course (the Werewolf course's ring of charos), or null. */
+    public String requiredItem() {
+        return this == WEREWOLF ? "ring_of_charos" : null;
     }
 
     public static AgilityCourse at(Landmark landmark) {

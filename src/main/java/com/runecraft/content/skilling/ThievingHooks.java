@@ -80,6 +80,9 @@ final class ThievingHooks {
                 Loot l = Loot.pick(t.table(), player.getRandom().nextInt(Loot.totalWeight(t.table())));
                 out.accept(l.item(), l.amount(player.getRandom().nextDouble()));
             }
+            if (t.npcId().equals("ham_member") && player.getRandom().nextInt(ThievingData.HAM_CLUE_CHANCE) == 0) {
+                out.accept("clue_scroll_easy", 1);
+            }
         }, unconscious);
     }
 
@@ -106,6 +109,26 @@ final class ThievingHooks {
         }
     }
 
+    /** Game tick until which each player's house key keeps a Civitas house open (not persisted). */
+    private static final java.util.Map<java.util.UUID, Long> HOUSE_OPEN = new java.util.HashMap<>();
+
+    /** True if the player is inside a Civitas house: a house key lets them in for a few minutes (and is used up). */
+    private static boolean inHouse(ServerPlayerEntity player) {
+        long now = com.runecraft.action.ActionManager.gameTick();
+        Long until = HOUSE_OPEN.get(player.getUuid());
+        if (until != null && until > now) {
+            return true;
+        }
+        if (!com.runecraft.util.Inv.has(player, ThievingData.HOUSE_KEY, 1)) {
+            Msg.game(player, "The house is locked. Wealthy citizens sometimes carry house keys...");
+            return false;
+        }
+        com.runecraft.util.Inv.remove(player, ThievingData.HOUSE_KEY, 1);
+        HOUSE_OPEN.put(player.getUuid(), now + ThievingData.HOUSE_VISIT_TICKS);
+        Msg.game(player, "You unlock the house with your key. Better be quick before the owner gets back.");
+        return true;
+    }
+
     private static void steal(ServerPlayerEntity player, BlockPos pos, ThievingData.Container c) {
         if (!Stun.check(player)) {
             return;
@@ -117,6 +140,13 @@ final class ThievingHooks {
         }
         if (!SkillingUtil.need(player, Skill.THIEVING, c.level(), c.chest() ? "open this chest" : "steal from the "
                 + SkillingUtil.lower(c.name()))) {
+            return;
+        }
+        if (ThievingData.LOCKPICK_CONTAINERS.contains(c.blockId()) && !com.runecraft.util.Inv.has(player, "lockpick", 1)) {
+            Msg.game(player, "You need a lockpick to open this chest.");
+            return;
+        }
+        if (ThievingData.HOUSE_CONTAINERS.contains(c.blockId()) && !inHouse(player)) {
             return;
         }
         player.swingHand(Hand.MAIN_HAND, true);

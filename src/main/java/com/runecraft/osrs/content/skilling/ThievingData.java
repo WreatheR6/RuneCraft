@@ -9,9 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Thieving: more pickpocket targets (master farmer and his seed table, rogue, knight of Ardougne,
- * watchman, menaphite thug, paladin, gnome, hero, vyre, elf, TzHaar-Hur), thieving chests and extra
- * market stalls. Levels, XP, stun damage and respawn times are OSRS values; success rates use the
+ * Thieving: more pickpocket targets (master farmer and his seed table, rogue, H.A.M. members,
+ * knight of Ardougne, Fremennik citizen, Varlamore's wealthy citizens, watchman, menaphite thug,
+ * paladin, gnome, hero, vyre, elf, TzHaar-Hur), thieving chests (including Dorgesh-Kaan's, which need
+ * a lockpick, and the Civitas illa Fortis houses, which need a house key) and extra market stalls. Levels, XP, stun damage and respawn times are OSRS values; success rates use the
  * standard low/high interpolation (approximate).
  */
 public final class ThievingData extends SkillingPart {
@@ -51,7 +52,34 @@ public final class ThievingData extends SkillingPart {
             Loot.of("jute_seed", 1, 2, 60), Loot.of("yanillian_seed", 1, 1, 40), Loot.of("krandorian_seed", 1, 1, 20),
             Loot.of("wildblood_seed", 1, 1, 10));
 
+    /**
+     * H.A.M. members' pickpocket table (15 Thieving, 22.2 XP): coins, ores, gems, tools and the
+     * H.A.M. robes; an easy clue scroll is rolled separately at 1/50 ({@link #HAM_CLUE_CHANCE}).
+     * Weights approx.; the rest of the H.A.M. outfit (cloak, logo, gloves, boots) and the junk items
+     * (buttons, rusty swords, damaged armour) are not in the game.
+     */
+    public static final List<Loot> HAM_TABLE = List.of(
+            Loot.of("coins", 1, 21, 28), Loot.of("iron_ore", 1, 1, 8), Loot.of("coal", 1, 1, 8), Loot.of("uncut_jade", 1, 1, 4),
+            Loot.of("uncut_opal", 1, 1, 4), Loot.of("uncut_red_topaz", 1, 1, 2), Loot.of("needle", 1, 1, 6), Loot.of("thread", 1, 5, 6),
+            Loot.of("tinderbox", 1, 1, 6), Loot.of("steel_arrow", 1, 13, 5), Loot.of("grimy_guam_leaf", 1, 1, 4),
+            Loot.of("grimy_marrentill", 1, 1, 3), Loot.of("grimy_tarromin", 1, 1, 2), Loot.of("ham_hood", 1, 1, 3),
+            Loot.of("ham_shirt", 1, 1, 3), Loot.of("ham_robe", 1, 1, 3));
+    public static final int HAM_CLUE_CHANCE = 50;
+    public static final String HOUSE_KEY = "house_key";
+    public static final String VALUABLES = "valuables";
+    /** A house key opens a Civitas house for this many game ticks (3 minutes). */
+    public static final int HOUSE_VISIT_TICKS = 300;
+
     public static final List<Target> TARGETS = List.of(
+            new Target("ham_member", "H.A.M. Member", "quest_ham_hideout", 3, -2, 15, 22.2, 135, 239, 1,
+                    List.of(), HAM_TABLE, new int[]{0xC8A080, 0xD8D0C0, 0xD8D0C0, 0xD8D0C0}),
+            // Fremennik citizens of Rellekka: 45 Thieving, 65 XP, 40 coins (success rates and stun approx.).
+            new Target("fremennik_citizen", "Fremennik citizen", "RELLEKKA", -4, 6, 45, 65.0, 65, 240, 2,
+                    List.of(Loot.of("coins", 40, 40, 1)), List.of(), new int[]{0xE0B890, 0x7A5A3A, 0x5A4A3A, 0xC0A060}),
+            // Varlamore's wealthy citizens: 50 Thieving, 96 XP, coins and a house key 1/17 (success rates and stun approx.).
+            new Target("wealthy_citizen", "Wealthy citizen", "zeah_civitas_illa_fortis", 6, -6, 50, 96.0, 60, 240, 3,
+                    List.of(Loot.of("coins", 85, 85, 1)), List.of(Loot.of(HOUSE_KEY, 1, 1, 1), Loot.of("coins", 1, 1, 16)),
+                    new int[]{0xB08060, 0x7A3A8A, 0x4A2A5A, 0xE0C040}),
             new Target("rogue_pickpocket", "Rogue", "EDGEVILLE", 5, 4, 32, 36.5, 74, 240, 2,
                     List.of(), List.of(Loot.of("coins", 25, 120, 60), Loot.of("air_rune", 8, 8, 15), Loot.of("jug_of_wine", 10),
                     Loot.of("iron_dagger", 5), Loot.of("lockpick", 10)), new int[]{0xC8A080, 0x3A2A2A, 0x2A2A2A, 0x1A1A1A}),
@@ -122,6 +150,11 @@ public final class ThievingData extends SkillingPart {
                             List<Loot> table, String look, int color) {
     }
 
+    /** Containers that need a lockpick (Dorgesh-Kaan's chests). */
+    public static final List<String> LOCKPICK_CONTAINERS = List.of("dorgesh_kaan_average_chest", "dorgesh_kaan_rich_chest");
+    /** The Civitas illa Fortis house furniture (Stealing valuables): needs a house key to get in. */
+    public static final List<String> HOUSE_CONTAINERS = List.of("civitas_house_chest", "civitas_house_wardrobe", "civitas_jewellery_case");
+
     public static final List<Container> CONTAINERS = List.of(
             new Container("ten_coin_chest", "Chest (10 coins)", true, 13, 7.8, 7, List.of(Loot.of("coins", 10, 10, 1)), List.of(),
                     "chest", 0x8A6A3A),
@@ -140,6 +173,22 @@ public final class ThievingData extends SkillingPart {
                     List.of(Loot.of("coins", 100, 500, 50), Loot.of("raw_shark", 1, 3, 15), Loot.of("death_rune", 10, 30, 10),
                             Loot.of("uncut_diamond", 6), Loot.of("uncut_ruby", 8), Loot.of("dragonstone", 1), Loot.of("rune_dagger", 2),
                             Loot.of("adamantite_ore", 1, 4, 8)), "chest", 0x5A4A3A),
+            // Dorgesh-Kaan chests (a lockpick needed): average 52 Thieving, rich 78 (XP, loot and respawn approx.).
+            new Container("dorgesh_kaan_average_chest", "Chest (Dorgesh-Kaan, average)", true, 52, 200.0, 100,
+                    List.of(Loot.of("coins", 50, 250, 1)), List.of(Loot.of("uncut_sapphire", 1, 1, 6), Loot.of("uncut_emerald", 1, 1, 3),
+                    Loot.of("gold_bar", 1, 1, 3), Loot.of("coins", 1, 1, 12)), "chest", 0x6A6A5A),
+            new Container("dorgesh_kaan_rich_chest", "Chest (Dorgesh-Kaan, rich)", true, 78, 650.0, 200,
+                    List.of(Loot.of("coins", 200, 800, 1)), List.of(Loot.of("uncut_ruby", 1, 1, 6), Loot.of("uncut_diamond", 1, 1, 3),
+                    Loot.of("uncut_dragonstone", 1, 1, 1), Loot.of("gold_bar", 1, 3, 4), Loot.of("coins", 1, 1, 10)), "chest", 0x8A7A4A),
+            // Stealing valuables (Civitas illa Fortis houses, 50 Thieving, 45 XP a theft): valuables, now and then a piece
+            // of jewellery (amounts and weights approx.).
+            new Container("civitas_house_chest", "Chest (Civitas house)", true, 50, 45.0, 2, List.of(Loot.of(VALUABLES, 1, 2, 1)),
+                    List.of(Loot.of("coins", 1, 1, 30), Loot.of("gold_ring", 1, 1, 1)), "chest", 0x9A6A3A),
+            new Container("civitas_house_wardrobe", "Wardrobe (Civitas house)", true, 50, 45.0, 2, List.of(Loot.of(VALUABLES, 1, 2, 1)),
+                    List.of(Loot.of("coins", 1, 1, 30), Loot.of("sapphire_ring", 1, 1, 1)), "crate", 0x7A4A2A),
+            new Container("civitas_jewellery_case", "Jewellery case (Civitas house)", true, 50, 45.0, 2,
+                    List.of(Loot.of(VALUABLES, 1, 3, 1)), List.of(Loot.of("coins", 1, 1, 20), Loot.of("emerald_necklace", 1, 1, 1)),
+                    "chest", 0xC0A050),
             new Container("vegetable_stall", "Vegetable stall", false, 2, 10.0, 3, List.of(),
                     List.of(Loot.of("potato", 1), Loot.of("onion", 1), Loot.of("cabbage", 1), Loot.of("tomato", 1), Loot.of("garlic", 1)),
                     "stall", 0x6A9A3A),
@@ -184,6 +233,10 @@ public final class ThievingData extends SkillingPart {
                     .examine("Coins stolen from " + p.npc() + ". Open it to take them out.");
         }
         tool(s, "oak_blackjack", "Oak blackjack", "club", 0x8A6A3A, 72).examine("A cosh for knocking people out.");
+        simple(s, HOUSE_KEY, "House key", "key", 0xC0A050, 0).stack(Integer.MAX_VALUE)
+                .examine("Opens a house in Civitas illa Fortis - when the owner is out.");
+        simple(s, VALUABLES, "Valuables", "gem", 0xE0C060, 100).stack(Integer.MAX_VALUE) // value approx.
+                .examine("Stolen from a house in Civitas illa Fortis.");
         tool(s, "willow_blackjack", "Willow blackjack", "club", 0x9A8A4A, 192).examine("A cosh for knocking people out.");
     }
 
@@ -226,6 +279,9 @@ public final class ThievingData extends SkillingPart {
                         List.of("crossbow_stall", "blast_furnace_stairs")),
                 PlaceDef.of("ape_atoll_stalls", "Ape Atoll market", 2760, 2785, PlaceDef.Style.CAMP,
                         List.of("magic_stall", "scimitar_stall")),
-                PlaceDef.of("lovakengj_ore_stall", "Lovakengj ore stall", 1490, 3770, PlaceDef.Style.TOWN, List.of("ore_stall")));
+                PlaceDef.of("lovakengj_ore_stall", "Lovakengj ore stall", 1490, 3770, PlaceDef.Style.TOWN, List.of("ore_stall")),
+                // The houses burgled in Stealing valuables (Lavinia's, Victor's and Caius'), approx.: one spot just west of the city walls, as the city structure fills the town.
+                PlaceDef.of("civitas_houses", "Civitas houses", 1612, 3112, PlaceDef.Style.TOWN,
+                        List.of("civitas_house_chest", "civitas_house_wardrobe", "civitas_jewellery_case")));
     }
 }

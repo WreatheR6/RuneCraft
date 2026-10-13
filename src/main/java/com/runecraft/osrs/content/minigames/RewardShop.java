@@ -112,6 +112,22 @@ public final class RewardShop {
         return this;
     }
 
+    /** Flat XP: {@code xpEach} experience per currency unit (stored as count = -xpEach * 10). */
+    RewardShop xpFlat(Skill skill, double xpEach, String currency, int amount) {
+        entries.add(new Entry(Reward.XP, skill.name(), -(int) Math.round(xpEach * 10), List.of(new Cost(currency, amount)),
+                skill.displayName() + " XP (" + amount + (amount == 1 ? " ticket)" : " tickets)"), null, 0, null));
+        return this;
+    }
+
+    /** XP an XP entry gives a player of {@code level}: Pest Control's formula, or flat XP per unit for {@link #xpFlat}. */
+    public static double xpFor(Entry e, int level) {
+        int amount = e.costs().get(0).amount();
+        if (e.count() < 0) {
+            return -e.count() / 10.0 * amount;
+        }
+        return MinigameRules.PestControl.xpFor(level, e.count(), amount);
+    }
+
     RewardShop unlock(String flag, String label, List<Cost> costs) {
         entries.add(new Entry(Reward.UNLOCK, flag, 1, List.copyOf(costs), label, null, 0, null));
         return this;

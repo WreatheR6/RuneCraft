@@ -77,6 +77,8 @@ final class DungeonsKandarin {
         for (int x = ox - 112; x <= ox - 12; x += 20) {
             c.set(x, f + 1, oz - 1, mc("chiseled_deepslate")).set(x, f + 1, oz + 1, mc("chiseled_deepslate"));
         }
+        // The 72 Agility tunnel from the entrance to the greater demons at the far end (approx. ends).
+        c.shortcut("stronghold_slayer_tunnel", ox + 6, oz + 6, f, ox - 122, oz + 20, f);
         c.entrance(ox, oz, f, mc("mossy_stone_bricks"), mc("cobblestone"), 's');
         c.camp(ox - 41, oz - 33, ox - 19, oz - 13, f, 4, 25, "aberrant_spectre");
         c.camp(ox - 41, oz + 13, ox - 19, oz + 33, f, 4, 25, "ankou");
@@ -261,6 +263,10 @@ final class DungeonsKandarin {
             c.pillar(p[0] + 8, p[1] + 6, f, 4, mc("mossy_cobblestone"));
             c.camp(p[0] - 11, p[1] - 9, p[0] + 11, p[1] + 9, f, 5, 25, chambers[i]);
         }
+        // The strange floor (81) from the cave crawlers to the pyrefiends and the narrow crevice (62) from the
+        // basilisks to the turoth.
+        c.shortcut("fremennik_slayer_strange_floor", centres[0][0] + 10, centres[0][1] + 8, f, centres[3][0] - 10, centres[3][1] - 8, f);
+        c.shortcut("fremennik_slayer_crevice", centres[4][0] + 10, centres[4][1] + 8, f, centres[6][0] - 10, centres[6][1] - 8, f);
         c.entrance(ox, oz, f, mc("spruce_planks"), mc("cobblestone"), 'n');
         return c.build();
     }

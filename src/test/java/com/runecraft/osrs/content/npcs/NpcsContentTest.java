@@ -246,7 +246,7 @@ class NpcsContentTest {
             }
         }
         for (TownMonsters.Pickpocket p : TownMonsters.pickpockets()) {
-            assertTrue(mine.contains(p.creature()), p.creature());
+            assertTrue(mine.contains(p.creature()) || ContentRegistry.monster(p.creature()) != null, p.creature()); // cave goblins are the dungeons module's
             assertTrue(p.level() >= 1 && p.level() <= 99 && p.xp() > 0 && p.stunDamage() >= 1, p.creature());
             assertTrue(p.low() < p.high(), p.creature());
             assertFalse(p.always().isEmpty() && p.table().isEmpty(), p.creature());

@@ -23,6 +23,26 @@ public final class BlockHooks {
         HANDLERS.put(blockId, handler);
     }
 
+    /**
+     * Handlers used when a block's own handler has nothing to do (e.g. a minigame block clicked by a
+     * player who isn't in that minigame: the Wilderness Agility Course's ticket dispenser).
+     */
+    private static final Map<String, Handler> FALLBACKS = new HashMap<>();
+
+    public static void registerFallback(String blockId, Handler handler) {
+        FALLBACKS.put(blockId, handler);
+    }
+
+    /** Runs the fallback handler of the block, if any; true if there was one. */
+    public static boolean useFallback(ServerPlayerEntity player, String blockId, BlockPos pos, BlockState state) {
+        Handler h = FALLBACKS.get(blockId);
+        if (h == null) {
+            return false;
+        }
+        h.use(player, pos, state);
+        return true;
+    }
+
     public static void use(ServerPlayerEntity player, String blockId, BlockPos pos, BlockState state) {
         Handler h = HANDLERS.get(blockId);
         if (h != null) {

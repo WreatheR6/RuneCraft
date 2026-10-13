@@ -85,6 +85,13 @@ final class DungeonsKaramjaDesert {
             c.set(x, f + 1, oz + 16, mc("fern")).set(x + 3, f + 1, oz + 38, mc("large_fern[half=lower]"));
         }
         c.pool(ox - 16, oz + 80, ox - 8, oz + 90, f, mc("lava"));
+        // Agility shortcuts: stepping stones over the river (12), the pipe from the moss giants to the red
+        // dragons (22), the log balance south-west of the red dragons (30) and the pipe past the vines to the
+        // metal dragons (34).
+        c.shortcut("brimhaven_stepping_stones", ox + 7, oz + 27, f, ox + 27, oz + 27, f);
+        c.shortcut("brimhaven_pipe_moss_giants", ox - 30, oz + 39, f, ox - 20, oz + 52, f);
+        c.shortcut("brimhaven_log_balance", ox + 31, oz + 78, f, ox + 19, oz + 94, f);
+        c.shortcut("brimhaven_pipe_dragons", ox + 58, oz + 12, f, ox + 72, oz + 4, f);
         c.entrance(ox, oz, f, mc("mossy_cobblestone"), mc("moss_block"), 'n');
         c.camp(ox - 38, oz + 16, ox + 2, oz + 38, f, 5, 50, "moss_giant");
         c.camp(ox + 32, oz + 12, ox + 58, oz + 42, f, 5, 25, "wild_dog", "greater_demon");
@@ -184,6 +191,8 @@ final class DungeonsKaramjaDesert {
         c.set(lx + 78, f + 1, lz - 16, mc("bone_block")).set(lx + 79, f + 1, lz - 15, mc("bone_block"));
         // The way up to the Queen's arena (centre 27 blocks east of the lair's place, radius 13).
         c.entrance(lx + 62, lz - 6, f, mc("sandstone"), mc("smooth_sandstone"), 'e');
+        // A rope tied to the rocks drops from the workers' tunnels into the Queen's chamber.
+        c.shortcut("kalphite_lair_rope", lx + 8, lz - 8, f, lx + 62, lz - 28, f);
         c.link(lx, lz, 55, f, "south");
         c.camp(lx - 8, lz - 8, lx + 8, lz + 8, f, 4, 25, "kalphite_worker");
         c.camp(lx + 18, lz + 22, lx + 42, lz + 42, f, 4, 25, "kalphite_soldier", "kalphite_worker");

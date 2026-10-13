@@ -90,7 +90,7 @@ class DungeonsContentTest {
         for (BlockDef b : MODULE.blocks()) {
             assertTrue(b.id().startsWith("dng_"), b.id());
         }
-        assertEquals(36, Dungeons.all().size());
+        assertEquals(38, Dungeons.all().size());
     }
 
     @Test
@@ -242,7 +242,7 @@ class DungeonsContentTest {
     @Test
     void campsAreInsideTheirDungeonsAndReferenceRealMonsters() {
         for (Dungeons.Dungeon d : Dungeons.all()) {
-            assertTrue(!d.camps().isEmpty() || d.id().equals("dng_nothing"), d.id() + " has no monsters");
+            assertTrue(!d.camps().isEmpty() || DungeonsAgility.COURSES.contains(d.id()), d.id() + " has no monsters");
             for (Dungeons.Camp c : d.camps()) {
                 assertTrue(c.feetY() <= Dungeons.DEEP_TOP, d.id() + " camp on the surface " + c);
                 assertTrue(c.cap() > 0 && c.respawnTicks() > 0, c.toString());
@@ -291,6 +291,59 @@ class DungeonsContentTest {
                 }
                 assertTrue(landed, d.id() + " ladder does not land in the dungeon: " + ladder);
             }
+        }
+    }
+
+    /** Every indoor Agility shortcut has its two ends carved into a dungeon (or the Slayer Tower), once. */
+    @Test
+    void agilityShortcutsAreCarved() {
+        Set<String> seen = new HashSet<>();
+        for (Dungeons.Dungeon d : Dungeons.all()) {
+            for (com.runecraft.osrs.content.skilling.AgilityShortcuts.BlockEnds e : d.shortcuts()) {
+                assertTrue(seen.add(e.id()), "shortcut placed twice: " + e.id());
+                assertTrue(e.y1() <= Dungeons.DEEP_TOP && e.y2() <= Dungeons.DEEP_TOP, e.toString());
+                assertTrue(Math.abs(e.x1() - e.x2()) + Math.abs(e.z1() - e.z2()) >= 3, e.id() + " ends too close");
+                int found = 0;
+                for (Op op : d.structure().ops()) {
+                    if ("runecraft:agility_shortcut".equals(op.block()) && op.x1() == op.x2() && op.y1() == op.y2()
+                            && ((op.x1() == e.x1() && op.y1() == e.y1() && op.z1() == e.z1())
+                            || (op.x1() == e.x2() && op.y1() == e.y2() && op.z1() == e.z2()))) {
+                        found++;
+                    }
+                }
+                assertEquals(2, found, e.id() + " blocks");
+            }
+        }
+        for (com.runecraft.osrs.content.skilling.AgilityShortcuts.BlockEnds e
+                : com.runecraft.osrs.content.skilling.AgilityShortcuts.TOWER_ENDS) {
+            assertTrue(seen.add(e.id()), "shortcut placed twice: " + e.id());
+        }
+        for (com.runecraft.osrs.content.skilling.AgilityShortcuts.Shortcut s
+                : com.runecraft.osrs.content.skilling.AgilityShortcuts.INDOOR) {
+            assertTrue(seen.contains(s.id()), s.id() + " is not placed anywhere");
+        }
+        assertEquals(seen.size(), Dungeons.shortcutEnds().size() + com.runecraft.osrs.content.skilling.AgilityShortcuts.TOWER_ENDS.size());
+    }
+
+    /** The two underground courses: every obstacle step is let into the floor of its cavern once, in reach of the entrance. */
+    @Test
+    void undergroundAgilityCourses() {
+        for (com.runecraft.osrs.data.AgilityCourse course : List.of(com.runecraft.osrs.data.AgilityCourse.WEREWOLF,
+                com.runecraft.osrs.data.AgilityCourse.PENGUIN)) {
+            String id = course == com.runecraft.osrs.data.AgilityCourse.WEREWOLF ? "dng_werewolf_agility_course" : "dng_penguin_agility_course";
+            Dungeons.Dungeon d = Dungeons.all().stream().filter(x -> x.id().equals(id)).findFirst().orElseThrow();
+            int[] count = new int[course.obstacles()];
+            for (Op op : d.structure().ops()) {
+                String b = op.block();
+                if (b != null && b.startsWith("runecraft:agility_obstacle[course=" + course.ordinal() + ",")) {
+                    int step = Integer.parseInt(b.substring(b.indexOf("step=") + 5, b.indexOf(']')));
+                    count[step]++;
+                }
+            }
+            for (int i = 0; i < count.length; i++) {
+                assertEquals(1, count[i], course + " step " + i);
+            }
+            assertTrue(course.handBuilt(), course.name());
         }
     }
 
