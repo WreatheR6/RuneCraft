@@ -67,6 +67,7 @@ public final class MinigameItemUse {
                     com.runecraft.content.minigames.games.TempleTrekkingSession.openToken(sp, stack);
                     yield false;
                 }
+                case "ring_of_wealth_scroll", "magic_shortbow_scroll" -> LmsService.useImbueScroll(sp, id);
                 case "bones_to_peaches_tablet" -> {
                     bonesToPeaches(sp);
                     yield false;

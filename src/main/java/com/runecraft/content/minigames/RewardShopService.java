@@ -129,6 +129,12 @@ public final class RewardShopService {
         if (e.reward() == RewardShop.Reward.UNLOCK && MinigameData.of(player).flag(player.getUuid(), e.item())) {
             return "Already unlocked";
         }
+        // Last Man Standing: tradeable rewards need a won game (OSRS Wiki, May 2026).
+        int wins = com.runecraft.osrs.content.minigames.LastManStanding.winsNeeded(e.item());
+        if (wins > 0 && e.costs().stream().anyMatch(c -> c.currency().equals(com.runecraft.osrs.content.minigames.LastManStanding.POINTS))
+                && MinigameData.of(player).stat(player.getUuid(), com.runecraft.osrs.content.minigames.LastManStanding.WINS) < wins) {
+            return "Requires " + wins + " competitive Last Man Standing win" + (wins == 1 ? "" : "s");
+        }
         return extraLock.apply(player, e.item());
     }
 

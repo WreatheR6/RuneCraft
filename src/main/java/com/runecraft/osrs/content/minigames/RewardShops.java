@@ -272,6 +272,9 @@ public final class RewardShops {
         for (Object[] imbue : MinigameRules.Imbues.ITEMS) {
             sw.upgrade((String) imbue[0], (String) imbue[1], ZEAL, (Integer) imbue[3]);
         }
+
+        // Last Man Standing: Justine's stuff for the Last Shopper Standing (points; OSRS Wiki).
+        LastManStanding.shop(shop(LastManStanding.SHOP, "Justine's stuff for the Last Shopper Standing"));
     }
 
     /** Adds the one Penance Queen kill spent on the queen-locked Barbarian Assault rewards. */

@@ -234,10 +234,20 @@ public final class CombatHandler {
     }
 
     /**
+     * PvP rules of a PvP minigame both players are in (Last Man Standing, Castle Wars, the Fight Pit): true or false decides,
+     * null falls back to the Wilderness rule. Set by the minigames module.
+     */
+    public static java.util.function.BiFunction<ServerPlayerEntity, ServerPlayerEntity, Boolean> pvpOverride = (attacker, target) -> null;
+
+    /**
      * PvP is only allowed in the Wilderness, between players whose combat levels differ by no more than the
      * Wilderness level.
      */
     public static boolean canAttackPlayer(ServerPlayerEntity attacker, ServerPlayerEntity target) {
+        Boolean override = pvpOverride.apply(attacker, target);
+        if (override != null) {
+            return override;
+        }
         return com.runecraft.osrs.CombatBonuses.canAttackInWilderness(Players.data(attacker).skills().combatLevel(),
                 Players.data(target).skills().combatLevel(), Gielinor.wildernessLevel(attacker), Gielinor.wildernessLevel(target));
     }

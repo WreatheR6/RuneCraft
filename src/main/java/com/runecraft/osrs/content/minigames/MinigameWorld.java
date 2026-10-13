@@ -34,6 +34,7 @@ public final class MinigameWorld {
         }
         EXTRA_ENTRANCES.put("warriors_guild_cyclops_entrance", Minigame.WARRIORS_GUILD);
         EXTRA_ENTRANCES.put("nightmare_zone_hard_entrance", Minigame.NIGHTMARE_ZONE);
+        EXTRA_ENTRANCES.put(LastManStanding.COMPETITIVE_ENTRANCE, Minigame.LAST_MAN_STANDING);
         for (String entrance : KetRakChallenges.extraEntrances()) {
             EXTRA_ENTRANCES.put(entrance, Minigame.TZHAAR_KET_RAK);
         }
@@ -57,6 +58,11 @@ public final class MinigameWorld {
 
     /** Interactive blocks placed inside the instanced arenas: id, name, colour, look. */
     public static final String[][] ARENA_BLOCKS = {
+            // Last Man Standing (the Deserted Island)
+            {LastManStanding.CHEST, "Chest", "6A4A2A", "chest"},
+            {LastManStanding.CRATE, "Crate", "8A6A3A", "crate"},
+            {LastManStanding.ROWBOAT, "Rowboat", "6A5A3A", "crate"},
+            {LastManStanding.FOG_MARKER, "Fog marker", "E0E060", "portal_glow"},
             // Wintertodt
             {"wintertodt_brazier", "Brazier", "C05020", "fire_brazier"},
             {"bruma_roots", "Bruma roots", "6A5A8A", "roots"},
@@ -280,6 +286,7 @@ public final class MinigameWorld {
                 case TEARS_OF_GUTHIX -> "Chasm of Tears entrance";
                 case SORCERESS_GARDEN -> "Sorceress's house";
                 case TEMPLE_TREKKING -> "Burgh de Rott (Temple Trekking)";
+                case LAST_MAN_STANDING -> "Ferox Enclave (Last Man Standing)";
                 default -> m.displayName();
             };
             list.add(PlaceDef.of(m.place(), name, m.entranceX(), m.entranceY(), m.style(), blocks.get(m.place())));
@@ -298,6 +305,11 @@ public final class MinigameWorld {
         list.add(NpcDef.of("mg_tzhaar_mej_kah", "TzHaar-Mej-Kah", Minigame.FIGHT_PITS.place(), 4, -2, tz, 0x4A1808, 0x3A1008,
                 0xFF9040));
         list.add(NpcDef.of("mg_tzhaar_ket_keh", "TzHaar-Ket-Keh", Minigame.FIGHT_CAVES.place(), 0, -2, tz, 0x3A1008, 0x2A0808, 0xFF6020));
+        // Lisa and Justine in the Last Man Standing lobby (both at 3142, 3635).
+        list.add(NpcDef.of(LastManStanding.LISA, "Lisa", Minigame.LAST_MAN_STANDING.place(), -2, -1, 0xC8A080, 0x8A2A2A, 0x3A2A2A,
+                0x6A3A1A));
+        list.add(NpcDef.of(LastManStanding.JUSTINE, "Justine", Minigame.LAST_MAN_STANDING.place(), -4, -1, 0xC8A080, 0x2A2A3A,
+                0x3A2A2A, 0xC0A040));
         list.add(NpcDef.of("mg_tzhaar_ket_rak", "TzHaar-Ket-Rak", Minigame.TZHAAR_KET_RAK.place(), -4, -2, tz, 0x3A1008, 0x2A0808,
                 0xFFB030));
         int trek = 0;
@@ -420,6 +432,7 @@ public final class MinigameWorld {
                 "carpenters_boots", "plank_sack", "amys_saw", "hosidius_blueprints")));
         pages.add(new CollectionLogData.Page(c, "Fishing Trawler", List.of("angler_hat", "angler_top", "angler_waders", "angler_boots")));
         pages.add(new CollectionLogData.Page(c, "Soul Wars", List.of("soul_cape")));
+        pages.add(new CollectionLogData.Page(c, "Last Man Standing", LastManStanding.collectionLog()));
         pages.add(new CollectionLogData.Page(c, "Temple Trekking", TempleTrekking.LUMBERJACK));
         pages.add(new CollectionLogData.Page(c, "Rogues' Den", List.of("rogue_mask", "rogue_top", "rogue_trousers", "rogue_gloves",
                 "rogue_boots")));

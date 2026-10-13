@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "runecraft:item/victors_cape_1000"
+  }
+}

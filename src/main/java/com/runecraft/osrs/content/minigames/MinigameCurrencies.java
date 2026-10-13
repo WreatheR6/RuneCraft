@@ -22,6 +22,7 @@ public final class MinigameCurrencies {
     public static final String VOLCANIC_MINE = "pts:volcanic_mine";
     public static final String NIGHTMARE_ZONE = "pts:nightmare_zone";
     public static final String ZEAL = "pts:soul_wars";
+    public static final String LMS = LastManStanding.POINTS;
     public static final String TOKKUL = "item:tokkul";
     public static final String PEARLS = "item:abyssal_pearls";
     public static final String CW_TICKETS = "item:castle_wars_ticket";
@@ -53,6 +54,7 @@ public final class MinigameCurrencies {
         NAMES.put(VOLCANIC_MINE, "Volcanic Mine points");
         NAMES.put(NIGHTMARE_ZONE, "Nightmare Zone points");
         NAMES.put(ZEAL, "Zeal Tokens");
+        NAMES.put(LMS, "Last Man Standing points");
         NAMES.put(TOKKUL, "Tokkul");
         NAMES.put(PEARLS, "Abyssal pearls");
         NAMES.put(CW_TICKETS, "Castle wars tickets");
