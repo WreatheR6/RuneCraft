@@ -115,14 +115,20 @@ Recurring conflict spots:
   - Combat Achievements: 216 → 438 tasks tracked via fight `Metrics` and a rule language (`CombatAchievementRules`); "Like a boss", elite superior rate, hilt 2 Barrows, half-price imbues.
   - Models: ~55 creatures off the generic humanoid fallback (tormented demon, gorak, werewolf, minotaur, kalphites, aviansies, animated armour…), `ModelSpec.Variant` look-alikes, painter lighting, previews rendered from above (`docs/previews/models/`).
 
+- **Session 2, round 3: TzHaar challenges and trekking, dungeons, Zeah geography** (towns scope still running when this was written):
+  - TzHaar-Ket-Rak's Challenges (`Minigame.TZHAAR_KET_RAK`, 11 CAs tracked), Fight Pit champion skull (`rc_pit_champion` team), Temple Trekking with followers, routes, events and the wiki reward formula (`Minigame.TEMPLE_TREKKING`).
+  - Waterbirth Island Dungeon (5 sublevels at cache counts, ladder to the Dagannoth Kings), Ape Atoll and Temple of Marimbo dungeons, Shade Catacombs key doors and Urium crypt (shade keys moved to `CommonItems`), Jormungand's Prison dagannoth/basilisk caves.
+  - Zeah and Varlamore coasts, 24 lakes, 67 rivers and new ridges traced from the map; biomes for KOUREND, VARLAMORE, FOSSIL_ISLAND, LITHKREN; 32 Zeah multicombat zones and single-way pockets (Falador castle SW).
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
   - 208 tasks untracked: awakened DT2 bosses, Doom delve levels, Yama contracts, Colosseum waves, Gauntlet prep, raid room/puzzle mechanics, heals/burrows, gear weight or value, movement tiles; missing items (Gauntlet and Hueycoatl armour, ratbane weapons).
   - Rewards not wired (feature missing): cannon capacity, instance fees, ecumenical key rate, DHCB (b)/(t), cosmetic slayer helms, bracelet recharge, extra Jad/Zuk slayer kills.
 - **Minigames:**
-  - Not built: Last Man Standing, Emir's Arena, Temple Trekking, TzHaar-Ket-Rak's Challenges (needs a `Minigame` value and an Inferno-completion gate).
-  - Fight Pit: use the new skull system for the red champion skull; PvP is melee only.
+  - Not built: Last Man Standing, Emir's Arena.
+  - Fight Pit PvP is melee only. Ket-Rak healer counts guessed; JalRek-Jad metamorphosis is only a flag.
+  - Temple Trekking: event weights guessed, safe instead of dangerous, no boat event, tomes give XP directly.
   - Sorceress's Garden: layouts are approximations, elementals see through hedges, Rocky pet never rolled.
   - Shades of Mort'ton: diary bonuses, serums, Dampe coffins, flamtaer bag storage; the dungeons-module Shade Catacombs has no key doors or Urium room.
   - Unfinished features: BA role levels and gambles; NMZ potions and power-ups; Soul Wars spoils.
@@ -137,8 +143,11 @@ Recurring conflict spots:
   - Seed pack contents are partly guessed.
 - **Thieving and Agility:** the Dorgesh-Kaan course is missing; Isle of Souls chests sit on the surface (their real tiles are in the dungeon/tower basement); leaving the Wilderness course doesn't forfeit the fee.
 - **World:**
-  - Kruk's Dungeon is only its core halls. Waterbirth Island Dungeon and Ape Atoll Dungeon missing (their monsters are surface stand-ins).
-  - Zeah/Varlamore coast is a coarse hull; Zeah multicombat zones missing; new regions need biome JSON in `tools/gen_worldgen.py`.
+  - Kruk's Dungeon is only its core halls (the western plane-1 hordes would sit under open sea; needs a placement decision).
+  - Waterbirth: circular doors open, no Kings' sublevel 6, no lighthouse exit; seabed shelf at y 56 over the dungeon. Ape Atoll dungeons are boxes around cache clusters.
+  - New dungeon monsters are not in `MonsterStatsTable`/`MonsterDropsTable`; slayer `zombies` lacks the monkey zombie variants.
+  - Remaining spawn stand-ins: Braindeath, Mudskipper Point, Jatizso ice trolls, Fortis guards.
+  - Zeah multicombat polygons are from 2018; Varlamore has none.
   - Overworld implings don't roam.
 - **Models:** remaining humanoid fallbacks (GWD orks/vampires/knights, Bandos/Sara/Zammy spiritual creatures, bloodveld/pyrefiend GWD variants, seasonal/titan elementals, quest giant lobster). Old single-model previews (`bst_*`, `slm_*`) were rendered from below.
 - **Bosses:**
