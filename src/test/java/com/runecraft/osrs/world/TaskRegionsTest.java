@@ -56,8 +56,18 @@ class TaskRegionsTest {
         assertEquals(Region.TROLL_COUNTRY, GielinorMap.regionAt(2916, 3746));      // God Wars Dungeon
         assertEquals(Region.MORYTANIA, GielinorMap.regionAt(3428, 3537));          // Slayer Tower
         assertEquals(Region.MORYTANIA, GielinorMap.regionAt(3680, 3480));          // Port Phasmatys
-        assertEquals(Region.UNCHARTED_ISLES, GielinorMap.regionAt(1640, 3680));    // Kourend
-        assertEquals(Region.UNCHARTED_ISLES, GielinorMap.regionAt(3740, 3800));    // Fossil Island
+        // Konar's regions off the continent
+        assertEquals(Region.KOUREND, GielinorMap.regionAt(1640, 3680));            // Kourend Castle
+        assertEquals(Region.KOUREND, GielinorMap.regionAt(1311, 3807));            // Mount Karuulm
+        assertEquals(Region.KOUREND, GielinorMap.regionAt(1290, 3610));            // Lizardman Settlement
+        assertEquals(Region.KOUREND, GielinorMap.regionAt(1580, 3480));            // Kourend Woodland
+        assertEquals(Region.VARLAMORE, GielinorMap.regionAt(1680, 3125));          // Civitas illa Fortis
+        assertEquals(Region.VARLAMORE, GielinorMap.regionAt(1450, 3115));          // Ralos' Rise
+        assertEquals(Region.FOSSIL_ISLAND, GielinorMap.regionAt(3740, 3800));      // Fossil Island
+        assertEquals(Region.FOSSIL_ISLAND, GielinorMap.regionAt(3683, 3706));      // the Tar Swamp's south end
+        assertEquals(Region.LITHKREN, GielinorMap.regionAt(3548, 3998));           // Lithkren
+        assertEquals(Region.UNCHARTED_ISLES, GielinorMap.regionAt(2110, 3905));    // Lunar Isle
+        assertEquals(Region.UNCHARTED_ISLES, GielinorMap.regionAt(3712, 2985));    // Mos Le'Harmless
     }
 
     @Test

@@ -144,17 +144,22 @@ public final class IslandsPlaces {
                 // spitting and taloned wyverns).
                 new Camp(MUSHROOM_MEADOW, IslandsStructures.WYVERN_CAMP_DX, IslandsStructures.WYVERN_CAMP_DZ, 16, 4,
                         IslandsStructures.WYVERN_CAVE_FLOOR_Y, List.of("long_tailed_wyvern", "ancient_wyvern")),
-                new Camp(APE_ATOLL, -54, -8, 8, 4, SURFACE, List.of("monkey_guard", "monkey_guard", "monkey_archer")),
+                // Cache spawns: 9 monkey guards at 2788-2805, 2775-2789 (east Marim); monkey archers all over the town.
+                new Camp(APE_ATOLL, 76, -6, 10, 4, SURFACE, List.of("monkey_guard")),
+                new Camp(APE_ATOLL, 0, 14, 10, 3, SURFACE, List.of("monkey_archer")),
                 new Camp(APE_ATOLL_TEMPLE, -8, 0, 8, 3, SURFACE, List.of("monkey_zombie")),
                 new Camp(LUNAR_SUQAH_HILLS, 0, 0, 14, 5, SURFACE, List.of("suqah")),
-                new Camp(NEITIZNOT, 30, -40, 12, 6, SURFACE, List.of("yak")),
+                new Camp(NEITIZNOT, -28, 14, 8, 6, SURFACE, List.of("yak")),       // cache: 6 yaks at 2318-2325, 3789-3797
                 new Camp(JATIZSO, -10, -64, 10, 4, SURFACE, List.of("ice_troll")),
                 new Camp(WATERBIRTH, -40, -10, 14, 6, SURFACE, List.of("dagannoth", "wallasalki", "rock_lobster")),
                 new Camp(MOS_LE_HARMLESS_JUNGLE, 0, 0, 14, 4, SURFACE, List.of("jungle_horror")),
-                new Camp(DRAGONTOOTH_ISLAND, 0, 0, 12, 3, SURFACE, List.of("ghost")),
-                new Camp(CRANDOR, -30, -60, 16, 5, SURFACE, List.of("lesser_demon", "moss_giant", "moss_giant")),
-                new Camp(KHARAZI_JUNGLE, 0, 30, 14, 4, SURFACE, List.of("jogre")),
-                new Camp(FELDIP_HUNTER_AREA, 0, -30, 14, 4, SURFACE, List.of("jogre", "ogre")),
+                // Cache: moss giants at 2827-2834, 3242-3246 and lesser demons at 2832-2837, 3278-3280.
+                new Camp(CRANDOR, -42, -12, 8, 3, SURFACE, List.of("moss_giant")),
+                new Camp(CRANDOR, -30, -82, 6, 2, SURFACE, List.of("lesser_demon")),
+                // Cache spawns: Karamja's jogres roam 2896-2935, 2945-2987 (and 3043-3062) east of the Kharazi Jungle; the
+                // Feldip Hunter area has two ogres at 2551, 2955-2961 and no jogres.
+                new Camp(KHARAZI_JUNGLE, 170, -70, 14, 4, SURFACE, List.of("jogre")),
+                new Camp(FELDIP_HUNTER_AREA, 2, -96, 6, 2, SURFACE, List.of("ogre")),
                 new Camp(CORSAIR_COVE, IslandsStructures.CORSAIR_DUNGEON_DX, IslandsStructures.CORSAIR_DUNGEON_DZ, 12, 5, cave,
                         List.of("ogress_warrior", "ogress_shaman")),
                 new Camp(MUDSKIPPER_POINT, 0, 6, 10, 4, SURFACE, List.of("mudskipper")),

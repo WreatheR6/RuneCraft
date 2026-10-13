@@ -203,12 +203,14 @@ public final class SpawnTable {
         // Slayer Tower: ground floor, first floor, second floor (its basement is a dungeon camp).
         f("crawling_hand", 3416, 3550, SLAYER_TOWER_0, 4, 3);
         f("banshee", 3440, 3550, SLAYER_TOWER_0, 4, 3);
-        f("infernal_mage", 3416, 3550, SLAYER_TOWER_1, 3, 3);
-        f("bloodveld", 3440, 3550, SLAYER_TOWER_1, 4, 3);
+        // Upper floors as in the cache: bloodveld and abyssal demons in the north-west, infernal mages and nechryael in
+        // the north-east, aberrant spectres in the south and gargoyles in the south-east.
+        f("infernal_mage", 3440, 3562, SLAYER_TOWER_1, 3, 3);
+        f("bloodveld", 3416, 3562, SLAYER_TOWER_1, 4, 3);
         f("aberrant_spectre", 3428, 3538, SLAYER_TOWER_1, 3, 3);
-        f("gargoyle", 3416, 3550, SLAYER_TOWER_2, 3, 3);
-        f("nechryael", 3440, 3550, SLAYER_TOWER_2, 3, 3);
-        f("abyssal_demon", 3428, 3538, SLAYER_TOWER_2, 3, 3);
+        f("gargoyle", 3440, 3540, SLAYER_TOWER_2, 3, 3);
+        f("nechryael", 3440, 3562, SLAYER_TOWER_2, 3, 3);
+        f("abyssal_demon", 3416, 3562, SLAYER_TOWER_2, 3, 3);
 
         // ============================================================ Kandarin
         s("minecraft:sheep", 2653, 3367, 8, 10);       // sheep north of East Ardougne (10 in OSRS)
@@ -234,8 +236,12 @@ public final class SpawnTable {
         f("baby_red_dragon", 2743, 3100, BRIMHAVEN_DUNGEON, 3, 4); // Brimhaven Dungeon
 
         // ============================================================ Tirannwn
-        s("elf_warrior", 2195, 3255, 4, 8);            // near the elf camp
-        s("elf_warrior", 2240, 3176, 3, 8);            // Isafdar forest
+        // The Iorwerth camp north of the Arandar pass (cache: 7 Iorwerth warriors, level 108 like the elf warrior, and 6
+        // archers at 2188-2210, 3239-3261). Isafdar's forest has no elf spawns in OSRS.
+        s("elf_warrior", 2199, 3251, 7, 12);
+        // Prifddinas (its OSRS coordinates, which count as Tirannwn): the farm animals of the cache.
+        s("minecraft:chicken", 3304, 6106, 4, 4);
+        s("minecraft:cow", 3216, 6166, 6, 4);
 
         // ============================================================ islands, Zeah
         // Catacombs of Kourend (the zeah module's crypt beneath the castle)
@@ -271,8 +277,10 @@ public final class SpawnTable {
         s("ninja_impling", 3380, 3000, 1, 24, IMPLING);
         s("dragon_impling", 3140, 3790, 1, 24, IMPLING * 6);
         s("lucky_impling", 2320, 3250, 1, 24, IMPLING * 6);
-        // OSRS: Prifddinas only; its instance lies outside the spawn table's bounds, so they roam Isafdar by its gates (approx).
-        s("crystal_impling", 2250, 3260, 1, 24, IMPLING * 3);
+        // Crystal implings only appear in Prifddinas, at 12 fixed spots (wiki map: west 3210-3240, 6046-6129 and east
+        // 3290-3308, 6041-6117), one per world every 30 minutes.
+        s("crystal_impling", 3226, 6088, 1, 32, IMPLING * 3);
+        s("crystal_impling", 3299, 6080, 1, 32, IMPLING * 3);
 
         // ============================================================ Slayer task creatures (slayer module extras)
         s("crocodile", 3351, 2927, 6, 10);             // the oasis south of Pollnivneach (7 in OSRS)

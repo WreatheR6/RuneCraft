@@ -90,18 +90,18 @@ final class Dragons {
                         .attack(magic(20, "minecraft:enchanted_hit")).attack(dragonfire(50, 3)).defenceBonus(130, 130, 130, 60, 130)
                         .drops(common(null, Drop.of("blue_dragonhide", 2, 2, 1), Drop.of("rune_platelegs", 1, 1, 128),
                                 Drop.of("death_rune", 15, 30, 8), Drop.herbs(12), Drop.gems(16), clue("hard", 100))),
-                        "blue_dragons", "brutal_blue_dragon", 1.4f).spawn(Region.UNCHARTED_ISLES, 1, 1, 1).underground(),
+                        "blue_dragons", "brutal_blue_dragon", 1.4f).spawn(Region.KOUREND, 1, 1, 1).underground(),
                 dragon(m("brutal_red_dragon", "Brutal red dragon", 289, 285, 268, 268, 238, 168, 1).speed(4).attack(slash(24))
                         .attack(magic(22, "minecraft:flame")).attack(dragonfire(50, 3)).defenceBonus(140, 140, 140, 70, 140)
                         .drops(common(null, Drop.of("red_dragonhide", 2, 2, 1), Drop.of("rune_platebody", 1, 1, 256),
                                 Drop.of("blood_rune", 15, 30, 8), Drop.herbs(12), Drop.gems(16), clue("hard", 100))),
-                        "red_dragons", "brutal_red_dragon", 1.45f).spawn(Region.UNCHARTED_ISLES, 1, 1, 1).underground(),
+                        "red_dragons", "brutal_red_dragon", 1.45f).spawn(Region.KOUREND, 1, 1, 1).underground(),
                 dragon(m("brutal_black_dragon", "Brutal black dragon", 318, 315, 268, 268, 238, 168, 1).speed(4).attack(slash(28))
                         .attack(magic(25, "minecraft:smoke")).attack(dragonfire(50, 3)).defenceBonus(150, 150, 150, 80, 150)
                         .drops(common(null, Drop.of("black_dragonhide", 2, 2, 1), Drop.of("rune_platebody", 1, 1, 128),
                                 Drop.of("dragon_platelegs", 1, 1, 512), Drop.of("blood_rune", 20, 40, 8), Drop.herbs(12), Drop.gems(16),
                                 clue("elite", 500))), "black_dragons", "brutal_black_dragon", 1.5f)
-                        .spawn(Region.UNCHARTED_ISLES, 1, 1, 1).underground(),
+                        .spawn(Region.KOUREND, 1, 1, 1).underground(),
 
                 // --- Lava dragons ---
                 m("lava_dragon", "Lava dragon", 252, 230, 240, 240, 220, 220, 1).speed(4).attack(slash(20))
@@ -141,7 +141,7 @@ final class Dragons {
                         .drops(common(null, Drop.of("adamantite_bar", 2, 2, 1), Drop.of("dragon_limbs", 1, 1, 1000),
                                 Drop.of("dragon_metal_slice", 1, 1, 1000), Drop.of("wrath_rune", 10, 25, 8), Drop.of("rune_platelegs", 1, 1, 64),
                                 Drop.herbs(10), Drop.gems(16), clue("elite", 256))), "metal_dragons", "adamant_dragon", 1.6f)
-                        .spawn(Region.UNCHARTED_ISLES, 1, 1, 1).underground(),
+                        .spawn(Region.LITHKREN, 1, 1, 1).underground(),
                 dragon(m("rune_dragon", "Rune dragon", 380, 330, 255, 255, 290, 230, 230).speed(4).attack(slash(38))
                         .attack(AttackDef.of("lightning", AttackType.MAGIC, 30, 10, 3).particle("minecraft:electric_spark")
                                 .message("The rune dragon fires a bolt of lightning."))
@@ -149,6 +149,6 @@ final class Dragons {
                         .drops(common(null, Drop.of("runite_bar", 2, 2, 1), Drop.of("dragon_limbs", 1, 1, 800),
                                 Drop.of("dragon_metal_lump", 1, 1, 5000), Drop.of("wrath_rune", 20, 40, 8), Drop.of("rune_platebody", 1, 1, 64),
                                 Drop.herbs(10), Drop.gems(16), clue("elite", 200))), "metal_dragons", "rune_dragon", 1.7f)
-                        .spawn(Region.UNCHARTED_ISLES, 1, 1, 1).underground());
+                        .spawn(Region.LITHKREN, 1, 1, 1).underground());
     }
 }

@@ -66,9 +66,25 @@ public final class GielinorMap {
      *       Waterbirth Island and the Island of Stone; Troll Country: Death Plateau, Trollheim and
      *       Trollweiss.</li>
      * </ul>
-     * Places off these coasts (Zeah, Fossil Island, Lithkren, Mos Le'Harmless...) are the Uncharted Isles.
+     * Off the continent, Konar's own regions: Great Kourend and Kebos (Zeah north of the Kourend Woodland's
+     * southern edge, y 3392 east of x 1408 and y 3456 west of it, as the game's league regions split it), Varlamore
+     * south of that, Fossil Island and Lithkren. Other places off these coasts (Mos Le'Harmless, Lunar Isle,
+     * Ape Atoll, the Sailing islands...) are the Uncharted Isles.
      */
     public static Region regionAt(double x, double y) {
+        if (x >= 1050 && x < 2000 && y >= 2840 && y < 4120) {
+            return y >= (x < 1408 ? 3456 : 3392) ? Region.KOUREND : Region.VARLAMORE;
+        }
+        if (in(x, y, 3600, 3900, 3680, 3940)) {
+            return Region.FOSSIL_ISLAND;
+        }
+        if (in(x, y, 3480, 3620, 3940, 4060)) {
+            return Region.LITHKREN;
+        }
+        // Prifddinas lies at its OSRS map coordinates far north of the map; it is Tirannwn's crystal city.
+        if (in(x, y, 3160, 3360, 5990, 6220)) {
+            return Region.TIRANNWN;
+        }
         if (in(x, y, 2944, 3392, WILDERNESS_DITCH, 3968)) {
             return Region.WILDERNESS;
         }

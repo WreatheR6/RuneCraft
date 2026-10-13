@@ -675,7 +675,7 @@ public final class FarmingData extends SkillingPart {
                         List.of("birdhouse_space", "birdhouse_space")),
                 PlaceDef.of("fossil_island_meadow", "Fossil Island meadow bird houses", 3677, 3882, PlaceDef.Style.CAMP,
                         List.of("birdhouse_space", "birdhouse_space")),
-                PlaceDef.of("underwater_seaweed", "Seaweed patches", 3740, 3900, PlaceDef.Style.CAMP,
+                PlaceDef.of("underwater_seaweed", "Seaweed patches", 3731, 3894, PlaceDef.Style.CAMP,
                         List.of("seaweed_patch", "seaweed_patch")),
                 PlaceDef.of("canifis_mushroom", "Canifis mushroom patch", 3451, 3473, PlaceDef.Style.CAMP, List.of("mushroom_patch")),
                 PlaceDef.of("draynor_belladonna", "Draynor Manor belladonna patch", 3087, 3355, PlaceDef.Style.CAMP,

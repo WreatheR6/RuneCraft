@@ -207,11 +207,17 @@ class HunterFollowupsTest {
         assertEquals(5000, t.rareOneIn());
         assertEquals("monkey_madness_ii", HunterData.MANIACAL_MONKEY_QUEST);
         assertNotNull(ContentRegistry.quest(HunterData.MANIACAL_MONKEY_QUEST));
-        boolean placed = false;
+        // Not on the surface: the boulders stand in Glough's laboratory in Kruk's Dungeon (dungeons module).
         for (PlaceDef p : new HunterData().places()) {
-            placed |= p.blocks().contains(HunterData.MANIACAL_MONKEY_BOULDER);
+            assertFalse(p.blocks().contains(HunterData.MANIACAL_MONKEY_BOULDER), p.id());
         }
-        assertTrue(placed);
+        boolean placed = false;
+        for (com.runecraft.osrs.world.StructureDef s : ContentRegistry.structures()) {
+            for (com.runecraft.osrs.world.StructureDef.Op op : s.ops()) {
+                placed |= ("runecraft:" + HunterData.MANIACAL_MONKEY_BOULDER).equals(op.block()) && op.y2() < 56;
+            }
+        }
+        assertTrue(placed, "boulders in Kruk's Dungeon");
         Recipe sinew = Recipes.get("cut_monkey_tail_sinew");
         assertEquals(10, sinew.level());
         assertEquals("knife", sinew.requiredTool());

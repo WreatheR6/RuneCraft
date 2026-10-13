@@ -164,6 +164,21 @@ public final class TownMonsters {
                 .drops(Drop.always("bones"), Drop.of("coins", 5, 40, 3), Drop.of("iron_arrow", 2, 8, 12), Drop.herbs(30))
                 .skin(0xC09070, 0x8A8A9A, 0x6A4A2A, 0x6A6A7A).size(0.5f, 1.1f, 0.85f));
 
+        // ------------------------------------------------------------- Prifddinas
+        // The elven city guards (wiki "Guard (Prifddinas)": level 108, not aggressive, respawn 30 ticks, task: elves).
+        // Their 128-slot table is rolled as independent 1/x chances; crystal teleport seeds and teleport crystals
+        // aren't in RuneCraft.
+        add(MonsterDef.of("prifddinas_guard", "Guard").level(108).stats(105, 95, 95, 80, 1, 1).speed(4)
+                .defenceBonus(50, 70, 70, 60, 50).attack(AttackDef.of("melee", AttackType.STAB, 10, 2.5, 10)).passive()
+                .drops(Drop.always("bones"), Drop.of("green_dhide_chaps", 1, 1, 43), Drop.of("green_dhide_body", 1, 1, 32),
+                        Drop.of("mithril_spear", 1, 1, 64), Drop.of("mithril_kiteshield", 1, 1, 128),
+                        Drop.of("adamant_full_helm", 1, 1, 128), Drop.of("rune_dagger", 1, 1, 128), Drop.of("water_rune", 70, 70, 16),
+                        Drop.of("nature_rune", 12, 12, 26), Drop.of("law_rune", 2, 2, 43), Drop.of("fire_rune", 37, 37, 64),
+                        Drop.of("coins", 20, 20, 26), Drop.of("coins", 44, 44, 4), Drop.of("coins", 180, 180, 13),
+                        Drop.of("bass", 1, 1, 43), Drop.of("shark", 1, 1, 43), Drop.of("adamantite_ore", 1, 1, 64),
+                        Drop.of("crystal_shard", 3, 5, 24), Drop.of("ensouled_elf_head", 1, 1, 50), Drop.of("clue_scroll_hard", 1, 1, 128))
+                .slayer(1, "elves").skin(0xE8D8C0, 0xB8D8E8, 0x6A8AA0, 0xE0F0FF).size(0.6f, 2.0f, 1.0f));
+
         // ------------------------------------------------------------- Desert, Karamja
         add(MonsterDef.of("desert_bandit", "Bandit").level(57).stats(64, 45, 45, 45, 1, 1).speed(4) // approx. stats
                 .defenceBonus(15, 15, 15, 0, 15).attack(AttackDef.of("melee", AttackType.SLASH, 6, 2.5, 10))
@@ -248,35 +263,33 @@ public final class TownMonsters {
         // ------------------------------------------------------------- where they live (OSRS tiles)
         // Built-in creatures: man, guard, al_kharid_warrior, barbarian, dark_wizard.
         spawn("man", 3222, 3218, 2, 8);         // Lumbridge
-        spawn("woman", 3225, 3240, 2, 8);
-        spawn("man", 3213, 3428, 3, 10);        // Varrock square
-        spawn("woman", 3220, 3420, 2, 10);
+        spawn("woman", 3229, 3208, 2, 8);       // south of the castle (cache: 3211-3244, 3203-3213)
+        spawn("man", 3230, 3400, 3, 10);        // Varrock, south of the square (cache: 3194-3238, 3395-3406)
+        spawn("woman", 3218, 3396, 1, 6);
         spawn("guard", 3212, 3462, 3, 8);       // Varrock Palace
         spawn("guard", 3176, 3428, 2, 6);       // Varrock west gate
         spawn("guard", 3270, 3428, 2, 6);       // Varrock east gate
-        spawn("mugger", 3268, 3404, 1, 6);
+        spawn("mugger", 3249, 3391, 1, 6);
         spawn("man", 3093, 3500, 2, 8);         // Edgeville
         spawn("monk", 3052, 3490, 3, 6);        // Edgeville Monastery
         spawn("man", 3093, 3250, 2, 8);         // Draynor Village
         spawn("woman", 3086, 3256, 1, 6);
         spawn("farmer", 3189, 3277, 2, 8);      // Fred's farm, Lumbridge
-        spawn("farmer", 3053, 3307, 2, 8);      // Draynor/Falador farms
+        spawn("farmer", 3175, 3330, 2, 12);     // the farms north of Lumbridge (cache: 3162-3192, 3324-3338)
         spawn("dark_wizard", 3227, 3369, 4, 6); // Stone circle south of Varrock
         spawn("barbarian", 3082, 3420, 5, 8);   // Barbarian Village
         spawn("al_kharid_warrior", 3293, 3172, 5, 6); // Al Kharid palace
         spawn("man", 3293, 3185, 2, 8);         // Al Kharid
-        spawn("man", 2965, 3380, 2, 10);        // Falador
-        spawn("woman", 2960, 3390, 2, 10);
         spawn("guard", 2965, 3392, 3, 10);
         spawn("white_knight", 2965, 3345, 4, 8); // White Knights' Castle
         spawn("dwarf", 3018, 3450, 3, 8);       // Ice Mountain / Dwarven Mine entrance
         spawn("highwayman", 2995, 3290, 2, 8);  // south of Falador
-        spawn("man", 2662, 3305, 3, 10);        // East Ardougne market
-        spawn("woman", 2655, 3310, 2, 10);
+        spawn("man", 2618, 3294, 1, 4);         // East Ardougne (the cache has one man and one woman)
+        spawn("woman", 2612, 3316, 1, 4);
         spawn("guard", 2650, 3305, 2, 10);
         spawn("ardougne_knight", 2662, 3302, 3, 10);
         spawn("paladin", 2588, 3297, 3, 6);     // Ardougne Castle
-        spawn("hero", 2580, 3300, 2, 6);
+        spawn("hero", 2648, 3302, 3, 16);       // East Ardougne market (cache: 2630-2667, 3288-3316)
         spawn("farmer", 2633, 3364, 2, 8);      // Ardougne farms
         spawn("gnome", 2461, 3444, 4, 10);      // Tree Gnome Stronghold
         spawn("gnome", 2465, 3495, 3, 8);
@@ -287,5 +300,14 @@ public final class TownMonsters {
         spawn("tzhaar_ket", 2836, 3176, 2, 8);
         spawn("tzhaar_xil", 2826, 3166, 2, 8);
         spawn("tzhaar_mej", 2838, 3164, 2, 8);
+        // Prifddinas guards at their cache tiles (plane 0); the south gate's pair stands in this city's south gate,
+        // 14 tiles north of the real one (approx).
+        spawn("prifddinas_guard", 3264, 6040, 2, 2);
+        spawn("prifddinas_guard", 3264, 6066, 1, 3);
+        spawn("prifddinas_guard", 3318, 6080, 2, 3);
+        spawn("prifddinas_guard", 3210, 6080, 2, 3);
+        spawn("prifddinas_guard", 3248, 6082, 1, 3);
+        spawn("prifddinas_guard", 3275, 6094, 5, 8);
+        spawn("prifddinas_guard", 3264, 6133, 2, 3);
     }
 }

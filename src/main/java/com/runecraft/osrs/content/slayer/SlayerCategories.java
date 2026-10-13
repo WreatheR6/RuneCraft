@@ -92,20 +92,20 @@ public final class SlayerCategories {
         add("mutated_zygomites", "mutated zygomites", 57, Region.LUMBRIDGE_SWAMP);
         add("cave_horrors", "cave horrors", 58, Region.MORYTANIA);
         add("aberrant_spectres", "aberrant spectres", 60, Region.MORYTANIA, Region.KANDARIN);
-        add("wyrms", "wyrms", 62, Region.UNCHARTED_ISLES);
+        add("wyrms", "wyrms", 62, Region.KOUREND);
         add("spiritual_creatures", "spiritual creatures", 63, Region.TROLL_COUNTRY);
         add("dust_devils", "dust devils", 65, Region.KHARIDIAN_DESERT);
-        add("fossil_island_wyverns", "fossil island wyverns", 66, Region.UNCHARTED_ISLES);
+        add("fossil_island_wyverns", "fossil island wyverns", 66, Region.FOSSIL_ISLAND);
         add("kurask", "kurask", 70, Region.FREMENNIK_PROVINCE, Region.TIRANNWN);
         add("skeletal_wyverns", "skeletal wyverns", 72, Region.ASGARNIA);
         add("gargoyles", "gargoyles", 75, Region.MORYTANIA);
         add("nechryael", "nechryael", 80, Region.MORYTANIA);
-        add("drakes", "drakes", 84, Region.UNCHARTED_ISLES);
+        add("drakes", "drakes", 84, Region.KOUREND);
         add("abyssal_demons", "abyssal demons", 85, Region.MORYTANIA, Region.WILDERNESS);
         add("cave_kraken", "cave kraken", 87, Region.KANDARIN);
         add("dark_beasts", "dark beasts", 90, Region.KANDARIN);
         add("smoke_devils", "smoke devils", 93, Region.KANDARIN);
-        add("hydras", "hydras", 95, Region.UNCHARTED_ISLES);
+        add("hydras", "hydras", 95, Region.KOUREND);
         // Unrestricted creatures (Slayer level 1) from this module
         add("ankou", "ankou", 1, Region.WILDERNESS, Region.MISTHALIN);
         add("hellhounds", "hellhounds", 1, Region.ASGARNIA, Region.WILDERNESS);
@@ -116,7 +116,7 @@ public final class SlayerCategories {
         add("cyclopes", "cyclopes", 1, Region.ASGARNIA);
         add("dagannoth", "dagannoth", 1, Region.FREMENNIK_PROVINCE);
         add("elves", "elves", 1, Region.TIRANNWN);
-        add("lizardmen", "lizardmen", 1, Region.UNCHARTED_ISLES);
+        add("lizardmen", "lizardmen", 1, Region.KOUREND);
         add("waterfiends", "waterfiends", 1, Region.KANDARIN);
         add("earth_warriors", "earth warriors", 1, Region.WILDERNESS);
         add("ice_warriors", "ice warriors", 1, Region.ASGARNIA, Region.WILDERNESS);
@@ -127,7 +127,7 @@ public final class SlayerCategories {
         add("black_dragons", "black dragons", 1, Region.ASGARNIA, Region.WILDERNESS);
         add("lava_dragons", "lava dragons", 1, Region.WILDERNESS);
         // Bronze, iron, steel, mithril, adamant and rune dragons are one task since August 2025.
-        add("metal_dragons", "metal dragons", 1, Region.KARAMJA, Region.KANDARIN, Region.UNCHARTED_ISLES);
+        add("metal_dragons", "metal dragons", 1, Region.KARAMJA, Region.KANDARIN, Region.LITHKREN);
         add("frost_dragons", "frost dragons", 1, Region.UNCHARTED_ISLES);
         // Provided by other modules (God Wars, TzHaar, Revenants...). Only assigned once such a creature exists.
         add("aviansies", "aviansies", 1, Region.TROLL_COUNTRY);
@@ -152,9 +152,9 @@ public final class SlayerCategories {
         // Newer OSRS tasks (wiki master tables). Assigned once one of their creatures exists in RuneCraft.
         add("crabs", "crabs", 1, Region.FREMENNIK_PROVINCE, Region.UNCHARTED_ISLES);
         add("werewolves", "werewolves", 1, Region.MORYTANIA);
-        add("gryphons", "gryphons", 51, Region.UNCHARTED_ISLES);
-        add("custodian_stalkers", "custodian stalkers", 54, Region.UNCHARTED_ISLES);
-        add("lesser_nagua", "lesser nagua", 48, Region.UNCHARTED_ISLES);
+        add("gryphons", "gryphons", 51, Region.VARLAMORE);
+        add("custodian_stalkers", "custodian stalkers", 54, Region.VARLAMORE);
+        add("lesser_nagua", "lesser nagua", 48, Region.VARLAMORE);
         add("warped_creatures", "warped creatures", 56, Region.KANDARIN);
         add("araxytes", "araxytes", 92, Region.MORYTANIA);
         add("aquanites", "aquanites", 78, Region.UNCHARTED_ISLES);

@@ -462,7 +462,7 @@ public final class Elevation {
             case TROLL_COUNTRY -> 26;
             case KARAMJA -> 14;
             case TIRANNWN -> 14;
-            case UNCHARTED_ISLES -> 13;
+            case UNCHARTED_ISLES, KOUREND, VARLAMORE, FOSSIL_ISLAND, LITHKREN -> 13;
         };
     }
 

@@ -95,25 +95,50 @@ public final class GielinorGeography {
             1182, 3330, 1172, 3420, 1172, 3500, 1205, 3560, 1180, 3640, 1170, 3720, 1160, 3800
     });
 
+    /**
+     * Traced from the OSRS world map (mejrs/layers_osrs map squares): the Tar Swamp reaching south to the
+     * Deranged archaeologist (3683, 3706), the channel between the swamp and the Verdant Valley, the bay below the
+     * Museum Camp, Mushroom Meadow and the north coast, the bay west of the House on the Hill, and the volcano.
+     */
     public static final Polygon FOSSIL_ISLAND = new Polygon("Fossil Island", new double[]{
-            3650, 3735, 3700, 3722, 3790, 3726, 3842, 3765, 3852, 3830, 3832, 3898, 3770, 3910, 3700, 3900,
-            3648, 3884, 3636, 3800
+            // west coast of the Tar Swamp, then Mushroom Meadow and the north coast
+            3636, 3800, 3640, 3817, 3650, 3828, 3656, 3840, 3655, 3870, 3655, 3883, 3667, 3893, 3680, 3898,
+            3700, 3901, 3717, 3901, 3730, 3898, 3737, 3892,
+            // the bay between Mushroom Meadow and the House on the Hill
+            3731, 3877, 3730, 3860, 3735, 3848, 3746, 3851, 3743, 3873, 3750, 3885, 3765, 3890, 3780, 3884,
+            3792, 3877, 3788, 3868, 3777, 3861, 3772, 3848, 3776, 3840,
+            // the volcano's north and east coast, the south coast and the sandbar below the Verdant Valley
+            3787, 3836, 3800, 3838, 3820, 3834, 3833, 3823, 3841, 3807, 3841, 3783, 3840, 3763, 3827, 3753,
+            3807, 3740, 3787, 3727, 3767, 3727, 3753, 3727, 3745, 3711, 3733, 3737, 3727, 3753, 3725, 3773,
+            // the channel west of the Verdant Valley up to the Museum Camp's bay, then down the Tar Swamp's east side
+            3730, 3793, 3724, 3804, 3713, 3806, 3709, 3798, 3707, 3780, 3710, 3767, 3710, 3753, 3707, 3723,
+            3700, 3707, 3688, 3696, 3673, 3697, 3660, 3707, 3656, 3723, 3647, 3740, 3640, 3767
     });
 
-    public static final List<Polygon> POLYGONS = List.of(MAINLAND, KARAMJA, ZEAH, FOSSIL_ISLAND);
+    /**
+     * Traced from the OSRS world map: Marim along the north coast, the lagoon opening to the east below it, and the
+     * jungle reaching south to y 2683 (the Arceuus Ape Atoll Teleport lands at 2770, 2703).
+     */
+    public static final Polygon APE_ATOLL = new Polygon("Ape Atoll", new double[]{
+            2695, 2800, 2712, 2805, 2737, 2812, 2770, 2815, 2795, 2812, 2814, 2807, 2815, 2792, 2814, 2767,
+            2808, 2752, 2810, 2745, 2795, 2745, 2775, 2744, 2770, 2735, 2780, 2728, 2800, 2726, 2810, 2730,
+            2813, 2720, 2812, 2700, 2808, 2690, 2790, 2683, 2760, 2683, 2740, 2685, 2712, 2690, 2695, 2710,
+            2690, 2732, 2691, 2750, 2694, 2775
+    });
+
+    public static final List<Polygon> POLYGONS = List.of(MAINLAND, KARAMJA, ZEAH, FOSSIL_ISLAND, APE_ATOLL);
 
     public static final List<Ellipse> ISLANDS = List.of(
             new Ellipse("Tutorial Island", 3104, 3102, 46, 34),
             new Ellipse("Crandor", 2836, 3262, 24, 38),
             new Ellipse("Entrana", 2836, 3340, 38, 30),
             new Ellipse("Cairn Isle", 2763, 2976, 15, 14),
-            new Ellipse("Ape Atoll", 2755, 2768, 58, 55),
             new Ellipse("Void Knights' Outpost", 2655, 2658, 42, 40),
             new Ellipse("Isle of Souls", 2210, 2900, 70, 60), // approx
             new Ellipse("Harmony Island", 3795, 2861, 30, 30),
             new Ellipse("Mos Le'Harmless", 3712, 2985, 66, 62),
             new Ellipse("Dragontooth Island", 3808, 3555, 26, 26),
-            new Ellipse("Lithkren", 3548, 3998, 32, 30),
+            new Ellipse("Lithkren", 3563, 3995, 36, 30), // OSRS map: 3537-3600, 3965-4025
             new Ellipse("Miscellania", 2534, 3868, 54, 32),
             new Ellipse("Etceteria", 2618, 3880, 24, 24),
             new Ellipse("Waterbirth Island", 2530, 3748, 26, 32),
