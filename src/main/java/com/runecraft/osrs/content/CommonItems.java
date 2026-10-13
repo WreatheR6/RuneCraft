@@ -46,6 +46,16 @@ public final class CommonItems {
                 .examine("Combine with a necklace of anguish to make a necklace of rupture (84 Crafting).");
         items.add("tormented_synapse", "Tormented synapse", Kind.SIMPLE, "orb", 0xE05020).value(800_000).stack(1)
                 .examine("A twitching synapse from a tormented demon. Its fiery energy could empower a demonbane weapon.");
+        // Ballista parts (Monkey Madness II): demonic and tortured gorilla drops in OSRS; assembled by the skilling module
+        // into the ballistae of CommonEquipment.
+        items.add("ballista_limbs", "Ballista limbs", Kind.SIMPLE, "limbs", 0x6A5A4A).value(50000).stack(1)
+                .examine("Sturdy struts.");
+        items.add("ballista_spring", "Ballista spring", Kind.SIMPLE, "core", 0x8A8A9A).value(50000).stack(1)
+                .examine("A spring-loaded mechanism.");
+        items.add("light_frame", "Light frame", Kind.SIMPLE, "stock", 0x9A7A4A).value(50000).stack(1)
+                .examine("A light wooden frame.");
+        items.add("heavy_frame", "Heavy frame", Kind.SIMPLE, "stock", 0x5A4A3A).value(50000).stack(1)
+                .examine("A heavy wooden frame.");
         CommonEquipment.add(items);
     }
 }

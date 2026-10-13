@@ -403,10 +403,14 @@ public final class EquipmentBonuses {
         ammo("iron_javelin", 42);
         ammo("steel_javelin", 64);
         ammo("mithril_javelin", 85);
-        ammo("adamant_javelin", 107);
+        ammo("adamant_javelin", 102);
         ammo("rune_javelin", 124);
         ammo("amethyst_javelin", 135);
         ammo("dragon_javelin", 150);
+        ammo("dragon_knife", 30);
+        ammo("dragon_thrownaxe", 47);
+        twoH("light_ballista", 7, 0, 0, 0, 0, 110,  0, 0, 0, 0, 0,  0, 0, 0, 0);
+        twoH("heavy_ballista", 7, 0, 0, 0, 0, 125,  0, 0, 0, 0, 0,  0, 15, 0, 0);
         ammo("amethyst_broad_bolts", 115);
         ammo("kebbit_bolts", 28);
         ammo("long_kebbit_bolts", 38);

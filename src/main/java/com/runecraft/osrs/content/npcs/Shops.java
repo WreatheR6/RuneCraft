@@ -419,6 +419,10 @@ public final class Shops {
                 .sell("butterfly_net", 5).sell("butterfly_jar", 100).sell("noose_wand", 50).sell("bird_snare", 50)
                 .sell("box_trap", 25).sell("teasing_stick", 5).sell("rabbit_snare", 10).sell("magic_box", 20)
                 .greeting("Welcome to my Hunter Emporium. Can I interest you in some hunting gear?"));
+        // OSRS Wiki: Magic Guild Store (Mystic Robes), first floor of the Wizards' Guild (66 Magic to enter). Blue mystic robes.
+        add(specialist("magic_guild_store_mystic", "Magic Guild Store", "npc_wizard_sinina").prices(1000, 600, 1)
+                .sell("mystic_hat", 1000).sell("mystic_robe_top", 1000).sell("mystic_robe_bottom", 1000).sell("mystic_gloves", 1000)
+                .sell("mystic_boots", 1000).greeting("Welcome to the Magic Guild Store. Can I interest you in some fine mystic robes?"));
         // OSRS Wiki: Gulluck and Sons (not in RuneCraft: Pearl bolts, Crossbow)
         add(specialist("gulluck_and_sons", "Gulluck and Sons", "npc_gulluck").prices(1000, 250, 10).sell("bronze_arrow", 200)
                 .sell("bronze_bolts", 150).sell("shortbow", 4).sell("longbow", 2).sell("bronze_arrowtips", 200)

@@ -168,10 +168,7 @@ final class FremennikQuests {
         b.npc("gunnjorn", "Gunnjorn", "barbarian_outpost", 0, 0, 0xE0B898, 0x6A2A1A, 0x3A2A1A, 0xC06A2A);
         b.npc("jossik", "Jossik", "lighthouse", -2, 3, 0xE8C0A6, 0x2A5A6A, 0x2A2A3A, 0xA0A0A0);
         b.item("lighthouse_key", "Lighthouse key", "key", 0x8A8A9A, "The key to the lighthouse.");
-        b.items(s -> s.add("damaged_holy_book", "Damaged book (Saradomin)", Kind.SHIELD, "book", 0xE0E0F0).value(1).stack(1)
-                .equipment(new EquipmentDef(EquipmentDef.Slot.SHIELD, new EquipmentStats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-                        Map.of(), 0, AttackType.CRUSH, EquipmentDef.WeaponClass.NONE))
-                .examine("The damaged holy book of Saradomin. Missing pages can be found on clue scrolls."));
+        // The damaged god books (damaged_holy_book and the others) are defined in osrs/content/CommonEquipment.
         b.boss(BossDef.of("dagannoth_mother", "Dagannoth Mother").level(100).stats(120, 100, 100, 100, 1, 1).speed(4)
                 .defenceBonus(50, 50, 50, 0, 50)
                 .attack(AttackDef.of("bite", AttackType.STAB, 15, 2.5, 8))
@@ -201,5 +198,11 @@ final class FremennikQuests {
                 .stage("I should tell Larrissa that Jossik is safe.")
                 .talk("larrissa").say("Jossik! You saved him! Thank you so much.")
                 .done("jossik", "Bring me missing pages and I'll help you restore those books.");
+        // Jossik's "salvaged prayer books": the other gods' damaged books unlock for 5,000 coins each (OSRS Wiki).
+        for (String[] book : new String[][]{{"damaged_unholy_book", "Zamorak"}, {"damaged_book_of_balance", "Guthix"},
+                {"damaged_book_of_war", "Bandos"}, {"damaged_book_of_law", "Armadyl"}, {"damaged_book_of_darkness", "Zaros"}}) {
+            b.shop("jossik", book[0], 5000, "horror_from_the_deep", null, null, 0,
+                    "More books keep washing up by the lighthouse. This one of " + book[1] + "'s is yours for 5,000 coins.");
+        }
     }
 }

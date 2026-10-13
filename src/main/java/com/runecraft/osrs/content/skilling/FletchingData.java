@@ -331,5 +331,21 @@ public final class FletchingData extends SkillingPart {
         }
         out.accept(r("fletch_celastrus_battlestaff", F, "Battlestaff (celastrus bark)", Skill.FLETCHING, 40, 80.0)
                 .in("celastrus_bark", 1).out("battlestaff", 1).tool("knife").ticks(3).build());
+        // Ballistae (OSRS Wiki): limbs on a frame, then the spring, then a monkey tail. Light 47 Fletching (15 + 15 + 300 XP),
+        // heavy 72 Fletching (30 + 30 + 600 XP). Parts and ballistae are CommonItems/CommonEquipment.
+        for (String size : new String[]{"light", "heavy"}) {
+            boolean heavy = size.equals("heavy");
+            int level = heavy ? 72 : 47;
+            double step = heavy ? 30.0 : 15.0;
+            String name = heavy ? "heavy ballista" : "light ballista";
+            out.accept(r("fletch_incomplete_" + size + "_ballista", F, "Incomplete " + name, Skill.FLETCHING, level, step)
+                    .in(size + "_frame", 1).in("ballista_limbs", 1).out("incomplete_" + size + "_ballista", 1).ticks(3).build());
+            out.accept(r("fletch_unstrung_" + size + "_ballista", F, "Unstrung " + name, Skill.FLETCHING, level, step)
+                    .in("incomplete_" + size + "_ballista", 1).in("ballista_spring", 1).out("unstrung_" + size + "_ballista", 1)
+                    .ticks(3).build());
+            out.accept(r("fletch_" + size + "_ballista", F, Character.toUpperCase(name.charAt(0)) + name.substring(1), Skill.FLETCHING,
+                    level, heavy ? 600.0 : 300.0).in("unstrung_" + size + "_ballista", 1).in("monkey_tail", 1)
+                    .out(size + "_ballista", 1).ticks(3).build());
+        }
     }
 }

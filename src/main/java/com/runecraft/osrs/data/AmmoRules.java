@@ -5,14 +5,15 @@ import java.util.Map;
 /**
  * Which ammunition a bow or crossbow can fire, as in OSRS: each bow fires arrows up to a metal tier
  * (normal bows iron, oak steel, willow mithril, maple adamant, yew rune, magic amethyst, dark/twisted bow dragon)
- * and each crossbow bolts up to its own tier (gem-tipped bolts count as the metal bolt they are made from).
+ * and each crossbow bolts up to its own tier (gem-tipped bolts count as the metal bolt they are made from). Ballistae
+ * fire javelins only, every javelin from bronze to dragon (OSRS Wiki, light ballista: "can now fire javelins up to Dragon").
  * Weapons not listed here (crystal bows, blowpipe, Karil's crossbow, salamanders...) keep firing anything.
  */
 public final class AmmoRules {
     private AmmoRules() {
     }
 
-    private enum Kind { ARROW, BOLT }
+    private enum Kind { ARROW, BOLT, JAVELIN }
 
     private record Ammo(Kind kind, int rank) {
     }
@@ -55,7 +56,15 @@ public final class AmmoRules {
             Map.entry("rune_bolts", new Ammo(Kind.BOLT, B_RUNE)),
             Map.entry("dragonstone_bolts", new Ammo(Kind.BOLT, B_RUNE)),
             Map.entry("onyx_bolts", new Ammo(Kind.BOLT, B_RUNE)),
-            Map.entry("dragon_bolts", new Ammo(Kind.BOLT, B_DRAGON)));
+            Map.entry("dragon_bolts", new Ammo(Kind.BOLT, B_DRAGON)),
+            Map.entry("bronze_javelin", new Ammo(Kind.JAVELIN, BRONZE)),
+            Map.entry("iron_javelin", new Ammo(Kind.JAVELIN, IRON)),
+            Map.entry("steel_javelin", new Ammo(Kind.JAVELIN, STEEL)),
+            Map.entry("mithril_javelin", new Ammo(Kind.JAVELIN, MITHRIL)),
+            Map.entry("adamant_javelin", new Ammo(Kind.JAVELIN, ADAMANT)),
+            Map.entry("rune_javelin", new Ammo(Kind.JAVELIN, RUNE)),
+            Map.entry("amethyst_javelin", new Ammo(Kind.JAVELIN, AMETHYST)),
+            Map.entry("dragon_javelin", new Ammo(Kind.JAVELIN, DRAGON)));
 
     private static final Map<String, Launcher> LAUNCHERS = Map.ofEntries(
             Map.entry("shortbow", new Launcher(Kind.ARROW, IRON)),
@@ -88,7 +97,9 @@ public final class AmmoRules {
             Map.entry("dragon_crossbow", new Launcher(Kind.BOLT, B_DRAGON)),
             Map.entry("dragon_hunter_crossbow", new Launcher(Kind.BOLT, B_DRAGON)),
             Map.entry("armadyl_crossbow", new Launcher(Kind.BOLT, B_DRAGON)),
-            Map.entry("zaryte_crossbow", new Launcher(Kind.BOLT, B_DRAGON)));
+            Map.entry("zaryte_crossbow", new Launcher(Kind.BOLT, B_DRAGON)),
+            Map.entry("light_ballista", new Launcher(Kind.JAVELIN, DRAGON)),
+            Map.entry("heavy_ballista", new Launcher(Kind.JAVELIN, DRAGON)));
 
     /** Antler bolts are only fired by the Hunters' sunlight crossbow, which fires nothing else. */
     private static boolean antler(String id) {

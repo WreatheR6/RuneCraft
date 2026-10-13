@@ -179,6 +179,7 @@ public final class Townsfolk {
         keeper("npc_ardougne_gem_merchant", "Gem merchant", "East Ardougne", 2667, 3303, "ardougne_gem_merchant", look(SKIN, 0x3A3A9A, 0x2A2A5A, 0x1A1A1A));
         keeper("npc_frenita", "Frenita", "Yanille", 2568, 3100, "frenitas_cookery_shop", look(SKIN, 0xE0E0E0, 0x6A4A2A, 0xC09040));
         keeper("npc_aleck", "Aleck", "Yanille", 2566, 3083, "alecks_hunter_emporium", look(SKIN, 0x5A6A3A, 0x4A3A2A, 0x6A5A3A));
+        keeper("npc_wizard_sinina", "Wizard Sinina", "Yanille", 2595, 3089, "magic_guild_store_mystic", wizard);
         keeper("npc_davon", "Davon", "Brimhaven", 2779, 3152, "davons_amulet_store", look(SKIN, 0x3A3A3A, 0x2A2A2A, 0x1A1A1A));
         keeper("npc_gulluck", "Gulluck", "Tree Gnome Stronghold", 2477, 3505, "gulluck_and_sons", gnome);
         keeper("npc_heckel_funch", "Heckel Funch", "Tree Gnome Stronghold", 2490, 3489, "grand_tree_groceries", gnome);
@@ -241,6 +242,9 @@ public final class Townsfolk {
         tanner("npc_sbott", "Sbott", "Canifis", 3490, 3500, werewolf, "Hello stranger. Would you like me to tan any hides for you?");
 
         // ------------------------------------------------------------- flavour characters
+        // Emblem Trader (Edgeville): his "Skull" option is wired up by the npcs module hooks (combat SkullService).
+        ambient("npc_emblem_trader", "Emblem Trader", "Edgeville", 3096, 3503, look(SKIN, 0x2A2A2A, 0x1A1A1A, 0x3A2A4A),
+                "Fancy a PK skull? Talk to me again and you'll have one.");
         ambient("npc_doomsayer", "Doomsayer", "Lumbridge", 3232, 3235, look(SKIN, 0x3A2A2A, 0x2A2A2A, 0x6A6A6A),
                 "Dooooom!", "Where? All around us! I can feel it in the air, hear it on the wind, smell it... also in the air!",
                 "I can warn you about dangers in Gielinor. Doom approaches, but forewarned is forearmed.");

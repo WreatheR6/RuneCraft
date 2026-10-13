@@ -113,6 +113,7 @@ final class QuestItemsData {
         b.gate("dragon_mace", "heroes_quest");
         b.gate("dragon_spear", "lost_city");
         b.gate("dragon_halberd", "regicide");
+        b.gate("heavy_ballista", "monkey_madness_ii"); // CommonEquipment item; OSRS also needs Duke's training
         // Quest-locked armour: the rune platebody, its trimmed/god variants and the green d'hide body need
         // Dragon Slayer I; the dragon sq shield needs Legends' Quest.
         for (String body : new String[]{"rune_platebody", "rune_platebody_t", "rune_platebody_g", "saradomin_platebody",

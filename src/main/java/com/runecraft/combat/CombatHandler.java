@@ -60,6 +60,7 @@ public final class CombatHandler {
         ServerLivingEntityEvents.AFTER_DEATH.register(CombatHandler::afterDeath);
         CombatHooks.addModifier(new GearEffects());
         PrayerEffectsService.register();
+        SkullService.register();
         SetEffectHooks.register();
     }
 
@@ -362,6 +363,9 @@ public final class CombatHandler {
             }
             if (attacker instanceof ServerPlayerEntity hitter) {
                 AutoRetaliate.onPlayerAttack(hitter, target);
+                if (target instanceof ServerPlayerEntity victim) {
+                    SkullService.onPlayerAttack(hitter, victim);
+                }
             }
         }
         if (damage <= 0) {

@@ -106,10 +106,7 @@ public final class MinigameItems {
             items.add(r[0], r[1], Kind.SIMPLE, "ring", Integer.parseInt(r[2], 16)).value(1).stack(1)
                     .examine("An imbued ring: its bonuses are doubled.");
         }
-        items.add("salve_amulet_i", "Salve amulet(i)", Kind.SIMPLE, "amulet", 0x7AE0B0).value(1).stack(1)
-                .examine("An imbued salve amulet: also boosts Ranged and Magic against the undead.");
-        items.add("salve_amulet_ei", "Salve amulet(ei)", Kind.SIMPLE, "amulet", 0x5AF0A0).value(1).stack(1)
-                .examine("An imbued, enchanted salve amulet: +20% in every style against the undead.");
+        // salve_amulet_i / salve_amulet_ei live in osrs/content/CommonEquipment (Tarn's diary also makes the (ei)).
         items.add("soul_cape", "Soul cape", Kind.SIMPLE, "cape", 0x8A3AC0).value(1).stack(1)
                 .examine("A cape from the Isle of Souls. (2,500 zeal)");
         simple(items, "soul_fragment", "Soul fragment", "shard", 0xB080FF, 0, "Lightly pulsing with energy. Offer it at the Soul Obelisk.");
