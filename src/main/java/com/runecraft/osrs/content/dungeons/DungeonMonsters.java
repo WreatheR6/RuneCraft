@@ -85,10 +85,10 @@ public final class DungeonMonsters {
         // 1-dose prayer potion and 2-dose antipoison are full potions at a quarter/half the rate (same doses per kill).
         list.add(m("maniacal_monkey", "Maniacal monkey", 140, 65, 200, 175, 10, 1, 1).speed(4)
                 .attack(melee(AttackType.SLASH, 18)).defenceBonus(0, 0, 0, 0, 0).drops(maniacalDrops())
-                .slayer(1, "monkeys").model("monkey").skin(0x5A3A2A, 0x3A2418, 0x3A2418, 0xC0A060).size(0.6f, 0.9f, 1.4f));
+                .slayer(1, "monkeys").model("maniacal_monkey").skin(0x5A3A2A, 0x3A2418, 0x3A2418, 0xC0A060).size(0.6f, 0.9f, 1.4f));
         list.add(m("maniacal_monkey_archer", "Maniacal Monkey Archer", 132, 60, 120, 80, 80, 1, 200).speed(4)
                 .attack(AttackDef.of("ranged", AttackType.RANGED, 24, 8, 10)).defenceBonus(0, 0, 0, 0, 0).drops(maniacalDrops())
-                .model("monkey").skin(0x4A3020, 0x2A1A10, 0x2A1A10, 0x8AA040).size(0.6f, 0.9f, 1.4f));
+                .model("maniacal_monkey").skin(0x4A3020, 0x2A1A10, 0x2A1A10, 0x8AA040).size(0.6f, 0.9f, 1.4f));
         waterbirth(list);
         apeAtoll(list);
         return list;
@@ -153,11 +153,11 @@ public final class DungeonMonsters {
     private static void apeAtoll(List<MonsterDef> list) {
         list.add(m("monkey_zombie_lvl82", "Monkey Zombie", 82, 60, 100, 60, 60, 60, 1).speed(4).attackBonus(15, 0, 0)
                 .attack(melee(AttackType.CRUSH, 7)).defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("bones"))
-                .slayer(1, "monkeys").attributes("undead").model("monkey").skin(0x6A7A5A, 0x4A5A3A, 0x4A5A3A, 0x9AA080)
+                .slayer(1, "monkeys").attributes("undead").model("monkey_zombie").skin(0x6A7A5A, 0x4A5A3A, 0x4A5A3A, 0x9AA080)
                 .size(0.6f, 0.8f, 1.4f));
         list.add(m("monkey_zombie_lvl129", "Monkey Zombie", 129, 90, 150, 110, 90, 90, 1).speed(4).attackBonus(35, 0, 0)
                 .attack(melee(AttackType.CRUSH, 12)).defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("big_bones"))
-                .slayer(1, "monkeys").attributes("undead").model("monkey").skin(0x5A6A4A, 0x3A4A2A, 0x3A4A2A, 0x8A9070)
+                .slayer(1, "monkeys").attributes("undead").model("monkey_zombie").skin(0x5A6A4A, 0x3A4A2A, 0x3A4A2A, 0x8A9070)
                 .size(0.7f, 1.0f, 1.8f));
         list.add(m("skeleton_lvl142", "Skeleton", 142, 77, 180, 90, 110, 110, 1).speed(4).attackBonus(50, 0, 0)
                 .attack(melee(AttackType.SLASH, 10)).defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("bones"))

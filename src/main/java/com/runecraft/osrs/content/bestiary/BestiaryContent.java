@@ -44,12 +44,15 @@ public final class BestiaryContent implements ContentModule {
         list.addAll(BestiaryModern.all());
         list.addAll(BestiaryCrashFossil.all());
         list.addAll(BestiaryLookalikes.fresh());
+        list.addAll(BestiaryRemnants.fresh());
         return list;
     }
 
     @Override
     public List<ModelSpec.Variant> modelVariants() {
-        return BestiaryLookalikes.variants();
+        List<ModelSpec.Variant> v = new java.util.ArrayList<>(BestiaryLookalikes.variants());
+        v.addAll(BestiaryRemnants.variants());
+        return v;
     }
 
     @Override

@@ -81,14 +81,14 @@ public final class IslandsMonsters {
                         .defenceBonus(60, 60, 60, 20, 60)
                         .drops(Drop.always("big_bones"), Drop.of("coins", 20, 300, 4), Drop.of("rune_dagger", 1, 1, 128),
                                 Drop.herbs(16), Drop.gems(64), clue("hard", 256))
-                        .slayer(1, "monkeys").model("monkey").size(0.8f, 1.0f, 2.2f),
+                        .slayer(1, "monkeys").model("monkey_guard").size(0.8f, 1.0f, 2.2f),
                 m("monkey_archer", "Monkey Archer", 86, 50, 1, 1, 70, 1, 100).speed(5).attack(ranged(8))
                         .drops(Drop.always("bones"), Drop.of("mithril_arrow", 5, 15, 8), Drop.of("adamant_arrow", 3, 8, 32),
                                 Drop.of("coins", 10, 100, 4))
                         .slayer(1, "monkeys").model("monkey").size(0.6f, 0.8f, 1.5f),
                 m("monkey_zombie", "Monkey Zombie", 98, 60, 80, 80, 80, 1, 1).speed(4).attack(melee(AttackType.SLASH, 11))
                         .drops(Drop.always("bones"), Drop.of("coins", 10, 120, 4), Drop.herbs(32), clue("medium", 128))
-                        .slayer(1, "monkeys").model("monkey").size(0.6f, 0.8f, 1.6f).skin(0x6A7A5A, 0x4A5A3A, 0x4A5A3A, 0x9AA080),
+                        .slayer(1, "monkeys").model("monkey_zombie").size(0.6f, 0.8f, 1.6f).skin(0x6A7A5A, 0x4A5A3A, 0x4A5A3A, 0x9AA080),
                 // Lunar Isle.
                 m("suqah", "Suqah", 111, 105, 107, 107, 107, 115, 1).speed(4).attack(melee(AttackType.SLASH, 13))
                         .attack(magic(14, "minecraft:enchant").message("The suqah casts a spell at you."))

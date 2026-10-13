@@ -397,20 +397,20 @@ public final class TempleTrekking {
         tiers(list, "trek_vampyre_juvinate", new String[]{"Vampyre Juvinate", "Vampyre Juvinate", "Vampyre Juvinate"}, AttackType.SLASH, 4,
                 0, "gwd_vampire", new String[]{"vampyre"}, 0.7f, 1.9f, 1.0f, 0x6A6A70, 0xA01010,
                 new int[][]{{59, 50, 95, 16, 45, 50, 50, 6}, {90, 100, 113, 46, 55, 50, 50, 6}, {119, 150, 127, 76, 65, 50, 50, 9}});
-        tiers(list, "trek_ghast", new String[]{"Ghast", "Ghast", "Ghast"}, AttackType.CRUSH, 8, 0, "ghost",
+        tiers(list, "trek_ghast", new String[]{"Ghast", "Ghast", "Ghast"}, AttackType.CRUSH, 8, 0, "trek_ghast",
                 new String[]{"spectral"}, 0.8f, 1.9f, 1.0f, 0x9AA080, 0x40A040,
                 new int[][]{{79, 115, 80, 30, 60, 30, 30, 4}, {109, 135, 110, 70, 70, 30, 30, 8}, {139, 160, 135, 110, 80, 30, 30, 12}});
         tiers(list, "trek_shade", new String[]{"Riyl shadow", "Asyn shadow", "Shade"}, AttackType.CRUSH, 4, 0, "shade",
                 new String[]{"undead", "spectral"}, 0.7f, 2.0f, 1.0f, 0x2A2A3A, 0x8080FF,
                 new int[][]{{80, 76, 87, 56, 60, 50, 50, 7}, {110, 94, 110, 96, 80, 50, 50, 11}, {140, 115, 130, 136, 100, 50, 50, 15}});
-        tiers(list, "trek_swamp_snake", new String[]{"Swamp snake", "Swamp snake", "Swamp snake"}, AttackType.CRUSH, 4, 0, "sea_snake",
+        tiers(list, "trek_swamp_snake", new String[]{"Swamp snake", "Swamp snake", "Swamp snake"}, AttackType.CRUSH, 4, 0, "swamp_snake",
                 none, 1.4f, 1.0f, 1.4f, 0x3A4A2A, 0x6A8A3A,
                 new int[][]{{80, 120, 50, 50, 70, 30, 30, 6}, {109, 125, 70, 110, 80, 30, 30, 12}, {139, 130, 90, 170, 90, 30, 30, 18}});
         tiers(list, "trek_giant_snail", new String[]{"Giant snail", "Giant snail", "Giant snail"}, AttackType.RANGED, 4, 8, "rockslug",
                 none, 1.4f, 1.4f, 1.5f, 0x6A5A3A, 0xA08A5A,
                 new int[][]{{80, 125, 30, 30, 60, 30, 70, 8}, {109, 150, 30, 30, 75, 30, 110, 13}, {139, 160, 30, 30, 86, 30, 160, 17}});
         // Nail beasts land three quick hits per attack (max 2/3/4 each); modelled as one hit of up to three times that. // approx
-        tiers(list, "trek_nail_beast", new String[]{"Nail beast", "Nail beast", "Nail beast"}, AttackType.SLASH, 8, 0, "dark_beast",
+        tiers(list, "trek_nail_beast", new String[]{"Nail beast", "Nail beast", "Nail beast"}, AttackType.SLASH, 8, 0, "nail_beast",
                 none, 1.2f, 1.4f, 1.1f, 0x5A4A3A, 0xE0D0B0,
                 new int[][]{{69, 55, 150, 6, 2, 1, 1, 6}, {98, 65, 215, 16, 30, 1, 1, 9}, {141, 75, 320, 26, 40, 1, 1, 12}},
                 Drop.always("big_bones"));

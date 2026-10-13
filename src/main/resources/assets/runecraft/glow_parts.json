@@ -125,16 +125,22 @@
     "eyes"
   ],
   "autumn_elemental": [
-    "core",
-    "head"
+    "head",
+    "heart"
   ],
   "avatar_of_creation": [
-    "core",
-    "head"
+    "head",
+    "jaw",
+    "core_glow",
+    "glow_seam_l",
+    "glow_seam_r"
   ],
   "avatar_of_destruction": [
-    "core",
-    "head"
+    "head",
+    "jaw",
+    "core_glow",
+    "glow_seam_l",
+    "glow_seam_r"
   ],
   "baba": [
     "eye_l",
@@ -290,9 +296,6 @@
     "soul_lantern"
   ],
   "catacomb_black_demon": [
-    "head"
-  ],
-  "catacomb_dagannoth": [
     "head"
   ],
   "catacomb_dust_devil": [
@@ -907,6 +910,9 @@
   "gwd_aviansie_elite": [
     "head"
   ],
+  "gwd_bloodveld": [
+    "head"
+  ],
   "gwd_cyclops": [
     "pupil"
   ],
@@ -916,55 +922,52 @@
   "gwd_imp": [
     "head"
   ],
+  "gwd_ork": [
+    "head"
+  ],
   "gwd_pyrefiend": [
     "body",
+    "core",
+    "wisp0",
+    "wisp1",
+    "wisp2",
+    "wisp3",
+    "wisp_tip",
+    "tongue0",
+    "tongue1",
+    "tongue2",
+    "tongue3",
+    "tongue4",
+    "tongue5",
     "head",
-    "flame",
+    "jaw",
+    "flame0",
+    "flame1",
+    "flame2",
     "arm_l",
     "arm_r",
-    "wisp"
-  ],
-  "gwd_saradomin_priest": [
-    "w_orb"
+    "forearm_l",
+    "forearm_r"
   ],
   "gwd_spiritual_mage_armadyl": [
     "head",
     "staff_orb"
   ],
   "gwd_spiritual_mage_bandos": [
-    "head",
-    "w_orb"
+    "staff_orb"
   ],
   "gwd_spiritual_mage_saradomin": [
-    "head",
-    "w_orb"
+    "staff_orb",
+    "hand_glow"
   ],
   "gwd_spiritual_mage_zamorak": [
-    "head",
-    "w_orb"
+    "staff_orb",
+    "hand_glow"
   ],
   "gwd_spiritual_ranger_armadyl": [
     "head"
   ],
-  "gwd_spiritual_ranger_bandos": [
-    "head"
-  ],
-  "gwd_spiritual_ranger_saradomin": [
-    "head"
-  ],
-  "gwd_spiritual_ranger_zamorak": [
-    "head"
-  ],
   "gwd_spiritual_warrior_armadyl": [
-    "head"
-  ],
-  "gwd_spiritual_warrior_bandos": [
-    "head"
-  ],
-  "gwd_spiritual_warrior_saradomin": [
-    "head"
-  ],
-  "gwd_spiritual_warrior_zamorak": [
     "head"
   ],
   "gwd_vampire": [
@@ -1376,6 +1379,9 @@
   ],
   "mithril_dragon": [
     "head"
+  ],
+  "monkey_guard": [
+    "eyes"
   ],
   "moss_guardian": [
     "head"
@@ -1958,8 +1964,8 @@
     "glow_cracks"
   ],
   "spring_elemental": [
-    "core",
-    "head"
+    "head",
+    "heart"
   ],
   "starlight": [
     "uni_horn"
@@ -1971,7 +1977,15 @@
     "head"
   ],
   "summer_elemental": [
-    "core",
+    "head",
+    "heart",
+    "crown0",
+    "crown1",
+    "crown2",
+    "crown3",
+    "crown4"
+  ],
+  "swamp_snake": [
     "head"
   ],
   "taloned_wyvern": [
@@ -2069,22 +2083,33 @@
     "embers"
   ],
   "titan_fire_elemental": [
-    "hips",
-    "torso",
-    "core",
-    "boulder_l",
-    "boulder_r",
     "head",
-    "arm_l",
-    "arm_r",
-    "fist_l",
-    "fist_r",
-    "leg_l",
-    "leg_r"
+    "wisp0",
+    "wisp1",
+    "wisp2",
+    "wisp3",
+    "shard0",
+    "shard1",
+    "shard2",
+    "shoulder_shard_l",
+    "shoulder_shard_r",
+    "core",
+    "hand_orb_l",
+    "hand_orb_r"
   ],
   "titan_ice_elemental": [
+    "head",
+    "wisp1",
+    "wisp2",
+    "wisp3",
+    "shard0",
+    "shard1",
+    "shard2",
+    "shoulder_shard_l",
+    "shoulder_shard_r",
     "core",
-    "head"
+    "hand_orb_l",
+    "hand_orb_r"
   ],
   "toa_baboon": [
     "eye_l",
@@ -2131,6 +2156,9 @@
     "eyes"
   ],
   "tree_spirit": [
+    "head"
+  ],
+  "trek_ghast": [
     "head"
   ],
   "treus_dayth": [
@@ -2406,8 +2434,13 @@
     "staff_orb"
   ],
   "winter_elemental": [
-    "core",
-    "head"
+    "head",
+    "heart",
+    "crown0",
+    "crown1",
+    "crown2",
+    "crown3",
+    "crown4"
   ],
   "wintertodt": [
     "blizzard",
