@@ -22,7 +22,7 @@ final class BestiarySlmLow {
         l.add(crawlingHand("crawling_hand"));
         l.add(caveBug("cave_bug"));
         l.add(caveCrawler("cave_crawler"));
-        l.add(banshee("banshee", 0xE8E6DC, 0xDCDAD0, 0xF4F2EA));
+        l.add(banshee("banshee", 0xBCC2B0, 0xC6C2B4, 0xEEECE4)); // OSRS: pale grey-green skin, ragged grey-cream robe, white hair
         l.add(jelly("cave_slime", 0x6A9A3A, 0.7f));
         l.add(jelly("jelly", 0x5A9AC8, 1.0f));
         l.add(rockslug("rockslug"));

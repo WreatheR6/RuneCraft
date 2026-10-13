@@ -110,12 +110,12 @@ final class BestiaryLookalikes {
     static ModelSpec gorak() {
         int skin = 0x7468B0;
         int dk = 0x3E3670;
-        Fig f = fig("gwd_gorak").legs(9, 5).torso(10, 10, 15, 8, 5, 8).arms(18, 5, 5).head(6, 6, 6).pose(32, 5, 14)
+        Fig f = fig("gwd_gorak").legs(9, 5).torso(10, 10, 15, 8, 5, 8).arms(18, 5, 5).head(7, 8, 7).pose(22, 5, 14)
                 .armPitch(-22, -22).skin(skin, "hide").shadow(1.0f);
         f.foreBend = 24;
-        f.core(dk, "hide", skin, "hide", skin, "hide").muscles(skin).head("monster", 0xFF3020)
+        f.core(dk, "hide", skin, "hide", skin, "hide").muscles(BestiaryLookalikes.mixRgb(skin, 0xE0D8F0, 0.25f)).head("monster", 0xFF3020)
                 .beastFace(darker(skin, 0.9f), dk, IVORY, false)
-                .armsBuild(skin, "hide", skin, "hide", dk, "hide").claws(0x2A2230, 2)
+                .armsBuild(skin, "hide", darker(skin, 0.88f), "hide", dk, "hide").claws(0x2A2230, 2)
                 .legsBuild(skin, "hide", darker(skin, 0.9f), "hide", dk, "hide").hump(skin, "hide", 12, 4, 6);
         f.p("gorak_crest", "head", dk).at(0, -f.headH, 0.5f).rot(-20, 0, 0).mat("hide").box(-1, -2, -2.5f, 2, 2, 5).add();
         f.s("gorak_ear", "head", false, skin).at(f.headW / 2f, -3.5f, 0.5f).rot(0, -20, -35).mat("hide").box(0, -1, -0.5f, 3, 2, 1).add();
