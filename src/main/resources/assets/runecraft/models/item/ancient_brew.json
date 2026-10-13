@@ -1,0 +1,26 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "runecraft:item/ancient_brew"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "damage": 0.25
+      },
+      "model": "runecraft:item/ancient_brew_3"
+    },
+    {
+      "predicate": {
+        "damage": 0.5
+      },
+      "model": "runecraft:item/ancient_brew_2"
+    },
+    {
+      "predicate": {
+        "damage": 0.75
+      },
+      "model": "runecraft:item/ancient_brew_1"
+    }
+  ]
+}
