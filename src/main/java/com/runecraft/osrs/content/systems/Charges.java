@@ -32,7 +32,7 @@ public final class Charges {
     public enum Kind { BARROWS, CRYSTAL, CHARGED, SERPENTINE, BLOWPIPE }
 
     /** When charges drain. */
-    public enum Drain { COMBAT_TICK, ATTACK, HIT_TAKEN, SERPENTINE }
+    public enum Drain { COMBAT_TICK, ATTACK, HIT_TAKEN, SERPENTINE, TELEPORT }
 
     /**
      * A charged item. {@code materials} is what one charge costs ({@code item -> amount}); for crystal it
@@ -57,6 +57,11 @@ public final class Charges {
     public static final int ARCLIGHT_MAX = 10_000;
     public static final int ARCLIGHT_START = 1_000;
     public static final int ARCLIGHT_PER_3_SHARDS = 1_000;
+    public static final String XERICS_TALISMAN = "xerics_talisman";
+    /** Xeric's talisman (wiki): one charge per lizardman fang, at most 1,000; one charge per teleport. */
+    public static final int XERICS_TALISMAN_MAX = 1_000;
+    /** Charges of a talisman made from the inert one with 100 fangs (the zeah module's recipe). approx */
+    public static final int XERICS_TALISMAN_START = 100;
     /** Game ticks without attacking or being attacked after which a player counts as out of combat (approx). */
     public static final int COMBAT_TIMEOUT_TICKS = 8;
 
@@ -116,6 +121,8 @@ public final class Charges {
         // becomes inactive, with Darklight's stats) - approx.
         put(new Spec(ARCLIGHT, "Arclight", Kind.CHARGED, ARCLIGHT_MAX, ARCLIGHT_START, Drain.ATTACK,
                 ordered("ancient_shard", 3), ARCLIGHT_PER_3_SHARDS, 0));
+        put(new Spec(XERICS_TALISMAN, "Xeric's talisman", Kind.CHARGED, XERICS_TALISMAN_MAX, XERICS_TALISMAN_START, Drain.TELEPORT,
+                ordered("lizardman_fang", 1), 1, 0));
     }
 
     private static Map<String, Integer> ordered(Object... kv) {

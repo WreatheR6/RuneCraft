@@ -142,7 +142,7 @@ public final class IslandsTravel {
     public static final Network FAIRY_RINGS = new Network("fairy_rings", IslandsBlocks.FAIRY_RING, "fairytale_ii_cure_a_queen",
             fairyStops());
 
-    /** Magic Mushtrees: tiles are the OSRS trees (Sticky Swamp's stands at 3676, 3755 in OSRS; approx here). */
+    /** Magic Mushtrees: each stands on its OSRS tile (shortest-path magic_mushtrees.tsv). */
     public static final Network MUSHTREES = new Network("mycelium", IslandsBlocks.MUSHTREE, null, List.of(
             new Stop("HOUSE_ON_THE_HILL", "House on the Hill", IslandsPlaces.HOUSE_ON_THE_HILL, IslandsStructures.HOUSE_TREE_DX,
                     IslandsStructures.HOUSE_TREE_DZ, true, null),

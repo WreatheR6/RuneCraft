@@ -100,43 +100,51 @@ public final class Travel {
 
     /**
      * Charter ports (the first eight keep their original order so route/NPC ids stay stable). Tiles are the
-     * docks the Trader Crewmembers stand at, which are also where the ship lands. The Sailing-era ports with
-     * no land in this world yet (Deepfin Point, Port Roberts, The Summer Shore) are not included.
+     * docks the Trader Crewmembers stand at, which are also where the ship lands. The Sailing-era ports Port Roberts
+     * (a floating platform), Deepfin Point and The Summer Shore come last; they need 50 / 67 Sailing or Troubled Tortugans.
      */
     static final String[] CHARTER_PORTS = {"Port Sarim", "Catherby", "Brimhaven", "Karamja Ship Yard", "Port Khazard",
             "Port Phasmatys", "Mos Le'Harmless", "Corsair Cove", "Musa Point", "Port Tyras", "Prifddinas", "Port Piscarilius",
-            "Land's End", "Civitas illa Fortis", "Aldarin", "Sunset Coast", "The Pandemonium", "Red Rock"};
+            "Land's End", "Civitas illa Fortis", "Aldarin", "Sunset Coast", "The Pandemonium", "Red Rock", "Port Roberts",
+            "Deepfin Point", "The Summer Shore"};
     static final int[][] CHARTER_TILES = {{3038, 3192}, {2792, 3414}, {2760, 3238}, {3001, 3032}, {2674, 3144},
             {3702, 3503}, {3671, 2931}, {2589, 2851}, {2954, 3158}, {2142, 3122}, {2157, 3330}, {1808, 3679},
-            {1496, 3403}, {1743, 3136}, {1455, 2968}, {1514, 2971}, {3064, 2999}, {2805, 2502}};
+            {1496, 3403}, {1743, 3136}, {1455, 2968}, {1514, 2971}, {3064, 2999}, {2805, 2502}, {1871, 3309}, {1943, 2757},
+            {3189, 2369}};
     /** Quest needed to charter a ship to each port (OSRS). */
     static final String[] CHARTER_QUESTS = {null, null, null, "monkey_madness_i", null, "priest_in_peril", "cabin_fever",
             null, null, "regicide", "song_of_the_elves", null, null, "children_of_the_sun", "children_of_the_sun",
-            "children_of_the_sun", "pandemonium", "the_red_reef"};
+            "children_of_the_sun", "pandemonium", "the_red_reef", null, null, "troubled_tortugans"};
+    /** Sailing level needed to charter a ship to each port (OSRS: Port Roberts 50, Deepfin Point 67), 0 = none. */
+    static final int[] CHARTER_SAILING = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 67, 0};
     static final String[] CHARTER_AREAS = {"Port Sarim", "Catherby", "Brimhaven", "Karamja", "Port Khazard", "Port Phasmatys",
             "Mos Le'Harmless", "Corsair Cove", "Musa Point", "Port Tyras", "Prifddinas", "Port Piscarilius", "Land's End",
-            "Civitas illa Fortis", "Aldarin", "Sunset Coast", "The Pandemonium", "Red Rock"};
+            "Civitas illa Fortis", "Aldarin", "Sunset Coast", "The Pandemonium", "Red Rock", "Port Roberts", "Deepfin Point",
+            "The Summer Shore"};
 
     /** OSRS charter fares (row = from, column = to); 0 = no charter on that route. */
     static final int[][] CHARTER_FARES = {
-            {0, 1000, 1600, 400, 1280, 1300, 650, 1200, 0, 3200, 4800, 0, 0, 3000, 3100, 3100, 0, 1700}, // Port Sarim
-            {1000, 0, 480, 1600, 1600, 3500, 1250, 1000, 480, 3200, 3560, 2000, 2200, 2400, 2500, 2500, 1200, 2000}, // Catherby
-            {1600, 480, 0, 400, 400, 2900, 1950, 680, 480, 3200, 3450, 2000, 2200, 2400, 2500, 2500, 400, 1900}, // Brimhaven
-            {400, 1600, 400, 0, 1600, 3200, 550, 800, 200, 3200, 4000, 2600, 2800, 3000, 3100, 3100, 200, 1600}, // Shipyard
-            {1280, 1600, 400, 1600, 0, 4100, 550, 600, 400, 3200, 2800, 1800, 2000, 2200, 2300, 2300, 700, 1800}, // Port Khazard
-            {1300, 3500, 2900, 3200, 4100, 0, 0, 4040, 1100, 3200, 5200, 4000, 4200, 4400, 4500, 4500, 1000, 2200}, // Port Phasmatys
-            {650, 1250, 1950, 550, 550, 0, 0, 2040, 2050, 1600, 2475, 2100, 2200, 2300, 2350, 2350, 500, 1000}, // Mos Le'Harmless
-            {1200, 1000, 680, 800, 600, 4040, 2040, 0, 800, 3200, 1420, 1500, 1800, 2000, 2100, 2100, 800, 1500}, // Corsair Cove
-            {0, 480, 480, 200, 400, 1100, 2050, 800, 0, 3200, 4400, 2500, 2700, 2900, 3000, 3000, 0, 1700}, // Musa Point
-            {3200, 3200, 3200, 3200, 3200, 3200, 1600, 3200, 3200, 0, 3200, 3200, 3200, 3200, 3200, 3200, 3200, 3200}, // Port Tyras
-            {4800, 3560, 3450, 4000, 2800, 5200, 2475, 1420, 4400, 3200, 0, 1200, 1500, 1700, 1800, 1800, 3800, 2000}, // Prifddinas
-            {0, 2000, 2000, 2600, 1800, 4000, 2100, 1500, 2500, 3200, 1200, 0, 0, 1000, 1100, 1100, 2400, 2400}, // Port Piscarilius
-            {0, 2200, 2200, 2800, 2000, 4200, 2200, 1800, 2700, 3200, 1500, 0, 0, 800, 900, 900, 2600, 2200}, // Land's End
-            {3000, 2400, 2400, 3000, 2200, 4400, 2300, 2000, 2900, 3200, 1700, 1000, 800, 0, 600, 500, 2800, 2000}, // Civitas
-            {3100, 2500, 2500, 3100, 2300, 4500, 2350, 2100, 3000, 3200, 1800, 1100, 900, 600, 0, 0, 3000, 2200}, // Aldarin
-            {3100, 2500, 2500, 3100, 2300, 4500, 2350, 2100, 3000, 3200, 1800, 1100, 900, 500, 0, 0, 3000, 2200}, // Sunset Coast
-            {0, 1200, 400, 200, 700, 1000, 500, 800, 0, 3200, 3800, 2400, 2600, 2800, 3000, 3000, 0, 1600}, // The Pandemonium
-            {1700, 2000, 1900, 1600, 1800, 2200, 2000, 1500, 1700, 3200, 2000, 2400, 2200, 2000, 2200, 2200, 1600, 0}, // Red Rock
+            {0, 1000, 1600, 400, 1280, 1300, 650, 1200, 0, 3200, 4800, 0, 0, 3000, 3100, 3100, 0, 1700, 3500, 2600, 1700}, // Port Sarim
+            {1000, 0, 480, 1600, 1600, 3500, 1250, 1000, 480, 3200, 3560, 2000, 2200, 2400, 2500, 2500, 1200, 2000, 3400, 2200, 2000}, // Catherby
+            {1600, 480, 0, 400, 400, 2900, 1950, 680, 480, 3200, 3450, 2000, 2200, 2400, 2500, 2500, 400, 1900, 3200, 2000, 1900}, // Brimhaven
+            {400, 1600, 400, 0, 1600, 3200, 550, 800, 200, 3200, 4000, 2600, 2800, 3000, 3100, 3100, 200, 1600, 3600, 2800, 1600}, // Shipyard
+            {1280, 1600, 400, 1600, 0, 4100, 550, 600, 400, 3200, 2800, 1800, 2000, 2200, 2300, 2300, 700, 1800, 3000, 1800, 1800}, // Port Khazard
+            {1300, 3500, 2900, 3200, 4100, 0, 0, 4040, 1100, 3200, 5200, 4000, 4200, 4400, 4500, 4500, 1000, 2200, 4600, 3400, 2000}, // Port Phasmatys
+            {650, 1250, 1950, 550, 550, 0, 0, 2040, 2050, 1600, 2475, 2100, 2200, 2300, 2350, 2350, 500, 1000, 2200, 1600, 900}, // Mos Le'Harmless
+            {1200, 1000, 680, 800, 600, 4040, 2040, 0, 800, 3200, 1420, 1500, 1800, 2000, 2100, 2100, 800, 1500, 2200, 1600, 1600}, // Corsair Cove
+            {0, 480, 480, 200, 400, 1100, 2050, 800, 0, 3200, 4400, 2500, 2700, 2900, 3000, 3000, 0, 1700, 3500, 2400, 1700}, // Musa Point
+            {3200, 3200, 3200, 3200, 3200, 3200, 1600, 3200, 3200, 0, 3200, 3200, 3200, 3200, 3200, 3200, 3200, 3200, 3200, 3200, 3200}, // Port Tyras
+            {4800, 3560, 3450, 4000, 2800, 5200, 2475, 1420, 4400, 3200, 0, 1200, 1500, 1700, 1800, 1800, 3800, 2000, 600, 1200, 2200}, // Prifddinas
+            {0, 2000, 2000, 2600, 1800, 4000, 2100, 1500, 2500, 3200, 1200, 0, 0, 1000, 1100, 1100, 2400, 2400, 1000, 1600, 2600}, // Port Piscarilius
+            {0, 2200, 2200, 2800, 2000, 4200, 2200, 1800, 2700, 3200, 1500, 0, 0, 800, 900, 900, 2600, 2200, 800, 1400, 2400}, // Land's End
+            {3000, 2400, 2400, 3000, 2200, 4400, 2300, 2000, 2900, 3200, 1700, 1000, 800, 0, 600, 500, 2800, 2000, 600, 1200, 2200}, // Civitas
+            {3100, 2500, 2500, 3100, 2300, 4500, 2350, 2100, 3000, 3200, 1800, 1100, 900, 600, 0, 0, 3000, 2200, 1400, 1200, 2400}, // Aldarin
+            {3100, 2500, 2500, 3100, 2300, 4500, 2350, 2100, 3000, 3200, 1800, 1100, 900, 500, 0, 0, 3000, 2200, 1400, 1200, 2400}, // Sunset Coast
+            {0, 1200, 400, 200, 700, 1000, 500, 800, 0, 3200, 3800, 2400, 2600, 2800, 3000, 3000, 0, 1600, 3600, 2800, 1600}, // The Pandemonium
+            {1700, 2000, 1900, 1600, 1800, 2200, 2000, 1500, 1700, 3200, 2000, 2400, 2200, 2000, 2200, 2200, 1600, 0, 2000, 1400, 1000}, // Red Rock
+            {3500, 3400, 3200, 3600, 3000, 4600, 2200, 2200, 3500, 3200, 600, 1000, 800, 600, 1400, 1400, 3600, 2000, 0, 1000, 2500}, // Port Roberts
+            {2600, 2200, 2000, 2800, 1800, 3400, 1600, 1600, 2400, 3200, 1200, 1600, 1400, 1200, 1200, 1200, 2800, 1400, 1000, 0, 1800}, // Deepfin Point
+            {1700, 2000, 1900, 1600, 1800, 2000, 900, 1600, 1700, 3200, 2200, 2600, 2400, 2200, 2400, 2400, 1600, 1000, 2500, 1800, 0}, // The Summer Shore
     };
 
     /** OSRS charter fare between two ports (indices into {@link #CHARTER_PORTS}); 0 if no ship sails that route. */
@@ -351,8 +359,9 @@ public final class Travel {
             for (int j = 0; j < CHARTER_PORTS.length; j++) {
                 if (i != j && CHARTER_FARES[i][j] > 0) {
                     String name = j == 3 ? "Shipyard" : CHARTER_PORTS[j];
-                    dests.add(CHARTER_QUESTS[j] == null ? Dest.of(name, CHARTER_TILES[j][0], CHARTER_TILES[j][1], CHARTER_FARES[i][j])
-                            : Dest.of(name, CHARTER_TILES[j][0], CHARTER_TILES[j][1], CHARTER_FARES[i][j], CHARTER_QUESTS[j]));
+                    dests.add(new Dest(name, CHARTER_TILES[j][0], CHARTER_TILES[j][1], CHARTER_FARES[i][j],
+                            CHARTER_SAILING[j] > 0 ? Skill.SAILING : null, CHARTER_SAILING[j],
+                            CHARTER_QUESTS[j] == null ? List.of() : List.of(CHARTER_QUESTS[j]), null, 0));
                 }
             }
             route(charterRoute(i), "sail", dests);

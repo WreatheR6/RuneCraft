@@ -20,7 +20,9 @@ public final class Poh {
 
     public enum Effect {
         DECOR, SEAT, BED, EXIT_PORTAL, ALTAR, BURNER, POOL, PORTAL_FRAME, LECTERN, JEWELLERY_BOX, SPIRIT_TREE, LARDER,
-        BOOKCASE, STOVE, WORKBENCH, PET_HOUSE, SPELLBOOK_ALTAR, CHEST, NEXUS, BELL_PULL
+        BOOKCASE, STOVE, WORKBENCH, PET_HOUSE, SPELLBOOK_ALTAR, CHEST, NEXUS, BELL_PULL,
+        /** House fairy ring (power 1) or spirit tree & fairy ring (power 2: also a spirit tree). */
+        FAIRY_RING
     }
 
     /**
@@ -422,8 +424,13 @@ public final class Poh {
         f("ornate_rejuvenation_pool", "Ornate rejuvenation pool", 90, 3107, Effect.POOL, 5, 0x40C0E0, "pool", "gold_leaf", 2,
                 "anti_venom_plus", 10); // approx materials
         hotspot("teleport", "Teleport", 2, 2);
-        fx("spirit_tree", "Spirit tree", 75, 199.5, Effect.SPIRIT_TREE, 1, 0x7A9A4A, "spirit_tree", Skill.FARMING, 83,
+        // Wiki: spirit tree 75 (83 Farming), 350 XP in both; fairy ring 85, 535 XP (10 mushrooms + a fairy enchantment,
+        // 100 coins from Fairy Fixit); spirit tree & fairy ring 95 (83 Farming), 885 XP in both. The fairy ring's code is DIQ.
+        fx("spirit_tree", "Spirit tree", 75, 350, Effect.SPIRIT_TREE, 1, 0x7A9A4A, "spirit_tree", Skill.FARMING, 83,
                 "coins", 250000); // approx: bagged spirit tree
+        f("fairy_ring", "Fairy ring", 85, 535, Effect.FAIRY_RING, 1, 0x9A6AC0, "mushroom", "coins", 100); // approx: the enchantment only
+        fx("spirit_tree_fairy_ring", "Spirit tree & fairy ring", 95, 885, Effect.FAIRY_RING, 2, 0x7A9A6A, "spirit_tree",
+                Skill.FARMING, 83, "coins", 250100); // approx: sapling + enchantment as coins
         hotspot("superior_tree", "Tree", 9, 9);
         plants(true);
         room("superior_garden", "Superior garden", 65, 75000, true, 0x4A8A3A);

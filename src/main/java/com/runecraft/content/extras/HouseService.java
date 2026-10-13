@@ -582,6 +582,9 @@ final class HouseService {
         placeHotspot(world, cellCorner(o, cx, cz), layout.room(cx, cz).hotspot(hotspotId), furnitureId);
         markBuilt(player.getServer(), player.getUuid(), layout);
         XpService.add(player, Skill.CONSTRUCTION, f.xp());
+        if (f.otherSkill() == Skill.FARMING) {
+            XpService.add(player, Skill.FARMING, f.xp()); // OSRS: house spirit trees give the same XP in Farming
+        }
         player.swingHand(net.minecraft.util.Hand.MAIN_HAND, true);
         world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_WOOD_PLACE, SoundCategory.BLOCKS, 1f, 1f);
         Msg.action(player, "You build " + Poh.article(f.name().toLowerCase(Locale.ROOT)) + ".");

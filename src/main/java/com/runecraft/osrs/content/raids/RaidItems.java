@@ -176,6 +176,9 @@ public final class RaidItems {
                 .examine("Read this to learn the Preserve prayer.");
         items.add("dark_relic", "Dark relic", Kind.SIMPLE, "orb", 0x3A2A4A).value(1).stack(1)
                 .examine("A relic of Xeric's power. Rub it to gain experience in a skill.");
+        // Rub Xeric's talisman with it in your inventory to unlock Xeric's Honour (systems module).
+        items.add("ancient_tablet", "Ancient tablet", Kind.SIMPLE, "tablet", 0x8A9A7A).value(75_000).stack(1)
+                .examine("Strange glowing symbols are inscribed in this tablet.");
         items.add("dragon_dart_tip", "Dragon dart tip", Kind.SIMPLE, "dart_tip", 0xB02A1A).value(1_000)
                 .examine("Fletch with feathers to make dragon darts.");
         items.add("lily_of_the_sands", "Lily of the sands", Kind.SIMPLE, "herb", 0xE8D890).value(1_000)

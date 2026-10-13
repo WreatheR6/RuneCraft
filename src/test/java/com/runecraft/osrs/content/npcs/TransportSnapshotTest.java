@@ -47,6 +47,9 @@ class TransportSnapshotTest {
             Map.entry("Ring of wealth: Dondakan", "OSRS lands underground; mine entrance at White Wolf Mountain"),
             Map.entry("Digsite pendant: Lithkren", "OSRS lands in the vault; Lithkren's surface"),
             Map.entry("Drakan's medallion: Slepe", "OSRS lands in the sanctuary under Slepe; the village"),
+            Map.entry("Slayer ring: Fremennik", "OSRS lands inside the dungeon; its entrance south-east of Rellekka"),
+            Map.entry("Slayer ring: Tarn's Lair", "an instance in OSRS; the Haunted Mine entrance to the lair as built here"),
+            Map.entry("Slayer ring: Dark Beasts", "OSRS lands by the Temple of Light; this world's dark beasts are in the Iorwerth Dungeon"),
             Map.entry("Paddewwa tablet", "Edgeville Dungeon is not built; surface above it"),
             Map.entry("Ape Atoll tablet", "OSRS lands in the Ape Atoll dungeon; the island above it"),
             Map.entry("Key master teleport", "Cerberus' lair is an instance; Taverley Dungeon entrance"));
@@ -277,13 +280,21 @@ class TransportSnapshotTest {
         Map<String, int[]> port = new HashMap<>();
         Map<String, Integer> fare = new HashMap<>();
         Map<String, Set<String>> req = new HashMap<>();
+        Map<String, String> skill = new HashMap<>();
         for (Map<String, String> r : rows("charter_ships.tsv")) {
             String from = r.get("section");
             String to = r.get("Display info");
             port.put(to, tile(r.get("Destination")));
             fare.put(from + ">" + to, coins(r.get("Items")));
             req.put(to, quests(r.get("Quests")));
+            skill.put(to, r.get("Skills"));
         }
+        // Every OSRS charter port has a crew here (the Sailing ports too).
+        Set<String> sections = new HashSet<>();
+        for (Map<String, String> r : rows("charter_ships.tsv")) {
+            sections.add(r.get("section"));
+        }
+        assertEquals(sections.size(), Travel.CHARTER_PORTS.length, "charter ports " + sections);
         int routes = 0;
         for (int i = 0; i < Travel.CHARTER_PORTS.length; i++) {
             String from = i == 3 ? "Shipyard" : Travel.CHARTER_PORTS[i];
@@ -298,6 +309,8 @@ class TransportSnapshotTest {
             for (Travel.Dest d : route.dests()) {
                 routes++;
                 assertEquals(req.get(d.name()), new HashSet<>(d.quests()), "charter to " + d.name() + " quest");
+                assertEquals(skill.get(d.name()), d.skill() == null ? "" : d.level() + " " + d.skill().displayName(),
+                        "charter to " + d.name() + " skill");
                 assertTrue(same(port.get(d.name()), d.x(), d.y()), d.name());
             }
             Travel.Agent crew = agent(route.id());
@@ -416,14 +429,12 @@ class TransportSnapshotTest {
                 dest.put(norm(r.get("Display info")), tile(r.get("Destination")));
             }
         }
-        // The House on the Hill's and Sticky Swamp's trees are part of hand-built structures, away from OSRS's (approx).
-        Map<String, Integer> tolerance = Map.of("HOUSE_ON_THE_HILL", 20, "STICKY_SWAMP", 50);
+        // Every tree stands on its OSRS tile (Verdant Valley's tile is the arrival tile beside its tree).
         for (IslandsTravel.Stop s : IslandsTravel.MUSHTREES.stops()) {
             int[] src = dest.get(norm(s.name()));
             assertNotNull(src, s.name());
             int[] t = ringTile(s);
-            int tol = tolerance.getOrDefault(s.code(), 10);
-            assertTrue(Math.abs(t[0] - src[0]) <= tol && Math.abs(t[1] - src[1]) <= tol, s.name() + " " + xy(t) + " vs " + xy(src));
+            assertTrue(Math.abs(t[0] - src[0]) <= 1 && Math.abs(t[1] - src[1]) <= 1, s.name() + " " + xy(t) + " vs " + xy(src));
         }
         assertEquals(dest.size(), IslandsTravel.MUSHTREES.stops().size());
     }
@@ -475,20 +486,22 @@ class TransportSnapshotTest {
             Map.entry("Combat bracelet", Teleports.COMBAT), Map.entry("Ring of wealth", Teleports.WEALTH),
             Map.entry("Digsite pendant", Teleports.DIGSITE), Map.entry("Necklace of passage", Teleports.PASSAGE),
             Map.entry("Burning amulet", Teleports.BURNING), Map.entry("Xeric's talisman", Teleports.XERIC),
-            Map.entry("Drakan's medallion", Teleports.DRAKAN), Map.entry("Ectophial", Teleports.ECTOPHIAL));
+            Map.entry("Drakan's medallion", Teleports.DRAKAN), Map.entry("Ectophial", Teleports.ECTOPHIAL),
+            Map.entry("Slayer ring", Teleports.SLAYER));
     private static final Map<String, String> ITEM_IDS = Map.ofEntries(
             Map.entry("Amulet of glory", "amulet_of_glory_4"), Map.entry("Ring of dueling", "ring_of_dueling_8"),
             Map.entry("Games necklace", "games_necklace_8"), Map.entry("Skills necklace", "skills_necklace_4"),
             Map.entry("Combat bracelet", "combat_bracelet_4"), Map.entry("Ring of wealth", "ring_of_wealth_5"),
             Map.entry("Digsite pendant", "digsite_pendant_5"), Map.entry("Necklace of passage", "necklace_of_passage_5"),
             Map.entry("Burning amulet", "burning_amulet_5"), Map.entry("Xeric's talisman", "xerics_talisman"),
-            Map.entry("Drakan's medallion", "drakans_medallion"), Map.entry("Ectophial", "ectophial"));
+            Map.entry("Drakan's medallion", "drakans_medallion"), Map.entry("Ectophial", "ectophial"),
+            Map.entry("Slayer ring", "slayer_ring_8"));
     /** RuneCraft destination names that differ from the snapshot's. */
     private static final Map<String, String> ALIAS = Map.of("Cooks' Guild", "Cooking Guild", "Edgeville Monastery", "Monastery",
             "Dondakan's Rock", "Dondakan", "Wintertodt Camp", "Wintertodt", "Eagles' Eyrie", "Eagle's Eyrie",
-            "Ectofuntus", "");
-    /** OSRS destinations not offered (yet): Xeric's Honour needs an unlock this world doesn't model. */
-    private static final Set<String> NOT_OFFERED = Set.of("Xeric's talisman: 5. Xeric's Honour");
+            "Ectofuntus", "", "Stronghold Slayer Cave", "Stronghold", "Fremennik Slayer Dungeon", "Fremennik");
+    /** OSRS destinations not offered (yet). */
+    private static final Set<String> NOT_OFFERED = Set.of();
 
     @Test
     void teleportJewelleryMatches() throws IOException {
@@ -525,6 +538,59 @@ class TransportSnapshotTest {
                     assertTrue(offered.contains(k), "missing " + k);
                 }
             }
+        }
+    }
+
+    /**
+     * Charges: the snapshot lists one OSRS item id per charge state (plus trimmed/imbued copies), and marks a teleport
+     * "Consumable" when it uses a charge. RuneCraft's charge states must match, and unlimited items must not use any.
+     */
+    @Test
+    void teleportJewelleryChargesMatch() throws IOException {
+        // display name -> {RuneCraft charge base, OSRS variants per charge state (glory (t), ring of wealth (i))}
+        Map<String, String[]> charged = Map.of("Games necklace", new String[]{"games_necklace", "1"},
+                "Ring of dueling", new String[]{"ring_of_dueling", "1"}, "Combat bracelet", new String[]{"combat_bracelet", "1"},
+                "Skills necklace", new String[]{"skills_necklace", "1"}, "Amulet of glory", new String[]{"amulet_of_glory", "2"},
+                "Ring of wealth", new String[]{"ring_of_wealth", "2"}, "Slayer ring", new String[]{"slayer_ring", "1"},
+                "Digsite pendant", new String[]{"digsite_pendant", "1"}, "Necklace of passage", new String[]{"necklace_of_passage", "1"},
+                "Burning amulet", new String[]{"burning_amulet", "1"});
+        Map<String, Integer> mine = new HashMap<>();
+        for (com.runecraft.osrs.content.systems.Jewellery.Worn w : com.runecraft.osrs.content.systems.Jewellery.all()) {
+            if (w.chargeBase() != null) {
+                mine.merge(w.chargeBase(), w.charges(), Math::max);
+            }
+        }
+        Set<String> checked = new HashSet<>();
+        for (Map<String, String> r : rows("teleportation_items.tsv")) {
+            String info = r.get("Display info");
+            int colon = info.indexOf(": ");
+            String item = colon < 0 ? info : info.substring(0, colon);
+            String[] c = charged.get(item);
+            if (c == null || !"T".equals(r.get("Consumable")) || !checked.add(item)) {
+                continue;
+            }
+            int ids = r.get("Items").split("\\|\\|").length;
+            assertEquals(ids / Integer.parseInt(c[1]), mine.getOrDefault(c[0], 0), item + " charges");
+        }
+        assertEquals(charged.keySet(), checked);
+        // Unlimited versions: the eternal glory and eternal slayer ring use no charges ("Consumable" F).
+        for (String id : List.of("amulet_of_eternal_glory", "slayer_ring_eternal", "drakans_medallion")) {
+            com.runecraft.osrs.content.systems.Jewellery.Worn w = com.runecraft.osrs.content.systems.Jewellery.worn(id);
+            assertNotNull(w, id);
+            assertEquals(null, w.chargeBase(), id);
+            assertFalse(w.teleports().isEmpty(), id);
+        }
+        assertEquals(Teleports.SLAYER, com.runecraft.osrs.content.systems.Jewellery.worn("slayer_ring_eternal").teleports());
+        // Xeric's talisman: one charge per teleport ("Consumable" T), kept per stack: one per lizardman fang, at most 1,000.
+        com.runecraft.osrs.content.systems.Charges.Spec xeric = com.runecraft.osrs.content.systems.Charges.of("xerics_talisman");
+        assertNotNull(xeric);
+        assertEquals(1000, xeric.max());
+        assertEquals(Map.of("lizardman_fang", 1), xeric.materials());
+        assertEquals(com.runecraft.osrs.content.systems.Charges.Drain.TELEPORT, xeric.drain());
+        assertEquals("ancient_tablet", Teleports.unlockItem(Teleports.XERICS_HONOUR));
+        assertTrue(com.runecraft.osrs.ItemCatalog.exists("ancient_tablet"));
+        for (int n = 1; n <= 8; n++) {
+            assertTrue(com.runecraft.osrs.ItemCatalog.exists("slayer_ring_" + n), "slayer_ring_" + n);
         }
     }
 

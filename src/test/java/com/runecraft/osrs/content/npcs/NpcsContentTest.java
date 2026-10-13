@@ -169,7 +169,7 @@ class NpcsContentTest {
             assertTrue(n.id().matches("[a-z0-9_]+"), n.id());
             assertTrue(ids.add(n.id()), "duplicate " + n.id());
             // Prifddinas (spirit tree) is built at its OSRS tile north of the main map.
-            assertTrue(n.x() > 1000 && n.x() < 4000 && n.y() > 2500 && (n.y() < 4100 || n.id().equals("npc_spirit_tree_prifddinas")),
+            assertTrue(n.x() > 1000 && n.x() < 4000 && n.y() > 2300 && (n.y() < 4100 || n.id().equals("npc_spirit_tree_prifddinas")),
                     n.id() + " tile");
             assertEquals(4, n.colors().length, n.id());
             switch (n.role()) {
@@ -223,7 +223,7 @@ class NpcsContentTest {
             assertFalse(r.dests().isEmpty(), r.id());
             for (Travel.Dest d : r.dests()) {
                 assertTrue(d.price() >= 0, r.id());
-                assertTrue(d.x() > 1000 && d.x() < 4000 && d.y() > 2400 && (d.y() < 4100 || d.name().equals("Prifddinas")),
+                assertTrue(d.x() > 1000 && d.x() < 4000 && d.y() > 2300 && (d.y() < 4100 || d.name().equals("Prifddinas")),
                         r.id() + " " + d.name());
                 for (String q : d.quests()) {
                     assertNotNull(ContentRegistry.quest(q), r.id() + " quest " + q);

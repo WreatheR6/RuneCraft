@@ -66,7 +66,11 @@ public final class Seafaring {
             new Port("lands_end", "Land's End", 1504, 3399, 5, false),
             new Port("sunset_coast", "Sunset Coast", 1514, 2972, 44, false), // approx dock
             new Port("aldarin", "Aldarin", 1393, 2928, 46, true), // approx dock
-            new Port("etceteria", "Etceteria", 2612, 3895, 65, false)); // approx dock
+            new Port("etceteria", "Etceteria", 2612, 3895, 65, false), // approx dock
+            // Charter docks of the Sailing ports (shortest-path charter tiles); Port Roberts is a floating platform.
+            new Port("port_roberts", "Port Roberts", 1871, 3309, 50, false),
+            new Port("deepfin_point", "Deepfin Point", 1943, 2757, 67, false),
+            new Port("the_summer_shore", "The Summer Shore", 3189, 2369, 45, false));
 
     /** Sailing level requirements for features (for the /sailing info list and gating). approx where noted. */
     public static final Map<String, Integer> FEATURES = new LinkedHashMap<>();
