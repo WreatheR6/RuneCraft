@@ -235,7 +235,7 @@ public final class JewelleryService {
             case "wear" -> wear(p, Hand.MAIN_HAND);
             case "energy" -> {
                 if (DiaryService.useDaily(p, "explorer_energy", energyUses(tierOf(w.id())))) {
-                    RunEnergyService.restore(p, 5000);
+                    RunEnergyService.restore(p, 100 * com.runecraft.osrs.content.systems.DiaryRewards.explorerEnergyPercent(tierOf(w.id())));
                     Msg.action(p, "You feel refreshed and renewed.");
                 } else {
                     Msg.game(p, "You have used up your energy restores for today.");

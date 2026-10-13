@@ -72,7 +72,7 @@ final class DiaryPerks {
             return;
         }
         String ammo = SysState.of(p).wornId(Jewellery.Slot.AMMO);
-        if (ammo.startsWith("radas_blessing_") && pending.item().startsWith("raw_") && DiaryService.inArea(p, "kourend")
+        if (ammo.startsWith("radas_blessing_") && pending.item().startsWith("raw_")
                 && p.getRandom().nextInt(100) < DiaryRewards.radasExtraFishPercent(DiaryRewards.tierOf(ammo))) {
             Inv.give(p, pending.item(), 1);
             Msg.game(p, "Rada's blessing grants you an extra fish.");

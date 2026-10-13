@@ -36,15 +36,15 @@ public final class DiaryRewards {
             new Tele("ardougne", Teleports.at("Ardougne Farm", 2673, 3375), new int[]{-1, 3, 5, 0}),
             new Tele("desert", Teleports.at("Nardah", 3428, 2892), new int[]{-1, 1, 0, 0}),
             new Tele("desert", Teleports.at("Kalphite Cave", 3321, 3122), new int[]{-1, -1, -1, 0}),
-            new Tele("fremennik", Teleports.at("Rellekka", 2660, 3657), new int[]{-1, 1, 3, 0}), // approx
+            new Tele("fremennik", Teleports.at("Rellekka", 2660, 3657), new int[]{1, 3, 5, 0}),
             new Tele("kandarin", Teleports.at("Sherlock", 2733, 3415), new int[]{-1, -1, 1, 0}),
             new Tele("karamja", Teleports.at("Shilo gem mine", 2825, 2997), new int[]{-1, -1, 0, 0}),
             new Tele("karamja", Teleports.at("Duradel", 2869, 2982), new int[]{-1, -1, -1, 0}),
             new Tele("kourend", Teleports.at("Kourend Woodland", 1552, 3456), new int[]{3, 5, 0, 0}),
             new Tele("kourend", Teleports.at("Mount Karuulm", 1311, 3795), new int[]{-1, -1, 3, 0}),
             new Tele("lumbridge", Teleports.at("Cabbage patch", 3052, 3289), new int[]{-1, 3, 0, 0}),
-            new Tele("morytania", Teleports.at("Ectofuntus", 3660, 3522), new int[]{-1, 5, 0, 0}),
-            new Tele("morytania", Teleports.at("Burgh de Rott", 3482, 3231), new int[]{-1, 5, 0, 0}),
+            new Tele("morytania", Teleports.at("Ectofuntus", 3660, 3522), new int[]{-1, 5, 5, 0}),
+            new Tele("morytania", Teleports.at("Burgh de Rott", 3482, 3231), new int[]{-1, -1, 0, 0}),
             new Tele("western", Teleports.at("Piscatoris Fishing Colony", 2340, 3650), new int[]{-1, -1, 1, 0}), // approx
             new Tele("wilderness", Teleports.at("Fountain of Rune", 3375, 3893), new int[]{-1, -1, 1, 0}));
 
@@ -96,32 +96,45 @@ public final class DiaryRewards {
 
     /** Falador shield: percent of the Prayer level restored, and uses per day. */
     public static int faladorRestorePercent(int tier) {
-        return tier <= 1 ? 50 : 100;
+        return switch (tier) {
+            case 1 -> 25;
+            case 2 -> 50;
+            default -> 100;
+        };
     }
 
     public static int faladorRestoresPerDay(int tier) {
         return tier >= 4 ? 2 : 1;
     }
 
-    /** Explorer's ring: 50% run energy restores per day and whether its 30 daily alchemy casts are High Alchemy. */
+    /**
+     * Explorer's ring (OSRS wiki): run energy restores per day (2 / 3 / 4 of 50%, then 3 of 100% on ring 4) and
+     * whether its 30 daily alchemy casts may be High Alchemy (ring 4 only; rings 1-3 cast Low Alchemy).
+     */
     public static int explorerEnergyRestores(int tier) {
         return switch (tier) {
             case 1 -> 2;
-            case 2, 3 -> 3;
-            default -> 4;
+            case 2 -> 3;
+            case 3 -> 4;
+            default -> 3;
         };
+    }
+
+    /** Percent of run energy each Explorer's ring restore gives. */
+    public static int explorerEnergyPercent(int tier) {
+        return tier >= 4 ? 100 : 50;
     }
 
     public static final int EXPLORER_ALCHS_PER_DAY = 30;
 
     public static boolean explorerHighAlch(int tier) {
-        return tier >= 2;
+        return tier >= 4;
     }
 
     /** Varrock armour: highest ore it can double when mining (10% chance), by tier. */
     private static final String[][] VARROCK_ORES = {
-            {"clay", "copper_ore", "tin_ore", "iron_ore", "silver_ore", "coal", "rune_essence", "pure_essence"},
-            {"gold_ore", "mithril_ore", "granite_500g", "granite_2kg", "granite_5kg", "sandstone_1kg"},
+            {"clay", "copper_ore", "tin_ore", "iron_ore", "silver_ore", "coal", "gold_ore", "rune_essence", "pure_essence"},
+            {"mithril_ore", "lovakite_ore", "granite_500g", "granite_2kg", "granite_5kg", "sandstone_1kg"},
             {"adamantite_ore"},
             {"runite_ore", "amethyst"}};
     private static final String[][] VARROCK_BARS = {
@@ -148,8 +161,8 @@ public final class DiaryRewards {
         return false;
     }
 
-    /** Rada's blessing: percent chance of an extra fish when fishing in Kourend & Kebos. */
-    public static int radasExtraFishPercent(int tier) { // approx
+    /** Rada's blessing (worn): percent chance of an extra fish anywhere (OSRS wiki: 2 / 4 / 6 / 8%). */
+    public static int radasExtraFishPercent(int tier) {
         return tier <= 0 ? 0 : tier * 2;
     }
 
@@ -285,16 +298,16 @@ public final class DiaryRewards {
                 }
             }
             case "lumbridge" -> {
-                out.add(explorerEnergyRestores(tier) + " run energy restores (50%) per day");
+                out.add(explorerEnergyRestores(tier) + " run energy restores (" + explorerEnergyPercent(tier) + "%) per day");
                 out.add(EXPLORER_ALCHS_PER_DAY + " free " + (explorerHighAlch(tier) ? "High" : "Low") + " Alchemy casts per day");
                 if (tier >= 4) {
                     out.add("Use fairy rings without a Dramen staff");
                 }
             }
             case "varrock" -> out.add(VARROCK_BONUS_PERCENT + "% chance of an extra ore/bar up to "
-                    + new String[]{"coal/steel", "mithril", "adamantite", "runite"}[Math.max(0, Math.min(3, tier - 1))]);
+                    + new String[]{"gold/steel", "lovakite/mithril", "adamantite", "runite"}[Math.max(0, Math.min(3, tier - 1))]);
             case "kourend" -> {
-                out.add(radasExtraFishPercent(tier) + "% chance of an extra fish in Kourend & Kebos");
+                out.add(radasExtraFishPercent(tier) + "% chance of an extra fish (worn, anywhere)");
                 out.add((tier >= 4 ? 10 : 5) + "% less burning on the Hosidius kitchen range");
             }
             case "morytania" -> {

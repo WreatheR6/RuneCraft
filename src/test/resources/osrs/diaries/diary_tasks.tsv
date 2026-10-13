@@ -1,0 +1,494 @@
+# OSRS wiki Achievement Diary task snapshot (Kiyogitpy/osrs-wiki-data, July 2026 dump).
+# area	tier	n	task	skills (SKILL:level, non-boostable and boostable alike)	quests completed (wiki names)
+ardougne	EASY	1	Have Wizard Cromperty teleport you to the Rune Essence mine.		Rune Mysteries
+ardougne	EASY	2	Steal a cake from the Ardougne market stalls.	THIEVING:5	
+ardougne	EASY	3	Sell Silk to Silk trader in Ardougne for 60 coins each.		
+ardougne	EASY	4	Use the altar in East Ardougne's church.		
+ardougne	EASY	5	Go out fishing on the Fishing Trawler		
+ardougne	EASY	6	Enter the Combat Training Camp north of W. Ardougne.		Biohazard
+ardougne	EASY	7	Have Tindel Marchant identify a Rusted Sword for you.		
+ardougne	EASY	8	Use the Ardougne Lever to teleport to the Wilderness.		
+ardougne	EASY	9	View Aleck's Hunter Emporium in Yanille.		
+ardougne	EASY	10	Check what pets you have Insured with Probita in Ardougne.		
+ardougne	MEDIUM	1	Enter the Unicorn pen in Ardougne zoo using Fairy rings.		
+ardougne	MEDIUM	2	Grapple over Yanille's south wall.	AGILITY:39,STRENGTH:38,RANGED:21	
+ardougne	MEDIUM	3	Harvest some strawberries from the Ardougne farming patch.	FARMING:31	
+ardougne	MEDIUM	4	Cast the Ardougne Teleport spell.	MAGIC:51	Plague City
+ardougne	MEDIUM	5	Travel to Castlewars by Hot Air Balloon.	FIREMAKING:50	Enlightened Journey
+ardougne	MEDIUM	6	Claim buckets of sand from Bert in Yanille.		The Hand in the Sand;Ultimate Ironman
+ardougne	MEDIUM	7	Catch any fish on the Fishing Platform.		
+ardougne	MEDIUM	8	Pickpocket the master farmer north of Ardougne.	THIEVING:38	
+ardougne	MEDIUM	9	Collect some Nightshade from the Skavid Caves.		
+ardougne	MEDIUM	10	Kill a swordchick in the Tower of Life.		Tower of Life
+ardougne	MEDIUM	11	Equip Iban's upgraded staff or upgrade an Iban staff.		Underground Pass
+ardougne	MEDIUM	12	Visit the Island East of the Necromancer's tower.		
+ardougne	HARD	1	Recharge some Jewellery at the Totem in the Legends Guild.		Legends' Quest
+ardougne	HARD	2	Enter the Magic Guild.	MAGIC:66	
+ardougne	HARD	3	Steal from a chest in Ardougne Castle.	THIEVING:72	
+ardougne	HARD	4	Have a zookeeper put you in Ardougne Zoo's monkey cage.		
+ardougne	HARD	5	Teleport to the Watchtower.	MAGIC:58	Watchtower
+ardougne	HARD	6	Catch a Red Salamander.	HUNTER:59	
+ardougne	HARD	7	Check the health of a Palm tree near tree gnome village.	FARMING:68	
+ardougne	HARD	8	Pick some Poison Ivy berries from the patch south of Ardougne.	FARMING:70	
+ardougne	HARD	9	Smith a Mithril platebody near Ardougne.	SMITHING:68	
+ardougne	HARD	10	Enter your POH from Yanille.	CONSTRUCTION:50	
+ardougne	HARD	11	Smith a Dragon sq shield in West Ardougne.	SMITHING:60	
+ardougne	HARD	12	Craft some Death runes from Essence.	RUNECRAFT:65	Mourning's End Part II
+ardougne	ELITE	1	Catch a Manta ray in the Fishing Trawler and cook it in Port Khazard.	FISHING:81,COOKING:91	
+ardougne	ELITE	2	Picklock the door to the basement of Yanille Agility Dungeon.	THIEVING:82	
+ardougne	ELITE	3	Pickpocket a Hero.	THIEVING:80	
+ardougne	ELITE	4	Make a rune crossbow yourself from scratch within Witchaven or Yanille.	CRAFTING:10,SMITHING:91,FLETCHING:69	
+ardougne	ELITE	5	Imbue a Salve amulet at Nightmare Zone, or equip a Salve amulet that was imbued there.		Haunted Mine
+ardougne	ELITE	6	Pick some Torstol from the patch north of Ardougne.	FARMING:85	
+ardougne	ELITE	7	Complete a lap of Ardougne's rooftop agility course.	AGILITY:90	
+ardougne	ELITE	8	Cast Ice Barrage on another player within Castle Wars.	MAGIC:94	Desert Treasure I
+desert	EASY	1	Catch a Golden Warbler.	HUNTER:5	
+desert	EASY	2	Mine 5 clay in the north-eastern desert.		
+desert	EASY	3	Enter the Kalphite Hive.		
+desert	EASY	4	Enter the Desert with a set of Desert robes equipped.		
+desert	EASY	5	Kill a Vulture		
+desert	EASY	6	Have the Nardah Herbalist clean a Herb for you.		
+desert	EASY	7	Collect 5 Potato Cactus from the Kalphite Hive.		
+desert	EASY	8	Sell some artefacts to Simon Templeton.		
+desert	EASY	9	Open the Sarcophagus in the first room of Pyramid Plunder	THIEVING:21	
+desert	EASY	10	Cut a desert cactus open to fill a waterskin.		
+desert	EASY	11	Travel from the Shantay Pass to Pollnivneach by Magic Carpet.		
+desert	MEDIUM	1	Climb to the summit of the Agility Pyramid.	AGILITY:30	
+desert	MEDIUM	2	Slay a desert lizard.	SLAYER:22	
+desert	MEDIUM	3	Catch an Orange Salamander.	HUNTER:47	
+desert	MEDIUM	4	Steal a feather from the Desert Phoenix.	THIEVING:25	
+desert	MEDIUM	5	Travel to Uzer via Magic Carpet.		The Golem
+desert	MEDIUM	6	Travel to the Desert via Eagle.		Eagles' Peak
+desert	MEDIUM	7	Pray at the Elidinis statuette in Nardah		Spirits of the Elid
+desert	MEDIUM	8	Create a combat potion in the desert.	HERBLORE:36	
+desert	MEDIUM	9	Teleport to Enakhra's Temple with the Camulet.		Enakhra's Lament
+desert	MEDIUM	10	Visit the Genie.		
+desert	MEDIUM	11	Teleport to Pollnivneach with a redirected teleport to house tablet.	CONSTRUCTION:20	
+desert	MEDIUM	12	Chop some Teak Logs near Uzer.	WOODCUTTING:35	
+desert	HARD	1	Knock out and pickpocket a Menaphite Thug.	THIEVING:65	
+desert	HARD	2	Mine some Granite.	MINING:45	
+desert	HARD	3	Refill your waterskins in the Desert using Lunar magic.	MAGIC:68	Dream Mentor
+desert	HARD	4	Kill the Kalphite Queen.		
+desert	HARD	5	Complete a lap of the Pollnivneach agility course.	AGILITY:70	
+desert	HARD	6	Slay a Dust Devil in the desert cave with a Slayer helmet equipped.	SLAYER:65,DEFENCE:10	
+desert	HARD	7	Activate Ancient Magicks at the altar in the Jaldraocht Pyramid.		Desert Treasure I
+desert	HARD	8	Defeat a Locust Rider with Keris.	ATTACK:50	
+desert	HARD	9	Burn some yew logs on the Nardah Mayor's balcony.	FIREMAKING:60	
+desert	HARD	10	Create a Mithril Platebody in Nardah.	SMITHING:68	
+desert	ELITE	1	Bake a wild pie at the Nardah Clay Oven.	COOKING:85	
+desert	ELITE	2	Cast Ice Barrage against a foe in the Desert	MAGIC:94	Desert Treasure I
+desert	ELITE	3	Fletch some Dragon darts at the Bedabin Camp.	FLETCHING:95	
+desert	ELITE	4	Speak to the KQ head in your POH.	CONSTRUCTION:78	Priest in Peril
+desert	ELITE	5	Steal from the Grand Gold Chest in the final room of Pyramid Plunder.	THIEVING:91	
+desert	ELITE	6	Restore at least 85 Prayer points when praying at the Altar in Sophanem.	PRAYER:85	
+falador	EASY	1	Find out what your family crest is from Sir Renitee	CONSTRUCTION:16	
+falador	EASY	2	Climb over the western Falador wall.	AGILITY:5	
+falador	EASY	3	Browse Sarah's farm shop.		
+falador	EASY	4	Get a Haircut or a Shave from the Falador Hairdresser.		
+falador	EASY	5	Fill a bucket from the pump north of Falador west bank.		
+falador	EASY	6	Kill a duck in Falador Park.		
+falador	EASY	7	Make a mind tiara.		
+falador	EASY	8	Take the boat to Entrana.		
+falador	EASY	9	Repair a broken strut in the Motherlode Mine.		
+falador	EASY	10	Claim a security book from the Security guard at Port Sarim jail.		
+falador	EASY	11	Smith some Blurite Limbs on Doric's anvil.	MINING:10,SMITHING:13	The Knight's Sword;Doric's Quest
+falador	MEDIUM	1	Light a Bullseye lantern at the Chemist's in Rimmington.	FIREMAKING:49	
+falador	MEDIUM	2	Telegrab some Wine of Zamorak at the Chaos Temple by the Wilderness.	MAGIC:33	
+falador	MEDIUM	3	Unlock the Crystal chest in Taverley.		
+falador	MEDIUM	4	Place a Scarecrow in the Falador farm flower patch.	FARMING:23	
+falador	MEDIUM	5	Kill a Mogre at Mudskipper Point.	SLAYER:32	Skippy and the Mogres
+falador	MEDIUM	6	Visit the Port Sarim Rat Pits.		
+falador	MEDIUM	7	Grapple up and then jump off the north Falador wall.	AGILITY:11,STRENGTH:37,RANGED:19	
+falador	MEDIUM	8	Pickpocket a Falador guard.	THIEVING:40	
+falador	MEDIUM	9	Pray at the Altar of Guthix in Taverley whilst wearing full Initiate.	PRAYER:10,DEFENCE:20	Recruitment Drive
+falador	MEDIUM	10	Mine some Gold ore at the Crafting Guild.	CRAFTING:40,MINING:40	
+falador	MEDIUM	11	Squeeze through the crevice in the Dwarven mines.	AGILITY:42	
+falador	MEDIUM	12	Chop and burn some Willow logs in Taverley.	WOODCUTTING:30,FIREMAKING:30	
+falador	MEDIUM	13	Craft a fruit basket on the Falador Farm loom.	CRAFTING:36	
+falador	MEDIUM	14	Teleport to Falador.	MAGIC:37	
+falador	HARD	1	Craft 140 Mind runes simultaneously from Essence without the use of Extracts.	RUNECRAFT:56	
+falador	HARD	2	Change your family crest to the Saradomin symbol.	PRAYER:70,CONSTRUCTION:16	
+falador	HARD	3	Kill the Giant Mole beneath Falador Park.		
+falador	HARD	4	Kill a Skeletal Wyvern in the Asgarnia Ice Dungeon.	SLAYER:72	
+falador	HARD	5	Complete a lap of the Falador rooftop agility course.	AGILITY:50	
+falador	HARD	6	Enter the mining guild while wearing a Prospector helmet.	MINING:60	
+falador	HARD	7	Kill the Blue Dragon under the Heroes' Guild.		Heroes' Quest
+falador	HARD	8	Crack a wall safe within Rogues' Den.	THIEVING:50	
+falador	HARD	9	Recharge your prayer in the Port Sarim church while wearing full Proselyte.	DEFENCE:30,PRAYER:20	The Slug Menace
+falador	HARD	10	Enter the Warriors' Guild.		
+falador	HARD	11	Equip a dwarven helmet within the dwarven mines.	DEFENCE:50	Grim Tales
+falador	ELITE	1	Craft 252 Air Runes simultaneously from Essence without the use of Extracts.	RUNECRAFT:88	
+falador	ELITE	2	Purchase a White 2h Sword from Sir Vyvin.		Wanted!
+falador	ELITE	3	Find at least 3 magic roots at once when digging up your magic tree in Falador.	FARMING:91,WOODCUTTING:75	
+falador	ELITE	4	Perform a skillcape or quest cape emote at the top of Falador Castle.		
+falador	ELITE	5	Jump over the strange floor in Taverley dungeon.	AGILITY:80	
+falador	ELITE	6	Mix a Saradomin brew in Falador east bank.	HERBLORE:81	
+fremennik	EASY	1	Catch a Cerulean twitch.	HUNTER:11	
+fremennik	EASY	2	Change your boots at Yrsa's Shoe Store.		The Fremennik Trials
+fremennik	EASY	3	Kill 5 Rock crabs.		
+fremennik	EASY	4	Craft a tiara from scratch in Rellekka.	CRAFTING:23,MINING:20,SMITHING:20	The Fremennik Trials
+fremennik	EASY	5	Browse the Stonemasons shop.		
+fremennik	EASY	6	Collect 5 Snape grass on Waterbirth Island.		
+fremennik	EASY	7	Steal from the Keldagrim crafting or baker's stall.	THIEVING:5	
+fremennik	EASY	8	Fill a bucket with water at the Rellekka well.		
+fremennik	EASY	9	Enter the Troll Stronghold.		
+fremennik	EASY	10	Chop and burn some oak logs in the Fremennik Province.	WOODCUTTING:15,FIREMAKING:15	
+fremennik	MEDIUM	1	Slay a Brine rat.	SLAYER:47	
+fremennik	MEDIUM	2	Travel to the Snowy Hunter Area via Eagle.		Eagles' Peak
+fremennik	MEDIUM	3	Mine some coal in Rellekka.	MINING:30	The Fremennik Trials
+fremennik	MEDIUM	4	Steal from the Rellekka Fish stalls.	THIEVING:42	The Fremennik Trials
+fremennik	MEDIUM	5	Travel to Miscellania by Fairy ring.		The Fremennik Trials;Fairytale II - Cure a Queen
+fremennik	MEDIUM	6	Catch a Snowy knight.	HUNTER:45	
+fremennik	MEDIUM	7	Pick up your Pet Rock from your POH Menagerie.	CONSTRUCTION:37	
+fremennik	MEDIUM	8	Visit the Lighthouse from Waterbirth island.		Horror from the Deep
+fremennik	MEDIUM	9	Mine some gold at the Arzinian mine.	MINING:40,DEFENCE:30	
+fremennik	HARD	1	Teleport to Trollheim.	MAGIC:61	Eadgar's Ruse
+fremennik	HARD	2	Catch a Sabre-toothed Kyatt.	HUNTER:55	
+fremennik	HARD	3	Mix a super defence potion in the Fremennik Province.	HERBLORE:66	
+fremennik	HARD	4	Steal from the Keldagrim Gem Stall.	THIEVING:75	
+fremennik	HARD	5	Craft a Neitiznot shield on Neitiznot.	WOODCUTTING:56	
+fremennik	HARD	6	Mine 5 Adamantite ores on Jatizso.	MINING:70	
+fremennik	HARD	7	Obtain 100% support from your kingdom subjects.		
+fremennik	HARD	8	Teleport to Waterbirth Island.	MAGIC:72	Lunar Diplomacy
+fremennik	HARD	9	Obtain the Blast Furnace Foremans permission to use the Blast Furnace for free.	SMITHING:60	
+fremennik	ELITE	1	Kill each of the Dagannoth Kings.		
+fremennik	ELITE	2	Craft 56 astral runes simultaneously from Essence without the use of Extracts.	RUNECRAFT:82	Lunar Diplomacy
+fremennik	ELITE	3	Create a dragonstone amulet in the Neitiznot furnace.	CRAFTING:80	
+fremennik	ELITE	4	Complete a lap of the Rellekka agility course.	AGILITY:80	
+fremennik	ELITE	5	Kill the generals of Armadyl, Bandos, Saradomin and Zamorak in the God Wars Dungeon.	AGILITY:70,STRENGTH:70,HITPOINTS:70,RANGED:70	
+fremennik	ELITE	6	Slay a Spiritual mage within the Godwars Dungeon.	SLAYER:83	
+kandarin	EASY	1	Catch a Mackerel at Catherby.	FISHING:16	
+kandarin	EASY	2	Buy a candle from the Chandler in Catherby.		
+kandarin	EASY	3	Collect five Flax from the Seers' flax fields.		
+kandarin	EASY	4	Play the Organ in Seers' church.		
+kandarin	EASY	5	Plant some Jute seeds in the patch north of McGrubor's Wood.	FARMING:13	
+kandarin	EASY	6	Have Galahad make you a cup of tea.		
+kandarin	EASY	7	Defeat one of each elemental in the workshop.		
+kandarin	EASY	8	Get a pet fish from Harry in Catherby.		
+kandarin	EASY	9	Buy a Stew from the Seers' pub.		
+kandarin	EASY	10	Speak to Sherlock.		
+kandarin	EASY	11	Cross the Coal truck log shortcut.	AGILITY:20	
+kandarin	MEDIUM	1	Complete a lap of the Barbarian agility course.	AGILITY:35	Alfred Grimhand's Barcrawl
+kandarin	MEDIUM	2	Create a Super Antipoison potion from scratch in the Seers/Catherby Area.	HERBLORE:48	
+kandarin	MEDIUM	3	Enter the Ranging guild.	RANGED:40	
+kandarin	MEDIUM	4	Use the grapple shortcut to get from the water obelisk to Catherby shore.	AGILITY:36,STRENGTH:22,RANGED:39	
+kandarin	MEDIUM	5	Catch and cook a Bass in Catherby.	FISHING:46,COOKING:43	
+kandarin	MEDIUM	6	Teleport to Camelot.	MAGIC:45	
+kandarin	MEDIUM	7	String a Maple shortbow in Seers' Village bank.	FLETCHING:50	
+kandarin	MEDIUM	8	Pick some Limpwurt root from the farming patch in Catherby.	FARMING:26	
+kandarin	MEDIUM	9	Create a Mind helmet.		
+kandarin	MEDIUM	10	Kill a Fire Giant inside Baxtorian Waterfall.		
+kandarin	MEDIUM	11	Complete a wave of Barbarian Assault.		
+kandarin	MEDIUM	12	Steal from the chest in Hemenster.	THIEVING:47	
+kandarin	MEDIUM	13	Travel to McGrubor's Wood by Fairy Ring.		
+kandarin	MEDIUM	14	Mine some coal near the coal trucks.	MINING:30	
+kandarin	HARD	1	Catch a Leaping Sturgeon.	FISHING:70,AGILITY:45,STRENGTH:45	
+kandarin	HARD	2	Complete a lap of the Seers' Village agility course.	AGILITY:60	
+kandarin	HARD	3	Create a Yew Longbow from scratch around Seers' Village.	FLETCHING:70,WOODCUTTING:60	
+kandarin	HARD	4	Enter the Seers' Village courthouse with piety turned on.	PRAYER:70,DEFENCE:70	King's Ransom;Knight Waves Training Grounds
+kandarin	HARD	5	Charge a Water Orb.	MAGIC:56	
+kandarin	HARD	6	Burn some Maple logs with a bow in Seers' Village.	FIREMAKING:65	
+kandarin	HARD	7	Kill a Shadow Hound in the Shadow dungeon.	THIEVING:53	
+kandarin	HARD	8	Kill a Mithril Dragon.		
+kandarin	HARD	9	Purchase and equip a granite body from Barbarian Assault.	STRENGTH:50,DEFENCE:50	
+kandarin	HARD	10	Have the Seers' estate agent decorate your house with Fancy Stone.	CONSTRUCTION:50	
+kandarin	HARD	11	Smith an Adamant spear at Otto's Grotto.	SMITHING:75	
+kandarin	ELITE	1	Read the Blackboard at Barbarian Assault after reaching level 5 in every role.		
+kandarin	ELITE	2	Pick some Dwarf weed from the herb patch at Catherby.	FARMING:79	
+kandarin	ELITE	3	Fish and Cook 5 Sharks in Catherby using the Cooking gauntlets.	FISHING:76,COOKING:80	Family Crest
+kandarin	ELITE	4	Mix a Stamina Mix on top of the Seers' Village bank.	HERBLORE:86,AGILITY:60	
+kandarin	ELITE	5	Smith a Rune Hasta at Otto's Grotto.	SMITHING:90	
+kandarin	ELITE	6	Construct a Pyre ship from Magic Logs.	FIREMAKING:85,CRAFTING:85	
+kandarin	ELITE	7	Teleport to Catherby.	MAGIC:87	Lunar Diplomacy
+karamja	EASY	1	Pick 5 bananas from the plantation located east of the volcano.		
+karamja	EASY	2	Use the rope swing to travel to the Moss Giant Island north-west of Karamja.	AGILITY:10	
+karamja	EASY	3	Mine some gold from the rocks on the north-west peninsula of Karamja.	MINING:40	
+karamja	EASY	4	Travel to Port Sarim via the dock, east of Musa Point.		
+karamja	EASY	5	Travel to Ardougne via the port near Brimhaven.		
+karamja	EASY	6	Explore Cairn Island to the west of Karamja.	AGILITY:15	
+karamja	EASY	7	Use the Fishing spots north of the banana plantation.		
+karamja	EASY	8	Collect 5 seaweed from anywhere on Karamja.		
+karamja	EASY	9	Attempt the TzHaar Fight Pits or Fight Cave.		
+karamja	EASY	10	Kill a jogre in the Pothole dungeon.		
+karamja	MEDIUM	1	Claim a ticket from the Agility Arena in Brimhaven.		
+karamja	MEDIUM	2	Discover hidden wall in the dungeon below the volcano.		
+karamja	MEDIUM	3	Visit the Isle of Crandor via the dungeon below the volcano.		
+karamja	MEDIUM	4	Use Vigroy and Hajedy's cart service.		Shilo Village
+karamja	MEDIUM	5	Earn 100% favour in the village of Tai Bwo Wannai.	WOODCUTTING:10	Jungle Potion
+karamja	MEDIUM	6	Cook a spider on a stick.	COOKING:16	
+karamja	MEDIUM	7	Charter the Lady of the Waves from Cairn Isle to Port Khazard.		Shilo Village
+karamja	MEDIUM	8	Cut a log from a teak tree.	WOODCUTTING:35	Jungle Potion
+karamja	MEDIUM	9	Cut a log from a mahogany tree.	WOODCUTTING:50	Jungle Potion
+karamja	MEDIUM	10	Catch a karambwan.	FISHING:65	
+karamja	MEDIUM	11	Exchange gems for a machete.		Jungle Potion
+karamja	MEDIUM	12	Use the gnome glider to travel to Karamja.		The Grand Tree
+karamja	MEDIUM	13	Grow a healthy fruit tree in the patch near Brimhaven.	FARMING:27	
+karamja	MEDIUM	14	Trap a horned graahk.	HUNTER:41	
+karamja	MEDIUM	15	Chop the vines to gain deeper access to Brimhaven Dungeon.	WOODCUTTING:10	
+karamja	MEDIUM	16	Cross the lava using the stepping stones within Brimhaven Dungeon.	WOODCUTTING:10,AGILITY:12	
+karamja	MEDIUM	17	Climb the stairs within Brimhaven Dungeon.	WOODCUTTING:10	
+karamja	MEDIUM	18	Charter a ship from the shipyard in the far east of Karamja.		
+karamja	MEDIUM	19	Mine a red topaz from a gem rock.	MINING:40	
+karamja	HARD	1	Become the Champion of the Fight Pits.		
+karamja	HARD	2	Kill a Ket-Zek in the Fight Caves.		
+karamja	HARD	3	Eat an oomlie wrap.		
+karamja	HARD	4	Craft some nature runes from Essence.	RUNECRAFT:44	
+karamja	HARD	5	Cook a karambwan thoroughly.	COOKING:30	Tai Bwo Wannai Trio;Tinsay
+karamja	HARD	6	Kill a deathwing in the dungeon under the Kharazi Jungle.		
+karamja	HARD	7	Use the crossbow shortcut south of the volcano.	AGILITY:53,RANGED:42,STRENGTH:21	
+karamja	HARD	8	Collect 5 palm leaves.		
+karamja	HARD	9	Be assigned a Slayer task by the Slayer Master in Shilo Village.	SLAYER:50	Shilo Village
+karamja	HARD	10	Kill a metal dragon in Brimhaven Dungeon.	WOODCUTTING:10	
+karamja	ELITE	1	Craft 56 Nature runes simultaneously from Essence without the use of Extracts.	RUNECRAFT:91	
+karamja	ELITE	2	Equip a Fire Cape or Infernal Cape in Mor Ul Rek.		
+karamja	ELITE	3	Check the health of a palm tree in Brimhaven.	FARMING:68	
+karamja	ELITE	4	Create an antivenom potion whilst standing in the horse shoe mine.	HERBLORE:87	
+karamja	ELITE	5	Check the health of your Calquat tree patch.	FARMING:72	
+kourend	EASY	1	Mine some Iron at the Mount Karuulm mine.	MINING:15	
+kourend	EASY	2	Kill a Sandcrab.		
+kourend	EASY	3	Hand in a book at the Arceuus Library.		
+kourend	EASY	4	Steal from a Hosidius Food Stall.	THIEVING:25	
+kourend	EASY	5	Browse the Warrens General Store.		
+kourend	EASY	6	Take a boat to Land's End.		
+kourend	EASY	7	Pray at the Altar in Kourend Castle		
+kourend	EASY	8	Dig up some Saltpetre.		
+kourend	EASY	9	Enter your Player Owned House from Hosidius.	CONSTRUCTION:25	
+kourend	EASY	10	Do a lap of either tier of the Shayzien Agility Course.		
+kourend	EASY	11	Create a Strength potion in the Lovakengj Pub.	HERBLORE:12	Druidic Ritual
+kourend	EASY	12	Fish a Trout from the River Molch.	FISHING:20	
+kourend	MEDIUM	1	Travel to the Fairy Ring south of Mount Karuulm.		
+kourend	MEDIUM	2	Kill a Lizardman.		
+kourend	MEDIUM	3	Use Kharedst's memoirs to teleport to all five cities in Great Kourend.		The Depths of Despair;The Queen of Thieves;Tale of the Righteous;The Forsaken Tower;The Ascent of Arceuus
+kourend	MEDIUM	4	Mine some Volcanic Sulphur.	MINING:42	
+kourend	MEDIUM	5	Enter the Farming Guild.	FARMING:45	
+kourend	MEDIUM	6	Switch to the Necromancy Spellbook at Tyss.		
+kourend	MEDIUM	7	Repair a Piscarilius crane.	CRAFTING:30,CONSTRUCTION:30	
+kourend	MEDIUM	8	Deliver some intelligence to Captain Ginea.		
+kourend	MEDIUM	9	Catch a Bluegill on Molch Island.	FISHING:43,HUNTER:35	
+kourend	MEDIUM	10	Use the boulder leap shortcut in the Arceuus essence mine.	AGILITY:49	
+kourend	MEDIUM	11	Subdue the Wintertodt	FIREMAKING:50	
+kourend	MEDIUM	12	Catch a Chinchompa in the Kourend Woodland.	HUNTER:53	
+kourend	MEDIUM	13	Chop some Mahogany logs north of the Farming Guild.	WOODCUTTING:50	
+kourend	HARD	1	Enter the Woodcutting Guild.	WOODCUTTING:60	
+kourend	HARD	2	Smelt an Adamantite bar in The Forsaken Tower.	SMITHING:70	The Forsaken Tower
+kourend	HARD	3	Kill a Lizardman Shaman in the Lizardman Temple.		
+kourend	HARD	4	Mine some Lovakite.	MINING:65	
+kourend	HARD	5	Plant some Logavano seeds at the Tithe Farm.	FARMING:74	
+kourend	HARD	6	Kill a Zombie in the Shayzien Crypts.		
+kourend	HARD	7	Teleport to Xeric's Heart using Xeric's Talisman.		
+kourend	HARD	8	Deliver an artefact to Captain Khaled.	THIEVING:49	
+kourend	HARD	9	Kill a Wyrm in the Karuulm Slayer Dungeon.	SLAYER:62	
+kourend	HARD	10	Cast Monster Examine on a Troll south of Mount Quidamortem.	MAGIC:66	Dream Mentor
+kourend	ELITE	1	Craft one or more Blood runes from Dark essence.	RUNECRAFT:77,MINING:38,CRAFTING:38	
+kourend	ELITE	2	Chop some Redwood logs.	WOODCUTTING:90	
+kourend	ELITE	3	Defeat Skotizo in the Catacombs of Kourend.		
+kourend	ELITE	4	Catch an Anglerfish and cook it whilst in Great Kourend.	FISHING:82,COOKING:84	
+kourend	ELITE	5	Kill a Hydra in the Karuulm Slayer Dungeon.	SLAYER:95	
+kourend	ELITE	6	Create an Ape Atoll teleport tablet.	MAGIC:90	
+kourend	ELITE	7	Complete a Raid in the Chambers of Xeric.		
+kourend	ELITE	8	Create your own Battlestaff from scratch within the Farming Guild.	FARMING:85,FLETCHING:40	
+lumbridge	EASY	1	Complete a lap of the Draynor Village agility course.		
+lumbridge	EASY	2	Slay a Cave bug beneath Lumbridge Swamp.	SLAYER:7	
+lumbridge	EASY	3	Have Sedridor teleport you to the Rune essence mine.		Rune Mysteries
+lumbridge	EASY	4	Craft some water runes from Essence.	RUNECRAFT:5	
+lumbridge	EASY	5	Learn your age from Hans in Lumbridge.		
+lumbridge	EASY	6	Pickpocket a man or woman in Lumbridge.		
+lumbridge	EASY	7	Chop and burn some oak logs in Lumbridge.	WOODCUTTING:15,FIREMAKING:15	
+lumbridge	EASY	8	Kill a Zombie in Draynor Sewers.		
+lumbridge	EASY	9	Catch some Anchovies in Al Kharid.	FISHING:15	
+lumbridge	EASY	10	Bake some Bread on the Lumbridge kitchen range.		Cook's Assistant
+lumbridge	EASY	11	Mine some Iron ore at the Al Kharid mine.	MINING:15	
+lumbridge	EASY	12	Enter the H.A.M. Hideout.		
+lumbridge	MEDIUM	1	Complete a lap of the Al Kharid agility course.	AGILITY:20	
+lumbridge	MEDIUM	2	Grapple across the River Lum.	AGILITY:8,STRENGTH:19,RANGED:37	
+lumbridge	MEDIUM	3	Purchase an upgraded device from Ava.	RANGED:50	Animal Magnetism
+lumbridge	MEDIUM	4	Travel to the Wizards' Tower by Fairy ring.		
+lumbridge	MEDIUM	5	Cast the Teleport to Lumbridge spell.	MAGIC:31	
+lumbridge	MEDIUM	6	Catch some Salmon in Lumbridge.	FISHING:30	
+lumbridge	MEDIUM	7	Craft a coif in the Lumbridge cow pen.	CRAFTING:38	
+lumbridge	MEDIUM	8	Chop some willow logs in Draynor Village.	WOODCUTTING:30	
+lumbridge	MEDIUM	9	Pickpocket Martin the Master Gardener.	THIEVING:38	
+lumbridge	MEDIUM	10	Get a slayer task from Chaeldar.		Lost City
+lumbridge	MEDIUM	11	Catch an Essence or Eclectic impling in Puro-Puro.	HUNTER:42	
+lumbridge	MEDIUM	12	Craft some Lava runes at the fire altar in Al Kharid.	RUNECRAFT:23	
+lumbridge	HARD	1	Cast Bones to Peaches in Al Kharid palace.	MAGIC:60	
+lumbridge	HARD	2	Squeeze past the jutting wall on your way to the cosmic altar.	AGILITY:46	Lost City
+lumbridge	HARD	3	Craft 56 Cosmic runes simultaneously from Essence without the use of Extracts.	RUNECRAFT:59	Lost City
+lumbridge	HARD	4	Travel from Lumbridge to Edgeville on a Waka Canoe.	WOODCUTTING:57	
+lumbridge	HARD	5	Collect at least 100 Tears of Guthix in one visit.		Tears of Guthix (quest)
+lumbridge	HARD	6	Take the train from Dorgesh-Kaan to Keldagrim.		Another Slice of H.A.M.
+lumbridge	HARD	7	Purchase some Barrows gloves from the Lumbridge bank chest.		
+lumbridge	HARD	8	Pick some Belladonna from the farming patch at Draynor Manor.	FARMING:63	
+lumbridge	HARD	9	Light your mining helmet in the Lumbridge castle basement.	FIREMAKING:65	
+lumbridge	HARD	10	Recharge your prayer at Emir's Arena with Smite activated.	PRAYER:52	
+lumbridge	HARD	11	Craft, string and enchant an Amulet of Power in Lumbridge.	CRAFTING:70,MAGIC:57	
+lumbridge	ELITE	1	Steal from a Dorgesh-Kaan rich chest.	THIEVING:78	Death to the Dorgeshuun
+lumbridge	ELITE	2	Grapple across a pylon on the Dorgesh-Kaan Agility Course.	AGILITY:70,RANGED:70,STRENGTH:70	Death to the Dorgeshuun
+lumbridge	ELITE	3	Chop some magic logs at the Mage Training Arena.	WOODCUTTING:75	
+lumbridge	ELITE	4	Smith an Adamant platebody down Draynor sewer.	SMITHING:88	
+lumbridge	ELITE	5	Craft 140 or more Water runes simultaneously from Essence without the use of Extracts.	RUNECRAFT:76	
+lumbridge	ELITE	6	Perform the Quest cape emote in the Wise Old Man's house.		
+morytania	EASY	1	Craft any Snelm from scratch in Morytania.	CRAFTING:15	
+morytania	EASY	2	Cook a thin Snail on the Port Phasmatys range.	COOKING:12	
+morytania	EASY	3	Get a slayer task from the Slayer Master in Canifis.		
+morytania	EASY	4	Kill a Banshee in the Slayer Tower.	SLAYER:15	
+morytania	EASY	5	Have Sbott in Canifis tan something for you.		
+morytania	EASY	6	Enter Mort Myre Swamp.		
+morytania	EASY	7	Kill a Ghoul.		
+morytania	EASY	8	Place a Scarecrow in the Morytania flower patch.	FARMING:23	
+morytania	EASY	9	Offer some bonemeal at the Ectofuntus.		
+morytania	EASY	10	Kill a werewolf in its human form using the Wolfbane Dagger.		
+morytania	EASY	11	Restore your prayer points at the nature altar.		Nature Spirit
+morytania	MEDIUM	1	Catch a swamp lizard.	HUNTER:29	
+morytania	MEDIUM	2	Complete a lap of the Canifis agility course.	AGILITY:40	
+morytania	MEDIUM	3	Obtain some Bark from a Hollow tree.	WOODCUTTING:45	
+morytania	MEDIUM	4	Travel to Dragontooth Isle.		
+morytania	MEDIUM	5	Kill a Terror Dog.	SLAYER:40	Lair of Tarn Razorlor
+morytania	MEDIUM	6	Complete a game of trouble brewing.	COOKING:40	
+morytania	MEDIUM	7	Board the Swampy boat at the Hollows.		
+morytania	MEDIUM	8	Make a batch of cannonballs at the Port Phasmatys furnace.	SMITHING:35	Dwarf Cannon
+morytania	MEDIUM	9	Kill a Fever Spider on Braindeath Island.	SLAYER:42	
+morytania	MEDIUM	10	Use an ectophial to return to Port Phasmatys.		Ghosts Ahoy
+morytania	MEDIUM	11	Mix a Guthix Balance potion while in Morytania.	HERBLORE:22	
+morytania	HARD	1	Enter the Kharyrll Portal in your POH.	MAGIC:66,CONSTRUCTION:50	Desert Treasure I
+morytania	HARD	2	Climb up the advanced spike chain within Slayer Tower.	AGILITY:71	
+morytania	HARD	3	Harvest some Watermelon from the Allotment patch on Harmony Island.	FARMING:47	
+morytania	HARD	4	Chop and burn some mahogany logs on Mos Le'Harmless.	WOODCUTTING:50,FIREMAKING:50	Cabin Fever
+morytania	HARD	5	Complete a temple trek with a hard companion.		In Aid of the Myreque
+morytania	HARD	6	Kill a Cave Horror.	SLAYER:58	Cabin Fever
+morytania	HARD	7	Harvest some Bittercap Mushrooms from the patch in Canifis.	FARMING:53	
+morytania	HARD	8	Pray at the Altar of Nature with Piety activated.	PRAYER:70,DEFENCE:70	Nature Spirit;Knight Waves Training Grounds;King's Ransom
+morytania	HARD	9	Use the shortcut to get to the bridge over the Salve.	AGILITY:65	
+morytania	HARD	10	Mine some Mithril ore in the Abandoned Mine.	MINING:55	Haunted Mine
+morytania	ELITE	1	Catch a shark in Burgh de Rott with your bare hands.	FISHING:96,STRENGTH:76	In Aid of the Myreque
+morytania	ELITE	2	Cremate any Shade remains on a Magic or Redwood pyre.	FIREMAKING:80	Shades of Mort'ton
+morytania	ELITE	3	Fertilize the Morytania herb patch using Lunar Magic.	MAGIC:83	Lunar Diplomacy
+morytania	ELITE	4	Craft a Black dragonhide body in Canifis bank.	CRAFTING:84	
+morytania	ELITE	5	Kill an Abyssal demon in the Slayer Tower.	SLAYER:85	
+morytania	ELITE	6	Loot the Barrows chest while wearing any complete barrows set.	DEFENCE:70	
+varrock	EASY	1	Browse Thessalia's store.		
+varrock	EASY	2	Have Aubury teleport you to the Essence mine.		Rune Mysteries
+varrock	EASY	3	Mine some Iron in the south-east mining patch near Varrock.	MINING:15	
+varrock	EASY	4	Make a normal plank at the Sawmill.		
+varrock	EASY	5	Enter the second level of the Stronghold of Security.		
+varrock	EASY	6	Jump over the fence south of Varrock.	AGILITY:13	
+varrock	EASY	7	Chop down a dying tree in the Lumber Yard.		
+varrock	EASY	8	Buy a newspaper.		
+varrock	EASY	9	Give a dog a bone!		
+varrock	EASY	10	Spin a bowl on the pottery wheel and fire it in the oven in Barb Village.	CRAFTING:8	
+varrock	EASY	11	Speak to Haig Halen after obtaining at least 50 Kudos.		
+varrock	EASY	12	Craft some Earth runes from Essence.	RUNECRAFT:9	
+varrock	EASY	13	Catch some trout in the River Lum at Barbarian Village.	FISHING:20	
+varrock	EASY	14	Steal from the Tea stall in Varrock.	THIEVING:5	
+varrock	MEDIUM	1	Have the Apothecary in Varrock make you a strength potion.		
+varrock	MEDIUM	2	Enter the Champions' Guild.		
+varrock	MEDIUM	3	Select a colour for your kitten.		Gertrude's Cat;Garden of Tranquillity
+varrock	MEDIUM	4	Use the spirit tree north of Varrock.		Tree Gnome Village
+varrock	MEDIUM	5	Perform the 4 emotes from the Stronghold of Security.		
+varrock	MEDIUM	6	Enter the Tolna dungeon after completing A Soul's Bane.		A Soul's Bane
+varrock	MEDIUM	7	Teleport to the digsite using a Digsite pendant.		The Dig Site
+varrock	MEDIUM	8	Cast the teleport to Varrock spell.	MAGIC:25	
+varrock	MEDIUM	9	Get a Slayer task from Vannaka.		
+varrock	MEDIUM	10	Make 20 Mahogany Planks in one go.		
+varrock	MEDIUM	11	Pick a White tree fruit.	FARMING:25	Garden of Tranquillity
+varrock	MEDIUM	12	Use the balloon to travel from Varrock.	FARMING:30,FIREMAKING:40	Enlightened Journey
+varrock	MEDIUM	13	Complete a lap of the Varrock Agility course.	AGILITY:30	
+varrock	HARD	1	Trade furs with the Fancy Dress Seller for a spottier cape and equip it.	HUNTER:66	
+varrock	HARD	2	Speak to Orlando Smith when you have achieved 153 Kudos.		
+varrock	HARD	3	Make a Waka canoe near Edgeville.	WOODCUTTING:57	
+varrock	HARD	4	Teleport to Paddewwa.	MAGIC:54	Desert Treasure I
+varrock	HARD	5	Teleport to Barbarian Village with a skull sceptre.		
+varrock	HARD	6	Chop some yew logs in Varrock and burn them at the top of the Varrock church.	WOODCUTTING:60,FIREMAKING:60	
+varrock	HARD	7	Have the Varrock estate agent decorate your house with Fancy Stone.	CONSTRUCTION:50	
+varrock	HARD	8	Collect at least 2 yew roots from the Tree patch in Varrock Palace.	FARMING:68,WOODCUTTING:60	
+varrock	HARD	9	Pray at the altar in Varrock palace with Smite active.	PRAYER:52	
+varrock	HARD	10	Squeeze through the obstacle pipe in Edgeville dungeon.	AGILITY:51	
+varrock	ELITE	1	Create a super combat potion in Varrock west bank.	HERBLORE:90	Druidic Ritual
+varrock	ELITE	2	Use Lunar magic to make 20 mahogany planks at the Lumberyard.	MAGIC:86	Dream Mentor
+varrock	ELITE	3	Bake a summer pie in the Cooking Guild.	COOKING:95	
+varrock	ELITE	4	Smith and fletch ten rune darts within Varrock.	SMITHING:89,FLETCHING:81	The Tourist Trap
+varrock	ELITE	5	Craft 100 or more earth runes simultaneously from Essence without the use of Extracts.	RUNECRAFT:78	
+western	EASY	1	Catch a Copper Longtail.	HUNTER:9	
+western	EASY	2	Complete a novice game of Pest Control.		
+western	EASY	3	Mine some Iron Ore near Piscatoris.	MINING:15	
+western	EASY	4	Complete a lap of the Gnome agility course.		
+western	EASY	5	Score a goal in a Gnomeball match.		
+western	EASY	6	Claim any Chompy bird hat from Rantz.		Big Chompy Bird Hunting
+western	EASY	7	Teleport to Pest Control using the Minigame Teleport.		
+western	EASY	8	Collect a swamp toad at the Gnome Stronghold.		
+western	EASY	9	Have Brimstail teleport you to the Essence Mine.		Rune Mysteries
+western	EASY	10	Fletch an Oak Shortbow in the Gnome Stronghold.	FLETCHING:20	
+western	EASY	11	Kill a Terrorbird in the Terrorbird enclosure.		
+western	MEDIUM	1	Take the agility shortcut from the Grand Tree to Otto's Grotto.	AGILITY:37	Tree Gnome Village;The Grand Tree
+western	MEDIUM	2	Travel to the Gnome Stronghold by Spirit Tree.		Tree Gnome Village
+western	MEDIUM	3	Trap a Spined Larupia.	HUNTER:31	
+western	MEDIUM	4	Fish some Bass on Ape Atoll.	FISHING:46	
+western	MEDIUM	5	Chop and burn some teak logs on Ape Atoll.	WOODCUTTING:35,FIREMAKING:35	
+western	MEDIUM	6	Complete an intermediate game of Pest Control.		
+western	MEDIUM	7	Travel to the Feldip Hills by Gnome Glider.		The Grand Tree;One Small Favour
+western	MEDIUM	8	Claim a Chompy bird hat from Rantz after registering at least 125 kills.		Big Chompy Bird Hunting
+western	MEDIUM	9	Travel from Eagles' Peak to the Feldip Hills by Eagle.		Eagles' Peak
+western	MEDIUM	10	Make a Chocolate Bomb at the Grand Tree.	COOKING:42	
+western	MEDIUM	11	Complete a delivery for the Gnome Restaurant.	COOKING:29	
+western	MEDIUM	12	Turn your small crystal seed into a Crystal saw.		The Eyes of Glouphrie
+western	MEDIUM	13	Mine some Gold ore underneath the Grand Tree.	MINING:40	The Grand Tree
+western	HARD	1	Kill an Elf with a Crystal bow.	RANGED:70	Roving Elves
+western	HARD	2	Catch and cook a Monkfish in Piscatoris.	FISHING:62,COOKING:62	Swan Song
+western	HARD	3	Complete a Veteran game of Pest Control.		
+western	HARD	4	Catch a Dashing Kebbit.	HUNTER:69	
+western	HARD	5	Complete a lap of the Ape Atoll agility course.	AGILITY:48	
+western	HARD	6	Chop and burn some Mahogany logs on Ape Atoll.	WOODCUTTING:50,FIREMAKING:50	
+western	HARD	7	Mine some Adamantite ore in Tirannwn.	MINING:70	
+western	HARD	8	Check the health of your Palm tree in Lletya.	FARMING:68	
+western	HARD	9	Claim a Chompy bird hat from Rantz after registering at least 300 kills.		Big Chompy Bird Hunting
+western	HARD	10	Build an Isafdar painting in your POH Quest hall.	CONSTRUCTION:65	Roving Elves
+western	HARD	11	Kill Zulrah.		
+western	HARD	12	Teleport to Ape Atoll.	MAGIC:64	Recipe for Disaster/Freeing King Awowogei;Recipe for Disaster
+western	HARD	13	Pickpocket a Gnome.	THIEVING:75	
+western	ELITE	1	Fletch a Magic Longbow in Tirannwn.	FLETCHING:85	
+western	ELITE	2	Kill the Thermonuclear Smoke Devil.	SLAYER:93	
+western	ELITE	3	Have Prissy Scilla protect your Magic tree.	FARMING:75	
+western	ELITE	4	Use the Elven overpass advanced cliffside shortcut.	AGILITY:85	Underground Pass
+western	ELITE	5	Equip any complete void set.	PRAYER:22,ATTACK:42,STRENGTH:42,DEFENCE:42,HITPOINTS:42,RANGED:42,MAGIC:42	
+western	ELITE	6	Claim a Chompy bird hat from Rantz after registering at least 1,000 kills.		Big Chompy Bird Hunting
+western	ELITE	7	Pickpocket an Elf.	THIEVING:85	
+wilderness	EASY	1	Cast Low Alchemy at the Fountain of Rune.	MAGIC:21	
+wilderness	EASY	2	Enter the Wilderness from the Ardougne or Edgeville lever.		
+wilderness	EASY	3	Pray at the Chaos Altar in the Western Wilderness.		
+wilderness	EASY	4	Enter the Chaos Runecrafting temple.		
+wilderness	EASY	5	Kill a Mammoth in the Wilderness.		
+wilderness	EASY	6	Kill an Earth Warrior in the Wilderness beneath Edgeville.	AGILITY:15	
+wilderness	EASY	7	Restore some prayer points at the demonic ruins.		
+wilderness	EASY	8	Enter the King Black Dragon's lair.		
+wilderness	EASY	9	Collect 5 Red spiders' eggs from the Wilderness		
+wilderness	EASY	10	Mine some Iron ore in the Wilderness.	MINING:15	
+wilderness	EASY	11	Have the Mage of Zamorak teleport you to the Abyss.		Enter the Abyss
+wilderness	EASY	12	Equip any team cape in the Wilderness.		
+wilderness	MEDIUM	1	Mine some Mithril ore in the wilderness.	MINING:55	
+wilderness	MEDIUM	2	Chop some yew logs from a fallen Ent.	WOODCUTTING:61	
+wilderness	MEDIUM	3	Enter the Wilderness Godwars Dungeon.	AGILITY:60	
+wilderness	MEDIUM	4	Complete a lap of the Wilderness Agility course.	AGILITY:52	
+wilderness	MEDIUM	5	Kill a Green Dragon.		
+wilderness	MEDIUM	6	Kill an Ankou in the Wilderness.		
+wilderness	MEDIUM	7	Charge an Earth Orb.	MAGIC:60	
+wilderness	MEDIUM	8	Kill a Bloodveld in the Wilderness Godwars Dungeon.	AGILITY:60,SLAYER:50	
+wilderness	MEDIUM	9	Talk to the Emblem Trader in Edgeville about emblems. (He's just north of the bank)		
+wilderness	MEDIUM	10	Smith a Golden helmet in the Resource Area.	SMITHING:50	
+wilderness	MEDIUM	11	Open the Muddy Chest in the lava maze.		
+wilderness	HARD	1	Cast any of the 3 God spells against another player in the Wilderness.	MAGIC:60	Mage Arena I
+wilderness	HARD	2	Charge an Air Orb.	MAGIC:66	
+wilderness	HARD	3	Catch a Black Salamander in the Wilderness.	HUNTER:67	
+wilderness	HARD	4	Smith an Adamant scimitar in the Resource Area.	SMITHING:75	
+wilderness	HARD	5	Kill a Lava Dragon.		
+wilderness	HARD	6	Kill the Chaos Elemental.		
+wilderness	HARD	7	Kill the Crazy Arc., Chaos Fanatic & Scorpia.		
+wilderness	HARD	8	Take the agility shortcut from Trollheim into the Wilderness.	AGILITY:64	
+wilderness	HARD	9	Kill a Spiritual warrior in the Wilderness Godwars Dungeon.	AGILITY:60,SLAYER:68	
+wilderness	HARD	10	Fish some Raw Lava Eel in the Wilderness.	FISHING:53,HERBLORE:25	
+wilderness	ELITE	1	Kill Callisto, Venenatis & Vet'ion.		
+wilderness	ELITE	2	Teleport to Ghorrock.	MAGIC:96	Desert Treasure I
+wilderness	ELITE	3	Fish and Cook a Dark Crab in the Resource Area.	FISHING:85,COOKING:90	
+wilderness	ELITE	4	Smith a rune scimitar from scratch in the Resource Area.	MINING:85,SMITHING:90	
+wilderness	ELITE	5	Steal from the Rogues' chest.	THIEVING:84	
+wilderness	ELITE	6	Slay a spiritual mage inside the wilderness Godwars Dungeon.	AGILITY:60,SLAYER:83	
+wilderness	ELITE	7	Cut and burn some magic logs in the Resource Area.	WOODCUTTING:75,FIREMAKING:75	
