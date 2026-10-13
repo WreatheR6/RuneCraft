@@ -6,7 +6,6 @@ import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.minigames.MinigameCurrencies;
-import com.runecraft.osrs.content.minigames.MinigameRules;
 import com.runecraft.osrs.content.minigames.RewardShop;
 import com.runecraft.osrs.content.minigames.RewardShops;
 import com.runecraft.player.Players;
@@ -88,6 +87,7 @@ public final class RewardShopService {
         return switch (e.reward()) {
             case XP -> "minecraft:experience_bottle";
             case UNLOCK -> RuneCraft.resolve("bones_to_peaches_tablet").toString();
+            case UPGRADE -> RuneCraft.resolve(e.item()).toString();
             case ITEM -> switch (e.item()) {
                 case "#herbs" -> RuneCraft.resolve("grimy_ranarr_weed").toString();
                 case "#seeds" -> RuneCraft.resolve("ranarr_seed").toString();
@@ -180,8 +180,7 @@ public final class RewardShopService {
             case XP -> {
                 Skill skill = Skill.valueOf(e.item());
                 int level = Players.data(player).skills().level(skill);
-                int amount = e.costs().get(0).amount();
-                int xp = MinigameRules.PestControl.xpFor(level, e.count(), amount);
+                int xp = RewardShop.xpReward(e, level);
                 XpService.add(player, skill, xp);
                 Msg.game(player, "You gain " + String.format("%,d", xp) + " " + skill.displayName() + " experience.");
             }
@@ -192,6 +191,13 @@ public final class RewardShopService {
                     CollectionLog.obtain(player, "bones_to_peaches_tablet");
                 }
                 Msg.game(player, "You unlock " + label(e) + "!");
+            }
+            case UPGRADE -> {
+                // The requirement check above guarantees the item is carried.
+                Inv.remove(player, e.requiresItem(), 1);
+                give(player, e.item(), 1);
+                ItemDef from = ItemCatalog.get(e.requiresItem());
+                Msg.game(player, "Your " + (from == null ? e.requiresItem() : from.name()) + " becomes " + label(e) + ".");
             }
         }
         open(player, shopId);
@@ -210,8 +216,9 @@ public final class RewardShopService {
                 }
             }
             case "#ores" -> {
-                String[] ores = {"coal", "iron_ore", "mithril_ore", "adamantite_ore"};
-                give(player, ores[RANDOM.nextInt(ores.length)], 10 + RANDOM.nextInt(15));
+                // Mineral pack (OSRS Wiki): 25 coal and 18 iron ore.
+                give(player, "coal", 25);
+                give(player, "iron_ore", 18);
             }
             default -> give(player, e.item(), e.count());
         }

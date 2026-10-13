@@ -6,6 +6,7 @@ import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameItems;
+import com.runecraft.osrs.content.minigames.MinigameRules.GnomeRestaurant;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.minecraft.block.Blocks;
@@ -18,8 +19,9 @@ import java.util.List;
 /**
  * Gnome Restaurant: Aluft Gianne snr. hands out delivery jobs. Cook the ordered gnome dish at the
  * gnome oven with the ingredients he provides, then deliver it to the customer's door before time
- * runs out. Easy jobs (Cooking 29) and hard jobs (Cooking 42+) pay reward tokens, coins and
- * Cooking experience; a missed delivery ends your shift.
+ * runs out (easy jobs 6 minutes, hard jobs 11). Each delivery is tipped 2-500 coins plus a roll on
+ * the tip table, and earns 1 (easy) or 3 (hard) points; every 12 points make a reward token that
+ * Aluft swaps for a gnome dish. A missed delivery ends your shift.
  */
 public class GnomeRestaurantSession extends MinigameSession {
     private String order;
@@ -64,7 +66,7 @@ public class GnomeRestaurantSession extends MinigameSession {
         order = (String) dish[0];
         ServerPlayerEntity first = online().isEmpty() ? null : online().get(0);
         hard = first != null && level(first, Skill.COOKING) >= 42 && random.nextBoolean();
-        deadline = ticks + (hard ? 1100 : 600);
+        deadline = ticks + (hard ? GnomeRestaurant.HARD_TICKS : GnomeRestaurant.EASY_TICKS);
         for (ServerPlayerEntity p : online()) {
             Inv.give(p, "gnome_ingredients", 1);
             Msg.game(p, "Aluft Gianne snr.: I need a " + ItemCatalog.get(order).name() + " delivered" + (hard ? " across Gielinor" : "")
@@ -91,9 +93,14 @@ public class GnomeRestaurantSession extends MinigameSession {
                     return true;
                 }
                 delivered++;
-                reward(player, "gnome_restaurant_token", hard ? 2 : 1);
-                reward(player, "coins", hard ? 400 + random.nextInt(400) : 150 + random.nextInt(200));
-                xp(player, Skill.COOKING, hard ? 200 : 100);
+                String key = "gnome_restaurant";
+                int before = MinigameData.of(player).points(player.getUuid(), key);
+                int after = before + (hard ? GnomeRestaurant.HARD_POINTS : GnomeRestaurant.EASY_POINTS);
+                MinigameData.of(player).addPoints(player.getUuid(), key, after - before);
+                reward(player, "gnome_restaurant_token", GnomeRestaurant.tokens(before, after));
+                reward(player, "coins", GnomeRestaurant.TIP_MIN + random.nextInt(GnomeRestaurant.TIP_MAX - GnomeRestaurant.TIP_MIN + 1));
+                rollLoot(player, GnomeRestaurant.TIPS);
+                xp(player, Skill.COOKING, hard ? 200 : 100); // approx
                 Msg.game(player, "The customer is delighted with their food!");
                 newOrder();
                 return true;

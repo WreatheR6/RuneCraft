@@ -166,6 +166,24 @@ public final class Jewellery {
         wornExternal("archers_ring", Slot.RING, s(0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0));
         wornExternal("seers_ring", Slot.RING, s(0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0));
         wornExternal("warrior_ring", Slot.RING, s(0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        // Imbued items (minigames module: Nightmare Zone / Soul Wars imbues; stats per the wiki DPS calculator).
+        wornExternal("granite_ring", Slot.RING, s(0, 0, 0, 0, 0, 2, 2, 2, -2, 12, 0, 0, 0, 0)); // item defined by the bosses module
+        wornExternal("berserker_ring_i", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 8, 0, 0, 0));
+        wornExternal("archers_ring_i", Slot.RING, s(0, 0, 0, 0, 8, 0, 0, 0, 0, 8, 0, 0, 0, 0));
+        wornExternal("seers_ring_i", Slot.RING, s(0, 0, 0, 12, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0));
+        wornExternal("warrior_ring_i", Slot.RING, s(0, 8, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0));
+        wornExternal("tyrannical_ring_i", Slot.RING, s(0, 0, 8, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0));
+        wornExternal("treasonous_ring_i", Slot.RING, s(8, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0));
+        wornExternal("ring_of_the_gods_i", Slot.RING, s(0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 8));
+        wornExternal("granite_ring_i", Slot.RING, s(0, 0, 0, 0, 0, 4, 4, 4, -4, 24, 0, 0, 0, 0));
+        wornExternal("ring_of_suffering_i", Slot.RING, s(0, 0, 0, 0, 0, 20, 20, 20, 20, 20, 0, 0, 0, 4));
+        wornExternal("salve_amulet_i", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3));
+        wornExternal("salve_amulet_ei", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3));
+        // Minigame gloves and capes (minigames module).
+        wornExternal("void_knight_gloves", Slot.HANDS, s(0, 0, 0, 0, 0, 6, 6, 6, 4, 6, 0, 0, 0, 0));
+        wornExternal("penance_gloves", Slot.HANDS, s(0, 0, 0, 0, 0, 0, 3, 4, 0, 2, 0, 0, 0, 0));
+        wornExternal("infinity_gloves", Slot.HANDS, s(0, 0, 0, 5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0));
+        wornExternal("soul_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8));
         wornExternal("brimstone_ring", Slot.RING, s(4, 4, 4, 6, 4, 0, 0, 0, 0, 0, 4, 0, 0, 0));
         wornExternal("legends_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 0, 0, 0, 0));
         wornExternal("obsidian_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 0, 0, 0, 0));

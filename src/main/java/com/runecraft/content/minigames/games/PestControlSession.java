@@ -225,9 +225,9 @@ public class PestControlSession extends MinigameSession {
         for (ServerPlayerEntity p : online()) {
             int act = activity.getOrDefault(p.getUuid(), 0);
             if (success && won && act >= PestControl.MIN_ACTIVITY) {
-                int pts = PestControl.POINTS[tier];
+                int pts = PestControl.pointsAwarded(tier, MinigameData.of(p).points(p.getUuid(), "pest_control"));
                 addPoints(p, MinigameCurrencies.PEST_CONTROL, pts);
-                reward(p, "coins", com.runecraft.player.Players.data(p).skills().combatLevel() * 10);
+                reward(p, "coins", com.runecraft.player.Players.data(p).skills().combatLevel() * PestControl.COINS_PER_COMBAT_LEVEL);
                 int total = MinigameData.of(p).points(p.getUuid(), "pest_control");
                 MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
                 Msg.game(p, "Congratulations! You managed to destroy all the portals! We've awarded you " + pts

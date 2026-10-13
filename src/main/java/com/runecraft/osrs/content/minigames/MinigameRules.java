@@ -41,6 +41,10 @@ public final class MinigameRules {
         /** Hitpoint scale applied to pests by lander tier (approx. of the per-level pest variants). */
         public static final double[] PEST_SCALE = {0.75, 1.0, 1.3};
         public static final int VOID_KNIGHT_HP = 200;
+        /** The squire won't let anyone holding 4,000 commendation points board (OSRS Wiki). */
+        public static final int MAX_POINTS = 4000;
+        /** Coins for a win: ten times the player's combat level. */
+        public static final int COINS_PER_COMBAT_LEVEL = 10;
         /** A game lasts at most 20 minutes (2000 game ticks). */
         public static final int GAME_TICKS = 2000;
         /** Activity needed to earn points (OSRS: 50 damage dealt / contribution). */
@@ -55,6 +59,11 @@ public final class MinigameRules {
 
         public static int tierFor(int combatLevel) {
             return combatLevel >= COMBAT[2] ? 2 : combatLevel >= COMBAT[1] ? 1 : 0;
+        }
+
+        /** Points actually added for a win, given the current balance (capped at {@link #MAX_POINTS}). */
+        public static int pointsAwarded(int tier, int balance) {
+            return Math.max(0, Math.min(POINTS[tier], MAX_POINTS - balance));
         }
 
         /** XP bought with points: floor(level^2 / 600) * N per point, +1% for 10 points, +10% for 100. */
@@ -226,7 +235,25 @@ public final class MinigameRules {
         public static final String[] PENANCE = {"penance_fighter", "penance_ranger", "penance_runner", "penance_healer"};
         public static final int WAVES = 10;
         public static final int QUEEN_HP = 250;
+        /** Eight omega egg hits kill the Penance Queen. */
+        public static final int QUEEN_EGG_HITS = 8;
         public static final int PET_CHANCE = 1000;
+        /** Wave 10 pays a flat 80 points in your role and 5 in each of the other three (OSRS Wiki). */
+        public static final int WAVE_10_ROLE = 80;
+        public static final int WAVE_10_OTHER = 5;
+        /** Honour points are capped at 5,000 per role and queen kills at 40. */
+        public static final int MAX_HONOUR = 5000;
+        public static final int MAX_QUEEN_KILLS = 40;
+        /**
+         * Base honour points for a full round (waves 1-10 including wave 10's 80) per role, from the
+         * wiki strategy guide: attacker 370, defender 357, collector 278, healer 305.
+         */
+        public static final int[] FULL_ROUND = {370, 357, 278, 305};
+        /** Penance hitpoints by wave (OSRS Wiki; wave 10 uses wave 7's). Runners always have 5. */
+        private static final int[] FIGHTER_HP = {28, 29, 32, 37, 38, 49, 50, 55, 56, 50};
+        private static final int[] RANGER_HP = {20, 28, 29, 34, 41, 50, 50, 54, 58, 50};
+        private static final int[] HEALER_HP = {27, 32, 37, 43, 49, 55, 60, 67, 76, 60};
+        public static final int RUNNER_HP = 5;
 
         private BarbarianAssault() {
         }
@@ -236,36 +263,92 @@ public final class MinigameRules {
             return new int[]{2 + (wave - 1) / 2, 2 + (wave - 1) / 2, 2 + wave / 3, 2 + (wave - 1) / 3};
         }
 
-        /** Penance hitpoints for a type in a wave (approx.). */
+        /** Penance hitpoints for a type (0 fighter, 1 ranger, 2 runner, 3 healer) in a wave (OSRS Wiki). */
         public static int hitpoints(int type, int wave) {
-            int[] base = {15, 12, 10, 12};
-            int[] step = {9, 8, 6, 7};
-            return base[type] + step[type] * (wave - 1);
+            int w = Math.max(1, Math.min(WAVES, wave)) - 1;
+            return switch (type) {
+                case 0 -> FIGHTER_HP[w];
+                case 1 -> RANGER_HP[w];
+                case 2 -> RUNNER_HP;
+                default -> HEALER_HP[w];
+            };
         }
 
-        /** Honour points for clearing a wave in your role (approx.). */
-        public static int honour(int wave) {
-            return wave >= WAVES ? 20 : wave * 2;
+        /** Omega egg damage so that {@link #QUEEN_EGG_HITS} hits kill the queen. */
+        public static int omegaEggDamage() {
+            return (QUEEN_HP + QUEEN_EGG_HITS - 1) / QUEEN_EGG_HITS;
         }
 
-        /** Total honour points for a full game (all ten waves). */
-        public static int fullGameHonour() {
+        /**
+         * Base honour points for clearing a wave (1-9) in a role with a clean performance. The wiki
+         * gives only each role's round total, so it's spread over the waves in proportion to the
+         * wave number (approx.; later waves pay more). Wave 10 pays {@link #WAVE_10_ROLE}.
+         */
+        public static int honour(int role, int wave) {
+            if (wave >= WAVES) {
+                return WAVE_10_ROLE;
+            }
+            return cumulative(role, wave) - cumulative(role, wave - 1);
+        }
+
+        private static int cumulative(int role, int wave) {
+            int base = FULL_ROUND[role] - WAVE_10_ROLE;
+            return (int) Math.round(base * (wave * (wave + 1) / 2.0) / 45.0);
+        }
+
+        /**
+         * Points lost to escaped runners: 3 per escape for everyone, capped at 10; defenders lose
+         * double (capped at 20). There are no penalties on wave 10.
+         */
+        public static int runnerPenalty(int role, int escapes, int wave) {
+            if (wave >= WAVES) {
+                return 0;
+            }
+            int team = Math.min(10, 3 * escapes);
+            return role == 1 ? Math.min(20, 2 * 3 * escapes) : team;
+        }
+
+        /** Honour for a wave after penalties, never negative. */
+        public static int waveHonour(int role, int wave, int escapes) {
+            return Math.max(0, honour(role, wave) - runnerPenalty(role, escapes, wave));
+        }
+
+        /** Total clean honour points in a role for a full game (all ten waves). */
+        public static int fullGameHonour(int role) {
             int total = 0;
             for (int w = 1; w <= WAVES; w++) {
-                total += honour(w);
+                total += honour(role, w);
             }
             return total;
+        }
+
+        /** Adds honour to a balance, respecting the 5,000 cap. */
+        public static int addHonour(int balance, int amount) {
+            return Math.min(MAX_HONOUR, balance + amount) - balance;
         }
     }
 
     // ---------------------------------------------------------------- Castle Wars
     public static final class CastleWars {
         public static final int GAME_TICKS = 2000;
-        public static final int TICKETS_WIN = 2;
-        public static final int TICKETS_DRAW = 1;
-        public static final int TICKETS_LOSS = 1;
+        /** Players must spend at least 15 minutes in a game to earn tickets. */
+        public static final int MIN_TICKS_FOR_TICKETS = 1500;
 
         private CastleWars() {
+        }
+
+        /**
+         * Tickets at the end of a game on a normal world (OSRS Wiki): a loss or a 0-0 draw pays 1, a
+         * scoring draw or a win against a team that scored pays 2, and a shut-out win pays 3.
+         */
+        public static int tickets(int ownScore, int otherScore) {
+            if (ownScore > otherScore) {
+                return otherScore == 0 ? 3 : 2;
+            }
+            if (ownScore == otherScore) {
+                return ownScore == 0 ? 1 : 2;
+            }
+            return 1;
         }
     }
 
@@ -309,15 +392,71 @@ public final class MinigameRules {
     // ---------------------------------------------------------------- Mage Training Arena
     public static final class MageArena {
         public static final String[] ROOMS = {"telekinetic", "alchemist", "enchantment", "graveyard"};
-        /** Points per completed action in each room (approx.). */
+        /** Magic needed for each room: Telekinetic Grab 33, Low Level Alchemy 21, Lvl-1 Enchant 7, Bones to Bananas 15. */
+        public static final int[] ROOM_MAGIC = {33, 21, 7, 15};
+        /** Telekinetic Theatre: 2 points per maze, plus 8 points (and 10 law runes) for every fifth maze in a row. */
         public static final int TELEKINETIC_MAZE = 2;
         public static final int TELEKINETIC_BONUS_EVERY = 5;
         public static final int TELEKINETIC_BONUS = 8;
+        public static final int TELEKINETIC_BONUS_LAWS = 10;
+        /** Alchemists' Playground: 1 point and 10 coins per 100 coins deposited, plus 2 Magic XP per coin. */
         public static final int ALCHEMY_COINS_PER_POINT = 100;
-        public static final int ENCHANT_SHAPES_PER_POINT = 1;
-        public static final int GRAVEYARD_BONES_PER_POINT = 4;
+        public static final int ALCHEMY_COINS_REWARD = 10;
+        public static final int ALCHEMY_XP_PER_COIN = 2;
+        /** The five cupboard items' alchemy values, rotated every minute. */
+        public static final int[] ALCHEMY_VALUES = {1, 5, 8, 15, 30};
+        public static final int ALCHEMY_ROTATE_TICKS = 100;
+        /** Enchanting Chamber: Lvl-1 to Lvl-6 Enchant (Magic level and XP per cast). */
+        public static final int[] ENCHANT_LEVELS = {7, 27, 49, 57, 68, 87};
+        public static final double[] ENCHANT_XP = {17.5, 37, 59, 67, 78, 97};
+        public static final int ENCHANT_BONUS_SHAPE = 2;
+        /** Creature Graveyard: 16 bananas or 8 peaches per point, at most 3 points per deposit. */
+        public static final int GRAVEYARD_BANANAS_PER_POINT = 16;
+        public static final int GRAVEYARD_PEACHES_PER_POINT = 8;
+        public static final int GRAVEYARD_MAX_PER_DEPOSIT = 3;
+        /** Falling bones hit for 2; dying in the graveyard costs 10 points. */
+        public static final int GRAVEYARD_BONE_DAMAGE = 2;
+        public static final int GRAVEYARD_DEATH_PENALTY = 10;
+        /** Point caps per room. */
+        public static final int[] MAX_POINTS = {8000, 16000, 32000, 8000};
 
         private MageArena() {
+        }
+
+        /** Best enchantment spell (1-6) for a Magic level, or 0. */
+        public static int enchantLevel(int magic) {
+            int best = 0;
+            for (int i = 0; i < ENCHANT_LEVELS.length; i++) {
+                if (magic >= ENCHANT_LEVELS[i]) {
+                    best = i + 1;
+                }
+            }
+            return best;
+        }
+
+        /**
+         * Enchantment points for one cast: the spell's level (doubled for a dragonstone), doubled again
+         * on every tenth shape, plus 2 for the indicated bonus shape (added after doubling).
+         */
+        public static int enchantPoints(int spellLevel, int nth, boolean bonusShape, boolean dragonstone) {
+            int pts = spellLevel * (dragonstone ? 2 : 1);
+            if (nth > 0 && nth % 10 == 0) {
+                pts *= 2;
+            }
+            return pts + (bonusShape ? ENCHANT_BONUS_SHAPE : 0);
+        }
+
+        /** Points for depositing coins: one per 100, the remainder giving that percent chance of one more. */
+        public static int alchemistPoints(int coins, double random) {
+            int pts = coins / ALCHEMY_COINS_PER_POINT;
+            return pts + (random < (coins % ALCHEMY_COINS_PER_POINT) / (double) ALCHEMY_COINS_PER_POINT ? 1 : 0);
+        }
+
+        /** Graveyard points for one deposit of fruit (fractions give that chance of an extra point; max 3). */
+        public static int graveyardPoints(int fruit, boolean peaches, double random) {
+            double exact = fruit / (double) (peaches ? GRAVEYARD_PEACHES_PER_POINT : GRAVEYARD_BANANAS_PER_POINT);
+            int pts = (int) Math.floor(exact) + (random < exact - Math.floor(exact) ? 1 : 0);
+            return Math.min(GRAVEYARD_MAX_PER_DEPOSIT, pts);
         }
     }
 
@@ -507,13 +646,243 @@ public final class MinigameRules {
         public static final String[] OBSTACLES = {"Contortion bars", "Pendulum", "Floor spikes", "Wall safe trap",
                 "Grill", "Ledge", "Blade trap", "Tile maze"};
         public static final String[] OUTFIT = {"rogue_mask", "rogue_top", "rogue_trousers", "rogue_gloves", "rogue_boots"};
+        /** Whether each obstacle is an Agility obstacle (else a Thieving trap). */
+        public static final boolean[] AGILITY = {true, true, false, false, false, true, true, false};
+        /**
+         * Levels drained by each obstacle (OSRS Wiki: contortion bars 5, pendulum 3, ledge 4, floor
+         * blades 3; the Thieving traps' drains are approx.).
+         */
+        public static final int[] DRAIN = {5, 3, 2, 2, 2, 4, 3, 2};
+        /** Both 50 Agility and 50 Thieving (unboostable) are needed to enter the maze. */
+        public static final int LEVEL = 50;
+        /** On cracking the safe: 12 XP in Agility and Thieving for every level drained from that skill. */
+        public static final int XP_PER_DRAINED_LEVEL = 12;
 
         private RoguesDen() {
         }
 
-        /** Chance to pass an obstacle: 60% at level 50 rising to 98% at 99 (approx.). */
+        /** Chance to disarm a Thieving trap (Agility obstacles never fail while levels remain): 60% at 50 to 98% at 99 (approx.). */
         public static double passChance(int level) {
             return Math.min(0.98, 0.60 + Math.max(0, level - 50) * 0.0078);
+        }
+
+        /**
+         * Experience on leaving the maze for the levels drained from a skill: the full 12 per level
+         * after cracking the safe, otherwise a share proportional to how far into the maze the
+         * player got (approx. of the wiki's "fraction depending on distance").
+         */
+        public static double xp(int drained, int obstaclesPassed, boolean cracked) {
+            double full = drained * (double) XP_PER_DRAINED_LEVEL;
+            return cracked ? full : full * obstaclesPassed / (double) (OBSTACLES.length + 1);
+        }
+    }
+
+    // ---------------------------------------------------------------- Trouble Brewing
+    public static final class TroubleBrewing {
+        /** A game lasts 20 minutes. */
+        public static final int GAME_TICKS = 2000;
+        /** 10 pieces of eight per bottle of rum the team makes, plus 1 per resource deposited (max 100). */
+        public static final int EIGHT_PER_RUM = 10;
+        public static final int MAX_CONTRIBUTION = 100;
+        /** Cooking XP for depositing a bitternut (200) or scrapey bark / sweetgrubs (100). */
+        public static final double BITTERNUT_XP = 200;
+        public static final double DEPOSIT_XP = 100;
+        /** Rum contribution reward per bottle the player helped make: Crafting 100, Cooking 250, Firemaking 150. */
+        public static final double RUM_CRAFTING_XP = 100;
+        public static final double RUM_COOKING_XP = 250;
+        public static final double RUM_FIREMAKING_XP = 150;
+        /** A bottle takes 38 seconds to brew (64 game ticks). */
+        public static final int BREW_TICKS = 64;
+
+        private TroubleBrewing() {
+        }
+
+        public static int piecesOfEight(int teamRum, int resourcesDeposited) {
+            return EIGHT_PER_RUM * teamRum + Math.min(MAX_CONTRIBUTION, resourcesDeposited);
+        }
+    }
+
+    // ---------------------------------------------------------------- Gnome Restaurant
+    public static final class GnomeRestaurant {
+        /** Easy deliveries: 6 minutes, 1 point; hard deliveries: 11 minutes, 3 points. 12 points make a reward token. */
+        public static final int EASY_TICKS = 600;
+        public static final int HARD_TICKS = 1100;
+        public static final int EASY_POINTS = 1;
+        public static final int HARD_POINTS = 3;
+        public static final int POINTS_PER_TOKEN = 12;
+        /** Every delivery is tipped 2-500 coins plus a roll on the tip table (approx. weights from the wiki). */
+        public static final int TIP_MIN = 2;
+        public static final int TIP_MAX = 500;
+        public static final List<Loot> TIPS = List.of(
+                new Loot("gnome_scarf", 1, 1, 23), new Loot("gnome_goggles", 1, 1, 23), new Loot("mint_cake", 1, 1, 18),
+                new Loot("toadflax", 3, 3, 31), new Loot("snapdragon", 1, 1, 31), new Loot("uncut_sapphire", 6, 16, 31),
+                new Loot("uncut_emerald", 3, 5, 31), new Loot("uncut_ruby", 2, 4, 31), new Loot("uncut_diamond", 1, 1, 31),
+                new Loot("uncut_jade", 2, 3, 31), new Loot("uncut_opal", 3, 3, 31), new Loot("uncut_red_topaz", 1, 1, 31),
+                new Loot("mithril_bolts", 16, 35, 40), new Loot("adamant_bolts", 12, 26, 20), new Loot("bird_nest_seeds", 1, 1, 20),
+                new Loot("coins", 2, 500, 200));
+
+        private GnomeRestaurant() {
+        }
+
+        /** Reward tokens earned when a delivery takes the point total from {@code before} to {@code after}. */
+        public static int tokens(int before, int after) {
+            return after / POINTS_PER_TOKEN - before / POINTS_PER_TOKEN;
+        }
+    }
+
+    // ---------------------------------------------------------------- Imbues (Nightmare Zone / Soul Wars)
+    public static final class Imbues {
+        /** Item, imbued item, Nightmare Zone points, Soul Wars zeal (OSRS Wiki). */
+        public static final Object[][] ITEMS = {
+                {"black_mask", "black_mask_i", 1_250_000, 500},
+                {"slayer_helmet", "slayer_helmet_i", 1_250_000, 500},
+                {"salve_amulet", "salve_amulet_i", 800_000, 320},
+                {"salve_amulet_e", "salve_amulet_ei", 800_000, 320},
+                {"ring_of_the_gods", "ring_of_the_gods_i", 650_000, 260},
+                {"ring_of_suffering", "ring_of_suffering_i", 725_000, 300},
+                {"berserker_ring", "berserker_ring_i", 650_000, 260},
+                {"warrior_ring", "warrior_ring_i", 650_000, 260},
+                {"archers_ring", "archers_ring_i", 650_000, 260},
+                {"seers_ring", "seers_ring_i", 650_000, 260},
+                {"tyrannical_ring", "tyrannical_ring_i", 650_000, 260},
+                {"treasonous_ring", "treasonous_ring_i", 650_000, 260},
+                {"granite_ring", "granite_ring_i", 500_000, 200}};
+
+        private Imbues() {
+        }
+    }
+
+    // ---------------------------------------------------------------- Nightmare Zone
+    public static final class NightmareZone {
+        /** Coins per dream from Dominic's coffer: normal / hard rumble (OSRS Wiki). */
+        public static final int RUMBLE_COST = 2000;
+        public static final int HARD_RUMBLE_COST = 6000;
+        /** Five of these boss quests must be complete to enter (the wiki's list, limited to quests RuneCraft has). */
+        public static final List<String> QUESTS = List.of("the_ascent_of_arceuus", "VAMPYRE_SLAYER", "the_corsair_curse",
+                "the_depths_of_despair", "tale_of_the_righteous", "what_lies_below", "witchs_house", "mountain_daughter",
+                "lunar_diplomacy", "getting_ahead", "dragon_slayer_i", "the_grand_tree", "haunted_mine", "shilo_village",
+                "in_search_of_the_myreque", "contact", "fairytale_i_growing_pains", "tree_gnome_village", "troll_romance",
+                "holy_grail", "the_fremennik_isles", "lost_city", "fight_arena", "legends_quest", "dream_mentor",
+                "recipe_for_disaster", "desert_treasure_i");
+        public static final int QUESTS_NEEDED = 5;
+        /** At most four bosses at once for a solo rumble. */
+        public static final int MAX_BOSSES = 4;
+        /** The rumble's quest bosses: creature id, points per kill in a normal rumble with every boss enabled (OSRS Wiki). */
+        public static final Object[][] BOSSES = {
+                {"nmz_count_draynor", 224}, {"nmz_king_roald", 448}, {"nmz_the_kendal", 998}, {"nmz_me", 1263},
+                {"nmz_elvarg", 1385}, {"nmz_tree_spirit", 2078}, {"nmz_dad", 2078}, {"nmz_khazard_warlord", 2547},
+                {"nmz_arrg", 2588}, {"nmz_black_knight_titan", 2934}, {"nmz_bouncer", 3811}, {"nmz_glod", 3872}};
+        /** Hard rumbles pay roughly 3.5 times as much per kill (approx. of the wiki's per-boss hard values). */
+        public static final double HARD_MULTIPLIER = 3.5;
+
+        private NightmareZone() {
+        }
+
+        public static int points(String boss, boolean hard) {
+            for (Object[] b : BOSSES) {
+                if (b[0].equals(boss)) {
+                    int pts = (Integer) b[1];
+                    return hard ? (int) Math.round(pts * HARD_MULTIPLIER) : pts;
+                }
+            }
+            return 0;
+        }
+
+        /** Whether enough of the listed quests are complete, given a completion check. */
+        public static boolean canEnter(java.util.function.Predicate<String> questComplete) {
+            return QUESTS.stream().distinct().filter(questComplete).count() >= QUESTS_NEEDED;
+        }
+    }
+
+    // ---------------------------------------------------------------- Soul Wars
+    public static final class SoulWars {
+        /** A game lasts up to 15 minutes; five Avatar kills end it early. */
+        public static final int GAME_TICKS = 1500;
+        public static final int AVATAR_KILLS_TO_WIN = 5;
+        /** Entry: total level 500 and combat level 40. */
+        public static final int TOTAL_LEVEL = 500;
+        public static final int COMBAT_LEVEL = 40;
+        /** Zeal for a full contribution: 60 for a win, 50 for a draw, 40 for a loss. */
+        public static final int ZEAL_WIN = 60;
+        public static final int ZEAL_DRAW = 50;
+        public static final int ZEAL_LOSS = 40;
+        /** Contribution limits (OSRS Wiki): 30 soul fragments, 6 captures, 260 Avatar damage. */
+        public static final int FRAGMENT_LIMIT = 30;
+        public static final int CAPTURE_LIMIT = 6;
+        public static final int DAMAGE_LIMIT = 260;
+        /** Avatars have 1,500 hitpoints and start with 100% damage reduction; each fragment removes 1%. */
+        public static final int AVATAR_HP = 1500;
+
+        private SoulWars() {
+        }
+
+        /**
+         * Zeal at the end of a game: the outcome's maximum times the player's contribution, the mean of
+         * their fragment, capture and Avatar-damage shares (approx.: the wiki gives only the limits).
+         */
+        public static int zeal(int outcome, int fragments, int captures, int avatarDamage) {
+            int max = outcome > 0 ? ZEAL_WIN : outcome == 0 ? ZEAL_DRAW : ZEAL_LOSS;
+            double share = (Math.min(fragments, FRAGMENT_LIMIT) / (double) FRAGMENT_LIMIT
+                    + Math.min(captures, CAPTURE_LIMIT) / (double) CAPTURE_LIMIT
+                    + Math.min(avatarDamage, DAMAGE_LIMIT) / (double) DAMAGE_LIMIT) / 3.0;
+            return (int) Math.round(max * share);
+        }
+
+        /** Damage taken by an Avatar after its damage reduction (0-100%). */
+        public static int reducedDamage(int damage, int reductionPercent) {
+            return damage * (100 - Math.max(0, Math.min(100, reductionPercent))) / 100;
+        }
+    }
+
+    // ---------------------------------------------------------------- Tears of Guthix
+    public static final class TearsOfGuthix {
+        /** Playable once every seven days, after 100,000 XP or a quest point since the last visit. */
+        public static final int DAYS_BETWEEN = 7;
+        public static final long XP_SINCE_LAST = 100_000;
+        /** Tie-break order for the skill with the least experience (OSRS Wiki, since November 2025). */
+        public static final List<com.runecraft.osrs.Skill> ORDER = List.of(com.runecraft.osrs.Skill.ATTACK,
+                com.runecraft.osrs.Skill.STRENGTH, com.runecraft.osrs.Skill.RANGED, com.runecraft.osrs.Skill.MAGIC,
+                com.runecraft.osrs.Skill.DEFENCE, com.runecraft.osrs.Skill.HITPOINTS, com.runecraft.osrs.Skill.PRAYER,
+                com.runecraft.osrs.Skill.AGILITY, com.runecraft.osrs.Skill.HERBLORE, com.runecraft.osrs.Skill.THIEVING,
+                com.runecraft.osrs.Skill.CRAFTING, com.runecraft.osrs.Skill.RUNECRAFT, com.runecraft.osrs.Skill.MINING,
+                com.runecraft.osrs.Skill.SMITHING, com.runecraft.osrs.Skill.FISHING, com.runecraft.osrs.Skill.COOKING,
+                com.runecraft.osrs.Skill.FIREMAKING, com.runecraft.osrs.Skill.WOODCUTTING, com.runecraft.osrs.Skill.FLETCHING,
+                com.runecraft.osrs.Skill.SLAYER, com.runecraft.osrs.Skill.FARMING, com.runecraft.osrs.Skill.CONSTRUCTION,
+                com.runecraft.osrs.Skill.HUNTER, com.runecraft.osrs.Skill.SAILING);
+        /** Each stream stays put for 16 game ticks; three blue and three green streams run at once. */
+        public static final int STREAM_TICKS = 16;
+
+        private TearsOfGuthix() {
+        }
+
+        /** Game ticks in the cave: one per quest point. */
+        public static int ticks(int questPoints) {
+            return Math.max(0, questPoints);
+        }
+
+        /** XP per tear: min(60, 10 + floor(xp / 27) / 10), so 60 from level 30 (OSRS Wiki). */
+        public static double xpPerTear(int currentXp) {
+            return Math.min(60.0, 10 + Math.floor(currentXp / 27.0) / 10.0);
+        }
+
+        /** Total XP for the tears collected (never negative). */
+        public static double xp(int tears, int currentXp) {
+            return Math.max(0, tears) * xpPerTear(currentXp);
+        }
+
+        /**
+         * The skill that receives the experience: the one with the least XP among the eligible skills,
+         * ties going to the earlier skill in {@link #ORDER}.
+         */
+        public static com.runecraft.osrs.Skill skill(java.util.function.ToIntFunction<com.runecraft.osrs.Skill> xp,
+                                                     java.util.function.Predicate<com.runecraft.osrs.Skill> eligible) {
+            com.runecraft.osrs.Skill best = null;
+            for (com.runecraft.osrs.Skill s : ORDER) {
+                if (eligible.test(s) && (best == null || xp.applyAsInt(s) < xp.applyAsInt(best))) {
+                    best = s;
+                }
+            }
+            return best;
         }
     }
 

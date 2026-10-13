@@ -47,7 +47,17 @@ public enum Minigame {
      * the islands module's Volcanic Mine lobby building and builds nothing else (style NONE).
      */
     VOLCANIC_MINE("volcanic_mine", "Volcanic Mine", "mg_volcanic_mine", 3812, 10240, 3820, 3800, PlaceDef.Style.NONE, 20, 30,
-            Skill.MINING, 50);
+            Skill.MINING, 50),
+    /**
+     * Dominic Onion's dreams, entered just north-west of Yanille bank (the arena is an instance of the
+     * King Black Dragon's lair). Needs five of the boss quests ({@link MinigameRules.NightmareZone#QUESTS}).
+     */
+    NIGHTMARE_ZONE("nightmare_zone", "Nightmare Zone", "mg_nightmare_zone", 2276, 4680, 2609, 3114, PlaceDef.Style.NONE, 0, 1, null, 0),
+    /** Soul Wars on the Isle of Souls (total level 500 and combat level 40; checked by the manager). */
+    SOUL_WARS("soul_wars", "Soul Wars", "mg_isle_of_souls", 2136, 2900, 2210, 2880, PlaceDef.Style.CAMP, 20, 30, null, 0),
+    /** Juna's Chasm of Tears below Lumbridge Swamp (after the Tears of Guthix quest); the portal stands beside Juna. */
+    TEARS_OF_GUTHIX("tears_of_guthix", "Tears of Guthix", "mg_chasm_of_tears", 3257, 9517, 3255, 3178, PlaceDef.Style.NONE, 0, 1,
+            null, 0);
 
     private final String id;
     private final String displayName;

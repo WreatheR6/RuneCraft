@@ -10,6 +10,8 @@ public final class MinigameCurrencies {
     public static final String BA_DEFENDER = "pts:ba_defender";
     public static final String BA_COLLECTOR = "pts:ba_collector";
     public static final String BA_HEALER = "pts:ba_healer";
+    /** Penance Queen kills: spent (one each) on the queen-locked Barbarian Assault rewards; at most 40 stored. */
+    public static final String BA_QUEEN = "pts:ba_queen_kills";
     public static final String MTA_TELEKINETIC = "pts:mta_telekinetic";
     public static final String MTA_ALCHEMIST = "pts:mta_alchemist";
     public static final String MTA_ENCHANTMENT = "pts:mta_enchantment";
@@ -18,6 +20,8 @@ public final class MinigameCurrencies {
     public static final String FOUNDRY = "pts:giants_foundry";
     public static final String CARPENTER = "pts:mahogany_homes";
     public static final String VOLCANIC_MINE = "pts:volcanic_mine";
+    public static final String NIGHTMARE_ZONE = "pts:nightmare_zone";
+    public static final String ZEAL = "pts:soul_wars";
     public static final String TOKKUL = "item:tokkul";
     public static final String PEARLS = "item:abyssal_pearls";
     public static final String CW_TICKETS = "item:castle_wars_ticket";
@@ -37,6 +41,7 @@ public final class MinigameCurrencies {
         NAMES.put(BA_DEFENDER, "Defender honour points");
         NAMES.put(BA_COLLECTOR, "Collector honour points");
         NAMES.put(BA_HEALER, "Healer honour points");
+        NAMES.put(BA_QUEEN, "Queen kills");
         NAMES.put(MTA_TELEKINETIC, "Telekinetic pizazz points");
         NAMES.put(MTA_ALCHEMIST, "Alchemist pizazz points");
         NAMES.put(MTA_ENCHANTMENT, "Enchantment pizazz points");
@@ -45,6 +50,8 @@ public final class MinigameCurrencies {
         NAMES.put(FOUNDRY, "Foundry reputation");
         NAMES.put(CARPENTER, "Carpenter points");
         NAMES.put(VOLCANIC_MINE, "Volcanic Mine points");
+        NAMES.put(NIGHTMARE_ZONE, "Nightmare Zone points");
+        NAMES.put(ZEAL, "Zeal Tokens");
         NAMES.put(TOKKUL, "Tokkul");
         NAMES.put(PEARLS, "Abyssal pearls");
         NAMES.put(CW_TICKETS, "Castle wars tickets");

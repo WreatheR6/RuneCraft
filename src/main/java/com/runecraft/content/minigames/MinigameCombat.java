@@ -61,7 +61,8 @@ public final class MinigameCombat {
         String legs = worn(p, EquipmentSlot.LEGS);
         if (!(top.equals("void_knight_top") || top.equals("elite_void_top"))
                 || !(legs.equals("void_knight_robe") || legs.equals("elite_void_robe"))
-                || !Inv.has(p, "void_knight_gloves", 1)) {
+                || !(com.runecraft.content.systems.SysState.of(p).wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.HANDS)
+                        .equals("void_knight_gloves") || Inv.has(p, "void_knight_gloves", 1))) {
             return -1;
         }
         return switch (worn(p, EquipmentSlot.HEAD)) {

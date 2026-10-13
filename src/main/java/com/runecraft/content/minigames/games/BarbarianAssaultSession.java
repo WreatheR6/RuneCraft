@@ -156,13 +156,21 @@ public class BarbarianAssaultSession extends MinigameSession {
     }
 
     private void completeWave() {
-        int honour = Math.max(0, BarbarianAssault.honour(wave) - escaped);
         for (ServerPlayerEntity p : online()) {
             int r = role(p);
-            addPoints(p, "pts:ba_" + BarbarianAssault.ROLES[r], honour);
-            Msg.game(p, "Wave " + wave + " complete! You earn " + honour + " " + roleName(r) + " honour points.");
+            int honour = giveHonour(p, r, BarbarianAssault.waveHonour(r, wave, escaped));
+            Msg.game(p, "Wave " + wave + " complete! You earn " + honour + " " + roleName(r) + " honour points"
+                    + (escaped > 0 ? " (" + escaped + " runner" + (escaped > 1 ? "s" : "") + " escaped)." : "."));
         }
         escaped = 0;
+    }
+
+    /** Adds honour points in a role, capped at 5,000; returns the amount added. */
+    private int giveHonour(ServerPlayerEntity p, int role, int amount) {
+        String key = "ba_" + BarbarianAssault.ROLES[role];
+        int add = BarbarianAssault.addHonour(MinigameData.of(p).points(p.getUuid(), key), amount);
+        addPoints(p, "pts:" + key, add);
+        return add;
     }
 
     @Override
@@ -202,7 +210,7 @@ public class BarbarianAssaultSession extends MinigameSession {
                 return true;
             }
             if (queen != null && queen.isAlive()) {
-                int dmg = eggs * 12;
+                int dmg = eggs * BarbarianAssault.omegaEggDamage();
                 CombatHandler.applyDamage(player, queen, dmg);
                 world.spawnParticles(ParticleTypes.EXPLOSION, queen.getX(), queen.getY() + 1, queen.getZ(), eggs, 1, 1, 1, 0);
                 Msg.game(player, "You fire " + eggs + " omega egg" + (eggs > 1 ? "s" : "") + " at the Penance Queen!");
@@ -240,8 +248,16 @@ public class BarbarianAssaultSession extends MinigameSession {
         }
         for (ServerPlayerEntity p : online()) {
             int r = role(p);
-            addPoints(p, "pts:ba_" + BarbarianAssault.ROLES[r], BarbarianAssault.honour(BarbarianAssault.WAVES));
+            // Wave 10: 80 points in your role and 5 in each of the others.
+            for (int other = 0; other < BarbarianAssault.ROLES.length; other++) {
+                giveHonour(p, other, other == r ? BarbarianAssault.WAVE_10_ROLE : BarbarianAssault.WAVE_10_OTHER);
+            }
             int kc = MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+            String queenKey = com.runecraft.osrs.content.minigames.MinigameCurrencies.key(
+                    com.runecraft.osrs.content.minigames.MinigameCurrencies.BA_QUEEN);
+            if (MinigameData.of(p).points(p.getUuid(), queenKey) < BarbarianAssault.MAX_QUEEN_KILLS) {
+                addPoints(p, com.runecraft.osrs.content.minigames.MinigameCurrencies.BA_QUEEN, 1);
+            }
             Msg.game(p, "Congratulations! You've defeated the Penance Queen. Queen kills: " + kc + ".");
             if (random.nextInt(BarbarianAssault.PET_CHANCE) == 0) {
                 reward(p, "pet_penance_queen", 1);

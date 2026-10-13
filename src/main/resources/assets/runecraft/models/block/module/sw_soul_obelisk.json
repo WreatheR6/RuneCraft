@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/sw_soul_obelisk_side",
+    "top": "runecraft:block/module/sw_soul_obelisk_top",
+    "bottom": "runecraft:block/module/sw_soul_obelisk_bottom"
+  }
+}
