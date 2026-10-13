@@ -535,7 +535,7 @@ final class GameplayChecks {
         if (below.getCollisionShape(world, pos.down()).isEmpty()) {
             throw failure("nothing to stand on at " + where + " (below " + below + ")");
         }
-        p().teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, p().getYaw(), p().getPitch());
+        // The player stays on the test platform: moving it would load chunks around every destination.
         return where + " on " + net.minecraft.registry.Registries.BLOCK.getId(below.getBlock());
     }
 }

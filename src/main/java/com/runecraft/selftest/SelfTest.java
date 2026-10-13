@@ -125,6 +125,7 @@ public final class SelfTest {
 
     private static void run(Check c) {
         String note;
+        long start = System.nanoTime();
         try {
             context.reset();
             note = c.body().run();
@@ -135,6 +136,10 @@ public final class SelfTest {
         }
         passed++;
         log("SELFTEST PASS " + c.name() + (note == null || note.isEmpty() ? "" : " (" + note + ")"));
+        long ms = (System.nanoTime() - start) / 1_000_000L;
+        if (ms >= 2000) {
+            log("SELFTEST SLOW " + c.name() + " took " + ms + " ms");
+        }
         cleanUp(c.name());
     }
 

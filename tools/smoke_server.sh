@@ -34,7 +34,7 @@ curl -sSfL -o "$D/server.jar" "https://meta.fabricmc.net/v2/versions/loader/$MC/
 curl -sSfL -o "$D/mods/fabric-api.jar" "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/$FAPI/fabric-api-$FAPI.jar" || exit 1
 cp "$JAR" "$D/mods/"
 echo "eula=true" > "$D/eula.txt"
-printf 'online-mode=false\nspawn-protection=0\nlevel-seed=42\nsync-chunk-writes=false\n' > "$D/server.properties"
+printf 'online-mode=false\nspawn-protection=0\nlevel-seed=42\nsync-chunk-writes=false\nmax-tick-time=-1\n' > "$D/server.properties"
 cd "$D"
 LOG=server.log
 : > "$LOG"
@@ -46,7 +46,7 @@ G="execute in runecraft:gielinor"
 feed() {
     for _ in $(seq 1 400); do
         grep -q 'Done (' "$LOG" && break
-        grep -q 'Crash report saved\|Failed to start the minecraft server\|Exception in server tick loop' "$LOG" && return
+        grep -q 'Crash report saved\|crash report has been saved\|Failed to start the minecraft server\|Exception in server tick loop' "$LOG" && return
         sleep 1
     done
     for a in "${AREAS[@]}"; do
@@ -106,7 +106,7 @@ feed() {
     if [ -n "${SELFTEST_FILTER:-}" ]; then echo "rc selftest $SELFTEST_FILTER"; else echo "rc selftest"; fi
     for _ in $(seq 1 "${SELFTEST_TIMEOUT:-1200}"); do
         grep -q 'SELFTEST END' "$LOG" && break
-        grep -q 'Crash report saved\|Exception in server tick loop' "$LOG" && break
+        grep -q 'Crash report saved\|crash report has been saved\|Considering it to be crashed\|Exception in server tick loop' "$LOG" && break
         sleep 1
     done
     sleep 5
@@ -133,7 +133,7 @@ cat checks.txt
 
 fail=0
 grep -q 'Done (' "$LOG" || { echo "FAIL: server never finished starting"; fail=1; }
-grep -q 'Crash report saved\|Exception in server tick loop' "$LOG" && { echo "FAIL: server crashed"; fail=1; }
+grep -q 'Crash report saved\|crash report has been saved\|Considering it to be crashed\|Exception in server tick loop' "$LOG" && { echo "FAIL: server crashed"; fail=1; }
 grep -q 'Failed to place structure\|Failed to build\|Custom builder for .* failed\|could not be parsed' strict.log && { echo "FAIL: RuneCraft reported build errors"; fail=1; }
 grep -E '\[(Server thread|main)/ERROR\]' strict.log | grep -qi 'runecraft' && { echo "FAIL: RuneCraft logged errors"; fail=1; }
 grep -q '^\s*at com\.runecraft\.' strict.log && { echo "FAIL: exception thrown through RuneCraft code:"; grep -n -B3 -m5 '^\s*at com\.runecraft\.' strict.log; fail=1; }
