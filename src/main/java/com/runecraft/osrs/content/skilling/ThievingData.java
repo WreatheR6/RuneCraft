@@ -150,6 +150,30 @@ public final class ThievingData extends SkillingPart {
                             List<Loot> table, String look, int color) {
     }
 
+    /** The Isle of Souls Dungeon chest and the Dark Chest it gives keys for. */
+    public static final String SOUL_CHEST = "isle_of_souls_chest";
+    public static final String DARK_CHEST = "dark_chest";
+    public static final String DARK_KEY = "dark_key";
+    /** Containers that are opened with a key, which is used up: block -> key item. */
+    public static final java.util.Map<String, String> KEY_CONTAINERS = java.util.Map.of(DARK_CHEST, DARK_KEY);
+
+    /**
+     * Picklock chances: block -> {low, high} on the 1-99 curve without and {low, high} with a lockpick carried
+     * (Mod Ash: the Isle of Souls chest is -23/153, +26 with a lockpick). A failure has a 1/6 chance of the
+     * chest's trap. Other containers always open.
+     */
+    public static final java.util.Map<String, int[]> PICKLOCK = java.util.Map.of(SOUL_CHEST, new int[]{-23, 153, 3, 179});
+    public static final int TRAP_CHANCE = 6;
+
+    /** Chance to open a container at a Thieving level (1 for containers that always open). */
+    public static double openChance(String blockId, int thieving, boolean lockpick) {
+        int[] lh = PICKLOCK.get(blockId);
+        if (lh == null) {
+            return 1.0;
+        }
+        return lockpick ? com.runecraft.osrs.Chance.lerp(thieving, lh[2], lh[3]) : com.runecraft.osrs.Chance.lerp(thieving, lh[0], lh[1]);
+    }
+
     /** Containers that need a lockpick (Dorgesh-Kaan's chests). */
     public static final List<String> LOCKPICK_CONTAINERS = List.of("dorgesh_kaan_average_chest", "dorgesh_kaan_rich_chest");
     /** The Civitas illa Fortis house furniture (Stealing valuables): needs a house key to get in. */
@@ -173,13 +197,40 @@ public final class ThievingData extends SkillingPart {
                     List.of(Loot.of("coins", 100, 500, 50), Loot.of("raw_shark", 1, 3, 15), Loot.of("death_rune", 10, 30, 10),
                             Loot.of("uncut_diamond", 6), Loot.of("uncut_ruby", 8), Loot.of("dragonstone", 1), Loot.of("rune_dagger", 2),
                             Loot.of("adamantite_ore", 1, 4, 8)), "chest", 0x5A4A3A),
-            // Dorgesh-Kaan chests (a lockpick needed): average 52 Thieving, rich 78 (XP, loot and respawn approx.).
-            new Container("dorgesh_kaan_average_chest", "Chest (Dorgesh-Kaan, average)", true, 52, 200.0, 100,
-                    List.of(Loot.of("coins", 50, 250, 1)), List.of(Loot.of("uncut_sapphire", 1, 1, 6), Loot.of("uncut_emerald", 1, 1, 3),
-                    Loot.of("gold_bar", 1, 1, 3), Loot.of("coins", 1, 1, 12)), "chest", 0x6A6A5A),
-            new Container("dorgesh_kaan_rich_chest", "Chest (Dorgesh-Kaan, rich)", true, 78, 650.0, 200,
-                    List.of(Loot.of("coins", 200, 800, 1)), List.of(Loot.of("uncut_ruby", 1, 1, 6), Loot.of("uncut_diamond", 1, 1, 3),
-                    Loot.of("uncut_dragonstone", 1, 1, 1), Loot.of("gold_bar", 1, 3, 4), Loot.of("coins", 1, 1, 10)), "chest", 0x8A7A4A),
+            // Dorgesh-Kaan chests (a lockpick needed; OSRS Wiki): average 52 Thieving, 200 XP, back after 90 s; rich 78, 650 XP,
+            // 300 s. Loot: the average chest's main table is 3/7 coins (1-250) and 1/7 each of an oil lantern, bullseye
+            // lantern, mining helmet and cave goblin wire; the rich chest's 15 equal lines are gems, lanterns, frog-leather,
+            // an iron bar, wire and light orbs. Approx: lines whose items aren't in the game are left out.
+            new Container("dorgesh_kaan_average_chest", "Chest (Dorgesh-Kaan, average)", true, 52, 200.0, 150,
+                    List.of(), List.of(Loot.of("coins", 1, 250, 3)), "chest", 0x6A6A5A),
+            new Container("dorgesh_kaan_rich_chest", "Chest (Dorgesh-Kaan, rich)", true, 78, 650.0, 500,
+                    List.of(), List.of(Loot.of("uncut_sapphire", 1), Loot.of("uncut_emerald", 1), Loot.of("uncut_ruby", 1),
+                    Loot.of("uncut_diamond", 1), Loot.of("uncut_opal", 1), Loot.of("uncut_jade", 1), Loot.of("uncut_red_topaz", 1),
+                    Loot.of("iron_bar", 1), Loot.of("empty_light_orb", 1)), "chest", 0x8A7A4A),
+            // Isle of Souls Dungeon chest (OSRS Wiki): 28 Thieving, 150 XP, loot back after 2 ticks; one of two sources of dark
+            // keys. Weights out of 200 (OSRS gives nothing when the inventory is too full).
+            new Container(SOUL_CHEST, "Chest (Isle of Souls)", true, 28, 150.0, 2, List.of(),
+                    List.of(Loot.of("coins", 90, 190, 20), Loot.of("minecraft:feather", 30, 80, 20),
+                            Loot.of("chocolate_bar", 6), Loot.of("bird_snare", 1, 2, 6), Loot.of("box_trap", 1, 2, 6),
+                            Loot.of("grimy_guam_leaf", 1, 2, 20), Loot.of("grimy_lantadyme", 12), Loot.of("grimy_ranarr_weed", 10),
+                            Loot.of("uncut_sapphire", 1, 2, 8), Loot.of("uncut_emerald", 1, 2, 8), Loot.of("uncut_ruby", 1, 2, 6),
+                            Loot.of("uncut_diamond", 1, 2, 4), Loot.of("mithril_pickaxe", 6), Loot.of("mithril_axe", 6),
+                            Loot.of("adamant_scimitar", 4), Loot.of("mind_rune", 1, 10, 15), Loot.of("nature_rune", 1, 2, 20),
+                            Loot.of("death_rune", 1, 2, 20), Loot.of("clue_scroll_medium", 2), Loot.of(DARK_KEY, 1)), "chest", 0x5A4A6A),
+            // The Dark Chest in the Crumbling Tower's basement (OSRS Wiki): a dark key and 28 Thieving, 1,500 XP. Weights "out of
+            // 600" (the wiki's lines add up to 603); herbs, hides and bones come noted in OSRS.
+            new Container(DARK_CHEST, "Dark Chest", true, 28, 1500.0, 2, List.of(),
+                    List.of(Loot.of("shield_left_half", 1), Loot.of("dragon_plateskirt", 1), Loot.of("dragon_platelegs", 1),
+                            Loot.of("rune_pickaxe", 15), Loot.of("rune_axe", 15), Loot.of("rune_longsword", 5), Loot.of("rune_kiteshield", 10),
+                            Loot.of("rune_chainbody", 10), Loot.of("mind_rune", 400, 600, 25), Loot.of("chaos_rune", 300, 500, 25),
+                            Loot.of("blood_rune", 100, 200, 25), Loot.of("nature_rune", 150, 350, 25), Loot.of("law_rune", 100, 300, 27),
+                            Loot.of("death_rune", 200, 400, 27), Loot.of("adamant_arrow", 200, 400, 40), Loot.of("rune_arrow", 100, 300, 30),
+                            Loot.of("grimy_dwarf_weed", 10, 15, 25), Loot.of("grimy_torstol", 10, 15, 25),
+                            Loot.of("grimy_ranarr_weed", 10, 15, 25), Loot.of("grimy_snapdragon", 10, 15, 25),
+                            Loot.of("green_dragon_leather", 5, 10, 20), Loot.of("blue_dragon_leather", 5, 10, 20),
+                            Loot.of("red_dragon_leather", 5, 10, 20), Loot.of("black_dragon_leather", 5, 10, 20),
+                            Loot.of("babydragon_bones", 10, 15, 35), Loot.of("dragon_bones", 10, 15, 20),
+                            Loot.of("coins", 9500, 29500, 69), Loot.of("dragonstone", 10), Loot.of(DARK_KEY, 2, 2, 7)), "chest", 0x2A2A3A),
             // Stealing valuables (Civitas illa Fortis houses, 50 Thieving, 45 XP a theft): valuables, now and then a piece
             // of jewellery (amounts and weights approx.).
             new Container("civitas_house_chest", "Chest (Civitas house)", true, 50, 45.0, 2, List.of(Loot.of(VALUABLES, 1, 2, 1)),
@@ -238,6 +289,7 @@ public final class ThievingData extends SkillingPart {
         simple(s, VALUABLES, "Valuables", "gem", 0xE0C060, 100).stack(Integer.MAX_VALUE) // value approx.
                 .examine("Stolen from a house in Civitas illa Fortis.");
         tool(s, "willow_blackjack", "Willow blackjack", "club", 0x9A8A4A, 192).examine("A cosh for knocking people out.");
+        simple(s, DARK_KEY, "Dark key", "key", 0x3A2A4A, 1).examine("Opens the Dark Chest in the Crumbling Tower.");
     }
 
     @Override
@@ -281,6 +333,11 @@ public final class ThievingData extends SkillingPart {
                         List.of("magic_stall", "scimitar_stall")),
                 PlaceDef.of("lovakengj_ore_stall", "Lovakengj ore stall", 1490, 3770, PlaceDef.Style.TOWN, List.of("ore_stall")),
                 // The houses burgled in Stealing valuables (Lavinia's, Victor's and Caius'), approx.: one spot just west of the city walls, as the city structure fills the town.
+                // Isle of Souls: the dungeon chests by the dungeon entrance (2309, 2919 in OSRS) and the Dark Chest in the Crumbling
+                // Tower basement (2131, 2994). Approx: both on the surface and pulled inside the approximate island outline.
+                PlaceDef.of("isle_of_souls_chests", "Isle of Souls Dungeon chests", 2265, 2915, PlaceDef.Style.CAVE,
+                        List.of(SOUL_CHEST, SOUL_CHEST, SOUL_CHEST)),
+                PlaceDef.of("crumbling_tower_dark_chest", "Crumbling Tower", 2180, 2935, PlaceDef.Style.RUINS, List.of(DARK_CHEST)),
                 PlaceDef.of("civitas_houses", "Civitas houses", 1612, 3112, PlaceDef.Style.TOWN,
                         List.of("civitas_house_chest", "civitas_house_wardrobe", "civitas_jewellery_case")));
     }

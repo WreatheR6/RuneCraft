@@ -16,7 +16,10 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -37,14 +40,42 @@ import java.util.UUID;
 final class AgilityHooks {
     /** Piece each player has selected at Grace's shop (not persisted). */
     private static final Map<UUID, Integer> SELECTED = new HashMap<>();
-    /** Wilderness course state per player: tickets waiting at the dispenser, fee paid, streak, loot multipliers waiting (not persisted). */
-    private static final Map<UUID, Wild> WILD = new HashMap<>();
+    /**
+     * Wilderness course state per player, kept in the skilling world save (section "wilderness_agility"):
+     * tickets waiting at the dispenser, fee paid, lap streak and the loot multipliers waiting.
+     */
+    private static final String WILD_SECTION = "wilderness_agility";
 
     private static final class Wild {
         int tickets;
         boolean paid;
         int streak;
         final List<Integer> loot = new ArrayList<>();
+    }
+
+    private static Wild wild(ServerPlayerEntity player) {
+        Wild w = new Wild();
+        NbtCompound nbt = SkillingState.get(player.getServer()).section(WILD_SECTION).getCompound(player.getUuidAsString());
+        w.tickets = nbt.getInt("tickets");
+        w.paid = nbt.getBoolean("paid");
+        w.streak = nbt.getInt("streak");
+        for (int m : nbt.getIntArray("loot")) {
+            w.loot.add(m);
+        }
+        return w;
+    }
+
+    private static void save(ServerPlayerEntity player, Wild w) {
+        NbtCompound nbt = new NbtCompound();
+        nbt.putInt("tickets", w.tickets);
+        nbt.putBoolean("paid", w.paid);
+        nbt.putInt("streak", w.streak);
+        int[] loot = new int[w.loot.size()];
+        for (int i = 0; i < loot.length; i++) {
+            loot[i] = w.loot.get(i);
+        }
+        nbt.putIntArray("loot", loot);
+        SkillingState.get(player.getServer()).section(WILD_SECTION).put(player.getUuidAsString(), nbt);
     }
 
     private AgilityHooks() {
@@ -58,6 +89,26 @@ final class AgilityHooks {
         // Brimhaven arena it runs the Wilderness course's tickets, fee and loot.
         com.runecraft.content.BlockHooks.registerFallback("agility_ticket_dispenser", (player, pos, state) -> dispenser(player));
         AgilityService.LAP_LISTENERS.add(AgilityHooks::lap);
+        // Logging out inside the Wilderness course costs ten laps of streak; dying loses the fee (and the streak).
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            ServerPlayerEntity player = handler.player;
+            Wild w = wild(player);
+            if (w.paid && Gielinor.wildernessLevel(player) > 0) {
+                w.streak = AgilityRewards.streakAfterLogout(w.streak);
+                save(player, w);
+            }
+        });
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+            if (entity instanceof ServerPlayerEntity player) {
+                Wild w = wild(player);
+                if (w.paid) {
+                    w.paid = false;
+                    w.streak = 0;
+                    w.loot.clear();
+                    save(player, w);
+                }
+            }
+        });
         AgilityPlacer.init();
     }
 
@@ -167,12 +218,13 @@ final class AgilityHooks {
             Msg.game(player, "You scoop up " + n + " termites as you go.");
         }
         if (course == AgilityCourse.WILDERNESS) {
-            Wild w = WILD.computeIfAbsent(player.getUuid(), k -> new Wild());
+            Wild w = wild(player);
             w.tickets++;
             if (w.paid) {
                 w.streak++;
                 w.loot.add(AgilityRewards.streakMultiplier(w.streak));
             }
+            save(player, w);
             Msg.game(player, "Tag the Agility dispenser for your reward.");
         }
     }
@@ -188,7 +240,7 @@ final class AgilityHooks {
      * tickets for Agility XP.
      */
     private static void dispenser(ServerPlayerEntity player) {
-        Wild w = WILD.computeIfAbsent(player.getUuid(), k -> new Wild());
+        Wild w = wild(player);
         if (w.tickets > 0) {
             give(player, AgilityRewards.WILDERNESS_TICKET, w.tickets);
             Msg.game(player, "You tag the dispenser and receive " + w.tickets + " Wilderness agility ticket" + (w.tickets == 1 ? "." : "s."));
@@ -201,6 +253,7 @@ final class AgilityHooks {
                 Msg.game(player, "The dispenser also gives you some loot. Your lap streak is " + w.streak + ".");
             }
             w.loot.clear();
+            save(player, w);
             return;
         }
         if (player.isSneaking()) {
@@ -212,6 +265,7 @@ final class AgilityHooks {
                 Inv.remove(player, Inv.COINS, AgilityRewards.WILDERNESS_FEE);
                 w.paid = true;
                 w.streak = 0;
+                save(player, w);
                 Msg.game(player, "You pay the dispenser. Each lap now earns loot as well as a ticket.");
                 com.runecraft.network.ServerNetworking.sync(player);
             }

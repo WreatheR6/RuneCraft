@@ -61,6 +61,17 @@ public final class AgilityRewards {
         return 200;
     }
 
+    /** Laps taken off the Wilderness lap streak for logging out inside the course (25 before 2023). */
+    public static final int LOGOUT_LAP_PENALTY = 10;
+
+    /**
+     * The Wilderness course's lap streak after logging out in the course: the fee stays paid, but ten laps
+     * are lost. (The fee itself is lost on death or on leaving the course.)
+     */
+    public static int streakAfterLogout(int streak) {
+        return Math.max(0, streak - LOGOUT_LAP_PENALTY);
+    }
+
     /** Loot multiplier on the {@code streak}-th lap after paying the Wilderness fee. */
     public static int streakMultiplier(int streak) {
         if (streak >= 61) {
