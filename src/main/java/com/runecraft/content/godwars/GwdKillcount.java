@@ -28,7 +28,10 @@ import net.minecraft.util.math.Box;
  * can be used instead. Also rolls the built-in General Graardor's and K'ril Tsutsaroth's hilts,
  * godsword shards and pets.
  */
-final class GwdKillcount {
+public final class GwdKillcount {
+    /** Kill count needed to open a general's chamber (the systems module lowers it with Combat Achievement tiers). */
+    public static java.util.function.ToIntFunction<ServerPlayerEntity> required = p -> GodWarsFactions.REQUIRED_KILLCOUNT;
+
     private GwdKillcount() {
     }
 
@@ -40,10 +43,11 @@ final class GwdKillcount {
     static boolean enter(ServerPlayerEntity player, God god, String general) {
         GwdKillcountState state = GwdKillcountState.get(player.getServer());
         int kc = state.get(player.getUuid(), god);
-        int after = GodWarsFactions.afterEntry(kc);
+        int need = required.applyAsInt(player);
+        int after = kc >= need ? kc - need : -1;
         if (after >= 0) {
             state.set(player.getUuid(), god, after);
-            Msg.game(player, "The door to " + general + "'s chamber opens. (" + GodWarsFactions.REQUIRED_KILLCOUNT + " "
+            Msg.game(player, "The door to " + general + "'s chamber opens. (" + need + " "
                     + god.displayName() + " kill count used.)");
             return true;
         }
@@ -52,7 +56,7 @@ final class GwdKillcount {
             Msg.game(player, "You use your ecumenical key to open the door to " + general + "'s chamber.");
             return true;
         }
-        Msg.red(player, "You need " + GodWarsFactions.REQUIRED_KILLCOUNT + " " + god.displayName() + " kill count to enter "
+        Msg.red(player, "You need " + need + " " + god.displayName() + " kill count to enter "
                 + general + "'s chamber. You have " + kc + ".");
         return false;
     }
@@ -65,8 +69,8 @@ final class GwdKillcount {
                 GwdKillcountState state = GwdKillcountState.get(player.getServer());
                 int kc = state.get(player.getUuid(), god) + 1;
                 state.set(player.getUuid(), god, kc);
-                Msg.action(player, god.displayName() + " kill count: " + kc + (kc < GodWarsFactions.REQUIRED_KILLCOUNT
-                        ? " / " + GodWarsFactions.REQUIRED_KILLCOUNT : ""));
+                int need = required.applyAsInt(player);
+                Msg.action(player, god.displayName() + " kill count: " + kc + (kc < need ? " / " + need : ""));
             }
         }
         if (entity instanceof BossEntity be && be.boss() != null) {

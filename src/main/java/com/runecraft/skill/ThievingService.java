@@ -200,7 +200,7 @@ public final class ThievingService {
                 String item = items.get(i);
                 Inv.give(player, item, n);
                 if (!item.equals(Inv.COINS)) {
-                    CollectionLog.obtain(player, item);
+                    CollectionLog.record(player, item);
                 }
                 GameEvents.fireObtain(player, item, n);
             }

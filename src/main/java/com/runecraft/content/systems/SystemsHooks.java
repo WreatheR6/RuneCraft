@@ -8,6 +8,7 @@ import com.runecraft.entity.QuestNpcEntity;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.content.systems.CluePuzzles;
+import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.osrs.content.systems.ClueScrolls;
 import com.runecraft.osrs.content.systems.Diaries;
 import com.runecraft.osrs.content.systems.DiaryRewards;
@@ -44,6 +45,8 @@ public final class SystemsHooks implements ModuleHooks {
         CapeService.registerCommands();
         AccessGateService.register();
         ChargeService.register();
+        CombatAchievementService.register();
+        CaMenus.registerHandlers();
 
         CombatHooks.addModifier(new SysModifier());
         CombatHooks.addHurtListener(JewelleryService::onHurt);
@@ -110,6 +113,16 @@ public final class SystemsHooks implements ModuleHooks {
             SysMenus.diaries(p);
         });
         QuestScripts.onTalk("watson", SystemsHooks::watson);
+        QuestScripts.onTalk(SystemsContent.GHOMMAL, (p, npc) -> {
+            QuestApi.say(p, "Ghommal", "Ghommal tests your strength. Show Ghommal what you have achieved in combat!");
+            CaMenus.overview(p);
+        });
+        // Combat Achievement rewards that live in other systems' mechanics.
+        com.runecraft.content.godwars.GwdKillcount.required = p -> CombatAchievements.gwdKillcount(CombatAchievementService.tier(p));
+        com.runecraft.content.minigames.games.PestControlSession.extraPoints = p ->
+                CombatAchievements.pestControlBonus(CombatAchievementService.tier(p));
+        com.runecraft.content.minigames.games.WarriorsGuildSession.tokenMultiplier = p ->
+                CombatAchievements.warriorTokenMultiplier(CombatAchievementService.tier(p));
 
         // Spell effects that live in other systems' mechanics.
         com.runecraft.skill.ThievingService.failUnnoticed = p -> SysState.of(p).shadowVeilUntil > SysTicks.now()
@@ -213,7 +226,7 @@ public final class SystemsHooks implements ModuleHooks {
     /** Whether an item's right-click is decided purely by its id (so the client can predict it). */
     static boolean deterministic(String id, boolean sneaking) {
         if (ClueScrolls.Tier.byScroll(id) != null || ClueScrolls.Tier.byCasket(id) != null || Spellbooks.tablet(id) != null
-                || id.startsWith("antique_lamp_") || RunEnergyService.isEnergyPotion(id) || id.equals("ectophial")
+                || id.startsWith("antique_lamp_") || id.startsWith(CombatAchievements.LAMP_PREFIX) || RunEnergyService.isEnergyPotion(id) || id.equals("ectophial")
                 || id.equals(CluePuzzles.PUZZLE_BOX) || id.equals(CluePuzzles.LIGHT_BOX)) {
             return true;
         }
@@ -223,7 +236,7 @@ public final class SystemsHooks implements ModuleHooks {
         if (id.startsWith("falador_shield_")) {
             return true;
         }
-        return sneaking && !diaryItemTeleports(id).isEmpty();
+        return sneaking && (!diaryItemTeleports(id).isEmpty() || CombatAchievements.hiltTier(id) > 0);
     }
 
     private static TypedActionResult<ItemStack> useItem(PlayerEntity player, net.minecraft.world.World world, Hand hand) {
@@ -277,6 +290,19 @@ public final class SystemsHooks implements ModuleHooks {
             } catch (IllegalArgumentException ignored) {
                 // unknown lamp
             }
+            return true;
+        }
+        if (id.startsWith(CombatAchievements.LAMP_PREFIX)) {
+            try {
+                CaMenus.lamp(p, CombatAchievements.Tier.valueOf(id.substring(CombatAchievements.LAMP_PREFIX.length())
+                        .toUpperCase(java.util.Locale.ROOT)));
+            } catch (IllegalArgumentException ignored) {
+                // unknown lamp
+            }
+            return true;
+        }
+        if (sneaking && CombatAchievements.hiltTier(id) > 0) {
+            CombatAchievementService.hiltMenu(p, id);
             return true;
         }
         if (RunEnergyService.isEnergyPotion(id)) {

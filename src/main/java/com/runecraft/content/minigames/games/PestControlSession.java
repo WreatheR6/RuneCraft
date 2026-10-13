@@ -31,6 +31,9 @@ import java.util.UUID;
  * (or survive 20 minutes) to win commendation points (3/4/5 by lander) if you dealt 50+ damage.
  */
 public class PestControlSession extends MinigameSession {
+    /** Extra commendation points per won game (the systems module adds the Combat Achievement tier bonus). */
+    public static java.util.function.ToIntFunction<ServerPlayerEntity> extraPoints = p -> 0;
+
     private static final int[][] PORTAL_POS = {{-24, 0}, {24, 0}, {12, 22}, {-12, 22}};
     private static final String[] PORTAL_DIR = {"western", "eastern", "south-eastern", "south-western"};
     private final int tier;
@@ -225,7 +228,7 @@ public class PestControlSession extends MinigameSession {
         for (ServerPlayerEntity p : online()) {
             int act = activity.getOrDefault(p.getUuid(), 0);
             if (success && won && act >= PestControl.MIN_ACTIVITY) {
-                int pts = PestControl.POINTS[tier];
+                int pts = PestControl.POINTS[tier] + extraPoints.applyAsInt(p);
                 addPoints(p, MinigameCurrencies.PEST_CONTROL, pts);
                 reward(p, "coins", com.runecraft.player.Players.data(p).skills().combatLevel() * 10);
                 int total = MinigameData.of(p).points(p.getUuid(), "pest_control");

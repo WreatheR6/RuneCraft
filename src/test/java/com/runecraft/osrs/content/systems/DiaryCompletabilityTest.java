@@ -160,6 +160,36 @@ class DiaryCompletabilityTest {
         assertTrue(problems.isEmpty(), String.join("\n", problems));
     }
 
+    /** Every task type is completed by a game event or a periodic state check (DiaryService wires both lists). */
+    @Test
+    void everyTaskHasATrigger() {
+        java.util.Set<Diaries.Type> triggered = java.util.EnumSet.noneOf(Diaries.Type.class);
+        triggered.addAll(Diaries.EVENT_TYPES);
+        triggered.addAll(Diaries.PERIODIC_TYPES);
+        for (Diaries.Task t : Diaries.tasks()) {
+            assertTrue(triggered.contains(t.type()), t.id() + " (" + t.description() + ") has no trigger for " + t.type());
+        }
+    }
+
+    /**
+     * Make events only fire for make-menu recipes, so every MAKE target must be a recipe output (a wildcard
+     * matching some unrelated item, e.g. "*spider" matching red spiders' eggs, is not enough).
+     */
+    @Test
+    void makeTasksNameARecipeOutput() {
+        Set<String> outputs = new HashSet<>();
+        for (com.runecraft.osrs.Recipe r : com.runecraft.osrs.Recipes.all()) {
+            outputs.addAll(r.outputs().keySet());
+        }
+        List<String> problems = new ArrayList<>();
+        for (Diaries.Task t : Diaries.tasks()) {
+            if (t.type() == Diaries.Type.MAKE && outputs.stream().noneMatch(o -> Diaries.itemMatches(t.target(), o))) {
+                problems.add(t.id() + " (" + t.description() + "): no recipe makes " + t.target());
+            }
+        }
+        assertTrue(problems.isEmpty(), String.join("\n", problems));
+    }
+
     @Test
     void taskCountsFollowOsrs() {
         // OSRS task counts per tier (easy, medium, hard, elite); a few tiers merge tasks the game can't tell apart.

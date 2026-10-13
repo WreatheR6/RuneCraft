@@ -476,6 +476,11 @@ public final class ClueService {
         }
         for (Tier tier : Tier.values()) {
             int oneIn = own.contains(tier) ? 0 : ClueScrolls.dropOneIn(tier, stats.name(), stats.combatLevel());
+            // Combat Achievement tiers give a 5% higher easy..elite clue chance.
+            double caBonus = com.runecraft.osrs.content.systems.CombatAchievements.clueChanceMultiplier(CombatAchievementService.tier(p), tier);
+            if (oneIn > 0 && caBonus > 1.0) {
+                oneIn = Math.max(1, (int) Math.round(oneIn / caBonus));
+            }
             if (oneIn <= 0 || Inv.has(p, tier.scrollItem(), 1) || sp.clues.containsKey(tier)) {
                 continue;
             }
