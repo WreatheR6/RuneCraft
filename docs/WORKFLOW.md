@@ -102,6 +102,12 @@ Recurring conflict spots:
   - All transports diffed against shortest-path (46 fairy rings, charter fare table, balloons, minecarts).
   - Combat Achievements system (646 tasks, 206 tracked) and diary trigger fixes.
   - Werewolf and Penguin courses, course rewards, dungeon shortcuts, new pickpockets and chests.
+- **Session 2, round 1: bosses, transport, wearables/skulls, minigames:**
+  - CI fix: `CaMenus` called `Tier.points()` (a field); `check_compile` cannot see it (see the compile caveat in the brief).
+  - Demonic and tortured gorillas (prayer/style switching, boulders) in Crash Site Cavern; Deranged archaeologist; Phosani stats, max hits and drop rates; Brutus/Demonic Brutus unlocks and drops; Shellbane task-only; lair tiles from the cache.
+  - Slayer ring (1)–(8) and eternal teleports; Xeric's talisman charges and Xeric's Honour (ancient tablet); POH fairy ring and spirit tree & fairy ring; Port Roberts, Deepfin Point, The Summer Shore charters with the full fare table and Sailing levels; mushtrees on their tiles; jewellery charges locked by a snapshot test.
+  - Blue and dusk mystic, 36 god vestments, 12 god books, ballistae with javelin-only ammo, salve (ei) via Tarn's diary; 3 ranged-strength fixes; PvP skull system (30 min, 0/1 items kept, Emblem Trader).
+  - Sorceress's Garden (4 seasons, wiki XP), Shades of Mort'ton rework (25 keys and wiki chest tables, pyre logs, temple sanctity, Urium shade), TzHaar Fight Pit.
 
 ## Backlog (things agents reported as missing or approximate)
 
@@ -109,13 +115,14 @@ Recurring conflict spots:
   - 440 tasks untracked. They need boss mechanic hooks: raid HM/CM/expert, group size, awakened bosses, delve levels, streaks.
   - Rewards not wired: slayer "Like a boss", hilt 2 Barrows drain removal, imbue and instance cost changes.
 - **Minigames:**
-  - Not built: Last Man Standing, Fight Pits, Emir's Arena, Temple Trekking, Sorceress's Garden.
-  - Shades of Mort'ton keys and chests are unchecked.
+  - Not built: Last Man Standing, Emir's Arena, Temple Trekking, TzHaar-Ket-Rak's Challenges (needs a `Minigame` value and an Inferno-completion gate).
+  - Fight Pit: use the new skull system for the red champion skull; PvP is melee only.
+  - Sorceress's Garden: layouts are approximations, elementals see through hedges, Rocky pet never rolled.
+  - Shades of Mort'ton: diary bonuses, serums, Dampe coffins, flamtaer bag storage; the dungeons-module Shade Catacombs has no key doors or Urium room.
   - Unfinished features: BA role levels and gambles; NMZ potions and power-ups; Soul Wars spoils.
 - **Transport:**
-  - No slayer ring teleports.
-  - Missing: Xeric's Honour, the house fairy ring, fairy rings in realms that aren't built, and the ports Deepfin Point, Port Roberts and The Summer Shore.
-  - Two mushtrees sit away from their tiles.
+  - Missing: pharaoh's sceptre, ring of the elements, ring of returning, giantsoul amulet and pendant of ates teleports; fairy rings in realms that aren't built; dialling DIQ for the house ring.
+  - The skilling module's `SailingData.PORTS` lacks the three new ports. `ItemValues` marks slayer ring (8) untradeable (it is tradeable).
 - **Skilling:**
   - GotR cells and barriers.
   - Motherlode upper floor.
@@ -132,9 +139,11 @@ Recurring conflict spots:
   - Region rectangles are coarse.
   - Zeah, Fossil Island and Lithkren are "Uncharted Isles" for Konar.
 - **Bosses:**
-  - Demonic Brutus unlock; Shellbane task-only rule.
-  - Several new lair coordinates are approx.
-  - Phosani max hits.
-  - Demonic gorillas, Deranged archaeologist, TzHaar-Ket-Rak's challenges.
-- **Items:** blue mystic hat, gloves and boots; god vestments and books; ballistae; salve (i)/(ei) via NMZ only; no skull system.
+  - Yama, Doom, Maggot King and Royal Titans lairs are approx (no cache surface tile).
+  - Deranged archaeologist sits at 3683,3735 because Fossil Island's coast polygon stops short of his real tile (3683,3706).
+  - Gorillas: boulder chance and reset timers guessed; no overhead prayer icon; Verac's doesn't bypass. Demonic Brutus phase-2 heal unscripted.
+- **Items:**
+  - Skull timers are in memory only (lost on restart). Heavy ballista wield doesn't check MM2 training; uncut zenyte is a gem-cutting recipe.
+  - Seers ring magic damage (0.2%/0.5%) can't be represented with whole-percent magic damage.
+  - Imbue scrolls from LMS/Emir's/Bounty Hunter missing (minigames don't exist).
 - **Untested in game:** much of the Minecraft-side code has only passed CI's boot test. A play-test pass would be the most valuable round once the data rounds slow down. Use `/run` or the client smoke screenshots.
