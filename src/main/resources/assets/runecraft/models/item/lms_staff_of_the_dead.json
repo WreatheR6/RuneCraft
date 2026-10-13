@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "runecraft:item/lms_staff_of_the_dead"
+  }
+}

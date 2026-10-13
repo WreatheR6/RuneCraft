@@ -217,6 +217,7 @@ public final class EquipmentBonuses {
         twoH("yew_shortbow", 4, 0, 0, 0, 0, 47,  0, 0, 0, 0, 0,  0, 0, 0, 0);
         twoH("yew_longbow", 6, 0, 0, 0, 0, 47,  0, 0, 0, 0, 0,  0, 0, 0, 0);
         twoH("magic_shortbow", 4, 0, 0, 0, 0, 69,  0, 0, 0, 0, 0,  0, 0, 0, 0);
+        twoH("magic_shortbow_i", 4, 0, 0, 0, 0, 75,  0, 0, 0, 0, 0,  0, 0, 0, 0);
         twoH("magic_longbow", 6, 0, 0, 0, 0, 69,  0, 0, 0, 0, 0,  0, 0, 0, 0);
         ammo("bronze_arrow", 7);
         ammo("iron_arrow", 10);

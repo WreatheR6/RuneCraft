@@ -228,6 +228,9 @@ public final class MinigameManager {
         if (game == Minigame.SHADES_OF_MORTTON) {
             return ShadesSession.requirement(player);
         }
+        if (game == Minigame.LAST_MAN_STANDING) {
+            return com.runecraft.content.minigames.games.LmsSession.requirement(player, variant);
+        }
         if (game == Minigame.SORCERESS_GARDEN) {
             return com.runecraft.content.minigames.games.SorceressGardenSession.requirement(player);
         }
@@ -300,6 +303,7 @@ public final class MinigameManager {
             case FIGHT_PITS -> new com.runecraft.content.minigames.games.FightPitsSession(id, slot, world, variant);
             case TZHAAR_KET_RAK -> new com.runecraft.content.minigames.games.KetRakSession(id, slot, world, variant);
             case TEMPLE_TREKKING -> new com.runecraft.content.minigames.games.TempleTrekkingSession(id, slot, world, variant);
+            case LAST_MAN_STANDING -> new com.runecraft.content.minigames.games.LmsSession(id, slot, world, variant);
         };
     }
 

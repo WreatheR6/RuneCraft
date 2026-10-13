@@ -55,7 +55,9 @@ class KetRakChallengesTest {
     void newMinigamesAreAppendedLast() {
         Minigame[] all = Minigame.values();
         assertEquals(Minigame.FIGHT_PITS.ordinal() + 1, Minigame.TZHAAR_KET_RAK.ordinal());
-        assertEquals(Minigame.TEMPLE_TREKKING, all[all.length - 1]);
+        assertEquals(Minigame.TZHAAR_KET_RAK.ordinal() + 1, Minigame.TEMPLE_TREKKING.ordinal());
+        assertEquals(Minigame.TEMPLE_TREKKING.ordinal() + 1, Minigame.LAST_MAN_STANDING.ordinal());
+        assertEquals(Minigame.LAST_MAN_STANDING, all[all.length - 1]);
     }
 
     @Test

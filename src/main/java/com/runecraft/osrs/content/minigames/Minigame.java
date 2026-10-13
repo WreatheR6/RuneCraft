@@ -79,7 +79,15 @@ public enum Minigame {
      * entered outside Paterdomus). Needs In Aid of the Myreque (checked by the manager).
      */
     TEMPLE_TREKKING("temple_trekking", "Temple Trekking", TempleTrekking.PLACE, TempleTrekking.MAP_X, TempleTrekking.MAP_Y,
-            TempleTrekking.BURGH_X, TempleTrekking.BURGH_Y, PlaceDef.Style.NONE, 0, 1, null, 0);
+            TempleTrekking.BURGH_X, TempleTrekking.BURGH_Y, PlaceDef.Style.NONE, 0, 1, null, 0),
+    /**
+     * Last Man Standing (see {@link LastManStanding}): Lisa's lobby in the Ferox Enclave (3142, 3636; style NONE, the enclave is
+     * built by the world module) and the Deserted Island instance. Lisa waits 60 seconds for more players. Appended last: arena
+     * slots use the ordinal.
+     */
+    LAST_MAN_STANDING("last_man_standing", "Last Man Standing", LastManStanding.PLACE, LastManStanding.ISLAND_X,
+            LastManStanding.ISLAND_Y, LastManStanding.LOBBY_X, LastManStanding.LOBBY_Y, PlaceDef.Style.NONE, 60,
+            LastManStanding.MAX_PLAYERS, null, 0);
 
     private final String id;
     private final String displayName;
