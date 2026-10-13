@@ -218,7 +218,7 @@ public final class JewelleryService {
                     DiaryService.rewardTeleport(p, w.id(), i);
                     return;
                 }
-                if (SysTeleport.teleport(p, w.teleports().get(i), SysTeleport.JEWELLERY_WILDERNESS)) {
+                if (SysTeleport.teleport(p, w.teleports().get(i), Teleports.wildernessLimit(w.id()))) {
                     if (w.chargeBase() != null) {
                         setStack(p, source, useCharge(p, stack));
                     }

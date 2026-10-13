@@ -32,7 +32,19 @@ final class TravelService {
     }
 
     private static String fare(Travel.Dest d) {
-        return d.price() > 0 ? String.format("%,d", d.price()) + " coins" : "free";
+        return fare(d.price());
+    }
+
+    private static String fare(int price) {
+        return price > 0 ? String.format("%,d", price) + " coins" : "free";
+    }
+
+    private static String cost(Travel.Dest d) {
+        if (d.item() == null) {
+            return fare(d);
+        }
+        String item = d.itemCount() + " " + d.item().replace('_', ' ');
+        return d.price() > 0 ? fare(d) + " and " + item : item;
     }
 
     /** Shows the destinations of an NPC's route as clickable chat options. */
@@ -46,13 +58,13 @@ final class TravelService {
         for (int i = 0; i < dests.size(); i++) {
             Travel.Dest d = dests.get(i);
             String req = d.skill() != null ? "\nRequires level " + d.level() + " " + d.skill().displayName() : "";
-            if (d.quest() != null) {
-                QuestInfo q = ContentRegistry.quest(d.quest());
-                req += "\nRequires " + (q == null ? d.quest() : q.displayName());
+            for (String quest : d.quests()) {
+                QuestInfo q = ContentRegistry.quest(quest);
+                req += "\nRequires " + (q == null ? quest : q.displayName());
             }
             String command = "/npcs travel " + npc.id() + " " + i;
-            String hover = capital(route.verb()) + " to " + d.name() + " (" + fare(d) + ")" + req;
-            line.append(Text.literal("[" + d.name() + (d.price() > 0 ? " - " + fare(d) : "") + "]").styled(s -> s
+            String hover = capital(route.verb()) + " to " + d.name() + " (" + cost(d) + ")" + req;
+            line.append(Text.literal("[" + d.name() + (d.price() > 0 || d.item() != null ? " - " + cost(d) : "") + "]").styled(s -> s
                     .withColor(Formatting.GOLD)
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(hover)))));
@@ -86,16 +98,28 @@ final class TravelService {
             Msg.game(player, "You need a " + d.skill().displayName() + " level of " + d.level() + " to " + route.verb() + " there.");
             return;
         }
-        if (d.quest() != null && ContentRegistry.quest(d.quest()) != null && !QuestApi.isComplete(player, d.quest())) {
-            Msg.game(player, "You need to complete " + ContentRegistry.quest(d.quest()).displayName() + " first.");
-            return;
-        }
-        if (d.price() > 0) {
-            if (!Inv.has(player, Inv.COINS, d.price())) {
-                Msg.game(player, "You need " + fare(d) + " to " + route.verb() + " to " + d.name() + ".");
+        for (String quest : d.quests()) {
+            if (ContentRegistry.quest(quest) != null && !QuestApi.isComplete(player, quest)) {
+                Msg.game(player, "You need to complete " + ContentRegistry.quest(quest).displayName() + " first.");
                 return;
             }
-            Inv.remove(player, Inv.COINS, d.price());
+        }
+        int price = Travel.fareFor(route.id(), d, q -> QuestApi.isComplete(player, q));
+        if (d.item() != null && !Inv.has(player, d.item(), d.itemCount())) {
+            Msg.game(player, "You need " + cost(d) + " to " + route.verb() + " to " + d.name() + ".");
+            return;
+        }
+        if (price > 0 && !Inv.has(player, Inv.COINS, price)) {
+            Msg.game(player, "You need " + fare(price) + " to " + route.verb() + " to " + d.name() + ".");
+            return;
+        }
+        if (d.item() != null) {
+            Inv.remove(player, d.item(), d.itemCount());
+        }
+        if (price > 0) {
+            Inv.remove(player, Inv.COINS, price);
+        }
+        if (price > 0 || d.item() != null) {
             ServerNetworking.sync(player);
         }
         ServerWorld world = Gielinor.world(player.getServer());
@@ -110,6 +134,10 @@ final class TravelService {
             case "fly" -> "You climb into the glider and fly to " + d.name() + ".";
             case "ride" -> "You climb onto the magic carpet and ride to " + d.name() + ".";
             case "paddle" -> "You chop a canoe and paddle down the river to " + d.name() + ".";
+            case "float" -> "You feed a log to the burner and the balloon floats you to " + d.name() + ".";
+            case "cart" -> "You climb into the cart and rattle along the tracks to " + d.name() + ".";
+            case "travel" -> "You place your hands on the dry tough bark of the spirit tree, and feel a surge of energy run through"
+                    + " your veins. You arrive at " + d.name() + ".";
             default -> "You travel to " + d.name() + ".";
         });
     }

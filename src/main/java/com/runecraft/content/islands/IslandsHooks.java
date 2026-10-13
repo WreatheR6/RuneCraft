@@ -33,6 +33,7 @@ public final class IslandsHooks implements ModuleHooks {
         for (IslandsTravel.Network network : IslandsTravel.networks()) {
             BlockHooks.register(network.blockId(), (player, pos, state) -> IslandsTravelService.use(player, pos, network));
         }
+        IslandsTravelService.registerRingBuilders();
         BlockHooks.register(IslandsBlocks.APE_OBSTACLE, (player, pos, state) -> IslandsAgilityService.use(player, pos));
         BlockHooks.register(IslandsBlocks.KINGDOM_LEDGER, (player, pos, state) -> IslandsKingdomService.ledger(player));
         BlockHooks.register(IslandsBlocks.KINGDOM_WORKFORCE, (player, pos, state) -> IslandsKingdomService.workforce(player));

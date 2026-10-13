@@ -304,42 +304,52 @@ public final class Townsfolk {
                 "Ho there, outerlander! I am hunting the dagannoth on Waterbirth Island. I can take you there for 1000 coins.");
         travel("npc_jarvald_waterbirth", "Jarvald", "Waterbirth Island", 2544, 3761, "boat_waterbirth_rellekka", fremennik,
                 "Ready to head back to Rellekka?");
-        String[] charterAreas = {"Port Sarim", "Catherby", "Brimhaven", "Karamja", "Port Khazard", "Port Phasmatys",
-                "Mos Le'Harmless", "Corsair Cove"};
-        for (int i = 0; i < Travel.CHARTER_PORTS.length; i++) {
-            int[] t = Travel.CHARTER_TILES[i];
-            String route = Travel.charterRoute(i);
-            travel("npc_" + route.replace("charter_", "charter_crew_"), "Trader Crewmember", charterAreas[i], t[0] + 1, t[1] + 1,
-                    route, sailor, "Do you want to charter a ship? Tell me where you want to go.");
-        }
-        String[] gliderPilots = {"Captain Errdo", "Captain Bleemadge", "Captain Dalbur", "Captain Klemfoodle", "Gnormadium Avlafrim"};
-        String[] gliderAreas = {"Tree Gnome Stronghold", "White Wolf Mountain", "Al Kharid", "Feldip Hills", "Karamja"};
-        for (int i = 0; i < gliderPilots.length; i++) {
-            int[] t = Travel.GLIDER_TILES[i];
-            travel("npc_glider_pilot_" + i, gliderPilots[i], gliderAreas[i], t[0] + 1, t[1], Travel.gliderRoute(i),
-                    look(GNOME, 0x8A5A2A, 0x5A3A2A, 0x3A3A3A), "Would you like to take the glider somewhere?");
+        // More fixed-fare boats (OSRS): Barnaby's Rimmington stop, the Pandemonium, Cabin Boy Colin, the Gunnars' boats
+        // to the Fremennik Isles and Antonia's ferry between Sunset Coast and Aldarin.
+        travel("npc_captain_barnaby_rimmington", "Captain Barnaby", "Rimmington", 2915, 3226, "boat_rimmington", sailor,
+                "Do you want to go on a trip to Ardougne or Brimhaven? The trip will cost you 30 coins.");
+        travel("npc_seaman_morris", "Seaman Morris", "The Pandemonium", 3064, 3004, "boat_pandemonium", sailor,
+                "Back to the mainland? 30 coins.");
+        travel("npc_cabin_boy_colin_rimmington", "Cabin Boy Colin", "Rimmington", 2909, 3227, "boat_rimmington_corsair_cove", sailor,
+                "The captain's ship sails for Corsair Cove whenever you're ready.");
+        travel("npc_cabin_boy_colin_corsair_cove", "Cabin Boy Colin", "Corsair Cove", 2578, 2841, "boat_corsair_cove_rimmington", sailor,
+                "Back to Rimmington?");
+        travel("npc_mord_gunnars_rellekka", "Mord Gunnars", "Rellekka", 2644, 3708, "boat_rellekka_jatizso", fremennik,
+                "Off to Jatizso? Hop in.");
+        travel("npc_mord_gunnars_jatizso", "Mord Gunnars", "Jatizso", 2421, 3782, "boat_jatizso_rellekka", fremennik,
+                "Back to Rellekka?");
+        travel("npc_maria_gunnars_rellekka", "Maria Gunnars", "Rellekka", 2645, 3711, "boat_rellekka_neitiznot", fremennik,
+                "Want to go to Neitiznot?");
+        travel("npc_maria_gunnars_neitiznot", "Maria Gunnars", "Neitiznot", 2311, 3782, "boat_neitiznot_rellekka", fremennik,
+                "Back to Rellekka?");
+        travel("npc_antonia_sunset_coast", "Antonia", "Sunset Coast", 1494, 2986, "boat_sunset_coast_aldarin", sailor,
+                "A boat to Aldarin? 20 coins.");
+        travel("npc_antonia_aldarin", "Antonia", "Aldarin", 1443, 2978, "boat_aldarin_sunset_coast", sailor,
+                "A boat to the Sunset Coast? 20 coins.");
+        // Charter crews, glider pilots, canoe stations, spirit trees, balloon assistants and cart conductors.
+        Map<String, int[]> agentLooks = Map.of("sailor", sailor, "gnome", look(GNOME, 0x8A5A2A, 0x5A3A2A, 0x3A3A3A),
+                "canoe", look(SKIN, 0x6A4A2A, 0x4A3A2A, 0x3A6A2A), "tree", look(0x6A5A3A, 0x4A8A3A, 0x5A4A2A, 0x3A7A2A),
+                "balloon", look(SKIN, 0x8A2A2A, 0x3A3A6A, 0xC0A060), "dwarf", dwarf);
+        for (Travel.Agent a : Travel.agents()) {
+            travel(a.id(), a.name(), a.area(), a.x(), a.y(), a.route(), agentLooks.getOrDefault(a.look(), sailor), a.line());
         }
         int[] rug = look(TAN, 0x7A3A8A, 0x5A2A6A, 0xE0D8C0);
         travel("npc_rug_merchant_shantay", "Rug Merchant", "Shantay Pass", 3311, 3109, "carpet_shantay", rug,
                 "Greetings, desert traveller. Do you require the services of my double-decker rugs? 200 coins a trip.");
-        travel("npc_rug_merchant_pollnivneach_north", "Rug Merchant", "Pollnivneach", 3349, 3003, "carpet_pollnivneach_north", rug,
+        travel("npc_rug_merchant_pollnivneach_north", "Rug Merchant", "Pollnivneach", 3350, 3001, "carpet_pollnivneach_north", rug,
                 "Greetings, desert traveller. Would you like a ride on my magic carpet?");
-        travel("npc_rug_merchant_pollnivneach_south", "Rug Merchant", "Pollnivneach", 3351, 2942, "carpet_pollnivneach_south", rug,
+        travel("npc_rug_merchant_pollnivneach_south", "Rug Merchant", "Pollnivneach", 3348, 2942, "carpet_pollnivneach_south", rug,
                 "Greetings, desert traveller. Would you like a ride on my magic carpet?");
-        travel("npc_rug_merchant_nardah", "Rug Merchant", "Nardah", 3401, 2916, "carpet_nardah", rug,
+        travel("npc_rug_merchant_nardah", "Rug Merchant", "Nardah", 3401, 2918, "carpet_nardah", rug,
                 "Greetings, desert traveller. Would you like a ride on my magic carpet?");
-        travel("npc_rug_merchant_sophanem", "Rug Merchant", "Sophanem", 3285, 2813, "carpet_sophanem", rug,
+        travel("npc_rug_merchant_sophanem", "Rug Merchant", "Sophanem", 3287, 2813, "carpet_sophanem", rug,
                 "Greetings, desert traveller. Would you like a ride on my magic carpet?");
-        travel("npc_rug_merchant_bedabin", "Rug Merchant", "Bedabin Camp", 3181, 3045, "carpet_bedabin", rug,
+        travel("npc_rug_merchant_menaphos", "Rug Merchant", "Menaphos", 3243, 2813, "carpet_menaphos", rug,
                 "Greetings, desert traveller. Would you like a ride on my magic carpet?");
-        travel("npc_rug_merchant_uzer", "Rug Merchant", "Uzer", 3469, 3113, "carpet_uzer", rug,
+        travel("npc_rug_merchant_bedabin", "Rug Merchant", "Bedabin Camp", 3182, 3043, "carpet_bedabin", rug,
                 "Greetings, desert traveller. Would you like a ride on my magic carpet?");
-        for (int i = 0; i < Travel.CANOE_STATIONS.length; i++) {
-            int[] t = Travel.CANOE_TILES[i];
-            travel("npc_" + Travel.canoeRoute(i).replace("canoe_", "canoe_station_"), "Canoe station", Travel.CANOE_STATIONS[i],
-                    t[0], t[1], Travel.canoeRoute(i), look(SKIN, 0x6A4A2A, 0x4A3A2A, 0x3A6A2A),
-                    "A canoe station. Chop a canoe and paddle down the River Lum - the further you go, the better the canoe you need.");
-        }
+        travel("npc_rug_merchant_uzer", "Rug Merchant", "Uzer", 3467, 3110, "carpet_uzer", rug,
+                "Greetings, desert traveller. Would you like a ride on my magic carpet?");
 
         // ------------------------------------------------------------- characters from elsewhere who also trade
         EXTRA_TRADERS.put("AUBURY", "auburys_rune_shop");

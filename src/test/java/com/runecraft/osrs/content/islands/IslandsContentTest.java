@@ -119,6 +119,12 @@ class IslandsContentTest {
     @Test
     void placesAreAtTheirRealCoordinatesWithRoomForTheirPlazas() {
         for (PlaceDef p : module.places()) {
+            if (p.id().startsWith(IslandsTravel.RING_PLACE_PREFIX)) {
+                // Bare places holding stand-alone fairy rings sit at the rings' OSRS tiles, Kourend and Varlamore included.
+                assertEquals(PlaceDef.Style.NONE, p.style(), p.id());
+                assertTrue(GielinorMap.wildernessLevel(p.blockX(), p.blockZ()) == 0, p.id() + " in the Wilderness");
+                continue;
+            }
             assertTrue(p.osrsX() > 2000 && p.osrsX() < 3900, p.id() + " x");
             assertTrue(p.osrsY() > 2600 && p.osrsY() < 4500, p.id() + " y");
             assertTrue(GielinorMap.wildernessLevel(p.blockX(), p.blockZ()) == 0, p.id() + " in the Wilderness");
@@ -436,7 +442,7 @@ class IslandsContentTest {
                 assertTrue(codes.add(s.code()), s.code());
                 int[] c = centre(s.place());
                 assertNotNull(c, s.place());
-                if (s.hasBlock()) {
+                if (s.hasBlock() && !s.place().startsWith(IslandsTravel.RING_PLACE_PREFIX)) { // those are laid at runtime
                     assertTrue(blockAt("runecraft:" + n.blockId(), c[0] + s.dx(), c[1] + s.dz()),
                             n.id() + " " + s.code() + " has no block at its stop");
                 }
@@ -445,9 +451,10 @@ class IslandsContentTest {
         assertEquals("COSMIC_ALTAR", IslandsTravel.FAIRY_RINGS.stop("CKP").place());
         assertNotNull(Landmark.byName("COSMIC_ALTAR"));
         IslandsTravel.Stop next = IslandsTravel.next(IslandsTravel.FAIRY_RINGS, "AIQ", "AIQ");
-        assertEquals("CIP", next.code());
+        assertEquals("AIR", next.code());
         assertEquals("AIQ", IslandsTravel.next(IslandsTravel.FAIRY_RINGS, "ZANARIS", "CIP").code());
-        assertEquals("AIQ", IslandsTravel.next(IslandsTravel.FAIRY_RINGS, "CKP", "ZANARIS").code());
+        assertEquals("CKQ", IslandsTravel.next(IslandsTravel.FAIRY_RINGS, "CKP", "ZANARIS").code());
+        assertEquals("ZANARIS", IslandsTravel.next(IslandsTravel.FAIRY_RINGS, "DLR", "AIQ").code());
     }
 
     @Test

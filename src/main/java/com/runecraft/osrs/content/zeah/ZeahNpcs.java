@@ -158,7 +158,16 @@ public final class ZeahNpcs {
         for (ZeahTravel.Stop s : ZeahTravel.QUETZAL.stops()) {
             String id = quetzal(s.place());
             boolean renu = id.equals("zeah_renu");
-            npc(out, id, renu ? "Renu" : "Quetzal", s.place(), renu ? 8 : 5, renu ? 6 : 5, 0x3AA05A, 0x2A8A6A, 0xD03A2A, 0xE0C040);
+            // Stand next to the OSRS landing site (place centres snap to their chunk centre).
+            int dx = 5;
+            int dz = 5;
+            for (com.runecraft.osrs.content.PlaceDef p : ZeahPlaces.all()) {
+                if (p.id().equals(s.place()) && s.x() != 0) {
+                    dx = com.runecraft.osrs.GielinorMap.toBlockX(s.x()) - p.blockX() + 2;
+                    dz = com.runecraft.osrs.GielinorMap.toBlockZ(s.y()) - p.blockZ();
+                }
+            }
+            npc(out, id, renu ? "Renu" : "Quetzal", s.place(), dx, dz, 0x3AA05A, 0x2A8A6A, 0xD03A2A, 0xE0C040);
         }
         return out;
     }

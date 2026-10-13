@@ -63,15 +63,61 @@ final class ZeahTravelService {
             return;
         }
         ZeahTravel.Stop to = dests.get(index);
-        if (network.fare() > 0) {
-            if (!Inv.has(player, Inv.COINS, network.fare())) {
-                QuestApi.say(player, speaker, "The fare is " + network.fare() + " coins.");
+        if (network.quest() != null && com.runecraft.osrs.content.ContentRegistry.quest(network.quest()) != null
+                && !QuestApi.isComplete(player, network.quest())) {
+            QuestApi.say(player, speaker, "You need to complete "
+                    + com.runecraft.osrs.content.ContentRegistry.quest(network.quest()).displayName() + " first.");
+            return;
+        }
+        int fare = network.fare(network.freeAfter() != null && QuestApi.isComplete(player, network.freeAfter()));
+        if (fare > 0) {
+            if (!Inv.has(player, Inv.COINS, fare)) {
+                QuestApi.say(player, speaker, "The fare is " + fare + " coins.");
                 return;
             }
-            Inv.remove(player, Inv.COINS, network.fare());
+            Inv.remove(player, Inv.COINS, fare);
         }
         Msg.game(player, network.verb() + " " + to.name() + ". (Sneak and talk to choose another destination.)");
-        travel(player, to.place());
+        travel(player, to);
+    }
+
+    /** Sends a player to a stop: its OSRS tile if it has one, else next to its place. */
+    static void travel(ServerPlayerEntity player, ZeahTravel.Stop to) {
+        if (to.x() == 0) {
+            travel(player, to.place());
+            return;
+        }
+        ServerWorld world = Gielinor.world(player.getServer());
+        if (world == null) {
+            return;
+        }
+        PlaceDef p = ContentRegistry.place(to.place());
+        if (p != null) {
+            LandmarkBuilder.buildNow(world, p);
+        }
+        BlockPos pos = Gielinor.safeSpot(world, GielinorMap.toBlockX(to.x()), GielinorMap.toBlockZ(to.y()));
+        player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());
+    }
+
+    /** Lays a minecart at each stand-alone Lovakengj station when its place is built. */
+    static void registerMinecartStations() {
+        for (String id : com.runecraft.osrs.content.zeah.ZeahPlaces.MINECART_STATIONS) {
+            PlaceDef p = ContentRegistry.place(id);
+            if (p == null) {
+                continue;
+            }
+            // Place centres snap to their chunk's centre: the cart goes beside the station's own tile.
+            int x = GielinorMap.toBlockX(p.osrsX()) + 2;
+            int z = GielinorMap.toBlockZ(p.osrsY());
+            LandmarkBuilder.registerCustom(id, (world, centre) -> {
+                world.getChunk(x >> 4, z >> 4);
+                int y = Math.max(world.getTopY(net.minecraft.world.Heightmap.Type.OCEAN_FLOOR, x, z), world.getSeaLevel());
+                net.minecraft.block.Block cart = net.minecraft.registry.Registries.BLOCK.get(
+                        RuneCraft.resolve(com.runecraft.osrs.content.zeah.ZeahBlocks.MINECART));
+                world.setBlockState(new BlockPos(x, y, z), cart.getDefaultState());
+                world.setBlockState(new BlockPos(x, y + 1, z), net.minecraft.block.Blocks.AIR.getDefaultState());
+            });
+        }
     }
 
     /** Sends a player to a module place or landmark, building it first if needed. */

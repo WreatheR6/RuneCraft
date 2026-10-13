@@ -37,14 +37,15 @@ public final class Capes {
     /** Teleports granted by a skillcape (OSRS perks where they are teleports). */
     public static List<Teleports.Destination> capeTeleports(Skill skill) {
         return switch (skill) {
-            case CRAFTING -> List.of(Teleports.at("Crafting Guild", 2933, 3290));
-            case FISHING -> List.of(Teleports.at("Fishing Guild", 2611, 3393), Teleports.at("Otto's Grotto", 2500, 3488));
-            case FARMING -> List.of(Teleports.at("Farming Guild", 1249, 3718));
-            case STRENGTH, ATTACK -> List.of(Teleports.at("Warriors' Guild", 2882, 3548));
-            case HUNTER -> List.of(Teleports.at("Hunter Guild", 1559, 3049));
+            case CRAFTING -> List.of(Teleports.at("Crafting Guild", 2931, 3286));
+            case FISHING -> List.of(Teleports.at("Fishing Guild", 2604, 3401), Teleports.at("Otto's Grotto", 2504, 3484));
+            case FARMING -> List.of(Teleports.at("Farming Guild", 1248, 3725));
+            case STRENGTH, ATTACK -> List.of(Teleports.at("Warriors' Guild", 2865, 3546));
+            case HUNTER -> List.of(Teleports.at("Hunter Guild", 1558, 3046), Teleports.at("Feldip Hills", 2556, 2917));
             case CONSTRUCTION -> List.of(Teleports.at("Rimmington", 2954, 3224), Teleports.at("Taverley", 2894, 3465),
-                    Teleports.at("Pollnivneach", 3340, 3003), Teleports.at("Rellekka", 2670, 3631), Teleports.at("Brimhaven", 2758, 3178),
-                    Teleports.at("Yanille", 2544, 3095), Teleports.at("Hosidius", 1744, 3517));
+                    Teleports.at("Pollnivneach", 3340, 3004), Teleports.at("Rellekka", 2670, 3632), Teleports.at("Brimhaven", 2758, 3178),
+                    Teleports.at("Yanille", 2544, 3095), Teleports.at("Hosidius", 1744, 3517), Teleports.at("Prifddinas", 3239, 6076),
+                    Teleports.at("Aldarin", 1422, 2965));
             case MAGIC -> List.of();
             case SLAYER -> List.of(Teleports.at("Slayer Tower", 3422, 3537), Teleports.at("Stronghold Slayer Cave", 2433, 3424));
             case RUNECRAFT -> List.of(Teleports.at("Ourania Altar", 2468, 3246));

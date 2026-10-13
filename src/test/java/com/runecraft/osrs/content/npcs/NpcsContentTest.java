@@ -168,7 +168,9 @@ class NpcsContentTest {
             assertTrue(n.id().startsWith("npc_"), n.id());
             assertTrue(n.id().matches("[a-z0-9_]+"), n.id());
             assertTrue(ids.add(n.id()), "duplicate " + n.id());
-            assertTrue(n.x() > 1000 && n.x() < 4000 && n.y() > 2500 && n.y() < 4100, n.id() + " tile");
+            // Prifddinas (spirit tree) is built at its OSRS tile north of the main map.
+            assertTrue(n.x() > 1000 && n.x() < 4000 && n.y() > 2500 && (n.y() < 4100 || n.id().equals("npc_spirit_tree_prifddinas")),
+                    n.id() + " tile");
             assertEquals(4, n.colors().length, n.id());
             switch (n.role()) {
                 case SHOP -> {
@@ -221,8 +223,12 @@ class NpcsContentTest {
             assertFalse(r.dests().isEmpty(), r.id());
             for (Travel.Dest d : r.dests()) {
                 assertTrue(d.price() >= 0, r.id());
-                assertTrue(d.x() > 1000 && d.x() < 4000 && d.y() > 2500 && d.y() < 4100, r.id() + " " + d.name());
-                assertTrue(d.quest() == null || ContentRegistry.quest(d.quest()) != null, r.id() + " quest " + d.quest());
+                assertTrue(d.x() > 1000 && d.x() < 4000 && d.y() > 2400 && (d.y() < 4100 || d.name().equals("Prifddinas")),
+                        r.id() + " " + d.name());
+                for (String q : d.quests()) {
+                    assertNotNull(ContentRegistry.quest(q), r.id() + " quest " + q);
+                }
+                assertTrue(d.item() == null || com.runecraft.osrs.ItemCatalog.exists(d.item()), r.id() + " item " + d.item());
             }
         }
         assertEquals(30, Travel.get("boat_port_sarim_karamja").dests().get(0).price());
@@ -230,8 +236,14 @@ class NpcsContentTest {
         assertEquals(27, Travel.canoeLevel(0, 2));
         assertEquals(42, Travel.canoeLevel(0, 3));
         assertEquals(57, Travel.canoeLevel(3, 4));
+        assertEquals(57, Travel.canoeLevel(3, 5)); // only a waka reaches Ferox Enclave
+        assertEquals(12, Travel.canoeLevel(5, 3)); // ...but leaving it goes by stops
+        assertEquals(57, Travel.canoeLevel(5, 4));
         assertEquals(Travel.charterFare(1, 2), Travel.charterFare(2, 1));
-        assertEquals(7, Travel.get(Travel.charterRoute(0)).dests().size());
+        assertEquals(480, Travel.charterFare("Catherby", "Brimhaven"));
+        assertEquals(-1, Travel.charterFare("Port Sarim", "Musa Point"));
+        assertEquals(0, Travel.fareFor("boat_rellekka_waterbirth", Travel.get("boat_rellekka_waterbirth").dests().get(0),
+                q -> q.equals("fremennik_trials")));
     }
 
     @Test
