@@ -6,7 +6,7 @@ import com.runecraft.content.ModuleHooks;
 import com.runecraft.menu.MenuService;
 import com.runecraft.osrs.MenuType;
 import com.runecraft.osrs.Skill;
-import com.runecraft.osrs.content.skilling.BrewingData;
+import com.runecraft.osrs.content.skilling.HerbloreData;
 import com.runecraft.osrs.content.skilling.MiningData;
 import com.runecraft.osrs.content.skilling.RunecraftData;
 import com.runecraft.quest.QuestScripts;
@@ -49,6 +49,11 @@ public final class SkillingHooks implements ModuleHooks {
         ThievingHooks.init();
         SailingHooks.init();
         BlastFurnaceHooks.init();
+        BrewingHooks.init();
+        // Barbarian mixes are taught by Otto Godblessed in Barbarian Training.
+        MenuService.REQUIREMENTS.add((player, recipe) -> HerbloreData.isBarbarianMix(recipe.id())
+                && !com.runecraft.quest.QuestApi.isComplete(player, HerbloreData.BARBARIAN_TRAINING)
+                ? "You need to learn barbarian Herblore from Otto Godblessed (Barbarian Training) to make mixes." : null);
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (ActionManager.mcTick() % ActionManager.MC_TICKS_PER_GAME_TICK != 0) {
@@ -58,6 +63,7 @@ public final class SkillingHooks implements ModuleHooks {
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 ItemHooks.divineTick(player, gameTick);
                 ItemHooks.prayerRegenTick(player, gameTick);
+                ItemHooks.goadingTick(player, gameTick);
                 SailingHooks.boatTick(player);
                 BlastFurnaceHooks.tick(player, gameTick);
                 if (gameTick % 20 == 0) {
@@ -66,16 +72,6 @@ public final class SkillingHooks implements ModuleHooks {
             }
         });
 
-        // Brewing: a finished vat sometimes turns mature (the (m) ales).
-        GameEvents.onMake((player, recipe) -> {
-            BrewingData.Brew brew = BrewingData.brewByRecipe(recipe.id());
-            if (brew != null && player.getRandom().nextDouble() < BrewingData.MATURE_CHANCE
-                    && Inv.count(player, brew.id()) >= BrewingData.PINTS) {
-                Inv.remove(player, brew.id(), BrewingData.PINTS);
-                Inv.give(player, brew.mature(), BrewingData.PINTS);
-                Msg.action(player, "The brew has matured nicely! You fill your glasses with " + brew.matureName() + ".");
-            }
-        });
         // The Dark Mage repairs essence pouches (NPC Contact reaches him too, see the systems module).
         QuestScripts.onTalk(RunecraftData.DARK_MAGE, (player, npc) -> EssencePouches.darkMage(player));
         // Gielinor's looms (Minecraft looms in the Crafting Guild, Rimmington...) are for weaving.

@@ -33,7 +33,13 @@ public final class HerbloreData extends SkillingPart {
         /** Shades of Mort'ton cure for the Afflicted; not drinkable. */
         SERUM_207,
         /** One Prayer point every 12 ticks for 8 minutes (66 points per dose). */
-        PRAYER_REGENERATION;
+        PRAYER_REGENERATION,
+        /** Goading potion: nearby monsters turn aggressive for 6 minutes (checked every 6 ticks). */
+        GOADING;
+
+        /** Goading potion: duration per dose and how often nearby monsters are goaded, in game ticks (OSRS Wiki). */
+        public static final int GOADING_DURATION = 600;
+        public static final int GOADING_INTERVAL = 6;
 
         /** Prayer regeneration: game ticks per Prayer point and duration per dose (OSRS Wiki). */
         public static final int REGEN_INTERVAL = 12;
@@ -148,7 +154,21 @@ public final class HerbloreData extends SkillingPart {
             new ModPotion("sanfew_serum", "Sanfew serum", Effect.SANFEW, 0xD0607A, 300),
             new ModPotion("relicyms_balm", "Relicym's balm", Effect.RELICYMS_BALM, 0xC0A0D0, 225),
             new ModPotion("serum_207", "Serum 207", Effect.SERUM_207, 0x6A8AC0, 14),
-            new ModPotion("prayer_regeneration_potion", "Prayer regeneration potion", Effect.PRAYER_REGENERATION, 0x40C0B0, 300));
+            new ModPotion("prayer_regeneration_potion", "Prayer regeneration potion", Effect.PRAYER_REGENERATION, 0x40C0B0, 300),
+            new ModPotion("goading_potion", "Goading potion", Effect.GOADING, 0xA0B040, 300));
+
+    /** The miniquest whose Herblore part (Otto Godblessed) teaches barbarian mixes. */
+    public static final String BARBARIAN_TRAINING = "barbarian_training";
+
+    /** True for the recipes that make a barbarian mix (they need Barbarian Training). */
+    public static boolean isBarbarianMix(String recipeId) {
+        for (Mix m : MIXES) {
+            if (recipeId.equals("mix_" + m.id()) || recipeId.equals("mix_" + m.id() + "_caviar")) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * A barbarian mix (Barbarian Training's Herblore part): a two-dose potion with roe or caviar added. Each of
@@ -353,6 +373,8 @@ public final class HerbloreData extends SkillingPart {
         mix(out, "sanfew_serum", 65, 72.0, "mixture_step_2", "nail_beast_nails");
         // Varlamore: huasca potion (unf) + aldarium.
         mix(out, "prayer_regeneration_potion", 58, 132.0, "huasca_potion_unf", "aldarium");
+        // Goading potion: harralander potion (unf) + aldarium, 54 Herblore, 132 XP (OSRS: makes a 3-dose potion; 4 here).
+        mix(out, "goading_potion", 54, 132.0, "harralander_potion_unf", "aldarium");
         // Barbarian mixes (roe mixes also take caviar). Approx: the base potion is used whole rather than as a (2).
         for (Mix m : MIXES) {
             out.accept(r("mix_" + m.id(), H, m.name(), Skill.HERBLORE, m.level(), m.xp()).in(m.base(), 1)

@@ -38,6 +38,12 @@ public final class MenuService {
      */
     public static java.util.function.BiFunction<ServerPlayerEntity, Double, Double> rangeBurnReduction = (p, r) -> r;
 
+    /**
+     * Extra requirements modules add to recipes (quest unlocks, a full brewing vat...): (player, recipe) -> why it
+     * can't be made, or null.
+     */
+    public static final List<java.util.function.BiFunction<ServerPlayerEntity, Recipe, String>> REQUIREMENTS = new ArrayList<>();
+
     private MenuService() {
     }
 
@@ -87,6 +93,12 @@ public final class MenuService {
 
     /** Returns why the recipe can't be made (shown to the player), or null if it can. */
     private static String canMake(ServerPlayerEntity player, SkillSet skills, Recipe r, int times) {
+        for (java.util.function.BiFunction<ServerPlayerEntity, Recipe, String> req : REQUIREMENTS) {
+            String why = req.apply(player, r);
+            if (why != null) {
+                return why;
+            }
+        }
         if (r.skill() != null && skills.currentLevel(r.skill()) < r.level()) {
             return "You need " + Msg.article(r.skill().displayName()) + " level of " + r.level()
                     + " to make that.";
