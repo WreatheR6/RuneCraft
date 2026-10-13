@@ -78,12 +78,18 @@ public final class DiaryService {
         return Diaries.restrictContains(restrict, Gielinor.region(p).name(), at[0], at[1]);
     }
 
-    /** The task's skill requirements (boosts count, as in OSRS). */
+    /** The task's skill (boosts count, as in OSRS) and quest requirements. */
     static boolean meets(ServerPlayerEntity p, Task task) {
         PlayerData d = Players.data(p);
         for (Map.Entry<Skill, Integer> e : task.reqs().entrySet()) {
             int lvl = Math.max(d.skills().level(e.getKey()), d.skills().currentLevel(e.getKey()));
             if (lvl < e.getValue()) {
+                return false;
+            }
+        }
+        for (String questId : Diaries.questReqs(task)) {
+            QuestInfo q = ContentRegistry.quest(questId);
+            if (q != null && !d.questComplete(q)) {
                 return false;
             }
         }
@@ -171,7 +177,7 @@ public final class DiaryService {
     public static void onCast(ServerPlayerEntity p, String spell) {
         SysState.of(p).spellsCast.add(spell);
         for (Task t : Diaries.tasks()) {
-            if (t.type() == Type.CAST && Diaries.spellMatches(t.target(), spell)) {
+            if (t.type() == Type.CAST && Diaries.spellMatches(t.target(), spell) && inArea(p, t.restrict())) {
                 complete(p, t);
             }
         }
@@ -252,7 +258,8 @@ public final class DiaryService {
                         yield false;
                     }
                 }
-                case CAST -> sp.spellsCast.stream().anyMatch(s -> Diaries.spellMatches(t.target(), s));
+                // A spell cast anywhere counts later; one that must be cast somewhere only counts when cast there (onCast).
+                case CAST -> t.restrict() == null && sp.spellsCast.stream().anyMatch(s -> Diaries.spellMatches(t.target(), s));
                 default -> false;
             };
             if (done) {

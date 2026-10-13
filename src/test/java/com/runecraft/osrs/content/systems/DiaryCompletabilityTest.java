@@ -205,7 +205,7 @@ class DiaryCompletabilityTest {
         osrs.put("morytania", new int[]{11, 11, 10, 6});
         osrs.put("varrock", new int[]{14, 13, 10, 5});
         osrs.put("western", new int[]{11, 13, 13, 7});
-        osrs.put("wilderness", new int[]{12, 11, 10, 11});
+        osrs.put("wilderness", new int[]{12, 11, 10, 7});
         int total = 0;
         for (Diaries.Area a : Diaries.AREAS) {
             for (Diaries.Tier t : Diaries.Tier.values()) {
@@ -214,7 +214,7 @@ class DiaryCompletabilityTest {
                 total += n;
             }
         }
-        assertEquals(496, total);
+        assertEquals(492, total);
     }
 
     @Test
@@ -254,8 +254,16 @@ class DiaryCompletabilityTest {
         assertEquals(1, DiaryRewards.teleports("karamja", 3).size());
         assertEquals(2, DiaryRewards.teleports("karamja", 4).size());
         assertTrue(DiaryRewards.teleports("desert", 1).isEmpty());
-        assertEquals(50, DiaryRewards.faladorRestorePercent(1));
-        assertEquals(100, DiaryRewards.faladorRestorePercent(2));
+        assertEquals(25, DiaryRewards.faladorRestorePercent(1));
+        assertEquals(50, DiaryRewards.faladorRestorePercent(2));
+        assertEquals(100, DiaryRewards.faladorRestorePercent(3));
+        assertEquals(4, DiaryRewards.explorerEnergyRestores(3));
+        assertEquals(100, DiaryRewards.explorerEnergyPercent(4));
+        assertFalse(DiaryRewards.explorerHighAlch(3));
+        assertTrue(DiaryRewards.explorerHighAlch(4));
+        assertTrue(DiaryRewards.varrockOre(1, "gold_ore"));
+        assertTrue(DiaryRewards.teleports("morytania", 2).size() == 1);
+        assertEquals(1, DiaryRewards.teleports("fremennik", 1).get(0).perDay(1));
         assertEquals(2, DiaryRewards.faladorRestoresPerDay(4));
         assertTrue(DiaryRewards.varrockOre(1, "coal"));
         assertFalse(DiaryRewards.varrockOre(1, "mithril_ore"));
