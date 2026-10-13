@@ -99,6 +99,7 @@ final class HouseFurniture {
             case LECTERN -> lectern(player, f);
             case JEWELLERY_BOX -> destinations(player, "Jewellery box:", Poh.jewelleryDests(f.power()), "jewellery");
             case SPIRIT_TREE -> destinations(player, "Spirit tree:", Poh.SPIRIT_TREES, "spirit");
+            case FAIRY_RING -> fairyRing(player, pos, f);
             case LARDER -> larder(player, f);
             case BOOKCASE -> bookcase(player);
             case WORKBENCH -> MenuService.open(player, MenuType.CONSTRUCTION, pos, false);
@@ -405,12 +406,40 @@ final class HouseFurniture {
         ExtrasUtil.options(player, title, links);
     }
 
+    /**
+     * The house fairy ring (code DIQ): works like any other fairy ring (dramen or lunar staff, sneak-use to turn the dial,
+     * use to travel). The spirit tree &amp; fairy ring also lists the spirit tree's destinations.
+     */
+    private static void fairyRing(ServerPlayerEntity player, BlockPos pos, Poh.Furniture f) {
+        if (f.power() >= 2 && !player.isSneaking()) {
+            List<MutableText> links = new ArrayList<>();
+            links.add(ExtrasUtil.link("Fairy ring", "/house tele fairy ring", "Step into the fairy ring (sneak and use the tree to "
+                    + "turn the dial)", Formatting.LIGHT_PURPLE));
+            for (Poh.Dest d : Poh.SPIRIT_TREES) {
+                links.add(ExtrasUtil.link(d.name(), "/house tele spirit " + d.id(), "Teleport to " + d.name(), Formatting.AQUA));
+            }
+            ExtrasUtil.options(player, f.name() + ":", links);
+            return;
+        }
+        com.runecraft.content.islands.IslandsTravelService.use(player, pos, com.runecraft.osrs.content.islands.IslandsTravel.FAIRY_RINGS);
+    }
+
     static void teleport(ServerPlayerEntity player, String kind, String destId) {
+        if (kind.equals("fairy")) {
+            if (nearby(player, Poh.Effect.FAIRY_RING) > 0) {
+                com.runecraft.content.islands.IslandsTravelService.use(player, player.getBlockPos(),
+                        com.runecraft.osrs.content.islands.IslandsTravel.FAIRY_RINGS);
+            } else {
+                Msg.game(player, "You need to be next to your house's fairy ring to use it.");
+            }
+            return;
+        }
         List<Poh.Dest> dests;
         if (kind.equals("jewellery")) {
             dests = Poh.jewelleryDests(nearby(player, Poh.Effect.JEWELLERY_BOX));
         } else if (kind.equals("spirit")) {
-            dests = nearby(player, Poh.Effect.SPIRIT_TREE) > 0 ? Poh.SPIRIT_TREES : List.of();
+            dests = nearby(player, Poh.Effect.SPIRIT_TREE) > 0 || nearby(player, Poh.Effect.FAIRY_RING) >= 2 ? Poh.SPIRIT_TREES
+                    : List.of();
         } else if (kind.equals("nexus")) {
             HouseService.Spot spot = nexusSpot(player);
             dests = new ArrayList<>();

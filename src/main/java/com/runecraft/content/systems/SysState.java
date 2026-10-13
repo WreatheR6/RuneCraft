@@ -83,6 +83,8 @@ public final class SysState extends PersistentState {
         public long nextCorruptionPulse;
         /** Prayer scrolls read (Rigour, Augury, Preserve, Deadeye, Mystic Vigour), by prayer name. */
         public final Set<String> prayerScrolls = new LinkedHashSet<>();
+        /** Permanent item unlocks (e.g. Xeric's Honour after using an ancient tablet on Xeric's talisman). */
+        public final Set<String> unlocks = new LinkedHashSet<>();
 
         public ItemStack worn(Jewellery.Slot slot) {
             return worn.getOrDefault(slot, ItemStack.EMPTY);
@@ -149,6 +151,7 @@ public final class SysState extends PersistentState {
             n.putInt("GeTrades", geTrades);
             n.put("Spells", strings(spellsCast));
             n.put("PrayerScrolls", strings(prayerScrolls));
+            n.put("Unlocks", strings(unlocks));
             n.putString("CluePuzzle", cluePuzzle);
             return n;
         }
@@ -210,6 +213,7 @@ public final class SysState extends PersistentState {
             geTrades = n.getInt("GeTrades");
             readStrings(n.getList("Spells", NbtElement.STRING_TYPE), spellsCast);
             readStrings(n.getList("PrayerScrolls", NbtElement.STRING_TYPE), prayerScrolls);
+            readStrings(n.getList("Unlocks", NbtElement.STRING_TYPE), unlocks);
             cluePuzzle = n.getString("CluePuzzle");
         }
     }

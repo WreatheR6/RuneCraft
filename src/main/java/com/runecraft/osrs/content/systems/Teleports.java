@@ -48,8 +48,23 @@ public final class Teleports {
             at("Eagles' Eyrie", 3405, 3158));
     public static final List<Destination> BURNING = List.of(at("Chaos Temple", 3234, 3634), at("Bandit Camp", 3038, 3651),
             at("Lava Maze", 3028, 3842));
+    /** Xeric's Honour (Mount Quidamortem): unlocked for good by using an ancient tablet (Chambers of Xeric) on the talisman. */
+    public static final Destination XERICS_HONOUR = at("Xeric's Honour", 1254, 3560);
     public static final List<Destination> XERIC = List.of(at("Xeric's Lookout", 1579, 3530), at("Xeric's Glade", 1752, 3566),
-            at("Xeric's Inferno", 1504, 3815), at("Xeric's Heart", 1644, 3673));
+            at("Xeric's Inferno", 1504, 3815), at("Xeric's Heart", 1644, 3673), XERICS_HONOUR);
+    /** The item that unlocks {@link #XERICS_HONOUR} when used on Xeric's talisman (consumed; the unlock is permanent). */
+    public static final String ANCIENT_TABLET = "ancient_tablet";
+    /** Slayer ring (8 charges; the eternal ring is unlimited). */
+    public static final List<Destination> SLAYER = List.of(at("Stronghold Slayer Cave", 2431, 3422),
+            at("Slayer Tower", 3421, 3537, "priest_in_peril"),
+            at("Fremennik Slayer Dungeon", 2797, 3614), // relocated: the dungeon entrance (OSRS lands inside it)
+            at("Tarn's Lair", 3445, 3223, "haunted_mine"), // relocated: the Haunted Mine entrance to the lair as built here
+            at("Dark Beasts", 2232, 3300, "mournings_end_part_ii")); // relocated: the Iorwerth Dungeon, where dark beasts live here
+
+    /** The unlock item a destination needs (used on the teleport item once), or null. */
+    public static String unlockItem(Destination d) {
+        return XERICS_HONOUR.equals(d) ? ANCIENT_TABLET : null;
+    }
     public static final List<Destination> DRAKAN = List.of(at("Ver Sinhaza", 3649, 3230),
             at("Darkmeyer", 3592, 3337, "sins_of_the_father"),
             at("Slepe", 3720, 3322)); // relocated: Slepe village (OSRS lands in the Sisterhood Sanctuary below it) approx

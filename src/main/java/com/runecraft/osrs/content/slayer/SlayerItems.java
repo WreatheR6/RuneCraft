@@ -92,6 +92,11 @@ public final class SlayerItems {
                 .examine("Used to lure out wall beasts... or so they say.");
         items.add("slayer_ring_8", "Slayer ring (8)", Kind.SLAYER_GEM, "ring", 0x8A30C0).value(87).stack(1)
                 .examine("A ring that tells me my slayer task.");
+        // Used charges (rubbed to teleport: Jewellery and Teleports.SLAYER in the systems module); the last one crumbles.
+        for (int n = 7; n >= 1; n--) {
+            items.add("slayer_ring_" + n, "Slayer ring (" + n + ")", Kind.SLAYER_GEM, "ring", 0x8A30C0).value(1000).stack(1)
+                    .examine("A ring that tells me my slayer task.");
+        }
         items.add("slayer_ring_eternal", "Slayer ring (eternal)", Kind.SLAYER_GEM, "ring", 0x5A1A8A).value(75).stack(1)
                 .examine("A ring that tells me my slayer task. It never runs out of charges.");
         items.add("herb_sack", "Herb sack", Kind.SIMPLE, "package", 0x5A7A3A).value(750).stack(1)

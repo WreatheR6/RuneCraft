@@ -163,8 +163,14 @@ public final class RaidRewards {
             new PointsCommon("torstol_seed", 3200), new PointsCommon("snapdragon_seed", 3200), new PointsCommon("dragon_med_helm", 4000),
             new PointsCommon("magic_seed", 6500), new PointsCommon("blood_essence", 7500), new PointsCommon("cache_of_runes", 999_999));
 
+    /**
+     * CoX extras (OSRS): the ancient tablet, 1/10 (it unlocks Xeric's Honour on Xeric's talisman; OSRS only gives it to
+     * players who haven't got or used one, and in place of a loot roll - approx: always rolled, on top).
+     */
+    public static final List<ExtraReward> COX_EXTRAS = List.of(new ExtraReward("ancient_tablet", 10, false));
     /** CoX Challenge Mode extras (OSRS): metamorphic dust 1/400; the twisted ancestral colour kit 1/75 within the target time. */
     public static final List<ExtraReward> COX_CM_EXTRAS = List.of(
+            new ExtraReward("ancient_tablet", 10, false),
             new ExtraReward("metamorphic_dust", 400, false),
             new ExtraReward("twisted_ancestral_colour_kit", 75, true));
     /** ToB Hard mode extras within the challenge time (OSRS): holy kit 1/100, sanguine kit 1/150, sanguine dust 1/275. */
@@ -214,8 +220,8 @@ public final class RaidRewards {
 
     /** Mode-only extra rewards (CoX Challenge Mode, ToB Hard mode). */
     public static List<ExtraReward> extras(RaidType type, RaidMode mode) {
-        if (type == RaidType.COX && mode == RaidMode.CHALLENGE) {
-            return COX_CM_EXTRAS;
+        if (type == RaidType.COX) {
+            return mode == RaidMode.CHALLENGE ? COX_CM_EXTRAS : COX_EXTRAS;
         }
         if (type == RaidType.TOB && mode == RaidMode.HARD) {
             return TOB_HARD_EXTRAS;

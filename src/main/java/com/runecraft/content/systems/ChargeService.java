@@ -126,7 +126,7 @@ public final class ChargeService {
     private static String denyAttack(ServerPlayerEntity p, AttackType type) {
         ItemStack weapon = p.getMainHandStack();
         Charges.Spec s = ItemCharges.spec(weapon);
-        if (s == null || !ItemCharges.depleted(weapon)) {
+        if (s == null || s.drain() == Charges.Drain.TELEPORT || !ItemCharges.depleted(weapon)) {
             return null;
         }
         return switch (s.kind()) {

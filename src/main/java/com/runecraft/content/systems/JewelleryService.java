@@ -1,10 +1,12 @@
 package com.runecraft.content.systems;
 
 import com.runecraft.combat.CombatHandler;
+import com.runecraft.item.ItemCharges;
 import com.runecraft.network.ServerNetworking;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.systems.Charges;
 import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.osrs.content.systems.Teleports;
 import com.runecraft.player.PlayerData;
@@ -114,15 +116,31 @@ public final class JewelleryService {
             return;
         }
         SysNet.Screen s = new SysNet.Screen("tele", w.name());
+        Charges.Spec charged = teleportCharges(stack);
         if (w.chargeBase() != null && w.charges() == 0) {
             s.line("It has no charges left. Recharge it at the Fountain of Heroes (Heroes' Guild, Burthorpe).", 0xFF8080);
+        } else if (charged != null && ItemCharges.get(stack) <= 0) {
+            s.line("It has no charges left. Sneak and use it with " + materialName(charged) + "s in your inventory to charge it.", 0xFF8080);
         } else {
+            if (charged != null) {
+                s.line(Charges.describe(charged, ItemCharges.get(stack)) + " (one per teleport; sneak and use it with "
+                        + materialName(charged) + "s to add more).");
+            }
             s.line("Where would you like to teleport to?");
             List<Teleports.Destination> dests = w.teleports();
             boolean diary = com.runecraft.osrs.content.systems.DiaryRewards.areaOf(w.id()) != null;
             for (int i = 0; i < dests.size(); i++) {
-                s.button(source + "|" + i, diary ? DiaryService.rewardTeleLabel(p, w.id(), i) : dests.get(i).name());
+                String unlock = Teleports.unlockItem(dests.get(i));
+                boolean locked = unlock != null && !SysState.of(p).unlocks.contains(dests.get(i).name());
+                s.button(source + "|" + i, diary ? DiaryService.rewardTeleLabel(p, w.id(), i)
+                        : dests.get(i).name() + (locked ? " (locked)" : ""));
+                if (locked && Inv.has(p, unlock, 1)) {
+                    s.button(source + "|unlock" + i, "Use your " + itemName(unlock).toLowerCase() + " to unlock " + dests.get(i).name());
+                }
             }
+        }
+        if (w.id().startsWith("slayer_ring")) {
+            s.button(source + "|task", "Check your slayer task");
         }
         if (w.id().startsWith("explorers_ring")) {
             int tier = tierOf(w.id());
@@ -136,6 +154,26 @@ public final class JewelleryService {
             s.button(source + "|wear", "Wear it");
         }
         s.send(p);
+    }
+
+    /** The per-stack charge spec of a teleport item that keeps its charges in NBT (Xeric's talisman), or null. */
+    static Charges.Spec teleportCharges(ItemStack stack) {
+        Charges.Spec spec = ItemCharges.spec(stack);
+        return spec != null && spec.drain() == Charges.Drain.TELEPORT ? spec : null;
+    }
+
+    private static String materialName(Charges.Spec spec) {
+        return spec.materials().isEmpty() ? "charge" : itemName(spec.materials().keySet().iterator().next()).toLowerCase();
+    }
+
+    private static String itemName(String id) {
+        ItemDef def = ItemCatalog.get(id);
+        return def == null ? id.replace('_', ' ') : def.name();
+    }
+
+    /** "a"/"an" + name. */
+    private static String article(String name) {
+        return (name.matches("^[aeiouAEIOU].*") ? "an " : "a ") + name;
     }
 
     private static int energyUses(int tier) {
@@ -204,7 +242,12 @@ public final class JewelleryService {
                 }
             }
             case "alch" -> explorerAlch(p, com.runecraft.osrs.content.systems.DiaryRewards.explorerHighAlch(tierOf(w.id())));
+            case "task" -> com.runecraft.combat.Slayer.checkTask(p);
             default -> {
+                if (what.startsWith("unlock")) {
+                    unlock(p, w, what.substring("unlock".length()));
+                    return;
+                }
                 int i;
                 try {
                     i = Integer.parseInt(what);
@@ -218,13 +261,56 @@ public final class JewelleryService {
                     DiaryService.rewardTeleport(p, w.id(), i);
                     return;
                 }
-                if (SysTeleport.teleport(p, w.teleports().get(i), Teleports.wildernessLimit(w.id()))) {
+                Teleports.Destination dest = w.teleports().get(i);
+                String unlockItem = Teleports.unlockItem(dest);
+                if (unlockItem != null && !SysState.of(p).unlocks.contains(dest.name())) {
+                    Msg.game(p, "You need to use " + article(itemName(unlockItem).toLowerCase()) + " on your "
+                            + w.name() + " to unlock " + dest.name() + ".");
+                    return;
+                }
+                Charges.Spec charged = teleportCharges(stack);
+                if (charged != null && ItemCharges.get(stack) <= 0) {
+                    Msg.game(p, "Your " + charged.name() + " has no charges left.");
+                    return;
+                }
+                if (SysTeleport.teleport(p, dest, Teleports.wildernessLimit(w.id()))) {
                     if (w.chargeBase() != null) {
                         setStack(p, source, useCharge(p, stack));
+                    } else if (charged != null) {
+                        ItemCharges.drain(stack, 1);
+                        int left = ItemCharges.get(stack);
+                        Msg.game(p, "Your " + charged.name() + " has " + left + " charge" + (left == 1 ? "" : "s") + " left.");
                     }
                 }
             }
         }
+    }
+
+    /** Uses an unlock item (the ancient tablet) on a teleport item: permanently unlocks that destination. */
+    private static void unlock(ServerPlayerEntity p, Jewellery.Worn w, String index) {
+        int i;
+        try {
+            i = Integer.parseInt(index);
+        } catch (NumberFormatException e) {
+            return;
+        }
+        if (i < 0 || i >= w.teleports().size()) {
+            return;
+        }
+        Teleports.Destination dest = w.teleports().get(i);
+        String item = Teleports.unlockItem(dest);
+        SysState.SysPlayer sp = SysState.of(p);
+        if (item == null || sp.unlocks.contains(dest.name())) {
+            return;
+        }
+        if (!Inv.has(p, item, 1)) {
+            Msg.game(p, "You need " + article(itemName(item).toLowerCase()) + " to do that.");
+            return;
+        }
+        Inv.remove(p, item, 1);
+        sp.unlocks.add(dest.name());
+        Msg.action(p, "As the talisman and tablet are held together, a surge of power connects the two. After a brief moment, "
+                + "the tablet crumbles, and the talisman feels somehow different.");
     }
 
     private static void explorerAlch(ServerPlayerEntity p, boolean high) {

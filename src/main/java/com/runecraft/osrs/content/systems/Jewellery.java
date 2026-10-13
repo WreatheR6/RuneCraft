@@ -45,6 +45,8 @@ public final class Jewellery {
     }
 
     private static final EquipmentStats NONE = EquipmentStats.NONE;
+    /** Slayer ring teleport charges (OSRS: 8). */
+    public static final int SLAYER_RING_CHARGES = 8;
 
     static {
         // ---------- Sapphire (Lvl-1 Enchant) ----------
@@ -123,8 +125,14 @@ public final class Jewellery {
         charged("digsite_pendant", "Digsite pendant", Slot.NECK, "necklace", 0xB08040, 1200, NONE, 5, Teleports.DIGSITE, true);
         charged("necklace_of_passage", "Necklace of passage", Slot.NECK, "necklace", 0x70A0D0, 2000, NONE, 5, Teleports.PASSAGE, true);
         charged("burning_amulet", "Burning amulet", Slot.NECK, "amulet", 0xE06020, 2000, NONE, 5, Teleports.BURNING, true);
-        worn("xerics_talisman", "Xeric's talisman", Slot.NECK, "amulet", 0x60B0A0, 3000, NONE, Perk.TELEPORT_ONLY, "A talisman of Xeric.");
+        // Xeric's talisman: one charge per lizardman fang, up to 1,000 (per-stack charges: Charges.XERICS_TALISMAN).
+        worn("xerics_talisman", "Xeric's talisman", Slot.NECK, "amulet", 0x60B0A0, 3000, NONE, Perk.TELEPORT_ONLY,
+                "An enervated relic of the ancient times of Kourend.");
         teleportsFor("xerics_talisman", Teleports.XERIC);
+        // Slayer ring (items defined by the slayer module): 8 teleports, then it crumbles; the eternal ring never runs out.
+        chargedExternal("slayer_ring", "Slayer ring", Slot.RING, SLAYER_RING_CHARGES, Teleports.SLAYER);
+        WORN.put("slayer_ring_eternal", new Worn("slayer_ring_eternal", "Slayer ring (eternal)", Slot.RING, NONE, Perk.TELEPORT_ONLY,
+                null, -1, Teleports.SLAYER, false));
         worn("drakans_medallion", "Drakan's medallion", Slot.NECK, "amulet", 0x902020, 3000, NONE, Perk.TELEPORT_ONLY, "A medallion of the Drakan family.");
         teleportsFor("drakans_medallion", Teleports.DRAKAN);
         worn("holy_symbol", "Holy symbol", Slot.NECK, "amulet", 0xE0E0E0, 300, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8),
@@ -216,6 +224,14 @@ public final class Jewellery {
 
     private static void wornExternal(String id, Slot slot, EquipmentStats stats) {
         WORN.putIfAbsent(id, new Worn(id, id, slot, ref(id, stats), Perk.NONE, null, -1, List.of(), false));
+    }
+
+    /** Worn charge states {@code base_1 .. base_max} ("Name (n)") of items another module defines; they crumble when empty. */
+    private static void chargedExternal(String base, String name, Slot slot, int max, List<Teleports.Destination> dests) {
+        for (int n = max; n >= 1; n--) {
+            String id = base + "_" + n;
+            WORN.put(id, new Worn(id, name + " (" + n + ")", slot, ref(id, NONE), Perk.TELEPORT_ONLY, base, n, dests, true));
+        }
     }
 
     /**

@@ -50,10 +50,11 @@ public final class IslandsStructures {
     static final int[] FELDIP_RING = {2571, 2956};
     static final int[] CASTLE_WARS_RING = {2385, 3035};
     static final int[] ZUL_ANDRA_RING = {2213, 3099};
-    static final int[] HOUSE_TREE = {3755, 3862};
-    static final int[] VALLEY_TREE = {3756, 3762};
-    static final int[] FOREST_TREE = {3701, 3797};
-    static final int[] MEADOW_TREE = {3667, 3866};
+    // Magic Mushtrees on their OSRS tiles (skretzo/shortest-path magic_mushtrees.tsv).
+    static final int[] HOUSE_TREE = {3764, 3879};
+    static final int[] VALLEY_TREE = {3760, 3758};
+    static final int[] FOREST_TREE = {3676, 3755};
+    static final int[] MEADOW_TREE = {3676, 3870}; // OSRS 3676, 3871: a tile south, clear of the bird house camp
 
     public static final int ZANARIS_RING_DX = dx(ZANARIS_RING[0], 2412);
     public static final int ZANARIS_RING_DZ = dz(ZANARIS_RING[1], 4434);

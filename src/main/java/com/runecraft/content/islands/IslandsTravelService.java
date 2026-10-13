@@ -53,7 +53,8 @@ public final class IslandsTravelService {
         return null;
     }
 
-    static void use(ServerPlayerEntity player, BlockPos pos, IslandsTravel.Network network) {
+    /** Uses a fairy ring or mushtree at {@code pos} (also the house fairy ring, which has no stop of its own). */
+    public static void use(ServerPlayerEntity player, BlockPos pos, IslandsTravel.Network network) {
         boolean fairy = network == IslandsTravel.FAIRY_RINGS;
         String quest = network.quest();
         if (quest != null && QuestApi.stage(player, quest) < 1 && !QuestApi.isComplete(player, quest)) {

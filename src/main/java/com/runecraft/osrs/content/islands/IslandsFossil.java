@@ -80,7 +80,7 @@ final class IslandsFossil {
         b.tSet(3764, 3874, 4, "minecraft:lectern");
         // The Magic Mushtree.
         b.tSet(IslandsStructures.HOUSE_TREE[0], IslandsStructures.HOUSE_TREE[1], 0, rc(IslandsBlocks.MUSHTREE));
-        mushroom(b, IslandsStructures.HOUSE_TREE[0] - 3, IslandsStructures.HOUSE_TREE[1] - 2, 6, 3, "minecraft:red_mushroom_block");
+        mushroom(b, 3776, 3880, 6, 3, "minecraft:red_mushroom_block");
         mushroom(b, 3775, 3860, 5, 2, "minecraft:brown_mushroom_block");
         lamp(b, 3761, 3864, "minecraft:oak_fence");
         lamp(b, 3766, 3864, "minecraft:oak_fence");
@@ -148,8 +148,11 @@ final class IslandsFossil {
             int[] c = caps[i];
             mushroom(b, c[0], c[1], c[2], c[3], i % 2 == 0 ? "minecraft:red_mushroom_block" : "minecraft:brown_mushroom_block");
         }
-        b.tSet(IslandsStructures.FOREST_TREE[0], IslandsStructures.FOREST_TREE[1], 0, rc(IslandsBlocks.MUSHTREE));
         b.tFloor(3693, 3772, 3694, 3800, PATH);
+        // The Sticky swamp's Magic Mushtree stands in a mycelium clearing at the swamp's south-west edge.
+        b.tFlatten(3670, 3750, 3684, 3762, "minecraft:mycelium");
+        b.tSet(IslandsStructures.FOREST_TREE[0], IslandsStructures.FOREST_TREE[1], 0, rc(IslandsBlocks.MUSHTREE));
+        mushroom(b, 3672, 3759, 6, 3, "minecraft:brown_mushroom_block");
         b.tSet(3688, 3792, 0, "minecraft:brown_mushroom");
         b.tSet(3700, 3783, 0, "minecraft:red_mushroom");
         b.tSet(3682, 3784, 0, "minecraft:brown_mushroom");
@@ -164,11 +167,15 @@ final class IslandsFossil {
         Builder b = StructureDef.builder("isl_mushroom_meadow", "Mushroom Meadow").replaces(IslandsPlaces.MUSHROOM_MEADOW);
         b.tFlatten(3662, 3861, 3683, 3869, "minecraft:coarse_dirt");
         b.tFloor(3664, 3862, 3681, 3868, "minecraft:mycelium");
-        for (int[] r : new int[][]{{3663, 3862}, {3682, 3863}, {3676, 3868}}) {
+        for (int[] r : new int[][]{{3663, 3862}, {3682, 3863}, {3670, 3868}}) {
             rocks(b, r[0], r[1], "minecraft:tuff");
         }
         b.tSet(3679, 3862, 0, "minecraft:bone_block");
         b.tSet(3673, 3862, 0, "minecraft:skeleton_skull");
+        // The tree stands just north of the levelled ground (the bird house camp is right behind it): give it a footing.
+        b.tSet(IslandsStructures.MEADOW_TREE[0], IslandsStructures.MEADOW_TREE[1], -1, "minecraft:mycelium");
+        b.tClear(IslandsStructures.MEADOW_TREE[0], IslandsStructures.MEADOW_TREE[1], IslandsStructures.MEADOW_TREE[0],
+                IslandsStructures.MEADOW_TREE[1], 1, 3);
         b.tSet(IslandsStructures.MEADOW_TREE[0], IslandsStructures.MEADOW_TREE[1], 0, rc(IslandsBlocks.MUSHTREE));
         mushroom(b, IslandsStructures.MEADOW_TREE[0] + 4, IslandsStructures.MEADOW_TREE[1] - 1, 6, 3, "minecraft:red_mushroom_block");
         mushroom(b, 3678, 3866, 5, 2, "minecraft:brown_mushroom_block");

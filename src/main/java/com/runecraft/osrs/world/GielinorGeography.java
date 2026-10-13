@@ -132,6 +132,7 @@ public final class GielinorGeography {
             new Ellipse("The Zenith", 2878, 2505, 16, 14),
             new Ellipse("Last Light", 2855, 2327, 26, 24),
             new Ellipse("Wyrmscraig", 2566, 2250, 58, 62),
+            new Ellipse("Deepfin Point", 1948, 2780, 16, 23), // wiki map centre; its charter dock (1943, 2757) on the south shore
             // instanced areas that the mod places at their OSRS instance coordinates
             new Ellipse("Zanaris", 2412, 4432, 48, 44),
             new Ellipse("Prifddinas", 3180, 6105, 170, 95)
