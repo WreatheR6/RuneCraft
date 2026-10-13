@@ -28,6 +28,7 @@ public final class MinigameCurrencies {
     public static final String WG_TOKENS = "item:warrior_guild_token";
     public static final String MARKS = "item:hallowed_mark";
     public static final String ARENA_TICKETS = "item:agility_arena_ticket";
+    public static final String BRIMHAVEN_VOUCHERS = "item:brimhaven_voucher";
     public static final String EIGHT = "item:pieces_of_eight";
     public static final String PERMITS = "item:reward_permit";
     public static final String GNOME_TOKENS = "item:gnome_restaurant_token";
@@ -58,6 +59,7 @@ public final class MinigameCurrencies {
         NAMES.put(WG_TOKENS, "Warrior guild tokens");
         NAMES.put(MARKS, "Hallowed marks");
         NAMES.put(ARENA_TICKETS, "Agility arena tickets");
+        NAMES.put(BRIMHAVEN_VOUCHERS, "Brimhaven vouchers");
         NAMES.put(EIGHT, "Pieces of eight");
         NAMES.put(PERMITS, "Reward permits");
         NAMES.put(GNOME_TOKENS, "Reward tokens");

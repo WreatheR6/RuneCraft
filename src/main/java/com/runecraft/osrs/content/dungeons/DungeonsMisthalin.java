@@ -76,6 +76,8 @@ final class DungeonsMisthalin {
         }
         c.set(tx + 9, f + 1, tz - 59, mc("cobweb")).set(tx - 13, f + 1, tz - 31, mc("cobweb"));
         c.pool(tx + 24, tz + 18, tx + 30, tz + 24, f, mc("water"));
+        // The 15 Agility monkeybars from the old jail to the chaos druids' room.
+        c.shortcut("edgeville_dungeon_monkeybars", tx + 8, tz - 58, f, tx + 16, tz - 74, f);
         c.link(tx, tz, 52, f, "north");
         c.camp(tx + 22, tz, tx + 52, tz + 26, f, 6, 50, "hill_giant");
         c.camp(tx - 12, tz - 58, tx + 8, tz - 32, f, 6, 25, "minecraft:skeleton", "minecraft:zombie", "giant_rat");
@@ -256,6 +258,10 @@ final class DungeonsMisthalin {
                 house(c, hx, hz, hx + 11, hz + 9, fc);
             }
         }
+        // Thieving chests (the skilling module's; a lockpick needed): an average one in the first house, a rich one
+        // in the house at the east end of the same row.
+        c.set(cx1 + 6, fc + 1, cz1 + 6, rc("dorgesh_kaan_average_chest"));
+        c.set(cx1 + 78, fc + 1, cz1 + 6, rc("dorgesh_kaan_rich_chest"));
         int mx = cx1 + 50;
         int mz = cz1 + 44;
         c.fill(mx - 2, fc + 1, mz - 2, mx + 2, fc + 1, mz + 2, mc("polished_blackstone"));

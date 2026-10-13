@@ -16,7 +16,9 @@ import java.util.List;
 /**
  * Brimhaven Agility Arena: a grid of pillars joined by planks over a spiked pit. The ticket
  * dispenser moves to a new pillar every minute; tag it (click) before it moves for an agility
- * arena ticket. Dart and spike traps punish missteps. Pirate Jackie the Fruit trades tickets.
+ * arena ticket and a Brimhaven voucher. Dart and spike traps punish missteps. Pirate Jackie the Fruit
+ * trades tickets for Agility XP (345 each) and vouchers for rewards. Entry costs Cap'n Izzy No-Beard
+ * 200 coins.
  */
 public class BrimhavenArenaSession extends MinigameSession {
     private static final int GRID = 4;
@@ -129,8 +131,9 @@ public class BrimhavenArenaSession extends MinigameSession {
         tagged = true;
         int agility = level(player, Skill.AGILITY);
         reward(player, "agility_arena_ticket", 1);
+        reward(player, "brimhaven_voucher", 1);
         xp(player, Skill.AGILITY, agility < 20 ? 7 : agility < 40 ? 15 : 20);
-        Msg.game(player, "You tag the pillar and receive an agility arena ticket.");
+        Msg.game(player, "You tag the pillar and receive an agility arena ticket and a Brimhaven voucher.");
         return true;
     }
 

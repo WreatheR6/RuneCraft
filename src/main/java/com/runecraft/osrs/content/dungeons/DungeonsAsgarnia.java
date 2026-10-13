@@ -75,6 +75,8 @@ final class DungeonsAsgarnia {
         c.carve();
         // The dusty-key gate before the blue dragons.
         gate(c, ox + 37, oz - 20, f, 'z');
+        // The 70 Agility obstacle pipe from the chaos druids into the blue dragons' cavern, past the gate.
+        c.shortcut("taverley_dungeon_pipe", ox + 42, oz - 7, f, ox + 42, oz - 31, f);
         // The lesser demons' cage (iron bars).
         c.b.walls(ox - 6, f + 1, oz - 38, ox + 6, f + 5, oz - 30, mc("iron_bars"));
         c.b.clear(ox - 5, f + 1, oz - 37, ox + 5, f + 5, oz - 31);
@@ -224,6 +226,8 @@ final class DungeonsAsgarnia {
         c.pool(lx + 100, lz - 60, lx + 110, lz - 50, f, mc("water"));
         c.fill(lx + 100, f, lz - 60, lx + 110, f, lz - 50, mc("ice"));
         c.set(lx - 40, f + 1, lz - 14, mc("barrel")).set(lx - 39, f + 1, lz - 14, mc("barrel"));
+        // The 72 Agility tunnel from the hobgoblins to the skeletal wyverns (approx. ends).
+        c.shortcut("asgarnian_ice_tunnel", lx + 42, lz + 18, f, lx + 92, lz - 22, f);
         c.link(lx, lz, 55, f, "south");
         c.camp(lx - 40, lz - 14, lx - 18, lz + 14, f, 4, 25, "pirate", "mugger");
         c.camp(lx + 22, lz - 4, lx + 42, lz + 18, f, 4, 25, "hobgoblin");

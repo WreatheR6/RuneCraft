@@ -2671,7 +2671,9 @@ public final class ItemValues {
 
     /** Weight while worn: Graceful pieces weigh less than nothing once equipped (OSRS worn weights). */
     public static double wornWeight(String id) {
-        return switch (id) {
+        // Recoloured Graceful pieces (Varlamore, Agility Arena) weigh the same as the plain ones.
+        String plain = id.startsWith("graceful_") ? id.replace("_varlamore", "").replace("_agility_arena", "") : id;
+        return switch (plain) {
             case "graceful_hood", "graceful_gloves" -> -3;
             case "graceful_cape", "graceful_legs", "graceful_boots" -> -4;
             case "graceful_top" -> -5;

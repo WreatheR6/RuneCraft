@@ -32,6 +32,7 @@ final class Cave {
     private final List<String> stairStates = new ArrayList<>();
     final List<Dungeons.Entrance> entrances = new ArrayList<>();
     final List<Dungeons.Camp> camps = new ArrayList<>();
+    final List<com.runecraft.osrs.content.skilling.AgilityShortcuts.BlockEnds> shortcuts = new ArrayList<>();
     private boolean carved;
 
     Cave(String id, String name, String wall, String floor, String light) {
@@ -381,7 +382,34 @@ final class Cave {
         return this;
     }
 
+    /**
+     * An indoor Agility shortcut ({@code AgilityShortcuts.INDOOR}) between (ax, az) on floor fa and
+     * (bx, bz) on floor fb: a shortcut block stands on each floor (after {@link #carve()}), and
+     * using one carries the player to the other.
+     */
+    Cave shortcut(String shortcutId, int ax, int az, int fa, int bx, int bz, int fb) {
+        if (com.runecraft.osrs.content.skilling.AgilityShortcuts.indoor(shortcutId) == null) {
+            throw new IllegalArgumentException(id + ": unknown shortcut " + shortcutId);
+        }
+        if (!carved || !inside(ax, fa + 1, az) || !inside(bx, fb + 1, bz)) {
+            throw new IllegalStateException(id + ": shortcut " + shortcutId + " must stand in carved air");
+        }
+        b.set(ax, fa + 1, az, rc(com.runecraft.osrs.content.skilling.AgilityShortcuts.BLOCK));
+        b.set(bx, fb + 1, bz, rc(com.runecraft.osrs.content.skilling.AgilityShortcuts.BLOCK));
+        shortcuts.add(new com.runecraft.osrs.content.skilling.AgilityShortcuts.BlockEnds(shortcutId, ax, fa + 1, az, bx, fb + 1, bz));
+        return this;
+    }
+
+    /**
+     * Places one obstacle of an agility course built into this dungeon: the numbered obstacle block
+     * in the floor at (x, z) (stepping onto it crosses the obstacle).
+     */
+    Cave obstacle(int x, int z, int f, int course, int step) {
+        b.set(x, f, z, rc("agility_obstacle[course=" + course + ",step=" + step + "]"));
+        return this;
+    }
+
     Dungeons.Dungeon build() {
-        return new Dungeons.Dungeon(id, name, b.build(), List.copyOf(entrances), List.copyOf(camps));
+        return new Dungeons.Dungeon(id, name, b.build(), List.copyOf(entrances), List.copyOf(camps), List.copyOf(shortcuts));
     }
 }

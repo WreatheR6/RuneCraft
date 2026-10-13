@@ -217,6 +217,12 @@ public final class SkillGuide {
                 b.add(Skill.AGILITY, s.level(), "Shortcut: " + s.name());
             }
         }
+        for (com.runecraft.osrs.content.skilling.AgilityShortcuts.Shortcut s
+                : com.runecraft.osrs.content.skilling.AgilityShortcuts.INDOOR) {
+            if (s.level() > 0) {
+                b.add(Skill.AGILITY, s.level(), "Shortcut: " + s.name());
+            }
+        }
         for (HunterData.Impling i : HunterData.IMPLINGS) {
             b.add(Skill.HUNTER, i.level(), i.name());
         }

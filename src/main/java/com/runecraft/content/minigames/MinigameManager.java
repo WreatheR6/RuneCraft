@@ -121,6 +121,9 @@ public final class MinigameManager {
     // ------------------------------------------------------------------ joining
 
     /** Entrance block clicked: check requirements, then start or queue in the lobby. */
+    /** Coins Cap'n Izzy No-Beard charges to enter the Brimhaven Agility Arena. */
+    static final int BRIMHAVEN_FEE = 200;
+
     public static void enter(ServerPlayerEntity player, Minigame game, String variant) {
         if (!Gielinor.is(player)) {
             return;
@@ -133,6 +136,15 @@ public final class MinigameManager {
         if (problem != null) {
             Msg.game(player, problem);
             return;
+        }
+        if (game == Minigame.BRIMHAVEN_AGILITY_ARENA) {
+            // Cap'n Izzy No-Beard's entry fee.
+            if (!Inv.has(player, Inv.COINS, BRIMHAVEN_FEE)) {
+                Msg.game(player, "Cap'n Izzy No-Beard: It costs " + BRIMHAVEN_FEE + " coins to enter the Agility Arena.");
+                return;
+            }
+            Inv.remove(player, Inv.COINS, BRIMHAVEN_FEE);
+            Msg.game(player, "You pay Cap'n Izzy No-Beard " + BRIMHAVEN_FEE + " coins.");
         }
         CHOSEN.put(player.getUuid(), variant);
         if (game.lobbySeconds() <= 0) {
@@ -366,6 +378,9 @@ public final class MinigameManager {
 
     static void onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
         MinigameSession s = session(player);
+        if (s == null && com.runecraft.content.BlockHooks.useFallback(player, blockId, pos, player.getWorld().getBlockState(pos))) {
+            return;
+        }
         if (s == null || !s.onBlock(player, blockId, pos)) {
             if (blockId.equals("minigame_exit") && s != null) {
                 leave(player);

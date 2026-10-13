@@ -115,7 +115,7 @@ class AgilityThievingAuditTest {
             if (wiki.containsKey(s.id())) {
                 assertEquals(wiki.get(s.id()), s.level(), s.id());
             }
-            assertTrue(s.level() > 0 || !s.other().isEmpty(), s.id() + " has no requirement");
+            assertTrue(s.level() > 0 || !s.other().isEmpty() || s.needs() != null, s.id() + " has no requirement");
             // Each end finds this shortcut and only this one.
             assertEquals(s, AgilityShortcuts.at(s.ax(), s.ay()), s.id());
             assertEquals(s, AgilityShortcuts.at(s.bx(), s.by()), s.id());
@@ -214,14 +214,14 @@ class AgilityThievingAuditTest {
         for (TownMonsters.Pickpocket p : TownMonsters.pickpockets()) {
             boolean coins = p.always().stream().anyMatch(l -> l.item().equals("coins") && l.max() > 1)
                     || p.table().stream().anyMatch(l -> l.item().equals("coins") && l.max() > 1);
-            if (coins) {
+            if (coins && !Thieving.LOOSE_COINS.contains(p.creature())) {
                 assertNotNull(Thieving.pouch(Thieving.pouchForNpc(p.creature())), p.creature());
             }
         }
         for (ThievingData.Target t : ThievingData.TARGETS) {
             boolean coins = t.always().stream().anyMatch(l -> l.item().equals("coins") && l.max() > 1)
                     || t.table().stream().anyMatch(l -> l.item().equals("coins") && l.max() > 1);
-            if (coins) {
+            if (coins && !Thieving.LOOSE_COINS.contains(t.npcId())) {
                 assertNotNull(Thieving.pouch(Thieving.pouchForNpc(t.npcId())), t.npcId());
             } else {
                 assertNull(Thieving.pouchForNpc(t.npcId()), t.npcId());

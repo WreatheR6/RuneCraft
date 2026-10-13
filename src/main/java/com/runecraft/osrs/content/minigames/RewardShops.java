@@ -17,6 +17,13 @@ import static com.runecraft.osrs.content.minigames.MinigameCurrencies.*;
  * #ores).
  */
 public final class RewardShops {
+    /** Agility XP per Brimhaven Agility Arena ticket (flat since the May 2024 rebalance). */
+    public static final double ARENA_TICKET_XP = 345.0;
+    /**
+     * Item id prefix of a Graceful recolour entry: buying it turns the full plain Graceful set the
+     * player carries into the set with this suffix (e.g. {@code #graceful_agility_arena}).
+     */
+    public static final String GRACEFUL_RECOLOUR = "#graceful";
     private static final Map<String, RewardShop> SHOPS = new LinkedHashMap<>();
 
     static {
@@ -147,13 +154,17 @@ public final class RewardShops {
                 .item("dark_acorn", MARKS, 3000)
                 .item("strange_old_lockpick", MARKS, 1000);
 
-        // Brimhaven Agility Arena: Pirate Jackie the Fruit.
+        // Brimhaven Agility Arena: Pirate Jackie the Fruit. Since the May 2024 rebalance tickets only buy Agility XP,
+        // at a flat 345 each, and the items cost Brimhaven vouchers (pirate's hook 800, the Agility Arena Graceful
+        // recolour 250 with a full set; the herbs' voucher prices approx., their old ticket prices).
         shop("brimhaven_agility_arena", "Pirate Jackie's Ticket Exchange")
-                .xp(Skill.AGILITY, 7, ARENA_TICKETS, 1, 1)
-                .xp(Skill.AGILITY, 7, ARENA_TICKETS, 10, 1)
-                .item("pirates_hook", ARENA_TICKETS, 800)
-                .item("toadflax", ARENA_TICKETS, 3)
-                .item("snapdragon", ARENA_TICKETS, 10);
+                .xpFlat(Skill.AGILITY, ARENA_TICKET_XP, ARENA_TICKETS, 1)
+                .xpFlat(Skill.AGILITY, ARENA_TICKET_XP, ARENA_TICKETS, 10)
+                .xpFlat(Skill.AGILITY, ARENA_TICKET_XP, ARENA_TICKETS, 100)
+                .item("pirates_hook", BRIMHAVEN_VOUCHERS, 800)
+                .item(GRACEFUL_RECOLOUR + "_agility_arena", BRIMHAVEN_VOUCHERS, 250)
+                .item("toadflax", BRIMHAVEN_VOUCHERS, 3)
+                .item("snapdragon", BRIMHAVEN_VOUCHERS, 10);
 
         // Trouble Brewing: Honest Jimmy's House of Stuff (pieces of eight; OSRS Wiki: ten times each item's value,
         // rum 20).

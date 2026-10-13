@@ -78,7 +78,9 @@ public final class Thieving {
             new CoinPouch("gnome", "a gnome", 300, 300),
             new CoinPouch("hero", "a hero", 200, 300),
             new CoinPouch("vyre", "a vyre", 250, 250),
-            new CoinPouch("elf", "an elf", 280, 350));
+            new CoinPouch("elf", "an elf", 280, 350),
+            // Varlamore's wealthy citizens (Civitas illa Fortis): 85 coins a pickpocket (approx.).
+            new CoinPouch("wealthy_citizen", "a wealthy citizen", 85, 85));
 
     public static String pouchId(String key) {
         return "coin_pouch_" + key;
@@ -106,7 +108,14 @@ public final class Thieving {
             java.util.Map.entry("gnome", "gnome"), java.util.Map.entry("gnome_pickpocket", "gnome"),
             java.util.Map.entry("hero", "hero"), java.util.Map.entry("ardougne_hero", "hero"),
             java.util.Map.entry("vyre_pickpocket", "vyre"), java.util.Map.entry("elf_pickpocket", "elf"),
-            java.util.Map.entry("fremennik_citizen", "fremennik_citizen"));
+            java.util.Map.entry("fremennik_citizen", "fremennik_citizen"),
+            java.util.Map.entry("wealthy_citizen", "wealthy_citizen"));
+
+    /**
+     * Pickpocket targets whose (varying) coins are handed out loose, not in a coin pouch: H.A.M.
+     * members and cave goblins, whose coins are one line of a mixed loot table.
+     */
+    public static final java.util.Set<String> LOOSE_COINS = java.util.Set.of("ham_member", "cave_goblin");
 
     /** Pouch key for a pickpocket target id, or null if its coins (if any) are given loose. */
     public static String pouchForNpc(String npcId) {

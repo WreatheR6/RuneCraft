@@ -37,8 +37,14 @@ import java.util.function.Supplier;
  * each tile is placed once (remembered in the world's saved state).
  */
 final class AgilityPlacer {
-    private record Tile(String key, int x, int z, Supplier<BlockState> state) {
+    /** A block to place at (x, z): on the surface, or at height {@code y} if it is not {@link #SURFACE}. */
+    private record Tile(String key, int x, int z, Supplier<BlockState> state, int y) {
+        Tile(String key, int x, int z, Supplier<BlockState> state) {
+            this(key, x, z, state, SURFACE);
+        }
     }
+
+    private static final int SURFACE = Integer.MIN_VALUE;
 
     private static final Map<Long, List<Tile>> BY_CHUNK = new HashMap<>();
     private static final Deque<Tile> QUEUE = new ArrayDeque<>();
@@ -60,6 +66,12 @@ final class AgilityPlacer {
             Supplier<BlockState> block = () -> Registries.BLOCK.get(RuneCraft.resolve(AgilityShortcuts.BLOCK)).getDefaultState();
             add(new Tile("shortcut:" + s.id() + ":a", StructureDef.bx(s.ax()), StructureDef.bz(s.ay()), block));
             add(new Tile("shortcut:" + s.id() + ":b", StructureDef.bx(s.bx()), StructureDef.bz(s.by()), block));
+        }
+        // Indoor shortcut ends inside surface buildings (the Slayer Tower's chains), at their storey's height.
+        for (AgilityShortcuts.BlockEnds e : AgilityShortcuts.TOWER_ENDS) {
+            Supplier<BlockState> block = () -> Registries.BLOCK.get(RuneCraft.resolve(AgilityShortcuts.BLOCK)).getDefaultState();
+            add(new Tile("shortcut:" + e.id() + ":a", e.x1(), e.z1(), block, e.y1()));
+            add(new Tile("shortcut:" + e.id() + ":b", e.x2(), e.z2(), block, e.y2()));
         }
     }
 
@@ -112,6 +124,16 @@ final class AgilityPlacer {
     private static void place(ServerWorld world, Tile t) {
         BlockState block = t.state().get();
         if (block.isOf(Blocks.AIR)) {
+            return;
+        }
+        if (t.y() != SURFACE) {
+            // Exactly at its height (the shortcut's ends are matched by block position): only into air or
+            // replaceable blocks (cobwebs...) with a floor below and head room above.
+            BlockPos feet = new BlockPos(t.x(), t.y(), t.z());
+            BlockState at = world.getBlockState(feet);
+            if ((at.isAir() || at.isReplaceable() || at.isOf(Blocks.COBWEB)) && at.getFluidState().isEmpty()) {
+                world.setBlockState(feet, block, Block.NOTIFY_ALL);
+            }
             return;
         }
         for (int r = 0; r <= SEARCH; r++) {

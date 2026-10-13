@@ -1,5 +1,6 @@
 package com.runecraft.osrs.content.dungeons;
 
+import com.runecraft.osrs.content.skilling.AgilityShortcuts;
 import com.runecraft.osrs.world.StructureDef;
 
 import java.util.ArrayList;
@@ -43,7 +44,8 @@ public final class Dungeons {
     }
 
     /** One dungeon. */
-    public record Dungeon(String id, String name, StructureDef structure, List<Entrance> entrances, List<Camp> camps) {
+    public record Dungeon(String id, String name, StructureDef structure, List<Entrance> entrances, List<Camp> camps,
+                          List<AgilityShortcuts.BlockEnds> shortcuts) {
     }
 
     /** An Abyss rift: using it takes the player to that rune altar (a {@code Landmark} name). */
@@ -65,6 +67,7 @@ public final class Dungeons {
             list.addAll(DungeonsEast.all());
             list.addAll(DungeonsZeah.all());
             list.addAll(DungeonsLairs.all());
+            list.addAll(DungeonsAgility.all());
             list.add(PuroPuro.dungeon());
             all = Collections.unmodifiableList(list);
         }
@@ -83,6 +86,15 @@ public final class Dungeons {
         List<Camp> out = new ArrayList<>();
         for (Dungeon d : all()) {
             out.addAll(d.camps());
+        }
+        return out;
+    }
+
+    /** The ends of every Agility shortcut carved into a dungeon. */
+    public static List<AgilityShortcuts.BlockEnds> shortcutEnds() {
+        List<AgilityShortcuts.BlockEnds> out = new ArrayList<>();
+        for (Dungeon d : all()) {
+            out.addAll(d.shortcuts());
         }
         return out;
     }

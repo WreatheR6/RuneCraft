@@ -406,12 +406,14 @@ public final class MinigameItems {
 
     // ------------------------------------------------------------------ Brimhaven Agility Arena
     private static void brimhaven(ItemSink items) {
-        simple(items, "agility_arena_ticket", "Agility arena ticket", "note", 0xE0A040, 1, "Exchange with Pirate Jackie the Fruit.");
+        simple(items, "agility_arena_ticket", "Agility arena ticket", "note", 0xE0A040, 1,
+                "Exchange with Pirate Jackie the Fruit for Agility experience.");
+        simple(items, "brimhaven_voucher", "Brimhaven voucher", "note", 0x6AB04A, 1, "Exchange with Pirate Jackie the Fruit for rewards.");
         // Worn in the hands slot (systems module's Jewellery); SIMPLE so it can't be wielded, HEAD only feeds tooltips.
         items.add("pirates_hook", "Pirate's hook", Kind.SIMPLE, "hook", 0xA0A0A0).value(1).stack(1)
                 .equipment(new EquipmentDef(Slot.HEAD, s(0, 0, 0, 0, 0, 1, 5, 3, 0, 0, 0, 0, 0, 0), reqs(), 0, AttackType.CRUSH,
                         WeaponClass.NONE))
-                .examine("Yarr! 800 Agility arena tickets.");
+                .examine("Yarr! 800 Brimhaven vouchers.");
     }
 
     // ------------------------------------------------------------------ Gnome Restaurant

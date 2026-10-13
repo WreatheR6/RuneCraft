@@ -236,6 +236,11 @@ public final class TownMonsters {
                 List.of(Loot.of("coins", 200, 300, 70), Loot.of("death_rune", 2, 2, 8), Loot.of("blood_rune", 1, 1, 6),
                         Loot.of("fire_orb", 1, 1, 4), Loot.of("diamond", 1, 1, 2), Loot.of("gold_ore", 1, 1, 4),
                         Loot.of("jug_of_wine", 1, 1, 6))));
+        // Cave goblins of Dorgesh-Kaan (the dungeons module's creature): 36 Thieving, 40 XP; coins loose (no pouch) with
+        // iron ore, tinderboxes and swamp tar (their goblin food and lanterns are not in the game; weights approx.).
+        PICKPOCKETS.add(new Pickpocket("cave_goblin", "Cave goblin", 36, 40.0, 100, 240, 1, List.of(),
+                List.of(Loot.of("coins", 11, 48, 20), Loot.of("iron_ore", 1, 1, 4), Loot.of("tinderbox", 1, 1, 3),
+                        Loot.of("swamp_tar", 1, 1, 3))));
         PICKPOCKETS.add(new Pickpocket("tzhaar_hur_citizen", "TzHaar-Hur", 90, 103.4, 40, 200, 4, List.of(),
                 List.of(Loot.of("tokkul", 3, 14, 70), Loot.of("uncut_sapphire", 1, 1, 6), Loot.of("uncut_emerald", 1, 1, 4),
                         Loot.of("uncut_ruby", 1, 1, 2), Loot.of("uncut_diamond", 1, 1, 1))));
