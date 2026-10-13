@@ -127,6 +127,11 @@ Recurring conflict spots:
   - Awakened DT2 bosses (`BossVariant`, awakener's orbs, separate KC, blood ornament kit) and Doom of Mokhaiotl delves with per-level loot; CAs 449 → 463 tracked.
   - GotR Rewards Guardian searches, polyelemental stones, portal talismans; Volcanic Mine vents/chambers, lava beasts, noted shop ores; Motherlode ore rolled when mined, 64 upper veins, inner ring; ancient brew/mix, magic essence/mix; calquat kegs.
 
+- **Session 2, round 6: boss mechanics, dungeon completion, Last Man Standing:**
+  - Doom of Mokhaiotl beam/melee punish, grubs, shield and burrow phases, volatile earth; delve runs persisted (`runecraft_bosses_doom`); CAs 463 → 468. DT2 tablets and quartzes; Vardorvis Str/Def fixed; Demonic Brutus phase 2; gorilla prayer name tags.
+  - Dagannoth Kings fought in their sublevel-6 lair (surface arena removed), circular doors with pet rock, door-supports, Lighthouse exit; deep rooms (< y 34) no longer raise a seabed shelf (`TerrainAnchors.DEEP_UNDERGROUND_BELOW`); Kruk's western hordes; Ape Atoll falling rocks and traps.
+  - Last Man Standing (`Minigame.LAST_MAN_STANDING`): builds, loadouts, chest tables, fog, keys, safe deaths with stash (`runecraft_minigames_lms`), points/rank, reward shop, ring of wealth (i) and magic shortbow (i) scrolls; `CombatHandler.pvpOverride` gives Fight Pit and Castle Wars ranged/magic PvP.
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
@@ -134,7 +139,8 @@ Recurring conflict spots:
   - Rewards not wired (feature missing): cannon capacity, instance fees, ecumenical key rate, DHCB (b)/(t), cosmetic slayer helms, bracelet recharge, extra Jad/Zuk slayer kills.
 - **Minigames:**
   - Not built: Last Man Standing, Emir's Arena.
-  - Fight Pit PvP is melee only. Ket-Rak healer counts guessed; JalRek-Jad metamorphosis is only a flag.
+  - LMS: competitive starts at 4 players, no High Stakes, no per-build prayer limits, `lms_*` copies lack specs (map `lms_` → base in `SpecialAttacks.of`).
+  - Ket-Rak healer counts guessed; JalRek-Jad metamorphosis is only a flag.
   - Temple Trekking: event weights guessed, safe instead of dangerous, no boat event, tomes give XP directly.
   - Sorceress's Garden: layouts are approximations, elementals see through hedges, Rocky pet never rolled.
   - Shades of Mort'ton: diary bonuses, serums, Dampe coffins, flamtaer bag storage; the dungeons-module Shade Catacombs has no key doors or Urium room.
