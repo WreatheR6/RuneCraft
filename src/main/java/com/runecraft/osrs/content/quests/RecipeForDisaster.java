@@ -64,12 +64,12 @@ final class RecipeForDisaster {
 
         b.quest("recipe_for_disaster", "Recipe for Disaster", Difficulty.GRANDMASTER, 10)
                 .reqQuest("COOKS_ASSISTANT").req(Skill.COOKING, 10)
-                .xp(Skill.COOKING, 20000).xp(Skill.HITPOINTS, 20000)
+                .xp(Skill.HERBLORE, 20000) // approx: OSRS gives a 20,000 XP lamp (any skill above 50) for defeating the Culinaromancer
                 .unlock("The Culinaromancer's chest: food and RFD gloves, up to Barrows gloves")
                 .stage("I can start this quest by speaking to the Gypsy in Lumbridge Castle's dining room. (Requires Cook's Assistant, 10 Cooking.)")
                 .talk("rfd_gypsy").say("The Duke is holding a banquet for the Secret Council of Gielinor, and the Cook is in a terrible state. He needs ingredients!")
                 .stage("Another Cook's Quest: the Cook needs a bucket of milk, an egg and a pot of flour for the banquet.")
-                .talk("rfd_gypsy").take("minecraft:milk_bucket", "minecraft:egg", "pot_of_flour").grantXp(Skill.COOKING, 1000)
+                .talk("rfd_gypsy").take("minecraft:milk_bucket", "minecraft:egg", "pot_of_flour") // Another Cook's Quest: no XP in OSRS
                 .say("* The banquet begins... and a sinister chef appears in a puff of smoke! It's the Culinaromancer!",
                         "@Culinaromancer: Fools! You'll never taste my cooking again! *He freezes the council in time.*",
                         "I have slowed time to stop him. Free each council member by cooking their favourite dish!")
@@ -86,7 +86,7 @@ final class RecipeForDisaster {
                 .say("Slop of compromise! *The goblin generals stop arguing long enough to be freed.*")
                 .missing("Goblins want slop! Spicy slop with cake in it!")
                 .talk("pirate_pete").stay().unlessFlag("rfd_pete").reqSkill(Skill.COOKING, 31).take("raw_salmon:2").flag("rfd_pete")
-                .grantXp(Skill.COOKING, 1000).grantXp(Skill.FISHING, 1000).grantXp(Skill.CRAFTING, 1000)
+                .grantXp(Skill.COOKING, 1000).grantXp(Skill.FISHING, 1000).grantXp(Skill.CRAFTING, 1000).grantXp(Skill.SMITHING, 1000)
                 .say("Fishcake! Arr, that's what I was missin'. *Pirate Pete is freed.*")
                 .missing("Arr, a fishcake. Bring me two raw salmon and I'll show ye how.")
                 .talk("lumbridge_guide").stay().unlessFlag("rfd_guide").reqSkill(Skill.COOKING, 40)
@@ -99,7 +99,7 @@ final class RecipeForDisaster {
                 .say("Spicy stew! The darkness... it's so spicy... *Evil Dave is freed. He seems even more evil.*")
                 .missing("Bring me the spiciest stew: four spices and a potato. (Requires 25 Cooking, Gertrude's Cat, Shadow of the Storm.)")
                 .talk("skrach_uglogwee").stay().unlessFlag("rfd_skrach").reqSkill(Skill.COOKING, 41).reqSkill(Skill.FIREMAKING, 20).reqDone("big_chompy_bird_hunting")
-                .take("raw_bird_meat:2").flag("rfd_skrach").grantXp(Skill.COOKING, 1500).grantXp(Skill.WOODCUTTING, 1500).grantXp(Skill.CRAFTING, 1500)
+                .take("raw_bird_meat:2").flag("rfd_skrach").grantXp(Skill.COOKING, 1500).grantXp(Skill.RANGED, 1500).grantXp(Skill.CRAFTING, 1500)
                 .say("Chompy! Roasted chompy! *Skrach Uglogwee is freed.*")
                 .missing("Skrach want chompy bird. Two. Roasted. (Requires 41 Cooking, 20 Firemaking, Big Chompy Bird Hunting.)")
                 // OSRS: Lost City and Legends' Quest started; 107 QP (the Legends' start requirement) stands in for "started". // approx

@@ -122,7 +122,7 @@ final class KandarinMoreQuests {
         b.npc("observatory_professor", "Observatory professor", "observatory", 0, 2, 0xE8D0C0, 0x3A2A6A, 0x2A1A4A, 0xC0C0C2);
         b.item("observatory_lens", "Observatory lens", "gem", 0xC0E0F0, "A lens for the observatory telescope.");
         b.item("lens_mould", "Lens mould", "mould", 0x8A7A6A, "A mould for making a telescope lens.");
-        b.quest("observatory_quest", "Observatory Quest", Difficulty.NOVICE, 2)
+        b.quest("observatory_quest", "Observatory Quest", Difficulty.INTERMEDIATE, 2)
                 .xp(Skill.CRAFTING, 2250).reward("uncut_sapphire")
                 .stage("I can start this quest by speaking to the Observatory professor south of the Tree Gnome Stronghold.")
                 .talk("observatory_professor").say("Goblins smashed our telescope! I need planks, bronze and molten glass to repair it.")
@@ -166,7 +166,7 @@ final class KandarinMoreQuests {
                 .drops(Drop.always("big_bones")).skin(0x9AA06B, 0x5A2A6A, 0x3A1A4A, 0xC0A040).size(1.0f, 2.6f, 1.4f)
                 .at("gu_tanoth").arena(9, "jungle"));
         b.quest("watchtower", "Watchtower", Difficulty.INTERMEDIATE, 4)
-                .req(Skill.MAGIC, 15).req(Skill.THIEVING, 15).req(Skill.AGILITY, 25).req(Skill.HERBLORE, 14).req(Skill.MINING, 40)
+                .req(Skill.MAGIC, 14).req(Skill.THIEVING, 15).req(Skill.AGILITY, 25).req(Skill.HERBLORE, 14).req(Skill.MINING, 40)
                 .xp(Skill.MAGIC, 15250).reward("coins:5000")
                 .unlock("The Watchtower Teleport spell")
                 .stage("I can start this quest by speaking to the Watchtower Wizard north of Yanille. (Requires 15 Magic, 15 Thieving, 25 Agility, 14 Herblore, 40 Mining.)")

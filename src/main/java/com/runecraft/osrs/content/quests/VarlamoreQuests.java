@@ -89,7 +89,7 @@ final class VarlamoreQuests {
         b.boss(moon("quest_blood_moon", "Blood Moon", AttackType.SLASH, Special.LIFESTEAL, 0x6A1A1A, 0xC02020));
         b.boss(moon("quest_blue_moon", "Blue Moon", AttackType.CRUSH, Special.FREEZE, 0x1A2A6A, 0x40A0E0));
         b.boss(moon("quest_eclipse_moon", "Eclipse Moon", AttackType.STAB, Special.BLINK, 0x2A2A2A, 0xE0C040));
-        b.quest("perilous_moons", "Perilous Moons", Difficulty.EXPERIENCED, 2)
+        b.quest("perilous_moons", "Perilous Moons", Difficulty.MASTER, 2)
                 .reqQuest("twilights_promise")
                 .req(Skill.SLAYER, 48).req(Skill.HUNTER, 20).req(Skill.FISHING, 20).req(Skill.RUNECRAFT, 20).req(Skill.CONSTRUCTION, 10)
                 .xp(Skill.SLAYER, 40000).xp(Skill.RUNECRAFT, 5000).xp(Skill.HUNTER, 5000).xp(Skill.FISHING, 5000) // approximate
@@ -229,7 +229,7 @@ final class VarlamoreQuests {
         Cast.npc(b, "quest_egg_collector", "Egg collector", "zeah_hunter_guild", 3, -3, Cast.TAN, 0xE0D0A0);
         b.items(s -> s.add("quest_quetzal_egg", "Quetzal egg", Kind.SIMPLE, "pot_item", 0xE0E0C0).value(0)
                 .examine("A large speckled egg. Handle with care."));
-        b.quest("scrambled", "Scrambled!", Difficulty.NOVICE, 1)
+        b.quest("scrambled", "Scrambled!", Difficulty.INTERMEDIATE, 1)
                 .req(Skill.CONSTRUCTION, 38).req(Skill.COOKING, 36).req(Skill.SMITHING, 35)
                 .xp(Skill.CONSTRUCTION, 5000).xp(Skill.COOKING, 5000).xp(Skill.SMITHING, 5000) // OSRS (current quest XP rewards)
                 .reqQuest("children_of_the_sun")
@@ -243,7 +243,7 @@ final class VarlamoreQuests {
 
     private static void shadowsOfCustodia(QuestBook b) {
         Cast.npc(b, "quest_custodia_warden", "Custodia warden", "quest_custodia_pass", 0, 2, Cast.BROWN, 0x3A4A3A);
-        b.quest("shadows_of_custodia", "Shadows of Custodia", Difficulty.INTERMEDIATE, 2)
+        b.quest("shadows_of_custodia", "Shadows of Custodia", Difficulty.EXPERIENCED, 2)
                 .reqQuest("children_of_the_sun")
                 .req(Skill.SLAYER, 54).req(Skill.FISHING, 45).req(Skill.CONSTRUCTION, 41).req(Skill.HUNTER, 36)
                 .xp(Skill.SLAYER, 10000).xp(Skill.HUNTER, 4000).xp(Skill.FISHING, 3000).xp(Skill.CONSTRUCTION, 3000) // OSRS (current quest XP rewards)

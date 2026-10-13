@@ -29,7 +29,7 @@ class QuestWikiDataTest {
             {"DEMON_SLAYER", 3}, {"dragon_slayer_i", 2}, {"black_knights_fortress", 3}, {"ernest_the_chicken", 4},
             {"goblin_diplomacy", 5}, {"pirates_treasure", 2}, {"prince_ali_rescue", 3}, {"the_knights_sword", 1},
             {"shield_of_arrav", 1}, {"x_marks_the_spot", 1}, {"below_ice_mountain", 1}, {"misthalin_mystery", 1},
-            {"the_corsair_curse", 2}, {"lost_city", 3}, {"waterfall_quest", 1}, {"merlins_crystal", 6}, {"holy_grail", 2},
+            {"the_corsair_curse", 2}, {"learning_the_ropes", 1}, {"lost_city", 3}, {"waterfall_quest", 1}, {"merlins_crystal", 6}, {"holy_grail", 2},
             {"family_crest", 1}, {"heroes_quest", 1}, {"sheep_herder", 4}, {"plague_city", 1}, {"biohazard", 3},
             {"fight_arena", 2}, {"hazeel_cult", 1}, {"clock_tower", 1}, {"witchs_house", 4}, {"tree_gnome_village", 2},
             {"the_grand_tree", 5}, {"monkey_madness_i", 3}, {"jungle_potion", 1}, {"shilo_village", 2}, {"legends_quest", 4},
@@ -88,7 +88,7 @@ class QuestWikiDataTest {
             assertTrue(ids.add(id), "duplicate " + id);
             total += (Integer) row[1];
         }
-        assertEquals(340, total);
+        assertEquals(341, total);
         // Nothing outside the wiki list (the legacy Barrows/Fight Caves entries) gives quest points.
         for (QuestInfo q : ContentRegistry.quests()) {
             assertTrue(ids.contains(q.questId()) || q.questPoints() == 0, q.questId() + " is not an OSRS quest");
@@ -103,15 +103,17 @@ class QuestWikiDataTest {
 
     @Test
     void correctedRequirements() {
-        assertEquals(15, def("watchtower").requirements().get(Skill.MAGIC));
+        assertEquals(14, def("watchtower").requirements().get(Skill.MAGIC));
         assertFalse(def("while_guthix_sleeps").requirements().containsKey(Skill.DEFENCE));
         assertTrue(def("while_guthix_sleeps").questRequirements().containsAll(List.of("fight_arena", "the_hand_in_the_sand",
                 "temple_of_the_eye", "a_tail_of_two_cats", "nature_spirit")));
         assertFalse(def("while_guthix_sleeps").questRequirements().contains("legends_quest"));
-        assertEquals(42, def("what_lies_below").requirements().get(Skill.MINING));
+        // 42 Mining is only for the optional Tunnel of Chaos route.
+        assertEquals(Map.of(Skill.RUNECRAFT, 35), def("what_lies_below").requirements());
         assertEquals(Map.of(Skill.SMITHING, 55, Skill.HUNTER, 52), def("defender_of_varrock").requirements());
         assertTrue(def("throne_of_miscellania").requirements().isEmpty(), "Throne needs any one of four skills");
-        assertEquals(30, def("tai_bwo_wannai_trio").requirements().get(Skill.FIREMAKING));
+        // 30 Firemaking is only recommended (OSRS Wiki).
+        assertFalse(def("tai_bwo_wannai_trio").requirements().containsKey(Skill.FIREMAKING));
         assertEquals(60, def("the_fremennik_exiles").requirements().get(Skill.MINING));
         assertEquals(Map.of(Skill.SLAYER, 54, Skill.FISHING, 45, Skill.CONSTRUCTION, 41, Skill.HUNTER, 36),
                 def("shadows_of_custodia").requirements());

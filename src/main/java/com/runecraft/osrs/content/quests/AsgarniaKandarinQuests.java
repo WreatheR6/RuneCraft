@@ -80,7 +80,7 @@ final class AsgarniaKandarinQuests {
                 .attack(AttackDef.of("root_snare", AttackType.CRUSH, 6, 7, 3).special(Special.FREEZE, 4)
                         .telegraph(2, "Roots burst from the ground!").particle("minecraft:composter"))
                 .drops(Drop.always("logs")).size(1.0f, 2.4f, 1.0f).at("entrana").arena(10, "jungle"));
-        b.quest("lost_city", "Lost City", Difficulty.EXPERIENCED, 3)
+        b.quest("lost_city", "Lost City", Difficulty.INTERMEDIATE, 3)
                 .req(Skill.CRAFTING, 31).req(Skill.WOODCUTTING, 36)
                 .unlock("Access to Zanaris")
                 .unlock("Ability to wield dragon longswords and dragon daggers")
@@ -213,7 +213,7 @@ final class AsgarniaKandarinQuests {
                 .requiresWeapon("excalibur")
                 .drops(Drop.always("big_bones")).skin(0xE0B898, 0x1A1A1A, 0x1A1A1A, 0x2A2A2A)
                 .size(0.9f, 2.4f, 2.0f).at("fisher_realm").arena(10, "crypt"));
-        b.quest("holy_grail", "Holy Grail", Difficulty.EXPERIENCED, 2)
+        b.quest("holy_grail", "Holy Grail", Difficulty.INTERMEDIATE, 2)
                 .reqQuest("merlins_crystal").req(Skill.ATTACK, 20).xp(Skill.PRAYER, 11000).xp(Skill.DEFENCE, 15300)
                 .stage("I can start this quest by speaking to King Arthur in Camelot. (Requires Merlin's Crystal, 20 Attack.)")
                 .talk("king_arthur").say("Now that Merlin is free, I wish to send my knights on a quest for the Holy Grail. Will you go too?")
@@ -295,10 +295,10 @@ final class AsgarniaKandarinQuests {
                 .skin(0xFF6A1A, 0xFFA040, 0xC03A1A, 0xFFD040).size(0.6f, 0.9f, 1.0f));
         b.quest("heroes_quest", "Heroes' Quest", Difficulty.EXPERIENCED, 1)
                 .qp(55).req(Skill.COOKING, 53).req(Skill.FISHING, 53).req(Skill.HERBLORE, 25).req(Skill.MINING, 50)
-                .reqQuest("shield_of_arrav", "lost_city", "merlins_crystal", "dragon_slayer_i", "DRUIDIC_RITUAL")
+                .reqQuest("shield_of_arrav", "lost_city", "merlins_crystal", "dragon_slayer_i")
                 .xp(Skill.ATTACK, 3075).xp(Skill.DEFENCE, 3075).xp(Skill.STRENGTH, 3075).xp(Skill.HITPOINTS, 3075)
                 .xp(Skill.RANGED, 2075).xp(Skill.FISHING, 2725).xp(Skill.COOKING, 2825).xp(Skill.WOODCUTTING, 1575)
-                .xp(Skill.FIREMAKING, 1575).xp(Skill.SMITHING, 2257).xp(Skill.MINING, 2575).xp(Skill.HERBLORE, 1325)
+                .xp(Skill.FIREMAKING, 1575).xp(Skill.SMITHING, 2275).xp(Skill.MINING, 2575).xp(Skill.HERBLORE, 1325)
                 .unlock("Access to the Heroes' Guild").unlock("Ability to wield the dragon battleaxe")
                 .stage("I can start this quest by speaking to Achietties outside the Heroes' Guild in Burthorpe. (Requires 55 quest points.)")
                 .talk("achietties").say("To join the Heroes' Guild you must bring me three items: a feather of an Entranan firebird, a master thieves' armband and a cooked lava eel.")
@@ -434,7 +434,7 @@ final class AsgarniaKandarinQuests {
                 .defenceBonus(80, 80, 80, 0, 80)
                 .attack(AttackDef.of("slash", AttackType.SLASH, 26, 2.5, 10))
                 .drops(Drop.always("bones")).skin(0xD0A880, 0x5A1A1A, 0x2A2A2A, 0x1A1A1A).size(0.9f, 2.4f, 1.2f).at("fight_arena").arena(10, "sand"));
-        b.quest("fight_arena", "Fight Arena", Difficulty.EXPERIENCED, 2)
+        b.quest("fight_arena", "Fight Arena", Difficulty.INTERMEDIATE, 2)
                 .xp(Skill.ATTACK, 12175).xp(Skill.THIEVING, 2175).reward("coins:1000")
                 .stage("I can start this quest by speaking to Lady Servil, south-east of the Fight Arena.")
                 .talk("lady_servil").say("General Khazard has captured my husband and son! He makes them fight for sport in his arena. Please save them!")

@@ -78,7 +78,7 @@ final class LateQuestsB {
                 .attack(AttackDef.of("mandibles", AttackType.STAB, 20, 3, 6).special(Special.POISON, 8))
                 .attack(AttackDef.of("swarm", AttackType.RANGED, 12, 8, 3).special(Special.AOE, 4).telegraph(2, "The giant scarab summons a swarm!"))
                 .drops(Drop.always("bones")).size(1.6f, 1.2f, 1.0f).at("sophanem_dungeon").arena(10, "sand"));
-        b.quest("contact", "Contact!", Difficulty.MASTER, 1)
+        b.quest("contact", "Contact!", Difficulty.EXPERIENCED, 1)
                 .reqQuest("prince_ali_rescue", "icthlarins_little_helper")
                 .xp(Skill.THIEVING, 7000).xp(Skill.RANGED, 7000).reward("keris")
                 .stage("I can start this quest by speaking to the High Priest in Sophanem. (Requires Prince Ali Rescue, Icthlarin's Little Helper.)")
@@ -164,7 +164,7 @@ final class LateQuestsB {
         // sacred_oil is in CommonItems (also made and used for pyre logs by the minigames module).
         b.quest("shades_of_mortton", "Shades of Mort'ton", Difficulty.INTERMEDIATE, 3)
                 .reqQuest("priest_in_peril").req(Skill.CRAFTING, 20).req(Skill.HERBLORE, 15).req(Skill.FIREMAKING, 5)
-                .xp(Skill.CRAFTING, 2000).xp(Skill.HERBLORE, 2000).xp(Skill.HITPOINTS, 2000)
+                .xp(Skill.CRAFTING, 2000).xp(Skill.HERBLORE, 2000)
                 .unlock("The Mort'ton temple and shade burning")
                 .stage("I can start this quest by speaking to Razmire Keelgan in Mort'ton. (Requires Priest in Peril, 20 Crafting, 15 Herblore, 5 Firemaking.)")
                 .talk("razmire_keelgan").say("The afflicted plague has struck Mort'ton, and shades walk the streets. The temple's flame must be relit.")
@@ -214,14 +214,14 @@ final class LateQuestsB {
                 .drops(Drop.always("bones")).size(1.0f, 2.4f, 1.0f).at("kebos_lowlands").arena(12, "void"));
 
         b.quest("the_depths_of_despair", "The Depths of Despair", Difficulty.INTERMEDIATE, 1)
-                .reqQuest("client_of_kourend").req(Skill.AGILITY, 18).xp(Skill.AGILITY, 1500).xp(Skill.HITPOINTS, 1500)
+                .reqQuest("client_of_kourend").req(Skill.AGILITY, 18).xp(Skill.AGILITY, 1500)
                 .stage("I can start this quest by speaking to Lord Kandur Hosidius in Hosidius. (Requires Client of Kourend, 18 Agility.)")
                 .talk("lord_kandur_hosidius").say("An ancient Hosidius heir, Lady Arceuus? No... a relic of our house was lost in the Crabclaw Caves. Find it.")
                 .stage("I should search for the lost Hosidius relic beneath Hosidius.")
                 .reach("hosidius", 10).say("* In the caves beneath Hosidius you find the relic: the Book of the Dead's lost pages.")
                 .stage("I should return to Lord Kandur Hosidius.")
                 .talk("lord_kandur_hosidius").say("The relic is home! Hosidius is grateful.");
-        b.quest("the_queen_of_thieves", "The Queen of Thieves", Difficulty.NOVICE, 1)
+        b.quest("the_queen_of_thieves", "The Queen of Thieves", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("client_of_kourend").req(Skill.THIEVING, 20).xp(Skill.THIEVING, 2000)
                 .stage("I can start this quest by speaking to Lady Shauna Piscarilius in Port Piscarilius. (Requires Client of Kourend, 20 Thieving.)")
                 .talk("lady_shauna_piscarilius").say("Councillor Hughes is corrupt, and only a thief can prove it. The Queen of Thieves runs the Piscarilius underworld. Help her, and she'll help us.")
@@ -229,16 +229,16 @@ final class LateQuestsB {
                 .reach("great_kourend", 8).say("* You sneak into Hughes's house and copy his ledger: proof of bribery!")
                 .stage("I should take the evidence to Lady Shauna.")
                 .talk("lady_shauna_piscarilius").say("Hughes is finished! The Queen of Thieves sends her regards. So do I.");
-        b.quest("tale_of_the_righteous", "Tale of the Righteous", Difficulty.NOVICE, 1)
+        b.quest("tale_of_the_righteous", "Tale of the Righteous", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("client_of_kourend").req(Skill.STRENGTH, 16).req(Skill.MINING, 10)
-                .xp(Skill.STRENGTH, 8000).xp(Skill.MINING, 500)
+                .reward("coins:8000") // OSRS: no XP reward
                 .stage("I can start this quest by speaking to Lord Shiro Shayzien in Shayzien. (Requires Client of Kourend, 16 Strength, 10 Mining.)")
                 .talk("lord_shiro_shayzien").say("A historian discovered that a lizardman corrupted by the old shrine threatens our soldiers. Investigate Lizardman Canyon.")
                 .stage("I must defeat the corrupt lizardman in Lizardman Canyon.")
                 .kill("corrupt_lizardman").say("* The corrupt lizardman falls. The shrine's dark influence fades.")
                 .stage("I should report to Lord Shiro Shayzien.")
                 .talk("lord_shiro_shayzien").say("Shayzien is safer for your bravery. Thank you.");
-        b.quest("the_forsaken_tower", "The Forsaken Tower", Difficulty.NOVICE, 1)
+        b.quest("the_forsaken_tower", "The Forsaken Tower", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("client_of_kourend").xp(Skill.MINING, 500).xp(Skill.SMITHING, 500)
                 .stage("I can start this quest by speaking to Lord Kandur Lovakengj in Lovakengj. (Requires Client of Kourend.)")
                 .talk("lord_kandur_lovakengj").give("lovakengj_plans").say("The old Forsaken Tower could power our forges again. Get its machinery working: here are the plans.")
@@ -246,7 +246,7 @@ final class LateQuestsB {
                 .reach("forsaken_tower", 8).take("lovakengj_plans", "coal:4", "steel_bar:2").say("* You fix the furnace, solve the power puzzle and the tower hums to life.")
                 .stage("I should report to Lord Kandur Lovakengj.")
                 .talk("lord_kandur_lovakengj").say("The tower's power flows to our forges! Lovakengj thanks you.");
-        b.quest("the_ascent_of_arceuus", "The Ascent of Arceuus", Difficulty.NOVICE, 1)
+        b.quest("the_ascent_of_arceuus", "The Ascent of Arceuus", Difficulty.INTERMEDIATE, 1)
                 .xp(Skill.HUNTER, 1500).xp(Skill.RUNECRAFT, 500) // OSRS (current quest XP rewards)
                 .reqQuest("client_of_kourend").req(Skill.HUNTER, 12)
                 .stage("I can start this quest by speaking to Lord Trobin Arceuus in Arceuus. (Requires Client of Kourend, 12 Hunter.)")
@@ -256,7 +256,7 @@ final class LateQuestsB {
                 .stage("I should bring the fragments to Lord Trobin.")
                 .talk("lord_trobin_arceuus").take("dark_essence_fragment:10").say("The souls are at rest. Arceuus's magic is safe... for now.");
         b.quest("getting_ahead", "Getting Ahead", Difficulty.INTERMEDIATE, 1)
-                .reqQuest("client_of_kourend").req(Skill.CRAFTING, 30).req(Skill.CONSTRUCTION, 26)
+                .req(Skill.CRAFTING, 30).req(Skill.CONSTRUCTION, 26)
                 .xp(Skill.CRAFTING, 4000).xp(Skill.CONSTRUCTION, 3200)
                 .stage("I can start this quest by speaking to Councillor Andrews in Port Piscarilius, who needs help for the Kebos farmers. (Requires Client of Kourend, 30 Crafting, 26 Construction.)")
                 .talk("councillor_andrews").say("A beast terrorises the farms of Kebos. The farmers want to scare it off with a fake head. Help them build one.")

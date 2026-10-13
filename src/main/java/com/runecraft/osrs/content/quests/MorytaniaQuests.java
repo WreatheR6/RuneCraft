@@ -80,9 +80,9 @@ final class MorytaniaQuests {
         b.npc("filliman_tarlock", "Filliman Tarlock", "mort_myre", 0, 0, 0xC8E8E0, 0x3A6A3A, 0x2A4A2A, 0xE8E8E8);
         b.npc("nature_spirit", "Nature spirit", "nature_grotto", 0, 2, 0xA0E0A0, 0x5AA05A, 0x3A8A3A, 0xD0F0A0);
         b.item("filliman_journal", "Journal", "book", 0x5A6A3A, "Filliman Tarlock's journal.");
-        b.quest("nature_spirit", "Nature Spirit", Difficulty.NOVICE, 2)
+        b.quest("nature_spirit", "Nature Spirit", Difficulty.INTERMEDIATE, 2)
                 .xp(Skill.CRAFTING, 3000).xp(Skill.DEFENCE, 2000).xp(Skill.HITPOINTS, 2000) // OSRS (current quest XP rewards)
-                .reqQuest("priest_in_peril", "RESTLESS_GHOST").req(Skill.CRAFTING, 18)
+                .reqQuest("priest_in_peril", "RESTLESS_GHOST")
                 .reward("silver_sickle_b")
                 .stage("I can start this quest by speaking to Drezel beneath Paterdomus temple. (Requires Priest in Peril, Restless Ghost, 18 Crafting.)")
                 .talk("drezel").say("Filliman Tarlock, a druid, went into the Mort Myre Swamp to fight its evil. I fear for him.")
@@ -209,7 +209,7 @@ final class MorytaniaQuests {
                 .attack(AttackDef.of("soul_blast", AttackType.MAGIC, 12, 8, 3).particle("minecraft:soul"))
                 .drops(Drop.always("bones")).skin(0xC8E8E5, 0x6A7A7A, 0x4A5A5A, 0x9AB0B0).at("abandoned_mine").arena(10, "crypt"));
         b.quest("haunted_mine", "Haunted Mine", Difficulty.EXPERIENCED, 2)
-                .reqQuest("priest_in_peril").req(Skill.AGILITY, 15).req(Skill.CRAFTING, 35)
+                .reqQuest("priest_in_peril").req(Skill.CRAFTING, 35)
                 .xp(Skill.STRENGTH, 22000).reward("salve_shard")
                 .stage("I can start this quest by speaking to the Zealot outside the Abandoned Mine in southern Morytania. (Requires Priest in Peril, 15 Agility, 35 Crafting.)")
                 .talk("zealot").say("The mine is haunted by the ghost of Treus Dayth, the old owner. There are glowing crystals deep inside, if you dare.")
@@ -229,7 +229,7 @@ final class MorytaniaQuests {
         b.quest("cabin_fever", "Cabin Fever", Difficulty.EXPERIENCED, 2)
                 .reqQuest("pirates_treasure", "priest_in_peril").reqQuest("rum_deal")
                 .req(Skill.AGILITY, 42).req(Skill.CRAFTING, 45).req(Skill.SMITHING, 50).req(Skill.RANGED, 40)
-                .xp(Skill.AGILITY, 7000).xp(Skill.CRAFTING, 7000).xp(Skill.SMITHING, 7000).xp(Skill.RANGED, 7000)
+                .xp(Skill.AGILITY, 7000).xp(Skill.CRAFTING, 7000).xp(Skill.SMITHING, 7000)
                 .reward("coins:10000")
                 .stage("I can start this quest by speaking to Bill Teach in Port Phasmatys. (Requires Pirate's Treasure, Priest in Peril and more.)")
                 .talk("bill_teach").travel("mos_le_harmless")
@@ -272,7 +272,7 @@ final class MorytaniaQuests {
     private static void darknessOfHallowvale(QuestBook b) {
         b.npc("safalaan", "Safalaan Hallow", "meiyerditch", 2, 2, 0xD8D8E0, 0x3A5A8A, 0x2A3A5A, 0xE0E0E0);
         b.item("sketch_of_hallowvale", "Sketches", "note", 0xD8D0B8, "Sketches of the old city of Hallowvale.");
-        b.quest("darkness_of_hallowvale", "Darkness of Hallowvale", Difficulty.INTERMEDIATE, 2)
+        b.quest("darkness_of_hallowvale", "Darkness of Hallowvale", Difficulty.EXPERIENCED, 2)
                 .reqQuest("in_search_of_the_myreque").reqQuest("in_aid_of_the_myreque")
                 .req(Skill.CONSTRUCTION, 5).req(Skill.MINING, 20).req(Skill.THIEVING, 22).req(Skill.AGILITY, 26)
                 .req(Skill.CRAFTING, 32).req(Skill.MAGIC, 33).req(Skill.STRENGTH, 40)

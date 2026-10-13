@@ -85,7 +85,7 @@ final class DesertQuests {
         b.boss(BossDef.of("fire_warrior_of_lesarkus", "Fire Warrior of Lesarkus").level(84).stats(59, 70, 80, 70, 1, 1).speed(4)
                 .attack(AttackDef.of("burning_blade", AttackType.SLASH, 9, 2.5, 10).particle("minecraft:flame"))
                 .drops(Drop.always("bones")).skin(0xE06A1A, 0xA02A0A, 0x6A1A0A, 0xFFB040).at("temple_of_ikov").arena(8, "lava"));
-        b.quest("temple_of_ikov", "Temple of Ikov", Difficulty.EXPERIENCED, 1)
+        b.quest("temple_of_ikov", "Temple of Ikov", Difficulty.INTERMEDIATE, 1)
                 .req(Skill.THIEVING, 42).req(Skill.RANGED, 40).xp(Skill.RANGED, 10500).xp(Skill.FLETCHING, 8000)
                 .stage("I can start this quest by speaking to Lucien in the Flying Horse Inn, East Ardougne. (Requires 42 Thieving, 40 Ranged.)")
                 .talk("lucien").say("I need the Staff of Armadyl from the Temple of Ikov. I cannot enter myself... but you can. I'll reward you well.")
@@ -218,7 +218,7 @@ final class DesertQuests {
         b.item("abyssal_incantation", "Abyssal incantation", "note", 0xA02A2A, "A strange incantation to open a rift.");
         b.quest("temple_of_the_eye", "Temple of the Eye", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("RUNE_MYSTERIES").req(Skill.RUNECRAFT, 10).reqQuest("enter_the_abyss")
-                .xp(Skill.RUNECRAFT, 10000)
+                .xp(Skill.RUNECRAFT, 5000) // + 4,210 Runecraft XP earned during the quest
                 .unlock("Access to Guardians of the Rift")
                 .stage("I can start this quest by speaking to Wizard Persten in the Wizards' Tower. (Requires Rune Mysteries, 10 Runecraft.)")
                 .talk("wizard_persten").say("I've found references to a lost temple of runecraft. The Zamorakian mages may know something. Visit the Mage of Zamorak in Varrock.")

@@ -66,7 +66,7 @@ final class KaramjaQuests {
                 .phase(33, "Nazastarool rises a final time as a ghost!", 1.2, false,
                         AttackDef.of("ghost_touch", AttackType.MAGIC, 14, 6, 10).special(Special.DRAIN_PRAYER, 3))
                 .drops(Drop.always("bones")).skin(0x8AA07A, 0x4A5A3A, 0x3A4A2A, 0x2A3A1A).at("rashiliyias_tomb").arena(9, "crypt"));
-        b.quest("shilo_village", "Shilo Village", Difficulty.EXPERIENCED, 2)
+        b.quest("shilo_village", "Shilo Village", Difficulty.INTERMEDIATE, 2)
                 .reqQuest("jungle_potion").req(Skill.CRAFTING, 20).req(Skill.AGILITY, 32).xp(Skill.CRAFTING, 3875)
                 .unlock("Access to Shilo Village")
                 .stage("I can start this quest by speaking to Mosol Rei outside Shilo Village. (Requires Jungle Potion, 20 Crafting, 32 Agility.)")

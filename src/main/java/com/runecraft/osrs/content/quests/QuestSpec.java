@@ -21,7 +21,7 @@ import java.util.Map;
  * is spoken by someone else.
  *
  * <pre>
- * book.quest("lost_city", "Lost City", Quest.Difficulty.EXPERIENCED, 3)
+ * book.quest("lost_city", "Lost City", Quest.Difficulty.INTERMEDIATE, 3)
  *     .req(Skill.CRAFTING, 31).req(Skill.WOODCUTTING, 36)
  *     .stage("Speak to the adventurers camping in Lumbridge Swamp.")
  *         .talk("lc_warrior").say("We're looking for Zanaris.", "> Zanaris?")

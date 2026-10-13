@@ -137,7 +137,7 @@ final class GrandmasterQuests {
                 .xp(Skill.THIEVING, 80000).xp(Skill.FARMING, 75000).xp(Skill.HERBLORE, 75000).xp(Skill.HUNTER, 50000) // OSRS (current quest XP rewards)
                 .qp(180)
                 .req(Skill.THIEVING, 72).req(Skill.MAGIC, 67).req(Skill.AGILITY, 66).req(Skill.FARMING, 65)
-                .req(Skill.HERBLORE, 65).req(Skill.HUNTER, 62)
+                .req(Skill.HERBLORE, 65).req(Skill.HUNTER, 62).req(Skill.FIREMAKING, 49) // 49 Firemaking: sapphire lantern
                 .stage("I can start this quest by speaking to Akrisae at the Temple Knight headquarters in Falador. (Requires 180 quest points and much more.)")
                 .talk("akrisae").say("Lucien seeks the resting place of Guthix himself. The Temple Knights need an agent to infiltrate his followers.")
                 .stage("I should find the Zamorakian Movario's base beneath the Lumbridge Swamp.")
