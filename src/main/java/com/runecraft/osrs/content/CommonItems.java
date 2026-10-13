@@ -46,6 +46,11 @@ public final class CommonItems {
                 .examine("Combine with a necklace of anguish to make a necklace of rupture (84 Crafting).");
         items.add("tormented_synapse", "Tormented synapse", Kind.SIMPLE, "orb", 0xE05020).value(800_000).stack(1)
                 .examine("A twitching synapse from a tormented demon. Its fiery energy could empower a demonbane weapon.");
+        // Construction material also used to repair the Mort'ton temple (minigames); sacred oil, made at the temple's
+        // fire altar and turned into pyre logs (minigames), is also a Shades of Mort'ton quest item (quests).
+        items.add("limestone_brick", "Limestone brick", Kind.SIMPLE, "brick", 0xD8D0B0).value(21);
+        items.add("sacred_oil", "Sacred oil", Kind.POTION, "potion", 0xE0E0A0).value(100).stack(1)
+                .examine("4 doses of sacred oil.");
         CommonEquipment.add(items);
     }
 }

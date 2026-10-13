@@ -113,7 +113,16 @@ public final class MinigameWorld {
             {"tb_brewing_vat", "Brewing vat", "8A6A3A", "machine"},
             // Shades of Mort'ton
             {"funeral_pyre", "Funeral pyre", "6A4A2A", "fire_pyre"},
-            {"shade_chest", "Shade chest", "4A4A6A", "chest"},
+            {"shade_chest", "Bronze chest", "8A5A2A", "chest"},
+            {"shade_chest_steel", "Steel chest", "9A9AA0", "chest"},
+            {"shade_chest_black", "Black chest", "2A2A2A", "chest"},
+            {"shade_chest_silver", "Silver chest", "D0D0E0", "chest"},
+            {"shade_chest_gold", "Gold chest", "E0B030", "chest"},
+            {"shade_door_bronze", "Wooden doors (bronze lock)", "6A4A2A", "portal_door"},
+            {"shade_door_steel", "Wooden doors (steel lock)", "6A4A2A", "portal_door"},
+            {"shade_door_black", "Wooden doors (black lock)", "6A4A2A", "portal_door"},
+            {"shade_door_silver", "Wooden doors (silver lock)", "6A4A2A", "portal_door"},
+            {"shade_door_gold", "Wooden doors (gold lock)", "6A4A2A", "portal_door"},
             // Tithe Farm
             {"tithe_patch", "Tithe patch", "5A3A1A", "soil"},
             {"tithe_water_barrel", "Water barrel", "4080C0", "pot"},
@@ -161,6 +170,13 @@ public final class MinigameWorld {
             // Shared
             {"minigame_exit", "Exit portal", "C0C0FF", "portal_glow"}};
 
+    /**
+     * Mort'ton's town objects beside the catacombs entrance: a funeral pyre, the Flamtaer temple's wall (repairs) and
+     * sacred fire (olive oil to sacred oil), and Razmire's general store (olive oil) and builders' merchant.
+     */
+    public static final List<String> MORTTON_BLOCKS = List.of("funeral_pyre", "flamtaer_temple", "flamtaer_altar",
+            "razmire_general_store", "razmire_builders_merchant");
+
     /** Shelves in the sorceress's house: free beer glasses for the sq'irkjuice. */
     public static final String SORCERESS_SHELVES = "sg_shelves";
 
@@ -180,6 +196,10 @@ public final class MinigameWorld {
         list.add(BlockDef.scripted("pyramid_plunder_artefact_trader", "Simon Templeton's artefact crate", 0xC0A060, "chest"));
         list.add(BlockDef.scripted("rogues_den_jewel_trader", "Brian O'Richard's crate", 0x5A5A60, "chest"));
         list.add(BlockDef.scripted(SORCERESS_SHELVES, "Shelves", 0x8A6A3A, "crate"));
+        list.add(BlockDef.scripted("flamtaer_temple", "Flamtaer temple wall", 0xB0A890, "rock"));
+        list.add(BlockDef.scripted("flamtaer_altar", "Sacred fire", 0xE08030, "fire_brazier"));
+        list.add(BlockDef.scripted("razmire_general_store", "Razmire's general store", 0x8A6A3A, "crate"));
+        list.add(BlockDef.scripted("razmire_builders_merchant", "Razmire's builders' merchant", 0x9A7A4A, "crate"));
         for (String[] b : ARENA_BLOCKS) {
             list.add(BlockDef.scripted(b[0], b[1], Integer.parseInt(b[2], 16), b[3]));
         }
@@ -204,6 +224,7 @@ public final class MinigameWorld {
         map.get(Minigame.ROGUES_DEN.place()).add("rogues_den_jewel_trader");
         map.get(Minigame.TEMPOROSS.place()).add("tempoross_reward_pool");
         map.get(Minigame.SORCERESS_GARDEN.place()).add(SORCERESS_SHELVES);
+        map.get(Minigame.SHADES_OF_MORTTON.place()).addAll(MORTTON_BLOCKS);
         return map;
     }
 
@@ -349,7 +370,9 @@ public final class MinigameWorld {
         }
         naval.add("the_stuff");
         pages.add(new CollectionLogData.Page(c, "Trouble Brewing", naval));
-        pages.add(new CollectionLogData.Page(c, "Shades of Mort'ton", List.of("flamtaer_hammer", "gold_shade_key")));
+        pages.add(new CollectionLogData.Page(c, "Shades of Mort'ton", List.of("amulet_of_the_damned", "flamtaer_bag", "fine_cloth",
+                "bronze_locks", "steel_locks", "black_locks", "silver_locks", "gold_locks", "runescroll_of_swampbark",
+                "runescroll_of_bloodbark", "zealots_helm", "zealots_robe_top", "zealots_robe_bottom", "zealots_boots")));
         pages.add(new CollectionLogData.Page(c, "Tithe Farm", List.of("farmers_strawhat", "farmers_jacket", "farmers_boro_trousers",
                 "farmers_boots", "gricollers_can", "seed_box", "herb_sack")));
         pages.add(new CollectionLogData.Page(c, "Giants' Foundry", List.of("smiths_tunic", "smiths_trousers", "smiths_boots",

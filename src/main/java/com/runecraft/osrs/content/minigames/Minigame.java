@@ -31,7 +31,8 @@ public enum Minigame {
             Skill.COOKING, 29),
     TROUBLE_BREWING("trouble_brewing", "Trouble Brewing", "mg_mos_le_harmless_brewery", 3810, 3022, 3810, 3022, PlaceDef.Style.RUINS, 20, 10,
             Skill.COOKING, 40),
-    SHADES_OF_MORTTON("shades_of_mortton", "Shades of Mort'ton", "mg_mortton", 3500, 3290, 3500, 3290, PlaceDef.Style.RUINS, 0, 1, null, 0),
+    /** Mort'ton (pyres, temple and Razmire's shops by the entrance); the Shade Catacombs are at 3493, 9725 (bronze chests). */
+    SHADES_OF_MORTTON("shades_of_mortton", "Shades of Mort'ton", "mg_mortton", 3493, 9725, 3500, 3290, PlaceDef.Style.RUINS, 0, 1, null, 0),
     TITHE_FARM("tithe_farm", "Tithe Farm", "mg_tithe_farm", 1802, 3501, 1802, 3501, PlaceDef.Style.CAMP, 0, 1, Skill.FARMING, 34),
     GIANTS_FOUNDRY("giants_foundry", "Giants' Foundry", "mg_giants_foundry", 3361, 3149, 3361, 3149, PlaceDef.Style.CAVE, 0, 1, Skill.SMITHING, 15),
     MAHOGANY_HOMES("mahogany_homes", "Mahogany Homes", "mg_mahogany_homes_office", 2989, 3366, 2989, 3366, PlaceDef.Style.TOWN, 0, 1,

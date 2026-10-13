@@ -166,7 +166,7 @@ public final class ConstructionData extends SkillingPart {
 
     @Override
     public void items(ItemSink s) {
-        simple(s, "limestone_brick", "Limestone brick", "brick", 0xD8D0B0, 21);
+        // limestone_brick is in CommonItems (also used by the Mort'ton temple repairs in the minigames module).
         simple(s, "marble_block", "Marble block", "brick", 0xF0F0F0, 325000);
         simple(s, "gold_leaf", "Gold leaf", "leaf", 0xE8C030, 130000);
         simple(s, "magic_stone", "Magic stone", "brick", 0x9070E0, 975000);

@@ -459,24 +459,8 @@ public final class MinigameItems {
     }
 
     // ------------------------------------------------------------------ Shades of Mort'ton
-    /** Shade tiers: id prefix, name, level, prayer xp when the remains are burned. */
-    public static final Object[][] SHADES = {
-            {"loar", "Loar", 40, 25.0}, {"phrin", "Phrin", 60, 46.5}, {"riyl", "Riyl", 80, 59.5},
-            {"asyn", "Asyn", 100, 82.5}, {"fiyr", "Fiyr", 120, 100.5}};
-
     private static void shades(ItemSink items) {
-        int[] colors = {0x8A8A7A, 0x7A7A8A, 0x6A6A8A, 0x5A5A7A, 0x4A4A6A};
-        for (int i = 0; i < SHADES.length; i++) {
-            Object[] sd = SHADES[i];
-            items.add(sd[0] + "_remains", sd[1] + " remains", Kind.SIMPLE, "bones", colors[i]).value(50 * (i + 1))
-                    .examine("Burn these on a funeral pyre.");
-        }
-        for (String k : new String[]{"bronze", "steel", "black", "silver", "gold"}) {
-            single(items, k + "_shade_key", Character.toUpperCase(k.charAt(0)) + k.substring(1) + " key", "key",
-                    k.equals("gold") ? 0xE0B030 : k.equals("silver") ? 0xD0D0E0 : k.equals("black") ? 0x2A2A2A
-                            : k.equals("steel") ? 0x9A9AA0 : 0x8A5A2A, 1, "Opens a chest in the Shade Catacombs.");
-        }
-        single(items, "flamtaer_hammer", "Flamtaer hammer", "hammer", 0x8A6A4A, 1, "Repairs the Mort'ton temple faster.");
+        ShadesOfMortton.items(items);
     }
 
     // ------------------------------------------------------------------ Tithe Farm

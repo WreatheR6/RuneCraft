@@ -89,8 +89,9 @@ public final class MinigamesHooks implements ModuleHooks {
         talk("mg_guardian_mummy", "Guardian mummy", "You may plunder the pyramid for five minutes. Urns, chests and the sarcophagus "
                 + "hold treasure... and the Pharaoh's sceptre itself, for the lucky.");
         talk("mg_murphy", "Murphy", "The Fishing Trawler sails soon. Patch leaks, bail water and keep her afloat for the net to fill.");
-        talk("mg_mortton_priest", "Ulsquire Shauncy", "The shades plague the catacombs. Burn their remains on a funeral pyre to lay "
-                + "them to rest, and their keys may open the old chests.");
+        talk("mg_mortton_priest", "Ulsquire Shauncy", "The shades plague Mort'ton. Repair the temple and slay the shades to earn "
+                + "sanctity, bless olive oil in the sacred fire and coat logs with it. Burn shade remains on a pyre of those logs: "
+                + "the spirits leave keys that open the chests in the catacombs.");
 
         // Arena objects.
         for (String[] b : MinigameWorld.ARENA_BLOCKS) {
@@ -99,6 +100,9 @@ public final class MinigamesHooks implements ModuleHooks {
             }
             BlockHooks.register(b[0], (player, pos, state) -> MinigameManager.onBlock(player, b[0], pos));
         }
+
+        // Mort'ton's town objects (the funeral pyre too, which used to live in the arena) are handled outside the instance.
+        ShadesService.register();
 
         GameEvents.onKill((player, entity, stats) -> MinigameManager.onKill(player, entity));
         // Champions' Challenge: Larxus, the champions' rules and the 1/5,000 scrolls for kin whose tables lack one.

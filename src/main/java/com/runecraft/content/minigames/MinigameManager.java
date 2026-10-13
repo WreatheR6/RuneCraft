@@ -219,6 +219,9 @@ public final class MinigameManager {
         if (game == Minigame.TEARS_OF_GUTHIX) {
             return com.runecraft.content.minigames.games.TearsOfGuthixSession.requirement(player);
         }
+        if (game == Minigame.SHADES_OF_MORTTON) {
+            return ShadesSession.requirement(player);
+        }
         if (game == Minigame.SORCERESS_GARDEN) {
             return com.runecraft.content.minigames.games.SorceressGardenSession.requirement(player);
         }

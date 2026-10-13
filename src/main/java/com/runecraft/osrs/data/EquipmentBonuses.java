@@ -1226,6 +1226,7 @@ public final class EquipmentBonuses {
         twoH("iron_spear", 4, 8, 8, 8, 0, 0,  1, 1, 0, 0, 0,  10, 0, 0, 0);
         twoH("steel_spear", 4, 12, 12, 12, 0, 0,  1, 1, 0, 0, 0,  12, 0, 0, 0);
         twoH("mithril_spear", 4, 17, 17, 17, 0, 0,  1, 1, 0, 0, 0,  18, 0, 0, 0);
+        twoH("black_spear", 4, 15, 15, 15, 0, 0,  1, 1, 0, 0, 0,  16, 0, 0, 0); // minigames module (Shade Catacombs chests)
         twoH("adamant_spear", 4, 24, 24, 24, 0, 0,  1, 1, 0, 0, 0,  28, 0, 0, 0);
         twoH("bronze_halberd", 7, 7, 8, 0, -4, 0,  -1, 1, 2, 0, 0,  8, 0, 0, 0);
         twoH("iron_halberd", 7, 9, 12, 0, -4, 0,  -1, 1, 2, 0, 0,  12, 0, 0, 0);
