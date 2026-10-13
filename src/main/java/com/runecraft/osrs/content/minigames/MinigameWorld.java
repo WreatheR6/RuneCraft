@@ -267,6 +267,8 @@ public final class MinigameWorld {
         int tz = 0x6A2A10;
         list.add(NpcDef.of("mg_tzhaar_mej_jal", "TzHaar-Mej-Jal", Minigame.FIGHT_CAVES.place(), 2, 2, tz, 0x4A1808, 0x3A1008, 0xFF8030));
         list.add(NpcDef.of("mg_tzhaar_hur_tel", "TzHaar-Hur-Tel", Minigame.FIGHT_CAVES.place(), -2, 2, tz, 0x5A2010, 0x3A1008, 0xFFA040));
+        list.add(NpcDef.of("mg_tzhaar_mej_kah", "TzHaar-Mej-Kah", Minigame.FIGHT_PITS.place(), 4, -2, tz, 0x4A1808, 0x3A1008,
+                0xFF9040));
         list.add(NpcDef.of("mg_tzhaar_ket_keh", "TzHaar-Ket-Keh", Minigame.FIGHT_CAVES.place(), 0, -2, tz, 0x3A1008, 0x2A0808, 0xFF6020));
         list.add(NpcDef.of("mg_void_knight_squire", "Squire", Minigame.PEST_CONTROL.place(), 2, 2, 0xC8A080, 0x6A6A70, 0x4A4A50, 0xA0A0A8));
         list.add(NpcDef.of("mg_ignisia", "Ignisia", Minigame.WINTERTODT.place(), 2, 2, 0xC8A080, 0xB04020, 0x6A2010, 0xE06020));

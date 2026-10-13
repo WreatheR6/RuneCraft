@@ -80,6 +80,8 @@ public final class MinigamesHooks implements ModuleHooks {
                 + "Survive, and TzTok-Jad himself will face you. The fire cape is the prize.");
         talk("mg_tzhaar_ket_keh", "TzHaar-Ket-Keh", "The Inferno is no place for JalYt. Sacrifice a fire cape and face TzKal-Zuk... "
                 + "if you dare. The infernal cape will be yours if you survive sixty-nine waves.");
+        talk("mg_tzhaar_mej_kah", "TzHaar-Mej-Kah", "The Fight Pit is where JalYt fight each other. Last one standing is champion: "
+                + "tokkul for every fighter beaten and the red skull. Fight Cave creatures join if you are slow, then the gas.");
         talk("mg_ignisia", "Ignisia", "The Wintertodt stirs. Chop bruma roots, fletch them into kindling and feed the braziers. "
                 + "Fix broken braziers with a hammer and keep the pyromancers alive. Earn 500 points for a supply crate.");
         talk("mg_first_mate_deri", "First Mate Deri", "Tempoross brews a storm! Harpoon the harpoonfish, load the cannons, "

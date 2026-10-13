@@ -65,7 +65,9 @@ public enum Minigame {
      * ordinal.
      */
     SORCERESS_GARDEN("sorceress_garden", "Sorceress's Garden", "mg_sorceress_house", SorceressGarden.GARDEN_X,
-            SorceressGarden.GARDEN_Y, SorceressGarden.HOUSE_X, SorceressGarden.HOUSE_Y, PlaceDef.Style.NONE, 0, 1, null, 0);
+            SorceressGarden.GARDEN_Y, SorceressGarden.HOUSE_X, SorceressGarden.HOUSE_Y, PlaceDef.Style.NONE, 0, 1, null, 0),
+    /** The TzHaar Fight Pit in Mor Ul Rek (2398, 5151): a safe last-man-standing PvP arena, entered beside the Fight Cave. */
+    FIGHT_PITS("fight_pits", "TzHaar Fight Pit", "mg_tzhaar_city", 2398, 5151, 2832, 3170, PlaceDef.Style.CAVE, 30, 50, null, 0);
 
     private final String id;
     private final String displayName;

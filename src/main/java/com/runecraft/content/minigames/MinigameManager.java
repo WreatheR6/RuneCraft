@@ -271,6 +271,7 @@ public final class MinigameManager {
             case SOUL_WARS -> new com.runecraft.content.minigames.games.SoulWarsSession(id, slot, world, variant);
             case TEARS_OF_GUTHIX -> new com.runecraft.content.minigames.games.TearsOfGuthixSession(id, slot, world, variant);
             case SORCERESS_GARDEN -> new com.runecraft.content.minigames.games.SorceressGardenSession(id, slot, world, variant);
+            case FIGHT_PITS -> new com.runecraft.content.minigames.games.FightPitsSession(id, slot, world, variant);
         };
     }
 
