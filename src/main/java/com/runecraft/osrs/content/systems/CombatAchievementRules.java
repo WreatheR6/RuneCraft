@@ -49,6 +49,8 @@ import java.util.Set;
  *   <li>{@code noprayrestore} (prayer points never went up), {@code onehand} (no two-handed weapon used on the target).</li>
  *   <li>Minigame runs: {@code stage=N} (which challenge or difficulty the run was, e.g. TzHaar-Ket-Rak's challenge number),
  *       {@code flag=NAME} (a condition the minigame itself judged, e.g. an empty inventory throughout).</li>
+ *   <li>{@code flag=NAME} / {@code noflag=NAME} on fights too: something a boss script reported during the fight
+ *       (e.g. the Doom of Mokhaiotl's {@code grub_absorbed}).</li>
  *   <li>{@link Track#WINDOW}: {@code distinct} (different targets) and {@code fromstart} (time from the first fight's
  *       start rather than its kill).</li>
  * </ul>
@@ -336,6 +338,7 @@ public final class CombatAchievementRules {
             case "nospirit" -> r != null && !r.spiritSupplies();
             case "stage" -> compare(m.stage, op, number(v));
             case "flag" -> m.flags.contains(v);
+            case "noflag" -> !m.flags.contains(v);
             case "awakened" -> m.awakened;
             case "delve" -> compare(m.delve, op, number(v));
             case "noprayrestore" -> !m.prayerRestored;
@@ -508,7 +511,12 @@ public final class CombatAchievementRules {
             621;RULE;doom_of_mokhaiotl;1;delve=1 t<0:30
             622;RUN;delve:doom_of_mokhaiotl;1;delve=8 t<10:00
             623;RUN;delve:doom_of_mokhaiotl;1;delve=8 t<7:15
-            616;RUN;delve:doom_of_mokhaiotl;1;delve=8 nodmg=boss,hazard
+            616;RUN;delve:doom_of_mokhaiotl;1;delve=8 nodmg=boss,hazard noflag=grub_absorbed
+            613;RULE;doom_of_mokhaiotl;1;flag=exposed
+            614;RULE;doom_of_mokhaiotl;1;delve>=8 noflag=burrowed
+            615;RUN;delve:doom_of_mokhaiotl;1;delve=8 noflag=grub_absorbed
+            620;RUN;delve:doom_of_mokhaiotl;1;delve=8 noflag=noshield
+            624;RULE;doom_of_mokhaiotl;1;flag=mopping_up
             617;RUN;delve:doom_of_mokhaiotl;1;delve=8 noprayrestore
             618;RUN;delve:doom_of_mokhaiotl;1;delve=8 style=melee onehand
             619;RUN;delve:doom_of_mokhaiotl;1;delve=8 noweapon=DEMONBANE

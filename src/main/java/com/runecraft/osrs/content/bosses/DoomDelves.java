@@ -124,6 +124,138 @@ public final class DoomDelves {
                 doom.defence, doom.magic, doom.ranged, attackSpeed(lvl), max, standardMaxHit(lvl) / 65.0, List.of(), petRate(lvl));
     }
 
+    // ------------------------------------------------------------------ fight mechanics (OSRS Wiki "Doom of Mokhaiotl",
+    // "Demonic larva", "Volatile earth", "Earthen shield", "Acid blood"; timings the wiki doesn't give are approx)
+
+    /** Delve level from which the Doom sprays acid blood, raises its shield (demonbane only) and burrows ("car" phase). */
+    public static final int ACID_FROM = 3;
+    public static final int SHIELD_FROM = 3;
+    public static final int BURROW_FROM = 5;
+    /** Delve level that wipes the acid blood carried over from earlier levels (once only). */
+    public static final int ACID_WIPE_LEVEL = 6;
+    /** The shield phase: 500 shield points, raised at 75% hitpoints or lower after at least two attacks. */
+    public static final int SHIELD_POINTS = 500;
+    public static final double SHIELD_BELOW = 0.75;
+    public static final int SHIELD_MIN_ATTACKS = 2;
+    /** Game ticks the Doom charges during the shield; the full bar fires the beam and ends the phase. */
+    public static final int SHIELD_CHARGE_TICKS = 40; // approx
+    /** Demonbane hits count this many times against the shield (they also skip the attack delay in OSRS). */
+    public static final int SHIELD_DEMONBANE_FACTOR = 3; // approx
+    /** Shield damage of a larva exploding next to the Doom (wiki: 100); outside the shield 5-10 hitpoints. */
+    public static final int LARVA_SHIELD_DAMAGE = 100;
+    /** Game ticks the Special Beam Cannon charges before firing; a melee hit in that window punishes it. */
+    public static final int BEAM_CHARGE_TICKS = 6; // approx
+    /** Standard attacks between beam charges. */
+    public static final int ATTACKS_PER_BEAM = 7; // approx
+    /** The shockwave ("around a minute into the fight") and how long the volatile earth stays up before it lands. */
+    public static final int SHOCKWAVE_INTERVAL = 100; // approx
+    public static final int SHOCKWAVE_WINDUP = 14; // approx
+    /** Burrow phase length in game ticks and the trample interval within it. */
+    public static final int BURROW_TICKS = 20; // approx
+    public static final int TRAMPLE_INTERVAL = 4; // approx
+    /** Combat Achievement flags the fight reports (see {@code CombatAchievementRules}, tasks 613-616, 620 and 624). */
+    public static final String FLAG_EXPOSED = "exposed";
+    public static final String FLAG_BURROWED = "burrowed";
+    public static final String FLAG_GRUB_ABSORBED = "grub_absorbed";
+    public static final String FLAG_NO_SHIELD = "noshield";
+    public static final String FLAG_MOPPING_UP = "mopping_up";
+    /** Acid splats one earthen shield must clear for the "Mopping up" task. */
+    public static final int MOPPING_UP_SPLATS = 8;
+
+    /** Game ticks the melee punish delays the Doom's next attack: 6 rising to 8 at the deepest delves (strategy guides). */
+    public static int punishDelay(int level) {
+        return level >= 8 ? 8 : level >= 5 ? 7 : 6; // approx (intermediate step)
+    }
+
+    /** Bonus damage of a melee punish: a fifth of the player's visible melee strength bonus. */
+    public static int punishBonus(int meleeStrength) {
+        return Math.max(0, meleeStrength / 5);
+    }
+
+    /** Game ticks between larvae dropping outside the shield (none before delve 5 except a lone larva now and then). */
+    public static int larvaInterval(int level) {
+        return level >= 5 ? 20 : 30; // approx
+    }
+
+    /** Larvae per drop outside the shield: one, two at delves 5-7, one giant larva from delve 8. */
+    public static int larvaeOutsideShield(int level) {
+        return level >= 5 && level <= 7 ? 2 : 1;
+    }
+
+    public static boolean giantLarvae(int level) {
+        return level >= 8;
+    }
+
+    /** Game ticks between larvae during the shield phase; fastest from delve 7. */
+    public static int shieldLarvaInterval(int level) {
+        return level >= 7 ? 3 : level >= 5 ? 4 : 5; // approx
+    }
+
+    /**
+     * A larva reaching the Doom: it heals 10 and deals 1 at no stacks of demonic charge, more with every stack (stacks
+     * carry over between levels); a giant larva counts three times. Damage is capped at 12 before delve 8, then 20 (30 for
+     * a giant larva).
+     */
+    public static int larvaHeal(int stacks, boolean giant) {
+        return 10 * (stacks + 1) * (giant ? 3 : 1); // approx: linear growth per stack
+    }
+
+    public static int larvaDamage(int stacks, boolean giant, int level) {
+        int cap = level < 8 ? 12 : giant ? 30 : 20;
+        return Math.min(cap, (stacks + 1) * (giant ? 3 : 1));
+    }
+
+    /** Stacks of demonic charge a larva adds when it reaches the Doom. */
+    public static int larvaStacks(boolean giant) {
+        return giant ? 3 : 1;
+    }
+
+    /** Larva hitpoints: 2, a giant larva 4. Non-demonbane hits deal at most 1; a demonbane hit kills a small larva outright. */
+    public static int larvaHitpoints(boolean giant) {
+        return giant ? 4 : 2;
+    }
+
+    /** Damage a player's hit deals to a larva. */
+    public static int larvaHit(int rolled, boolean demonbane) {
+        if (demonbane) {
+            return larvaHitpoints(false); // one demonbane hit kills a small larva, two a giant one
+        }
+        return Math.min(1, Math.max(0, rolled));
+    }
+
+    // ------------------------------------------------------------------ held loot (stored with the player)
+
+    /** Held loot as "item:count;item:count" for storage. */
+    public static String encode(List<Loot> loot) {
+        StringBuilder b = new StringBuilder();
+        for (Loot l : loot) {
+            if (b.length() > 0) {
+                b.append(';');
+            }
+            b.append(l.item()).append(':').append(l.count());
+        }
+        return b.toString();
+    }
+
+    public static List<Loot> decode(String s) {
+        List<Loot> out = new ArrayList<>();
+        if (s == null || s.isBlank()) {
+            return out;
+        }
+        for (String part : s.split(";")) {
+            int c = part.lastIndexOf(':');
+            if (c <= 0) {
+                continue;
+            }
+            try {
+                out.add(new Loot(part.substring(0, c), Integer.parseInt(part.substring(c + 1))));
+            } catch (NumberFormatException ignored) {
+                // skip a damaged entry
+            }
+        }
+        return out;
+    }
+
     /** An item and amount awarded for completing a level. */
     public record Loot(String item, int count) {
     }

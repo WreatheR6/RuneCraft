@@ -986,7 +986,8 @@ public final class MonsterStatsTable {
         // The Whisperer (Post-quest)
         row("the_whisperer", 791, 900, 280, 280, 250, 180, 180, 10, 180, 300, 220, 10, 300, 140, 190, 160);
         // Vardorvis (Post-quest)
-        row("vardorvis", 784, 700, 280, 1, 1, 215, 1, 5, 215, 65, 85, 580, 580, 190, 0, 0);
+        // Strength 270 and Defence 215 at full health (wiki); they scale linearly with his hitpoints to 360 and 145.
+        row("vardorvis", 784, 700, 280, 270, 215, 215, 1, 5, 215, 65, 85, 580, 580, 190, 0, 0);
         maxHit("vardorvis", "axe_swing", 43); // was 35
         // The Hueycoatl (Normal)
         row("the_hueycoatl", 642, 2500, 150, 50, 125, 50, 50, 5, 100, 100, 0, 200, 350, 100, 200, 250, "dragon");

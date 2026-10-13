@@ -64,6 +64,7 @@ public final class BossesHooks implements ModuleHooks {
         BlockHooks.register(BossPlaces.FONT_OF_CONSUMPTION, BossesHooks::offerUnsired);
 
         BossScripts.register(com.runecraft.osrs.content.bosses.IslandBosses.DERANGED, DerangedArchaeologistScript::new);
+        BossScripts.register("demonic_brutus", DemonicBrutusScript::new);
         // Brutus is fought after The Ides of Milk; Demonic Brutus also needs an abyssal potato (the boss key, plucked in the
         // Scar after Desert Treasure II).
         com.runecraft.boss.DataBossService.requirement("brutus", (player, def) -> questDone(player, "the_ides_of_milk",

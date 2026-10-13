@@ -55,6 +55,12 @@ public final class Dt2Bosses {
     public static final AttackDef VARD_BLOOD = AttackDef.of("blood_splat", AttackType.MAGIC, 20, 16, 1).special(Special.SKY_STRIKE, 0)
             .telegraph(3, "Blood splatters across the ground - don't let it heal him!").particle("minecraft:damage_indicator");
 
+    public static final int TABLET_RATE = 25;
+    public static final int QUARTZ_RATE = 200;
+    /** Each boss's teleport tablet and quartz (for the ancient sceptres and the Zaros icons). */
+    public static final List<String> TABLETS = List.of("frozen_tablet", "scarred_tablet", "sirenic_tablet", "strangled_tablet");
+    public static final List<String> QUARTZES = List.of("ice_quartz", "smoke_quartz", "shadow_quartz", "blood_quartz");
+
     public static List<BossDef> all() {
         return List.of(duke(), leviathan(), whisperer(), vardorvis());
     }
@@ -65,7 +71,7 @@ public final class Dt2Bosses {
      * 1/8 (each of the three equally); the awakener's orb is rolled next. Awakened kills roll the unique table at 3/n
      * ({@link AwakenedBosses#drops}).
      */
-    static List<Drop> dt2Drops(String bossId, String vestige, String axePiece) {
+    static List<Drop> dt2Drops(String bossId, String vestige, String axePiece, String tablet, String quartz) {
         int n = AwakenedBosses.uniqueTableRate(bossId);
         List<Drop> d = new ArrayList<>(List.of(Drop.of("chromium_ingot", 1, 1, Math.round(8 * n / 3f)), Drop.of(vestige, 1, 1, 8 * n),
                 Drop.of(axePiece, 1, 1, 8 * n), Drop.of("virtus_mask", 1, 1, 24 * n), Drop.of("virtus_robe_top", 1, 1, 24 * n),
@@ -73,6 +79,11 @@ public final class Dt2Bosses {
                 Drop.of("runite_bar", 4, 8, 8), // approx: the standard table below is a simplification
                 Drop.of("death_rune", 200, 300, 8), Drop.of("soul_rune", 150, 250, 8), Drop.of("dragon_platelegs", 1, 1, 16),
                 Drop.of("coins", 30000, 90000, 4), Drop.of("clue_scroll_elite", 1, 1, 160)));
+        // Wiki: the boss's tablet (one-off teleport to the lair) 1/25 and its quartz 1/200, both rolled after the unique
+        // table (shown as ~1/25.8 and ~1/206). Before the first quartz OSRS improves its rate from 1/200 to 1/50 over the
+        // first 300 kills; that ramp isn't modelled. // approx
+        d.add(Drop.of(tablet, 1, 1, TABLET_RATE));
+        d.add(Drop.of(quartz, 1, 1, QUARTZ_RATE));
         return d;
     }
 
@@ -81,7 +92,7 @@ public final class Dt2Bosses {
                 .defenceBonus(20, 250, 250, 300, 300)
                 .attack(DUKE_SLAM).attack(DUKE_MAGIC).attack(DUKE_GAZE).attack(DUKE_VENTS)
                 .pet("pet_baron").at("ghorrock_prison").arena(13, "ice").size(1.8f, 2.4f, 2.0f).moveSpeed(0.0);
-        b.drops.addAll(dt2Drops(b.id, "magus_vestige", "eye_of_the_duke"));
+        b.drops.addAll(dt2Drops(b.id, "magus_vestige", "eye_of_the_duke", "frozen_tablet", "ice_quartz"));
         return b;
     }
 
@@ -90,7 +101,7 @@ public final class Dt2Bosses {
                 .defenceBonus(300, 300, 300, 200, 40)
                 .attack(LEVI_RANGED).attack(LEVI_MAGIC).attack(LEVI_MELEE).attack(LEVI_DEBRIS)
                 .pet("pet_lilviathan").at("the_scar").arena(14, "water").size(2.2f, 2.2f, 2.0f).moveSpeed(0.0);
-        b.drops.addAll(dt2Drops(b.id, "venator_vestige", "leviathans_lure"));
+        b.drops.addAll(dt2Drops(b.id, "venator_vestige", "leviathans_lure", "scarred_tablet", "smoke_quartz"));
         return b;
     }
 
@@ -100,7 +111,7 @@ public final class Dt2Bosses {
                 .attack(WHISPER_MAGIC).attack(WHISPER_RANGED).attack(WHISPER_SIPHON)
                 .phase(50, "The Whisperer drags you into the Shadow Realm!", 1.1, false)
                 .pet("pet_wisp").at("lassar_undercity").arena(13, "void").flying().size(1.8f, 2.6f, 2.0f).moveSpeed(0.18);
-        b.drops.addAll(dt2Drops(b.id, "bellator_vestige", "sirens_staff"));
+        b.drops.addAll(dt2Drops(b.id, "bellator_vestige", "sirens_staff", "sirenic_tablet", "shadow_quartz"));
         return b;
     }
 
@@ -109,7 +120,7 @@ public final class Dt2Bosses {
                 .defenceBonus(40, 200, 200, 300, 300)
                 .attack(VARD_SLASH).attack(VARD_AXES).attack(VARD_BLOOD)
                 .pet("pet_butch").at("stranglewood").arena(12, "crypt").size(0.9f, 2.4f, 1.6f).moveSpeed(0.28);
-        b.drops.addAll(dt2Drops(b.id, "ultor_vestige", "executioners_axe_head"));
+        b.drops.addAll(dt2Drops(b.id, "ultor_vestige", "executioners_axe_head", "strangled_tablet", "blood_quartz"));
         return b;
     }
 }

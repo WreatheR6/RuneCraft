@@ -357,6 +357,17 @@ public final class BossItems {
                 "A mysterious orb of unknown power. Use it on a Desert Treasure II boss's summoning stone to awaken the boss.");
         simple(items, AwakenedBosses.BLOOD_KIT, "Ancient blood ornament kit", "package", 0x8A1A1A, 1,
                 "Earned by defeating all four awakened bosses. Turns Torva armour into sanguine Torva.");
+        // Teleport tablets (75k value) and quartzes (100k), untradeable (wiki).
+        for (String[] t : new String[][]{{"frozen_tablet", "Frozen tablet", "Duke Sucellus", "9AC8E0"},
+                {"scarred_tablet", "Scarred tablet", "the Leviathan", "5A7A8A"}, {"sirenic_tablet", "Sirenic tablet", "the Whisperer", "6A4A9A"},
+                {"strangled_tablet", "Strangled tablet", "Vardorvis", "8A3A3A"}}) {
+            simple(items, t[0], t[1], "tablet", Integer.parseInt(t[3], 16), 75000,
+                    "Strange glowing symbols are inscribed upon this tablet. (A one-off teleport to " + t[2] + ".)");
+        }
+        for (String[] q : new String[][]{{"ice", "A0D8F0"}, {"smoke", "8A8A8A"}, {"shadow", "4A3A5A"}, {"blood", "A01A2A"}}) {
+            simple(items, q[0] + "_quartz", Character.toUpperCase(q[0].charAt(0)) + q[0].substring(1) + " quartz", "gem",
+                    Integer.parseInt(q[1], 16), 100000, "Made of condensed " + q[0] + " energy.");
+        }
         for (String[] v : new String[][]{{"ultor", "8A2A2A"}, {"magus", "3A3AA0"}, {"venator", "3A8A3A"}, {"bellator", "A08A3A"}}) {
             String cap = Character.toUpperCase(v[0].charAt(0)) + v[0].substring(1);
             simple(items, v[0] + "_vestige", cap + " vestige", "gem", Integer.parseInt(v[1], 16), 1,

@@ -79,6 +79,9 @@ public final class Untradeables {
                 "rogue_mask", "rogue_top", "rogue_trousers", "rogue_boots", "guild_hunter_headwear", "guild_hunter_top",
                 "guild_hunter_legs", "guild_hunter_boots", "shayzien_helm_5", "shayzien_platebody_5", "shayzien_greaves_5",
                 "shayzien_boots_5");
+        // Desert Treasure II boss tablets and quartzes.
+        add("frozen_tablet", "scarred_tablet", "sirenic_tablet", "strangled_tablet", "ice_quartz", "smoke_quartz", "shadow_quartz",
+                "blood_quartz");
     }
 
     private Untradeables() {

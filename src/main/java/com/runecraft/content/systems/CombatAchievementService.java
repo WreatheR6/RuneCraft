@@ -127,6 +127,21 @@ public final class CombatAchievementService {
         SysTicks.everyPlayer(CombatAchievementService::tick);
     }
 
+    /**
+     * A boss script reports something the fight's tasks check with {@code flag=}/{@code noflag=} (a grub absorbed, a
+     * kill during an exposed phase...): it goes on the player's current fight and, on a delve run, on the run.
+     */
+    public static void flag(ServerPlayerEntity p, String flag) {
+        Tracker f = FIGHTS.get(p.getUuid());
+        if (f != null) {
+            f.m.flags.add(flag);
+        }
+        Tracker d = DELVES.get(p.getUuid());
+        if (d != null) {
+            d.m.flags.add(flag);
+        }
+    }
+
     // ------------------------------------------------------------------ fights
 
     /** Boss id of an entity (secondary forms included), or null for a regular monster. */

@@ -15,6 +15,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -37,6 +39,8 @@ public class GorillaEntity extends OsrsMonsterEntity {
     private Vec3d boulderAt;
     private long boulderDue = -1;
     private long lastCombatTick;
+    /** The protection prayer shown over a demonic gorilla's head (its name tag), or null before the first update. */
+    private Style shownPrayer;
 
     public GorillaEntity(EntityType<? extends HostileEntity> type, World world) {
         super(type, world);
@@ -69,6 +73,25 @@ public class GorillaEntity extends OsrsMonsterEntity {
             }
         }
         return attacks.get(0);
+    }
+
+    /** Overhead prayer indicator: the active protection prayer in the gorilla's name tag, coloured by style. */
+    private void showPrayer() {
+        if (!demonic()) {
+            return;
+        }
+        Style prayer = tracker().prayer();
+        if (prayer == null || prayer == shownPrayer) {
+            return;
+        }
+        shownPrayer = prayer;
+        Formatting colour = switch (prayer) {
+            case MELEE -> Formatting.RED;
+            case RANGED -> Formatting.GREEN;
+            case MAGIC -> Formatting.AQUA;
+        };
+        setCustomName(Text.literal("Demonic gorilla ").append(Text.literal("[" + prayer.prayerName() + "]").formatted(colour)));
+        setCustomNameVisible(true);
     }
 
     @Override
@@ -133,12 +156,16 @@ public class GorillaEntity extends OsrsMonsterEntity {
             ((ServerWorld) getWorld()).spawnParticles(ParticleTypes.ENCHANT, getX(), getY() + getHeight(), getZ(), 20, 0.5, 0.4, 0.5, 0.2);
             Msg.action(attacker, "The demonic gorilla pounds its chest and switches to " + style.prayerName() + "!");
         }
+        showPrayer();
         return d;
     }
 
     @Override
     protected void mobTick() {
         super.mobTick();
+        if (age % 20 == 0 && demonic()) {
+            showPrayer();
+        }
         if (age % ActionManager.MC_TICKS_PER_GAME_TICK != 0 || tracker == null) {
             return;
         }

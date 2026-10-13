@@ -47,6 +47,9 @@ public final class ModernBosses {
             .special(Special.HAZARD, 8).particle("minecraft:flame");
 
     // ================= Doom of Mokhaiotl =================
+    public static final String DOOM_LARVA = "demonic_larva";
+    public static final String DOOM_GIANT_LARVA = "giant_demonic_larva";
+    public static final String DOOM_VOLATILE_EARTH = "doom_volatile_earth";
     public static final AttackDef DOOM_MELEE = AttackDef.of("crushing_claws", AttackType.CRUSH, 65, 5, 4);
     public static final AttackDef DOOM_MAGIC = AttackDef.of("void_orb", AttackType.MAGIC, 40, 16, 3) // approx
             .telegraph(2, "The Doom's eye glows violet...").particle("minecraft:witch");
@@ -79,6 +82,17 @@ public final class ModernBosses {
             .special(Special.KNOCKBACK, 4).telegraph(2, "Demonic Brutus rears up!");
     public static final AttackDef DEMONIC_FIRE = AttackDef.of("brimstone", AttackType.MAGIC, 15, 12, 1) // approx
             .special(Special.HAZARD, 5).particle("minecraft:flame");
+    /** Phase 2: Demonic Brutus revives with 487 hitpoints after dropping to 0 ("Moo moo!"). */
+    public static final int DEMONIC_REVIVE_HP = 487;
+    /** Phase 2: each special is accompanied by four ghost projectiles, magic-melee-ranged then a random one. */
+    public static final AttackDef DEMONIC_GHOST_MAGIC = AttackDef.of("ghost_magic", AttackType.MAGIC, 30, 16, 1) // approx
+            .particle("minecraft:witch");
+    public static final AttackDef DEMONIC_GHOST_MELEE = AttackDef.of("ghost_melee", AttackType.CRUSH, 30, 16, 1) // approx
+            .particle("minecraft:crimson_spore");
+    public static final AttackDef DEMONIC_GHOST_RANGED = AttackDef.of("ghost_ranged", AttackType.RANGED, 30, 16, 1) // approx
+            .particle("minecraft:crit");
+    /** Basic attacks between Demonic Brutus' specials (stomp and charge alternate). */
+    public static final int DEMONIC_BASICS_PER_SPECIAL = 3;
 
     // ================= Maggot King =================
     public static final AttackDef MAGGOT_MAGIC = AttackDef.of("bile_bolt", AttackType.MAGIC, 46, 16, 3)
@@ -101,7 +115,18 @@ public final class ModernBosses {
                 MonsterDef.of("yama_void_flare", "Void Flare").level(130).stats(140, 1, 1, 100, 200, 1).speed(4)
                         .attack(AttackDef.of("flare_burst", AttackType.MAGIC, 45, 3, 1).special(Special.AOE, 3)
                                 .telegraph(3, "The void flare pulses violently!"))
-                        .attributes("demon").skin(0x3A1A4A, 0xE05010, 0x2A0A3A, 0xFF8A1E).size(0.9f, 1.4f, 1.0f).moveSpeed(0.12));
+                        .attributes("demon").skin(0x3A1A4A, 0xE05010, 0x2A0A3A, 0xFF8A1E).size(0.9f, 1.4f, 1.0f).moveSpeed(0.12),
+                // The Doom of Mokhaiotl's demonic larvae (2 hitpoints, a giant one 4) crawl to the Doom and are moved by its script;
+                // volatile earth (1 hitpoint) raises the earthen shield against the shockwave.
+                MonsterDef.of(DOOM_LARVA, "Demonic larva").level(1).stats(DoomDelves.larvaHitpoints(false), 1, 1, 1, 1, 1)
+                        .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive().attributes("demon")
+                        .skin(0xC8B48A, 0x9A7A5A, 0x7A5A3A, 0xE0D0A0).size(0.6f, 0.4f, 0.8f).moveSpeed(0.0),
+                MonsterDef.of(DOOM_GIANT_LARVA, "Giant demonic larva").level(1).stats(DoomDelves.larvaHitpoints(true), 1, 1, 1, 1, 1)
+                        .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive().attributes("demon")
+                        .skin(0xA03A2A, 0x7A2A1A, 0x5A1A10, 0xE07A3A).size(1.0f, 0.7f, 1.2f).moveSpeed(0.0),
+                MonsterDef.of(DOOM_VOLATILE_EARTH, "Volatile earth").level(1).stats(1, 1, 1, 1, 1, 1)
+                        .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()
+                        .skin(0x6A5A4A, 0x8A6A3A, 0x4A3A2A, 0xE0A040).size(1.0f, 1.0f, 1.0f).moveSpeed(0.0));
     }
 
     static BossDef yama() {
