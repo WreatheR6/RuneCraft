@@ -147,11 +147,9 @@ public final class IslandsPlaces {
                 // Cache spawns: 9 monkey guards at 2788-2805, 2775-2789 (east Marim); monkey archers all over the town.
                 new Camp(APE_ATOLL, 76, -6, 10, 4, SURFACE, List.of("monkey_guard")),
                 new Camp(APE_ATOLL, 0, 14, 10, 3, SURFACE, List.of("monkey_archer")),
-                new Camp(APE_ATOLL_TEMPLE, -8, 0, 8, 3, SURFACE, List.of("monkey_zombie")),
                 new Camp(LUNAR_SUQAH_HILLS, 0, 0, 14, 5, SURFACE, List.of("suqah")),
                 new Camp(NEITIZNOT, -28, 14, 8, 6, SURFACE, List.of("yak")),       // cache: 6 yaks at 2318-2325, 3789-3797
                 new Camp(JATIZSO, -10, -64, 10, 4, SURFACE, List.of("ice_troll")),
-                new Camp(WATERBIRTH, -40, -10, 14, 6, SURFACE, List.of("dagannoth", "wallasalki", "rock_lobster")),
                 new Camp(MOS_LE_HARMLESS_JUNGLE, 0, 0, 14, 4, SURFACE, List.of("jungle_horror")),
                 // Cache: moss giants at 2827-2834, 3242-3246 and lesser demons at 2832-2837, 3278-3280.
                 new Camp(CRANDOR, -42, -12, 8, 3, SURFACE, List.of("moss_giant")),

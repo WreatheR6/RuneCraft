@@ -37,17 +37,9 @@ class NpcSpawnReferenceTest {
      * realm that isn't carved, placed at its surface entrance instead.
      */
     private static final Map<String, String> STAND_INS = Map.ofEntries(
-            Map.entry("dagannoth@waterbirth_island", "Waterbirth Island Dungeon is not carved"),
-            Map.entry("wallasalki@waterbirth_island", "Waterbirth Island Dungeon is not carved"),
-            Map.entry("rock_lobster@waterbirth_island", "Waterbirth Island Dungeon is not carved"),
-            Map.entry("monkey_zombie@ape_atoll_temple", "the Ape Atoll Dungeon below the temple is not carved"),
             Map.entry("fever_spider@braindeath_island", "Braindeath Island's brewery lies off the main map"),
             Map.entry("pirate@braindeath_island", "Braindeath Island lies off the main map"),
             Map.entry("mudskipper@isl_mudskipper_point", "the cache has no Mudskipper Point spawns (they appear when fished up)"),
-            Map.entry("tzhaar_hur_citizen@town", "the TzHaar city is a surface camp by the Karamja volcano"),
-            Map.entry("tzhaar_ket@town", "the TzHaar city is a surface camp by the Karamja volcano"),
-            Map.entry("tzhaar_xil@town", "the TzHaar city is a surface camp by the Karamja volcano"),
-            Map.entry("tzhaar_mej@town", "the TzHaar city is a surface camp by the Karamja volcano"),
             Map.entry("ice_troll@jatizso", "Jatizso's trolls are runts, males and females in the cache"),
             Map.entry("fortis_guard", "Varlamore's city guards are named after their posts in the cache"));
 

@@ -34,9 +34,9 @@ public final class ShadesOfMortton {
     /** Key and lock colours, worst to best. */
     public static final String[] COLOURS = {"red", "brown", "crimson", "black", "purple"};
 
-    /** A shade key: the red key keeps the old id ({@code bronze_shade_key}), the others add their colour. */
+    /** A shade key (a shared item, {@code CommonItems}, since the dungeons module's catacomb doors take them too). */
     public static String key(String metal, String colour) {
-        return metal + "_shade_key" + (colour.equals("red") ? "" : "_" + colour);
+        return com.runecraft.osrs.content.CommonItems.shadeKey(metal, colour);
     }
 
     /** {metal, colour} of a shade key id, or null. */
@@ -466,10 +466,6 @@ public final class ShadesOfMortton {
         }
         for (int m = 0; m < METALS.length; m++) {
             String cap = Character.toUpperCase(METALS[m].charAt(0)) + METALS[m].substring(1);
-            for (String c : COLOURS) {
-                single(items, key(METALS[m], c), cap + " key " + c, "key", METAL_RGB[m], 81,
-                        "A " + METALS[m] + " key with a " + c + " painted eyelet (opens chests found in the Mort'ton catacombs).");
-            }
             int[] lockValues = {800, 1600, 3200, 19200, 32000};
             single(items, METALS[m] + "_locks", cap + " locks", "key", METAL_RGB[m], lockValues[m],
                     "Perhaps someone can do something with this.");

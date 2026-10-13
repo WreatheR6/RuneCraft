@@ -190,7 +190,10 @@ class IslandsContentTest {
             }
         }
         for (MonsterDef m : module.monsters()) {
-            assertTrue(IslandsPlaces.camps().stream().anyMatch(c -> c.creatures().contains(m.id)), m.id + " never spawns");
+            // (or in a dungeons-module dungeon: the Waterbirth and Ape Atoll monsters)
+            assertTrue(IslandsPlaces.camps().stream().anyMatch(c -> c.creatures().contains(m.id))
+                    || com.runecraft.osrs.content.dungeons.Dungeons.camps().stream().anyMatch(c -> c.creatures().contains(m.id)),
+                    m.id + " never spawns");
         }
     }
 

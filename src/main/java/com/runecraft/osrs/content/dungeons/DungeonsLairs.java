@@ -23,7 +23,7 @@ final class DungeonsLairs {
     static List<Dungeons.Dungeon> all() {
         List<Dungeons.Dungeon> out = new ArrayList<>();
         out.add(tarnsLair());
-        out.add(shadeCatacombs());
+        out.add(ShadeCatacombs.build());
         out.add(brineRatCavern());
         out.add(sourhogCave());
         out.add(legendsGuildDungeon());
@@ -109,62 +109,6 @@ final class DungeonsLairs {
         tCamp(c, 3401, 3249, 3417, 3261, lair, 4, 35, "terror_dog");
         tCamp(c, 3425, 3247, 3435, 3263, lair, 4, 35, "terror_dog");
         return c.build();
-    }
-
-    // ------------------------------------------------------------------ Mort'ton shade catacombs
-
-    /**
-     * The shade catacombs below Mort'ton, entered just north of the general store (tile 3482, 3313;
-     * in OSRS the entrance is inside the walls - here it is just outside them): the phrin shades'
-     * crypt by the stair, then behind gates (the shade-key doors of OSRS; no keys needed here,
-     * approx) the riyl shades to the east, the asyn shades to the south-east and the fiyr shades in
-     * the deepest crypt to the south-west, each lined with coffins.
-     */
-    static Dungeons.Dungeon shadeCatacombs() {
-        Cave c = new Cave("dng_shade_catacombs", "Mort'ton catacombs", mc("deepslate_bricks"), mc("cobbled_deepslate"),
-                mc("pearlescent_froglight"));
-        int f = 28;
-        int ex = bx(3482);
-        int ez = bz(3313);
-        c.room(ex - 6, ez - 5, ex + 6, ez + 5, f, 5);
-        c.hallZ(ex, ez + 5, ex, bz(3300), f, 3, 4);
-        tRoom(c, 3472, 3288, 3490, 3300, f, 6);                                // phrin shades
-        c.hall(bx(3490), bz(3294), bx(3494), bz(3294), f, 3, 4);
-        tRoom(c, 3494, 3286, 3510, 3302, f, 6);                                // riyl shades
-        c.hallZ(bx(3502), bz(3286), bx(3502), bz(3282), f, 3, 4);
-        tRoom(c, 3494, 3266, 3510, 3282, f, 6);                                // asyn shades
-        c.hall(bx(3494), bz(3274), bx(3490), bz(3274), f, 3, 4);
-        tRoom(c, 3472, 3264, 3490, 3284, f, 7);                                // fiyr shades
-        c.carve();
-        // The shade-key gates.
-        DungeonsAsgarnia.gate(c, bx(3492), bz(3294), f, 'x');
-        DungeonsAsgarnia.gate(c, bx(3502), bz(3284), f, 'z');
-        DungeonsAsgarnia.gate(c, bx(3492), bz(3274), f, 'x');
-        // Coffins along the crypt walls, cobwebs and soul fires.
-        coffins(c, 3473, 3289, 3489, 3299, f);
-        coffins(c, 3495, 3287, 3509, 3301, f);
-        coffins(c, 3495, 3267, 3509, 3281, f);
-        coffins(c, 3473, 3265, 3489, 3283, f);
-        for (int[] p : new int[][]{{3481, 3294}, {3502, 3294}, {3502, 3274}, {3481, 3274}}) {
-            c.set(bx(p[0]), f + 1, bz(p[1]), mc("soul_campfire"));
-        }
-        for (int x = bx(3474); x <= bx(3508); x += 7) {
-            c.set(x, f + 6, bz(3299), mc("cobweb")).set(x + 2, f + 6, bz(3267), mc("cobweb"));
-        }
-        c.entrance(ex, ez, f, mc("deepslate_bricks"), mc("cobbled_deepslate"), 'n');
-        tCamp(c, 3473, 3289, 3489, 3299, f, 3, 35, "phrin_shade");
-        tCamp(c, 3495, 3287, 3509, 3301, f, 3, 35, "riyl_shade");
-        tCamp(c, 3495, 3267, 3509, 3281, f, 3, 35, "asyn_shade");
-        tCamp(c, 3473, 3265, 3489, 3283, f, 3, 50, "fiyr_shade");
-        return c.build();
-    }
-
-    /** Rows of stone coffins against the north and south walls of a crypt (tile rectangle inside it). */
-    private static void coffins(Cave c, int tx1, int ty1, int tx2, int ty2, int f) {
-        for (int x = bx(tx1) + 2; x <= bx(tx2) - 1; x += 4) {
-            c.fill(x, f + 1, bz(ty2), x + 1, f + 1, bz(ty2), mc("polished_deepslate_slab"));
-            c.fill(x, f + 1, bz(ty1) + 1, x + 1, f + 1, bz(ty1) + 1, mc("polished_deepslate_slab"));
-        }
     }
 
     // ------------------------------------------------------------------ Brine Rat Cavern
@@ -307,7 +251,9 @@ final class DungeonsLairs {
      * Jormungand's Prison (The Fremennik Exiles), below the Island of Stone north of the Fremennik
      * Isles: the island's west end (a levelled shelf of rock beside the quest's ruins, with the
      * entrance at tile 2461, 3993), the shaft down, and the prison's two halls of basilisk knights (OSRS 2403-2434 and 2450-2460,
-     * 10375-10397: twenty knights) beside the bones of the great serpent.
+     * 10375-10397: twenty knights) beside the bones of the great serpent, the basilisks' cave east of them, and the
+     * dagannoth caves to the north (cache 2404-2489, 10408-10459: 28 level 74 and 33 level 92 dagannoth; the passages
+     * between the caves are approx).
      */
     static Dungeons.Dungeon jormungandsPrison() {
         Cave c = new Cave("dng_jormungands_prison", "Jormungand's Prison", mc("deepslate_tiles"), mc("polished_deepslate"),
@@ -320,6 +266,12 @@ final class DungeonsLairs {
         tRoom(c, 2446, 3974, 2462, 3996, f, 9);                                // eastern hall
         c.hall(bx(2446), bz(3986), bx(2436), bz(3986), f, 5, 6);
         tRoom(c, 2400, 3972, 2436, 3999, f, 12);                               // the serpent's hall
+        tRoom(c, 2457, 3997, 2487, 4011, f, 7);                                // basilisks
+        c.hallZ(bx(2420), bz(3999), bx(2420), bz(4008), f, 3, 5);
+        tRoom(c, 2404, 4008, 2438, 4037, f, 7);                                // dagannoth caves: west
+        tRoom(c, 2432, 4028, 2458, 4059, f, 7);                                // middle
+        c.hall(bx(2458), bz(4045), bx(2468), bz(4045), f, 3, 5);
+        tRoom(c, 2468, 4028, 2489, 4056, f, 7);                                // east
         c.carve();
         // Jormungand's bones: a spine curling through the western hall, with ribs.
         int sz = bz(3986);
@@ -347,6 +299,13 @@ final class DungeonsLairs {
         c.entrance(ex, ez, f, mc("deepslate_bricks"), mc("polished_deepslate"), 's');
         tCamp(c, 2401, 3973, 2435, 3998, f, 4, 50, "basilisk_knight");
         tCamp(c, 2447, 3975, 2461, 3995, f, 3, 50, "basilisk_knight");
+        tCamp(c, 2458, 3998, 2486, 4010, f, 12, 25, "basilisk");                 // approx: respawns
+        tCamp(c, 2405, 4009, 2430, 4036, f, 10, 30, "dagannoth");
+        tCamp(c, 2405, 4009, 2430, 4036, f, 13, 30, "dagannoth_lvl92");
+        tCamp(c, 2440, 4029, 2457, 4058, f, 10, 30, "dagannoth");
+        tCamp(c, 2440, 4029, 2457, 4058, f, 11, 30, "dagannoth_lvl92");
+        tCamp(c, 2469, 4029, 2488, 4055, f, 8, 30, "dagannoth");
+        tCamp(c, 2469, 4029, 2488, 4055, f, 9, 30, "dagannoth_lvl92");
         return c.build();
     }
 }

@@ -2,6 +2,7 @@ package com.runecraft.osrs.content.dungeons;
 
 import com.runecraft.osrs.content.BlockDef;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -31,6 +32,14 @@ public final class DungeonBlocks {
     /** The passage blockers of the Abyss's inner ring (passable through the gaps only). */
     public static final String ABYSS_PASSAGE = "dng_abyss_passage";
 
+    /** The Waterbirth Island Dungeon's ladder down to the Dagannoth Kings (to the bosses module's arena). */
+    public static final String KINGS_LADDER = "dng_kings_ladder";
+
+    /** A Mort'ton catacomb door that opens for any shade key of its metal ({@link ShadeCatacombs}). */
+    public static String shadeDoor(String metal) {
+        return "dng_shade_door_" + metal;
+    }
+
     /** Which reward chest each Stronghold of Security floor ends at, and the floor's door. */
     public static final List<String> SOS_DOORS = List.of(GATE_OF_WAR, RICKETY_DOOR, OOZING_BARRIER, PORTAL_OF_DEATH);
     public static final List<String> SOS_CHESTS = List.of(GIFT_OF_PEACE, GRAIN_OF_PLENTY, BOX_OF_HEALTH, CRADLE_OF_LIFE);
@@ -42,7 +51,7 @@ public final class DungeonBlocks {
             MINING_GUILD_DOOR, ABYSS_PASSAGE);
 
     public static List<BlockDef> all() {
-        return List.of(
+        List<BlockDef> list = new ArrayList<>(List.of(
                 BlockDef.scripted(GATE_OF_WAR, "Gate of War", 0x6A6A6A, "door"),
                 BlockDef.scripted(RICKETY_DOOR, "Rickety door", 0x7A5A3A, "door"),
                 BlockDef.scripted(OOZING_BARRIER, "Oozing barrier", 0x6A8A3A, "door"),
@@ -58,6 +67,11 @@ public final class DungeonBlocks {
                 BlockDef.scripted(Barrows.SARCOPHAGUS, "Sarcophagus", 0x5A5856, "coffin"),
                 BlockDef.scripted(Barrows.CRYPT_STAIRS, "Crypt stairs", 0x3A3A3A, "statue"),
                 BlockDef.scripted(Barrows.TUNNEL_DOOR, "Crypt door", 0x4A3A2A, "door"),
-                BlockDef.scripted(Barrows.CHEST, "Barrows chest", 0x6A5A3A, "chest"));
+                BlockDef.scripted(Barrows.CHEST, "Barrows chest", 0x6A5A3A, "chest"),
+                BlockDef.scripted(KINGS_LADDER, "Ladder (Dagannoth Kings)", 0x5A4A3A, "pit")));
+        for (String metal : com.runecraft.osrs.content.CommonItems.SHADE_KEY_METALS) {
+            list.add(BlockDef.scripted(shadeDoor(metal), "Wooden doors (" + metal + " lock)", 0x6A4A2A, "portal_door"));
+        }
+        return list;
     }
 }

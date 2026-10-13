@@ -16,6 +16,16 @@ public final class CommonItems {
     private CommonItems() {
     }
 
+    /** Shades of Mort'ton keys, worst to best (minigames: pyre rewards and chests; dungeons: the catacomb doors). */
+    public static final String[] SHADE_KEY_METALS = {"bronze", "steel", "black", "silver", "gold"};
+    public static final String[] SHADE_KEY_COLOURS = {"red", "brown", "crimson", "black", "purple"};
+    private static final int[] SHADE_KEY_RGB = {0x8A5A2A, 0x9A9AA0, 0x2A2A2A, 0xD0D0E0, 0xE0B030};
+
+    /** A shade key id: the red key keeps the old id ({@code bronze_shade_key}), the others add their colour. */
+    public static String shadeKey(String metal, String colour) {
+        return metal + "_shade_key" + (colour.equals("red") ? "" : "_" + colour);
+    }
+
     public static void add(ItemSink items) {
         items.add("green_dragonhide", "Green dragonhide", Kind.SIMPLE, "hide", 0x3A8A3A).value(1800);
         items.add("blue_dragonhide", "Blue dragonhide", Kind.SIMPLE, "hide", 0x3A5AB0).value(2000);
@@ -61,6 +71,14 @@ public final class CommonItems {
         items.add("limestone_brick", "Limestone brick", Kind.SIMPLE, "brick", 0xD8D0B0).value(21);
         items.add("sacred_oil", "Sacred oil", Kind.POTION, "potion", 0xE0E0A0).value(100).stack(1)
                 .examine("4 doses of sacred oil.");
+        for (int m = 0; m < SHADE_KEY_METALS.length; m++) {
+            String metal = SHADE_KEY_METALS[m];
+            String cap = Character.toUpperCase(metal.charAt(0)) + metal.substring(1);
+            for (String c : SHADE_KEY_COLOURS) {
+                items.add(shadeKey(metal, c), cap + " key " + c, Kind.SIMPLE, "key", SHADE_KEY_RGB[m]).value(81).stack(1)
+                        .examine("A " + metal + " key with a " + c + " painted eyelet (opens chests found in the Mort'ton catacombs).");
+            }
+        }
         CommonEquipment.add(items);
     }
 }
