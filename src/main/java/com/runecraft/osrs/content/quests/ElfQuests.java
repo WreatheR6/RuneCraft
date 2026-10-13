@@ -66,7 +66,7 @@ final class ElfQuests {
                 .defenceBonus(60, 60, 60, 0, 60)
                 .attack(AttackDef.of("halberd", AttackType.SLASH, 17, 3, 10))
                 .drops(Drop.always("bones")).skin(0xE8C0AD, 0xC0C0C8, 0x8A1A1A, 0xE0C030).at("tyras_camp").arena(10, "jungle"));
-        b.quest("regicide", "Regicide", Difficulty.MASTER, 3)
+        b.quest("regicide", "Regicide", Difficulty.EXPERIENCED, 3)
                 .reqQuest("underground_pass").req(Skill.AGILITY, 56).req(Skill.CRAFTING, 10)
                 .xp(Skill.AGILITY, 13750)
                 .unlock("Access to Tirannwn and Lletya")
@@ -102,7 +102,7 @@ final class ElfQuests {
                 .drops(Drop.always("coins")).size(0.8f, 2.4f, 1.3f).at("prifddinas_ruins").arena(14, "void"));
         b.quest("song_of_the_elves", "Song of the Elves", Difficulty.GRANDMASTER, 4)
                 .xp(Skill.AGILITY, 40000).xp(Skill.CONSTRUCTION, 40000).xp(Skill.FARMING, 40000).xp(Skill.HERBLORE, 40000).xp(Skill.HUNTER, 40000).xp(Skill.MINING, 40000).xp(Skill.SMITHING, 40000).xp(Skill.WOODCUTTING, 40000) // OSRS (current quest XP rewards)
-                .reqQuest("regicide", "plague_city").reqQuest("mournings_end_part_ii", "making_history")
+                .reqQuest("regicide", "plague_city").reqQuest("mournings_end_part_ii", "making_history", "DRUIDIC_RITUAL")
                 .req(Skill.AGILITY, 70).req(Skill.CONSTRUCTION, 70).req(Skill.FARMING, 70).req(Skill.HERBLORE, 70)
                 .req(Skill.HUNTER, 70).req(Skill.MINING, 70).req(Skill.SMITHING, 70).req(Skill.WOODCUTTING, 70)
                 .unlock("Access to Prifddinas, the elven city")

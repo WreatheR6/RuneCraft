@@ -59,9 +59,9 @@ final class FremennikQuests {
                 .phase(25, "Koschei rises a final time!", 1.6, false)
                 .drops(Drop.always("bones")).skin(0xE0C0A0, 0x5A5A6A, 0x3A3A3A, 0x8A8A8A).at("rellekka_longhall_basement").arena(9, "stone"));
         b.quest("fremennik_trials", "The Fremennik Trials", Difficulty.INTERMEDIATE, 3)
-                .req(Skill.FLETCHING, 25).req(Skill.WOODCUTTING, 40).req(Skill.CRAFTING, 40)
-                .xp(Skill.AGILITY, 2812).xp(Skill.ATTACK, 2812).xp(Skill.CRAFTING, 2812).xp(Skill.DEFENCE, 2812).xp(Skill.FISHING, 2812)
-                .xp(Skill.FLETCHING, 2812).xp(Skill.HITPOINTS, 2812).xp(Skill.STRENGTH, 2812).xp(Skill.THIEVING, 2812).xp(Skill.WOODCUTTING, 2812)
+                // OSRS: no skill requirements (25 Fletching, 40 Woodcutting, 40 Crafting are one optional route).
+                .xp(Skill.AGILITY, 2812.4).xp(Skill.ATTACK, 2812.4).xp(Skill.CRAFTING, 2812.4).xp(Skill.DEFENCE, 2812.4).xp(Skill.FISHING, 2812.4)
+                .xp(Skill.FLETCHING, 2812.4).xp(Skill.HITPOINTS, 2812.4).xp(Skill.STRENGTH, 2812.4).xp(Skill.THIEVING, 2812.4).xp(Skill.WOODCUTTING, 2812.4)
                 .unlock("A Fremennik name and citizenship of Rellekka")
                 .stage("I can start this quest by speaking to Brundt the Chieftain in the longhall of Rellekka. (Requires 25 Fletching, 40 Woodcutting, 40 Crafting.)")
                 .talk("brundt").say("An outerlander wants to become one of us? Then you must win the votes of seven members of the council:",
@@ -174,9 +174,9 @@ final class FremennikQuests {
                 .attack(AttackDef.of("bite", AttackType.STAB, 15, 2.5, 8))
                 .attack(AttackDef.of("water_spit", AttackType.RANGED, 12, 8, 3).particle("minecraft:splash"))
                 .drops(Drop.always("dagannoth_bones")).size(1.2f, 2.6f, 1.0f).at("lighthouse").arena(11, "water"));
-        b.quest("horror_from_the_deep", "Horror from the Deep", Difficulty.EXPERIENCED, 2)
+        b.quest("horror_from_the_deep", "Horror from the Deep", Difficulty.INTERMEDIATE, 2)
                 .req(Skill.AGILITY, 35).reqQuest("alfred_grimhands_barcrawl")
-                .xp(Skill.MAGIC, 4662).xp(Skill.STRENGTH, 4662).xp(Skill.RANGED, 4662).reward("damaged_holy_book")
+                .xp(Skill.MAGIC, 4662.5).xp(Skill.STRENGTH, 4662.5).xp(Skill.RANGED, 4662.5).reward("damaged_holy_book")
                 .unlock("Access to the Lighthouse and the Dagannoth caves")
                 .stage("I can start this quest by speaking to Larrissa outside the lighthouse north of the Barbarian Outpost. (Requires 35 Agility.)")
                 .talk("larrissa").say("My boyfriend Jossik is the lighthouse keeper, and he's locked inside! The light is out. Gunnjorn at the Barbarian Outpost has the spare key.")

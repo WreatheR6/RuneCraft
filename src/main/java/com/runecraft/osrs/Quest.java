@@ -49,7 +49,7 @@ public enum Quest implements QuestInfo {
                     "Kaqemeex told me to speak to Sanfew.",
                     "Sanfew needs raw beef, raw chicken, raw porkchop and raw mutton for the ritual.",
                     "I should tell Kaqemeex the ritual is complete.")),
-    VAMPYRE_SLAYER("Vampyre Slayer", Difficulty.NOVICE, 3, Map.of(), Map.of(Skill.ATTACK, 4825.0), List.of(),
+    VAMPYRE_SLAYER("Vampyre Slayer", Difficulty.INTERMEDIATE, 3, Map.of(), Map.of(Skill.ATTACK, 4825.0), List.of(),
             List.of("I can start this quest by speaking to Morgan in Draynor Village.",
                     "Morgan's friend Dr Harlow in Varrock knows how to slay vampyres.",
                     "Dr Harlow wants a beer before he'll help.",

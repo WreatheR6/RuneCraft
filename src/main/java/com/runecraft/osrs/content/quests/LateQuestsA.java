@@ -77,7 +77,7 @@ final class LateQuestsA {
         b.boss(BossDef.of("gorak", "Gorak").level(145).stats(112, 120, 120, 110, 1, 1).speed(4)
                 .attack(AttackDef.of("claw", AttackType.SLASH, 16, 2.5, 10).special(Special.DRAIN_STAT, Skill.HITPOINTS.ordinal()))
                 .drops(Drop.always("gorak_claws")).skin(0x6A3A6B, 0x4A2A4A, 0x3A1A3A, 0x8A4A8A).at("gorak_plane").arena(9, "void"));
-        b.quest("fairytale_i_growing_pains", "Fairytale I - Growing Pains", Difficulty.EXPERIENCED, 2)
+        b.quest("fairytale_i_growing_pains", "Fairytale I - Growing Pains", Difficulty.INTERMEDIATE, 2)
                 .reqQuest("lost_city", "nature_spirit")
                 .xp(Skill.FARMING, 3500).xp(Skill.ATTACK, 2000).xp(Skill.MAGIC, 1000).reward("magic_secateurs")
                 .stage("I can start this quest by speaking to Martin the Master Gardener in Draynor Village. (Requires Lost City, Nature Spirit.)")
@@ -233,7 +233,7 @@ final class LateQuestsA {
                 .attack(AttackDef.of("ice_breath", AttackType.MAGIC, 15, 8, 3).special(Special.FREEZE, 4).particle("minecraft:snowflake"))
                 .drops(Drop.always("big_bones")).size(1.2f, 2.6f, 1.0f).at("ice_troll_cave").arena(11, "ice"));
         b.quest("the_fremennik_isles", "The Fremennik Isles", Difficulty.EXPERIENCED, 1)
-                .reqQuest("fremennik_trials").req(Skill.CONSTRUCTION, 20).req(Skill.AGILITY, 40)
+                .reqQuest("fremennik_trials").req(Skill.CONSTRUCTION, 20) // 40 Agility only for the optional mine shortcut
                 .xp(Skill.CONSTRUCTION, 5000).xp(Skill.CRAFTING, 5000).xp(Skill.WOODCUTTING, 10000).reward("helm_of_neitiznot")
                 // Plus two 10,000 XP rewards in Attack, Strength, Defence or Hitpoints (player's choice). // approx: fixed skills
                 .xp(Skill.STRENGTH, 10000).xp(Skill.DEFENCE, 10000)
@@ -376,7 +376,7 @@ final class LateQuestsA {
         b.npc("wizard_mirmanir", "Wizard Mirmanir", "YANILLE", 5, 5, 0xF0D8CD, 0x6A3A9B, 0x4A2A6B, 0xE0E0EC);
         b.item("sandy_hand", "Sandy hand", "skull", 0xD0B080, "A hand, found in a sand pit. Disturbing.");
         b.item("truth_serum", "Truth serum", "potion", 0x80E0E0, "A serum that makes people tell the truth.");
-        b.quest("the_hand_in_the_sand", "The Hand in the Sand", Difficulty.NOVICE, 1)
+        b.quest("the_hand_in_the_sand", "The Hand in the Sand", Difficulty.INTERMEDIATE, 1)
                 .req(Skill.THIEVING, 17).req(Skill.CRAFTING, 49).xp(Skill.THIEVING, 1000).xp(Skill.CRAFTING, 9000)
                 .unlock("Bert delivers 84 buckets of sand a day")
                 .stage("I can start this quest by speaking to Bert at the Yanille sandpit. (Requires 17 Thieving, 49 Crafting.)")

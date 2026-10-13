@@ -237,7 +237,7 @@ final class MisthalinMoreQuests {
         b.npc("clay_golem", "Clay golem", "uzer_golem_room", 0, 0, 0xA87A5A, 0x8A6A4A, 0x6A4A3A, 0xA06A40);
         b.npc("elissa", "Elissa", "uzer", 3, 3, 0xF0C8B3, 0x6A6AA1, 0x4A4A7B, 0xC08A3D);
         b.item("statuette", "Statuette", "statue", 0xC0A062, "A statuette from the Varrock Museum.");
-        b.quest("the_golem", "The Golem", Difficulty.NOVICE, 1)
+        b.quest("the_golem", "The Golem", Difficulty.INTERMEDIATE, 1)
                 .req(Skill.CRAFTING, 20).req(Skill.THIEVING, 25).xp(Skill.CRAFTING, 1000).xp(Skill.THIEVING, 1000)
                 .stage("I can start this quest by speaking to the clay golem in the ruins of Uzer. (Requires 20 Crafting, 25 Thieving.)")
                 .talk("clay_golem").say("I must protect Uzer from the demon Thammaron! But I am cracked. Repair me with soft clay.")
@@ -287,7 +287,7 @@ final class MisthalinMoreQuests {
                 .attack(AttackDef.of("punch", AttackType.CRUSH, 8, 2.5, 10)).drops(Drop.always("coins"))
                 .skin(0xE8C0A0, 0x8A1A3B, 0x5A1A2B, 0xD0B031).at("chaos_altar_surok").arena(8, "crypt"));
         b.quest("what_lies_below", "What Lies Below", Difficulty.INTERMEDIATE, 1)
-                .req(Skill.MINING, 42)
+                // 42 Mining only for the optional Tunnel of Chaos route (OSRS Wiki: recommended, not required).
                 .reqQuest("RUNE_MYSTERIES").req(Skill.RUNECRAFT, 35).xp(Skill.RUNECRAFT, 8000).xp(Skill.DEFENCE, 2000).reward("beacon_ring")
                 .stage("I can start this quest by speaking to Rat Burgiss on the road south of Varrock. (Requires Rune Mysteries, 35 Runecraft, 42 Mining.)")
                 .talk("rat_burgiss").give("rats_letter").say("Outlaws stole my papers! The outlaw camp's west of Varrock. Then take this letter to Surok Magis in Varrock.")
@@ -326,7 +326,7 @@ final class MisthalinMoreQuests {
                 .attack(AttackDef.of("sword", AttackType.SLASH, 5, 2.5, 10)).drops(Drop.always("bones"))
                 .skin(0xD0C8C8, 0x3A1A1A, 0x2A0A0A, 0x1A1A1A).at("burgh_de_rott").arena(8, "crypt"));
         b.quest("in_aid_of_the_myreque", "In Aid of the Myreque", Difficulty.INTERMEDIATE, 2)
-                .reqQuest("in_search_of_the_myreque").req(Skill.CRAFTING, 25).req(Skill.MINING, 15).req(Skill.MAGIC, 7)
+                .reqQuest("in_search_of_the_myreque").req(Skill.AGILITY, 25).req(Skill.CRAFTING, 25).req(Skill.MINING, 15).req(Skill.MAGIC, 7)
                 .xp(Skill.ATTACK, 2000).xp(Skill.STRENGTH, 2000).xp(Skill.DEFENCE, 2000).xp(Skill.CRAFTING, 2000).reward("rod_of_ivandis")
                 .stage("I can start this quest by speaking to Veliaf Hurtz. (Requires In Search of the Myreque, 25 Crafting, 15 Mining, 7 Magic.)")
                 .talk("veliaf_hurtz").say("We're moving our base to Burgh de Rott. It needs defences and supplies. Help us.")
@@ -349,7 +349,7 @@ final class MisthalinMoreQuests {
                 .examine("A Temple Knight's initiate helm."));
         b.quest("recruitment_drive", "Recruitment Drive", Difficulty.NOVICE, 1)
                 .reqQuest("black_knights_fortress", "DRUIDIC_RITUAL")
-                .xp(Skill.PRAYER, 1000).xp(Skill.HERBLORE, 1000).xp(Skill.AGILITY, 1000).reward("initiate_sallet")
+                .xp(Skill.PRAYER, 1000.5).xp(Skill.HERBLORE, 1000.5).xp(Skill.AGILITY, 1000.5).reward("initiate_sallet")
                 .stage("I can start this quest by speaking to Sir Tiffy Cashien in Falador Park. (Requires Black Knights' Fortress, Druidic Ritual.)")
                 .talk("sir_tiffy_cashien").travel("falador_temple_knights").say("I say, we're recruiting for the Temple Knights! Let's see if you pass the tests.")
                 .stage("I must pass the Temple Knights' tests: logic, strength and courage.")
@@ -364,7 +364,7 @@ final class MisthalinMoreQuests {
         b.item("silverware", "Silverware", "bar", 0xD0D0E0, "The Duke's stolen silverware.");
         b.quest("the_lost_tribe", "The Lost Tribe", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("goblin_diplomacy", "RUNE_MYSTERIES").req(Skill.AGILITY, 13).req(Skill.THIEVING, 13).req(Skill.MINING, 17)
-                .xp(Skill.MINING, 3000).xp(Skill.AGILITY, 3000).xp(Skill.THIEVING, 3000)
+                .xp(Skill.MINING, 3000)
                 .unlock("Access to Dorgesh-Kaan, the cave goblin city")
                 .stage("I can start this quest by speaking to Sigmund in Lumbridge Castle. (Requires Goblin Diplomacy, Rune Mysteries, 13 Agility, 13 Thieving, 17 Mining.)")
                 .talk("sigmund_lumbridge").say("A hole in the cellar wall, and the Duke's silverware is missing! Goblins, I say. Investigate!")

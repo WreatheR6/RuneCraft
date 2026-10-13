@@ -56,8 +56,9 @@ final class Miniquests {
         Cast.npc(b, "quest_archeio", "Archeio", "arceuus", 3, -3, Cast.PALE, 0x5A2A6A);
         b.item("quest_kourend_plans", "Building plans", "note", 0xD8D0B0, "Old plans of Kourend's architecture.");
         b.quest("architectural_alliance", "Architectural Alliance (miniquest)", Difficulty.EXPERIENCED, 0)
-                .reqQuest("client_of_kourend").req(Skill.MINING, 42)
-                .xp(Skill.MINING, 1000) // approximate
+                .req(Skill.MINING, 42)
+                // OSRS: a 10,000 XP antique lamp (any skill above 40) from Hosa. // approx
+                .xp(Skill.MINING, 1000)
                 .unlock("Xeric's talisman teleport to Xeric's Heart")
                 .stage("I can start this miniquest by speaking to the ghost Hosa in Kourend Castle. (Requires Client of Kourend, 42 Mining.)")
                 .talk("quest_hosa").say("I was Kourend's architect, long ago. My plans were lost when I died. Find them, and I'll show you a secret of Xeric's.")
@@ -76,20 +77,20 @@ final class Miniquests {
         b.quest("barbarian_training", "Barbarian Training (miniquest)", Difficulty.INTERMEDIATE, 0)
                 .req(Skill.FARMING, 15)
                 .reqQuest("DRUIDIC_RITUAL", "tai_bwo_wannai_trio")
-                .req(Skill.FISHING, 55).req(Skill.AGILITY, 15).req(Skill.STRENGTH, 15).req(Skill.FIREMAKING, 35)
+                .req(Skill.FISHING, 55).req(Skill.AGILITY, 15).req(Skill.STRENGTH, 35).req(Skill.FIREMAKING, 35)
                 .req(Skill.CRAFTING, 11).req(Skill.SMITHING, 5).req(Skill.HERBLORE, 4)
                 .reward("bronze_hasta")
                 .unlock("Barbarian fishing, barbarian firemaking, barbarian herblore mixes and smithing hastae")
                 .stage("I can start this miniquest by speaking to Otto Godblessed at his grotto north of the Barbarian Outpost. (Requires Druidic Ritual, Tai Bwo Wannai Trio and various skills.)")
                 .talk("otto_godblessed").say("You wish to learn the barbarian ways? Then fish as we fish, burn as we burn, and forge as we forge.")
                 .stage("I should complete Otto's three trials: fish with a barbarian rod, light a fire with a bow, and smith a hasta.")
-                .talk("otto_godblessed").stay().unlessFlag("bt_fishing").take("raw_trout:3").flag("bt_fishing").grantXp(Skill.FISHING, 5000)
+                .talk("otto_godblessed").stay().unlessFlag("bt_fishing").take("raw_trout:3").flag("bt_fishing")
                 .say("*You catch leaping trout with your bare hands and a heavy rod.* Good! Now you fish like a barbarian.")
                 .missing("Bring me 3 trout caught the barbarian way.")
-                .talk("otto_godblessed").stay().unlessFlag("bt_firemaking").take("oak_logs").need("shortbow").flag("bt_firemaking").grantXp(Skill.FIREMAKING, 2500)
+                .talk("otto_godblessed").stay().unlessFlag("bt_firemaking").take("oak_logs").need("shortbow").flag("bt_firemaking")
                 .say("*You spin the bowstring against the log until it smokes.* Fire without a tinderbox! Excellent.")
                 .missing("Light an oak log using a shortbow, as a barbarian would.")
-                .talk("otto_godblessed").needFlag("bt_fishing", "bt_firemaking").take("bronze_bar", "logs").need("hammer").grantXp(Skill.SMITHING, 1000)
+                .talk("otto_godblessed").needFlag("bt_fishing", "bt_firemaking").take("bronze_bar", "logs").need("hammer") // OSRS: no fixed XP rewards, only XP from the activities
                 .say("*You forge a bronze hasta on the barbarian anvil.* You have learned well. The barbarian ways are yours.")
                 .missing("Finish the fishing and firemaking trials, then bring a bronze bar and some logs to forge a hasta.");
     }
@@ -141,7 +142,7 @@ final class Miniquests {
         Cast.npc(b, "marlo", "Marlo", "VARROCK", 8, 6, Cast.FAIR, 0x5A3A6A);
         Cast.npc(b, "old_man_yarlo", "Old Man Yarlo", "VARROCK", -8, -5, Cast.PALE, 0x6A5A3A);
         b.quest("daddys_home", "Daddy's Home (miniquest)", Difficulty.NOVICE, 0)
-                .xp(Skill.CONSTRUCTION, 944).reward("plank:25", "steel_nails:50")
+                .xp(Skill.CONSTRUCTION, 400).reward("plank:25", "steel_nails:50") // + 544 XP from building furniture during the quest
                 .unlock("Construction contracts with Marlo")
                 .stage("I can start this miniquest by speaking to Marlo in north-east Varrock.")
                 .talk("marlo").say("My dad's house is falling apart and he won't let me fix it. Maybe he'll let you. Here's what you'll need: planks, nails, a hammer.")
@@ -185,6 +186,7 @@ final class Miniquests {
     private static void frozenDoor(QuestBook b) {
         Cast.npc(b, "quest_ashuelot_reis", "Ashuelot Reis", "gwd_ancient_prison", 3, -3, Cast.PALE, 0x5A2A6A);
         b.quest("the_frozen_door", "The Frozen Door (miniquest)", Difficulty.MASTER, 0)
+                .reqQuest("desert_treasure_i")
                 .req(Skill.AGILITY, 70).req(Skill.STRENGTH, 70).req(Skill.HITPOINTS, 70).req(Skill.RANGED, 70)
                 .reward("frozen_key")
                 .unlock("Access to Nex's chamber in the Ancient Prison")
@@ -395,8 +397,7 @@ final class Miniquests {
     private static void valeTotems(QuestBook b) {
         Cast.npc(b, "quest_totem_carver", "Totem carver", "quest_auburn_vale", 0, 2, Cast.BROWN, 0x8A6A2A);
         b.quest("vale_totems", "Vale Totems (miniquest)", Difficulty.NOVICE, 0)
-                .reqQuest("children_of_the_sun").req(Skill.FLETCHING, 20)
-                .xp(Skill.FLETCHING, 1000) // approximate
+                .reqQuest("children_of_the_sun").req(Skill.FLETCHING, 20) // OSRS: no XP reward (Sacraments of ent folk, access to Vale Totems)
                 .unlock("Carving and decorating totems in Auburnvale")
                 .stage("I can start this miniquest by speaking to the Totem carver in Auburnvale. (Requires Children of the Sun, 20 Fletching.)")
                 .talk("quest_totem_carver").say("The vale's totems have rotted. Help me carve new ones and the spirits of the vale will be pleased.")

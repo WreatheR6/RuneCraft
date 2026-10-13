@@ -57,9 +57,9 @@ final class LateQuestsC {
                 .drops(Drop.always("big_bones")).skin(0xC08A3A, 0x8A5A2A, 0x6A4A1A, 0x2A1A0A).size(1.4f, 1.2f, 1.0f)
                 .at("tai_bwo_wannai").arena(9, "jungle"));
         b.quest("tai_bwo_wannai_trio", "Tai Bwo Wannai Trio", Difficulty.INTERMEDIATE, 2)
-                .req(Skill.FIREMAKING, 30)
+                // OSRS Wiki: 30 Firemaking is only recommended (karambwan can be cooked other ways).
                 .reqQuest("jungle_potion").req(Skill.AGILITY, 15).req(Skill.COOKING, 30).req(Skill.FISHING, 5)
-                .xp(Skill.ATTACK, 2500).xp(Skill.STRENGTH, 2500).xp(Skill.COOKING, 5000).xp(Skill.FISHING, 5000).xp(Skill.AGILITY, 2500)
+                .xp(Skill.ATTACK, 2500).xp(Skill.STRENGTH, 2500).xp(Skill.COOKING, 5000).xp(Skill.FISHING, 5000)
                 .unlock("Karambwan fishing with a karambwan vessel; cooking karambwans thoroughly")
                 .stage("I can start this quest by speaking to Timfraku in Tai Bwo Wannai. (Requires Jungle Potion, 15 Agility, 30 Cooking, 5 Fishing, 30 Firemaking.)")
                 .talk("timfraku").say("My sons Tamayu, Tiadeche and Tinsay each seek greatness and none listen to their father. Help them, and you help the village.")
@@ -90,7 +90,7 @@ final class LateQuestsC {
                 .attack(AttackDef.of("rock_throw", AttackType.RANGED, 16, 9, 3))
                 .drops(Drop.always("big_bones")).skin(0x8A8A78, 0x6A5A3A, 0x4A3A2A, 0x3A3A2A).size(1.3f, 2.8f, 1.2f)
                 .at("quest_trollweiss").arena(10, "ice"));
-        b.quest("troll_romance", "Troll Romance", Difficulty.EXPERIENCED, 2)
+        b.quest("troll_romance", "Troll Romance", Difficulty.INTERMEDIATE, 2)
                 .reqQuest("troll_stronghold").req(Skill.AGILITY, 28)
                 .xp(Skill.AGILITY, 8000).xp(Skill.STRENGTH, 4000).reward("diamond", "trollweiss_flower")
                 .unlock("Access to Trollweiss Mountain and the sled run")
@@ -152,7 +152,7 @@ final class LateQuestsC {
                 .equipment(EquipmentDef.armour(EquipmentDef.Slot.HEAD, new EquipmentStats(0, 0, 0, -6, -2, 10, 12, 8, -1, 10, 0, 0, 0, 2), 1))
                 .examine("A helmet made from a ram's skull."));
         b.gear("bonesack", QuestBook.GearSlot.CAPE, new EquipmentStats(0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 2), "rag_and_bone_man_ii");
-        b.quest("rag_and_bone_man_ii", "Rag and Bone Man II", Difficulty.INTERMEDIATE, 1)
+        b.quest("rag_and_bone_man_ii", "Rag and Bone Man II", Difficulty.EXPERIENCED, 1)
                 .reqQuest("rag_and_bone_man_i", "skippy_and_the_mogres")
                 .req(Skill.SLAYER, 40).req(Skill.DEFENCE, 20)
                 .xp(Skill.PRAYER, 5000).reward("bonesack", "ram_skull_helm")
@@ -175,7 +175,7 @@ final class LateQuestsC {
                 .attack(AttackDef.of("dread", AttackType.MAGIC, 6, 8, 3).special(Special.DRAIN_STAT, 2))
                 .drops(Drop.always("bones")).skin(0x2A2A2A, 0x1A1A1A, 0x0A0A0A, 0xC0C0C0)
                 .at("quest_tolnas_rift").arena(8, "void"));
-        b.quest("a_souls_bane", "A Soul's Bane", Difficulty.NOVICE, 1)
+        b.quest("a_souls_bane", "A Soul's Bane", Difficulty.INTERMEDIATE, 1)
                 .xp(Skill.DEFENCE, 500).xp(Skill.HITPOINTS, 500)
                 .unlock("Tolna's Rift, home of angry, fearful and confused souls")
                 .stage("I can start this quest by speaking to Launa by the rift north-east of Varrock.")
@@ -207,7 +207,7 @@ final class LateQuestsC {
                 .size(1.4f, 2.4f, 1.2f).at("quest_harmony_island").arena(10, "stone"));
         b.quest("the_great_brain_robbery", "The Great Brain Robbery", Difficulty.EXPERIENCED, 2)
                 .reqQuest("creature_of_fenkenstrain", "cabin_fever")                .req(Skill.CRAFTING, 16).req(Skill.CONSTRUCTION, 30).req(Skill.PRAYER, 50)
-                .xp(Skill.PRAYER, 6000).xp(Skill.CRAFTING, 2000).xp(Skill.CONSTRUCTION, 2000).reward("barrelchest_anchor")
+                .xp(Skill.PRAYER, 6000).xp(Skill.CRAFTING, 3000).xp(Skill.CONSTRUCTION, 2000).reward("barrelchest_anchor")
                 .unlock("Access to the Barrelchest; the Harmony Island monastery's prayer altar")
                 .stage("I can start this quest by speaking to Brother Tranquility on Harmony Island. (Requires Creature of Fenkenstrain, Cabin Fever, Recipe for Disaster (Pirate Pete), 16 Crafting, 30 Construction, 50 Prayer.)")
                 .talk("quest_tranquility_harmony").needFlag("rfd_pete")

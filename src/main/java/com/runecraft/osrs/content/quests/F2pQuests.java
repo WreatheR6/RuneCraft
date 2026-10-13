@@ -28,6 +28,7 @@ final class F2pQuests {
         belowIceMountain(b);
         misthalinMystery(b);
         corsairCurse(b);
+        learningTheRopes(b);
     }
 
     private static void places(QuestBook b) {
@@ -142,7 +143,7 @@ final class F2pQuests {
     private static void blackKnightsFortress(QuestBook b) {
         b.npc("sir_amik_varze", "Sir Amik Varze", "falador_castle", 0, 0, 0xE8C8A8, 0xD8D8E0, 0xB0B0C0, 0xC0A060);
         b.npc("black_knight_witch", "Witch", "black_knights_fortress", 2, -2, 0xB0C090, 0x2A2A2A, 0x1A1A1A, 0x3A1A3A);
-        b.quest("black_knights_fortress", "Black Knights' Fortress", Difficulty.NOVICE, 3)
+        b.quest("black_knights_fortress", "Black Knights' Fortress", Difficulty.INTERMEDIATE, 3)
                 .qp(12).reward("coins:2500")
                 .stage("I can start this quest by speaking to Sir Amik Varze in the White Knights' Castle in Falador. (Requires 12 quest points.)")
                 .talk("sir_amik_varze").say("The Black Knights are brewing an invincibility potion in their fortress! We need a spy.",
@@ -395,6 +396,27 @@ final class F2pQuests {
                 .stage("I should take the casket to Veos at the Port Sarim docks.")
                 .talk("veos_port_sarim").take("ancient_casket").say("You found it! Here is your reward, and a little something for any future treasure hunts.")
                 .done("veos_port_sarim", "Fancy a trip to Great Kourend some time?");
+    }
+
+    // ---------------------------------------------------------------- Learning the Ropes
+    /** Tutorial Island as a quest (OSRS, 22 October 2025): 1 QP, no requirements, starter kit. Condensed. // approx */
+    private static void learningTheRopes(QuestBook b) {
+        b.spot("ltr_quest_guide_house", "Quest Guide's house", 3086, 3122);
+        b.spot("ltr_magic_instructor", "Magic Instructor's hill", 3141, 3088);
+        b.npc("ltr_quest_guide", "Quest Guide", "ltr_quest_guide_house", 0, 0, 0xE8C8A8, 0x5A3A8A, 0x3A2A5A, 0x6A4A2A);
+        b.npc("ltr_magic_instructor", "Magic Instructor", "ltr_magic_instructor", 0, 0, 0xE0C0A0, 0x2A3A9A, 0x1A2A6A, 0x2A3A9A);
+        b.quest("learning_the_ropes", "Learning the Ropes", Difficulty.NOVICE, 1)
+                .reward("bronze_axe", "bronze_pickaxe", "tinderbox", "small_fishing_net", "shrimps", "bronze_dagger", "bronze_sword",
+                        "wooden_shield", "shortbow", "bronze_arrow:25", "air_rune:25", "mind_rune:15", "water_rune:6", "earth_rune:4",
+                        "body_rune:2", "bread", "coins:25")
+                .unlock("Access to the mainland and the Lumbridge Home Teleport")
+                .stage("I can start this quest by speaking to the Quest Guide on Tutorial Island.")
+                .talk("ltr_quest_guide").say("Every adventurer should know how quests work. Your quest journal keeps track of them.",
+                        "Head down to the mines and the combat area, then visit the Magic Instructor before you leave.")
+                .stage("I should speak to the Magic Instructor before leaving Tutorial Island.")
+                .talk("ltr_magic_instructor").say("You've learned the ropes. I'll send you to the mainland, to Lumbridge.",
+                        "Take this kit with you. Good luck, adventurer!").travel("LUMBRIDGE")
+                .done("ltr_magic_instructor", "Remember: the Lumbridge Home Teleport will always bring you back to Lumbridge.");
     }
 
     // ---------------------------------------------------------------- Below Ice Mountain

@@ -212,7 +212,7 @@ final class MahjarratQuests {
                 .attack(AttackDef.of("boulder_drop", AttackType.RANGED, 18, 10, 3).special(Special.SKY_STRIKE, 0).telegraph(2, "The Giant Roc drops a boulder!"))
                 .drops(Drop.always("big_bones")).skin(0x8A6A3A, 0x6A4A2A, 0x5A3A1A, 0xE0C040).size(2.0f, 2.4f, 1.3f).flying()
                 .at("quest_troll_stronghold_roof").arena(10, "stone"));
-        b.quest("my_arms_big_adventure", "My Arm's Big Adventure", Difficulty.INTERMEDIATE, 1)
+        b.quest("my_arms_big_adventure", "My Arm's Big Adventure", Difficulty.EXPERIENCED, 1)
                 .xp(Skill.HERBLORE, 10000).xp(Skill.FARMING, 5000) // OSRS (current quest XP rewards)
                 .reqQuest("eadgars_ruse", "the_feud", "jungle_potion").req(Skill.WOODCUTTING, 10).req(Skill.FARMING, 29)
                 .unlock("My Arm's herb patch on the Troll Stronghold roof")

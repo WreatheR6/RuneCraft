@@ -68,7 +68,7 @@ final class KandarinGnomeQuests {
                 .defenceBonus(0, 0, 0, -10, 0)
                 .attack(AttackDef.of("claw", AttackType.SLASH, 16, 3, 10))
                 .drops(Drop.always("bones")).size(1.0f, 2.4f, 1.0f).at("grand_tree_mine").arena(10, "crypt"));
-        b.quest("the_grand_tree", "The Grand Tree", Difficulty.EXPERIENCED, 5)
+        b.quest("the_grand_tree", "The Grand Tree", Difficulty.INTERMEDIATE, 5)
                 .xp(Skill.ATTACK, 18400).xp(Skill.AGILITY, 7900).xp(Skill.MAGIC, 2150) // OSRS (current quest XP rewards)
                 .req(Skill.AGILITY, 25)
                 .stage("I can start this quest by speaking to King Narnode Shareen under the Grand Tree. (Requires 25 Agility.)")

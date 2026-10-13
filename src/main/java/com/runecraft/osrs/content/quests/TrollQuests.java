@@ -66,9 +66,8 @@ final class TrollQuests {
         b.boss(BossDef.of("troll_general", "Troll General").level(113).stats(140, 100, 110, 80, 1, 1).speed(5)
                 .attack(AttackDef.of("great_club", AttackType.CRUSH, 20, 3, 10))
                 .drops(Drop.always("big_bones")).size(1.2f, 2.6f, 1.0f).at("troll_stronghold").arena(10, "stone"));
-        b.quest("troll_stronghold", "Troll Stronghold", Difficulty.EXPERIENCED, 1)
-                .reqQuest("death_plateau").req(Skill.AGILITY, 15)
-                .xp(Skill.AGILITY, 10000).xp(Skill.STRENGTH, 10000)
+        b.quest("troll_stronghold", "Troll Stronghold", Difficulty.INTERMEDIATE, 1)
+                .reqQuest("death_plateau").req(Skill.AGILITY, 15) // OSRS: no XP reward (law talisman, Trollheim access)
                 .stage("I can start this quest by speaking to Denulth in Burthorpe. (Requires Death Plateau, 15 Agility.)")
                 .talk("denulth").say("The trolls have captured Godric, one of my best men, and taken him to their stronghold. Will you rescue him?")
                 .stage("I should go to the troll arena on Death Plateau and fight past the trolls' champion, Dad.")
@@ -88,8 +87,8 @@ final class TrollQuests {
         b.npc("brother_tranquility", "Brother Tranquility", "troll_stronghold", 0, -4, 0xE0B89D, 0x6A4A3B, 0x6A4A3B, 0x3A2A1B);
         b.item("troll_disguise", "Fake man", "creature", 0xC0A080, "A scarecrow dressed to look like a human. Trolls love humans... to eat.");
         b.item("troll_potion", "Troll potion", "potion", 0x6A8A4A, "Tastes like... troll.");
-        b.quest("eadgars_ruse", "Eadgar's Ruse", Difficulty.EXPERIENCED, 1)
-                .reqQuest("DRUIDIC_RITUAL", "troll_stronghold").req(Skill.HERBLORE, 31).req(Skill.AGILITY, 15)
+        b.quest("eadgars_ruse", "Eadgar's Ruse", Difficulty.INTERMEDIATE, 1)
+                .reqQuest("DRUIDIC_RITUAL", "troll_stronghold").req(Skill.HERBLORE, 31)
                 .xp(Skill.HERBLORE, 11000)
                 .unlock("The Trollheim Teleport spell")
                 .stage("I can start this quest by speaking to Mad Eadgar atop Trollheim: Sanfew of Taverley needs goutweed from the trolls' kitchen. (Requires Druidic Ritual, Troll Stronghold, 31 Herblore, 15 Agility.)")
