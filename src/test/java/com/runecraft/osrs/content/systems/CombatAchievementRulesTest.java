@@ -102,6 +102,40 @@ class CombatAchievementRulesTest {
         assertTrue(problems.isEmpty(), String.join("\n", problems));
     }
 
+    /** "Without taking damage from X" names attacks some boss or monster really has. */
+    @Test
+    void namedAttacksExist() {
+        Set<String> attacks = new java.util.HashSet<>(Set.of("boss", "other", "melee", "bossmelee", "offprayer", "mechanic", "hazard",
+                "poison"));
+        for (AttackType t : AttackType.values()) {
+            attacks.add(t.name().toLowerCase(java.util.Locale.ROOT));
+        }
+        List<com.runecraft.osrs.content.CombatProfile<?>> profiles = new ArrayList<>(com.runecraft.osrs.content.ContentRegistry.bosses());
+        profiles.addAll(com.runecraft.osrs.content.ContentRegistry.monsters());
+        for (com.runecraft.osrs.content.CombatProfile<?> p : profiles) {
+            p.attacks.forEach(a -> attacks.add(CombatAchievementRules.attackKey(a.name())));
+            if (p instanceof com.runecraft.osrs.content.BossDef b) {
+                b.phases.forEach(ph -> ph.attacks().forEach(a -> attacks.add(CombatAchievementRules.attackKey(a.name()))));
+            }
+        }
+        List<String> problems = new ArrayList<>();
+        for (Task t : CombatAchievements.tasks()) {
+            if (t.rule() == null) {
+                continue;
+            }
+            for (String token : t.rule().split("\\s+")) {
+                if (token.startsWith("nodmg=")) {
+                    for (String a : token.substring(6).split(",")) {
+                        if (!attacks.contains(a)) {
+                            problems.add(t.name() + ": no attack " + a);
+                        }
+                    }
+                }
+            }
+        }
+        assertTrue(problems.isEmpty(), String.join("\n", problems));
+    }
+
     @Test
     void mostTasksAreTracked() {
         long tracked = CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count();

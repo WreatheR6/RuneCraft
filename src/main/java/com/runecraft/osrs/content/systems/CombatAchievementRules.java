@@ -485,7 +485,7 @@ public final class CombatAchievementRules {
             95;STREAK;dusk;10;
             96;STREAK;dusk;20;
             124;RULE;hespori;1;finishspec
-            125;WINDOW;kill:flower;3;t<=0:05
+            125;WINDOW;kill:flower;6;t<=0:05
             335;RULE;kril_tsutsaroth;1;alone
             336;RULE;kril_tsutsaroth;1;style=magic spell=*demonbane
             337;RULE;kril_tsutsaroth;1;nodmg=bossmelee
@@ -623,6 +623,8 @@ public final class CombatAchievementRules {
             604;RULE;yama;1;nopotion foodonly=plain_pizza/half_plain_pizza
             329;STREAK;zalcano;5;nodmg=rockfall,red_symbol,mechanic,hazard
             229;RULE;zulrah;1;nodmg=other,toxic_cloud,venom_spit,tail_slam,mechanic,hazard
+            228;WINDOW;kill:snakeling;3;t<=1t
+            187;WINDOW;kill:husk;2;t<=1t
             """;
 
     private static final Map<Integer, Spec> SPECS = new LinkedHashMap<>();
