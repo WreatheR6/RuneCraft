@@ -20,9 +20,11 @@ import static com.runecraft.osrs.content.dungeons.Cave.mc;
  *
  * <p>Rooms cover the cache's monster clusters (mejrs/data_osrs NPCList_OSRS.json) and every camp keeps the cache's
  * number of each monster (the level 1 spiders are the core Spider). Approximations: the rooms are boxes around the
- * clusters rather than the real winding tunnels; the floor traps, falling rocks, the hot-rock cave and the locked doors
- * are left out; the temple's trapdoor is a hut just south of the temple (the islands module builds the temple), with
- * the dungeon shifted 3 tiles south to lie under it; Zooknock and his companions are not placed.
+ * clusters rather than the real winding tunnels; rocks fall on players anywhere in Zooknock's tunnels away from the
+ * rock ledges ({@link #fallingRocks}), and the trapped tunnel has one row of floor traps ({@link #trapAt}) that always
+ * spring (damage approx); the hot-rock cave and the locked doors are left out; the temple's trapdoor is a hut just
+ * south of the temple (the islands module builds the temple), with the dungeon shifted 3 tiles south to lie under it;
+ * Zooknock and his companions are not placed (the quests module keeps Zooknock on the surface by Marim).
  */
 final class ApeAtollDungeons {
     /** Surface entrance of the Ape Atoll Dungeon and the shift from its cache tiles. */
@@ -34,7 +36,38 @@ final class ApeAtollDungeons {
     static final int FLOOR = 6;
     private static final String SPIDER = "minecraft:cave_spider";
 
+    /** The rock ledges of the Ape Atoll Dungeon (cache tiles): standing within a block or two of one shelters a player. */
+    static final int[][] LEDGES = {{2770, 9100}, {2800, 9110}, {2740, 9110}, {2710, 9100}, {2705, 9130}, {2760, 9144}};
+    /** The temple dungeon's trapped tunnel: the cache tile column of its floor traps. */
+    static final int TRAP_X = 2777;
+    static final int TRAP_Y = 9196;
+
     private ApeAtollDungeons() {
+    }
+
+    /**
+     * True if a player whose feet are at block (x, y, z) stands on one of the trapped tunnel's floor traps (the temple
+     * dungeon's tunnel between its first cave and the great western cave).
+     */
+    static boolean trapAt(int x, int y, int z) {
+        int tz = bz(TRAP_Y, TEMPLE_DY);
+        return y == FLOOR + 1 && x == bx(TRAP_X, 0) && z >= tz - 1 && z <= tz + 1;
+    }
+
+    /**
+     * True if rocks can fall on a player whose feet are at block (x, y, z): inside the Ape Atoll Dungeon (Zooknock's
+     * tunnels) and not sheltering by a rock ledge.
+     */
+    static boolean fallingRocks(int x, int y, int z) {
+        if (y < FLOOR + 1 || y > FLOOR + 4 || x < bx(2690, DX) || x > bx(2812, DX) + 1 || z < bz(9152, DY) || z > bz(9088, DY) + 1) {
+            return false;
+        }
+        for (int[] p : LEDGES) {
+            if (Math.abs(x - bx(p[0], DX)) <= 2 && Math.abs(z - bz(p[1], DY)) <= 2) {
+                return false;
+            }
+        }
+        return true;
     }
 
     static List<Dungeons.Dungeon> all() {
@@ -83,7 +116,7 @@ final class ApeAtollDungeons {
         room(c, dx, dy, 2797, 9138, 2810, 9152, 6);           // Zooknock's cave
         c.carve();
         // Rock ledges (the falling-rock shelters) and bones; Zooknock's brewing.
-        for (int[] p : new int[][]{{2770, 9100}, {2800, 9110}, {2740, 9110}, {2710, 9100}, {2705, 9130}, {2760, 9144}}) {
+        for (int[] p : LEDGES) {
             c.pillar(bx(p[0], dx), bz(p[1], dy), FLOOR, 6, mc("mossy_stone_bricks"));
         }
         c.set(bx(2738, dx), FLOOR + 1, bz(9120, dy), mc("bone_block[axis=x]"));
@@ -120,6 +153,10 @@ final class ApeAtollDungeons {
         // The two walls of flame where m'speak amulets are made, and old bones.
         c.set(bx(2796, dx), FLOOR + 1, bz(9205, dy), mc("soul_campfire"));
         c.set(bx(2800, dx), FLOOR + 1, bz(9205, dy), mc("soul_campfire"));
+        // The trapped tunnel's floor traps, across its whole width.
+        for (int k = -1; k <= 1; k++) {
+            c.set(bx(TRAP_X, dx), FLOOR + 1, bz(TRAP_Y, dy) + k, mc("polished_blackstone_pressure_plate"));
+        }
         c.set(bx(2766, dx), FLOOR + 1, bz(9196, dy), mc("bone_block[axis=y]"));
         c.set(bx(2770, dx), FLOOR + 1, bz(9188, dy), mc("skeleton_skull[rotation=6]"));
         c.entrance(bx(2790, dx), bz(9184, dy), FLOOR, mc("mossy_stone_bricks"), mc("rooted_dirt"), 'n');

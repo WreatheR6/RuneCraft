@@ -2,6 +2,8 @@ package com.runecraft.content.dungeons;
 
 import com.runecraft.content.BlockHooks;
 import com.runecraft.content.ModuleHooks;
+import com.runecraft.combat.CombatHandler;
+import com.runecraft.network.Net;
 import com.runecraft.network.ServerNetworking;
 import com.runecraft.osrs.Landmark;
 import com.runecraft.osrs.Skill;
@@ -10,13 +12,14 @@ import com.runecraft.osrs.content.dungeons.DungeonBlocks;
 import com.runecraft.osrs.content.dungeons.Dungeons;
 import com.runecraft.osrs.content.dungeons.DungeonsContent;
 import com.runecraft.osrs.content.dungeons.ShadeCatacombs;
-import com.runecraft.osrs.world.ArenaLayout;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -28,7 +31,8 @@ import java.util.List;
 /**
  * Minecraft-side behaviour for the dungeons module: the monster camps inside every dungeon, the
  * Stronghold of Security's doors and reward chests, Brimhaven's vines, the Mining Guild door and
- * the Abyss's passages and rifts, and the Barrows crypts and tunnels ({@link BarrowsHooks}).
+ * the Abyss's passages and rifts, the Barrows crypts and tunnels ({@link BarrowsHooks}), the Waterbirth Island
+ * Dungeon's circular doors, door-supports, Kings' ladder and Lighthouse ladder, and Ape Atoll's traps and falling rocks.
  */
 public final class DungeonsHooks implements ModuleHooks {
     /** Security advice spoken by the Stronghold of Security's doors (one is picked per use). */
@@ -62,8 +66,49 @@ public final class DungeonsHooks implements ModuleHooks {
             BlockHooks.register(DungeonBlocks.shadeDoor(metal), DungeonsHooks::shadeDoor);
         }
         BlockHooks.register(DungeonBlocks.KINGS_LADDER, DungeonsHooks::kingsLadder);
+        BlockHooks.register(DungeonBlocks.CIRCULAR_DOOR, DungeonsHooks::circularDoor);
+        BlockHooks.register(DungeonBlocks.DOOR_SUPPORT, DungeonsHooks::doorSupport);
+        BlockHooks.register(DungeonBlocks.LIGHTHOUSE_LADDER, DungeonsHooks::lighthouseLadder);
+        BlockHooks.register(DungeonBlocks.ROCK_PILE, DungeonsHooks::rockPile);
         DungeonCamps.register();
         BarrowsHooks.register();
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (++hazardTicks % HAZARD_INTERVAL != 0) {
+                return;
+            }
+            ServerWorld world = Gielinor.world(server);
+            if (world != null) {
+                for (ServerPlayerEntity p : world.getPlayers()) {
+                    if (p.isAlive() && !p.isSpectator() && !p.isCreative()) {
+                        apeAtollHazards(p);
+                    }
+                }
+            }
+        });
+    }
+
+    /** How often (Minecraft ticks) Ape Atoll's traps and falling rocks are checked. */
+    private static final int HAZARD_INTERVAL = 20;
+    private static long hazardTicks;
+
+    /**
+     * The Temple of Marimbo Dungeon's floor traps spring under a player standing on them; in the Ape Atoll Dungeon rocks
+     * fall now and then on anyone away from the rock ledges (damage approx).
+     */
+    private static void apeAtollHazards(ServerPlayerEntity p) {
+        BlockPos at = p.getBlockPos();
+        if (DungeonBlocks.apeAtollTrap(at.getX(), at.getY(), at.getZ())) {
+            Msg.game(p, "You trigger a trap! Spikes shoot up from the floor.");
+            hazardHit(p, 2 + p.getRandom().nextInt(5));
+        } else if (DungeonBlocks.apeAtollFallingRocks(at.getX(), at.getY(), at.getZ()) && p.getRandom().nextInt(8) == 0) {
+            Msg.game(p, "Rocks fall from the ceiling and hit you!");
+            hazardHit(p, 1 + p.getRandom().nextInt(4));
+        }
+    }
+
+    private static void hazardHit(ServerPlayerEntity p, int damage) {
+        CombatHandler.applyDamage(null, p, damage);
+        ServerNetworking.hitsplat(p, damage, Net.SPLAT_DAMAGE);
     }
 
     /**
@@ -198,16 +243,100 @@ public final class DungeonsHooks implements ModuleHooks {
         passThrough(player, pos);
     }
 
-    /** The Waterbirth Island Dungeon's ladder down to the Dagannoth Kings: their arena (bosses module). */
+    /**
+     * The Waterbirth Island Dungeon's Kings' ladder: from the great hall (sublevel 5) down into the Kings' lair, where
+     * their summoning stone stands, and from the lair back up.
+     */
     private static void kingsLadder(ServerPlayerEntity player, BlockPos pos, BlockState state) {
-        ArenaLayout.Arena arena = ArenaLayout.of("dagannoth_rex");
-        if (arena == null || !(player.getWorld() instanceof ServerWorld world)) {
-            Msg.game(player, "The ladder leads nowhere.");
+        if (!(player.getWorld() instanceof ServerWorld world)) {
             return;
         }
-        Msg.game(player, "You climb down into the lair of the Dagannoth Kings...");
-        BlockPos to = Gielinor.safeSpot(world, arena.x(), arena.z() - arena.radius() + 4);
+        boolean up = DungeonBlocks.inKingsLair(pos.getX(), pos.getY(), pos.getZ());
+        int[] to = DungeonBlocks.kingsLadderTarget(pos.getX(), pos.getY(), pos.getZ());
+        Msg.game(player, up ? "You climb back up to the dungeon." : "You climb down into the lair of the Dagannoth Kings...");
+        player.teleport(world, to[0] + 0.5, to[1], to[2] + 0.5, player.getYaw(), player.getPitch());
+    }
+
+    /**
+     * A Waterbirth circular door: from the entrance hall it opens only while another player stands on the pressure pad
+     * beside it, or for a player with a pet rock to put on the pad; from the far side it opens freely.
+     */
+    private static void circularDoor(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+        if (!(player.getWorld() instanceof ServerWorld world)) {
+            return;
+        }
+        if (!DungeonBlocks.outsideCircularDoor(player.getX())) {
+            passThrough(player, pos);
+            return;
+        }
+        if (padHeld(world, player, pos)) {
+            Msg.game(player, "Your companion holds the pressure pad down, and the door swings open.");
+            passThrough(player, pos);
+        } else if (Inv.has(player, DungeonsContent.PET_ROCK, 1)) {
+            Msg.game(player, "You put your pet rock on the pressure pad. The door swings open, and you pick the rock back up.");
+            passThrough(player, pos);
+        } else {
+            Msg.game(player, "The door won't budge. Someone needs to stand on the pressure pad - or put a pet rock on it.");
+        }
+    }
+
+    /** True if another player stands on a pressure pad near the door. */
+    private static boolean padHeld(ServerWorld world, ServerPlayerEntity player, BlockPos door) {
+        for (ServerPlayerEntity other : world.getPlayers()) {
+            if (other == player || !other.isAlive() || other.isSpectator()) {
+                continue;
+            }
+            BlockPos at = other.getBlockPos();
+            if (Math.abs(at.getX() - door.getX()) <= 6 && Math.abs(at.getZ() - door.getZ()) <= 6 && Math.abs(at.getY() - door.getY()) <= 2
+                    && world.getBlockState(at).isOf(Blocks.STONE_PRESSURE_PLATE)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * A door-support around Waterbirth's central room: knocked down from a distance by a ranged or magic weapon, or by
+     * a rune thrownaxe's chain-hit (approx: it lets the player through and stands again); leaving the room is free.
+     */
+    private static void doorSupport(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+        if (DungeonBlocks.insideCentralRoom(player.getX(), player.getZ(), pos.getX(), pos.getZ())) {
+            passThrough(player, pos);
+            return;
+        }
+        ItemStack held = player.getMainHandStack();
+        String heldId = held.isEmpty() ? "" : Inv.idOf(held);
+        if (heldId.equals("rune_thrownaxe") || Inv.has(player, "rune_thrownaxe", 1)) {
+            Msg.game(player, "Your rune thrownaxe chain-hits the door-supports, and they collapse.");
+        } else if (DungeonBlocks.breaksDoorSupport(heldId)) {
+            Msg.game(player, "You knock the door-support down from a safe distance.");
+        } else {
+            Msg.game(player, "The door-support is too sturdy to push past. Knock it down from a distance with a ranged or magic attack.");
+            return;
+        }
+        passThrough(player, pos);
+    }
+
+    /** The iron ladder from Waterbirth sublevel 2 up to the Lighthouse. */
+    private static void lighthouseLadder(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+        if (!(player.getWorld() instanceof ServerWorld world)) {
+            return;
+        }
+        int[] l = DungeonBlocks.lighthouseExit();
+        BlockPos to = Gielinor.safeSpot(world, l[0], l[1]);
+        Msg.game(player, "You climb the long iron ladder up into the Lighthouse.");
         player.teleport(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYaw(), player.getPitch());
+    }
+
+    /** The rock pile by Waterbirth's arrival ladder: one pet rock per player. */
+    private static void rockPile(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+        if (Inv.has(player, DungeonsContent.PET_ROCK, 1)) {
+            Msg.game(player, "You already have a pet rock.");
+            return;
+        }
+        Inv.give(player, DungeonsContent.PET_ROCK, 1);
+        Msg.game(player, "You pick a friendly-looking rock out of the pile. It would sit nicely on a pressure pad.");
+        ServerNetworking.sync(player);
     }
 
     private static void rift(ServerPlayerEntity player, BlockPos pos, BlockState state) {

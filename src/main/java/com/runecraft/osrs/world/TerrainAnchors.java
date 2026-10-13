@@ -55,6 +55,12 @@ public final class TerrainAnchors {
     /** Minimum rock cover above dungeon rooms, and the minimum surface height over them. */
     public static final int ROCK_COVER = 5;
     public static final int MIN_SURFACE_OVER_DUNGEONS = 56;
+    /**
+     * Rooms whose top is below this y lie deep enough that the natural sea and lake beds (about y 40 at their
+     * deepest) already cover them with {@link #ROCK_COVER}: they only need the rock cover, not the y 56 surface,
+     * so a deep dungeon under the sea leaves no raised shelf on the sea bed.
+     */
+    public static final int DEEP_UNDERGROUND_BELOW = 34;
     /** Half-size of the levelled core at a place/landmark centre (bigger for boss arenas). */
     static final int PLACE_CORE = 6;
     /** Near an anchor the terrain stays within this many blocks of its level. */
@@ -138,7 +144,7 @@ public final class TerrainAnchors {
                     water.add(new WaterBox(def.id(), op.x1(), op.z1(), op.x2(), op.z2(), op.y1()));
                 }
                 if (op.y2() < UNDERGROUND_BELOW) {
-                    double need = Math.max(op.y2() + 1 + ROCK_COVER, MIN_SURFACE_OVER_DUNGEONS);
+                    double need = coverNeeded(op.y2());
                     forCells(op, key -> {
                         if (floorCells.merge(key, need, Math::max) == need) {
                             floorSource.put(key, def.id());
@@ -206,6 +212,12 @@ public final class TerrainAnchors {
             }
         }
         out.add(new Anchor(Kind.CORE, source, x - r, z - r, x + r, z + r, level, PLACE_RADIUS, PLACE_SLOPE));
+    }
+
+    /** Lowest surface height over an underground op whose top block is at y {@code top}. */
+    public static int coverNeeded(int top) {
+        int rock = top + 1 + ROCK_COVER;
+        return top < DEEP_UNDERGROUND_BELOW ? rock : Math.max(rock, MIN_SURFACE_OVER_DUNGEONS);
     }
 
     /** Boss arenas around a place centre, mirroring LandmarkBuilder's layout. */

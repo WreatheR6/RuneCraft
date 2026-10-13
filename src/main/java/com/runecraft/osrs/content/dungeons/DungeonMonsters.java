@@ -125,7 +125,16 @@ public final class DungeonMonsters {
                         Drop.of("coins", 25, 25, 13), Drop.of("fishing_bait", 3, 3, 13), Drop.gems(128))
                 .slayer(1, "dagannoth").model("dagannoth").skin(0x6A8A60, 0x4A6A44, 0x4A6A44, 0xB0C090)
                 .size(0.6f, 1.2f, 0.6f));
-        list.add(m("dagannoth_fledgeling", "Dagannoth fledgeling", 70, 100, 50, 50, 50, 1, 1).speed(4)
+        // The Kings' lair's spinolyps (DPS calculator: level 76, 100 hitpoints, 100 Ranged); their spines drain prayer.
+        // OSRS: they stay submerged in their pools; drops approx (wiki: fish, runes and seaweed).
+        list.add(m("spinolyp", "Spinolyp", 76, 100, 10, 10, 10, 1, 100).speed(4)
+                .attack(AttackDef.of("spines", AttackType.RANGED, 10, 8, 10).special(Special.DRAIN_PRAYER, 1))
+                .attack(AttackDef.of("water", AttackType.MAGIC, 10, 8, 5))
+                .defenceBonus(100, 100, 100, 50, 50)
+                .drops(Drop.of("water_rune", 5, 15, 8), Drop.of("raw_shark", 1, 1, 32), Drop.of("seaweed", 1, 1, 8), // approx
+                        Drop.of("coins", 10, 60, 8))
+                .skin(0x3A5A6A, 0x2A4A5A, 0x2A4A5A, 0x9AC0C0).size(0.9f, 0.9f, 1.0f));
+        list.add(m("dagannoth_fledgeling","Dagannoth fledgeling", 70, 100, 50, 50, 50, 1, 1).speed(4)
                 .attack(melee(AttackType.STAB, 6)).defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("bones"))
                 .slayer(1, "dagannoth").model("dagannoth").skin(0x5A7A56, 0x3A5A3E, 0x3A5A3E, 0xA0B484)
                 .size(0.8f, 1.6f, 0.8f));

@@ -35,6 +35,73 @@ public final class DungeonBlocks {
     /** The Waterbirth Island Dungeon's ladder down to the Dagannoth Kings (to the bosses module's arena). */
     public static final String KINGS_LADDER = "dng_kings_ladder";
 
+    /** Waterbirth sublevel 1's circular doors (two players, or one with a pet rock on the pressure pad). */
+    public static final String CIRCULAR_DOOR = "dng_circular_door";
+    /** Waterbirth sublevel 1's door-supports around the central room (broken by a ranged or magic attack). */
+    public static final String DOOR_SUPPORT = "dng_door_support";
+    /** The iron ladder from Waterbirth sublevel 2's rock lobster room up to the Lighthouse. */
+    public static final String LIGHTHOUSE_LADDER = "dng_lighthouse_ladder";
+    /** A pile of rocks by the Waterbirth arrival ladder: a pet rock for the circular doors. */
+    public static final String ROCK_PILE = "dng_rock_pile";
+
+    /**
+     * Where the Kings' ladder at block (x, y, z) takes a player: from the great hall down into the Kings' lair, from
+     * the lair back up to the great hall. Returns the block {x, y, z} to stand on.
+     */
+    public static int[] kingsLadderTarget(int x, int y, int z) {
+        return WaterbirthDungeon.inLair(x, y, z) ? WaterbirthDungeon.hallArrival() : WaterbirthDungeon.lairArrival();
+    }
+
+    /** True if a player with feet at (x, y, z) stands on a floor trap of the Temple of Marimbo Dungeon's tunnel. */
+    public static boolean apeAtollTrap(int x, int y, int z) {
+        return ApeAtollDungeons.trapAt(x, y, z);
+    }
+
+    /** True if rocks can fall on a player with feet at (x, y, z) in the Ape Atoll Dungeon (away from the rock ledges). */
+    public static boolean apeAtollFallingRocks(int x, int y, int z) {
+        return ApeAtollDungeons.fallingRocks(x, y, z);
+    }
+
+    /** True if the block is in the Dagannoth Kings' lair (Waterbirth sublevel 6). */
+    public static boolean inKingsLair(int x, int y, int z) {
+        return WaterbirthDungeon.inLair(x, y, z);
+    }
+
+    /**
+     * True if the held weapon can knock down a door-support from a distance: a ranged weapon (bows, crossbows,
+     * thrown weapons, blowpipes, chinchompas) or a magic one (staves, wands, sceptres, tridents).
+     */
+    public static boolean breaksDoorSupport(String heldId) {
+        if (heldId == null || heldId.isEmpty()) {
+            return false;
+        }
+        for (String kind : new String[]{"bow", "thrownaxe", "dart", "knife", "javelin", "chinchompa", "blowpipe", "ballista",
+                "staff", "wand", "sceptre", "trident", "crozier"}) {
+            if (heldId.contains(kind)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Block {x, z} of the Lighthouse, where its iron ladder from the Waterbirth Island Dungeon comes up. */
+    public static int[] lighthouseExit() {
+        return WaterbirthDungeon.lighthouse();
+    }
+
+    /** True if a player at block x is on the entrance hall's side of the circular doors (west of them). */
+    public static boolean outsideCircularDoor(double playerX) {
+        return playerX < WaterbirthDungeon.doorX() + 0.5;
+    }
+
+    /** True if a player at (px, pz) is inside the central room, i.e. nearer its middle than the door-support is. */
+    public static boolean insideCentralRoom(double px, double pz, int supportX, int supportZ) {
+        int[] c = WaterbirthDungeon.centralRoom();
+        double dp = Math.hypot(px - c[0] - 0.5, pz - c[1] - 0.5);
+        double ds = Math.hypot(supportX - c[0], supportZ - c[1]);
+        return dp < ds;
+    }
+
     /** A Mort'ton catacomb door that opens for any shade key of its metal ({@link ShadeCatacombs}). */
     public static String shadeDoor(String metal) {
         return "dng_shade_door_" + metal;
@@ -68,7 +135,11 @@ public final class DungeonBlocks {
                 BlockDef.scripted(Barrows.CRYPT_STAIRS, "Crypt stairs", 0x3A3A3A, "statue"),
                 BlockDef.scripted(Barrows.TUNNEL_DOOR, "Crypt door", 0x4A3A2A, "door"),
                 BlockDef.scripted(Barrows.CHEST, "Barrows chest", 0x6A5A3A, "chest"),
-                BlockDef.scripted(KINGS_LADDER, "Ladder (Dagannoth Kings)", 0x5A4A3A, "pit")));
+                BlockDef.scripted(KINGS_LADDER, "Ladder (Dagannoth Kings)", 0x5A4A3A, "pit"),
+                BlockDef.scripted(CIRCULAR_DOOR, "Door", 0x4A5A5A, "portal_door"),
+                BlockDef.scripted(DOOR_SUPPORT, "Door-support", 0x6A5A3A, "statue"),
+                BlockDef.scripted(LIGHTHOUSE_LADDER, "Iron ladder (Lighthouse)", 0x5A5A5A, "pit"),
+                BlockDef.scripted(ROCK_PILE, "Pile of rocks", 0x7A7A72, "boulder")));
         for (String metal : com.runecraft.osrs.content.CommonItems.SHADE_KEY_METALS) {
             list.add(BlockDef.scripted(shadeDoor(metal), "Wooden doors (" + metal + " lock)", 0x6A4A2A, "portal_door"));
         }

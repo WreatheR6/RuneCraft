@@ -219,7 +219,8 @@ class ElevationTest {
                 if (op.y2() >= TerrainAnchors.UNDERGROUND_BELOW || op.type() == StructureDef.Op.Type.FLATTEN) {
                     continue;
                 }
-                int need = Math.max(op.y2() + TerrainAnchors.ROCK_COVER, 55);
+                int need = op.y2() < TerrainAnchors.DEEP_UNDERGROUND_BELOW ? op.y2() + TerrainAnchors.ROCK_COVER
+                        : Math.max(op.y2() + TerrainAnchors.ROCK_COVER, 55);
                 int[][] pts = {{op.x1(), op.z1()}, {op.x2(), op.z2()}, {op.x1(), op.z2()}, {op.x2(), op.z1()},
                         {(op.x1() + op.x2()) / 2, (op.z1() + op.z2()) / 2}};
                 for (int[] p : pts) {
