@@ -334,9 +334,10 @@ final class EncounterScripts {
 
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
-            if (attackCount % 5 == 4) {
+            int vents = boss.awakened() ? 4 : 5;
+            if (attackCount % vents == vents - 1) {
                 BossFx.warn(boss, "Poisonous gas erupts from the vents!");
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < (boss.awakened() ? 5 : 3); i++) {
                     strike(boss, around(boss, target.getPos(), 4), 2, 20, 1.3, ParticleTypes.SNEEZE, (hit, pos) ->
                             com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, 5, 8, boss));
                 }
@@ -370,11 +371,12 @@ final class EncounterScripts {
                 BossFx.burst(boss, ParticleTypes.SNOWFLAKE, 10, 1.5);
             }
             if (gaze <= 0) {
-                gaze = 20;
+                gaze = boss.awakened() ? 14 : 20; // approx: the awakened Duke gazes more often
                 for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
                     if (boss.canSee(p)) {
                         BossFx.stun(p, 6);
-                        CombatHandler.applyDamage(boss, p, 40 + boss.getRandom().nextInt(36));
+                        CombatHandler.applyDamage(boss, p, (int) Math.round((40 + boss.getRandom().nextInt(36))
+                                * boss.variantHitScale(Dt2Bosses.DUKE_GAZE)));
                         Msg.red(p, "The Duke's freezing gaze locks onto you!");
                     } else {
                         Msg.game(p, "You hide from the Duke's gaze.");
@@ -401,14 +403,14 @@ final class EncounterScripts {
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
             if (volley.isEmpty()) {
-                int n = 3 + boss.getRandom().nextInt(4);
+                int n = (boss.awakened() ? 5 : 3) + boss.getRandom().nextInt(4); // approx: awakened volleys are longer
                 AttackDef[] styles = {Dt2Bosses.LEVI_RANGED, Dt2Bosses.LEVI_MAGIC, Dt2Bosses.LEVI_MELEE};
                 for (int i = 0; i < n; i++) {
                     volley.add(styles[boss.getRandom().nextInt(3)]);
                 }
                 BossFx.warn(boss, "The Leviathan prepares a barrage of " + n + " projectiles!");
                 for (int i = 0; i < 3; i++) {
-                    strike(boss, around(boss, target.getPos(), 5), 3, Dt2Bosses.LEVI_DEBRIS.maxHit(), 1.3, ParticleTypes.ASH);
+                    strike(boss, around(boss, target.getPos(), 5), 3, maxHit(boss, Dt2Bosses.LEVI_DEBRIS), 1.3, ParticleTypes.ASH);
                 }
                 cooldown = 2;
                 return null;
@@ -417,7 +419,7 @@ final class EncounterScripts {
             Msg.action(target, a == Dt2Bosses.LEVI_RANGED ? "Boulder! (ranged)" : a == Dt2Bosses.LEVI_MAGIC ? "Abyssal orb! (magic)"
                     : "Shadow! (melee)");
             if (volley.isEmpty()) {
-                pause = percent(boss) < 20 ? 3 : 6;
+                pause = boss.awakened() ? (percent(boss) < 20 ? 2 : 4) : percent(boss) < 20 ? 3 : 6;
             }
             return a;
         }
@@ -434,8 +436,8 @@ final class EncounterScripts {
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
-            if (target != null && boss.getRandom().nextInt(30) == 0) {
-                strike(boss, target.getPos(), 3, Dt2Bosses.LEVI_LIGHTNING.maxHit(), 1.3, ParticleTypes.ELECTRIC_SPARK);
+            if (target != null && boss.getRandom().nextInt(boss.awakened() ? 18 : 30) == 0) {
+                strike(boss, target.getPos(), 3, maxHit(boss, Dt2Bosses.LEVI_LIGHTNING), 1.3, ParticleTypes.ELECTRIC_SPARK);
                 BossFx.warn(boss, "The Leviathan's shell crackles with lightning!");
             }
         }
@@ -466,10 +468,11 @@ final class EncounterScripts {
 
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
-            if (attackCount > 0 && attackCount % 10 == 0) {
+            int screech = boss.awakened() ? 7 : 10;
+            if (attackCount > 0 && attackCount % screech == 0) {
                 return Dt2Bosses.WHISPER_SCREECH;
             }
-            if (boss.getRandom().nextInt(8) == 0) {
+            if (boss.getRandom().nextInt(boss.awakened() ? 5 : 8) == 0) {
                 return Dt2Bosses.WHISPER_SIPHON;
             }
             return attackCount % 2 == 0 ? Dt2Bosses.WHISPER_MAGIC : Dt2Bosses.WHISPER_RANGED;
@@ -481,7 +484,7 @@ final class EncounterScripts {
             if (target == null) {
                 return;
             }
-            shadowTicks = 30;
+            shadowTicks = boss.awakened() ? 24 : 30; // approx: less time to escape when awakened
             for (int i = 0; i < 3; i++) {
                 MobEntity t = BossFx.spawnMinion(boss, "whisperer_tentacle", around(boss, target.getPos(), 5), target);
                 if (t != null) {
@@ -501,7 +504,8 @@ final class EncounterScripts {
             boolean cleared = tentacles.stream().noneMatch(MobEntity::isAlive);
             if (cleared || shadowTicks == 0) {
                 if (!cleared && target != null) {
-                    CombatHandler.applyDamage(boss, target, 30 + boss.getRandom().nextInt(21));
+                    CombatHandler.applyDamage(boss, target, (int) Math.round((30 + boss.getRandom().nextInt(21))
+                            * boss.variantHitScale(Dt2Bosses.WHISPER_SIPHON)));
                     Msg.red(target, "The Whisperer consumes part of your soul!");
                 }
                 tentacles.forEach(MobEntity::discard);
@@ -538,23 +542,27 @@ final class EncounterScripts {
 
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
-            if (attackCount % 6 == 5) {
+            boolean awake = boss.awakened(); // approx: awakened Vardorvis' specials come faster
+            int head = awake ? 4 : 6;
+            int axes = awake ? 5 : 8;
+            int blood = awake ? 9 : 11;
+            if (attackCount % head == head - 1) {
                 return boss.getRandom().nextBoolean() ? Dt2Bosses.VARD_HEAD_RANGED : Dt2Bosses.VARD_HEAD_MAGIC;
             }
-            if (attackCount % 8 == 7) {
+            if (attackCount % axes == axes - 1) {
                 BossFx.warn(boss, "Axes swing out from the walls!");
                 Vec3d p = target.getPos();
                 Vec3d dir = p.subtract(boss.getPos()).normalize();
                 for (int i = -4; i <= 4; i++) {
                     Vec3d at = p.add(dir.multiply(i * 1.5));
-                    strike(boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, Dt2Bosses.VARD_AXES.maxHit(), 1.1,
+                    strike(boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, maxHit(boss, Dt2Bosses.VARD_AXES), 1.1,
                             ParticleTypes.SWEEP_ATTACK);
                 }
                 attackCount++;
                 cooldown = 2;
                 return null;
             }
-            if (attackCount % 11 == 10) {
+            if (attackCount % blood == blood - 1) {
                 BossFx.warn(boss, "Blood splatters across the ground - absorb it before it heals him!");
                 for (int i = 0; i < 4; i++) {
                     strike(boss, around(boss, target.getPos(), 4), 5, 0, 1.0, ParticleTypes.DAMAGE_INDICATOR, (hit, pos) -> {

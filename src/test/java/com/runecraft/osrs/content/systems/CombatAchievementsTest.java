@@ -79,6 +79,31 @@ class CombatAchievementsTest {
     }
 
     @Test
+    void awakenedAndDelveTasksAreTracked() {
+        assertEquals(463, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
+        for (int id : new int[]{490, 499, 508, 517, 610, 611, 612, 616, 617, 618, 619, 621, 622, 623}) {
+            assertTrue(CombatAchievements.task("ca_" + id).track() != Track.UNTRACKED, "ca_" + id);
+        }
+        assertEquals("delve:doom_of_mokhaiotl", CombatAchievements.task("ca_622").target());
+        assertEquals(999, CombatAchievements.task("ca_622").ticks()); // strictly under 10:00
+
+        CombatAchievementRules.Metrics m = new CombatAchievementRules.Metrics();
+        assertFalse(CombatAchievementRules.meets("awakened", m));
+        m.awakened = true;
+        assertTrue(CombatAchievementRules.meets("awakened", m));
+        m.delve = 8;
+        assertTrue(CombatAchievementRules.meets("delve>=8", m));
+        assertFalse(CombatAchievementRules.meets("delve>=16", m));
+        assertTrue(CombatAchievementRules.meets("delve=8 noprayrestore", m));
+        m.prayerRestored = true;
+        assertFalse(CombatAchievementRules.meets("noprayrestore", m));
+        m.weapons.add("abyssal_whip");
+        assertTrue(CombatAchievementRules.meets("onehand", m));
+        m.weapons.add("scythe_of_vitur");
+        assertFalse(CombatAchievementRules.meets("onehand", m));
+    }
+
+    @Test
     void idsAreUniqueAndStable() {
         Set<String> ids = new HashSet<>();
         Set<Integer> wiki = new HashSet<>();
@@ -133,7 +158,8 @@ class CombatAchievementsTest {
                     }
                 }
                 case RUN -> {
-                    if (!t.target().startsWith("mg:") || !minigames.contains(t.target().substring(3))) {
+                    boolean delve = t.target().startsWith("delve:") && bosses.contains(t.target().substring(6));
+                    if (!delve && (!t.target().startsWith("mg:") || !minigames.contains(t.target().substring(3)))) {
                         problems.add(t.name() + ": no minigame " + t.target());
                     }
                 }
@@ -217,11 +243,16 @@ class CombatAchievementsTest {
                 .findFirst().orElseThrow();
         assertEquals(Track.STYLE, stab.track());
         assertEquals("king_black_dragon", stab.target());
-        // Awakened bosses and delve levels aren't modelled; raid runs and group sizes are.
+        // Awakened bosses and delve levels are tracked through the awakened/delve conditions; so are raid runs and group sizes.
         for (Task t : CombatAchievements.tasks()) {
             String d = t.description();
-            if (d.contains("Awakened") || d.contains("delve level")) {
-                assertEquals(Track.UNTRACKED, t.track(), t.description());
+            if (d.contains("Awakened")) {
+                assertEquals(Track.RULE, t.track(), t.description());
+                assertEquals("awakened", t.rule(), t.description());
+            }
+            if (d.contains("at delve level")) {
+                assertEquals(Track.RULE, t.track(), t.description());
+                assertTrue(t.rule().startsWith("delve>="), t.description());
             }
             if (d.startsWith("Complete a Chambers of Xeric") && d.contains("(Trio)")) {
                 assertEquals(Track.RAID, t.track(), t.description());

@@ -1,6 +1,7 @@
 package com.runecraft.boss;
 
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.bosses.BossVariant;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
@@ -16,6 +17,8 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 
 /** Spawning data-driven bosses and building their arenas. */
@@ -23,11 +26,34 @@ public final class DataBossService {
     /** Extra conditions modules can add before a boss may be summoned (e.g. quest requirements). */
     private static final java.util.Map<String, BiPredicate<ServerPlayerEntity, BossDef>> REQUIREMENTS = new java.util.HashMap<>();
 
+    /** Picks the variant a summon starts (awakened boss, delve level); returning null starts the ordinary fight. */
+    private static final java.util.Map<String, BiFunction<ServerPlayerEntity, BossDef, BossVariant>> VARIANTS = new java.util.HashMap<>();
+    /** Called after a boss's kill has been credited (drops, pet and kill count done). */
+    private static final java.util.Map<String, java.util.List<BiConsumer<ServerPlayerEntity, DataBossEntity>>> KILLED =
+            new java.util.HashMap<>();
+
     private DataBossService() {
     }
 
     public static void requirement(String bossId, BiPredicate<ServerPlayerEntity, BossDef> check) {
         REQUIREMENTS.put(bossId, check);
+    }
+
+    public static void variant(String bossId, BiFunction<ServerPlayerEntity, BossDef, BossVariant> chooser) {
+        VARIANTS.put(bossId, chooser);
+    }
+
+    public static void onKilled(String bossId, BiConsumer<ServerPlayerEntity, DataBossEntity> listener) {
+        KILLED.computeIfAbsent(bossId, k -> new java.util.ArrayList<>()).add(listener);
+    }
+
+    static void killed(ServerPlayerEntity player, DataBossEntity boss) {
+        BossDef def = boss.def();
+        if (def != null) {
+            for (BiConsumer<ServerPlayerEntity, DataBossEntity> l : KILLED.getOrDefault(def.id, java.util.List.of())) {
+                l.accept(player, boss);
+            }
+        }
     }
 
     public static void summon(ServerPlayerEntity player, ServerWorld world, BlockPos pos, BossDef boss) {
@@ -55,9 +81,15 @@ public final class DataBossService {
             }
             Inv.remove(player, boss.key, 1);
         }
-        spawn(world, pos.up().offset(player.getHorizontalFacing(), 3), boss, player);
+        BiFunction<ServerPlayerEntity, BossDef, BossVariant> chooser = VARIANTS.get(boss.id);
+        BossVariant variant = chooser == null ? null : chooser.apply(player, boss);
+        DataBossEntity entity = spawn(world, pos.up().offset(player.getHorizontalFacing(), 3), boss, player);
+        if (entity != null && variant != null) {
+            entity.applyVariant(variant);
+        }
         world.playSound(null, pos, SoundEvents.ENTITY_WITHER_SPAWN, SoundCategory.HOSTILE, 0.6f, 1.0f);
-        Msg.red(player, boss.name + " (level-" + boss.combatLevel + ") awakens!");
+        Msg.red(player, (variant != null ? variant.name() : boss.name) + " (level-" + (variant != null ? variant.combatLevel()
+                : boss.combatLevel) + ") awakens!");
     }
 
     /** Spawns a boss at a position, targeting {@code target} (nullable). */

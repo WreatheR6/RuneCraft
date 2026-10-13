@@ -32,7 +32,7 @@ import java.util.function.BiConsumer;
  *   <li><b>Secondary forms</b> ({@link #creditAs()}): a lethal hit credits the main boss's kill instead.</li>
  * </ul>
  */
-abstract class ScriptedBoss implements BossScript {
+abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
     /** Idle attacks handed to the engine in driven mode (SUMMON with no minion does nothing). */
     static final AttackDef IDLE_RANGED = AttackDef.of("idle", AttackType.MAGIC, 0, 64, 1).special(AttackDef.Special.SUMMON, 0);
     static final AttackDef IDLE_MELEE = AttackDef.of("idle", AttackType.CRUSH, 0, 64, 1).special(AttackDef.Special.SUMMON, 0);
@@ -147,7 +147,12 @@ abstract class ScriptedBoss implements BossScript {
     protected void perform(DataBossEntity boss, ServerPlayerEntity target, AttackDef a) {
         last = a;
         attackCount++;
-        Mechanics.perform(boss, target, a, multiplier(boss));
+        Mechanics.perform(boss, target, a, multiplier(boss) * boss.variantHitScale(a));
+    }
+
+    /** An attack's max hit for this boss (awakened variants hit harder). */
+    protected static int maxHit(DataBossEntity boss, AttackDef a) {
+        return (int) Math.round(a.maxHit() * boss.variantHitScale(a));
     }
 
     protected double multiplier(DataBossEntity boss) {
@@ -158,9 +163,9 @@ abstract class ScriptedBoss implements BossScript {
     @Override
     public final int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
         int d = incoming(boss, attacker, damage, type);
-        BossDef def = boss.def();
-        if (def != null && def.hitpoints > MAX_MC_HEALTH && d > 0) {
-            double scaled = d * (double) MAX_MC_HEALTH / def.hitpoints;
+        int hp = boss.trueHitpoints();
+        if (hp > MAX_MC_HEALTH && d > 0) {
+            double scaled = d * (double) MAX_MC_HEALTH / hp;
             int whole = (int) scaled;
             d = whole + (boss.getRandom().nextDouble() < scaled - whole ? 1 : 0);
         }
@@ -174,8 +179,8 @@ abstract class ScriptedBoss implements BossScript {
 
     /** Scales a "true OSRS hitpoints" amount (heals, thresholds) into Minecraft health. */
     protected static float mcHp(DataBossEntity boss, double osrsHp) {
-        BossDef def = boss.def();
-        return def != null && def.hitpoints > MAX_MC_HEALTH ? (float) (osrsHp * MAX_MC_HEALTH / def.hitpoints) : (float) osrsHp;
+        int hp = boss.trueHitpoints();
+        return hp > MAX_MC_HEALTH ? (float) (osrsHp * MAX_MC_HEALTH / hp) : (float) osrsHp;
     }
 
     protected static double percent(DataBossEntity boss) {
