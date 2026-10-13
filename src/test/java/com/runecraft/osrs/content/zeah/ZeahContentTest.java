@@ -152,7 +152,7 @@ class ZeahContentTest {
         // Veos sails from Port Sarim to both Kourend ports.
         assertEquals(List.of("PORT_SARIM", ZeahPlaces.PORT_PISCARILIUS, ZeahPlaces.LANDS_END),
                 ZeahTravel.SHIP.stops().stream().map(ZeahTravel.Stop::place).toList());
-        assertEquals(12, ZeahTravel.QUETZAL.stops().size());
+        assertEquals(14, ZeahTravel.QUETZAL.stops().size());
     }
 
     @Test

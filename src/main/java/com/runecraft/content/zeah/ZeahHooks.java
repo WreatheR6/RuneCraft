@@ -60,6 +60,7 @@ public final class ZeahHooks implements ModuleHooks {
             }
         }
         BlockHooks.register(ZeahBlocks.MINECART, (player, pos, state) -> ZeahTravelService.minecart(player, pos));
+        ZeahTravelService.registerMinecartStations();
         BlockHooks.register(ZeahBlocks.LOVAKITE_ROCK, (player, pos, state) -> ZeahSkilling.mineLovakite(player, pos));
         BlockHooks.register(ZeahBlocks.HARD_ROCK, (player, pos, state) -> ZeahSkilling.blastMine(player, pos));
         for (ZeahHunter.Spot spot : ZeahHunter.SPOTS) {

@@ -38,7 +38,9 @@ public final class IslandsContent implements ContentModule {
 
     @Override
     public List<PlaceDef> places() {
-        return IslandsPlaces.all();
+        List<PlaceDef> out = new java.util.ArrayList<>(IslandsPlaces.all());
+        out.addAll(IslandsTravel.ringPlaces());
+        return out;
     }
 
     @Override

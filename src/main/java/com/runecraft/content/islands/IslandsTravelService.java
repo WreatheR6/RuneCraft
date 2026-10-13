@@ -4,6 +4,7 @@ import com.runecraft.RuneCraft;
 import com.runecraft.osrs.Landmark;
 import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.PlaceDef;
+import com.runecraft.osrs.content.islands.IslandsBlocks;
 import com.runecraft.osrs.content.islands.IslandsTravel;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Msg;
@@ -81,9 +82,52 @@ public final class IslandsTravelService {
         }
         DIAL.put(key, chosen);
         IslandsTravel.Stop to = network.stop(chosen);
+        for (IslandsTravel.Stop end : new IslandsTravel.Stop[]{here, to}) {
+            if (end != null && end.quest() != null && ContentRegistry.quest(end.quest()) != null
+                    && !QuestApi.isComplete(player, end.quest())) {
+                Msg.game(player, "You need to complete " + ContentRegistry.quest(end.quest()).displayName() + " to use the "
+                        + end.code() + " fairy ring.");
+                return;
+            }
+        }
         Msg.game(player, fairy ? "You step into the fairy ring... " + to.name() + "." : "The mushtree's spores carry you to " + to.name()
                 + ". (Sneak and use it to choose another destination.)");
         travel(player, to);
+    }
+
+    /** Lays the stand-alone fairy rings (mycelium, the ring, mushrooms) where their bare places are built. */
+    static void registerRingBuilders() {
+        for (PlaceDef p : IslandsTravel.ringPlaces()) {
+            // The place centre is its chunk's centre; the ring stands on its own OSRS tile in that chunk.
+            int x = com.runecraft.osrs.GielinorMap.toBlockX(p.osrsX());
+            int z = com.runecraft.osrs.GielinorMap.toBlockZ(p.osrsY());
+            LandmarkBuilder.registerCustom(p.id(), (world, plaza) -> layRing(world, ground(world, x, z)));
+        }
+    }
+
+    /** The top solid block at (x, z), never below the sea surface. */
+    static BlockPos ground(ServerWorld world, int x, int z) {
+        world.getChunk(x >> 4, z >> 4);
+        int top = world.getTopY(net.minecraft.world.Heightmap.Type.OCEAN_FLOOR, x, z) - 1;
+        return new BlockPos(x, Math.max(top, world.getSeaLevel() - 1), z);
+    }
+
+    private static void layRing(ServerWorld world, BlockPos centre) {
+        net.minecraft.block.Block ring = net.minecraft.registry.Registries.BLOCK.get(RuneCraft.resolve(IslandsBlocks.FAIRY_RING));
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                BlockPos floor = centre.add(dx, 0, dz);
+                world.setBlockState(floor, net.minecraft.block.Blocks.MYCELIUM.getDefaultState());
+                for (int up = 1; up <= 3; up++) {
+                    world.setBlockState(floor.up(up), net.minecraft.block.Blocks.AIR.getDefaultState());
+                }
+                if (dx != 0 || dz != 0) {
+                    world.setBlockState(floor.up(), (dx == 0 || dz == 0 ? net.minecraft.block.Blocks.RED_MUSHROOM
+                            : net.minecraft.block.Blocks.BROWN_MUSHROOM).getDefaultState());
+                }
+            }
+        }
+        world.setBlockState(centre.up(), ring.getDefaultState());
     }
 
     static void travel(ServerPlayerEntity player, IslandsTravel.Stop to) {

@@ -49,6 +49,25 @@ public final class ZeahPlaces {
     public static final String LAKE_MOLCH = "zeah_lake_molch";
     public static final String MOUNT_QUIDAMORTEM = "zeah_mount_quidamortem";
     public static final String MINECART_FARMING_GUILD = "zeah_minecart_farming_guild";
+    public static final String MINECART_ARCEUUS = "zeah_minecart_arceuus";
+    public static final String MINECART_HOSIDIUS_SOUTH = "zeah_minecart_hosidius_south";
+    public static final String MINECART_HOSIDIUS_WEST = "zeah_minecart_hosidius_west";
+    public static final String MINECART_KINGSTOWN = "zeah_minecart_kingstown";
+    public static final String MINECART_KOUREND_WOODLAND = "zeah_minecart_kourend_woodland";
+    public static final String MINECART_LOVAKENGJ = "zeah_minecart_lovakengj";
+    public static final String MINECART_PORT_PISCARILIUS = "zeah_minecart_port_piscarilius";
+    public static final String MINECART_SHAYZIEN_EAST = "zeah_minecart_shayzien_east";
+    public static final String MINECART_SHAYZIEN_WEST = "zeah_minecart_shayzien_west";
+    public static final String TEOMAT = "zeah_teomat";
+    public static final String COLOSSAL_WYRM_REMAINS = "zeah_colossal_wyrm_remains";
+
+    /**
+     * Bare places (style NONE) at the OSRS tiles of Lovakengj minecart stations away from their town plazas;
+     * the Minecraft side lays the minecart at each.
+     */
+    public static final List<String> MINECART_STATIONS = List.of(MINECART_ARCEUUS, MINECART_HOSIDIUS_SOUTH, MINECART_HOSIDIUS_WEST,
+            MINECART_KINGSTOWN, MINECART_KOUREND_WOODLAND, MINECART_LOVAKENGJ, MINECART_PORT_PISCARILIUS, MINECART_SHAYZIEN_EAST,
+            MINECART_SHAYZIEN_WEST);
     public static final String NORTHERN_TUNDRAS = "zeah_northern_tundras";
     // ---- Varlamore ----
     public static final String CIVITAS = "zeah_civitas_illa_fortis";
@@ -121,6 +140,21 @@ public final class ZeahPlaces {
                 PlaceDef.of(MOUNT_QUIDAMORTEM, "Mount Quidamortem", 1255, 3549, Style.CAMP, List.of(ZeahBlocks.MINECART)),
                 PlaceDef.of(MINECART_FARMING_GUILD, "Farming Guild minecart", 1218, 3737, Style.CAMP, List.of(ZeahBlocks.MINECART)),
                 PlaceDef.of(NORTHERN_TUNDRAS, "Northern Tundras", 1648, 3931, Style.CAMP, List.of(ZeahBlocks.MINECART)),
+                // Lovakengj minecart stations (OSRS tiles).
+                PlaceDef.of(MINECART_ARCEUUS, "Arceuus minecart station", 1670, 3833, Style.NONE, List.of(ZeahBlocks.MINECART)),
+                PlaceDef.of(MINECART_HOSIDIUS_SOUTH, "Hosidius South minecart station", 1808, 3479, Style.NONE, List.of(ZeahBlocks.MINECART)),
+                PlaceDef.of(MINECART_HOSIDIUS_WEST, "Hosidius West minecart station", 1655, 3543, Style.NONE, List.of(ZeahBlocks.MINECART)),
+                PlaceDef.of(MINECART_KINGSTOWN, "Kingstown minecart station", 1699, 3660, Style.NONE, List.of(ZeahBlocks.MINECART)),
+                PlaceDef.of(MINECART_KOUREND_WOODLAND, "Kourend Woodland minecart station", 1572, 3466, Style.NONE,
+                        List.of(ZeahBlocks.MINECART)),
+                PlaceDef.of(MINECART_LOVAKENGJ, "Lovakengj minecart station", 1518, 3733, Style.NONE, List.of(ZeahBlocks.MINECART)),
+                PlaceDef.of(MINECART_PORT_PISCARILIUS, "Port Piscarilius minecart station", 1761, 3710, Style.NONE,
+                        List.of(ZeahBlocks.MINECART)),
+                PlaceDef.of(MINECART_SHAYZIEN_EAST, "Shayzien East minecart station", 1590, 3620, Style.NONE, List.of(ZeahBlocks.MINECART)),
+                PlaceDef.of(MINECART_SHAYZIEN_WEST, "Shayzien West minecart station", 1415, 3577, Style.NONE, List.of(ZeahBlocks.MINECART)),
+                // Quetzal landing sites without a town of their own.
+                PlaceDef.of(TEOMAT, "The Teomat", 1437, 3171, Style.NONE, List.of()),
+                PlaceDef.of(COLOSSAL_WYRM_REMAINS, "Colossal Wyrm Remains", 1670, 2933, Style.NONE, List.of()),
                 // Varlamore.
                 PlaceDef.town(CIVITAS, "Civitas illa Fortis", 1680, 3130, Station.BANK_BOOTH, Station.GENERAL_STORE, Station.RANGE,
                         Station.FURNACE, Station.ANVIL, Station.WEAPON_SHOP, Station.RUNE_SHOP, Station.ARCHERY_SHOP,

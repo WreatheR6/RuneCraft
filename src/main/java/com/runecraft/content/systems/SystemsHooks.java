@@ -310,7 +310,7 @@ public final class SystemsHooks implements ModuleHooks {
             return true;
         }
         if (id.equals("ectophial")) {
-            SysTeleport.teleport(p, Teleports.ECTOPHIAL.get(0), SysTeleport.JEWELLERY_WILDERNESS);
+            SysTeleport.teleport(p, Teleports.ECTOPHIAL.get(0), Teleports.wildernessLimit("ectophial"));
             return true;
         }
         if (id.equals("spade")) {

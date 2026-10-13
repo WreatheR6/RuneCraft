@@ -9,18 +9,29 @@ import java.util.List;
  * Primio's passage between Varrock and Civitas illa Fortis.
  *
  * <p>Each stop is a place id (a module PlaceDef or a Landmark enum name); travellers arrive next
- * to its centre. Fares are the OSRS ones where there is a fare (minecarts cost 20 coins without
- * the Kourend & Kebos diary; Veos' ship and the quetzals are free).
+ * to its centre, or at the stop's OSRS tile where one is given. Fares are the OSRS ones (minecarts cost 20 coins
+ * until The Forsaken Tower is complete; Veos' ship and the quetzals are free). Checked against the transport
+ * snapshot by TransportSnapshotTest.
  */
 public final class ZeahTravel {
     private ZeahTravel() {
     }
 
-    public record Stop(String place, String name) {
+    /**
+     * A stop: a place id (module PlaceDef or Landmark name) and, when non-zero, the OSRS tile travellers arrive
+     * at (else next to the place centre).
+     */
+    public record Stop(String place, String name, int x, int y) {
+        public Stop(String place, String name) {
+            this(place, name, 0, 0);
+        }
     }
 
-    /** A transport network: talking to any of its NPCs (or using any of its blocks) travels between its stops. */
-    public record Network(String id, String name, int fare, String verb, List<Stop> stops) {
+    /**
+     * A transport network: talking to any of its NPCs (or using any of its blocks) travels between its stops.
+     * {@code quest} (or null) is needed to use it; the fare is waived once {@code freeAfter} (or null) is complete.
+     */
+    public record Network(String id, String name, int fare, String verb, List<Stop> stops, String quest, String freeAfter) {
         public Stop stop(String place) {
             for (Stop s : stops) {
                 if (s.place().equals(place)) {
@@ -40,43 +51,58 @@ public final class ZeahTravel {
             }
             return out;
         }
+
+        /** The fare for a player who has ({@code true}) or hasn't completed {@link #freeAfter()}. */
+        public int fare(boolean freeAfterDone) {
+            return freeAfter != null && freeAfterDone ? 0 : fare;
+        }
     }
 
     public static final Network SHIP = new Network("veos_ship", "Veos' ship", 0, "You set sail for", List.of(
-            new Stop("PORT_SARIM", "Port Sarim"),
-            new Stop(ZeahPlaces.PORT_PISCARILIUS, "Port Piscarilius"),
-            new Stop(ZeahPlaces.LANDS_END, "Land's End")));
+            new Stop("PORT_SARIM", "Port Sarim", 3055, 3245),
+            new Stop(ZeahPlaces.PORT_PISCARILIUS, "Port Piscarilius", 1824, 3691),
+            new Stop(ZeahPlaces.LANDS_END, "Land's End", 1504, 3399)), null, null);
 
+    /**
+     * Lovakengj minecarts: the twelve OSRS stations at their tiles; 20 coins a ride until The Forsaken Tower is
+     * complete. (Stations whose town plaza is elsewhere have their own small station place.)
+     */
     public static final Network MINECART = new Network("lovakengj_minecart", "Lovakengj minecart network", 20,
             "The minecart rattles off towards", List.of(
-            new Stop(ZeahPlaces.ARCEUUS, "Arceuus"),
-            new Stop(ZeahPlaces.MINECART_FARMING_GUILD, "Farming Guild"),
-            new Stop(ZeahPlaces.HOSIDIUS, "Hosidius"),
-            new Stop(ZeahPlaces.KOUREND_WOODLAND, "Kourend Woodland"),
-            new Stop(ZeahPlaces.LOVAKENGJ, "Lovakengj"),
-            new Stop(ZeahPlaces.MOUNT_QUIDAMORTEM, "Mount Quidamortem"),
-            new Stop(ZeahPlaces.NORTHERN_TUNDRAS, "Northern Tundras"),
-            new Stop(ZeahPlaces.PORT_PISCARILIUS, "Port Piscarilius"),
-            new Stop(ZeahPlaces.SHAYZIEN, "Shayzien")));
+            new Stop(ZeahPlaces.MINECART_ARCEUUS, "Arceuus", 1670, 3833),
+            new Stop(ZeahPlaces.MINECART_FARMING_GUILD, "Farming Guild", 1218, 3737),
+            new Stop(ZeahPlaces.MINECART_HOSIDIUS_SOUTH, "Hosidius South", 1808, 3479),
+            new Stop(ZeahPlaces.MINECART_HOSIDIUS_WEST, "Hosidius West", 1655, 3543),
+            new Stop(ZeahPlaces.MINECART_KINGSTOWN, "Kingstown", 1699, 3660),
+            new Stop(ZeahPlaces.MINECART_KOUREND_WOODLAND, "Kourend Woodland", 1572, 3466),
+            new Stop(ZeahPlaces.MINECART_LOVAKENGJ, "Lovakengj", 1518, 3733),
+            new Stop(ZeahPlaces.MOUNT_QUIDAMORTEM, "Mount Quidamortem", 1255, 3548),
+            new Stop(ZeahPlaces.NORTHERN_TUNDRAS, "Northern Tundras", 1648, 3931),
+            new Stop(ZeahPlaces.MINECART_PORT_PISCARILIUS, "Port Piscarilius", 1761, 3710),
+            new Stop(ZeahPlaces.MINECART_SHAYZIEN_EAST, "Shayzien East", 1590, 3620),
+            new Stop(ZeahPlaces.MINECART_SHAYZIEN_WEST, "Shayzien West", 1415, 3577)), null, "the_forsaken_tower");
 
+    /** Quetzal transport system (Twilight's Promise): Renu and the quetzals wait at the OSRS landing sites. */
     public static final Network QUETZAL = new Network("quetzal", "Quetzal transport system", 0, "The quetzal carries you to",
             List.of(
-            new Stop(ZeahPlaces.CIVITAS, "Civitas illa Fortis"),
-            new Stop(ZeahPlaces.HUNTER_GUILD, "the Hunter Guild"),
-            new Stop(ZeahPlaces.SUNSET_COAST, "Sunset Coast"),
-            new Stop(ZeahPlaces.QUETZACALLI_GORGE, "Quetzacalli Gorge"),
-            new Stop(ZeahPlaces.FORTIS_COLOSSEUM, "the Fortis Colosseum"),
-            new Stop(ZeahPlaces.OUTER_FORTIS, "Outer Fortis"),
-            new Stop(ZeahPlaces.CAM_TORUM, "Cam Torum"),
-            new Stop(ZeahPlaces.TAL_TEKLAN, "Tal Teklan"),
-            new Stop(ZeahPlaces.ALDARIN, "Aldarin"),
-            new Stop(ZeahPlaces.KASTORI, "Kastori"),
-            new Stop(ZeahPlaces.SALVAGER_OVERLOOK, "Salvager Overlook"),
-            new Stop(ZeahPlaces.AUBURNVALE, "Auburnvale")));
+            new Stop(ZeahPlaces.CIVITAS, "Civitas illa Fortis", 1697, 3140),
+            new Stop(ZeahPlaces.HUNTER_GUILD, "the Hunter Guild", 1585, 3053),
+            new Stop(ZeahPlaces.SUNSET_COAST, "Sunset Coast", 1548, 2995),
+            new Stop(ZeahPlaces.QUETZACALLI_GORGE, "Quetzacalli Gorge", 1510, 3222),
+            new Stop(ZeahPlaces.FORTIS_COLOSSEUM, "the Fortis Colosseum", 1779, 3111),
+            new Stop(ZeahPlaces.OUTER_FORTIS, "Outer Fortis", 1700, 3037),
+            new Stop(ZeahPlaces.CAM_TORUM, "Cam Torum", 1446, 3108),
+            new Stop(ZeahPlaces.TAL_TEKLAN, "Tal Teklan", 1226, 3091),
+            new Stop(ZeahPlaces.ALDARIN, "Aldarin", 1389, 2901),
+            new Stop(ZeahPlaces.KASTORI, "Kastori", 1344, 3022),
+            new Stop(ZeahPlaces.SALVAGER_OVERLOOK, "Salvager Overlook", 1613, 3300),
+            new Stop(ZeahPlaces.AUBURNVALE, "Auburnvale", 1411, 3361),
+            new Stop(ZeahPlaces.TEOMAT, "The Teomat", 1437, 3171),
+            new Stop(ZeahPlaces.COLOSSAL_WYRM_REMAINS, "the Colossal Wyrm Remains", 1670, 2933)), "twilights_promise", null);
 
     public static final Network PRIMIO = new Network("primio", "Primio's passage", 0, "You make the long journey to", List.of(
             new Stop("VARROCK", "Varrock"),
-            new Stop(ZeahPlaces.CIVITAS, "Civitas illa Fortis")));
+            new Stop(ZeahPlaces.CIVITAS, "Civitas illa Fortis")), null, null);
 
     public static List<Network> networks() {
         return List.of(SHIP, MINECART, QUETZAL, PRIMIO);

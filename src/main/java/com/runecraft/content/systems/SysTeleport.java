@@ -38,6 +38,12 @@ public final class SysTeleport {
 
     /** Teleports a player to OSRS world coordinates (from any dimension). */
     public static boolean teleport(ServerPlayerEntity p, Teleports.Destination dest, int maxWilderness) {
+        if (dest.quest() != null && com.runecraft.osrs.content.ContentRegistry.quest(dest.quest()) != null
+                && !com.runecraft.quest.QuestApi.isComplete(p, dest.quest())) {
+            Msg.game(p, "You need to complete " + com.runecraft.osrs.content.ContentRegistry.quest(dest.quest()).displayName()
+                    + " to teleport to " + dest.name() + ".");
+            return false;
+        }
         if (!canTeleport(p, maxWilderness)) {
             return false;
         }

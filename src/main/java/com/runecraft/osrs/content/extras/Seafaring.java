@@ -126,8 +126,15 @@ public final class Seafaring {
         return Math.max(Math.abs(a.x() - b.x()), Math.abs(a.y() - b.y()));
     }
 
-    /** Charter fare in coins (scales with distance like the OSRS charter ships). approx */
+    /**
+     * Charter fare in coins: the OSRS charter table where both ports have Trader Crewmembers, else scaled with
+     * distance (approx; e.g. Rellekka and Etceteria have no OSRS charter).
+     */
     public static int charterFare(Port from, Port to) {
+        int osrs = com.runecraft.osrs.content.npcs.Travel.charterFare(from.name(), to.name());
+        if (osrs > 0) {
+            return osrs;
+        }
         return 200 + tiles(from, to) * 2;
     }
 

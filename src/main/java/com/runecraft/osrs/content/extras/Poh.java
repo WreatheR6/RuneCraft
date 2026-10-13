@@ -516,32 +516,32 @@ public final class Poh {
     /** Jewellery box teleports by box tier (basic 1, fancy 2, ornate 3). */
     public static final List<Dest> JEWELLERY_DESTS = List.of(
             // basic: ring of dueling + games necklace
-            new Dest("pvp_arena", "PvP Arena", 3315, 3235, 0, Map.of(), 1),
+            new Dest("pvp_arena", "Emir's Arena", 3315, 3235, 0, Map.of(), 1),
             new Dest("castle_wars", "Castle Wars", 2440, 3090, 0, Map.of(), 1),
             new Dest("ferox_enclave", "Ferox Enclave", 3151, 3635, 0, Map.of(), 1),
-            new Dest("burthorpe", "Burthorpe", 2898, 3553, 0, Map.of(), 1),
+            new Dest("burthorpe", "Burthorpe", 2899, 3553, 0, Map.of(), 1),
             new Dest("barbarian_outpost", "Barbarian Outpost", 2520, 3571, 0, Map.of(), 1),
             new Dest("corporeal_beast", "Corporeal Beast", 3206, 3681, 0, Map.of(), 1), // approx (cave entrance)
-            new Dest("tears_of_guthix", "Tears of Guthix", 3169, 3172, 0, Map.of(), 1), // approx (swamp cave entrance)
-            new Dest("wintertodt", "Wintertodt Camp", 1624, 3938, 0, Map.of(), 1),
+            new Dest("tears_of_guthix", "Tears of Guthix", 3252, 3175, 0, Map.of(), 1), // the Tears of Guthix cave as built here
+            new Dest("wintertodt", "Wintertodt Camp", 1631, 3940, 0, Map.of(), 1),
             // fancy: combat bracelet + skills necklace
-            new Dest("warriors_guild", "Warriors' Guild", 2882, 3548, 0, Map.of(), 2),
-            new Dest("champions_guild", "Champions' Guild", 3191, 3367, 0, Map.of(), 2),
-            new Dest("monastery", "Edgeville Monastery", 3052, 3488, 0, Map.of(), 2),
-            new Dest("ranging_guild", "Ranging Guild", 2655, 3441, 0, Map.of(), 2),
+            new Dest("warriors_guild", "Warriors' Guild", 2882, 3547, 0, Map.of(), 2),
+            new Dest("champions_guild", "Champions' Guild", 3192, 3368, 0, Map.of(), 2),
+            new Dest("monastery", "Edgeville Monastery", 3052, 3490, 0, Map.of(), 2),
+            new Dest("ranging_guild", "Ranging Guild", 2653, 3439, 0, Map.of(), 2),
             new Dest("fishing_guild", "Fishing Guild", 2611, 3390, 0, Map.of(), 2),
-            new Dest("mining_guild", "Mining Guild", 3020, 3339, 0, Map.of(), 2), // approx (Falador entrance)
-            new Dest("crafting_guild", "Crafting Guild", 2933, 3290, 0, Map.of(), 2),
-            new Dest("cooking_guild", "Cooks' Guild", 3143, 3442, 0, Map.of(), 2),
+            new Dest("mining_guild", "Mining Guild", 3016, 3339, 0, Map.of(), 2), // approx (Falador entrance)
+            new Dest("crafting_guild", "Crafting Guild", 2933, 3295, 0, Map.of(), 2),
+            new Dest("cooking_guild", "Cooks' Guild", 3144, 3438, 0, Map.of(), 2),
             new Dest("woodcutting_guild", "Woodcutting Guild", 1662, 3505, 0, Map.of(), 2),
-            new Dest("farming_guild", "Farming Guild", 1249, 3718, 0, Map.of(), 2),
+            new Dest("farming_guild", "Farming Guild", 1248, 3719, 0, Map.of(), 2),
             // ornate: amulet of glory + ring of wealth
             new Dest("edgeville", "Edgeville", 3087, 3496, 0, Map.of(), 3),
             new Dest("karamja", "Karamja", 2918, 3176, 0, Map.of(), 3),
             new Dest("draynor_village", "Draynor Village", 3105, 3251, 0, Map.of(), 3),
             new Dest("al_kharid", "Al Kharid", 3293, 3163, 0, Map.of(), 3),
-            new Dest("miscellania", "Miscellania", 2535, 3862, 0, Map.of(), 3),
-            new Dest("grand_exchange", "Grand Exchange", 3164, 3478, 0, Map.of(), 3),
+            new Dest("miscellania", "Miscellania", 2534, 3862, 0, Map.of(), 3),
+            new Dest("grand_exchange", "Grand Exchange", 3163, 3478, 0, Map.of(), 3),
             new Dest("falador_park", "Falador Park", 2995, 3375, 0, Map.of(), 3),
             new Dest("dondakans_rock", "Dondakan's Rock", 2826, 3504, 0, Map.of(), 3)); // approx (Keldagrim entrance)
 
@@ -553,6 +553,7 @@ public final class Poh {
             new Dest("grand_exchange", "Grand Exchange", 3185, 3508, 0, Map.of(), 1),
             new Dest("feldip_hills", "Feldip Hills", 2488, 2850, 0, Map.of(), 1),
             new Dest("prifddinas", "Prifddinas", 3274, 6123, 0, Map.of(), 1),
+            new Dest("poison_waste", "Poison Waste", 2339, 3109, 0, Map.of(), 1),
             new Dest("port_sarim", "Port Sarim", 3059, 3257, 0, Map.of(), 1),
             new Dest("etceteria", "Etceteria", 2613, 3855, 0, Map.of(), 1),
             new Dest("brimhaven", "Brimhaven", 2800, 3203, 0, Map.of(), 1),

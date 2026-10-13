@@ -3,7 +3,6 @@ package com.runecraft.content.skilling;
 import com.runecraft.content.BlockHooks;
 import com.runecraft.osrs.Chance;
 import com.runecraft.osrs.FarmingDisease;
-import com.runecraft.osrs.Landmark;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.skilling.CraftingData;
 import com.runecraft.osrs.content.skilling.FarmingData;
@@ -45,8 +44,9 @@ final class FarmingHooks {
     static final double GROWTH_SPEED = 1.0;
     private static final long TICKS_PER_MINUTE = 1200;
 
-    private static final Landmark[] SPIRIT_DESTINATIONS = {Landmark.GNOME_STRONGHOLD, Landmark.VARROCK, Landmark.PORT_SARIM,
-            Landmark.BRIMHAVEN, Landmark.YANILLE, Landmark.CATHERBY};
+    /** A player-grown spirit tree reaches every natural spirit tree (OSRS), with that tree's quest requirements. */
+    private static final java.util.List<com.runecraft.osrs.content.npcs.Travel.Dest> SPIRIT_DESTINATIONS =
+            com.runecraft.osrs.content.npcs.Travel.spiritTreeDests(null);
 
     static final List<String> BIRDHOUSE_SEEDS = List.of("barley_seed", "hammerstone_seed", "asgarnian_seed", "jute_seed",
             "yanillian_seed", "krandorian_seed", "wildblood_seed", "guam_seed", "marrentill_seed", "tarromin_seed", "harralander_seed");
@@ -690,19 +690,34 @@ final class FarmingHooks {
             Msg.game(player, "The spirit tree is fully grown. Talk to it to travel; sneak to choose a destination.");
             return;
         }
-        int dest = nbt.getInt("dest") % SPIRIT_DESTINATIONS.length;
+        int dest = nbt.getInt("dest") % SPIRIT_DESTINATIONS.size();
         if (player.isSneaking()) {
-            dest = (dest + 1) % SPIRIT_DESTINATIONS.length;
+            dest = (dest + 1) % SPIRIT_DESTINATIONS.size();
             nbt.putInt("dest", dest);
-            Msg.game(player, "The spirit tree will take you to " + SPIRIT_DESTINATIONS[dest].displayName() + ".");
+            Msg.game(player, "The spirit tree will take you to " + SPIRIT_DESTINATIONS.get(dest).name() + ".");
             return;
         }
         if (!Gielinor.is(player)) {
             Msg.game(player, "The spirit tree can only take you to places in Gielinor.");
             return;
         }
+        com.runecraft.osrs.content.npcs.Travel.Dest to = SPIRIT_DESTINATIONS.get(dest);
+        for (String quest : to.quests()) {
+            if (com.runecraft.osrs.content.ContentRegistry.quest(quest) != null
+                    && !com.runecraft.quest.QuestApi.isComplete(player, quest)) {
+                Msg.game(player, "You need to complete " + com.runecraft.osrs.content.ContentRegistry.quest(quest).displayName()
+                        + " to travel to " + to.name() + ".");
+                return;
+            }
+        }
+        ServerWorld world = Gielinor.world(player.getServer());
+        if (world == null) {
+            return;
+        }
         Msg.action(player, "You feel at one with the spirit tree.");
-        Gielinor.teleport(player, SPIRIT_DESTINATIONS[dest]);
+        BlockPos pos = Gielinor.safeSpot(world, com.runecraft.osrs.GielinorMap.toBlockX(to.x()),
+                com.runecraft.osrs.GielinorMap.toBlockZ(to.y()));
+        player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());
     }
 
     private static void clear(ServerWorld world, BlockPos pos, NbtCompound nbt, SkillingState state, String key) {
