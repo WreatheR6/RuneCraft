@@ -185,8 +185,9 @@ class SpawnTableTest {
             } else {
                 assertTrue(region.mainland(), p.key() + " is off the mapped kingdoms");
             }
-            // Gielinor's bounds; only islands (Zanaris at y 4400) lie north of the Wilderness.
-            assertTrue(p.x() > 1000 && p.x() < 4000 && p.y() > 2500 && p.y() < (p.island() ? 4500 : 4000), p.key());
+            // Gielinor's bounds; only islands (Zanaris at y 4400) and Prifddinas (y 6040-6170) lie north of the Wilderness.
+            boolean prifddinas = p.x() >= 3196 && p.x() <= 3332 && p.y() >= 6036 && p.y() <= 6172;
+            assertTrue(prifddinas || p.x() > 1000 && p.x() < 4000 && p.y() > 2500 && p.y() < (p.island() ? 4500 : 4000), p.key());
         }
     }
 

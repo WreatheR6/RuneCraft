@@ -203,9 +203,13 @@ public final class ZeahPlaces {
         return List.of(
                 new Camp(SAND_CRAB_BEACH, 0, 0, 14, 7, SURFACE, List.of("sand_crab")),
                 new Camp(CRABCLAW_ISLE, 0, 0, 10, 4, SURFACE, List.of("sand_crab", "sand_crab", "king_sand_crab")),
+                // No shamans on the settlement's surface in the cache; theirs are in the Lizardman Caves below (dungeons).
                 new Camp(LIZARDMAN_SETTLEMENT, 0, 0, 16, 7, SURFACE, List.of("lizardman", "lizardman", "lizardman_brute",
-                        "lizardman_brute", "lizardman_shaman")),
-                new Camp(LIZARDMAN_CANYON, 0, 0, 14, 5, SURFACE, List.of("lizardman_brute", "lizardman_shaman", "lizardman_shaman")),
+                        "lizardman_brute")),
+                // Cache spawns: lizardmen and brutes fill the canyon's east end (35 and 21 at 1480-1530, 3680-3720); its
+                // three shamans stand at the west end (1424-1434, 3700-3711).
+                new Camp(LIZARDMAN_CANYON, 0, 0, 14, 5, SURFACE, List.of("lizardman", "lizardman", "lizardman_brute")),
+                new Camp(LIZARDMAN_CANYON, -172, -10, 8, 3, SURFACE, List.of("lizardman_shaman")),
                 new Camp(KOUREND_CASTLE, 0, 10, 40, 12, ZeahStructures.CATACOMBS_FLOOR_Y + 1, ZeahMonsters.CATACOMB_CREATURES),
                 new Camp(CAM_TORUM, 0, 20, 12, 4, SURFACE, List.of("sulphur_nagua")),
                 new Camp(RALOS_RISE, 0, 0, 12, 3, SURFACE, List.of("sulphur_nagua")),

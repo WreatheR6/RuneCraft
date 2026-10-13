@@ -81,6 +81,10 @@ public final class GielinorMap {
         if (in(x, y, 3480, 3620, 3940, 4060)) {
             return Region.LITHKREN;
         }
+        // Prifddinas lies at its OSRS map coordinates far north of the map; it is Tirannwn's crystal city.
+        if (in(x, y, 3160, 3360, 5990, 6220)) {
+            return Region.TIRANNWN;
+        }
         if (in(x, y, 2944, 3392, WILDERNESS_DITCH, 3968)) {
             return Region.WILDERNESS;
         }
