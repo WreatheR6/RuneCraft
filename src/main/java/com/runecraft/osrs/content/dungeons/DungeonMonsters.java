@@ -81,8 +81,8 @@ public final class DungeonMonsters {
                         Drop.of("soul_rune", 1, 6, 25), Drop.of("blood_rune", 2, 10, 20))
                 .skin(0x2A1A3A, 0x1A102A, 0x1A0A20, 0xA020C0).size(1.2f, 2.2f, 1.1f));
         // Kruk's Dungeon (Monkey Madness II): stats from the wiki DPS calculator (cache ids 7118 and 7119). Both share one
-        // 20-slot drop table, rolled here as independent 1/x chances. Small ninja monkey bones are plain bones, and the
-        // 1-dose prayer potion and 2-dose antipoison are full potions at a quarter/half the rate (same doses per kill).
+        // 20-slot drop table, rolled here as independent 1/x chances. MonsterDropsTable swaps the bones for small ninja
+        // monkey bones, and the 1-dose prayer potion and 2-dose antipoison are full potions at a quarter/half the rate (same doses per kill).
         list.add(m("maniacal_monkey", "Maniacal monkey", 140, 65, 200, 175, 10, 1, 1).speed(4)
                 .attack(melee(AttackType.SLASH, 18)).defenceBonus(0, 0, 0, 0, 0).drops(maniacalDrops())
                 .slayer(1, "monkeys").model("maniacal_monkey").skin(0x5A3A2A, 0x3A2418, 0x3A2418, 0xC0A060).size(0.6f, 0.9f, 1.4f));
@@ -98,7 +98,8 @@ public final class DungeonMonsters {
      * Waterbirth Island Dungeon (and Jormungand's Prison): the dagannoth of the wiki's "Dagannoth (Waterbirth Island)"
      * page - level 88 (ranged, 3-tick) and level 90 (stab) - their spawn and fledgelings, giant rock crabs, and the
      * prison's level 92 dagannoth. Stats from the wiki infoboxes and the DPS calculator data; drops are the wiki
-     * tables' core items (Fremennik armour pieces, hides and crafting materials of other modules are left out, approx).
+     * tables' core items; MonsterDropsTable adds the rest (Fremennik clothing, spined gloves/boots, Neitiznot helms,
+     * oyster pearls; the hides and crafting materials are still left out, approx).
      */
     private static void waterbirth(List<MonsterDef> list) {
         list.add(m("dagannoth_lvl88", "Dagannoth", 88, 85, 10, 10, 75, 1, 100).speed(3)
@@ -147,8 +148,9 @@ public final class DungeonMonsters {
 
     /**
      * The Ape Atoll Dungeon and the Temple of Marimbo Dungeon: the level 82 and 129 monkey zombies (the level 98 one is
-     * the islands module's) and the level 142 skeletons, from the DPS calculator data. Their bones (zombie monkey bones,
-     * Ape Atoll bones) are plain bones here (approx).
+     * the islands module's) and the level 142 skeletons, from the DPS calculator data. MonsterDropsTable swaps the
+     * zombies' bones for small/large zombie monkey bones; the skeletons' Ape Atoll "Bones" are plain bones (same name and
+     * Prayer XP in OSRS).
      */
     private static void apeAtoll(List<MonsterDef> list) {
         list.add(m("monkey_zombie_lvl82", "Monkey Zombie", 82, 60, 100, 60, 60, 60, 1).speed(4).attackBonus(15, 0, 0)
@@ -165,7 +167,7 @@ public final class DungeonMonsters {
     }
 
     private static Drop[] maniacalDrops() {
-        return new Drop[]{Drop.always("bones"), // approx: small ninja monkey bones
+        return new Drop[]{Drop.always("bones"), // MonsterDropsTable: small ninja monkey bones
                 Drop.of("steel_scimitar", 1, 1, 10), Drop.of("maple_shortbow", 1, 1, 20), Drop.of("oak_plank", 1, 1, 7),
                 Drop.of("grimy_guam_leaf", 1, 1, 10), Drop.of("banana", 1, 1, 10), Drop.of("adamant_arrow", 5, 5, 20),
                 Drop.of("antipoison", 1, 1, 20), Drop.of("bass", 2, 2, 5), Drop.of("prayer_potion", 1, 1, 40),

@@ -210,6 +210,14 @@ public final class Jewellery {
         wornExternal("spotted_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0));   // skilling module (Hunter)
         wornExternal("spottier_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0)); // skilling module (Hunter)
         wornExternal("ectophial", Slot.NECK, NONE);
+        // Monster-drop gloves and cloak (CommonEquipment: Waterbirth dagannoth, rock crabs, wallasalki, crawling hands,
+        // Ancient Prison).
+        for (String gloves : new String[]{"spined_gloves", "rock_shell_gloves", "skeletal_gloves", "fremennik_gloves",
+                "purple_gloves", "red_gloves", "teal_gloves", "yellow_gloves"}) {
+            wornExternal(gloves, Slot.HANDS, s(0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0));
+        }
+        wornExternal("ancient_ceremonial_gloves", Slot.HANDS, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1));
+        wornExternal("fremennik_brown_cloak", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0));
     }
 
     private Jewellery() {

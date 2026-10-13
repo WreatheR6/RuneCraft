@@ -10,7 +10,18 @@ public enum Bone {
     LAVA_DRAGON_BONES("lava_dragon_bones", "Lava dragon bones", 85.0, 0xC08060),
     HYDRA_BONES("hydra_bones", "Hydra bones", 110.0, 0xB0C0A0),
     DAGANNOTH_BONES("dagannoth_bones", "Dagannoth bones", 125.0, 0xC8C0B0),
-    SUPERIOR_DRAGON_BONES("superior_dragon_bones", "Superior dragon bones", 150.0, 0xC8C0A0);
+    SUPERIOR_DRAGON_BONES("superior_dragon_bones", "Superior dragon bones", 150.0, 0xC8C0A0),
+    // Monster-specific bones (OSRS Wiki Prayer XP), dropped by Ape Atoll monkeys, jogres, wyrms and drakes.
+    MONKEY_BONES("monkey_bones", "Monkey bones", 5.0, 0xD8CCB0),
+    SMALL_NINJA_MONKEY_BONES("small_ninja_monkey_bones", "Small ninja monkey bones", 16.0, 0xD0C4A8),
+    MEDIUM_NINJA_MONKEY_BONES("medium_ninja_monkey_bones", "Medium ninja monkey bones", 18.0, 0xC8BCA0),
+    GORILLA_BONES("gorilla_bones", "Gorilla bones", 18.0, 0xC8C0A8),
+    BEARDED_GORILLA_BONES("bearded_gorilla_bones", "Bearded gorilla bones", 18.0, 0xC0B8A0),
+    SMALL_ZOMBIE_MONKEY_BONES("small_zombie_monkey_bones", "Small zombie monkey bones", 5.0, 0xB8C0A0),
+    LARGE_ZOMBIE_MONKEY_BONES("large_zombie_monkey_bones", "Large zombie monkey bones", 5.0, 0xB0B898),
+    JOGRE_BONES("jogre_bones", "Jogre bones", 15.0, 0xD0C8B0),
+    WYRM_BONES("wyrm_bones", "Wyrm bones", 50.0, 0xC8C8B8),
+    DRAKE_BONES("drake_bones", "Drake bones", 80.0, 0xC0B8A8);
 
     /** Best bone-offering multiplier at a gilded altar (both incense burners lit); see {@link PrayerAltars}. */
     public static final double ALTAR_MULTIPLIER = 3.5;

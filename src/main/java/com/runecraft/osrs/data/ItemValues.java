@@ -2635,6 +2635,45 @@ public final class ItemValues {
             suqah_hide|60|3.175||
             suqah_tooth|20|0.01||
             """);
+        // Monster-drop items added with the drop-table follow-up (same parsed-osrs snapshot).
+        load("""
+            berserker_helm|60000|2.721|gt|This helmet is worn by berserkers.
+            warrior_helm|60000|2.721|gt|This helmet is worn by warriors.
+            spined_gloves|650|3.175|gt|Fremennik gloves stitched together from spined dagannoth hide.
+            spined_boots|650|3.175|gt|Some finely crafted Fremennik boots, made from spined dagannoth hide.
+            rock_shell_gloves|650|3.175|gt|Fremennik gloves stitched together from rock crab shell shards.
+            rock_shell_boots|650|3.175|gt|Some Fremennik boots, made from the shards of a rock crab's shell.
+            skeletal_gloves|650|3.175|gt|Fremennik gloves stitched together from wallasalki bones fragments.
+            skeletal_boots|650|3.175|gt|Some finely crafted Fremennik boots, made from the bones of a wallasalki.
+            fremennik_gloves|500|0.453|gt|These will keep my hands warm!
+            fremennik_brown_shirt|250|0.907|gt|The latest in Fremennik fashion.
+            fremennik_brown_cloak|250|0.453|gt|The latest fashion in Rellekka.
+            ancient_ceremonial_mask|50000|0.3|gt|A ceremonial mask dedicated to an ancient god.
+            ancient_ceremonial_top|100000|0.9|gt|Some ceremonial robes dedicated to an ancient god.
+            ancient_ceremonial_legs|80000|0.8|gt|Some ceremonial robes dedicated to an ancient god.
+            ancient_ceremonial_gloves|40000|0.2|gt|Some ceremonial gloves dedicated to an ancient god.
+            ancient_ceremonial_boots|40000|0.3|gt|Some ceremonial boots dedicated to an ancient god.
+            granite_helm|46000|4.535|gt|A stone helmet.
+            black_robe|13|0.907|gt|I can do magic better in this.
+            purple_gloves|500|0.453|gt|These will keep my hands warm!
+            red_gloves|500|0.453|gt|These will keep my hands warm!
+            teal_gloves|500|0.453|gt|These will keep my hands warm!
+            yellow_gloves|500|0.453|gt|These will keep my hands warm!
+            monkey_bones|1|0.5|gt|These are small monkey bones.
+            small_ninja_monkey_bones|1|0.5||These are smallish monkey bones.
+            medium_ninja_monkey_bones|1|0.5||These are medium sized monkey bones.
+            gorilla_bones|1|0.8||These are quite large ape bones.
+            bearded_gorilla_bones|1|0.8||These are quite large ape bones.
+            small_zombie_monkey_bones|1|0.5||These are smallish monkey bones. They smell extremely nauseating.
+            large_zombie_monkey_bones|1|0.5||These are smallish monkey bones. They smell extremely nauseating.
+            jogre_bones|1|0.8|gt|Fairly big bones which smell distinctly of Jogre.
+            wyrm_bones|160|1.8|gt|I wonder how Wyrms have bones...
+            drake_bones|160|1.8|gt|The bones of a ferocious Drake.
+            long_bone|5|1||A Construction bone.
+            curved_bone|7|1||A curved Construction bone.
+            oyster_pearls|1400|0.004|gt|I could work wonders with a chisel on these pearls.
+            unicorn_horn|20|0.007|gt|This horn has restorative properties.
+            """);
     }
 
     private ItemValues() {

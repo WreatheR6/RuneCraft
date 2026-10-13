@@ -1832,6 +1832,37 @@ public final class GePrices {
             lime_chunks|194|13000
             orange_chunks|97|13000
             """);
+        // Monster-drop items added with the drop-table follow-up (same snapshot).
+        load("""
+            berserker_helm|40656|70
+            warrior_helm|38796|70
+            spined_gloves|6300|125
+            spined_boots|3865|125
+            rock_shell_gloves|693|125
+            rock_shell_boots|626|125
+            skeletal_gloves|222148|125
+            skeletal_boots|75031|125
+            fremennik_gloves|186|150
+            fremennik_brown_shirt|50|150
+            fremennik_brown_cloak|27|150
+            ancient_ceremonial_mask|29073|8
+            ancient_ceremonial_top|58936|8
+            ancient_ceremonial_legs|47072|8
+            ancient_ceremonial_gloves|22814|8
+            ancient_ceremonial_boots|22816|8
+            granite_helm|28494|70
+            black_robe|562|125
+            purple_gloves|1214|150
+            red_gloves|1469|150
+            teal_gloves|753|150
+            yellow_gloves|1424|150
+            monkey_bones|282|3000
+            jogre_bones|640|3000
+            wyrm_bones|1973|7500
+            drake_bones|3921|7500
+            oyster_pearls|653|11000
+            unicorn_horn|444|13000
+            """);
     }
 
     private GePrices() {

@@ -335,6 +335,7 @@ public final class HerbloreData extends SkillingPart {
         grind(out, "lava_scale", "lava_scale_shard");
         grind(out, "superior_dragon_bones", "crushed_superior_dragon_bones");
         grind(out, "bird_nest", "crushed_nest");
+        grind(out, "unicorn_horn", "unicorn_horn_dust"); // unicorn_horn is a CommonItems drop
         out.accept(plain("trade_amylase", H, "10 amylase crystals (1 mark of grace)").in("mark_of_grace", 1)
                 .out("amylase_crystal", 10).ticks(0).build());
         out.accept(r("make_coconut_milk", H, "Coconut milk", Skill.HERBLORE, 1, 0).in("coconut", 1).in("vial", 1)
