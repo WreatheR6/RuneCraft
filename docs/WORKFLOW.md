@@ -120,6 +120,13 @@ Recurring conflict spots:
   - Waterbirth Island Dungeon (5 sublevels at cache counts, ladder to the Dagannoth Kings), Ape Atoll and Temple of Marimbo dungeons, Shade Catacombs key doors and Urium crypt (shade keys moved to `CommonItems`), Jormungand's Prison dagannoth/basilisk caves.
   - Zeah and Varlamore coasts, 24 lakes, 67 rivers and new ridges traced from the map; biomes for KOUREND, VARLAMORE, FOSSIL_ISLAND, LITHKREN; 32 Zeah multicombat zones and single-way pockets (Falador castle SW).
 
+- **Session 2, rounds 4–5: monster data, models, drops, DT2/Doom, skilling leftovers:**
+  - Reference stats/drops for the new dungeon and trek monsters; second slayer categories (`SlayerCategories.also`); ice troll spawn aliases; slayer ring (8) tradeable.
+  - Models for the remaining fallbacks (spiritual creatures per god, GWD orks/vampires/knights/priests, seasonal/titan elementals, avatars, ghasts, nail beasts) and look-alike variants; old previews re-rendered from above.
+  - 10 new `Bone` values (monkey, gorilla, zombie monkey, jogre, wyrm, drake) and 21 wearables from drop tables; skipped monster drop pairs 523 → 359.
+  - Awakened DT2 bosses (`BossVariant`, awakener's orbs, separate KC, blood ornament kit) and Doom of Mokhaiotl delves with per-level loot; CAs 449 → 463 tracked.
+  - GotR Rewards Guardian searches, polyelemental stones, portal talismans; Volcanic Mine vents/chambers, lava beasts, noted shop ores; Motherlode ore rolled when mined, 64 upper veins, inner ring; ancient brew/mix, magic essence/mix; calquat kegs.
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
@@ -136,9 +143,9 @@ Recurring conflict spots:
   - Missing: pharaoh's sceptre, ring of the elements, ring of returning, giantsoul amulet and pendant of ates teleports; fairy rings in realms that aren't built; dialling DIQ for the house ring.
   - The skilling module's `SailingData.PORTS` lacks the three new ports.
 - **Skilling:**
-  - GotR: Rewards Guardian block not placed, no 25-pearl search, abyssal creatures are abstract, polyelemental stones and portal talismans missing.
-  - Volcanic Mine: no lava/water vessel, vents or lava beasts. Motherlode: ores rolled at deposit; upper floor has 16 of 64 veins.
-  - Ancient and magic essence mixes (cross-module ingredients). Calquat kegs.
+  - GotR: binding necklace and polycatalytic stones; abyssal creatures are abstract.
+  - Volcanic Mine: heat-proof vessel, gas holes, meteors, multiple boulders; lava beast spawn rate guessed.
+  - Brews come as 4 doses (OSRS 3).
   - Dungeon herb, seed and Varlamore crops; coral.
   - Seed pack contents are partly guessed.
 - **Thieving and Agility:** the Dorgesh-Kaan course is missing; Isle of Souls chests sit on the surface (their real tiles are in the dungeon/tower basement); leaving the Wilderness course doesn't forfeit the fee.
@@ -151,10 +158,12 @@ Recurring conflict spots:
   - Overworld implings don't roam.
 - **Models:** remaining humanoid fallbacks (GWD orks/vampires/knights, Bandos/Sara/Zammy spiritual creatures, bloodveld/pyrefiend GWD variants, seasonal/titan elementals, quest giant lobster). Old single-model previews (`bst_*`, `slm_*`) were rendered from below.
 - **Bosses:**
+  - Doom: grubs, shield/burrow phases, melee punish missing (CAs 613–615, 620, 624); delve runs and held loot are in memory only. Awakened mechanics are guesses; DT2 tablets/quartzes missing; normal Vardorvis stat row has Str/Def 1.
   - Yama, Doom, Maggot King and Royal Titans lairs are approx (no cache surface tile).
   - Deranged archaeologist sits at 3683,3735 because Fossil Island's coast polygon stops short of his real tile (3683,3706).
   - Gorillas: boulder chance and reset timers guessed; no overhead prayer icon; Verac's doesn't bypass. Demonic Brutus phase-2 heal unscripted.
 - **Items:**
+  - Spined/rock-shell/skeletal helms and Fremennik boots (need dagannoth hide crafting); potions with fewer than 4 doses; boss tables not patched by `MonsterDropsTable`; feathers, edible seaweed, demon contracts, slayer heads still missing as drop items.
   - Skull timers are in memory only (lost on restart). Heavy ballista wield doesn't check MM2 training; uncut zenyte is a gem-cutting recipe.
   - Seers ring magic damage (0.2%/0.5%) can't be represented with whole-percent magic damage.
   - Imbue scrolls from LMS/Emir's/Bounty Hunter missing (minigames don't exist).
