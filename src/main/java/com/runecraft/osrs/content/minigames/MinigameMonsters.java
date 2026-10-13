@@ -216,6 +216,14 @@ public final class MinigameMonsters {
                 .stats(MinigameRules.SoulWars.AVATAR_HP, 160, 320, 10, 10, 1).speed(6)
                 .defenceBonus(20, 20, 20, 20, 20).attack(melee(AttackType.CRUSH, 54))
                 .size(1.8f, 4.0f, 2.2f).skin(0x1A3A6A, 0x10204A, 0x08102A, 0x40A0FF));
+        // ---------------- Sorceress's Garden ----------------
+        // The seasonal elementals can't be attacked; they patrol their garden (moved by the session) and teleport intruders out.
+        for (SorceressGarden.Season s : SorceressGarden.Season.values()) {
+            list.add(MonsterDef.of(s.elemental(), s.displayName() + " Elemental").level(0).stats(255, 1, 1, 1, 1, 1).passive()
+                    .moveSpeed(0.0).immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.MAGIC, AttackType.RANGED)
+                    .attack(NONE).flying().size(0.7f, 1.9f, 1.0f)
+                    .skin(s.juiceColor(), s.fruitColor(), s.fruitColor(), 0xFFFFFF));
+        }
         return list;
     }
 

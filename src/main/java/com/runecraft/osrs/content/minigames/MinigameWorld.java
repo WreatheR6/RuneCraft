@@ -144,8 +144,25 @@ public final class MinigameWorld {
             {"sw_graveyard", "Graveyard", "6A6A6A", "statue"},
             // Tears of Guthix
             {"tog_weeping_wall", "Weeping wall", "4A6A8A", "water_spot"},
+            // Sorceress's Garden (gate, sq'irk tree and herb patch per season; see SorceressGarden.Season)
+            {"sg_fountain", "Fountain", "6AA0E0", "statue"},
+            {"sg_gate_winter", "Winter garden gate", "9AC8E8", "portal_door"},
+            {"sg_gate_spring", "Spring garden gate", "6AC050", "portal_door"},
+            {"sg_gate_autumn", "Autumn garden gate", "C07020", "portal_door"},
+            {"sg_gate_summer", "Summer garden gate", "E04040", "portal_door"},
+            {"sg_sqirk_tree_winter", "Sq'irk tree", "8AA0B0", "tree"},
+            {"sg_sqirk_tree_spring", "Sq'irk tree", "4A9A3A", "tree"},
+            {"sg_sqirk_tree_autumn", "Sq'irk tree", "A06020", "tree"},
+            {"sg_sqirk_tree_summer", "Sq'irk tree", "3A8A2A", "tree"},
+            {"sg_herbs_winter", "Herbs", "6A8A7A", "farming_patch"},
+            {"sg_herbs_spring", "Herbs", "4A9A3A", "farming_patch"},
+            {"sg_herbs_autumn", "Herbs", "8A7A2A", "farming_patch"},
+            {"sg_herbs_summer", "Herbs", "3A8A2A", "farming_patch"},
             // Shared
             {"minigame_exit", "Exit portal", "C0C0FF", "portal_glow"}};
+
+    /** Shelves in the sorceress's house: free beer glasses for the sq'irkjuice. */
+    public static final String SORCERESS_SHELVES = "sg_shelves";
 
     public static List<BlockDef> blocks() {
         List<BlockDef> list = new ArrayList<>();
@@ -162,6 +179,7 @@ public final class MinigameWorld {
         }
         list.add(BlockDef.scripted("pyramid_plunder_artefact_trader", "Simon Templeton's artefact crate", 0xC0A060, "chest"));
         list.add(BlockDef.scripted("rogues_den_jewel_trader", "Brian O'Richard's crate", 0x5A5A60, "chest"));
+        list.add(BlockDef.scripted(SORCERESS_SHELVES, "Shelves", 0x8A6A3A, "crate"));
         for (String[] b : ARENA_BLOCKS) {
             list.add(BlockDef.scripted(b[0], b[1], Integer.parseInt(b[2], 16), b[3]));
         }
@@ -185,6 +203,7 @@ public final class MinigameWorld {
         map.get(Minigame.PYRAMID_PLUNDER.place()).add("pyramid_plunder_artefact_trader");
         map.get(Minigame.ROGUES_DEN.place()).add("rogues_den_jewel_trader");
         map.get(Minigame.TEMPOROSS.place()).add("tempoross_reward_pool");
+        map.get(Minigame.SORCERESS_GARDEN.place()).add(SORCERESS_SHELVES);
         return map;
     }
 
@@ -214,6 +233,7 @@ public final class MinigameWorld {
                 case NIGHTMARE_ZONE -> "Nightmare Zone";
                 case SOUL_WARS -> "Isle of Souls";
                 case TEARS_OF_GUTHIX -> "Chasm of Tears entrance";
+                case SORCERESS_GARDEN -> "Sorceress's house";
                 default -> m.displayName();
             };
             list.add(PlaceDef.of(m.place(), name, m.entranceX(), m.entranceY(), m.style(), blocks.get(m.place())));
@@ -262,6 +282,8 @@ public final class MinigameWorld {
         list.add(NpcDef.of("mg_dominic_onion", "Dominic Onion", Minigame.NIGHTMARE_ZONE.place(), 2, 2, 0xC8A080, 0x4A6AA0, 0x3A4A7A,
                 0xE0E0E0));
         list.add(NpcDef.of("mg_nomad", "Nomad", Minigame.SOUL_WARS.place(), 2, 2, 0xC09070, 0x5A3A8A, 0x3A2A5A, 0x2A2A2A));
+        list.add(NpcDef.of("mg_sorceress_apprentice", "Apprentice", Minigame.SORCERESS_GARDEN.place(), 2, 2, 0xC09070, 0x6A3A8A,
+                0x4A2A6A, 0x2A1A1A));
         list.add(NpcDef.of("mg_mortton_priest", "Ulsquire Shauncy", Minigame.SHADES_OF_MORTTON.place(), 2, 2, 0xB0B0A0, 0x3A3A3A,
                 0x2A2A2A, 0x8A8A8A));
         return list;

@@ -57,7 +57,14 @@ public enum Minigame {
     SOUL_WARS("soul_wars", "Soul Wars", "mg_isle_of_souls", 2136, 2900, 2210, 2880, PlaceDef.Style.CAMP, 20, 30, null, 0),
     /** Juna's Chasm of Tears below Lumbridge Swamp (after the Tears of Guthix quest); the portal stands beside Juna. */
     TEARS_OF_GUTHIX("tears_of_guthix", "Tears of Guthix", "mg_chasm_of_tears", 3257, 9517, 3255, 3178, PlaceDef.Style.NONE, 0, 1,
-            null, 0);
+            null, 0),
+    /**
+     * The Sorceress's Garden (an instance at 2912, 5472), entered through the sorceress's apprentice in the house north-east
+     * of the Shantay Pass (3320, 3139); needs Prince Ali Rescue (checked by the manager). Appended last: arena slots use the
+     * ordinal.
+     */
+    SORCERESS_GARDEN("sorceress_garden", "Sorceress's Garden", "mg_sorceress_house", SorceressGarden.GARDEN_X,
+            SorceressGarden.GARDEN_Y, SorceressGarden.HOUSE_X, SorceressGarden.HOUSE_Y, PlaceDef.Style.NONE, 0, 1, null, 0);
 
     private final String id;
     private final String displayName;
