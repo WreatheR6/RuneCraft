@@ -116,6 +116,10 @@ public abstract class MinigameSession {
     protected void onEnd(boolean success) {
     }
 
+    /** The session is gone (after rewards and after every player left): release chunks or other resources. */
+    protected void onClose() {
+    }
+
     /** Multiplier on a session player's max hit (role bonuses). */
     protected double damageMultiplier(ServerPlayerEntity player, LivingEntity target, com.runecraft.osrs.AttackType type) {
         return 1.0;
@@ -255,6 +259,11 @@ public abstract class MinigameSession {
             MinigameNet.sendHud(p, List.of());
         }
         players.clear();
+        try {
+            onClose();
+        } catch (RuntimeException e) {
+            com.runecraft.RuneCraft.LOGGER.error("Minigame {} failed to close", game.id(), e);
+        }
         MinigameManager.release(this);
     }
 

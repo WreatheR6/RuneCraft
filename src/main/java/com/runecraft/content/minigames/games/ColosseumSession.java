@@ -92,6 +92,13 @@ public class ColosseumSession extends MinigameSession {
     private boolean echoing;
     private long lastMyopiaMessage;
     private BlockPos solDiedAt;
+    /**
+     * The wave's monsters as spawned. Tracked here rather than looked up in the world: an entity added to a chunk that
+     * isn't entity-ticking yet (a fresh instance slot, or the self-test running inside one server tick) is invisible to
+     * box queries until the chunk becomes accessible.
+     */
+    private final List<LivingEntity> spawned = new ArrayList<>();
+    private final List<Long> forcedChunks = new ArrayList<>();
 
     private record Sand(BlockPos pos, boolean permanent) {
     }
@@ -130,6 +137,14 @@ public class ColosseumSession extends MinigameSession {
 
     @Override
     protected void build() {
+        // Keep the arena loaded (and its entities ticking) for the whole run; released in onClose.
+        for (int cx = (origin.getX() - HALF - 2) >> 4; cx <= (origin.getX() + HALF + 2) >> 4; cx++) {
+            for (int cz = (origin.getZ() - HALF - 2) >> 4; cz <= (origin.getZ() + HALF + 2) >> 4; cz++) {
+                world.getChunk(cx, cz);
+                world.setChunkForced(cx, cz, true);
+                forcedChunks.add(net.minecraft.util.math.ChunkPos.toLong(cx, cz));
+            }
+        }
         room(Blocks.SMOOTH_SANDSTONE, Blocks.CUT_SANDSTONE, Blocks.CHISELED_SANDSTONE);
         for (int sx = -1; sx <= 1; sx += 2) {
             for (int sz = -1; sz <= 1; sz += 2) {
@@ -307,10 +322,7 @@ public class ColosseumSession extends MinigameSession {
         List<String> monsters = FortisColosseum.startingMonsters(wave, active, random);
         for (String id : monsters) {
             BlockPos at = id.equals(FortisColosseum.SOL_HEREDIT) ? rel(0, 1, -6) : spawnSpot();
-            MobEntity mob = spawn(id, at);
-            if (mob != null) {
-                aggro(mob);
-            }
+            spawnWaveMonster(id, at);
         }
         int beesWanted = active.getOrDefault(Modifier.BEES, 0);
         bees.removeIf(b -> !b.isAlive());
@@ -351,14 +363,18 @@ public class ColosseumSession extends MinigameSession {
 
     /** Monsters that hold up a wave (not bee swarms or healing totems). */
     private List<LivingEntity> waveMonsters() {
-        List<LivingEntity> list = new ArrayList<>();
-        for (LivingEntity e : living(null)) {
-            String id = MinigameManager.creatureId(e);
-            if (!id.equals(FortisColosseum.BEE_SWARM) && !id.equals(FortisColosseum.HEALING_TOTEM)) {
-                list.add(e);
-            }
+        spawned.removeIf(e -> !e.isAlive() || e.isRemoved());
+        return new ArrayList<>(spawned);
+    }
+
+    private void spawnWaveMonster(String id, BlockPos at) {
+        MobEntity mob = spawn(id, at);
+        if (mob == null) {
+            com.runecraft.RuneCraft.LOGGER.warn("Fortis Colosseum: could not spawn {}", id);
+            return;
         }
-        return list;
+        spawned.add(mob);
+        aggro(mob);
     }
 
     private void fightTick() {
@@ -368,10 +384,7 @@ public class ColosseumSession extends MinigameSession {
             List<ServerPlayerEntity> online = online();
             boolean north = !online.isEmpty() && relPos(online.get(0)).getZ() < 0;
             for (String id : FortisColosseum.wave(wave).reinforcements()) {
-                MobEntity mob = spawn(id, rel(random.nextInt(5) - 2, 1, north ? -HALF + 2 : HALF - 2));
-                if (mob != null) {
-                    aggro(mob);
-                }
+                spawnWaveMonster(id, rel(random.nextInt(5) - 2, 1, north ? -HALF + 2 : HALF - 2));
             }
             broadcastRed("Reinforcements arrive from the " + (north ? "north" : "south") + " gate!");
         }
@@ -887,6 +900,18 @@ public class ColosseumSession extends MinigameSession {
         }
         PoisonService.cure(player, true, 0, com.runecraft.action.ActionManager.gameTick());
         clearSand(true);
+    }
+
+    @Override
+    protected void onClose() {
+        for (LivingEntity e : spawned) {
+            e.discard();
+        }
+        spawned.clear();
+        for (long c : forcedChunks) {
+            world.setChunkForced(net.minecraft.util.math.ChunkPos.getPackedX(c), net.minecraft.util.math.ChunkPos.getPackedZ(c), false);
+        }
+        forcedChunks.clear();
     }
 
     @Override
