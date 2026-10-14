@@ -85,6 +85,13 @@ public final class SysState extends PersistentState {
         public final Set<String> prayerScrolls = new LinkedHashSet<>();
         /** Permanent item unlocks (e.g. Xeric's Honour after using an ancient tablet on Xeric's talisman). */
         public final Set<String> unlocks = new LinkedHashSet<>();
+        /**
+         * Dwarf multicannon (CannonService): set while the player's cannon is out in the world; if it is gone (decayed,
+         * logged out, server restart) Nulodion gives it back with the cannonballs it held.
+         */
+        public boolean cannonOut;
+        public int cannonSteel;
+        public int cannonGranite;
 
         public ItemStack worn(Jewellery.Slot slot) {
             return worn.getOrDefault(slot, ItemStack.EMPTY);
@@ -153,6 +160,12 @@ public final class SysState extends PersistentState {
             n.put("PrayerScrolls", strings(prayerScrolls));
             n.put("Unlocks", strings(unlocks));
             n.putString("CluePuzzle", cluePuzzle);
+            if (cannonOut) {
+                NbtCompound cannon = new NbtCompound();
+                cannon.putInt("Steel", cannonSteel);
+                cannon.putInt("Granite", cannonGranite);
+                n.put("Cannon", cannon);
+            }
             return n;
         }
 
@@ -215,6 +228,9 @@ public final class SysState extends PersistentState {
             readStrings(n.getList("PrayerScrolls", NbtElement.STRING_TYPE), prayerScrolls);
             readStrings(n.getList("Unlocks", NbtElement.STRING_TYPE), unlocks);
             cluePuzzle = n.getString("CluePuzzle");
+            cannonOut = n.contains("Cannon");
+            cannonSteel = n.getCompound("Cannon").getInt("Steel");
+            cannonGranite = n.getCompound("Cannon").getInt("Granite");
         }
     }
 

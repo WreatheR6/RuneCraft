@@ -43,6 +43,7 @@ public final class SystemsContent implements ContentModule {
         ClueRewards.items(items);
         Capes.items(items);
         CombatAchievements.items(items);
+        Multicannon.items(items);
         Defs.simple(items, CluePuzzles.PUZZLE_BOX, "Puzzle box", "package", 0x8A6A3A, 1).stack(1)
                 .examine("Slide the pieces into order to solve the puzzle.");
         Defs.simple(items, CluePuzzles.LIGHT_BOX, "Light box", "package", 0xE0D060, 1).stack(1)
@@ -92,7 +93,8 @@ public final class SystemsContent implements ContentModule {
                 BlockDef.scripted(DIARY_BOARD, "Achievement diary board", 0x8A6A3A, "crate"),
                 BlockDef.scripted(com.runecraft.osrs.bank.DepositBoxes.BLOCK, "Bank deposit box", 0x6A5A3A, "chest"),
                 BlockDef.scripted(DiaryExtras.MUDDY_CHEST, "Muddy chest", 0x6A4A2A, "chest"),
-                BlockDef.scripted(DiaryExtras.CRYSTAL_CHEST, "Crystal chest", 0x8AB0C0, "chest"));
+                BlockDef.scripted(DiaryExtras.CRYSTAL_CHEST, "Crystal chest", 0x8AB0C0, "chest"),
+                BlockDef.scripted(Multicannon.BLOCK, "Dwarf multicannon", 0x3A3A40, "machine"));
     }
 
     @Override
@@ -110,6 +112,7 @@ public final class SystemsContent implements ContentModule {
                 PlaceDef.of(DiaryExtras.GENIE, "Genie's crevice", DiaryExtras.GENIE_X, DiaryExtras.GENIE_Y, PlaceDef.Style.NONE, List.of()),
                 PlaceDef.of(DiaryExtras.MUDDY_CHEST, "Muddy chest", DiaryExtras.MUDDY_CHEST_X, DiaryExtras.MUDDY_CHEST_Y, PlaceDef.Style.NONE,
                         List.of(DiaryExtras.MUDDY_CHEST)),
+                PlaceDef.of(Multicannon.NULODION, "Nulodion", Multicannon.NULODION_X, Multicannon.NULODION_Y, PlaceDef.Style.NONE, List.of()),
                 PlaceDef.of(DiaryExtras.CRYSTAL_CHEST, "Crystal chest", DiaryExtras.CRYSTAL_CHEST_X, DiaryExtras.CRYSTAL_CHEST_Y,
                         PlaceDef.Style.NONE, List.of(DiaryExtras.CRYSTAL_CHEST))));
         // Bank deposit boxes: nothing is levelled; the hooks put the box on the ground at the spot.
@@ -129,7 +132,8 @@ public final class SystemsContent implements ContentModule {
                 NpcDef.of(CluePuzzles.FALO, "Falo the Bard", CluePuzzles.FALO, 0, 0, 0xE0B090, 0x3A6A9A, 0x5A3A2A, 0xC03030),
                 NpcDef.of(GHOMMAL, "Ghommal", GHOMMAL, 0, 0, 0xC8A080, 0x8A8A90, 0x5A5A60, 0x8A8A90),
                 NpcDef.of(DiaryExtras.TINDEL, "Tindel Marchant", DiaryExtras.TINDEL, 0, 0, 0xE0B898, 0x6A4A2A, 0x3A3A4A, 0x5A3A2A),
-                NpcDef.of(DiaryExtras.GENIE, "Genie", DiaryExtras.GENIE, 0, 0, 0x5A8AE0, 0xC03030, 0x3A6AC0, 0xE0C040));
+                NpcDef.of(DiaryExtras.GENIE, "Genie", DiaryExtras.GENIE, 0, 0, 0x5A8AE0, 0xC03030, 0x3A6AC0, 0xE0C040),
+                NpcDef.of(Multicannon.NULODION, "Nulodion", Multicannon.NULODION, 0, 0, 0xD8A888, 0x3A3A3A, 0x2A2A2A, 0x6A6A70));
     }
 
     @Override

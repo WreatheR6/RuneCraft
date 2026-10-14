@@ -120,6 +120,14 @@ public final class CommonItems {
                 .examine("The lean, slimy corpse of a deceased giant snail.");
         items.add("fat_snail", "Fat snail", Kind.SIMPLE, "meat_raw", 0x8A7A5A).value(10)
                 .examine("The fat, slimy corpse of a deceased giant snail.");
+        // Dwarf multicannon ammunition: smithed by the skilling module (ammo moulds), handed out by the Dwarf Cannon quest
+        // (quests), sold in Giants' Foundry (minigames: double mould), dropped by monsters and fired by the multicannon
+        // (systems); granite dust is a Grotesque Guardians drop (bosses) that coats cannonballs.
+        items.add("cannonball", "Steel cannonball", Kind.SIMPLE, "cannonball", 0x5A5A60).value(5).examine("Ammo for the Dwarf Cannon.");
+        items.add("ammo_mould", "Ammo mould", Kind.TOOL, "mould", 0x6A6A70).value(5).stack(1).examine("Used to make cannon ammunition.");
+        items.add("double_ammo_mould", "Double ammo mould", Kind.SIMPLE, "mould", 0x8A8A8A).value(6).stack(1)
+                .examine("Looks like two ammo moulds roughly put together with a metal strip.");
+        items.add("granite_dust", "Granite dust", Kind.SIMPLE, "essence", 0x9A9A9A).value(1).stack(64000);
         dropItems(items);
         diaryItems(items);
         CommonEquipment.add(items);

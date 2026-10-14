@@ -535,7 +535,7 @@ public final class MinigameItems {
         weapon(items, "colossal_blade", "Colossal blade", Kind.MELEE_WEAPON, "2h_sword", 0x9A9AA0, 1,
                 s(0, 90, 0, 0, 0, 0, 0, 0, 0, 0, 94, 0, 0, 0), 6, AttackType.SLASH, WeaponClass.MELEE, Skill.ATTACK, 60)
                 .examine("A giant's sword. Hits harder against large foes.");
-        single(items, "double_ammo_mould", "Double ammo mould", "mould", 0x8A8A8A, 1, "Makes two cannonballs at once.");
+        // The double ammo mould is in CommonItems (the skilling module's cannonball recipe uses it).
         items.add("kovacs_grog", "Kovac's grog", Kind.FOOD, "beer", 0xA06030).value(1).heal(3).stack(16)
                 .examine("Boosts Smithing a little.");
     }

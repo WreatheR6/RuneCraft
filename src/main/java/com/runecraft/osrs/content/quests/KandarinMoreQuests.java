@@ -404,10 +404,12 @@ final class KandarinMoreQuests {
     private static void dwarfCannon(QuestBook b) {
         b.npc("captain_lawgof", "Captain Lawgof", "coal_trucks", 0, 3, 0xD8A888, 0x6A6A2B, 0x4A4A1B, 0xC07A2D);
         b.item("dwarf_remains", "Dwarf remains", "bones", 0xA09080, "The remains of a dwarf guard.");
-        b.item("cannon_ammo_mould", "Ammo mould", "mould", 0x6A6A6A, "A mould for making cannonballs.");
+        // Old quest reward kept for saved inventories: Nulodion swaps it for the real ammo mould (CommonItems), which the
+        // quest now gives.
+        b.item("cannon_ammo_mould", "Ammo mould (old)", "mould", 0x6A6A6A, "Nulodion will swap this for a working ammo mould.");
         b.item("nulodions_notes", "Nulodion's notes", "note", 0xE0D8C1, "Instructions for making cannonballs.");
         b.quest("dwarf_cannon", "Dwarf Cannon", Difficulty.NOVICE, 1)
-                .xp(Skill.CRAFTING, 750).reward("cannon_ammo_mould", "nulodions_notes")
+                .xp(Skill.CRAFTING, 750).reward("ammo_mould", "nulodions_notes")
                 .unlock("Ability to buy and use the dwarf multicannon")
                 .stage("I can start this quest by speaking to Captain Lawgof at the dwarf camp north of the Coal Trucks.")
                 .talk("captain_lawgof").say("Goblins are attacking my outpost! Repair the railings with these... I mean, bring me 6 planks for the railings.")

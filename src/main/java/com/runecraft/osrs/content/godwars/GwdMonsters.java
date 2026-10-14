@@ -35,7 +35,7 @@ public final class GwdMonsters {
         List<Drop> d = new ArrayList<>(List.of(extra));
         d.add(Drop.of("coins", 100, 1500, 3));
         d.add(Drop.herbs(16));
-        d.add(Drop.of("ecumenical_key", 1, 1, 250)); // approx. (OSRS: Wilderness GWD followers only)
+        // Ecumenical keys: rolled on kill in the Wilderness God Wars Dungeon only (GwdKillcount), 1/60 to 1/40 by CA tier.
         d.add(Drop.of("clue_scroll_hard", 1, 1, 128));
         return d.toArray(new Drop[0]);
     }
