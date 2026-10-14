@@ -56,8 +56,13 @@ final class SailingHooks {
         for (SailingData.Wreck w : SailingData.WRECKS) {
             BlockHooks.register(w.blockId(), (player, pos, state) -> salvage(player, pos, w));
             LandmarkBuilder.registerCustom(w.blockId() + "_site", (world, centre) -> placeAtSea(world, centre, w.blockId(), 0));
+            int extra = SailingData.EXTRA_WRECK_SITES[SailingData.WRECKS.indexOf(w)].length / 2;
+            for (int n = 2; n < extra + 2; n++) {
+                LandmarkBuilder.registerCustom(w.blockId() + "_site_" + n, (world, centre) -> placeAtSea(world, centre, w.blockId(), 0));
+            }
         }
         BlockHooks.register("sea_chart_marker", (player, pos, state) -> chart(player, pos));
+        SeaHooks.init();
         for (SailingTraining.ChartTask c : SailingTraining.CHARTS) {
             if (!c.underground()) {
                 LandmarkBuilder.registerCustom(c.placeId(), (world, centre) -> placeAtSea(world, centre, "sea_chart_marker", 0));
@@ -77,6 +82,8 @@ final class SailingHooks {
                 if (!camp) {
                     placeAtSea(world, centre, p.board(), 0);
                 }
+                // Most OSRS ports have a salvaging station on the dock.
+                placeAtSea(world, centre, "port_salvaging_station", -2);
                 if (shipwright) {
                     placeAtSea(world, centre, "boat_schematics", 2);
                 }
@@ -168,6 +175,7 @@ final class SailingHooks {
         String type = boatType(vehicle);
         if (type == null) {
             TICKS.remove(player.getUuid());
+            SeaHooks.offBoat(player);
             if (TRIALS.containsKey(player.getUuid())) {
                 trialTick(player);
             }
@@ -186,12 +194,13 @@ final class SailingHooks {
             XpService.add(player, Skill.SAILING, SailingTraining.EXTRACTOR_XP);
             Msg.action(player, "You harvest a wind mote from the crystal extractor.");
         }
+        SeaHooks.boatTick(player, vehicle, type);
         if (TRIALS.containsKey(player.getUuid())) {
             trialTick(player);
         }
     }
 
-    private static boolean nearBoat(ServerPlayerEntity player) {
+    static boolean nearBoat(ServerPlayerEntity player) {
         return player.getVehicle() instanceof BoatEntity
                 || !player.getWorld().getEntitiesByClass(BoatEntity.class, player.getBoundingBox().expand(6), b -> true).isEmpty();
     }
@@ -202,9 +211,14 @@ final class SailingHooks {
         if (!SkillingUtil.need(player, Skill.SAILING, w.level(), "salvage this shipwreck")) {
             return;
         }
-        if (!SkillingUtil.needItem(player, "salvaging_hook", "You need a salvaging hook to salvage shipwrecks.")) {
+        // A salvaging hook built on the boat (best tier counts) or the hand-held hook from Pandemonium (bronze).
+        Entity boat = nearbyBoat(player);
+        String boatType = boatType(boat);
+        int hookTier = boatType == null ? -1 : com.runecraft.osrs.content.skilling.SailingSea.hookTier(facilities(player, boatType));
+        if (hookTier < 0 && !SkillingUtil.needItem(player, "salvaging_hook", "You need a salvaging hook on your boat to salvage shipwrecks.")) {
             return;
         }
+        int tier = Math.max(0, hookTier);
         ServerWorld world = (ServerWorld) player.getWorld();
         if (GatheringHooks.depleted(world, pos)) {
             Msg.game(player, "There's nothing left to salvage here for now.");
@@ -215,14 +229,15 @@ final class SailingHooks {
             return;
         }
         Msg.action(player, "You lower your salvaging hook into the wreck.");
-        ActionManager.start(player, new SkillingUtil.BlockAction(pos, w.blockId(), 5) {
+        ActionManager.start(player, new SkillingUtil.BlockAction(pos, w.blockId(), com.runecraft.osrs.content.skilling.SailingSea.SALVAGE_TICKS) {
             @Override
             boolean roll(ServerPlayerEntity p, Random random) {
-                if (!Inv.has(p, "salvaging_hook", 1) || GatheringHooks.depleted(world, pos)) {
+                if ((hookTier < 0 && !Inv.has(p, "salvaging_hook", 1)) || GatheringHooks.depleted(world, pos)) {
                     return false;
                 }
                 world.playSound(null, pos, SoundEvents.ENTITY_FISHING_BOBBER_SPLASH, SoundCategory.PLAYERS, 0.5f, 0.8f);
-                if (random.nextDouble() < Chance.lerp(SkillingUtil.level(p, Skill.SAILING), w.low(), w.high())) {
+                if (random.nextDouble() < com.runecraft.osrs.content.skilling.SailingSea.salvageChance(w, SkillingUtil.level(p, Skill.SAILING),
+                        tier)) {
                     SkillingUtil.give(p, w.salvage(), 1);
                     XpService.add(p, Skill.SAILING, w.xp());
                     Msg.action(p, "You haul up some salvage.");
@@ -342,7 +357,7 @@ final class SailingHooks {
                 acted = true;
             }
         }
-        if (acted) {
+        if (acted || SeaHooks.portBoard(player, here, held.getKeys().size())) {
             return;
         }
         if (player.isSneaking()) {
@@ -406,7 +421,7 @@ final class SailingHooks {
     }
 
     /** The boat a player is on or standing next to. */
-    private static Entity nearbyBoat(ServerPlayerEntity player) {
+    static Entity nearbyBoat(ServerPlayerEntity player) {
         if (boatType(player.getVehicle()) != null) {
             return player.getVehicle();
         }
@@ -418,7 +433,14 @@ final class SailingHooks {
         return null;
     }
 
-    private static NbtCompound boatState(ServerPlayerEntity player) {
+    /** Every boat facility: the round-8 ones plus salvaging hooks and cannons. */
+    static List<SailingTraining.Facility> allFacilities() {
+        List<SailingTraining.Facility> all = new ArrayList<>(SailingTraining.FACILITIES);
+        all.addAll(com.runecraft.osrs.content.skilling.SailingSea.FACILITIES);
+        return all;
+    }
+
+    static NbtCompound boatState(ServerPlayerEntity player) {
         return SkillingState.get(player.getServer()).entry("boats", player.getUuidAsString());
     }
 
@@ -430,7 +452,7 @@ final class SailingHooks {
         return boatState(player).getBoolean(boat + ".f." + facility);
     }
 
-    private static Map<SailingTraining.PartType, Integer> tiers(ServerPlayerEntity player, String boat) {
+    static Map<SailingTraining.PartType, Integer> tiers(ServerPlayerEntity player, String boat) {
         Map<SailingTraining.PartType, Integer> m = new HashMap<>();
         for (SailingTraining.PartType t : SailingTraining.PartType.values()) {
             m.put(t, partTier(player, boat, t));
@@ -438,9 +460,9 @@ final class SailingHooks {
         return m;
     }
 
-    private static Set<String> facilities(ServerPlayerEntity player, String boat) {
+    static Set<String> facilities(ServerPlayerEntity player, String boat) {
         Set<String> s = new HashSet<>();
-        for (SailingTraining.Facility f : SailingTraining.FACILITIES) {
+        for (SailingTraining.Facility f : allFacilities()) {
             if (hasFacility(player, boat, f.id())) {
                 s.add(f.id());
             }
@@ -478,8 +500,8 @@ final class SailingHooks {
                 options.add(next);
             }
         }
-        for (SailingTraining.Facility f : SailingTraining.FACILITIES) {
-            if (!hasFacility(player, type, f.id()) && !type.equals("raft")) {
+        for (SailingTraining.Facility f : allFacilities()) {
+            if (!hasFacility(player, type, f.id()) && (!type.equals("raft") || f.id().endsWith("_salvaging_hook"))) {
                 options.add(f);
             }
         }

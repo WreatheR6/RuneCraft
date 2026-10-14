@@ -16,7 +16,8 @@ import java.util.function.Consumer;
  * salvaging and sorting (wiki levels and XP, one wiki spot per wreck type), sea charting (the wiki's
  * 358 tasks, see {@link SailingTraining}), courier tasks between port notice boards (the wiki's 439
  * tasks and their XP), trawling from a boat, boat parts and facilities built at boat schematics, and
- * the Barracuda Trials. Sailing needs the Pandemonium quest (it gives the raft). Salvage loot and the
+ * the Barracuda Trials. Sailing needs the Pandemonium quest (it gives the raft). Salvage loot, boat combat, bounty tasks,
+ * ocean encounters and hazards live in {@link SailingSea} (wiki tables). The
  * shop sources of Sailing-island materials are approximations.
  */
 public final class SailingData extends SkillingPart {
@@ -48,46 +49,36 @@ public final class SailingData extends SkillingPart {
 
     /**
      * Shipwrecks: block id, Sailing level, XP per salvage hauled up, salvage item (and its OSRS name), success chance out of
-     * 256 at level 1 and 99, the loot table and the XP for sorting one salvage.
+     * 256 at level 1 and 99 (approx), the salvage's OSRS name and the XP for sorting one salvage. Sorting loot is the
+     * wiki table in {@link SailingSea#SALVAGE}.
      */
-    public record Wreck(String blockId, String name, int level, double xp, String salvage, int low, int high, List<Loot> loot,
+    public record Wreck(String blockId, String name, int level, double xp, String salvage, int low, int high,
                         String salvageName, double sortXp) {
-    }
-
-    private static List<Loot> salvageTable(int tier) {
-        List<Loot> l = new ArrayList<>();
-        String[] planks = {"plank", "plank", "oak_plank", "oak_plank", "teak_plank", "teak_plank", "mahogany_plank", "mahogany_plank"};
-        String[] nails = {"bronze_nails", "iron_nails", "iron_nails", "steel_nails", "steel_nails", "mithril_nails", "adamant_nails",
-                "rune_nails"};
-        String[] gems = {"uncut_opal", "uncut_jade", "uncut_red_topaz", "uncut_sapphire", "uncut_emerald", "uncut_ruby", "uncut_diamond",
-                "uncut_dragonstone"};
-        l.add(Loot.of(planks[tier], 2, 5 + tier, 30));
-        l.add(Loot.of(nails[tier], 5, 15 + tier * 3, 25));
-        l.add(Loot.of("rope", 1, 2, 15));
-        l.add(Loot.of("coins", 20 + tier * 40, 100 + tier * 150, 25));
-        l.add(Loot.of("bolt_of_cloth", 1, 1 + tier / 3, 8));
-        l.add(Loot.of(gems[tier], 1, 1, 6));
-        l.add(Loot.of("casket", 4));
-        l.add(Loot.of("seaweed", 1, 4, 10));
-        l.add(Loot.of(tier < 4 ? "clue_scroll_easy" : tier < 6 ? "clue_scroll_medium" : "clue_scroll_hard", 1));
-        return l;
+        /** Every item sorting this salvage can give (weights out of 100,000 of the wiki chances). */
+        public List<Loot> loot() {
+            List<Loot> l = new ArrayList<>();
+            for (SailingSea.SalvageLine s : SailingSea.SALVAGE.getOrDefault(salvage, List.of())) {
+                l.add(Loot.of(s.item(), s.min(), s.max(), (int) Math.max(1, Math.round(s.chance() * 100_000))));
+            }
+            return l;
+        }
     }
 
     /** OSRS Wiki (shipwreck salvaging): salvage XP and sorting XP per salvage. */
     public static final List<Wreck> WRECKS = List.of(
-            new Wreck("small_shipwreck", "Small shipwreck", 15, 10.0, "small_salvage", 80, 220, salvageTable(0), "Small salvage", 5.5),
-            new Wreck("fishermans_shipwreck", "Fisherman's shipwreck", 26, 17.0, "fishy_salvage", 60, 200, salvageTable(1),
+            new Wreck("small_shipwreck", "Small shipwreck", 15, 10.0, "small_salvage", 80, 220, "Small salvage", 5.5),
+            new Wreck("fishermans_shipwreck", "Fisherman's shipwreck", 26, 17.0, "fishy_salvage", 60, 200,
                     "Fishy salvage", 9.0),
-            new Wreck("barracuda_shipwreck", "Barracuda shipwreck", 35, 31.0, "barracuda_salvage", 50, 190, salvageTable(2),
+            new Wreck("barracuda_shipwreck", "Barracuda shipwreck", 35, 31.0, "barracuda_salvage", 50, 190,
                     "Barracuda salvage", 15.5),
-            new Wreck("large_shipwreck", "Large shipwreck", 53, 48.0, "large_salvage", 40, 170, salvageTable(3), "Large salvage", 24.0),
-            new Wreck("pirate_shipwreck", "Pirate shipwreck", 64, 76.0, "pirate_salvage", 32, 150, salvageTable(4), "Plundered salvage",
+            new Wreck("large_shipwreck", "Large shipwreck", 53, 48.0, "large_salvage", 40, 170, "Large salvage", 24.0),
+            new Wreck("pirate_shipwreck", "Pirate shipwreck", 64, 76.0, "pirate_salvage", 32, 150, "Plundered salvage",
                     31.5),
-            new Wreck("mercenary_shipwreck", "Mercenary shipwreck", 73, 138.0, "mercenary_salvage", 26, 130, salvageTable(5),
+            new Wreck("mercenary_shipwreck", "Mercenary shipwreck", 73, 138.0, "mercenary_salvage", 26, 130,
                     "Martial salvage", 63.5),
-            new Wreck("fremennik_shipwreck", "Fremennik shipwreck", 80, 162.0, "fremennik_salvage", 20, 120, salvageTable(6),
+            new Wreck("fremennik_shipwreck", "Fremennik shipwreck", 80, 162.0, "fremennik_salvage", 20, 120,
                     "Fremennik salvage", 75.0),
-            new Wreck("merchant_shipwreck", "Merchant shipwreck", 87, 200.0, "merchant_salvage", 16, 110, salvageTable(7),
+            new Wreck("merchant_shipwreck", "Merchant shipwreck", 87, 200.0, "merchant_salvage", 16, 110,
                     "Opulent salvage", 95.0));
 
     public static Wreck wreck(String blockId) {
@@ -222,6 +213,52 @@ public final class SailingData extends SkillingPart {
             simple(s, w.salvage(), w.salvageName(), "salvage", 0x7A6A5A, 10 + w.level())
                     .examine("Sort through it for anything useful.");
         }
+        // Boat cannon ammunition (OSRS Wiki Cannonball table; steel is the multicannon's "cannonball").
+        String[][] balls = {{"bronze", "B08850"}, {"iron", "6A6A6A"}, {"mithril", "4A5A8A"}, {"adamant", "4A7A5A"}, {"rune", "4A8AAA"},
+                {"dragon", "A03030"}};
+        int[] ballValue = {5, 9, 30, 60, 160, 600}; // approx
+        for (int i = 0; i < balls.length; i++) {
+            simple(s, balls[i][0] + "_cannonball", SailingSea.title(balls[i][0]) + " cannonball", "cannonball",
+                    Integer.parseInt(balls[i][1], 16), ballValue[i]).stack(Integer.MAX_VALUE).examine("Ammo for a boat cannon.");
+        }
+        // Salvage, sea creature and bounty items (wiki names; values approx).
+        for (String[] it : SEA_ITEMS) {
+            simple(s, SailingSea.itemId(it[0]), it[0], it[1], Integer.parseInt(it[2], 16), Integer.parseInt(it[3]));
+        }
+        for (String part : SailingSea.bountyParts()) {
+            String name = SailingSea.BOUNTIES.stream().filter(b -> b.item().equals(part)).findFirst().orElseThrow().itemName();
+            String shape = part.endsWith("beak") || part.endsWith("barbs") ? "tooth" : part.endsWith("feather") || part.endsWith("fin")
+                    ? "tail" : part.endsWith("jaw") || part.endsWith("teeth") ? "teeth" : part.endsWith("skin") ? "hide"
+                    : part.endsWith("tentacle") ? "tentacle" : part.endsWith("ink_sac") ? "pot_item" : part.endsWith("tusk")
+                    || part.endsWith("horn") ? "horn" : part.endsWith("mace") ? "club" : part.endsWith("head") ? "skull" : "meat_raw";
+            simple(s, part, name, shape, 0x8A7A6A, 0).stack(Integer.MAX_VALUE).examine("A bounty for a port master.");
+        }
+    }
+
+    /** One shipwreck in each of the type's other wiki salvaging areas (x, y pairs; Shipwreck salvaging map pins). */
+    public static final int[][] EXTRA_WRECK_SITES = {{1592, 3303}, {1863, 3832, 2696, 3050}, {2133, 3291, 2489, 2694, 2977, 2890, 3097, 2759},
+            {1546, 2636, 1861, 2546, 2496, 2289, 3372, 2112}, {1792, 2869, 2088, 3656, 2177, 3804}, {1673, 2384, 1739, 2232},
+            {1767, 4090, 2246, 4115}, {1794, 3995}};
+
+    /** Items from salvage, sea creatures and ocean encounters: wiki name, shape, colour, value (approx). */
+    static final String[][] SEA_ITEMS = {
+            {"Rusty locket", "amulet", "8A5A3A", "100"}, {"Boat bottle (empty)", "vial", "A0C0C0", "100"},
+            {"Facility bottle (empty)", "vial", "A0B0C0", "100"}, {"Sailors' amulet (inert)", "amulet", "4A7AAA", "5000"},
+            {"Mouldy block", "package", "6A7A4A", "10"}, {"Dull knife", "knife", "7A7A7A", "10"}, {"Broken compass", "orb", "B09040", "50"},
+            {"Rusty coin", "coins", "8A5A3A", "50"}, {"Broken sextant", "orb", "B0A060", "100"}, {"Smashed mirror", "shard", "C0D0E0", "100"},
+            {"Mouldy doll", "pet", "7A6A4A", "200"}, {"Hemp seed", "seed", "7A8A3A", "20"}, {"Flax seed", "seed", "8A9AC0", "20"},
+            {"Cotton seed", "seed", "E0E0D0", "60"}, {"Camphor seed", "seed", "8A6A4A", "200"}, {"Ironwood seed", "seed", "5A4A40", "600"},
+            {"Rosewood seed", "seed", "9A4A4A", "2000"}, {"Elkhorn frag", "shard", "D0C0A0", "50"}, {"Pillar frag", "shard", "E0A0B0", "50"},
+            {"Umbral frag", "shard", "5A3A7A", "500"}, {"Sawmill coupon (wood plank)", "note", "C0A070", "100"},
+            {"Sawmill coupon (oak plank)", "note", "A08050", "250"}, {"Salvor's paint", "pot_item", "3A6A8A", "1000"},
+            {"Inky paint", "pot_item", "202030", "1000"}, {"Broken dragon hook", "hook", "A02020", "50000"},
+            {"Dragon cannon barrel", "bar", "B02A2A", "200000"}, {"Echo pearl", "orb", "C0E0F0", "5000"}, {"Ray barbs", "tooth", "8A7A6A", "500"},
+            {"Swift albatross feather", "tail", "F0F0F0", "5000"}, {"Bottled storm", "vial", "6A7AC0", "5000"},
+            {"Narwhal horn", "horn", "E0E0D0", "5000"}, {"Castaway", "creature", "C08060", "0"}};
+
+    @Override
+    public List<com.runecraft.osrs.content.MonsterDef> monsters() {
+        return SailingSea.monsters();
     }
 
     @Override
@@ -259,6 +296,7 @@ public final class SailingData extends SkillingPart {
             list.add(BlockDef.scripted(w.blockId(), w.name(), 0x5A4A3A, "shipwreck"));
         }
         list.add(BlockDef.scripted("sea_chart_marker", "Charting buoy", 0xD04030, "buoy"));
+        list.add(BlockDef.scripted("port_salvaging_station", "Salvaging station", 0x7A6A4A, "crate"));
         list.add(BlockDef.scripted("boat_schematics", "Boat schematics", 0x6A5A3A, "notice_board"));
         list.add(BlockDef.scripted("barracuda_trial_buoy", "Barracuda trial master's buoy", 0x3080C0, "buoy"));
         for (Port p : PORTS) {
@@ -277,6 +315,10 @@ public final class SailingData extends SkillingPart {
         for (int i = 0; i < WRECKS.size(); i++) {
             Wreck w = WRECKS.get(i);
             list.add(PlaceDef.of(w.blockId() + "_site", w.name(), wreckCoords[i][0], wreckCoords[i][1], PlaceDef.Style.NONE, List.of()));
+            for (int j = 0; j < EXTRA_WRECK_SITES[i].length; j += 2) {
+                list.add(PlaceDef.of(w.blockId() + "_site_" + (j / 2 + 2), w.name(), EXTRA_WRECK_SITES[i][j], EXTRA_WRECK_SITES[i][j + 1],
+                        PlaceDef.Style.NONE, List.of()));
+            }
         }
         for (SailingTraining.ChartTask c : SailingTraining.CHARTS) {
             if (!c.underground()) {
