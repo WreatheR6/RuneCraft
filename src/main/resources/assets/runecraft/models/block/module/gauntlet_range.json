@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/gauntlet_range_side",
+    "top": "runecraft:block/module/gauntlet_range_top",
+    "bottom": "runecraft:block/module/gauntlet_range_bottom"
+  }
+}

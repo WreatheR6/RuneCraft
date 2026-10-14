@@ -426,6 +426,16 @@
     "lizard_jaw",
     "corrupt_mark"
   ],
+  "corrupted_bat": [
+    "head"
+  ],
+  "corrupted_dark_beast": [
+    "head",
+    "jaw"
+  ],
+  "corrupted_dragon": [
+    "head"
+  ],
   "corrupted_hunllef": [
     "blade0",
     "blade2",
@@ -440,6 +450,12 @@
     "leg_b_claw_l",
     "leg_b_claw_r",
     "tail_shard"
+  ],
+  "corrupted_scorpion": [
+    "eyes"
+  ],
+  "corrupted_spider": [
+    "eyes"
   ],
   "count_draynor": [
     "head"
@@ -494,6 +510,16 @@
     "head",
     "sparkle"
   ],
+  "crystalline_bat": [
+    "head"
+  ],
+  "crystalline_dark_beast": [
+    "head",
+    "jaw"
+  ],
+  "crystalline_dragon": [
+    "head"
+  ],
   "crystalline_hunllef": [
     "blade0",
     "blade2",
@@ -508,6 +534,12 @@
     "leg_b_claw_l",
     "leg_b_claw_r",
     "tail_shard"
+  ],
+  "crystalline_scorpion": [
+    "eyes"
+  ],
+  "crystalline_spider": [
+    "eyes"
   ],
   "cyclops": [
     "pupil"
