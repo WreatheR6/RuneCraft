@@ -23,6 +23,8 @@ public abstract class TzHaarSession extends MinigameSession {
     protected int wave;
     protected int nextWaveIn = 8;
     protected final List<Integer> healedJads = new ArrayList<>();
+    /** Combat Achievement conditions judged over the run (healers healing, Jal-ImKot digging, pillars falling). */
+    protected final java.util.Set<String> caRunFlags = new java.util.HashSet<>();
     protected static final String DISTRACTED = "rcmg_distracted";
 
     protected TzHaarSession(Minigame game, int id, int slot, ServerWorld world, String variant) {
@@ -101,6 +103,11 @@ public abstract class TzHaarSession extends MinigameSession {
         }
     }
 
+    @Override
+    public java.util.Set<String> caFlags(ServerPlayerEntity player) {
+        return new java.util.HashSet<>(caRunFlags);
+    }
+
     /** Yt-HurKot heal their Jad unless a player distracted them; Yt-MejKot heal nearby allies. */
     protected void healers() {
         if (ticks % 4 != 0) {
@@ -116,6 +123,7 @@ public abstract class TzHaarSession extends MinigameSession {
                         healer.getNavigation().startMovingTo(jad.getX(), jad.getY(), jad.getZ(), 1.0);
                     } else if (jad.getHealth() < jad.getMaxHealth()) {
                         jad.heal(random.nextInt(20));
+                        caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_HURKOT_HEALED);
                         world.spawnParticles(ParticleTypes.HEART, jad.getX(), jad.getY() + jad.getHeight(), jad.getZ(), 2, 0.4, 0.3, 0.4, 0);
                     }
                 }
@@ -123,6 +131,7 @@ public abstract class TzHaarSession extends MinigameSession {
                 for (LivingEntity ally : all) {
                     if (ally != e && ally.squaredDistanceTo(e) < 16 && ally.getHealth() < ally.getMaxHealth()) {
                         ally.heal(2);
+                        caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_MEJKOT_HEALED);
                     }
                 }
             }

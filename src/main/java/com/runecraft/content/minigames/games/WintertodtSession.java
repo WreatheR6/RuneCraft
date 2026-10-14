@@ -42,6 +42,9 @@ public class WintertodtSession extends MinigameSession {
     private final State[] braziers = {State.UNLIT, State.UNLIT, State.UNLIT, State.UNLIT};
     private final boolean[] pyromancerDown = new boolean[4];
     private final Map<UUID, Integer> points = new HashMap<>();
+    /** Combat Achievement conditions: per player (healed a pyromancer, fixed a brazier) and for the whole fight. */
+    private final Map<UUID, java.util.Set<String>> caPlayerFlags = new HashMap<>();
+    private final java.util.Set<String> caRunFlags = new java.util.HashSet<>();
     private final List<Object[]> snowfalls = new ArrayList<>();
     private int energy;
     private int maxEnergy;
@@ -218,6 +221,7 @@ public class WintertodtSession extends MinigameSession {
                     return;
                 }
                 braziers[i] = State.UNLIT;
+                caPlayerFlags.computeIfAbsent(player.getUuid(), u -> new java.util.HashSet<>()).add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_FIXED_BRAZIER);
                 addPoints(player, Wintertodt.POINTS_FIX);
                 xp(player, Skill.CONSTRUCTION, Wintertodt.fixXp(level(player, Skill.CONSTRUCTION)));
                 Msg.game(player, "You fix the brazier.");
@@ -226,6 +230,7 @@ public class WintertodtSession extends MinigameSession {
                 if (pyromancerDown[i]) {
                     if (Inv.remove(player, "rejuvenation_potion", 1) > 0) {
                         pyromancerDown[i] = false;
+                        caPlayerFlags.computeIfAbsent(player.getUuid(), u -> new java.util.HashSet<>()).add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_HEALED_PYROMANCER);
                         addPoints(player, Wintertodt.POINTS_HEAL_PYROMANCER);
                         Msg.game(player, "You help the pyromancer back to their feet.");
                     } else {
@@ -317,6 +322,9 @@ public class WintertodtSession extends MinigameSession {
                 if (roll == 0) {
                     braziers[i] = State.BROKEN;
                     broadcastRed("A brazier shatters!");
+                    if (java.util.Arrays.stream(braziers).allMatch(b2 -> b2 == State.BROKEN)) {
+                        caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_ALL_BRAZIERS_BROKEN);
+                    }
                     for (ServerPlayerEntity p : online()) {
                         if (p.getBlockPos().getSquaredDistance(b) < 9) {
                             CombatHandler.applyDamage(null, p, 1 + random.nextInt(6));
@@ -328,6 +336,7 @@ public class WintertodtSession extends MinigameSession {
                 } else if (roll == 2) {
                     braziers[i] = State.UNLIT;
                     pyromancerDown[i] = true;
+                    caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_PYROMANCER_FELL);
                     broadcastRed("A pyromancer has fallen!");
                 }
             } else if (braziers[i] == State.BROKEN) {
@@ -367,6 +376,19 @@ public class WintertodtSession extends MinigameSession {
             }
             return true;
         });
+    }
+
+    @Override
+    public java.util.Set<String> caFlags(ServerPlayerEntity player) {
+        java.util.Set<String> flags = new java.util.HashSet<>(caRunFlags);
+        flags.addAll(caPlayerFlags.getOrDefault(player.getUuid(), java.util.Set.of()));
+        if (warmth(player) >= 4) {
+            flags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_WARM_GEAR);
+        }
+        if (points.getOrDefault(player.getUuid(), 0) >= 3000) {
+            flags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_POINTS_3000);
+        }
+        return flags;
     }
 
     @Override

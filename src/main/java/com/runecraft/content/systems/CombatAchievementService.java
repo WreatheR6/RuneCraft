@@ -77,6 +77,8 @@ public final class CombatAchievementService {
         MinigameSession session;
         /** Delve runs: the fight key of the boss being delved (its hits count as the target's). */
         String target;
+        /** Where the player stood last tick (tiles walked). */
+        Vec3d pos;
 
         Tracker(String key, long now) {
             this.key = key;
@@ -123,6 +125,7 @@ public final class CombatAchievementService {
             }
         });
         CombatHooks.addDamageListener(CombatAchievementService::onDamaged);
+        com.runecraft.boss.Mechanics.attackListener = CombatAchievementService::bossAttack;
         com.runecraft.content.GameEvents.onKill(CombatAchievementService::onKill);
         SysTicks.everyPlayer(CombatAchievementService::tick);
     }
@@ -132,13 +135,83 @@ public final class CombatAchievementService {
      * kill during an exposed phase...): it goes on the player's current fight and, on a delve run, on the run.
      */
     public static void flag(ServerPlayerEntity p, String flag) {
-        Tracker f = FIGHTS.get(p.getUuid());
-        if (f != null) {
-            f.m.flags.add(flag);
+        for (Tracker t : trackers(p)) {
+            t.m.flags.add(flag);
         }
-        Tracker d = DELVES.get(p.getUuid());
-        if (d != null) {
-            d.m.flags.add(flag);
+    }
+
+    /** Takes a flag back (a condition that only holds for a while, e.g. the Giant Mole having just resurfaced). */
+    public static void unflag(ServerPlayerEntity p, String flag) {
+        for (Tracker t : trackers(p)) {
+            t.m.flags.remove(flag);
+        }
+    }
+
+    /** Counts something a script observed for the player's fight and run (burrows, souls negated...). */
+    public static void count(ServerPlayerEntity p, String key, int n) {
+        for (Tracker t : trackers(p)) {
+            t.m.count(key, n);
+        }
+    }
+
+    /** Range within which players count as part of a boss's fight for team-wide flags. */
+    private static final double SCRIPT_RANGE = 32;
+
+    private static List<ServerPlayerEntity> near(LivingEntity source) {
+        if (!(source.getWorld() instanceof net.minecraft.server.world.ServerWorld world)) {
+            return List.of();
+        }
+        return world.getPlayers(o -> o.isAlive() && !o.isSpectator() && o.squaredDistanceTo(source) < SCRIPT_RANGE * SCRIPT_RANGE);
+    }
+
+    /** {@link #flag} for every player fighting near a boss ("without anyone..." conditions). */
+    public static void flagNear(LivingEntity source, String flag) {
+        for (ServerPlayerEntity p : near(source)) {
+            flag(p, flag);
+        }
+    }
+
+    public static void unflagNear(LivingEntity source, String flag) {
+        for (ServerPlayerEntity p : near(source)) {
+            unflag(p, flag);
+        }
+    }
+
+    public static void countNear(LivingEntity source, String key) {
+        for (ServerPlayerEntity p : near(source)) {
+            count(p, key, 1);
+        }
+    }
+
+    /** The last attack of each monster, for "the same attack twice in a row" conditions (keyed by entity id). */
+    private static final Map<Integer, String> LAST_ATTACK = new HashMap<>();
+
+    /**
+     * A monster or boss used an attack (hit or not): counted as "used:" + attack for everyone fighting it, and flagged
+     * "repeat:" + attack when it used the same attack twice in a row.
+     */
+    private static void bossAttack(OsrsMonsterEntity mob, ServerPlayerEntity target, com.runecraft.osrs.content.AttackDef attack) {
+        if (attack == null || attack.name() == null) {
+            return;
+        }
+        String key = CombatAchievementRules.attackKey(attack.name());
+        String prev = LAST_ATTACK.put(mob.getId(), key);
+        if (LAST_ATTACK.size() > 512) {
+            LAST_ATTACK.clear();
+        }
+        String fight = fightKey(mob);
+        if (target != null) {
+            engage(target, mob);
+        }
+        for (ServerPlayerEntity p : near(mob)) {
+            Tracker f = FIGHTS.get(p.getUuid());
+            if (f == null || fight == null || !f.key.equals(fight)) {
+                continue;
+            }
+            f.m.count("used:" + key, 1);
+            if (key.equals(prev)) {
+                f.m.flags.add("repeat:" + key);
+            }
         }
     }
 
@@ -194,6 +267,7 @@ public final class CombatAchievementService {
         if (f != null && !f.key.equals(key) && !f.key.startsWith("kill:")) {
             // A boss fight carries on while its minions, bodyguards or spawns join in.
             f.last = now;
+            f.m.struck.add(key);
             return null;
         }
         if (f == null || !f.key.equals(key)) {
@@ -237,6 +311,8 @@ public final class CombatAchievementService {
         t.m.maxHp = (int) Math.ceil(p.getHealth());
         t.m.minHp = t.m.maxHp;
         t.m.book = SysState.of(p).book.name();
+        t.pos = p.getPos();
+        t.m.gear(worn(p));
         for (Prayer pr : d.activePrayers()) {
             t.m.prayersEver.add(pr.name());
         }
@@ -379,10 +455,10 @@ public final class CombatAchievementService {
         List<Tracker> active = trackers(p);
         if (!active.isEmpty()) {
             Snapshot s = snapshot(p);
-            int near = f != null ? playersNear(p) : 1;
+            int near = playersNear(p);
             for (Tracker t : active) {
                 measure(p, t, s);
-                if (t == f) {
+                if (t == f || t.raid == null) {
                     t.m.maxPlayers = Math.max(t.m.maxPlayers, near);
                 }
             }
@@ -477,9 +553,20 @@ public final class CombatAchievementService {
                 m.equipChanged = true;
             }
         }
+        if (!s.equipment().equals(t.equipment)) {
+            m.gear(List.of(s.equipment().split(",", -1)));
+        }
         t.food = s.food();
         t.doses = s.doses();
         t.equipment = s.equipment();
+        Vec3d at = p.getPos();
+        if (t.pos != null) {
+            double step = Math.sqrt(Math.pow(at.x - t.pos.x, 2) + Math.pow(at.z - t.pos.z, 2));
+            if (step < 8) { // teleports and knockbacks across the arena aren't walking
+                m.moved += step / 2;
+            }
+        }
+        t.pos = at;
         m.prayersEver.addAll(s.prayers());
         if (s.running()) {
             m.ran = true;

@@ -194,6 +194,9 @@ public class InfernoSession extends TzHaarSession {
         BlockPos c = rel(PILLARS[i][0], 1, PILLARS[i][1]);
         world.spawnParticles(ParticleTypes.EXPLOSION, c.getX() + 0.5, c.getY() + 1, c.getZ() + 0.5, 6, 1.5, 1, 1.5, 0);
         broadcastRed("A pillar collapses!");
+        if (wave < 67) {
+            caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_PILLAR_EARLY);
+        }
         for (ServerPlayerEntity p : online()) {
             if (p.getBlockPos().getSquaredDistance(c) < 16) {
                 CombatHandler.applyDamage(null, p, 10 + random.nextInt(40));
@@ -208,6 +211,7 @@ public class InfernoSession extends TzHaarSession {
                     imkotFar = 0;
                     LivingEntity t = mob.getTarget();
                     mob.requestTeleport(t.getX() + random.nextInt(3) - 1, t.getY(), t.getZ() + random.nextInt(3) - 1);
+                    caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_IMKOT_DUG);
                     world.spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, mob.getX(), mob.getY(), mob.getZ(), 10, 0.5, 0.2, 0.5, 0.01);
                     if (t instanceof ServerPlayerEntity p) {
                         Msg.action(p, "Jal-ImKot burrows underground and resurfaces beside you!");

@@ -47,6 +47,11 @@ import java.util.Set;
  *   <li>Boss variants: {@code awakened} (an awakened Desert Treasure II boss), {@code delve=N}/{@code delve>=N} (the Doom of
  *       Mokhaiotl's delve level; on a delve run, the level just completed).</li>
  *   <li>{@code noprayrestore} (prayer points never went up), {@code onehand} (no two-handed weapon used on the target).</li>
+ *   <li>{@code count<=N:a/b}: how often boss scripts counted something (summed over the alternatives); every monster attack
+ *       is counted as {@code used:<attack>}, and the same attack twice in a row flags {@code repeat:<attack>}.</li>
+ *   <li>{@code moved<=N} (tiles walked), {@code weight<N} (kg of worn gear, at its heaviest), {@code gearvalue<=N} (GE value
+ *       of worn gear), {@code geartier<N} (highest level requirement of worn gear), {@code noattack=a/b} (never attacked
+ *       these other creatures during the fight).</li>
  *   <li>Minigame runs: {@code stage=N} (which challenge or difficulty the run was, e.g. TzHaar-Ket-Rak's challenge number),
  *       {@code flag=NAME} (a condition the minigame itself judged, e.g. an empty inventory throughout).</li>
  *   <li>{@code flag=NAME} / {@code noflag=NAME} on fights too: something a boss script reported during the fight
@@ -116,6 +121,16 @@ public final class CombatAchievementRules {
         public int delve;
         /** Prayer points went up at some point (potions, altars, restores). */
         public boolean prayerRestored;
+        /** Things boss scripts and minigames counted during the fight (attacks used as "used:" + attack, burrows...). */
+        public final Map<String, Integer> counts = new HashMap<>();
+        /** Tiles walked during the fight (one OSRS tile is two blocks). */
+        public double moved;
+        /** The heaviest (kg), most valuable (GE gp) and highest-tier (level requirement) worn gear seen during the fight. */
+        public double maxWeight;
+        public long maxGearValue;
+        public int maxGearTier;
+        /** Fight keys of other creatures the player attacked during the fight (minions, elementals...). */
+        public final Set<String> struck = new HashSet<>();
 
         public void took(Hit h) {
             taken.add(h);
@@ -129,6 +144,17 @@ public final class CombatAchievementRules {
 
         public void killed(String key) {
             killed.merge(key, 1, Integer::sum);
+        }
+
+        public void count(String key, int n) {
+            counts.merge(key.toLowerCase(Locale.ROOT), n, Integer::sum);
+        }
+
+        /** Notes the gear worn this tick (item ids; empty slots are ""). */
+        public void gear(List<String> worn) {
+            maxWeight = Math.max(maxWeight, gearWeight(worn));
+            maxGearValue = Math.max(maxGearValue, gearValue(worn));
+            maxGearTier = Math.max(maxGearTier, gearTier(worn));
         }
 
         public CombatAchievements.FightResult result() {
@@ -239,6 +265,9 @@ public final class CombatAchievementRules {
         return false;
     }
 
+    /** Attack names boss scripts give damage that no {@code AttackDef} carries (Hunllef's tornadoes and floor, Nex's dash...). */
+    public static final Set<String> SCRIPTED_ATTACKS = Set.of("tornado", "damaging_floor", "summoned_soul", "smoke_dash");
+
     /** Normalised attack name of a hit (lower case, '_' for spaces), or "mechanic" when the damage had no name. */
     public static String attackKey(String attack) {
         return attack == null || attack.isEmpty() ? "mechanic" : attack.toLowerCase(Locale.ROOT).replace(' ', '_');
@@ -318,6 +347,19 @@ public final class CombatAchievementRules {
             case "nohitby" -> m.taken.stream().noneMatch(h -> h.damage() > 0 && matches(v, h.attacker()));
             case "offprayerhitby" -> m.taken.stream().anyMatch(h -> h.damage() > 0 && !h.prayed() && matches(v, h.attacker()));
             case "nokill" -> m.killed.keySet().stream().noneMatch(k -> matches(v, k));
+            case "count" -> {
+                int colon = v.indexOf(':');
+                int sum = 0;
+                for (String what : list(v.substring(colon + 1), "/")) {
+                    sum += m.counts.getOrDefault(name(what), 0);
+                }
+                yield compare(sum, op, number(v.substring(0, colon)));
+            }
+            case "moved" -> compare((long) Math.floor(m.moved), op, number(v));
+            case "weight" -> compare((long) Math.ceil(m.maxWeight * 1000), op, number(v) * 1000L);
+            case "gearvalue" -> compare(m.maxGearValue, op, Long.parseLong(v.trim()));
+            case "geartier" -> compare(m.maxGearTier, op, number(v));
+            case "noattack" -> m.struck.stream().noneMatch(k -> matches(v, k));
             case "killed" -> {
                 int colon = v.indexOf(':');
                 String what = name(v.substring(colon + 1));
@@ -358,6 +400,45 @@ public final class CombatAchievementRules {
         } catch (RuntimeException e) {
             return true;
         }
+    }
+
+    // ------------------------------------------------------------------ gear
+
+    /** Total weight in kg of worn items (weight-reducing gear counts negative, as in OSRS). */
+    public static double gearWeight(List<String> worn) {
+        double kg = 0;
+        for (String id : worn) {
+            com.runecraft.osrs.ItemDef d = id == null || id.isEmpty() ? null : com.runecraft.osrs.ItemCatalog.get(id);
+            if (d != null) {
+                kg += d.weight() != 0 ? d.weight() : com.runecraft.osrs.data.EquipmentWeights.of(id);
+            }
+        }
+        return Math.max(0, kg);
+    }
+
+    /** Total Grand Exchange guide price of worn items (untradeables count as nothing). */
+    public static long gearValue(List<String> worn) {
+        long gp = 0;
+        for (String id : worn) {
+            if (id != null && !id.isEmpty()) {
+                gp += com.runecraft.osrs.data.GePrices.guide(id);
+            }
+        }
+        return gp;
+    }
+
+    /** The gear tier of worn items: the highest skill level any of them needs to wear (0 for none). */
+    public static int gearTier(List<String> worn) {
+        int tier = 0;
+        for (String id : worn) {
+            com.runecraft.osrs.ItemDef d = id == null || id.isEmpty() ? null : com.runecraft.osrs.ItemCatalog.get(id);
+            if (d != null && d.equipment() != null) {
+                for (int lvl : d.equipment().requirements().values()) {
+                    tier = Math.max(tier, lvl);
+                }
+            }
+        }
+        return tier;
     }
 
     // ------------------------------------------------------------------ streaks, windows, averages
@@ -679,6 +760,48 @@ public final class CombatAchievementRules {
             229;RULE;zulrah;1;nodmg=other,toxic_cloud,venom_spit,tail_slam,mechanic,hazard
             228;WINDOW;kill:snakeling;3;t<=1t
             187;WINDOW;kill:husk;2;t<=1t
+            179;RULE;giant_mole;1;count<=2:mole_burrow
+            181;RULE;giant_mole;1;flag=mole_surfaced
+            53;RULE;cerberus;1;noflag=cerberus_souls
+            54;RULE;cerberus;1;count>=6:soul_negated
+            3;RULE;abyssal_sire;1;noflag=sire_scion
+            140;RULE;alchemical_hydra;1;noflag=hydra_empowered
+            141;RULE;alchemical_hydra;1;noflag=hydra_flame_wall
+            87;RULE;dusk;1;noflag=dawn_healed
+            88;RULE;dusk;1;nodmg=lightning
+            413;RULE;nex;1;noflag=nex_siphon_heal
+            414;RULE;nex;1;noflag=nex_ice
+            415;RULE;nex;1;noflag=nex_smoke_dash
+            420;RULE;nex;1;noflag=nex_shadow_smash
+            419;RULE;nex;1;noflag=nex_siphon_heal noflag=nex_ice noflag=nex_smoke_dash noflag=nex_shadow_smash
+            59;RULE;chaos_elemental;1;noflag=chaos_unequipped
+            112;RULE;crystalline_hunllef;1;nodmg=tornado,damaging_floor,stomp,offprayer noflag=hunllef_wrong_weapon
+            102;RULE;corrupted_hunllef;1;nodmg=tornado,damaging_floor,stomp,offprayer noflag=hunllef_wrong_weapon
+            502;RULE;the_whisperer;1;count<10:shadow_realm_ticks
+            208;RULE;sarachnis;1;noflag=repeat:web_spit
+            527;RULE;MOONS;1;id=blue_moon count<=1:used:frozen_weapons/used:winter_storm || id=eclipse_moon count<=1:used:eclipse/used:moonlight_clones || id=blood_moon count<=1:used:blood_rain/used:call_jaguar
+            594;RULE;branda_the_fire_queen;1;noattack=kill:ice+elemental/kill:fire+elemental
+            643;RULE;maggot_king;1;moved<=40
+            631;STREAK;shellbane_gryphon;5;weight<40
+            493;RULE;vardorvis;1;gearvalue<=2000000
+            310;RULE;tekton;1;count<=1:tekton_anvil
+            309;RULE;vasa_nistirio;1;count<=1:vasa_teleport
+            240;RULE;pestilent_bloat;1;mode=normal count<=2:bloat_shutdown
+            380;RAID;TOB;1;mode=hard target deathless nospirit
+            427;RAID;TOA;1;geartier<75
+            150;RUN;mg:fight_caves;1;noflag=mejkot_healed
+            151;RUN;mg:fight_caves;1;noflag=hurkot_healed
+            343;RUN;mg:inferno;1;noflag=imkot_dug
+            346;RUN;mg:inferno;1;noflag=pillar_early
+            281;RUN;mg:wintertodt;1;flag=healed_pyromancer
+            282;RUN;mg:wintertodt;1;flag=fixed_brazier
+            283;RUN;mg:wintertodt;1;noflag=all_braziers_broken
+            284;RUN;mg:wintertodt;1;noflag=pyromancer_fell
+            285;RUN;mg:wintertodt;1;flag=warm_gear
+            286;RUN;mg:wintertodt;1;flag=points_3000
+            358;RUN;mg:tempoross;1;flag=ten_permits
+            359;RUN;mg:tempoross;1;solo noflag=wave_hit
+            360;RUN;mg:tempoross;1;flag=both_cannons
             """;
 
     private static final Map<Integer, Spec> SPECS = new LinkedHashMap<>();

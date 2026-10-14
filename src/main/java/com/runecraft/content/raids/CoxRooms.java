@@ -91,6 +91,7 @@ final class CoxRooms {
                     move(tekton, anvil);
                     anchor(tekton);
                     say("Tekton retreats to his anvil to sharpen his hammer.");
+                    com.runecraft.content.systems.CombatAchievementService.countNear(tekton, com.runecraft.osrs.content.systems.CombatAchievements.COUNT_TEKTON_ANVIL);
                 }
             }
         }
@@ -195,6 +196,7 @@ final class CoxRooms {
                 teleportCooldown = 25;
                 ServerPlayerEntity p = randomPlayer();
                 if (p != null) {
+                    com.runecraft.content.systems.CombatAchievementService.countNear(vasa, com.runecraft.osrs.content.systems.CombatAchievements.COUNT_VASA_TELEPORT);
                     raid.teleport(p, vasa.getBlockPos().add(1, 0, 1));
                     Msg.red(p, "Vasa Nistirio teleports you to him! Run!");
                     RaidEffects.strike(world(), vasa.getPos(), 4.0, 55, 4, vasa, ParticleTypes.END_ROD);

@@ -164,6 +164,70 @@ public final class CombatAchievements {
     public static final int GHOMMAL_Y = 3547;
     /** OSRS demonbane weapons in this world. */
     public static final String DEMONBANE = "arclight|emberlight|darklight|silverlight|scorching_bow|purging_staff|burning_claws";
+
+    // Flags and counters boss scripts and minigames report for rules ({@code flag=}, {@code noflag=}, {@code count<=N:}).
+    /** The Giant Mole resurfaced within the last 10 seconds (Whack-a-Mole). */
+    public static final String FLAG_MOLE_SURFACED = "mole_surfaced";
+    /** Times the Giant Mole burrowed. */
+    public static final String COUNT_MOLE_BURROW = "mole_burrow";
+    /** Cerberus summoned her souls. */
+    public static final String FLAG_CERBERUS_SOULS = "cerberus_souls";
+    /** Summoned soul attacks negated with the right protection prayer. */
+    public static final String COUNT_SOUL_NEGATED = "soul_negated";
+    /** A scion matured at the Abyssal Sire. */
+    public static final String FLAG_SIRE_SCION = "sire_scion";
+    /** The Alchemical Hydra used its flame wall. */
+    public static final String FLAG_HYDRA_FLAME_WALL = "hydra_flame_wall";
+    /** The Alchemical Hydra absorbed the wrong chemicals. */
+    public static final String FLAG_HYDRA_EMPOWERED = "hydra_empowered";
+    /** Dawn healed from an energy sphere. */
+    public static final String FLAG_DAWN_HEALED = "dawn_healed";
+    /** Someone was hit by Nex's Smoke Dash. */
+    public static final String FLAG_NEX_SMOKE_DASH = "nex_smoke_dash";
+    /** Someone was hit by Nex's Shadow Smash. */
+    public static final String FLAG_NEX_SHADOW_SMASH = "nex_shadow_smash";
+    /** Someone took damage from an Ice special (Contain this! or the ice prison). */
+    public static final String FLAG_NEX_ICE = "nex_ice";
+    /** Nex healed from her Blood Siphon. */
+    public static final String FLAG_NEX_SIPHON_HEAL = "nex_siphon_heal";
+    /** The Chaos Elemental unequipped one of your items. */
+    public static final String FLAG_CHAOS_UNEQUIPPED = "chaos_unequipped";
+    /** You attacked the Hunllef with the style it protects from. */
+    public static final String FLAG_HUNLLEF_WRONG_WEAPON = "hunllef_wrong_weapon";
+    /** Game ticks spent in the Whisperer's Shadow Realm. */
+    public static final String COUNT_SHADOW_REALM_TICKS = "shadow_realm_ticks";
+    /** A Yt-HurKot healed a Jad. */
+    public static final String FLAG_HURKOT_HEALED = "hurkot_healed";
+    /** A Yt-MejKot healed a monster. */
+    public static final String FLAG_MEJKOT_HEALED = "mejkot_healed";
+    /** A Jal-ImKot dug. */
+    public static final String FLAG_IMKOT_DUG = "imkot_dug";
+    /** An Inferno pillar fell before wave 67. */
+    public static final String FLAG_PILLAR_EARLY = "pillar_early";
+    /** You healed a fallen pyromancer. */
+    public static final String FLAG_HEALED_PYROMANCER = "healed_pyromancer";
+    /** You repaired a broken brazier. */
+    public static final String FLAG_FIXED_BRAZIER = "fixed_brazier";
+    /** All four braziers were broken at once. */
+    public static final String FLAG_ALL_BRAZIERS_BROKEN = "all_braziers_broken";
+    /** A pyromancer fell. */
+    public static final String FLAG_PYROMANCER_FELL = "pyromancer_fell";
+    /** Four pieces of warm equipment worn when the Wintertodt was subdued. */
+    public static final String FLAG_WARM_GEAR = "warm_gear";
+    /** 3000 or more Wintertodt points. */
+    public static final String FLAG_POINTS_3000 = "points_3000";
+    /** You loaded both of Tempoross' cannons. */
+    public static final String FLAG_BOTH_CANNONS = "both_cannons";
+    /** A Tempoross wave hit you. */
+    public static final String FLAG_WAVE_HIT = "wave_hit";
+    /** 10 reward permits from one Tempoross fight. */
+    public static final String FLAG_TEN_PERMITS = "ten_permits";
+    /** Times Tekton retreated to his anvil. */
+    public static final String COUNT_TEKTON_ANVIL = "tekton_anvil";
+    /** Times Vasa Nistirio used his teleport attack. */
+    public static final String COUNT_VASA_TELEPORT = "vasa_teleport";
+    /** Times the Pestilent Bloat shut down. */
+    public static final String COUNT_BLOAT_SHUTDOWN = "bloat_shutdown";
     /** A fight is forgotten after this many game ticks without either side attacking. */
     public static final int FIGHT_TIMEOUT_TICKS = 100;
 

@@ -2,6 +2,8 @@ package com.runecraft.content.bosses;
 
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.combat.CombatHandler;
+import com.runecraft.content.systems.CombatAchievementService;
+import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.Skill;
@@ -172,14 +174,15 @@ final class SlayerScripts {
                 lava = 20;
                 BossFx.say(boss, "Cerberus: Grrrrrrrrrrrrrr!");
                 Vec3d p = target.getPos();
-                strike(boss, p, 4, 15, 1.4, ParticleTypes.LAVA);
-                strike(boss, around(boss, p, 3), 4, 15, 1.4, ParticleTypes.LAVA);
-                strike(boss, around(boss, p, 3), 4, 15, 1.4, ParticleTypes.LAVA);
+                namedStrike("lava_pool", boss, p, 4, 15, 1.4, ParticleTypes.LAVA);
+                namedStrike("lava_pool", boss, around(boss, p, 3), 4, 15, 1.4, ParticleTypes.LAVA);
+                namedStrike("lava_pool", boss, around(boss, p, 3), 4, 15, 1.4, ParticleTypes.LAVA);
             }
         }
 
         private void summonSouls(DataBossEntity boss, ServerPlayerEntity target) {
             BossFx.say(boss, "Cerberus: Aaarrrooooooo! Summoned souls float in - ranged, then magic, then melee!");
+            CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_CERBERUS_SOULS);
             String[] ids = {"summoned_soul_ranged", "summoned_soul_magic", "summoned_soul_melee"};
             Vec3d c = homeVec();
             for (int i = 0; i < 3; i++) {
@@ -203,8 +206,10 @@ final class SlayerScripts {
                 if (BossFx.protects(target, prayers[soulStep])) {
                     boolean spectral = "spectral_spirit_shield".equals(Inv.idOf(target.getOffHandStack()));
                     BossFx.drainPrayer(target, spectral ? 15 : 30);
+                    CombatAchievementService.count(target, CombatAchievements.COUNT_SOUL_NEGATED, 1);
                     Msg.game(target, "The " + names[soulStep] + " soul drains your prayer.");
                 } else {
+                    com.runecraft.combat.CombatHooks.nameAttack("summoned_soul", null);
                     CombatHandler.applyDamage(boss, target, 30);
                     Msg.red(target, "The " + names[soulStep] + " soul strikes you!");
                 }
@@ -302,6 +307,9 @@ final class SlayerScripts {
             if (--spawnTimer <= 0) {
                 spawnTimer = stage >= 3 ? 12 : 15;
                 BossFx.spawnMinion(boss, stage >= 3 ? "abyssal_scion" : "abyssal_spawn", around(boss, boss.getPos(), 3), target);
+                if (stage >= 3) {
+                    CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_SIRE_SCION);
+                }
             }
         }
 
@@ -400,7 +408,7 @@ final class SlayerScripts {
                     BossFx.warn(boss, "The Alchemical Hydra spits poison!");
                     for (int i = 0; i < 5; i++) {
                         Vec3d at = i == 0 ? p : around(boss, p, 3);
-                        strike(boss, at, 2, 12, 1.2, ParticleTypes.SNEEZE, (hit, pos) ->
+                        namedStrike("poison_pool", boss, at, 2, 12, 1.2, ParticleTypes.SNEEZE, (hit, pos) ->
                                 com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, 4, 10, boss));
                     }
                 }
@@ -408,7 +416,7 @@ final class SlayerScripts {
                     BossFx.warn(boss, "The Alchemical Hydra calls down lightning - keep moving!");
                     for (int i = 0; i < 4; i++) {
                         final int delay = 2 + i * 2;
-                        strike(boss, around(boss, p, 2 + i), delay, 20, 1.3, ParticleTypes.ELECTRIC_SPARK, (hit, pos) -> {
+                        namedStrike("lightning", boss, around(boss, p, 2 + i), delay, 20, 1.3, ParticleTypes.ELECTRIC_SPARK, (hit, pos) -> {
                             for (ServerPlayerEntity h : hit) {
                                 BossFx.stun(h, 2);
                             }
@@ -417,15 +425,16 @@ final class SlayerScripts {
                 }
                 case RED -> {
                     BossFx.warn(boss, "The Alchemical Hydra breathes walls of fire - get between them!");
+                    CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_HYDRA_FLAME_WALL);
                     Vec3d dir = p.subtract(boss.getPos()).normalize();
                     Vec3d side = new Vec3d(-dir.z, 0, dir.x);
                     for (int i = -5; i <= 5; i++) {
                         for (int s : new int[]{-2, 2}) {
                             Vec3d at = p.add(dir.multiply(i * 1.2)).add(side.multiply(s));
-                            strike(boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, 20, 1.0, ParticleTypes.FLAME);
+                            namedStrike("fire_wall", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, 20, 1.0, ParticleTypes.FLAME);
                         }
                     }
-                    strike(boss, p, 6, 20, 1.0, ParticleTypes.FLAME);
+                    namedStrike("fire_wall", boss, p, 6, 20, 1.0, ParticleTypes.FLAME);
                 }
             }
         }
@@ -473,6 +482,7 @@ final class SlayerScripts {
                             shielded = true;
                             boss.heal(mcHp(boss, 20));
                             BossFx.say(boss, "The Alchemical Hydra absorbs the wrong chemicals and its defences return!");
+                            CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_HYDRA_EMPOWERED);
                         }
                     }
                 }
@@ -515,14 +525,14 @@ final class SlayerScripts {
             if (dawnAlive()) {
                 BossFx.warn(boss, "Rocks fall from above!");
                 for (int i = 0; i < 4; i++) {
-                    strike(boss, i == 0 ? target.getPos() : around(boss, target.getPos(), 4), 3, 22, 1.3, ParticleTypes.ASH);
+                    namedStrike("falling_rocks", boss, i == 0 ? target.getPos() : around(boss, target.getPos(), 4), 3, 22, 1.3, ParticleTypes.ASH);
                 }
             } else if (boss.getRandom().nextBoolean()) {
                 perform(boss, target, SlayerBosses.DUSK_EXPLOSION);
             } else {
                 BossFx.warn(boss, "Lightning crackles across the rooftop!");
                 for (int i = 0; i < 5; i++) {
-                    strike(boss, around(boss, homeVec(), 10), 3, 15, 1.5, ParticleTypes.ELECTRIC_SPARK);
+                    namedStrike("lightning", boss, around(boss, homeVec(), 10), 3, 15, 1.5, ParticleTypes.ELECTRIC_SPARK);
                 }
             }
         }
@@ -550,6 +560,7 @@ final class SlayerScripts {
                 strike(boss, around(boss, target.getPos(), 4), 5, 0, 1.0, ParticleTypes.END_ROD, (hit, pos) -> {
                     if (hit.isEmpty()) {
                         boss.heal(15);
+                        CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_DAWN_HEALED);
                         BossFx.world(boss).spawnParticles(ParticleTypes.HEART, boss.getX(), boss.getY() + 2, boss.getZ(), 3, 0.5, 0.3, 0.5, 0);
                     } else {
                         for (ServerPlayerEntity p : hit) {

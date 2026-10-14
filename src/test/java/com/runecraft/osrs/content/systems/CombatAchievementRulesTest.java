@@ -107,6 +107,7 @@ class CombatAchievementRulesTest {
     void namedAttacksExist() {
         Set<String> attacks = new java.util.HashSet<>(Set.of("boss", "other", "melee", "bossmelee", "offprayer", "mechanic", "hazard",
                 "poison"));
+        attacks.addAll(CombatAchievementRules.SCRIPTED_ATTACKS);
         for (AttackType t : AttackType.values()) {
             attacks.add(t.name().toLowerCase(java.util.Locale.ROOT));
         }
@@ -129,6 +130,77 @@ class CombatAchievementRulesTest {
                         if (!attacks.contains(a)) {
                             problems.add(t.name() + ": no attack " + a);
                         }
+                    }
+                }
+            }
+        }
+        assertTrue(problems.isEmpty(), String.join("\n", problems));
+    }
+
+    @Test
+    void countsMovementGearAndOtherTargets() {
+        Metrics m = new Metrics();
+        assertTrue(CombatAchievementRules.meets("count<=2:mole_burrow", m));
+        m.count("mole_burrow", 3);
+        assertFalse(CombatAchievementRules.meets("count<=2:mole_burrow", m));
+        m.count("used:frozen_weapons", 1);
+        assertTrue(CombatAchievementRules.meets("count<=1:used:frozen_weapons/used:winter_storm", m));
+        m.count("used:winter_storm", 1);
+        assertFalse(CombatAchievementRules.meets("count<=1:used:frozen_weapons/used:winter_storm", m));
+        assertTrue(CombatAchievementRules.meets("count>=6:soul_negated", new Metrics()) == false);
+
+        m.moved = 40.5;
+        assertTrue(CombatAchievementRules.meets("moved<=40", m));
+        m.moved = 41;
+        assertFalse(CombatAchievementRules.meets("moved<=40", m));
+
+        Metrics g = new Metrics();
+        g.gear(List.of("rune_platebody", "rune_platelegs", ""));
+        assertEquals(40, g.maxGearTier);
+        assertTrue(g.maxWeight > 15 && g.maxWeight < 25, "weight " + g.maxWeight); // 9.979 + 9.071 kg
+        assertTrue(g.maxGearValue > 50_000, "value " + g.maxGearValue);
+        assertTrue(CombatAchievementRules.meets("weight<40 geartier<75 gearvalue<=2000000", g));
+        g.gear(List.of("twisted_bow"));
+        assertFalse(CombatAchievementRules.meets("geartier<75", g));
+        assertFalse(CombatAchievementRules.meets("gearvalue<=2000000", g));
+        // Equipment ItemValues doesn't weigh gets its weight from the osrsreboxed snapshot.
+        assertTrue(com.runecraft.osrs.data.EquipmentWeights.size() > 300);
+        assertTrue(CombatAchievementRules.gearWeight(List.of("adamant_boots")) > 1);
+
+        Metrics o = new Metrics();
+        assertTrue(CombatAchievementRules.meets("noattack=kill:ice+elemental/kill:fire+elemental", o));
+        o.struck.add("kill:fire elemental");
+        assertFalse(CombatAchievementRules.meets("noattack=kill:ice+elemental/kill:fire+elemental", o));
+    }
+
+    @Test
+    void scriptFlagsInRulesAreReported() {
+        // Every flag and counter a rule checks is one the game reports (a typo would make a task impossible or free).
+        Set<String> reported = new java.util.HashSet<>(Set.of("grub_absorbed", "burrowed", "exposed", "mopping_up", "noshield", "noinv",
+                "fluke", "multistyle"));
+        for (java.lang.reflect.Field f : CombatAchievements.class.getFields()) {
+            if ((f.getName().startsWith("FLAG_") || f.getName().startsWith("COUNT_")) && f.getType() == String.class) {
+                try {
+                    reported.add((String) f.get(null));
+                } catch (IllegalAccessException e) {
+                    throw new AssertionError(e);
+                }
+            }
+        }
+        List<String> problems = new ArrayList<>();
+        for (Task t : CombatAchievements.tasks()) {
+            if (t.rule() == null) {
+                continue;
+            }
+            for (String token : t.rule().split("\\s+")) {
+                String name = token.startsWith("flag=") ? token.substring(5) : token.startsWith("noflag=") ? token.substring(7)
+                        : token.startsWith("count") ? token.substring(token.indexOf(':') + 1) : null;
+                if (name == null) {
+                    continue;
+                }
+                for (String n : name.split("/")) {
+                    if (!n.startsWith("used:") && !n.startsWith("repeat:") && !reported.contains(n)) {
+                        problems.add(t.name() + ": " + n);
                     }
                 }
             }
