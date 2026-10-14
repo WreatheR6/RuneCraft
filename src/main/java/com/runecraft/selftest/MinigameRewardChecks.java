@@ -139,6 +139,10 @@ final class MinigameRewardChecks {
         } finally {
             s.end(true);
         }
+        if (!c.realPlayer()) {
+            // end() only wakes players in the world's player list, which the fake player is not in
+            return "outside: refused; in the dream: " + String.join(", ", done) + "; waking checked by the real-player run";
+        }
         for (String id : NightmareZone.POTIONS) {
             if (Inv.count(p(), id) > 0) {
                 throw failure(id + " left in the inventory after waking up");
