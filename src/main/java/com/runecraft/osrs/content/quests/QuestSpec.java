@@ -162,6 +162,29 @@ public final class QuestSpec {
         return this;
     }
 
+    /**
+     * Killing {@code count} of a creature (5 ice trolls, 4 tortured gorillas): the interpreter counts the kills per
+     * player (saved with the world) and fires the trigger on the last one.
+     */
+    public QuestSpec kill(String creature, int count) {
+        add(Trigger.Kind.KILL, creature);
+        current.count = Math.max(1, count);
+        return this;
+    }
+
+    /**
+     * How many times the current objective must happen: kills for a {@link #kill} trigger, and for a {@link #drop}
+     * how many of the item to collect (the drop keeps rolling until the player carries that many).
+     */
+    public QuestSpec times(int count) {
+        Trigger t = cur();
+        if (t.kind != Trigger.Kind.KILL && t.kind != Trigger.Kind.DROP) {
+            throw new IllegalStateException(id() + ": times() only applies to kill and drop objectives");
+        }
+        t.count = Math.max(1, count);
+        return this;
+    }
+
     /** While at this stage, killing {@code creature} drops {@code item} with a 1/{@code chance} chance (once). */
     public QuestSpec drop(String creature, String item, int chance) {
         add(Trigger.Kind.DROP, creature);
@@ -417,6 +440,8 @@ public final class QuestSpec {
         public int minCombat;
         public int next = DEFAULT;
         public int chance = 1;
+        /** Kills needed (KILL) or items to collect (DROP); see {@link QuestSpec#times}. */
+        public int count = 1;
         public int radius = 8;
         public String spawn;
         public String travel;
@@ -425,6 +450,11 @@ public final class QuestSpec {
             this.kind = kind;
             this.target = target;
             this.stage = stage;
+        }
+
+        /** Key of this trigger's saved kill counter: quest, stage, position in the stage and creature. */
+        public String counterKey(String questId, int indexInStage) {
+            return questId + ":" + stage + ":" + indexInStage + ":" + target;
         }
 
         /** Whether the trigger ends the quest. */

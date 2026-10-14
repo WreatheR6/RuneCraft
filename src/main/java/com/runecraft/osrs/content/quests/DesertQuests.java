@@ -253,9 +253,10 @@ final class DesertQuests {
                 .attack(AttackDef.of("vampyric_slash", AttackType.SLASH, 26, 2.5, 6).special(Special.LIFESTEAL, 25))
                 .attack(AttackDef.of("blood_spell", AttackType.MAGIC, 20, 8, 3).special(Special.LIFESTEAL, 50).particle("minecraft:crimson_spore"))
                 .drops(Drop.always("bones")).size(0.8f, 2.4f, 1.0f).at("dessous_graveyard").arena(10, "crypt"));
-        b.boss(BossDef.of("fareed", "Fareed").level(167).stats(130, 120, 130, 130, 1, 1).speed(4)
-                .defenceBonus(60, 60, 60, -30, 60)
-                .attack(AttackDef.of("flaming_scimitar", AttackType.SLASH, 26, 2.5, 8).particle("minecraft:flame"))
+        // OSRS Wiki: 130 HP, 190 Attack, 120 Strength, 135 Defence, +100 melee defence, 0 magic/ranged; max hit 40 (37 against ice gloves).
+        b.boss(BossDef.of("fareed", "Fareed").level(167).stats(130, 190, 120, 135, 1, 1).speed(4)
+                .defenceBonus(100, 100, 100, 0, 0)
+                .attack(AttackDef.of("flaming_scimitar", AttackType.SLASH, 40, 2.5, 8).particle("minecraft:flame"))
                 .attack(AttackDef.of("fire_burst", AttackType.MAGIC, 18, 5, 3).special(Special.AOE, 3).particle("minecraft:flame"))
                 .drops(Drop.always("bones")).skin(0xE06A1A, 0xA03A0A, 0x5A1A0A, 0xFFB040).at("smoke_dungeon").arena(10, "lava"));
         b.boss(BossDef.of("damis", "Damis").level(103).stats(90, 100, 100, 90, 1, 1).speed(4)
@@ -294,7 +295,10 @@ final class DesertQuests {
                         "* The warm key opens the gate to Fareed's chamber.")
                 .missing("* Choking smoke fills the dungeon. You need a facemask, and a tinderbox for the four torches.")
                 .kill("fareed").stay().needFlag("dt_torches").unless("smoke_diamond").unlessFlag("dt_smoke_placed").give("smoke_diamond")
-                .say("* Fareed's flames gutter out. You take the Smoke diamond.") // OSRS: ice gloves or water spells to hit him
+                .say("* Fareed's flames gutter out. You take the Smoke diamond.") // OSRS: melee needs ice gloves (QuestBossScripts.Fareed)
+                // The Ice Queen beneath White Wolf Mountain drops ice gloves for anyone (no quest needed in OSRS).
+                .kill("ice_queen").stay().needFlag("dt_torches").unless("ice_gloves", "smoke_diamond").unlessFlag("dt_smoke_placed").give("ice_gloves")
+                .say("* The Ice Queen shatters. Her ice gloves will let you grip Fareed's burning blade.")
                 // --- Shadow diamond: pick the bandits' secure chest for the gilded cross; Rasolo trades it for a ring of visibility.
                 .talk("rasolo").stay().unlessFlag("dt_rasolo").flag("dt_rasolo")
                 .say("Damis hides in the Shadow Dungeon east of here, invisible to mortal eyes. Bring me the gilded cross the bandits stole and I'll give you a ring of visibility.")
@@ -310,8 +314,8 @@ final class DesertQuests {
                 .talk("troll_child").stay().unlessFlag("dt_troll_child").take("cake").flag("dt_troll_child")
                 .say("Cake! *munch* Kamil froze my mummy and daddy! He's up the Ice Path, north-west of Trollheim. Please help!")
                 .missing("*sniff* I'm hungry... have you got anything sweet?")
-                .kill("ice_troll").stay().needFlag("dt_troll_child").unlessFlag("dt_ice_trolls").flag("dt_ice_trolls")
-                .say("* The ice trolls guarding the gate are slain. The Ice Path lies open.") // approx: OSRS wants five kills
+                .kill("ice_troll", 5).stay().needFlag("dt_troll_child").unlessFlag("dt_ice_trolls").flag("dt_ice_trolls")
+                .say("* The five ice trolls guarding the gate are slain. The Ice Path lies open.") // OSRS: kill 5 ice trolls at the ice gate
                 .kill("kamil").stay().needFlag("dt_ice_trolls").unlessFlag("dt_kamil").flag("dt_kamil")
                 .say("* Kamil shatters into shards of ice. Further west, two trolls stand frozen in ice.")
                 .reach("ice_path", 10).stay().needFlag("dt_kamil").unless("ice_diamond").unlessFlag("dt_ice_freed").need("spiked_boots").take("fire_rune:5")

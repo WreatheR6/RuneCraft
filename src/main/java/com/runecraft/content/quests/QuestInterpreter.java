@@ -114,7 +114,8 @@ public final class QuestInterpreter {
         }
         if (t.kind == Trigger.Kind.DROP) {
             for (String item : t.give.keySet()) {
-                if (Inv.has(p, item, 1)) {
+                // a counted drop (5 mudskipper hides) keeps rolling until the player carries enough
+                if (Inv.has(p, item, Math.max(1, t.count))) {
                     return true;
                 }
             }
@@ -351,7 +352,8 @@ public final class QuestInterpreter {
                 continue;
             }
             QuestSpec.Stage stage = q.stages.get(stage(p, q));
-            for (Trigger t : stage.triggers) {
+            for (int i = 0; i < stage.triggers.size(); i++) {
+                Trigger t = stage.triggers.get(i);
                 if (!ids.contains(t.target) || skipped(p, t)) {
                     continue;
                 }
@@ -360,6 +362,18 @@ public final class QuestInterpreter {
                         t.give.forEach((item, n) -> entity.dropStack(Inv.stack(item, n)));
                     }
                 } else if (t.kind == Trigger.Kind.KILL && unmet(p, t) == null) {
+                    if (t.count > 1) {
+                        // Multi-kill objective: count the kill (saved with the world) and fire on the last one.
+                        QuestsState state = QuestsState.get(p);
+                        String key = t.counterKey(q.id(), i);
+                        int done = state.addKill(p.getUuid(), key);
+                        if (done < t.count) {
+                            p.sendMessage(Text.literal("[" + q.def.displayName() + "] " + stats.name() + ": " + done + "/" + t.count + " killed.")
+                                    .formatted(Formatting.DARK_AQUA), false);
+                            return;
+                        }
+                        state.clearKills(p.getUuid(), key);
+                    }
                     fire(p, q, t, stats.name());
                     return;
                 }

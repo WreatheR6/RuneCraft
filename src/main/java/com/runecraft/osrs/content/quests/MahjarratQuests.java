@@ -227,6 +227,7 @@ final class MahjarratQuests {
         Cast.npc(b, "my_arm", "My Arm", "quest_troll_stronghold_roof", 0, 2, Cast.TROLL, 0x5A4A3A);
         Cast.npc(b, "murcaily", "Murcaily", "tai_bwo_wannai", 3, -3, Cast.BROWN, 0x3A6A2A);
         b.item("goutweed_tuber", "Goutweed tuber", "seed", 0x8A9A4A, "A tuber of the herb goutweed.");
+        b.item("mab_goutweedy_lump", "Goutweedy lump", "pot", 0x6A7A3A, "A bucket of the trolls' goutweed stew, gone lumpy.");
         b.boss(BossDef.of("quest_giant_roc", "Giant Roc").level(172).stats(250, 120, 120, 120, 1, 120).speed(5)
                 .attack(AttackDef.of("peck", AttackType.STAB, 20, 3, 5))
                 .attack(AttackDef.of("boulder_drop", AttackType.RANGED, 18, 10, 3).special(Special.SKY_STRIKE, 0).telegraph(2, "The Giant Roc drops a boulder!"))
@@ -239,11 +240,18 @@ final class MahjarratQuests {
                 .stage("I can start this quest by speaking to Burntmeat in the Troll Stronghold kitchen. (Requires Eadgar's Ruse, The Feud, Jungle Potion, 10 Woodcutting, 29 Farming.)")
                 .talk("burntmeat").say("My Arm want to grow things on roof! Silly troll. You go help him.")
                 .stage("I should talk to My Arm on the Troll Stronghold roof.")
-                .talk("my_arm").say("My Arm want to be farmer! Need compost, lots. And special plant, goutweed. Humans in jungle have it.")
-                .stage("I should fetch a goutweed tuber from Murcaily in Tai Bwo Wannai's hardwood grove, and bring 3 supercompost.")
+                // OSRS: fetch a goutweedy lump from the cooking pot on Death Plateau (past the thrower trolls) with a bucket.
+                .reach("death_plateau", 8).stay().take("minecraft:bucket").unless("mab_goutweedy_lump").unlessFlag("mab_lump")
+                .give("mab_goutweedy_lump").say("* You scoop the trolls' stew out of the cooking pot on Death Plateau: a goutweedy lump.")
+                .missing("* A cooking pot bubbles in the middle of the plateau. You'd need an empty bucket.")
+                .talk("my_arm").take("mab_goutweedy_lump").flag("mab_lump")
+                .say("Goutweedy lump! My Arm try grow it... *it rots.* Need proper plant, goutweed. Humans in jungle have it. And lots of compost.")
+                .missing("My Arm want goutweed! Burntmeat stew pot on Death Plateau got some. Bring in bucket.")
+                // OSRS: the soil patch takes 3 buckets of ugthanki dung and 7 supercompost (the dung isn't in the mod: approx).
+                .stage("I should fetch a goutweed tuber from Murcaily in Tai Bwo Wannai's hardwood grove, and bring 7 supercompost.")
                 .talk("murcaily").stay().unless("goutweed_tuber").give("goutweed_tuber").say("Goutweed for a troll? Ha! Take it, and stay away from my teak.")
-                .talk("my_arm").take("goutweed_tuber", "supercompost:3").say("*You and My Arm plant the goutweed in the rooftop patch.* It growing! ...What that shadow?")
-                .missing("My Arm need goutweed tuber from jungle man, and 3 supercompost.")
+                .talk("my_arm").take("goutweed_tuber", "supercompost:7").say("*You and My Arm dig in the supercompost and plant the goutweed in the rooftop patch.* It growing! ...What that shadow?")
+                .missing("My Arm need goutweed tuber from jungle man, and 7 supercompost.")
                 .stage("A Giant Roc swoops down to protect its nest near the patch! I must defeat it.")
                 .kill("quest_giant_roc").flag("mab_roc").say("* The Giant Roc flees, shedding feathers. My Arm's goutweed survives.")
                 .stage("I should tell My Arm the patch is safe.")

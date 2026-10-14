@@ -98,6 +98,7 @@ Implement the methods you need on your module class (`ContentModule`):
 ### Quests
 - `QuestScripts.onTalk(npcId, (player, npcEntity) -> ...)` and `QuestScripts.onKill(...)`.
 - `QuestApi.say/you/stage/setStage/start/complete/isComplete/takeAll/has/give`.
+- Declarative quests (`QuestSpec`): `.kill("ice_troll", 5)` (or `.kill(x).times(5)`) needs N kills, counted per player in `QuestsState` and saved; `.drop(x, item, chance).times(5)` keeps dropping until the player carries 5. The self-test reports `count` kills.
 
 ### Events
 - `GameEvents.onXp/onKill/onMake/onObtain`: diaries, clue steps, points.

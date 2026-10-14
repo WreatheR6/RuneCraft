@@ -98,7 +98,7 @@ final class TrollQuests {
                 .say("*Eadgar builds a scarecrow 'human' and brews a troll potion so you smell like a troll.*")
                 .missing("I need 10 logs and 3 balls of wool.")
                 .stage("I should drink the troll potion and trade the fake man to Burntmeat for goutweed.")
-                .talk("burntmeat").take("troll_disguise", "troll_potion").say("Mmm, human! Burntmeat cook him nice. Here, take smelly weed, Burntmeat not need it.",
+                .talk("burntmeat").take("troll_disguise", "troll_potion").give("goutweed").say("Mmm, human! Burntmeat cook him nice. Here, take smelly weed, Burntmeat not need it.",
                         "* While he's distracted you grab some goutweed from the storeroom.")
                 .stage("I should tell Mad Eadgar that the ruse worked.")
                 .talk("mad_eadgar").say("Ha ha! The trolls fell for it! I'll teach you a trick: the Trollheim Teleport. Mad, eh?")

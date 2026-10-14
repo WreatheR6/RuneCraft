@@ -70,6 +70,7 @@ final class LateQuestsD {
                         .telegraph(3, "The Bull growls and lowers its horns!"))
                 .drops(Drop.always("big_bones")).skin(0x5A3A2A, 0x3A2A1A, 0x2A1A0A, 0xD0C0A0).size(1.2f, 1.4f, 1.0f)
                 .at("quest_bull_pen").arena(8, "stone"));
+        b.item("quest_milk_sample", "Milk sample", "vial", 0xF0F0E8, "A sample of sour milk from the Lumbridge cows.");
         b.quest("the_ides_of_milk", "The Ides of Milk", Difficulty.NOVICE, 1)
                 .xp(Skill.HITPOINTS, 1000) // approx: Gillie's lamp (1,000 XP in a combat skill or Prayer)
                 .unlock("Access to the Bull, the cow boss in the Lumbridge cow field")
@@ -83,10 +84,13 @@ final class LateQuestsD {
                 .talk("quest_seth_groats").give("quest_groats_principles")
                 .say("*You search the shelves and find 'The groats principles'.* Take it to Cassius. He'll know what to make of it.")
                 .stage("I should return to Cassius with 'The groats principles'.")
-                .talk("quest_cassius").take("quest_groats_principles")
-                .say("It's all here: a bull in the herd turns the milk. That Bull has to go. Gillie will open the pen for you.")
+                .talk("quest_cassius").take("quest_groats_principles").give("quest_milk_sample")
+                .say("It's all here: a bull in the herd turns the milk. Taste this sample... sour, see? Show Gillie; she'll give you a permit for that Bull.")
                 .stage("I must open the bull pen in the north-east of the cow field and defeat the Bull (level 30).")
-                .kill("quest_bull").flag("iom_bull").say("* The Bull crashes to the ground. The cows already seem calmer.")
+                // OSRS: drink a milk sample in front of Gillie Groats, who then gives you the permit for dealing with the bull.
+                .talk("quest_gillie_groats").stay().take("quest_milk_sample").unlessFlag("iom_permit").flag("iom_permit")
+                .say("*You drink the sour milk sample in front of her.* Ugh, see? That Bull's to blame. Here's a permit: the pen's yours.")
+                .kill("quest_bull").needFlag("iom_permit").flag("iom_bull").say("* The Bull crashes to the ground. The cows already seem calmer.")
                 .stage("I should return to Cassius.")
                 .talk("quest_cassius").needFlag("iom_bull").say("Sweet milk again! Gillie says you've earned a cow bell amulet. Ask her for it.")
                 .done("quest_gillie_groats", "The Bull's back in his pen now, and grumpier than ever. Fancy another round with him?");
@@ -129,13 +133,22 @@ final class LateQuestsD {
                 .talk("quest_councillor_catherine").give("quest_form_cr4p")
                 .say("A charting permit? Fill in form cr-4p. And the mayor has to sign it. We... don't currently have a mayor.")
                 .stage("Catherby needs a new mayor. Harry's aquarium in the fish shop might have a candidate: I'll need a small fishing net.")
-                .talk("quest_councillor_catherine").need("small_fishing_net").take("quest_form_cr4p").give("quest_mayor_of_catherby")
-                .say("*You net a very dignified goldfish from Harry's aquarium.* The Mayor of Catherby! He signs... well, he splashes the form. Approved.")
-                .missing("You'll need a small fishing net to, er, appoint the mayor from Harry's aquarium.")
+                // OSRS: Harry sells a mayoral fishbowl and tiny net for 50 coins; Arhein gives the fish a mayoral chain;
+                // Catherine checks the form's answers and the mayor signs form 7r4-5h.
+                .talk("quest_ca_arhein").stay().take("coins:50").unless("quest_mayor_of_catherby").give("quest_mayor_of_catherby")
+                .say("*Harry sells you a mayoral fishbowl and a tiny net for 50 coins. You fish a very dignified goldfish out of his aquarium.*",
+                        "A fine mayor! Here, he'll need this mayoral chain. Now show him to Catherine.")
+                .missing("Harry in the fish shop can sell you a mayoral fishbowl and a tiny net. Bring 50 coins.")
+                .talk("quest_councillor_catherine").need("quest_mayor_of_catherby").take("quest_form_cr4p")
+                .say("*Catherine quizzes you on form cr-4p; you give the same answers as before.* Form 7r4-5h, then. *The Mayor of Catherby splashes it.* Approved.")
+                .missing("A mayor? I don't see one. And bring back form cr-4p.")
                 .stage("I should give Arhein the good news and get a current duck from him.")
                 .talk("quest_ca_arhein").give("quest_current_duck").say("A permit at last! Take this current duck: drop it in the bay and follow it with your boat.")
-                .stage("I should follow the current duck by boat; it'll end up south-west of Entrana.")
-                .reach("chart_entrana", 24).need("quest_current_duck").flag("ca_charted").say("* The duck bobs along the current all the way to the waters south-west of Entrana. You chart its course.")
+                .stage("I should sail east to the ripple just west of the Obelisk of Water, drop the current duck and follow it.")
+                .reach("obelisk_of_water_site", 12).stay().need("quest_current_duck").unlessFlag("ca_ripple").flag("ca_ripple")
+                .say("* You find a ripple in the water just west of the Obelisk of Water and set the current duck on it. It starts to drift.")
+                .reach("witchaven", 16).needFlag("ca_ripple").need("quest_current_duck").flag("ca_charted")
+                .say("* The duck bobs along the current all the way to the shore where Holgart keeps his boat. You chart its course and collect the duck.")
                 .stage("I should share what I've learned with Arhein on the Catherby docks.")
                 .talk("quest_ca_arhein").needFlag("ca_charted").say("The currents run all the way to Entrana! Keep the duck. There are plenty more currents to chart out there.");
     }

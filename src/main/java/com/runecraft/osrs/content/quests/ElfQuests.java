@@ -131,6 +131,13 @@ final class ElfQuests {
         b.item("ardougne_knight_helm", "Ardougne knight helm", "helmet", 0xA02A2A, "A red steel full helm of the Ardougne knights.");
         b.item("ardougne_knight_platebody", "Ardougne knight platebody", "platebody", 0x8A8A9A, "A steel platebody with the Ardougne tabard.");
         b.item("crystal_seed_sote", "Crystal seed", "gem", 0xB8F0FF, "The seed of the great crystal of Prifddinas.");
+        // The cave on the north side of the Iorwerth Camp, where an archer and a warrior guard the stolen orb.
+        b.spot("sote_iorwerth_cave", "Iorwerth Camp cave", 2201, 3262); // approx
+        // OSRS Wiki "Iorwerth Warrior": level 108, 105 HP, 95 Attack/Strength, 80 Defence, stab max hit 10 every 4 ticks.
+        b.boss(BossDef.of("iorwerth_warrior", "Iorwerth Warrior").level(108).stats(105, 95, 95, 80, 1, 1).speed(4)
+                .defenceBonus(50, 70, 70, 60, 50)
+                .attack(AttackDef.of("stab", AttackType.STAB, 10, 2, 1))
+                .drops(Drop.always("bones")).model("elf_warrior").at("sote_iorwerth_cave").arena(7, "jungle"));
         // Fragment of Seren and Essyllt: OSRS Wiki infoboxes (levels, hitpoints, combat stats, max hits, attack speed).
         b.boss(BossDef.of("sote_essyllt", "Essyllt").level(236).stats(320, 268, 268, 104, 104, 342).speed(4)
                 .attack(AttackDef.of("sword", AttackType.SLASH, 40, 2.5, 5))
@@ -173,8 +180,10 @@ final class ElfQuests {
                 .say("* You grind the crystal shard to dust and mix it with cadantine in a vial of water.",
                         "A crystal tonic! With this I can sing to the crystal again. Now, to Iorwerth.")
                 .missing("I need a tonic to sing to the crystal: cadantine, a crystal shard and a vial of water, ground and mixed with a pestle and mortar.")
-                .kill("iorwerth_archer").stay().needFlag("sote_arianwyn").unlessFlag("sote_orb").flag("sote_orb")
-                .say("* The Iorwerth archer and his warrior companion fall. You recover the stolen orb.") // approx: the level 108 warrior isn't spawned
+                .kill("iorwerth_archer").stay().needFlag("sote_arianwyn").unlessFlag("sote_archer", "sote_orb").flag("sote_archer")
+                .say("* The Iorwerth archer guarding the cave falls. His warrior companion is still inside.")
+                .kill("iorwerth_warrior").stay().needFlag("sote_archer").unlessFlag("sote_orb").flag("sote_orb")
+                .say("* The Iorwerth warrior falls. You recover the stolen orb.")
                 .talk("lord_iorwerth").needFlag("sote_tonic", "sote_orb")
                 .say("You're too late! I have corrupted the Fragment of Seren. The goddess's song will destroy you all!")
                 .missing("* Iorwerth's guards bar the way. Baxtorian needs his tonic, and the orb the Iorwerth archers stole must be recovered.")

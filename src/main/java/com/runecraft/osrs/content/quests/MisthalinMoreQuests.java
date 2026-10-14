@@ -124,12 +124,23 @@ final class MisthalinMoreQuests {
 
     private static void dreamMentor(QuestBook b) {
         b.npc("cyrisus", "Cyrisus", "quest_lunar_isle", -3, -2, 0xE8C0B8, 0x8A8AA0, 0x5A5A7A, 0x5A3A1E);
-        b.boss(BossDef.of("the_inadequacy", "The Inadequacy").level(343).stats(340, 300, 300, 150, 1, 1).speed(5)
+        b.item("goutweed", "Goutweed", "herb", 0x6A8A3A, "A rather smelly weed. Trolls use it in their cooking.");
+        // Cyrisus's four fears, fought one after another in his dream (OSRS Wiki infoboxes: levels, HP, stats, max hits, speeds).
+        b.boss(BossDef.of("the_inadequacy", "The Inadequacy").level(343).stats(180, 564, 170, 240, 1, 170).speed(4)
                 .defenceBonus(0, 0, 0, 0, 0)
-                .attack(AttackDef.of("crush", AttackType.CRUSH, 24, 3, 6))
-                .attack(AttackDef.of("despair", AttackType.MAGIC, 20, 10, 3).special(Special.DRAIN_STAT, Skill.DEFENCE.ordinal()))
-                .phase(50, "The Inadequacy: You'll never be good enough!", 1.2, false)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 18, 3, 6))
+                .attack(AttackDef.of("doubt", AttackType.RANGED, 20, 10, 3))
+                .phase(50, "The Inadequacy: You'll never be good enough!", 1.0, false)
                 .drops(Drop.always("coins")).size(1.0f, 2.6f, 1.5f).at("dream_world_cyrisus").arena(11, "void"));
+        b.boss(BossDef.of("the_everlasting", "The Everlasting").level(223).stats(230, 187, 231, 120, 1, 1).speed(6)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 24, 3, 1))
+                .drops(Drop.always("coins")).skin(0x8A8AA0, 0x5A5A7A, 0x3A3A5A, 0xC0C0E0).size(1.0f, 2.6f, 1.3f).at("dream_world_cyrisus").arena(11, "void"));
+        b.boss(BossDef.of("the_untouchable", "The Untouchable").level(274).stats(90, 187, 255, 434, 1, 1).speed(6)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 26, 3, 1))
+                .drops(Drop.always("coins")).skin(0xA0A0B0, 0x6A6A8A, 0x4A4A6A, 0xE0E0F0).size(1.0f, 2.6f, 1.3f).at("dream_world_cyrisus").arena(11, "void"));
+        b.boss(BossDef.of("the_illusive", "The Illusive").level(108).stats(144, 72, 71, 105, 1, 1).speed(6)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 8, 3, 1))
+                .drops(Drop.always("coins")).skin(0x7A7A9A, 0x4A4A6A, 0x2A2A4A, 0xB0B0D0).size(0.9f, 2.4f, 1.2f).at("dream_world_cyrisus").arena(11, "void"));
         b.quest("dream_mentor", "Dream Mentor", Difficulty.MASTER, 2)
                 .reqQuest("lunar_diplomacy", "eadgars_ruse")                .xp(Skill.HITPOINTS, 15000).xp(Skill.MAGIC, 10000)
                 .unlock("The Dream Lunar spell")
@@ -140,12 +151,22 @@ final class MisthalinMoreQuests {
                 .talk("cyrisus").take("shark:5", "rune_full_helm").say("Food... armour... I feel stronger. But I fear what's in my dreams.")
                 .missing("I'm too weak... I need food (5 sharks) and some armour (a rune full helm)...")
                 .stage("I should enter Cyrisus's dream with him and face his fears.")
-                .talk("oneiromancer").take("vial_of_water", "astral_rune").need("pestle_and_mortar").travel("dream_world_cyrisus")
-                .say("* You grind an astral rune and mix it with goutweed from the Oneiromancer's stores into a vial of water.",
+                // Goutweed: the Troll Stronghold storeroom, open to you since Eadgar's Ruse.
+                .reach("troll_stronghold", 8).stay().unless("goutweed").give("goutweed")
+                .say("* You slip into the trolls' storeroom and take some goutweed.")
+                .talk("oneiromancer").take("vial_of_water", "astral_rune", "goutweed").need("pestle_and_mortar", "seal_of_passage").travel("dream_world_cyrisus")
+                .say("* The Oneiromancer hands you a dream vial. You fill it with water, add the goutweed and a ground astral rune.",
                         "Drink this dream potion and share his dream... *The world fades.*")
-                .missing("To share his dream you need a dream potion: bring a vial of water, an astral rune and a pestle and mortar to grind it.")
-                .stage("I must defeat The Inadequacy, Cyrisus's worst fear.")
-                .kill("the_inadequacy").travel("quest_lunar_isle").say("* The Inadequacy fades away. Cyrisus wakes with new courage.")
+                .missing("To share his dream you need a dream potion: a vial of water, goutweed from the trolls' storeroom, an astral rune "
+                        + "and a pestle and mortar to grind it. And keep your seal of passage on you.")
+                .stage("I must defeat Cyrisus's four fears: The Inadequacy, The Everlasting, The Untouchable and The Illusive.")
+                .kill("the_inadequacy").stay().unlessFlag("dm_fear_1").flag("dm_fear_1").spawn("the_everlasting")
+                .say("* The Inadequacy fades away... and The Everlasting rises in its place.")
+                .kill("the_everlasting").stay().needFlag("dm_fear_1").unlessFlag("dm_fear_2").flag("dm_fear_2").spawn("the_untouchable")
+                .say("* The Everlasting finally falls. The Untouchable steps out of the dark.")
+                .kill("the_untouchable").stay().needFlag("dm_fear_2").unlessFlag("dm_fear_3").flag("dm_fear_3").spawn("the_illusive")
+                .say("* The Untouchable shatters. Only The Illusive remains.")
+                .kill("the_illusive").needFlag("dm_fear_3").travel("quest_lunar_isle").say("* The Illusive fades away. Cyrisus wakes with new courage.")
                 .stage("I should speak to Cyrisus.")
                 .talk("cyrisus").say("I'm free of my fears! Thank you. The Oneiromancer says you've earned the Dream spell.");
     }

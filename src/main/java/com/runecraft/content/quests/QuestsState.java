@@ -24,6 +24,8 @@ public final class QuestsState extends PersistentState {
 
     private final Map<UUID, Set<String>> flags = new HashMap<>();
     private final Map<UUID, Map<String, String>> gear = new HashMap<>();
+    /** Kill counters of multi-kill objectives ("desert_treasure:3:4:ice_troll" -> 2). */
+    private final Map<UUID, Map<String, Integer>> kills = new HashMap<>();
 
     public static QuestsState get(MinecraftServer server) {
         return server.getOverworld().getPersistentStateManager().getOrCreate(QuestsState::fromNbt, QuestsState::new, KEY);
@@ -39,6 +41,26 @@ public final class QuestsState extends PersistentState {
 
     public void setFlag(UUID player, String flag) {
         if (flags.computeIfAbsent(player, u -> new HashSet<>()).add(flag)) {
+            markDirty();
+        }
+    }
+
+    /** Kills counted so far towards a multi-kill objective. */
+    public int kills(UUID player, String key) {
+        return kills.getOrDefault(player, Map.of()).getOrDefault(key, 0);
+    }
+
+    /** Counts one more kill towards an objective; returns the new total. */
+    public int addKill(UUID player, String key) {
+        int n = kills.computeIfAbsent(player, u -> new HashMap<>()).merge(key, 1, Integer::sum);
+        markDirty();
+        return n;
+    }
+
+    /** Clears an objective's kill counter (once it has fired). */
+    public void clearKills(UUID player, String key) {
+        Map<String, Integer> m = kills.get(player);
+        if (m != null && m.remove(key) != null) {
             markDirty();
         }
     }
@@ -76,6 +98,13 @@ public final class QuestsState extends PersistentState {
             gearNbt.put(uuid.toString(), s);
         });
         nbt.put("Gear", gearNbt);
+        NbtCompound killsNbt = new NbtCompound();
+        kills.forEach((uuid, counters) -> {
+            NbtCompound c = new NbtCompound();
+            counters.forEach(c::putInt);
+            killsNbt.put(uuid.toString(), c);
+        });
+        nbt.put("Kills", killsNbt);
         return nbt;
     }
 
@@ -105,6 +134,20 @@ public final class QuestsState extends PersistentState {
                     slots.put(slot, s.getString(slot));
                 }
                 state.gear.put(uuid, slots);
+            } catch (IllegalArgumentException ignored) {
+                // skip malformed entries
+            }
+        }
+        NbtCompound killsNbt = nbt.getCompound("Kills");
+        for (String key : killsNbt.getKeys()) {
+            try {
+                UUID uuid = UUID.fromString(key);
+                NbtCompound c = killsNbt.getCompound(key);
+                Map<String, Integer> counters = new HashMap<>();
+                for (String objective : c.getKeys()) {
+                    counters.put(objective, c.getInt(objective));
+                }
+                state.kills.put(uuid, counters);
             } catch (IllegalArgumentException ignored) {
                 // skip malformed entries
             }
