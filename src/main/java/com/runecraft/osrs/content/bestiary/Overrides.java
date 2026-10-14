@@ -28,6 +28,8 @@ final class Overrides {
         l.addAll(Flagships2.overrides());
         // ---- round 12 flagship boss re-sculpts, part 3 ----
         l.addAll(Flagships3.overrides());
+        // ---- round 19 re-sculpts of the most commonly met creatures ----
+        l.addAll(Common1.overrides());
         return l;
     }
 }

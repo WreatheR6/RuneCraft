@@ -202,6 +202,7 @@
     "bubbles"
   ],
   "bloodveld": [
+    "torso",
     "head"
   ],
   "blue_dragon": [
@@ -335,7 +336,8 @@
     "head"
   ],
   "cave_kraken": [
-    "head"
+    "eye_l",
+    "eye_r"
   ],
   "cave_slime": [
     "dome"
@@ -813,9 +815,6 @@
     "tail0",
     "tail1"
   ],
-  "gargoyle": [
-    "head"
-  ],
   "gelatinnoth_mother": [
     "hips",
     "torso",
@@ -839,7 +838,22 @@
     "khazard_eyes"
   ],
   "ghost": [
-    "head"
+    "body",
+    "skirt",
+    "hem",
+    "wisp",
+    "wisp_tip",
+    "hood",
+    "hood_rim",
+    "head",
+    "arm_l",
+    "arm_r",
+    "sleeve_l",
+    "sleeve_r",
+    "sleeve_rag_l",
+    "sleeve_rag_r",
+    "hand_l",
+    "hand_r"
   ],
   "giant_bat": [
     "head"
@@ -926,6 +940,7 @@
     "head"
   ],
   "gwd_bloodveld": [
+    "torso",
     "head"
   ],
   "gwd_cyclops": [
@@ -942,27 +957,17 @@
   ],
   "gwd_pyrefiend": [
     "body",
-    "core",
-    "wisp0",
-    "wisp1",
-    "wisp2",
-    "wisp3",
-    "wisp_tip",
-    "tongue0",
-    "tongue1",
-    "tongue2",
-    "tongue3",
-    "tongue4",
-    "tongue5",
     "head",
     "jaw",
-    "flame0",
-    "flame1",
-    "flame2",
+    "mane",
+    "back_flames",
     "arm_l",
     "arm_r",
-    "forearm_l",
-    "forearm_r"
+    "fore_l",
+    "fore_r",
+    "fire0",
+    "fire1",
+    "fire2"
   ],
   "gwd_spiritual_mage_armadyl": [
     "head",
@@ -1651,51 +1656,31 @@
   ],
   "pyrefiend": [
     "body",
-    "core",
-    "wisp0",
-    "wisp1",
-    "wisp2",
-    "wisp3",
-    "wisp_tip",
-    "tongue0",
-    "tongue1",
-    "tongue2",
-    "tongue3",
-    "tongue4",
-    "tongue5",
     "head",
     "jaw",
-    "flame0",
-    "flame1",
-    "flame2",
+    "mane",
+    "back_flames",
     "arm_l",
     "arm_r",
-    "forearm_l",
-    "forearm_r"
+    "fore_l",
+    "fore_r",
+    "fire0",
+    "fire1",
+    "fire2"
   ],
   "pyrelord": [
     "body",
-    "core",
-    "wisp0",
-    "wisp1",
-    "wisp2",
-    "wisp3",
-    "wisp_tip",
-    "tongue0",
-    "tongue1",
-    "tongue2",
-    "tongue3",
-    "tongue4",
-    "tongue5",
     "head",
     "jaw",
-    "flame0",
-    "flame1",
-    "flame2",
+    "mane",
+    "back_flames",
     "arm_l",
     "arm_r",
-    "forearm_l",
-    "forearm_r"
+    "fore_l",
+    "fore_r",
+    "fire0",
+    "fire1",
+    "fire2"
   ],
   "quest_arrg": [
     "head"
@@ -1976,7 +1961,8 @@
     "eye_r"
   ],
   "smoke_devil": [
-    "head"
+    "head",
+    "jaw"
   ],
   "sol_heredit": [
     "head",
@@ -2239,7 +2225,22 @@
     "eyes"
   ],
   "tortured_soul": [
-    "head"
+    "body",
+    "skirt",
+    "hem",
+    "wisp",
+    "wisp_tip",
+    "hood",
+    "hood_rim",
+    "head",
+    "arm_l",
+    "arm_r",
+    "sleeve_l",
+    "sleeve_r",
+    "sleeve_rag_l",
+    "sleeve_rag_r",
+    "hand_l",
+    "hand_r"
   ],
   "tree_spirit": [
     "head"
@@ -2303,10 +2304,17 @@
     "tail"
   ],
   "tzhaar_ket": [
-    "neck",
+    "torso",
+    "belly",
     "head",
-    "chin",
-    "brow"
+    "crest",
+    "jaw",
+    "arm_r",
+    "fore_l",
+    "fore_r",
+    "shin_l",
+    "shin_r",
+    "maul_head"
   ],
   "tzhaar_mej": [
     "head",
