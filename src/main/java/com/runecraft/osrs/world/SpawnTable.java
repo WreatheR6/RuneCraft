@@ -195,6 +195,7 @@ public final class SpawnTable {
 
         // ============================================================ Morytania
         s("ghoul", 3433, 3463, 8, 10);                 // past the gate north of Paterdomus (10 in OSRS)
+        s("monk_of_zamorak", 3412, 3488, 3, 3);        // Paterdomus temple, Priest in Peril (golden key)
         s("giant_bat", 3747, 3397, 6, 12);             // eastern Morytania (6 in OSRS)
         // Terror dogs: Tarn's Lair below the Haunted Mine (a dungeon camp).
         // Shades of Mort'ton: loar shades roam the temple ruins (25 in OSRS); the stronger ones are
@@ -331,6 +332,7 @@ public final class SpawnTable {
         s("undead_chicken", 3630, 3528, 6, 4);         // Alice's farm, west of Port Phasmatys
         s("undead_cow", 3617, 3525, 4, 6);
         s("zombie_rat", 2930, 3249, 7, 7);             // Rimmington
+        s("rat", 2957, 3204, 3, 3);                    // Brian's Archery Supplies, Rimmington (Witch's Potion rats)
         s("vampyre_juvenile", 3564, 3244, 4, 9);       // Meiyerditch (35 in OSRS)
         s("vampyre_juvenile", 3561, 3213, 3, 7);
         s("vampyre_juvenile", 3631, 3221, 3, 6);
@@ -438,6 +440,8 @@ public final class SpawnTable {
         m.put("giant_rat", "OSRS giant rats also roam Lumbridge Swamp above ground");
         m.put("chaos_druid", "OSRS chaos druids also live in the Chaos Druid Tower north of Ardougne");
         m.put("loar_shade", "loar shades roam the ruins of Mort'ton above ground in OSRS");
+        m.put("rat", "OSRS rats live in Brian's Archery Supplies in Rimmington (Witch's Potion tails)");
+        m.put("monk_of_zamorak", "OSRS Monks of Zamorak guard Paterdomus temple (Priest in Peril golden key)");
         return Collections.unmodifiableMap(m);
     }
 

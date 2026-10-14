@@ -3,6 +3,8 @@ package com.runecraft.quest;
 import com.runecraft.combat.MonsterStats;
 import com.runecraft.entity.QuestNpcEntity;
 import com.runecraft.network.ServerNetworking;
+import com.runecraft.osrs.FreeQuestObjectives;
+import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.ImpCatcherBeads;
 import com.runecraft.osrs.Quest;
 import com.runecraft.osrs.QuestNpc;
@@ -14,6 +16,8 @@ import com.runecraft.registry.ModEntities;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
@@ -141,7 +145,7 @@ public final class QuestManager {
                 set(p, q, 1);
             }
             case 1 -> {
-                if (takeAll(p, Map.of("minecraft:milk_bucket", 1, "minecraft:egg", 1, "pot_of_flour", 1))) {
+                if (takeAll(p, FreeQuestObjectives.COOKS_ASSISTANT)) {
                     say(p, npc, "You've brought me everything I need! I am saved! Thank you!");
                     Inv.give(p, "minecraft:bucket", 1);
                     complete(p, q);
@@ -162,7 +166,7 @@ public final class QuestManager {
                 set(p, q, 1);
             }
             case 1 -> {
-                if (takeAll(p, Map.of("ball_of_wool", 20))) {
+                if (takeAll(p, FreeQuestObjectives.SHEEP_SHEARER)) {
                     say(p, npc, "That's the last of them. Thank you! Here's your payment.");
                     complete(p, q);
                 } else {
@@ -182,7 +186,7 @@ public final class QuestManager {
                 set(p, q, 1);
             }
             case 1 -> {
-                if (takeAll(p, Map.of("clay", 6, "copper_ore", 4, "iron_ore", 2))) {
+                if (takeAll(p, FreeQuestObjectives.DORICS_QUEST)) {
                     say(p, npc, "Well done! Here's some coins for your trouble.");
                     complete(p, q);
                 } else {
@@ -259,14 +263,15 @@ public final class QuestManager {
                     return;
                 }
                 if (s == 2) {
-                    say(p, npc, "You can understand me! Someone stole my skull. I think the skeletons of Gielinor took it...");
+                    say(p, npc, "You can understand me! A warlock stole my skull. I sense it lies on the altar in the Wizards' Tower basement...");
                     set(p, q, 3);
                 } else if (s >= 3 && Inv.has(p, "ghosts_skull", 1)) {
                     Inv.remove(p, "ghosts_skull", 1);
+                    you(p, "I'll put your skull back in your coffin.");
                     say(p, npc, "My skull! Thank you! Now I can rest in peace...");
                     complete(p, q);
                 } else if (s == 3) {
-                    say(p, npc, "Please find my skull. Skeletons may have it.");
+                    say(p, npc, "Please find my skull. It's on the altar beneath the Wizards' Tower, south of Draynor.");
                 } else {
                     say(p, npc, "...");
                 }
@@ -302,14 +307,14 @@ public final class QuestManager {
                 set(p, q, 1);
             }
             case 1 -> {
-                if (takeAll(p, Map.of("rats_tail", 1, "eye_of_newt", 1, "burnt_meat", 1, "onion", 1))) {
-                    say(p, npc, "Excellent. Now drink from my cauldron...");
-                    you(p, "*gulp*");
-                    complete(p, q);
+                if (takeAll(p, FreeQuestObjectives.WITCHS_POTION)) {
+                    say(p, npc, "Excellent. *She drops the ingredients into her cauldron.* Now drink from my cauldron...");
+                    set(p, q, 2);
                 } else {
-                    say(p, npc, "I need a rat's tail, an eye of newt, burnt meat and an onion. Giant rats might have a tail.");
+                    say(p, npc, "I need a rat's tail, an eye of newt, some burnt meat and an onion. The rats in Brian's shop next door have tails.");
                 }
             }
+            case 2 -> say(p, npc, "Well, go on then. Drink from the cauldron!");
             default -> say(p, npc, "Mwahaha.");
         }
     }
@@ -358,7 +363,7 @@ public final class QuestManager {
                     Inv.give(p, "cadava_potion", 1);
                     set(p, q, 5);
                 } else if (s == 4) {
-                    say(p, npc, "I need cadava berries to make that. Herb patches and goblins sometimes have them.");
+                    say(p, npc, "I need cadava berries to make that. Cadava bushes grow south-east of Varrock, by the mine.");
                 } else {
                     say(p, npc, "Potions for sale!");
                 }
@@ -381,14 +386,15 @@ public final class QuestManager {
             }
         } else {
             if (s == 1) {
-                say(p, npc, "We need raw beef, raw chicken, raw porkchop and raw mutton for the ritual.");
+                say(p, npc, "We need raw beef, raw rat meat, raw bear meat and raw chicken, dipped in the Cauldron of Thunder.");
+                say(p, npc, "The cauldron is in Taverley Dungeon, just south of the village.");
                 set(p, q, 2);
             } else if (s == 2) {
-                if (takeAll(p, Map.of("minecraft:beef", 1, "minecraft:chicken", 1, "minecraft:porkchop", 1, "minecraft:mutton", 1))) {
+                if (takeAll(p, FreeQuestObjectives.DRUIDIC_RITUAL)) {
                     say(p, npc, "Perfect. The ritual is done. Tell Kaqemeex.");
                     set(p, q, 3);
                 } else {
-                    say(p, npc, "I still need raw beef, raw chicken, raw porkchop and raw mutton.");
+                    say(p, npc, "I still need enchanted beef, rat, bear and chicken. Dip the raw meats in the Cauldron of Thunder.");
                 }
             } else {
                 say(p, npc, "Guthix be with you.");
@@ -404,7 +410,7 @@ public final class QuestManager {
                 say(p, npc, "A vampyre terrorises our village from Draynor Manor! My friend Dr Harlow in Varrock knows how to kill it.");
                 set(p, q, 1);
             } else {
-                say(p, npc, s == 3 ? "Slay Count Draynor! His coffin is in the manor." : "Please help us!");
+                say(p, npc, s == 3 ? "Slay Count Draynor! His coffin is in the manor's basement. Bring garlic, a stake and a hammer." : "Please help us!");
             }
         } else {
             if (s == 1) {
@@ -467,15 +473,52 @@ public final class QuestManager {
         }
     }
 
+    // ---------------- Place objectives ----------------
+
+    /** Checks the hand-scripted quests' place objectives ({@link FreeQuestObjectives#SPOTS}); called once a second. */
+    public static void spotTick(ServerPlayerEntity p) {
+        PlayerData data = Players.data(p);
+        int tx = GielinorMap.toOsrsX(p.getBlockX());
+        int ty = GielinorMap.toOsrsY(p.getBlockZ());
+        for (FreeQuestObjectives.Spot spot : FreeQuestObjectives.SPOTS) {
+            if (!spot.active(data.questStage(spot.quest())) || !spot.contains(tx, ty) || !spot.applies(item -> Inv.has(p, item, 1))) {
+                continue;
+            }
+            p.sendMessage(Text.literal(spot.message()).formatted(Formatting.GRAY, Formatting.ITALIC), false);
+            switch (spot.action()) {
+                case GIVE -> Inv.give(p, spot.item(), 1);
+                case ENCHANT_MEATS -> FreeQuestObjectives.DRUIDIC_MEATS.forEach((raw, enchanted) -> {
+                    if (Inv.has(p, raw, 1) && !Inv.has(p, enchanted, 1)) {
+                        Inv.remove(p, raw, 1);
+                        Inv.give(p, enchanted, 1);
+                    }
+                });
+                case COMPLETE -> complete(p, spot.quest());
+            }
+            if (spot.spawn() != null) {
+                EntityType.get(spot.spawn()).ifPresent(type -> {
+                    Entity e = type.create(p.getWorld());
+                    if (e != null) {
+                        e.refreshPositionAndAngles(p.getX() + 2, p.getY(), p.getZ() + 2, 0f, 0f);
+                        p.getWorld().spawnEntity(e);
+                    }
+                });
+            }
+            ServerNetworking.sync(p);
+        }
+    }
+
     // ---------------- Kill objectives & quest drops ----------------
 
     public static void onKill(ServerPlayerEntity p, LivingEntity entity, MonsterStats stats) {
         QuestScripts.onKill(p, entity, stats);
         PlayerData data = Players.data(p);
         String name = stats.name();
-        if (data.questStage(Quest.RESTLESS_GHOST) == 3 && name.equals("Skeleton") && !Inv.has(p, "ghosts_skull", 1)
-                && p.getRandom().nextInt(4) == 0) {
-            entity.dropStack(Inv.stack("ghosts_skull", 1));
+        for (FreeQuestObjectives.QuestDrop drop : FreeQuestObjectives.DROPS) {
+            if (drop.matches(data.questStage(drop.quest()), name) && !Inv.has(p, drop.item(), 1)
+                    && p.getRandom().nextInt(Math.max(1, drop.oneIn())) == 0) {
+                entity.dropStack(Inv.stack(drop.item(), 1));
+            }
         }
         // OSRS: imps carry Mizgog's beads (also on their normal drop table); while the quest needs them,
         // an imp also often drops a bead the player is still missing.
@@ -487,14 +530,17 @@ public final class QuestManager {
                 entity.dropStack(Inv.stack(bead, 1));
             }
         }
-        if (data.questStage(Quest.WITCHS_POTION) == 1 && name.equals("Giant rat") && !Inv.has(p, "rats_tail", 1)) {
-            entity.dropStack(Inv.stack("rats_tail", 1));
-        }
-        if (data.questStage(Quest.ROMEO_AND_JULIET) == 4 && name.equals("Goblin") && p.getRandom().nextInt(3) == 0) {
-            entity.dropStack(Inv.stack("cadava_berries", 1));
-        }
         Boss boss = ModEntities.boss(entity.getType());
         if (boss == Boss.COUNT_DRAYNOR && data.questStage(Quest.VAMPYRE_SLAYER) == 3) {
+            // OSRS: without a stake and a hammer the Count can't be finished off.
+            for (String item : FreeQuestObjectives.VAMPYRE_SLAYER_KILL) {
+                if (!Inv.has(p, item, 1)) {
+                    Msg.game(p, "Count Draynor retreats to his coffin. You need a stake and a hammer to finish him off.");
+                    return;
+                }
+            }
+            Inv.remove(p, "stake", 1);
+            Msg.game(p, "You hammer the stake into the vampyre's chest!");
             complete(p, Quest.VAMPYRE_SLAYER);
         } else if (boss == Boss.DELRITH && data.questStage(Quest.DEMON_SLAYER) == 4) {
             Msg.game(p, "Delrith is banished back to the void!");

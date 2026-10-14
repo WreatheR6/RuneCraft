@@ -20,7 +20,7 @@ public enum QuestNpc {
     GYPSY_ARIS("Gypsy Aris", Landmark.VARROCK, 0, 4, Look.LADY),
     SIR_PRYSIN("Sir Prysin", Landmark.VARROCK, 4, 2, Look.KNIGHT),
     DORIC("Doric", Landmark.FALADOR, 5, 5, Look.DWARF),
-    HETTY("Hetty", Landmark.RIMMINGTON, 3, -3, Look.WITCH),
+    HETTY("Hetty", Landmark.RIMMINGTON, 22, 18, Look.WITCH), // her house at OSRS (2968, 3205),
     KAQEMEEX("Kaqemeex", Landmark.TAVERLEY, 3, 3, Look.DRUID),
     SANFEW("Sanfew", Landmark.TAVERLEY, -3, 3, Look.DRUID),
     MORGAN("Morgan", Landmark.DRAYNOR_VILLAGE, 4, 4, Look.PEASANT);
