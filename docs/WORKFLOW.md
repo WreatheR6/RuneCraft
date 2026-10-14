@@ -174,6 +174,13 @@ Recurring conflict spots:
   - `osrs/world/SeaIslands.java`: 52 islands and 5 lagoons traced from the map squares (Sunbleak, Drumstick, Onyx Crest, Laguna Aurorae, Buccaneers' Haven, the Pandemonium, Isle of Serpents…), `SeaIslandsGeographyTest`; Pandemonium, Buccaneers' Haven, Laguna and Onyx Crest settlements; ironwood, rosewood and lead sites; pickpocketable pirates.
   - 31 slayer-task monsters at cache spawns (`SlayerTaskMonsters`: bears, wolves, scorpions, vampyre juveniles and Vyrewatch sentinels, zogres, sorebones…); `MonsterTraits` (697 creatures: size, attributes, poison/venom immunity, wiki Slayer XP) applied after `MonsterStatsTable`; poison immunity respected; Slayer XP per kill from the wiki. Mummy, Ghoul and Zombies champions kept undead by hand (the DPS data lists no attributes for them).
 
+- **Session 2, round 17: slayer monsters part 2, combat gear effects, missing items, teleport items:**
+  - 27 slayer-task monsters (`SlayerTaskMonsters2`, `task_monsters_r17.tsv`): albino bats (Mos Le'Harmless caves), crypt rats/spiders and bloodworms in the Barrows tunnels, sulphur lizards (Karuulm room), araxytes in a new carved `dng_morytania_spider_cave`, feral vampyres, ice wolves, the Death Plateau named trolls, skogres, roosters, ancient zygomites; Varlamore wyrmlings, frost crabs, chilled jellies, earthen nagua and custodian stalkers at their dungeon entrances; custodian stalker tasks now assignable; `SlayerGear.EXEMPT` (no ice cooler for sulphur/grimy lizards, no boots of stone for wyrmlings).
+  - Vampyre tiers 1–3 (`osrs/VampyreTiers`, immunities, silver/Ivandis/blisterwood/Efaritay's), amulet of avarice and Forinthry surge, revenant weapons, Elysian/Dinh's bulwark/Justiciar reductions on incoming hits (`NpcHitCalc.reduceIncoming`, `combat/DefenceEffects`), Ahrim's/Karil's damned effects, per-style defences for the 23 `Monster` constants; `dps_reference.tsv` 3,298 rows, `npc_reduction_reference.tsv` 416 rows; blisterwood sickle, wieldable rod of Ivandis.
+  - Dosed potion drops (`prayer_potion(2)`, `Drop.doses()`), 37 lines rewritten and 58 added; spined/rock-shell/skeletal armour (Rellekka tanner recipes from dagannoth hide + material + coins), Fremennik boots and Yrsa's shop, edible seaweed, ugthanki kebab, stuffable Slayer heads, Yama contracts, Xerician fabric; skipped drop pairs 348 → 259 (scratch counter, not committed).
+  - Pharaoh's sceptre (held item, diary charge caps, mummy recharge), ring of the elements, ring of returning, giantsoul amulet, pendant of ates, diffed in `TransportSnapshotTest`; Dorgesh-Kaan agility course (`AgilityCourse.DORGESH_KAAN`, level 70, 2,750 XP per lap, approx layout); leaving the Wilderness course forfeits the fee; the Isle of Souls chest on its dungeon tile.
+  - CI: server self-test 2,805 passed / 0 failed, client 270 / 0.
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
@@ -188,15 +195,15 @@ Recurring conflict spots:
   - Shades of Mort'ton: diary bonuses, serums, Dampe coffins, flamtaer bag storage; the dungeons-module Shade Catacombs has no key doors or Urium room.
   - Unfinished features: BA role levels and gambles; NMZ potions and power-ups; Soul Wars spoils.
 - **Transport:**
-  - Missing: pharaoh's sceptre, ring of the elements, ring of returning, giantsoul amulet and pendant of ates teleports; fairy rings in realms that aren't built; dialling DIQ for the house ring.
-  - The skilling module's `SailingData.PORTS` lacks the three new ports.
+  - Fairy rings in realms that aren't built; dialling DIQ for the house ring (needs a virtual stop in the islands fairy-ring network).
+  - Teleport items: giantsoul destinations are relocated next to our lairs (approx); ring of returning always goes to Lumbridge; ring of the elements charges are per ring; Pyramid Plunder sceptres start charged; Aldarin icon step missing.
 - **Skilling:**
   - GotR: binding necklace and polycatalytic stones; abyssal creatures are abstract.
   - Volcanic Mine: heat-proof vessel, gas holes, meteors, multiple boulders; lava beast spawn rate guessed.
   - Dungeon herb, seed and Varlamore crops; coral.
   - Seed pack contents are partly guessed.
 - **Diaries:** 28 tasks approximated: Arzinian mine, Skavid caves, swordchick/deathwing, totem pole, emotes, and others. Kingdom/TBW/BA/museum details are approximate (see round 13). Earlier notes: 75: shadow hounds and locust riders need the Shadow Dungeon and Contact! dungeon; swordchick/deathwing have no cache spawns; Arceuus lectern tablets; Port Phasmatys has no range; NPC-talk and minigame-internal tasks.
-- **Thieving and Agility:** the Dorgesh-Kaan course is missing; Isle of Souls chests sit on the surface (their real tiles are in the dungeon/tower basement); leaving the Wilderness course doesn't forfeit the fee.
+- **Thieving and Agility:** Dorgesh-Kaan course folds Turgall's parts/spring device into the lap, no grapple route, no light-source check, fail chance 0 at 99; the Dark Chest stays on the surface (Crumbling Tower basement not built).
 - **World:**
   - Missing dungeons: Myths' Guild, Isle of Souls, Giants' Den, Deep Wilderness, Crandor/Karamja, Ourania Cave interior, Stalker Den, Ice Troll Caves. New dungeon huts sit a few tiles off where another module's building occupies the tile; Kalphite Cave task-only rule and its multicombat missing.
   - Kruk's Dungeon: the western plane-1 hordes are carved at y -10 under the atoll (own shift, ladder from the lower north-west hall); the other plane-1 clusters (east of 2500, about 120 monkeys/archers) and the plane-0 clusters west of 2600 are still missing.
@@ -212,13 +219,13 @@ Recurring conflict spots:
   - Deranged archaeologist sits at 3683,3735 because Fossil Island's coast polygon stops short of his real tile (3683,3706).
   - Gorillas: boulder chance and reset timers guessed; no overhead prayer icon; Verac's doesn't bypass. Demonic Brutus phase-2 heal unscripted.
 - **Items:**
-  - Spined/rock-shell/skeletal helms and Fremennik boots (need dagannoth hide crafting); potions with fewer than 4 doses; boss tables not patched by `MonsterDropsTable`; feathers, edible seaweed, demon contracts, slayer heads still missing as drop items.
+  - Boss tables not patched by `MonsterDropsTable` (needs a collection-log allowlist); boss loot drops full potions; Fremennik armour/Yrsa's shop don't check The Fremennik Trials and are made at any tanner; poisoned weapon/ammo drops skipped; granite shield, scaly blue dragonhide, blighted supplies, crystal teleport seeds and charged-jewellery drop variants missing.
   - Skull timers are in memory only (lost on restart). Heavy ballista wield doesn't check MM2 training; uncut zenyte is a gem-cutting recipe.
   - Seers ring magic damage (0.2%/0.5%) can't be represented with whole-percent magic damage.
   - Ring of the gods imbue should need a holy wrench (nowhere modelled).
-- **Combat:** `Monster`-enum monsters keep a single ranged defence; Elysian/Justiciar/Dinh's damage reduction not modelled; vampyrebane, Efaritay's, avarice, rev weapons not modelled.
+- **Combat:** no topaz ring, so Efaritay's aid can't be made; avarice amulet not on the revenant drop table; revenant weapons and the rod of Ivandis have no charges; specs with their own damage code skip vampyre transforms; Karil's second hit gives no XP; Justiciar negative-bonus and unnamed-style cases approx.
 - **Skilling gaps:** island fishing spots, lockboxes and island facilities; Laguna's leeches/mosquitoes/toads; Pandemonium Cave, Sunbleak Cave, Buccaneers' Laboratory; Daeyalt essence; drift net fishing; shark lures; Camdozaal is a surface stand-in; shooting stars are in memory only; celestial ring has no effect.
-- **Monsters missing:** ~66 slayer-task monsters with no surface cache spawns or post-snapshot content (albino bat, crypt rats/spiders, lobstrosity, sulphur lizard, armoured zombies, earthen nagua, custodian stalkers, frost crab, wyrmling, strykewyrms, chilled jelly, ancient zygomite, warped tortoise, araxytes, named Trollheim trolls); vampyre tiers all count as "vampyre". Last Light, Wyrmscraig, Great Conch and Isle of Souls are still ellipses.
+- **Monsters missing:** lobstrosity (Fossil Island underwater), lava strykewyrm (Charred Dungeon), warped tortoise (Poison Waste Dungeon), dungeon rat, death wing, Troll Stronghold trolls and generals, armoured zombies, undead lumberjacks, Dark Ankou, swamp crab, plain Vyrewatch tiers; Varlamore task monsters stand at dungeon entrances (Neypotzli, Tapoyauik, Tonali, Stalker Den not carved); stalker bleed and nagua two-hit simplified; Karuulm hot floor doesn't hurt in the sulphur lizard room; missing drops (bat wings, rat/wyrmling/troll bones, venom sacs, vampyre dust, blessed bone shards). Last Light, Wyrmscraig, Great Conch and Isle of Souls are still ellipses.
 - **Self-test gaps:** PvP minigames need two players; utility spells needing targets/items (enchants, telegrab, bake pie) aren't cast; Guthix balance, olive oil and sacred oil have no drink effect; `TestContext.reset()` doesn't reset systems state or the Slayer profile.
 - **Sailing:** boat combat, bounty tasks, ocean encounters, crew, cargo holds, cannons, hazards, salvaging hook tiers, hull speed; island materials are sold in the tool shop.
 - **Untested in game:** much of the Minecraft-side code has only passed CI's boot test. A play-test pass would be the most valuable round once the data rounds slow down. Use `/run` or the client smoke screenshots.
