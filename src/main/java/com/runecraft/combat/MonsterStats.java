@@ -44,6 +44,31 @@ public record MonsterStats(String name, int combatLevel, int hitpoints, int atta
                 profile.heavyRangedDefence != null ? profile.heavyRangedDefence : standard};
     }
 
+    /** Key of this creature's {@link com.runecraft.osrs.data.MonsterTraits} row (creature id, boss id or Monster.NAME). */
+    public String traitsKey() {
+        if (profile != null) {
+            return profile.id;
+        }
+        if (boss != null) {
+            return boss.entityId();
+        }
+        return monster != null ? com.runecraft.osrs.data.MonsterTraits.key(monster) : null;
+    }
+
+    /** OSRS attributes (undead, demon, dragon, ...) from the creature's profile or its traits row. */
+    public java.util.Set<String> attributes() {
+        if (profile != null) {
+            return profile.attributes;
+        }
+        com.runecraft.osrs.data.MonsterTraits.Traits t = com.runecraft.osrs.data.MonsterTraits.get(traitsKey());
+        return t != null ? t.attributes() : java.util.Set.of();
+    }
+
+    /** True when the creature has wiki attribute data (reference stats or a traits row). */
+    public boolean knowsAttributes() {
+        return profile != null && profile.referenceStats || com.runecraft.osrs.data.MonsterTraits.get(traitsKey()) != null;
+    }
+
     /** Elemental weakness ("fire", "water", "earth", "air") or null. */
     public String weakness() {
         return profile != null ? profile.weakness : null;

@@ -298,6 +298,64 @@ public final class SpawnTable {
         s("oomlie_bird", 2800, 2918, 5, 20);           // western Kharazi Jungle (22 in OSRS)
         s("bandit", 3040, 3701, 4, 7, 100);            // Wilderness Bandit Camp (60 s respawn)
         s("wilderness_bandit", 3036, 3696, 5, 8, 100); // Wilderness Bandit Camp, level 130s
+        // Slayer task variants added in the monster completeness audit (SlayerTaskMonsters), at their cache clusters.
+        s("black_bear", 2970, 3481, 3, 6);             // north of the Mind Altar / Goblin Village road
+        s("black_bear", 2478, 3200, 2, 10);            // north of Gu'Tanoth / the Gnome Maze
+        s("bear_cub", 2691, 3612, 4, 4);               // the woods south of Rellekka
+        s("bear_cub", 2721, 3643, 4, 4);
+        si("bear_cub", 1250, 3475, 4, 10);              // north of Land's End
+        s("grizzly_bear_cub", 2199, 3219, 3, 3);       // Isafdar
+        s("grizzly_bear_cub", 2291, 3154, 2, 3);
+        s("desert_wolf", 3263, 3071, 5, 7);            // between the Shantay Pass and the Bedabin Camp
+        s("desert_wolf", 3310, 3070, 4, 5);
+        s("desert_wolf", 3323, 3031, 3, 3);
+        s("dire_wolf", 2316, 3269, 3, 5);              // Isafdar, south of Prifddinas
+        s("dire_wolf", 2337, 3275, 3, 4);
+        s("jungle_wolf", 2900, 2910, 4, 14);           // Kharazi Jungle (16 in OSRS)
+        s("big_wolf", 2840, 3497, 1, 2);               // White Wolf Mountain
+        s("jackal", 3214, 2865, 5, 3);                 // the desert south of the Shantay Pass (55 in OSRS)
+        s("jackal", 3266, 2933, 4, 3);
+        s("jackal", 3319, 2899, 4, 3);
+        s("jackal", 3240, 2845, 4, 3);
+        s("guard_dog", 2664, 3479, 3, 9);              // McGrubor's Wood / Seers' Village farms
+        s("guard_dog", 2785, 3194, 3, 4);              // Brimhaven
+        si("guard_dog", 1740, 3597, 2, 3);              // Hosidius
+        s("small_lizard", 3407, 3060, 6, 10);          // the desert east of the Kalphite Lair (31 in OSRS)
+        s("small_lizard", 3439, 3058, 6, 10);
+        s("small_lizard", 3442, 3014, 5, 4);
+        s("grave_scorpion", 2469, 3226, 5, 5);
+        s("poison_scorpion", 2720, 3217, 5, 6);        // north of Brimhaven
+        s("pit_scorpion", 2604, 3270, 4, 3);           // Ardougne Zoo
+        s("tortured_soul", 3659, 3533, 3, 7);          // the Port Phasmatys farmland
+        s("tortured_soul", 3670, 3532, 2, 5);
+        s("undead_chicken", 3630, 3528, 6, 4);         // Alice's farm, west of Port Phasmatys
+        s("undead_cow", 3617, 3525, 4, 6);
+        s("zombie_rat", 2930, 3249, 7, 7);             // Rimmington
+        s("vampyre_juvenile", 3564, 3244, 4, 9);       // Meiyerditch (35 in OSRS)
+        s("vampyre_juvenile", 3561, 3213, 3, 7);
+        s("vampyre_juvenile", 3631, 3221, 3, 6);
+        s("vampyre_juvenile", 3649, 3352, 4, 10);      // Darkmeyer
+        s("vyrewatch_sentinel", 3598, 3353, 5, 11);    // Darkmeyer (19 in OSRS)
+        s("vyrewatch_sentinel", 3601, 3383, 3, 6);
+        s("vyrewatch_sentinel", 3627, 3381, 3, 7);
+        s("elf_archer", 2329, 3170, 1, 3);             // Lletya
+        s("iorwerth_archer", 2206, 3256, 3, 5);        // the Iorwerth Camp
+        s("iorwerth_archer", 2191, 3246, 2, 5);
+        s("guard_bandit", 3037, 3665, 4, 7, 100);      // Wilderness Bandit Camp
+        s("thrower_troll", 2856, 3599, 4, 7);          // Death Plateau
+        s("thrower_troll", 2891, 3698, 4, 7);          // Trollheim
+        s("troll_spectator", 2920, 3606, 3, 6);        // the Troll Stronghold arena
+        s("troll_spectator", 2921, 3619, 2, 4);
+        si("sorebones", 3813, 2844, 7, 7);              // Harmony Island
+        si("zombie_pirate", 3790, 2846, 3, 6);
+        si("zombie_pirate", 3799, 2853, 3, 6);
+        si("zombie_pirate", 3796, 2832, 2, 5);
+        s("undead_one", 2874, 2953, 9, 7);             // the Karamja burial grounds, north of Shilo Village
+        s("zogre", 2466, 3048, 5, 6);                  // Jiggig
+        s("seagull", 3028, 3203, 4, 3);                // Port Sarim docks
+        s("seagull", 3028, 3234, 4, 3);
+        s("black_guard", 3015, 3445, 4, 4);            // the Dwarven Mine entrance north of Falador
+        si("pyrelord", 2255, 2960, 3, 5);               // Isle of Souls
         // Brine rats, Jormungand's basilisk knights, baby green dragons, sourhogs, shadow warriors and the
         // Wilderness God Wars Dungeon's spiritual creatures are dungeon camps (DungeonsLairs).
     }

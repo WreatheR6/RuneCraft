@@ -113,8 +113,10 @@ public final class HitCalcBridge {
         in.weaknessElement = stats.weakness();
         in.weaknessPercent = stats.weaknessPercent();
         in.targetTbowMagic = Math.max(stats.magic(), stats.attackBonus(AttackType.MAGIC));
-        if (stats.profile() != null) {
-            in.attributes.addAll(stats.profile().attributes);
+        in.attributes.addAll(stats.attributes());
+        int tiles = com.runecraft.osrs.data.MonsterTraits.size(stats.traitsKey());
+        if (tiles > 0) {
+            in.targetSize = tiles; // OSRS size in tiles (colossal blade), not the Minecraft hitbox
         }
         if (SysCombat.isUndead(target)) {
             in.attributes.add("undead");

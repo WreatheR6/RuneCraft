@@ -848,6 +848,9 @@
     "head",
     "sparkle"
   ],
+  "grave_scorpion": [
+    "eyes"
+  ],
   "great_guardian": [
     "hips",
     "torso",
@@ -1591,9 +1594,15 @@
     "cowl_glow",
     "aura"
   ],
+  "pit_scorpion": [
+    "eyes"
+  ],
   "plague_sheep": [
     "sores",
     "drool",
+    "eyes"
+  ],
+  "poison_scorpion": [
     "eyes"
   ],
   "poison_spider": [
@@ -1605,6 +1614,30 @@
     "possession"
   ],
   "pyrefiend": [
+    "body",
+    "core",
+    "wisp0",
+    "wisp1",
+    "wisp2",
+    "wisp3",
+    "wisp_tip",
+    "tongue0",
+    "tongue1",
+    "tongue2",
+    "tongue3",
+    "tongue4",
+    "tongue5",
+    "head",
+    "jaw",
+    "flame0",
+    "flame1",
+    "flame2",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r"
+  ],
+  "pyrelord": [
     "body",
     "core",
     "wisp0",
@@ -1828,6 +1861,24 @@
     "eyes",
     "pearls"
   ],
+  "seagull": [
+    "eyes",
+    "crest0",
+    "crest1",
+    "crest2",
+    "crest3",
+    "crest4",
+    "primary0_l",
+    "primary0_r",
+    "primary1_l",
+    "primary1_r",
+    "tail0",
+    "tail1",
+    "tail2",
+    "streamer_l",
+    "streamer_r",
+    "ember_core"
+  ],
   "sergeant_steelwill": [
     "staff_orb"
   ],
@@ -1880,6 +1931,9 @@
     "eye_r",
     "mind_gem",
     "slime_trail"
+  ],
+  "small_lizard": [
+    "head"
   ],
   "small_muttadile": [
     "eye_l",
@@ -2145,6 +2199,9 @@
   "tortured_gorilla": [
     "eyes"
   ],
+  "tortured_soul": [
+    "head"
+  ],
   "tree_spirit": [
     "head"
   ],
@@ -2276,6 +2333,9 @@
   "umbra": [
     "orb"
   ],
+  "vampyre_juvenile": [
+    "head"
+  ],
   "vanguard_magic": [
     "visor",
     "staff_orb"
@@ -2380,6 +2440,9 @@
   ],
   "vulture": [
     "eyes"
+  ],
+  "vyrewatch_sentinel": [
+    "head"
   ],
   "wall_beast": [
     "head"
