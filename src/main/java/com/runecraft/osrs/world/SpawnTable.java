@@ -112,8 +112,8 @@ public final class SpawnTable {
     private static final int SLAYER_TOWER_0 = StructureDef.GROUND;
     private static final int SLAYER_TOWER_1 = StructureDef.GROUND + 7;
     private static final int SLAYER_TOWER_2 = StructureDef.GROUND + 14;
-    /** Top floor of the Wizards' Tower (MisthalinDraynor): four storeys of 6 blocks. */
-    private static final int WIZARDS_TOWER_TOP = StructureDef.GROUND + 18;
+    /** Top floor of the Wizards' Tower (MisthalinDraynor): three storeys of 6 blocks under the roof. */
+    private static final int WIZARDS_TOWER_TOP = StructureDef.GROUND + 12;
     /** Floor heights of built dungeons (see the dungeons and zeah modules' camps). */
     private static final int BRIMHAVEN_DUNGEON = 25;
     private static final int LUMBRIDGE_SWAMP_CAVES = 23;

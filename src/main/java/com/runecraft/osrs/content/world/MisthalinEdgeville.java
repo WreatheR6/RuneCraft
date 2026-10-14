@@ -141,61 +141,170 @@ final class MisthalinEdgeville {
         k.tPath(3067, 3504, 3075, 3504, 2);
     }
 
+    /**
+     * Edgeville Monastery, traced from the OSRS map (mejrs layers_osrs, planes 0-1) and the shortest-path
+     * ladders (3046, 3483) and (3057, 3483): a cloister of two-storey ranges around an open garden court
+     * (3048-3055, 3485-3494) inside a chamfered perimeter wall (3042-3061, 3481-3499) with gateways north and
+     * south. The chapel with the altar fills the north range's first floor (approx: room use from the wiki,
+     * not the map).
+     */
     private static void monastery(MisthalinKit k) {
-        // Edgeville Monastery on the hill west of the village: monks' hall below, chapel and altar above
         k.tFlatten(3038, 3476, 3064, 3504);
         k.meadow(t(3038, 3476, 3064, 3504), 8);
-        Box b = t(3043, 3483, 3059, 3498);
-        k.house(b).storeys(2).height(5).wall(STONE_BRICKS).corner(CHISELED).beam(POLISHED_ANDESITE).base(COBBLE)
-                .floor(POLISHED_ANDESITE).upperFloor(SPRUCE_PLANKS).roof(Roof.SLATE).gable(STONE_BRICKS)
-                .doorAt('e', Z(3491), 4, 4).build();
-        Box in = b.inset(1);
-        // ground floor: refectory and dormitory
-        k.diningX(in.x1() + 4, in.x2() - 8, 0, in.cz());
-        k.set(in.x1() + 3, 0, in.cz(), "minecraft:oak_stairs[facing=east]");
-        for (int x = in.x1(); x <= in.x2() - 6; x += 3) {
-            k.bed(x, 0, in.z1(), 's', "brown");
-            k.bed(x, 0, in.z2(), 'n', "brown");
+        // the perimeter wall with its north and south gateways
+        Box outer = t(3042, 3481, 3061, 3499);
+        Box ring = outer;
+        for (int z = ring.z1(); z <= ring.z2(); z++) {
+            int edge = Math.min(z - ring.z1(), ring.z2() - z);
+            int cut = Math.max(0, 4 - edge);
+            int x1 = ring.x1() + cut;
+            int x2 = ring.x2() - cut;
+            if (cut > 0 || z == ring.z1() || z == ring.z2()) {
+                int run = edge == 0 ? 0 : 1;
+                k.fill(x1, 0, z, x1 + run, 3, z, STONE_BRICKS).fill(x2 - run, 0, z, x2, 3, z, STONE_BRICKS);
+                if (edge == 0) {
+                    k.fill(x1, 0, z, x2, 3, z, STONE_BRICKS);
+                }
+            } else {
+                k.fill(x1, 0, z, x1, 3, z, STONE_BRICKS).fill(x2, 0, z, x2, 3, z, STONE_BRICKS);
+            }
         }
-        k.set(in.x2(), 0, in.z1(), RANGE);
-        k.set(in.x2() - 1, 0, in.z1(), BARREL).set(in.x2() - 2, 0, in.z1(), "minecraft:cauldron");
-        k.stairs2(in.x2() - 3, 0, in.z2() - 1, 'n', 5, "minecraft:stone_brick_stairs", 'e');
-        k.connect(in.x2() - 4, 5, in.z2() - 5, in.x2() - 4, 5, in.z2() - 1, "minecraft:spruce_fence");
-        for (int x = in.x1() + 3; x <= in.x2(); x += 6) {
-            k.hang(x, 3, in.cz() - 3).hang(x, 3, in.cz() + 3);
+        k.clear(X(3050), 0, outer.z2(), X(3053) + 1, 3, outer.z2());
+        k.clear(X(3046), 0, outer.z1(), X(3057) + 1, 3, outer.z1());
+        k.fill(X(3046) - 1, 0, Z(3504), X(3046) - 1, 3, outer.z1(), STONE_BRICKS);
+        k.fill(X(3057) + 2, 0, Z(3504), X(3057) + 2, 3, outer.z1(), STONE_BRICKS);
+        k.floor(t(3047, 3500, 3056, 3504), GRAVEL);
+        k.floor(t(3043, 3482, 3060, 3498), "minecraft:stone_bricks");
+
+        // the ranges round the court: one box per block of the OSRS first floor, walls on shared tile edges
+        Box north = mHull(3050, 3495, 3055, 3499);
+        Box nw = mHull(3044, 3492, 3049, 3498);
+        Box ne = mHull(3056, 3492, 3060, 3498);
+        Box west = mHull(3044, 3485, 3047, 3491);
+        Box east = mHull(3056, 3485, 3060, 3491);
+        Box south = mHull(3044, 3481, 3060, 3484);
+        Box[] ranges = {north, nw, ne, west, east, south};
+        for (Box r : ranges) {
+            k.fill(r, -3, -1, COBBLE).fill(r, 0, 9, STONE_BRICKS);
         }
-        // first floor: the chapel with the altar at the west end
-        k.carpet(new Box(in.x1() + 2, in.cz() - 1, in.x2() - 5, in.cz() + 1), 5, "red");
-        k.fill(in.x1(), 4, in.z1() + 2, in.x1() + 1, 4, in.z2() - 2, "minecraft:quartz_block");
-        k.set(in.x1(), 5, in.cz(), ALTAR);
-        k.set(in.x1(), 5, in.cz() - 3, "minecraft:candle[candles=4,lit=true]").set(in.x1(), 5, in.cz() + 3, "minecraft:candle[candles=4,lit=true]");
-        k.set(in.x1(), 5, in.cz() - 2, "minecraft:gold_block").set(in.x1(), 5, in.cz() + 2, "minecraft:gold_block");
-        for (int x = in.x1() + 4; x <= in.x2() - 7; x += 2) {
-            k.fill(x, 5, in.z1() + 1, x, 5, in.cz() - 2, "minecraft:spruce_stairs[facing=west]");
-            k.fill(x, 5, in.cz() + 2, x, 5, in.z2() - 1, "minecraft:spruce_stairs[facing=west]");
+        for (Box r : ranges) {
+            k.walls(r, 4, 4, POLISHED_ANDESITE).walls(r, 0, 0, COBBLE);
         }
-        for (int z = in.z1() + 2; z <= in.z2() - 2; z += 4) {
-            k.connect(b.x1(), 6, z, b.x1(), 7, z, "minecraft:yellow_stained_glass_pane");
+        for (Box r : ranges) {
+            k.clear(r.inset(1), 0, 3).clear(r.inset(1), 5, 8);
+            k.fill(r.inset(1), -1, -1, POLISHED_ANDESITE).fill(r.inset(1), 4, 4, SPRUCE_PLANKS);
         }
-        k.shelvesZ(in.x2(), 5, in.z1(), in.z2() - 6, "west");
-        for (int x = in.x1() + 3; x <= in.x2(); x += 6) {
-            k.hang(x, 8, in.cz());
+        for (Box r : ranges) {
+            k.roof(r, 10, Roof.SLATE, STONE_BRICKS);
         }
-        // bell turret on the east gable
-        int bx = in.x2() - 1;
-        k.fill(bx - 1, 10, b.cz() - 1, bx + 1, 18, b.cz() + 1, STONE_BRICKS);
-        k.clear(bx, 15, b.cz() - 1, bx, 17, b.cz() + 1);
-        k.clear(bx - 1, 15, b.cz(), bx + 1, 17, b.cz());
-        k.set(bx, 17, b.cz(), "minecraft:bell[attachment=ceiling,facing=north]");
-        k.fill(bx - 1, 19, b.cz() - 1, bx + 1, 19, b.cz() + 1, "minecraft:deepslate_tile_slab");
-        // monastery garden: herb beds, a well, the fenced grounds
-        k.field(t(3044, 3478, 3052, 3481), "minecraft:carrots[age=7]");
-        k.well(X(3056), Z(3480));
-        Box yard = t(3040, 3477, 3062, 3502);
-        k.fenceRing(yard, "minecraft:spruce_fence");
-        k.clear(yard.x2(), 0, Z(3491), yard.x2(), 0, Z(3490) + 1);
+        // doors: the gateways through the south and north ranges, into the court, and between the ranges
+        mDoorZ(k, south.z2(), 3051, 0);
+        mDoorZ(k, north.z1(), 3052, 0);
+        for (int y : new int[]{0, 5}) {
+            if (y == 0) {
+                mDoorZ(k, south.z1(), 3051, 0);
+                mDoorZ(k, north.z2(), 3052, 0);
+                mDoorX(k, west.x2(), 3488, 0);
+                mDoorX(k, east.x1(), 3488, 0);
+                mDoorZ(k, nw.z2(), 3048, 0);
+                mDoorZ(k, ne.z2(), 3057, 0);
+            }
+            mDoorZ(k, west.z2(), 3045, y);
+            mDoorZ(k, east.z2(), 3058, y);
+            mDoorZ(k, west.z1(), 3045, y);
+            mDoorZ(k, east.z1(), 3058, y);
+            mDoorX(k, north.x1(), 3497, y);
+            mDoorX(k, north.x2(), 3497, y);
+        }
+        // windows on the outer faces and onto the court
+        for (int y : new int[]{1, 6}) {
+            for (int z = Z(3497); z <= Z(3482); z += 6) {
+                k.replace(new Box(nw.x1(), z, nw.x1(), z + 1), y, y + 1, STONE_BRICKS, GLASS);
+                k.replace(new Box(ne.x2(), z, ne.x2(), z + 1), y, y + 1, STONE_BRICKS, GLASS);
+            }
+            for (int x = X(3045); x <= X(3059); x += 6) {
+                k.replace(new Box(x, south.z2(), x + 1, south.z2()), y, y + 1, STONE_BRICKS, GLASS);
+            }
+        }
+        // the ladders (3046, 3483) and (3057, 3483) up to the first floor, each against a pillar
+        for (int lx : new int[]{X(3046), X(3057)}) {
+            k.fill(lx, 0, Z(3483) + 2, lx + 1, 3, Z(3483) + 2, CHISELED);
+            k.ladder(lx, Z(3483) + 1, "north", 0, 4).ladder(lx + 1, Z(3483) + 1, "north", 0, 4);
+        }
+
+        // the garden court: grass, four ponds, trees, open to the sky
+        Box court = t(3048, 3485, 3055, 3494);
+        k.floor(court, GRASS);
+        k.meadow(court, 5);
+        for (int[] p : new int[][]{{3049, 3493}, {3054, 3493}, {3049, 3486}, {3054, 3486}}) {
+            k.clear(X(p[0]), 0, Z(p[1]), X(p[0]) + 1, 0, Z(p[1]) + 1);
+            k.fill(X(p[0]), -1, Z(p[1]), X(p[0]) + 1, -1, Z(p[1]) + 1, WATER);
+        }
+        k.floor(t(3051, 3485, 3052, 3494), GRAVEL);
+        k.floor(t(3048, 3488, 3055, 3488), GRAVEL);
+        k.bush(X(3050), Z(3491), OAK_LEAVES).bush(X(3053), Z(3491), OAK_LEAVES).bush(X(3050), Z(3489) + 1, OAK_LEAVES);
+
+        // ground floor: refectory (west), kitchen (east), cloister walk (south), monks' cells north
+        Box wi = west.inset(1);
+        k.diningZ(wi.cx(), 0, wi.z1() + 1, wi.z2() - 1);
+        Box ei = east.inset(1);
+        k.set(ei.x2(), 0, ei.z1(), RANGE).set(ei.x2(), 0, ei.z1() + 1, BARREL).set(ei.x2(), 0, ei.z1() + 2, "minecraft:cauldron");
+        k.table(ei.cx(), 0, ei.cz());
+        Box si = south.inset(1);
+        k.carpet(new Box(X(3048), si.z1() + 1, X(3055) + 1, si.z2() - 1), 0, "brown");
+        for (Box r : new Box[]{nw, ne}) {
+            Box in = r.inset(1);
+            k.bed(in.x1(), 0, in.z1(), 's', "brown").bed(in.x1() + 3, 0, in.z1(), 's', "brown");
+        }
+        for (int x = X(3046); x <= X(3058); x += 6) {
+            k.hang(x, 2, si.cz());
+        }
+        // first floor: the chapel in the north range, dormitories round the court
+        Box ni = north.inset(1);
+        k.set(ni.cx(), 5, ni.z1(), ALTAR);
+        k.set(ni.cx() - 2, 5, ni.z1(), "minecraft:candle[candles=4,lit=true]").set(ni.cx() + 2, 5, ni.z1(), "minecraft:candle[candles=4,lit=true]");
+        k.fill(ni.x1(), 4, ni.z1(), ni.x2(), 4, ni.z1() + 1, "minecraft:quartz_block");
+        for (int z = ni.z1() + 3; z <= ni.z2(); z += 2) {
+            k.fill(ni.x1(), 5, z, ni.cx() - 1, 5, z, "minecraft:spruce_stairs[facing=north]");
+            k.fill(ni.cx() + 2, 5, z, ni.x2(), 5, z, "minecraft:spruce_stairs[facing=north]");
+        }
+        k.connect(north.x1() + 3, 6, north.z1(), north.x2() - 3, 7, north.z1(), "minecraft:yellow_stained_glass_pane");
+        for (Box r : new Box[]{west, east, nw, ne}) {
+            Box in = r.inset(1);
+            k.bed(in.x1(), 5, in.z1(), 's', "brown");
+            k.set(in.x2(), 5, in.z1(), "minecraft:chest[facing=west]");
+            k.hang(in.cx(), 7, in.cz());
+        }
+        k.shelvesX(si.x1() + 3, si.x2() - 3, 5, si.z2(), "north");
+        // bell turret over the south gateway
+        int bx = X(3051) + 1;
+        int bz = south.cz();
+        k.fill(bx - 1, 14, bz - 1, bx + 1, 18, bz + 1, STONE_BRICKS);
+        k.clear(bx, 15, bz - 1, bx, 17, bz + 1).clear(bx - 1, 15, bz, bx + 1, 17, bz);
+        k.set(bx, 17, bz, "minecraft:bell[attachment=ceiling,facing=north]");
+        k.fill(bx - 1, 19, bz - 1, bx + 1, 19, bz + 1, "minecraft:deepslate_tile_slab");
+        k.tPath(3051, 3480, 3051, 3477, 2);
+        k.tPath(3052, 3505, 3060, 3505, 2);
         k.tPath(3060, 3491, 3074, 3491, 2);
-        k.tOak(3041, 3500).tOak(3061, 3500).tOak(3041, 3479);
+        k.tOak(3040, 3502).tOak(3063, 3502).tOak(3040, 3478).tOak(3063, 3478);
+    }
+
+    /** Block box of a tile rectangle whose east and south walls sit on the neighbouring tiles' edge blocks. */
+    private static Box mHull(int tx1, int ty1, int tx2, int ty2) {
+        Box b = t(tx1, ty1, tx2, ty2);
+        return new Box(b.x1(), b.z1(), b.x2() + 1, b.z2() + 1);
+    }
+
+    private static void mDoorZ(MisthalinKit k, int z, int tx, int y) {
+        k.clear(X(tx), y, z, X(tx) + 1, y + 2, z);
+        k.set(X(tx), y, z, "minecraft:spruce_door[facing=south,half=lower,hinge=left]");
+        k.set(X(tx) + 1, y, z, "minecraft:spruce_door[facing=south,half=lower,hinge=right]");
+    }
+
+    private static void mDoorX(MisthalinKit k, int x, int ty, int y) {
+        k.clear(x, y, Z(ty), x, y + 2, Z(ty) + 1);
+        k.set(x, y, Z(ty), "minecraft:spruce_door[facing=east,half=lower,hinge=left]");
+        k.set(x, y, Z(ty) + 1, "minecraft:spruce_door[facing=east,half=lower,hinge=right]");
     }
 
     // ------------------------------------------------------------------ Barbarian Village
@@ -238,37 +347,38 @@ final class MisthalinEdgeville {
     }
 
     private static void longhall(MisthalinKit k) {
-        // the longhall where Gunthor the Brave holds court
-        Box b = t(3073, 3436, 3091, 3446);
-        k.house(b).storeys(1).height(6).wall("minecraft:spruce_log[axis=x]").corner(SPRUCE_LOG).base(COBBLE)
-                .floor(SPRUCE_PLANKS).roof(Roof.THATCH).gable(SPRUCE_PLANKS).window(null).doorAt('s', X(3082), 2, 4).build();
-        k.fill(b.x1(), 0, b.z1() + 1, b.x1(), 5, b.z2() - 1, "minecraft:spruce_log[axis=z]");
-        k.fill(b.x2(), 0, b.z1() + 1, b.x2(), 5, b.z2() - 1, "minecraft:spruce_log[axis=z]");
-        k.clear(X(3082), 0, b.z2(), X(3082) + 1, 3, b.z2());
+        // the longhall where Gunthor the Brave holds court: 8 x 10 tiles (3075-3082, 3436-3445) running
+        // north-south with its door south (3078-3079), traced from the OSRS map (mejrs layers_osrs)
+        Box b = t(3075, 3436, 3082, 3445);
+        k.house(b).storeys(1).height(6).wall("minecraft:spruce_log[axis=z]").corner(SPRUCE_LOG).base(COBBLE)
+                .floor(SPRUCE_PLANKS).roof(Roof.THATCH).gable(SPRUCE_PLANKS).window(null).doorAt('s', X(3078), 4, 4).build();
+        k.fill(b.x1() + 1, 0, b.z1(), b.x2() - 1, 5, b.z1(), "minecraft:spruce_log[axis=x]");
+        k.fill(b.x1() + 1, 0, b.z2(), b.x2() - 1, 5, b.z2(), "minecraft:spruce_log[axis=x]");
+        k.clear(X(3078), 0, b.z2(), X(3079) + 1, 3, b.z2());
         // shutters for light
-        for (int x = b.x1() + 4; x < b.x2() - 2; x += 6) {
-            k.clear(x, 2, b.z1(), x, 2, b.z1());
-            k.clear(x, 2, b.z2(), x, 2, b.z2());
+        for (int z = b.z1() + 4; z < b.z2() - 2; z += 5) {
+            k.clear(b.x1(), 2, z, b.x1(), 2, z);
+            k.clear(b.x2(), 2, z, b.x2(), 2, z);
         }
         Box in = b.inset(1);
         // long hearth down the middle
-        k.fill(in.x1() + 6, -1, in.cz(), in.x2() - 6, -1, in.cz() + 1, COBBLE);
-        for (int x = in.x1() + 7; x <= in.x2() - 7; x += 4) {
-            k.set(x, 0, in.cz(), "minecraft:campfire[lit=true]");
+        k.fill(in.cx(), -1, in.z1() + 5, in.cx() + 1, -1, in.z2() - 5, COBBLE);
+        for (int z = in.z1() + 6; z <= in.z2() - 6; z += 4) {
+            k.set(in.cx(), 0, z, "minecraft:campfire[lit=true]");
         }
-        k.diningX(in.x1() + 6, in.x2() - 6, 0, in.z1() + 3);
-        k.diningX(in.x1() + 6, in.x2() - 6, 0, in.z2() - 3);
-        // Gunthor's seat at the west end, the cooking range at the east end
-        k.fill(in.x1(), -1, in.cz() - 2, in.x1() + 2, -1, in.cz() + 3, "minecraft:spruce_planks");
-        k.set(in.x1(), 0, in.cz(), "minecraft:dark_oak_stairs[facing=west]");
-        k.set(in.x1(), 0, in.cz() + 1, "minecraft:dark_oak_stairs[facing=west]");
-        k.set(in.x1(), 1, in.cz() - 1, "minecraft:skeleton_skull").set(in.x1(), 1, in.cz() + 2, "minecraft:skeleton_skull");
-        k.set(in.x1(), 3, in.cz(), "minecraft:red_wall_banner[facing=east]");
-        k.set(in.x2(), 0, in.z1(), RANGE).set(in.x2(), 0, in.z1() + 1, BARREL).set(in.x2() - 1, 0, in.z1(), BARREL);
-        k.set(in.x2(), 0, in.z2(), BARREL).set(in.x2(), 1, in.z2(), BARREL).set(in.x2() - 1, 0, in.z2(), HAY);
-        for (int x = in.x1() + 4; x <= in.x2() - 4; x += 5) {
-            k.set(x, 0, in.z1(), "minecraft:grindstone[face=floor,facing=south]");
-            k.hang(x, 4, in.cz() + 2);
+        k.diningZ(in.x1() + 2, 0, in.z1() + 5, in.z2() - 5);
+        k.diningZ(in.x2() - 2, 0, in.z1() + 5, in.z2() - 5);
+        // Gunthor's seat at the north end, the cooking range in the south-east corner
+        k.fill(in.cx() - 2, -1, in.z1(), in.cx() + 3, -1, in.z1() + 2, "minecraft:spruce_planks");
+        k.set(in.cx(), 0, in.z1(), "minecraft:dark_oak_stairs[facing=north]");
+        k.set(in.cx() + 1, 0, in.z1(), "minecraft:dark_oak_stairs[facing=north]");
+        k.set(in.cx() - 1, 1, in.z1(), "minecraft:skeleton_skull").set(in.cx() + 2, 1, in.z1(), "minecraft:skeleton_skull");
+        k.set(in.cx(), 3, in.z1(), "minecraft:red_wall_banner[facing=south]");
+        k.set(in.x2(), 0, in.z2(), RANGE).set(in.x2(), 0, in.z2() - 1, BARREL).set(in.x2() - 1, 0, in.z2(), BARREL);
+        k.set(in.x1(), 0, in.z2(), BARREL).set(in.x1(), 1, in.z2(), BARREL).set(in.x1(), 0, in.z2() - 1, HAY);
+        for (int z = in.z1() + 4; z <= in.z2() - 4; z += 5) {
+            k.set(in.x1(), 0, z, "minecraft:grindstone[face=floor,facing=east]");
+            k.hang(in.cx() + 2, 4, z);
         }
     }
 
