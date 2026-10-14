@@ -97,7 +97,60 @@ public final class DungeonMonsters {
         list.add(m("bloodworm", "Bloodworm", 52, 45, 80, 20, 35, 1, 1).speed(4).attack(melee(AttackType.STAB, 3))
                 .defenceBonus(0, 0, 0, 0, 0).model("abyssal_leech").skin(0x8A1A1A, 0x6A1010, 0x6A1010, 0xC03030)
                 .size(0.8f, 0.6f, 0.8f));
+        warpedCreatures(list);
+        lavaStrykewyrm(list);
         return list;
+    }
+
+    /**
+     * The Charred Dungeon's lava strykewyrm (Slayer 62, wyrm tasks): stats from the wiki's DPS calculator data, drops
+     * from its wiki page (x/128). Strykewyrm bones, cannonballs, chilli potatoes, super attack/defence potions and the
+     * dragon metal sheet are not in the game and are left out; the gem-tipped bolt tips are folded into diamond ones.
+     */
+    static void lavaStrykewyrm(List<MonsterDef> list) {
+        list.add(m("lava_strykewyrm", "Lava Strykewyrm", 116, 150, 90, 90, 50, 50, 110).speed(5)
+                .attack(melee(AttackType.CRUSH, 10)).attack(AttackDef.of("ranged", AttackType.RANGED, 12, 8, 10))
+                .defenceBonus(30, 60, 70, 40, 120).rangedDefence(120, 120).attackBonus(30, 0, 40).weakness("water", 50)
+                .drops(Drop.always("ashes"), Drop.herbs(64), Drop.of("lava_battlestaff", 1, 1, 26), Drop.of("adamant_platebody", 1, 1, 32),
+                        Drop.of("rune_longsword", 1, 1, 64), Drop.of("rune_mace", 1, 1, 64), Drop.of("rune_med_helm", 1, 1, 64),
+                        Drop.of("rune_pickaxe", 1, 1, 64), Drop.of("lava_rune", 50, 100, 21), Drop.of("death_rune", 5, 10, 21),
+                        Drop.of("chaos_rune", 10, 20, 21), Drop.of("fire_rune", 50, 100, 21), Drop.of("lava_rune", 200, 200, 26),
+                        Drop.of("rune_dart", 20, 30, 26), Drop.of("rune_knife", 20, 30, 26), Drop.of("rune_arrow", 20, 30, 26),
+                        Drop.of("diamond_bolt_tips", 5, 10, 26), Drop.of("coins", 100, 200, 21), Drop.of("fire_orb", 1, 1, 26),
+                        Drop.of("uncut_diamond", 1, 1, 26), Drop.of("dragon_arrowtips", 2, 6, 32), Drop.of("coal", 4, 6, 32),
+                        Drop.of("adamantite_ore", 2, 4, 32), Drop.of("chaos_talisman", 1, 1, 32), Drop.of("fire_talisman", 1, 1, 32),
+                        Drop.of("runite_ore", 1, 2, 43))
+                .slayer(62, "wyrms").model("wyrm").size(1.4f, 1.6f, 1.2f));
+    }
+
+    /**
+     * The Poison Waste Dungeon's warped creatures (Slayer 56, warped creatures tasks): the warped tortoise and the level
+     * 96 warped terrorbird (the level 138 one is The Path of Glouphrie's boss, {@code warped_terrorbird}). Stats from
+     * the wiki's DPS calculator data (weirdgloop/osrs-dps-calc), drops from the wiki pages (2/64 = 1 in 32); the warped
+     * sceptre, tortoise shells, feathers and terrorbird wings are not in the game yet and are left out.
+     */
+    static void warpedCreatures(List<MonsterDef> list) {
+        list.add(m("warped_tortoise", "Warped Tortoise", 121, 200, 78, 106, 78, 50, 1).speed(4).attack(melee(AttackType.CRUSH, 12))
+                .defenceBonus(50, 50, 0, 0, 60).rangedDefence(60, 20).attackBonus(0, 0, 0).weakness("earth", 20)
+                .drops(Drop.always("big_bones"), Drop.gems(21), Drop.of("adamant_axe", 1, 1, 32), Drop.of("adamant_platebody", 1, 1, 32),
+                        Drop.of("rune_pickaxe", 1, 1, 64), Drop.of("rune_kiteshield", 1, 1, 64), Drop.of("rune_warhammer", 1, 1, 64),
+                        Drop.of("earth_rune", 80, 100, 11), Drop.of("mud_rune", 30, 50, 13), Drop.of("death_rune", 15, 20, 21),
+                        Drop.of("coins", 600, 800, 6), Drop.of("adamantite_ore", 3, 5, 32), Drop.of("swamp_tar", 40, 60, 11),
+                        Drop.of("coal", 6, 12, 21), Drop.of("weapon_poison", 1, 1, 21), Drop.of("cabbage", 20, 40, 11),
+                        Drop.of("pineapple", 1, 1, 21), Drop.of("tangled_toads_legs", 2, 3, 21), Drop.of("long_bone", 1, 1, 400),
+                        Drop.of("curved_bone", 1, 1, 5012))
+                .slayer(56, "warped_creatures").passive().model("rock_crab").skin(0x5A6A3A, 0x3A4A2A, 0x3A4A2A, 0x9AC040)
+                .size(2.4f, 1.6f, 1.8f));
+        list.add(m("warped_terrorbird_lvl96", "Warped Terrorbird", 96, 150, 60, 90, 20, 60, 40).speed(4)
+                .attack(melee(AttackType.CRUSH, 10)).attack(AttackDef.of("ranged", AttackType.RANGED, 10, 8, 10))
+                .defenceBonus(50, 50, 0, 0, 62).rangedDefence(20, 62).attackBonus(0, 0, 240)
+                .drops(Drop.always("bones"), Drop.gems(21), Drop.of("adamant_warhammer", 1, 1, 32), Drop.of("adamant_platebody", 1, 1, 32),
+                        Drop.of("rune_battleaxe", 1, 1, 64), Drop.of("rune_kiteshield", 1, 1, 64), Drop.of("rune_warhammer", 1, 1, 64),
+                        Drop.of("air_rune", 80, 120, 11), Drop.of("earth_rune", 80, 100, 11), Drop.of("death_rune", 15, 20, 21),
+                        Drop.of("law_rune", 15, 20, 21), Drop.of("soul_rune", 10, 15, 21), Drop.of("coins", 600, 800, 8),
+                        Drop.of("adamantite_ore", 3, 5, 32), Drop.of("weapon_poison", 1, 1, 21), Drop.of("diamond_bolt_tips", 24, 32, 21),
+                        Drop.of("raw_shark", 3, 7, 13), Drop.of("swamp_tar", 40, 60, 13), Drop.of("chocolate_bomb", 2, 3, 21))
+                .slayer(56, "warped_creatures").model("warped_terrorbird").size(1.4f, 2.4f, 1.0f));
     }
 
     /**

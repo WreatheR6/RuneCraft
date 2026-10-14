@@ -93,7 +93,7 @@ class DungeonsContentTest {
         for (BlockDef b : MODULE.blocks()) {
             assertTrue(b.id().startsWith("dng_"), b.id());
         }
-        assertEquals(58, Dungeons.all().size());
+        assertEquals(64, Dungeons.all().size());
     }
 
     @Test
@@ -336,6 +336,35 @@ class DungeonsContentTest {
         assertEquals(63, ContentRegistry.monster("shadow_hound").combatLevel);
         assertEquals(106, ContentRegistry.monster("locust_rider").combatLevel);
         assertEquals(98, ContentRegistry.monster("locust_rider_ranger").combatLevel);
+    }
+
+    /** The Varlamore dungeons, the Poison Waste Dungeon and the Charred Dungeon hold the wiki's LocLine spawn counts. */
+    @Test
+    void varlamoreDungeonsHoldTheWikiSpawnCounts() {
+        assertEquals(Map.of("wyrmling", 6, "grimy_lizard", 8), caps("dng_neypotzli"));
+        assertEquals(Map.ofEntries(Map.entry("cave_crawler", 7), Map.entry("frost_crab", 23), Map.entry("ice_warrior", 7),
+                Map.entry("icefiend", 15), Map.entry("chilled_jelly", 10), Map.entry("frost_nagua", 11), Map.entry("ice_spider", 7),
+                Map.entry("ice_giant", 14), Map.entry("blue_dragon", 7), Map.entry("baby_blue_dragon", 7),
+                Map.entry("brutal_blue_dragon", 5)), caps("dng_ruins_of_tapoyauik"));
+        assertEquals(Map.of("earthen_nagua", 25, "grimy_lizard", 15, "giant_rock_crab", 9, "moss_giant", 8, "minecraft:skeleton", 11,
+                "rockslug", 6), caps("dng_tonali_cavern"));
+        assertEquals(Map.of("juvenile_custodian_stalker", 10, "mature_custodian_stalker", 18, "elder_custodian_stalker", 20,
+                "ancient_zygomite", 9), caps("dng_stalker_den"));
+        // The Poison Waste Dungeon's warped creatures make warped creature tasks assignable.
+        assertEquals(Map.of("warped_tortoise", 15, "warped_terrorbird_lvl96", 36), caps("dng_poison_waste_dungeon"));
+        assertTrue(com.runecraft.osrs.content.slayer.SlayerTasks.available("warped_creatures"));
+        assertEquals(121, ContentRegistry.monster("warped_tortoise").combatLevel);
+        assertEquals(96, ContentRegistry.monster("warped_terrorbird_lvl96").combatLevel);
+        assertEquals(Map.of("fire_giant", 6, "hellhound", 5, "lesser_demon", 6, "black_dragon", 5, "red_dragon", 4,
+                "baby_black_dragon", 7, "nechryael", 11, "black_demon", 3, "lava_strykewyrm", 12), caps("dng_charred_dungeon"));
+        assertEquals("wyrms", ContentRegistry.monster("lava_strykewyrm").slayerCategory);
+        // The creatures no longer wait on the surface at the dungeons' entrances.
+        for (com.runecraft.osrs.content.zeah.ZeahPlaces.Camp c : com.runecraft.osrs.content.zeah.ZeahPlaces.camps()) {
+            for (String id : List.of("wyrmling", "grimy_lizard", "frost_crab", "chilled_jelly", "earthen_nagua", "frost_nagua",
+                    "juvenile_custodian_stalker", "mature_custodian_stalker", "elder_custodian_stalker")) {
+                assertFalse(c.creatures().contains(id), id + " still camps on the surface at " + c.place());
+            }
+        }
     }
 
     /** The Kalphite Cave and the Shadow Dungeon are multicombat underground only; the Kalphite Cave is task-only. */

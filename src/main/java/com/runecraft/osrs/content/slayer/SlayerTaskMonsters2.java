@@ -27,8 +27,8 @@ import static com.runecraft.osrs.content.slayer.Kit.stab;
  * <p>Where they spawn: the Barrows tunnels (crypt rats and spiders; the bloodworms beside them are the dungeons module's), the Mos Le'Harmless caves (albino bats),
  * the Karuulm Slayer Dungeon (sulphur lizards) and the Morytania Spider Cave (araxytes) are dungeon camps (dungeons
  * module); feral vampyres, ice wolves, the Death Plateau trolls and Fossil Island's ancient zygomites are cache/wiki-tile
- * spawn points in {@code SpawnTable}; the Varlamore creatures wait at the entrances of their unbuilt dungeons (Neypotzli,
- * the Ruins of Tapoyauik, the Tonali Cavern, the Stalker Den) as zeah-module camps, like the frost nagua.
+ * spawn points in {@code SpawnTable}; the Varlamore creatures live in the dungeons module's Neypotzli, Ruins of Tapoyauik,
+ * Tonali Cavern and Stalker Den ({@code VarlamoreDungeons}), on the wiki's spawn tiles.
  */
 final class SlayerTaskMonsters2 {
     private SlayerTaskMonsters2() {
