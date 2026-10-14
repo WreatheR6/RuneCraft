@@ -169,6 +169,16 @@ final class F2pQuests {
         b.item("oil_can", "Oil can", "pot", 0x5A5A5A, "Its oily contents are the only thing that can save Ernest.");
         b.item("pressure_gauge", "Pressure gauge", "gem", 0xC0C0C0, "A pressure gauge, found in the fountain.");
         b.item("rubber_tube", "Rubber tube", "string", 0x2A2A2A, "A rubber tube from Draynor Manor.");
+        b.item("fish_food", "Fish food", "pot", 0xC0A060, "Keeps your pet fish strong and healthy.");
+        b.item("poison", "Poison", "potion", 0x6A8A2A, "This stuff looks nasty.");
+        b.item("poisoned_fish_food", "Poisoned fish food", "pot", 0x8AA040, "Doesn't seem very nice to the poor fishes.");
+        b.item("manor_key", "Key", "key", 0x8A7A5A, "A key from the compost heap behind Draynor Manor.");
+        // Object locations from Zoinkwiz/quest-helper (OSRS tiles).
+        b.spot("draynor_manor_fountain", "Draynor Manor fountain", 3088, 3335);
+        b.spot("draynor_manor_compost", "Draynor Manor compost heap", 3085, 3361);
+        b.spot("draynor_manor_poison_room", "Draynor Manor north-west room", 3097, 3366);
+        b.spot("draynor_manor_tube_room", "Draynor Manor small room", 3111, 3367);
+        b.spot("draynor_manor_secret_room", "Draynor Manor secret room", 3096, 3357);
         b.quest("ernest_the_chicken", "Ernest the Chicken", Difficulty.NOVICE, 4)
                 .reward("coins:300")
                 .stage("I can start this quest by speaking to Veronica outside Draynor Manor.")
@@ -177,13 +187,31 @@ final class F2pQuests {
                 .talk("professor_oddenstein").say("Ernest? Ah. I'm afraid my latest invention turned him into a chicken.",
                         "I can change him back, but the poltergeists have hidden parts of my machine: a pressure gauge, an oil can and a rubber tube.")
                 .stage("Professor Oddenstein needs a pressure gauge, a rubber tube and an oil can to turn Ernest back into a human.")
-                .drop("minecraft:skeleton", "rubber_tube", 3)
-                .drop("minecraft:zombie", "pressure_gauge", 3)
-                .drop("minecraft:spider", "oil_can", 3)
+                // Pressure gauge: fish food (upstairs) + poison (north-west room), fed to the fountain's piranhas.
+                .reach("DRAYNOR_MANOR", 6).stay().unless("fish_food", "poisoned_fish_food", "pressure_gauge").give("fish_food")
+                .say("* Upstairs in the manor you pick up some fish food.")
+                .reach("draynor_manor_poison_room", 4).stay().unless("poison", "poisoned_fish_food", "pressure_gauge").give("poison")
+                .say("* You pick up a bottle of poison from the shelf.")
+                .reach("draynor_manor_fountain", 4).stay().unless("pressure_gauge").take("fish_food", "poison").give("pressure_gauge")
+                .say("* You mix the poison into the fish food and drop it in the fountain. The piranhas die.",
+                        "* You search the fountain and find a pressure gauge!")
+                .missing("* There seems to be a pressure gauge in here... and a lot of very hungry piranhas.",
+                        "* (You need fish food and poison to deal with them.)")
+                // Rubber tube: the key in the compost heap (needs a spade) opens the small room north of the stairs.
+                .reach("draynor_manor_compost", 4).stay().unless("manor_key", "rubber_tube").need("spade").give("manor_key")
+                .say("* You dig through the compost heap and find a key.")
+                .missing("* The compost heap smells awful. You'd need a spade to dig through it.")
+                .reach("draynor_manor_tube_room", 3).stay().unless("rubber_tube").take("manor_key").give("rubber_tube")
+                .say("* You unlock the door with the key and pick up a rubber tube.")
+                .missing("* The door is locked.")
+                // Oil can: behind the bookcase, down the ladder, through the lever puzzle (A, B, D, A, B up, F, E, C, E...).
+                .reach("draynor_manor_secret_room", 3).stay().unless("oil_can").give("oil_can")
+                .say("* Behind the bookcase a ladder leads to a basement of doors and levers.",
+                        "* After pulling the levers in the right order you reach the last room and pick up an oil can.")
                 .talk("professor_oddenstein").take("pressure_gauge", "rubber_tube", "oil_can")
                 .say("Excellent! Stand back...", "* There is a flash and a puff of smoke. Ernest stands before you, a man once more.",
                         "@Ernest: Thank you! Being a chicken was terrible. Here, take this for your trouble.")
-                .missing("I still need the pressure gauge, the rubber tube and the oil can. The skeletons, zombies and spiders of the manor may have taken them.")
+                .missing("I still need the pressure gauge, the rubber tube and the oil can. The fountain, the locked room and the basement, I'd wager.")
                 .done("ernest", "Thanks again for turning me back into a human!")
                 .done("veronica", "Ernest is back! Thank you, adventurer.");
     }

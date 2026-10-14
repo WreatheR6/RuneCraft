@@ -30,7 +30,16 @@ final class KandarinGnomeQuests {
     private static void treeGnomeVillage(QuestBook b) {
         b.npc("king_bolren", "King Bolren", "tree_gnome_village", 0, 3, 0xD0A070, 0xC0A030, 0x6A4A1A, 0xE0C030);
         b.npc("commander_montai", "Commander Montai", "khazard_battlefield", 3, 3, 0xD0A071, 0x8A3A1A, 0x4A2A1A, 0x6A6A6A);
-        b.npc("tracker_gnome", "Tracker gnome", "khazard_battlefield", -3, 3, 0xC89A68, 0x3A6A2A, 0x2A4A1A, 0x3A5A2A);
+        // Tracker gnomes and the ballista at their OSRS tiles (Zoinkwiz/quest-helper).
+        b.spot("tgv_tracker_1", "Tracker gnome 1", 2501, 3261);
+        b.spot("tgv_tracker_2", "Tracker gnome 2", 2524, 3257);
+        b.spot("tgv_tracker_3", "Tracker gnome 3", 2497, 3234);
+        b.spot("tgv_ballista", "Gnome ballista", 2509, 3211);
+        b.spot("khazard_stronghold", "Khazard stronghold", 2506, 3259);
+        b.npc("tracker_gnome", "Tracker gnome 1", "tgv_tracker_1", 0, 0, 0xC89A68, 0x3A6A2A, 0x2A4A1A, 0x3A5A2A);
+        b.npc("tracker_gnome_2", "Tracker gnome 2", "tgv_tracker_2", 0, 0, 0xC0946A, 0x2A5A6A, 0x2A3A4A, 0x5A3A2A);
+        b.npc("tracker_gnome_3", "Tracker gnome 3", "tgv_tracker_3", 0, 0, 0xC89A68, 0x6A3A2A, 0x2A4A1A, 0x3A5A2A);
+        b.item("orb_of_protection", "Orb of protection", "gem", 0x60C0E0, "One of the gnome village's orbs of protection.");
         b.npc("elkoy", "Elkoy", "tree_gnome_village", 3, -3, 0xD8A878, 0x6A8A3A, 0x3A4A1A, 0x8A6A2A);
         b.item("orbs_of_protection", "Orbs of protection", "gem", 0x60C0E0, "The gnome village's orbs of protection.");
         b.boss(BossDef.of("khazard_warlord", "Khazard warlord").level(112).stats(170, 80, 75, 80, 1, 1).speed(4)
@@ -45,9 +54,17 @@ final class KandarinGnomeQuests {
                 .talk("commander_montai").take("logs:6").say("Logs! Now the defences will hold. My trackers have scouted the Khazard stronghold; find all three and get the coordinates.")
                 .missing("We need six logs to build defences.")
                 .stage("I should gather the coordinates from the tracker gnomes and fire the ballista at the Khazard stronghold.")
-                .talk("tracker_gnome").say("The stronghold is at height four, x-coordinate five, y-coordinate one!", "* You fire the ballista. The stronghold wall collapses!")
-                .stage("The wall is breached. I should find the orbs; the Khazard warlord carries them.")
-                .kill("khazard_warlord").give("orbs_of_protection").say("* The warlord falls, dropping the orbs of protection.")
+                .talk("tracker_gnome").stay().unlessFlag("tgv_t1").flag("tgv_t1").say("I've scouted the stronghold. Its height coordinate is four.")
+                .talk("tracker_gnome_2").stay().unlessFlag("tgv_t2").flag("tgv_t2").say("They caught me spying! The y coordinate is one. Tell Montai!")
+                .talk("tracker_gnome_3").stay().unlessFlag("tgv_t3").flag("tgv_t3").say("*hic* The x coordinate? Somewhere between one and five... *hic*")
+                .reach("tgv_ballista", 4).needFlag("tgv_t1", "tgv_t2", "tgv_t3")
+                .say("* You load the ballista with the trackers' coordinates and fire. The stronghold wall collapses!")
+                .stage("The wall is breached. An orb is kept in the Khazard stronghold; the Khazard warlord carries the rest.")
+                .reach("khazard_stronghold", 4).stay().unless("orb_of_protection").unlessFlag("tgv_orb1").give("orb_of_protection")
+                .say("* You climb the ladder in the stronghold and take an orb of protection from the chest.")
+                .talk("king_bolren").stay().unlessFlag("tgv_orb1").take("orb_of_protection").flag("tgv_orb1")
+                .say("An orb! But the Khazard warlord still holds the others, and his men are attacking the village. Please, get them back!")
+                .kill("khazard_warlord").needFlag("tgv_orb1").give("orbs_of_protection").say("* The warlord falls, dropping the orbs of protection.")
                 .stage("I should return the orbs to King Bolren.")
                 .talk("king_bolren").take("orbs_of_protection").say("The orbs! Our village is safe. Please accept this gnome amulet of protection.")
                 .done("elkoy", "Follow me through the maze any time.")

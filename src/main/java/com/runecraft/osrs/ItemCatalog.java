@@ -452,6 +452,13 @@ public final class ItemCatalog {
         add("yellow_bead", "Yellow bead", Kind.SIMPLE, "bead", 0xE0D020).value(1);
         add("white_bead", "White bead", Kind.SIMPLE, "bead", 0xF0F0F0).value(1);
         add("rats_tail", "Rat's tail", Kind.SIMPLE, "tail", 0xC09080).value(1);
+        // Druidic Ritual: the four meats Sanfew needs, dipped in the Cauldron of Thunder.
+        add("raw_rat_meat", "Raw rat meat", Kind.SIMPLE, "meat_raw", 0xD08A8A).value(1);
+        add("raw_bear_meat", "Raw bear meat", Kind.SIMPLE, "meat_raw", 0xC07070).value(1);
+        add("enchanted_beef", "Enchanted beef", Kind.SIMPLE, "meat_raw", 0x9AA0E0).value(1).stack(1);
+        add("enchanted_rat", "Enchanted rat", Kind.SIMPLE, "meat_raw", 0xA09AE0).value(1).stack(1);
+        add("enchanted_bear", "Enchanted bear", Kind.SIMPLE, "meat_raw", 0x8A8AD0).value(1).stack(1);
+        add("enchanted_chicken", "Enchanted chicken", Kind.SIMPLE, "meat_raw", 0xB0B0F0).value(1).stack(1);
         add("cadava_berries", "Cadava berries", Kind.SIMPLE, "secondary", 0x8A2A8A).value(3);
         add("cadava_potion", "Cadava potion", Kind.SIMPLE, "potion_unf", 0x8A2A8A).value(3).stack(1);
         add("message_from_juliet", "Message", Kind.SIMPLE, "note", 0xE8E0C0).value(1).stack(1);

@@ -425,6 +425,19 @@ final class AsgarniaKandarinQuests {
         b.npc("jeremy_servil", "Jeremy Servil", "fight_arena", 4, -4, 0xF0D0B0, 0x8A6A3A, 0x5A4A2A, 0x8A5A2A);
         b.item("khali_brew", "Khali brew", "beer", 0x6A3A1A, "A bottle of Khazard's worst brew.");
         b.item("khazard_cell_keys", "Khazard cell keys", "key", 0x6A6A6A, "Keys to the cells of the Fight Arena.");
+        b.item("khazard_helmet", "Khazard helmet", "helmet", 0x6A5A3A, "A helmet for a Khazard guard.");
+        b.item("khazard_armour", "Khazard armour", "platebody", 0x6A5A3A, "Armour for a Khazard guard.");
+        b.npc("arena_khazard_guard", "Khazard Guard", "fight_arena", 6, -2, 0xD0A880, 0x6A5A3A, 0x3A2A1A, 0x2A2A2A);
+        b.spot("fight_arena_chest", "Khazard armour chest", 2613, 3189);
+        // OSRS wiki: Khazard Ogre (level 63) and Khazard Scorpion (level 44), fought before Bouncer.
+        b.boss(BossDef.of("khazard_ogre", "Khazard Ogre").level(63).stats(60, 54, 53, 53, 1, 1).speed(6)
+                .defenceBonus(0, 0, 0, 0, 0)
+                .attack(AttackDef.of("club", AttackType.CRUSH, 8, 2.5, 10))
+                .drops(Drop.always("big_bones")).size(1.2f, 2.6f, 1.2f).at("fight_arena").arena(10, "sand"));
+        b.boss(BossDef.of("khazard_scorpion", "Khazard Scorpion").level(44).stats(40, 40, 39, 34, 1, 1).speed(4)
+                .defenceBonus(5, 15, 15, 0, 0)
+                .attack(AttackDef.of("sting", AttackType.STAB, 5, 2.5, 10))
+                .drops(Drop.always("bones")).size(1.2f, 0.9f, 1.2f).at("fight_arena").arena(10, "sand"));
         b.boss(BossDef.of("bouncer", "Bouncer").level(137).stats(116, 140, 140, 60, 1, 1).speed(4)
                 .defenceBonus(0, 0, 0, 0, 0)
                 .attack(AttackDef.of("bite", AttackType.STAB, 17, 2.5, 10))
@@ -439,17 +452,29 @@ final class AsgarniaKandarinQuests {
                 .stage("I can start this quest by speaking to Lady Servil, south-east of the Fight Arena.")
                 .talk("lady_servil").say("General Khazard has captured my husband and son! He makes them fight for sport in his arena. Please save them!")
                 .stage("I should disguise myself as a Khazard guard and find a way into the cells.")
-                .talk("khazard_barman").take("coins:5").give("khali_brew").say("Khali brew? 5 coins. Only the guards drink it.")
-                .missing("Khali brew's 5 coins.")
-                .stage("The guard Hengrad holds the cell keys. A Khali brew might loosen him up.")
-                .talk("hengrad").take("khali_brew").give("khazard_cell_keys").say("Khali brew! *glug glug* ...zzz...", "* You take the keys from the snoring guard.")
+                .reach("fight_arena_chest", 4).stay().unless("khazard_helmet").give("khazard_helmet", "khazard_armour")
+                .say("* You search the chest and find a Khazard helmet and Khazard armour.")
+                .talk("arena_khazard_guard").stay().need("khazard_helmet", "khazard_armour").say("Not much happening here. I could murder a Khali brew.")
+                .talk("khazard_barman").need("khazard_helmet", "khazard_armour").take("coins:5").give("khali_brew")
+                .say("Khali brew? 5 coins. Only the guards drink it.")
+                .missing("Khali brew's 5 coins, and I only serve Khazard's men.")
+                .stage("The Khazard guard in the prison holds the cell keys. A Khali brew might loosen him up.")
+                .talk("arena_khazard_guard").need("khazard_helmet", "khazard_armour").take("khali_brew").give("khazard_cell_keys")
+                .say("Khali brew! *glug glug* ...zzz...", "* You take the keys from the snoring guard.")
+                .missing("Oi! You're not one of us!")
                 .stage("I should free Jeremy Servil.")
                 .talk("jeremy_servil").take("khazard_cell_keys").say("You came for me! But Khazard's men have seen us... we'll have to fight our way out!",
                         "* Khazard throws you into the arena!")
-                .stage("I must survive the arena: defeat Khazard's champion, the Bouncer.")
-                .kill("bouncer").say("* The Bouncer falls. General Khazard is furious!")
-                .stage("General Khazard himself challenges me.")
+                .stage("I must survive the arena: the Khazard Ogre, the Khazard Scorpion, then Khazard's champion, the Bouncer.")
+                .kill("khazard_ogre").stay().unlessFlag("fa_ogre").flag("fa_ogre")
+                .say("@General Khazard: Not bad. Let's see how you handle my scorpion!")
+                .talk("hengrad").stay().say("They threw you in here too? Rest while you can; the scorpion's next.")
+                .kill("khazard_scorpion").stay().needFlag("fa_ogre").unlessFlag("fa_scorpion").flag("fa_scorpion")
+                .say("@General Khazard: Impressive. Time for the main event: Bouncer!")
+                .kill("bouncer").needFlag("fa_scorpion").say("* The Bouncer falls. General Khazard is furious!")
+                .stage("General Khazard challenges me. I can fight him, or leave the arena and return to Lady Servil.")
                 .kill("general_khazard").say("* Khazard flees, beaten. The Servils are free!")
+                .reach("servil_house", 6).say("* You slip out of the arena and make for the Servils' house.")
                 .stage("I should return to Lady Servil.")
                 .talk("lady_servil").say("My family is home! Please, take this reward.");
     }
@@ -502,6 +527,12 @@ final class AsgarniaKandarinQuests {
         b.npc("witchs_house_boy", "Boy", "witchs_house", 3, 4, 0xF0D0B0, 0x3A6AC0, 0x3A3A6A, 0xC08A3A);
         b.item("childs_ball", "Ball", "bead", 0xE03A3A, "A child's ball.");
         b.item("door_key_witch", "Door key", "key", 0x8A8A8A, "The key to the witch's house.");
+        b.item("magnet", "Magnet", "bar", 0x9A2A2A, "A very attractive magnet.");
+        b.item("witchs_shed_key", "Key", "key", 0x6A6A5A, "The key to the witch's garden shed.");
+        // Object locations from Zoinkwiz/quest-helper (OSRS tiles; the basement at 2898,9874 is under the house).
+        b.spot("witchs_mouse_hole", "Mouse hole", 2903, 3466);
+        b.spot("witchs_fountain", "Witch's garden fountain", 2910, 3471);
+        b.spot("witchs_shed", "Witch's garden shed", 2934, 3463);
         b.boss(BossDef.of("witchs_experiment", "Witch's experiment").level(53).stats(91, 50, 50, 40, 1, 1).speed(4)
                 .attack(AttackDef.of("bite", AttackType.STAB, 8, 2.5, 10))
                 .phase(75, "The experiment changes into a spider!", 1.1, false, AttackDef.of("bite", AttackType.STAB, 9, 2.5, 10))
@@ -515,9 +546,21 @@ final class AsgarniaKandarinQuests {
                 .stage("I should get into the witch's house. A key may be hidden near the door.")
                 .reach("witchs_house", 6).give("door_key_witch").say("* You find a key under the doormat.")
                 .stage("The ball is in the witch's garden shed. Her experiment guards it!")
-                .kill("witchs_experiment").need("door_key_witch").give("childs_ball")
-                .say("* The experiment is finally destroyed. You grab the ball from the shed.")
+                // Basement: the electrified gate needs gloves; the cupboard behind it holds a magnet.
+                .reach("witchs_house", 6).stay().unless("magnet").unlessFlag("wh_mouse").need("door_key_witch", "leather_gloves").give("magnet")
+                .say("* In the basement you pass the electrified gate wearing your gloves, and find a magnet in the cupboard.")
+                .missing("* The basement gate crackles with electricity. You'd need a pair of gloves to touch it.")
+                // The mouse: cheese on the hole, then the magnet on the mouse unlocks the back door.
+                .reach("witchs_mouse_hole", 3).stay().unlessFlag("wh_mouse").take("cheese", "magnet").flag("wh_mouse")
+                .say("* You put the cheese by the mouse hole. A mouse comes out and you attach the magnet to it.",
+                        "* The mouse runs off and you hear the door to the garden unlock.")
+                .missing("* A mouse lives in this hole. Some cheese might lure it out.")
+                // Garden: sneak to the fountain for the shed key.
+                .reach("witchs_fountain", 3).stay().needFlag("wh_mouse").unless("witchs_shed_key", "childs_ball").give("witchs_shed_key")
+                .say("* Sneaking around the garden behind the witch's back, you search the fountain and find a key.")
+                .kill("witchs_experiment").need("witchs_shed_key").give("childs_ball")
+                .say("* The experiment's fourth form is destroyed. You grab the ball from the shed.")
                 .stage("I should return the ball to the boy.")
-                .talk("witchs_house_boy").take("childs_ball", "door_key_witch").say("My ball! Thank you so much!");
+                .talk("witchs_house_boy").take("childs_ball").say("My ball! Thank you so much!");
     }
 }

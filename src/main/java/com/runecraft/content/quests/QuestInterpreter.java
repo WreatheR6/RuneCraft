@@ -424,6 +424,8 @@ public final class QuestInterpreter {
             if (!Gielinor.is(p) || p.isSpectator()) {
                 continue;
             }
+            // place objectives of the hand-scripted quests (Restless Ghost altar, cadava bushes...)
+            com.runecraft.quest.QuestManager.spotTick(p);
             for (QuestSpec q : book.quests) {
                 if (!active(p, q)) {
                     continue;

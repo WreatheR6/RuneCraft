@@ -48,6 +48,7 @@ final class MorytaniaQuests {
         b.item("golden_key", "Golden key", "key", 0xE0C040, "A shiny golden key from the monument.");
         b.item("iron_key_pip", "Iron key", "key", 0x6A6A6A, "The key to Drezel's cell.");
         b.item("blessed_water", "Bucket of blessed water", "pot", 0x8AC0E0, "Water blessed by Drezel. Vampyres hate it.");
+        b.item("murky_water", "Bucket of murky water", "pot", 0x5A6A4A, "Water from the well beneath Paterdomus.");
         b.boss(BossDef.of("temple_guardian", "Temple guardian").level(30).stats(45, 30, 30, 30, 1, 1).speed(4)
                 .attack(AttackDef.of("bite", AttackType.STAB, 5, 2.5, 10))
                 .drops(Drop.always("bones")).size(1.0f, 1.2f, 1.0f).at("paterdomus").arena(8, "stone"));
@@ -63,12 +64,19 @@ final class MorytaniaQuests {
                 .stage("I should tell King Roald what happened.")
                 .talk("king_roald").say("You killed the temple guardian?! You fool! Zamorakians have taken the temple. Go back and help Drezel!")
                 .stage("I should return to Paterdomus and free Drezel. The monuments hide a key; Drezel can bless water to destroy the vampyre in the coffin.")
-                .reach("paterdomus", 8).stay().unless("golden_key", "iron_key_pip").give("golden_key").say("* You find a golden key hidden in a monument and swap it for the iron key.")
-                .talk("drezel").stay().unless("blessed_water").take("minecraft:water_bucket").give("blessed_water")
+                // Quest-helper steps: a Monk of Zamorak (in the temple) drops the golden key; it is swapped for the iron key on
+                // a monument under the temple, where the well gives murky water for Drezel to bless.
+                .kill("monk_of_zamorak").stay().unless("golden_key", "iron_key_pip").give("golden_key")
+                .say("* The monk drops a golden key.")
+                .reach("paterdomus", 8).stay().unless("iron_key_pip").take("golden_key").give("iron_key_pip")
+                .say("* Beneath the temple you study the monuments. One holds an iron key; you swap the golden key for it.")
+                .reach("paterdomus", 8).stay().unless("murky_water", "blessed_water").take("minecraft:bucket").give("murky_water")
+                .say("* You fill your bucket at the well beneath the temple. The water is murky.")
+                .talk("drezel").stay().unless("blessed_water").take("murky_water").give("blessed_water")
                 .say("Bless this water and pour it on the vampyre's coffin. It'll keep him in his grave!")
-                .talk("drezel").take("golden_key", "blessed_water").say("* You pour the blessed water over the vampyre's coffin and unlock Drezel's cell.",
+                .talk("drezel").take("iron_key_pip", "blessed_water").say("* You unlock the cell door and pour the blessed water over the vampyre's coffin.",
                         "Thank you! Now the barrier of Saradomin must be repaired. The Zamorakians defiled the Salve. I need 50 rune essence.")
-                .missing("I'm trapped in this cell! Find the key, and bring water for me to bless.")
+                .missing("I'm trapped in this cell! The monks carry a golden key that fits the monuments below. And bring a bucket of water from the well for me to bless.")
                 .stage("I need to bring Drezel 50 rune essence to restore the holy barrier.")
                 .talk("drezel").take("rune_essence:50").say("* The essence seals the holy barrier. The River Salve is pure again.",
                         "Morytania lies beyond. Take this blessed dagger, Wolfbane; it stops werewolves changing form.")
