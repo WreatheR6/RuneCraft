@@ -49,6 +49,33 @@ public final class NpcFloor {
         return new BlockPos(x, lowestY(world, x, z), z);
     }
 
+    /**
+     * Like {@link #spot} but on the given storey of the building at this column: the floor-th standable
+     * spot above the ground-floor one, each under a ceiling of its own (falls back to the highest found).
+     */
+    public static BlockPos spot(ServerWorld world, int x, int z, boolean banker, int floor) {
+        BlockPos ground = spot(world, x, z, banker);
+        if (floor <= 0) {
+            return ground;
+        }
+        int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+        BlockPos.Mutable pos = new BlockPos.Mutable(x, ground.getY(), z);
+        int best = ground.getY();
+        int found = 0;
+        boolean ceiling = false;
+        for (int y = ground.getY() + 1; y < top && found < floor; y++) {
+            pos.setY(y);
+            if (solid(world, pos)) {
+                ceiling = true;
+            } else if (ceiling && standable(world, pos)) {
+                best = y;
+                found++;
+                ceiling = false;
+            }
+        }
+        return new BlockPos(x, best, z);
+    }
+
     /** Y to put an entity's feet at when standing in this block (on top of a carpet, if any). */
     public static double feetY(ServerWorld world, BlockPos pos) {
         VoxelShape shape = world.getBlockState(pos).getCollisionShape(world, pos);
