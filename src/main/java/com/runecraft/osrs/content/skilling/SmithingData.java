@@ -143,7 +143,8 @@ public final class SmithingData extends SkillingPart {
         for (int i = 0; i < SMITHABLE.length; i++) {
             MetalTier t = SMITHABLE[i];
             int level = t.smithingLevel(5);
-            List<String> heads = t == MetalTier.MITHRIL ? List.of("spear", "hasta") : List.of("spear");
+            // The bronze hasta is the quests module's Barbarian Training reward, so it isn't smithed here (approx).
+            List<String> heads = t == MetalTier.BRONZE ? List.of("spear") : List.of("spear", "hasta");
             for (String head : heads) {
                 String id = t.id() + "_" + head;
                 out.accept(r("smith_" + id, MenuType.SMITHING, t.displayName() + " " + head, Skill.SMITHING, level, t.xpPerBar() * 2)

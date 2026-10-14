@@ -205,6 +205,11 @@ public final class Diaries {
         add(desc, Type.KILL, keyword, n, area, 0, req);
     }
 
+    /** Kill inside an "x,y,r" circle. */
+    private static void killAt(String desc, String keyword, int n, String place, Object... req) {
+        add(desc, Type.KILL, keyword, n, place, 0, req);
+    }
+
     private static void killAny(String desc, String keyword, int n, Object... req) {
         add(desc, Type.KILL, keyword, n, null, 0, req);
     }
@@ -334,7 +339,7 @@ public final class Diaries {
         get("Mine 5 clay in the north-eastern desert", "clay", 5);
         visit("Enter the Kalphite Lair", 3226, 3108, 12);
         visit("Enter the Desert with a set of desert robes equipped", 3304, 3115, 15); approx(); // approx: Shantay Pass
-        kill("Kill a Vulture", "lizard|scorpion", 1); approx(); // approx: no vultures
+        kill("Kill a Vulture", "vulture", 1);
         visit("Have the Nardah herbalist (Zahur) clean a herb for you", 3424, 2908, 8);
         kill("Collect 5 potato cacti from the Kalphite Hive", "kalphite", 5); approx(); // approx
         visit("Sell some artefacts to Simon Templeton", 3346, 2827, 10);
@@ -380,7 +385,7 @@ public final class Diaries {
         visit("Browse Sarah's Farming Shop", 3039, 3292, 8);
         visit("Get a Haircut from the Falador hairdresser", 2944, 3380, 8);
         have("Fill a bucket from the pump north of Falador West Bank", "*vial_of_water|bucket_of_water"); approx(); // approx
-        visit("Kill a duck in Falador Park", 2993, 3378, 12); approx(); // approx: no ducks
+        killAt("Kill a duck in Falador Park", "duck", 1, at(2986, 3370, 20));
         // Tiaras are bound at the altar (an obtain event), not made through a make menu.
         getAt("Make a Mind Tiara", "mind_tiara", 1, null);
         visit("Take the boat to Entrana", 2834, 3335, 15);
@@ -503,12 +508,13 @@ public final class Diaries {
         killAny("Kill a Mithril Dragon", "mithril dragon", 1);
         haveAny("Purchase and equip a granite body from Penance Queen", "granite_body", STRENGTH, 50, DEFENCE, 50);
         level("Have the Seers' estate agent decorate your house with Fancy Stone", CONSTRUCTION, 50);
-        make("Smith an Adamant spear at Otto's Grotto", "*adamant", 1, SMITHING, 75); approx(); // approx: no adamant spear
+        makeAt("Smith an Adamant spear at Otto's Grotto", "adamant_spear", 1, at(2500, 3493, 16), SMITHING, 75);
         in("kandarin", Tier.ELITE);
         get("Pick some dwarf weed from the herb patch at Catherby", "grimy_dwarf_weed", 1, FARMING, 79);
         makeHere("Fish and cook 5 sharks in Catherby using the Cooking gauntlets", "shark", 5, FISHING, 76, COOKING, 80);
-        makeHere("Mix a Stamina mix on top of the Seers' Village bank", "stamina_potion", 1, HERBLORE, 86, AGILITY, 60); approx(); // approx
-        make("Smith a rune hasta at Otto's Grotto", "*rune", 1, SMITHING, 90); approx(); // approx: no hastas
+        // The bank roof is part of the Seers' rooftop course; the trigger is the bank's footprint (the roof height isn't checked).
+        makeAt("Mix a Stamina mix on top of the Seers' Village bank", "stamina_mix", 1, at(2725, 3493, 6), HERBLORE, 86, AGILITY, 60);
+        makeAt("Smith a rune hasta at Otto's Grotto", "rune_hasta", 1, at(2500, 3493, 16), SMITHING, 90);
         xp("Construct a pyre ship from magic logs", FIREMAKING, 85, CRAFTING, 85); approx(); // approx
         cast("Teleport to Catherby", "catherby_teleport", MAGIC, 87);
         visit("Read the Blackboard at Barbarian Assault after reaching level 5 in every role", 2531, 3577, 12); approx(); // approx: no BA roles
@@ -663,8 +669,9 @@ public final class Diaries {
 
         // ======================= Morytania (11 / 11 / 10 / 6) =======================
         in("morytania", Tier.EASY);
-        xp("Craft any Snelm from scratch in Morytania", CRAFTING, 15); approx(); // approx
-        xp("Cook a thin Snail on the Port Phasmatys range", COOKING, 12); approx(); // approx
+        makeHere("Craft any Snelm from scratch in Morytania", "*snelm", 1, CRAFTING, 15);
+        makeAt("Cook a thin Snail on the Port Phasmatys range", "thin_snail_meat", 1, at(3680, 3485, 25), COOKING, 12);
+        approx(); // approx: Port Phasmatys has no range built, so any fire in the town counts
         combat("Get a slayer task from Mazchna", 20);
         killAny("Kill a Banshee in the Slayer Tower", "banshee", 1, SLAYER, 15);
         visit("Have Sbott in Canifis tan something for you", 3490, 3502, 8);
@@ -677,13 +684,13 @@ public final class Diaries {
         in("morytania", Tier.MEDIUM);
         xp("Catch a swamp lizard", HUNTER, 29);
         xpAt("Complete a lap of the Canifis agility course", AGILITY, 40, at(3507, 3488, 30));
-        xp("Obtain some Bark from a Hollow tree", WOODCUTTING, 45); approx(); // approx
+        get("Obtain some Bark from a Hollow tree", "bark", 1, WOODCUTTING, 45);
         killAny("Kill a Terror Dog", "terror dog", 1, SLAYER, 40);
         quest("Complete a game of Trouble Brewing", "cabin_fever", COOKING, 40); approx(); // approx
         makeHere("Make a batch of cannonballs at the Port Phasmatys furnace", "cannonball", 1, SMITHING, 35);
         killAny("Kill a Fever Spider on Braindeath Island", "fever spider", 1, SLAYER, 42);
         haveAny("Use an ectophial to return to Port Phasmatys", "ectophial");
-        xp("Mix a Guthix Balance potion while in Morytania", HERBLORE, 22); approx(); // approx
+        makeHere("Mix a Guthix Balance potion while in Morytania", "guthix_balance", 1, HERBLORE, 22);
         visit("Travel to Dragontooth Isle", 3815, 3560, 20);
         visit("Board the Swamp boat at the Hollows", 3500, 3380, 12);
         in("morytania", Tier.HARD);
@@ -765,7 +772,7 @@ public final class Diaries {
         visit("Collect a swamp toad at the Gnome Stronghold", 2420, 3510, 15);
         visit("Have Brimstail teleport you to the Essence mine", 2410, 3415, 12);
         makeHere("Fletch an Oak shortbow in the Gnome Stronghold", "oak_shortbow", 1, FLETCHING, 20);
-        kill("Kill a Terrorbird in the Terrorbird enclosure", "gnome", 1); approx(); // approx: no terrorbirds
+        killAt("Kill a Terrorbird in the Terrorbird enclosure", "terrorbird", 1, at(2378, 3434, 12));
         in("western", Tier.MEDIUM);
         visit("Take the agility shortcut from the Grand Tree to Otto's Grotto", 2486, 3515, 10, AGILITY, 37);
         quest("Travel to the Gnome Stronghold by Spirit Tree", "tree_gnome_village");
@@ -841,7 +848,7 @@ public final class Diaries {
         kc("Kill the Crazy Archaeologist, Chaos Fanatic and Scorpia", "crazy_archaeologist&chaos_fanatic&scorpia", 1);
         visit("Take the agility shortcut from Trollheim into the Wilderness", 2949, 3768, 12, AGILITY, 64);
         kill("Kill a Spiritual warrior in the Wilderness God Wars Dungeon", "spiritual warrior", 1, SLAYER, 68, AGILITY, 60);
-        get("Fish some raw lava eel in the Wilderness", "*lava_eel", 1, FISHING, 53, HERBLORE, 25); approx(); // approx
+        get("Fish some raw lava eel in the Wilderness", "*lava_eel", 1, FISHING, 53, HERBLORE, 25); // the Lava Maze spot
         in("wilderness", Tier.ELITE);
         kc("Kill Callisto, Venenatis and Vet'ion", "callisto|artio&venenatis|spindel&vetion|calvarion", 1);
         retire(3); // Venenatis, Vet'ion and Scorpia were merged into the boss tasks above

@@ -147,6 +147,18 @@ public final class CraftingData extends SkillingPart {
             new BirdHouse("magic_bird_house", "Magic bird house", "magic_logs", 75, 50.0, 74, 1140.0, 0x3A8AA8),
             new BirdHouse("redwood_bird_house", "Redwood bird house", "redwood_logs", 90, 55.0, 89, 1200.0, 0xA03A2A));
 
+    /** Snelm id, name, shell (a common item dropped by the snails) and colour. */
+    public static final String[][] SNELMS = {
+            {"myre_snelm", "Myre snelm", "blamish_myre_shell_round", "7A7A3A"},
+            {"pointed_myre_snelm", "Pointed myre snelm", "blamish_myre_shell_pointed", "7A7A3A"},
+            {"ochre_snelm", "Ochre snelm", "blamish_ochre_shell_round", "C0902A"},
+            {"pointed_ochre_snelm", "Pointed ochre snelm", "blamish_ochre_shell_pointed", "C0902A"},
+            {"bloodntar_snelm", "Blood'n'tar snelm", "blamish_red_shell_round", "8A1A1A"},
+            {"pointed_bloodntar_snelm", "Pointed blood'n'tar snelm", "blamish_red_shell_pointed", "8A1A1A"},
+            {"bruise_blue_snelm", "Bruise blue snelm", "blamish_blue_shell_round", "3A4A8A"},
+            {"pointed_bruise_blue_snelm", "Pointed bruise blue snelm", "blamish_blue_shell_pointed", "3A4A8A"},
+            {"broken_bark_snelm", "Broken bark snelm", "blamish_bark_shell", "5A4A3A"}};
+
     @Override
     public void items(ItemSink s) {
         // --- Tools & moulds ---
@@ -164,6 +176,12 @@ public final class CraftingData extends SkillingPart {
         simple(s, "snakeskin", "Snakeskin", "leather", 0x7A8A4A, 45);
         for (Hide h : HIDES) {
             simple(s, h.id + "_dragon_leather", h.name + " dragon leather", "leather", h.color, 1900 + 400 * List.of(HIDES).indexOf(h));
+        }
+        // Snelms: a chisel on a Mort Myre snail shell (all share the steel-med-helm-like wiki bonuses, no requirements).
+        for (String[] sn : SNELMS) {
+            s.add(sn[0], sn[1], Kind.ARMOUR, "med_helm", Integer.parseInt(sn[3], 16)).value(300).stack(1)
+                    .equipment(wear(Slot.HEAD, stats(0, 0, 0, -3, -1, 7, 8, 6, -1, 7, 0, 0, 0, 0)))
+                    .examine("A snail shell helmet.");
         }
         // Leather extras (no hands slot yet: gloves and vambraces are carried, not worn)
         simple(s, "leather_gloves", "Leather gloves", "gloves", 0x9A6A3A, 6).stack(1).examine("These will keep my hands warm!");
@@ -411,6 +429,11 @@ public final class CraftingData extends SkillingPart {
                 .out("basket", 1).ticks(4).build());
         out.accept(r("craft_gold_tiara", MenuType.SMELTING, "Gold tiara", Skill.CRAFTING, 42, 35.0).in("gold_bar", 1)
                 .out("gold_tiara", 1).tool("tiara_mould").ticks(3).build());
+        // --- Snelms (chisel on a snail shell: 15 Crafting, 32.5 XP) ---
+        for (String[] sn : SNELMS) {
+            out.accept(r("craft_" + sn[0], MenuType.GEM_CUTTING, sn[1], Skill.CRAFTING, 15, 32.5).in(sn[2], 1).out(sn[0], 1)
+                    .tool("chisel").ticks(2).build());
+        }
         // --- Bird houses (hammer + chisel) ---
         out.accept(r("craft_clockwork", L, "Clockwork", Skill.CRAFTING, 8, 15.0).in("steel_bar", 1).out("clockwork", 1)
                 .tool("hammer").ticks(3).build());

@@ -82,6 +82,11 @@ final class BestiaryLookalikes {
         l.add(new ModelSpec.Variant("quest_bull", "cow", 1.1f, bullCoat()));
         // Crystal impling: an impling in pale crystal blue.
         l.add(new ModelSpec.Variant("crystal_impling", "essence_impling", 1.0f, c -> mixRgb(c, 0x9CE8F4, 0.65f)));
+        // Wild birds the diaries ask for: the vulture as a small brown roc, the duck as a small mallard-green chompy and
+        // the gnomes' terrorbird as the warped one without the warping (brown-grey plumage).
+        l.add(new ModelSpec.Variant("vulture", "quest_giant_roc", 0.35f, c -> mixRgb(c, 0x4A3A2E, 0.35f)));
+        l.add(new ModelSpec.Variant("duck", "chompy_bird", 0.4f, c -> mixRgb(c, 0x6A7A4A, 0.3f)));
+        l.add(new ModelSpec.Variant("terrorbird", "warped_terrorbird", 0.8f, c -> mixRgb(c, 0x8A7A62, 0.6f)));
         return l;
     }
 

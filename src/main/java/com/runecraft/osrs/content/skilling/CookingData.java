@@ -60,6 +60,18 @@ public final class CookingData extends SkillingPart {
             new NewFish("bluefin", "Bluefin", 87, 220.5, 87, 215.0, 22, 100, 0x305080, 600),
             new NewFish("marlin", "Marlin", 91, 265.5, 93, 225.0, 24, 100, 0x3A5AA0, 1200));
 
+    /**
+     * Snails from Mort Myre (OSRS Wiki): Cooking level, XP, heal (middle of the wiki's 5-7, 5-8 and 7-9 ranges) and
+     * stop-burn level (thin snail 47 per the wiki; lean and fat approx).
+     */
+    public record Snail(String raw, int level, double xp, int heal, int stopBurn, int value) {
+    }
+
+    public static final List<Snail> SNAILS = List.of(
+            new Snail("thin_snail", 12, 70.0, 6, 47, 10),
+            new Snail("lean_snail", 17, 80.0, 7, 50, 15),   // approx stop-burn
+            new Snail("fat_snail", 22, 95.0, 8, 55, 20));   // approx stop-burn
+
     /** Foods eaten in two (or three) bites: eating {@code full} heals {@code heal} and leaves {@code next}. */
     public record Bite(String full, String next, int heal) {
     }
@@ -111,6 +123,12 @@ public final class CookingData extends SkillingPart {
             food(s, f.cooked(), f.id().equals("karambwan") ? "Cooked karambwan" : f.name(), "fish_cooked", f.color(),
                     f.value(), f.heal());
         }
+        // Snail meat (raw snails are common items dropped by the npcs module's Mort Myre snails).
+        for (Snail sn : SNAILS) {
+            food(s, sn.raw() + "_meat", title(sn.raw()) + " meat", "meat_cooked", 0x8A6A3A, sn.value(), sn.heal())
+                    .examine("A succulently slimy slice of sumptuous snail.");
+        }
+        simple(s, "burnt_snail", "Burnt snail", "meat_burnt", 0x2A2018, 1).examine("Oops!");
         // Containers and basic ingredients
         simple(s, "jug", "Jug", "jug", 0xC0C8D0, 1);
         simple(s, "jug_of_water", "Jug of water", "jug", 0x5080D0, 1);
@@ -191,6 +209,10 @@ public final class CookingData extends SkillingPart {
                 b.burn(f.stopBurn(), "burnt_fish");
             }
             out.accept(b.build());
+        }
+        for (Snail sn : SNAILS) {
+            out.accept(r("cook_" + sn.raw() + "_meat", C, title(sn.raw()) + " meat", Skill.COOKING, sn.level(), sn.xp())
+                    .in(sn.raw(), 1).out(sn.raw() + "_meat", 1).ticks(4).burn(sn.stopBurn(), "burnt_snail").build());
         }
         // Doughs (flour + water)
         out.accept(r("mix_bread_dough", C, "Bread dough", Skill.COOKING, 1, 0).in("pot_of_flour", 1).in("jug_of_water", 1)
