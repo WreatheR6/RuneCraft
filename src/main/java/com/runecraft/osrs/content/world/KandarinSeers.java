@@ -67,13 +67,21 @@ final class KandarinSeers {
         seersCourse(k, bank, hb, hc, hd, he);
 
         // --- Spinning wheel house (wheel upstairs) ---
-        Bld spin = k.house(2700, 3486, 2706, 3492, 2, SEERS, 's', FURN);
+        Bld spin = k.house(2702, 3486, 2707, 3492, 2, SEERS, 's', FURN);
         k.set(spin.x1() + 2, 4, spin.z2() - 2, WHEEL);
         k.set(spin.x1() + 1, 4, spin.z2() - 1, "minecraft:white_wool");
         k.set(spin.x1() + 1, 0, spin.z2() - 1, "minecraft:loom[facing=east]");
 
-        // --- Forester's Arms ---
-        Bld pub = k.house(2689, 3488, 2697, 3497, 2, SEERS.roof("minecraft:spruce"), 's', 0);
+        // --- Forester's Arms: OSRS footprint 2689-2700 x 3487-3498 (mejrs layers_osrs), door south at 2694-2695,
+        // the back room 2697-2700 x 3487-3493 behind its own door; OSRS has stairs up at 2698,3495, here a
+        // ladder on the back-room wall // approx ---
+        Bld pub = k.house(2689, 3487, 2700, 3498, 2, SEERS.roof("minecraft:spruce"), 's', NO_LADDER);
+        k.fill(KandarinKit.X(2697), 0, KandarinKit.Z(3493), KandarinKit.X(2697), 2, pub.z2() - 1, SEERS.wall());
+        k.fill(KandarinKit.X(2697) + 1, 0, KandarinKit.Z(3493), pub.x2() - 1, 2, KandarinKit.Z(3493), SEERS.wall());
+        k.clear(KandarinKit.X(2698), 0, KandarinKit.Z(3493), KandarinKit.X(2698), 1, KandarinKit.Z(3493));
+        k.set(KandarinKit.X(2699), 0, KandarinKit.Z(3491), "minecraft:barrel[facing=up]");
+        k.set(KandarinKit.X(2700), 0, KandarinKit.Z(3491), "minecraft:barrel[facing=up]");
+        k.ladder(KandarinKit.X(2699), KandarinKit.Z(3493) - 1, 0, 3, "north");
         int bar = pub.z1() + 3;
         k.fill(pub.x1() + 1, 0, bar, pub.x2() - 4, 0, bar, "minecraft:spruce_slab[type=top]");
         k.fill(pub.x1() + 1, 0, pub.z1() + 1, pub.x2() - 2, 0, pub.z1() + 1, "minecraft:barrel[facing=south]");
@@ -107,16 +115,25 @@ final class KandarinSeers {
         k.house(2722, 3497, 2728, 3502, 1, SEERS, 's', FURN);
         k.house(2709, 3497, 2715, 3503, 2, SEERS.roof("minecraft:spruce"), 's', FURN);
 
-        // --- Courthouse ---
-        Bld ct = k.house(2729, 3458, 2738, 3468, 2, STONE.roof("minecraft:spruce"), 'w', WIDE_DOOR);
-        k.fill(ct.x2() - 3, 0, ct.z1() + 2, ct.x2() - 1, 0, ct.z2() - 2, "minecraft:spruce_planks");
-        k.fill(ct.x2() - 3, 1, ct.z1() + 2, ct.x2() - 3, 1, ct.z2() - 2, "minecraft:spruce_slab[type=bottom]");
-        k.set(ct.x2() - 2, 1, ct.cz(), "minecraft:spruce_stairs[facing=east]");
-        k.set(ct.x2() - 1, 1, ct.cz(), "minecraft:red_wool");
-        for (int x = ct.x1() + 2; x <= ct.x2() - 6; x += 2) {
-            k.fill(x, 0, ct.z1() + 2, x, 0, ct.cz() - 1, "minecraft:spruce_stairs[facing=west]");
-            k.fill(x, 0, ct.cz() + 2, x, 0, ct.z2() - 2, "minecraft:spruce_stairs[facing=west]");
+        // --- Courthouse: OSRS 2732-2740 x 3464-3471 on its pale stone terrace 2731-2740 x 3463-3474, door north at
+        // 2735-2736, the court room with the two holding rooms along the south (doors 2734 and 2738) ---
+        k.fill(KandarinKit.X(2731), -1, KandarinKit.Z(3474), KandarinKit.X(2740) + 1, -1, KandarinKit.Z(3463) + 1,
+                "minecraft:smooth_sandstone");
+        Bld ct = k.house(2732, 3464, 2740, 3471, 2, STONE.roof("minecraft:spruce"), 'n', WIDE_DOOR | NO_LADDER);
+        int hold = KandarinKit.Z(3466);
+        k.fill(ct.x1() + 1, 0, hold, ct.x2() - 1, 2, hold, SB);
+        k.fill(KandarinKit.X(2736), 0, hold + 1, KandarinKit.X(2736), 2, ct.z2() - 1, SB);
+        k.clear(KandarinKit.X(2734), 0, hold, KandarinKit.X(2734), 1, hold);
+        k.clear(KandarinKit.X(2738), 0, hold, KandarinKit.X(2738), 1, hold);
+        k.fill(ct.x1() + 1, -1, hold + 1, ct.x2() - 1, -1, ct.z2() - 1, "minecraft:deepslate_tiles");
+        // the judge's bench against the south wall, public benches facing it, the stairs up at 2737,3468
+        k.fill(ct.x1() + 2, 0, hold - 2, ct.x1() + 6, 0, hold - 2, "minecraft:spruce_planks");
+        k.set(ct.x1() + 4, 1, hold - 1, "minecraft:spruce_stairs[facing=north]");
+        k.set(ct.x1() + 4, 2, hold - 1, "minecraft:red_banner[rotation=0]");
+        for (int z = ct.z1() + 2; z <= hold - 4; z += 2) {
+            k.fill(ct.x1() + 2, 0, z, ct.x1() + 6, 0, z, "minecraft:spruce_stairs[facing=south]");
         }
+        k.ladder(ct.x2() - 1, KandarinKit.Z(3468), 0, 3, "west"); // OSRS stairs at 2737,3468 // approx
         k.set(ct.cx(), 2, ct.cz(), "minecraft:lantern[hanging=true]");
 
         // --- Church with bell tower ---
@@ -512,8 +529,14 @@ final class KandarinSeers {
         k.counter(candle, GENERAL, "spruce");
         k.set(candle.x1() + 1, 1, candle.z2() - 1, "minecraft:candle[candles=4,lit=true]");
 
-        Bld bank = k.house(2804, 3437, 2812, 3442, 1, STONE.roof("minecraft:spruce"), 's', NO_LADDER | WIDE_DOOR);
-        int bz = bank.z1() + 2;
+        // bank on its OSRS footprint 2806-2812 x 3437-3444, booths across the middle, chequered floor in front
+        Bld bank = k.house(2806, 3437, 2812, 3444, 1, STONE.roof("minecraft:spruce"), 's', NO_LADDER | WIDE_DOOR);
+        int bz = KandarinKit.Z(3441);
+        for (int x = bank.x1() + 1; x < bank.x2(); x++) {
+            for (int z = bz + 1; z < bank.z2(); z++) {
+                k.set(x, -1, z, (((x >> 1) + (z >> 1)) & 1) == 0 ? "minecraft:polished_andesite" : "minecraft:gray_concrete");
+            }
+        }
         k.fill(bank.x1() + 1, 0, bz, bank.x2() - 1, 0, bz, "minecraft:spruce_slab[type=top]");
         for (int x = bank.x1() + 2; x <= bank.x2() - 2; x += 3) {
             k.set(x, 0, bz, BANK);
@@ -631,31 +654,43 @@ final class KandarinSeers {
 
     static StructureDef sorcerersTower() {
         KandarinKit k = new KandarinKit("sorcerers_tower", "Sorcerer's Tower").replaces("sorcerers_tower");
-        k.flatten(2693, 3396, 2711, 3412);
+        // OSRS map: the tower is 9 tiles across (2698-2706 x 3401-3409, an octagon there // approx: round here) with
+        // its door south at 2702, in a hedged garden 2694-2710 x 3396-3412 with flower beds by the gate
+        k.flatten(2690, 3392, 2714, 3416);
         int cx = KandarinKit.X(2702) + 1;
-        int cz = KandarinKit.Z(3404) + 1;
-        k.disc(cx, cz, -1, -1, 9, GRAVEL);
-        k.towerB(cx, cz, 6, 19, SB, "minecraft:dark_oak_planks", "minecraft:purple_terracotta", 's', 5);
+        int cz = KandarinKit.Z(3405) + 1;
+        k.disc(cx, cz, -1, -1, 13, GRAVEL);
+        k.towerB(cx, cz, 9, 19, SB, "minecraft:dark_oak_planks", "minecraft:purple_terracotta", 's', 5);
         // ground: library; first: alchemy; second: observatory
-        k.ring(cx, cz, 0, 1, 4, "minecraft:bookshelf");
-        k.clear(cx - 1, 0, cz + 4, cx + 1, 1, cz + 4);
-        k.clear(cx + 4, 0, cz - 1, cx + 4, 1, cz + 1);
-        k.clear(cx - 4, 0, cz - 1, cx - 4, 1, cz + 1);
+        k.ring(cx, cz, 0, 1, 6, "minecraft:bookshelf");
+        k.clear(cx - 1, 0, cz + 6, cx + 1, 1, cz + 6);
+        k.clear(cx + 6, 0, cz - 1, cx + 6, 1, cz + 1);
+        k.clear(cx - 6, 0, cz - 1, cx - 6, 1, cz + 1);
         k.set(cx, 0, cz, "minecraft:lectern[facing=south]");
         k.set(cx, 4, cz, "minecraft:enchanting_table");
-        k.set(cx - 2, 4, cz - 2, "minecraft:brewing_stand");
-        k.set(cx + 2, 4, cz - 2, "minecraft:cauldron");
-        k.set(cx - 2, 4, cz + 2, "minecraft:chest[facing=north]");
+        k.set(cx - 3, 4, cz - 3, "minecraft:brewing_stand");
+        k.set(cx + 3, 4, cz - 3, "minecraft:cauldron");
+        k.set(cx - 3, 4, cz + 3, "minecraft:chest[facing=north]");
         k.set(cx, 9, cz, "minecraft:amethyst_cluster");
-        k.set(cx - 2, 9, cz, "minecraft:bookshelf");
-        k.set(cx + 2, 9, cz, "minecraft:crafting_table");
+        k.set(cx - 3, 9, cz, "minecraft:bookshelf");
+        k.set(cx + 3, 9, cz, "minecraft:crafting_table");
         k.set(cx, 14, cz, "minecraft:respawn_anchor");
         k.set(cx, 8, cz, "minecraft:lantern[hanging=true]");
         k.set(cx, 3, cz, "minecraft:lantern[hanging=true]");
-        k.ring(cx, cz, 0, 0, 9, "minecraft:spruce_fence");
-        k.clear(cx - 1, 0, cz + 9, cx + 1, 0, cz + 9);
-        k.oak(cx - 8, cz - 8, 6);
-        k.oak(cx + 8, cz - 7, 5);
+        // the hedge round the garden, open at the south gate, and the flower beds either side of the path
+        int gx1 = KandarinKit.X(2694);
+        int gx2 = KandarinKit.X(2710) + 1;
+        int gz1 = KandarinKit.Z(3412);
+        int gz2 = KandarinKit.Z(3396) + 1;
+        k.walls(gx1, 0, gz1, gx2, 1, gz2, "minecraft:oak_leaves[persistent=true]");
+        k.clear(cx - 2, 0, gz2, cx + 2, 1, gz2);
+        k.fill(cx - 1, -1, cz + 10, cx + 1, -1, gz2, GRAVEL);
+        for (int s = -1; s <= 1; s += 2) {
+            k.fill(cx + s * 5, 0, gz2 - 4, cx + s * 4, 0, gz2 - 2, "minecraft:allium");
+            k.fill(cx + s * 7, 0, gz2 - 4, cx + s * 6, 0, gz2 - 2, "minecraft:oxeye_daisy");
+        }
+        k.oak(gx1 + 3, gz1 + 3, 6);
+        k.oak(gx2 - 3, gz1 + 3, 5);
         return k.build();
     }
 

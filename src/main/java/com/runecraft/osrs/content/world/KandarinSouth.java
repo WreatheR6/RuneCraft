@@ -204,61 +204,93 @@ final class KandarinSouth {
     // ------------------------------------------------------------------ Fight Arena
 
     /**
-     * The Fight Arena compound. The two boss arenas of this place are generated 24 blocks east and
-     * west of its centre, so the spectator stands ring the east one and the west one is the prison
-     * yard; the centre is an open courtyard.
+     * The Fight Arena as on the OSRS map (mejrs layers_osrs): the walled octagon 2581-2606 x 3151-3172 with
+     * three prisoners' cells on its east side (2607-2611 x 3157-3166, gates into the arena), Khazard's
+     * buildings round it and the gap in the south-east corner to the barracks. The quest's boss arenas
+     * ({@code ArenaLayout}) are pushed out beside the compound by its levelled ground, as before.
      */
     static StructureDef fightArena() {
         KandarinKit k = new KandarinKit("fight_arena", "Fight Arena").replaces("fight_arena");
         String dark = "minecraft:deepslate_bricks";
-        k.flatten(2560, 3134, 2612, 3182, "minecraft:coarse_dirt");
-        k.cwallRect(2563, 3137, 2610, 3179, 7, dark);
-        k.gate(2585, 3179, 2586, 3179, 4, COBBLE);
-        k.gate(2585, 3137, 2586, 3137, 4, COBBLE);
-        for (int[] c : new int[][]{{2563, 3137}, {2610, 3137}, {2563, 3179}, {2610, 3179}}) {
-            k.tower(c[0], c[1], 3, 11, "minecraft:polished_blackstone_bricks", "minecraft:dark_oak_planks", null, ' ');
+        k.flatten(2560, 3136, 2622, 3190, "minecraft:coarse_dirt");
+        // octagon: 26 x 22 tiles with 5-tile corner cuts; centre on the block line X(2594) / Z(3161)
+        int ox = KandarinKit.X(2594);
+        int oz = KandarinKit.Z(3161);
+        for (int x = ox - 26; x < ox + 26; x++) {
+            for (int z = oz - 22; z < oz + 22; z++) {
+                double u = Math.abs(x + 0.5 - ox);
+                double v = Math.abs(z + 0.5 - oz);
+                boolean in = u + v <= 38;
+                boolean rim = in && (u > 25 || v > 21 || u + v > 36.6);
+                // the south-east gap to the barracks (2604-2606, 3151-3153)
+                boolean gap = x >= KandarinKit.X(2603) && z >= KandarinKit.Z(3153) && x + 0.5 - ox > 0 && z + 0.5 - oz > 0
+                        && u + v > 30;
+                if (rim && !gap) {
+                    k.fill(x, 0, z, x, 3, z, dark);
+                    k.set(x, 4, z, "minecraft:deepslate_brick_wall");
+                }
+            }
         }
-        int cx = KandarinKit.X(2586);
-        int cz = KandarinKit.Z(3158);
-        k.road(2585, 3138, 2586, 3178, COBBLE, GRAVEL);
-        // east arena with stepped stands
-        int ex = cx + 24;
-        for (int r = 15, y = 3; r >= 12; r--, y--) {
-            k.disc(ex, cz, 0, y, r, dark);
+        // the three prisoners' cells on the east side, iron gates into the arena
+        int cx1 = KandarinKit.X(2607);
+        int cx2 = KandarinKit.X(2611) + 1;
+        k.fill(cx1, -1, KandarinKit.Z(3166), cx2, -1, KandarinKit.Z(3157) + 1, "minecraft:cobbled_deepslate");
+        k.fill(cx1 + 1, 0, KandarinKit.Z(3166) - 1, cx2, 3, KandarinKit.Z(3157) + 1, dark);
+        for (int[] c : new int[][]{{3164, 3166}, {3161, 3163}, {3157, 3160}}) {
+            k.clear(cx1 - 1, 0, KandarinKit.Z(c[1]), cx2 - 1, 2, KandarinKit.Z(c[0]));
+            int gz = KandarinKit.Z((c[0] + c[1]) / 2);
+            k.fill(cx1 - 1, 0, KandarinKit.Z(c[1]), cx1 - 1, 2, KandarinKit.Z(c[0]), "minecraft:iron_bars");
+            k.clear(cx1 - 1, 0, gz, cx1 - 1, 1, gz);
+            k.set(cx2 - 1, 0, KandarinKit.Z(c[0]), "minecraft:hay_block");
         }
-        for (int r = 15, y = 4; r >= 12; r--, y--) {
-            k.ring(ex, cz, y, y, r, "minecraft:polished_blackstone_brick_slab");
+        k.fill(cx1, 4, KandarinKit.Z(3166) - 1, cx2, 4, KandarinKit.Z(3157) + 1, "minecraft:deepslate_tiles");
+        // west: the L-shaped house (2563-2571 x 3170-3172 and 2568-2571 x 3168-3169), the hut 2563-2567 x
+        // 3159-3166 and the stepped hall 2563-2572 x 3139-3154 // approx: the steps are rectangles
+        k.house(2563, 3170, 2571, 3172, 1, KHAZ, ' ', FURN | NO_LADDER);
+        k.house(2568, 3168, 2571, 3170, 1, KHAZ, 's', NO_LADDER);
+        k.clear(KandarinKit.X(2568) + 1, 0, KandarinKit.Z(3170), KandarinKit.X(2571), 2, KandarinKit.Z(3170) + 1);
+        k.house(2563, 3159, 2567, 3166, 1, KHAZ, 'e', FURN | NO_LADDER);
+        Bld hall = k.house(2563, 3139, 2572, 3150, 1, KHAZ, 'n', FURN | NO_LADDER);
+        k.house(2563, 3151, 2567, 3154, 1, KHAZ, ' ', NO_LADDER);
+        k.clear(KandarinKit.X(2563) + 1, 0, KandarinKit.Z(3151) + 1, KandarinKit.X(2567), 2, KandarinKit.Z(3150));
+        k.set(hall.x1() + 1, 0, hall.z1() + 1, RANGE);
+        // south: the bar and its three side rooms (2585-2603 x 3139-3144), corridor east to the barracks
+        Bld bar = k.house(2585, 3139, 2603, 3144, 1, KHAZ, 'w', FURN | NO_LADDER);
+        k.fill(bar.x1() + 1, 0, KandarinKit.Z(3142) + 1, bar.x2() - 1, 2, KandarinKit.Z(3142) + 1, dark);
+        k.fill(KandarinKit.X(2592), 0, bar.z1() + 1, KandarinKit.X(2592), 2, KandarinKit.Z(3142), dark);
+        k.fill(KandarinKit.X(2597), 0, bar.z1() + 1, KandarinKit.X(2597), 2, KandarinKit.Z(3142), dark);
+        for (int dx : new int[]{2589, 2595, 2600}) {
+            k.clear(KandarinKit.X(dx), 0, KandarinKit.Z(3142) + 1, KandarinKit.X(dx), 1, KandarinKit.Z(3142) + 1);
         }
-        k.disc(ex, cz, 0, 8, 11, AIR);
-        k.disc(ex, cz, -1, -1, 11, SAND);
-        k.ring(ex, cz, 0, 1, 11, "minecraft:polished_blackstone_bricks");
-        k.clear(ex - 16, 0, cz - 1, ex - 10, 2, cz + 1);
-        k.fill(ex - 16, -1, cz - 1, ex - 10, -1, cz + 1, GRAVEL);
-        k.flag(ex, 5, cz - 15, "red", "black");
-        k.flag(ex, 5, cz + 15, "red", "black");
-        // west prison yard with the cell block
-        int wx = cx - 24;
-        k.disc(wx, cz, -1, -1, 11, SAND);
-        Bld pr = k.house(2564, 3146, 2567, 3170, 1, TROLL, 'e', NO_LADDER);
-        for (int z = pr.z1() + 4; z <= pr.z2() - 1; z += 4) {
-            k.fill(pr.x1() + 1, 0, z, pr.x2() - 2, 2, z, "minecraft:iron_bars");
+        k.fill(KandarinKit.X(2587), 0, KandarinKit.Z(3141), KandarinKit.X(2591), 0, KandarinKit.Z(3141),
+                "minecraft:dark_oak_slab[type=top]");
+        k.house(2604, 3140, 2608, 3141, 1, KHAZ, ' ', NO_LADDER | NO_WINDOWS);
+        k.clear(bar.x2(), 0, KandarinKit.Z(3141), bar.x2(), 2, KandarinKit.Z(3140) + 1);
+        // south-east: Khazard's barracks and quarters (2609-2619 x 3139-3145, 2613-2619 x 3146-3150) and the
+        // east cell block 2614-2619 x 3155-3170 joined by a passage at 2616-2617
+        k.clear(KandarinKit.X(2608), 0, KandarinKit.Z(3141), KandarinKit.X(2609) + 1, 2, KandarinKit.Z(3140) + 1);
+        Bld kq = k.house(2609, 3139, 2619, 3145, 2, KHAZ, 'w', FURN);
+        k.set(kq.x2() - 1, 0, kq.z1() + 1, RANGE);
+        k.house(2613, 3146, 2619, 3150, 1, KHAZ, 'n', FURN | NO_LADDER);
+        k.house(2605, 3146, 2611, 3152, 1, KHAZ, 'n', FURN | NO_LADDER);
+        k.house(2616, 3151, 2617, 3154, 1, KHAZ, ' ', NO_LADDER | NO_WINDOWS);
+        k.clear(KandarinKit.X(2616) + 1, 0, KandarinKit.Z(3150), KandarinKit.X(2617), 2, KandarinKit.Z(3155) + 1);
+        Bld cells = k.house(2614, 3155, 2619, 3170, 1, KHAZ, ' ', NO_LADDER);
+        k.fill(KandarinKit.X(2617), 0, cells.z1() + 1, KandarinKit.X(2617), 2, cells.z2() - 1, "minecraft:iron_bars");
+        for (int cz : new int[]{3159, 3163, 3167}) {
+            k.fill(cells.x1() + 1, 0, KandarinKit.Z(cz) + 1, KandarinKit.X(2616) + 1, 2, KandarinKit.Z(cz) + 1, dark);
+            k.clear(KandarinKit.X(2617), 0, KandarinKit.Z(cz + 1), KandarinKit.X(2617), 1, KandarinKit.Z(cz + 1));
         }
-        k.fill(pr.x2() - 2, 0, pr.z1() + 1, pr.x2() - 2, 2, pr.z2() - 1, "minecraft:iron_bars");
-        for (int z = pr.z1() + 2; z <= pr.z2() - 2; z += 4) {
-            k.set(pr.x1() + 1, 0, z, "minecraft:white_wool");
-        }
-        // central courtyard statue of General Khazard
-        int sz = KandarinKit.Z(3166);
-        k.fill(cx - 1, 0, sz - 1, cx + 1, 0, sz + 1, "minecraft:polished_blackstone");
-        k.fill(cx, 1, sz, cx, 3, sz, "minecraft:polished_blackstone_wall");
-        k.set(cx, 4, sz, "minecraft:wither_skeleton_skull");
-        // barracks, Khazard's quarters, the bar
-        k.house(2588, 3168, 2600, 3175, 1, KHAZ, 's', FURN);
-        k.house(2570, 3168, 2580, 3175, 1, KHAZ, 's', FURN);
-        Bld kq = k.house(2598, 3139, 2605, 3145, 2, KHAZ, 'n', FURN);
-        k.set(kq.x1() + 1, 0, kq.z2() - 1, RANGE);
-        Bld bar = k.house(2567, 3139, 2573, 3145, 1, KHAZ, 'n', FURN);
-        k.fill(bar.x1() + 1, 0, bar.z2() - 2, bar.x2() - 2, 0, bar.z2() - 2, "minecraft:dark_oak_slab[type=top]");
+        // north: the guards' hall (2589-2600 x 3180-3184 with its wing 2591-2598 x 3185-3187) and the
+        // armoury 2605-2612 x 3180-3182 (2607-2610 to 3186) // approx
+        k.house(2589, 3180, 2600, 3184, 1, KHAZ, 's', FURN | NO_LADDER);
+        k.house(2591, 3185, 2598, 3187, 1, KHAZ, ' ', NO_LADDER);
+        k.clear(KandarinKit.X(2591) + 1, 0, KandarinKit.Z(3185) + 1, KandarinKit.X(2598), 2, KandarinKit.Z(3184));
+        k.house(2605, 3180, 2612, 3182, 1, KHAZ, 's', FURN | NO_LADDER);
+        k.house(2607, 3183, 2610, 3186, 1, KHAZ, ' ', NO_LADDER);
+        k.clear(KandarinKit.X(2607) + 1, 0, KandarinKit.Z(3183) + 1, KandarinKit.X(2610), 2, KandarinKit.Z(3182));
+        // the prison hut in the far north-west (2562-2567 x 3184-3189) // approx
+        k.house(2562, 3184, 2567, 3189, 1, TROLL, 'e', NO_LADDER);
         return k.build();
     }
 

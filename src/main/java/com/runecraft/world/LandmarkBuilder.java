@@ -503,7 +503,7 @@ public final class LandmarkBuilder {
                 return;
             }
             StructurePlacer.applyIfLoaded(world, x >> 4, z >> 4);
-            BlockPos feet = NpcFloor.spot(world, x, z, NpcFloor.isBanker(npc.name(), npc.displayName()));
+            BlockPos feet = NpcFloor.spot(world, x, z, NpcFloor.isBanker(npc.name(), npc.displayName()), npc.floor());
             entity.refreshPositionAndAngles(feet.getX() + 0.5, NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
                     world.getRandom().nextFloat() * 360f, 0);
             entity.setNpc(npc);
@@ -526,7 +526,7 @@ public final class LandmarkBuilder {
             int x = cx + npc.dx();
             int z = cz + npc.dz();
             StructurePlacer.applyIfLoaded(world, x >> 4, z >> 4);
-            BlockPos feet = NpcFloor.spot(world, x, z, NpcFloor.isBanker(npc.name(), npc.displayName()));
+            BlockPos feet = NpcFloor.spot(world, x, z, NpcFloor.isBanker(npc.name(), npc.displayName()), npc.floor());
             entity.refreshPositionAndAngles(feet.getX() + 0.5, NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
                     world.getRandom().nextFloat() * 360f, 0);
             entity.setNpc(npc);

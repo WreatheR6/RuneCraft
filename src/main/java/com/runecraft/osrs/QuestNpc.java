@@ -2,7 +2,8 @@ package com.runecraft.osrs;
 
 /** Quest characters, where they stand (landmark + offset in blocks) and how they look. */
 public enum QuestNpc {
-    // Characters with an OSRS tile stand there (mejrs/data_osrs NPC spawns; upstairs ones on the floor below);
+    // Characters with an OSRS tile stand there (mejrs/data_osrs NPC spawns; upstairs ones on the floor below,
+    // except those given a storey, who stand on that floor of their rebuilt building);
     // those more than REMOTE blocks from their landmark spawn when their own chunk loads (LandmarkBuilder).
     COOK("Cook", Landmark.LUMBRIDGE, Look.COOK, 3209, 3215), // castle kitchen
     DUKE_HORACIO("Duke Horacio", Landmark.LUMBRIDGE, Look.NOBLE, 3212, 3220), // castle, 1st floor
@@ -11,8 +12,9 @@ public enum QuestNpc {
     FRED_THE_FARMER("Fred the Farmer", Landmark.LUMBRIDGE, Look.PEASANT, 3189, 3273), // his farmhouse
     FATHER_URHNEY("Father Urhney", Landmark.WATER_ALTAR, Look.PRIEST, 3146, 3174), // his shack in Lumbridge Swamp
     SEDRIDOR("Sedridor", Landmark.WIZARDS_TOWER, 3, 3, Look.WIZARD), // OSRS: the basement
-    WIZARD_MIZGOG("Wizard Mizgog", Landmark.WIZARDS_TOWER, Look.WIZARD, 3103, 3163), // top floor
-    WIZARD_TRAIBORN("Wizard Traiborn", Landmark.WIZARDS_TOWER, Look.WIZARD, 3112, 3162), // 1st floor
+    WIZARD_MIZGOG("Wizard Mizgog", Landmark.WIZARDS_TOWER, Look.WIZARD, 3103, 3163, 2), // top floor
+    // OSRS 3112,3162 holds a chair in our 1st-floor room, so he stands one tile west // approx
+    WIZARD_TRAIBORN("Wizard Traiborn", Landmark.WIZARDS_TOWER, Look.WIZARD, 3111, 3162, 1), // 1st floor
     AUBURY("Aubury", Landmark.VARROCK, Look.WIZARD, 3253, 3402), // his rune shop
     ROMEO("Romeo", Landmark.VARROCK, Look.NOBLE, 3211, 3425), // Varrock square
     JULIET("Juliet", Landmark.VARROCK, Look.LADY, 3158, 3425), // her house west of Varrock, 1st floor
@@ -36,6 +38,7 @@ public enum QuestNpc {
     private final int dz;
     private final Look look;
     private final boolean tile;
+    private final int floor;
 
     /** Blocks from the landmark beyond which a character is spawned when its own chunk loads, not with the landmark. */
     public static final int REMOTE = 24;
@@ -47,16 +50,28 @@ public enum QuestNpc {
         this.dz = dz;
         this.look = look;
         this.tile = false;
+        this.floor = 0;
     }
 
     /** A character standing on its OSRS tile. */
     QuestNpc(String displayName, Landmark landmark, Look look, int osrsX, int osrsY) {
+        this(displayName, landmark, look, osrsX, osrsY, 0);
+    }
+
+    /** A character standing on its OSRS tile on the given storey (0 = ground floor) of the building there. */
+    QuestNpc(String displayName, Landmark landmark, Look look, int osrsX, int osrsY, int floor) {
         this.displayName = displayName;
         this.landmark = landmark;
         this.dx = GielinorMap.toBlockX(osrsX) - landmark.blockX();
         this.dz = GielinorMap.toBlockZ(osrsY) - landmark.blockZ();
         this.look = look;
         this.tile = true;
+        this.floor = floor;
+    }
+
+    /** Storey the character stands on (0 = ground floor; OSRS plane). */
+    public int floor() {
+        return floor;
     }
 
     /** Whether the character stands on its own OSRS tile (rather than an offset picked near the landmark). */
