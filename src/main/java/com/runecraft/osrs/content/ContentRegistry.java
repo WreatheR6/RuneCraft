@@ -51,6 +51,7 @@ public final class ContentRegistry {
             Modules.ALL.forEach(m -> all.addAll(m.bosses()));
             all.forEach(com.runecraft.osrs.data.MonsterStatsTable::apply);
             all.forEach(com.runecraft.osrs.data.MonsterTraits::apply);
+            all.forEach(com.runecraft.osrs.data.BossDropsTable::apply);
             bosses = unique(all, d -> d.id, "boss");
         }
         return bosses;

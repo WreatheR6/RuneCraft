@@ -81,6 +81,8 @@ public final class Charges {
      * Pharaoh's sceptre (wiki): holds 3 charges, 10/25/50/100 with the easy/medium/hard/elite Desert Diary; recharged
      * by the guardian mummy in Jalsavrah for 6 gold, 12 stone or 24 pottery/ivory artefacts.
      */
+    /** Revenant ether a revenant weapon holds (wiki). */
+    public static final int REVENANT_ETHER_MAX = 16_000;
     public static final String PHARAOHS_SCEPTRE = "pharaohs_sceptre";
     public static final int PHARAOHS_SCEPTRE_MAX = 100;
     private static final int[] PHARAOHS_SCEPTRE_CAPS = {3, 10, 25, 50, 100};
@@ -160,6 +162,13 @@ public final class Charges {
                 ordered("big_bones", 1, "law_rune", 1), 1, 0));
         put(new Spec(PENDANT_OF_ATES, "Pendant of ates", Kind.CHARGED, PENDANT_OF_ATES_MAX, 0, Drain.TELEPORT,
                 ordered("frozen_tear", 1), 1, 0));
+        // Revenant weapons and their wilderness-boss upgrades (wiki): up to 16,000 revenant ether, one per attack; they drop
+        // uncharged ("(u)") and can't attack empty, which also ends their +50% Wilderness bonus (PlayerHitCalc.revWeapon).
+        for (String[] w : new String[][]{{"craws_bow", "Craw's bow"}, {"viggoras_chainmace", "Viggora's chainmace"},
+                {"thammarons_sceptre", "Thammaron's sceptre"}, {"webweaver_bow", "Webweaver bow"},
+                {"ursine_chainmace", "Ursine chainmace"}, {"accursed_sceptre", "Accursed sceptre"}}) {
+            put(new Spec(w[0], w[1], Kind.CHARGED, REVENANT_ETHER_MAX, 0, Drain.ATTACK, ordered("revenant_ether", 1), 1, 0));
+        }
         // A sceptre found in the pyramid holds the default 3 charges (approx: OSRS hands it out uncharged since 2022).
         put(new Spec(PHARAOHS_SCEPTRE, "Pharaoh's sceptre", Kind.CHARGED, PHARAOHS_SCEPTRE_MAX, 3, Drain.TELEPORT,
                 ordered(), 1, 0));

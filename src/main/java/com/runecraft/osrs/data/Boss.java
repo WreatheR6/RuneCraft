@@ -71,6 +71,7 @@ public enum Boss {
     private final Landmark lair;
     private final String key;
     private final List<Drop> drops;
+    private List<Drop> patchedDrops;
 
     Boss(String id, String name, int combatLevel, int hitpoints, int attack, int strength, int defence, int magic,
          int ranged, int attackSpeed, AttackType style, int maxHit, int defenceBonus, Mechanic mechanic, float scale,
@@ -200,7 +201,11 @@ public enum Boss {
     }
 
     public List<Drop> drops() {
-        return drops;
+        // Wiki corrections (BossDropsTable), applied once on first use.
+        if (patchedDrops == null) {
+            patchedDrops = List.copyOf(BossDropsTable.patched(BossDropsTable.key(this), drops));
+        }
+        return patchedDrops;
     }
 
     /**

@@ -247,7 +247,7 @@ public class BossEntity extends OsrsMonsterEntity {
         // As in OSRS the Barrows brothers drop nothing: their tables are rolled by the Barrows chest.
         if (boss.lair() != com.runecraft.osrs.Landmark.BARROWS) {
             for (Drops.Rolled r : Drops.roll(boss.drops(), getRandom(), false)) {
-                dropStack(Inv.stack(r.item(), r.count()));
+                dropStack(Drops.withDoses(Inv.stack(r.item(), r.count()), r.doses()));
                 CollectionLog.obtain(player, r.item());
             }
         }

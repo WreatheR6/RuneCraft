@@ -1,0 +1,2275 @@
+# Boss drop tables from the OSRS Wiki (Flipping-Utilities/parsed-osrs data/monsters/all-monsters.json, Sep 2026).
+# Diffed by BossDropsTableTest: every "drop" (item:min-max/1-in-N) must be a line of the boss's table.
+# "-" drops are rows not applied (item not in the game, no parseable rate, or handled elsewhere).
+# <..> rows are shared tables (rolls = quantity column). Boss key Boss.X = built-in enum, else BossDef id.
+# boss|wiki_name|wiki_level|item|quantity|rarity|drop
+Boss.GENERAL_GRAARDOR|General Graardor|624|Big bones|1|Always|big_bones:1-1/1
+Boss.GENERAL_GRAARDOR|General Graardor|624|Frozen key piece (Bandos)|1|Always|-handled elsewhere:frozen_key_piece_bandos
+Boss.GENERAL_GRAARDOR|General Graardor|624|Bandos chestplate|1|1/381|bandos_chestplate:1-1/381
+Boss.GENERAL_GRAARDOR|General Graardor|624|Bandos tassets|1|1/381|bandos_tassets:1-1/381
+Boss.GENERAL_GRAARDOR|General Graardor|624|Bandos boots|1|1/381|bandos_boots:1-1/381
+Boss.GENERAL_GRAARDOR|General Graardor|624|Bandos hilt|1|1/508|-handled elsewhere:bandos_hilt
+Boss.GENERAL_GRAARDOR|General Graardor|624|Godsword shard 1|1|1/762|-handled elsewhere:godsword_shard_1
+Boss.GENERAL_GRAARDOR|General Graardor|624|Godsword shard 2|1|1/762|-handled elsewhere:godsword_shard_2
+Boss.GENERAL_GRAARDOR|General Graardor|624|Godsword shard 3|1|1/762|-handled elsewhere:godsword_shard_3
+Boss.GENERAL_GRAARDOR|General Graardor|624|Rune longsword|1|8/127|rune_longsword:1-1/16
+Boss.GENERAL_GRAARDOR|General Graardor|624|Rune 2h sword|1|8/127|rune_2h_sword:1-1/16
+Boss.GENERAL_GRAARDOR|General Graardor|624|Rune platebody|1|8/127|rune_platebody:1-1/16
+Boss.GENERAL_GRAARDOR|General Graardor|624|Rune pickaxe|1|6/127|rune_pickaxe:1-1/21
+Boss.GENERAL_GRAARDOR|General Graardor|624|Coins|19500-20000|31.7/127|coins:19500-20000/4
+Boss.GENERAL_GRAARDOR|General Graardor|624|Grimy snapdragon|3 (noted)|8/127|grimy_snapdragon:3-3/16
+Boss.GENERAL_GRAARDOR|General Graardor|624|Snapdragon seed|1|8/127|snapdragon_seed:1-1/16
+Boss.GENERAL_GRAARDOR|General Graardor|624|Super restore(4)|3|8/127|super_restore:3-3/16
+Boss.GENERAL_GRAARDOR|General Graardor|624|Adamantite ore|15-20 (noted)|8/127|adamantite_ore:15-20/16
+Boss.GENERAL_GRAARDOR|General Graardor|624|Coal|115-120 (noted)|8/127|coal:115-120/16
+Boss.GENERAL_GRAARDOR|General Graardor|624|Magic logs|15-20 (noted)|8/127|magic_logs:15-20/16
+Boss.GENERAL_GRAARDOR|General Graardor|624|Nature rune|65-70|8/127|nature_rune:65-70/16
+Boss.GENERAL_GRAARDOR|General Graardor|624|Coins|20100-20600|1.25/127|coins:20100-20600/102
+Boss.GENERAL_GRAARDOR|General Graardor|624|Brimstone key|1|-|-handled elsewhere:brimstone_key
+Boss.GENERAL_GRAARDOR|General Graardor|624|Long bone|1|1/400|long_bone:1-1/400
+Boss.GENERAL_GRAARDOR|General Graardor|624|Pet General Graardor|1|1/5000|-handled elsewhere:pet_general_graardor
+Boss.GENERAL_GRAARDOR|General Graardor|624|Curved bone|1|1/5012.5|curved_bone:1-1/5012
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Infernal ashes|1|Always|infernal_ashes:1-1/1
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Frozen key piece (Zamorak)|1|Always|-handled elsewhere:frozen_key_piece_zamorak
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Steam battlestaff|1|1/127|steam_battlestaff:1-1/127
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Zamorakian spear|1|1/127|zamorakian_spear:1-1/127
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Staff of the Dead|1|1/508|staff_of_the_dead:1-1/508
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Zamorak hilt|1|1/508|-handled elsewhere:zamorak_hilt
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Godsword shard 1|1|1/762|-handled elsewhere:godsword_shard_1
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Godsword shard 2|1|1/762|-handled elsewhere:godsword_shard_2
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Godsword shard 3|1|1/762|-handled elsewhere:godsword_shard_3
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Adamant arrow(p++)|295-300|8/127|-not in game
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Rune scimitar|1|8/127|rune_scimitar:1-1/16
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Adamant platebody|1|8/127|adamant_platebody:1-1/16
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Rune platelegs|1|7/127|rune_platelegs:1-1/18
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Dragon dagger(p++)|1|2/127|-not in game
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Super attack(3)|3|8/127|super_attack(3):3-3/16
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Super strength(3)|3|8/127|super_strength(3):3-3/16
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Super restore(3)|3|8/127|super_restore(3):3-3/16
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Zamorak brew(3)|3|8/127|zamorak_brew(3):3-3/16
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Coins|19500-20000|36.7/127|coins:19500-20000/3
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Grimy lantadyme|10 (noted)|8/127|grimy_lantadyme:10-10/16
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Lantadyme seed|3|8/127|lantadyme_seed:3-3/16
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Death rune|120-125|8/127|death_rune:120-125/16
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Blood rune|80-85|8/127|blood_rune:80-85/16
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Brimstone key|1|-|-handled elsewhere:brimstone_key
+Boss.KRIL_TSUTSAROTH|K'ril Tsutsaroth|650|Pet K'ril Tsutsaroth|1|1/5000|-handled elsewhere:pet_kril_tsutsaroth
+kreearra|Kree'arra|580|Big bones|1|Always|big_bones:1-1/1
+kreearra|Kree'arra|580|Feather|1-16|Always|-not in game
+kreearra|Kree'arra|580|Frozen key piece (Armadyl)|1|Always|-handled elsewhere:frozen_key_piece_armadyl
+kreearra|Kree'arra|580|Armadyl helmet|1|1/381|armadyl_helmet:1-1/381
+kreearra|Kree'arra|580|Armadyl chestplate|1|1/381|armadyl_chestplate:1-1/381
+kreearra|Kree'arra|580|Armadyl chainskirt|1|1/381|armadyl_chainskirt:1-1/381
+kreearra|Kree'arra|580|Armadyl hilt|1|1/508|armadyl_hilt:1-1/508
+kreearra|Kree'arra|580|Godsword shard 1|1|1/762|godsword_shard_1:1-1/762
+kreearra|Kree'arra|580|Godsword shard 2|1|1/762|godsword_shard_2:1-1/762
+kreearra|Kree'arra|580|Godsword shard 3|1|1/762|godsword_shard_3:1-1/762
+kreearra|Kree'arra|580|Black d'hide body|1|8/127|black_dhide_body:1-1/16
+kreearra|Kree'arra|580|Rune crossbow|1|8/127|rune_crossbow:1-1/16
+kreearra|Kree'arra|580|Mind rune|586-601|8/127|mind_rune:586-601/16
+kreearra|Kree'arra|580|Rune arrow|100-105|8/127|rune_arrow:100-105/16
+kreearra|Kree'arra|580|Runite bolts|20-25|8/127|rune_bolts:20-25/16
+kreearra|Kree'arra|580|Dragonstone bolts (e)|5-10|8/127|dragonstone_bolts_e:5-10/16
+kreearra|Kree'arra|580|Coins|19500-20000|43.7/127|coins:19500-20000/3
+kreearra|Kree'arra|580|Ranging potion(3)|3|8/127|ranging_potion(3):3-3/16
+kreearra|Kree'arra|580|Super defence(3)|3|8/127|super_defence(3):3-3/16
+kreearra|Kree'arra|580|Grimy dwarf weed|8-13 (noted)|8/127|grimy_dwarf_weed:8-13/16
+kreearra|Kree'arra|580|Dwarf weed seed|2|8/127|dwarf_weed_seed:2-2/16
+kreearra|Kree'arra|580|Coins|20500-21000|1.25/127|coins:20500-21000/102
+kreearra|Kree'arra|580|Crystal key|1|1/127|crystal_key:1-1/127
+kreearra|Kree'arra|580|Yew seed|1|1/127|yew_seed:1-1/127
+kreearra|Kree'arra|580|Brimstone key|1|-|-handled elsewhere:brimstone_key
+kreearra|Kree'arra|580|Long bone|1|1/400|long_bone:1-1/400
+kreearra|Kree'arra|580|Pet Kree'arra|1|1/5000|-handled elsewhere:pet_kreearra
+kreearra|Kree'arra|580|Curved bone|1|1/5012.5|curved_bone:1-1/5012
+commander_zilyana|Commander Zilyana|596|Bones|1|Always|bones:1-1/1
+commander_zilyana|Commander Zilyana|596|Frozen key piece (Saradomin)|1|Always|-handled elsewhere:frozen_key_piece_saradomin
+commander_zilyana|Commander Zilyana|596|Saradomin sword|1|1/127|saradomin_sword:1-1/127
+commander_zilyana|Commander Zilyana|596|Saradomin's light|1|1/254|saradomins_light:1-1/254
+commander_zilyana|Commander Zilyana|596|Armadyl crossbow|1|1/508|armadyl_crossbow:1-1/508
+commander_zilyana|Commander Zilyana|596|Saradomin hilt|1|1/508|saradomin_hilt:1-1/508
+commander_zilyana|Commander Zilyana|596|Godsword shard 1|1|1/762|godsword_shard_1:1-1/762
+commander_zilyana|Commander Zilyana|596|Godsword shard 2|1|1/762|godsword_shard_2:1-1/762
+commander_zilyana|Commander Zilyana|596|Godsword shard 3|1|1/762|godsword_shard_3:1-1/762
+commander_zilyana|Commander Zilyana|596|Adamant platebody|1|8/127|adamant_platebody:1-1/16
+commander_zilyana|Commander Zilyana|596|Rune dart|35-40|8/127|rune_dart:35-40/16
+commander_zilyana|Commander Zilyana|596|Rune kiteshield|1|8/127|rune_kiteshield:1-1/16
+commander_zilyana|Commander Zilyana|596|Rune plateskirt|1|8/127|rune_plateskirt:1-1/16
+commander_zilyana|Commander Zilyana|596|Prayer potion(4)|3|8/127|prayer_potion:3-3/16
+commander_zilyana|Commander Zilyana|596|Saradomin brew(3)|3|6/127|saradomin_brew(3):3-3/21
+commander_zilyana|Commander Zilyana|596|Super restore(4)|3|6/127|super_restore:3-3/21
+commander_zilyana|Commander Zilyana|596|Super defence(3)|3|8/127|super_defence(3):3-3/16
+commander_zilyana|Commander Zilyana|596|Magic potion(3)|3|8/127|magic_potion(3):3-3/16
+commander_zilyana|Commander Zilyana|596|Coins|19500-20000|31.2/127|coins:19500-20000/4
+commander_zilyana|Commander Zilyana|596|Diamond|6 (noted)|8/127|diamond:6-6/16
+commander_zilyana|Commander Zilyana|596|Law rune|95-100|8/127|law_rune:95-100/16
+commander_zilyana|Commander Zilyana|596|Grimy ranarr weed|5 (noted)|8/127|grimy_ranarr_weed:5-5/16
+commander_zilyana|Commander Zilyana|596|Ranarr seed|2|8/127|ranarr_seed:2-2/16
+commander_zilyana|Commander Zilyana|596|Magic seed|1|1/127|magic_seed:1-1/127
+commander_zilyana|Commander Zilyana|596|Brimstone key|1|-|-handled elsewhere:brimstone_key
+commander_zilyana|Commander Zilyana|596|Pet Zilyana|1|1/5000|-handled elsewhere:pet_zilyana
+nex|Nex|1001|Big bones|1|Always|big_bones:1-1/1
+nex|Nex|1001|Ancient hilt|1|1/516|ancient_hilt:1-1/516
+nex|Nex|1001|Nihil horn|1|1/258|nihil_horn:1-1/258
+nex|Nex|1001|Torva full helm (damaged)|1|1/258|torva_full_helm:1-1/258
+nex|Nex|1001|Torva platebody (damaged)|1|1/258|torva_platebody:1-1/258
+nex|Nex|1001|Torva platelegs (damaged)|1|1/258|torva_platelegs:1-1/258
+nex|Nex|1001|Zaryte vambraces|1|1/172|zaryte_vambraces:1-1/172
+nex|Nex|1001|Air rune|123-10000|Uncommon|-no rate:air_rune
+nex|Nex|1001|Fire rune|1-10000|Uncommon|-no rate:fire_rune
+nex|Nex|1001|Blood rune|84-876|Common|-no rate:blood_rune
+nex|Nex|1001|Death rune|85-986|Common|-no rate:death_rune
+nex|Nex|1001|Water rune|193-10000|Uncommon|-no rate:water_rune
+nex|Nex|1001|Soul rune|86-592|Common|-no rate:soul_rune
+nex|Nex|1001|Dragon bolts (unf)|12-283|Common|-no rate:dragon_bolts_unf
+nex|Nex|1001|Onyx bolts (e)|11-29|Uncommon|-no rate:onyx_bolts_e
+nex|Nex|1001|Steel cannonball|42-2252|Common|-no rate:cannonball
+nex|Nex|1001|Air orb|6-100 (noted)|Common|-no rate:air_orb
+nex|Nex|1001|Coal|23-2354(noted)|Uncommon|-no rate:coal
+nex|Nex|1001|Runite ore|2-30 (noted)|Uncommon|-no rate:runite_ore
+nex|Nex|1001|Uncut ruby|3-80 (noted)|Common|-no rate:uncut_ruby
+nex|Nex|1001|Uncut diamond|3-64 (noted)|Common|-no rate:uncut_diamond
+nex|Nex|1001|Wine of Zamorak|4-64 (noted)|Common|-no rate:wine_of_zamorak
+nex|Nex|1001|Shark|10|Common|-no rate:shark
+nex|Nex|1001|Prayer potion(4)|3|Common|-no rate:prayer_potion
+nex|Nex|1001|Saradomin brew(4)|1-10|Common|-no rate:saradomin_brew
+nex|Nex|1001|Super restore(4)|1-5|Common|-no rate:super_restore
+nex|Nex|1001|Blood essence|1-2|1/82|blood_essence:1-2/82
+nex|Nex|1001|Coins|8539-26748|Uncommon|-no rate:coins
+nex|Nex|1001|Rune sword|1|1/209|rune_sword:1-1/209
+nex|Nex|1001|Ecumenical key shard|6-39|Common|-not in game
+nex|Nex|1001|Nihil shard|80-85|5/82|nihil_shard:80-85/16
+nex|Nex|1001|Nihil shard|85-95|8/209|nihil_shard:85-95/26
+nex|Nex|1001|Nexling|1|1/500|-handled elsewhere:nexling
+fumus|Fumus|285|Ancient ceremonial mask|1|1/1000|ancient_ceremonial_mask:1-1/1000
+fumus|Fumus|285|Ancient ceremonial top|1|1/1000|ancient_ceremonial_top:1-1/1000
+fumus|Fumus|285|Ancient ceremonial legs|1|1/1000|ancient_ceremonial_legs:1-1/1000
+fumus|Fumus|285|Ancient ceremonial gloves|1|1/1000|ancient_ceremonial_gloves:1-1/1000
+fumus|Fumus|285|Ancient ceremonial boots|1|1/1000|ancient_ceremonial_boots:1-1/1000
+umbra|Umbra|285|Ancient ceremonial mask|1|1/1000|ancient_ceremonial_mask:1-1/1000
+umbra|Umbra|285|Ancient ceremonial top|1|1/1000|ancient_ceremonial_top:1-1/1000
+umbra|Umbra|285|Ancient ceremonial legs|1|1/1000|ancient_ceremonial_legs:1-1/1000
+umbra|Umbra|285|Ancient ceremonial gloves|1|1/1000|ancient_ceremonial_gloves:1-1/1000
+umbra|Umbra|285|Ancient ceremonial boots|1|1/1000|ancient_ceremonial_boots:1-1/1000
+cruor|Cruor|285|Ancient ceremonial mask|1|1/1000|ancient_ceremonial_mask:1-1/1000
+cruor|Cruor|285|Ancient ceremonial top|1|1/1000|ancient_ceremonial_top:1-1/1000
+cruor|Cruor|285|Ancient ceremonial legs|1|1/1000|ancient_ceremonial_legs:1-1/1000
+cruor|Cruor|285|Ancient ceremonial gloves|1|1/1000|ancient_ceremonial_gloves:1-1/1000
+cruor|Cruor|285|Ancient ceremonial boots|1|1/1000|ancient_ceremonial_boots:1-1/1000
+glacies|Glacies|285|Ancient ceremonial mask|1|1/1000|ancient_ceremonial_mask:1-1/1000
+glacies|Glacies|285|Ancient ceremonial top|1|1/1000|ancient_ceremonial_top:1-1/1000
+glacies|Glacies|285|Ancient ceremonial legs|1|1/1000|ancient_ceremonial_legs:1-1/1000
+glacies|Glacies|285|Ancient ceremonial gloves|1|1/1000|ancient_ceremonial_gloves:1-1/1000
+glacies|Glacies|285|Ancient ceremonial boots|1|1/1000|ancient_ceremonial_boots:1-1/1000
+callisto|Callisto|470|Big bones|1|Always|big_bones:1-1/1
+callisto|Callisto|470|Bones|1|Always|-handled elsewhere:bones
+callisto|Callisto|470|Claws of Callisto|1|1/196|claws_of_callisto:1-1/196
+callisto|Callisto|470|Dragon 2h sword|1|1/256|dragon_2h_sword:1-1/256
+callisto|Callisto|470|Dragon pickaxe|1|1/256|dragon_pickaxe:1-1/256
+callisto|Callisto|470|Voidwaker hilt|1|1/360|voidwaker_hilt:1-1/360
+callisto|Callisto|470|Tyrannical ring|1|1/512|tyrannical_ring:1-1/512
+callisto|Callisto|470|Mystic earth staff|4 (noted)|2/126|mystic_earth_staff:4-4/63
+callisto|Callisto|470|Mystic robe top|4 (noted)|2/126|mystic_robe_top:4-4/63
+callisto|Callisto|470|Mystic robe bottom|4 (noted)|2/126|mystic_robe_bottom:4-4/63
+callisto|Callisto|470|Rune pickaxe|5 (noted)|8/126|rune_pickaxe:5-5/16
+callisto|Callisto|470|Rune 2h sword|3 (noted)|3/126|rune_2h_sword:3-3/42
+callisto|Callisto|470|Rune kiteshield|4 (noted)|2/126|rune_kiteshield:4-4/63
+callisto|Callisto|470|Rune platebody|4 (noted)|2/126|rune_platebody:4-4/63
+callisto|Callisto|470|Blood rune|500|7/126|blood_rune:500-500/18
+callisto|Callisto|470|Death rune|700|7/126|death_rune:700-700/18
+callisto|Callisto|470|Chaos rune|900|7/126|chaos_rune:900-900/18
+callisto|Callisto|470|Soul rune|450|5/126|soul_rune:450-450/25
+callisto|Callisto|470|Steel cannonball|600|4/126|cannonball:600-600/32
+callisto|Callisto|470|Uncut ruby|50 (noted)|4/126|uncut_ruby:50-50/32
+callisto|Callisto|470|Uncut diamond|25 (noted)|3/126|uncut_diamond:25-25/42
+callisto|Callisto|470|Uncut dragonstone|5 (noted)|2/126|uncut_dragonstone:5-5/63
+callisto|Callisto|470|Limpwurt root|100 (noted)|5/126|limpwurt_root:100-100/25
+callisto|Callisto|470|Magic logs|225 (noted)|5/126|magic_logs:225-225/25
+callisto|Callisto|470|Mahogany logs|600 (noted)|6/126|mahogany_logs:600-600/21
+callisto|Callisto|470|Red dragonhide|170 (noted)|3/126|red_dragonhide:170-170/42
+callisto|Callisto|470|Coconut|135 (noted)|2/126|coconut:135-135/63
+callisto|Callisto|470|Grimy toadflax|100 (noted)|1/126|grimy_toadflax:100-100/126
+callisto|Callisto|470|Grimy dwarf weed|45 (noted)|1/126|grimy_dwarf_weed:45-45/126
+callisto|Callisto|470|Grimy ranarr weed|45 (noted)|1/126|grimy_ranarr_weed:45-45/126
+callisto|Callisto|470|Grimy snapdragon|45 (noted)|1/126|grimy_snapdragon:45-45/126
+callisto|Callisto|470|Ranarr seed|11|5/126|ranarr_seed:11-11/25
+callisto|Callisto|470|Snapdragon seed|5|5/126|snapdragon_seed:5-5/25
+callisto|Callisto|470|Coins|50000|10/126|coins:50000-50000/13
+callisto|Callisto|470|Dark crab|50 (noted)|5/126|dark_crab:50-50/25
+callisto|Callisto|470|Super restore(4)|10 (noted)|5/126|super_restore:10-10/25
+callisto|Callisto|470|Supercompost|225 (noted)|4/126|supercompost:225-225/32
+callisto|Callisto|470|Dragon bones|75 (noted)|3/126|dragon_bones:75-75/42
+callisto|Callisto|470|Blighted anglerfish|100 (noted)|1/126|anglerfish:100-100/126
+callisto|Callisto|470|Wilderness crabs teleport|4|3/126|-not in game
+callisto|Callisto|470|Blighted anglerfish|5-6|1/18|anglerfish:5-6/18
+callisto|Callisto|470|Blighted karambwan|5-6|1/18|cooked_karambwan:5-6/18
+callisto|Callisto|470|Blighted super restore(3)|3-4|1/18|super_restore(3):3-4/18
+callisto|Callisto|470|Blighted super restore(4)|3-4|1/18|super_restore:3-4/18
+callisto|Callisto|470|Ranging potion(2)|2-3|1/18|ranging_potion(2):2-3/18
+callisto|Callisto|470|Super combat potion(2)|2-3|1/18|super_combat_potion(2):2-3/18
+callisto|Callisto|470|Looting bag|1|1/3|-not in game
+callisto|Callisto|470|Brimstone key|1|-|-handled elsewhere:brimstone_key
+callisto|Callisto|470|Long bone|1|1/400|long_bone:1-1/400
+callisto|Callisto|470|Callisto cub|1|1/1500|-handled elsewhere:callisto_cub
+callisto|Callisto|470|Curved bone|1|2/10025|curved_bone:1-1/5012
+callisto|Callisto|470|<wilderness_slayer_table>|1|-|-no shared table
+artio|Artio|320|Big bones|1|Always|big_bones:1-1/1
+artio|Artio|320|Dragon 2h sword|1|1/358|dragon_2h_sword:1-1/358
+artio|Artio|320|Dragon pickaxe|1|1/358|dragon_pickaxe:1-1/358
+artio|Artio|320|Claws of Callisto|1|1/618|claws_of_callisto:1-1/618
+artio|Artio|320|Tyrannical ring|1|1/716|tyrannical_ring:1-1/716
+artio|Artio|320|Voidwaker hilt|1|1/912|voidwaker_hilt:1-1/912
+artio|Artio|320|Dark crab|9|5/128|dark_crab:9-9/26
+artio|Artio|320|Super restore(4)|3|5/128|super_restore:3-3/26
+artio|Artio|320|Rune 2h sword|1|3/128|rune_2h_sword:1-1/43
+artio|Artio|320|Rune pickaxe|1|12/128|rune_pickaxe:1-1/11
+artio|Artio|320|Chaos rune|300|7/128|chaos_rune:300-300/18
+artio|Artio|320|Death rune|220|7/128|death_rune:220-220/18
+artio|Artio|320|Blood rune|140|7/128|blood_rune:140-140/18
+artio|Artio|320|Soul rune|150|5/128|soul_rune:150-150/26
+artio|Artio|320|Steel cannonball|190|4/128|cannonball:190-190/32
+artio|Artio|320|Uncut ruby|17 (noted)|4/128|uncut_ruby:17-17/32
+artio|Artio|320|Uncut diamond|7 (noted)|3/128|uncut_diamond:7-7/43
+artio|Artio|320|Uncut dragonstone|1|2/128|uncut_dragonstone:1-1/64
+artio|Artio|320|Limpwurt root|20 (noted)|5/128|limpwurt_root:20-20/26
+artio|Artio|320|Magic logs|60 (noted)|5/128|magic_logs:60-60/26
+artio|Artio|320|Mahogany logs|200 (noted)|6/128|mahogany_logs:200-200/21
+artio|Artio|320|Dragon bones|25 (noted)|3/128|dragon_bones:25-25/43
+artio|Artio|320|Grimy toadflax|40 (noted)|1/128|grimy_toadflax:40-40/128
+artio|Artio|320|Coconut|30 (noted)|2/128|coconut:30-30/64
+artio|Artio|320|Red dragonhide|55 (noted)|3/128|red_dragonhide:55-55/43
+artio|Artio|320|Coins|12000|21/128|coins:12000-12000/6
+artio|Artio|320|Dark fishing bait|300|1/128|dark_fishing_bait:300-300/128
+artio|Artio|320|Supercompost|60 (noted)|4/128|supercompost:60-60/32
+artio|Artio|320|Yew seed|1|1/128|yew_seed:1-1/128
+artio|Artio|320|Magic seed|1|1/128|magic_seed:1-1/128
+artio|Artio|320|Ranarr seed|3|5/128|ranarr_seed:3-3/26
+artio|Artio|320|Snapdragon seed|1|5/128|snapdragon_seed:1-1/26
+artio|Artio|320|Palm tree seed|1|1/128|palm_seed:1-1/128
+artio|Artio|320|Blighted anglerfish|5-6|1/18|anglerfish:5-6/18
+artio|Artio|320|Blighted karambwan|5-6|1/18|cooked_karambwan:5-6/18
+artio|Artio|320|Blighted super restore(3)|3-4|1/18|super_restore(3):3-4/18
+artio|Artio|320|Blighted super restore(4)|3-4|1/18|super_restore:3-4/18
+artio|Artio|320|Ranging potion(2)|2-3|1/18|ranging_potion(2):2-3/18
+artio|Artio|320|Super combat potion(2)|2-3|1/18|super_combat_potion(2):2-3/18
+artio|Artio|320|Looting bag|1|1/3|-not in game
+artio|Artio|320|Brimstone key|1|-|-handled elsewhere:brimstone_key
+artio|Artio|320|Long bone|1|1/400|long_bone:1-1/400
+artio|Artio|320|Curved bone|1|1/5012.5|curved_bone:1-1/5012
+artio|Artio|320|Callisto cub|1|1/2800|-handled elsewhere:callisto_cub
+artio|Artio|320|<wilderness_slayer_table>|1|-|-no shared table
+venenatis|Venenatis|464|Big bones|1|Always|big_bones:1-1/1
+venenatis|Venenatis|464|Bones|1|Always|-handled elsewhere:bones
+venenatis|Venenatis|464|Fangs of Venenatis|1|1/196|fangs_of_venenatis:1-1/196
+venenatis|Venenatis|464|Dragon 2h sword|1|1/256|dragon_2h_sword:1-1/256
+venenatis|Venenatis|464|Dragon pickaxe|1|1/256|dragon_pickaxe:1-1/256
+venenatis|Venenatis|464|Voidwaker gem|1|1/360|voidwaker_gem:1-1/360
+venenatis|Venenatis|464|Treasonous ring|1|1/512|treasonous_ring:1-1/512
+venenatis|Venenatis|464|Mystic air staff|4 (noted)|2/126|mystic_air_staff:4-4/63
+venenatis|Venenatis|464|Rune pickaxe|5 (noted)|8/126|rune_pickaxe:5-5/16
+venenatis|Venenatis|464|Rune dart|150|3/126|rune_dart:150-150/42
+venenatis|Venenatis|464|Rune knife|150|5/126|rune_knife:150-150/25
+venenatis|Venenatis|464|Rune platelegs|4 (noted)|2/126|rune_platelegs:4-4/63
+venenatis|Venenatis|464|Rune sq shield|4 (noted)|2/126|rune_sq_shield:4-4/63
+venenatis|Venenatis|464|Dragon dagger|6 (noted)|2/126|dragon_dagger:6-6/63
+venenatis|Venenatis|464|Chaos rune|500|7/126|chaos_rune:500-500/18
+venenatis|Venenatis|464|Death rune|700|7/126|death_rune:700-700/18
+venenatis|Venenatis|464|Blood rune|900|7/126|blood_rune:900-900/18
+venenatis|Venenatis|464|Diamond bolts (e)|300|5/126|diamond_bolts_e:300-300/25
+venenatis|Venenatis|464|Steel cannonball|600|4/126|cannonball:600-600/32
+venenatis|Venenatis|464|Uncut ruby|50 (noted)|1/126|uncut_ruby:50-50/126
+venenatis|Venenatis|464|Uncut diamond|25 (noted)|8/126|uncut_diamond:25-25/16
+venenatis|Venenatis|464|Gold ore|675 (noted)|6/126|gold_ore:675-675/21
+venenatis|Venenatis|464|Onyx bolt tips|150|5/126|onyx_bolt_tips:150-150/25
+venenatis|Venenatis|464|Magic logs|225 (noted)|5/126|magic_logs:225-225/25
+venenatis|Venenatis|464|Limpwurt root|100 (noted)|5/126|limpwurt_root:100-100/25
+venenatis|Venenatis|464|Red spiders' eggs|500 (noted)|3/126|red_spiders_eggs:500-500/42
+venenatis|Venenatis|464|Unicorn horn|225 (noted)|1/126|unicorn_horn:225-225/126
+venenatis|Venenatis|464|Uncut dragonstone|5 (noted)|2/126|uncut_dragonstone:5-5/63
+venenatis|Venenatis|464|Grimy ranarr weed|45 (noted)|1/126|grimy_ranarr_weed:45-45/126
+venenatis|Venenatis|464|Grimy snapdragon|100 (noted)|1/126|grimy_snapdragon:100-100/126
+venenatis|Venenatis|464|Grimy toadflax|45 (noted)|1/126|grimy_toadflax:45-45/126
+venenatis|Venenatis|464|Battlestaff|12 (noted)|2/126|battlestaff:12-12/63
+venenatis|Venenatis|464|Coins|50000|10/126|coins:50000-50000/13
+venenatis|Venenatis|464|Supercompost|225 (noted)|4/126|supercompost:225-225/32
+venenatis|Venenatis|464|Antidote++(4)|20 (noted)|3/126|antidote_plus_plus:20-20/42
+venenatis|Venenatis|464|Super restore(4)|10 (noted)|5/126|super_restore:10-10/25
+venenatis|Venenatis|464|Dark crab|50 (noted)|5/126|dark_crab:50-50/25
+venenatis|Venenatis|464|Blighted anglerfish|100 (noted)|1/126|anglerfish:100-100/126
+venenatis|Venenatis|464|Wilderness crabs teleport|4|3/126|-not in game
+venenatis|Venenatis|464|Blighted anglerfish|5-6|1/18|anglerfish:5-6/18
+venenatis|Venenatis|464|Blighted karambwan|5-6|1/18|cooked_karambwan:5-6/18
+venenatis|Venenatis|464|Blighted super restore(3)|3-4|1/18|super_restore(3):3-4/18
+venenatis|Venenatis|464|Blighted super restore(4)|3-4|1/18|super_restore:3-4/18
+venenatis|Venenatis|464|Ranging potion(2)|2-3|1/18|ranging_potion(2):2-3/18
+venenatis|Venenatis|464|Super combat potion(2)|2-3|1/18|super_combat_potion(2):2-3/18
+venenatis|Venenatis|464|Looting bag|1|1/3|-not in game
+venenatis|Venenatis|464|Strange fruit|1|1/5|-not in game
+venenatis|Venenatis|464|Brimstone key|1|-|-handled elsewhere:brimstone_key
+venenatis|Venenatis|464|Long bone|1|1/400|long_bone:1-1/400
+venenatis|Venenatis|464|Venenatis spiderling|1|1/1500|-handled elsewhere:pet_venenatis_spiderling
+venenatis|Venenatis|464|Curved bone|1|1/5012.5|curved_bone:1-1/5012
+venenatis|Venenatis|464|<wilderness_slayer_table>|1|-|-no shared table
+spindel|Spindel|302|Big bones|1|Always|big_bones:1-1/1
+spindel|Spindel|302|Dragon 2h sword|1|1/358|dragon_2h_sword:1-1/358
+spindel|Spindel|302|Dragon pickaxe|1|1/358|dragon_pickaxe:1-1/358
+spindel|Spindel|302|Fangs of Venenatis|1|1/618|fangs_of_venenatis:1-1/618
+spindel|Spindel|302|Treasonous ring|1|1/716|treasonous_ring:1-1/716
+spindel|Spindel|302|Voidwaker gem|1|1/912|voidwaker_gem:1-1/912
+spindel|Spindel|302|Dark crab|8|5/128|dark_crab:8-8/26
+spindel|Spindel|302|Super restore(4)|3|5/128|super_restore:3-3/26
+spindel|Spindel|302|Rune knife|30|5/128|rune_knife:30-30/26
+spindel|Spindel|302|Rune pickaxe|1|12/128|rune_pickaxe:1-1/11
+spindel|Spindel|302|Rune 2h sword|1|3/128|rune_2h_sword:1-1/43
+spindel|Spindel|302|Chaos rune|180|7/128|chaos_rune:180-180/18
+spindel|Spindel|302|Blood rune|150|7/128|blood_rune:150-150/18
+spindel|Spindel|302|Death rune|220|7/128|death_rune:220-220/18
+spindel|Spindel|302|Steel cannonball|200|4/128|cannonball:200-200/32
+spindel|Spindel|302|Diamond bolts (e)|60|5/128|diamond_bolts_e:60-60/26
+spindel|Spindel|302|Uncut diamond|7 (noted)|8/128|uncut_diamond:7-7/16
+spindel|Spindel|302|Gold ore|180 (noted)|6/128|gold_ore:180-180/21
+spindel|Spindel|302|Magic logs|60 (noted)|5/128|magic_logs:60-60/26
+spindel|Spindel|302|Limpwurt root|18 (noted)|5/128|limpwurt_root:18-18/26
+spindel|Spindel|302|Onyx bolt tips|35|5/128|onyx_bolt_tips:35-35/26
+spindel|Spindel|302|Red spiders' eggs|250 (noted)|3/128|red_spiders_eggs:250-250/43
+spindel|Spindel|302|Uncut dragonstone|1|2/128|uncut_dragonstone:1-1/64
+spindel|Spindel|302|Uncut ruby|14 (noted)|1/128|uncut_ruby:14-14/128
+spindel|Spindel|302|Grimy snapdragon|40 (noted)|1/128|grimy_snapdragon:40-40/128
+spindel|Spindel|302|Unicorn horn|60 (noted)|1/128|unicorn_horn:60-60/128
+spindel|Spindel|302|Coins|14000|21/128|coins:14000-14000/6
+spindel|Spindel|302|Supercompost|60 (noted)|4/128|supercompost:60-60/32
+spindel|Spindel|302|Antidote++(4)|6 (noted)|3/128|antidote_plus_plus:6-6/43
+spindel|Spindel|302|Dark fishing bait|200|1/128|dark_fishing_bait:200-200/128
+spindel|Spindel|302|Magic seed|1|1/128|magic_seed:1-1/128
+spindel|Spindel|302|Palm tree seed|1|1/128|palm_seed:1-1/128
+spindel|Spindel|302|Blighted anglerfish|5-6|5/54|anglerfish:5-6/11
+spindel|Spindel|302|Blighted karambwan|5-6|5/54|cooked_karambwan:5-6/11
+spindel|Spindel|302|Blighted super restore(3)|3-4|5/54|super_restore(3):3-4/11
+spindel|Spindel|302|Blighted super restore(4)|3-4|5/54|super_restore:3-4/11
+spindel|Spindel|302|Ranging potion(2)|2-3|5/54|ranging_potion(2):2-3/11
+spindel|Spindel|302|Super combat potion(2)|2-3|5/54|super_combat_potion(2):2-3/11
+spindel|Spindel|302|Looting bag|1|1/3|-not in game
+spindel|Spindel|302|Strange fruit|1|1/5|-not in game
+spindel|Spindel|302|Brimstone key|1|-|-handled elsewhere:brimstone_key
+spindel|Spindel|302|Venenatis spiderling|1|1/2800|-handled elsewhere:pet_venenatis_spiderling
+spindel|Spindel|302|<wilderness_slayer_table>|1|-|-no shared table
+vetion|Vet'ion|454|Big bones|1|Always|big_bones:1-1/1
+vetion|Vet'ion|454|Bones|1|Always|-handled elsewhere:bones
+vetion|Vet'ion|454|Skull of Vet'ion|1|1/196|skull_of_vetion:1-1/196
+vetion|Vet'ion|454|Dragon 2h sword|1|1/256|dragon_2h_sword:1-1/256
+vetion|Vet'ion|454|Dragon pickaxe|1|1/256|dragon_pickaxe:1-1/256
+vetion|Vet'ion|454|Voidwaker blade|1|1/360|voidwaker_blade:1-1/360
+vetion|Vet'ion|454|Ring of the gods|1|1/512|ring_of_the_gods:1-1/512
+vetion|Vet'ion|454|Mystic fire staff|4 (noted)|2/126|mystic_fire_staff:4-4/63
+vetion|Vet'ion|454|Mystic water staff|4 (noted)|2/126|mystic_water_staff:4-4/63
+vetion|Vet'ion|454|Mystic robe top|4 (noted)|2/126|mystic_robe_top:4-4/63
+vetion|Vet'ion|454|Mystic robe bottom|4 (noted)|2/126|mystic_robe_bottom:4-4/63
+vetion|Vet'ion|454|Rune full helm|4 (noted)|2/126|rune_full_helm:4-4/63
+vetion|Vet'ion|454|Rune pickaxe|5 (noted)|8/126|rune_pickaxe:5-5/16
+vetion|Vet'ion|454|Rune dart|150|3/126|rune_dart:150-150/42
+vetion|Vet'ion|454|Rune knife|150|3/126|rune_knife:150-150/42
+vetion|Vet'ion|454|Chaos rune|900|7/126|chaos_rune:900-900/18
+vetion|Vet'ion|454|Death rune|700|7/126|death_rune:700-700/18
+vetion|Vet'ion|454|Blood rune|500|7/126|blood_rune:500-500/18
+vetion|Vet'ion|454|Steel cannonball|550|4/126|cannonball:550-550/32
+vetion|Vet'ion|454|Uncut ruby|50 (noted)|4/126|uncut_ruby:50-50/32
+vetion|Vet'ion|454|Uncut diamond|25 (noted)|3/126|uncut_diamond:25-25/42
+vetion|Vet'ion|454|Uncut dragonstone|5 (noted)|2/126|uncut_dragonstone:5-5/63
+vetion|Vet'ion|454|Gold ore|675 (noted)|6/126|gold_ore:675-675/21
+vetion|Vet'ion|454|Limpwurt root|60 (noted)|5/126|limpwurt_root:60-60/25
+vetion|Vet'ion|454|Wine of Zamorak|100 (noted)|5/126|wine_of_zamorak:100-100/25
+vetion|Vet'ion|454|Magic logs|225 (noted)|5/126|magic_logs:225-225/25
+vetion|Vet'ion|454|Oak plank|400 (noted)|5/126|oak_plank:400-400/25
+vetion|Vet'ion|454|Dragon bones|150 (noted)|3/126|dragon_bones:150-150/42
+vetion|Vet'ion|454|Mort myre fungus|450 (noted)|2/126|mort_myre_fungus:450-450/63
+vetion|Vet'ion|454|Grimy ranarr weed|100 (noted)|1/126|grimy_ranarr_weed:100-100/126
+vetion|Vet'ion|454|Grimy dwarf weed|45 (noted)|1/126|grimy_dwarf_weed:45-45/126
+vetion|Vet'ion|454|Grimy snapdragon|45 (noted)|1/126|grimy_snapdragon:45-45/126
+vetion|Vet'ion|454|Grimy toadflax|45 (noted)|1/126|grimy_toadflax:45-45/126
+vetion|Vet'ion|454|Coins|50000|10/126|coins:50000-50000/13
+vetion|Vet'ion|454|Supercompost|225 (noted)|4/126|supercompost:225-225/32
+vetion|Vet'ion|454|Super restore(4)|10 (noted)|5/126|super_restore:10-10/25
+vetion|Vet'ion|454|Blighted anglerfish|100 (noted)|1/126|anglerfish:100-100/126
+vetion|Vet'ion|454|Sanfew serum(4)|20 (noted)|5/126|sanfew_serum:20-20/25
+vetion|Vet'ion|454|Dark crab|50 (noted)|5/126|dark_crab:50-50/25
+vetion|Vet'ion|454|Wilderness crabs teleport|4|3/126|-not in game
+vetion|Vet'ion|454|Blighted anglerfish|5-6|1/18|anglerfish:5-6/18
+vetion|Vet'ion|454|Blighted karambwan|5-6|1/18|cooked_karambwan:5-6/18
+vetion|Vet'ion|454|Blighted super restore(3)|3-4|1/18|super_restore(3):3-4/18
+vetion|Vet'ion|454|Blighted super restore(4)|3-4|1/18|super_restore:3-4/18
+vetion|Vet'ion|454|Ranging potion(2)|2-3|1/18|ranging_potion(2):2-3/18
+vetion|Vet'ion|454|Super combat potion(2)|2-3|1/18|super_combat_potion(2):2-3/18
+vetion|Vet'ion|454|Looting bag|1|1/3|-not in game
+vetion|Vet'ion|454|Brimstone key|1|-|-handled elsewhere:brimstone_key
+vetion|Vet'ion|454|Long bone|1|1/400|long_bone:1-1/400
+vetion|Vet'ion|454|Vet'ion Jr.|1|1/1500|-handled elsewhere:vetion_jr
+vetion|Vet'ion|454|Skeleton champion scroll|1|1/5000|skeleton_champion_scroll:1-1/5000
+vetion|Vet'ion|454|Curved bone|1|1/5012.5|curved_bone:1-1/5012
+vetion|Vet'ion|454|<wilderness_slayer_table>|1|-|-no shared table
+calvarion|Calvar'ion|264|Big bones|1|Always|big_bones:1-1/1
+calvarion|Calvar'ion|264|Dragon 2h sword|1|1/358|dragon_2h_sword:1-1/358
+calvarion|Calvar'ion|264|Dragon pickaxe|1|1/358|dragon_pickaxe:1-1/358
+calvarion|Calvar'ion|264|Skull of Vet'ion|1|1/618|skull_of_vetion:1-1/618
+calvarion|Calvar'ion|264|Ring of the gods|1|1/716|ring_of_the_gods:1-1/716
+calvarion|Calvar'ion|264|Voidwaker blade|1|1/912|voidwaker_blade:1-1/912
+calvarion|Calvar'ion|264|Dark crab|8|5/128|dark_crab:8-8/26
+calvarion|Calvar'ion|264|Super restore(4)|3|5/128|super_restore:3-3/26
+calvarion|Calvar'ion|264|Ancient staff|1|3/128|ancient_staff:1-1/43
+calvarion|Calvar'ion|264|Rune 2h sword|1|3/128|rune_2h_sword:1-1/43
+calvarion|Calvar'ion|264|Rune pickaxe|1|12/128|rune_pickaxe:1-1/11
+calvarion|Calvar'ion|264|Chaos rune|220|7/128|chaos_rune:220-220/18
+calvarion|Calvar'ion|264|Death rune|120|7/128|death_rune:120-120/18
+calvarion|Calvar'ion|264|Blood rune|180|7/128|blood_rune:180-180/18
+calvarion|Calvar'ion|264|Steel cannonball|180|4/128|cannonball:180-180/32
+calvarion|Calvar'ion|264|Uncut ruby|17 (noted)|4/128|uncut_ruby:17-17/32
+calvarion|Calvar'ion|264|Uncut diamond|7 (noted)|3/128|uncut_diamond:7-7/43
+calvarion|Calvar'ion|264|Uncut dragonstone|1|2/128|uncut_dragonstone:1-1/64
+calvarion|Calvar'ion|264|Gold ore|200 (noted)|6/128|gold_ore:200-200/21
+calvarion|Calvar'ion|264|Limpwurt root|19 (noted)|5/128|limpwurt_root:19-19/26
+calvarion|Calvar'ion|264|Magic logs|60 (noted)|5/128|magic_logs:60-60/26
+calvarion|Calvar'ion|264|Oak plank|220 (noted)|5/128|oak_plank:220-220/26
+calvarion|Calvar'ion|264|Dragon bones|60 (noted)|3/128|dragon_bones:60-60/43
+calvarion|Calvar'ion|264|Mort myre fungus|120 (noted)|2/128|mort_myre_fungus:120-120/64
+calvarion|Calvar'ion|264|Wine of Zamorak|35 (noted)|5/128|wine_of_zamorak:35-35/26
+calvarion|Calvar'ion|264|Grimy ranarr weed|60 (noted)|1/128|grimy_ranarr_weed:60-60/128
+calvarion|Calvar'ion|264|Coins|12000|21/128|coins:12000-12000/6
+calvarion|Calvar'ion|264|Yew seed|1|1/128|yew_seed:1-1/128
+calvarion|Calvar'ion|264|Magic seed|1|1/128|magic_seed:1-1/128
+calvarion|Calvar'ion|264|Palm tree seed|1|1/128|palm_seed:1-1/128
+calvarion|Calvar'ion|264|Supercompost|60 (noted)|4/128|supercompost:60-60/32
+calvarion|Calvar'ion|264|Sanfew serum(4)|6 (noted)|5/128|sanfew_serum:6-6/26
+calvarion|Calvar'ion|264|Dark fishing bait|280|1/128|dark_fishing_bait:280-280/128
+calvarion|Calvar'ion|264|Blighted anglerfish|5-6|1/18|anglerfish:5-6/18
+calvarion|Calvar'ion|264|Blighted karambwan|5-6|1/18|cooked_karambwan:5-6/18
+calvarion|Calvar'ion|264|Blighted super restore(3)|3-4|1/18|super_restore(3):3-4/18
+calvarion|Calvar'ion|264|Blighted super restore(4)|3-4|1/18|super_restore:3-4/18
+calvarion|Calvar'ion|264|Ranging potion(2)|2-3|1/18|ranging_potion(2):2-3/18
+calvarion|Calvar'ion|264|Super combat potion(2)|2-3|1/18|super_combat_potion(2):2-3/18
+calvarion|Calvar'ion|264|Looting bag|1|1/3|-not in game
+calvarion|Calvar'ion|264|Long bone|1|1/400|long_bone:1-1/400
+calvarion|Calvar'ion|264|Curved bone|1|1/5012.5|curved_bone:1-1/5012
+calvarion|Calvar'ion|264|Skeleton champion scroll|1|1/5000|skeleton_champion_scroll:1-1/5000
+calvarion|Calvar'ion|264|Brimstone key|1|-|-handled elsewhere:brimstone_key
+calvarion|Calvar'ion|264|Vet'ion Jr.|1|1/2800|-handled elsewhere:vetion_jr
+calvarion|Calvar'ion|264|<wilderness_slayer_table>|1|-|-no shared table
+scorpia|Scorpia|225|Odium shard 3|1|1/256|odium_shard_3:1-1/256
+scorpia|Scorpia|225|Malediction shard 3|1|1/256|malediction_shard_3:1-1/256
+scorpia|Scorpia|225|Battlestaff|5-8 (noted)|6/128|battlestaff:5-8/21
+scorpia|Scorpia|225|Rune 2h sword|1|5/128|rune_2h_sword:1-1/26
+scorpia|Scorpia|225|Rune pickaxe|1|5/128|rune_pickaxe:1-1/26
+scorpia|Scorpia|225|Rune kiteshield|1|5/128|rune_kiteshield:1-1/26
+scorpia|Scorpia|225|Rune chainbody|1|4/128|rune_chainbody:1-1/32
+scorpia|Scorpia|225|Rune platelegs|1|4/128|rune_platelegs:1-1/32
+scorpia|Scorpia|225|Rune scimitar|1|4/128|rune_scimitar:1-1/32
+scorpia|Scorpia|225|Rune warhammer|1|4/128|rune_warhammer:1-1/32
+scorpia|Scorpia|225|Mystic earth staff|1|4/128|mystic_earth_staff:1-1/32
+scorpia|Scorpia|225|Mystic robe top|1|1/128|mystic_robe_top:1-1/128
+scorpia|Scorpia|225|Mystic robe bottom|1|1/128|mystic_robe_bottom:1-1/128
+scorpia|Scorpia|225|Dragon scimitar|1|1/128|dragon_scimitar:1-1/128
+scorpia|Scorpia|225|Dragon 2h sword|1|1/128|dragon_2h_sword:1-1/128
+scorpia|Scorpia|225|Death rune|100-150|8/128|death_rune:100-150/16
+scorpia|Scorpia|225|Blood rune|100-150|8/128|blood_rune:100-150/16
+scorpia|Scorpia|225|Chaos rune|150-200|8/128|chaos_rune:150-200/16
+scorpia|Scorpia|225|Grimy kwuarm|10-15 (noted)|5/128|grimy_kwuarm:10-15/26
+scorpia|Scorpia|225|Grimy dwarf weed|10-15 (noted)|5/128|grimy_dwarf_weed:10-15/26
+scorpia|Scorpia|225|Grimy torstol|10-15 (noted)|5/128|grimy_torstol:10-15/26
+scorpia|Scorpia|225|Grimy snapdragon|4-7 (noted)|5/128|grimy_snapdragon:4-7/26
+scorpia|Scorpia|225|Uncut ruby|15-20 (noted)|6/128|uncut_ruby:15-20/21
+scorpia|Scorpia|225|Uncut diamond|10-15 (noted)|4/128|uncut_diamond:10-15/32
+scorpia|Scorpia|225|Runite ore|3 (noted)|4/128|runite_ore:3-3/32
+scorpia|Scorpia|225|Dragon javelin tips|30-50|4/128|dragon_javelin_heads:30-50/32
+scorpia|Scorpia|225|Onyx bolt tips|6-10|2/128|onyx_bolt_tips:6-10/64
+scorpia|Scorpia|225|Coins|25002-34962|7/128|coins:25002-34962/18
+scorpia|Scorpia|225|Blighted anglerfish|15-25 (noted)|5/128|anglerfish:15-25/26
+scorpia|Scorpia|225|Blighted super restore(4)|5 (noted)|5/128|super_restore:5-5/26
+scorpia|Scorpia|225|Wilderness crabs teleport|2|2/128|-not in game
+scorpia|Scorpia|225|Looting bag|1|1/3|-not in game
+scorpia|Scorpia|225|Ensouled scorpion head|1|1/18|ensouled_scorpion_head:1-1/18
+scorpia|Scorpia|225|Brimstone key|1|-|-handled elsewhere:brimstone_key
+scorpia|Scorpia|225|Scorpia's offspring|1|1/2015.75|-handled elsewhere:pet_scorpias_offspring
+scorpia|Scorpia|225|<wilderness_slayer_table>|1|-|-no shared table
+chaos_elemental|Chaos Elemental|305|Blighted anglerfish|2|1/5|anglerfish:2-2/5
+chaos_elemental|Chaos Elemental|305|Blighted karambwan|3|1/5|cooked_karambwan:3-3/5
+chaos_elemental|Chaos Elemental|305|Blighted super restore(4)|1|1/5|super_restore:1-1/5
+chaos_elemental|Chaos Elemental|305|Dragon bones|1|1/5|dragon_bones:1-1/5
+chaos_elemental|Chaos Elemental|305|Super combat potion(1)|1|1/5|super_combat_potion(1):1-1/5
+chaos_elemental|Chaos Elemental|305|Dragon pickaxe|1|1/256|dragon_pickaxe:1-1/256
+chaos_elemental|Chaos Elemental|305|Rune dart|100|5/128|rune_dart:100-100/26
+chaos_elemental|Chaos Elemental|305|Rune platelegs|1|4/128|rune_platelegs:1-1/32
+chaos_elemental|Chaos Elemental|305|Rune plateskirt|1|4/128|rune_plateskirt:1-1/32
+chaos_elemental|Chaos Elemental|305|Rune full helm|1|3/128|rune_full_helm:1-1/43
+chaos_elemental|Chaos Elemental|305|Mystic air staff|1|3/128|mystic_air_staff:1-1/43
+chaos_elemental|Chaos Elemental|305|Mystic water staff|1|3/128|mystic_water_staff:1-1/43
+chaos_elemental|Chaos Elemental|305|Mystic earth staff|1|3/128|mystic_earth_staff:1-1/43
+chaos_elemental|Chaos Elemental|305|Mystic fire staff|1|3/128|mystic_fire_staff:1-1/43
+chaos_elemental|Chaos Elemental|305|Dragon dagger|1|2/128|dragon_dagger:1-1/64
+chaos_elemental|Chaos Elemental|305|Dragon 2h sword|1|2/128|dragon_2h_sword:1-1/64
+chaos_elemental|Chaos Elemental|305|Dragon platelegs|1|2/128|dragon_platelegs:1-1/64
+chaos_elemental|Chaos Elemental|305|Dragon plateskirt|1|2/128|dragon_plateskirt:1-1/64
+chaos_elemental|Chaos Elemental|305|Chaos rune|300-500|8/128|chaos_rune:300-500/16
+chaos_elemental|Chaos Elemental|305|Blood rune|100-250|8/128|blood_rune:100-250/16
+chaos_elemental|Chaos Elemental|305|Grimy ranarr weed|5-8 (noted)|4/128|grimy_ranarr_weed:5-8/32
+chaos_elemental|Chaos Elemental|305|Grimy snapdragon|5-8 (noted)|4/128|grimy_snapdragon:5-8/32
+chaos_elemental|Chaos Elemental|305|Grimy avantoe|5-8 (noted)|3/128|grimy_avantoe:5-8/43
+chaos_elemental|Chaos Elemental|305|Grimy kwuarm|5-8 (noted)|3/128|grimy_kwuarm:5-8/43
+chaos_elemental|Chaos Elemental|305|Coal|75-150 (noted)|5/128|coal:75-150/26
+chaos_elemental|Chaos Elemental|305|Mahogany plank|8-16 (noted)|5/128|mahogany_plank:8-16/26
+chaos_elemental|Chaos Elemental|305|Adamantite bar|8-12 (noted)|4/128|adamantite_bar:8-12/32
+chaos_elemental|Chaos Elemental|305|Blighted ancient ice sack|20-40|5/128|-not in game
+chaos_elemental|Chaos Elemental|305|Blighted karambwan|15-25 (noted)|4/128|cooked_karambwan:15-25/32
+chaos_elemental|Chaos Elemental|305|Blighted anglerfish|10-15 (noted)|4/128|anglerfish:10-15/32
+chaos_elemental|Chaos Elemental|305|Wilderness crabs teleport|2|2/128|-not in game
+chaos_elemental|Chaos Elemental|305|Weapon poison(++)|1|10/128|weapon_poison_plus_plus:1-1/13
+chaos_elemental|Chaos Elemental|305|Looting bag|1|1/3|-not in game
+chaos_elemental|Chaos Elemental|305|Brimstone key|1|-|-handled elsewhere:brimstone_key
+chaos_elemental|Chaos Elemental|305|Pet chaos elemental|1|1/300|-handled elsewhere:pet_chaos_elemental
+chaos_elemental|Chaos Elemental|305|Coins|3000|1/97.5|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Uncut sapphire|1|1/409.6|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Loop half of key|1|1/101.6|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Tooth half of key|1|1/101.6|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Uncut emerald|1|1/819.2|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Uncut ruby|1|1/1638.4|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Runite bar|1|1/409.6|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Nature rune|67|1/682.7|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Rune 2h sword|1|1/682.7|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Rune battleaxe|1|1/682.7|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Law rune|45|1/1024.0|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Death rune|45|1/1024.0|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Steel arrow|150|1/1024.0|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Rune arrow|42|1/1024.0|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Adamant javelin|20|1/1024.0|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Rune sq shield|1|1/1024.0|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Dragonstone|1|1/1024.0|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Silver ore|100 (noted)|1/1024.0|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Uncut diamond|1|1/6553.6|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Rune kiteshield|1|1/2048.0|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Dragon med helm|1|1/2048.0|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Rune spear|1|1/2162.0|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Rune javelin|5|1/13107.2|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Shield left half|1|1/4324.0|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Dragon spear|1|1/5765.4|-expanded shared table
+chaos_elemental|Chaos Elemental|305|Nature talisman|1|1/4369.1|-expanded shared table
+chaos_elemental|Chaos Elemental|305|<rare_drop_table>|1|8/128|#rare:1-1/16
+chaos_elemental|Chaos Elemental|305|<wilderness_slayer_table>|1|-|-no shared table
+chaos_fanatic|Chaos Fanatic|202|Bones|1|Always|bones:1-1/1
+chaos_fanatic|Chaos Fanatic|202|Odium shard 1|1|1/256|odium_shard_1:1-1/256
+chaos_fanatic|Chaos Fanatic|202|Malediction shard 1|1|1/256|malediction_shard_1:1-1/256
+chaos_fanatic|Chaos Fanatic|202|Battlestaff|5 (noted)|5/128|battlestaff:5-5/26
+chaos_fanatic|Chaos Fanatic|202|Splitbark body|1|5/128|-not in game
+chaos_fanatic|Chaos Fanatic|202|Splitbark legs|1|5/128|-not in game
+chaos_fanatic|Chaos Fanatic|202|Zamorak monk top|1|4/128|-not in game
+chaos_fanatic|Chaos Fanatic|202|Zamorak monk bottom|1|4/128|-not in game
+chaos_fanatic|Chaos Fanatic|202|Ancient staff|1|1/128|ancient_staff:1-1/128
+chaos_fanatic|Chaos Fanatic|202|Fire rune|250|4/128|fire_rune:250-250/32
+chaos_fanatic|Chaos Fanatic|202|Smoke rune|30|4/128|smoke_rune:30-30/32
+chaos_fanatic|Chaos Fanatic|202|Chaos rune|175|4/128|chaos_rune:175-175/32
+chaos_fanatic|Chaos Fanatic|202|Blood rune|50|4/128|blood_rune:50-50/32
+chaos_fanatic|Chaos Fanatic|202|Monkfish|3|8/128|monkfish:3-3/16
+chaos_fanatic|Chaos Fanatic|202|Shark|1|8/128|shark:1-1/16
+chaos_fanatic|Chaos Fanatic|202|Prayer potion(4)|1|8/128|prayer_potion:1-1/16
+chaos_fanatic|Chaos Fanatic|202|Anchovy pizza|8 (noted)|4/128|anchovy_pizza:8-8/32
+chaos_fanatic|Chaos Fanatic|202|Grimy lantadyme|4 (noted)|8/128|grimy_lantadyme:4-4/16
+chaos_fanatic|Chaos Fanatic|202|Ring of life|1|7/128|ring_of_life:1-1/18
+chaos_fanatic|Chaos Fanatic|202|Chaos talisman|1|6/128|chaos_talisman:1-1/21
+chaos_fanatic|Chaos Fanatic|202|Wine of Zamorak|10 (noted)|6/128|wine_of_zamorak:10-10/21
+chaos_fanatic|Chaos Fanatic|202|Sinister key|1|4/128|-not in game
+chaos_fanatic|Chaos Fanatic|202|Pure essence|250 (noted)|2/128|pure_essence:250-250/64
+chaos_fanatic|Chaos Fanatic|202|Looting bag|1|1/3|-not in game
+chaos_fanatic|Chaos Fanatic|202|Brimstone key|1|-|-handled elsewhere:brimstone_key
+chaos_fanatic|Chaos Fanatic|202|Pet chaos elemental|1|1/1000|-handled elsewhere:pet_chaos_elemental
+chaos_fanatic|Chaos Fanatic|202|Coins|3000|1/195.0|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Uncut sapphire|1|1/110.7|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Loop half of key|1|1/193.6|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Tooth half of key|1|1/193.6|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Uncut emerald|1|1/221.4|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Uncut ruby|1|1/442.8|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Runite bar|1|1/819.2|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Nature rune|67|1/1365.3|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Rune 2h sword|1|1/1365.3|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Rune battleaxe|1|1/1365.3|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Law rune|45|1/2048.0|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Death rune|45|1/2048.0|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Steel arrow|150|1/2048.0|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Rune arrow|42|1/2048.0|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Adamant javelin|20|1/2048.0|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Rune sq shield|1|1/2048.0|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Dragonstone|1|1/2048.0|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Silver ore|100 (noted)|1/2048.0|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Uncut diamond|1|1/1771.2|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Rune kiteshield|1|1/4096.0|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Dragon med helm|1|1/4096.0|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Rune spear|1|1/4056.4|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Rune javelin|5|1/3542.5|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Shield left half|1|1/8112.8|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Dragon spear|1|1/10817.0|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|Nature talisman|1|1/1180.8|-expanded shared table
+chaos_fanatic|Chaos Fanatic|202|<rare_drop_table>|1|4/128|#rare:1-1/32
+chaos_fanatic|Chaos Fanatic|202|<gem_drop_table>|1|4/128|#gems:1-1/32
+chaos_fanatic|Chaos Fanatic|202|<wilderness_slayer_table>|1|-|-no shared table
+crazy_archaeologist|Crazy archaeologist|204|Bones|1|Always|bones:1-1/1
+crazy_archaeologist|Crazy archaeologist|204|Odium shard 2|1|1/256|odium_shard_2:1-1/256
+crazy_archaeologist|Crazy archaeologist|204|Malediction shard 2|1|1/256|malediction_shard_2:1-1/256
+crazy_archaeologist|Crazy archaeologist|204|Amulet of power|1|7/128|amulet_of_power:1-1/18
+crazy_archaeologist|Crazy archaeologist|204|Rune crossbow|2|5/128|rune_crossbow:2-2/26
+crazy_archaeologist|Crazy archaeologist|204|Red d'hide body|1|4/128|red_dhide_body:1-1/32
+crazy_archaeologist|Crazy archaeologist|204|Rune knife|10|4/128|rune_knife:10-10/32
+crazy_archaeologist|Crazy archaeologist|204|Mud rune|30|4/128|mud_rune:30-30/32
+crazy_archaeologist|Crazy archaeologist|204|Steel cannonball|150|4/128|cannonball:150-150/32
+crazy_archaeologist|Crazy archaeologist|204|Dragon arrow|75|1/128|dragon_arrow:75-75/128
+crazy_archaeologist|Crazy archaeologist|204|Shark|1|8/128|shark:1-1/16
+crazy_archaeologist|Crazy archaeologist|204|Potato with cheese|3|8/128|potato_with_cheese:3-3/16
+crazy_archaeologist|Crazy archaeologist|204|Prayer potion(4)|1|8/128|prayer_potion:1-1/16
+crazy_archaeologist|Crazy archaeologist|204|Anchovy pizza|8 (noted)|4/128|anchovy_pizza:8-8/32
+crazy_archaeologist|Crazy archaeologist|204|Grimy dwarf weed|4 (noted)|8/128|grimy_dwarf_weed:4-4/16
+crazy_archaeologist|Crazy archaeologist|204|White berries|10 (noted)|6/128|white_berries:10-10/21
+crazy_archaeologist|Crazy archaeologist|204|Red dragonhide|10 (noted)|5/128|red_dragonhide:10-10/26
+crazy_archaeologist|Crazy archaeologist|204|Rusty sword|1|4/128|rusty_sword:1-1/32
+crazy_archaeologist|Crazy archaeologist|204|Muddy key|1|4/128|muddy_key:1-1/32
+crazy_archaeologist|Crazy archaeologist|204|Onyx bolt tips|12|4/128|onyx_bolt_tips:12-12/32
+crazy_archaeologist|Crazy archaeologist|204|Long bone|1|2/128|long_bone:1-1/64
+crazy_archaeologist|Crazy archaeologist|204|Looting bag|1|1/3|-not in game
+crazy_archaeologist|Crazy archaeologist|204|Brimstone key|1|-|-handled elsewhere:brimstone_key
+crazy_archaeologist|Crazy archaeologist|204|Fedora|1|1/128|-not in game
+crazy_archaeologist|Crazy archaeologist|204|Coins|3000|1/195.0|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Uncut sapphire|1|1/110.7|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Loop half of key|1|1/193.6|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Tooth half of key|1|1/193.6|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Uncut emerald|1|1/221.4|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Uncut ruby|1|1/442.8|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Runite bar|1|1/819.2|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Nature rune|67|1/1365.3|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Rune 2h sword|1|1/1365.3|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Rune battleaxe|1|1/1365.3|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Law rune|45|1/2048.0|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Death rune|45|1/2048.0|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Steel arrow|150|1/2048.0|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Rune arrow|42|1/2048.0|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Adamant javelin|20|1/2048.0|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Rune sq shield|1|1/2048.0|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Dragonstone|1|1/2048.0|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Silver ore|100 (noted)|1/2048.0|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Uncut diamond|1|1/1771.2|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Rune kiteshield|1|1/4096.0|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Dragon med helm|1|1/4096.0|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Rune spear|1|1/4056.4|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Rune javelin|5|1/3542.5|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Shield left half|1|1/8112.8|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Dragon spear|1|1/10817.0|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|Nature talisman|1|1/1180.8|-expanded shared table
+crazy_archaeologist|Crazy archaeologist|204|<rare_drop_table>|1|4/128|#rare:1-1/32
+crazy_archaeologist|Crazy archaeologist|204|<gem_drop_table>|1|4/128|#gems:1-1/32
+crazy_archaeologist|Crazy archaeologist|204|<wilderness_slayer_table>|1|-|-no shared table
+king_black_dragon|King Black Dragon|276|Dragon bones|1|Always|dragon_bones:1-1/1
+king_black_dragon|King Black Dragon|276|Black dragonhide|2|Always|black_dragonhide:2-2/1
+king_black_dragon|King Black Dragon|276|Dragon pickaxe|1|1/1000|dragon_pickaxe:1-1/1000
+king_black_dragon|King Black Dragon|276|Rune longsword|1|10/128|rune_longsword:1-1/13
+king_black_dragon|King Black Dragon|276|Adamant platebody|1|9/128|adamant_platebody:1-1/14
+king_black_dragon|King Black Dragon|276|Adamant kiteshield|1|3/128|adamant_kiteshield:1-1/43
+king_black_dragon|King Black Dragon|276|Fire rune|300|5/128|fire_rune:300-300/26
+king_black_dragon|King Black Dragon|276|Air rune|300|10/128|air_rune:300-300/13
+king_black_dragon|King Black Dragon|276|Iron arrow|690|10/128|iron_arrow:690-690/13
+king_black_dragon|King Black Dragon|276|Runite bolts|10-20|10/128|rune_bolts:10-20/13
+king_black_dragon|King Black Dragon|276|Blood rune|30|5/128|blood_rune:30-30/26
+king_black_dragon|King Black Dragon|276|Yew logs|150 (noted)|10/128|yew_logs:150-150/13
+king_black_dragon|King Black Dragon|276|Adamantite bar|3|5/128|adamantite_bar:3-3/26
+king_black_dragon|King Black Dragon|276|Gold ore|100 (noted)|2/128|gold_ore:100-100/64
+king_black_dragon|King Black Dragon|276|Amulet of power|1|7/128|amulet_of_power:1-1/18
+king_black_dragon|King Black Dragon|276|Dragon arrowtips|5-14|5/128|dragon_arrowtips:5-14/26
+king_black_dragon|King Black Dragon|276|Dragon dart tip|5-14|5/128|dragon_dart_tip:5-14/26
+king_black_dragon|King Black Dragon|276|Dragon javelin tips|15|5/128|dragon_javelin_heads:15-15/26
+king_black_dragon|King Black Dragon|276|Runite limbs|1|4/128|rune_limbs:1-1/32
+king_black_dragon|King Black Dragon|276|Shark|4|4/128|shark:4-4/32
+king_black_dragon|King Black Dragon|276|Key (elite)|1|Always|-not in game
+king_black_dragon|King Black Dragon|276|Brimstone key|1|-|-handled elsewhere:brimstone_key
+king_black_dragon|King Black Dragon|276|Kbd heads|1|1/128|kbd_heads:1-1/128
+king_black_dragon|King Black Dragon|276|Prince Black Dragon|1|1/3000|-handled elsewhere:prince_black_dragon
+king_black_dragon|King Black Dragon|276|Draconic visage|1|1/5000|draconic_visage:1-1/5000
+king_black_dragon|King Black Dragon|276|Coins|3000|1/97.5|-expanded shared table
+king_black_dragon|King Black Dragon|276|Uncut sapphire|1|1/157.5|-expanded shared table
+king_black_dragon|King Black Dragon|276|Loop half of key|1|1/100.4|-expanded shared table
+king_black_dragon|King Black Dragon|276|Tooth half of key|1|1/100.4|-expanded shared table
+king_black_dragon|King Black Dragon|276|Uncut emerald|1|1/315.1|-expanded shared table
+king_black_dragon|King Black Dragon|276|Uncut ruby|1|1/630.2|-expanded shared table
+king_black_dragon|King Black Dragon|276|Runite bar|1|1/409.6|-expanded shared table
+king_black_dragon|King Black Dragon|276|Nature rune|67|1/682.7|-expanded shared table
+king_black_dragon|King Black Dragon|276|Rune 2h sword|1|1/682.7|-expanded shared table
+king_black_dragon|King Black Dragon|276|Rune battleaxe|1|1/682.7|-expanded shared table
+king_black_dragon|King Black Dragon|276|Law rune|45|1/1024.0|-expanded shared table
+king_black_dragon|King Black Dragon|276|Death rune|45|1/1024.0|-expanded shared table
+king_black_dragon|King Black Dragon|276|Steel arrow|150|1/1024.0|-expanded shared table
+king_black_dragon|King Black Dragon|276|Rune arrow|42|1/1024.0|-expanded shared table
+king_black_dragon|King Black Dragon|276|Adamant javelin|20|1/1024.0|-expanded shared table
+king_black_dragon|King Black Dragon|276|Rune sq shield|1|1/1024.0|-expanded shared table
+king_black_dragon|King Black Dragon|276|Dragonstone|1|1/1024.0|-expanded shared table
+king_black_dragon|King Black Dragon|276|Silver ore|100 (noted)|1/1024.0|-expanded shared table
+king_black_dragon|King Black Dragon|276|Uncut diamond|1|1/2520.6|-expanded shared table
+king_black_dragon|King Black Dragon|276|Rune kiteshield|1|1/2048.0|-expanded shared table
+king_black_dragon|King Black Dragon|276|Dragon med helm|1|1/2048.0|-expanded shared table
+king_black_dragon|King Black Dragon|276|Rune spear|1|1/2126.9|-expanded shared table
+king_black_dragon|King Black Dragon|276|Rune javelin|5|1/5041.2|-expanded shared table
+king_black_dragon|King Black Dragon|276|Shield left half|1|1/4253.9|-expanded shared table
+king_black_dragon|King Black Dragon|276|Dragon spear|1|1/5671.8|-expanded shared table
+king_black_dragon|King Black Dragon|276|Nature talisman|1|1/1680.4|-expanded shared table
+king_black_dragon|King Black Dragon|276|<rare_drop_table>|1|8/128|#rare:1-1/16
+king_black_dragon|King Black Dragon|276|<gem_drop_table>|1|2/128|#gems:1-1/64
+giant_mole|Giant Mole|230|Big bones|1|Always|big_bones:1-1/1
+giant_mole|Giant Mole|230|Mole claw|1|Always|mole_claw:1-1/1
+giant_mole|Giant Mole|230|Mole skin|1-3|Always|mole_skin:1-3/1
+giant_mole|Giant Mole|230|Adamant longsword|1|10/131|adamant_longsword:1-1/13
+giant_mole|Giant Mole|230|Mithril platebody|1|9/131|mithril_platebody:1-1/15
+giant_mole|Giant Mole|230|Amulet of strength|1|7/131|amulet_of_strength:1-1/19
+giant_mole|Giant Mole|230|Mithril axe|1|2/131|mithril_axe:1-1/66
+giant_mole|Giant Mole|230|Mithril battleaxe|1|1/131|mithril_battleaxe:1-1/131
+giant_mole|Giant Mole|230|Rune med helm|1|1/131|rune_med_helm:1-1/131
+giant_mole|Giant Mole|230|Air rune|105|20/131|air_rune:105-105/7
+giant_mole|Giant Mole|230|Blood rune|15|19/131|blood_rune:15-15/7
+giant_mole|Giant Mole|230|Fire rune|105|11/131|fire_rune:105-105/12
+giant_mole|Giant Mole|230|Iron arrow|690|10/131|iron_arrow:690-690/13
+giant_mole|Giant Mole|230|Yew logs|100 (noted)|10/131|yew_logs:100-100/13
+giant_mole|Giant Mole|230|Shark|4|4/131|shark:4-4/33
+giant_mole|Giant Mole|230|Mithril bar|1|3/131|mithril_bar:1-1/44
+giant_mole|Giant Mole|230|Ranarr seed|1|3/131|ranarr_seed:1-1/44
+giant_mole|Giant Mole|230|Iron ore|100 (noted)|2/131|iron_ore:100-100/66
+giant_mole|Giant Mole|230|Oyster pearls|1|1/131|oyster_pearls:1-1/131
+giant_mole|Giant Mole|230|Immaculate mole skin|1|1/50|-not in game
+giant_mole|Giant Mole|230|Brimstone key|1|-|-handled elsewhere:brimstone_key
+giant_mole|Giant Mole|230|Long bone|1|1/400|long_bone:1-1/400
+giant_mole|Giant Mole|230|Baby Mole|1|1/3000|-handled elsewhere:pet_baby_mole
+giant_mole|Giant Mole|230|Curved bone|1|1/5012.5|curved_bone:1-1/5012
+giant_mole|Giant Mole|230|Coins|3000|1/199.6|-expanded shared table
+giant_mole|Giant Mole|230|Uncut sapphire|1|1/79.1|-expanded shared table
+giant_mole|Giant Mole|230|Loop half of key|1|1/193.6|-expanded shared table
+giant_mole|Giant Mole|230|Tooth half of key|1|1/193.6|-expanded shared table
+giant_mole|Giant Mole|230|Uncut emerald|1|1/158.2|-expanded shared table
+giant_mole|Giant Mole|230|Uncut ruby|1|1/316.4|-expanded shared table
+giant_mole|Giant Mole|230|Runite bar|1|1/838.4|-expanded shared table
+giant_mole|Giant Mole|230|Nature rune|67|1/1397.3|-expanded shared table
+giant_mole|Giant Mole|230|Rune 2h sword|1|1/1397.3|-expanded shared table
+giant_mole|Giant Mole|230|Rune battleaxe|1|1/1397.3|-expanded shared table
+giant_mole|Giant Mole|230|Law rune|45|1/2096.0|-expanded shared table
+giant_mole|Giant Mole|230|Death rune|45|1/2096.0|-expanded shared table
+giant_mole|Giant Mole|230|Steel arrow|150|1/2096.0|-expanded shared table
+giant_mole|Giant Mole|230|Rune arrow|42|1/2096.0|-expanded shared table
+giant_mole|Giant Mole|230|Adamant javelin|20|1/2096.0|-expanded shared table
+giant_mole|Giant Mole|230|Rune sq shield|1|1/2096.0|-expanded shared table
+giant_mole|Giant Mole|230|Dragonstone|1|1/2096.0|-expanded shared table
+giant_mole|Giant Mole|230|Silver ore|100 (noted)|1/2096.0|-expanded shared table
+giant_mole|Giant Mole|230|Uncut diamond|1|1/1265.5|-expanded shared table
+giant_mole|Giant Mole|230|Rune kiteshield|1|1/4192.0|-expanded shared table
+giant_mole|Giant Mole|230|Dragon med helm|1|1/4192.0|-expanded shared table
+giant_mole|Giant Mole|230|Rune spear|1|1/4026.8|-expanded shared table
+giant_mole|Giant Mole|230|Rune javelin|5|1/2531.0|-expanded shared table
+giant_mole|Giant Mole|230|Shield left half|1|1/8053.7|-expanded shared table
+giant_mole|Giant Mole|230|Dragon spear|1|1/10738.2|-expanded shared table
+giant_mole|Giant Mole|230|Nature talisman|1|1/843.7|-expanded shared table
+giant_mole|Giant Mole|230|<rare_drop_table>|1|4/131|#rare:1-1/33
+giant_mole|Giant Mole|230|<gem_drop_table>|1|6/131|#gems:1-1/22
+kalphite_queen|Kalphite Queen|333|Monkfish|3|1/9|monkfish:3-3/9
+kalphite_queen|Kalphite Queen|333|Shark|2|1/9|shark:2-2/9
+kalphite_queen|Kalphite Queen|333|Dark crab|2|1/9|dark_crab:2-2/9
+kalphite_queen|Kalphite Queen|333|Saradomin brew(4)|1|1/9|saradomin_brew:1-1/9
+kalphite_queen|Kalphite Queen|333|Prayer potion(4)|2|1/9|prayer_potion:2-2/9
+kalphite_queen|Kalphite Queen|333|Super restore(4)|1|1/9|super_restore:1-1/9
+kalphite_queen|Kalphite Queen|333|Super combat potion(2)|1|1/9|super_combat_potion(2):1-1/9
+kalphite_queen|Kalphite Queen|333|Ranging potion(3)|1|1/9|ranging_potion(3):1-1/9
+kalphite_queen|Kalphite Queen|333|Superantipoison(2)|1|1/9|superantipoison(2):1-1/9
+kalphite_queen|Kalphite Queen|333|Battlestaff|10 (noted)|5/126|battlestaff:10-10/25
+kalphite_queen|Kalphite Queen|333|Rune chainbody|1|4/126|rune_chainbody:1-1/32
+kalphite_queen|Kalphite Queen|333|Red d'hide body|1|4/126|red_dhide_body:1-1/32
+kalphite_queen|Kalphite Queen|333|Rune knife(p++)|25|4/126|-not in game
+kalphite_queen|Kalphite Queen|333|Lava battlestaff|1|2/126|lava_battlestaff:1-1/63
+kalphite_queen|Kalphite Queen|333|Blood rune|100|6/126|blood_rune:100-100/21
+kalphite_queen|Kalphite Queen|333|Mithril arrow|500|5/126|mithril_arrow:500-500/25
+kalphite_queen|Kalphite Queen|333|Grimy toadflax|25 (noted)|2/126|grimy_toadflax:25-25/63
+kalphite_queen|Kalphite Queen|333|Grimy ranarr weed|25 (noted)|2/126|grimy_ranarr_weed:25-25/63
+kalphite_queen|Kalphite Queen|333|Grimy snapdragon|25 (noted)|2/126|grimy_snapdragon:25-25/63
+kalphite_queen|Kalphite Queen|333|Grimy torstol|25 (noted)|2/126|grimy_torstol:25-25/63
+kalphite_queen|Kalphite Queen|333|Torstol seed|2|4/126|torstol_seed:2-2/32
+kalphite_queen|Kalphite Queen|333|Watermelon seed|25|3/126|watermelon_seed:25-25/42
+kalphite_queen|Kalphite Queen|333|Papaya tree seed|2|3/126|papaya_seed:2-2/42
+kalphite_queen|Kalphite Queen|333|Palm tree seed|2|3/126|palm_seed:2-2/42
+kalphite_queen|Kalphite Queen|333|Magic seed|2|3/126|magic_seed:2-2/42
+kalphite_queen|Kalphite Queen|333|Bucket of sand|100 (noted)|4/126|bucket_of_sand:100-100/32
+kalphite_queen|Kalphite Queen|333|Gold ore|250 (noted)|4/126|gold_ore:250-250/32
+kalphite_queen|Kalphite Queen|333|Magic logs|60 (noted)|4/126|magic_logs:60-60/32
+kalphite_queen|Kalphite Queen|333|Wine of Zamorak|60 (noted)|10/126|wine_of_zamorak:60-60/13
+kalphite_queen|Kalphite Queen|333|Potato cactus|100 (noted)|8/126|potato_cactus:100-100/16
+kalphite_queen|Kalphite Queen|333|Grapes|100 (noted)|5/126|grapes:100-100/25
+kalphite_queen|Kalphite Queen|333|Weapon poison(++)|5 (noted)|5/126|weapon_poison_plus_plus:5-5/25
+kalphite_queen|Kalphite Queen|333|Cactus spine|10 (noted)|3/126|cactus_spine:10-10/42
+kalphite_queen|Kalphite Queen|333|Kq head (tattered)|1|Once|-not in game
+kalphite_queen|Kalphite Queen|333|Ensouled kalphite head|1|1/20|ensouled_kalphite_head:1-1/20
+kalphite_queen|Kalphite Queen|333|Brimstone key|1|-|-handled elsewhere:brimstone_key
+kalphite_queen|Kalphite Queen|333|Kq head|1|1/128|kq_head:1-1/128
+kalphite_queen|Kalphite Queen|333|Dragon chainbody|1|1/128|dragon_chainbody:1-1/128
+kalphite_queen|Kalphite Queen|333|Dragon 2h sword|1|1/256|dragon_2h_sword:1-1/256
+kalphite_queen|Kalphite Queen|333|Dragon pickaxe|1|1/400|dragon_pickaxe:1-1/400
+kalphite_queen|Kalphite Queen|333|Jar of Sand|1|1/2000|jar_of_sand:1-1/2000
+kalphite_queen|Kalphite Queen|333|Kalphite Princess|1|1/3000|-handled elsewhere:pet_kalphite_princess
+kalphite_queen|Kalphite Queen|333|Coins|3000|1/768.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Uncut sapphire|1|1/3225.6|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Loop half of key|1|1/800.1|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Tooth half of key|1|1/800.1|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Uncut emerald|1|1/6451.2|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Uncut ruby|1|1/12902.4|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Runite bar|1|1/3225.6|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Nature rune|67|1/5376.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Rune 2h sword|1|1/5376.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Rune battleaxe|1|1/5376.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Law rune|45|1/8064.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Death rune|45|1/8064.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Steel arrow|150|1/8064.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Rune arrow|42|1/8064.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Adamant javelin|20|1/8064.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Rune sq shield|1|1/8064.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Dragonstone|1|1/8064.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Silver ore|100 (noted)|1/8064.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Uncut diamond|1|1/51609.6|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Rune kiteshield|1|1/16128.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Dragon med helm|1|1/16128.0|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Rune spear|1|1/17025.8|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Rune javelin|5|1/103219.2|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Shield left half|1|1/34051.7|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Dragon spear|1|1/45402.3|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Chaos talisman|1|1/34406.4|-expanded shared table
+kalphite_queen|Kalphite Queen|333|Nature talisman|1|1/34406.4|-expanded shared table
+kalphite_queen|Kalphite Queen|333|<rare_drop_table>|1|1/126|#rare:1-1/126
+dagannoth_rex|Dagannoth Rex|303|Dagannoth bones|1|Always|dagannoth_bones:1-1/1
+dagannoth_rex|Dagannoth Rex|303|Dagannoth hide|1|Always|dagannoth_hide:1-1/1
+dagannoth_rex|Dagannoth Rex|303|Steel kiteshield|1|17/128|steel_kiteshield:1-1/8
+dagannoth_rex|Dagannoth Rex|303|Mithril warhammer|1|11/128|mithril_warhammer:1-1/12
+dagannoth_rex|Dagannoth Rex|303|Adamant axe|1|7/128|adamant_axe:1-1/18
+dagannoth_rex|Dagannoth Rex|303|Steel platebody|1|4/128|steel_platebody:1-1/32
+dagannoth_rex|Dagannoth Rex|303|Mithril pickaxe|1|3/128|mithril_pickaxe:1-1/43
+dagannoth_rex|Dagannoth Rex|303|Adamant platebody|1|2/128|adamant_platebody:1-1/64
+dagannoth_rex|Dagannoth Rex|303|Fremennik blade|1|2/128|fremennik_blade:1-1/64
+dagannoth_rex|Dagannoth Rex|303|Dragon axe|1|1/128|dragon_axe:1-1/128
+dagannoth_rex|Dagannoth Rex|303|Rune axe|1|1/128|rune_axe:1-1/128
+dagannoth_rex|Dagannoth Rex|303|Fremennik shield|1|1/128|fremennik_shield:1-1/128
+dagannoth_rex|Dagannoth Rex|303|Fremennik helm|1|1/128|fremennik_helm:1-1/128
+dagannoth_rex|Dagannoth Rex|303|Mithril 2h sword|1|1/128|mithril_2h_sword:1-1/128
+dagannoth_rex|Dagannoth Rex|303|Ring of life|1|1/128|ring_of_life:1-1/128
+dagannoth_rex|Dagannoth Rex|303|Rock-shell plate|1|1/128|rock_shell_plate:1-1/128
+dagannoth_rex|Dagannoth Rex|303|Rock-shell legs|1|1/128|rock_shell_legs:1-1/128
+dagannoth_rex|Dagannoth Rex|303|Berserker ring|1|1/128|berserker_ring:1-1/128
+dagannoth_rex|Dagannoth Rex|303|Warrior ring|1|1/128|warrior_ring:1-1/128
+dagannoth_rex|Dagannoth Rex|303|Antifire potion(2)|1|1/128|antifire_potion(2):1-1/128
+dagannoth_rex|Dagannoth Rex|303|Prayer potion(2)|1|1/128|prayer_potion(2):1-1/128
+dagannoth_rex|Dagannoth Rex|303|Restore potion(2)|1|1/128|restore_potion(2):1-1/128
+dagannoth_rex|Dagannoth Rex|303|Super attack(2)|1|1/128|super_attack(2):1-1/128
+dagannoth_rex|Dagannoth Rex|303|Super strength(2)|1|1/128|super_strength(2):1-1/128
+dagannoth_rex|Dagannoth Rex|303|Super defence(2)|1|1/128|super_defence(2):1-1/128
+dagannoth_rex|Dagannoth Rex|303|Zamorak brew(2)|1|1/128|zamorak_brew(2):1-1/128
+dagannoth_rex|Dagannoth Rex|303|Mithril ore|25 (noted)|10/128|mithril_ore:25-25/13
+dagannoth_rex|Dagannoth Rex|303|Adamantite bar|1|3/128|adamantite_bar:1-1/43
+dagannoth_rex|Dagannoth Rex|303|Coal|100 (noted)|2/128|coal:100-100/64
+dagannoth_rex|Dagannoth Rex|303|Iron ore|150 (noted)|1/128|iron_ore:150-150/128
+dagannoth_rex|Dagannoth Rex|303|Steel bar|15-30 (noted)|1/128|steel_bar:15-30/128
+dagannoth_rex|Dagannoth Rex|303|Grimy ranarr weed|1|7/128|grimy_ranarr_weed:1-1/18
+dagannoth_rex|Dagannoth Rex|303|Bass|5|7/128|bass:5-5/18
+dagannoth_rex|Dagannoth Rex|303|Swordfish|5|4/128|swordfish:5-5/32
+dagannoth_rex|Dagannoth Rex|303|Shark|5|1/128|shark:5-5/128
+dagannoth_rex|Dagannoth Rex|303|Dagannoth ribs|1|1/4|-not in game
+dagannoth_rex|Dagannoth Rex|303|Ensouled dagannoth head|1|1/20|ensouled_dagannoth_head:1-1/20
+dagannoth_rex|Dagannoth Rex|303|Brimstone key|1|-|-handled elsewhere:brimstone_key
+dagannoth_rex|Dagannoth Rex|303|Pet Dagannoth Rex|1|1/5000|-handled elsewhere:pet_dagannoth_rex
+dagannoth_rex|Dagannoth Rex|303|Coins|3000|1/97.5|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Uncut sapphire|1|1/45.5|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Loop half of key|1|1/95.7|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Tooth half of key|1|1/95.7|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Uncut emerald|1|1/91.0|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Uncut ruby|1|1/182.0|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Runite bar|1|1/409.6|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Nature rune|67|1/682.7|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Rune 2h sword|1|1/682.7|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Rune battleaxe|1|1/682.7|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Law rune|45|1/1024.0|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Death rune|45|1/1024.0|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Steel arrow|150|1/1024.0|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Rune arrow|42|1/1024.0|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Adamant javelin|20|1/1024.0|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Rune sq shield|1|1/1024.0|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Dragonstone|1|1/1024.0|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Silver ore|100 (noted)|1/1024.0|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Uncut diamond|1|1/728.2|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Rune kiteshield|1|1/2048.0|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Dragon med helm|1|1/2048.0|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Rune spear|1|1/1997.3|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Rune javelin|5|1/1456.4|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Shield left half|1|1/3994.6|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Dragon spear|1|1/5326.1|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|Nature talisman|1|1/485.5|-expanded shared table
+dagannoth_rex|Dagannoth Rex|303|<rare_drop_table>|1|8/128|#rare:1-1/16
+dagannoth_rex|Dagannoth Rex|303|<gem_drop_table>|1|10/128|#gems:1-1/13
+dagannoth_prime|Dagannoth Prime|303|Dagannoth bones|1|Always|dagannoth_bones:1-1/1
+dagannoth_prime|Dagannoth Prime|303|Dagannoth hide|1|Always|dagannoth_hide:1-1/1
+dagannoth_prime|Dagannoth Prime|303|Earth battlestaff|1|10/128|earth_battlestaff:1-1/13
+dagannoth_prime|Dagannoth Prime|303|Water battlestaff|1|5/128|water_battlestaff:1-1/26
+dagannoth_prime|Dagannoth Prime|303|Air battlestaff|1|4/128|air_battlestaff:1-1/32
+dagannoth_prime|Dagannoth Prime|303|Battlestaff|1-10 (noted)|1/128|battlestaff:1-10/128
+dagannoth_prime|Dagannoth Prime|303|Fremennik blade|1|1/128|fremennik_blade:1-1/128
+dagannoth_prime|Dagannoth Prime|303|Fremennik shield|1|1/128|fremennik_shield:1-1/128
+dagannoth_prime|Dagannoth Prime|303|Fremennik helm|1|1/128|fremennik_helm:1-1/128
+dagannoth_prime|Dagannoth Prime|303|Mud battlestaff|1|1/128|mud_battlestaff:1-1/128
+dagannoth_prime|Dagannoth Prime|303|Dragon axe|1|1/128|dragon_axe:1-1/128
+dagannoth_prime|Dagannoth Prime|303|Farseer helm|1|1/128|farseer_helm:1-1/128
+dagannoth_prime|Dagannoth Prime|303|Skeletal top|1|1/128|skeletal_top:1-1/128
+dagannoth_prime|Dagannoth Prime|303|Skeletal bottoms|1|1/128|skeletal_bottoms:1-1/128
+dagannoth_prime|Dagannoth Prime|303|Seers ring|1|1/128|seers_ring:1-1/128
+dagannoth_prime|Dagannoth Prime|303|Air rune|100-200|6/128|air_rune:100-200/21
+dagannoth_prime|Dagannoth Prime|303|Earth rune|50-100|5/128|earth_rune:50-100/26
+dagannoth_prime|Dagannoth Prime|303|Blood rune|25-75|2/128|blood_rune:25-75/64
+dagannoth_prime|Dagannoth Prime|303|Mud rune|25-75|2/128|mud_rune:25-75/64
+dagannoth_prime|Dagannoth Prime|303|Earth talisman|25-75 (noted)|10/128|earth_talisman:25-75/13
+dagannoth_prime|Dagannoth Prime|303|Air talisman|25-75 (noted)|7/128|air_talisman:25-75/18
+dagannoth_prime|Dagannoth Prime|303|Water talisman|1-76 (noted)|7/128|water_talisman:1-76/18
+dagannoth_prime|Dagannoth Prime|303|Shark|5|10/128|shark:5-5/13
+dagannoth_prime|Dagannoth Prime|303|Oyster pearls|1|5/128|oyster_pearls:1-1/26
+dagannoth_prime|Dagannoth Prime|303|Pure essence|150 (noted)|5/128|pure_essence:150-150/26
+dagannoth_prime|Dagannoth Prime|303|Grimy ranarr weed|1|5/128|grimy_ranarr_weed:1-1/26
+dagannoth_prime|Dagannoth Prime|303|Dagannoth ribs|1|1/4|-not in game
+dagannoth_prime|Dagannoth Prime|303|Ensouled dagannoth head|1|1/20|ensouled_dagannoth_head:1-1/20
+dagannoth_prime|Dagannoth Prime|303|Brimstone key|1|-|-handled elsewhere:brimstone_key
+dagannoth_prime|Dagannoth Prime|303|Pet Dagannoth Prime|1|1/5000|-handled elsewhere:pet_dagannoth_prime
+dagannoth_prime|Dagannoth Prime|303|Coins|3000|1/97.5|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Uncut sapphire|1|1/45.5|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Loop half of key|1|1/95.7|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Tooth half of key|1|1/95.7|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Uncut emerald|1|1/91.0|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Uncut ruby|1|1/182.0|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Runite bar|1|1/409.6|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Nature rune|67|1/682.7|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Rune 2h sword|1|1/682.7|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Rune battleaxe|1|1/682.7|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Law rune|45|1/1024.0|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Death rune|45|1/1024.0|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Steel arrow|150|1/1024.0|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Rune arrow|42|1/1024.0|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Adamant javelin|20|1/1024.0|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Rune sq shield|1|1/1024.0|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Dragonstone|1|1/1024.0|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Silver ore|100 (noted)|1/1024.0|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Uncut diamond|1|1/728.2|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Rune kiteshield|1|1/2048.0|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Dragon med helm|1|1/2048.0|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Rune spear|1|1/1997.3|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Rune javelin|5|1/1456.4|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Shield left half|1|1/3994.6|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Dragon spear|1|1/5326.1|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Nature talisman|1|1/485.5|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Toadflax seed|1|1/92.3|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Irit seed|1|1/134.7|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Belladonna seed|1|1/139.4|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Poison ivy seed|1|1/193.5|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Avantoe seed|1|1/197.3|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Cactus seed|1|1/207.6|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Potato cactus seed|1|1/284.7|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Kwuarm seed|1|1/288.9|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Snapdragon seed|1|1/433.3|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Cadantine seed|1|1/622.9|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Lantadyme seed|1|1/866.6|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Snape grass seed|3|1/996.6|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Dwarf weed seed|1|1/1423.7|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|Torstol seed|1|1/2214.6|-expanded shared table
+dagannoth_prime|Dagannoth Prime|303|<rare_drop_table>|1|8/128|#rare:1-1/16
+dagannoth_prime|Dagannoth Prime|303|<gem_drop_table>|1|10/128|#gems:1-1/13
+dagannoth_prime|Dagannoth Prime|303|<rare_seed_drop_table>|1|7/128|#rare_seeds:1-1/18
+dagannoth_supreme|Dagannoth Supreme|303|Dagannoth bones|1|Always|dagannoth_bones:1-1/1
+dagannoth_supreme|Dagannoth Supreme|303|Dagannoth hide|1|Always|dagannoth_hide:1-1/1
+dagannoth_supreme|Dagannoth Supreme|303|Mithril knife|25-50|10/128|mithril_knife:25-50/13
+dagannoth_supreme|Dagannoth Supreme|303|Red d'hide vambraces|1|7/128|red_dhide_vambraces:1-1/18
+dagannoth_supreme|Dagannoth Supreme|303|Rune thrownaxe|5-10|5/128|rune_thrownaxe:5-10/26
+dagannoth_supreme|Dagannoth Supreme|303|Adamant dart|10-25|5/128|adamant_dart:10-25/26
+dagannoth_supreme|Dagannoth Supreme|303|Iron knife|200-500|5/128|iron_knife:200-500/26
+dagannoth_supreme|Dagannoth Supreme|303|Steel knife|50-150|5/128|steel_knife:50-150/26
+dagannoth_supreme|Dagannoth Supreme|303|Fremennik blade|1|1/128|fremennik_blade:1-1/128
+dagannoth_supreme|Dagannoth Supreme|303|Fremennik shield|1|1/128|fremennik_shield:1-1/128
+dagannoth_supreme|Dagannoth Supreme|303|Fremennik helm|1|1/128|fremennik_helm:1-1/128
+dagannoth_supreme|Dagannoth Supreme|303|Seercull|1|1/128|seercull:1-1/128
+dagannoth_supreme|Dagannoth Supreme|303|Dragon axe|1|1/128|dragon_axe:1-1/128
+dagannoth_supreme|Dagannoth Supreme|303|Archer helm|1|1/128|archer_helm:1-1/128
+dagannoth_supreme|Dagannoth Supreme|303|Spined body|1|1/128|spined_body:1-1/128
+dagannoth_supreme|Dagannoth Supreme|303|Spined chaps|1|1/128|spined_chaps:1-1/128
+dagannoth_supreme|Dagannoth Supreme|303|Archers ring|1|1/128|archers_ring:1-1/128
+dagannoth_supreme|Dagannoth Supreme|303|Runite bolts|2-12|5/128|rune_bolts:2-12/26
+dagannoth_supreme|Dagannoth Supreme|303|Iron arrow|200-700|4/128|iron_arrow:200-700/32
+dagannoth_supreme|Dagannoth Supreme|303|Oyster pearls|1|6/128|oyster_pearls:1-1/21
+dagannoth_supreme|Dagannoth Supreme|303|Opal bolt tips|10-30|5/128|opal_bolt_tips:10-30/26
+dagannoth_supreme|Dagannoth Supreme|303|Shark|5|5/128|shark:5-5/26
+dagannoth_supreme|Dagannoth Supreme|303|Yew logs|50-150 (noted)|5/128|yew_logs:50-150/26
+dagannoth_supreme|Dagannoth Supreme|303|Grimy ranarr weed|1|5/128|grimy_ranarr_weed:1-1/26
+dagannoth_supreme|Dagannoth Supreme|303|Maple logs|15-65 (noted)|3/128|maple_logs:15-65/43
+dagannoth_supreme|Dagannoth Supreme|303|Runite limbs|1|2/128|rune_limbs:1-1/64
+dagannoth_supreme|Dagannoth Supreme|303|Feather|250-500|1/128|-not in game
+dagannoth_supreme|Dagannoth Supreme|303|Dagannoth ribs|1|1/4|-not in game
+dagannoth_supreme|Dagannoth Supreme|303|Ensouled dagannoth head|1|1/20|ensouled_dagannoth_head:1-1/20
+dagannoth_supreme|Dagannoth Supreme|303|Brimstone key|1|-|-handled elsewhere:brimstone_key
+dagannoth_supreme|Dagannoth Supreme|303|Pet Dagannoth Supreme|1|1/5000|-handled elsewhere:pet_dagannoth_supreme
+dagannoth_supreme|Dagannoth Supreme|303|Coins|3000|1/97.5|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Uncut sapphire|1|1/45.5|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Loop half of key|1|1/95.7|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Tooth half of key|1|1/95.7|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Uncut emerald|1|1/91.0|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Uncut ruby|1|1/182.0|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Runite bar|1|1/409.6|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Nature rune|67|1/682.7|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Rune 2h sword|1|1/682.7|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Rune battleaxe|1|1/682.7|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Law rune|45|1/1024.0|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Death rune|45|1/1024.0|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Steel arrow|150|1/1024.0|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Rune arrow|42|1/1024.0|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Adamant javelin|20|1/1024.0|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Rune sq shield|1|1/1024.0|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Dragonstone|1|1/1024.0|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Silver ore|100 (noted)|1/1024.0|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Uncut diamond|1|1/728.2|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Rune kiteshield|1|1/2048.0|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Dragon med helm|1|1/2048.0|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Rune spear|1|1/1997.3|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Rune javelin|5|1/1456.4|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Shield left half|1|1/3994.6|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Dragon spear|1|1/5326.1|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Nature talisman|1|1/485.5|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Toadflax seed|1|1/92.3|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Irit seed|1|1/134.7|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Belladonna seed|1|1/139.4|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Poison ivy seed|1|1/193.5|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Avantoe seed|1|1/197.3|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Cactus seed|1|1/207.6|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Potato cactus seed|1|1/284.7|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Kwuarm seed|1|1/288.9|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Snapdragon seed|1|1/433.3|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Cadantine seed|1|1/622.9|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Lantadyme seed|1|1/866.6|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Snape grass seed|3|1/996.6|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Dwarf weed seed|1|1/1423.7|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|Torstol seed|1|1/2214.6|-expanded shared table
+dagannoth_supreme|Dagannoth Supreme|303|<rare_drop_table>|1|8/128|#rare:1-1/16
+dagannoth_supreme|Dagannoth Supreme|303|<gem_drop_table>|1|10/128|#gems:1-1/13
+dagannoth_supreme|Dagannoth Supreme|303|<rare_seed_drop_table>|1|7/128|#rare_seeds:1-1/18
+sarachnis|Sarachnis|318|Dragon med helm|1|2/384|dragon_med_helm:1-1/192
+sarachnis|Sarachnis|318|Sarachnis cudgel|1|1/384|sarachnis_cudgel:1-1/384
+sarachnis|Sarachnis|318|Battlestaff|8-10 (noted)|2/100|battlestaff:8-10/50
+sarachnis|Sarachnis|318|Rune platebody|1|2/100|rune_platebody:1-1/50
+sarachnis|Sarachnis|318|Rune med helm|1|2/100|rune_med_helm:1-1/50
+sarachnis|Sarachnis|318|Rune 2h sword|1|2/100|rune_2h_sword:1-1/50
+sarachnis|Sarachnis|318|Blood rune|80-100|5/100|blood_rune:80-100/20
+sarachnis|Sarachnis|318|Chaos rune|175-200|5/100|chaos_rune:175-200/20
+sarachnis|Sarachnis|318|Cosmic rune|125-150|5/100|cosmic_rune:125-150/20
+sarachnis|Sarachnis|318|Death rune|80-100|5/100|death_rune:80-100/20
+sarachnis|Sarachnis|318|Soul rune|80-100|5/100|soul_rune:80-100/20
+sarachnis|Sarachnis|318|Mithril arrow|450-600|2/100|mithril_arrow:450-600/50
+sarachnis|Sarachnis|318|Mithril bolts|175-225|2/100|mithril_bolts:175-225/50
+sarachnis|Sarachnis|318|Maple seed|2|1/100|maple_seed:2-2/100
+sarachnis|Sarachnis|318|Papaya tree seed|2|1/100|papaya_seed:2-2/100
+sarachnis|Sarachnis|318|Yew seed|1|1/100|yew_seed:1-1/100
+sarachnis|Sarachnis|318|Grimy kwuarm|10-15 (noted)|15/800|grimy_kwuarm:10-15/53
+sarachnis|Sarachnis|318|Grimy dwarf weed|10-15 (noted)|12/800|grimy_dwarf_weed:10-15/67
+sarachnis|Sarachnis|318|Grimy cadantine|10-15 (noted)|12/800|grimy_cadantine:10-15/67
+sarachnis|Sarachnis|318|Grimy avantoe|5-10 (noted)|10/800|grimy_avantoe:5-10/80
+sarachnis|Sarachnis|318|Grimy lantadyme|10-15 (noted)|9/800|grimy_lantadyme:10-15/89
+sarachnis|Sarachnis|318|Grimy snapdragon|5-10 (noted)|8/800|grimy_snapdragon:5-10/100
+sarachnis|Sarachnis|318|Grimy ranarr weed|5-10 (noted)|8/800|grimy_ranarr_weed:5-10/100
+sarachnis|Sarachnis|318|Grimy torstol|5-10 (noted)|6/800|grimy_torstol:5-10/133
+sarachnis|Sarachnis|318|Mithril ore|60-90 (noted)|6/100|mithril_ore:60-90/17
+sarachnis|Sarachnis|318|Red dragonhide|15-25 (noted)|5/100|red_dragonhide:15-25/20
+sarachnis|Sarachnis|318|Adamantite ore|30-40 (noted)|3/100|adamantite_ore:30-40/33
+sarachnis|Sarachnis|318|Onyx bolt tips|8-10|2/100|onyx_bolt_tips:8-10/50
+sarachnis|Sarachnis|318|Runite ore|4-6 (noted)|1/100|runite_ore:4-6/100
+sarachnis|Sarachnis|318|Coins|17000-25000|6/100|coins:17000-25000/17
+sarachnis|Sarachnis|318|Dragon bones|10-15 (noted)|5/100|dragon_bones:10-15/20
+sarachnis|Sarachnis|318|Egg potato|5-8|5/100|-not in game
+sarachnis|Sarachnis|318|Weapon poison(++)|4-6 (noted)|2/100|weapon_poison_plus_plus:4-6/50
+sarachnis|Sarachnis|318|Crystal key|1|1/100|crystal_key:1-1/100
+sarachnis|Sarachnis|318|Spider carcass|10 (noted)|1/100|spider_carcass:10-10/100
+sarachnis|Sarachnis|318|Tattered moon page|1|1/5|-not in game
+sarachnis|Sarachnis|318|Tattered sun page|1|1/5|-not in game
+sarachnis|Sarachnis|318|Tattered temple page|1|1/5|-not in game
+sarachnis|Sarachnis|318|Giant egg sac(full)|1|1/20|giant_egg_sac_full:1-1/20
+sarachnis|Sarachnis|318|Grubby key|1|1/15|-not in game
+sarachnis|Sarachnis|318|Brimstone key|1|-|-handled elsewhere:brimstone_key
+sarachnis|Sarachnis|318|Pristine spider silk|1|1/50|-not in game
+sarachnis|Sarachnis|318|Jar of Eyes|1|1/2000|jar_of_eyes:1-1/2000
+sarachnis|Sarachnis|318|Sraracha|1|1/3000|-handled elsewhere:pet_sraracha
+sarachnis|Sarachnis|318|Uncut sapphire|1|1/400.0|-expanded shared table
+sarachnis|Sarachnis|318|Uncut emerald|1|1/800.0|-expanded shared table
+sarachnis|Sarachnis|318|Uncut ruby|1|1/1600.0|-expanded shared table
+sarachnis|Sarachnis|318|Uncut diamond|1|1/6400.0|-expanded shared table
+sarachnis|Sarachnis|318|Rune javelin|5|1/12800.0|-expanded shared table
+sarachnis|Sarachnis|318|Loop half of key|1|1/12800.0|-expanded shared table
+sarachnis|Sarachnis|318|Tooth half of key|1|1/12800.0|-expanded shared table
+sarachnis|Sarachnis|318|Rune spear|1|1/204800.0|-expanded shared table
+sarachnis|Sarachnis|318|Shield left half|1|1/409600.0|-expanded shared table
+sarachnis|Sarachnis|318|Dragon spear|1|1/546133.3|-expanded shared table
+sarachnis|Sarachnis|318|Nature talisman|1|1/4266.7|-expanded shared table
+sarachnis|Sarachnis|318|Toadflax seed|1|1/84.1|-expanded shared table
+sarachnis|Sarachnis|318|Irit seed|1|1/122.7|-expanded shared table
+sarachnis|Sarachnis|318|Belladonna seed|1|1/127.0|-expanded shared table
+sarachnis|Sarachnis|318|Poison ivy seed|1|1/176.4|-expanded shared table
+sarachnis|Sarachnis|318|Avantoe seed|1|1/179.9|-expanded shared table
+sarachnis|Sarachnis|318|Cactus seed|1|1/189.2|-expanded shared table
+sarachnis|Sarachnis|318|Potato cactus seed|1|1/259.5|-expanded shared table
+sarachnis|Sarachnis|318|Kwuarm seed|1|1/263.3|-expanded shared table
+sarachnis|Sarachnis|318|Snapdragon seed|1|1/394.9|-expanded shared table
+sarachnis|Sarachnis|318|Cadantine seed|1|1/567.7|-expanded shared table
+sarachnis|Sarachnis|318|Lantadyme seed|1|1/789.9|-expanded shared table
+sarachnis|Sarachnis|318|Snape grass seed|3|1/908.3|-expanded shared table
+sarachnis|Sarachnis|318|Dwarf weed seed|1|1/1297.6|-expanded shared table
+sarachnis|Sarachnis|318|Torstol seed|1|1/2018.5|-expanded shared table
+sarachnis|Sarachnis|318|<gem_drop_table>|1|1/100|#gems:1-1/100
+sarachnis|Sarachnis|318|<rare_seed_drop_table>|3|2/100|#rare_seeds:1-1/17
+corporeal_beast|Corporeal Beast|785|Mystic robe top|1|18/512|mystic_robe_top:1-1/28
+corporeal_beast|Corporeal Beast|785|Mystic robe bottom|1|18/512|mystic_robe_bottom:1-1/28
+corporeal_beast|Corporeal Beast|785|Mystic air staff|1|12/512|mystic_air_staff:1-1/43
+corporeal_beast|Corporeal Beast|785|Mystic water staff|1|12/512|mystic_water_staff:1-1/43
+corporeal_beast|Corporeal Beast|785|Mystic earth staff|1|12/512|mystic_earth_staff:1-1/43
+corporeal_beast|Corporeal Beast|785|Mystic fire staff|1|12/512|mystic_fire_staff:1-1/43
+corporeal_beast|Corporeal Beast|785|Spirit shield|1|8/512|spirit_shield:1-1/64
+corporeal_beast|Corporeal Beast|785|Soul rune|250|32/512|soul_rune:250-250/16
+corporeal_beast|Corporeal Beast|785|Runite bolts|250|24/512|rune_bolts:250-250/21
+corporeal_beast|Corporeal Beast|785|Death rune|300|22/512|death_rune:300-300/23
+corporeal_beast|Corporeal Beast|785|Onyx bolts (e)|175|20/512|onyx_bolts_e:175-175/26
+corporeal_beast|Corporeal Beast|785|Steel cannonball|2000|17/512|cannonball:2000-2000/30
+corporeal_beast|Corporeal Beast|785|Adamant arrow|750|17/512|adamant_arrow:750-750/30
+corporeal_beast|Corporeal Beast|785|Law rune|250|17/512|law_rune:250-250/30
+corporeal_beast|Corporeal Beast|785|Cosmic rune|500|17/512|cosmic_rune:500-500/30
+corporeal_beast|Corporeal Beast|785|Raw shark|70 (noted)|21/512|raw_shark:70-70/24
+corporeal_beast|Corporeal Beast|785|Pure essence|2500 (noted)|21/512|pure_essence:2500-2500/24
+corporeal_beast|Corporeal Beast|785|Adamantite bar|35 (noted)|18/512|adamantite_bar:35-35/28
+corporeal_beast|Corporeal Beast|785|Green dragonhide|100 (noted)|18/512|green_dragonhide:100-100/28
+corporeal_beast|Corporeal Beast|785|Adamantite ore|125 (noted)|17/512|adamantite_ore:125-125/30
+corporeal_beast|Corporeal Beast|785|Runite ore|20 (noted)|12/512|runite_ore:20-20/43
+corporeal_beast|Corporeal Beast|785|Teak plank|100 (noted)|12/512|teak_plank:100-100/43
+corporeal_beast|Corporeal Beast|785|Mahogany logs|150 (noted)|12/512|mahogany_logs:150-150/43
+corporeal_beast|Corporeal Beast|785|Magic logs|75 (noted)|12/512|magic_logs:75-75/43
+corporeal_beast|Corporeal Beast|785|Tuna potato|30|20/512|tuna_potato:30-30/26
+corporeal_beast|Corporeal Beast|785|White berries|120 (noted)|17/512|white_berries:120-120/30
+corporeal_beast|Corporeal Beast|785|Goat horn|120 (noted)|17/512|goat_horn:120-120/30
+corporeal_beast|Corporeal Beast|785|Watermelon seed|24|15/512|watermelon_seed:24-24/34
+corporeal_beast|Corporeal Beast|785|Coins|20000-50000|12/512|coins:20000-50000/43
+corporeal_beast|Corporeal Beast|785|Antidote++(4)|40 (noted)|10/512|antidote_plus_plus:40-40/51
+corporeal_beast|Corporeal Beast|785|Ranarr seed|10|5/512|ranarr_seed:10-10/102
+corporeal_beast|Corporeal Beast|785|Holy elixir|1|3/512|holy_elixir:1-1/171
+corporeal_beast|Corporeal Beast|785|Jar of Spirits|1|1/1000|jar_of_spirits:1-1/1000
+corporeal_beast|Corporeal Beast|785|Pet dark core|1|1/5000|-handled elsewhere:pet_dark_core
+corporeal_beast|Corporeal Beast|785|Uncut sapphire|1|1/17.1|-expanded shared table
+corporeal_beast|Corporeal Beast|785|Uncut emerald|1|1/34.1|-expanded shared table
+corporeal_beast|Corporeal Beast|785|Uncut ruby|1|1/68.3|-expanded shared table
+corporeal_beast|Corporeal Beast|785|Uncut diamond|1|1/273.1|-expanded shared table
+corporeal_beast|Corporeal Beast|785|Rune javelin|5|1/546.1|-expanded shared table
+corporeal_beast|Corporeal Beast|785|Loop half of key|1|1/546.1|-expanded shared table
+corporeal_beast|Corporeal Beast|785|Tooth half of key|1|1/546.1|-expanded shared table
+corporeal_beast|Corporeal Beast|785|Rune spear|1|1/8738.1|-expanded shared table
+corporeal_beast|Corporeal Beast|785|Shield left half|1|1/17476.3|-expanded shared table
+corporeal_beast|Corporeal Beast|785|Dragon spear|1|1/23301.7|-expanded shared table
+corporeal_beast|Corporeal Beast|785|Nature talisman|1|1/182.0|-expanded shared table
+corporeal_beast|Corporeal Beast|785|<gem_drop_table>|10|12/512|#gems:1-1/4
+skotizo|Skotizo|321|Infernal ashes|1|Always|infernal_ashes:1-1/1
+skotizo|Skotizo|321|Ancient shard|1|75/100|ancient_shard:1-1/1
+skotizo|Skotizo|321|Ancient shard|2|15/100|ancient_shard:2-2/7
+skotizo|Skotizo|321|Ancient shard|3|5/100|ancient_shard:3-3/20
+skotizo|Skotizo|321|Ancient shard|4|4/100|ancient_shard:4-4/25
+skotizo|Skotizo|321|Ancient shard|5|1/100|ancient_shard:5-5/100
+skotizo|Skotizo|321|Uncut dragonstone|10 (noted)|9/1000|uncut_dragonstone:10-10/111
+skotizo|Skotizo|321|Uncut onyx|1|1/1000|uncut_onyx:1-1/1000
+skotizo|Skotizo|321|Rune platebody|3 (noted)|7/100|rune_platebody:3-3/14
+skotizo|Skotizo|321|Rune platelegs|3 (noted)|7/100|rune_platelegs:3-3/14
+skotizo|Skotizo|321|Rune plateskirt|3 (noted)|7/100|rune_plateskirt:3-3/14
+skotizo|Skotizo|321|Death rune|500|7/100|death_rune:500-500/14
+skotizo|Skotizo|321|Soul rune|450|7/100|soul_rune:450-450/14
+skotizo|Skotizo|321|Blood rune|450|7/100|blood_rune:450-450/14
+skotizo|Skotizo|321|Adamantite ore|75 (noted)|7/100|adamantite_ore:75-75/14
+skotizo|Skotizo|321|Grimy snapdragon|20 (noted)|7/100|grimy_snapdragon:20-20/14
+skotizo|Skotizo|321|Grimy torstol|20 (noted)|7/100|grimy_torstol:20-20/14
+skotizo|Skotizo|321|Raw anglerfish|60 (noted)|7/100|raw_anglerfish:60-60/14
+skotizo|Skotizo|321|Runite bar|20 (noted)|7/100|runite_bar:20-20/14
+skotizo|Skotizo|321|Mahogany plank|150 (noted)|7/100|mahogany_plank:150-150/14
+skotizo|Skotizo|321|Battlestaff|25 (noted)|7/100|battlestaff:25-25/14
+skotizo|Skotizo|321|Onyx bolt tips|40|7/100|onyx_bolt_tips:40-40/14
+skotizo|Skotizo|321|Shield left half|1|1/100|shield_left_half:1-1/100
+skotizo|Skotizo|321|Ensouled demon head|1|1/10|ensouled_demon_head:1-1/10
+skotizo|Skotizo|321|Dark claw|1|1/25|dark_claw:1-1/25
+skotizo|Skotizo|321|Brimstone key|1|-|-handled elsewhere:brimstone_key
+skotizo|Skotizo|321|Skotos|1|1/65|-handled elsewhere:pet_skotos
+skotizo|Skotizo|321|Dark totem base|1|3/128|dark_totem_base:1-1/43
+skotizo|Skotizo|321|Dark totem middle|1|3/128|dark_totem_middle:1-1/43
+skotizo|Skotizo|321|Dark totem top|1|3/128|dark_totem_top:1-1/43
+skotizo|Skotizo|321|Dark totem|1|1/128|dark_totem:1-1/128
+skotizo|Skotizo|321|Jar of Darkness|1|1/200|jar_of_darkness:1-1/200
+hespori|Hespori|284|Attas seed|1-2|1/3|attas_seed:1-2/3
+hespori|Hespori|284|Iasor seed|1-2|1/3|iasor_seed:1-2/3
+hespori|Hespori|284|Kronos seed|1-2|1/3|kronos_seed:1-2/3
+hespori|Hespori|284|Bottomless compost bucket|1|1/35|bottomless_compost_bucket:1-1/35
+hespori|Hespori|284|Watermelon seed|10-20|2/80|watermelon_seed:10-20/40
+hespori|Hespori|284|Snape grass seed|6-16|2/80|snape_grass_seed:6-16/40
+hespori|Hespori|284|White lily seed|8-18|5/80|white_lily_seed:8-18/16
+hespori|Hespori|284|Limpwurt seed|6-14|2/80|limpwurt_seed:6-14/40
+hespori|Hespori|284|Wildblood seed|10-20|2/80|wildblood_seed:10-20/40
+hespori|Hespori|284|Whiteberry seed|10-16|2/80|whiteberry_seed:10-16/40
+hespori|Hespori|284|Poison ivy seed|8-16|2/80|poison_ivy_seed:8-16/40
+hespori|Hespori|284|Irit seed|2-8|3/80|irit_seed:2-8/27
+hespori|Hespori|284|Avantoe seed|2-5|3/80|avantoe_seed:2-5/27
+hespori|Hespori|284|Kwuarm seed|2-5|3/80|kwuarm_seed:2-5/27
+hespori|Hespori|284|Toadflax seed|2-5|3/80|toadflax_seed:2-5/27
+hespori|Hespori|284|Cadantine seed|2-5|3/80|cadantine_seed:2-5/27
+hespori|Hespori|284|Lantadyme seed|2-5|3/80|lantadyme_seed:2-5/27
+hespori|Hespori|284|Dwarf weed seed|2-5|3/80|dwarf_weed_seed:2-5/27
+hespori|Hespori|284|Ranarr seed|1-2|2/80|ranarr_seed:1-2/40
+hespori|Hespori|284|Snapdragon seed|1|2/80|snapdragon_seed:1-1/40
+hespori|Hespori|284|Torstol seed|1|2/80|torstol_seed:1-1/40
+hespori|Hespori|284|Maple seed|2-4|4/80|maple_seed:2-4/20
+hespori|Hespori|284|Willow seed|2-5|3/80|willow_seed:2-5/27
+hespori|Hespori|284|Yew seed|1|2/80|yew_seed:1-1/40
+hespori|Hespori|284|Magic seed|1|1/80|magic_seed:1-1/80
+hespori|Hespori|284|Pineapple seed|3-6|3/80|pineapple_seed:3-6/27
+hespori|Hespori|284|Papaya tree seed|1-3|3/80|papaya_seed:1-3/27
+hespori|Hespori|284|Palm tree seed|1-3|3/80|palm_seed:1-3/27
+hespori|Hespori|284|Dragonfruit tree seed|1|2/80|dragonfruit_seed:1-1/40
+hespori|Hespori|284|Teak seed|2-5|4/80|teak_seed:2-5/20
+hespori|Hespori|284|Mahogany seed|1-3|3/80|mahogany_seed:1-3/27
+hespori|Hespori|284|Cactus seed|4-14|2/80|cactus_seed:4-14/40
+hespori|Hespori|284|Potato cactus seed|4-14|2/80|potato_cactus_seed:4-14/40
+hespori|Hespori|284|Celastrus seed|1|2/80|celastrus_seed:1-1/40
+hespori|Hespori|284|Spirit seed|1|1/80|spirit_seed:1-1/80
+hespori|Hespori|284|Redwood tree seed|1|1/80|redwood_tree_seed:1-1/80
+hespori|Hespori|284|Tangleroot|1|1/5375|-handled elsewhere:pet_tangleroot
+scurrius|Scurrius|250|Big bones|1|Always|big_bones:1-1/1
+scurrius|Scurrius|250|Raw rat meat|1|Always|-not in game
+scurrius|Scurrius|250|Adamant platebody|1|6/100|adamant_platebody:1-1/17
+scurrius|Scurrius|250|Rune med helm|1|6/100|rune_med_helm:1-1/17
+scurrius|Scurrius|250|Rune full helm|1|6/100|rune_full_helm:1-1/17
+scurrius|Scurrius|250|Rune sq shield|1|6/100|rune_sq_shield:1-1/17
+scurrius|Scurrius|250|Rune chainbody|1|6/100|rune_chainbody:1-1/17
+scurrius|Scurrius|250|Rune battleaxe|1|6/100|rune_battleaxe:1-1/17
+scurrius|Scurrius|250|Adamant arrow|20-50|6/100|adamant_arrow:20-50/17
+scurrius|Scurrius|250|Rune arrow|20-50|6/100|rune_arrow:20-50/17
+scurrius|Scurrius|250|Chaos rune|70-125|6/100|chaos_rune:70-125/17
+scurrius|Scurrius|250|Death rune|40-90|3/100|death_rune:40-90/33
+scurrius|Scurrius|250|Law rune|10-30|3/100|law_rune:10-30/33
+scurrius|Scurrius|250|Trout|1-3|6/100|trout:1-3/17
+scurrius|Scurrius|250|Tuna|1-3|6/100|tuna:1-3/17
+scurrius|Scurrius|250|Shark|1|3/100|shark:1-1/33
+scurrius|Scurrius|250|Lobster|1-3|6/100|lobster:1-3/17
+scurrius|Scurrius|250|Ranging potion(1)|1|3/100|ranging_potion(1):1-1/33
+scurrius|Scurrius|250|Super strength(1)|1|3/100|super_strength(1):1-1/33
+scurrius|Scurrius|250|Cheese|1|1/100|cheese:1-1/100
+scurrius|Scurrius|250|Prayer potion(4)|1|6/100|prayer_potion:1-1/17
+scurrius|Scurrius|250|Coins|1000-9000|6/100|coins:1000-9000/17
+scurrius|Scurrius|250|Scurrius' spine|1|1/33|scurrius_spine:1-1/33
+scurrius|Scurrius|250|Long bone|1|1/400|long_bone:1-1/400
+scurrius|Scurrius|250|Curved bone|1|1/5012.5|curved_bone:1-1/5012
+scurrius|Scurrius|250|Scurry|1|1/3000|-handled elsewhere:pet_scurry
+scurrius|Scurrius|250|Big bones|1|Always|big_bones:1-1/1
+scurrius|Scurrius|250|Adamant arrow|20-35|3/33|adamant_arrow:20-35/11
+scurrius|Scurrius|250|Rune arrow|20-35|3/33|rune_arrow:20-35/11
+scurrius|Scurrius|250|Chaos rune|40-70|3/33|chaos_rune:40-70/11
+scurrius|Scurrius|250|Death rune|30-50|3/33|death_rune:30-50/11
+scurrius|Scurrius|250|Law rune|5-15|3/33|law_rune:5-15/11
+scurrius|Scurrius|250|Trout|1-3|3/33|trout:1-3/11
+scurrius|Scurrius|250|Tuna|1-3|3/33|tuna:1-3/11
+scurrius|Scurrius|250|Lobster|1-3|3/33|lobster:1-3/11
+scurrius|Scurrius|250|Shark|1|1/33|shark:1-1/33
+scurrius|Scurrius|250|Ranging potion(1)|1|3/33|ranging_potion(1):1-1/11
+scurrius|Scurrius|250|Super strength(1)|1|3/33|super_strength(1):1-1/11
+scurrius|Scurrius|250|Cheese|1|1/33|cheese:1-1/33
+scurrius|Scurrius|250|Scurrius' spine|1|1/33|scurrius_spine:1-1/33
+zulrah|Zulrah|725|Zulrah's scales|100-299|Always|zulrahs_scales:100-299/1
+zulrah|Zulrah|725|Tanzanite fang|1|1/1024|tanzanite_fang:1-1/1024
+zulrah|Zulrah|725|Magic fang|1|1/1024|magic_fang:1-1/1024
+zulrah|Zulrah|725|Serpentine visage|1|1/1024|serpentine_visage:1-1/1024
+zulrah|Zulrah|725|Uncut onyx|1|1/1024|uncut_onyx:1-1/1024
+zulrah|Zulrah|725|Flax|1000 (noted)|10/249|flax:1000-1000/25
+zulrah|Zulrah|725|Tanzanite mutagen|1|1/13107|tanzanite_mutagen:1-1/13107
+zulrah|Zulrah|725|Magma mutagen|1|1/13107|magma_mutagen:1-1/13107
+zulrah|Zulrah|725|Battlestaff|10 (noted)|10/249|battlestaff:10-10/25
+zulrah|Zulrah|725|Dragon halberd|1|2/249|dragon_halberd:1-1/124
+zulrah|Zulrah|725|Chaos rune|400|12/249|chaos_rune:400-400/21
+zulrah|Zulrah|725|Snapdragon|10 (noted)|2/249|snapdragon:10-10/124
+zulrah|Zulrah|725|Dwarf weed|30 (noted)|2/249|dwarf_weed:30-30/124
+zulrah|Zulrah|725|Toadflax|25 (noted)|2/249|toadflax:25-25/124
+zulrah|Zulrah|725|Torstol|10 (noted)|2/249|torstol:10-10/124
+zulrah|Zulrah|725|Palm tree seed|1|6/249|palm_seed:1-1/42
+zulrah|Zulrah|725|Papaya tree seed|3|6/249|papaya_seed:3-3/42
+zulrah|Zulrah|725|Calquat tree seed|2|6/249|calquat_tree_seed:2-2/42
+zulrah|Zulrah|725|Magic seed|1|4/249|magic_seed:1-1/62
+zulrah|Zulrah|725|Toadflax seed|2|2/249|toadflax_seed:2-2/124
+zulrah|Zulrah|725|Snapdragon seed|1|2/249|snapdragon_seed:1-1/124
+zulrah|Zulrah|725|Dwarf weed seed|2|2/249|dwarf_weed_seed:2-2/124
+zulrah|Zulrah|725|Torstol seed|1|2/249|torstol_seed:1-1/124
+zulrah|Zulrah|725|Spirit seed|1|1/249|spirit_seed:1-1/249
+zulrah|Zulrah|725|Snakeskin|35 (noted)|11/249|snakeskin:35-35/23
+zulrah|Zulrah|725|Runite ore|2 (noted)|11/249|runite_ore:2-2/23
+zulrah|Zulrah|725|Pure essence|1500 (noted)|10/249|pure_essence:1500-1500/25
+zulrah|Zulrah|725|Yew logs|35 (noted)|10/249|yew_logs:35-35/25
+zulrah|Zulrah|725|Adamantite bar|20 (noted)|8/249|adamantite_bar:20-20/31
+zulrah|Zulrah|725|Coal|200 (noted)|8/249|coal:200-200/31
+zulrah|Zulrah|725|Dragon bones|12 (noted)|8/249|dragon_bones:12-12/31
+zulrah|Zulrah|725|Mahogany logs|50 (noted)|8/249|mahogany_logs:50-50/31
+zulrah|Zulrah|725|Raw shark|35 (noted)|4.5/249|raw_shark:35-35/55
+zulrah|Zulrah|725|Shark lure|70|4.5/249|-not in game
+zulrah|Zulrah|725|Manta ray|35 (noted)|3/249|manta_ray:35-35/83
+zulrah|Zulrah|725|Zul-andra teleport|4|15/249|zul_andra_teleport:4-4/17
+zulrah|Zulrah|725|Antidote++(4)|10 (noted)|9/249|antidote_plus_plus:10-10/28
+zulrah|Zulrah|725|Dragonstone bolt tips|12|8/249|dragonstone_bolt_tips:12-12/31
+zulrah|Zulrah|725|Grapes|250 (noted)|6/249|grapes:250-250/42
+zulrah|Zulrah|725|Coconut|20 (noted)|6/249|coconut:20-20/42
+zulrah|Zulrah|725|Swamp tar|1000|5/249|swamp_tar:1000-1000/50
+zulrah|Zulrah|725|Zulrah's scales|500|5/249|zulrahs_scales:500-500/50
+zulrah|Zulrah|725|Brimstone key|1|-|-handled elsewhere:brimstone_key
+zulrah|Zulrah|725|Jar of Swamp|1|1/3000|jar_of_swamp:1-1/3000
+zulrah|Zulrah|725|Pet Snakeling|1|1/4000|-handled elsewhere:pet_snakeling
+zulrah|Zulrah|725|Coins|3000|1/75.9|-expanded shared table
+zulrah|Zulrah|725|Uncut sapphire|1|1/318.7|-expanded shared table
+zulrah|Zulrah|725|Loop half of key|1|1/79.1|-expanded shared table
+zulrah|Zulrah|725|Tooth half of key|1|1/79.1|-expanded shared table
+zulrah|Zulrah|725|Uncut emerald|1|1/637.4|-expanded shared table
+zulrah|Zulrah|725|Uncut ruby|1|1/1274.9|-expanded shared table
+zulrah|Zulrah|725|Runite bar|1|1/318.7|-expanded shared table
+zulrah|Zulrah|725|Nature rune|67|1/531.2|-expanded shared table
+zulrah|Zulrah|725|Rune 2h sword|1|1/531.2|-expanded shared table
+zulrah|Zulrah|725|Rune battleaxe|1|1/531.2|-expanded shared table
+zulrah|Zulrah|725|Law rune|45|1/796.8|-expanded shared table
+zulrah|Zulrah|725|Death rune|45|1/796.8|-expanded shared table
+zulrah|Zulrah|725|Steel arrow|150|1/796.8|-expanded shared table
+zulrah|Zulrah|725|Rune arrow|42|1/796.8|-expanded shared table
+zulrah|Zulrah|725|Adamant javelin|20|1/796.8|-expanded shared table
+zulrah|Zulrah|725|Rune sq shield|1|1/796.8|-expanded shared table
+zulrah|Zulrah|725|Dragonstone|1|1/796.8|-expanded shared table
+zulrah|Zulrah|725|Silver ore|100 (noted)|1/796.8|-expanded shared table
+zulrah|Zulrah|725|Uncut diamond|1|1/5099.5|-expanded shared table
+zulrah|Zulrah|725|Rune kiteshield|1|1/1593.6|-expanded shared table
+zulrah|Zulrah|725|Dragon med helm|1|1/1593.6|-expanded shared table
+zulrah|Zulrah|725|Rune spear|1|1/1682.3|-expanded shared table
+zulrah|Zulrah|725|Rune javelin|5|1/10199.0|-expanded shared table
+zulrah|Zulrah|725|Shield left half|1|1/3364.6|-expanded shared table
+zulrah|Zulrah|725|Dragon spear|1|1/4486.2|-expanded shared table
+zulrah|Zulrah|725|Nature talisman|1|1/3399.7|-expanded shared table
+zulrah|Zulrah|725|<rare_drop_table>|2|10/249|#rare:1-1/12
+vorkath|Vorkath|732|Superior dragon bones|2|Always|superior_dragon_bones:2-2/1
+vorkath|Vorkath|732|Blue dragonhide|2|Always|blue_dragonhide:2-2/1
+vorkath|Vorkath|732|Rune longsword|2-3|5/150|rune_longsword:2-3/30
+vorkath|Vorkath|732|Battlestaff|5-15 (noted)|4/150|battlestaff:5-15/38
+vorkath|Vorkath|732|Dragon battleaxe|1|2/150|dragon_battleaxe:1-1/75
+vorkath|Vorkath|732|Dragon longsword|1|2/150|dragon_longsword:1-1/75
+vorkath|Vorkath|732|Dragon platelegs|1|2/150|dragon_platelegs:1-1/75
+vorkath|Vorkath|732|Dragon plateskirt|1|2/150|dragon_plateskirt:1-1/75
+vorkath|Vorkath|732|Chaos rune|250-350|6/150|chaos_rune:250-350/25
+vorkath|Vorkath|732|Wrath rune|30-60|3/150|wrath_rune:30-60/50
+vorkath|Vorkath|732|Blue dragonhide|25-30 (noted)|8/150|blue_dragonhide:25-30/19
+vorkath|Vorkath|732|Green dragonhide|25-30 (noted)|7/150|green_dragonhide:25-30/21
+vorkath|Vorkath|732|Red dragonhide|20-25 (noted)|7/150|red_dragonhide:20-25/21
+vorkath|Vorkath|732|Black dragonhide|15-25 (noted)|7/150|black_dragonhide:15-25/21
+vorkath|Vorkath|732|Dragon bolts (unf)|50-100|8/150|dragon_bolts_unf:50-100/19
+vorkath|Vorkath|732|Dragonstone bolt tips|11-25|5/150|dragonstone_bolt_tips:11-25/30
+vorkath|Vorkath|732|Onyx bolt tips|5-10|4/150|onyx_bolt_tips:5-10/38
+vorkath|Vorkath|732|Rune dart tip|75-100|3/150|rune_dart_tip:75-100/50
+vorkath|Vorkath|732|Dragon dart tip|10-50|6/150|dragon_dart_tip:10-50/25
+vorkath|Vorkath|732|Dragon arrowtips|25-50|3/150|dragon_arrowtips:25-50/50
+vorkath|Vorkath|732|Diamond bolt tips|25-30|25/2730|diamond_bolt_tips:25-30/109
+vorkath|Vorkath|732|Emerald bolt tips|25-30|20/2730|emerald_bolt_tips:25-30/136
+vorkath|Vorkath|732|Ruby bolt tips|25-30|20/2730|ruby_bolt_tips:25-30/136
+vorkath|Vorkath|732|Dragonstone bolt tips|25-30|14/2730|dragonstone_bolt_tips:25-30/195
+vorkath|Vorkath|732|Onyx bolt tips|25-30|7/2730|onyx_bolt_tips:25-30/390
+vorkath|Vorkath|732|Sapphire bolt tips|25-30|5/2730|sapphire_bolt_tips:25-30/546
+vorkath|Vorkath|732|Raw shark|35-55 (noted)|3/300|raw_shark:35-55/100
+vorkath|Vorkath|732|Shark lure|70-110|3/300|-not in game
+vorkath|Vorkath|732|Manta ray|35-55 (noted)|2/300|manta_ray:35-55/150
+vorkath|Vorkath|732|Adamantite ore|10-30 (noted)|7/150|adamantite_ore:10-30/21
+vorkath|Vorkath|732|Grapes|250-300 (noted)|5/150|grapes:250-300/30
+vorkath|Vorkath|732|Magic logs|50 (noted)|5/150|magic_logs:50-50/30
+vorkath|Vorkath|732|Dragon bones|15-20 (noted)|4/150|dragon_bones:15-20/38
+vorkath|Vorkath|732|Diamond|10-20 (noted)|4/150|diamond:10-20/38
+vorkath|Vorkath|732|Wrath talisman|1|3/150|wrath_talisman:1-1/50
+vorkath|Vorkath|732|Scaly blue dragonhide|1|1/10|-not in game
+vorkath|Vorkath|732|Vorkath's head|1|1/50|vorkaths_head:1-1/50
+vorkath|Vorkath|732|Brimstone key|1|-|-handled elsewhere:brimstone_key
+vorkath|Vorkath|732|Dragonbone necklace|1|1/1000|dragonbone_necklace:1-1/1000
+vorkath|Vorkath|732|Jar of Decay|1|1/3000|jar_of_decay:1-1/3000
+vorkath|Vorkath|732|Vorki|1|1/3000|-handled elsewhere:pet_vorki
+vorkath|Vorkath|732|Draconic visage|1|1/5000|draconic_visage:1-1/5000
+vorkath|Vorkath|732|Skeletal visage|1|1/5000|skeletal_visage:1-1/5000
+vorkath|Vorkath|732|Coins|3000|1/91.4|-expanded shared table
+vorkath|Vorkath|732|Uncut sapphire|1|1/384.0|-expanded shared table
+vorkath|Vorkath|732|Loop half of key|1|1/95.3|-expanded shared table
+vorkath|Vorkath|732|Tooth half of key|1|1/95.3|-expanded shared table
+vorkath|Vorkath|732|Uncut emerald|1|1/768.0|-expanded shared table
+vorkath|Vorkath|732|Uncut ruby|1|1/1536.0|-expanded shared table
+vorkath|Vorkath|732|Runite bar|1|1/384.0|-expanded shared table
+vorkath|Vorkath|732|Nature rune|67|1/640.0|-expanded shared table
+vorkath|Vorkath|732|Rune 2h sword|1|1/640.0|-expanded shared table
+vorkath|Vorkath|732|Rune battleaxe|1|1/640.0|-expanded shared table
+vorkath|Vorkath|732|Law rune|45|1/960.0|-expanded shared table
+vorkath|Vorkath|732|Death rune|45|1/960.0|-expanded shared table
+vorkath|Vorkath|732|Steel arrow|150|1/960.0|-expanded shared table
+vorkath|Vorkath|732|Rune arrow|42|1/960.0|-expanded shared table
+vorkath|Vorkath|732|Adamant javelin|20|1/960.0|-expanded shared table
+vorkath|Vorkath|732|Rune sq shield|1|1/960.0|-expanded shared table
+vorkath|Vorkath|732|Dragonstone|1|1/960.0|-expanded shared table
+vorkath|Vorkath|732|Silver ore|100 (noted)|1/960.0|-expanded shared table
+vorkath|Vorkath|732|Uncut diamond|1|1/6144.0|-expanded shared table
+vorkath|Vorkath|732|Rune kiteshield|1|1/1920.0|-expanded shared table
+vorkath|Vorkath|732|Dragon med helm|1|1/1920.0|-expanded shared table
+vorkath|Vorkath|732|Rune spear|1|1/2026.9|-expanded shared table
+vorkath|Vorkath|732|Rune javelin|5|1/12288.0|-expanded shared table
+vorkath|Vorkath|732|Shield left half|1|1/4053.8|-expanded shared table
+vorkath|Vorkath|732|Dragon spear|1|1/5405.0|-expanded shared table
+vorkath|Vorkath|732|Nature talisman|1|1/4096.0|-expanded shared table
+vorkath|Vorkath|732|<rare_drop_table>|2|5/150|#rare:1-1/15
+kraken|Kraken|291|Mystic water staff|1|3/128|mystic_water_staff:1-1/43
+kraken|Kraken|291|Rune warhammer|1|2/128|rune_warhammer:1-1/64
+kraken|Kraken|291|Rune longsword|1|2/128|rune_longsword:1-1/64
+kraken|Kraken|291|Mystic robe top|1|1/128|mystic_robe_top:1-1/128
+kraken|Kraken|291|Mystic robe bottom|1|1/128|mystic_robe_bottom:1-1/128
+kraken|Kraken|291|Trident of the Seas (full)|1|1/512|trident_of_the_seas:1-1/512
+kraken|Kraken|291|Water rune|400|10/128|water_rune:400-400/13
+kraken|Kraken|291|Mist rune|100|4/128|mist_rune:100-100/32
+kraken|Kraken|291|Chaos rune|200|10/128|chaos_rune:200-200/13
+kraken|Kraken|291|Death rune|150|10/128|death_rune:150-150/13
+kraken|Kraken|291|Blood rune|60|10/128|blood_rune:60-60/13
+kraken|Kraken|291|Soul rune|50|7/128|soul_rune:50-50/18
+kraken|Kraken|291|Watermelon seed|24|3/128|watermelon_seed:24-24/43
+kraken|Kraken|291|Torstol seed|2|1/128|torstol_seed:2-2/128
+kraken|Kraken|291|Magic seed|1|1/128|magic_seed:1-1/128
+kraken|Kraken|291|Seaweed|125 (noted)|3/128|seaweed:125-125/43
+kraken|Kraken|291|Battlestaff|10 (noted)|4/128|battlestaff:10-10/32
+kraken|Kraken|291|Unpowered orb|50 (noted)|2/128|unpowered_orb:50-50/64
+kraken|Kraken|291|Diamond|8 (noted)|1/128|diamond:8-8/128
+kraken|Kraken|291|Oak plank|60 (noted)|3/128|oak_plank:60-60/43
+kraken|Kraken|291|Runite bar|2|1/128|runite_bar:2-2/128
+kraken|Kraken|291|Raw shark|50 (noted)|2/128|raw_shark:50-50/64
+kraken|Kraken|291|Raw monkfish|100 (noted)|2/128|raw_monkfish:100-100/64
+kraken|Kraken|291|Grimy snapdragon|6 (noted)|2/128|grimy_snapdragon:6-6/64
+kraken|Kraken|291|Coins|10000-19999|15/128|coins:10000-19999/9
+kraken|Kraken|291|Shark|5|7/128|shark:5-5/18
+kraken|Kraken|291|Pirate boots|1|4/128|-not in game
+kraken|Kraken|291|Sanfew serum(4)|2|4/128|sanfew_serum:2-2/32
+kraken|Kraken|291|Edible seaweed|5|3/128|edible_seaweed:5-5/43
+kraken|Kraken|291|Harpoon|1|1/128|harpoon:1-1/128
+kraken|Kraken|291|Bucket|1|1/128|-not in game
+kraken|Kraken|291|Crystal key|1|1/128|crystal_key:1-1/128
+kraken|Kraken|291|Rusty sword|1|1.75/128|rusty_sword:1-1/73
+kraken|Kraken|291|Antidote++(4)|2 (noted)|2/128|antidote_plus_plus:2-2/64
+kraken|Kraken|291|Dragonstone ring|1|1/128|dragonstone_ring:1-1/128
+kraken|Kraken|291|Kraken tentacle|1|1/400|kraken_tentacle:1-1/400
+kraken|Kraken|291|Brimstone key|1|-|-handled elsewhere:brimstone_key
+kraken|Kraken|291|Jar of Dirt|1|1/1000|jar_of_dirt:1-1/1000
+kraken|Kraken|291|Pet Kraken|1|1/3000|-handled elsewhere:pet_kraken
+kraken|Kraken|291|Uncut sapphire|1|1/256.0|-expanded shared table
+kraken|Kraken|291|Uncut emerald|1|1/512.0|-expanded shared table
+kraken|Kraken|291|Uncut ruby|1|1/1024.0|-expanded shared table
+kraken|Kraken|291|Uncut diamond|1|1/4096.0|-expanded shared table
+kraken|Kraken|291|Rune javelin|5|1/8192.0|-expanded shared table
+kraken|Kraken|291|Loop half of key|1|1/8192.0|-expanded shared table
+kraken|Kraken|291|Tooth half of key|1|1/8192.0|-expanded shared table
+kraken|Kraken|291|Rune spear|1|1/131072.0|-expanded shared table
+kraken|Kraken|291|Shield left half|1|1/262144.0|-expanded shared table
+kraken|Kraken|291|Dragon spear|1|1/349525.3|-expanded shared table
+kraken|Kraken|291|Chaos talisman|1|1/2730.7|-expanded shared table
+kraken|Kraken|291|Nature talisman|1|1/2730.7|-expanded shared table
+kraken|Kraken|291|<gem_drop_table>|1|2/128|#gems:1-1/64
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Ashes|1|Always|ashes:1-1/1
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Occult necklace|1|1/350|occult_necklace:1-1/350
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Smoke battlestaff|1|1/512|smoke_battlestaff:1-1/512
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Dragon chainbody|1|1/2000|dragon_chainbody:1-1/2000
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Rune dagger|1|5/107|rune_dagger:1-1/21
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Rune chainbody|1|4/107|rune_chainbody:1-1/27
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Red d'hide body|1|3/107|red_dhide_body:1-1/36
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Rune battleaxe|1|3/107|rune_battleaxe:1-1/36
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Mystic air staff|1|3/107|mystic_air_staff:1-1/36
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Mystic fire staff|1|3/107|mystic_fire_staff:1-1/36
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Rune scimitar|1|2/107|rune_scimitar:1-1/54
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Rune knife(p++)|50|1/107|-not in game
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Dragon scimitar|1|1/107|dragon_scimitar:1-1/107
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Ancient staff|1|1/107|ancient_staff:1-1/107
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Smoke rune|100|10/107|smoke_rune:100-100/11
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Air rune|300|8/107|air_rune:300-300/13
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Soul rune|100|8/107|soul_rune:100-100/13
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Rune arrow|100|2/107|rune_arrow:100-100/54
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Ugthanki kebab|3|1/107|ugthanki_kebab:3-3/107
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Tuna potato|3|3/107|tuna_potato:3-3/36
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Sanfew serum(4)|2|3/107|sanfew_serum:2-2/36
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Prayer potion(4)|2|1/107|prayer_potion:2-2/107
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Pure essence|300 (noted)|2/107|pure_essence:300-300/54
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Molten glass|100 (noted)|2/107|molten_glass:100-100/54
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Mithril bar|20 (noted)|2/107|mithril_bar:20-20/54
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Magic logs|20 (noted)|2/107|magic_logs:20-20/54
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Gold ore|200 (noted)|2/107|gold_ore:200-200/54
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Diamond|10 (noted)|1/107|diamond:10-10/107
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Raw shark|30 (noted)|5/856|raw_shark:30-30/171
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Shark lure|60|3/856|-not in game
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Coins|10000-19999|15/107|coins:10000-19999/7
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Tinderbox|1|1/107|tinderbox:1-1/107
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Fire talisman|1|1/107|fire_talisman:1-1/107
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Goat horn|50 (noted)|2/107|goat_horn:50-50/54
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Grimy toadflax|15 (noted)|2/107|grimy_toadflax:15-15/54
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Onyx bolt tips|12|2/107|onyx_bolt_tips:12-12/54
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Snapdragon seed|2|2/107|snapdragon_seed:2-2/54
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Ranarr seed|2|2/107|ranarr_seed:2-2/54
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Grapes|100 (noted)|1/107|grapes:100-100/107
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Magic seed|1|1/107|magic_seed:1-1/107
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Dragonstone ring|1|1/107|dragonstone_ring:1-1/107
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Crystal key|1|1/107|crystal_key:1-1/107
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Brimstone key|1|-|-handled elsewhere:brimstone_key
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Jar of Smoke|1|1/2000|jar_of_smoke:1-1/2000
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Pet Smoke Devil|1|1/3000|-handled elsewhere:pet_smoke_devil
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Uncut sapphire|1|1/214.0|-expanded shared table
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Uncut emerald|1|1/428.0|-expanded shared table
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Uncut ruby|1|1/856.0|-expanded shared table
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Uncut diamond|1|1/3424.0|-expanded shared table
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Rune javelin|5|1/6848.0|-expanded shared table
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Loop half of key|1|1/6848.0|-expanded shared table
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Tooth half of key|1|1/6848.0|-expanded shared table
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Rune spear|1|1/109568.0|-expanded shared table
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Shield left half|1|1/219136.0|-expanded shared table
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Dragon spear|1|1/292181.3|-expanded shared table
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|Nature talisman|1|1/2282.7|-expanded shared table
+thermonuclear_smoke_devil|Thermonuclear smoke devil|301|<gem_drop_table>|1|2/107|#gems:1-1/54
+cerberus|Cerberus|318|Infernal ashes|1|Always|infernal_ashes:1-1/1
+cerberus|Cerberus|318|Primordial crystal|1|1/520|primordial_crystal:1-1/520
+cerberus|Cerberus|318|Pegasian crystal|1|1/520|pegasian_crystal:1-1/520
+cerberus|Cerberus|318|Eternal crystal|1|1/520|eternal_crystal:1-1/520
+cerberus|Cerberus|318|Smouldering stone|1|1/520|smouldering_stone:1-1/520
+cerberus|Cerberus|318|Rune platebody|1|5/130|rune_platebody:1-1/26
+cerberus|Cerberus|318|Rune chainbody|1|4/130|rune_chainbody:1-1/32
+cerberus|Cerberus|318|Black d'hide body|1|3/130|black_dhide_body:1-1/43
+cerberus|Cerberus|318|Rune axe|1|3/130|rune_axe:1-1/43
+cerberus|Cerberus|318|Rune pickaxe|1|3/130|rune_pickaxe:1-1/43
+cerberus|Cerberus|318|Battlestaff|6 (noted)|3/130|battlestaff:6-6/43
+cerberus|Cerberus|318|Rune full helm|1|3/130|rune_full_helm:1-1/43
+cerberus|Cerberus|318|Lava battlestaff|1|2/130|lava_battlestaff:1-1/65
+cerberus|Cerberus|318|Rune halberd|1|2/130|rune_halberd:1-1/65
+cerberus|Cerberus|318|Fire rune|300|6/130|fire_rune:300-300/22
+cerberus|Cerberus|318|Soul rune|100|6/130|soul_rune:100-100/22
+cerberus|Cerberus|318|Pure essence|300 (noted)|5/130|pure_essence:300-300/26
+cerberus|Cerberus|318|Blood rune|60|4/130|blood_rune:60-60/32
+cerberus|Cerberus|318|Steel cannonball|50|4/130|cannonball:50-50/32
+cerberus|Cerberus|318|Runite bolts (unf)|40|4/130|rune_bolts_unf:40-40/32
+cerberus|Cerberus|318|Coal|120 (noted)|6/130|coal:120-120/22
+cerberus|Cerberus|318|Super restore(4)|2|6/130|super_restore:2-2/22
+cerberus|Cerberus|318|Summer pie|3|6/130|summer_pie:3-3/22
+cerberus|Cerberus|318|Dragon bones|20 (noted)|5/130|dragon_bones:20-20/26
+cerberus|Cerberus|318|Unholy symbol|1|5/130|unholy_symbol:1-1/26
+cerberus|Cerberus|318|Wine of Zamorak|15 (noted)|5/130|wine_of_zamorak:15-15/26
+cerberus|Cerberus|318|Ashes|50 (noted)|4/130|ashes:50-50/32
+cerberus|Cerberus|318|Fire orb|20 (noted)|4/130|fire_orb:20-20/32
+cerberus|Cerberus|318|Grimy torstol|6 (noted)|4/130|grimy_torstol:6-6/32
+cerberus|Cerberus|318|Runite ore|5 (noted)|3/130|runite_ore:5-5/43
+cerberus|Cerberus|318|Torstol seed|3|2/130|torstol_seed:3-3/65
+cerberus|Cerberus|318|Ranarr seed|2|2/130|ranarr_seed:2-2/65
+cerberus|Cerberus|318|Key master teleport|7|2/130|key_master_teleport:7-7/65
+cerberus|Cerberus|318|Ensouled hellhound head|1|1/15|ensouled_hellhound_head:1-1/15
+cerberus|Cerberus|318|Clue scroll (elite)|1|Always|-handled elsewhere:clue_scroll_elite
+cerberus|Cerberus|318|Reward casket (elite)|1|Always|-handled elsewhere:reward_casket_elite
+cerberus|Cerberus|318|Brimstone key|1|-|-handled elsewhere:brimstone_key
+cerberus|Cerberus|318|Jar of Souls|1|1/2000|jar_of_souls:1-1/2000
+cerberus|Cerberus|318|Hellpuppy|1|1/3000|-handled elsewhere:pet_hellpuppy
+cerberus|Cerberus|318|Coins|3000|1/264.1|-expanded shared table
+cerberus|Cerberus|318|Uncut sapphire|1|1/1109.3|-expanded shared table
+cerberus|Cerberus|318|Loop half of key|1|1/275.2|-expanded shared table
+cerberus|Cerberus|318|Tooth half of key|1|1/275.2|-expanded shared table
+cerberus|Cerberus|318|Uncut emerald|1|1/2218.7|-expanded shared table
+cerberus|Cerberus|318|Uncut ruby|1|1/4437.3|-expanded shared table
+cerberus|Cerberus|318|Runite bar|1|1/1109.3|-expanded shared table
+cerberus|Cerberus|318|Nature rune|67|1/1848.9|-expanded shared table
+cerberus|Cerberus|318|Rune 2h sword|1|1/1848.9|-expanded shared table
+cerberus|Cerberus|318|Rune battleaxe|1|1/1848.9|-expanded shared table
+cerberus|Cerberus|318|Law rune|45|1/2773.3|-expanded shared table
+cerberus|Cerberus|318|Death rune|45|1/2773.3|-expanded shared table
+cerberus|Cerberus|318|Steel arrow|150|1/2773.3|-expanded shared table
+cerberus|Cerberus|318|Rune arrow|42|1/2773.3|-expanded shared table
+cerberus|Cerberus|318|Adamant javelin|20|1/2773.3|-expanded shared table
+cerberus|Cerberus|318|Rune sq shield|1|1/2773.3|-expanded shared table
+cerberus|Cerberus|318|Dragonstone|1|1/2773.3|-expanded shared table
+cerberus|Cerberus|318|Silver ore|100 (noted)|1/2773.3|-expanded shared table
+cerberus|Cerberus|318|Uncut diamond|1|1/17749.3|-expanded shared table
+cerberus|Cerberus|318|Rune kiteshield|1|1/5546.7|-expanded shared table
+cerberus|Cerberus|318|Dragon med helm|1|1/5546.7|-expanded shared table
+cerberus|Cerberus|318|Rune spear|1|1/5855.5|-expanded shared table
+cerberus|Cerberus|318|Rune javelin|5|1/35498.7|-expanded shared table
+cerberus|Cerberus|318|Shield left half|1|1/11710.9|-expanded shared table
+cerberus|Cerberus|318|Dragon spear|1|1/15614.5|-expanded shared table
+cerberus|Cerberus|318|Nature talisman|1|1/11832.9|-expanded shared table
+cerberus|Cerberus|318|<rare_drop_table>|1|3/130|#rare:1-1/43
+abyssal_sire|Abyssal Sire|350|Unsired|1|1/100|unsired:1-1/100
+abyssal_sire|Abyssal Sire|350|Abyssal ashes|1|Always|abyssal_ashes:1-1/1
+abyssal_sire|Abyssal Sire|350|Battlestaff|10 (noted)|6/139|battlestaff:10-10/23
+abyssal_sire|Abyssal Sire|350|Rune full helm|3 (noted)|4/139|rune_full_helm:3-3/35
+abyssal_sire|Abyssal Sire|350|Mystic lava staff|2 (noted)|4/139|-not in game
+abyssal_sire|Abyssal Sire|350|Rune sword|3 (noted)|4/139|rune_sword:3-3/35
+abyssal_sire|Abyssal Sire|350|Rune platebody|2 (noted)|4/139|rune_platebody:2-2/35
+abyssal_sire|Abyssal Sire|350|Mystic air staff|2 (noted)|2/139|mystic_air_staff:2-2/70
+abyssal_sire|Abyssal Sire|350|Air battlestaff|6 (noted)|2/139|air_battlestaff:6-6/70
+abyssal_sire|Abyssal Sire|350|Blood rune|190-210|5/139|blood_rune:190-210/28
+abyssal_sire|Abyssal Sire|350|Soul rune|225-275|5/139|soul_rune:225-275/28
+abyssal_sire|Abyssal Sire|350|Cosmic rune|350|4/139|cosmic_rune:350-350/35
+abyssal_sire|Abyssal Sire|350|Steel cannonball|300|4/139|cannonball:300-300/35
+abyssal_sire|Abyssal Sire|350|Grimy kwuarm|25 (noted)|25/2224|grimy_kwuarm:25-25/89
+abyssal_sire|Abyssal Sire|350|Grimy dwarf weed|25 (noted)|20/2224|grimy_dwarf_weed:25-25/111
+abyssal_sire|Abyssal Sire|350|Grimy cadantine|25 (noted)|20/2224|grimy_cadantine:25-25/111
+abyssal_sire|Abyssal Sire|350|Grimy lantadyme|25 (noted)|15/2224|grimy_lantadyme:25-25/148
+abyssal_sire|Abyssal Sire|350|Earth orb|47-53 (noted)|5/139|earth_orb:47-53/28
+abyssal_sire|Abyssal Sire|350|Pure essence|600 (noted)|5/139|pure_essence:600-600/28
+abyssal_sire|Abyssal Sire|350|Magic logs|50-70 (noted)|5/139|magic_logs:50-70/28
+abyssal_sire|Abyssal Sire|350|Coal|380-420 (noted)|4/139|coal:380-420/35
+abyssal_sire|Abyssal Sire|350|Runite ore|6 (noted)|4/139|runite_ore:6-6/35
+abyssal_sire|Abyssal Sire|350|Onyx bolt tips|10|3/139|onyx_bolt_tips:10-10/46
+abyssal_sire|Abyssal Sire|350|Aether catalyst|220-270|2/139|-not in game
+abyssal_sire|Abyssal Sire|350|Chilli potato|10|7/139|-not in game
+abyssal_sire|Abyssal Sire|350|Super restore(4)|4|5/139|super_restore:4-4/28
+abyssal_sire|Abyssal Sire|350|Binding necklace|25 (noted)|4/139|binding_necklace:25-25/35
+abyssal_sire|Abyssal Sire|350|Saradomin brew(3)|6|2/139|saradomin_brew(3):6-6/70
+abyssal_sire|Abyssal Sire|350|Jug of water|250-350 (noted)|2/139|jug_of_water:250-350/70
+abyssal_sire|Abyssal Sire|350|Brimstone key|1|-|-handled elsewhere:brimstone_key
+abyssal_sire|Abyssal Sire|350|Coins|3000|1/282.4|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Uncut sapphire|1|1/1186.1|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Loop half of key|1|1/294.2|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Tooth half of key|1|1/294.2|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Uncut emerald|1|1/2372.3|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Uncut ruby|1|1/4744.5|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Runite bar|1|1/1186.1|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Nature rune|67|1/1976.9|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Rune 2h sword|1|1/1976.9|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Rune battleaxe|1|1/1976.9|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Law rune|45|1/2965.3|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Death rune|45|1/2965.3|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Steel arrow|150|1/2965.3|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Rune arrow|42|1/2965.3|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Adamant javelin|20|1/2965.3|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Rune sq shield|1|1/2965.3|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Dragonstone|1|1/2965.3|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Silver ore|100 (noted)|1/2965.3|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Uncut diamond|1|1/18978.1|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Rune kiteshield|1|1/5930.7|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Dragon med helm|1|1/5930.7|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Rune spear|1|1/6260.8|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Rune javelin|5|1/37956.3|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Shield left half|1|1/12521.7|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Dragon spear|1|1/16695.5|-expanded shared table
+abyssal_sire|Abyssal Sire|350|Nature talisman|1|1/12652.1|-expanded shared table
+abyssal_sire|Abyssal Sire|350|<rare_drop_table>|1|3/139|#rare:1-1/46
+alchemical_hydra|Alchemical Hydra|426|Hydra bones|2|Always|hydra_bones:2-2/1
+alchemical_hydra|Alchemical Hydra|426|Hydra's eye|1|1/|-no rate:hydras_eye
+alchemical_hydra|Alchemical Hydra|426|Hydra's fang|1|1/|-no rate:hydras_fang
+alchemical_hydra|Alchemical Hydra|426|Hydra's heart|1|1/|-no rate:hydras_heart
+alchemical_hydra|Alchemical Hydra|426|Hydra tail|1|1/|-no rate:hydra_tail
+alchemical_hydra|Alchemical Hydra|426|Hydra leather|1|1/|-no rate:hydra_leather
+alchemical_hydra|Alchemical Hydra|426|Hydra's claw|1|1/|-no rate:hydra_claw
+alchemical_hydra|Alchemical Hydra|426|Dragon thrownaxe|500-1000|1/2000|dragon_thrownaxe:500-1000/2000
+alchemical_hydra|Alchemical Hydra|426|Dragon knife|500-1000|1/|-no rate:dragon_knife
+alchemical_hydra|Alchemical Hydra|426|Mystic fire staff|1|8/101|mystic_fire_staff:1-1/13
+alchemical_hydra|Alchemical Hydra|426|Mystic water staff|1|8/101|mystic_water_staff:1-1/13
+alchemical_hydra|Alchemical Hydra|426|Battlestaff|8-12 (noted)|5/101|battlestaff:8-12/20
+alchemical_hydra|Alchemical Hydra|426|Black d'hide body|1|5/101|black_dhide_body:1-1/20
+alchemical_hydra|Alchemical Hydra|426|Dragon longsword|1|3/101|dragon_longsword:1-1/34
+alchemical_hydra|Alchemical Hydra|426|Rune platebody|1|3/101|rune_platebody:1-1/34
+alchemical_hydra|Alchemical Hydra|426|Dragon battleaxe|1|2/101|dragon_battleaxe:1-1/50
+alchemical_hydra|Alchemical Hydra|426|Rune platelegs|1|1.5/101|rune_platelegs:1-1/67
+alchemical_hydra|Alchemical Hydra|426|Rune plateskirt|1|1.5/101|rune_plateskirt:1-1/67
+alchemical_hydra|Alchemical Hydra|426|Mystic robe top (light)|1|1/101|mystic_robe_top_light:1-1/101
+alchemical_hydra|Alchemical Hydra|426|Mystic robe bottom (light)|1|1/101|mystic_robe_bottom_light:1-1/101
+alchemical_hydra|Alchemical Hydra|426|Chaos rune|150-300|6/101|chaos_rune:150-300/17
+alchemical_hydra|Alchemical Hydra|426|Blood rune|150-300|6/101|blood_rune:150-300/17
+alchemical_hydra|Alchemical Hydra|426|Astral rune|150-300|6/101|astral_rune:150-300/17
+alchemical_hydra|Alchemical Hydra|426|Dragonstone bolts (e)|100-120|2/101|dragonstone_bolts_e:100-120/50
+alchemical_hydra|Alchemical Hydra|426|Onyx bolts (e)|35-50|1/101|onyx_bolts_e:35-50/101
+alchemical_hydra|Alchemical Hydra|426|Grimy avantoe|10-15 (noted)|1/|-no rate:grimy_avantoe
+alchemical_hydra|Alchemical Hydra|426|Grimy kwuarm|25-30 (noted)|1/|-no rate:grimy_kwuarm
+alchemical_hydra|Alchemical Hydra|426|Grimy ranarr weed|10-15 (noted)|1/|-no rate:grimy_ranarr_weed
+alchemical_hydra|Alchemical Hydra|426|Grimy snapdragon|10-15 (noted)|1/|-no rate:grimy_snapdragon
+alchemical_hydra|Alchemical Hydra|426|Grimy cadantine|25-30 (noted)|1/|-no rate:grimy_cadantine
+alchemical_hydra|Alchemical Hydra|426|Grimy dwarf weed|25-30 (noted)|1/|-no rate:grimy_dwarf_weed
+alchemical_hydra|Alchemical Hydra|426|Grimy lantadyme|25-30 (noted)|1/|-no rate:grimy_lantadyme
+alchemical_hydra|Alchemical Hydra|426|Grimy torstol|10-15 (noted)|1/|-no rate:grimy_torstol
+alchemical_hydra|Alchemical Hydra|426|Shark|2-4|7/101|shark:2-4/14
+alchemical_hydra|Alchemical Hydra|426|Ranging potion(3)|1|7/101|ranging_potion(3):1-1/14
+alchemical_hydra|Alchemical Hydra|426|Super restore(3)|2|7/101|super_restore(3):2-2/14
+alchemical_hydra|Alchemical Hydra|426|Dragon bones|30 (noted)|6/101|dragon_bones:30-30/17
+alchemical_hydra|Alchemical Hydra|426|Crystal key|1|1/101|crystal_key:1-1/101
+alchemical_hydra|Alchemical Hydra|426|Brimstone key|1|-|-handled elsewhere:brimstone_key
+alchemical_hydra|Alchemical Hydra|426|Alchemical hydra heads|1|1/256|alchemical_hydra_heads:1-1/256
+alchemical_hydra|Alchemical Hydra|426|Jar of Chemicals|1|1/2000|jar_of_chemicals:1-1/2000
+alchemical_hydra|Alchemical Hydra|426|Ikkle Hydra|1|1/3000|-handled elsewhere:pet_ikkle_hydra
+alchemical_hydra|Alchemical Hydra|426|Coins|3000|1/307.8|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Uncut sapphire|1|1/1292.8|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Loop half of key|1|1/320.7|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Tooth half of key|1|1/320.7|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Uncut emerald|1|1/2585.6|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Uncut ruby|1|1/5171.2|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Runite bar|1|1/1292.8|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Nature rune|67|1/2154.7|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Rune 2h sword|1|1/2154.7|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Rune battleaxe|1|1/2154.7|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Law rune|45|1/3232.0|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Death rune|45|1/3232.0|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Steel arrow|150|1/3232.0|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Rune arrow|42|1/3232.0|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Adamant javelin|20|1/3232.0|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Rune sq shield|1|1/3232.0|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Dragonstone|1|1/3232.0|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Silver ore|100 (noted)|1/3232.0|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Uncut diamond|1|1/20684.8|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Rune kiteshield|1|1/6464.0|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Dragon med helm|1|1/6464.0|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Rune spear|1|1/6823.9|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Rune javelin|5|1/41369.6|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Shield left half|1|1/13647.7|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Dragon spear|1|1/18196.9|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|Nature talisman|1|1/13789.9|-expanded shared table
+alchemical_hydra|Alchemical Hydra|426|<rare_drop_table>|2|1/101|#rare:1-1/50
+the_nightmare|The Nightmare|814|Big bones|1|Always|big_bones:1-1/1
+the_nightmare|The Nightmare|814|Bones|1|Always|-handled elsewhere:bones
+the_nightmare|The Nightmare|814|Nightmare staff|1|1/300|nightmare_staff:1-1/300
+the_nightmare|The Nightmare|814|Inquisitor's great helm|1|1/420|inquisitors_great_helm:1-1/420
+the_nightmare|The Nightmare|814|Inquisitor's hauberk|1|1/420|inquisitors_hauberk:1-1/420
+the_nightmare|The Nightmare|814|Inquisitor's plateskirt|1|1/420|inquisitors_plateskirt:1-1/420
+the_nightmare|The Nightmare|814|Inquisitor's mace|1|1/750|inquisitors_mace:1-1/750
+the_nightmare|The Nightmare|814|Eldritch orb|1|1/960|eldritch_orb:1-1/960
+the_nightmare|The Nightmare|814|Harmonised orb|1|1/960|harmonised_orb:1-1/960
+the_nightmare|The Nightmare|814|Volatile orb|1|1/960|volatile_orb:1-1/960
+the_nightmare|The Nightmare|814|Cosmic rune|11-242|4/100|cosmic_rune:11-242/25
+the_nightmare|The Nightmare|814|Nature rune|8-176|4/100|nature_rune:8-176/25
+the_nightmare|The Nightmare|814|Death rune|7-176|4/100|death_rune:7-176/25
+the_nightmare|The Nightmare|814|Blood rune|16-440|4/100|blood_rune:16-440/25
+the_nightmare|The Nightmare|814|Soul rune|8-132|4/100|soul_rune:8-132/25
+the_nightmare|The Nightmare|814|Steel cannonball|6-220|4/100|cannonball:6-220/25
+the_nightmare|The Nightmare|814|Rune arrow|31-547|3/100|rune_arrow:31-547/33
+the_nightmare|The Nightmare|814|Mithril ore|11-176 (noted)|4/100|mithril_ore:11-176/25
+the_nightmare|The Nightmare|814|Coal|15-264 (noted)|4/100|coal:15-264/25
+the_nightmare|The Nightmare|814|Gold ore|9-176 (noted)|4/100|gold_ore:9-176/25
+the_nightmare|The Nightmare|814|Adamantite ore|40-95 (noted)|4/100|adamantite_ore:40-95/25
+the_nightmare|The Nightmare|814|Magic logs|1-55 (noted)|4/100|magic_logs:1-55/25
+the_nightmare|The Nightmare|814|Grimy cadantine|1-16 (noted)|4/100|grimy_cadantine:1-16/25
+the_nightmare|The Nightmare|814|Grimy torstol|1-16 (noted)|4/100|grimy_torstol:1-16/25
+the_nightmare|The Nightmare|814|Snapdragon seed|1-7|3/100|snapdragon_seed:1-7/33
+the_nightmare|The Nightmare|814|Uncut emerald|2-44 (noted)|3/100|uncut_emerald:2-44/33
+the_nightmare|The Nightmare|814|Uncut ruby|27-60 (noted)|3/100|uncut_ruby:27-60/33
+the_nightmare|The Nightmare|814|Runite ore|1-16 (noted)|2/100|runite_ore:1-16/50
+the_nightmare|The Nightmare|814|Bass|1-18|6/100|bass:1-18/17
+the_nightmare|The Nightmare|814|Shark|1-16|6/100|shark:1-16/17
+the_nightmare|The Nightmare|814|Prayer potion(3)|1-10|5/100|prayer_potion(3):1-10/20
+the_nightmare|The Nightmare|814|Sanfew serum(3)|1-8|5/100|sanfew_serum(3):1-8/20
+the_nightmare|The Nightmare|814|Saradomin brew(3)|1-10|5/100|saradomin_brew(3):1-10/20
+the_nightmare|The Nightmare|814|Zamorak brew(3)|1-10|5/100|zamorak_brew(3):1-10/20
+the_nightmare|The Nightmare|814|Coins|2291-43958|2/100|coins:2291-43958/50
+the_nightmare|The Nightmare|814|Little Nightmare|1|1/800|-handled elsewhere:pet_little_nightmare
+the_nightmare|The Nightmare|814|Jar of Dreams|1|1/1900|jar_of_dreams:1-1/1900
+phosanis_nightmare|Phosani's Nightmare|1024|Big bones|1|Always|big_bones:1-1/1
+phosanis_nightmare|Phosani's Nightmare|1024|Nightmare staff|1|69/35000|nightmare_staff:1-1/507
+phosanis_nightmare|Phosani's Nightmare|1024|Inquisitor's great helm|1|1/700|inquisitors_great_helm:1-1/700
+phosanis_nightmare|Phosani's Nightmare|1024|Inquisitor's hauberk|1|1/700|inquisitors_hauberk:1-1/700
+phosanis_nightmare|Phosani's Nightmare|1024|Inquisitor's plateskirt|1|1/700|inquisitors_plateskirt:1-1/700
+phosanis_nightmare|Phosani's Nightmare|1024|Inquisitor's mace|1|31/35000|inquisitors_mace:1-1/1129
+phosanis_nightmare|Phosani's Nightmare|1024|Eldritch orb|1|1/1600|eldritch_orb:1-1/1600
+phosanis_nightmare|Phosani's Nightmare|1024|Harmonised orb|1|1/1600|harmonised_orb:1-1/1600
+phosanis_nightmare|Phosani's Nightmare|1024|Volatile orb|1|1/1600|volatile_orb:1-1/1600
+phosanis_nightmare|Phosani's Nightmare|1024|Cosmic rune|247-420|4/100|cosmic_rune:247-420/25
+phosanis_nightmare|Phosani's Nightmare|1024|Nature rune|165-305|4/100|nature_rune:165-305/25
+phosanis_nightmare|Phosani's Nightmare|1024|Death rune|165-305|4/100|death_rune:165-305/25
+phosanis_nightmare|Phosani's Nightmare|1024|Blood rune|343-765|4/100|blood_rune:343-765/25
+phosanis_nightmare|Phosani's Nightmare|1024|Soul rune|110-228|4/100|soul_rune:110-228/25
+phosanis_nightmare|Phosani's Nightmare|1024|Steel cannonball|137-382|4/100|cannonball:137-382/25
+phosanis_nightmare|Phosani's Nightmare|1024|Rune arrow|412-957|3/100|rune_arrow:412-957/33
+phosanis_nightmare|Phosani's Nightmare|1024|Mithril ore|165-305 (noted)|5/100|mithril_ore:165-305/20
+phosanis_nightmare|Phosani's Nightmare|1024|Coal|220-458 (noted)|4/100|coal:220-458/25
+phosanis_nightmare|Phosani's Nightmare|1024|Gold ore|165-305 (noted)|4/100|gold_ore:165-305/25
+phosanis_nightmare|Phosani's Nightmare|1024|Adamantite ore|40-95 (noted)|4/100|adamantite_ore:40-95/25
+phosanis_nightmare|Phosani's Nightmare|1024|Magic logs|40-95 (noted)|4/100|magic_logs:40-95/25
+phosanis_nightmare|Phosani's Nightmare|1024|Grimy cadantine|13-26 (noted)|4/100|grimy_cadantine:13-26/25
+phosanis_nightmare|Phosani's Nightmare|1024|Grimy torstol|13-26 (noted)|4/100|grimy_torstol:13-26/25
+phosanis_nightmare|Phosani's Nightmare|1024|Snapdragon seed|5-10|3/100|snapdragon_seed:5-10/33
+phosanis_nightmare|Phosani's Nightmare|1024|Uncut emerald|33-75 (noted)|3/100|uncut_emerald:33-75/33
+phosanis_nightmare|Phosani's Nightmare|1024|Uncut ruby|27-60 (noted)|3/100|uncut_ruby:27-60/33
+phosanis_nightmare|Phosani's Nightmare|1024|Runite ore|11-26 (noted)|2/100|runite_ore:11-26/50
+phosanis_nightmare|Phosani's Nightmare|1024|Bass|16-29|6/100|bass:16-29/17
+phosanis_nightmare|Phosani's Nightmare|1024|Shark|13-26|6/100|shark:13-26/17
+phosanis_nightmare|Phosani's Nightmare|1024|Prayer potion(3)|8-15|5/100|prayer_potion(3):8-15/20
+phosanis_nightmare|Phosani's Nightmare|1024|Sanfew serum(3)|6-12|5/100|sanfew_serum(3):6-12/20
+phosanis_nightmare|Phosani's Nightmare|1024|Saradomin brew(3)|8-15|5/100|saradomin_brew(3):8-15/20
+phosanis_nightmare|Phosani's Nightmare|1024|Zamorak brew(3)|8-15|5/100|zamorak_brew(3):8-15/20
+phosanis_nightmare|Phosani's Nightmare|1024|Coins|41417-74500|2/100|coins:41417-74500/50
+phosanis_nightmare|Phosani's Nightmare|1024|Slepey tablet|1|1/25|-not in game
+phosanis_nightmare|Phosani's Nightmare|1024|Parasitic egg|1|1/200|parasitic_egg:1-1/200
+phosanis_nightmare|Phosani's Nightmare|1024|Little Nightmare|1|1/1400|-handled elsewhere:pet_little_nightmare
+phosanis_nightmare|Phosani's Nightmare|1024|Jar of Dreams|1|1/4000|jar_of_dreams:1-1/4000
+phantom_muspah|Phantom Muspah|741|Ancient essence|540-599|60/100|ancient_essence:540-599/2
+phantom_muspah|Phantom Muspah|741|Ancient essence|885-995|23/100|ancient_essence:885-995/4
+phantom_muspah|Phantom Muspah|741|Ancient essence|1970-2060|10/100|ancient_essence:1970-2060/10
+phantom_muspah|Phantom Muspah|741|Frozen cache|1|4/100|-not in game
+phantom_muspah|Phantom Muspah|741|Ancient icon|1|2/100|ancient_icon:1-1/50
+phantom_muspah|Phantom Muspah|741|Venator shard|1|1/100|venator_shard:1-1/100
+phantom_muspah|Phantom Muspah|741|Shark|4-6|1/9|shark:4-6/9
+phantom_muspah|Phantom Muspah|741|Summer pie|4-6|1/9|summer_pie:4-6/9
+phantom_muspah|Phantom Muspah|741|Ancient brew(3)|1-2|1/9|ancient_brew(3):1-2/9
+phantom_muspah|Phantom Muspah|741|Ranging potion(3)|1-3|1/9|ranging_potion(3):1-3/9
+phantom_muspah|Phantom Muspah|741|Super restore(3)|2-3|1/9|super_restore(3):2-3/9
+phantom_muspah|Phantom Muspah|741|Prayer potion(3)|2-3|1/9|prayer_potion(3):2-3/9
+phantom_muspah|Phantom Muspah|741|Dragon plateskirt|1|5/235|dragon_plateskirt:1-1/47
+phantom_muspah|Phantom Muspah|741|Rune platelegs|3 (noted)|5/235|rune_platelegs:3-3/47
+phantom_muspah|Phantom Muspah|741|Black d'hide body|1|5/235|black_dhide_body:1-1/47
+phantom_muspah|Phantom Muspah|741|Dragon platelegs|2|4/235|dragon_platelegs:2-2/59
+phantom_muspah|Phantom Muspah|741|Rune sword|1|1/235|rune_sword:1-1/235
+phantom_muspah|Phantom Muspah|741|Soul rune|380|10/235|soul_rune:380-380/24
+phantom_muspah|Phantom Muspah|741|Smoke rune|314|15/235|smoke_rune:314-314/16
+phantom_muspah|Phantom Muspah|741|Chaos rune|480|5/235|chaos_rune:480-480/47
+phantom_muspah|Phantom Muspah|741|Fire rune|1964|5/235|fire_rune:1964-1964/47
+phantom_muspah|Phantom Muspah|741|Steel cannonball|670|5/235|cannonball:670-670/47
+phantom_muspah|Phantom Muspah|741|Grimy toadflax|40 (noted)|3/235|grimy_toadflax:40-40/78
+phantom_muspah|Phantom Muspah|741|Grimy kwuarm|6 (noted)|5/752|grimy_kwuarm:6-6/150
+phantom_muspah|Phantom Muspah|741|Grimy dwarf weed|6 (noted)|4/752|grimy_dwarf_weed:6-6/188
+phantom_muspah|Phantom Muspah|741|Grimy cadantine|6 (noted)|4/752|grimy_cadantine:6-6/188
+phantom_muspah|Phantom Muspah|741|Grimy lantadyme|6 (noted)|3/752|grimy_lantadyme:6-6/251
+phantom_muspah|Phantom Muspah|741|Yew seed|2|5/235|yew_seed:2-2/47
+phantom_muspah|Phantom Muspah|741|Torstol seed|2|5/235|torstol_seed:2-2/47
+phantom_muspah|Phantom Muspah|741|Palm tree seed|2|5/235|palm_seed:2-2/47
+phantom_muspah|Phantom Muspah|741|Ranarr seed|3|5/235|ranarr_seed:3-3/47
+phantom_muspah|Phantom Muspah|741|Snapdragon seed|5|4/235|snapdragon_seed:5-5/59
+phantom_muspah|Phantom Muspah|741|Ranarr seed|5|3/235|ranarr_seed:5-5/78
+phantom_muspah|Phantom Muspah|741|Spirit seed|1|2/235|spirit_seed:1-1/118
+phantom_muspah|Phantom Muspah|741|Adamantite ore|22 (noted)|10/235|adamantite_ore:22-22/24
+phantom_muspah|Phantom Muspah|741|Gold ore|180 (noted)|10/235|gold_ore:180-180/24
+phantom_muspah|Phantom Muspah|741|Teak plank|22 (noted)|10/235|teak_plank:22-22/24
+phantom_muspah|Phantom Muspah|741|Molten glass|89 (noted)|15/235|molten_glass:89-89/16
+phantom_muspah|Phantom Muspah|741|Pure essence|2314 (noted)|5/235|pure_essence:2314-2314/47
+phantom_muspah|Phantom Muspah|741|Coal|163 (noted)|5/235|coal:163-163/47
+phantom_muspah|Phantom Muspah|741|Runite ore|18 (noted)|3/235|runite_ore:18-18/78
+phantom_muspah|Phantom Muspah|741|Water orb|21 (noted)|15/235|water_orb:21-21/16
+phantom_muspah|Phantom Muspah|741|Dragon bolts (unf)|89|10/235|dragon_bolts_unf:89-89/24
+phantom_muspah|Phantom Muspah|741|Limpwurt root|21 (noted)|3/235|limpwurt_root:21-21/78
+phantom_muspah|Phantom Muspah|741|Raw shark|28 (noted)|3.75/235|raw_shark:28-28/63
+phantom_muspah|Phantom Muspah|741|Shark lure|56|3.75/235|-not in game
+phantom_muspah|Phantom Muspah|741|Manta ray|28 (noted)|2.5/235|manta_ray:28-28/94
+phantom_muspah|Phantom Muspah|741|Brimstone key|1|-|-handled elsewhere:brimstone_key
+phantom_muspah|Phantom Muspah|741|Charged ice|1|Always|-not in game
+phantom_muspah|Phantom Muspah|741|Muphin|1|1/2500|-handled elsewhere:pet_muphin
+phantom_muspah|Phantom Muspah|741|Coins|3000|1/143.2|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Uncut sapphire|1|1/601.6|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Loop half of key|1|1/149.2|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Tooth half of key|1|1/149.2|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Uncut emerald|1|1/1203.2|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Uncut ruby|1|1/2406.4|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Runite bar|1|1/601.6|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Nature rune|67|1/1002.7|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Rune 2h sword|1|1/1002.7|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Rune battleaxe|1|1/1002.7|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Law rune|45|1/1504.0|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Death rune|45|1/1504.0|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Steel arrow|150|1/1504.0|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Rune arrow|42|1/1504.0|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Adamant javelin|20|1/1504.0|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Rune sq shield|1|1/1504.0|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Dragonstone|1|1/1504.0|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Silver ore|100 (noted)|1/1504.0|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Uncut diamond|1|1/9625.6|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Rune kiteshield|1|1/3008.0|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Dragon med helm|1|1/3008.0|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Rune spear|1|1/3175.5|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Rune javelin|5|1/19251.2|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Shield left half|1|1/6350.9|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Dragon spear|1|1/8467.9|-expanded shared table
+phantom_muspah|Phantom Muspah|741|Nature talisman|1|1/6417.1|-expanded shared table
+phantom_muspah|Phantom Muspah|741|<rare_drop_table>|2|5/235|#rare:1-1/24
+duke_sucellus|Duke Sucellus|758|Magus vestige|1|1/720|magus_vestige:1-1/720
+duke_sucellus|Duke Sucellus|758|Chromium ingot|1|3/720|chromium_ingot:1-1/240
+duke_sucellus|Duke Sucellus|758|Eye of the Duke|1|1/720|eye_of_the_duke:1-1/720
+duke_sucellus|Duke Sucellus|758|Virtus mask|1|1/2160|virtus_mask:1-1/2160
+duke_sucellus|Duke Sucellus|758|Virtus robe top|1|1/2160|virtus_robe_top:1-1/2160
+duke_sucellus|Duke Sucellus|758|Virtus robe bottom|1|1/2160|virtus_robe_bottom:1-1/2160
+duke_sucellus|Duke Sucellus|758|Frozen tablet|1|1/25.8|-expanded shared table
+duke_sucellus|Duke Sucellus|758|Awakener's orb|1|1/48.5|-expanded shared table
+duke_sucellus|Duke Sucellus|758|Ice quartz|1|1/206.6|-expanded shared table
+duke_sucellus|Duke Sucellus|758|Pineapple pizza|3-4|1/5.4|-expanded shared table
+duke_sucellus|Duke Sucellus|758|Prayer potion(3)|1|1/5.4|-expanded shared table
+duke_sucellus|Duke Sucellus|758|Super combat potion(2)|1|1/5.4|-expanded shared table
+duke_sucellus|Duke Sucellus|758|Bronze chainbody|11,17 (noted)|1/100|bronze_chainbody:1117-1117/100
+duke_sucellus|Duke Sucellus|758|Mithril chainbody|5,7 (noted)|1/100|mithril_chainbody:57-57/100
+duke_sucellus|Duke Sucellus|758|Adamant chainbody|6,10 (noted)|1/100|adamant_chainbody:610-610/100
+duke_sucellus|Duke Sucellus|758|Dragon platelegs|5,7|1/100|dragon_platelegs:57-57/100
+duke_sucellus|Duke Sucellus|758|Pure essence|200,300 (noted)|1/100|pure_essence:200300-200300/100
+duke_sucellus|Duke Sucellus|758|Iron ore|63,95 (noted)|1/100|iron_ore:6395-6395/100
+duke_sucellus|Duke Sucellus|758|Coal|216,325 (noted)|8/100|coal:216325-216325/12
+duke_sucellus|Duke Sucellus|758|Mithril ore|33,50 (noted)|1/100|mithril_ore:3350-3350/100
+duke_sucellus|Duke Sucellus|758|Adamantite ore|75,112 (noted)|8/100|adamantite_ore:75112-75112/12
+duke_sucellus|Duke Sucellus|758|Runite ore|30,45 (noted)|2/100|runite_ore:3045-3045/50
+duke_sucellus|Duke Sucellus|758|Sapphire|28,42 (noted)|1/100|sapphire:2842-2842/100
+duke_sucellus|Duke Sucellus|758|Emerald|28,42 (noted)|1/100|emerald:2842-2842/100
+duke_sucellus|Duke Sucellus|758|Ruby|28,42 (noted)|1/100|ruby:2842-2842/100
+duke_sucellus|Duke Sucellus|758|Uncut ruby|41,62 (noted)|5/100|uncut_ruby:4162-4162/20
+duke_sucellus|Duke Sucellus|758|Uncut diamond|41,62 (noted)|5/100|uncut_diamond:4162-4162/20
+duke_sucellus|Duke Sucellus|758|Bronze bar|63,95 (noted)|1/100|bronze_bar:6395-6395/100
+duke_sucellus|Duke Sucellus|758|Dragon arrowtips|166,250|2/100|dragon_arrowtips:166250-166250/50
+duke_sucellus|Duke Sucellus|758|Rune javelin tips|60,90|8/100|rune_javelin_heads:6090-6090/12
+duke_sucellus|Duke Sucellus|758|Dragon javelin tips|60,90|8/100|dragon_javelin_heads:6090-6090/12
+duke_sucellus|Duke Sucellus|758|Raw sea turtle|200,300 (noted)|1/100|raw_sea_turtle:200300-200300/100
+duke_sucellus|Duke Sucellus|758|Air rune|200,300|1/100|air_rune:200300-200300/100
+duke_sucellus|Duke Sucellus|758|Mist rune|100,150|8/100|mist_rune:100150-100150/12
+duke_sucellus|Duke Sucellus|758|Chaos rune|100,150|9/100|chaos_rune:100150-100150/11
+duke_sucellus|Duke Sucellus|758|Soul rune|666,1000|2/100|soul_rune:6661000-6661000/50
+duke_sucellus|Duke Sucellus|758|Odd key|1|Always|-not in game
+duke_sucellus|Duke Sucellus|758|Brimstone key|1|-|-handled elsewhere:brimstone_key
+duke_sucellus|Duke Sucellus|758|Baron|1|1/2500|-handled elsewhere:pet_baron
+duke_sucellus|Duke Sucellus|758|Ancient blood ornament kit|1|Always|-handled elsewhere:ancient_blood_ornament_kit
+the_leviathan|The Leviathan|798|Venator vestige|1|1/768|venator_vestige:1-1/768
+the_leviathan|The Leviathan|798|Chromium ingot|1|3/768|chromium_ingot:1-1/256
+the_leviathan|The Leviathan|798|Leviathan's lure|1|1/768|leviathans_lure:1-1/768
+the_leviathan|The Leviathan|798|Virtus mask|1|1/2304|virtus_mask:1-1/2304
+the_leviathan|The Leviathan|798|Virtus robe top|1|1/2304|virtus_robe_top:1-1/2304
+the_leviathan|The Leviathan|798|Virtus robe bottom|1|1/2304|virtus_robe_bottom:1-1/2304
+the_leviathan|The Leviathan|798|Scarred tablet|1|1/25.8|-expanded shared table
+the_leviathan|The Leviathan|798|Awakener's orb|1|1/53.6|-expanded shared table
+the_leviathan|The Leviathan|798|Smoke quartz|1|1/206.0|-expanded shared table
+the_leviathan|The Leviathan|798|Prayer potion(3)|1|1/5.4|-expanded shared table
+the_leviathan|The Leviathan|798|Ranging potion(2)|1|1/5.4|-expanded shared table
+the_leviathan|The Leviathan|798|Sea turtle|3-4|1/5.4|-expanded shared table
+the_leviathan|The Leviathan|798|Aether catalyst|1500,2250|1/100|-not in game
+the_leviathan|The Leviathan|798|Iron ore|57,85 (noted)|1/100|iron_ore:5785-5785/100
+the_leviathan|The Leviathan|798|Silver ore|57,85 (noted)|1/100|silver_ore:5785-5785/100
+the_leviathan|The Leviathan|798|Coal|195,292 (noted)|8/100|coal:195292-195292/12
+the_leviathan|The Leviathan|798|Gold ore|67,101 (noted)|8/100|gold_ore:67101-67101/12
+the_leviathan|The Leviathan|798|Adamantite ore|57,85 (noted)|1/100|adamantite_ore:5785-5785/100
+the_leviathan|The Leviathan|798|Runite ore|27,40 (noted)|2/100|runite_ore:2740-2740/50
+the_leviathan|The Leviathan|798|Sapphire|25,38 (noted)|1/100|sapphire:2538-2538/100
+the_leviathan|The Leviathan|798|Emerald|25,38 (noted)|1/100|emerald:2538-2538/100
+the_leviathan|The Leviathan|798|Ruby|25,38 (noted)|1/100|ruby:2538-2538/100
+the_leviathan|The Leviathan|798|Uncut ruby|37,56 (noted)|5/100|uncut_ruby:3756-3756/20
+the_leviathan|The Leviathan|798|Uncut diamond|37,56 (noted)|5/100|uncut_diamond:3756-3756/20
+the_leviathan|The Leviathan|798|Dragon javelin tips|54,81|8/100|dragon_javelin_heads:5481-5481/12
+the_leviathan|The Leviathan|798|Dragon bolts (unf)|150,225|2/100|dragon_bolts_unf:150225-150225/50
+the_leviathan|The Leviathan|798|Onyx bolt tips|90,135|1/100|onyx_bolt_tips:90135-90135/100
+the_leviathan|The Leviathan|798|Raw manta ray|180,270 (noted)|1/100|raw_manta_ray:180270-180270/100
+the_leviathan|The Leviathan|798|Anglerfish|4,6|8/100|anglerfish:46-46/12
+the_leviathan|The Leviathan|798|Bronze arrow|63,94|1/100|bronze_arrow:6394-6394/100
+the_leviathan|The Leviathan|798|Mithril arrow|63,94|1/100|mithril_arrow:6394-6394/100
+the_leviathan|The Leviathan|798|Adamant arrow|63,94|1/100|adamant_arrow:6394-6394/100
+the_leviathan|The Leviathan|798|Rune arrow|54,81|8/100|rune_arrow:5481-5481/12
+the_leviathan|The Leviathan|798|Body rune|180,270|1/100|body_rune:180270-180270/100
+the_leviathan|The Leviathan|798|Earth rune|180,270|1/100|earth_rune:180270-180270/100
+the_leviathan|The Leviathan|798|Smoke rune|300,450|8/100|smoke_rune:300450-300450/12
+the_leviathan|The Leviathan|798|Soul rune|600,900|2/100|soul_rune:600900-600900/50
+the_leviathan|The Leviathan|798|Brimstone key|1|-|-handled elsewhere:brimstone_key
+the_leviathan|The Leviathan|798|Lil'viathan|1|1/2500|-handled elsewhere:pet_lilviathan
+the_leviathan|The Leviathan|798|Ancient blood ornament kit|1|Always|-handled elsewhere:ancient_blood_ornament_kit
+the_whisperer|The Whisperer|791|Bellator vestige|1|1/512|bellator_vestige:1-1/512
+the_whisperer|The Whisperer|791|Chromium ingot|1|3/512|chromium_ingot:1-1/171
+the_whisperer|The Whisperer|791|Siren's staff|1|1/512|sirens_staff:1-1/512
+the_whisperer|The Whisperer|791|Virtus mask|1|1/1536|virtus_mask:1-1/1536
+the_whisperer|The Whisperer|791|Virtus robe top|1|1/1536|virtus_robe_top:1-1/1536
+the_whisperer|The Whisperer|791|Virtus robe bottom|1|1/1536|virtus_robe_bottom:1-1/1536
+the_whisperer|The Whisperer|791|Sirenic tablet|1|1/26.2|-expanded shared table
+the_whisperer|The Whisperer|791|Awakener's orb|1|1/34.5|-expanded shared table
+the_whisperer|The Whisperer|791|Shadow quartz|1|1/209.3|-expanded shared table
+the_whisperer|The Whisperer|791|Ancient brew(2)|1|1/5.5|-expanded shared table
+the_whisperer|The Whisperer|791|Prayer potion(3)|1|1/5.5|-expanded shared table
+the_whisperer|The Whisperer|791|Manta ray|3-4|1/5.5|-expanded shared table
+the_whisperer|The Whisperer|791|Bronze longsword|16,24 (noted)|1/100|bronze_longsword:1624-1624/100
+the_whisperer|The Whisperer|791|Mithril longsword|7,10 (noted)|1/100|mithril_longsword:710-710/100
+the_whisperer|The Whisperer|791|Adamant longsword|9,14 (noted)|1/100|adamant_longsword:914-914/100
+the_whisperer|The Whisperer|791|Battlestaff|70,105 (noted)|2/100|battlestaff:70105-70105/50
+the_whisperer|The Whisperer|791|Dragon plateskirt|7,10|1/100|dragon_plateskirt:710-710/100
+the_whisperer|The Whisperer|791|Pure essence|280; 420 (noted)|1/100|pure_essence:280-420/100
+the_whisperer|The Whisperer|791|Iron ore|88,133 (noted)|1/100|iron_ore:88133-88133/100
+the_whisperer|The Whisperer|791|Coal|303,455 (noted)|8/100|coal:303455-303455/12
+the_whisperer|The Whisperer|791|Gold ore|88,133 (noted)|1/100|gold_ore:88133-88133/100
+the_whisperer|The Whisperer|791|Mithril ore|88,133 (noted)|1/100|mithril_ore:88133-88133/100
+the_whisperer|The Whisperer|791|Adamantite ore|105,157 (noted)|8/100|adamantite_ore:105157-105157/12
+the_whisperer|The Whisperer|791|Runite ore|42,63 (noted)|2/100|runite_ore:4263-4263/50
+the_whisperer|The Whisperer|791|Sapphire|39,59 (noted)|1/100|sapphire:3959-3959/100
+the_whisperer|The Whisperer|791|Emerald|39,59 (noted)|1/100|emerald:3959-3959/100
+the_whisperer|The Whisperer|791|Ruby|39,59 (noted)|1/100|ruby:3959-3959/100
+the_whisperer|The Whisperer|791|Uncut ruby|58,87 (noted)|5/100|uncut_ruby:5887-5887/20
+the_whisperer|The Whisperer|791|Uncut diamond|58,87 (noted)|5/100|uncut_diamond:5887-5887/20
+the_whisperer|The Whisperer|791|Dragon javelin tips|84,126|8/100|dragon_javelin_heads:84126-84126/12
+the_whisperer|The Whisperer|791|Runite bolts (unf)|84,126|8/100|rune_bolts_unf:84126-84126/12
+the_whisperer|The Whisperer|791|Raw monkfish|700,1050 (noted)|1/100|raw_monkfish:7001050-7001050/100
+the_whisperer|The Whisperer|791|Water rune|280,420|1/100|water_rune:280420-280420/100
+the_whisperer|The Whisperer|791|Steam rune|466,700|8/100|steam_rune:466700-466700/12
+the_whisperer|The Whisperer|791|Chaos rune|140,210|1/100|chaos_rune:140210-140210/100
+the_whisperer|The Whisperer|791|Death rune|466,700|8/100|death_rune:466700-466700/12
+the_whisperer|The Whisperer|791|Soul rune|933,1400|2/100|soul_rune:9331400-9331400/50
+the_whisperer|The Whisperer|791|Brimstone key|1|-|-handled elsewhere:brimstone_key
+the_whisperer|The Whisperer|791|Ancient blood ornament kit|1|Always|-handled elsewhere:ancient_blood_ornament_kit
+the_whisperer|The Whisperer|791|Wisp|1|1/2000|-handled elsewhere:pet_wisp
+vardorvis|Vardorvis|784|Ultor vestige|1|1/1088|ultor_vestige:1-1/1088
+vardorvis|Vardorvis|784|Chromium ingot|1|3/1088|chromium_ingot:1-1/363
+vardorvis|Vardorvis|784|Executioner's axe head|1|1/1088|executioners_axe_head:1-1/1088
+vardorvis|Vardorvis|784|Virtus mask|1|1/3264|virtus_mask:1-1/3264
+vardorvis|Vardorvis|784|Virtus robe top|1|1/3264|virtus_robe_top:1-1/3264
+vardorvis|Vardorvis|784|Virtus robe bottom|1|1/3264|virtus_robe_bottom:1-1/3264
+vardorvis|Vardorvis|784|Strangled tablet|1|1/25.5|-expanded shared table
+vardorvis|Vardorvis|784|Awakener's orb|1|1/80.6|-expanded shared table
+vardorvis|Vardorvis|784|Blood quartz|1|1/204.0|-expanded shared table
+vardorvis|Vardorvis|784|Tuna potato|3-4|1/5.3|-expanded shared table
+vardorvis|Vardorvis|784|Prayer potion(3)|1|1/5.3|-expanded shared table
+vardorvis|Vardorvis|784|Super combat potion(2)|1|1/5.3|-expanded shared table
+vardorvis|Vardorvis|784|Pure essence|120,180 (noted)|1/100|pure_essence:120180-120180/100
+vardorvis|Vardorvis|784|Iron ore|38,57 (noted)|1/100|iron_ore:3857-3857/100
+vardorvis|Vardorvis|784|Silver ore|38,57 (noted)|1/100|silver_ore:3857-3857/100
+vardorvis|Vardorvis|784|Coal|130,195 (noted)|8/100|coal:130195-130195/12
+vardorvis|Vardorvis|784|Mithril ore|38,57 (noted)|1/100|mithril_ore:3857-3857/100
+vardorvis|Vardorvis|784|Adamantite ore|45,67 (noted)|8/100|adamantite_ore:4567-4567/12
+vardorvis|Vardorvis|784|Runite ore|18,27 (noted)|2/100|runite_ore:1827-1827/50
+vardorvis|Vardorvis|784|Sapphire|17,25 (noted)|1/100|sapphire:1725-1725/100
+vardorvis|Vardorvis|784|Emerald|17,25 (noted)|1/100|emerald:1725-1725/100
+vardorvis|Vardorvis|784|Ruby|17,25 (noted)|1/100|ruby:1725-1725/100
+vardorvis|Vardorvis|784|Uncut ruby|25,37 (noted)|5/100|uncut_ruby:2537-2537/20
+vardorvis|Vardorvis|784|Uncut diamond|25,37 (noted)|5/100|uncut_diamond:2537-2537/20
+vardorvis|Vardorvis|784|Rune javelin tips|36,54|8/100|rune_javelin_heads:3654-3654/12
+vardorvis|Vardorvis|784|Dragon javelin tips|36,54|8/100|dragon_javelin_heads:3654-3654/12
+vardorvis|Vardorvis|784|Dragon dart tip|100,150|2/100|dragon_dart_tip:100150-100150/50
+vardorvis|Vardorvis|784|Raw shark|200,300 (noted)|1/100|raw_shark:200300-200300/100
+vardorvis|Vardorvis|784|Bronze javelin|42,63|1/100|bronze_javelin:4263-4263/100
+vardorvis|Vardorvis|784|Mithril javelin|42,63|1/100|mithril_javelin:4263-4263/100
+vardorvis|Vardorvis|784|Adamant javelin|42,63|1/100|adamant_javelin:4263-4263/100
+vardorvis|Vardorvis|784|Onyx bolts (e)|60,90|1/100|onyx_bolts_e:6090-6090/100
+vardorvis|Vardorvis|784|Mind rune|120,180|1/100|mind_rune:120180-120180/100
+vardorvis|Vardorvis|784|Fire rune|120,180|1/100|fire_rune:120180-120180/100
+vardorvis|Vardorvis|784|Lava rune|200,300|8/100|lava_rune:200300-200300/12
+vardorvis|Vardorvis|784|Blood rune|200,300|8/100|blood_rune:200300-200300/12
+vardorvis|Vardorvis|784|Soul rune|400,600|2/100|soul_rune:400600-400600/50
+vardorvis|Vardorvis|784|Temple key (Desert Treasure II)|1|Always|-not in game
+vardorvis|Vardorvis|784|Brimstone key|1|-|-handled elsewhere:brimstone_key
+vardorvis|Vardorvis|784|Ancient blood ornament kit|1|Always|-handled elsewhere:ancient_blood_ornament_kit
+vardorvis|Vardorvis|784|Butch|1|1/3000|-handled elsewhere:pet_butch
+the_hueycoatl|The Hueycoatl|642|Big bones|1|Always|big_bones:1-1/1
+the_hueycoatl|The Hueycoatl|642|Dragon hunter wand|1|1/105|dragon_hunter_wand:1-1/105
+the_hueycoatl|The Hueycoatl|642|Hueycoatl hide|3|11/315|hueycoatl_hide:3-3/29
+the_hueycoatl|The Hueycoatl|642|Tome of Earth (empty)|1|1/90|tome_of_earth:1-1/90
+the_hueycoatl|The Hueycoatl|642|Rune mace|1-26 (noted)|3/68|rune_mace:1-26/23
+the_hueycoatl|The Hueycoatl|642|Rune scimitar|1-20 (noted)|3/68|rune_scimitar:1-20/23
+the_hueycoatl|The Hueycoatl|642|Rune plateskirt|1-20 (noted)|2/68|rune_plateskirt:1-20/34
+the_hueycoatl|The Hueycoatl|642|Adamant platebody|1-30 (noted)|3/68|adamant_platebody:1-30/23
+the_hueycoatl|The Hueycoatl|642|Death rune|22-450|3/68|death_rune:22-450/23
+the_hueycoatl|The Hueycoatl|642|Earth rune|150-3000|2/68|earth_rune:150-3000/34
+the_hueycoatl|The Hueycoatl|642|Cosmic rune|20-400|2/68|cosmic_rune:20-400/34
+the_hueycoatl|The Hueycoatl|642|Nature rune|20-400|2/68|nature_rune:20-400/34
+the_hueycoatl|The Hueycoatl|642|Lantadyme seed|3-60|2/68|lantadyme_seed:3-60/34
+the_hueycoatl|The Hueycoatl|642|Huasca seed|1-20|2/68|huasca_seed:1-20/34
+the_hueycoatl|The Hueycoatl|642|Toadflax seed|2-40|2/68|toadflax_seed:2-40/34
+the_hueycoatl|The Hueycoatl|642|Torstol seed|1-20|2/68|torstol_seed:1-20/34
+the_hueycoatl|The Hueycoatl|642|Ranarr seed|1-20|2/68|ranarr_seed:1-20/34
+the_hueycoatl|The Hueycoatl|642|Avantoe seed|1-20|3/68|avantoe_seed:1-20/23
+the_hueycoatl|The Hueycoatl|642|Kwuarm seed|1-20|3/68|kwuarm_seed:1-20/23
+the_hueycoatl|The Hueycoatl|642|Soiled page|4-80|5/68|-not in game
+the_hueycoatl|The Hueycoatl|642|Adamant bolts(unf)|15-300|3/68|adamant_bolts_unf:15-300/23
+the_hueycoatl|The Hueycoatl|642|Air orb|4-80 (noted)|3/68|air_orb:4-80/23
+the_hueycoatl|The Hueycoatl|642|Raw shark|9-180 (noted)|3/68|raw_shark:9-180/23
+the_hueycoatl|The Hueycoatl|642|Sunfire splinters|17-350|3/68|sunfire_splinters:17-350/23
+the_hueycoatl|The Hueycoatl|642|Sun-kissed bones|5-100 (noted)|3/68|-not in game
+the_hueycoatl|The Hueycoatl|642|Dragon bones|2-40 (noted)|3/68|dragon_bones:2-40/23
+the_hueycoatl|The Hueycoatl|642|Adamantite ore|6-120 (noted)|2/68|adamantite_ore:6-120/34
+the_hueycoatl|The Hueycoatl|642|Steel cannonball|60-1200|3/68|cannonball:60-1200/23
+the_hueycoatl|The Hueycoatl|642|Rune dart tip|6-120|2/68|rune_dart_tip:6-120/34
+the_hueycoatl|The Hueycoatl|642|Limpwurt root|10-200 (noted)|2/68|limpwurt_root:10-200/34
+the_hueycoatl|The Hueycoatl|642|Tooth half of key (moon key)|1|1/75|-not in game
+the_hueycoatl|The Hueycoatl|642|Huberte|1|1/400|-handled elsewhere:pet_huberte
+amoxliatl|Amoxliatl|263|Frozen tear|2-4|6/10|frozen_tear:2-4/2
+amoxliatl|Amoxliatl|263|Frozen tear|5-10|3/10|frozen_tear:5-10/3
+amoxliatl|Amoxliatl|263|Frozen tear|10-20|1/10|frozen_tear:10-20/10
+amoxliatl|Amoxliatl|263|Rune mace|1|2/58|rune_mace:1-1/29
+amoxliatl|Amoxliatl|263|Rune pickaxe|1|2/58|rune_pickaxe:1-1/29
+amoxliatl|Amoxliatl|263|Rune platebody|1|1/58|rune_platebody:1-1/58
+amoxliatl|Amoxliatl|263|Rune platelegs|1|1/58|rune_platelegs:1-1/58
+amoxliatl|Amoxliatl|263|Water rune|200-400|5/58|water_rune:200-400/12
+amoxliatl|Amoxliatl|263|Chaos rune|30-60|4/58|chaos_rune:30-60/14
+amoxliatl|Amoxliatl|263|Death rune|20-40|4/58|death_rune:20-40/14
+amoxliatl|Amoxliatl|263|Blood rune|15-30|4/58|blood_rune:15-30/14
+amoxliatl|Amoxliatl|263|Soul rune|30-45|4/58|soul_rune:30-45/14
+amoxliatl|Amoxliatl|263|Nature rune|30-60|4/58|nature_rune:30-60/14
+amoxliatl|Amoxliatl|263|Coal|20-30 (noted)|5/58|coal:20-30/12
+amoxliatl|Amoxliatl|263|Gold ore|20-30 (noted)|5/58|gold_ore:20-30/12
+amoxliatl|Amoxliatl|263|Adamantite ore|5-10 (noted)|4/58|adamantite_ore:5-10/14
+amoxliatl|Amoxliatl|263|Prayer potion(3)|1|2/58|prayer_potion(3):1-1/29
+amoxliatl|Amoxliatl|263|Runite ore|1 (noted)|2/58|runite_ore:1-1/29
+amoxliatl|Amoxliatl|263|Blessed bone shards|60-100|2/58|-not in game
+amoxliatl|Amoxliatl|263|Water orb|10-20 (noted)|2/58|water_orb:10-20/29
+amoxliatl|Amoxliatl|263|Water talisman|1|2/58|water_talisman:1-1/29
+amoxliatl|Amoxliatl|263|Huasca seed|1|1/58|huasca_seed:1-1/58
+amoxliatl|Amoxliatl|263|Clue scroll (elite)|1|Always|-handled elsewhere:clue_scroll_elite
+amoxliatl|Amoxliatl|263|Reward casket (elite)|1|Always|-handled elsewhere:reward_casket_elite
+amoxliatl|Amoxliatl|263|Pendant of Ates (inert)|1|1/25|pendant_of_ates:1-1/25
+amoxliatl|Amoxliatl|263|Glacial temotli|1|1/100|glacial_temotli:1-1/100
+amoxliatl|Amoxliatl|263|Tooth half of key (moon key)|1|1/125|-not in game
+amoxliatl|Amoxliatl|263|Brimstone key|1|-|-handled elsewhere:brimstone_key
+amoxliatl|Amoxliatl|263|Moxi|1|1/3000|-handled elsewhere:pet_moxi
+amoxliatl|Amoxliatl|263|Uncut sapphire|1|1/58.0|-expanded shared table
+amoxliatl|Amoxliatl|263|Uncut emerald|1|1/116.0|-expanded shared table
+amoxliatl|Amoxliatl|263|Uncut ruby|1|1/232.0|-expanded shared table
+amoxliatl|Amoxliatl|263|Uncut diamond|1|1/928.0|-expanded shared table
+amoxliatl|Amoxliatl|263|Rune javelin|5|1/1856.0|-expanded shared table
+amoxliatl|Amoxliatl|263|Loop half of key|1|1/1856.0|-expanded shared table
+amoxliatl|Amoxliatl|263|Tooth half of key|1|1/1856.0|-expanded shared table
+amoxliatl|Amoxliatl|263|Rune spear|1|1/29696.0|-expanded shared table
+amoxliatl|Amoxliatl|263|Shield left half|1|1/59392.0|-expanded shared table
+amoxliatl|Amoxliatl|263|Dragon spear|1|1/79189.3|-expanded shared table
+amoxliatl|Amoxliatl|263|Nature talisman|1|1/618.7|-expanded shared table
+amoxliatl|Amoxliatl|263|<gem_drop_table>|2|2/58|#gems:1-1/14
+branda_the_fire_queen|Branda the Fire Queen|350|Desiccated page|10-19|Always|-not in game
+branda_the_fire_queen|Branda the Fire Queen|350|Fire element staff crown|1|1/75|fire_element_staff_crown:1-1/75
+branda_the_fire_queen|Branda the Fire Queen|350|Mystic vigour prayer scroll|1|1/75|mystic_vigour_prayer_scroll:1-1/75
+branda_the_fire_queen|Branda the Fire Queen|350|Giantsoul amulet|1|1/16|giantsoul_amulet:1-1/16
+branda_the_fire_queen|Branda the Fire Queen|350|Mystic fire staff|4 (noted)|2/55|mystic_fire_staff:4-4/28
+branda_the_fire_queen|Branda the Fire Queen|350|Fire battlestaff|6 (noted)|2/55|fire_battlestaff:6-6/28
+branda_the_fire_queen|Branda the Fire Queen|350|Rune plateskirt|2|2/55|rune_plateskirt:2-2/28
+branda_the_fire_queen|Branda the Fire Queen|350|Rune scimitar|2|2/55|rune_scimitar:2-2/28
+branda_the_fire_queen|Branda the Fire Queen|350|Rune pickaxe|2|2/55|rune_pickaxe:2-2/28
+branda_the_fire_queen|Branda the Fire Queen|350|Fire rune|1500-3000|2/55|fire_rune:1500-3000/28
+branda_the_fire_queen|Branda the Fire Queen|350|Chaos rune|200-400|2/55|chaos_rune:200-400/28
+branda_the_fire_queen|Branda the Fire Queen|350|Death rune|150-300|2/55|death_rune:150-300/28
+branda_the_fire_queen|Branda the Fire Queen|350|Nature rune|100-150|2/55|nature_rune:100-150/28
+branda_the_fire_queen|Branda the Fire Queen|350|Law rune|100-150|2/55|law_rune:100-150/28
+branda_the_fire_queen|Branda the Fire Queen|350|Soul rune|100-150|2/55|soul_rune:100-150/28
+branda_the_fire_queen|Branda the Fire Queen|350|Blood rune|100-150|2/55|blood_rune:100-150/28
+branda_the_fire_queen|Branda the Fire Queen|350|Rune arrow|100-300|2/55|rune_arrow:100-300/28
+branda_the_fire_queen|Branda the Fire Queen|350|Coal|280-320 (noted)|2/55|coal:280-320/28
+branda_the_fire_queen|Branda the Fire Queen|350|Gold ore|60-100 (noted)|2/55|gold_ore:60-100/28
+branda_the_fire_queen|Branda the Fire Queen|350|Fire orb|20-40 (noted)|2/55|fire_orb:20-40/28
+branda_the_fire_queen|Branda the Fire Queen|350|Grimy avantoe|6-8 (noted)|2/55|grimy_avantoe:6-8/28
+branda_the_fire_queen|Branda the Fire Queen|350|Grimy cadantine|6-8 (noted)|2/55|grimy_cadantine:6-8/28
+branda_the_fire_queen|Branda the Fire Queen|350|Grimy dwarf weed|6-8 (noted)|2/55|grimy_dwarf_weed:6-8/28
+branda_the_fire_queen|Branda the Fire Queen|350|Grimy irit leaf|6-8 (noted)|2/55|grimy_irit_leaf:6-8/28
+branda_the_fire_queen|Branda the Fire Queen|350|Grimy kwuarm|6-8 (noted)|2/55|grimy_kwuarm:6-8/28
+branda_the_fire_queen|Branda the Fire Queen|350|Grimy lantadyme|6-8 (noted)|2/55|grimy_lantadyme:6-8/28
+branda_the_fire_queen|Branda the Fire Queen|350|Grimy ranarr weed|6-8 (noted)|2/55|grimy_ranarr_weed:6-8/28
+branda_the_fire_queen|Branda the Fire Queen|350|Maple seed|4-6|1/55|maple_seed:4-6/55
+branda_the_fire_queen|Branda the Fire Queen|350|Palm tree seed|2|1/55|palm_seed:2-2/55
+branda_the_fire_queen|Branda the Fire Queen|350|Yew seed|2|1/55|yew_seed:2-2/55
+branda_the_fire_queen|Branda the Fire Queen|350|Coins|10000-30000|2/55|coins:10000-30000/28
+branda_the_fire_queen|Branda the Fire Queen|350|Prayer potion(4)|2-4|2/55|prayer_potion:2-4/28
+branda_the_fire_queen|Branda the Fire Queen|350|Desiccated page|6-24|2/55|-not in game
+branda_the_fire_queen|Branda the Fire Queen|350|Bran|1|1/3000|-handled elsewhere:pet_bran
+gemstone_crab|Gemstone Crab|160|Uncut opal|1|9/32|uncut_opal:1-1/4
+gemstone_crab|Gemstone Crab|160|Uncut jade|1|9/32|uncut_jade:1-1/4
+gemstone_crab|Gemstone Crab|160|Uncut red topaz|1|6/32|uncut_red_topaz:1-1/5
+gemstone_crab|Gemstone Crab|160|Uncut sapphire|1|3/32|uncut_sapphire:1-1/11
+gemstone_crab|Gemstone Crab|160|Uncut emerald|1|2/32|uncut_emerald:1-1/16
+gemstone_crab|Gemstone Crab|160|Uncut ruby|1|2/32|uncut_ruby:1-1/16
+gemstone_crab|Gemstone Crab|160|Uncut diamond|1|1/32|uncut_diamond:1-1/32
+gemstone_crab|Gemstone Crab|160|Uncut dragonstone|1|1/500|uncut_dragonstone:1-1/500
+shellbane_gryphon|Shellbane gryphon|235|Belle's folly (tarnished)|1|1/75|belles_folly_tarnished:1-1/75
+shellbane_gryphon|Shellbane gryphon|235|Big bones|1|Always|big_bones:1-1/1
+shellbane_gryphon|Shellbane gryphon|235|Gryphon feather|7-10|Always|-not in game
+shellbane_gryphon|Shellbane gryphon|235|Rune claws|1|10/128|rune_claws:1-1/13
+shellbane_gryphon|Shellbane gryphon|235|Rune scimitar|1|8/128|rune_scimitar:1-1/16
+shellbane_gryphon|Shellbane gryphon|235|Adamant cannonball|35-50|8/128|-not in game
+shellbane_gryphon|Shellbane gryphon|235|Rune cannonball|20-30|6/128|-not in game
+shellbane_gryphon|Shellbane gryphon|235|Raw swordfish|1|14/128|raw_swordfish:1-1/9
+shellbane_gryphon|Shellbane gryphon|235|Sweetcorn|1|10/128|sweetcorn:1-1/13
+shellbane_gryphon|Shellbane gryphon|235|Watermelon|1|10/128|watermelon:1-1/13
+shellbane_gryphon|Shellbane gryphon|235|Raw sea turtle|1|4/128|raw_sea_turtle:1-1/32
+shellbane_gryphon|Shellbane gryphon|235|Potato seed|1-4|1/|-no rate:potato_seed
+shellbane_gryphon|Shellbane gryphon|235|Onion seed|1-3|1/|-no rate:onion_seed
+shellbane_gryphon|Shellbane gryphon|235|Cabbage seed|1-3|1/|-no rate:cabbage_seed
+shellbane_gryphon|Shellbane gryphon|235|Tomato seed|1-2|1/|-no rate:tomato_seed
+shellbane_gryphon|Shellbane gryphon|235|Sweetcorn seed|1-2|1/|-no rate:sweetcorn_seed
+shellbane_gryphon|Shellbane gryphon|235|Elkhorn frag|1|1/128|-not in game
+shellbane_gryphon|Shellbane gryphon|235|Pillar frag|1|1/128|-not in game
+shellbane_gryphon|Shellbane gryphon|235|Strawberry seed|1|1/|-no rate:strawberry_seed
+shellbane_gryphon|Shellbane gryphon|235|Watermelon seed|1|1/|-no rate:watermelon_seed
+shellbane_gryphon|Shellbane gryphon|235|Snape grass seed|1|1/|-no rate:snape_grass_seed
+shellbane_gryphon|Shellbane gryphon|235|Grimy guam leaf|1|1/|-no rate:grimy_guam_leaf
+shellbane_gryphon|Shellbane gryphon|235|Grimy marrentill|1|1/|-no rate:grimy_marrentill
+shellbane_gryphon|Shellbane gryphon|235|Grimy tarromin|1|1/|-no rate:grimy_tarromin
+shellbane_gryphon|Shellbane gryphon|235|Grimy harralander|1|1/|-no rate:grimy_harralander
+shellbane_gryphon|Shellbane gryphon|235|Grimy ranarr weed|1|1/|-no rate:grimy_ranarr_weed
+shellbane_gryphon|Shellbane gryphon|235|Grimy irit leaf|1|1/|-no rate:grimy_irit_leaf
+shellbane_gryphon|Shellbane gryphon|235|Grimy avantoe|1|1/|-no rate:grimy_avantoe
+shellbane_gryphon|Shellbane gryphon|235|Grimy kwuarm|1|1/|-no rate:grimy_kwuarm
+shellbane_gryphon|Shellbane gryphon|235|Grimy cadantine|1|1/|-no rate:grimy_cadantine
+shellbane_gryphon|Shellbane gryphon|235|Grimy lantadyme|1|1/|-no rate:grimy_lantadyme
+shellbane_gryphon|Shellbane gryphon|235|Grimy dwarf weed|1|1/|-no rate:grimy_dwarf_weed
+shellbane_gryphon|Shellbane gryphon|235|Gryphon feather|35-50|11/128|-not in game
+shellbane_gryphon|Shellbane gryphon|235|Shark lure|3-5|10/128|-not in game
+shellbane_gryphon|Shellbane gryphon|235|Basket|1|3/128|basket:1-1/43
+shellbane_gryphon|Shellbane gryphon|235|Clue scroll (elite)|1|Always|-handled elsewhere:clue_scroll_elite
+shellbane_gryphon|Shellbane gryphon|235|Reward casket (elite)|1|Always|-handled elsewhere:reward_casket_elite
+shellbane_gryphon|Shellbane gryphon|235|Brimstone key|1|-|-handled elsewhere:brimstone_key
+shellbane_gryphon|Shellbane gryphon|235|Long bone|1|1/400|long_bone:1-1/400
+shellbane_gryphon|Shellbane gryphon|235|Jar of Feathers|1|1/2000|jar_of_feathers:1-1/2000
+shellbane_gryphon|Shellbane gryphon|235|Gull (pet)|1|1/3000|-not in game
+shellbane_gryphon|Shellbane gryphon|235|Curved bone|1|1/5012.5|curved_bone:1-1/5012
+shellbane_gryphon|Shellbane gryphon|235|Uncut sapphire|1|1/256.0|-expanded shared table
+shellbane_gryphon|Shellbane gryphon|235|Uncut emerald|1|1/512.0|-expanded shared table
+shellbane_gryphon|Shellbane gryphon|235|Uncut ruby|1|1/1024.0|-expanded shared table
+shellbane_gryphon|Shellbane gryphon|235|Uncut diamond|1|1/4096.0|-expanded shared table
+shellbane_gryphon|Shellbane gryphon|235|Rune javelin|5|1/8192.0|-expanded shared table
+shellbane_gryphon|Shellbane gryphon|235|Loop half of key|1|1/8192.0|-expanded shared table
+shellbane_gryphon|Shellbane gryphon|235|Tooth half of key|1|1/8192.0|-expanded shared table
+shellbane_gryphon|Shellbane gryphon|235|Rune spear|1|1/131072.0|-expanded shared table
+shellbane_gryphon|Shellbane gryphon|235|Shield left half|1|1/262144.0|-expanded shared table
+shellbane_gryphon|Shellbane gryphon|235|Dragon spear|1|1/349525.3|-expanded shared table
+shellbane_gryphon|Shellbane gryphon|235|Nature talisman|1|1/2730.7|-expanded shared table
+shellbane_gryphon|Shellbane gryphon|235|<gem_drop_table>|2|1/128|#gems:1-1/64
+brutus|Brutus|30|Bull bones|1|Always|-not in game
+brutus|Brutus|30|Raw t-bone steak|1|Always|-not in game
+brutus|Brutus|30|Mooleta|1|5/150|mooleta:1-1/30
+brutus|Brutus|30|Bottomless milk bucket (empty)|1|4/150|bottomless_milk_bucket:1-1/38
+brutus|Brutus|30|Cow slippers|1|1/150|cow_slippers:1-1/150
+brutus|Brutus|30|Iron full helm|1|2/81|iron_full_helm:1-1/40
+brutus|Brutus|30|Iron platebody|1|2/81|iron_platebody:1-1/40
+brutus|Brutus|30|Iron platelegs|1|1/81|iron_platelegs:1-1/81
+brutus|Brutus|30|Iron plateskirt|1|1/81|iron_plateskirt:1-1/81
+brutus|Brutus|30|Iron arrow|14|10/81|iron_arrow:14-14/8
+brutus|Brutus|30|Air rune|29|10/81|air_rune:29-29/8
+brutus|Brutus|30|Mind rune|18|8/81|mind_rune:18-18/10
+brutus|Brutus|30|Chaos rune|12|2/81|chaos_rune:12-12/40
+brutus|Brutus|30|Potato seed|3|10/81|potato_seed:3-3/8
+brutus|Brutus|30|Acorn|2|5/81|acorn:2-2/16
+brutus|Brutus|30|Raw t-bone steak|3 (noted)|10/81|-not in game
+brutus|Brutus|30|Cowhide|1|10/81|cowhide:1-1/8
+brutus|Brutus|30|Oak logs|2|5/81|oak_logs:2-2/16
+brutus|Brutus|30|Logs|2|5/81|logs:2-2/16
+brutus|Brutus|30|Coins|60-80|15/81|coins:60-80/5
+brutus|Brutus|30|Coins|80-100|5/81|coins:80-100/16
+brutus|Brutus|30|Coins|100-120|5/81|coins:100-120/16
+brutus|Brutus|30|Beef|1|1/1000|-handled elsewhere:pet_beef
+deranged_archaeologist|Deranged archaeologist|276|Bones|1|Always|bones:1-1/1
+deranged_archaeologist|Deranged archaeologist|276|Steel ring|1|3/131|steel_ring:1-1/44
+deranged_archaeologist|Deranged archaeologist|276|Black d'hide body|1|6/131|black_dhide_body:1-1/22
+deranged_archaeologist|Deranged archaeologist|276|Rune sword|1|4/131|rune_sword:1-1/33
+deranged_archaeologist|Deranged archaeologist|276|Water rune|100|6/131|water_rune:100-100/22
+deranged_archaeologist|Deranged archaeologist|276|Mud rune|40|6/131|mud_rune:40-40/22
+deranged_archaeologist|Deranged archaeologist|276|Rune knife|25|6/131|rune_knife:25-25/22
+deranged_archaeologist|Deranged archaeologist|276|Dragon arrow|60|1/131|dragon_arrow:60-60/131
+deranged_archaeologist|Deranged archaeologist|276|Steel cannonball|80|4/131|cannonball:80-80/33
+deranged_archaeologist|Deranged archaeologist|276|Grimy dwarf weed|4 (noted)|8/131|grimy_dwarf_weed:4-4/16
+deranged_archaeologist|Deranged archaeologist|276|White berries|10 (noted)|7/131|white_berries:10-10/19
+deranged_archaeologist|Deranged archaeologist|276|Runite limbs|1|5/131|rune_limbs:1-1/26
+deranged_archaeologist|Deranged archaeologist|276|Black dragonhide|8 (noted)|5/131|black_dragonhide:8-8/26
+deranged_archaeologist|Deranged archaeologist|276|Gold ore|10 (noted)|6/131|gold_ore:10-10/22
+deranged_archaeologist|Deranged archaeologist|276|Onyx bolt tips|6|6/131|onyx_bolt_tips:6-6/22
+deranged_archaeologist|Deranged archaeologist|276|Anchovy pizza|2|4/131|anchovy_pizza:2-2/33
+deranged_archaeologist|Deranged archaeologist|276|Prayer potion(3)|1|8/131|prayer_potion(3):1-1/16
+deranged_archaeologist|Deranged archaeologist|276|Potato with cheese|3|8/131|potato_with_cheese:3-3/16
+deranged_archaeologist|Deranged archaeologist|276|Shark|2|8/131|shark:2-2/16
+deranged_archaeologist|Deranged archaeologist|276|Crystal key|1|7/131|crystal_key:1-1/19
+deranged_archaeologist|Deranged archaeologist|276|Long bone|1|2/131|long_bone:1-1/66
+deranged_archaeologist|Deranged archaeologist|276|Brimstone key|1|-|-handled elsewhere:brimstone_key
+deranged_archaeologist|Deranged archaeologist|276|Coins|3000|1/133.1|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Uncut sapphire|1|1/75.5|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Loop half of key|1|1/132.1|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Tooth half of key|1|1/132.1|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Uncut emerald|1|1/151.1|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Uncut ruby|1|1/302.1|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Runite bar|1|1/558.9|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Nature rune|67|1/931.6|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Rune 2h sword|1|1/931.6|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Rune battleaxe|1|1/931.6|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Law rune|45|1/1397.3|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Death rune|45|1/1397.3|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Steel arrow|150|1/1397.3|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Rune arrow|42|1/1397.3|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Adamant javelin|20|1/1397.3|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Rune sq shield|1|1/1397.3|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Dragonstone|1|1/1397.3|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Silver ore|100 (noted)|1/1397.3|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Uncut diamond|1|1/1208.5|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Rune kiteshield|1|1/2794.7|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Dragon med helm|1|1/2794.7|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Rune spear|1|1/2767.6|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Rune javelin|5|1/2417.0|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Shield left half|1|1/5535.3|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Dragon spear|1|1/7380.4|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|Nature talisman|1|1/805.7|-expanded shared table
+deranged_archaeologist|Deranged archaeologist|276|<rare_drop_table>|1|6/131|#rare:1-1/22
+deranged_archaeologist|Deranged archaeologist|276|<gem_drop_table>|1|6/131|#gems:1-1/22
+deranged_archaeologist|Deranged archaeologist|276|<fossil_table>|1|-|-no shared table

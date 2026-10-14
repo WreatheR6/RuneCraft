@@ -129,9 +129,8 @@ public final class Jewellery {
                 s(0, 0, 0, 20, -4, 15, 18, 7, 5, 5, 0, 0, 7, 2), Perk.NONE,
                 "A tormented bracelet woven with Mokhaiotl cloth. A missed spell makes the next one roll accuracy twice.");
         // Round 17 combat jewellery (effects in PlayerHitCalc): avarice +20% vs revenants (+35% with Forinthry surge when
-        // skulled); Efaritay's aid (an enchanted topaz ring in OSRS; no topaz ring here yet) helps silver weapons vs vampyres.
-        worn("amulet_of_avarice", "Amulet of avarice", Slot.NECK, "amulet", 0x6AD0B0, 60_000, s(10, 10, 10, 10, 10, 3, 3, 3, 3, 3, 6, 0, 0, 3),
-                Perk.NONE, "A hauntingly beautiful amulet. Revenants fear it; the Wilderness covets it.");
+        // skulled); Efaritay's aid (a topaz ring with Lvl-3 Enchant) helps silver weapons vs vampyres.
+        wornExternal("amulet_of_avarice", Slot.NECK, s(10, 10, 10, 10, 10, 3, 3, 3, 3, 3, 6, 0, 0, 3)); // item in CommonItems (revenant drop)
         worn("efaritays_aid", "Efaritay's aid", Slot.RING, "ring", 0xE06A3A, 1_800, NONE, Perk.NONE,
                 "A ring that aids its wearer against vampyres when wielding silver.");
         // ---------- Other worn items ----------
@@ -390,15 +389,22 @@ public final class Jewellery {
         enchant(1, "sapphire_necklace", "games_necklace_8");
         enchant(1, "sapphire_amulet", "amulet_of_magic");
         enchant(1, "sapphire_bracelet", "bracelet_of_clay");
+        // Semi-precious jewellery (wiki): opal needs Lvl-1, jade Lvl-2 and topaz Lvl-3 Enchant. Ring of pursuit, amulet of
+        // bounty, expeditious bracelet, amulet of chemistry, flamtaer bracelet, necklace of faith and bracelet of slaughter
+        // are not in RuneCraft yet.
+        enchant(1, "opal_necklace", "dodgy_necklace");
         enchant(2, "emerald_ring", "ring_of_dueling_8");
         enchant(2, "emerald_necklace", "binding_necklace");
         enchant(2, "emerald_amulet", "amulet_of_defence");
         enchant(2, "emerald_bracelet", "castle_wars_bracelet");
         enchant(2, "jade_ring", "ring_of_returning_" + RING_OF_RETURNING_CHARGES);
+        enchant(2, "jade_necklace", "necklace_of_passage_5");
         enchant(3, "ruby_ring", "ring_of_forging");
-        enchant(3, "ruby_necklace", "dodgy_necklace");
+        enchant(3, "ruby_necklace", "digsite_pendant_5");
         enchant(3, "ruby_amulet", "amulet_of_strength");
         enchant(3, "ruby_bracelet", "inoculation_bracelet");
+        enchant(3, "topaz_ring", "efaritays_aid");
+        enchant(3, "topaz_amulet", "burning_amulet_5");
         enchant(4, "diamond_ring", "ring_of_life");
         enchant(4, "diamond_necklace", "phoenix_necklace");
         enchant(4, "diamond_amulet", "amulet_of_power");

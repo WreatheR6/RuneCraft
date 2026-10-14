@@ -68,9 +68,11 @@ public final class MonsterDropsTable {
     /** {@code drops} with the patch for {@code key} applied (the same list when there is none). */
     public static List<Drop> patched(String key, List<Drop> drops) {
         Patch p = PATCHES.get(key);
-        if (p == null) {
-            return drops;
-        }
+        return p == null ? drops : applied(p, drops);
+    }
+
+    /** {@code drops} with {@code p} applied (also used for the boss tables, {@link BossDropsTable}). */
+    public static List<Drop> applied(Patch p, List<Drop> drops) {
         Map<String, List<Drop>> put = new LinkedHashMap<>();
         // Lines are grouped by base item, so prayer_potion(2) replaces a module's prayer_potion line too.
         for (Drop d : p.put()) {

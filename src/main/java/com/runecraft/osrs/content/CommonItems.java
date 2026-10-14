@@ -59,6 +59,9 @@ public final class CommonItems {
         items.add("tormented_synapse", "Tormented synapse", Kind.SIMPLE, "orb", 0xE05020).value(800_000).stack(1)
                 .examine("A twitching synapse from a tormented demon. Its fiery energy could empower a demonbane weapon.");
         // Caught from maniacal monkeys (skilling, Hunter) and dropped by demonic gorillas (slayer); strings a ballista.
+        // Revenant unique (godwars module drops it; systems' Jewellery makes it wearable).
+        items.add("amulet_of_avarice", "Amulet of avarice", Kind.SIMPLE, "amulet", 0x6AD0B0).value(60_000).stack(1)
+                .examine("A hauntingly beautiful amulet. Revenants fear it; the Wilderness covets it.");
         items.add("monkey_tail", "Monkey tail", Kind.SIMPLE, "tail", 0x8A6A3A).value(1).examine("A whole maniacal monkey tail. Ballista string!");
         // Demonic gorilla uniques (slayer module drops them; ballistae are fletched from them, uncut zenyte crafted).
         items.add("zenyte_shard", "Zenyte shard", Kind.SIMPLE, "shard", 0xF0A020).value(75_000)

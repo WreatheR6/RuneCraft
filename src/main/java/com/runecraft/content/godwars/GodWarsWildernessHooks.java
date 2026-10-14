@@ -51,6 +51,7 @@ public final class GodWarsWildernessHooks implements ModuleHooks {
         });
         GwdKillcount.registerBuiltinGate();
         GameEvents.onKill(GwdKillcount::onKill);
+        GameEvents.onKill(RevenantLoot::onKill);
         GwdCamps.register();
     }
 }

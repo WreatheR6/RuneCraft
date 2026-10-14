@@ -190,13 +190,13 @@ class GodWarsContentTest {
         assertEquals(AttackDef.Special.DRAGONFIRE, WildernessBosses.KBD_ICE.special());
         assertEquals(AttackDef.Special.DRAGONFIRE, WildernessBosses.KBD_SHOCK.special());
         assertEquals(128, rarity(boss("king_black_dragon"), "kbd_heads"));
-        assertEquals(618, rarity(boss("callisto"), "claws_of_callisto"));
-        assertEquals(618, rarity(boss("venenatis"), "fangs_of_venenatis"));
-        assertEquals(618, rarity(boss("vetion"), "skull_of_vetion"));
+        assertEquals(196, rarity(boss("callisto"), "claws_of_callisto"));
+        assertEquals(196, rarity(boss("venenatis"), "fangs_of_venenatis"));
+        assertEquals(196, rarity(boss("vetion"), "skull_of_vetion"));
         assertEquals(256, rarity(boss("scorpia"), "odium_shard_3"));
         assertEquals(256, rarity(boss("chaos_fanatic"), "malediction_shard_1"));
         assertEquals(256, rarity(boss("crazy_archaeologist"), "odium_shard_2"));
-        assertEquals(128, rarity(boss("chaos_elemental"), "dragon_2h_sword"));
+        assertEquals(64, rarity(boss("chaos_elemental"), "dragon_2h_sword")); // wiki 2/128 (BossDropsTable)
         assertEquals(300, WildernessBosses.realPetRate("chaos_elemental"));
     }
 

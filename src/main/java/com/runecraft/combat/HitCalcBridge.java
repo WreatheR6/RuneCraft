@@ -68,7 +68,8 @@ public final class HitCalcBridge {
         in.strengthBonus = eq.meleeStrength();
         in.rangedStrength = eq.rangedStrength() + ammoStrength;
         in.magicDamageTenths = eq.magicDamagePercent() * 10;
-        // Revenant weapons (+50% in the Wilderness; revenant ether charges aren't modelled, so they count as charged) and
+        // Revenant weapons (+50% in the Wilderness; they hold revenant ether (Charges) and can't attack empty, so an attacking one
+        // is charged) and
         // the amulet of avarice's Forinthry surge while skulled.
         in.inWilderness = com.runecraft.world.Gielinor.wildernessLevel(p) > 0;
         in.forinthrySurge = SkullService.isSkulled(p);

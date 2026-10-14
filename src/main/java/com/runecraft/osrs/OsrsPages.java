@@ -26,7 +26,8 @@ final class OsrsPages {
     private static final List<Def> EXTEND = new ArrayList<>();
     /** Generated pages that have no OSRS counterpart. */
     static final Set<String> REMOVED = Set.of("Herbs", "Gems", "Rune altars", "Quest rewards", "Boss keys", "Hunter", "Rooftop Agility",
-            "Superior slayer creatures", "Dragons", "Brimstone & Larran's chests");
+            "Superior slayer creatures", "Dragons", "Brimstone & Larran's chests", "Gemstone Crab",
+            "Fumus", "Umbra", "Cruor", "Glacies");
 
     private static List<String> l(String... s) {
         return List.of(s);
@@ -65,12 +66,12 @@ final class OsrsPages {
         boss("Commander Zilyana", shards("pet_zilyana", "armadyl_crossbow", "saradomin_hilt", "saradomin_sword", "saradomins_light"));
         boss("Corporeal Beast", "pet_dark_core", "elysian_sigil", "spectral_sigil", "arcane_sigil", "holy_elixir", "spirit_shield",
                 "jar_of_spirits");
-        boss("Crazy archaeologist", "odium_shard_2", "malediction_shard_2", "fedora");
+        boss("Crazy Archaeologist", l("Crazy archaeologist"), null, "odium_shard_2", "malediction_shard_2", "fedora");
         boss("Dagannoth Kings", l("Dagannoth Rex", "Dagannoth Prime", "Dagannoth Supreme"),
                 l("dagannoth_rex", "dagannoth_prime", "dagannoth_supreme"), "pet_dagannoth_prime", "pet_dagannoth_supreme",
                 "pet_dagannoth_rex", "berserker_ring", "archers_ring", "seers_ring", "warrior_ring", "dragon_axe", "seercull",
                 "mud_battlestaff");
-        boss("Deranged Archaeologist", l("Deranged archaeologist"), l("deranged_archaeologist"), "steel_ring");
+        boss("Deranged archaeologist", l("Deranged archaeologist"), l("deranged_archaeologist"), "steel_ring");
         boss("The Gauntlet", l("Crystalline Hunllef", "Corrupted Hunllef"), l("crystalline_hunllef", "corrupted_hunllef"),
                 "pet_youngllef", "crystal_armour_seed", "crystal_weapon_seed", "enhanced_crystal_weapon_seed", "gauntlet_cape");
         boss("General Graardor", shards("pet_general_graardor", "bandos_chestplate", "bandos_tassets", "bandos_boots", "bandos_hilt"));
@@ -91,14 +92,14 @@ final class OsrsPages {
         boss("Moons of Peril", l("Blue Moon", "Eclipse Moon", "Blood Moon"), l("blue_moon", "eclipse_moon", "blood_moon"),
                 "eclipse_atlatl", "eclipse_moon_helm", "eclipse_moon_chestplate", "eclipse_moon_tassets", "dual_macuahuitl",
                 "blood_moon_helm", "blood_moon_chestplate", "blood_moon_tassets", "blue_moon_spear", "blue_moon_helm",
-                "blue_moon_chestplate", "blue_moon_tassets");
+                "blue_moon_chestplate", "blue_moon_tassets", "atlatl_dart");
         boss("Obor", "hill_giant_club");
         boss("Phantom Muspah", "pet_muphin", "venator_shard", "ancient_icon", "frozen_cache", "ancient_essence");
         boss("Sarachnis", "pet_sraracha", "jar_of_eyes", "giant_egg_sac_full", "sarachnis_cudgel");
         boss("Scorpia", "pet_scorpias_offspring", "odium_shard_3", "malediction_shard_3", "dragon_2h_sword");
         boss("Scurrius", "pet_scurry", "scurrius_spine");
         boss("Skotizo", "pet_skotos", "jar_of_darkness", "dark_claw", "dark_totem", "uncut_onyx", "ancient_shard");
-        boss("Thermonuclear smoke devil", "pet_smoke_devil", "occult_necklace", "smoke_battlestaff", "dragon_chainbody", "jar_of_smoke");
+        boss("Thermonuclear Smoke Devil", l("Thermonuclear smoke devil"), null, "pet_smoke_devil", "occult_necklace", "smoke_battlestaff", "dragon_chainbody", "jar_of_smoke");
         boss("Venenatis and Spindel", l("Venenatis", "Spindel"), l("venenatis", "spindel"), "pet_venenatis_spiderling",
                 "treasonous_ring", "dragon_pickaxe", "dragon_2h_sword", "fangs_of_venenatis", "voidwaker_gem");
         boss("Vet'ion and Calvar'ion", l("Vet'ion", "Calvar'ion"), l("vetion", "calvarion"), "vetion_jr", "ring_of_the_gods",
@@ -106,7 +107,32 @@ final class OsrsPages {
         boss("Vorkath", "pet_vorki", "vorkaths_head", "draconic_visage", "skeletal_visage", "jar_of_decay", "dragonbone_necklace");
         boss("Zalcano", "pet_smolcano", "crystal_tool_seed", "zalcano_shard", "uncut_onyx");
         boss("Zulrah", "pet_snakeling", "tanzanite_mutagen", "magma_mutagen", "jar_of_swamp", "magic_fang", "serpentine_visage",
-                "tanzanite_fang", "zul_andra_teleport", "uncut_onyx");
+                "tanzanite_fang", "zul_andra_teleport", "uncut_onyx", "zulrahs_scales");
+        // Newer boss pages (wiki "Collection log" page contents; see CollectionLogSnapshotTest).
+        boss("Amoxliatl", "pet_moxi", "glacial_temotli", "pendant_of_ates", "frozen_tear");
+        boss("Araxxor", "pet_nid", "araxyte_venom_sac", "spider_cave_teleport", "araxyte_fang", "noxious_point", "noxious_blade",
+                "noxious_pommel", "araxyte_head", "jar_of_venom", "coagulated_venom");
+        boss("Brutus", l("Brutus", "Demonic Brutus"), null, "pet_beef", "cow_slippers", "bottomless_milk_bucket", "mooleta");
+        boss("Doom of Mokhaiotl", "pet_dom", "mokhaiotl_cloth", "eye_of_ayak", "avernic_treads", "demon_tear", "mokhaiotl_waystone");
+        for (String[] dt2 : new String[][]{{"Duke Sucellus", "pet_baron", "ice_quartz", "magus_vestige", "eye_of_the_duke", "frozen_tablet"},
+                {"The Leviathan", "pet_lilviathan", "smoke_quartz", "venator_vestige", "leviathans_lure", "scarred_tablet"},
+                {"The Whisperer", "pet_wisp", "shadow_quartz", "bellator_vestige", "sirens_staff", "sirenic_tablet"},
+                {"Vardorvis", "pet_butch", "blood_quartz", "ultor_vestige", "executioners_axe_head", "strangled_tablet"}}) {
+            boss(dt2[0], dt2[1], "virtus_mask", "virtus_robe_top", "virtus_robe_bottom", "chromium_ingot", dt2[2], dt2[3], dt2[4], dt2[5],
+                    "awakeners_orb");
+        }
+        boss("Fortis Colosseum", l("Sol Heredit"), null, "pet_smol_heredit", "dizanas_quiver", "sunfire_fanatic_cuirass",
+                "sunfire_fanatic_chausses", "sunfire_fanatic_helm", "echo_crystal", "tonalztics_of_ralos", "sunfire_splinters", "uncut_onyx");
+        boss("The Hueycoatl", "pet_huberte", "dragon_hunter_wand", "soiled_page", "hueycoatl_hide", "huasca_seed", "tome_of_earth");
+        boss("Maggot King", "pet_maggot_marquess", "crimson_kisten", "elder_venator_fang");
+        boss("Royal Titans", l("Branda the Fire Queen", "Eldric the Ice King"), null, "pet_bran", "deadeye_prayer_scroll",
+                "mystic_vigour_prayer_scroll", "ice_element_staff_crown", "fire_element_staff_crown", "desiccated_page", "giantsoul_amulet");
+        boss("Shellbane Gryphon", l("Shellbane gryphon"), null, "pet_gull", "belles_folly_tarnished", "jar_of_feathers", "gryphon_feather");
+        boss("Yama", "pet_yami", "soulflame_horn", "oathplate_helm", "oathplate_chest", "oathplate_legs", "oathplate_shards", "dossier",
+                "forgotten_lockbox", "chasm_teleport_scroll", "barrel_of_demonic_tallow", "rite_of_vile_transference");
+        DEFS.add(new Def("Other", "Revenants", l(), null, l("revenant_cave_teleport", "bracelet_of_ethereum", "revenant_ether",
+                "ancient_crystal", "ancient_emblem", "ancient_totem", "ancient_statuette", "ancient_medallion", "ancient_effigy",
+                "ancient_relic", "craws_bow", "thammarons_sceptre", "viggoras_chainmace", "amulet_of_avarice")));
         // The Fight Caves are a minigame page in the game; OSRS lists it under Bosses with the same items.
         DEFS.add(new Def("Bosses", "The Fight Caves", l("TzTok-Jad", "Fight Caves"), l("tztok_jad"), l("fire_cape", "tzrek_jad")));
         DEFS.add(new Def("Bosses", "The Inferno", l("The Inferno"), l("tzkal_zuk"), l("infernal_cape", "jal_nib_rek")));

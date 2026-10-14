@@ -243,8 +243,9 @@ public final class GwdMonsters {
     }
 
     /**
-     * Revenants switch between all three styles. Weapon and artefact rates follow the shape of the OSRS
-     * formula (higher levels drop more) but are approximations.
+     * Revenants switch between all three styles. The amulet of avarice, revenant weapons and ancient artefacts are
+     * rolled on kill by {@link RevenantRewards} (wiki formula: level, skull and Slayer task); the lines here are the
+     * ordinary table (ether, coins, bracelet: approx).
      */
     private static void revenants(List<MonsterDef> list) {
         Rev[] revs = {
@@ -269,17 +270,8 @@ public final class GwdMonsters {
                     .attack(AttackDef.of("ranged", AttackType.RANGED, r.max(), 10, 8).particle("minecraft:soul"))
                     .drops(Drop.of("revenant_ether", 1 + lvl / 20, 3 + lvl / 6, 1),
                             Drop.of("coins", 100 + lvl * 20, 500 + lvl * 80, 2),
-                            Drop.of("bracelet_of_ethereum", 1, 1, Math.max(60, 400 - lvl * 2)),
-                            Drop.of("ancient_emblem", 1, 1, r.weaponRarity() / 8),
-                            Drop.of("ancient_totem", 1, 1, r.weaponRarity() / 5),
-                            Drop.of("ancient_statuette", 1, 1, r.weaponRarity() / 3),
-                            Drop.of("ancient_medallion", 1, 1, r.weaponRarity() / 2),
-                            Drop.of("ancient_effigy", 1, 1, r.weaponRarity()),
-                            Drop.of("ancient_relic", 1, 1, r.weaponRarity() * 3),
-                            Drop.of("craws_bow", 1, 1, r.weaponRarity() * 2),
-                            Drop.of("viggoras_chainmace", 1, 1, r.weaponRarity() * 2),
-                            Drop.of("thammarons_sceptre", 1, 1, r.weaponRarity() * 2),
-                            Drop.of("dragon_dagger", 1, 1, 400),
+                            Drop.of("bracelet_of_ethereum", 1, 1, Math.max(60, 400 - lvl * 2)), // approx
+                            Drop.of("dragon_dagger", 1, 1, 400), // approx
                             Drop.of("clue_scroll_elite", 1, 1, Math.max(150, 1000 - lvl * 6)))
                     .model(r.id()).size(0.7f, 1.8f, r.scale()).spawn(Region.WILDERNESS, 2, 1, 2));
         }

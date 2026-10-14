@@ -1,0 +1,1917 @@
+# OSRS collection log page contents from the wiki (Flipping-Utilities/parsed-osrs data/modules/
+# "Collection log__data.json", Sep 2026), by page then game item id. id = RuneCraft item (- = not in the game).
+# Boss pages are diffed by CollectionLogSnapshotTest.
+# page|wiki_item|game_id|id
+Abyssal Sire|Abyssal whip|4151|abyssal_whip
+Abyssal Sire|Abyssal head|7979|abyssal_head
+Abyssal Sire|Abyssal orphan|13262|pet_abyssal_orphan
+Abyssal Sire|Abyssal dagger|13265|abyssal_dagger
+Abyssal Sire|Bludgeon spine|13274|bludgeon_spine
+Abyssal Sire|Bludgeon claw|13275|bludgeon_claw
+Abyssal Sire|Bludgeon axon|13276|bludgeon_axon
+Abyssal Sire|Jar of miasma|13277|jar_of_miasma
+Abyssal Sire|Unsired|25624|unsired
+Aerial Fishing|Angler hat|13258|angler_hat
+Aerial Fishing|Angler top|13259|angler_top
+Aerial Fishing|Angler waders|13260|angler_waders
+Aerial Fishing|Angler boots|13261|angler_boots
+Aerial Fishing|Fish sack|22838|-
+Aerial Fishing|Golden tench|22840|golden_tench
+Aerial Fishing|Pearl barbarian rod|22842|-
+Aerial Fishing|Pearl fly fishing rod|22844|-
+Aerial Fishing|Pearl fishing rod|22846|-
+Alchemical Hydra|Dragon thrownaxe|20849|dragon_thrownaxe
+Alchemical Hydra|Ikkle hydra|22746|pet_ikkle_hydra
+Alchemical Hydra|Dragon knife|22804|dragon_knife
+Alchemical Hydra|Hydra's claw|22966|hydra_claw
+Alchemical Hydra|Hydra's heart|22969|hydras_heart
+Alchemical Hydra|Hydra's fang|22971|hydras_fang
+Alchemical Hydra|Hydra's eye|22973|hydras_eye
+Alchemical Hydra|Hydra leather|22983|hydra_leather
+Alchemical Hydra|Hydra tail|22988|hydra_tail
+Alchemical Hydra|Jar of chemicals|23064|jar_of_chemicals
+Alchemical Hydra|Alchemical hydra heads|23077|alchemical_hydra_heads
+All Pets|Pet chaos elemental|11995|pet_chaos_elemental
+All Pets|Pet dagannoth supreme|12643|pet_dagannoth_supreme
+All Pets|Pet dagannoth prime|12644|pet_dagannoth_prime
+All Pets|Pet dagannoth rex|12645|pet_dagannoth_rex
+All Pets|Baby mole|12646|pet_baby_mole
+All Pets|Kalphite princess|12647|pet_kalphite_princess
+All Pets|Pet smoke devil|12648|pet_smoke_devil
+All Pets|Pet kree'arra|12649|pet_kreearra
+All Pets|Pet general graardor|12650|pet_general_graardor
+All Pets|Pet zilyana|12651|pet_zilyana
+All Pets|Pet k'ril tsutsaroth|12652|pet_kril_tsutsaroth
+All Pets|Prince black dragon|12653|prince_black_dragon
+All Pets|Pet kraken|12655|pet_kraken
+All Pets|Pet penance queen|12703|pet_penance_queen
+All Pets|Pet dark core|12816|pet_dark_core
+All Pets|Pet snakeling|12921|pet_snakeling
+All Pets|Chompy chick|13071|pet_chompy_chick
+All Pets|Venenatis spiderling|13177|pet_venenatis_spiderling
+All Pets|Callisto cub|13178|callisto_cub
+All Pets|Vet'ion jr.|13179|vetion_jr
+All Pets|Scorpia's offspring|13181|pet_scorpias_offspring
+All Pets|Tzrek-jad|13225|tzrek_jad
+All Pets|Hellpuppy|13247|pet_hellpuppy
+All Pets|Abyssal orphan|13262|pet_abyssal_orphan
+All Pets|Heron|13320|pet_heron
+All Pets|Rock golem|13321|pet_rock_golem
+All Pets|Beaver|13322|pet_beaver
+All Pets|Baby chinchompa|13324|pet_baby_chinchompa
+All Pets|Bloodhound|19730|bloodhound
+All Pets|Giant squirrel|20659|pet_giant_squirrel
+All Pets|Tangleroot|20661|pet_tangleroot
+All Pets|Rocky|20663|pet_rocky
+All Pets|Rift guardian|20665|pet_rift_guardian
+All Pets|Phoenix|20693|phoenix
+All Pets|Olmlet|20851|olmlet
+All Pets|Skotos|21273|pet_skotos
+All Pets|Jal-nib-rek|21291|jal_nib_rek
+All Pets|Herbi|21509|pet_herbi
+All Pets|Noon|21748|pet_noon
+All Pets|Vorki|21992|pet_vorki
+All Pets|Lil' zik|22473|lil_zik
+All Pets|Ikkle hydra|22746|pet_ikkle_hydra
+All Pets|Sraracha|23495|pet_sraracha
+All Pets|Youngllef|23757|pet_youngllef
+All Pets|Smolcano|23760|pet_smolcano
+All Pets|Little nightmare|24491|pet_little_nightmare
+All Pets|Lil' creator|25348|-
+All Pets|Tiny tempor|25602|tiny_tempor
+All Pets|Nexling|26348|nexling
+All Pets|Abyssal protector|26901|abyssal_protector
+All Pets|Tumeken's guardian|27352|tumekens_guardian
+All Pets|Muphin|27590|pet_muphin
+All Pets|Wisp|28246|pet_wisp
+All Pets|Butch|28248|pet_butch
+All Pets|Baron|28250|pet_baron
+All Pets|Lil'viathan|28252|pet_lilviathan
+All Pets|Scurry|28801|pet_scurry
+All Pets|Smol heredit|28960|pet_smol_heredit
+All Pets|Quetzin|28962|-
+All Pets|Nid|29836|pet_nid
+All Pets|Huberte|30152|pet_huberte
+All Pets|Moxi|30154|pet_moxi
+All Pets|Bran|30622|pet_bran
+All Pets|Yami|30888|pet_yami
+All Pets|Dom|31130|pet_dom
+All Pets|Soup|31283|-
+All Pets|Gull (pet)|31285|pet_gull
+All Pets|Beef|33124|pet_beef
+All Pets|Maggot marquess|33642|pet_maggot_marquess
+Amoxliatl|Glacial temotli|29889|glacial_temotli
+Amoxliatl|Pendant of ates (inert)|29892|pendant_of_ates
+Amoxliatl|Frozen tear|29895|frozen_tear
+Amoxliatl|Moxi|30154|pet_moxi
+Araxxor|Coagulated venom|29781|coagulated_venom
+Araxxor|Spider cave teleport|29782|-
+Araxxor|Araxyte venom sac|29784|-
+Araxxor|Jar of venom|29786|jar_of_venom
+Araxxor|Araxyte head|29788|araxyte_head
+Araxxor|Noxious point|29790|noxious_point
+Araxxor|Noxious blade|29792|noxious_blade
+Araxxor|Noxious pommel|29794|noxious_pommel
+Araxxor|Araxyte fang|29799|araxyte_fang
+Araxxor|Nid|29836|pet_nid
+Barbarian Assault|Healer hat|10547|healer_hat
+Barbarian Assault|Fighter hat|10548|fighter_hat
+Barbarian Assault|Runner hat|10549|runner_hat
+Barbarian Assault|Ranger hat|10550|ranger_hat
+Barbarian Assault|Fighter torso|10551|fighter_torso
+Barbarian Assault|Runner boots|10552|runner_boots
+Barbarian Assault|Penance gloves|10553|penance_gloves
+Barbarian Assault|Penance skirt|10555|penance_skirt
+Barbarian Assault|Granite body|10564|granite_body
+Barbarian Assault|Granite helm|10589|granite_helm
+Barbarian Assault|Pet penance queen|12703|pet_penance_queen
+Barracuda Trials|Stormy key|31732|-
+Barracuda Trials|Barrel stand|31733|-
+Barracuda Trials|Ralph's fabric roll|31734|-
+Barracuda Trials|Fetid key|31744|-
+Barracuda Trials|Captured wind mote|31745|-
+Barracuda Trials|Gurtob's fabric roll|31746|-
+Barracuda Trials|Serrated key|31756|-
+Barracuda Trials|Heart of ithell|31757|heart_of_ithell
+Barracuda Trials|Gwyna's fabric roll|31758|-
+Barrows Chests|Ahrim's hood|4708|ahrims_hood
+Barrows Chests|Ahrim's staff|4710|ahrims_staff
+Barrows Chests|Ahrim's robetop|4712|ahrims_robetop
+Barrows Chests|Ahrim's robeskirt|4714|ahrims_robeskirt
+Barrows Chests|Dharok's helm|4716|dharoks_helm
+Barrows Chests|Dharok's greataxe|4718|dharoks_greataxe
+Barrows Chests|Dharok's platebody|4720|dharoks_platebody
+Barrows Chests|Dharok's platelegs|4722|dharoks_platelegs
+Barrows Chests|Guthan's helm|4724|guthans_helm
+Barrows Chests|Guthan's warspear|4726|guthans_warspear
+Barrows Chests|Guthan's platebody|4728|guthans_platebody
+Barrows Chests|Guthan's chainskirt|4730|guthans_chainskirt
+Barrows Chests|Karil's coif|4732|karils_coif
+Barrows Chests|Karil's crossbow|4734|karils_crossbow
+Barrows Chests|Karil's leathertop|4736|karils_leathertop
+Barrows Chests|Karil's leatherskirt|4738|karils_leatherskirt
+Barrows Chests|Bolt rack|4740|-
+Barrows Chests|Torag's helm|4745|torags_helm
+Barrows Chests|Torag's hammers|4747|torags_hammers
+Barrows Chests|Torag's platebody|4749|torags_platebody
+Barrows Chests|Torag's platelegs|4751|torags_platelegs
+Barrows Chests|Verac's helm|4753|veracs_helm
+Barrows Chests|Verac's flail|4755|veracs_flail
+Barrows Chests|Verac's brassard|4757|veracs_brassard
+Barrows Chests|Verac's plateskirt|4759|veracs_plateskirt
+Beginner Treasure Trails|Black pickaxe|12297|black_pickaxe
+Beginner Treasure Trails|Mole slippers|23285|mole_slippers
+Beginner Treasure Trails|Frog slippers|23288|frog_slippers
+Beginner Treasure Trails|Bear feet|23291|bear_feet
+Beginner Treasure Trails|Demon feet|23294|demon_feet
+Beginner Treasure Trails|Jester cape|23297|jester_cape
+Beginner Treasure Trails|Shoulder parrot|23300|shoulder_parrot
+Beginner Treasure Trails|Monk's robe top (t)|23303|monks_robe_top_t
+Beginner Treasure Trails|Monk's robe (t)|23306|monks_robe_t
+Beginner Treasure Trails|Amulet of defence (t)|23309|amulet_of_defence_t
+Beginner Treasure Trails|Sandwich lady hat|23312|sandwich_lady_hat
+Beginner Treasure Trails|Sandwich lady top|23315|sandwich_lady_top
+Beginner Treasure Trails|Sandwich lady bottom|23318|sandwich_lady_bottom
+Beginner Treasure Trails|Rune scimitar ornament kit (guthix)|23321|rune_scimitar_ornament_kit_guthix
+Beginner Treasure Trails|Rune scimitar ornament kit (saradomin)|23324|rune_scimitar_ornament_kit_saradomin
+Beginner Treasure Trails|Rune scimitar ornament kit (zamorak)|23327|rune_scimitar_ornament_kit_zamorak
+Boat Paints|Barracuda paint|32087|-
+Boat Paints|Shark paint|32090|-
+Boat Paints|Inky paint|32093|-
+Boat Paints|Angler's paint|32096|-
+Boat Paints|Salvor's paint|32099|-
+Boat Paints|Armadylean paint|32102|-
+Boat Paints|Zamorakian paint|32104|-
+Boat Paints|Guthixian paint|32106|-
+Boat Paints|Saradominist paint|32108|-
+Boat Paints|Merchant's paint|32110|-
+Boat Paints|Sandy paint|32113|-
+Brimhaven Agility Arena|Agility arena ticket|2996|agility_arena_ticket
+Brimhaven Agility Arena|Pirate's hook|2997|pirates_hook
+Brimhaven Agility Arena|Graceful hood|21061|graceful_hood
+Brimhaven Agility Arena|Graceful cape|21064|graceful_cape
+Brimhaven Agility Arena|Graceful top|21067|graceful_top
+Brimhaven Agility Arena|Graceful legs|21070|graceful_legs
+Brimhaven Agility Arena|Graceful gloves|21073|graceful_gloves
+Brimhaven Agility Arena|Graceful boots|21076|graceful_boots
+Brimhaven Agility Arena|Brimhaven voucher|29482|brimhaven_voucher
+Brutus|Bottomless milk bucket (empty)|33091|bottomless_milk_bucket
+Brutus|Cow slippers|33093|cow_slippers
+Brutus|Mooleta|33101|mooleta
+Brutus|Beef|33124|pet_beef
+Bryophyta|Bryophyta's essence|22372|bryophytas_essence
+Callisto and Artio|Dragon 2h sword|7158|dragon_2h_sword
+Callisto and Artio|Dragon pickaxe|11920|dragon_pickaxe
+Callisto and Artio|Tyrannical ring|12603|tyrannical_ring
+Callisto and Artio|Callisto cub|13178|callisto_cub
+Callisto and Artio|Claws of callisto|27667|claws_of_callisto
+Callisto and Artio|Voidwaker hilt|27681|voidwaker_hilt
+Camdozaal|Barronite head|25635|barronite_head
+Camdozaal|Barronite handle|25637|-
+Camdozaal|Barronite guard|25639|-
+Camdozaal|Barronite mace|25641|-
+Camdozaal|Imcando hammer|25644|-
+Camdozaal|Ancient globe|25686|ancient_globe
+Camdozaal|Ancient ledger|25688|ancient_ledger
+Camdozaal|Ancient astroscope|25690|ancient_astroscope
+Camdozaal|Ancient treatise|25692|ancient_treatise
+Camdozaal|Ancient carcanet|25694|ancient_carcanet
+Castle Wars|Decorative sword|4068|-
+Castle Wars|Decorative armour|4069|-
+Castle Wars|Decorative armour|4070|-
+Castle Wars|Decorative helm|4071|-
+Castle Wars|Decorative shield|4072|-
+Castle Wars|Decorative sword|4503|-
+Castle Wars|Decorative armour|4504|-
+Castle Wars|Decorative armour|4505|-
+Castle Wars|Decorative helm|4506|-
+Castle Wars|Decorative shield|4507|-
+Castle Wars|Decorative sword|4508|-
+Castle Wars|Decorative armour|4509|-
+Castle Wars|Decorative armour|4510|-
+Castle Wars|Decorative helm|4511|-
+Castle Wars|Decorative shield|4512|-
+Castle Wars|Castlewars hood|4513|-
+Castle Wars|Castlewars cloak|4514|-
+Castle Wars|Castlewars hood|4515|-
+Castle Wars|Castlewars cloak|4516|-
+Castle Wars|Saradomin banner|11891|-
+Castle Wars|Zamorak banner|11892|-
+Castle Wars|Decorative armour|11893|-
+Castle Wars|Decorative armour|11894|-
+Castle Wars|Decorative armour|11895|-
+Castle Wars|Decorative armour|11896|-
+Castle Wars|Decorative armour|11897|-
+Castle Wars|Decorative armour|11898|-
+Castle Wars|Decorative armour|11899|-
+Castle Wars|Decorative armour|11900|-
+Castle Wars|Decorative armour|11901|-
+Castle Wars|Saradomin halo|12637|saradomin_halo
+Castle Wars|Zamorak halo|12638|zamorak_halo
+Castle Wars|Guthix halo|12639|guthix_halo
+Castle Wars|Decorative boots|25163|-
+Castle Wars|Decorative full helm|25165|-
+Castle Wars|Decorative boots|25167|-
+Castle Wars|Decorative full helm|25169|-
+Castle Wars|Decorative boots|25171|-
+Castle Wars|Decorative full helm|25174|-
+Cerberus|Eternal crystal|13227|eternal_crystal
+Cerberus|Pegasian crystal|13229|pegasian_crystal
+Cerberus|Primordial crystal|13231|primordial_crystal
+Cerberus|Smouldering stone|13233|smouldering_stone
+Cerberus|Jar of souls|13245|jar_of_souls
+Cerberus|Hellpuppy|13247|pet_hellpuppy
+Cerberus|Key master teleport|13249|key_master_teleport
+Chambers of Xeric|Onyx|6573|onyx
+Chambers of Xeric|Dragon claws|13652|dragon_claws
+Chambers of Xeric|Olmlet|20851|olmlet
+Chambers of Xeric|Twisted bow|20997|twisted_bow
+Chambers of Xeric|Twisted buckler|21000|twisted_buckler
+Chambers of Xeric|Elder maul|21003|elder_maul
+Chambers of Xeric|Dragon hunter crossbow|21012|dragon_hunter_crossbow
+Chambers of Xeric|Dinh's bulwark|21015|dinhs_bulwark
+Chambers of Xeric|Ancestral hat|21018|ancestral_hat
+Chambers of Xeric|Ancestral robe top|21021|ancestral_robe_top
+Chambers of Xeric|Ancestral robe bottom|21024|ancestral_robe_bottom
+Chambers of Xeric|Dark relic|21027|dark_relic
+Chambers of Xeric|Dexterous prayer scroll|21034|dexterous_prayer_scroll
+Chambers of Xeric|Kodai insignia|21043|kodai_insignia
+Chambers of Xeric|Torn prayer scroll|21047|torn_prayer_scroll
+Chambers of Xeric|Arcane prayer scroll|21079|arcane_prayer_scroll
+Chambers of Xeric|Metamorphic dust|22386|metamorphic_dust
+Chambers of Xeric|Xeric's guard|22388|-
+Chambers of Xeric|Xeric's warrior|22390|-
+Chambers of Xeric|Xeric's sentinel|22392|-
+Chambers of Xeric|Xeric's general|22394|-
+Chambers of Xeric|Xeric's champion|22396|-
+Chambers of Xeric|Twisted ancestral colour kit|24670|twisted_ancestral_colour_kit
+Champion's Challenge|Earth warrior champion scroll|6798|earth_warrior_champion_scroll
+Champion's Challenge|Ghoul champion scroll|6799|ghoul_champion_scroll
+Champion's Challenge|Giant champion scroll|6800|giant_champion_scroll
+Champion's Challenge|Goblin champion scroll|6801|goblin_champion_scroll
+Champion's Challenge|Hobgoblin champion scroll|6802|hobgoblin_champion_scroll
+Champion's Challenge|Imp champion scroll|6803|imp_champion_scroll
+Champion's Challenge|Jogre champion scroll|6804|jogre_champion_scroll
+Champion's Challenge|Lesser demon champion scroll|6805|lesser_demon_champion_scroll
+Champion's Challenge|Skeleton champion scroll|6806|skeleton_champion_scroll
+Champion's Challenge|Zombie champion scroll|6807|zombie_champion_scroll
+Champion's Challenge|Champion's cape|21439|champions_cape
+Chaos Elemental|Dragon 2h sword|7158|dragon_2h_sword
+Chaos Elemental|Dragon pickaxe|11920|dragon_pickaxe
+Chaos Elemental|Pet chaos elemental|11995|pet_chaos_elemental
+Chaos Fanatic|Odium shard 1|11928|odium_shard_1
+Chaos Fanatic|Malediction shard 1|11931|malediction_shard_1
+Chaos Fanatic|Pet chaos elemental|11995|pet_chaos_elemental
+Chompy Bird Hunting|Chompy bird hat|2978|-
+Chompy Bird Hunting|Chompy bird hat|2979|-
+Chompy Bird Hunting|Chompy bird hat|2980|-
+Chompy Bird Hunting|Chompy bird hat|2981|-
+Chompy Bird Hunting|Chompy bird hat|2982|-
+Chompy Bird Hunting|Chompy bird hat|2983|-
+Chompy Bird Hunting|Chompy bird hat|2984|-
+Chompy Bird Hunting|Chompy bird hat|2985|-
+Chompy Bird Hunting|Chompy bird hat|2986|-
+Chompy Bird Hunting|Chompy bird hat|2987|-
+Chompy Bird Hunting|Chompy bird hat|2988|-
+Chompy Bird Hunting|Chompy bird hat|2989|-
+Chompy Bird Hunting|Chompy bird hat|2990|-
+Chompy Bird Hunting|Chompy bird hat|2991|-
+Chompy Bird Hunting|Chompy bird hat|2992|-
+Chompy Bird Hunting|Chompy bird hat|2993|-
+Chompy Bird Hunting|Chompy bird hat|2994|-
+Chompy Bird Hunting|Chompy bird hat|2995|-
+Chompy Bird Hunting|Chompy chick|13071|pet_chompy_chick
+Colossal Wyrm Agility|Colossal wyrm teleport scroll|30040|-
+Colossal Wyrm Agility|Calcified acorn|30042|-
+Colossal Wyrm Agility|Graceful hood|30045|graceful_hood
+Colossal Wyrm Agility|Graceful cape|30048|graceful_cape
+Colossal Wyrm Agility|Graceful top|30051|graceful_top
+Colossal Wyrm Agility|Graceful legs|30054|graceful_legs
+Colossal Wyrm Agility|Graceful gloves|30057|graceful_gloves
+Colossal Wyrm Agility|Graceful boots|30060|graceful_boots
+Commander Zilyana|Armadyl crossbow|11785|armadyl_crossbow
+Commander Zilyana|Saradomin hilt|11814|saradomin_hilt
+Commander Zilyana|Godsword shard 1|11818|godsword_shard_1
+Commander Zilyana|Godsword shard 2|11820|godsword_shard_2
+Commander Zilyana|Godsword shard 3|11822|godsword_shard_3
+Commander Zilyana|Saradomin sword|11838|saradomin_sword
+Commander Zilyana|Pet zilyana|12651|pet_zilyana
+Commander Zilyana|Saradomin's light|13256|saradomins_light
+Corporeal Beast|Pet dark core|12816|pet_dark_core
+Corporeal Beast|Elysian sigil|12819|elysian_sigil
+Corporeal Beast|Spectral sigil|12823|spectral_sigil
+Corporeal Beast|Arcane sigil|12827|arcane_sigil
+Corporeal Beast|Spirit shield|12829|spirit_shield
+Corporeal Beast|Holy elixir|12833|holy_elixir
+Corporeal Beast|Jar of spirits|25521|jar_of_spirits
+Crazy Archaeologist|Odium shard 2|11929|odium_shard_2
+Crazy Archaeologist|Malediction shard 2|11932|malediction_shard_2
+Crazy Archaeologist|Fedora|11990|-
+Creature Creation|Tea flask|25617|-
+Creature Creation|Plain satchel|25618|-
+Creature Creation|Green satchel|25619|-
+Creature Creation|Red satchel|25620|-
+Creature Creation|Black satchel|25621|-
+Creature Creation|Gold satchel|25622|-
+Creature Creation|Rune satchel|25623|-
+Cyclopes|Bronze defender|8844|bronze_defender
+Cyclopes|Iron defender|8845|iron_defender
+Cyclopes|Steel defender|8846|steel_defender
+Cyclopes|Black defender|8847|black_defender
+Cyclopes|Mithril defender|8848|mithril_defender
+Cyclopes|Adamant defender|8849|adamant_defender
+Cyclopes|Rune defender|8850|rune_defender
+Cyclopes|Dragon defender|12954|dragon_defender
+Dagannoth Kings|Mud battlestaff|6562|mud_battlestaff
+Dagannoth Kings|Seercull|6724|seercull
+Dagannoth Kings|Seers ring|6731|seers_ring
+Dagannoth Kings|Archers ring|6733|archers_ring
+Dagannoth Kings|Warrior ring|6735|warrior_ring
+Dagannoth Kings|Berserker ring|6737|berserker_ring
+Dagannoth Kings|Dragon axe|6739|dragon_axe
+Dagannoth Kings|Pet dagannoth supreme|12643|pet_dagannoth_supreme
+Dagannoth Kings|Pet dagannoth prime|12644|pet_dagannoth_prime
+Dagannoth Kings|Pet dagannoth rex|12645|pet_dagannoth_rex
+Deranged archaeologist|Steel ring|30895|steel_ring
+Doom of Mokhaiotl|Avernic treads|31088|avernic_treads
+Doom of Mokhaiotl|Mokhaiotl waystone|31099|-
+Doom of Mokhaiotl|Mokhaiotl cloth|31109|mokhaiotl_cloth
+Doom of Mokhaiotl|Demon tear|31111|demon_tear
+Doom of Mokhaiotl|Eye of ayak|31115|eye_of_ayak
+Doom of Mokhaiotl|Dom|31130|pet_dom
+Duke Sucellus|Virtus mask|26241|virtus_mask
+Duke Sucellus|Virtus robe top|26243|virtus_robe_top
+Duke Sucellus|Virtus robe bottom|26245|virtus_robe_bottom
+Duke Sucellus|Baron|28250|pet_baron
+Duke Sucellus|Ice quartz|28270|ice_quartz
+Duke Sucellus|Chromium ingot|28276|chromium_ingot
+Duke Sucellus|Magus vestige|28281|magus_vestige
+Duke Sucellus|Eye of the duke|28321|eye_of_the_duke
+Duke Sucellus|Frozen tablet|28333|frozen_tablet
+Duke Sucellus|Awakener's orb|28334|awakeners_orb
+Easy Treasure Trails|Black platebody (t)|2583|black_platebody_t
+Easy Treasure Trails|Black platelegs (t)|2585|black_platelegs_t
+Easy Treasure Trails|Black full helm (t)|2587|black_full_helm_t
+Easy Treasure Trails|Black kiteshield (t)|2589|black_kiteshield_t
+Easy Treasure Trails|Black platebody (g)|2591|black_platebody_g
+Easy Treasure Trails|Black platelegs (g)|2593|black_platelegs_g
+Easy Treasure Trails|Black full helm (g)|2595|black_full_helm_g
+Easy Treasure Trails|Black kiteshield (g)|2597|black_kiteshield_g
+Easy Treasure Trails|Highwayman mask|2631|highwayman_mask
+Easy Treasure Trails|Blue beret|2633|blue_beret
+Easy Treasure Trails|Black beret|2635|black_beret
+Easy Treasure Trails|White beret|2637|white_beret
+Easy Treasure Trails|Black plateskirt (t)|3472|-
+Easy Treasure Trails|Black plateskirt (g)|3473|-
+Easy Treasure Trails|Black shield (h1)|7332|-
+Easy Treasure Trails|Black shield (h2)|7338|-
+Easy Treasure Trails|Black shield (h3)|7344|-
+Easy Treasure Trails|Black shield (h4)|7350|-
+Easy Treasure Trails|Black shield (h5)|7356|-
+Easy Treasure Trails|Studded body (g)|7362|studded_body_g
+Easy Treasure Trails|Studded body (t)|7364|studded_body_t
+Easy Treasure Trails|Studded chaps (g)|7366|studded_chaps_g
+Easy Treasure Trails|Studded chaps (t)|7368|studded_chaps_t
+Easy Treasure Trails|Blue skirt (g)|7386|-
+Easy Treasure Trails|Blue skirt (t)|7388|-
+Easy Treasure Trails|Blue wizard robe (g)|7390|blue_wizard_robe_g
+Easy Treasure Trails|Blue wizard robe (t)|7392|blue_wizard_robe_t
+Easy Treasure Trails|Blue wizard hat (g)|7394|blue_wizard_hat_g
+Easy Treasure Trails|Blue wizard hat (t)|7396|blue_wizard_hat_t
+Easy Treasure Trails|Willow comp bow|10280|willow_comp_bow
+Easy Treasure Trails|Black helm (h1)|10306|-
+Easy Treasure Trails|Black helm (h2)|10308|-
+Easy Treasure Trails|Black helm (h3)|10310|-
+Easy Treasure Trails|Black helm (h4)|10312|-
+Easy Treasure Trails|Black helm (h5)|10314|-
+Easy Treasure Trails|Bob's red shirt|10316|bobs_red_shirt
+Easy Treasure Trails|Bob's blue shirt|10318|bobs_blue_shirt
+Easy Treasure Trails|Bob's green shirt|10320|bobs_green_shirt
+Easy Treasure Trails|Bob's black shirt|10322|bobs_black_shirt
+Easy Treasure Trails|Bob's purple shirt|10324|bobs_purple_shirt
+Easy Treasure Trails|Amulet of magic (t)|10366|amulet_of_magic_t
+Easy Treasure Trails|A powdered wig|10392|a_powdered_wig
+Easy Treasure Trails|Flared trousers|10394|flared_trousers
+Easy Treasure Trails|Pantaloons|10396|pantaloons
+Easy Treasure Trails|Sleeping cap|10398|sleeping_cap
+Easy Treasure Trails|Red elegant shirt|10404|red_elegant_shirt
+Easy Treasure Trails|Red elegant legs|10406|red_elegant_legs
+Easy Treasure Trails|Blue elegant shirt|10408|-
+Easy Treasure Trails|Blue elegant legs|10410|-
+Easy Treasure Trails|Green elegant shirt|10412|-
+Easy Treasure Trails|Green elegant legs|10414|-
+Easy Treasure Trails|Red elegant blouse|10424|-
+Easy Treasure Trails|Red elegant skirt|10426|-
+Easy Treasure Trails|Blue elegant blouse|10428|-
+Easy Treasure Trails|Blue elegant skirt|10430|-
+Easy Treasure Trails|Green elegant blouse|10432|-
+Easy Treasure Trails|Green elegant skirt|10434|-
+Easy Treasure Trails|Saradomin robe top|10458|saradomin_robe_top
+Easy Treasure Trails|Zamorak robe top|10460|zamorak_robe_top
+Easy Treasure Trails|Guthix robe top|10462|guthix_robe_top
+Easy Treasure Trails|Saradomin robe legs|10464|saradomin_robe_legs
+Easy Treasure Trails|Guthix robe legs|10466|guthix_robe_legs
+Easy Treasure Trails|Zamorak robe legs|10468|zamorak_robe_legs
+Easy Treasure Trails|Ancient robe top|12193|ancient_robe_top
+Easy Treasure Trails|Ancient robe legs|12195|ancient_robe_legs
+Easy Treasure Trails|Bronze platebody (g)|12205|bronze_platebody_g
+Easy Treasure Trails|Bronze platelegs (g)|12207|bronze_platelegs_g
+Easy Treasure Trails|Bronze plateskirt (g)|12209|-
+Easy Treasure Trails|Bronze full helm (g)|12211|bronze_full_helm_g
+Easy Treasure Trails|Bronze kiteshield (g)|12213|bronze_kiteshield_g
+Easy Treasure Trails|Bronze platebody (t)|12215|bronze_platebody_t
+Easy Treasure Trails|Bronze platelegs (t)|12217|bronze_platelegs_t
+Easy Treasure Trails|Bronze plateskirt (t)|12219|-
+Easy Treasure Trails|Bronze full helm (t)|12221|bronze_full_helm_t
+Easy Treasure Trails|Bronze kiteshield (t)|12223|bronze_kiteshield_t
+Easy Treasure Trails|Iron platebody (t)|12225|iron_platebody_t
+Easy Treasure Trails|Iron platelegs (t)|12227|iron_platelegs_t
+Easy Treasure Trails|Iron plateskirt (t)|12229|-
+Easy Treasure Trails|Iron full helm (t)|12231|iron_full_helm_t
+Easy Treasure Trails|Iron kiteshield (t)|12233|iron_kiteshield_t
+Easy Treasure Trails|Iron platebody (g)|12235|iron_platebody_g
+Easy Treasure Trails|Iron platelegs (g)|12237|iron_platelegs_g
+Easy Treasure Trails|Iron plateskirt (g)|12239|-
+Easy Treasure Trails|Iron full helm (g)|12241|iron_full_helm_g
+Easy Treasure Trails|Iron kiteshield (g)|12243|iron_kiteshield_g
+Easy Treasure Trails|Beanie|12245|-
+Easy Treasure Trails|Red beret|12247|red_beret
+Easy Treasure Trails|Imp mask|12249|-
+Easy Treasure Trails|Goblin mask|12251|-
+Easy Treasure Trails|Armadyl robe top|12253|armadyl_robe_top
+Easy Treasure Trails|Armadyl robe legs|12255|armadyl_robe_legs
+Easy Treasure Trails|Bandos robe top|12265|bandos_robe_top
+Easy Treasure Trails|Bandos robe legs|12267|bandos_robe_legs
+Easy Treasure Trails|Black pickaxe|12297|black_pickaxe
+Easy Treasure Trails|Black cane|12375|black_cane
+Easy Treasure Trails|Black skirt (g)|12445|-
+Easy Treasure Trails|Black skirt (t)|12447|-
+Easy Treasure Trails|Black wizard robe (g)|12449|black_wizard_robe_g
+Easy Treasure Trails|Black wizard robe (t)|12451|black_wizard_robe_t
+Easy Treasure Trails|Black wizard hat (g)|12453|black_wizard_hat_g
+Easy Treasure Trails|Black wizard hat (t)|12455|black_wizard_hat_t
+Easy Treasure Trails|Wooden shield (g)|20166|-
+Easy Treasure Trails|Steel platebody (g)|20169|steel_platebody_g
+Easy Treasure Trails|Steel platelegs (g)|20172|steel_platelegs_g
+Easy Treasure Trails|Steel plateskirt (g)|20175|-
+Easy Treasure Trails|Steel full helm (g)|20178|steel_full_helm_g
+Easy Treasure Trails|Steel kiteshield (g)|20181|steel_kiteshield_g
+Easy Treasure Trails|Steel platebody (t)|20184|steel_platebody_t
+Easy Treasure Trails|Steel platelegs (t)|20187|steel_platelegs_t
+Easy Treasure Trails|Steel plateskirt (t)|20190|-
+Easy Treasure Trails|Steel full helm (t)|20193|steel_full_helm_t
+Easy Treasure Trails|Steel kiteshield (t)|20196|steel_kiteshield_t
+Easy Treasure Trails|Monk's robe top (g)|20199|-
+Easy Treasure Trails|Monk's robe (g)|20202|-
+Easy Treasure Trails|Golden chef's hat|20205|golden_chef_hat
+Easy Treasure Trails|Golden apron|20208|golden_apron
+Easy Treasure Trails|Team cape zero|20211|-
+Easy Treasure Trails|Team cape x|20214|-
+Easy Treasure Trails|Team cape i|20217|-
+Easy Treasure Trails|Cape of skulls|23351|-
+Easy Treasure Trails|Amulet of power (t)|23354|amulet_of_power_t
+Easy Treasure Trails|Rain bow|23357|-
+Easy Treasure Trails|Ham joint|23360|ham_joint
+Easy Treasure Trails|Staff of bob the cat|23363|-
+Easy Treasure Trails|Black platebody (h1)|23366|-
+Easy Treasure Trails|Black platebody (h2)|23369|-
+Easy Treasure Trails|Black platebody (h3)|23372|-
+Easy Treasure Trails|Black platebody (h4)|23375|-
+Easy Treasure Trails|Black platebody (h5)|23378|-
+Easy Treasure Trails|Leather body (g)|23381|leather_body_g
+Easy Treasure Trails|Leather chaps (g)|23384|leather_chaps_g
+Elder Chaos Druids|Elder chaos top|20517|-
+Elder Chaos Druids|Elder chaos robe|20520|-
+Elder Chaos Druids|Elder chaos hood|20595|-
+Elite Treasure Trails|Briefcase|12335|briefcase
+Elite Treasure Trails|Sagacious spectacles|12337|sagacious_spectacles
+Elite Treasure Trails|Musketeer hat|12351|musketeer_hat
+Elite Treasure Trails|Monocle|12353|monocle
+Elite Treasure Trails|Big pirate hat|12355|big_pirate_hat
+Elite Treasure Trails|Katana|12357|katana
+Elite Treasure Trails|Bronze dragon mask|12363|-
+Elite Treasure Trails|Iron dragon mask|12365|-
+Elite Treasure Trails|Steel dragon mask|12367|-
+Elite Treasure Trails|Mithril dragon mask|12369|-
+Elite Treasure Trails|Dragon cane|12373|dragon_cane
+Elite Treasure Trails|Black d'hide body (g)|12381|black_dhide_body_g
+Elite Treasure Trails|Black d'hide chaps (g)|12383|black_dhide_chaps_g
+Elite Treasure Trails|Black d'hide body (t)|12385|black_dhide_body_t
+Elite Treasure Trails|Black d'hide chaps (t)|12387|black_dhide_chaps_t
+Elite Treasure Trails|Royal gown top|12393|royal_gown_top
+Elite Treasure Trails|Royal gown bottom|12395|royal_gown_bottom
+Elite Treasure Trails|Royal crown|12397|royal_crown
+Elite Treasure Trails|Afro|12430|afro
+Elite Treasure Trails|Top hat|12432|top_hat
+Elite Treasure Trails|Royal sceptre|12439|royal_sceptre
+Elite Treasure Trails|Musketeer tabard|12441|-
+Elite Treasure Trails|Musketeer pants|12443|-
+Elite Treasure Trails|Fury ornament kit|12526|-
+Elite Treasure Trails|Dark infinity colour kit|12528|-
+Elite Treasure Trails|Light infinity colour kit|12530|-
+Elite Treasure Trails|Dragon sq shield ornament kit|12532|dragon_sq_shield_ornament_kit
+Elite Treasure Trails|Dragon chainbody ornament kit|12534|dragon_chainbody_ornament_kit
+Elite Treasure Trails|Dragon legs/skirt ornament kit|12536|dragon_legs_skirt_ornament_kit
+Elite Treasure Trails|Dragon full helm ornament kit|12538|dragon_full_helm_ornament_kit
+Elite Treasure Trails|Deerstalker|12540|deerstalker
+Elite Treasure Trails|Rangers' tunic|12596|rangers_tunic
+Elite Treasure Trails|Arceuus scarf|19943|-
+Elite Treasure Trails|Hosidius scarf|19946|-
+Elite Treasure Trails|Lovakengj scarf|19949|-
+Elite Treasure Trails|Piscarilius scarf|19952|-
+Elite Treasure Trails|Shayzien scarf|19955|-
+Elite Treasure Trails|Dark tuxedo jacket|19958|-
+Elite Treasure Trails|Dark tuxedo cuffs|19961|-
+Elite Treasure Trails|Dark trousers|19964|-
+Elite Treasure Trails|Dark tuxedo shoes|19967|-
+Elite Treasure Trails|Dark bow tie|19970|-
+Elite Treasure Trails|Light tuxedo jacket|19973|-
+Elite Treasure Trails|Light tuxedo cuffs|19976|-
+Elite Treasure Trails|Light trousers|19979|-
+Elite Treasure Trails|Light tuxedo shoes|19982|-
+Elite Treasure Trails|Light bow tie|19985|-
+Elite Treasure Trails|Blacksmith's helm|19988|-
+Elite Treasure Trails|Bucket helm|19991|-
+Elite Treasure Trails|Ranger gloves|19994|ranger_gloves
+Elite Treasure Trails|Holy wraps|19997|holy_wraps
+Elite Treasure Trails|Dragon scimitar ornament kit|20002|dragon_scimitar_ornament_kit
+Elite Treasure Trails|Ring of 3rd age|23185|-
+Elite Treasure Trails|Fremennik kilt|23246|fremennik_kilt
+Elite Treasure Trails|Rangers' tights|23249|rangers_tights
+Elite Treasure Trails|Giant boot|23252|giant_boot
+Elite Treasure Trails|Uri's hat|23255|uris_hat
+Elite Treasure Trails|Adamant dragon mask|23270|-
+Elite Treasure Trails|Rune dragon mask|23273|-
+Elite Treasure Trails (Rare)|Gilded platebody|3481|gilded_platebody
+Elite Treasure Trails (Rare)|Gilded platelegs|3483|gilded_platelegs
+Elite Treasure Trails (Rare)|Gilded plateskirt|3485|-
+Elite Treasure Trails (Rare)|Gilded full helm|3486|gilded_full_helm
+Elite Treasure Trails (Rare)|Gilded kiteshield|3488|gilded_kiteshield
+Elite Treasure Trails (Rare)|3rd age range top|10330|3rd_age_range_top
+Elite Treasure Trails (Rare)|3rd age range legs|10332|3rd_age_range_legs
+Elite Treasure Trails (Rare)|3rd age range coif|10334|3rd_age_range_coif
+Elite Treasure Trails (Rare)|3rd age vambraces|10336|3rd_age_vambraces
+Elite Treasure Trails (Rare)|3rd age robe top|10338|3rd_age_robe_top
+Elite Treasure Trails (Rare)|3rd age robe|10340|3rd_age_robe
+Elite Treasure Trails (Rare)|3rd age mage hat|10342|3rd_age_mage_hat
+Elite Treasure Trails (Rare)|3rd age amulet|10344|3rd_age_amulet
+Elite Treasure Trails (Rare)|3rd age platelegs|10346|3rd_age_platelegs
+Elite Treasure Trails (Rare)|3rd age platebody|10348|3rd_age_platebody
+Elite Treasure Trails (Rare)|3rd age full helmet|10350|3rd_age_full_helmet
+Elite Treasure Trails (Rare)|3rd age kiteshield|10352|3rd_age_kiteshield
+Elite Treasure Trails (Rare)|Lava dragon mask|12371|lava_dragon_mask
+Elite Treasure Trails (Rare)|Gilded scimitar|12389|gilded_scimitar
+Elite Treasure Trails (Rare)|Gilded boots|12391|gilded_boots
+Elite Treasure Trails (Rare)|3rd age wand|12422|3rd_age_wand
+Elite Treasure Trails (Rare)|3rd age bow|12424|3rd_age_bow
+Elite Treasure Trails (Rare)|3rd age longsword|12426|3rd_age_longsword
+Elite Treasure Trails (Rare)|3rd age cloak|12437|3rd_age_cloak
+Elite Treasure Trails (Rare)|Ring of nature|20005|ring_of_nature
+Elite Treasure Trails (Rare)|Gilded med helm|20146|-
+Elite Treasure Trails (Rare)|Gilded chainbody|20149|-
+Elite Treasure Trails (Rare)|Gilded sq shield|20152|-
+Elite Treasure Trails (Rare)|Gilded 2h sword|20155|-
+Elite Treasure Trails (Rare)|Gilded spear|20158|-
+Elite Treasure Trails (Rare)|Gilded hasta|20161|-
+Elite Treasure Trails (Rare)|3rd age plateskirt|23242|-
+Elite Treasure Trails (Rare)|Gilded coif|23258|-
+Elite Treasure Trails (Rare)|Gilded d'hide vambraces|23261|-
+Elite Treasure Trails (Rare)|Gilded d'hide body|23264|-
+Elite Treasure Trails (Rare)|Gilded d'hide chaps|23267|-
+Elite Treasure Trails (Rare)|Gilded pickaxe|23276|-
+Elite Treasure Trails (Rare)|Gilded axe|23279|-
+Elite Treasure Trails (Rare)|Gilded spade|23282|-
+Fishing Trawler|Angler hat|13258|angler_hat
+Fishing Trawler|Angler top|13259|angler_top
+Fishing Trawler|Angler waders|13260|angler_waders
+Fishing Trawler|Angler boots|13261|angler_boots
+Forestry|Lumberjack boots|10933|lumberjack_boots
+Forestry|Lumberjack top|10939|lumberjack_top
+Forestry|Lumberjack legs|10940|lumberjack_legs
+Forestry|Lumberjack hat|10941|lumberjack_hat
+Forestry|Funky shaped log|28138|-
+Forestry|Log basket|28140|-
+Forestry|Log brace|28146|-
+Forestry|Clothes pouch blueprint|28166|-
+Forestry|Forestry top|28169|-
+Forestry|Forestry legs|28171|-
+Forestry|Forestry hat|28173|-
+Forestry|Forestry boots|28175|-
+Forestry|Felling axe handle|28177|-
+Forestry|Cape pouch|28613|-
+Forestry|Pheasant cape|28616|-
+Forestry|Pheasant boots|28618|-
+Forestry|Pheasant hat|28620|-
+Forestry|Pheasant legs|28622|-
+Forestry|Fox whistle|28626|-
+Forestry|Twitcher's gloves|28630|-
+Forestry|Petal garland|28655|-
+Forestry|Golden pheasant egg|28663|-
+Forestry|Sturdy beehive parts|28674|-
+Fortis Colosseum|Uncut onyx|6571|uncut_onyx
+Fortis Colosseum|Tonalztics of ralos (uncharged)|28919|tonalztics_of_ralos
+Fortis Colosseum|Sunfire splinters|28924|sunfire_splinters
+Fortis Colosseum|Sunfire fanatic helm|28933|sunfire_fanatic_helm
+Fortis Colosseum|Sunfire fanatic cuirass|28936|sunfire_fanatic_cuirass
+Fortis Colosseum|Sunfire fanatic chausses|28939|sunfire_fanatic_chausses
+Fortis Colosseum|Echo crystal|28942|echo_crystal
+Fortis Colosseum|Dizana's quiver (uncharged)|28947|dizanas_quiver
+Fortis Colosseum|Smol heredit|28960|pet_smol_heredit
+Fossil Island Notes|Scribbled note|21664|-
+Fossil Island Notes|Partial note|21666|-
+Fossil Island Notes|Ancient note|21668|-
+Fossil Island Notes|Ancient writings|21670|-
+Fossil Island Notes|Experimental note|21672|-
+Fossil Island Notes|Paragraph of text|21674|-
+Fossil Island Notes|Musty smelling note|21676|-
+Fossil Island Notes|Hastily scrawled note|21678|-
+Fossil Island Notes|Old writing|21680|-
+Fossil Island Notes|Short note|21682|-
+General Graardor|Bandos hilt|11812|bandos_hilt
+General Graardor|Godsword shard 1|11818|godsword_shard_1
+General Graardor|Godsword shard 2|11820|godsword_shard_2
+General Graardor|Godsword shard 3|11822|godsword_shard_3
+General Graardor|Bandos chestplate|11832|bandos_chestplate
+General Graardor|Bandos tassets|11834|bandos_tassets
+General Graardor|Bandos boots|11836|bandos_boots
+General Graardor|Pet general graardor|12650|pet_general_graardor
+Giant Mole|Mole claw|7416|mole_claw
+Giant Mole|Mole skin|7418|mole_skin
+Giant Mole|Baby mole|12646|pet_baby_mole
+Giant Mole|Immaculate mole skin|33382|-
+Giants' Foundry|Double ammo mould|27012|double_ammo_mould
+Giants' Foundry|Kovac's grog|27014|kovacs_grog
+Giants' Foundry|Smithing catalyst|27017|-
+Giants' Foundry|Ore pack|27019|-
+Giants' Foundry|Colossal blade|27021|colossal_blade
+Giants' Foundry|Smiths tunic|27023|smiths_tunic
+Giants' Foundry|Smiths trousers|27025|smiths_trousers
+Giants' Foundry|Smiths boots|27027|smiths_boots
+Giants' Foundry|Smiths gloves|27029|smiths_gloves
+Glough's Experiments|Zenyte shard|19529|zenyte_shard
+Glough's Experiments|Light frame|19586|light_frame
+Glough's Experiments|Heavy frame|19589|heavy_frame
+Glough's Experiments|Ballista limbs|19592|ballista_limbs
+Glough's Experiments|Ballista spring|19601|ballista_spring
+Glough's Experiments|Monkey tail|19610|monkey_tail
+Gnome Restaurant|Grand seed pod|9469|-
+Gnome Restaurant|Gnome scarf|9470|gnome_scarf
+Gnome Restaurant|Gnome goggles|9472|gnome_goggles
+Gnome Restaurant|Mint cake|9475|mint_cake
+Grotesque Guardians|Granite dust|21726|granite_dust
+Grotesque Guardians|Black tourmaline core|21730|black_tourmaline_core
+Grotesque Guardians|Granite gloves|21736|granite_gloves
+Grotesque Guardians|Granite ring|21739|granite_ring
+Grotesque Guardians|Granite hammer|21742|granite_hammer
+Grotesque Guardians|Jar of stone|21745|jar_of_stone
+Grotesque Guardians|Noon|21748|pet_noon
+Guardians of the Rift|Abyssal pearls|26792|abyssal_pearls
+Guardians of the Rift|Catalytic talisman|26798|catalytic_talisman
+Guardians of the Rift|Abyssal green dye|26807|abyssal_green_dye
+Guardians of the Rift|Abyssal blue dye|26809|abyssal_blue_dye
+Guardians of the Rift|Abyssal red dye|26811|abyssal_red_dye
+Guardians of the Rift|Abyssal needle|26813|abyssal_needle
+Guardians of the Rift|Ring of the elements|26815|ring_of_the_elements
+Guardians of the Rift|Guardian's eye|26820|-
+Guardians of the Rift|Abyssal lantern|26822|abyssal_lantern
+Guardians of the Rift|Hat of the eye|26850|hat_of_the_eye
+Guardians of the Rift|Robe top of the eye|26852|robe_top_of_the_eye
+Guardians of the Rift|Robe bottoms of the eye|26854|robe_bottoms_of_the_eye
+Guardians of the Rift|Boots of the eye|26856|boots_of_the_eye
+Guardians of the Rift|Abyssal protector|26901|abyssal_protector
+Guardians of the Rift|Intricate pouch|26908|intricate_pouch
+Guardians of the Rift|Tarnished locket|26910|-
+Guardians of the Rift|Lost bag|26912|-
+Hallowed Sepulchre|Hallowed mark|24711|hallowed_mark
+Hallowed Sepulchre|Hallowed token|24719|-
+Hallowed Sepulchre|Hallowed grapple|24721|hallowed_grapple
+Hallowed Sepulchre|Hallowed focus|24723|hallowed_focus
+Hallowed Sepulchre|Hallowed symbol|24725|hallowed_symbol
+Hallowed Sepulchre|Hallowed hammer|24727|hallowed_hammer
+Hallowed Sepulchre|Dark dye|24729|dark_dye
+Hallowed Sepulchre|Hallowed ring|24731|hallowed_ring
+Hallowed Sepulchre|Dark acorn|24733|dark_acorn
+Hallowed Sepulchre|Strange old lockpick (full)|24740|strange_old_lockpick
+Hallowed Sepulchre|Mysterious page|24763|mysterious_page
+Hallowed Sepulchre|Mysterious page|24765|mysterious_page
+Hallowed Sepulchre|Mysterious page|24767|mysterious_page
+Hallowed Sepulchre|Mysterious page|24769|mysterious_page
+Hallowed Sepulchre|Mysterious page|24771|mysterious_page
+Hallowed Sepulchre|Ring of endurance (uncharged)|24844|ring_of_endurance
+Hard Treasure Trails|Robin hood hat|2581|robin_hood_hat
+Hard Treasure Trails|Rune platebody (g)|2615|rune_platebody_g
+Hard Treasure Trails|Rune platelegs (g)|2617|rune_platelegs_g
+Hard Treasure Trails|Rune full helm (g)|2619|rune_full_helm_g
+Hard Treasure Trails|Rune kiteshield (g)|2621|rune_kiteshield_g
+Hard Treasure Trails|Rune platebody (t)|2623|rune_platebody_t
+Hard Treasure Trails|Rune platelegs (t)|2625|rune_platelegs_t
+Hard Treasure Trails|Rune full helm (t)|2627|rune_full_helm_t
+Hard Treasure Trails|Rune kiteshield (t)|2629|rune_kiteshield_t
+Hard Treasure Trails|Tan cavalier|2639|tan_cavalier
+Hard Treasure Trails|Dark cavalier|2641|dark_cavalier
+Hard Treasure Trails|Black cavalier|2643|black_cavalier
+Hard Treasure Trails|Pirate's hat|2651|pirate_hat
+Hard Treasure Trails|Zamorak platebody|2653|zamorak_platebody
+Hard Treasure Trails|Zamorak platelegs|2655|zamorak_platelegs
+Hard Treasure Trails|Zamorak full helm|2657|zamorak_full_helm
+Hard Treasure Trails|Zamorak kiteshield|2659|zamorak_kiteshield
+Hard Treasure Trails|Saradomin platebody|2661|saradomin_platebody
+Hard Treasure Trails|Saradomin platelegs|2663|saradomin_platelegs
+Hard Treasure Trails|Saradomin full helm|2665|saradomin_full_helm
+Hard Treasure Trails|Saradomin kiteshield|2667|saradomin_kiteshield
+Hard Treasure Trails|Guthix platebody|2669|guthix_platebody
+Hard Treasure Trails|Guthix platelegs|2671|guthix_platelegs
+Hard Treasure Trails|Guthix full helm|2673|guthix_full_helm
+Hard Treasure Trails|Guthix kiteshield|2675|guthix_kiteshield
+Hard Treasure Trails|Rune plateskirt (g)|3476|-
+Hard Treasure Trails|Rune plateskirt (t)|3477|-
+Hard Treasure Trails|Zamorak plateskirt|3478|-
+Hard Treasure Trails|Saradomin plateskirt|3479|-
+Hard Treasure Trails|Guthix plateskirt|3480|-
+Hard Treasure Trails|Rune shield (h1)|7336|-
+Hard Treasure Trails|Rune shield (h2)|7342|-
+Hard Treasure Trails|Rune shield (h3)|7348|-
+Hard Treasure Trails|Rune shield (h4)|7354|-
+Hard Treasure Trails|Rune shield (h5)|7360|-
+Hard Treasure Trails|Blue d'hide body (g)|7374|blue_dhide_body_g
+Hard Treasure Trails|Blue d'hide body (t)|7376|blue_dhide_body_t
+Hard Treasure Trails|Blue d'hide chaps (g)|7382|blue_dhide_chaps_g
+Hard Treasure Trails|Blue d'hide chaps (t)|7384|blue_dhide_chaps_t
+Hard Treasure Trails|Enchanted robe|7398|enchanted_robe
+Hard Treasure Trails|Enchanted top|7399|enchanted_top
+Hard Treasure Trails|Enchanted hat|7400|enchanted_hat
+Hard Treasure Trails|Magic comp bow|10284|magic_comp_bow
+Hard Treasure Trails|Rune helm (h1)|10286|-
+Hard Treasure Trails|Rune helm (h2)|10288|-
+Hard Treasure Trails|Rune helm (h3)|10290|-
+Hard Treasure Trails|Rune helm (h4)|10292|-
+Hard Treasure Trails|Rune helm (h5)|10294|-
+Hard Treasure Trails|Amulet of glory (t4)|10354|-
+Hard Treasure Trails|Zamorak bracers|10368|zamorak_bracers
+Hard Treasure Trails|Zamorak d'hide body|10370|zamorak_dhide_body
+Hard Treasure Trails|Zamorak chaps|10372|zamorak_chaps
+Hard Treasure Trails|Zamorak coif|10374|zamorak_coif
+Hard Treasure Trails|Guthix bracers|10376|guthix_bracers
+Hard Treasure Trails|Guthix d'hide body|10378|guthix_dhide_body
+Hard Treasure Trails|Guthix chaps|10380|guthix_chaps
+Hard Treasure Trails|Guthix coif|10382|guthix_coif
+Hard Treasure Trails|Saradomin bracers|10384|saradomin_bracers
+Hard Treasure Trails|Saradomin d'hide body|10386|saradomin_dhide_body
+Hard Treasure Trails|Saradomin chaps|10388|saradomin_chaps
+Hard Treasure Trails|Saradomin coif|10390|saradomin_coif
+Hard Treasure Trails|Saradomin crozier|10440|saradomin_crozier
+Hard Treasure Trails|Guthix crozier|10442|guthix_crozier
+Hard Treasure Trails|Zamorak crozier|10444|zamorak_crozier
+Hard Treasure Trails|Saradomin stole|10470|saradomin_stole
+Hard Treasure Trails|Guthix stole|10472|guthix_stole
+Hard Treasure Trails|Zamorak stole|10474|zamorak_stole
+Hard Treasure Trails|White cavalier|12321|-
+Hard Treasure Trails|Red cavalier|12323|-
+Hard Treasure Trails|Navy cavalier|12325|-
+Hard Treasure Trails|Red d'hide body (g)|12327|red_dhide_body_g
+Hard Treasure Trails|Red d'hide chaps (g)|12329|red_dhide_chaps_g
+Hard Treasure Trails|Red d'hide body (t)|12331|red_dhide_body_t
+Hard Treasure Trails|Red d'hide chaps (t)|12333|red_dhide_chaps_t
+Hard Treasure Trails|Rune cane|12379|rune_cane
+Hard Treasure Trails|Ancient platebody|12460|ancient_platebody
+Hard Treasure Trails|Ancient platelegs|12462|ancient_platelegs
+Hard Treasure Trails|Ancient plateskirt|12464|-
+Hard Treasure Trails|Ancient full helm|12466|ancient_full_helm
+Hard Treasure Trails|Ancient kiteshield|12468|ancient_kiteshield
+Hard Treasure Trails|Armadyl platebody|12470|armadyl_platebody
+Hard Treasure Trails|Armadyl platelegs|12472|armadyl_platelegs
+Hard Treasure Trails|Armadyl plateskirt|12474|-
+Hard Treasure Trails|Armadyl full helm|12476|armadyl_full_helm
+Hard Treasure Trails|Armadyl kiteshield|12478|armadyl_kiteshield
+Hard Treasure Trails|Bandos platebody|12480|bandos_platebody
+Hard Treasure Trails|Bandos platelegs|12482|bandos_platelegs
+Hard Treasure Trails|Bandos plateskirt|12484|-
+Hard Treasure Trails|Bandos full helm|12486|bandos_full_helm
+Hard Treasure Trails|Bandos kiteshield|12488|bandos_kiteshield
+Hard Treasure Trails|Ancient bracers|12490|ancient_bracers
+Hard Treasure Trails|Ancient d'hide body|12492|ancient_dhide_body
+Hard Treasure Trails|Ancient chaps|12494|ancient_chaps
+Hard Treasure Trails|Ancient coif|12496|ancient_coif
+Hard Treasure Trails|Bandos bracers|12498|bandos_bracers
+Hard Treasure Trails|Bandos d'hide body|12500|bandos_dhide_body
+Hard Treasure Trails|Bandos chaps|12502|bandos_chaps
+Hard Treasure Trails|Bandos coif|12504|bandos_coif
+Hard Treasure Trails|Armadyl bracers|12506|armadyl_bracers
+Hard Treasure Trails|Armadyl d'hide body|12508|armadyl_dhide_body
+Hard Treasure Trails|Armadyl chaps|12510|armadyl_chaps
+Hard Treasure Trails|Armadyl coif|12512|armadyl_coif
+Hard Treasure Trails|Explorer backpack|12514|explorer_backpack
+Hard Treasure Trails|Pith helmet|12516|pith_helmet
+Hard Treasure Trails|Green dragon mask|12518|-
+Hard Treasure Trails|Blue dragon mask|12520|-
+Hard Treasure Trails|Red dragon mask|12522|-
+Hard Treasure Trails|Black dragon mask|12524|-
+Hard Treasure Trails|Zombie head|19912|-
+Hard Treasure Trails|Cyclops head|19915|-
+Hard Treasure Trails|Nunchaku|19918|-
+Hard Treasure Trails|Ancient d'hide boots|19921|ancient_dhide_boots
+Hard Treasure Trails|Bandos d'hide boots|19924|bandos_dhide_boots
+Hard Treasure Trails|Guthix d'hide boots|19927|guthix_dhide_boots
+Hard Treasure Trails|Armadyl d'hide boots|19930|armadyl_dhide_boots
+Hard Treasure Trails|Saradomin d'hide boots|19933|saradomin_dhide_boots
+Hard Treasure Trails|Zamorak d'hide boots|19936|zamorak_dhide_boots
+Hard Treasure Trails|Dragon boots ornament kit|22231|-
+Hard Treasure Trails|Guthix d'hide shield|23188|guthix_dhide_shield
+Hard Treasure Trails|Saradomin d'hide shield|23191|saradomin_dhide_shield
+Hard Treasure Trails|Zamorak d'hide shield|23194|zamorak_dhide_shield
+Hard Treasure Trails|Ancient d'hide shield|23197|ancient_dhide_shield
+Hard Treasure Trails|Armadyl d'hide shield|23200|armadyl_dhide_shield
+Hard Treasure Trails|Bandos d'hide shield|23203|bandos_dhide_shield
+Hard Treasure Trails|Dual sai|23206|-
+Hard Treasure Trails|Rune platebody (h1)|23209|-
+Hard Treasure Trails|Rune platebody (h2)|23212|-
+Hard Treasure Trails|Rune platebody (h3)|23215|-
+Hard Treasure Trails|Rune platebody (h4)|23218|-
+Hard Treasure Trails|Rune platebody (h5)|23221|-
+Hard Treasure Trails|Thieving bag|23224|-
+Hard Treasure Trails|Rune defender ornament kit|23227|-
+Hard Treasure Trails|Tzhaar-ket-om ornament kit|23232|-
+Hard Treasure Trails|Berserker necklace ornament kit|23237|-
+Hard Treasure Trails (Rare)|Gilded platebody|3481|gilded_platebody
+Hard Treasure Trails (Rare)|Gilded platelegs|3483|gilded_platelegs
+Hard Treasure Trails (Rare)|Gilded plateskirt|3485|-
+Hard Treasure Trails (Rare)|Gilded full helm|3486|gilded_full_helm
+Hard Treasure Trails (Rare)|Gilded kiteshield|3488|gilded_kiteshield
+Hard Treasure Trails (Rare)|3rd age range top|10330|3rd_age_range_top
+Hard Treasure Trails (Rare)|3rd age range legs|10332|3rd_age_range_legs
+Hard Treasure Trails (Rare)|3rd age range coif|10334|3rd_age_range_coif
+Hard Treasure Trails (Rare)|3rd age vambraces|10336|3rd_age_vambraces
+Hard Treasure Trails (Rare)|3rd age robe top|10338|3rd_age_robe_top
+Hard Treasure Trails (Rare)|3rd age robe|10340|3rd_age_robe
+Hard Treasure Trails (Rare)|3rd age mage hat|10342|3rd_age_mage_hat
+Hard Treasure Trails (Rare)|3rd age amulet|10344|3rd_age_amulet
+Hard Treasure Trails (Rare)|3rd age platelegs|10346|3rd_age_platelegs
+Hard Treasure Trails (Rare)|3rd age platebody|10348|3rd_age_platebody
+Hard Treasure Trails (Rare)|3rd age full helmet|10350|3rd_age_full_helmet
+Hard Treasure Trails (Rare)|3rd age kiteshield|10352|3rd_age_kiteshield
+Hard Treasure Trails (Rare)|Gilded med helm|20146|-
+Hard Treasure Trails (Rare)|Gilded chainbody|20149|-
+Hard Treasure Trails (Rare)|Gilded sq shield|20152|-
+Hard Treasure Trails (Rare)|Gilded 2h sword|20155|-
+Hard Treasure Trails (Rare)|Gilded spear|20158|-
+Hard Treasure Trails (Rare)|Gilded hasta|20161|-
+Hard Treasure Trails (Rare)|3rd age plateskirt|23242|-
+Hespori|Attas seed|22881|attas_seed
+Hespori|Iasor seed|22883|iasor_seed
+Hespori|Kronos seed|22885|kronos_seed
+Hespori|Bottomless compost bucket|22994|bottomless_compost_bucket
+Hunter Guild|Quetzin|28962|-
+Hunter Guild|Guild hunter headwear|29263|guild_hunter_headwear
+Hunter Guild|Guild hunter top|29265|guild_hunter_top
+Hunter Guild|Guild hunter legs|29267|guild_hunter_legs
+Hunter Guild|Guild hunter boots|29269|guild_hunter_boots
+Hunter Guild|Huntsman's kit|29309|-
+K'ril Tsutsaroth|Steam battlestaff|11787|steam_battlestaff
+K'ril Tsutsaroth|Staff of the dead|11791|staff_of_the_dead
+K'ril Tsutsaroth|Zamorak hilt|11816|zamorak_hilt
+K'ril Tsutsaroth|Godsword shard 1|11818|godsword_shard_1
+K'ril Tsutsaroth|Godsword shard 2|11820|godsword_shard_2
+K'ril Tsutsaroth|Godsword shard 3|11822|godsword_shard_3
+K'ril Tsutsaroth|Zamorakian spear|11824|zamorakian_spear
+K'ril Tsutsaroth|Pet k'ril tsutsaroth|12652|pet_kril_tsutsaroth
+Kalphite Queen|Dragon chainbody|3140|dragon_chainbody
+Kalphite Queen|Dragon 2h sword|7158|dragon_2h_sword
+Kalphite Queen|Kq head|7981|kq_head
+Kalphite Queen|Dragon pickaxe|11920|dragon_pickaxe
+Kalphite Queen|Kalphite princess|12647|pet_kalphite_princess
+Kalphite Queen|Jar of sand|12885|jar_of_sand
+King Black Dragon|Kbd heads|7980|kbd_heads
+King Black Dragon|Draconic visage|11286|draconic_visage
+King Black Dragon|Dragon pickaxe|11920|dragon_pickaxe
+King Black Dragon|Prince black dragon|12653|prince_black_dragon
+Kraken|Trident of the seas (full)|11905|trident_of_the_seas
+Kraken|Kraken tentacle|12004|kraken_tentacle
+Kraken|Jar of dirt|12007|jar_of_dirt
+Kraken|Pet kraken|12655|pet_kraken
+Kree'arra|Armadyl hilt|11810|armadyl_hilt
+Kree'arra|Godsword shard 1|11818|godsword_shard_1
+Kree'arra|Godsword shard 2|11820|godsword_shard_2
+Kree'arra|Godsword shard 3|11822|godsword_shard_3
+Kree'arra|Armadyl helmet|11826|armadyl_helmet
+Kree'arra|Armadyl chestplate|11828|armadyl_chestplate
+Kree'arra|Armadyl chainskirt|11830|armadyl_chainskirt
+Kree'arra|Pet kree'arra|12649|pet_kreearra
+Last Man Standing|Blue dark bow paint|12757|-
+Last Man Standing|Green dark bow paint|12759|-
+Last Man Standing|Yellow dark bow paint|12761|-
+Last Man Standing|White dark bow paint|12763|-
+Last Man Standing|Frozen whip mix|12769|-
+Last Man Standing|Volcanic whip mix|12771|-
+Last Man Standing|Steam staff upgrade kit|12798|-
+Last Man Standing|Dragon pickaxe upgrade kit|12800|-
+Last Man Standing|Ward upgrade kit|12802|-
+Last Man Standing|Granite clamp|12849|-
+Last Man Standing|Lava staff upgrade kit|21202|-
+Last Man Standing|Deadman's chest|24189|deadmans_chest
+Last Man Standing|Deadman's legs|24190|deadmans_legs
+Last Man Standing|Deadman's cape|24191|deadmans_cape
+Last Man Standing|Armadyl halo|24192|armadyl_halo
+Last Man Standing|Bandos halo|24195|bandos_halo
+Last Man Standing|Seren halo|24198|seren_halo
+Last Man Standing|Ancient halo|24201|ancient_halo
+Last Man Standing|Brassica halo|24204|brassica_halo
+Last Man Standing|Victor's cape (1)|24207|victors_cape_1
+Last Man Standing|Victor's cape (10)|24209|victors_cape_10
+Last Man Standing|Victor's cape (50)|24211|victors_cape_50
+Last Man Standing|Victor's cape (100)|24213|victors_cape_100
+Last Man Standing|Victor's cape (500)|24215|victors_cape_500
+Last Man Standing|Guthixian icon|24217|-
+Last Man Standing|Swift blade|24219|-
+Last Man Standing|Ornate maul handle|24229|-
+Last Man Standing|Victor's cape (1000)|24520|victors_cape_1000
+Last Man Standing|Golden armadyl special attack|24868|-
+Last Man Standing|Golden bandos special attack|24869|-
+Last Man Standing|Golden saradomin special attack|24870|-
+Last Man Standing|Golden zamorak special attack|24871|-
+Lost Schematics|Salvaging station schematic|32401|-
+Lost Schematics|Gale catcher schematic|32402|-
+Lost Schematics|Eternal brazier schematic|32403|-
+Lost Schematics|Dragon salvaging hook schematic|32404|-
+Lost Schematics|Rosewood cargo hold schematic|32405|-
+Lost Schematics|Dragon cannon schematic|32406|-
+Lost Schematics|Rosewood hull schematic|32407|-
+Lost Schematics|Rosewood & cotton sails schematic|32408|-
+Lost Schematics|Dragon helm schematic|32409|-
+Lost Schematics|Dragon keel schematic|32410|-
+Lost Schematics|Ballistic attractor schematic|33143|-
+Lost Schematics|Bosun's workbench schematic|33423|-
+Maggot King|Crimson kisten|33631|crimson_kisten
+Maggot King|Elder venator fang|33634|elder_venator_fang
+Maggot King|Maggot marquess|33642|pet_maggot_marquess
+Magic Training Arena|Mage's book|6889|mages_book
+Magic Training Arena|Beginner wand|6908|beginner_wand
+Magic Training Arena|Apprentice wand|6910|apprentice_wand
+Magic Training Arena|Teacher wand|6912|teacher_wand
+Magic Training Arena|Master wand|6914|master_wand
+Magic Training Arena|Infinity top|6916|infinity_top
+Magic Training Arena|Infinity hat|6918|infinity_hat
+Magic Training Arena|Infinity boots|6920|infinity_boots
+Magic Training Arena|Infinity gloves|6922|infinity_gloves
+Magic Training Arena|Infinity bottoms|6924|infinity_bottoms
+Magic Training Arena|Bones to peaches|6926|bones_to_peaches_tablet
+Mahogany Homes|Carpenter's helmet|24872|carpenters_helmet
+Mahogany Homes|Carpenter's shirt|24874|carpenters_shirt
+Mahogany Homes|Carpenter's trousers|24876|carpenters_trousers
+Mahogany Homes|Carpenter's boots|24878|carpenters_boots
+Mahogany Homes|Amy's saw|24880|amys_saw
+Mahogany Homes|Supply crate|24884|supply_crate
+Mahogany Homes|Hosidius blueprints|24885|hosidius_blueprints
+Mahogany Homes|Plank sack|25629|plank_sack
+Master Treasure Trails|Left eye patch|19724|left_eye_patch
+Master Treasure Trails|Bloodhound|19730|bloodhound
+Master Treasure Trails|Fancy tiara|20008|fancy_tiara
+Master Treasure Trails|Lesser demon mask|20020|lesser_demon_mask
+Master Treasure Trails|Greater demon mask|20023|greater_demon_mask
+Master Treasure Trails|Black demon mask|20026|black_demon_mask
+Master Treasure Trails|Old demon mask|20029|old_demon_mask
+Master Treasure Trails|Jungle demon mask|20032|jungle_demon_mask
+Master Treasure Trails|Samurai kasa|20035|samurai_kasa
+Master Treasure Trails|Samurai shirt|20038|samurai_shirt
+Master Treasure Trails|Samurai gloves|20041|samurai_gloves
+Master Treasure Trails|Samurai greaves|20044|samurai_greaves
+Master Treasure Trails|Samurai boots|20047|samurai_boots
+Master Treasure Trails|Obsidian cape (r)|20050|obsidian_cape_r
+Master Treasure Trails|Half moon spectacles|20053|half_moon_spectacles
+Master Treasure Trails|Ale of the gods|20056|ale_of_the_gods
+Master Treasure Trails|Torture ornament kit|20062|torture_ornament_kit
+Master Treasure Trails|Occult ornament kit|20065|occult_ornament_kit
+Master Treasure Trails|Armadyl godsword ornament kit|20068|armadyl_godsword_ornament_kit
+Master Treasure Trails|Bandos godsword ornament kit|20071|bandos_godsword_ornament_kit
+Master Treasure Trails|Saradomin godsword ornament kit|20074|saradomin_godsword_ornament_kit
+Master Treasure Trails|Zamorak godsword ornament kit|20077|zamorak_godsword_ornament_kit
+Master Treasure Trails|Mummy's head|20080|mummys_head
+Master Treasure Trails|Mummy's body|20083|mummys_body
+Master Treasure Trails|Mummy's hands|20086|mummys_hands
+Master Treasure Trails|Mummy's legs|20089|mummys_legs
+Master Treasure Trails|Mummy's feet|20092|mummys_feet
+Master Treasure Trails|Ankou mask|20095|ankou_mask
+Master Treasure Trails|Ankou top|20098|ankou_top
+Master Treasure Trails|Ankou gloves|20101|ankou_gloves
+Master Treasure Trails|Ankou's leggings|20104|ankou_legs
+Master Treasure Trails|Ankou socks|20107|ankou_socks
+Master Treasure Trails|Bowl wig|20110|-
+Master Treasure Trails|Arceuus hood|20113|-
+Master Treasure Trails|Hosidius hood|20116|-
+Master Treasure Trails|Lovakengj hood|20119|-
+Master Treasure Trails|Piscarilius hood|20122|-
+Master Treasure Trails|Shayzien hood|20125|-
+Master Treasure Trails|Hood of darkness|20128|hood_of_darkness
+Master Treasure Trails|Robe top of darkness|20131|robe_top_of_darkness
+Master Treasure Trails|Gloves of darkness|20134|gloves_of_darkness
+Master Treasure Trails|Robe bottom of darkness|20137|robe_bottom_of_darkness
+Master Treasure Trails|Boots of darkness|20140|boots_of_darkness
+Master Treasure Trails|Dragon defender ornament kit|20143|dragon_defender_ornament_kit
+Master Treasure Trails|Dragon platebody ornament kit|22236|-
+Master Treasure Trails|Dragon kiteshield ornament kit|22239|-
+Master Treasure Trails|Anguish ornament kit|22246|anguish_ornament_kit
+Master Treasure Trails|Ring of 3rd age|23185|-
+Master Treasure Trails|Tormented ornament kit|23348|tormented_ornament_kit
+Master Treasure Trails (Rare)|Gilded platebody|3481|gilded_platebody
+Master Treasure Trails (Rare)|Gilded platelegs|3483|gilded_platelegs
+Master Treasure Trails (Rare)|Gilded plateskirt|3485|-
+Master Treasure Trails (Rare)|Gilded full helm|3486|gilded_full_helm
+Master Treasure Trails (Rare)|Gilded kiteshield|3488|gilded_kiteshield
+Master Treasure Trails (Rare)|3rd age range top|10330|3rd_age_range_top
+Master Treasure Trails (Rare)|3rd age range legs|10332|3rd_age_range_legs
+Master Treasure Trails (Rare)|3rd age range coif|10334|3rd_age_range_coif
+Master Treasure Trails (Rare)|3rd age vambraces|10336|3rd_age_vambraces
+Master Treasure Trails (Rare)|3rd age robe top|10338|3rd_age_robe_top
+Master Treasure Trails (Rare)|3rd age robe|10340|3rd_age_robe
+Master Treasure Trails (Rare)|3rd age mage hat|10342|3rd_age_mage_hat
+Master Treasure Trails (Rare)|3rd age amulet|10344|3rd_age_amulet
+Master Treasure Trails (Rare)|3rd age platelegs|10346|3rd_age_platelegs
+Master Treasure Trails (Rare)|3rd age platebody|10348|3rd_age_platebody
+Master Treasure Trails (Rare)|3rd age full helmet|10350|3rd_age_full_helmet
+Master Treasure Trails (Rare)|3rd age kiteshield|10352|3rd_age_kiteshield
+Master Treasure Trails (Rare)|Gilded scimitar|12389|gilded_scimitar
+Master Treasure Trails (Rare)|Gilded boots|12391|gilded_boots
+Master Treasure Trails (Rare)|3rd age wand|12422|3rd_age_wand
+Master Treasure Trails (Rare)|3rd age bow|12424|3rd_age_bow
+Master Treasure Trails (Rare)|3rd age longsword|12426|3rd_age_longsword
+Master Treasure Trails (Rare)|3rd age cloak|12437|3rd_age_cloak
+Master Treasure Trails (Rare)|3rd age axe|20011|3rd_age_axe
+Master Treasure Trails (Rare)|3rd age pickaxe|20014|3rd_age_pickaxe
+Master Treasure Trails (Rare)|Ring of coins|20017|ring_of_coins
+Master Treasure Trails (Rare)|Bucket helm (g)|20059|bucket_helm_g
+Master Treasure Trails (Rare)|Gilded med helm|20146|-
+Master Treasure Trails (Rare)|Gilded chainbody|20149|-
+Master Treasure Trails (Rare)|Gilded sq shield|20152|-
+Master Treasure Trails (Rare)|Gilded 2h sword|20155|-
+Master Treasure Trails (Rare)|Gilded spear|20158|-
+Master Treasure Trails (Rare)|Gilded hasta|20161|-
+Master Treasure Trails (Rare)|3rd age plateskirt|23242|-
+Master Treasure Trails (Rare)|Gilded coif|23258|-
+Master Treasure Trails (Rare)|Gilded d'hide vambraces|23261|-
+Master Treasure Trails (Rare)|Gilded d'hide body|23264|-
+Master Treasure Trails (Rare)|Gilded d'hide chaps|23267|-
+Master Treasure Trails (Rare)|Gilded pickaxe|23276|-
+Master Treasure Trails (Rare)|Gilded axe|23279|-
+Master Treasure Trails (Rare)|Gilded spade|23282|-
+Master Treasure Trails (Rare)|3rd age druidic robe top|23336|3rd_age_druidic_robe_top
+Master Treasure Trails (Rare)|3rd age druidic robe bottoms|23339|3rd_age_druidic_robe_bottoms
+Master Treasure Trails (Rare)|3rd age druidic staff|23342|3rd_age_druidic_staff
+Master Treasure Trails (Rare)|3rd age druidic cloak|23345|3rd_age_druidic_cloak
+Mastering Mixology|Prescription goggles|29974|-
+Mastering Mixology|Alchemist labcoat|29978|-
+Mastering Mixology|Alchemist pants|29982|-
+Mastering Mixology|Alchemist gloves|29986|-
+Mastering Mixology|Alchemist's amulet|29992|-
+Mastering Mixology|Reagent pouch|29996|-
+Mastering Mixology|Chugging barrel (disassembled)|30002|-
+Medium Treasure Trails|Ranger boots|2577|ranger_boots
+Medium Treasure Trails|Wizard boots|2579|wizard_boots
+Medium Treasure Trails|Adamant platebody (t)|2599|adamant_platebody_t
+Medium Treasure Trails|Adamant platelegs (t)|2601|adamant_platelegs_t
+Medium Treasure Trails|Adamant kiteshield (t)|2603|adamant_kiteshield_t
+Medium Treasure Trails|Adamant full helm (t)|2605|adamant_full_helm_t
+Medium Treasure Trails|Adamant platebody (g)|2607|adamant_platebody_g
+Medium Treasure Trails|Adamant platelegs (g)|2609|adamant_platelegs_g
+Medium Treasure Trails|Adamant kiteshield (g)|2611|adamant_kiteshield_g
+Medium Treasure Trails|Adamant full helm (g)|2613|adamant_full_helm_g
+Medium Treasure Trails|Red headband|2645|red_headband
+Medium Treasure Trails|Black headband|2647|black_headband
+Medium Treasure Trails|Brown headband|2649|brown_headband
+Medium Treasure Trails|Adamant plateskirt (t)|3474|-
+Medium Treasure Trails|Adamant plateskirt (g)|3475|-
+Medium Treasure Trails|Red boater|7319|-
+Medium Treasure Trails|Orange boater|7321|-
+Medium Treasure Trails|Green boater|7323|-
+Medium Treasure Trails|Blue boater|7325|-
+Medium Treasure Trails|Black boater|7327|-
+Medium Treasure Trails|Adamant shield (h1)|7334|-
+Medium Treasure Trails|Adamant shield (h2)|7340|-
+Medium Treasure Trails|Adamant shield (h3)|7346|-
+Medium Treasure Trails|Adamant shield (h4)|7352|-
+Medium Treasure Trails|Adamant shield (h5)|7358|-
+Medium Treasure Trails|Green d'hide body (g)|7370|green_dhide_body_g
+Medium Treasure Trails|Green d'hide body (t)|7372|green_dhide_body_t
+Medium Treasure Trails|Green d'hide chaps (g)|7378|green_dhide_chaps_g
+Medium Treasure Trails|Green d'hide chaps (t)|7380|green_dhide_chaps_t
+Medium Treasure Trails|Yew comp bow|10282|-
+Medium Treasure Trails|Adamant helm (h1)|10296|-
+Medium Treasure Trails|Adamant helm (h2)|10298|-
+Medium Treasure Trails|Adamant helm (h3)|10300|-
+Medium Treasure Trails|Adamant helm (h4)|10302|-
+Medium Treasure Trails|Adamant helm (h5)|10304|-
+Medium Treasure Trails|Strength amulet (t)|10364|amulet_of_strength_t
+Medium Treasure Trails|Black elegant shirt|10400|black_elegant_shirt
+Medium Treasure Trails|Black elegant legs|10402|black_elegant_legs
+Medium Treasure Trails|Purple elegant shirt|10416|purple_elegant_shirt
+Medium Treasure Trails|Purple elegant legs|10418|purple_elegant_legs
+Medium Treasure Trails|White elegant blouse|10420|white_elegant_blouse
+Medium Treasure Trails|White elegant skirt|10422|white_elegant_skirt
+Medium Treasure Trails|Purple elegant blouse|10436|-
+Medium Treasure Trails|Purple elegant skirt|10438|-
+Medium Treasure Trails|Saradomin cloak|10446|saradomin_cloak
+Medium Treasure Trails|Guthix cloak|10448|guthix_cloak
+Medium Treasure Trails|Zamorak cloak|10450|zamorak_cloak
+Medium Treasure Trails|Saradomin mitre|10452|saradomin_mitre
+Medium Treasure Trails|Guthix mitre|10454|guthix_mitre
+Medium Treasure Trails|Zamorak mitre|10456|zamorak_mitre
+Medium Treasure Trails|Ancient cloak|12197|ancient_cloak
+Medium Treasure Trails|Ancient crozier|12199|ancient_crozier
+Medium Treasure Trails|Ancient stole|12201|ancient_stole
+Medium Treasure Trails|Ancient mitre|12203|ancient_mitre
+Medium Treasure Trails|Armadyl stole|12257|armadyl_stole
+Medium Treasure Trails|Armadyl mitre|12259|armadyl_mitre
+Medium Treasure Trails|Armadyl cloak|12261|armadyl_cloak
+Medium Treasure Trails|Armadyl crozier|12263|armadyl_crozier
+Medium Treasure Trails|Bandos stole|12269|bandos_stole
+Medium Treasure Trails|Bandos mitre|12271|bandos_mitre
+Medium Treasure Trails|Bandos cloak|12273|bandos_cloak
+Medium Treasure Trails|Bandos crozier|12275|bandos_crozier
+Medium Treasure Trails|Mithril platebody (g)|12277|mithril_platebody_g
+Medium Treasure Trails|Mithril platelegs (g)|12279|mithril_platelegs_g
+Medium Treasure Trails|Mithril kiteshield (g)|12281|mithril_kiteshield_g
+Medium Treasure Trails|Mithril full helm (g)|12283|mithril_full_helm_g
+Medium Treasure Trails|Mithril plateskirt (g)|12285|-
+Medium Treasure Trails|Mithril platebody (t)|12287|mithril_platebody_t
+Medium Treasure Trails|Mithril platelegs (t)|12289|mithril_platelegs_t
+Medium Treasure Trails|Mithril kiteshield (t)|12291|mithril_kiteshield_t
+Medium Treasure Trails|Mithril full helm (t)|12293|mithril_full_helm_t
+Medium Treasure Trails|Mithril plateskirt (t)|12295|-
+Medium Treasure Trails|White headband|12299|-
+Medium Treasure Trails|Blue headband|12301|-
+Medium Treasure Trails|Gold headband|12303|-
+Medium Treasure Trails|Pink headband|12305|-
+Medium Treasure Trails|Green headband|12307|-
+Medium Treasure Trails|Pink boater|12309|-
+Medium Treasure Trails|Purple boater|12311|-
+Medium Treasure Trails|White boater|12313|-
+Medium Treasure Trails|Pink elegant shirt|12315|-
+Medium Treasure Trails|Pink elegant legs|12317|-
+Medium Treasure Trails|Crier hat|12319|crier_hat
+Medium Treasure Trails|Pink elegant blouse|12339|-
+Medium Treasure Trails|Pink elegant skirt|12341|-
+Medium Treasure Trails|Gold elegant blouse|12343|-
+Medium Treasure Trails|Gold elegant skirt|12345|-
+Medium Treasure Trails|Gold elegant shirt|12347|-
+Medium Treasure Trails|Gold elegant legs|12349|-
+Medium Treasure Trails|Leprechaun hat|12359|leprechaun_hat
+Medium Treasure Trails|Cat mask|12361|cat_mask
+Medium Treasure Trails|Adamant cane|12377|adamant_cane
+Medium Treasure Trails|Penguin mask|12428|penguin_mask
+Medium Treasure Trails|Holy sandals|12598|holy_sandals
+Medium Treasure Trails|Crier coat|20240|crier_coat
+Medium Treasure Trails|Crier bell|20243|crier_bell
+Medium Treasure Trails|Black leprechaun hat|20246|-
+Medium Treasure Trails|Arceuus banner|20251|-
+Medium Treasure Trails|Hosidius banner|20254|-
+Medium Treasure Trails|Lovakengj banner|20257|-
+Medium Treasure Trails|Piscarilius banner|20260|-
+Medium Treasure Trails|Shayzien banner|20263|-
+Medium Treasure Trails|Black unicorn mask|20266|black_unicorn_mask
+Medium Treasure Trails|White unicorn mask|20269|white_unicorn_mask
+Medium Treasure Trails|Cabbage round shield|20272|cabbage_round_shield
+Medium Treasure Trails|Gnomish firelighter|20275|-
+Medium Treasure Trails|Spiked manacles|23389|spiked_manacles
+Medium Treasure Trails|Adamant platebody (h1)|23392|-
+Medium Treasure Trails|Adamant platebody (h2)|23395|-
+Medium Treasure Trails|Adamant platebody (h3)|23398|-
+Medium Treasure Trails|Adamant platebody (h4)|23401|-
+Medium Treasure Trails|Adamant platebody (h5)|23404|-
+Medium Treasure Trails|Wolf mask|23407|wolf_mask
+Medium Treasure Trails|Wolf cloak|23410|wolf_cloak
+Medium Treasure Trails|Climbing boots (g)|23413|climbing_boots_g
+Miscellaneous|Dragon spear|1249|dragon_spear
+Miscellaneous|Shield left half|2366|shield_left_half
+Miscellaneous|Uncut onyx|6571|uncut_onyx
+Miscellaneous|Fresh crab claw|7536|-
+Miscellaneous|Fresh crab shell|7538|-
+Miscellaneous|Big bass|7989|-
+Miscellaneous|Big swordfish|7991|-
+Miscellaneous|Big shark|7993|-
+Miscellaneous|Right skull half|9007|right_skull_half
+Miscellaneous|Left skull half|9008|left_skull_half
+Miscellaneous|Top of sceptre|9010|top_of_sceptre
+Miscellaneous|Bottom of sceptre|9011|bottom_of_sceptre
+Miscellaneous|Long bone|10976|long_bone
+Miscellaneous|Curved bone|10977|curved_bone
+Miscellaneous|Dragon full helm|11335|dragon_full_helm
+Miscellaneous|Chewed bones|11338|-
+Miscellaneous|Ecumenical key|11942|ecumenical_key
+Miscellaneous|Chompy chick|13071|pet_chompy_chick
+Miscellaneous|Xeric's talisman (inert)|13392|xerics_talisman_inert
+Miscellaneous|Dragon warhammer|13576|dragon_warhammer
+Miscellaneous|Dark totem base|19679|dark_totem_base
+Miscellaneous|Dark totem middle|19681|dark_totem_middle
+Miscellaneous|Dark totem top|19683|dark_totem_top
+Miscellaneous|Amulet of eternal glory|19707|amulet_of_eternal_glory
+Miscellaneous|Evil chicken feet|20433|-
+Miscellaneous|Evil chicken wings|20436|-
+Miscellaneous|Evil chicken head|20439|-
+Miscellaneous|Evil chicken legs|20442|-
+Miscellaneous|Giant key|20754|giant_key
+Miscellaneous|Mining gloves|21343|-
+Miscellaneous|Superior mining gloves|21345|-
+Miscellaneous|Expert mining gloves|21392|-
+Miscellaneous|Herbi|21509|pet_herbi
+Miscellaneous|Merfolk trident|21649|-
+Miscellaneous|Shaman mask|21838|-
+Miscellaneous|Dragon limbs|21918|dragon_limbs
+Miscellaneous|Dragon metal slice|22100|dragon_metal_slice
+Miscellaneous|Dragon metal lump|22103|dragon_metal_lump
+Miscellaneous|Mossy key|22374|mossy_key
+Miscellaneous|Hespori seed|22875|hespori_seed
+Miscellaneous|Mask of ranul|23522|-
+Miscellaneous|Elven signet|23943|-
+Miscellaneous|Enhanced crystal teleport seed|23959|-
+Miscellaneous|Crystal grail|24000|-
+Miscellaneous|Dragonstone full helm|24034|-
+Miscellaneous|Dragonstone platebody|24037|-
+Miscellaneous|Dragonstone platelegs|24040|-
+Miscellaneous|Dragonstone boots|24043|-
+Miscellaneous|Dragonstone gauntlets|24046|-
+Miscellaneous|Orange egg sac|25844|-
+Miscellaneous|Blue egg sac|25846|-
+Miscellaneous|Pharaoh's sceptre (uncharged)|26945|-
+Miscellaneous|Broken zombie axe|28813|-
+Miscellaneous|Helmet of the moon|30111|-
+Miscellaneous|Broken zombie helmet|30324|-
+Miscellaneous|Giant blue krill|31408|-
+Miscellaneous|Golden haddock|31412|-
+Miscellaneous|Orangefin|31416|-
+Miscellaneous|Huge halibut|31420|-
+Miscellaneous|Purplefin|31424|-
+Miscellaneous|Swift marlin|31428|-
+Miscellaneous|Squid beak|31572|-
+Monkey Backpacks|Karamjan monkey|24862|-
+Monkey Backpacks|Zombie monkey|24863|-
+Monkey Backpacks|Maniacal monkey|24864|-
+Monkey Backpacks|Skeleton monkey|24865|-
+Monkey Backpacks|Kruk jr|24866|-
+Monkey Backpacks|Princely monkey|24867|-
+Moons of Peril|Blue moon spear|28988|blue_moon_spear
+Moons of Peril|Atlatl dart|28991|atlatl_dart
+Moons of Peril|Dual macuahuitl|28997|dual_macuahuitl
+Moons of Peril|Eclipse atlatl|29000|eclipse_atlatl
+Moons of Peril|Eclipse moon chestplate|29004|eclipse_moon_chestplate
+Moons of Peril|Eclipse moon tassets|29007|eclipse_moon_tassets
+Moons of Peril|Eclipse moon helm|29010|eclipse_moon_helm
+Moons of Peril|Blue moon chestplate|29013|blue_moon_chestplate
+Moons of Peril|Blue moon tassets|29016|blue_moon_tassets
+Moons of Peril|Blue moon helm|29019|blue_moon_helm
+Moons of Peril|Blood moon chestplate|29022|blood_moon_chestplate
+Moons of Peril|Blood moon tassets|29025|blood_moon_tassets
+Moons of Peril|Blood moon helm|29028|blood_moon_helm
+Motherlode Mine|Prospector helmet|12013|prospector_helmet
+Motherlode Mine|Prospector jacket|12014|prospector_jacket
+Motherlode Mine|Prospector legs|12015|prospector_legs
+Motherlode Mine|Prospector boots|12016|prospector_boots
+Motherlode Mine|Coal bag|25627|-
+Motherlode Mine|Gem bag|25628|-
+My Notes|Ancient page|11341|-
+My Notes|Ancient page|11342|-
+My Notes|Ancient page|11343|-
+My Notes|Ancient page|11344|-
+My Notes|Ancient page|11345|-
+My Notes|Ancient page|11346|-
+My Notes|Ancient page|11347|-
+My Notes|Ancient page|11348|-
+My Notes|Ancient page|11349|-
+My Notes|Ancient page|11350|-
+My Notes|Ancient page|11351|-
+My Notes|Ancient page|11352|-
+My Notes|Ancient page|11353|-
+My Notes|Ancient page|11354|-
+My Notes|Ancient page|11355|-
+My Notes|Ancient page|11356|-
+My Notes|Ancient page|11357|-
+My Notes|Ancient page|11358|-
+My Notes|Ancient page|11359|-
+My Notes|Ancient page|11360|-
+My Notes|Ancient page|11361|-
+My Notes|Ancient page|11362|-
+My Notes|Ancient page|11363|-
+My Notes|Ancient page|11364|-
+My Notes|Ancient page|11365|-
+My Notes|Ancient page|11366|-
+Nex|Nihil shard|26231|nihil_shard
+Nex|Zaryte vambraces|26235|zaryte_vambraces
+Nex|Nexling|26348|nexling
+Nex|Ancient hilt|26370|ancient_hilt
+Nex|Nihil horn|26372|nihil_horn
+Nex|Torva full helm (damaged)|26376|torva_full_helm
+Nex|Torva platebody (damaged)|26378|torva_platebody
+Nex|Torva platelegs (damaged)|26380|torva_platelegs
+Obor|Hill giant club|20756|hill_giant_club
+Ocean Encounters|Tiny pearl|31770|-
+Ocean Encounters|Small pearl|31773|-
+Ocean Encounters|Shiny pearl|31776|-
+Ocean Encounters|Bright pearl|31779|-
+Ocean Encounters|Big pearl|31782|-
+Ocean Encounters|Huge pearl|31785|-
+Ocean Encounters|Enormous pearl|31788|-
+Ocean Encounters|Shimmering pearl|31791|-
+Ocean Encounters|Glistening pearl|31794|-
+Ocean Encounters|Brilliant pearl|31797|-
+Ocean Encounters|Radiant pearl|31800|-
+Pest Control|Void knight top|8839|void_knight_top
+Pest Control|Void knight robe|8840|void_knight_robe
+Pest Control|Void knight mace|8841|void_knight_mace
+Pest Control|Void knight gloves|8842|void_knight_gloves
+Pest Control|Void mage helm|11663|void_mage_helm
+Pest Control|Void ranger helm|11664|void_ranger_helm
+Pest Control|Void melee helm|11665|void_melee_helm
+Pest Control|Void seal(8)|11666|void_seal
+Pest Control|Elite void top|13072|elite_void_top
+Pest Control|Elite void robe|13073|elite_void_robe
+Phantom Muspah|Muphin|27590|pet_muphin
+Phantom Muspah|Venator shard|27614|venator_shard
+Phantom Muspah|Ancient essence|27616|ancient_essence
+Phantom Muspah|Frozen cache|27622|-
+Phantom Muspah|Ancient icon|27627|ancient_icon
+Phantom Muspah|Charged ice|27643|-
+Random Events|Mime mask|3057|-
+Random Events|Mime top|3058|-
+Random Events|Mime legs|3059|-
+Random Events|Mime gloves|3060|-
+Random Events|Mime boots|3061|-
+Random Events|Lederhosen top|6180|-
+Random Events|Lederhosen shorts|6181|-
+Random Events|Lederhosen hat|6182|-
+Random Events|Frog token|6183|-
+Random Events|Camo top|6654|-
+Random Events|Camo bottoms|6655|-
+Random Events|Camo helmet|6656|-
+Random Events|Zombie shirt|7592|-
+Random Events|Zombie trousers|7593|-
+Random Events|Zombie mask|7594|-
+Random Events|Zombie gloves|7595|-
+Random Events|Zombie boots|7596|-
+Random Events|Stale baguette|20590|-
+Random Events|Beekeeper's hat|25129|-
+Random Events|Beekeeper's top|25131|-
+Random Events|Beekeeper's legs|25133|-
+Random Events|Beekeeper's gloves|25135|-
+Random Events|Beekeeper's boots|25137|-
+Revenants|Revenant cave teleport|21802|revenant_cave_teleport
+Revenants|Ancient crystal|21804|-
+Revenants|Ancient emblem|21807|ancient_emblem
+Revenants|Ancient totem|21810|ancient_totem
+Revenants|Ancient statuette|21813|ancient_statuette
+Revenants|Bracelet of ethereum (uncharged)|21817|bracelet_of_ethereum
+Revenants|Revenant ether|21820|revenant_ether
+Revenants|Ancient medallion|22299|ancient_medallion
+Revenants|Ancient effigy|22302|ancient_effigy
+Revenants|Ancient relic|22305|ancient_relic
+Revenants|Viggora's chainmace (u)|22542|viggoras_chainmace
+Revenants|Craw's bow (u)|22547|craws_bow
+Revenants|Thammaron's sceptre (u)|22552|thammarons_sceptre
+Revenants|Amulet of avarice|22557|amulet_of_avarice
+Rogues' Den|Rogue top|5553|rogue_top
+Rogues' Den|Rogue mask|5554|rogue_mask
+Rogues' Den|Rogue trousers|5555|rogue_trousers
+Rogues' Den|Rogue gloves|5556|rogue_gloves
+Rogues' Den|Rogue boots|5557|rogue_boots
+Rooftop Agility|Mark of grace|11849|mark_of_grace
+Rooftop Agility|Graceful hood|11850|graceful_hood
+Rooftop Agility|Graceful cape|11852|graceful_cape
+Rooftop Agility|Graceful top|11854|graceful_top
+Rooftop Agility|Graceful legs|11856|graceful_legs
+Rooftop Agility|Graceful gloves|11858|graceful_gloves
+Rooftop Agility|Graceful boots|11860|graceful_boots
+Royal Titans|Bran|30622|pet_bran
+Royal Titans|Deadeye prayer scroll|30626|deadeye_prayer_scroll
+Royal Titans|Mystic vigour prayer scroll|30627|mystic_vigour_prayer_scroll
+Royal Titans|Ice element staff crown|30628|ice_element_staff_crown
+Royal Titans|Fire element staff crown|30631|fire_element_staff_crown
+Royal Titans|Giantsoul amulet (uncharged)|30637|giantsoul_amulet
+Royal Titans|Desiccated page|30640|-
+Sailing Miscellaneous|Dragon nails|31406|dragon_nails
+Sailing Miscellaneous|Dragon cannonball|31916|-
+Sailing Miscellaneous|Echo pearl|31946|-
+Sailing Miscellaneous|Bottled storm|31949|-
+Sailing Miscellaneous|Swift albatross feather|31952|-
+Sailing Miscellaneous|Narwhal horn|31954|-
+Sailing Miscellaneous|Ray barbs|31959|-
+Sailing Miscellaneous|Broken dragon hook|31961|-
+Sailing Miscellaneous|Boat bottle (empty)|31989|-
+Sailing Miscellaneous|Dragon metal sheet|31996|dragon_metal_sheet
+Sailing Miscellaneous|Dragon cannon barrel|32115|-
+Sailing Miscellaneous|Facility bottle (empty)|33074|-
+Sarachnis|Sraracha|23495|pet_sraracha
+Sarachnis|Giant egg sac(full)|23517|giant_egg_sac_full
+Sarachnis|Jar of eyes|23525|jar_of_eyes
+Sarachnis|Sarachnis cudgel|23528|sarachnis_cudgel
+Sarachnis|Pristine spider silk|33133|-
+Scorpia|Dragon 2h sword|7158|dragon_2h_sword
+Scorpia|Odium shard 3|11930|odium_shard_3
+Scorpia|Malediction shard 3|11933|malediction_shard_3
+Scorpia|Scorpia's offspring|13181|pet_scorpias_offspring
+Scroll Cases|Minor beginner scroll case|30902|-
+Scroll Cases|Major beginner scroll case|30904|-
+Scroll Cases|Minor easy scroll case|30906|-
+Scroll Cases|Major easy scroll case|30908|-
+Scroll Cases|Minor medium scroll case|30910|-
+Scroll Cases|Major medium scroll case|30912|-
+Scroll Cases|Minor hard scroll case|30914|-
+Scroll Cases|Major hard scroll case|30916|-
+Scroll Cases|Minor elite scroll case|30918|-
+Scroll Cases|Major elite scroll case|30920|-
+Scroll Cases|Minor master scroll case|30922|-
+Scroll Cases|Major master scroll case|30924|-
+Scroll Cases|Mimic scroll case|30926|-
+Scurrius|Scurrius' spine|28798|scurrius_spine
+Scurrius|Scurry|28801|pet_scurry
+Sea Treasures|Medallion fragment|32388|-
+Sea Treasures|Medallion fragment|32389|-
+Sea Treasures|Medallion fragment|32390|-
+Sea Treasures|Medallion fragment|32391|-
+Sea Treasures|Medallion fragment|32392|-
+Sea Treasures|Medallion fragment|32393|-
+Sea Treasures|Medallion fragment|32394|-
+Sea Treasures|Medallion fragment|32395|-
+Sea Treasures|Sailors' amulet (inert)|32398|-
+Sea Treasures|Rusty locket|32863|-
+Sea Treasures|Mouldy block|32864|-
+Sea Treasures|Dull knife|32865|-
+Sea Treasures|Broken compass|32866|-
+Sea Treasures|Rusty coin|32867|-
+Sea Treasures|Broken sextant|32868|-
+Sea Treasures|Mouldy doll|32869|-
+Sea Treasures|Smashed mirror|32870|-
+Shades of Mort'ton|Fine cloth|3470|fine_cloth
+Shades of Mort'ton|Amulet of the damned (full)|12851|amulet_of_the_damned
+Shades of Mort'ton|Zealot's robe top|25434|zealots_robe_top
+Shades of Mort'ton|Zealot's robe bottom|25436|zealots_robe_bottom
+Shades of Mort'ton|Zealot's helm|25438|zealots_helm
+Shades of Mort'ton|Zealot's boots|25440|zealots_boots
+Shades of Mort'ton|Bronze locks|25442|bronze_locks
+Shades of Mort'ton|Steel locks|25445|steel_locks
+Shades of Mort'ton|Black locks|25448|black_locks
+Shades of Mort'ton|Silver locks|25451|silver_locks
+Shades of Mort'ton|Gold locks|25454|gold_locks
+Shades of Mort'ton|Tree wizards' journal|25474|-
+Shades of Mort'ton|Bloody notes|25476|-
+Shades of Mort'ton|Flamtaer bag|25630|flamtaer_bag
+Shared Treasure Trail Rewards|Saradomin page 1|3827|saradomin_page_1
+Shared Treasure Trail Rewards|Saradomin page 2|3828|saradomin_page_2
+Shared Treasure Trail Rewards|Saradomin page 3|3829|saradomin_page_3
+Shared Treasure Trail Rewards|Saradomin page 4|3830|saradomin_page_4
+Shared Treasure Trail Rewards|Zamorak page 1|3831|zamorak_page_1
+Shared Treasure Trail Rewards|Zamorak page 2|3832|zamorak_page_2
+Shared Treasure Trail Rewards|Zamorak page 3|3833|zamorak_page_3
+Shared Treasure Trail Rewards|Zamorak page 4|3834|zamorak_page_4
+Shared Treasure Trail Rewards|Guthix page 1|3835|guthix_page_1
+Shared Treasure Trail Rewards|Guthix page 2|3836|guthix_page_2
+Shared Treasure Trail Rewards|Guthix page 3|3837|guthix_page_3
+Shared Treasure Trail Rewards|Guthix page 4|3838|guthix_page_4
+Shared Treasure Trail Rewards|Red firelighter|7329|-
+Shared Treasure Trail Rewards|Green firelighter|7330|-
+Shared Treasure Trail Rewards|Blue firelighter|7331|-
+Shared Treasure Trail Rewards|Purple firelighter|10326|-
+Shared Treasure Trail Rewards|White firelighter|10327|-
+Shared Treasure Trail Rewards|Purple sweets|10476|-
+Shared Treasure Trail Rewards|Nardah teleport|12402|nardah_teleport
+Shared Treasure Trail Rewards|Digsite teleport|12403|digsite_teleport
+Shared Treasure Trail Rewards|Feldip hills teleport|12404|feldip_hills_teleport
+Shared Treasure Trail Rewards|Lunar isle teleport|12405|lunar_isle_teleport
+Shared Treasure Trail Rewards|Mort'ton teleport|12406|mortton_teleport
+Shared Treasure Trail Rewards|Pest control teleport|12407|pest_control_teleport
+Shared Treasure Trail Rewards|Piscatoris teleport|12408|piscatoris_teleport
+Shared Treasure Trail Rewards|Tai bwo wannai teleport|12409|tai_bwo_wannai_teleport
+Shared Treasure Trail Rewards|Iorwerth camp teleport|12410|iorwerth_camp_teleport
+Shared Treasure Trail Rewards|Mos le'harmless teleport|12411|mos_leharmless_teleport
+Shared Treasure Trail Rewards|Bandos page 1|12613|bandos_page_1
+Shared Treasure Trail Rewards|Bandos page 2|12614|bandos_page_2
+Shared Treasure Trail Rewards|Bandos page 3|12615|bandos_page_3
+Shared Treasure Trail Rewards|Bandos page 4|12616|bandos_page_4
+Shared Treasure Trail Rewards|Armadyl page 1|12617|armadyl_page_1
+Shared Treasure Trail Rewards|Armadyl page 2|12618|armadyl_page_2
+Shared Treasure Trail Rewards|Armadyl page 3|12619|armadyl_page_3
+Shared Treasure Trail Rewards|Armadyl page 4|12620|armadyl_page_4
+Shared Treasure Trail Rewards|Ancient page 1|12621|ancient_page_1
+Shared Treasure Trail Rewards|Ancient page 2|12622|ancient_page_2
+Shared Treasure Trail Rewards|Ancient page 3|12623|ancient_page_3
+Shared Treasure Trail Rewards|Ancient page 4|12624|ancient_page_4
+Shared Treasure Trail Rewards|Lumberyard teleport|12642|lumberyard_teleport
+Shared Treasure Trail Rewards|Holy blessing|20220|-
+Shared Treasure Trail Rewards|Unholy blessing|20223|-
+Shared Treasure Trail Rewards|Peaceful blessing|20226|-
+Shared Treasure Trail Rewards|Honourable blessing|20229|-
+Shared Treasure Trail Rewards|War blessing|20232|-
+Shared Treasure Trail Rewards|Ancient blessing|20235|-
+Shared Treasure Trail Rewards|Charge dragonstone jewellery scroll|20238|-
+Shared Treasure Trail Rewards|Master scroll book (empty)|21387|-
+Shayzien Armour|Shayzien gloves (1)|13357|-
+Shayzien Armour|Shayzien boots (1)|13358|-
+Shayzien Armour|Shayzien helm (1)|13359|-
+Shayzien Armour|Shayzien greaves (1)|13360|-
+Shayzien Armour|Shayzien platebody (1)|13361|-
+Shayzien Armour|Shayzien gloves (2)|13362|-
+Shayzien Armour|Shayzien boots (2)|13363|-
+Shayzien Armour|Shayzien helm (2)|13364|-
+Shayzien Armour|Shayzien greaves (2)|13365|-
+Shayzien Armour|Shayzien platebody (2)|13366|-
+Shayzien Armour|Shayzien gloves (3)|13367|-
+Shayzien Armour|Shayzien boots (3)|13368|-
+Shayzien Armour|Shayzien helm (3)|13369|-
+Shayzien Armour|Shayzien greaves (3)|13370|-
+Shayzien Armour|Shayzien platebody (3)|13371|-
+Shayzien Armour|Shayzien gloves (4)|13372|-
+Shayzien Armour|Shayzien boots (4)|13373|-
+Shayzien Armour|Shayzien helm (4)|13374|-
+Shayzien Armour|Shayzien greaves (4)|13375|-
+Shayzien Armour|Shayzien platebody (4)|13376|-
+Shayzien Armour|Shayzien gloves (5)|13377|-
+Shayzien Armour|Shayzien boots (5)|13378|shayzien_boots_5
+Shayzien Armour|Shayzien helm (5)|13379|shayzien_helm_5
+Shayzien Armour|Shayzien greaves (5)|13380|shayzien_greaves_5
+Shayzien Armour|Shayzien body (5)|13381|-
+Shellbane Gryphon|Gryphon feather|31235|-
+Shellbane Gryphon|Belle's folly (tarnished)|31245|belles_folly_tarnished
+Shellbane Gryphon|Gull (pet)|31285|pet_gull
+Shellbane Gryphon|Jar of feathers|32921|jar_of_feathers
+Shooting Stars|Celestial ring (uncharged)|25539|celestial_ring_uncharged
+Shooting Stars|Star fragment|25547|star_fragment
+Skilling Pets|Heron|13320|pet_heron
+Skilling Pets|Rock golem|13321|pet_rock_golem
+Skilling Pets|Beaver|13322|pet_beaver
+Skilling Pets|Baby chinchompa|13324|pet_baby_chinchompa
+Skilling Pets|Giant squirrel|20659|pet_giant_squirrel
+Skilling Pets|Tangleroot|20661|pet_tangleroot
+Skilling Pets|Rocky|20663|pet_rocky
+Skilling Pets|Rift guardian|20665|pet_rift_guardian
+Skilling Pets|Soup|31283|-
+Skotizo|Uncut onyx|6571|uncut_onyx
+Skotizo|Ancient shard|19677|ancient_shard
+Skotizo|Dark totem|19685|dark_totem
+Skotizo|Jar of darkness|19701|jar_of_darkness
+Skotizo|Skotos|21273|pet_skotos
+Skotizo|Dark claw|21275|dark_claw
+Slayer|Dragon chainbody|3140|dragon_chainbody
+Slayer|Mystic hat (dark)|4099|mystic_hat_dark
+Slayer|Mystic robe top (dark)|4101|mystic_robe_top_dark
+Slayer|Mystic robe bottom (dark)|4103|mystic_robe_bottom_dark
+Slayer|Mystic gloves (dark)|4105|mystic_gloves_dark
+Slayer|Mystic boots (dark)|4107|mystic_boots_dark
+Slayer|Mystic hat (light)|4109|mystic_hat_light
+Slayer|Mystic robe top (light)|4111|mystic_robe_top_light
+Slayer|Mystic robe bottom (light)|4113|mystic_robe_bottom_light
+Slayer|Mystic gloves (light)|4115|mystic_gloves_light
+Slayer|Mystic boots (light)|4117|mystic_boots_light
+Slayer|Bronze boots|4119|bronze_boots
+Slayer|Iron boots|4121|iron_boots
+Slayer|Steel boots|4123|steel_boots
+Slayer|Black boots|4125|black_boots
+Slayer|Mithril boots|4127|mithril_boots
+Slayer|Adamant boots|4129|adamant_boots
+Slayer|Rune boots|4131|rune_boots
+Slayer|Abyssal whip|4151|abyssal_whip
+Slayer|Granite maul|4153|granite_maul
+Slayer|Mudskipper hat|6665|-
+Slayer|Flippers|6666|flippers
+Slayer|Granite legs|6809|granite_legs
+Slayer|Crawling hand|7975|crawling_hand
+Slayer|Cockatrice head|7976|cockatrice_head
+Slayer|Basilisk head|7977|basilisk_head
+Slayer|Kurask head|7978|kurask_head
+Slayer|Abyssal head|7979|abyssal_head
+Slayer|Black mask (10)|8901|-
+Slayer|Granite helm|10589|granite_helm
+Slayer|Brine sabre|11037|brine_sabre
+Slayer|Dark bow|11235|dark_bow
+Slayer|Draconic visage|11286|draconic_visage
+Slayer|Dragon boots|11840|dragon_boots
+Slayer|Leaf-bladed sword|11902|leaf_bladed_sword
+Slayer|Uncharged trident|11908|-
+Slayer|Occult necklace|12002|occult_necklace
+Slayer|Kraken tentacle|12004|kraken_tentacle
+Slayer|Abyssal dagger|13265|abyssal_dagger
+Slayer|Imbued heart|20724|imbued_heart
+Slayer|Leaf-bladed battleaxe|20727|leaf_bladed_battleaxe
+Slayer|Mist battlestaff|20730|mist_battlestaff
+Slayer|Dust battlestaff|20736|dust_battlestaff
+Slayer|Dragon thrownaxe|20849|dragon_thrownaxe
+Slayer|Dragon sword|21009|dragon_sword
+Slayer|Dragon harpoon|21028|dragon_harpoon
+Slayer|Eternal gem|21270|eternal_gem
+Slayer|Wyvern visage|21637|wyvern_visage
+Slayer|Granite boots|21643|granite_boots
+Slayer|Granite longsword|21646|granite_longsword
+Slayer|Dragon knife|22804|dragon_knife
+Slayer|Drake's claw|22957|drakes_claw
+Slayer|Drake's tooth|22960|drakes_tooth
+Slayer|Broken dragon hasta|22963|-
+Slayer|Hydra's heart|22969|hydras_heart
+Slayer|Hydra's fang|22971|hydras_fang
+Slayer|Hydra's eye|22973|hydras_eye
+Slayer|Hydra tail|22988|hydra_tail
+Slayer|Mystic hat (dusk)|23047|mystic_hat_dusk
+Slayer|Mystic robe top (dusk)|23050|mystic_robe_top_dusk
+Slayer|Mystic robe bottom (dusk)|23053|mystic_robe_bottom_dusk
+Slayer|Mystic gloves (dusk)|23056|mystic_gloves_dusk
+Slayer|Mystic boots (dusk)|23059|mystic_boots_dusk
+Slayer|Basilisk jaw|24268|basilisk_jaw
+Slayer|Dagon'hai hat|24288|-
+Slayer|Dagon'hai robe top|24291|-
+Slayer|Dagon'hai robe bottom|24294|-
+Slayer|Blood shard|24777|-
+Slayer|Ancient ceremonial top|26221|ancient_ceremonial_top
+Slayer|Ancient ceremonial legs|26223|ancient_ceremonial_legs
+Slayer|Ancient ceremonial mask|26225|ancient_ceremonial_mask
+Slayer|Ancient ceremonial gloves|26227|ancient_ceremonial_gloves
+Slayer|Ancient ceremonial boots|26229|ancient_ceremonial_boots
+Slayer|Warped sceptre (uncharged)|28583|-
+Slayer|Sulphur blades|29084|-
+Slayer|Teleport anchoring scroll|29455|-
+Slayer|Aranea boots|29806|-
+Slayer|Glacial temotli|29889|glacial_temotli
+Slayer|Pendant of ates (inert)|29892|pendant_of_ates
+Slayer|Frozen tear|29895|frozen_tear
+Slayer|Earthbound tecpatl|30957|-
+Slayer|Antler guard|31081|-
+Slayer|Alchemist's signet|31084|-
+Slayer|Broken antler|31086|-
+Slayer|Gryphon feather|31235|-
+Slayer|Horn of plenty (empty)|31243|-
+Slayer|Dragon metal sheet|31996|dragon_metal_sheet
+Slayer|Aquanite tendon|32876|-
+Soul Wars|Ectoplasmator|25340|-
+Soul Wars|Soul cape|25346|soul_cape
+Soul Wars|Lil' creator|25348|-
+Temple Trekking|Lumberjack boots|10933|lumberjack_boots
+Temple Trekking|Lumberjack top|10939|lumberjack_top
+Temple Trekking|Lumberjack legs|10940|lumberjack_legs
+Temple Trekking|Lumberjack hat|10941|lumberjack_hat
+Tempoross|Dragon harpoon|21028|dragon_harpoon
+Tempoross|Big harpoonfish|25559|big_harpoonfish
+Tempoross|Tome of water (empty)|25576|tome_of_water
+Tempoross|Soaked page|25578|soaked_page
+Tempoross|Tackle box|25580|tackle_box
+Tempoross|Fish barrel|25582|fish_barrel
+Tempoross|Spirit flakes|25588|spirit_flakes
+Tempoross|Spirit angler headband|25592|-
+Tempoross|Spirit angler top|25594|-
+Tempoross|Spirit angler waders|25596|-
+Tempoross|Spirit angler boots|25598|-
+Tempoross|Tiny tempor|25602|tiny_tempor
+The Fight Caves|Fire cape|6570|fire_cape
+The Fight Caves|Tzrek-jad|13225|tzrek_jad
+The Gauntlet|Crystal weapon seed|4207|crystal_weapon_seed
+The Gauntlet|Youngllef|23757|pet_youngllef
+The Gauntlet|Gauntlet cape|23859|gauntlet_cape
+The Gauntlet|Crystal armour seed|23956|crystal_armour_seed
+The Gauntlet|Enhanced crystal weapon seed|25859|enhanced_crystal_weapon_seed
+The Hueycoatl|Tome of earth (empty)|30066|tome_of_earth
+The Hueycoatl|Soiled page|30068|-
+The Hueycoatl|Dragon hunter wand|30070|dragon_hunter_wand
+The Hueycoatl|Hueycoatl hide|30085|hueycoatl_hide
+The Hueycoatl|Huasca seed|30088|huasca_seed
+The Hueycoatl|Huberte|30152|pet_huberte
+The Inferno|Jal-nib-rek|21291|jal_nib_rek
+The Inferno|Infernal cape|21295|infernal_cape
+The Leviathan|Virtus mask|26241|virtus_mask
+The Leviathan|Virtus robe top|26243|virtus_robe_top
+The Leviathan|Virtus robe bottom|26245|virtus_robe_bottom
+The Leviathan|Lil'viathan|28252|pet_lilviathan
+The Leviathan|Smoke quartz|28274|smoke_quartz
+The Leviathan|Chromium ingot|28276|chromium_ingot
+The Leviathan|Venator vestige|28283|venator_vestige
+The Leviathan|Leviathan's lure|28325|leviathans_lure
+The Leviathan|Scarred tablet|28332|scarred_tablet
+The Leviathan|Awakener's orb|28334|awakeners_orb
+The Nightmare|Inquisitor's mace|24417|inquisitors_mace
+The Nightmare|Inquisitor's great helm|24419|inquisitors_great_helm
+The Nightmare|Inquisitor's hauberk|24420|inquisitors_hauberk
+The Nightmare|Inquisitor's plateskirt|24421|inquisitors_plateskirt
+The Nightmare|Nightmare staff|24422|nightmare_staff
+The Nightmare|Little nightmare|24491|pet_little_nightmare
+The Nightmare|Jar of dreams|24495|jar_of_dreams
+The Nightmare|Harmonised orb|24511|harmonised_orb
+The Nightmare|Volatile orb|24514|volatile_orb
+The Nightmare|Eldritch orb|24517|eldritch_orb
+The Nightmare|Slepey tablet|25837|-
+The Nightmare|Parasitic egg|25838|parasitic_egg
+The Whisperer|Virtus mask|26241|virtus_mask
+The Whisperer|Virtus robe top|26243|virtus_robe_top
+The Whisperer|Virtus robe bottom|26245|virtus_robe_bottom
+The Whisperer|Wisp|28246|pet_wisp
+The Whisperer|Shadow quartz|28272|shadow_quartz
+The Whisperer|Chromium ingot|28276|chromium_ingot
+The Whisperer|Bellator vestige|28279|bellator_vestige
+The Whisperer|Siren's staff|28323|sirens_staff
+The Whisperer|Sirenic tablet|28331|sirenic_tablet
+The Whisperer|Awakener's orb|28334|awakeners_orb
+Theatre of Blood|Ghrazi rapier|22324|ghrazi_rapier
+Theatre of Blood|Justiciar faceguard|22326|justiciar_faceguard
+Theatre of Blood|Justiciar chestguard|22327|justiciar_chestguard
+Theatre of Blood|Justiciar legguards|22328|justiciar_legguards
+Theatre of Blood|Vial of blood|22446|vial_of_blood
+Theatre of Blood|Lil' zik|22473|lil_zik
+Theatre of Blood|Avernic defender hilt|22477|avernic_defender_hilt
+Theatre of Blood|Sanguinesti staff (uncharged)|22481|sanguinesti_staff
+Theatre of Blood|Scythe of vitur (uncharged)|22486|scythe_of_vitur
+Theatre of Blood|Sinhaza shroud tier 1|22494|-
+Theatre of Blood|Sinhaza shroud tier 2|22496|-
+Theatre of Blood|Sinhaza shroud tier 3|22498|-
+Theatre of Blood|Sinhaza shroud tier 4|22500|-
+Theatre of Blood|Sinhaza shroud tier 5|22502|-
+Theatre of Blood|Holy ornament kit|25742|holy_ornament_kit
+Theatre of Blood|Sanguine ornament kit|25744|sanguine_ornament_kit
+Theatre of Blood|Sanguine dust|25746|sanguine_dust
+Thermonuclear Smoke Devil|Dragon chainbody|3140|dragon_chainbody
+Thermonuclear Smoke Devil|Smoke battlestaff|11998|smoke_battlestaff
+Thermonuclear Smoke Devil|Occult necklace|12002|occult_necklace
+Thermonuclear Smoke Devil|Pet smoke devil|12648|pet_smoke_devil
+Thermonuclear Smoke Devil|Jar of smoke|25524|jar_of_smoke
+Tithe Farm|Herb sack|13226|herb_sack
+Tithe Farm|Gricoller's can|13353|gricollers_can
+Tithe Farm|Seed box|13639|seed_box
+Tithe Farm|Farmer's boro trousers|13640|farmers_boro_trousers
+Tithe Farm|Farmer's jacket|13642|farmers_jacket
+Tithe Farm|Farmer's boots|13644|farmers_boots
+Tithe Farm|Farmer's strawhat|13646|farmers_strawhat
+Tombs of Amascut|Lightbearer|25975|lightbearer
+Tombs of Amascut|Elidinis' ward|25985|elidinis_ward
+Tombs of Amascut|Osmumten's fang|26219|osmumtens_fang
+Tombs of Amascut|Masori mask|27226|masori_mask
+Tombs of Amascut|Masori body|27229|masori_body
+Tombs of Amascut|Masori chaps|27232|masori_chaps
+Tombs of Amascut|Cursed phalanx|27248|-
+Tombs of Amascut|Menaphite ornament kit|27255|-
+Tombs of Amascut|Icthlarin's shroud (tier 1)|27257|-
+Tombs of Amascut|Icthlarin's shroud (tier 2)|27259|-
+Tombs of Amascut|Icthlarin's shroud (tier 3)|27261|-
+Tombs of Amascut|Icthlarin's shroud (tier 4)|27263|-
+Tombs of Amascut|Icthlarin's shroud (tier 5)|27265|-
+Tombs of Amascut|Tumeken's shadow (uncharged)|27277|tumekens_shadow
+Tombs of Amascut|Thread of elidinis|27279|-
+Tombs of Amascut|Breach of the scarab|27283|-
+Tombs of Amascut|Eye of the corruptor|27285|-
+Tombs of Amascut|Jewel of the sun|27289|-
+Tombs of Amascut|Cache of runes|27293|cache_of_runes
+Tombs of Amascut|Tumeken's guardian|27352|tumekens_guardian
+Tombs of Amascut|Masori crafting kit|27372|-
+Tombs of Amascut|Remnant of akkha|27377|-
+Tombs of Amascut|Remnant of ba-ba|27378|-
+Tombs of Amascut|Remnant of kephri|27379|-
+Tombs of Amascut|Remnant of zebak|27380|-
+Tombs of Amascut|Ancient remnant|27381|-
+Tombs of Amascut|Jewel of amascut|30893|-
+Tormented Demons|Burning claw|29574|burning_claw
+Tormented Demons|Tormented synapse|29580|tormented_synapse
+Tormented Demons|Guthixian temple teleport|29684|-
+Trouble Brewing|Rum|8940|-
+Trouble Brewing|Rum|8941|-
+Trouble Brewing|Blue naval shirt|8952|blue_naval_shirt
+Trouble Brewing|Green naval shirt|8953|green_naval_shirt
+Trouble Brewing|Red naval shirt|8954|red_naval_shirt
+Trouble Brewing|Brown naval shirt|8955|brown_naval_shirt
+Trouble Brewing|Black naval shirt|8956|black_naval_shirt
+Trouble Brewing|Purple naval shirt|8957|purple_naval_shirt
+Trouble Brewing|Grey naval shirt|8958|grey_naval_shirt
+Trouble Brewing|Blue tricorn hat|8959|blue_tricorn_hat
+Trouble Brewing|Green tricorn hat|8960|green_tricorn_hat
+Trouble Brewing|Red tricorn hat|8961|red_tricorn_hat
+Trouble Brewing|Brown tricorn hat|8962|brown_tricorn_hat
+Trouble Brewing|Black tricorn hat|8963|black_tricorn_hat
+Trouble Brewing|Purple tricorn hat|8964|purple_tricorn_hat
+Trouble Brewing|Grey tricorn hat|8965|grey_tricorn_hat
+Trouble Brewing|Cutthroat flag|8966|-
+Trouble Brewing|Gilded smile flag|8967|-
+Trouble Brewing|Bronze fist flag|8968|-
+Trouble Brewing|Lucky shot flag|8969|-
+Trouble Brewing|Treasure flag|8970|-
+Trouble Brewing|Phasmatys flag|8971|-
+Trouble Brewing|The stuff|8988|the_stuff
+Trouble Brewing|Blue navy slacks|8991|blue_navy_slacks
+Trouble Brewing|Green navy slacks|8992|green_navy_slacks
+Trouble Brewing|Red navy slacks|8993|red_navy_slacks
+Trouble Brewing|Brown navy slacks|8994|brown_navy_slacks
+Trouble Brewing|Black navy slacks|8995|black_navy_slacks
+Trouble Brewing|Purple navy slacks|8996|purple_navy_slacks
+Trouble Brewing|Grey navy slacks|8997|grey_navy_slacks
+TzHaar|Toktz-xil-ul|6522|toktz_xil_ul
+TzHaar|Toktz-xil-ak|6523|toktz_xil_ak
+TzHaar|Toktz-ket-xil|6524|toktz_ket_xil
+TzHaar|Toktz-xil-ek|6525|toktz_xil_ek
+TzHaar|Toktz-mej-tal|6526|toktz_mej_tal
+TzHaar|Tzhaar-ket-om|6528|tzhaar_ket_om
+TzHaar|Obsidian cape|6568|obsidian_cape
+TzHaar|Obsidian helmet|21298|obsidian_helmet
+TzHaar|Obsidian platebody|21301|obsidian_platebody
+TzHaar|Obsidian platelegs|21304|obsidian_platelegs
+Vale Totems|Ent branch|31032|-
+Vale Totems|Greenman mask|31034|-
+Vale Totems|Fletching knife|31043|-
+Vale Totems|Bow string spool|31052|-
+Vardorvis|Virtus mask|26241|virtus_mask
+Vardorvis|Virtus robe top|26243|virtus_robe_top
+Vardorvis|Virtus robe bottom|26245|virtus_robe_bottom
+Vardorvis|Butch|28248|pet_butch
+Vardorvis|Blood quartz|28268|blood_quartz
+Vardorvis|Chromium ingot|28276|chromium_ingot
+Vardorvis|Ultor vestige|28285|ultor_vestige
+Vardorvis|Executioner's axe head|28319|executioners_axe_head
+Vardorvis|Strangled tablet|28330|strangled_tablet
+Vardorvis|Awakener's orb|28334|awakeners_orb
+Venators|Venator fang|33661|-
+Venators|Venator tooth|33663|-
+Venenatis and Spindel|Dragon 2h sword|7158|dragon_2h_sword
+Venenatis and Spindel|Dragon pickaxe|11920|dragon_pickaxe
+Venenatis and Spindel|Treasonous ring|12605|treasonous_ring
+Venenatis and Spindel|Venenatis spiderling|13177|pet_venenatis_spiderling
+Venenatis and Spindel|Fangs of venenatis|27670|fangs_of_venenatis
+Venenatis and Spindel|Voidwaker gem|27687|voidwaker_gem
+Vet'ion and Calvar'ion|Dragon 2h sword|7158|dragon_2h_sword
+Vet'ion and Calvar'ion|Dragon pickaxe|11920|dragon_pickaxe
+Vet'ion and Calvar'ion|Ring of the gods|12601|ring_of_the_gods
+Vet'ion and Calvar'ion|Vet'ion jr.|13179|vetion_jr
+Vet'ion and Calvar'ion|Skull of vet'ion|27673|skull_of_vetion
+Vet'ion and Calvar'ion|Voidwaker blade|27684|voidwaker_blade
+Volcanic Mine|Prospector helmet|12013|prospector_helmet
+Volcanic Mine|Prospector jacket|12014|prospector_jacket
+Volcanic Mine|Prospector legs|12015|prospector_legs
+Volcanic Mine|Prospector boots|12016|prospector_boots
+Volcanic Mine|Volcanic mine teleport|21541|-
+Volcanic Mine|Ash covered tome|21697|-
+Volcanic Mine|Large water container|25615|-
+Volcanic Mine|Dragon pickaxe (broken)|27695|-
+Vorkath|Draconic visage|11286|draconic_visage
+Vorkath|Vorkath's head|21907|vorkaths_head
+Vorkath|Vorki|21992|pet_vorki
+Vorkath|Skeletal visage|22006|skeletal_visage
+Vorkath|Jar of decay|22106|jar_of_decay
+Vorkath|Dragonbone necklace|22111|dragonbone_necklace
+Wintertodt|Dragon axe|6739|dragon_axe
+Wintertodt|Phoenix|20693|phoenix
+Wintertodt|Pyromancer garb|20704|pyromancer_garb
+Wintertodt|Pyromancer robe|20706|pyromancer_robe
+Wintertodt|Pyromancer hood|20708|pyromancer_hood
+Wintertodt|Pyromancer boots|20710|pyromancer_boots
+Wintertodt|Warm gloves|20712|warm_gloves
+Wintertodt|Tome of fire (empty)|20716|tome_of_fire
+Wintertodt|Burnt page|20718|burnt_page
+Wintertodt|Bruma torch|20720|bruma_torch
+Yama|Oathplate helm|30750|oathplate_helm
+Yama|Oathplate chest|30753|oathplate_chest
+Yama|Oathplate legs|30756|oathplate_legs
+Yama|Soulflame horn|30759|soulflame_horn
+Yama|Forgotten lockbox|30763|-
+Yama|Oathplate shards|30765|oathplate_shards
+Yama|Chasm teleport scroll|30775|-
+Yama|Barrel of demonic tallow (full)|30795|-
+Yama|Dossier|30805|dossier
+Yama|Rite of vile transference|30806|-
+Yama|Yami|30888|pet_yami
+Zalcano|Uncut onyx|6571|uncut_onyx
+Zalcano|Smolcano|23760|pet_smolcano
+Zalcano|Zalcano shard|23908|zalcano_shard
+Zalcano|Crystal tool seed|23953|crystal_tool_seed
+Zulrah|Uncut onyx|6571|uncut_onyx
+Zulrah|Pet snakeling|12921|pet_snakeling
+Zulrah|Tanzanite fang|12922|tanzanite_fang
+Zulrah|Serpentine visage|12927|serpentine_visage
+Zulrah|Magic fang|12932|magic_fang
+Zulrah|Zulrah's scales|12934|zulrahs_scales
+Zulrah|Jar of swamp|12936|jar_of_swamp
+Zulrah|Zul-andra teleport|12938|zul_andra_teleport
+Zulrah|Tanzanite mutagen|13200|tanzanite_mutagen
+Zulrah|Magma mutagen|13201|magma_mutagen
