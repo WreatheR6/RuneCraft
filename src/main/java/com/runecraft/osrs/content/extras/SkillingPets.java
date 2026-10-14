@@ -11,7 +11,8 @@ import java.util.Map;
 
 /**
  * Base chances for the skilling pets ({@code 1/(base - level*25)} per action). Gathering pets are
- * keyed by the item the action produced; Thieving by the XP of the pickpocket/stall; Agility by the
+ * keyed by the item the action produced; Thieving by the pickpocket target or stall ({@link #thievingBase(String, int)},
+ * falling back to the XP of the action); Agility by the
  * course whose lap bonus was just awarded; Runecraft per craft. Values follow the OSRS wiki where
  * known; entries marked approx are estimates.
  */
@@ -22,6 +23,7 @@ public final class SkillingPets {
 
     private static final Map<String, Roll> BY_ITEM = new LinkedHashMap<>();
     private static final Map<Integer, Integer> THIEVING_BY_XP_TENTHS = new HashMap<>();
+    private static final Map<String, Integer> THIEVING_BY_SOURCE = new HashMap<>();
     private static final Map<Integer, Integer> AGILITY_BY_LAP_TENTHS = new HashMap<>();
 
     public static final String HERON = "pet_heron";
@@ -92,18 +94,34 @@ public final class SkillingPets {
         item(TANGLEROOT, Skill.FARMING, 220_000, "potato", "onion", "cabbage", "tomato", "sweetcorn", "strawberry", "watermelon",
                 "snape_grass"); // approx
 
-        // Thieving (Rocky): pickpockets default 257,211; stalls and high-level targets are better.
-        thieving(16.0, 124_066);   // bakery stall
+        // Thieving (Rocky, OSRS Wiki): pickpockets default 257,211; stalls and high-level targets are better. Keyed by
+        // the pickpocket target's name (lower case) or the stall's block id; thieving chests never roll Rocky (0).
+        thievingSource(124_066, "cake_stall", "keldagrim_bakery_stall", "fruit_stall");
+        thievingSource(68_926, "silk_stall", "tea_stall");
+        thievingSource(47_718, "keldagrim_crafting_stall");
+        thievingSource(206_777, "vegetable_stall", "civitas_house_chest", "civitas_house_wardrobe", "civitas_jewellery_case");
+        thievingSource(36_490, "fur_stall", "silver_stall", "spice_stall", "gem_stall", "wine_stall", "seed_stall", "fish_stall",
+                "crossbow_stall", "magic_stall", "scimitar_stall", "keldagrim_gem_stall", "ore_stall");
+        thievingSource(134_625, "watchman");
+        thievingSource(127_056, "paladin");
+        thievingSource(108_718, "gnome");
+        thievingSource(99_175, "hero", "elf", "vyre");
+        thievingSource(176_743, "tzhaar-hur");
+        thievingSource(0, "ten_coin_chest", "nature_rune_chest", "fifty_coin_chest", "arrowtip_chest", "blood_rune_chest",
+                "ardougne_castle_chest", "rogues_castle_chest", "dorgesh_kaan_average_chest", "dorgesh_kaan_rich_chest",
+                "isle_of_souls_chest", "dark_chest");
+        // XP fallback for Thieving XP with no source (the stall XP after the 2024 rebalance; unique values only).
         thieving(24.0, 68_926);    // silk stall
-        thieving(36.0, 36_490);    // fur stall
-        thieving(54.0, 36_490);    // silver stall
-        thieving(81.0, 36_490);    // spice stall
-        thieving(160.0, 36_490);   // gem stall
-        thieving(151.75, 127_056); // paladin
-        thieving(198.5, 108_718);  // gnome
-        thieving(275.0, 99_175);   // hero
-        thieving(353.0, 99_175);   // elf
-        thieving(103.5, 176_743);  // TzHaar-Hur
+        thieving(45.0, 36_490);    // fur stall
+        thieving(205.0, 36_490);   // silver stall
+        thieving(92.0, 36_490);    // spice stall
+        thieving(408.0, 36_490);   // gem stall
+        thieving(131.8, 127_056);  // paladin
+        thieving(133.3, 108_718);  // gnome
+        thieving(163.3, 99_175);   // hero
+        thieving(306.9, 99_175);   // vyre
+        thieving(353.3, 99_175);   // elf
+        thieving(103.4, 176_743);  // TzHaar-Hur
 
         // Agility (Giant squirrel): per lap, by course.
         for (AgilityCourse c : AgilityCourse.values()) {
@@ -128,6 +146,12 @@ public final class SkillingPets {
         THIEVING_BY_XP_TENTHS.put(Experience.tenths(xp), base);
     }
 
+    private static void thievingSource(int base, String... sources) {
+        for (String s : sources) {
+            THIEVING_BY_SOURCE.put(s, base);
+        }
+    }
+
     private SkillingPets() {
     }
 
@@ -139,6 +163,15 @@ public final class SkillingPets {
     /** Base chance for a Thieving action that gave {@code tenths} XP. */
     public static int thievingBase(int tenths) {
         return THIEVING_BY_XP_TENTHS.getOrDefault(tenths, THIEVING_DEFAULT);
+    }
+
+    /**
+     * Base chance for a Thieving action from {@code source} (a pickpocket target's name in lower case or a stall/chest
+     * block id; null if unknown), falling back to {@link #thievingBase(int)}. 0 means no Rocky roll (chests).
+     */
+    public static int thievingBase(String source, int tenths) {
+        Integer b = source == null ? null : THIEVING_BY_SOURCE.get(source.toLowerCase(java.util.Locale.ROOT));
+        return b != null ? b : thievingBase(tenths);
     }
 
     /** Base chance if {@code tenths} Agility XP is a course's lap bonus, else 0 (not a lap). */

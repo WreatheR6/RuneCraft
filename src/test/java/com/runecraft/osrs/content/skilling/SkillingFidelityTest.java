@@ -250,9 +250,10 @@ class SkillingFidelityTest {
     void thieving() {
         assertEquals(8.0, Thieving.Pickpocket.MAN.xp());
         assertEquals(40, Thieving.Pickpocket.GUARD.level());
-        assertEquals(273.3, Thieving.Pickpocket.HERO.xp());
+        assertEquals(163.3, Thieving.Pickpocket.HERO.xp());
         assertEquals(75, Thieving.Stall.GEM.level());
-        assertEquals(160.0, Thieving.Stall.GEM.xp());
+        assertEquals(408.0, Thieving.Stall.GEM.xp());
+        assertEquals(100, Thieving.Stall.GEM.respawnTicks());
         ThievingData.Target farmer = ThievingData.target("master_farmer");
         assertEquals(38, farmer.level());
         assertEquals(43.0, farmer.xp());

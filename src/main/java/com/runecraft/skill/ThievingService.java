@@ -49,6 +49,7 @@ public final class ThievingService {
         player.swingHand(Hand.MAIN_HAND, true);
         Inv.give(player, l.item(), l.min());
         CollectionLog.obtain(player, l.item());
+        GameEvents.fireActivity(player, "thieve:" + stall.blockId()); // Rocky's rate is per stall
         XpService.add(player, Skill.THIEVING, stall.xp());
         Msg.action(player, "You steal from the " + stall.displayName() + ".");
         block.empty(world, pos, state);
@@ -72,14 +73,15 @@ public final class ThievingService {
     /** Coin pouches the player may carry (the systems module raises it with the Ardougne diary). */
     public static java.util.function.ToIntFunction<ServerPlayerEntity> coinPouchLimit = p -> Thieving.COIN_POUCH_LIMIT;
 
-    /** A pickpocket success chance after bonuses (diary perks, Thieving cape), capped at 100%. */
-    public static double pickpocketChance(ServerPlayerEntity player, double base) {
+    /**
+     * A pickpocket success chance after bonuses: gloves of silence and the Ardougne diary ({@link #pickpocketBonus}),
+     * then the Thieving cape, each scaling the target's low/high values ({@link Thieving#pickpocketChance}).
+     */
+    public static double pickpocketChance(ServerPlayerEntity player, int level, int low, int high) {
         double bonus = pickpocketBonus.applyAsDouble(player);
-        if (wearingExtra.test(player, "thieving_cape") || wearingExtra.test(player, "thieving_cape_t")
-                || wearingExtra.test(player, "max_cape")) {
-            bonus *= Thieving.THIEVING_CAPE_BONUS;
-        }
-        return Math.min(1.0, base * bonus);
+        double cape = wearingExtra.test(player, "thieving_cape") || wearingExtra.test(player, "thieving_cape_t")
+                || wearingExtra.test(player, "max_cape") ? Thieving.THIEVING_CAPE_BONUS : 1.0;
+        return Thieving.pickpocketChance(level, low, high, bonus, cape);
     }
 
     /** Rogue equipment pieces worn (mask, top, trousers, boots in the armour slots; gloves in the hands slot). */
@@ -177,7 +179,7 @@ public final class ThievingService {
         }
         Msg.action(player, "You attempt to pick the " + who + "'s pocket.");
         player.swingHand(Hand.MAIN_HAND, true);
-        if (sure || player.getRandom().nextDouble() < pickpocketChance(player, com.runecraft.osrs.Chance.lerp(level, t.low(), t.high()))) {
+        if (sure || player.getRandom().nextDouble() < pickpocketChance(player, level, t.low(), t.high())) {
             List<String> items = new ArrayList<>();
             List<Integer> counts = new ArrayList<>();
             boolean[] pouched = {false};
@@ -204,6 +206,7 @@ public final class ThievingService {
                 }
                 GameEvents.fireObtain(player, item, n);
             }
+            GameEvents.fireActivity(player, "thieve:" + t.name().toLowerCase(Locale.ROOT)); // Rocky's rate is per target
             XpService.add(player, Skill.THIEVING, t.xp());
             Msg.action(player, "You pick the " + who + "'s pocket.");
             if (twice && !items.isEmpty()) {

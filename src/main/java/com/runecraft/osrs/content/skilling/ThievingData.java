@@ -12,8 +12,9 @@ import java.util.List;
  * Thieving: more pickpocket targets (master farmer and his seed table, rogue, H.A.M. members,
  * knight of Ardougne, Fremennik citizen, Varlamore's wealthy citizens, watchman, menaphite thug,
  * paladin, gnome, hero, vyre, elf, TzHaar-Hur), thieving chests (including Dorgesh-Kaan's, which need
- * a lockpick, and the Civitas illa Fortis houses, which need a house key) and extra market stalls. Levels, XP, stun damage and respawn times are OSRS values; success rates use the
- * standard low/high interpolation (approximate).
+ * a lockpick, and the Civitas illa Fortis houses, which need a house key) and extra market stalls. Levels, XP, stun damage
+ * and respawn times are OSRS values; success rates are the OSRS Wiki's skilling success chart low/high values
+ * (snapshot: src/test/resources/osrs/skilling/success_rates.tsv).
  */
 public final class ThievingData extends SkillingPart {
 
@@ -76,47 +77,46 @@ public final class ThievingData extends SkillingPart {
             // Fremennik citizens of Rellekka: 45 Thieving, 65 XP, 40 coins (success rates and stun approx.).
             new Target("fremennik_citizen", "Fremennik citizen", "RELLEKKA", -4, 6, 45, 65.0, 65, 240, 2,
                     List.of(Loot.of("coins", 40, 40, 1)), List.of(), new int[]{0xE0B890, 0x7A5A3A, 0x5A4A3A, 0xC0A060}),
-            // Varlamore's wealthy citizens: 50 Thieving, 96 XP, coins and a house key 1/17 (success rates and stun approx.).
-            new Target("wealthy_citizen", "Wealthy citizen", "zeah_civitas_illa_fortis", 6, -6, 50, 96.0, 60, 240, 3,
+            // Varlamore's wealthy citizens: 50 Thieving, 96 XP, 35/200, coins and a house key 1/17.
+            new Target("wealthy_citizen", "Wealthy citizen", "zeah_civitas_illa_fortis", 6, -6, 50, 96.0, 35, 200, 3,
                     List.of(Loot.of("coins", 85, 85, 1)), List.of(Loot.of(HOUSE_KEY, 1, 1, 1), Loot.of("coins", 1, 1, 16)),
                     new int[]{0xB08060, 0x7A3A8A, 0x4A2A5A, 0xE0C040}),
-            new Target("rogue_pickpocket", "Rogue", "EDGEVILLE", 5, 4, 32, 36.5, 74, 240, 2,
+            new Target("rogue_pickpocket", "Rogue", "EDGEVILLE", 5, 4, 32, 36.5, 75, 240, 2,
                     List.of(), List.of(Loot.of("coins", 25, 120, 60), Loot.of("air_rune", 8, 8, 15), Loot.of("jug_of_wine", 10),
                     Loot.of("iron_dagger", 5), Loot.of("lockpick", 10)), new int[]{0xC8A080, 0x3A2A2A, 0x2A2A2A, 0x1A1A1A}),
             new Target("master_farmer", "Master Farmer", "DRAYNOR_VILLAGE", 4, -4, 38, 43.0, 90, 240, 3,
                     List.of(), SEED_TABLE, new int[]{0xC8A080, 0x4A7A2A, 0x6A4A2A, 0xC0A060}),
             new Target("knight_of_ardougne", "Knight of Ardougne", "ARDOUGNE", -5, 3, 55, 84.3, 50, 240, 3,
                     List.of(Loot.of("coins", 50, 50, 1)), List.of(), new int[]{0xC8A080, 0xA0A0A8, 0x6A6A70, 0x9A9AA0}),
-            new Target("ardougne_paladin", "Paladin", "ARDOUGNE", 5, -3, 70, 151.8, 50, 150, 3,
+            new Target("ardougne_paladin", "Paladin", "ARDOUGNE", 5, -3, 70, 131.8, 40, 170, 3,
                     List.of(Loot.of("coins", 80, 80, 1)), List.of(Loot.of("chaos_rune", 2, 2, 1), Loot.of("coins", 1, 1, 7)),
                     new int[]{0xC8A080, 0xE0E0E8, 0xC0C0C8, 0xE0C040}),
             new Target("watchman", "Watchman", "YANILLE", 4, 4, 65, 137.5, 15, 160, 3,
                     List.of(Loot.of("coins", 60, 60, 1)), List.of(Loot.of("bread", 1, 1, 1), Loot.of("coins", 1, 1, 3)),
                     new int[]{0xC8A080, 0x3A5A8A, 0x2A3A5A, 0x2A2A2A}),
-            new Target("menaphite_thug", "Menaphite Thug", "POLLNIVNEACH", 3, -8, 65, 137.5, 60, 240, 5,
+            new Target("menaphite_thug", "Menaphite Thug", "POLLNIVNEACH", 3, -8, 65, 137.5, 50, 160, 5,
                     List.of(Loot.of("coins", 60, 60, 1)), List.of(), new int[]{0xA07850, 0x8A2A2A, 0x5A3A2A, 0x2A2A2A}),
-            // Pollnivneach bandits (blackjacking targets in the north of the town; stun damage approx.).
-            new Target("bearded_pollnivneach_bandit", "Bearded Pollnivneach bandit", "POLLNIVNEACH", -4, 10, 45, 65.0, 60, 240, 3,
+            // Pollnivneach bandits (blackjacking targets in the north of the town; success rates approx, the wiki has no chart).
+            new Target("bearded_pollnivneach_bandit", "Bearded Pollnivneach bandit", "POLLNIVNEACH", -4, 10, 45, 65.0, 60, 240, 5,
                     List.of(Loot.of("coins", 40, 40, 1)), List.of(), new int[]{0xA07850, 0x6A5A3A, 0x4A3A2A, 0x3A2A1A}),
-            new Target("pollnivneach_bandit", "Pollnivneach bandit", "POLLNIVNEACH", 4, 12, 55, 84.3, 60, 240, 4,
+            new Target("pollnivneach_bandit", "Pollnivneach bandit", "POLLNIVNEACH", 4, 12, 55, 84.3, 60, 240, 5,
                     List.of(Loot.of("coins", 50, 50, 1)), List.of(), new int[]{0xA07850, 0x7A6A4A, 0x4A3A2A, 0x2A2A2A}),
-            new Target("gnome_pickpocket", "Gnome", "GNOME_STRONGHOLD", 4, 5, 75, 198.5, 8, 120, 1,
+            new Target("gnome_pickpocket", "Gnome", "GNOME_STRONGHOLD", 4, 5, 75, 133.3, 43, 175, 1,
                     List.of(), List.of(Loot.of("coins", 300, 300, 40), Loot.of("earth_rune", 1, 1, 15), Loot.of("gold_ore", 10),
                     Loot.of("fire_orb", 5), Loot.of("uncut_sapphire", 10), Loot.of("mithril_ore", 10)),
                     new int[]{0xC8A080, 0x3A8A3A, 0x6A4A2A, 0x9A2A2A}),
-            new Target("ardougne_hero", "Hero", "ARDOUGNE", 0, 6, 80, 273.3, 6, 100, 4,
+            new Target("ardougne_hero", "Hero", "ARDOUGNE", 0, 6, 80, 163.3, 39, 160, 3,
                     List.of(), List.of(Loot.of("coins", 200, 300, 70), Loot.of("death_rune", 2, 2, 8), Loot.of("blood_rune", 1, 1, 6),
                     Loot.of("fire_orb", 4), Loot.of("diamond", 2), Loot.of("gold_ore", 4), Loot.of("jug_of_wine", 6)),
                     new int[]{0xC8A080, 0x7A2A2A, 0x3A3A3A, 0xE0C040}),
-            new Target("vyre_pickpocket", "Vyre", "CANIFIS", -4, 5, 82, 306.9, 35, 210, 5,
+            new Target("vyre_pickpocket", "Vyre", "CANIFIS", -4, 5, 82, 306.9, 8, 128, 5,
                     List.of(), List.of(Loot.of("coins", 250, 250, 60), Loot.of("death_rune", 4, 4, 15), Loot.of("diamond", 4),
                     Loot.of("uncut_ruby", 6), Loot.of("vial_of_blood", 10)), new int[]{0xB0B0B8, 0x4A1A2A, 0x2A1A1A, 0x1A1A1A}),
-            // Elf 4/100 matches the wiki's 33.94% at 85 and ~39% at 99 (approx).
-            new Target("elf_pickpocket", "Elf", "LLETYA", 4, -4, 85, 353.3, 4, 100, 5,
+            new Target("elf_pickpocket", "Elf", "LLETYA", 4, -4, 85, 353.3, 6, 100, 5,
                     List.of(), List.of(Loot.of("coins", 280, 350, 60), Loot.of("death_rune", 2, 2, 10), Loot.of("nature_rune", 3, 3, 10),
                     Loot.of("diamond", 3), Loot.of("gold_ore", 5), Loot.of("fire_orb", 4), Loot.of("crystal_dust", 3, 6, 4)),
                     new int[]{0xE0D0B0, 0x3A8A5A, 0x2A5A3A, 0xE0E0A0}),
-            new Target("tzhaar_hur", "TzHaar-Hur", "MOR_UL_REK", 5, 5, 90, 103.4, 40, 200, 4,
+            new Target("tzhaar_hur", "TzHaar-Hur", "MOR_UL_REK", 5, 5, 90, 103.4, -200, 200, 4,
                     List.of(), List.of(Loot.of("tokkul", 3, 14, 70), Loot.of("uncut_sapphire", 6), Loot.of("uncut_emerald", 4),
                     Loot.of("uncut_ruby", 2), Loot.of("uncut_diamond", 1)), new int[]{0x8A3A1A, 0x5A2A1A, 0x4A2A1A, 0xE06010}));
 
@@ -129,11 +129,14 @@ public final class ThievingData extends SkillingPart {
     public static final int KNOCKOUT_TICKS = 4;
 
     /**
-     * Chance a knock-out works: the target's pickpocket chance (the thug's or bandit's low/high
-     * interpolation), approx.; a failure hits the player like a failed pickpocket.
+     * Knock-out low/high: the OSRS Wiki's Menaphite thug chart is 78/240; the bandits use the same values (approx).
      */
+    public static final int KNOCKOUT_LOW = 78;
+    public static final int KNOCKOUT_HIGH = 240;
+
+    /** Chance a knock-out works; a failure hits the player like a failed pickpocket. */
     public static double knockoutChance(Target t, int thievingLevel) {
-        return com.runecraft.osrs.Chance.lerp(thievingLevel, t.low(), t.high());
+        return com.runecraft.osrs.Chance.lerp(thievingLevel, KNOCKOUT_LOW, KNOCKOUT_HIGH);
     }
 
     public static Target target(String npcId) {
@@ -240,11 +243,11 @@ public final class ThievingData extends SkillingPart {
             new Container("civitas_jewellery_case", "Jewellery case (Civitas house)", true, 50, 45.0, 2,
                     List.of(Loot.of(VALUABLES, 1, 3, 1)), List.of(Loot.of("coins", 1, 1, 20), Loot.of("emerald_necklace", 1, 1, 1)),
                     "chest", 0xC0A050),
-            new Container("vegetable_stall", "Vegetable stall", false, 2, 10.0, 3, List.of(),
+            new Container("vegetable_stall", "Vegetable stall", false, 2, 10.0, 2, List.of(),
                     List.of(Loot.of("potato", 1), Loot.of("onion", 1), Loot.of("cabbage", 1), Loot.of("tomato", 1), Loot.of("garlic", 1)),
                     "stall", 0x6A9A3A),
-            new Container("tea_stall", "Tea stall", false, 5, 16.0, 12, List.of(), List.of(Loot.of("cup_of_tea", 1)), "stall", 0xA06030),
-            new Container("wine_stall", "Wine stall", false, 22, 27.0, 27, List.of(),
+            new Container("tea_stall", "Tea stall", false, 5, 16.0, 4, List.of(), List.of(Loot.of("cup_of_tea", 1)), "stall", 0xA06030),
+            new Container("wine_stall", "Wine stall", false, 22, 27.0, 8, List.of(),
                     List.of(Loot.of("jug_of_wine", 2), Loot.of("grapes", 3), Loot.of("jug_of_water", 3), Loot.of("jug_of_bad_wine", 2),
                             Loot.of("jug", 2)), "stall", 0x8A1A3A),
             // Hosidius fruit stall: 25 Thieving, 28.5 XP, respawns in 2.4 s (weights approx; lemons/limes/strange fruit
@@ -253,28 +256,35 @@ public final class ThievingData extends SkillingPart {
                     List.of(Loot.of("cooking_apple", 40), Loot.of("banana", 20), Loot.of("strawberry", 10), Loot.of("jangerberries", 8),
                             Loot.of("redberries", 8), Loot.of("pineapple", 6), Loot.of("papaya_fruit", 4), Loot.of("orange", 4)),
                     "stall", 0xC08030),
-            new Container("seed_stall", "Seed stall", false, 27, 10.0, 18, List.of(), STALL_SEEDS, "stall", 0x4A7A2A),
-            new Container("fish_stall", "Fish stall", false, 42, 42.0, 27, List.of(),
+            new Container("seed_stall", "Seed stall", false, 27, 10.0, 4, List.of(), STALL_SEEDS, "stall", 0x4A7A2A),
+            new Container("fish_stall", "Fish stall", false, 42, 42.0, 12, List.of(),
                     List.of(Loot.of("raw_salmon", 4), Loot.of("raw_tuna", 3), Loot.of("raw_lobster", 2)), "stall", 0x5A80A0),
-            new Container("crossbow_stall", "Crossbow stall", false, 49, 52.0, 15, List.of(),
-                    List.of(Loot.of("bronze_bolts", 3, 3, 1), Loot.of("bronze_limbs", 1), Loot.of("wooden_stock", 1)), "stall", 0x8A6A3A),
-            new Container("magic_stall", "Magic stall", false, 65, 100.0, 133, List.of(),
-                    List.of(Loot.of("air_rune", 1), Loot.of("water_rune", 1), Loot.of("earth_rune", 1), Loot.of("fire_rune", 1),
-                            Loot.of("law_rune", 1)), "stall", 0x5A3A8A),
-            new Container("scimitar_stall", "Scimitar stall", false, 65, 100.0, 133, List.of(),
-                    List.of(Loot.of("iron_scimitar", 4), Loot.of("steel_scimitar", 1)), "stall", 0x8A8A9A),
+            new Container("crossbow_stall", "Crossbow stall", false, 49, 52.0, 8, List.of(),
+                    // Crossbow stall (wiki, out of 80): bronze bolts (3) 46, bronze limbs 18, wooden stock 12, mithril bolts (3) 3,
+                    // mithril limbs 1 (the wiki lists 3 limbs/stocks a theft; 1 here, approx).
+                    List.of(Loot.of("bronze_bolts", 3, 3, 46), Loot.of("bronze_limbs", 18), Loot.of("wooden_stock", 12),
+                            Loot.of("mithril_bolts", 3, 3, 3), Loot.of("mithril_limbs", 1)), "stall", 0x8A6A3A),
+            new Container("magic_stall", "Magic stall", false, 65, 90.0, 12, List.of(),
+                    // Magic stall (wiki, out of 20): air, earth and fire runes 6 each, law and nature runes 1 each.
+                    List.of(Loot.of("air_rune", 6), Loot.of("earth_rune", 6), Loot.of("fire_rune", 6), Loot.of("law_rune", 1),
+                            Loot.of("nature_rune", 1)), "stall", 0x5A3A8A),
+            new Container("scimitar_stall", "Scimitar stall", false, 65, 210.0, 32, List.of(),
+                    // Scimitar stall (wiki, out of 40): iron 23, steel 13, mithril 3, adamant 1.
+                    List.of(Loot.of("iron_scimitar", 23), Loot.of("steel_scimitar", 13), Loot.of("mithril_scimitar", 3),
+                            Loot.of("adamant_scimitar", 1)), "stall", 0x8A8A9A),
             // Keldagrim's market (OSRS Wiki): the Carefree Crafting Stall (5 Thieving, 20 XP, restocks in 4.8 s; 54ths), Keldagrim's
-            // Best Bread (a bakery stall: 5 Thieving, 16 XP, bread 5/20, cake 13/20, chocolate slice 2/20; restocks twice as slowly
-            // as Ardougne's, approx 8 ticks) and Green Gemstone Gems (75 Thieving, 408 XP, restocks in 60 s).
+            // Best Bread (a bakery stall: 5 Thieving, 16 XP, bread 5/20, cake 13/20, chocolate slice 2/20; restocks in 9.6 s)
+            // and Green Gemstone Gems (75 Thieving, 408 XP, restocks in 60 s).
             new Container("keldagrim_crafting_stall", "Crafting stall", false, 5, 20.0, 8, List.of(),
                     List.of(Loot.of("amulet_mould", 12), Loot.of("bracelet_mould", 12), Loot.of("chisel", 6), Loot.of("gold_bar", 2),
                             Loot.of("necklace_mould", 11), Loot.of("ring_mould", 11)), "stall", 0x8A7A5A),
-            new Container("keldagrim_bakery_stall", "Bakery stall", false, 5, 16.0, 8, List.of(),
+            new Container("keldagrim_bakery_stall", "Bakery stall", false, 5, 16.0, 16, List.of(),
                     List.of(Loot.of("bread", 5), Loot.of("cake", 13), Loot.of("chocolate_slice", 2)), "stall", 0xC09A5A),
             new Container("keldagrim_gem_stall", "Gem stall", false, 75, 408.0, 100, List.of(),
                     List.of(Loot.of("uncut_sapphire", 105), Loot.of("uncut_emerald", 17), Loot.of("uncut_ruby", 5),
                             Loot.of("uncut_diamond", 1)), "stall", 0x3A8A5A),
-            new Container("ore_stall", "Ore stall", false, 82, 180.0, 100, List.of(),
+            // Ore stall: 82 Thieving, 350 XP, restocks in 30 s (OSRS: Mor Ul Rek's ore counter; weights approx).
+            new Container("ore_stall", "Ore stall", false, 82, 350.0, 50, List.of(),
                     List.of(Loot.of("iron_ore", 30), Loot.of("silver_ore", 15), Loot.of("coal", 30), Loot.of("gold_ore", 12),
                             Loot.of("mithril_ore", 8), Loot.of("adamantite_ore", 4), Loot.of("runite_ore", 1)), "stall", 0x6A6A6A));
 

@@ -192,7 +192,10 @@ class AgilityThievingAuditTest {
         assertNotNull(ItemCatalog.get("dodgy_necklace"));
         assertNotNull(ItemCatalog.get("thieving_cape"));
         assertEquals(1.0, Thieving.pickpocketChance(99, 200, 255, 1.5));
-        assertEquals(com.runecraft.osrs.Chance.lerp(50, 50, 240) * 1.1, Thieving.pickpocketChance(50, 50, 240, 1.1), 1e-9);
+        // Bonuses scale low/high (wiki guard chart: 55/264 with the Ardougne diary, 60/290 with the diary and the cape).
+        assertEquals(com.runecraft.osrs.Chance.lerp(50, 55, 264), Thieving.pickpocketChance(50, 50, 240, 1.1), 1e-9);
+        assertEquals(60, Thieving.scaled(50, 1.1, 1.1));
+        assertEquals(290, Thieving.scaled(240, 1.1, 1.1));
         Set<String> keys = new HashSet<>();
         for (Thieving.CoinPouch p : Thieving.COIN_POUCHES) {
             assertTrue(keys.add(p.key()), p.key());

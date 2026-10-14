@@ -52,6 +52,9 @@ final class PetService {
     private record Pending(String item, long tick) {
     }
 
+    /** The pickpocket target or stall of a Thieving action this tick ("thieve:" activity), paired with its XP drop. */
+    private static final Map<UUID, Pending> THIEVING_SOURCE = new HashMap<>();
+
     private PetService() {
     }
 
@@ -70,6 +73,11 @@ final class PetService {
         GameEvents.onObtain((player, item, count) -> {
             if (SkillingPets.forItem(item) != null) {
                 PENDING.put(player.getUuid(), new Pending(item, player.getServer().getTicks()));
+            }
+        });
+        GameEvents.onActivity((player, key) -> {
+            if (key.startsWith("thieve:")) {
+                THIEVING_SOURCE.put(player.getUuid(), new Pending(key.substring("thieve:".length()), player.getServer().getTicks()));
             }
         });
         GameEvents.onXp(PetService::onXp);
@@ -97,6 +105,7 @@ final class PetService {
                 e.discard();
             }
             PENDING.remove(handler.player.getUuid());
+            THIEVING_SOURCE.remove(handler.player.getUuid());
         });
     }
 
@@ -105,7 +114,14 @@ final class PetService {
     private static void onXp(ServerPlayerEntity player, Skill skill, int tenths) {
         Random random = player.getRandom();
         switch (skill) {
-            case THIEVING -> rollSkilling(player, SkillingPets.ROCKY, skill, SkillingPets.thievingBase(tenths), random);
+            case THIEVING -> {
+                Pending src = THIEVING_SOURCE.remove(player.getUuid());
+                String source = src != null && src.tick() == player.getServer().getTicks() ? src.item() : null;
+                int base = SkillingPets.thievingBase(source, tenths);
+                if (base > 0) {
+                    rollSkilling(player, SkillingPets.ROCKY, skill, base, random);
+                }
+            }
             case RUNECRAFT -> rollSkilling(player, SkillingPets.RIFT_GUARDIAN, skill, SkillingPets.RUNECRAFT_BASE, random);
             case AGILITY -> {
                 int base = SkillingPets.agilityLapBase(tenths);

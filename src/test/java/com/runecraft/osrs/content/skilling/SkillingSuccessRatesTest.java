@@ -82,12 +82,18 @@ class SkillingSuccessRatesTest {
         assertEquals(256, Fish.SHRIMPS.high());
         assertEquals(6, Fish.LOBSTER.low());
         assertEquals(95, Fish.LOBSTER.high());
-        assertEquals(10, Fish.TUNA.low());
-        assertEquals(86, Fish.TUNA.high());
-        assertEquals(5, Fish.SWORDFISH.low());
-        assertEquals(64, Fish.SWORDFISH.high());
-        assertEquals(4, Fish.SHARK.low());
-        assertEquals(54, Fish.SHARK.high());
+        // Harpoon fish: plain harpoon values; dragon (x1.2) and crystal (x1.35) harpoons scale low/high, rounded down.
+        assertEquals(8, Fish.TUNA.low());
+        assertEquals(64, Fish.TUNA.high());
+        assertEquals(Chance.lerp(60, 9, 76), Fish.TUNA.chance(60, 1.2), 1e-12);
+        assertEquals(Chance.lerp(60, 10, 86), Fish.TUNA.chance(60, 1.35), 1e-12);
+        assertEquals(4, Fish.SWORDFISH.low());
+        assertEquals(48, Fish.SWORDFISH.high());
+        assertEquals(Chance.lerp(70, 4, 57), Fish.SWORDFISH.chance(70, 1.2), 1e-12);
+        assertEquals(3, Fish.SHARK.low());
+        assertEquals(40, Fish.SHARK.high());
+        assertEquals(Chance.lerp(80, 3, 48), Fish.SHARK.chance(80, 1.2), 1e-12);
+        assertEquals(Chance.lerp(80, 4, 54), Fish.SHARK.chance(80, 1.35), 1e-12);
         assertEquals(3, Fish.ANGLERFISH.low());
         assertEquals(36, Fish.ANGLERFISH.high());
         assertEquals(48, Fish.MONKFISH.low());
@@ -140,28 +146,26 @@ class SkillingSuccessRatesTest {
         assertEquals(5, Tree.MAGIC.low(ToolTier.BLACK.woodcuttingMultiplier()));
         assertEquals(13, Tree.MAGIC.high(ToolTier.BLACK.woodcuttingMultiplier()));
         assertEquals(224, Tree.TREE.low(ToolTier.RUNE.woodcuttingMultiplier()));
-        // Trees/axes without exact data scale the bronze values.
         assertEquals(750, Tree.TREE.high(ToolTier.DRAGON.woodcuttingMultiplier()));
-        assertEquals(Tree.TEAK.low() * 2, Tree.TEAK.low(2.0));
+        // Teak with a steel axe is 31/93 on the wiki (not 30/92); unknown multipliers scale the bronze values.
+        assertEquals(31, Tree.TEAK.low(2.0));
+        assertEquals((int) Math.floor(Tree.TEAK.low() * 1.25), Tree.TEAK.low(1.25));
     }
 
     @Test
     void pickpocketRates() {
-        // Paladin 50/150 (59% at 99, per the wiki money making guide), hero 6/100.
-        assertEquals(150, Thieving.Pickpocket.PALADIN.high());
-        assertEquals(100, Thieving.Pickpocket.HERO.high());
+        // Paladin 40/170 and hero 39/160 (the wiki's current charts); the full diff is in SuccessRateSnapshotTest.
+        assertEquals(170, Thieving.Pickpocket.PALADIN.high());
+        assertEquals(160, Thieving.Pickpocket.HERO.high());
         for (TownMonsters.Pickpocket p : TownMonsters.pickpockets()) {
             if (p.name().equals("Paladin")) {
-                assertEquals(50, p.low());
-                assertEquals(150, p.high());
+                assertEquals(40, p.low());
+                assertEquals(170, p.high());
             }
         }
         for (ThievingData.Target t : ThievingData.TARGETS) {
             if (t.name().equals("Paladin")) {
-                assertEquals(150, t.high());
-            }
-            if (t.name().equals("Elf")) {
-                assertEquals(0.3394, Chance.lerp(85, t.low(), t.high()), 0.002);
+                assertEquals(170, t.high());
             }
         }
     }

@@ -2,7 +2,9 @@ package com.runecraft.osrs.data;
 
 /**
  * Fish: fishing level/XP, catch-rate low/high values out of 256 (the OSRS Wiki's skilling success
- * chart data; harpoon fish use the post-2023 rates) and cooking data
+ * chart data, snapshot in src/test/resources/osrs/skilling/success_rates.tsv; harpoon fish are the plain
+ * harpoon's values, which a dragon/infernal harpoon scales by 1.2 and a crystal harpoon by 1.35, see
+ * {@link #chance(int, double)}) and cooking data
  * (level, XP, heal amount and the level at which you stop burning on a fire).
  */
 public enum Fish {
@@ -13,11 +15,11 @@ public enum Fish {
     TROUT("trout", "Trout", 20, 50.0, 32, 192, 15, 70.0, 7, 50, 0xC09070, 20),
     PIKE("pike", "Pike", 25, 60.0, 16, 96, 20, 80.0, 8, 64, 0x8A9A6A, 25),
     SALMON("salmon", "Salmon", 30, 70.0, 16, 96, 25, 90.0, 9, 58, 0xE07050, 50),
-    TUNA("tuna", "Tuna", 35, 80.0, 10, 86, 30, 100.0, 10, 64, 0x7A7AA0, 100),
+    TUNA("tuna", "Tuna", 35, 80.0, 8, 64, 30, 100.0, 10, 64, 0x7A7AA0, 100),
     LOBSTER("lobster", "Lobster", 40, 90.0, 6, 95, 40, 120.0, 12, 74, 0xC03020, 200),
-    SWORDFISH("swordfish", "Swordfish", 50, 100.0, 5, 64, 45, 140.0, 14, 86, 0x6A5AA0, 400),
+    SWORDFISH("swordfish", "Swordfish", 50, 100.0, 4, 48, 45, 140.0, 14, 86, 0x6A5AA0, 400),
     MONKFISH("monkfish", "Monkfish", 62, 120.0, 48, 90, 62, 150.0, 16, 92, 0x9A7A5A, 300),
-    SHARK("shark", "Shark", 76, 110.0, 4, 54, 80, 210.0, 20, 100, 0x8A8A9A, 800),
+    SHARK("shark", "Shark", 76, 110.0, 3, 40, 80, 210.0, 20, 100, 0x8A8A9A, 800),
     ANGLERFISH("anglerfish", "Anglerfish", 82, 120.0, 3, 36, 84, 230.0, 22, 100, 0x6A3A5A, 1200),
     DARK_CRAB("dark_crab", "Dark crab", 85, 130.0, 3, 40, 90, 215.0, 22, 100, 0x3A2A4A, 1000);
 
@@ -80,6 +82,19 @@ public enum Fish {
 
     public int high() {
         return high;
+    }
+
+    /**
+     * Catch chance at a Fishing level with a tool multiplier (1.0 normally; a dragon harpoon 1.2, a crystal harpoon
+     * 1.35), which scales the low and high values, rounded down (wiki: tuna 8/64, 9/76 dragon, 10/86 crystal).
+     */
+    public double chance(int level, double toolMultiplier) {
+        return catchChance(level, low, high, toolMultiplier);
+    }
+
+    /** {@link #chance(int, double)} for any low/high pair. */
+    public static double catchChance(int level, int low, int high, double toolMultiplier) {
+        return com.runecraft.osrs.Chance.lerp(level, Math.floor(low * toolMultiplier + 1e-9), Math.floor(high * toolMultiplier + 1e-9));
     }
 
     public int cookLevel() {

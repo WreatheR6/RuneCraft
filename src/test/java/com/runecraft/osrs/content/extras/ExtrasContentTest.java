@@ -86,7 +86,14 @@ class ExtrasContentTest {
         assertEquals(82_758, SkillingPets.forItem("black_chinchompa").base());
         assertEquals(98_364, SkillingPets.forItem("grimy_ranarr_weed").base());
         assertNull(SkillingPets.forItem("abyssal_whip"));
-        assertEquals(36_490, SkillingPets.thievingBase(Experience.tenths(160.0)));
+        assertEquals(36_490, SkillingPets.thievingBase(Experience.tenths(408.0)));
+        assertEquals(36_490, SkillingPets.thievingBase("gem_stall", Experience.tenths(408.0)));
+        // Same XP, different rates: a watchman and a Menaphite thug both give 137.5 XP.
+        assertEquals(134_625, SkillingPets.thievingBase("Watchman", Experience.tenths(137.5)));
+        assertEquals(SkillingPets.THIEVING_DEFAULT, SkillingPets.thievingBase("menaphite thug", Experience.tenths(137.5)));
+        assertEquals(206_777, SkillingPets.thievingBase("vegetable_stall", Experience.tenths(10.0)));
+        assertEquals(36_490, SkillingPets.thievingBase("seed_stall", Experience.tenths(10.0)));
+        assertEquals(0, SkillingPets.thievingBase("ardougne_castle_chest", Experience.tenths(500.0)));
         assertEquals(SkillingPets.THIEVING_DEFAULT, SkillingPets.thievingBase(Experience.tenths(8.0)));
         assertTrue(SkillingPets.agilityLapBase(Experience.tenths(com.runecraft.osrs.data.AgilityCourse.ARDOUGNE.lapBonusXp())) > 0);
         for (SkillingPets.Roll r : SkillingPets.items().values()) {

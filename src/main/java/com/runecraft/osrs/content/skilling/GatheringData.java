@@ -24,14 +24,51 @@ public final class GatheringData extends SkillingPart {
     /** A tree added by this module. Logs light with a tinderbox at {@code fmLevel} for {@code fmXp}. */
     public record ModTree(String blockId, String name, int level, double xp, String log, int low, int high, double depleteChance,
                           int respawnTicks, int fmLevel, double fmXp, int color) {
+        /** Success low value for an axe multiplier: the wiki's per-axe value where known, else the bronze value scaled. */
+        public int low(double axeMultiplier) {
+            int[] e = exact(axeMultiplier);
+            return e != null ? e[0] : (int) Math.floor(low * axeMultiplier);
+        }
+
+        /** Success high value for an axe multiplier (see {@link #low(double)}). */
+        public int high(double axeMultiplier) {
+            int[] e = exact(axeMultiplier);
+            return e != null ? e[1] : (int) Math.floor(high * axeMultiplier);
+        }
+
+        private int[] exact(double axeMultiplier) {
+            int[][] t = AXE_VALUES.get(blockId);
+            int col = com.runecraft.osrs.data.Tree.axeColumn(axeMultiplier);
+            return t == null || col < 0 || col >= t.length ? null : t[col];
+        }
     }
+
+    /**
+     * Per-axe low/high values (columns as {@link com.runecraft.osrs.data.Tree#AXE_MULTIPLIERS}: bronze ... rune, dragon,
+     * crystal) from the OSRS Wiki's skilling success charts. The hollow tree has no crystal-axe line.
+     */
+    static final java.util.Map<String, int[][]> AXE_VALUES = java.util.Map.of(
+            "achey_tree", new int[][]{{64, 200}, {96, 300}, {128, 400}, {144, 450}, {160, 500}, {192, 600}, {224, 700}, {240, 750},
+                    {250, 800}},
+            "arctic_pine_tree", new int[][]{{8, 25}, {12, 37}, {16, 50}, {18, 56}, {20, 62}, {24, 75}, {28, 87}, {30, 93}, {32, 100}},
+            "sulliuscep", new int[][]{{11, 55}, {17, 85}, {23, 115}, {26, 131}, {29, 147}, {35, 177}, {41, 208}, {45, 228}, {48, 240}},
+            "hollow_tree", new int[][]{{18, 26}, {28, 40}, {36, 54}, {42, 57}, {46, 68}, {59, 81}, {64, 94}, {67, 101}},
+            // Camphor black axe: the wiki chart says 17/71 (the adamant high); 52 lies between steel and mithril (approx).
+            "camphor_tree", new int[][]{{8, 23}, {11, 36}, {15, 47}, {17, 52}, {19, 59}, {23, 71}, {27, 83}, {32, 89}, {34, 93}},
+            "ironwood_tree", new int[][]{{6, 21}, {10, 38}, {13, 42}, {15, 46}, {17, 53}, {21, 63}, {24, 75}, {29, 80}, {30, 83}},
+            "rosewood_tree", new int[][]{{6, 18}, {9, 28}, {12, 37}, {13, 40}, {15, 47}, {18, 56}, {21, 66}, {25, 70}, {27, 73}});
 
     public static final List<ModTree> TREES = List.of(
             new ModTree("achey_tree", "Achey tree", 1, 25.0, "achey_tree_logs", 64, 200, 1.0, 60, 1, 40.0, 0x8A5A3A),
-            new ModTree("arctic_pine_tree", "Arctic pine", 54, 40.0, "arctic_pine_logs", 6, 30, 0.125, 34, 42, 125.0, 0x4A5A3A),
-            new ModTree("sulliuscep", "Sulliuscep", 65, 127.0, "sulliuscep_cap", 4, 20, 0.25, 50, 0, 0, 0xB08A5A),
-            // Hollow tree (Morytania): bark at 45 Woodcutting for 82.5 XP; maple-like chop chances (approx).
-            new ModTree("hollow_tree", "Hollow tree", 45, 82.5, "bark", 8, 25, 0.125, 45, 0, 0, 0x5A4A3A));
+            new ModTree("arctic_pine_tree", "Arctic pine", 54, 40.0, "arctic_pine_logs", 8, 25, 0.125, 34, 42, 125.0, 0x4A5A3A),
+            new ModTree("sulliuscep", "Sulliuscep", 65, 127.0, "sulliuscep_cap", 11, 55, 0.25, 50, 0, 0, 0xB08A5A),
+            // Hollow tree (Morytania): bark at 45 Woodcutting for 82.5 XP.
+            new ModTree("hollow_tree", "Hollow tree", 45, 82.5, "bark", 18, 26, 0.125, 45, 0, 0, 0x5A4A3A),
+            // Sailing-era lumber trees (OSRS Wiki): camphor 66 Woodcutting / 143.5 XP (the Great Conch), ironwood 80 / 175
+            // (Sunbleak Island), rosewood 92 / 212.5 (Drumstick Isle). Depletion and respawn approx (Forestry-style trees).
+            new ModTree("camphor_tree", "Camphor tree", 66, 143.5, "camphor_logs", 8, 23, 0.125, 60, 0, 0, 0x8A6A4A),
+            new ModTree("ironwood_tree", "Ironwood tree", 80, 175.0, "ironwood_logs", 6, 21, 0.1, 100, 0, 0, 0x5A4A40),
+            new ModTree("rosewood_tree", "Rosewood tree", 92, 212.5, "rosewood_logs", 6, 18, 0.1, 100, 0, 0, 0x9A4A4A));
 
     public static ModTree tree(String blockId) {
         for (ModTree t : TREES) {
@@ -60,6 +97,11 @@ public final class GatheringData extends SkillingPart {
         static Catch of(String item, int level, double xp, int low, int high) {
             return new Catch(item, level, xp, low, high, 0, 0, 1, 1);
         }
+
+        /** Catch chance with a tool multiplier scaling low/high (harpoons; see {@link com.runecraft.osrs.data.Fish#chance}). */
+        public double chance(int fishing, double toolMultiplier) {
+            return com.runecraft.osrs.data.Fish.catchChance(fishing, low, high, toolMultiplier);
+        }
     }
 
     /** A fishing spot added by this module. {@code bait} may be null. */
@@ -68,7 +110,7 @@ public final class GatheringData extends SkillingPart {
 
     public static final List<Spot> SPOTS = List.of(
             new Spot("big_net_fishing_spot", "Fishing spot (big net)", "big_fishing_net", null, List.of(
-                    Catch.of("raw_bass", 46, 100.0, 4, 40), Catch.of("raw_cod", 23, 45.0, 8, 64), Catch.of("raw_mackerel", 16, 20.0, 5, 65)),
+                    Catch.of("raw_bass", 46, 100.0, 3, 40), Catch.of("raw_cod", 23, 45.0, 4, 55), Catch.of("raw_mackerel", 16, 20.0, 5, 65)),
                     List.of(Loot.of("seaweed", 1, 2, 60), Loot.of("oyster", 15), Loot.of("casket", 5), Loot.of("leather_boots", 10),
                             Loot.of("leather_gloves", 10)), 10),
             new Spot("barbarian_fishing_spot", "Fishing spot (barbarian)", "barbarian_rod", "fishing_bait", List.of(
@@ -89,7 +131,7 @@ public final class GatheringData extends SkillingPart {
                     Catch.of("infernal_eel", 80, 95.0, 30, 93)), List.of(), 0),
             new Spot("deep_sea_fishing_spot", "Fishing spot (deep sea)", "harpoon", null, List.of(
                     Catch.of("raw_manta_ray", 81, 46.0, 4, 30), Catch.of("raw_sea_turtle", 79, 38.0, 6, 40),
-                    Catch.of("raw_shark", 76, 110.0, 4, 54)), List.of(Loot.of("casket", 1), Loot.of("seaweed", 4)), 4));
+                    Catch.of("raw_shark", 76, 110.0, 3, 40)), List.of(Loot.of("casket", 1), Loot.of("seaweed", 4)), 4));
 
     public static Spot spot(String blockId) {
         for (Spot s : SPOTS) {
@@ -212,6 +254,10 @@ public final class GatheringData extends SkillingPart {
                         List.of("arctic_pine_tree", "arctic_pine_tree", "arctic_pine_tree")),
                 PlaceDef.of("fossil_island_sulliuscep", "Sulliuscep grove", 3678, 3733, PlaceDef.Style.CAMP,
                         List.of("sulliuscep", "sulliuscep")),
+                // Camphor trees west of the Summer Shore on the Great Conch (approx tile). Sunbleak Island and Drumstick Isle
+                // (ironwood, rosewood) are not on the map yet, so those trees have no grove.
+                PlaceDef.of("great_conch_camphor_trees", "Camphor trees", 3160, 2425, PlaceDef.Style.CAMP,
+                        List.of("camphor_tree", "camphor_tree", "camphor_tree")),
                 // Otto's Grotto also has the anvil where barbarian spears and hastae are smithed.
                 new PlaceDef("otto_grotto", "Otto's Grotto", 2500, 3497, PlaceDef.Style.CAMP, List.of(com.runecraft.osrs.Station.ANVIL),
                         List.of("barbarian_fishing_spot", "barbarian_fishing_spot")),

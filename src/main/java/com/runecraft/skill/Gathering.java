@@ -298,7 +298,7 @@ public final class Gathering {
                 String harpoon = method == FishingMethod.HARPOON ? Tools.bestHarpoon(p, Players.data(p).skills()) : null;
                 double boost = harpoon == null ? 1.0 : SpecialTool.harpoonMultiplier(harpoon);
                 for (Fish f : fish) {
-                    if (level >= f.level() && random.nextDouble() < Chance.lerp(level, f.low(), f.high()) * boost) {
+                    if (level >= f.level() && random.nextDouble() < f.chance(level, boost)) {
                         if (!Inv.hasRoomFor(p, f.rawItem())) {
                             Msg.game(p, "You can't carry any more fish.");
                             return false;

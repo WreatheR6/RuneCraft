@@ -138,8 +138,8 @@ final class GatheringHooks {
                     return false;
                 }
                 world.playSound(null, pos, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.PLAYERS, 1.0f, 0.9f);
-                double chance = Chance.lerp(SkillingUtil.level(p, Skill.WOODCUTTING), tree.low() * axe.woodcuttingMultiplier(),
-                        tree.high() * axe.woodcuttingMultiplier());
+                double chance = Chance.lerp(SkillingUtil.level(p, Skill.WOODCUTTING), tree.low(axe.woodcuttingMultiplier()),
+                        tree.high(axe.woodcuttingMultiplier()));
                 if (random.nextDouble() < chance) {
                     SkillingUtil.give(p, tree.log(), 1);
                     XpService.add(p, Skill.WOODCUTTING, tree.xp());
@@ -504,7 +504,7 @@ final class GatheringHooks {
                     if (fishing < c.level() || agility < c.agilityReq() || strength < c.strengthReq()) {
                         continue;
                     }
-                    if (random.nextDouble() < Chance.lerp(fishing, c.low(), c.high()) * boost) {
+                    if (random.nextDouble() < c.chance(fishing, boost)) {
                         if (spot.bait() != null) {
                             Inv.remove(p, spot.bait(), 1);
                         }

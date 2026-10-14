@@ -246,16 +246,16 @@ public final class TownMonsters {
         PICKPOCKETS.add(new Pickpocket("woman", "Woman", 1, 8.0, 180, 240, 1, List.of(Loot.always("coins", 3)), List.of()));
         PICKPOCKETS.add(new Pickpocket("farmer", "Farmer", 10, 14.5, 150, 240, 1, List.of(Loot.always("coins", 9)),
                 List.of(Loot.of("potato_seed", 1, 1, 1), Loot.of("coins", 1, 1, 9))));
-        PICKPOCKETS.add(new Pickpocket("desert_bandit", "Bandit", 53, 79.5, 50, 240, 3, List.of(Loot.always("coins", 30)),
+        PICKPOCKETS.add(new Pickpocket("desert_bandit", "Bandit", 53, 79.4, 50, 240, 3, List.of(Loot.always("coins", 30)),
                 List.of(Loot.of("antipoison", 1, 1, 1), Loot.of("lockpick", 1, 1, 1), Loot.of("coins", 1, 1, 8))));
         PICKPOCKETS.add(new Pickpocket("ardougne_knight", "Knight of Ardougne", 55, 84.3, 50, 240, 3,
                 List.of(Loot.always("coins", 50)), List.of()));
-        PICKPOCKETS.add(new Pickpocket("paladin", "Paladin", 70, 151.75, 50, 150, 3, List.of(Loot.always("coins", 80)),
+        PICKPOCKETS.add(new Pickpocket("paladin", "Paladin", 70, 131.8, 40, 170, 3, List.of(Loot.always("coins", 80)),
                 List.of(Loot.of("chaos_rune", 2, 2, 1), Loot.of("coins", 1, 1, 7))));
-        PICKPOCKETS.add(new Pickpocket("gnome", "Gnome", 75, 198.5, 8, 120, 1, List.of(),
+        PICKPOCKETS.add(new Pickpocket("gnome", "Gnome", 75, 133.3, 43, 175, 1, List.of(),
                 List.of(Loot.of("coins", 300, 300, 40), Loot.of("earth_rune", 1, 1, 15), Loot.of("gold_ore", 1, 1, 10),
                         Loot.of("fire_orb", 1, 1, 5), Loot.of("uncut_sapphire", 1, 1, 10), Loot.of("mithril_ore", 1, 1, 10))));
-        PICKPOCKETS.add(new Pickpocket("hero", "Hero", 80, 273.3, 6, 100, 4, List.of(),
+        PICKPOCKETS.add(new Pickpocket("hero", "Hero", 80, 163.3, 39, 160, 3, List.of(),
                 List.of(Loot.of("coins", 200, 300, 70), Loot.of("death_rune", 2, 2, 8), Loot.of("blood_rune", 1, 1, 6),
                         Loot.of("fire_orb", 1, 1, 4), Loot.of("diamond", 1, 1, 2), Loot.of("gold_ore", 1, 1, 4),
                         Loot.of("jug_of_wine", 1, 1, 6))));
@@ -264,7 +264,7 @@ public final class TownMonsters {
         PICKPOCKETS.add(new Pickpocket("cave_goblin", "Cave goblin", 36, 40.0, 100, 240, 1, List.of(),
                 List.of(Loot.of("coins", 11, 48, 20), Loot.of("iron_ore", 1, 1, 4), Loot.of("tinderbox", 1, 1, 3),
                         Loot.of("swamp_tar", 1, 1, 3))));
-        PICKPOCKETS.add(new Pickpocket("tzhaar_hur_citizen", "TzHaar-Hur", 90, 103.4, 40, 200, 4, List.of(),
+        PICKPOCKETS.add(new Pickpocket("tzhaar_hur_citizen", "TzHaar-Hur", 90, 103.4, -200, 200, 4, List.of(),
                 List.of(Loot.of("tokkul", 3, 14, 70), Loot.of("uncut_sapphire", 1, 1, 6), Loot.of("uncut_emerald", 1, 1, 4),
                         Loot.of("uncut_ruby", 1, 1, 2), Loot.of("uncut_diamond", 1, 1, 1))));
 

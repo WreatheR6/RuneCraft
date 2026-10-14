@@ -1,0 +1,795 @@
+# OSRS Wiki "Skilling success chart" lines (Kiyogitpy/osrs-wiki-data, July 2026): page, chart, tab, line, low, high, req.
+# Pickpocket, fishing, woodcutting and mining charts only; success = (1 + floor(low*(99-L)/98 + high*(L-1)/98 + 0.5)) / 256.
+Achey Tree	Achey tree cut chance		Adamant	192	600	31
+Achey Tree	Achey tree cut chance		Black	144	450	11
+Achey Tree	Achey tree cut chance		Bronze	64	200	1
+Achey Tree	Achey tree cut chance		Crystal	250	800	71
+Achey Tree	Achey tree cut chance		Dragon	240	750	61
+Achey Tree	Achey tree cut chance		Iron	96	300	1
+Achey Tree	Achey tree cut chance		Mithril	160	500	21
+Achey Tree	Achey tree cut chance		Rune	224	700	41
+Achey Tree	Achey tree cut chance		Steel	128	400	6
+Adamantite rocks	Adamantite rocks mining chance		Adamantite rocks	2	25	70
+Al Kharid warrior	Al Kharid warrior pickpocket chance		Ardougne Diary	110	264	67
+Al Kharid warrior	Al Kharid warrior pickpocket chance		Gloves of silence	105	252	40
+Al Kharid warrior	Al Kharid warrior pickpocket chance		Normal	100	240	25
+Al Kharid warrior	Al Kharid warrior pickpocket chance		Thieving cape + Ardougne Diary	121	290	99
+Amethyst crystals	Amethyst crystal mining chance		Amethyst crystal	-18	10	92
+Anaire	Elf pickpocket chance		Ardougne Diary	6	110	85
+Anaire	Elf pickpocket chance		Gloves of silence	6	105	85
+Anaire	Elf pickpocket chance		Normal	6	100	85
+Anaire	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Aranwe	Elf pickpocket chance		Ardougne Diary	6	110	85
+Aranwe	Elf pickpocket chance		Gloves of silence	6	105	85
+Aranwe	Elf pickpocket chance		Normal	6	100	85
+Aranwe	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Arctic pine tree	Arctic pine tree cut chance		Adamant	24	75	54
+Arctic pine tree	Arctic pine tree cut chance		Black	18	56	54
+Arctic pine tree	Arctic pine tree cut chance		Bronze	8	25	54
+Arctic pine tree	Arctic pine tree cut chance		Crystal	32	100	71
+Arctic pine tree	Arctic pine tree cut chance		Dragon	30	93	61
+Arctic pine tree	Arctic pine tree cut chance		Iron	12	37	54
+Arctic pine tree	Arctic pine tree cut chance		Mithril	20	62	54
+Arctic pine tree	Arctic pine tree cut chance		Rune	28	87	54
+Arctic pine tree	Arctic pine tree cut chance		Steel	16	50	54
+Aredhel	Elf pickpocket chance		Ardougne Diary	6	110	85
+Aredhel	Elf pickpocket chance		Gloves of silence	6	105	85
+Aredhel	Elf pickpocket chance		Normal	6	100	85
+Aredhel	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Arvel	Elf pickpocket chance		Ardougne Diary	6	110	85
+Arvel	Elf pickpocket chance		Gloves of silence	6	105	85
+Arvel	Elf pickpocket chance		Normal	6	100	85
+Arvel	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Bandit (Bandit Camp)	Bandit pickpocket chance		Ardougne Diary	55	264	53
+Bandit (Bandit Camp)	Bandit pickpocket chance		Gloves of silence	52	252	53
+Bandit (Bandit Camp)	Bandit pickpocket chance		Normal	50	240	53
+Bandit (Bandit Camp)	Bandit pickpocket chance		Thieving cape + Ardougne Diary	60	290	99
+Barronite rocks	Barronite rock mining chance		Barronite rock	80	100	14
+Barronite rocks	Barronite rock mining chance		Charm of Mining	105	125	14
+Blisterwood tree	Blisterwood tree cut chance		Bronze	15	50	62
+Blisterwood tree	Blisterwood tree cut chance		Dragon	61	186	62
+Bluefin shoal	Bluefin catch chance		Fishing rod	0	18	87
+Bluefin shoal	Bluefin catch chance		Trawling net	5	23	87
+Blurite rocks	Blurite rocks mining chance		Blurite rocks	90	350	10
+Burnt tree	Dead tree cut chance		Adamant	192	600	31
+Burnt tree	Dead tree cut chance		Black	144	450	11
+Burnt tree	Dead tree cut chance		Bronze	64	200	1
+Burnt tree	Dead tree cut chance		Dragon	240	750	61
+Burnt tree	Dead tree cut chance		Iron	96	300	1
+Burnt tree	Dead tree cut chance		Mithril	160	500	21
+Burnt tree	Dead tree cut chance		Rune	224	700	41
+Burnt tree	Dead tree cut chance		Steel	128	400	6
+Camphor tree	Camphor tree cut chance		Adamant	23	71	66
+Camphor tree	Camphor tree cut chance		Black	17	71	66
+Camphor tree	Camphor tree cut chance		Bronze	8	23	66
+Camphor tree	Camphor tree cut chance		Crystal	34	93	71
+Camphor tree	Camphor tree cut chance		Dragon	32	89	66
+Camphor tree	Camphor tree cut chance		Iron	11	36	66
+Camphor tree	Camphor tree cut chance		Mithril	19	59	66
+Camphor tree	Camphor tree cut chance		Rune	27	83	66
+Camphor tree	Camphor tree cut chance		Steel	15	47	66
+Caranthir	Elf pickpocket chance		Ardougne Diary	6	110	85
+Caranthir	Elf pickpocket chance		Gloves of silence	6	105	85
+Caranthir	Elf pickpocket chance		Normal	6	100	85
+Caranthir	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Celebrian	Elf pickpocket chance		Ardougne Diary	6	110	85
+Celebrian	Elf pickpocket chance		Gloves of silence	6	105	85
+Celebrian	Elf pickpocket chance		Normal	6	100	85
+Celebrian	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Celegorm	Elf pickpocket chance		Ardougne Diary	6	110	85
+Celegorm	Elf pickpocket chance		Gloves of silence	6	105	85
+Celegorm	Elf pickpocket chance		Normal	6	100	85
+Celegorm	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Cirdan	Elf pickpocket chance		Ardougne Diary	6	110	85
+Cirdan	Elf pickpocket chance		Gloves of silence	6	105	85
+Cirdan	Elf pickpocket chance		Normal	6	100	85
+Cirdan	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Citizen (Civitas illa Fortis)	Citizen pickpocket chance		Ardougne Diary	198	264	1
+Citizen (Civitas illa Fortis)	Citizen pickpocket chance		Gloves of silence	189	252	1
+Citizen (Civitas illa Fortis)	Citizen pickpocket chance		Normal	180	240	1
+Citizen (Civitas illa Fortis)	Citizen pickpocket chance		Thieving cape + Ardougne Diary	217	290	99
+Citizen (Twilight's Promise)	Citizen pickpocket chance		Ardougne Diary	198	264	1
+Citizen (Twilight's Promise)	Citizen pickpocket chance		Gloves of silence	189	252	1
+Citizen (Twilight's Promise)	Citizen pickpocket chance		Normal	180	240	1
+Citizen (Twilight's Promise)	Citizen pickpocket chance		Thieving cape + Ardougne Diary	217	290	99
+Clay rocks	Clay rocks mining chance		Clay rocks	128	400	1
+Coal rocks	Coal rocks mining chance		Coal rocks	16	100	30
+Copper rocks	Copper rocks mining chance		Copper rocks	100	350	1
+Crashed Star	Stardust mining chance		Stardust	73	117	10
+Curufin	Elf pickpocket chance		Ardougne Diary	6	110	85
+Curufin	Elf pickpocket chance		Gloves of silence	6	105	85
+Curufin	Elf pickpocket chance		Normal	6	100	85
+Curufin	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Dead tree	Dead tree cut chance		Adamant	192	600	31
+Dead tree	Dead tree cut chance		Black	144	450	11
+Dead tree	Dead tree cut chance		Bronze	64	200	1
+Dead tree	Dead tree cut chance		Dragon	240	750	61
+Dead tree	Dead tree cut chance		Iron	96	300	1
+Dead tree	Dead tree cut chance		Mithril	160	500	21
+Dead tree	Dead tree cut chance		Rune	224	700	41
+Dead tree	Dead tree cut chance		Steel	128	400	6
+Dense Jungle	Dense Jungle Cut Chance		Jade Machete	36	64	35
+Dense Jungle	Dense Jungle Cut Chance		Opal Machete	21	49	35
+Dense Jungle	Dense Jungle Cut Chance		Plain Machete	16	44	35
+Dense Jungle	Dense Jungle Cut Chance		Red Topaz Machete	52	80	35
+Dying tree	Dying tree cut chance		Adamant	192	600	31
+Dying tree	Dying tree cut chance		Black	144	450	11
+Dying tree	Dying tree cut chance		Bronze	64	200	1
+Dying tree	Dying tree cut chance		Dragon	240	750	61
+Dying tree	Dying tree cut chance		Iron	96	300	1
+Dying tree	Dying tree cut chance		Mithril	160	500	21
+Dying tree	Dying tree cut chance		Rune	224	700	41
+Dying tree	Dying tree cut chance		Steel	128	400	6
+Earwen	Elf pickpocket chance		Ardougne Diary	6	110	85
+Earwen	Elf pickpocket chance		Gloves of silence	6	105	85
+Earwen	Elf pickpocket chance		Normal	6	100	85
+Earwen	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Edrahil	Elf pickpocket chance		Ardougne Diary	6	110	85
+Edrahil	Elf pickpocket chance		Gloves of silence	6	105	85
+Edrahil	Elf pickpocket chance		Normal	6	100	85
+Edrahil	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Elenwe	Elf pickpocket chance		Ardougne Diary	6	110	85
+Elenwe	Elf pickpocket chance		Gloves of silence	6	105	85
+Elenwe	Elf pickpocket chance		Normal	6	100	85
+Elenwe	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Elf (Thieving)	Elf pickpocket chance		Ardougne Diary	6	110	85
+Elf (Thieving)	Elf pickpocket chance		Gloves of silence	6	105	85
+Elf (Thieving)	Elf pickpocket chance		Normal	6	100	85
+Elf (Thieving)	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Elladan	Elf pickpocket chance		Ardougne Diary	6	110	85
+Elladan	Elf pickpocket chance		Gloves of silence	6	105	85
+Elladan	Elf pickpocket chance		Normal	6	100	85
+Elladan	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Enel	Elf pickpocket chance		Ardougne Diary	6	110	85
+Enel	Elf pickpocket chance		Gloves of silence	6	105	85
+Enel	Elf pickpocket chance		Normal	6	100	85
+Enel	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Enelye	Elf pickpocket chance		Ardougne Diary	6	110	85
+Enelye	Elf pickpocket chance		Gloves of silence	6	105	85
+Enelye	Elf pickpocket chance		Normal	6	100	85
+Enelye	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Enerdhil	Elf pickpocket chance		Ardougne Diary	6	110	85
+Enerdhil	Elf pickpocket chance		Gloves of silence	6	105	85
+Enerdhil	Elf pickpocket chance		Normal	6	100	85
+Enerdhil	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Erestor	Elf pickpocket chance		Ardougne Diary	6	110	85
+Erestor	Elf pickpocket chance		Gloves of silence	6	105	85
+Erestor	Elf pickpocket chance		Normal	6	100	85
+Erestor	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Evergreen tree	Evergreen tree cut chance		Adamant	192	600	31
+Evergreen tree	Evergreen tree cut chance		Black	144	450	11
+Evergreen tree	Evergreen tree cut chance		Bronze	64	200	1
+Evergreen tree	Evergreen tree cut chance		Dragon	240	750	61
+Evergreen tree	Evergreen tree cut chance		Iron	96	300	1
+Evergreen tree	Evergreen tree cut chance		Mithril	160	500	21
+Evergreen tree	Evergreen tree cut chance		Rune	224	700	41
+Evergreen tree	Evergreen tree cut chance		Steel	128	400	6
+Farmer	Farmer pickpocket chance		Ardougne Diary	165	264	38
+Farmer	Farmer pickpocket chance		Gloves of silence	157	252	7
+Farmer	Farmer pickpocket chance		Normal	150	240	7
+Farmer	Farmer pickpocket chance		Thieving cape + Ardougne Diary	181	290	99
+Farmer (Kastori)	Farmer pickpocket chance		Ardougne Diary	165	264	38
+Farmer (Kastori)	Farmer pickpocket chance		Gloves of silence	157	252	7
+Farmer (Kastori)	Farmer pickpocket chance		Normal	150	240	7
+Farmer (Kastori)	Farmer pickpocket chance		Thieving cape + Ardougne Diary	181	290	99
+Farmer (Varlamore)	Farmer pickpocket chance		Ardougne Diary	165	264	38
+Farmer (Varlamore)	Farmer pickpocket chance		Gloves of silence	157	252	7
+Farmer (Varlamore)	Farmer pickpocket chance		Normal	150	240	7
+Farmer (Varlamore)	Farmer pickpocket chance		Thieving cape + Ardougne Diary	181	290	99
+Feanor	Elf pickpocket chance		Ardougne Diary	6	110	85
+Feanor	Elf pickpocket chance		Gloves of silence	6	105	85
+Feanor	Elf pickpocket chance		Normal	6	100	85
+Feanor	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Findis	Elf pickpocket chance		Ardougne Diary	6	110	85
+Findis	Elf pickpocket chance		Gloves of silence	6	105	85
+Findis	Elf pickpocket chance		Normal	6	100	85
+Findis	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Finduilas	Elf pickpocket chance		Ardougne Diary	6	110	85
+Finduilas	Elf pickpocket chance		Gloves of silence	6	105	85
+Finduilas	Elf pickpocket chance		Normal	6	100	85
+Finduilas	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Fingolfin	Elf pickpocket chance		Ardougne Diary	6	110	85
+Fingolfin	Elf pickpocket chance		Gloves of silence	6	105	85
+Fingolfin	Elf pickpocket chance		Normal	6	100	85
+Fingolfin	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Fingon	Elf pickpocket chance		Ardougne Diary	6	110	85
+Fingon	Elf pickpocket chance		Gloves of silence	6	105	85
+Fingon	Elf pickpocket chance		Normal	6	100	85
+Fingon	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Fishing spot (Tempoross Cove)	Harpoonfish fishing chance		Crystal harpoon	187	280	71
+Fishing spot (Tempoross Cove)	Harpoonfish fishing chance		Dragon harpoon	178	267	61
+Fishing spot (Tempoross Cove)	Harpoonfish fishing chance		Harpoon	170	255	35
+Fishing spot (barbarian)	Barbarian rod fishing chance		Leaping salmon	16	96	58
+Fishing spot (barbarian)	Barbarian rod fishing chance		Leaping sturgeon	8	64	70
+Fishing spot (barbarian)	Barbarian rod fishing chance		Leaping trout	32	192	48
+Fishing spot (big net, harpoon)	Big net fishing chance		Bass	3	40	46
+Fishing spot (big net, harpoon)	Big net fishing chance		Casket	1	2	16
+Fishing spot (big net, harpoon)	Big net fishing chance		Casket (skills necklace)	2	3	16
+Fishing spot (big net, harpoon)	Big net fishing chance		Cod	4	55	23
+Fishing spot (big net, harpoon)	Big net fishing chance		Leather boots	10	10	16
+Fishing spot (big net, harpoon)	Big net fishing chance		Leather gloves	5	5	16
+Fishing spot (big net, harpoon)	Big net fishing chance		Mackerel	5	65	16
+Fishing spot (big net, harpoon)	Big net fishing chance		Oyster	3	7	16
+Fishing spot (big net, harpoon)	Big net fishing chance		Seaweed	10	10	16
+Fishing spot (big net, harpoon)	Shark fishing chance		Crystal	4	54	76
+Fishing spot (big net, harpoon)	Shark fishing chance		Dragon	3	48	76
+Fishing spot (big net, harpoon)	Shark fishing chance		Harpoon	3	40	76
+Fishing spot (cage, harpoon)	Lobster fishing chance		Raw lobster	6	95	40
+Fishing spot (cage, harpoon)	Swordfish + tuna fishing chance		Swordfish	4	48	50
+Fishing spot (cage, harpoon)	Swordfish + tuna fishing chance		Tuna	8	64	35
+Fishing spot (river)	Leechfin fishing chance		Leechfin	30	220	78
+Free-to-play Fishing training	Trout + salmon fishing chance		Raw salmon	16	96	30
+Free-to-play Fishing training	Trout + salmon fishing chance		Raw trout	32	192	20
+Galathil	Elf pickpocket chance		Ardougne Diary	6	110	85
+Galathil	Elf pickpocket chance		Gloves of silence	6	105	85
+Galathil	Elf pickpocket chance		Normal	6	100	85
+Galathil	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Gelmir	Elf pickpocket chance		Ardougne Diary	6	110	85
+Gelmir	Elf pickpocket chance		Gloves of silence	6	105	85
+Gelmir	Elf pickpocket chance		Normal	6	100	85
+Gelmir	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Gem rocks	Gem rock mining chance		Charged glory	84	210	40
+Gem rocks	Gem rock mining chance		Normal	28	70	40
+Giant krill shoal	Giant krill catch chance		Fishing rod	10	25	69
+Giant krill shoal	Giant krill catch chance		Trawling net	15	30	69
+Glorfindel	Elf pickpocket chance		Ardougne Diary	6	110	85
+Glorfindel	Elf pickpocket chance		Gloves of silence	6	105	85
+Glorfindel	Elf pickpocket chance		Normal	6	100	85
+Glorfindel	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Gnome	Gnome pickpocket chance		Ardougne Diary	47	192	75
+Gnome	Gnome pickpocket chance		Gloves of silence	45	183	75
+Gnome	Gnome pickpocket chance		Normal	43	175	75
+Gnome	Gnome pickpocket chance		Thieving cape + Ardougne Diary	51	211	99
+Gnome woman	Gnome pickpocket chance		Ardougne Diary	47	192	75
+Gnome woman	Gnome pickpocket chance		Gloves of silence	45	183	75
+Gnome woman	Gnome pickpocket chance		Normal	43	175	75
+Gnome woman	Gnome pickpocket chance		Thieving cape + Ardougne Diary	51	211	99
+Gold rocks	Gold rocks mining chance		Gold rocks	7	75	40
+Goreu	Elf pickpocket chance		Ardougne Diary	6	110	85
+Goreu	Elf pickpocket chance		Gloves of silence	6	105	85
+Goreu	Elf pickpocket chance		Normal	6	100	85
+Goreu	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Granite rocks	Granite rock mining chance		2kg	8	75	45
+Granite rocks	Granite rock mining chance		500g	16	100	45
+Granite rocks	Granite rock mining chance		5kg	6	64	45
+Guard	Guard pickpocket chance		Ardougne Diary	55	264	40
+Guard	Guard pickpocket chance		Gloves of silence	52	252	40
+Guard	Guard pickpocket chance		Normal	50	240	40
+Guard	Guard pickpocket chance		Thieving cape + Ardougne Diary	60	290	99
+Guard (Aldarin)	Guard pickpocket chance		Ardougne Diary	55	264	67
+Guard (Aldarin)	Guard pickpocket chance		Gloves of silence	52	252	40
+Guard (Aldarin)	Guard pickpocket chance		Normal	50	240	40
+Guard (Aldarin)	Guard pickpocket chance		Thieving cape + Ardougne Diary	60	290	99
+Guard (Auburnvale)	Guard pickpocket chance		Ardougne Diary	55	264	67
+Guard (Auburnvale)	Guard pickpocket chance		Gloves of silence	52	252	40
+Guard (Auburnvale)	Guard pickpocket chance		Normal	50	240	40
+Guard (Auburnvale)	Guard pickpocket chance		Thieving cape + Ardougne Diary	60	290	99
+Guard (Doric's hut)	Guard pickpocket chance		Ardougne Diary	55	264	40
+Guard (Doric's hut)	Guard pickpocket chance		Gloves of silence	52	252	40
+Guard (Doric's hut)	Guard pickpocket chance		Normal	50	240	40
+Guard (Doric's hut)	Guard pickpocket chance		Thieving cape + Ardougne Diary	60	290	99
+Guard (Hosidius)	Guard pickpocket chance		Ardougne Diary	55	264	67
+Guard (Hosidius)	Guard pickpocket chance		Gloves of silence	52	252	40
+Guard (Hosidius)	Guard pickpocket chance		Normal	50	240	40
+Guard (Hosidius)	Guard pickpocket chance		Thieving cape + Ardougne Diary	60	290	99
+Guard (Port Roberts)	Guard pickpocket chance		Ardougne Diary	55	264	67
+Guard (Port Roberts)	Guard pickpocket chance		Gloves of silence	52	252	40
+Guard (Port Roberts)	Guard pickpocket chance		Normal	50	240	40
+Guard (Port Roberts)	Guard pickpocket chance		Thieving cape + Ardougne Diary	60	290	99
+Guard (Port Sarim jail)	Guard pickpocket chance		Ardougne Diary	55	264	40
+Guard (Port Sarim jail)	Guard pickpocket chance		Gloves of silence	52	252	40
+Guard (Port Sarim jail)	Guard pickpocket chance		Normal	50	240	40
+Guard (Port Sarim jail)	Guard pickpocket chance		Thieving cape + Ardougne Diary	60	290	99
+Guard (Tlati Rainforest)	Guard pickpocket chance		Ardougne Diary	55	264	67
+Guard (Tlati Rainforest)	Guard pickpocket chance		Gloves of silence	52	252	40
+Guard (Tlati Rainforest)	Guard pickpocket chance		Normal	50	240	40
+Guard (Tlati Rainforest)	Guard pickpocket chance		Thieving cape + Ardougne Diary	60	290	99
+Guard (Varlamore)	Guard pickpocket chance		Ardougne Diary	55	264	67
+Guard (Varlamore)	Guard pickpocket chance		Gloves of silence	52	252	40
+Guard (Varlamore)	Guard pickpocket chance		Normal	50	240	40
+Guard (Varlamore)	Guard pickpocket chance		Thieving cape + Ardougne Diary	60	290	99
+Guilin	Elf pickpocket chance		Ardougne Diary	6	110	85
+Guilin	Elf pickpocket chance		Gloves of silence	6	105	85
+Guilin	Elf pickpocket chance		Normal	6	100	85
+Guilin	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+H.A.M. Member	H.A.M Member pickpocket chance		Ardougne Diary	148	262	72
+H.A.M. Member	H.A.M Member pickpocket chance		Gloves of silence	141	250	15
+H.A.M. Member	H.A.M Member pickpocket chance		Normal	135	239	15
+H.A.M. Member	H.A.M Member pickpocket chance		Thieving cape + Ardougne Diary	162	288	99
+Haddock shoal	Haddock catch chance		Fishing rod	7	23	73
+Haddock shoal	Haddock catch chance		Trawling net	12	28	73
+Halibut shoal	Halibut catch chance		Fishing rod	1	20	83
+Halibut shoal	Halibut catch chance		Trawling net	6	25	83
+Hendor (elf)	Elf pickpocket chance		Ardougne Diary	6	110	85
+Hendor (elf)	Elf pickpocket chance		Gloves of silence	6	105	85
+Hendor (elf)	Elf pickpocket chance		Normal	6	100	85
+Hendor (elf)	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Hero	Hero pickpocket chance		Ardougne Diary	42	176	80
+Hero	Hero pickpocket chance		Gloves of silence	40	168	80
+Hero	Hero pickpocket chance		Normal	39	160	80
+Hero	Hero pickpocket chance		Thieving cape + Ardougne Diary	46	193	99
+Hollow tree	Hollow tree cut chance		Adamant	59	81	45
+Hollow tree	Hollow tree cut chance		Black	42	57	45
+Hollow tree	Hollow tree cut chance		Bronze	18	26	45
+Hollow tree	Hollow tree cut chance		Dragon	67	101	61
+Hollow tree	Hollow tree cut chance		Iron	28	40	45
+Hollow tree	Hollow tree cut chance		Mithril	46	68	45
+Hollow tree	Hollow tree cut chance		Rune	64	94	45
+Hollow tree	Hollow tree cut chance		Steel	36	54	45
+Idril	Elf pickpocket chance		Ardougne Diary	6	110	85
+Idril	Elf pickpocket chance		Gloves of silence	6	105	85
+Idril	Elf pickpocket chance		Normal	6	100	85
+Idril	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Imin	Elf pickpocket chance		Ardougne Diary	6	110	85
+Imin	Elf pickpocket chance		Gloves of silence	6	105	85
+Imin	Elf pickpocket chance		Normal	6	100	85
+Imin	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Iminye	Elf pickpocket chance		Ardougne Diary	6	110	85
+Iminye	Elf pickpocket chance		Gloves of silence	6	105	85
+Iminye	Elf pickpocket chance		Normal	6	100	85
+Iminye	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Indis	Elf pickpocket chance		Ardougne Diary	6	110	85
+Indis	Elf pickpocket chance		Gloves of silence	6	105	85
+Indis	Elf pickpocket chance		Normal	6	100	85
+Indis	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Infected root	Infected root cut chance		Adamant	48	150	80
+Infected root	Infected root cut chance		Black	36	112	80
+Infected root	Infected root cut chance		Crystal	64	195	80
+Infected root	Infected root cut chance		Dragon	60	187	80
+Infected root	Infected root cut chance		Iron	24	75	80
+Infected root	Infected root cut chance		Mithril	40	125	80
+Infected root	Infected root cut chance		Rune	56	175	80
+Infected root	Infected root cut chance		Steel	32	100	80
+Infernal eel	Infernal eel catch chance		Infernal eel	30	93	80
+Ingwe	Elf pickpocket chance		Ardougne Diary	6	110	85
+Ingwe	Elf pickpocket chance		Gloves of silence	6	105	85
+Ingwe	Elf pickpocket chance		Normal	6	100	85
+Ingwe	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Ingwion	Elf pickpocket chance		Ardougne Diary	6	110	85
+Ingwion	Elf pickpocket chance		Gloves of silence	6	105	85
+Ingwion	Elf pickpocket chance		Normal	6	100	85
+Ingwion	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Iron rocks	Iron rocks mining chance		Iron rocks	96	350	15
+Ironwood tree	Ironwood tree cut chance		Adamant	21	63	80
+Ironwood tree	Ironwood tree cut chance		Black	15	46	80
+Ironwood tree	Ironwood tree cut chance		Bronze	6	21	80
+Ironwood tree	Ironwood tree cut chance		Crystal	30	83	80
+Ironwood tree	Ironwood tree cut chance		Dragon	29	80	80
+Ironwood tree	Ironwood tree cut chance		Iron	10	38	80
+Ironwood tree	Ironwood tree cut chance		Mithril	17	53	80
+Ironwood tree	Ironwood tree cut chance		Rune	24	75	80
+Ironwood tree	Ironwood tree cut chance		Steel	13	42	80
+Jatoba tree	Jatoba tree cut chance		Adamant	24	75	40
+Jatoba tree	Jatoba tree cut chance		Black	18	56	40
+Jatoba tree	Jatoba tree cut chance		Bronze	8	25	40
+Jatoba tree	Jatoba tree cut chance		Crystal	32	100	71
+Jatoba tree	Jatoba tree cut chance		Dragon	30	93	61
+Jatoba tree	Jatoba tree cut chance		Iron	12	37	40
+Jatoba tree	Jatoba tree cut chance		Mithril	20	62	40
+Jatoba tree	Jatoba tree cut chance		Rune	28	87	41
+Jatoba tree	Jatoba tree cut chance		Steel	16	50	40
+Jungle tree (Trouble Brewing)	Jungle tree cut chance		Adamant	75	225	31
+Jungle tree (Trouble Brewing)	Jungle tree cut chance		Black	54	158	11
+Jungle tree (Trouble Brewing)	Jungle tree cut chance		Bronze	22	74	1
+Jungle tree (Trouble Brewing)	Jungle tree cut chance		Crystal	91	296	71
+Jungle tree (Trouble Brewing)	Jungle tree cut chance		Dragon	89	285	61
+Jungle tree (Trouble Brewing)	Jungle tree cut chance		Iron	35	112	1
+Jungle tree (Trouble Brewing)	Jungle tree cut chance		Mithril	61	190	21
+Jungle tree (Trouble Brewing)	Jungle tree cut chance		Rune	84	263	41
+Jungle tree (Trouble Brewing)	Jungle tree cut chance		Steel	48	150	6
+Kelyn	Elf pickpocket chance		Ardougne Diary	6	110	85
+Kelyn	Elf pickpocket chance		Gloves of silence	6	105	85
+Kelyn	Elf pickpocket chance		Normal	6	100	85
+Kelyn	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Knight of Ardougne	Knight of Ardougne pickpocket chance		Ardougne Diary	55	264	55
+Knight of Ardougne	Knight of Ardougne pickpocket chance		Gloves of silence	52	252	55
+Knight of Ardougne	Knight of Ardougne pickpocket chance		Normal	50	240	55
+Knight of Ardougne	Knight of Ardougne pickpocket chance		Thieving cape + Ardougne Diary	60	290	99
+Lead rocks	Lead rocks mining chance		Lead rocks	112	278	25
+Leaping salmon	Barbarian rod fishing chance		Leaping salmon	16	96	58
+Leaping salmon	Barbarian rod fishing chance		Leaping sturgeon	8	64	70
+Leaping salmon	Barbarian rod fishing chance		Leaping trout	32	192	48
+Leaping sturgeon	Barbarian rod fishing chance		Leaping salmon	16	96	58
+Leaping sturgeon	Barbarian rod fishing chance		Leaping sturgeon	8	64	70
+Leaping sturgeon	Barbarian rod fishing chance		Leaping trout	32	192	48
+Leaping trout	Barbarian rod fishing chance		Leaping salmon	16	96	58
+Leaping trout	Barbarian rod fishing chance		Leaping sturgeon	8	64	70
+Leaping trout	Barbarian rod fishing chance		Leaping trout	32	192	48
+Leechfin	Leechfin fishing chance		Leechfin	30	220	78
+Lenwe	Elf pickpocket chance		Ardougne Diary	6	110	85
+Lenwe	Elf pickpocket chance		Gloves of silence	6	105	85
+Lenwe	Elf pickpocket chance		Normal	6	100	85
+Lenwe	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Light Jungle	Light Jungle Cut Chance		Jade Machete	70	190	10
+Light Jungle	Light Jungle Cut Chance		Opal Machete	54	174	10
+Light Jungle	Light Jungle Cut Chance		Plain Machete	49	169	10
+Light Jungle	Light Jungle Cut Chance		Red Topaz Machete	85	205	10
+Limestone rock	Limestone rock mining chance		Limestone	95	350	10
+Lindir	Elf pickpocket chance		Ardougne Diary	6	110	85
+Lindir	Elf pickpocket chance		Gloves of silence	6	105	85
+Lindir	Elf pickpocket chance		Normal	6	100	85
+Lindir	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Maeglin	Elf pickpocket chance		Ardougne Diary	6	110	85
+Maeglin	Elf pickpocket chance		Gloves of silence	6	105	85
+Maeglin	Elf pickpocket chance		Normal	6	100	85
+Maeglin	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Magic tree	Magic tree cut chance		Adamant	6	18	75
+Magic tree	Magic tree cut chance		Black	5	13	75
+Magic tree	Magic tree cut chance		Bronze	2	6	75
+Magic tree	Magic tree cut chance		Crystal	8	23	75
+Magic tree	Magic tree cut chance		Dragon	7	22	75
+Magic tree	Magic tree cut chance		Iron	3	9	75
+Magic tree	Magic tree cut chance		Mithril	5	15	75
+Magic tree	Magic tree cut chance		Rune	7	21	75
+Magic tree	Magic tree cut chance		Steel	4	12	75
+Mahogany tree	Mahogany tree cut chance		Adamant	25	75	50
+Mahogany tree	Mahogany tree cut chance		Black	18	54	50
+Mahogany tree	Mahogany tree cut chance		Bronze	8	25	50
+Mahogany tree	Mahogany tree cut chance		Crystal	36	97	71
+Mahogany tree	Mahogany tree cut chance		Dragon	34	94	61
+Mahogany tree	Mahogany tree cut chance		Iron	12	38	50
+Mahogany tree	Mahogany tree cut chance		Mithril	20	63	50
+Mahogany tree	Mahogany tree cut chance		Rune	29	88	50
+Mahogany tree	Mahogany tree cut chance		Steel	16	50	50
+Mahtan	Elf pickpocket chance		Ardougne Diary	6	110	85
+Mahtan	Elf pickpocket chance		Gloves of silence	6	105	85
+Mahtan	Elf pickpocket chance		Normal	6	100	85
+Mahtan	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Man	Man pickpocket chance		Ardougne Diary	198	264	1
+Man	Man pickpocket chance		Gloves of silence	189	252	1
+Man	Man pickpocket chance		Normal	180	240	1
+Man	Man pickpocket chance		Thieving cape + Ardougne Diary	217	290	99
+Man (East Ardougne)	Man pickpocket chance		Ardougne Diary	198	264	1
+Man (East Ardougne)	Man pickpocket chance		Gloves of silence	189	252	1
+Man (East Ardougne)	Man pickpocket chance		Normal	180	240	1
+Man (East Ardougne)	Man pickpocket chance		Thieving cape + Ardougne Diary	217	290	99
+Maple tree	Maple tree cut chance		Adamant	24	75	45
+Maple tree	Maple tree cut chance		Black	18	56	45
+Maple tree	Maple tree cut chance		Bronze	8	25	45
+Maple tree	Maple tree cut chance		Crystal	32	100	71
+Maple tree	Maple tree cut chance		Dragon	30	93	61
+Maple tree	Maple tree cut chance		Iron	12	37	45
+Maple tree	Maple tree cut chance		Mithril	20	62	45
+Maple tree	Maple tree cut chance		Rune	28	87	45
+Maple tree	Maple tree cut chance		Steel	16	50	45
+Marlin shoal	Marlin catch chance		Fishing rod	-1	15	91
+Marlin shoal	Marlin catch chance		Trawling net	4	20	91
+Martin the Master Gardener	Master Farmer pickpocket chance		Ardougne Diary	99	264	67
+Martin the Master Gardener	Master Farmer pickpocket chance		Gloves of silence	94	252	38
+Martin the Master Gardener	Master Farmer pickpocket chance		Normal	90	240	38
+Martin the Master Gardener	Master Farmer pickpocket chance		Thieving cape + Ardougne Diary	108	290	99
+Master Farmer	Master Farmer pickpocket chance		Ardougne Diary	99	264	67
+Master Farmer	Master Farmer pickpocket chance		Gloves of silence	94	252	38
+Master Farmer	Master Farmer pickpocket chance		Normal	90	240	38
+Master Farmer	Master Farmer pickpocket chance		Thieving cape + Ardougne Diary	108	290	99
+Mawrth	Elf pickpocket chance		Ardougne Diary	6	110	85
+Mawrth	Elf pickpocket chance		Gloves of silence	6	105	85
+Mawrth	Elf pickpocket chance		Normal	6	100	85
+Mawrth	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Meat tree	Meat tree cut chance		Meat tree	50	200	1
+Medium Jungle	Medium Jungle Cut Chance		Jade Machete	54	105	20
+Medium Jungle	Medium Jungle Cut Chance		Opal Machete	39	90	20
+Medium Jungle	Medium Jungle Cut Chance		Plain Machete	34	85	20
+Medium Jungle	Medium Jungle Cut Chance		Red Topaz Machete	70	121	20
+Menaphite Thug	Menaphite Thug knockout chance		Menaphite Thug	78	240	65
+Menaphite Thug	Menaphite Thug pickpocket chance		Ardougne Diary	55	176	65
+Menaphite Thug	Menaphite Thug pickpocket chance		Gloves of silence	52	168	65
+Menaphite Thug	Menaphite Thug pickpocket chance		Normal	50	160	65
+Menaphite Thug	Menaphite Thug pickpocket chance		Thieving cape + Ardougne Diary	60	193	99
+Miriel	Elf pickpocket chance		Ardougne Diary	6	110	85
+Miriel	Elf pickpocket chance		Gloves of silence	6	105	85
+Miriel	Elf pickpocket chance		Normal	6	100	85
+Miriel	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Mithrellas	Elf pickpocket chance		Ardougne Diary	6	110	85
+Mithrellas	Elf pickpocket chance		Gloves of silence	6	105	85
+Mithrellas	Elf pickpocket chance		Normal	6	100	85
+Mithrellas	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Mithril rocks	Mithril rocks mining chance		Mithril rocks	4	50	55
+Motherlode Mine	Pay-dirt mining chance		Pay-dirt	60	105	30
+Nellas	Elf pickpocket chance		Ardougne Diary	6	110	85
+Nellas	Elf pickpocket chance		Gloves of silence	6	105	85
+Nellas	Elf pickpocket chance		Normal	6	100	85
+Nellas	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Nerdanel	Elf pickpocket chance		Ardougne Diary	6	110	85
+Nerdanel	Elf pickpocket chance		Gloves of silence	6	105	85
+Nerdanel	Elf pickpocket chance		Normal	6	100	85
+Nerdanel	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Nimloth	Elf pickpocket chance		Ardougne Diary	6	110	85
+Nimloth	Elf pickpocket chance		Gloves of silence	6	105	85
+Nimloth	Elf pickpocket chance		Normal	6	100	85
+Nimloth	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Oak tree	Oak tree cut chance		Adamant	96	300	31
+Oak tree	Oak tree cut chance		Black	72	225	15
+Oak tree	Oak tree cut chance		Bronze	32	100	15
+Oak tree	Oak tree cut chance		Crystal	125	400	90
+Oak tree	Oak tree cut chance		Dragon	120	375	61
+Oak tree	Oak tree cut chance		Iron	48	150	15
+Oak tree	Oak tree cut chance		Mithril	80	250	21
+Oak tree	Oak tree cut chance		Rune	112	350	41
+Oak tree	Oak tree cut chance		Steel	64	200	15
+Oak tree (The Node)	Oak tree cut chance		Adamant	96	300	31
+Oak tree (The Node)	Oak tree cut chance		Black	72	225	15
+Oak tree (The Node)	Oak tree cut chance		Bronze	32	100	15
+Oak tree (The Node)	Oak tree cut chance		Dragon	120	375	61
+Oak tree (The Node)	Oak tree cut chance		Iron	48	150	15
+Oak tree (The Node)	Oak tree cut chance		Mithril	80	250	21
+Oak tree (The Node)	Oak tree cut chance		Rune	112	350	41
+Oak tree (The Node)	Oak tree cut chance		Steel	64	200	15
+Oropher	Elf pickpocket chance		Ardougne Diary	6	110	85
+Oropher	Elf pickpocket chance		Gloves of silence	6	105	85
+Oropher	Elf pickpocket chance		Normal	6	100	85
+Oropher	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Orophin	Elf pickpocket chance		Ardougne Diary	6	110	85
+Orophin	Elf pickpocket chance		Gloves of silence	6	105	85
+Orophin	Elf pickpocket chance		Normal	6	100	85
+Orophin	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Paladin	Paladin pickpocket chance		Ardougne Diary	44	187	70
+Paladin	Paladin pickpocket chance		Gloves of silence	42	178	70
+Paladin	Paladin pickpocket chance		Normal	40	170	70
+Paladin	Paladin pickpocket chance		Thieving cape + Ardougne Diary	48	205	99
+Pay-dirt	Pay-dirt mining chance		Pay-dirt	60	105	30
+Raw anchovies	Shrimp + anchovies fishing chance		Raw anchovies	24	128	15
+Raw anchovies	Shrimp + anchovies fishing chance		Raw shrimps	48	256	1
+Raw anglerfish	Anglerfish fishing chance		Diabolic worms	13	100	82
+Raw anglerfish	Anglerfish fishing chance		Sandworms	3	36	82
+Raw bass	Big net fishing chance		Raw bass	3	40	46
+Raw bluefin	Bluefin catch chance		Fishing rod	0	18	87
+Raw bluefin	Bluefin catch chance		Trawling net	5	23	87
+Raw cave eel	Slimy + cave eel fishing chance		Raw cave eel	10	80	38
+Raw cave eel	Slimy + cave eel fishing chance		Raw slimy eel	10	80	28
+Raw cod	Big net fishing chance		Raw cod	4	55	23
+Raw dark crab	Dark crab fishing chance		Elite Wilderness Diary	13	55	85
+Raw dark crab	Dark crab fishing chance		Normal	3	40	85
+Raw giant krill	Giant krill catch chance		Fishing rod	10	25	69
+Raw giant krill	Giant krill catch chance		Trawling net	15	30	69
+Raw haddock	Haddock catch chance		Fishing rod	7	23	73
+Raw haddock	Haddock catch chance		Trawling net	12	28	73
+Raw halibut	Halibut catch chance		Fishing rod	1	20	83
+Raw halibut	Halibut catch chance		Trawling net	6	25	83
+Raw harpoonfish	Harpoonfish fishing chance		Crystal harpoon	187	280	71
+Raw harpoonfish	Harpoonfish fishing chance		Dragon harpoon	178	267	61
+Raw harpoonfish	Harpoonfish fishing chance		Harpoon	170	255	35
+Raw herring	Herring + sardine fishing chance		Herring	24	128	10
+Raw herring	Herring + sardine fishing chance		Sardine	32	192	5
+Raw karambwan	Karambwan fishing chance		Raw karambwan	5	160	65
+Raw karambwanji	Karambwanji + shrimp fishing chance		Raw karambwanji	100	250	5
+Raw karambwanji	Karambwanji + shrimp fishing chance		Raw shrimps	48	256	1
+Raw lava eel	Lava eel fishing chance		Oily fishing rod	16	96	53
+Raw lobster	Lobster fishing chance		Raw lobster	6	95	40
+Raw mackerel	Big net fishing chance		Raw mackerel	5	65	16
+Raw marlin	Marlin catch chance		Fishing rod	-1	15	91
+Raw marlin	Marlin catch chance		Trawling net	4	20	91
+Raw monkfish	Monkfish fishing chance		Raw monkfish	48	90	62
+Raw pike	Pike fishing chance		Raw pike	16	96	25
+Raw rainbow fish	Rainbow fish fishing chance		Raw rainbow fish	8	64	38
+Raw salmon	Trout + salmon fishing chance		Raw salmon	16	96	30
+Raw salmon	Trout + salmon fishing chance		Raw trout	32	192	20
+Raw sardine	Herring + sardine fishing chance		Herring	24	128	10
+Raw sardine	Herring + sardine fishing chance		Sardine	32	192	5
+Raw shark	Shark fishing chance		Crystal	4	54	76
+Raw shark	Shark fishing chance		Dragon	3	48	76
+Raw shark	Shark fishing chance		Harpoon	3	40	76
+Raw shark	Shark fishing chance (Crystal harpoon + Shark lures)	Crystal harpoon	1x shark lure	12	162	76
+Raw shark	Shark fishing chance (Crystal harpoon + Shark lures)	Crystal harpoon	3x shark lure	18	243	76
+Raw shark	Shark fishing chance (Crystal harpoon + Shark lures)	Crystal harpoon	5x shark lure	24	324	76
+Raw shark	Shark fishing chance (Crystal harpoon + Shark lures)	Crystal harpoon	No shark lure	4	54	76
+Raw shark	Shark fishing chance (Dragon harpoon + Shark lures)	Dragon harpoon	1x shark lure	9	144	76
+Raw shark	Shark fishing chance (Dragon harpoon + Shark lures)	Dragon harpoon	3x shark lure	13.5	216	76
+Raw shark	Shark fishing chance (Dragon harpoon + Shark lures)	Dragon harpoon	5x shark lure	18	288	76
+Raw shark	Shark fishing chance (Dragon harpoon + Shark lures)	Dragon harpoon	No shark lure	3	48	76
+Raw shark	Shark fishing chance (Harpoon + Shark lures)	Harpoon	1x shark lure	9	120	76
+Raw shark	Shark fishing chance (Harpoon + Shark lures)	Harpoon	3x shark lure	13.5	180	76
+Raw shark	Shark fishing chance (Harpoon + Shark lures)	Harpoon	5x shark lure	18	240	76
+Raw shark	Shark fishing chance (Harpoon + Shark lures)	Harpoon	No shark lure	3	40	76
+Raw shrimps	Shrimp + anchovies fishing chance		Raw anchovies	24	128	15
+Raw shrimps	Shrimp + anchovies fishing chance		Raw shrimps	48	256	1
+Raw slimy eel	Slimy + cave eel fishing chance		Raw cave eel	10	80	38
+Raw slimy eel	Slimy + cave eel fishing chance		Raw slimy eel	10	80	28
+Raw swordfish	Swordfish + tuna fishing chance	Crystal harpoon	Swordfish	5	64	50
+Raw swordfish	Swordfish + tuna fishing chance	Crystal harpoon	Tuna	10	86	35
+Raw swordfish	Swordfish + tuna fishing chance	Dragon harpoon	Swordfish	4	57	50
+Raw swordfish	Swordfish + tuna fishing chance	Dragon harpoon	Tuna	9	76	35
+Raw swordfish	Swordfish + tuna fishing chance	Harpoon	Swordfish	4	48	50
+Raw swordfish	Swordfish + tuna fishing chance	Harpoon	Tuna	8	64	35
+Raw trout	Trout + salmon fishing chance		Raw salmon	16	96	30
+Raw trout	Trout + salmon fishing chance		Raw trout	32	192	20
+Raw tuna	Swordfish + tuna fishing chance	Crystal harpoon	Swordfish	5	64	50
+Raw tuna	Swordfish + tuna fishing chance	Crystal harpoon	Tuna	10	86	35
+Raw tuna	Swordfish + tuna fishing chance	Dragon harpoon	Swordfish	4	57	50
+Raw tuna	Swordfish + tuna fishing chance	Dragon harpoon	Tuna	9	76	35
+Raw tuna	Swordfish + tuna fishing chance	Harpoon	Swordfish	4	48	50
+Raw tuna	Swordfish + tuna fishing chance	Harpoon	Tuna	8	64	35
+Raw yellowfin	Yellowfin catch chance		Fishing rod	3	22	79
+Raw yellowfin	Yellowfin catch chance		Trawling net	8	27	79
+Redwood tree	Redwood tree cut chance		Adamant	6	18	90
+Redwood tree	Redwood tree cut chance		Black	4	14	90
+Redwood tree	Redwood tree cut chance		Bronze	2	6	90
+Redwood tree	Redwood tree cut chance		Crystal	8	35	90
+Redwood tree	Redwood tree cut chance		Dragon	7	30	90
+Redwood tree	Redwood tree cut chance		Iron	3	9	90
+Redwood tree	Redwood tree cut chance		Mithril	5	15	90
+Redwood tree	Redwood tree cut chance		Rune	7	21	90
+Redwood tree	Redwood tree cut chance		Steel	4	12	90
+Rock (Abyss)	Rock mining chance		Success	0	255	
+Rod Fishing spot (lure, bait)	Trout + salmon fishing chance		Raw salmon	16	96	30
+Rod Fishing spot (lure, bait)	Trout + salmon fishing chance		Raw trout	32	192	20
+Rogue	Rogue pickpocket chance		Ardougne Diary	82	264	32
+Rogue	Rogue pickpocket chance		Gloves of silence	78	252	32
+Rogue	Rogue pickpocket chance		Normal	75	240	32
+Rogue	Rogue pickpocket chance		Thieving cape + Ardougne Diary	90	290	99
+Rosewood tree	Rosewood tree cut chance		Adamant	18	56	92
+Rosewood tree	Rosewood tree cut chance		Black	13	40	92
+Rosewood tree	Rosewood tree cut chance		Bronze	6	18	92
+Rosewood tree	Rosewood tree cut chance		Crystal	27	73	92
+Rosewood tree	Rosewood tree cut chance		Dragon	25	70	92
+Rosewood tree	Rosewood tree cut chance		Iron	9	28	92
+Rosewood tree	Rosewood tree cut chance		Mithril	15	47	92
+Rosewood tree	Rosewood tree cut chance		Rune	21	66	92
+Rosewood tree	Rosewood tree cut chance		Steel	12	37	92
+Runite rocks	Runite rocks mining chance		Runite rocks	1	18	85
+Sacred eel	Sacred eel catch chance		Sacred eel	0	60	87
+Saeros	Elf pickpocket chance		Ardougne Diary	6	110	85
+Saeros	Elf pickpocket chance		Gloves of silence	6	105	85
+Saeros	Elf pickpocket chance		Normal	6	100	85
+Saeros	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Salgant	Elf pickpocket chance		Ardougne Diary	6	110	85
+Salgant	Elf pickpocket chance		Gloves of silence	6	105	85
+Salgant	Elf pickpocket chance		Normal	6	100	85
+Salgant	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Salvager	Citizen pickpocket chance		Ardougne Diary	198	264	1
+Salvager	Citizen pickpocket chance		Gloves of silence	189	252	1
+Salvager	Citizen pickpocket chance		Normal	180	240	1
+Salvager	Citizen pickpocket chance		Thieving cape + Ardougne Diary	217	290	99
+Sandstone	Sandstone mining chance		10kg	4	50	35
+Sandstone	Sandstone mining chance		1kg	25	200	35
+Sandstone	Sandstone mining chance		2kg	16	100	35
+Sandstone	Sandstone mining chance		5kg	8	75	35
+Sandstone rocks	Sandstone mining chance		10kg	4	50	35
+Sandstone rocks	Sandstone mining chance		1kg	25	200	35
+Sandstone rocks	Sandstone mining chance		2kg	16	100	35
+Sandstone rocks	Sandstone mining chance		5kg	8	75	35
+Scrapey tree	Scrapey tree cut chance		Adamant	75	225	31
+Scrapey tree	Scrapey tree cut chance		Black	54	158	11
+Scrapey tree	Scrapey tree cut chance		Bronze	22	74	1
+Scrapey tree	Scrapey tree cut chance		Crystal	91	296	71
+Scrapey tree	Scrapey tree cut chance		Dragon	89	285	61
+Scrapey tree	Scrapey tree cut chance		Iron	35	112	1
+Scrapey tree	Scrapey tree cut chance		Mithril	61	190	21
+Scrapey tree	Scrapey tree cut chance		Rune	84	263	41
+Scrapey tree	Scrapey tree cut chance		Steel	48	150	6
+Shooting Stars	Stardust mining chance		Stardust	73	117	10
+Silver rocks	Silver rocks mining chance		Silver rocks	25	200	20
+Skilling success rate	Barbarian fishing chance		Leaping salmon	16	96	58
+Skilling success rate	Barbarian fishing chance		Leaping sturgeon	8	64	70
+Skilling success rate	Barbarian fishing chance		Leaping trout	32	192	48
+Skilling success rate	Monkfish fishing chance		Raw monkfish	48	90	62
+Sulliuscep	Sulliuscep cut chance		Adamant	35	177	65
+Sulliuscep	Sulliuscep cut chance		Black	26	131	65
+Sulliuscep	Sulliuscep cut chance		Bronze	11	55	65
+Sulliuscep	Sulliuscep cut chance		Crystal	48	240	71
+Sulliuscep	Sulliuscep cut chance		Dragon	45	228	65
+Sulliuscep	Sulliuscep cut chance		Iron	17	85	65
+Sulliuscep	Sulliuscep cut chance		Mithril	29	147	65
+Sulliuscep	Sulliuscep cut chance		Rune	41	208	65
+Sulliuscep	Sulliuscep cut chance		Steel	23	115	65
+Tatie	Elf pickpocket chance		Ardougne Diary	6	110	85
+Tatie	Elf pickpocket chance		Gloves of silence	6	105	85
+Tatie	Elf pickpocket chance		Normal	6	100	85
+Tatie	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Teak tree	Teak tree cut chance		Adamant	47	140	35
+Teak tree	Teak tree cut chance		Black	35	102	35
+Teak tree	Teak tree cut chance		Bronze	15	46	35
+Teak tree	Teak tree cut chance		Crystal	60	200	71
+Teak tree	Teak tree cut chance		Dragon	60	190	61
+Teak tree	Teak tree cut chance		Iron	23	70	35
+Teak tree	Teak tree cut chance		Mithril	39	117	35
+Teak tree	Teak tree cut chance		Rune	55	164	41
+Teak tree	Teak tree cut chance		Steel	31	93	35
+Thingol	Elf pickpocket chance		Ardougne Diary	6	110	85
+Thingol	Elf pickpocket chance		Gloves of silence	6	105	85
+Thingol	Elf pickpocket chance		Normal	6	100	85
+Thingol	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Tin rocks	Tin rocks mining chance		Tin rocks	100	350	1
+Tourist	Tourist pickpocket chance		Ardougne Diary	198	264	1
+Tourist	Tourist pickpocket chance		Gloves of silence	189	252	1
+Tourist	Tourist pickpocket chance		Normal	180	240	1
+Tourist	Tourist pickpocket chance		Thieving cape + Ardougne Diary	217	290	99
+Tree	Normal tree cut chance		Adamant	192	600	31
+Tree	Normal tree cut chance		Black	144	450	11
+Tree	Normal tree cut chance		Bronze	64	200	1
+Tree	Normal tree cut chance		Crystal	250	800	71
+Tree	Normal tree cut chance		Dragon	240	750	61
+Tree	Normal tree cut chance		Iron	96	300	1
+Tree	Normal tree cut chance		Mithril	160	500	21
+Tree	Normal tree cut chance		Rune	224	700	41
+Tree	Normal tree cut chance		Steel	128	400	6
+Tree (Shayzien)	Normal tree cut chance		Adamant	192	600	31
+Tree (Shayzien)	Normal tree cut chance		Black	144	450	11
+Tree (Shayzien)	Normal tree cut chance		Bronze	64	200	1
+Tree (Shayzien)	Normal tree cut chance		Dragon	240	750	61
+Tree (Shayzien)	Normal tree cut chance		Iron	96	300	1
+Tree (Shayzien)	Normal tree cut chance		Mithril	160	500	21
+Tree (Shayzien)	Normal tree cut chance		Rune	224	700	41
+Tree (Shayzien)	Normal tree cut chance		Steel	128	400	6
+Tree (The Node)	Normal tree cut chance		Adamant	192	600	31
+Tree (The Node)	Normal tree cut chance		Black	144	450	11
+Tree (The Node)	Normal tree cut chance		Bronze	64	200	1
+Tree (The Node)	Normal tree cut chance		Dragon	240	750	61
+Tree (The Node)	Normal tree cut chance		Iron	96	300	1
+Tree (The Node)	Normal tree cut chance		Mithril	160	500	21
+Tree (The Node)	Normal tree cut chance		Rune	224	700	41
+Tree (The Node)	Normal tree cut chance		Steel	128	400	6
+Tree (Varlamore)	Normal tree cut chance		Adamant	192	600	31
+Tree (Varlamore)	Normal tree cut chance		Black	144	450	11
+Tree (Varlamore)	Normal tree cut chance		Bronze	64	200	1
+Tree (Varlamore)	Normal tree cut chance		Dragon	240	750	61
+Tree (Varlamore)	Normal tree cut chance		Iron	96	300	1
+Tree (Varlamore)	Normal tree cut chance		Mithril	160	500	21
+Tree (Varlamore)	Normal tree cut chance		Rune	224	700	41
+Tree (Varlamore)	Normal tree cut chance		Steel	128	400	6
+Turgon	Elf pickpocket chance		Ardougne Diary	6	110	85
+Turgon	Elf pickpocket chance		Gloves of silence	6	105	85
+Turgon	Elf pickpocket chance		Normal	6	100	85
+Turgon	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+TzHaar-Hur	TzHaar-Hur pickpocket chance		Ardougne Diary	-220	220	90
+TzHaar-Hur	TzHaar-Hur pickpocket chance		Gloves of silence	-210	210	90
+TzHaar-Hur	TzHaar-Hur pickpocket chance		Normal	-200	200	90
+TzHaar-Hur	TzHaar-Hur pickpocket chance		Thieving cape + Ardougne Diary	-242	242	99
+Vaire	Elf pickpocket chance		Ardougne Diary	6	110	85
+Vaire	Elf pickpocket chance		Gloves of silence	6	105	85
+Vaire	Elf pickpocket chance		Normal	6	100	85
+Vaire	Elf pickpocket chance		Thieving cape + Ardougne Diary	6	121	99
+Vines (Brimhaven Dungeon)	Vine cut chance		Adamant	192	600	31
+Vines (Brimhaven Dungeon)	Vine cut chance		Black	144	450	11
+Vines (Brimhaven Dungeon)	Vine cut chance		Bronze	64	200	1
+Vines (Brimhaven Dungeon)	Vine cut chance		Crystal	250	800	71
+Vines (Brimhaven Dungeon)	Vine cut chance		Dragon	240	750	61
+Vines (Brimhaven Dungeon)	Vine cut chance		Iron	96	300	1
+Vines (Brimhaven Dungeon)	Vine cut chance		Mithril	160	500	21
+Vines (Brimhaven Dungeon)	Vine cut chance		Rune	224	700	41
+Vines (Brimhaven Dungeon)	Vine cut chance		Steel	128	400	6
+Volcanic sulphur	Volcanic sulphur mining chance		Volcanic sulphur	100	220	42
+Vyre	Vyre pickpocket chance		Ardougne Diary	8	140	82
+Vyre	Vyre pickpocket chance		Gloves of silence	8	134	82
+Vyre	Vyre pickpocket chance		Normal	8	128	82
+Vyre	Vyre pickpocket chance		Thieving cape + Ardougne Diary	8	154	99
+Warrior (Thieving)	Warrior pickpocket chance		Ardougne Diary	110	264	67
+Warrior (Thieving)	Warrior pickpocket chance		Gloves of silence	105	252	40
+Warrior (Thieving)	Warrior pickpocket chance		Normal	100	240	25
+Warrior (Thieving)	Warrior pickpocket chance		Thieving cape + Ardougne Diary	121	290	99
+Watchman	Watchman pickpocket chance		Ardougne Diary	16	176	67
+Watchman	Watchman pickpocket chance		Gloves of silence	15	168	65
+Watchman	Watchman pickpocket chance		Normal	15	160	65
+Watchman	Watchman pickpocket chance		Thieving cape + Ardougne Diary	17	193	99
+Wealthy citizen	Wealthy citizen pickpocket chance		Ardougne Diary	38	220	67
+Wealthy citizen	Wealthy citizen pickpocket chance		Gloves of silence	36	210	50
+Wealthy citizen	Wealthy citizen pickpocket chance		Normal	35	200	50
+Wealthy citizen	Wealthy citizen pickpocket chance		Thieving cape + Ardougne Diary	41	242	99
+Willow tree	Willow tree cut chance		Adamant	48	150	31
+Willow tree	Willow tree cut chance		Black	36	112	30
+Willow tree	Willow tree cut chance		Bronze	16	50	30
+Willow tree	Willow tree cut chance		Crystal	64	195	71
+Willow tree	Willow tree cut chance		Dragon	60	187	61
+Willow tree	Willow tree cut chance		Iron	24	75	30
+Willow tree	Willow tree cut chance		Mithril	40	125	30
+Willow tree	Willow tree cut chance		Rune	56	175	41
+Willow tree	Willow tree cut chance		Steel	32	100	30
+Woman	Woman pickpocket chance		Ardougne Diary	198	264	1
+Woman	Woman pickpocket chance		Gloves of silence	189	252	1
+Woman	Woman pickpocket chance		Normal	180	240	1
+Woman	Woman pickpocket chance		Thieving cape + Ardougne Diary	217	290	99
+Woman (East Ardougne)	Woman pickpocket chance		Ardougne Diary	198	264	1
+Woman (East Ardougne)	Woman pickpocket chance		Gloves of silence	189	252	1
+Woman (East Ardougne)	Woman pickpocket chance		Normal	180	240	1
+Woman (East Ardougne)	Woman pickpocket chance		Thieving cape + Ardougne Diary	217	290	99
+Yellowfin shoal	Yellowfin catch chance		Fishing rod	3	22	79
+Yellowfin shoal	Yellowfin catch chance		Trawling net	8	27	79
+Yew tree	Yew tree cut chance		Adamant	12	37	60
+Yew tree	Yew tree cut chance		Black	9	28	60
+Yew tree	Yew tree cut chance		Bronze	4	12	60
+Yew tree	Yew tree cut chance		Crystal	16	50	71
+Yew tree	Yew tree cut chance		Dragon	15	47	61
+Yew tree	Yew tree cut chance		Iron	6	19	60
+Yew tree	Yew tree cut chance		Mithril	10	31	60
+Yew tree	Yew tree cut chance		Rune	14	44	60
+Yew tree	Yew tree cut chance		Steel	8	25	60

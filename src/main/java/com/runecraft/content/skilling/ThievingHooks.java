@@ -176,6 +176,7 @@ final class ThievingHooks {
         }
         SkillingUtil.giveAll(player, c.always(), player.getRandom());
         SkillingUtil.roll(player, c.table(), player.getRandom());
+        com.runecraft.content.GameEvents.fireActivity(player, "thieve:" + c.blockId()); // Rocky's rate is per stall/chest
         XpService.add(player, Skill.THIEVING, c.xp());
         com.runecraft.content.GameEvents.fireActivity(player, "steal:" + c.blockId());
         Msg.action(player, c.chest() ? "You find treasure inside!" : "You steal from the " + SkillingUtil.lower(c.name()) + ".");

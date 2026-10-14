@@ -12,7 +12,8 @@ import java.util.List;
  *       stack you must open them before pickpocketing again. Opening one gives the NPC's coins.</li>
  *   <li>The <b>rogue equipment</b> gives a 20% chance per piece worn of double loot (100% for all five).</li>
  *   <li>A <b>dodgy necklace</b> has a 25% chance to stop the stun when you fail; it has 10 charges.</li>
- *   <li>The <b>Thieving cape</b> gives +10% pickpocket success.</li>
+ *   <li>The <b>Thieving cape</b>, <b>gloves of silence</b> and the <b>Ardougne diary</b> scale the target's low/high
+ *       values ({@link #pickpocketChance}).</li>
  * </ul>
  */
 public final class Thieving {
@@ -46,9 +47,23 @@ public final class Thieving {
         return Math.min(1.0, Math.max(0, pieces) * 0.2);
     }
 
-    /** Pickpocket success chance: the low/high interpolation times the bonuses (diary, cape), capped at 100%. */
-    public static double pickpocketChance(int level, int low, int high, double multiplier) {
-        return Math.min(1.0, com.runecraft.osrs.Chance.lerp(level, low, high) * multiplier);
+    /**
+     * Pickpocket success chance. Each bonus (gloves of silence 1.05, Ardougne diary 1.1, Thieving cape 1.1) scales
+     * the target's low and high values, rounded down after each one, before the usual interpolation: the OSRS Wiki's
+     * charts give a guard 50/240 normally, 52/252 with gloves of silence, 55/264 with the diary and 60/290 with the
+     * diary and the cape.
+     */
+    public static double pickpocketChance(int level, int low, int high, double... multipliers) {
+        return com.runecraft.osrs.Chance.lerp(level, scaled(low, multipliers), scaled(high, multipliers));
+    }
+
+    /** A low or high value after the pickpocket bonuses (each multiplied in and rounded down in turn). */
+    public static int scaled(int value, double... multipliers) {
+        int v = value;
+        for (double m : multipliers) {
+            v = (int) Math.floor(v * m + 1e-9);
+        }
+        return v;
     }
 
     /**
@@ -139,8 +154,8 @@ public final class Thieving {
         AL_KHARID_WARRIOR("Al-Kharid warrior", 25, 26.0, 100, 240, 18, 2, "al_kharid_warrior", List.of(new Loot("coins", 18, 18, 1))),
         GUARD("Guard", 40, 46.8, 50, 240, 30, 2, "guard", List.of(new Loot("coins", 30, 30, 1))),
         KNIGHT("Knight of Ardougne", 55, 84.3, 50, 240, 50, 3, "knight_of_ardougne", List.of(new Loot("coins", 50, 50, 1))),
-        PALADIN("Paladin", 70, 151.75, 50, 150, 80, 3, "paladin", List.of(new Loot("coins", 80, 80, 1), new Loot("chaos_rune", 2, 2, 8))),
-        HERO("Hero", 80, 273.3, 6, 100, 200, 4, "hero", List.of(new Loot("coins", 200, 300, 1), new Loot("death_rune", 2, 2, 8)));
+        PALADIN("Paladin", 70, 131.8, 40, 170, 80, 3, "paladin", List.of(new Loot("coins", 80, 80, 1), new Loot("chaos_rune", 2, 2, 8))),
+        HERO("Hero", 80, 163.3, 39, 160, 200, 3, "hero", List.of(new Loot("coins", 200, 300, 1), new Loot("death_rune", 2, 2, 8)));
 
         private final String name;
         private final int level;
@@ -198,15 +213,17 @@ public final class Thieving {
         }
     }
 
-    /** Market stalls. Respawn is in game ticks. */
+    /** Market stalls (OSRS Wiki Stall/Thievable table, after the 2024 stall rebalance). Respawn is in game ticks. */
     public enum Stall {
         CAKE("cake_stall", "Baker's stall", 5, 16.0, 4, List.of(new Loot("cake", 1, 1, 1), new Loot("bread", 1, 1, 1), new Loot("chocolate_slice", 1, 1, 1))),
         SILK("silk_stall", "Silk stall", 20, 24.0, 8, List.of(new Loot("silk", 1, 1, 1))),
-        FUR("fur_stall", "Fur stall", 35, 36.0, 17, List.of(new Loot("grey_wolf_fur", 1, 1, 1))),
-        SILVER("silver_stall", "Silver stall", 50, 54.0, 50, List.of(new Loot("silver_ore", 1, 1, 1))),
-        SPICE("spice_stall", "Spice stall", 65, 81.0, 134, List.of(new Loot("spice", 1, 1, 1))),
+        FUR("fur_stall", "Fur stall", 35, 45.0, 12, List.of(new Loot("grey_wolf_fur", 1, 1, 1))),
+        // Silver stall (wiki): silver ore 4/5, silver bar 3/20, tiara 1/20.
+        SILVER("silver_stall", "Silver stall", 50, 205.0, 32, List.of(new Loot("silver_ore", 1, 1, 16), new Loot("silver_bar", 1, 1, 3),
+                new Loot("tiara", 1, 1, 1))),
+        SPICE("spice_stall", "Spice stall", 65, 92.0, 10, List.of(new Loot("spice", 1, 1, 1))),
         // Gem stall: sapphire 105/128, emerald 17/128, ruby 5/128, diamond 1/128 (wiki).
-        GEM("gem_stall", "Gem stall", 75, 160.0, 300, List.of(new Loot("uncut_sapphire", 1, 1, 105),
+        GEM("gem_stall", "Gem stall", 75, 408.0, 100, List.of(new Loot("uncut_sapphire", 1, 1, 105),
                 new Loot("uncut_emerald", 1, 1, 17), new Loot("uncut_ruby", 1, 1, 5), new Loot("uncut_diamond", 1, 1, 1)));
 
         private final String blockId;

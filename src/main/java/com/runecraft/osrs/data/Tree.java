@@ -92,41 +92,41 @@ public enum Tree {
         return high;
     }
 
-    /** Multipliers of the bronze-to-rune axes, matching {@link #EXACT}'s columns. */
-    private static final double[] AXE_MULTIPLIERS = {1.0, 1.5, 2.0, 2.25, 2.5, 3.0, 3.5};
+    /**
+     * Woodcutting multipliers of the axes, matching {@link #EXACT}'s columns: bronze, iron, steel, black, mithril, adamant,
+     * rune, dragon (and infernal) and crystal ({@link SpecialTool#CRYSTAL_AXE}).
+     */
+    public static final double[] AXE_MULTIPLIERS = {1.0, 1.5, 2.0, 2.25, 2.5, 3.0, 3.5, 3.75, 4.125};
 
     /**
-     * Exact per-axe low/high values (bronze, iron, steel, black, mithril, adamant, rune) of the trees
-     * that have them in the game's woodcutting data; they are not always a clean multiple of the
-     * bronze values (e.g. a yew with an iron axe is 6/19, not 6/18).
+     * Exact per-axe low/high values (columns as {@link #AXE_MULTIPLIERS}) from the OSRS Wiki's skilling success charts,
+     * in enum order; they are not always a clean multiple of the bronze values (e.g. a yew with an iron axe is 6/19, not
+     * 6/18; a crystal axe on a normal tree is 250/800).
      */
     private static final int[][][] EXACT = {
-            {{64, 200}, {96, 300}, {128, 400}, {144, 450}, {160, 500}, {192, 600}, {224, 700}},
-            {{32, 100}, {48, 150}, {64, 200}, {72, 225}, {80, 250}, {96, 300}, {112, 350}},
-            {{16, 50}, {24, 75}, {32, 100}, {36, 112}, {40, 125}, {48, 150}, {56, 175}},
-            {{8, 25}, {12, 37}, {16, 50}, {18, 56}, {20, 62}, {24, 75}, {28, 87}},
-            {{4, 12}, {6, 19}, {8, 25}, {9, 28}, {10, 31}, {12, 37}, {14, 44}},
-            {{2, 6}, {3, 9}, {4, 12}, {5, 13}, {5, 15}, {6, 18}, {7, 21}}};
+            {{64, 200}, {96, 300}, {128, 400}, {144, 450}, {160, 500}, {192, 600}, {224, 700}, {240, 750}, {250, 800}},
+            {{32, 100}, {48, 150}, {64, 200}, {72, 225}, {80, 250}, {96, 300}, {112, 350}, {120, 375}, {125, 400}},
+            {{16, 50}, {24, 75}, {32, 100}, {36, 112}, {40, 125}, {48, 150}, {56, 175}, {60, 187}, {64, 195}},
+            {{15, 46}, {23, 70}, {31, 93}, {35, 102}, {39, 117}, {47, 140}, {55, 164}, {60, 190}, {60, 200}},
+            {{8, 25}, {12, 37}, {16, 50}, {18, 56}, {20, 62}, {24, 75}, {28, 87}, {30, 93}, {32, 100}},
+            {{8, 25}, {12, 38}, {16, 50}, {18, 54}, {20, 63}, {25, 75}, {29, 88}, {34, 94}, {36, 97}},
+            {{4, 12}, {6, 19}, {8, 25}, {9, 28}, {10, 31}, {12, 37}, {14, 44}, {15, 47}, {16, 50}},
+            {{2, 6}, {3, 9}, {4, 12}, {5, 13}, {5, 15}, {6, 18}, {7, 21}, {7, 22}, {8, 23}},
+            {{2, 6}, {3, 9}, {4, 12}, {4, 14}, {5, 15}, {6, 18}, {7, 21}, {7, 30}, {8, 35}}};
 
-    private int[] exact(double axeMultiplier) {
-        int row = switch (this) {
-            case TREE -> 0;
-            case OAK -> 1;
-            case WILLOW -> 2;
-            case MAPLE -> 3;
-            case YEW -> 4;
-            case MAGIC -> 5;
-            default -> -1;
-        };
-        if (row < 0) {
-            return null;
-        }
+    /** Column of {@link #AXE_MULTIPLIERS} for an axe multiplier, or -1. */
+    public static int axeColumn(double axeMultiplier) {
         for (int i = 0; i < AXE_MULTIPLIERS.length; i++) {
             if (Math.abs(AXE_MULTIPLIERS[i] - axeMultiplier) < 1e-9) {
-                return EXACT[row][i];
+                return i;
             }
         }
-        return null;
+        return -1;
+    }
+
+    private int[] exact(double axeMultiplier) {
+        int col = axeColumn(axeMultiplier);
+        return col < 0 ? null : EXACT[ordinal()][col];
     }
 
     /** Success low value for an axe with this woodcutting multiplier (exact where the game data has one). */
