@@ -446,7 +446,7 @@ public final class CombatHandler {
                 : stats.profile() instanceof com.runecraft.osrs.content.MonsterDef md ? md.drops : null;
         if (table != null) {
             for (Drops.Rolled r : Drops.roll(table, entity.getRandom(), false)) {
-                entity.dropStack(CombatHooks.dropStack(player, entity, r.item(), r.count()));
+                entity.dropStack(Drops.withDoses(CombatHooks.dropStack(player, entity, r.item(), r.count()), r.doses()));
                 CollectionLog.obtain(player, r.item());
             }
         }

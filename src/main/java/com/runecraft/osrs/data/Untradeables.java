@@ -83,6 +83,8 @@ public final class Untradeables {
         // Desert Treasure II boss tablets and quartzes.
         add("frozen_tablet", "scarred_tablet", "sirenic_tablet", "strangled_tablet", "ice_quartz", "smoke_quartz", "shadow_quartz",
                 "blood_quartz");
+        // Stuffable Slayer heads.
+        add("cockatrice_head", "basilisk_head", "kurask_head", "crawling_hand");
     }
 
     private Untradeables() {

@@ -55,7 +55,7 @@ class MonsterDropsTableTest {
                 bad.add("unknown monster " + e.getKey());
             }
             for (Drop d : e.getValue().put()) {
-                boolean ok = d.item().startsWith("#") ? DropTables.MARKERS.contains(d.item()) : ItemCatalog.exists(d.item());
+                boolean ok = d.item().startsWith("#") ? DropTables.MARKERS.contains(d.item()) : ItemCatalog.exists(d.baseItem());
                 if (!ok || d.rarity() < 1 || d.min() < 1 || d.min() > d.max()) {
                     bad.add(e.getKey() + ": " + d);
                 }
@@ -197,5 +197,75 @@ class MonsterDropsTableTest {
         List<Drop> after = MonsterDropsTable.patched("Monster.MOSS_GIANT", before);
         assertTrue(after.contains(Drop.of("clue_scroll_hard", 1, 1, 128)));
         assertFalse(after.stream().anyMatch(d -> d.item().equals("mithril_scimitar")));
+    }
+
+    /** Potions the wiki lists with 1-3 doses drop with that many doses ("id(n)"), not as full potions. */
+    @Test
+    void partialPotionDoses() {
+        Drop d = Drop.of(Drop.dosed("prayer_potion", 2), 1, 1, 14);
+        assertEquals("prayer_potion(2)", d.item());
+        assertEquals("prayer_potion", d.baseItem());
+        assertEquals(2, d.doses());
+        assertEquals(0, Drop.of("prayer_potion", 1, 1, 1).doses());
+        assertEquals(0, Drop.dosesOf("ring_of_dueling(8)"));
+        assertTrue(ItemCatalog.exists("prayer_potion(1)"));
+        assertFalse(ItemCatalog.exists("bones(2)"));      // only potions take a dose suffix
+        // Maniacal monkeys: 2/20 prayer potion(1) and antipoison(2); the module's full-potion lines are replaced.
+        MonsterDef monkey = monster("maniacal_monkey");
+        assertEquals(10, rarity(monkey.drops, "prayer_potion(1)"));
+        assertEquals(10, rarity(monkey.drops, "antipoison(2)"));
+        assertEquals(-1, rarity(monkey.drops, "prayer_potion"));
+        assertEquals(-1, rarity(monkey.drops, "antipoison"));
+        assertEquals(16, rarity(monster("tortured_gorilla").drops, "prayer_potion(1)"));
+        // Sweep lines rewritten from the wiki's dose: spiritual rangers' prayer potion(2), spiritual warriors' super attack(1).
+        assertEquals(14, rarity(monster("spiritual_ranger").drops, "prayer_potion(2)"));
+        assertEquals(12, rarity(monster("spiritual_warrior").drops, "super_attack(1)"));
+        // Barbarian mixes hold two doses, so they never take a suffix.
+        for (Map.Entry<String, MonsterDropsTable.Patch> e : MonsterDropsTable.patches().entrySet()) {
+            for (Drop p : e.getValue().put()) {
+                assertFalse(p.doses() > 0 && p.baseItem().endsWith("_mix"), e.getKey() + ": " + p);
+            }
+        }
+    }
+
+    /** Round 17 items: Fremennik armour materials, food, Slayer heads and vanilla stand-ins on their wiki lines. */
+    @Test
+    void fremennikMaterialsAndOtherNewDrops() {
+        MonsterDef wb88 = monster("dagannoth_lvl88");
+        assertEquals(64, rarity(wb88.drops, "circular_hide"));
+        assertEquals(64, rarity(wb88.drops, "flattened_hide"));
+        assertEquals(64, rarity(wb88.drops, "stretched_hide"));
+        assertEquals(16, rarity(wb88.drops, "edible_seaweed"));
+        assertEquals(13, rarity(monster("dagannoth_lvl90").drops, "dagannoth_hide"));
+        assertEquals(64, rarity(monster("giant_rock_crab").drops, "rock_shell_chunk"));
+        assertEquals(64, rarity(monster("king_sand_crab").drops, "rock_shell_shard"));
+        assertEquals(64, rarity(monster("wallasalki").drops, "skull_piece"));
+        assertEquals(64, rarity(monster("wallasalki").drops, "ribcage_piece"));
+        assertEquals(64, rarity(monster("wallasalki").drops, "fibula_piece"));
+        assertEquals(64, rarity(monster("rock_crab").drops, "edible_seaweed"));
+        assertEquals(3000, rarity(monster("kurask").drops, "kurask_head"));
+        assertEquals(2000, rarity(monster("basilisk").drops, "basilisk_head"));
+        assertEquals(1000, rarity(monster("cockatrice").drops, "cockatrice_head"));
+        assertEquals(500, rarity(monster("crawling_hand").drops, "crawling_hand"));
+        assertEquals(64, rarity(monster("dagannoth").drops, "minecraft:feather"));
+        assertEquals(64, rarity(monster("dust_devil").drops, "ugthanki_kebab"));
+        assertEquals(4, ItemCatalog.get("edible_seaweed").heal());
+        assertEquals(19, ItemCatalog.get("ugthanki_kebab").heal());
+        // The Dagannoth Kings always drop a dagannoth hide (not a collection log item: rarity 1).
+        for (com.runecraft.osrs.content.BossDef b : ContentRegistry.bosses()) {
+            if (b.id.matches("dagannoth_(rex|prime|supreme)")) {
+                assertEquals(1, rarity(b.drops, "dagannoth_hide"), b.id);
+            }
+        }
+        // Rellekka's craftsmen: piece + 1/2/3 dagannoth hides + 5,000/7,500/10,000 coins.
+        ContentRegistry.monsters();
+        Recipe helm = Recipes.get("fremennik_spined_helm");
+        assertNotNull(helm);
+        assertEquals(Map.of("circular_hide", 1, "dagannoth_hide", 1, "coins", 5000), helm.inputs());
+        assertEquals(Map.of("spined_helm", 1), helm.outputs());
+        assertEquals(Map.of("rock_shell_shard", 1, "dagannoth_hide", 3, "coins", 10000),
+                Recipes.get("fremennik_rock_shell_plate").inputs());
+        assertEquals(Map.of("fibula_piece", 1, "dagannoth_hide", 2, "coins", 7500),
+                Recipes.get("fremennik_skeletal_bottoms").inputs());
     }
 }

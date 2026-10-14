@@ -328,6 +328,21 @@ public final class CraftingData extends SkillingPart {
             out.accept(plain("tan_" + h.id + "_dragon_leather", MenuType.TANNING, h.name + " dragon leather (20 coins)")
                     .in(h.id + "_dragonhide", 1).in("coins", 20).out(h.id + "_dragon_leather", 1).ticks(0).build());
         }
+        // --- Fremennik armour (OSRS: Sigli, Skulgrimen and Peer the Seer in Rellekka make it after The Fremennik Trials;
+        // no Crafting XP). Offered at the tanner here and the quest is not checked (approx). Helm 1 hide + 5,000 coins,
+        // legs 2 hides + 7,500, body 3 hides + 10,000, plus the piece. ---
+        String[][] fremennik = {
+                {"spined_helm", "circular_hide", "1", "5000"}, {"spined_chaps", "stretched_hide", "2", "7500"},
+                {"spined_body", "flattened_hide", "3", "10000"}, {"rock_shell_helm", "rock_shell_chunk", "1", "5000"},
+                {"rock_shell_legs", "rock_shell_splinter", "2", "7500"}, {"rock_shell_plate", "rock_shell_shard", "3", "10000"},
+                {"skeletal_helm", "skull_piece", "1", "5000"}, {"skeletal_bottoms", "fibula_piece", "2", "7500"},
+                {"skeletal_top", "ribcage_piece", "3", "10000"}};
+        for (String[] f : fremennik) {
+            int hides = Integer.parseInt(f[2]);
+            out.accept(plain("fremennik_" + f[0], MenuType.TANNING, title(f[0]) + " (" + title(f[1]) + ", " + hides + " dagannoth hide"
+                    + (hides > 1 ? "s" : "") + ", " + f[3] + " coins)")
+                    .in(f[1], 1).in("dagannoth_hide", hides).in("coins", Integer.parseInt(f[3])).out(f[0], 1).ticks(0).build());
+        }
         // --- Sewing (needle + thread) ---
         sew(out, "leather_gloves", "Leather gloves", 1, 13.8, "leather", 1);
         sew(out, "leather_vambraces", "Leather vambraces", 11, 22.0, "leather", 1);

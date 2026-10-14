@@ -117,8 +117,52 @@ public final class CommonItems {
                 .examine("The lean, slimy corpse of a deceased giant snail.");
         items.add("fat_snail", "Fat snail", Kind.SIMPLE, "meat_raw", 0x8A7A5A).value(10)
                 .examine("The fat, slimy corpse of a deceased giant snail.");
+        dropItems(items);
         diaryItems(items);
         CommonEquipment.add(items);
+    }
+
+    /**
+     * More monster drops the wiki drop sweep used to skip (OSRS Wiki values; MonsterDropsTable and the Dagannoth Kings
+     * drop them): Fremennik armour materials, taken with dagannoth hide and coins to Rellekka's craftsmen (CraftingData,
+     * at the tanner), edible seaweed and ugthanki kebabs, the stuffable Slayer heads, Xerician fabric (lizardmen) and
+     * Yama's contracts (Catacombs black and greater demons; nothing to hand them to yet).
+     */
+    private static void dropItems(ItemSink items) {
+        items.add("dagannoth_hide", "Dagannoth hide", Kind.SIMPLE, "hide", 0x5A6A5A).value(60).weight(3.175)
+                .examine("A sturdy piece of dagannoth hide.");
+        String[][] parts = {
+                {"circular_hide", "Circular hide", "hide", "6A8A6A", "A toughened chunk of dagannoth hide."},
+                {"flattened_hide", "Flattened hide", "hide", "6A8A6A", "A tattered chunk of dagannoth hide."},
+                {"stretched_hide", "Stretched hide", "hide", "6A8A6A", "A weathered chunk of dagannoth hide."},
+                {"rock_shell_chunk", "Rock-shell chunk", "shell", "8A7A5A", "A spherical chunk of rock-shell."},
+                {"rock_shell_shard", "Rock-shell shard", "shell", "8A7A5A", "A curved piece of rock-shell."},
+                {"rock_shell_splinter", "Rock-shell splinter", "shell", "8A7A5A", "A slim piece of rock-shell."},
+                {"skull_piece", "Skull piece", "skull", "D8D0B8", "A fearsome looking skull."},
+                {"ribcage_piece", "Ribcage piece", "bones", "D8D0B8", "A slightly damaged ribcage."},
+                {"fibula_piece", "Fibula piece", "bones", "D8D0B8", "An interesting looking bone shard."}};
+        for (String[] p : parts) {
+            items.add(p[0], p[1], Kind.SIMPLE, p[2], Integer.parseInt(p[3], 16)).value(60).weight(3.175).examine(p[4]);
+        }
+        items.add("edible_seaweed", "Edible seaweed", Kind.FOOD, "secondary", 0x4A7A3A).value(2).heal(4).weight(0.25)
+                .examine("Slightly damp seaweed.");
+        items.add("ugthanki_kebab", "Ugthanki kebab", Kind.FOOD, "meat_cooked", 0xB07A4A).value(20).heal(19).weight(0.5)
+                .examine("A fresh kebab made from ugthanki meat.");
+        for (String[] h : new String[][]{{"cockatrice", "Cockatrice", "2000", "8AA05A"}, {"basilisk", "Basilisk", "4000", "5A8A4A"},
+                {"kurask", "Kurask", "6000", "6A7A4A"}}) {
+            items.add(h[0] + "_head", h[1] + " head", Kind.SIMPLE, "skull", Integer.parseInt(h[3], 16)).value(Integer.parseInt(h[2]))
+                    .stack(1).weight(10).examine("I should get it stuffed!");
+        }
+        // The crawling hand's stuffable hand (same id as the monster, like undead_chicken; the Slayer log page lists it).
+        items.add("crawling_hand", "Crawling hand", Kind.SIMPLE, "skull", 0xB8A890).value(1000).stack(1).weight(10)
+                .examine("I should get it stuffed!");
+        items.add("xerician_fabric", "Xerician fabric", Kind.SIMPLE, "cloth", 0x4A6A4A).value(3).weight(0.06)
+                .examine("An old scrap of cloth, containing remnants of Xeric's forgotten magicks.");
+        for (String c : new String[]{"bloodied_blows", "glyphic_attenuation", "divine_severance", "forfeit_breath", "sensory_clouding"}) {
+            String words = c.replace('_', ' ');
+            items.add("contract_of_" + c, "Contract of " + words, Kind.SIMPLE, "scroll", 0x8A2A2A).value(75000).weight(0.4)
+                    .examine("A contract issued by Yama. Present it to him to discuss some new terms.");
+        }
     }
 
     /** Team capes 1-50 (pink 1-10, yellow 11-20, blue 21-30, green 31-40, red 41-50), sold by the Wilderness cape merchants. */

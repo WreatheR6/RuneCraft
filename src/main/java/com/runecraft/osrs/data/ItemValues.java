@@ -2673,6 +2673,32 @@ public final class ItemValues {
             curved_bone|7|1||A curved Construction bone.
             oyster_pearls|1400|0.004|gt|I could work wonders with a chisel on these pearls.
             unicorn_horn|20|0.007|gt|This horn has restorative properties.
+            spined_helm|60000|2.721|gt|A helm fit for any Fremennik ranger.
+            rock_shell_helm|35200|2.721|gt|Protective headwear made from crabs. Better than that sounds.
+            skeletal_helm|10000|1.36|gt|Make your foes cower by wearing a skull as a helmet!
+            fremennik_boots|500|0.34|gt|Very stylish!
+            dagannoth_hide|60|3.175|gt|A sturdy piece of dagannoth hide.
+            circular_hide|60|3.175|gt|A toughened chunk of dagannoth hide.
+            flattened_hide|60|3.175|gt|A tattered chunk of dagannoth hide.
+            stretched_hide|60|3.175|gt|A weathered chunk of dagannoth hide.
+            rock_shell_chunk|60|3.175|gt|A spherical chunk of rock-shell.
+            rock_shell_shard|60|3.175|gt|A curved piece of rock-shell.
+            rock_shell_splinter|60|3.175|gt|A slim piece of rock-shell.
+            skull_piece|60|3.175|gt|A fearsome looking skull.
+            ribcage_piece|60|3.175|gt|A slightly damaged ribcage.
+            fibula_piece|60|3.175|gt|An interesting looking bone shard.
+            edible_seaweed|2|0.25|gt|Slightly damp seaweed.
+            ugthanki_kebab|20|0.5|gt|A fresh kebab made from ugthanki meat.
+            cockatrice_head|2000|10||I should get it stuffed!
+            basilisk_head|4000|10||I should get it stuffed!
+            kurask_head|6000|10||I should get it stuffed!
+            crawling_hand|1000|10||I should get it stuffed!
+            xerician_fabric|3|0.06|gt|An old scrap of cloth, containing remnants of Xeric's forgotten magicks.
+            contract_of_bloodied_blows|75000|0.4|gt|A contract issued by Yama. Present it to him to discuss some new terms.
+            contract_of_glyphic_attenuation|75000|0.4|gt|A contract issued by Yama. Present it to him to discuss some new terms.
+            contract_of_divine_severance|75000|0.4|gt|A contract issued by Yama. Present it to him to discuss some new terms.
+            contract_of_forfeit_breath|75000|0.4|gt|A contract issued by Yama. Present it to him to discuss some new terms.
+            contract_of_sensory_clouding|75000|0.4|gt|A contract issued by Yama. Present it to him to discuss some new terms.
             """);
     }
 

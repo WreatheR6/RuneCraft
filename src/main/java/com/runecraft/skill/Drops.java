@@ -16,7 +16,22 @@ public final class Drops {
     private Drops() {
     }
 
-    public record Rolled(String item, int count) {
+    /** A rolled item ({@code doses} > 0 for a potion dropped with 1-3 doses; see {@link Drop#doses()}). */
+    public record Rolled(String item, int count, int doses) {
+        public Rolled(String item, int count) {
+            this(item, count, 0);
+        }
+    }
+
+    /** {@code stack} with {@code doses} doses left when it is a partly drunk potion (doses are item damage). */
+    public static net.minecraft.item.ItemStack withDoses(net.minecraft.item.ItemStack stack, int doses) {
+        if (doses > 0 && doses < 4 && !stack.isEmpty()) {
+            com.runecraft.osrs.ItemDef def = ItemCatalog.get(com.runecraft.util.Inv.idOf(stack));
+            if (def != null && def.kind() == com.runecraft.osrs.ItemDef.Kind.POTION) {
+                stack.setDamage(4 - doses);
+            }
+        }
+        return stack;
     }
 
     public static List<Rolled> roll(List<Drop> table, Random random, boolean ringOfWealth) {
@@ -33,7 +48,7 @@ public final class Drops {
                     continue;
                 }
                 int count = d.min() + (d.max() > d.min() ? random.nextInt(d.max() - d.min() + 1) : 0);
-                out.add(new Rolled(d.item(), count));
+                out.add(new Rolled(d.baseItem(), count, d.doses()));
             }
         }
         return out;

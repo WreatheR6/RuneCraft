@@ -46,7 +46,12 @@ public final class ItemCatalog {
     }
 
     public static boolean exists(String id) {
-        return id.startsWith("minecraft:") || id.startsWith("#") || get(id) != null;
+        if (id.startsWith("minecraft:") || id.startsWith("#") || get(id) != null) {
+            return true;
+        }
+        // A drop-table potion with 1-3 doses ("prayer_potion(2)", see Drop#doses).
+        ItemDef base = com.runecraft.osrs.data.Drop.dosesOf(id) > 0 ? get(com.runecraft.osrs.data.Drop.baseOf(id)) : null;
+        return base != null && base.kind() == Kind.POTION;
     }
 
     private static ItemDef add(String id, String name, Kind kind, String shape, int color) {
