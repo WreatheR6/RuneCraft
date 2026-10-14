@@ -48,6 +48,7 @@ public final class SystemsHooks implements ModuleHooks {
         CombatAchievementService.register();
         CaMenus.registerHandlers();
         DiaryExtrasService.register();
+        CannonService.register();
 
         CombatHooks.addModifier(new SysModifier());
         CombatHooks.addHurtListener(JewelleryService::onHurt);
@@ -139,6 +140,8 @@ public final class SystemsHooks implements ModuleHooks {
         });
         // Combat Achievement rewards that live in other systems' mechanics.
         com.runecraft.content.godwars.GwdKillcount.required = p -> CombatAchievements.gwdKillcount(CombatAchievementService.tier(p));
+        com.runecraft.content.godwars.GwdKillcount.ecumenicalChance = p ->
+                CombatAchievements.ecumenicalKeyChance(CombatAchievementService.tier(p));
         com.runecraft.content.minigames.games.PestControlSession.extraPoints = p ->
                 CombatAchievements.pestControlBonus(CombatAchievementService.tier(p));
         com.runecraft.content.minigames.games.WarriorsGuildSession.tokenMultiplier = p ->

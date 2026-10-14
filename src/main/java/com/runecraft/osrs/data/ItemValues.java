@@ -1769,6 +1769,11 @@ public final class ItemValues {
             giant_carp|10|0.5||
             dwarf_remains|1|16||
             cannon_ammo_mould|5|4.535||
+            cannon_base|187500|10|gt|
+            cannon_stand|187500|0.907|gt|
+            cannon_barrels|187500|15|gt|
+            cannon_furnace|187500|5|gt|
+            granite_cannonball|85|0|s|
             nulodions_notes|1|0.028||
             fluffs_kittens|1|0.75||
             enchanted_key|1|0.01||

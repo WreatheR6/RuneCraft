@@ -1530,6 +1530,12 @@ public final class MonsterDropsTable {
         add("mogre", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
         // Killerwatt <- parsed:Killerwatt(55)
         add("killerwatt", rm(), d("cannonball", 3, 3, 70));
+        // Steel cannonballs (OSRS Wiki drop tables): zombie pirates 20-100 at 12/378, custodian stalkers 10-15 at 20/160
+        // (juvenile), 15-30 at 15/107 (mature) and 20-30 at 15/124 (elder).
+        add("zombie_pirate", rm(), d("cannonball", 20, 100, 32));
+        add("juvenile_custodian_stalker", rm(), d("cannonball", 10, 15, 8));
+        add("mature_custodian_stalker", rm(), d("cannonball", 15, 30, 7));
+        add("elder_custodian_stalker", rm(), d("cannonball", 20, 30, 8));
         // Sea Snake Young <- parsed:Sea Snake Young(90)
         add("sea_snake_young", rm(), d("oyster_pearls", 1, 1, 128), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
         // Terror dog <- parsed:Terror dog(100)

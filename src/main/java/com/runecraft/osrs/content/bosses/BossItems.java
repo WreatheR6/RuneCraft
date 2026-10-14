@@ -243,7 +243,7 @@ public final class BossItems {
         simple(items, "black_tourmaline_core", "Black tourmaline core", "core", 0x2A2A2A, 1, "Combine with bandos boots.");
         wear(items, "guardian_boots", "Guardian boots", Kind.ARMOUR, "boots", 0x4A4A4A, 3000000, Slot.FEET,
                 st(0, 0, 0, -3, -1, 32, 32, 32, -3, 24, 1, 0, 0, 1), Skill.DEFENCE, 75);
-        items.add("granite_dust", "Granite dust", Kind.SIMPLE, "essence", 0x9A9A9A).value(1).stack(64000);
+        // Granite dust is in CommonItems (the systems module coats cannonballs with it).
         jar(items, "jar_of_stone", "Jar of stone", 0x7A7A7A);
         pet(items, "pet_noon", "Noon", "Grotesque Guardians", 0x7A7A8A);
 

@@ -31,6 +31,13 @@ import net.minecraft.util.math.Box;
 public final class GwdKillcount {
     /** Kill count needed to open a general's chamber (the systems module lowers it with Combat Achievement tiers). */
     public static java.util.function.ToIntFunction<ServerPlayerEntity> required = p -> GodWarsFactions.REQUIRED_KILLCOUNT;
+    /**
+     * Ecumenical key chance (1 in n) for a Wilderness God Wars Dungeon kill: 1/60 (OSRS Wiki); the systems module lowers it
+     * to 1/55..1/40 with the hard..grandmaster Combat Achievement tiers.
+     */
+    public static java.util.function.ToIntFunction<ServerPlayerEntity> ecumenicalChance = p -> 60;
+    /** Most ecumenical keys a player may hold (3; 4 and 5 with the medium and hard Wilderness diaries in OSRS). // approx */
+    public static final int ECUMENICAL_KEY_CAP = 3;
 
     private GwdKillcount() {
     }
@@ -71,6 +78,14 @@ public final class GwdKillcount {
                 state.set(player.getUuid(), god, kc);
                 int need = required.applyAsInt(player);
                 Msg.action(player, god.displayName() + " kill count: " + kc + (kc < need ? " / " + need : ""));
+                if (com.runecraft.world.Gielinor.wildernessLevel(entity) > 0
+                        && entity.getRandom().nextInt(Math.max(1, ecumenicalChance.applyAsInt(player))) == 0) {
+                    if (Inv.count(player, "ecumenical_key") >= ECUMENICAL_KEY_CAP) {
+                        Msg.game(player, "You already have enough of these.");
+                    } else {
+                        entity.dropStack(Inv.stack("ecumenical_key", 1));
+                    }
+                }
             }
         }
         if (entity instanceof BossEntity be && be.boss() != null) {

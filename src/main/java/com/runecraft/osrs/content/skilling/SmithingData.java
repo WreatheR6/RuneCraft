@@ -113,8 +113,7 @@ public final class SmithingData extends SkillingPart {
             simple(s, t.id() + "_limbs", (t == MetalTier.RUNE ? "Runite" : t.displayName()) + " limbs", "limbs", t.color(), base * 4);
         }
         simple(s, "steel_studs", "Steel studs", "nails", 0xB8B8C0, 20);
-        simple(s, "cannonball", "Cannonball", "cannonball", 0x5A5A60, 5).examine("Ammo for the Dwarf Cannon.");
-        tool(s, "ammo_mould", "Ammo mould", "mould", 0x6A6A70, 5);
+        // The cannonball and the ammo moulds are in CommonItems (the Dwarf Cannon quest and the multicannon use them too).
         // Blurite
         simple(s, "blurite_ore", "Blurite ore", "ore", 0x4A6AC0, 25);
         simple(s, "blurite_bar", "Blurite bar", "bar", 0x5A7AD0, 50);
@@ -155,8 +154,12 @@ public final class SmithingData extends SkillingPart {
         out.accept(r("smith_dragon_sq_shield", MenuType.SMITHING, "Dragon sq shield", Skill.SMITHING, 60, 75.0)
                 .in("shield_left_half", 1).in("shield_right_half", 1).out("dragon_sq_shield", 1).tool("hammer").ticks(4).build());
         smith(out, "steel_studs", "Steel studs", 1, MetalTier.STEEL, 1, 36);
+        // Steel cannonballs (OSRS Wiki): 35 Smithing, 25.6 XP per bar, 8 ticks at a furnace; the double ammo mould (Giants'
+        // Foundry) makes 8 from 2 bars in the same time.
         out.accept(r("smith_cannonball", MenuType.SMELTING, "4 cannonballs", Skill.SMITHING, 35, 25.6).in("steel_bar", 1)
-                .out("cannonball", 4).tool("ammo_mould").ticks(5).build());
+                .out("cannonball", 4).tool("ammo_mould").ticks(8).build());
+        out.accept(r("smith_cannonball_double", MenuType.SMELTING, "8 cannonballs (double mould)", Skill.SMITHING, 35, 51.2)
+                .in("steel_bar", 2).out("cannonball", 8).tool("double_ammo_mould").ticks(8).build());
         // Blurite: smelted at level 13 (8 XP), smithed into bolts and limbs.
         out.accept(r("smelt_blurite_bar", MenuType.SMELTING, "Blurite bar", Skill.SMITHING, 13, 8.0).in("blurite_ore", 1)
                 .out("blurite_bar", 1).ticks(4).build());

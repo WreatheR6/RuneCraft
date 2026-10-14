@@ -794,6 +794,17 @@ public final class CombatAchievements {
         return unlocked != null && unlocked.ordinal() >= Tier.ELITE.ordinal() ? base * 3 / 4 : base;
     }
 
+    /**
+     * Ecumenical key drop chance (1 in n) from Wilderness God Wars Dungeon monsters: 1/60, then 1/55, 1/50, 1/45 and 1/40
+     * from the hard, elite, master and grandmaster tiers.
+     */
+    public static int ecumenicalKeyChance(Tier unlocked) {
+        if (unlocked == null || unlocked.ordinal() < Tier.HARD.ordinal()) {
+            return 60;
+        }
+        return 55 - 5 * (unlocked.ordinal() - Tier.HARD.ordinal());
+    }
+
     /** Nightmare Zone and Soul Wars imbues cost half from the hard tier. */
     public static int imbueCost(int cost, Tier unlocked) {
         return unlocked != null && unlocked.ordinal() >= Tier.HARD.ordinal() ? cost / 2 : cost;
@@ -856,26 +867,28 @@ public final class CombatAchievements {
             case MEDIUM -> List.of("Antique lamp: 10,000 XP in a skill of level 30+", "Ghommal's hilt 2: 5 daily God Wars Dungeon teleports",
                     "5% higher medium clue scroll drop chance", "Like a boss: up to 45 boss kills per task",
                     "+2 Void Knight commendation points per Pest Control game", "200% bonus Warrior guild tokens",
-                    "No Barrows Prayer drain while a Ghommal's hilt is equipped");
+                    "No Barrows Prayer drain while a Ghommal's hilt is equipped", "The dwarf multicannon holds 35 cannonballs");
             case HARD -> List.of("Antique lamp: 15,000 XP in a skill of level 40+", "Ghommal's hilt 3: unlimited God Wars Dungeon teleports",
                     "5% higher hard clue scroll drop chance", "Like a boss: up to 50 boss kills per task",
                     "God Wars Dungeon boss rooms need 35 kill count", "+3 Void Knight commendation points per Pest Control game",
                     "Nightmare Zone and Soul Wars imbues cost half",
-                    "Ghommal's hilt 3: attach King Black Dragon heads to a dragon hunter crossbow (b)");
+                    "Ghommal's hilt 3: attach King Black Dragon heads to a dragon hunter crossbow (b)",
+                    "Ecumenical keys drop 1/55 instead of 1/60", "The dwarf multicannon holds 45 cannonballs");
             case ELITE -> List.of("Antique lamp: 25,000 XP in a skill of level 50+", "Ghommal's hilt 4: 3 daily teleports to Mor Ul Rek",
                     "5% higher elite clue scroll drop chance", "Like a boss: up to 55 boss kills per task",
                     "God Wars Dungeon boss rooms need 30 kill count",
                     "Superior slayer monsters appear 1/150 instead of 1/200",
-                    "Ghommal's hilt 4: attach Vorkath's head to a dragon hunter crossbow (t)");
+                    "Ghommal's hilt 4: attach Vorkath's head to a dragon hunter crossbow (t)",
+                    "Ecumenical keys drop 1/50", "The dwarf multicannon holds 60 cannonballs");
             case MASTER -> List.of("Antique lamp: 35,000 XP in a skill of level 60+", "Ghommal's hilt 5: 5 daily teleports to Mor Ul Rek",
                     "Ghommal's lucky penny: 5% chance not to use a charge of a charged item",
                     "Combine the hilt with an avernic defender into Ghommal's avernic defender 5",
                     "Like a boss: up to 60 boss kills per task", "TzTok-Jad and TzKal-Zuk tasks are 2 kills",
-                    "God Wars Dungeon boss rooms need 25 kill count", "Thralls last twice as long");
+                    "God Wars Dungeon boss rooms need 25 kill count", "Thralls last twice as long", "Ecumenical keys drop 1/45");
             case GRANDMASTER -> List.of("Antique lamp: 50,000 XP in a skill of level 70+", "Ghommal's hilt 6: unlimited teleports to Mor Ul Rek",
                     "Combine the hilt with an avernic defender into Ghommal's avernic defender 6",
                     "Like a boss: up to 65 boss kills per task", "TzTok-Jad and TzKal-Zuk tasks are 3 kills",
-                    "God Wars Dungeon boss rooms need 15 kill count");
+                    "God Wars Dungeon boss rooms need 15 kill count", "Ecumenical keys drop 1/40");
         };
     }
 
