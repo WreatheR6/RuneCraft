@@ -207,7 +207,8 @@ class HunterAuditTest {
                 return true;
             }
         }
-        return GatheringData.spot(id) != null || MiningData.rock(id) != null || id.equals(AerialFishing.SPOT);
+        return GatheringData.spot(id) != null || GatheringData.tree(id) != null || MiningData.rock(id) != null
+                || id.equals(AerialFishing.SPOT);
     }
 
     @Test
@@ -223,7 +224,7 @@ class HunterAuditTest {
             if (s.kind() == ResourceSites.Kind.FISHING) {
                 assertTrue(s.block().endsWith("_fishing_spot"), s.id());
             } else if (s.kind() == ResourceSites.Kind.TREE) {
-                assertTrue(s.block().endsWith("_tree_log"), s.id());
+                assertTrue(s.block().endsWith("_tree_log") || GatheringData.tree(s.block()) != null, s.id());
             } else {
                 assertTrue(s.block().endsWith("_rock"), s.id());
             }

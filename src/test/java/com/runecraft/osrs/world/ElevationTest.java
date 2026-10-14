@@ -43,7 +43,7 @@ class ElevationTest {
         double[][] sea = {
                 {2050, 3250}, // west of Tirannwn
                 {2000, 3500}, // between Zeah and the mainland
-                {2880, 2840}, // south of Karamja
+                {2860, 2830}, // south of Karamja (west of Rock Island Prison)
                 {2550, 2790}, // south of the Feldip Hills
                 {3850, 3400}, // east of Morytania
                 {3620, 2900}, // east of the Kharidian Desert

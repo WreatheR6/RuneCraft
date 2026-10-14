@@ -77,6 +77,10 @@ public final class IslandsPlaces {
     public static final String ZUL_ANDRA = "zul_andra";
     public static final String BRAINDEATH_ISLAND = "braindeath_island";
     public static final String VOID_KNIGHTS_OUTPOST = "mg_void_knights_outpost";
+    // Sailing-era islands (traced in SeaIslands; built in IslandsSailing)
+    public static final String BUCCANEERS_HAVEN = "isl_buccaneers_haven";
+    public static final String LAGUNA_AURORAE = "isl_laguna_aurorae";
+    public static final String ONYX_CREST = "isl_the_onyx_crest";
 
     public static List<PlaceDef> all() {
         return List.of(
@@ -119,7 +123,12 @@ public final class IslandsPlaces {
                 PlaceDef.of(ISAFDAR, "Isafdar dense forest", 2240, 3176, Style.CAMP, List.of()),
                 // Zanaris, the fairy realm: the fairy ring centre, bank, market and the Fairy Queen's grove.
                 new PlaceDef(ZANARIS, "Zanaris", 2412, 4434, Style.TOWN, List.of(Station.BANK_BOOTH, Station.GENERAL_STORE),
-                        List.of(IslandsBlocks.FAIRY_RING)));
+                        List.of(IslandsBlocks.FAIRY_RING)),
+                // Sailing-era islands: the pirates' castle on Buccaneers' Haven, the pirate houses on Laguna Aurorae and the
+                // pirate camp on the Onyx Crest (map squares).
+                PlaceDef.of(BUCCANEERS_HAVEN, "Buccaneers' Haven", 2096, 3684, Style.RUINS, List.of()),
+                PlaceDef.of(LAGUNA_AURORAE, "Laguna Aurorae", 1165, 2780, Style.CAMP, List.of()),
+                PlaceDef.of(ONYX_CREST, "The Onyx Crest", 2982, 2286, Style.CAMP, List.of()));
     }
 
     /**
@@ -162,6 +171,10 @@ public final class IslandsPlaces {
                         List.of("ogress_warrior", "ogress_shaman")),
                 new Camp(MUDSKIPPER_POINT, 0, 6, 10, 4, SURFACE, List.of("mudskipper")),
                 new Camp(BRAINDEATH_ISLAND, 20, -6, 6, 4, SURFACE, List.of("fever_spider", "pirate")),
-                new Camp(ZANARIS, 0, 40, 12, 3, SURFACE, List.of("mutated_zygomite")));
+                new Camp(ZANARIS, 0, 40, 12, 3, SURFACE, List.of("mutated_zygomite")),
+                // Laguna Aurorae's moss giants (wiki spawn tiles): 7 in the east at 1219-1249, 2791-2808 and 8 in the south at
+                // 1174-1193, 2756-2784. Its leeches, giant mosquitoes and giant toads are not in the game.
+                new Camp(LAGUNA_AURORAE, 140, -38, 24, 4, SURFACE, List.of("moss_giant")),
+                new Camp(LAGUNA_AURORAE, 32, 32, 16, 4, SURFACE, List.of("moss_giant")));
     }
 }

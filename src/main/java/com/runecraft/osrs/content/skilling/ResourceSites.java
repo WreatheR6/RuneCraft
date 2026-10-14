@@ -35,6 +35,11 @@ public final class ResourceSites {
         return new Site(id, name, Kind.TREE, tree + "_tree_log", region, tiles(xy));
     }
 
+    /** Trees whose block is one of {@link GatheringData#TREES} (the block id itself, not a {@code *_tree_log}). */
+    private static Site modTree(String id, String name, String block, Region region, int... xy) {
+        return new Site(id, name, Kind.TREE, block, region, tiles(xy));
+    }
+
     private static Site rock(String id, String name, String rock, Region region, int... xy) {
         return new Site(id, name, Kind.ROCK, rock + "_rock", region, tiles(xy));
     }
@@ -122,9 +127,18 @@ public final class ResourceSites {
             rock("barbarian_village_tin", "Barbarian Village mine", "tin", Region.MISTHALIN, 3079, 3418, 3080, 3419),
             rock("seers_coal_trucks", "Coal trucks mine", "coal", Region.KANDARIN, 2581, 3481, 2584, 3483, 2586, 3478, 2589, 3481), // approx
             rock("lava_maze_runite", "Lava Maze runite rocks", "runite", Region.WILDERNESS, 3059, 3884, 3060, 3885),   // approx
-            // Lead rocks on Deepfin Point (wiki object tiles; the Onyx Crest and the Pandemonium Cave's rocks are not built).
+            // Lead rocks on Deepfin Point and the Onyx Crest (wiki object tiles; the Pandemonium Cave's rocks are not built).
             rock("deepfin_point_lead", "Deepfin Point lead rocks", "lead", Region.UNCHARTED_ISLES,
                     1935, 2795, 1933, 2794, 1936, 2794, 1934, 2792, 1932, 2791, 1930, 2789, 1939, 2789),
+            rock("onyx_crest_lead", "Onyx Crest lead rocks", "lead", Region.UNCHARTED_ISLES,
+                    2975, 2255, 2975, 2253, 2977, 2253, 2974, 2252, 2975, 2251, 2978, 2251),
+            // The 14 ironwood trees of Sunbleak Island and the 10 rosewood trees of Drumstick Isle (wiki object tiles).
+            modTree("sunbleak_island_ironwood", "Sunbleak Island ironwood trees", "ironwood_tree", Region.UNCHARTED_ISLES,
+                    2200, 2328, 2231, 2334, 2228, 2340, 2227, 2330, 2223, 2347, 2223, 2323, 2221, 2344, 2221, 2319, 2211, 2320,
+                    2210, 2317, 2207, 2327, 2207, 2313, 2204, 2325, 2203, 2316),
+            modTree("drumstick_isle_rosewood", "Drumstick Isle rosewood trees", "rosewood_tree", Region.UNCHARTED_ISLES,
+                    2135, 3548, 2154, 3543, 2153, 3540, 2153, 3537, 2150, 3555, 2150, 3538, 2149, 3558, 2148, 3556, 2137, 3547,
+                    2137, 3544),
             // The Lovakengj sulphur mine's volcanic sulphur deposits (wiki object tiles).
             rock("lovakengj_sulphur", "Lovakengj sulphur mine", "volcanic_sulphur", Region.KOUREND,
                     1423, 3872, 1445, 3863, 1439, 3869, 1432, 3866, 1446, 3873));

@@ -125,9 +125,21 @@ public final class ThievingData extends SkillingPart {
             // Pollnivneach villagers (30 Thieving, 8 XP, 2 damage, 5 coins): blackjack targets after The Feud. Low/high approx.
             new Target("pollnivneach_villager", "Villager", "POLLNIVNEACH", 2, 3, 30, 8.0, 110, 240, 2,
                     List.of(Loot.of("coins", 5, 5, 1)), List.of(), new int[]{0xA07850, 0xC0A880, 0x8A7A5A, 0xE0D8C0}),
+            // Pirates of the Sailing islands (60 Thieving, 72 XP, 3 damage; OSRS Wiki "Pirate (Thieving)", spawn tiles from its
+            // location table): the Onyx Crest, Laguna Aurorae and the castle on Buccaneers' Haven. Loot: 20 coins (170/200)
+            // or a steel cannonball (5/200); the bronze and iron cannonballs (24/200), elkhorn frag and the Onyx Crest's
+            // medallion fragment are not in the game. The wiki has no success chart: low/high approx.
+            pirate("onyx_crest_pirate", "onyx_crest_pirates", 0xA07850, 0x8A2A2A),
+            pirate("laguna_aurorae_pirate", "laguna_aurorae_pirates", 0xC8A080, 0x2A4A8A),
+            pirate("buccaneers_haven_pirate", "buccaneers_haven_pirates", 0x8A6A4A, 0x2A2A2A),
             new Target("tzhaar_hur", "TzHaar-Hur", "MOR_UL_REK", 5, 5, 90, 103.4, -200, 200, 4,
                     List.of(), List.of(Loot.of("tokkul", 3, 14, 70), Loot.of("uncut_sapphire", 6), Loot.of("uncut_emerald", 4),
                     Loot.of("uncut_ruby", 2), Loot.of("uncut_diamond", 1)), new int[]{0x8A3A1A, 0x5A2A1A, 0x4A2A1A, 0xE06010}));
+
+    private static Target pirate(String npcId, String place, int skin, int shirt) {
+        return new Target(npcId, "Pirate", place, 0, 0, 60, 72.0, 40, 200, 3, List.of(),
+                List.of(Loot.of("coins", 20, 20, 170), Loot.of("cannonball", 1, 1, 5)), new int[]{skin, shirt, 0x3A2A1A, 0x1A1A1A});
+    }
 
     /** Targets that can be knocked out with a blackjack first (Pollnivneach, after The Feud). */
     public static final List<String> BLACKJACK_TARGETS = List.of("menaphite_thug", "bearded_pollnivneach_bandit", "pollnivneach_bandit",
@@ -373,6 +385,10 @@ public final class ThievingData extends SkillingPart {
                 PlaceDef.of("civitas_houses", "Civitas houses", 1612, 3112, PlaceDef.Style.TOWN,
                         List.of("civitas_house_chest", "civitas_house_wardrobe", "civitas_jewellery_case")),
                 // The Digsite workmen's spawns (cache tiles 3350-3373, 3385-3429); one stands at their centre.
-                PlaceDef.of("digsite_workmen", "Digsite", 3362, 3408, PlaceDef.Style.NONE, List.of()));
+                PlaceDef.of("digsite_workmen", "Digsite", 3362, 3408, PlaceDef.Style.NONE, List.of()),
+                // The Sailing islands' pirates: the centre of each island's pirate spawn tiles (wiki).
+                PlaceDef.of("onyx_crest_pirates", "The Onyx Crest pirate camp", 2981, 2287, PlaceDef.Style.NONE, List.of()),
+                PlaceDef.of("laguna_aurorae_pirates", "Laguna Aurorae pirates", 1164, 2781, PlaceDef.Style.NONE, List.of()),
+                PlaceDef.of("buccaneers_haven_pirates", "Buccaneers' Haven castle", 2096, 3684, PlaceDef.Style.NONE, List.of()));
     }
 }

@@ -100,7 +100,7 @@ class SuccessRateSnapshotTest {
 
     /** Targets the wiki has no success chart for (low/high approx). */
     private static final Set<String> NO_CHART = Set.of("Fremennik citizen", "Bearded Pollnivneach bandit", "Pollnivneach bandit",
-            "Cave goblin", "Digsite workman", "Villager");
+            "Cave goblin", "Digsite workman", "Villager", "Pirate");
 
     /** Mod pickpocket name -> row name of the Thieving page's NPC table, where they differ. */
     private static final Map<String, String> TABLE_NAMES = Map.of("Woman", "Man", "Al-Kharid warrior", "Warrior",

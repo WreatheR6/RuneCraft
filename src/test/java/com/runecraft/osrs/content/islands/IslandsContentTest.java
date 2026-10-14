@@ -125,8 +125,9 @@ class IslandsContentTest {
                 assertTrue(GielinorMap.wildernessLevel(p.blockX(), p.blockZ()) == 0, p.id() + " in the Wilderness");
                 continue;
             }
-            assertTrue(p.osrsX() > 2000 && p.osrsX() < 3900, p.id() + " x");
-            assertTrue(p.osrsY() > 2600 && p.osrsY() < 4500, p.id() + " y");
+            // the Sailing-era islands reach west to Laguna Aurorae (x 1165) and south to the Onyx Crest (y 2286)
+            assertTrue(p.osrsX() > 1100 && p.osrsX() < 3900, p.id() + " x");
+            assertTrue(p.osrsY() > 2200 && p.osrsY() < 4500, p.id() + " y");
             assertTrue(GielinorMap.wildernessLevel(p.blockX(), p.blockZ()) == 0, p.id() + " in the Wilderness");
             assertNull(Landmark.byName(p.id()), p.id());
             for (PlaceDef o : ContentRegistry.places()) {

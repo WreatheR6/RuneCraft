@@ -1,0 +1,420 @@
+package com.runecraft.osrs.world;
+
+import com.runecraft.osrs.world.GielinorGeography.Lake;
+import com.runecraft.osrs.world.GielinorGeography.Polygon;
+
+import java.util.List;
+
+/**
+ * The islands of the Sailing-era seas (and a few older ones the mod lacked), traced from the OSRS world map
+ * (mejrs/layers_osrs map squares, July 2026, 1 px per tile, sea told from land by colour, coast simplified to within
+ * about 1 tile). Generated: every land body of at least 40 tiles that the hand-authored coasts did not cover and that a
+ * sea charting task names or sits next to. Islet names in lower case are descriptive, not OSRS names. Lagoons enclosed
+ * by an island (Laguna Aurorae) are {@link #LAGOONS}.
+ */
+public final class SeaIslands {
+    private SeaIslands() {
+    }
+
+    /** Isle of Serpents: tiles 1796-1909, 2370-2476. */
+    public static final Polygon ISLE_OF_SERPENTS = new Polygon("Isle of Serpents", new double[]{
+            1878.5, 2370, 1867.5, 2371, 1856.5, 2378, 1848.5, 2380, 1833.5, 2392, 1813.5, 2389, 1811, 2385.5, 1810, 2378.5,
+            1803.5, 2373, 1801.5, 2373, 1796, 2380.5, 1797, 2386.5, 1804, 2398.5, 1805, 2408.5, 1809, 2414.5, 1826.5, 2429,
+            1835, 2433.5, 1843, 2442.5, 1848, 2456.5, 1850.5, 2459, 1856.5, 2459, 1863.5, 2468, 1866.5, 2466, 1872.5, 2469,
+            1873.5, 2477, 1880.5, 2475, 1888.5, 2466, 1893.5, 2465, 1899, 2457.5, 1890.5, 2461, 1889, 2456.5, 1891, 2451.5,
+            1888.5, 2448, 1884.5, 2450, 1871.5, 2450, 1867, 2444.5, 1867, 2437.5, 1873.5, 2431, 1881.5, 2429, 1884.5, 2423,
+            1892.5, 2423, 1896, 2418.5, 1894, 2409.5, 1900.5, 2406, 1907.5, 2407, 1910, 2401.5, 1908.5, 2398, 1903.5, 2397,
+            1900.5, 2392, 1896.5, 2391, 1896, 2386.5, 1884.5, 2378
+    });
+
+    /** Laguna Aurorae: tiles 1144-1254, 2717-2813. */
+    public static final Polygon LAGUNA_AURORAE = new Polygon("Laguna Aurorae", new double[]{
+            1181.5, 2717, 1173.5, 2719, 1172, 2721.5, 1174, 2725.5, 1169, 2729.5, 1169, 2731.5, 1173, 2734.5, 1170, 2738.5,
+            1173, 2740.5, 1168, 2744.5, 1178, 2750.5, 1170.5, 2758, 1167.5, 2756, 1165.5, 2760, 1162.5, 2760, 1163, 2757.5,
+            1161.5, 2757, 1159.5, 2761, 1153, 2763.5, 1156, 2765.5, 1145, 2773.5, 1147, 2775.5, 1144, 2781.5, 1148.5, 2785,
+            1153.5, 2786, 1159.5, 2793, 1163, 2794.5, 1157, 2798.5, 1157, 2807.5, 1163.5, 2809, 1168.5, 2813, 1179.5, 2814,
+            1185.5, 2809, 1200.5, 2813, 1202, 2811.5, 1197.5, 2807, 1203.5, 2810, 1216.5, 2807, 1220.5, 2813, 1226.5, 2813,
+            1228.5, 2805, 1233.5, 2809, 1240.5, 2811, 1244.5, 2804, 1251.5, 2804, 1255, 2800.5, 1253, 2795.5, 1255, 2789.5,
+            1250.5, 2787, 1247, 2788.5, 1244.5, 2793, 1243.5, 2791, 1237, 2789.5, 1237, 2785.5, 1233, 2781.5, 1233, 2777.5,
+            1235, 2776.5, 1234, 2773.5, 1228.5, 2773, 1229.5, 2770, 1226.5, 2770, 1225.5, 2772, 1224, 2770.5, 1223, 2764.5,
+            1225, 2762.5, 1223.5, 2758, 1220.5, 2757, 1216.5, 2763, 1214, 2762.5, 1217, 2765.5, 1214.5, 2772, 1209.5, 2770,
+            1207.5, 2775, 1203, 2774.5, 1205, 2776.5, 1202.5, 2779, 1201.5, 2777, 1199, 2777.5, 1199, 2772.5, 1202.5, 2770,
+            1204.5, 2772, 1204, 2769.5, 1208, 2763.5, 1211, 2764.5, 1209, 2759.5, 1212, 2759.5, 1206.5, 2755, 1204, 2755.5,
+            1204.5, 2751, 1202, 2752.5, 1202, 2749.5, 1207, 2742.5, 1205.5, 2741, 1197, 2741.5, 1201.5, 2738, 1205.5, 2739,
+            1207, 2735.5, 1200.5, 2730, 1189.5, 2734, 1183, 2727.5, 1185, 2724.5
+    });
+
+    /** The Iceberg: tiles 2624-2680, 3978-4088. */
+    public static final Polygon ICEBERG = new Polygon("The Iceberg", new double[]{
+            2668.5, 3978, 2665.5, 3978, 2663, 3980.5, 2660.5, 3988, 2655.5, 3991, 2647.5, 3992, 2642, 3997.5, 2642, 4000.5,
+            2639.5, 4003, 2636.5, 4002, 2632.5, 4007, 2630, 4007.5, 2626, 4014.5, 2626, 4017.5, 2630, 4021.5, 2627, 4024.5,
+            2628, 4028.5, 2624, 4032.5, 2627, 4037.5, 2625, 4042.5, 2631, 4046.5, 2636, 4054.5, 2640.5, 4058, 2645.5, 4049,
+            2651, 4049.5, 2645, 4062.5, 2641.5, 4065, 2637.5, 4064, 2634, 4067.5, 2634, 4075.5, 2639, 4085.5, 2642.5, 4088,
+            2653.5, 4084, 2659.5, 4089, 2662.5, 4089, 2670, 4079.5, 2669, 4075.5, 2671, 4072.5, 2669, 4068.5, 2672, 4066.5,
+            2668, 4059.5, 2671, 4057.5, 2661, 4047.5, 2661, 4043.5, 2667, 4037.5, 2665, 4034.5, 2665, 4027.5, 2667.5, 4025,
+            2671.5, 4025, 2679, 4016.5, 2673, 4006.5, 2681, 3994.5, 2681, 3987.5, 2674.5, 3979, 2670.5, 3980
+    });
+
+    /** Pest Control island: tiles 2625-2686, 2561-2618. */
+    public static final Polygon PEST_CONTROL_ISLAND = new Polygon("Pest Control island (the pest-filled island south of the Void Knights' Outpost)", new double[]{
+            2643.5, 2561, 2640, 2563.5, 2641.5, 2568, 2633.5, 2566, 2625, 2573.5, 2629.5, 2583, 2633.5, 2583, 2635.5, 2581,
+            2641, 2581.5, 2637.5, 2582, 2634.5, 2585, 2630.5, 2585, 2626, 2588.5, 2627, 2595.5, 2625, 2598.5, 2630.5, 2607,
+            2632.5, 2604, 2634, 2604.5, 2631, 2609.5, 2632, 2616.5, 2634.5, 2619, 2637.5, 2619, 2640.5, 2616, 2644.5, 2619,
+            2646, 2617.5, 2645, 2610.5, 2647.5, 2608, 2655.5, 2609, 2656, 2614.5, 2659.5, 2615, 2660, 2609.5, 2665.5, 2607,
+            2670, 2608.5, 2671.5, 2614, 2679.5, 2616, 2683, 2610.5, 2682, 2607.5, 2686, 2604.5, 2682, 2600.5, 2683, 2594.5,
+            2687, 2593.5, 2687, 2589.5, 2683, 2584.5, 2685, 2581.5, 2684, 2575.5, 2687, 2569.5, 2686, 2565.5, 2682.5, 2564,
+            2684, 2567.5, 2680.5, 2570, 2676.5, 2570, 2673.5, 2563, 2668.5, 2564, 2666.5, 2567, 2663.5, 2563, 2649.5, 2565
+    });
+
+    /** The Onyx Crest: tiles 2946-3004, 2247-2297. */
+    public static final Polygon ONYX_CREST = new Polygon("The Onyx Crest", new double[]{
+            2981.5, 2247, 2975.5, 2248, 2972.5, 2252, 2955.5, 2250, 2948, 2251.5, 2946, 2256.5, 2947, 2265.5, 2953, 2273.5,
+            2952, 2280.5, 2954, 2284.5, 2953, 2291.5, 2954.5, 2294, 2960.5, 2292, 2961, 2288.5, 2970.5, 2280, 2975, 2282.5,
+            2975, 2287.5, 2972, 2293.5, 2973.5, 2296, 2978.5, 2298, 2984.5, 2298, 2992.5, 2290, 3000.5, 2289, 3004, 2286.5,
+            3004, 2277.5, 2998, 2259.5
+    });
+
+    /** Crash Island: tiles 2887-2939, 2698-2741. */
+    public static final Polygon CRASH_ISLAND = new Polygon("Crash Island", new double[]{
+            2926.5, 2698, 2921.5, 2699, 2916.5, 2704, 2906.5, 2709, 2892.5, 2707, 2888, 2710.5, 2887, 2720.5, 2891, 2725.5,
+            2889, 2736.5, 2893.5, 2741, 2911.5, 2741, 2917.5, 2735, 2923.5, 2738, 2928.5, 2738, 2936, 2733.5, 2939, 2727.5,
+            2940, 2716.5, 2936, 2703.5
+    });
+
+    /** Buccaneers' Haven: tiles 2052-2107, 3657-3710. */
+    public static final Polygon BUCCANEERS_HAVEN = new Polygon("Buccaneers' Haven", new double[]{
+            2083.5, 3657, 2077.5, 3659, 2071, 3667.5, 2072.5, 3671, 2079, 3671.5, 2075.5, 3676, 2069.5, 3677, 2057.5, 3675,
+            2052, 3681.5, 2056, 3699.5, 2064.5, 3708, 2072.5, 3708, 2078.5, 3711, 2083, 3706.5, 2078.5, 3705, 2070, 3697.5,
+            2069.5, 3691, 2078.5, 3694, 2085.5, 3690, 2092.5, 3698, 2108, 3691.5, 2108, 3677.5, 2104, 3667.5, 2095.5, 3659,
+            2087.5, 3660
+    });
+
+    /** Tempoross Cove: tiles 3010-3061, 2820-2878. */
+    public static final Polygon TEMPOROSS_COVE = new Polygon("Tempoross Cove", new double[]{
+            3025.5, 2820, 3017.5, 2825, 3011, 2832.5, 3015, 2842.5, 3014, 2844.5, 3017.5, 2844, 3019, 2847.5, 3012, 2854.5,
+            3010, 2866.5, 3025.5, 2877, 3038.5, 2879, 3048, 2875.5, 3051, 2870.5, 3051, 2864.5, 3048.5, 2856, 3046, 2856.5,
+            3045.5, 2860, 3040, 2854.5, 3040, 2838.5, 3033.5, 2838, 3033, 2858.5, 3036.5, 2862, 3040.5, 2858, 3044, 2862.5,
+            3040.5, 2868, 3031, 2869.5, 3025, 2855.5, 3027, 2854.5, 3025, 2852.5, 3028, 2846.5, 3029, 2838.5, 3031.5, 2836,
+            3037.5, 2835, 3041.5, 2839, 3045.5, 2840, 3046.5, 2843, 3049, 2842.5, 3049.5, 2839, 3055, 2844.5, 3055, 2859.5,
+            3053, 2859.5, 3052.5, 2862, 3051.5, 2861, 3051.5, 2863, 3054.5, 2863, 3054.5, 2861, 3062, 2860.5, 3062, 2840.5,
+            3058.5, 2837, 3054.5, 2841, 3051, 2837.5, 3052, 2832.5, 3042.5, 2822, 3035.5, 2823
+    });
+
+    /** Sunbleak Island: tiles 2178-2237, 2306-2354. */
+    public static final Polygon SUNBLEAK_ISLAND = new Polygon("Sunbleak Island", new double[]{
+            2210.5, 2306, 2203.5, 2306, 2193.5, 2310, 2180.5, 2308, 2178, 2312.5, 2185, 2325.5, 2191, 2327.5, 2192, 2334.5,
+            2194.5, 2338, 2207.5, 2334, 2211, 2336.5, 2220, 2353.5, 2226.5, 2353, 2228.5, 2355, 2228, 2352.5, 2232.5, 2348,
+            2234.5, 2351, 2236, 2350.5, 2235, 2348.5, 2238, 2344.5, 2237, 2331.5, 2229, 2323.5, 2221.5, 2311
+    });
+
+    /** Island of the shipyard in the Sea of Souls: tiles 2052-2098, 2695-2744. */
+    public static final Polygon SEA_OF_SOULS_SHIPYARD_ISLE = new Polygon("Island of the shipyard in the Sea of Souls (approx name)", new double[]{
+            2073.5, 2695, 2070.5, 2700, 2061.5, 2700, 2055.5, 2695, 2052, 2697.5, 2052, 2700.5, 2056.5, 2707, 2062, 2709.5,
+            2056, 2722.5, 2060.5, 2728, 2063, 2728.5, 2063, 2733.5, 2064.5, 2735, 2071.5, 2733, 2077, 2737.5, 2078, 2743.5,
+            2081.5, 2745, 2090.5, 2742, 2094, 2736.5, 2099, 2733.5, 2098.5, 2728, 2088, 2727.5, 2088.5, 2720, 2099, 2719.5,
+            2098.5, 2718, 2088.5, 2718, 2088, 2710.5, 2098.5, 2710, 2099, 2703.5, 2095.5, 2698, 2077.5, 2702
+    });
+
+    /** The Pandemonium: tiles 3012-3069, 2960-3005. */
+    public static final Polygon PANDEMONIUM = new Polygon("The Pandemonium", new double[]{
+            3038.5, 2960, 3036, 2961.5, 3038, 2966.5, 3045, 2968.5, 3044, 2980.5, 3039, 2980.5, 3041, 2979.5, 3040.5, 2977,
+            3043, 2977.5, 3042, 2970.5, 3034.5, 2964, 3030.5, 2964, 3029, 2967.5, 3035, 2972.5, 3032.5, 2977, 3028.5, 2975,
+            3025, 2976.5, 3028, 2985.5, 3026, 2990.5, 3021.5, 2988, 3014.5, 2988, 3012, 2996.5, 3016.5, 3000, 3022.5, 3001,
+            3026, 2997.5, 3025, 2993.5, 3030.5, 2993, 3033, 2994.5, 3034, 2998.5, 3032, 3000.5, 3036.5, 3005, 3041.5, 3003,
+            3042.5, 3005, 3044.5, 3004, 3046.5, 3006, 3051.5, 3006, 3052.5, 3004, 3054.5, 3005, 3054, 3002.5, 3057, 3002.5,
+            3055, 2998.5, 3061, 2994.5, 3062, 2991.5, 3060.5, 2990, 3054.5, 2996, 3050.5, 2991, 3045, 2989.5, 3049, 2986.5,
+            3049, 2976.5, 3050.5, 2976, 3051, 2981.5, 3054, 2982.5, 3050, 2989.5, 3051.5, 2991, 3057, 2989.5, 3056, 2982.5,
+            3057.5, 2982, 3058, 2988.5, 3063, 2989.5, 3063, 2994.5, 3061, 2996.5, 3063, 2997.5, 3063, 3004.5, 3065.5, 3005,
+            3066, 2989.5, 3069.5, 2989, 3070, 2986.5, 3062.5, 2986, 3060, 2981.5, 3065.5, 2981, 3066, 2978.5, 3060.5, 2978,
+            3060, 2976.5, 3065.5, 2976, 3066, 2973.5, 3054.5, 2974, 3053, 2968.5, 3056.5, 2969, 3057, 2967.5, 3052.5, 2963,
+            3045.5, 2963, 3043.5, 2965, 3041.5, 2961
+    });
+
+    /** The Shimmering Atoll: tiles 1538-1598, 2753-2813. */
+    public static final Polygon SHIMMERING_ATOLL = new Polygon("The Shimmering Atoll", new double[]{
+            1594.5, 2753, 1586.5, 2756, 1571.5, 2769, 1556.5, 2772, 1548.5, 2771, 1545, 2773.5, 1545, 2775.5, 1541, 2778.5,
+            1542.5, 2782, 1546.5, 2782, 1551.5, 2777, 1566.5, 2777, 1576.5, 2773, 1590.5, 2760, 1594, 2759.5, 1588, 2771.5,
+            1588, 2778.5, 1583, 2788.5, 1572.5, 2793, 1559.5, 2805, 1549.5, 2808, 1546, 2802.5, 1546, 2799.5, 1549, 2796.5,
+            1546, 2793.5, 1547, 2791.5, 1544.5, 2789, 1541.5, 2789, 1539, 2791.5, 1538, 2811.5, 1540.5, 2814, 1555.5, 2814,
+            1577.5, 2799, 1585.5, 2798, 1592, 2793.5, 1595, 2789.5, 1594, 2779.5, 1599, 2761.5, 1598, 2756.5
+    });
+
+    /** Charred Island: tiles 2628-2668, 2384-2427. */
+    public static final Polygon CHARRED_ISLAND = new Polygon("Charred Island", new double[]{
+            2657.5, 2384, 2638.5, 2384, 2629, 2392.5, 2628, 2396.5, 2631, 2404.5, 2631, 2410.5, 2629, 2412.5, 2631, 2418.5,
+            2636.5, 2423, 2642.5, 2422, 2649.5, 2428, 2657.5, 2427, 2662, 2423.5, 2663, 2420.5, 2653, 2413.5, 2652, 2404.5,
+            2659.5, 2396, 2664.5, 2397, 2667.5, 2395, 2668, 2393.5, 2666, 2392.5, 2669, 2389.5, 2667.5, 2388, 2665.5, 2391
+    });
+
+    /** Drumstick Isle: tiles 2129-2166, 3525-3566. */
+    public static final Polygon DRUMSTICK_ISLE = new Polygon("Drumstick Isle", new double[]{
+            2164.5, 3525, 2159.5, 3525, 2151.5, 3531, 2148.5, 3530, 2141.5, 3537, 2134.5, 3538, 2132, 3540.5, 2131, 3547.5,
+            2129, 3549.5, 2130, 3557.5, 2137.5, 3566, 2141.5, 3567, 2148.5, 3564, 2156, 3555.5, 2159, 3535.5, 2167, 3529.5
+    });
+
+    /** Island south-east of Tutorial Island: tiles 3087-3121, 3008-3046. */
+    public static final Polygon TUTORIAL_SOUTH_EAST_ISLET = new Polygon("Island south-east of Tutorial Island", new double[]{
+            3109.5, 3008, 3096.5, 3008, 3093, 3010.5, 3092, 3015.5, 3099.5, 3017, 3100, 3019.5, 3094, 3021.5, 3093, 3026.5,
+            3090, 3028.5, 3090, 3032.5, 3098.5, 3033, 3106, 3038.5, 3099.5, 3039, 3096.5, 3035, 3090.5, 3035, 3087, 3037.5,
+            3089.5, 3044, 3096.5, 3045, 3099.5, 3041, 3105.5, 3041, 3106, 3044.5, 3102.5, 3045, 3102.5, 3047, 3115, 3046.5,
+            3114.5, 3045, 3108, 3044.5, 3108, 3041.5, 3112, 3040.5, 3108, 3037.5, 3112.5, 3036, 3117.5, 3037, 3120, 3034.5,
+            3120, 3031.5, 3117, 3029.5, 3116, 3023.5, 3112.5, 3020, 3102.5, 3020, 3102, 3017.5, 3111.5, 3017, 3119.5, 3025,
+            3122, 3022.5, 3122, 3017.5, 3115.5, 3011
+    });
+
+    /** Grimstone: tiles 2893-2934, 4054-4087. */
+    public static final Polygon GRIMSTONE = new Polygon("Grimstone", new double[]{
+            2926.5, 4054, 2923, 4055.5, 2926, 4061.5, 2922.5, 4066, 2914.5, 4058, 2909.5, 4058, 2902.5, 4065, 2896, 4060.5,
+            2893, 4068.5, 2899, 4077.5, 2896, 4085.5, 2897.5, 4087, 2917.5, 4088, 2924, 4086.5, 2914, 4077.5, 2922.5, 4072,
+            2927.5, 4076, 2931.5, 4076, 2935, 4072.5, 2934, 4068.5, 2928, 4063.5, 2930, 4057.5
+    });
+
+    /** Dognose Island: tiles 3033-3064, 2630-2666. */
+    public static final Polygon DOGNOSE_ISLAND = new Polygon("Dognose Island", new double[]{
+            3043.5, 2630, 3038.5, 2632, 3033, 2638.5, 3035, 2640.5, 3033, 2647.5, 3036, 2653.5, 3038.5, 2654, 3045.5, 2663,
+            3051, 2663.5, 3049, 2665.5, 3050.5, 2667, 3054.5, 2665, 3055.5, 2662, 3057.5, 2664, 3057, 2661.5, 3061, 2658.5,
+            3059, 2654.5, 3065, 2642.5, 3058.5, 2634, 3048.5, 2633
+    });
+
+    /** Island south-west of the Island of Stone: tiles 2452-2487, 3993-4028. */
+    public static final Polygon ISLAND_OF_STONE_SOUTH_WEST_ISLET = new Polygon("Island south-west of the Island of Stone", new double[]{
+            2477.5, 3993, 2471.5, 3994, 2464.5, 4003, 2460.5, 4001, 2452, 4008.5, 2452, 4013.5, 2454, 4015.5, 2452, 4017.5,
+            2460, 4022.5, 2462.5, 4029, 2468, 4025.5, 2466.5, 4024, 2476.5, 4018, 2481.5, 4017, 2485.5, 4019, 2488, 4017.5,
+            2485, 4014.5, 2484, 4009.5, 2475, 3999.5, 2478, 3996.5
+    });
+
+    /** Rock Island Prison: tiles 2881-2912, 2819-2850. */
+    public static final Polygon ROCK_ISLAND_PRISON = new Polygon("Rock Island Prison", new double[]{
+            2902.5, 2819, 2897.5, 2825, 2888.5, 2825, 2888, 2826.5, 2890, 2827.5, 2887.5, 2831, 2883.5, 2833, 2882.5, 2831,
+            2881, 2831.5, 2881, 2836.5, 2886, 2840.5, 2883, 2842.5, 2889, 2845.5, 2887.5, 2849, 2891.5, 2848, 2896.5, 2849,
+            2897.5, 2851, 2903.5, 2851, 2908.5, 2843, 2910.5, 2845, 2913, 2842.5, 2913, 2835.5, 2910, 2833.5, 2908, 2826.5,
+            2903, 2822.5
+    });
+
+    /** The Crown Jewel: tiles 1747-1776, 2647-2680. */
+    public static final Polygon CROWN_JEWEL = new Polygon("The Crown Jewel", new double[]{
+            1765.5, 2647, 1758.5, 2647, 1753, 2650.5, 1750, 2657.5, 1751, 2661.5, 1747, 2668.5, 1750, 2677.5, 1756.5, 2681,
+            1760.5, 2681, 1767, 2674.5, 1768, 2671.5, 1765, 2667.5, 1766, 2660.5, 1771.5, 2656, 1777, 2654.5, 1777, 2651.5,
+            1774.5, 2649, 1770.5, 2650
+    });
+
+    /** Lledrith Island: tiles 2076-2109, 3161-3195. */
+    public static final Polygon LLEDRITH_ISLAND = new Polygon("Lledrith Island", new double[]{
+            2107.5, 3161, 2104.5, 3161, 2101.5, 3165, 2091.5, 3166, 2079, 3176.5, 2076, 3188.5, 2081.5, 3195, 2091.5, 3196,
+            2098, 3189.5, 2101, 3178.5, 2107, 3173.5, 2110, 3166.5, 2110, 3162.5
+    });
+
+    /** Rainbow's End: tiles 2322-2345, 2259-2282. */
+    public static final Polygon RAINBOWS_END = new Polygon("Rainbow's End", new double[]{
+            2337.5, 2259, 2331.5, 2260, 2322, 2272.5, 2327.5, 2280, 2333.5, 2283, 2338.5, 2283, 2344, 2277.5, 2346, 2272.5,
+            2345, 2265.5
+    });
+
+    /** Isle of Bones: tiles 2521-2547, 2518-2547. */
+    public static final Polygon ISLE_OF_BONES = new Polygon("Isle of Bones", new double[]{
+            2531.5, 2518, 2526.5, 2519, 2525, 2524.5, 2521, 2527.5, 2526, 2532.5, 2526, 2535.5, 2530, 2537.5, 2528, 2541.5,
+            2529.5, 2546, 2534.5, 2544, 2536.5, 2546, 2537.5, 2544, 2539.5, 2547, 2543.5, 2548, 2548, 2544.5, 2548, 2541.5,
+            2544.5, 2537, 2538.5, 2536, 2532, 2529.5, 2532, 2525.5, 2536, 2522.5, 2536, 2520.5
+    });
+
+    /** Ice floe north of the Iceberg: tiles 2666-2686, 4036-4064. */
+    public static final Polygon ICEBERG_NORTH_ISLET = new Polygon("Ice floe north of the Iceberg", new double[]{
+            2685.5, 4036, 2683.5, 4038, 2672.5, 4036, 2666, 4046.5, 2667.5, 4048, 2670.5, 4046, 2671, 4049.5, 2674, 4049.5,
+            2673, 4052.5, 2678, 4061.5, 2683.5, 4065, 2687, 4061.5, 2687, 4056.5, 2683, 4048.5, 2687, 4043.5
+    });
+
+    /** Island south of Menaphos: tiles 3173-3194, 2633-2652. */
+    public static final Polygon MENAPHOS_SOUTH_ISLAND = new Polygon("Island south of Menaphos", new double[]{
+            3187.5, 2633, 3182.5, 2633, 3173, 2637.5, 3177, 2646.5, 3176, 2648.5, 3180, 2648.5, 3179.5, 2653, 3180.5, 2651,
+            3188.5, 2651, 3194, 2645.5, 3195, 2640.5
+    });
+
+    /** Island south of Miscellania: tiles 2527-2553, 3816-3832. */
+    public static final Polygon MISCELLANIA_SOUTH_ISLET = new Polygon("Island south of Miscellania", new double[]{
+            2542.5, 3816, 2529.5, 3816, 2527, 3820.5, 2534.5, 3823, 2536, 3829.5, 2539.5, 3832, 2548.5, 3832, 2553, 3828.5,
+            2553, 3821.5, 2549.5, 3817
+    });
+
+    /** Wintumber Island: tiles 2059-2076, 2596-2617. */
+    public static final Polygon WINTUMBER_ISLAND = new Polygon("Wintumber Island", new double[]{
+            2070.5, 2596, 2065.5, 2596, 2062, 2599.5, 2059, 2603.5, 2059, 2609.5, 2064.5, 2617, 2071.5, 2618, 2077, 2612.5,
+            2077, 2609.5, 2074, 2604.5, 2075, 2599.5
+    });
+
+    /** Island north-west of Weiss: tiles 2795-2811, 3976-4004. */
+    public static final Polygon WEISS_NORTH_WEST_ISLET = new Polygon("Island north-west of Weiss", new double[]{
+            2804.5, 3976, 2799, 3982.5, 2799, 3986.5, 2801, 3988.5, 2800, 3996.5, 2795, 4000.5, 2798.5, 4005, 2807, 4000.5,
+            2808, 3995.5, 2812, 3990.5, 2810, 3978.5
+    });
+
+    /** Islet south of Deepfin Point: tiles 2014-2037, 2658-2674. */
+    public static final Polygon DEEPFIN_SOUTH_ISLET = new Polygon("Islet south of Deepfin Point", new double[]{
+            2020.5, 2658, 2014, 2665.5, 2014, 2671.5, 2017.5, 2675, 2025.5, 2675, 2029.5, 2670, 2038, 2665.5, 2036.5, 2662,
+            2023.5, 2661
+    });
+
+    /** Island north-west of Etceteria: tiles 2577-2595, 3905-3920. */
+    public static final Polygon ETCETERIA_NORTH_WEST_ISLET = new Polygon("Island north-west of Etceteria", new double[]{
+            2590.5, 3905, 2580.5, 3905, 2577, 3907.5, 2579, 3917.5, 2581.5, 3920, 2590.5, 3921, 2593, 3918.5, 2596, 3909.5
+    });
+
+    /** Islet south-west of Tutorial Island: tiles 3046-3064, 3049-3069. */
+    public static final Polygon SALTY_GROUPER_ISLET = new Polygon("Islet south-west of Tutorial Island", new double[]{
+            3062.5, 3049, 3057.5, 3053, 3049.5, 3053, 3046, 3057.5, 3046, 3062.5, 3049, 3064.5, 3051.5, 3070, 3057, 3068.5,
+            3056, 3064.5, 3065, 3052.5
+    });
+
+    /** Ice floe north-east of the Iceberg: tiles 2659-2683, 4074-4095. */
+    public static final Polygon ICEBERG_NORTH_EAST_ISLET = new Polygon("Ice floe north-east of the Iceberg", new double[]{
+            2679.5, 4074, 2672, 4082.5, 2670, 4088.5, 2664.5, 4093, 2660.5, 4093, 2659, 4094.5, 2660.5, 4096, 2665.5, 4096,
+            2667.5, 4093, 2672.5, 4095, 2676, 4093.5, 2681, 4087.5, 2681, 4083.5, 2684, 4081.5
+    });
+
+    /** Hunter islet west of Trollweiss Mountain: tiles 2710-2724, 3860-3876. */
+    public static final Polygon TROLLWEISS_WEST_ISLET = new Polygon("Hunter islet west of Trollweiss Mountain", new double[]{
+            2718.5, 3860, 2715, 3861.5, 2710, 3871.5, 2711.5, 3875, 2716.5, 3877, 2721.5, 3876, 2725, 3871.5, 2725, 3868.5
+    });
+
+    /** Islet south of Crash Island: tiles 2892-2912, 2696-2706. */
+    public static final Polygon CRASH_ISLAND_SOUTH_ISLET = new Polygon("Islet south of Crash Island", new double[]{
+            2907.5, 2696, 2896.5, 2698, 2892, 2702.5, 2896.5, 2706, 2905.5, 2707, 2913, 2701.5, 2913, 2699.5
+    });
+
+    /** Islet east of the Legends' Guild: tiles 2788-2802, 3313-3326. */
+    public static final Polygon LEGENDS_GUILD_EAST_ISLET = new Polygon("Islet east of the Legends' Guild", new double[]{
+            2797.5, 3313, 2793.5, 3314, 2793, 3316.5, 2789.5, 3317, 2788, 3319.5, 2792.5, 3327, 2803, 3321.5, 2801.5, 3317,
+            2797.5, 3320, 2794, 3318.5, 2799, 3316.5
+    });
+
+    /** Islet east of the Isle of Serpents: tiles 1887-1900, 2467-2479. */
+    public static final Polygon SERPENTS_EAST_ISLET = new Polygon("Islet east of the Isle of Serpents", new double[]{
+            1896.5, 2467, 1891.5, 2468, 1888, 2471.5, 1887, 2476.5, 1888.5, 2478, 1892.5, 2480, 1899, 2479.5, 1896, 2473.5,
+            1901, 2469.5
+    });
+
+    /** Islet north-west of Laguna Aurorae: tiles 1136-1148, 2790-2803. */
+    public static final Polygon LAGUNA_WEST_ISLET = new Polygon("Islet north-west of Laguna Aurorae", new double[]{
+            1146.5, 2790, 1144.5, 2792, 1142.5, 2790, 1142, 2792.5, 1138, 2794.5, 1138, 2799.5, 1136, 2801.5, 1137.5, 2804,
+            1141.5, 2802, 1143.5, 2804, 1148, 2798.5, 1149, 2793.5
+    });
+
+    /** Islet south-east of Tutorial Island: tiles 3096-3108, 3052-3064. */
+    public static final Polygon TUTORIAL_SOUTH_EAST_ISLET_2 = new Polygon("Islet south-east of Tutorial Island", new double[]{
+            3099.5, 3052, 3096, 3053.5, 3097, 3060.5, 3099.5, 3061, 3101.5, 3065, 3104.5, 3065, 3105, 3063.5, 3102, 3062.5,
+            3107.5, 3060, 3109, 3055.5, 3102.5, 3056
+    });
+
+    /** Islet south-west of the Island of Stone: tiles 2440-2455, 3994-4004. */
+    public static final Polygon ISLAND_OF_STONE_SOUTH_WEST_ISLET_2 = new Polygon("Islet south-west of the Island of Stone", new double[]{
+            2448.5, 3994, 2440, 4000.5, 2440.5, 4002, 2442.5, 4001, 2442, 4003.5, 2443.5, 4003, 2444.5, 4005, 2446.5, 4003,
+            2450.5, 4005, 2456, 4001.5, 2453, 3998.5, 2455, 3996.5, 2451.5, 3997
+    });
+
+    /** Rock formations in Weissmere: tiles 2773-2789, 4006-4015. */
+    public static final Polygon WEISSMERE_ROCKS = new Polygon("Rock formations in Weissmere", new double[]{
+            2774.5, 4006, 2773, 4013.5, 2775.5, 4016, 2784.5, 4016, 2790, 4012.5, 2780.5, 4011
+    });
+
+    /** Ice floe west of the Iceberg: tiles 2624-2634, 4079-4092. */
+    public static final Polygon ICEBERG_WEST_ISLET = new Polygon("Ice floe west of the Iceberg", new double[]{
+            2625.5, 4079, 2624, 4086.5, 2629.5, 4093, 2633.5, 4092, 2635, 4090.5, 2632, 4088.5, 2631, 4083.5
+    });
+
+    /** Islet west of Trollweiss Mountain: tiles 2721-2729, 3845-3856. */
+    public static final Polygon TROLLWEISS_WEST_ISLET_2 = new Polygon("Islet west of Trollweiss Mountain", new double[]{
+            2728.5, 3845, 2721, 3849.5, 2722, 3854.5, 2725.5, 3857, 2730, 3852.5
+    });
+
+    /** Small island in the Bay of Sarim: tiles 3077-3088, 3203-3212. */
+    public static final Polygon BAY_OF_SARIM_ISLET = new Polygon("Small island in the Bay of Sarim", new double[]{
+            3087.5, 3203, 3079.5, 3205, 3077, 3207.5, 3077, 3210.5, 3079.5, 3213, 3084.5, 3211, 3089, 3204.5
+    });
+
+    /** Islet east of Laguna Aurorae: tiles 1238-1245, 2777-2788. */
+    public static final Polygon LAGUNA_EAST_ISLET = new Polygon("Islet east of Laguna Aurorae", new double[]{
+            1245.5, 2777, 1238, 2777.5, 1241, 2784.5, 1239, 2786.5, 1241.5, 2789, 1246, 2785.5
+    });
+
+    /** Islet south-east of Wintumber Island: tiles 2075-2084, 2585-2594. */
+    public static final Polygon WINTUMBER_SOUTH_EAST_ISLET = new Polygon("Islet south-east of Wintumber Island", new double[]{
+            2078.5, 2585, 2075, 2587.5, 2077, 2593.5, 2078.5, 2595, 2082.5, 2593, 2084.5, 2594, 2083, 2588.5
+    });
+
+    /** Islet south-west of the Pandemonium: tiles 3020-3032, 2950-2958. */
+    public static final Polygon PANDEMONIUM_SOUTH_WEST_ISLET = new Polygon("Islet south-west of the Pandemonium", new double[]{
+            3032.5, 2950, 3030.5, 2952, 3028.5, 2950, 3024.5, 2953, 3022.5, 2951, 3020, 2956.5, 3023.5, 2959, 3025.5, 2956,
+            3029.5, 2956
+    });
+
+    /** Rock formations in Weissmere: tiles 2762-2771, 3995-4005. */
+    public static final Polygon WEISSMERE_ROCKS_2 = new Polygon("Rock formations in Weissmere", new double[]{
+            2763.5, 3995, 2762, 3999.5, 2768.5, 4006, 2770.5, 4006, 2772, 4003.5, 2769, 3998.5
+    });
+
+    /** Islet south-east of Tutorial Island: tiles 3123-3133, 3057-3065. */
+    public static final Polygon TUTORIAL_SOUTH_EAST_ISLET_3 = new Polygon("Islet south-east of Tutorial Island", new double[]{
+            3129.5, 3057, 3126.5, 3057, 3124, 3059.5, 3123.5, 3064, 3126.5, 3060, 3129, 3062.5, 3127.5, 3066, 3134, 3063.5,
+            3134, 3060.5
+    });
+
+    /** Islet south-east of Tutorial Island: tiles 3114-3122, 3052-3060. */
+    public static final Polygon TUTORIAL_SOUTH_EAST_ISLET_4 = new Polygon("Islet south-east of Tutorial Island", new double[]{
+            3119.5, 3052, 3116.5, 3052, 3114, 3055.5, 3119.5, 3061, 3122.5, 3061, 3123, 3057.5
+    });
+
+    /** Islet east of the Kharazi Jungle: tiles 2967-2976, 2887-2892. */
+    public static final Polygon KHARAZI_EAST_ISLET = new Polygon("Islet east of the Kharazi Jungle", new double[]{
+            2972.5, 2887, 2968.5, 2887, 2967, 2890.5, 2974.5, 2893, 2977, 2890.5
+    });
+
+    /** Islet east of the Isle of Serpents: tiles 1875-1885, 2476-2482. */
+    public static final Polygon SERPENTS_EAST_ISLET_2 = new Polygon("Islet east of the Isle of Serpents", new double[]{
+            1883.5, 2476, 1875, 2480.5, 1877.5, 2483, 1885.5, 2481
+    });
+
+    /** Rock formations in Weissmere: tiles 2796-2805, 4019-4026. */
+    public static final Polygon WEISSMERE_ROCKS_3 = new Polygon("Rock formations in Weissmere", new double[]{
+            2803.5, 4019, 2796, 4024.5, 2798.5, 4027, 2800.5, 4027, 2806, 4020.5
+    });
+
+    /** Every island above, for {@link GielinorGeography#POLYGONS}. */
+    public static final List<Polygon> ALL = List.of(
+            ISLE_OF_SERPENTS, LAGUNA_AURORAE, ICEBERG, PEST_CONTROL_ISLAND, ONYX_CREST,
+            CRASH_ISLAND, BUCCANEERS_HAVEN, TEMPOROSS_COVE, SUNBLEAK_ISLAND, SEA_OF_SOULS_SHIPYARD_ISLE,
+            PANDEMONIUM, SHIMMERING_ATOLL, CHARRED_ISLAND, DRUMSTICK_ISLE, TUTORIAL_SOUTH_EAST_ISLET,
+            GRIMSTONE, DOGNOSE_ISLAND, ISLAND_OF_STONE_SOUTH_WEST_ISLET, ROCK_ISLAND_PRISON, CROWN_JEWEL,
+            LLEDRITH_ISLAND, RAINBOWS_END, ISLE_OF_BONES, ICEBERG_NORTH_ISLET, MENAPHOS_SOUTH_ISLAND,
+            MISCELLANIA_SOUTH_ISLET, WINTUMBER_ISLAND, WEISS_NORTH_WEST_ISLET, DEEPFIN_SOUTH_ISLET, ETCETERIA_NORTH_WEST_ISLET,
+            SALTY_GROUPER_ISLET, ICEBERG_NORTH_EAST_ISLET, TROLLWEISS_WEST_ISLET, CRASH_ISLAND_SOUTH_ISLET, LEGENDS_GUILD_EAST_ISLET,
+            SERPENTS_EAST_ISLET, LAGUNA_WEST_ISLET, TUTORIAL_SOUTH_EAST_ISLET_2, ISLAND_OF_STONE_SOUTH_WEST_ISLET_2, WEISSMERE_ROCKS,
+            ICEBERG_WEST_ISLET, TROLLWEISS_WEST_ISLET_2, BAY_OF_SARIM_ISLET, LAGUNA_EAST_ISLET, WINTUMBER_SOUTH_EAST_ISLET,
+            PANDEMONIUM_SOUTH_WEST_ISLET, WEISSMERE_ROCKS_2, TUTORIAL_SOUTH_EAST_ISLET_3, TUTORIAL_SOUTH_EAST_ISLET_4, KHARAZI_EAST_ISLET,
+            SERPENTS_EAST_ISLET_2, WEISSMERE_ROCKS_3);
+
+    /** Water enclosed by an island (the lagoon that names Laguna Aurorae). */
+    public static final List<Lake> LAGOONS = List.of(
+            new Lake("Lagoon of Isle of Serpents", new double[]{
+                    1874.5, 2452, 1873, 2452.5, 1874, 2458.5, 1884.5, 2464, 1883, 2454.5
+            }),
+            new Lake("Lagoon of Isle of Serpents", new double[]{
+                    1866.5, 2453, 1862, 2456.5, 1862, 2458.5, 1863.5, 2461, 1870.5, 2463, 1871, 2455.5
+            }),
+            new Lake("Lagoon of Laguna Aurorae", new double[]{
+                    1181.5, 2773, 1178, 2773.5, 1178, 2778.5, 1181, 2781.5, 1176, 2784.5, 1178, 2788.5, 1174.5, 2792, 1171.5, 2791,
+                    1165, 2794.5, 1165.5, 2796, 1170.5, 2796, 1171, 2799.5, 1174, 2799.5, 1173.5, 2802, 1176.5, 2803, 1178.5, 2801,
+                    1179.5, 2805, 1185.5, 2804, 1188.5, 2807, 1193.5, 2802, 1197.5, 2803, 1198.5, 2801, 1208.5, 2805, 1212.5, 2803,
+                    1216.5, 2804, 1217.5, 2798, 1222.5, 2799, 1224.5, 2796, 1227, 2797.5, 1226.5, 2795, 1219, 2793.5, 1222, 2789.5,
+                    1220, 2787.5, 1222, 2786.5, 1219, 2785.5, 1219, 2781.5, 1216.5, 2779, 1210, 2784.5, 1211, 2786.5, 1208, 2787.5,
+                    1214, 2792.5, 1211.5, 2797, 1207.5, 2797, 1205.5, 2792, 1199.5, 2792, 1195.5, 2789, 1190.5, 2793, 1185.5, 2792,
+                    1184, 2795.5, 1186.5, 2796, 1188, 2799.5, 1182.5, 2802, 1175, 2794.5, 1181, 2791.5, 1183.5, 2785, 1186.5, 2784,
+                    1188, 2785.5, 1191, 2778.5, 1188.5, 2779
+            }),
+            new Lake("Lagoon of Tempoross Cove", new double[]{
+                    3037.5, 2835, 3031.5, 2836, 3029, 2838.5, 3028, 2846.5, 3025, 2852.5, 3027, 2853.5, 3025, 2855.5, 3027, 2857.5,
+                    3027, 2862.5, 3031.5, 2870, 3040.5, 2868, 3044, 2862.5, 3040.5, 2858, 3036.5, 2862, 3033, 2858.5, 3033, 2838.5,
+                    3039.5, 2838, 3040, 2836.5
+            }),
+            new Lake("Lagoon of Lledrith Island", new double[]{
+                    2089.5, 3181, 2085.5, 3181, 2081, 3186.5, 2084.5, 3192, 2089.5, 3191, 2092, 3187.5, 2092, 3183.5
+            }));
+}

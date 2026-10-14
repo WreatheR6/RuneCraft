@@ -31,7 +31,8 @@ import static com.runecraft.osrs.content.islands.IslandsKit.dz;
  * Ungael, Lithkren, Mos Le'Harmless, Harmony Island, Dragontooth Island, Tutorial Island, Mudskipper
  * Point, Crandor, Kharazi Jungle, Cairn Isle, Feldip Hills (Gu'Tanoth, Castle Wars with its two
  * castles, Corsair Cove and the Hunter area), Zul-Andra, Port Tyras, Isafdar, Braindeath Island, the
- * Void Knights' Outpost and Zanaris.
+ * Void Knights' Outpost and Zanaris; and the Sailing-era islands (the Pandemonium, Buccaneers' Haven, Laguna
+ * Aurorae, the Onyx Crest).
  *
  * <p>Places owned by other modules are replaced (each by exactly one structure) rather than
  * duplicated. Every other module's plaza, boss arena and structure is left alone: no flattening
@@ -103,6 +104,7 @@ public final class IslandsStructures {
         out.addAll(IslandsEast.all());
         out.addAll(IslandsSouth.all());
         out.addAll(IslandsWest.all());
+        out.addAll(IslandsSailing.all());
         return out;
     }
 

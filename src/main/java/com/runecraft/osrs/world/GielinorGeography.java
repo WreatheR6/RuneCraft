@@ -293,9 +293,17 @@ public final class GielinorGeography {
             2690, 2732, 2691, 2750, 2694, 2775
     });
 
-    public static final List<Polygon> POLYGONS = List.of(MAINLAND, KARAMJA, ZEAH, FOSSIL_ISLAND, APE_ATOLL,
+    /** Every traced landmass, followed by the Sailing-era sea islands ({@link SeaIslands}). */
+    public static final List<Polygon> POLYGONS = concat(List.of(MAINLAND, KARAMJA, ZEAH, FOSSIL_ISLAND, APE_ATOLL,
             KEBOS_ICE_ISLET, SAND_CRAB_ISLET, CRABCLAW_ISLE, CRABCLAW_EAST_ISLET, PORT_ROBERTS,
-            TEMPESTUS, TEMPEST_BAY_ISLET, PORT_ROBERTS_SOUTH_ISLET, COLOSSEUM_EAST_ISLET, TLATI_RIVER_ISLET, ALDARIN_ISLE, SUNSET_COAST_EAST_ISLET, KASTORI_SOUTH_ISLET);
+            TEMPESTUS, TEMPEST_BAY_ISLET, PORT_ROBERTS_SOUTH_ISLET, COLOSSEUM_EAST_ISLET, TLATI_RIVER_ISLET, ALDARIN_ISLE, SUNSET_COAST_EAST_ISLET, KASTORI_SOUTH_ISLET),
+            SeaIslands.ALL);
+
+    private static <T> List<T> concat(List<T> a, List<T> b) {
+        List<T> out = new java.util.ArrayList<>(a);
+        out.addAll(b);
+        return List.copyOf(out);
+    }
 
     public static final List<Ellipse> ISLANDS = List.of(
             new Ellipse("Tutorial Island", 3104, 3102, 46, 34),
@@ -317,8 +325,8 @@ public final class GielinorGeography {
             new Ellipse("Pirates' Cove", 2212, 3805, 28, 28),
             new Ellipse("Ungael", 2256, 4048, 30, 30),
             new Ellipse("Iceberg", 2660, 4010, 14, 12),
-            // Sailing-era islands of the Unquiet Ocean, placed and sized around their quest sites (approx)
-            new Ellipse("The Pandemonium", 3050, 2967, 15, 13),
+            // Sailing-era islands of the Unquiet Ocean, placed and sized around their quest sites (approx); the traced ones
+            // (the Pandemonium, the Onyx Crest, Sunbleak Island...) are in SeaIslands
             new Ellipse("The Great Conch", 3186, 2443, 62, 58),
             new Ellipse("Little Pearl", 3352, 2212, 16, 14),
             new Ellipse("Tortugan islet", 2962, 2605, 10, 9),
@@ -370,7 +378,9 @@ public final class GielinorGeography {
                     1295, 3446, 112}),
             new Ridge("Custodia Mountains (south)", 14, new double[]{1175, 3305, 118, 1203, 3329, 138, 1245, 3352, 118}),
             new Ridge("Custodia Mountains (east)", 11, new double[]{1318, 3370, 108, 1335, 3386, 116, 1340, 3398, 108}),
-            new Ridge("The Stranglewood's peak", 16, new double[]{1121, 3421, 130, 1122, 3422, 130}) // approx name
+            new Ridge("The Stranglewood's peak", 16, new double[]{1121, 3421, 130, 1122, 3422, 130}), // approx name
+            // the Onyx Crest's young volcano on the island's west side (lava crater at 2950-2970, 2252-2268 on the map; height approx)
+            new Ridge("The Onyx Crest volcano", 9, new double[]{2957, 2258, 84, 2962, 2266, 80})
     );
 
     public static final List<Ring> RINGS = List.of(
@@ -555,7 +565,7 @@ public final class GielinorGeography {
      * tiles of water; Port Roberts' harbour basin and the meltwater pools on the Wintertodt snowfield are left out).
      * Lake Molch keeps Molch Island, where the aerial fishing boats land (1369, 3639).
      */
-    public static final List<Lake> TRACED_LAKES = List.of(
+    public static final List<Lake> TRACED_LAKES = concat(List.of(
             new Lake("Pond near Arceuus", new double[]{
                     1765.5, 3796, 1745.5, 3803, 1746, 3810.5, 1750.5, 3814, 1767.5, 3807, 1772, 3801.5
             }),
@@ -635,7 +645,7 @@ public final class GielinorGeography {
             new Lake("Pond near the Locus Oasis", new double[]{
                     1688.5, 2980, 1680.5, 2982, 1677, 2986.5, 1675, 2992.5, 1680.5, 3000, 1691, 2993.5, 1693, 2984.5
             })
-    );
+    ), SeaIslands.LAGOONS);
 
     public static final List<Ellipse> SWAMPS = List.of(
             new Ellipse("Lumbridge Swamp", 3195, 3166, 58, 28),

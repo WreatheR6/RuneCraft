@@ -277,8 +277,8 @@ public final class GatheringData extends SkillingPart {
                         List.of("arctic_pine_tree", "arctic_pine_tree", "arctic_pine_tree")),
                 PlaceDef.of("fossil_island_sulliuscep", "Sulliuscep grove", 3678, 3733, PlaceDef.Style.CAMP,
                         List.of("sulliuscep", "sulliuscep")),
-                // Camphor trees west of the Summer Shore on the Great Conch (approx tile). Sunbleak Island and Drumstick Isle
-                // (ironwood, rosewood) are not on the map yet, so those trees have no grove.
+                // Camphor trees west of the Summer Shore on the Great Conch (approx tile). The ironwood trees of Sunbleak Island
+                // and the rosewood trees of Drumstick Isle stand on their own tiles (ResourceSites).
                 PlaceDef.of("great_conch_camphor_trees", "Camphor trees", 3160, 2425, PlaceDef.Style.CAMP,
                         List.of("camphor_tree", "camphor_tree", "camphor_tree")),
                 // Otto's Grotto also has the anvil where barbarian spears and hastae are smithed.

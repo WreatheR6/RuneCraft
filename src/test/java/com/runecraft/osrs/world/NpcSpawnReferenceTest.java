@@ -41,6 +41,7 @@ class NpcSpawnReferenceTest {
     private static final Map<String, String> STAND_INS = Map.ofEntries(
             Map.entry("fever_spider@braindeath_island", "Braindeath Island's brewery lies off the main map"),
             Map.entry("pirate@braindeath_island", "Braindeath Island lies off the main map"),
+            Map.entry("moss_giant@isl_laguna_aurorae", "the cache snapshot predates Sailing; Laguna Aurorae's tiles are the wiki's"),
             Map.entry("mudskipper@isl_mudskipper_point", "the cache has no Mudskipper Point spawns (they appear when fished up)"),
             Map.entry("ice_troll@jatizso", "the cache's Jatizso trolls (2387-2418, 3853-3869) sit north of the island's traced coast"),
             Map.entry("fortis_guard", "the cache snapshot has no Varlamore spawns, and plain \"Guard\" would match guards elsewhere"));
