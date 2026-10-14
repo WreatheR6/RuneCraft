@@ -17,7 +17,7 @@ import java.util.List;
  * Rift, Barbarian Assault, Castle Wars, Warriors' Guild, Mage Training Arena, Pyramid Plunder,
  * Hallowed Sepulchre, Brimhaven Agility Arena, Gnome Restaurant, Trouble Brewing, Shades of
  * Mort'ton, Tithe Farm, Giants' Foundry, Mahogany Homes, Fishing Trawler, Rogues' Den, TzHaar-Ket-Rak's Challenges,
- * Temple Trekking and Last Man Standing.
+ * Temple Trekking, Last Man Standing and the Gauntlet.
  */
 public final class MinigamesContent implements ContentModule {
     @Override
@@ -32,11 +32,14 @@ public final class MinigamesContent implements ContentModule {
         EmirsArena.items(items);
         TaiBwoWannai.items(items);
         VarrockMuseum.items(items);
+        Gauntlet.items(items);
     }
 
     @Override
     public List<MonsterDef> monsters() {
-        return MinigameMonsters.monsters();
+        List<MonsterDef> list = new java.util.ArrayList<>(MinigameMonsters.monsters());
+        list.addAll(Gauntlet.monsters());
+        return list;
     }
 
     @Override
@@ -64,6 +67,11 @@ public final class MinigamesContent implements ContentModule {
     @Override
     public List<ModelSpec> models() {
         return MinigameModels.models();
+    }
+
+    @Override
+    public List<ModelSpec.Variant> modelVariants() {
+        return Gauntlet.modelVariants();
     }
 
     @Override

@@ -777,6 +777,18 @@ public final class CombatAchievementRules {
             59;RULE;chaos_elemental;1;noflag=chaos_unequipped
             112;RULE;crystalline_hunllef;1;nodmg=tornado,damaging_floor,stomp,offprayer noflag=hunllef_wrong_weapon
             102;RULE;corrupted_hunllef;1;nodmg=tornado,damaging_floor,stomp,offprayer noflag=hunllef_wrong_weapon
+            113;RUN;mg:gauntlet;1;stage=1 flag=noarmour
+            103;RUN;mg:gauntlet;1;stage=2 flag=noarmour
+            114;RUN;mg:gauntlet;1;stage=1 flag=noegniol
+            104;RUN;mg:gauntlet;1;stage=2 flag=noegniol
+            116;RUN;mg:gauntlet;1;stage=1 flag=oneweapon
+            106;RUN;mg:gauntlet;1;stage=2 flag=oneweapon
+            115;RUN;mg:gauntlet;1;stage=1 wear=crystal_helm_perfected,crystal_body_perfected,crystal_legs_perfected
+            105;RUN;mg:gauntlet;1;stage=2 wear=corrupted_helm_perfected,corrupted_body_perfected,corrupted_legs_perfected
+            117;RUN;mg:gauntlet;1;stage=1 t<4:45
+            118;RUN;mg:gauntlet;1;stage=1 t<3:45
+            107;RUN;mg:gauntlet;1;stage=2 t<7:05
+            108;RUN;mg:gauntlet;1;stage=2 t<6:05
             502;RULE;the_whisperer;1;count<10:shadow_realm_ticks
             208;RULE;sarachnis;1;noflag=repeat:web_spit
             527;RULE;MOONS;1;id=blue_moon count<=1:used:frozen_weapons/used:winter_storm || id=eclipse_moon count<=1:used:eclipse/used:moonlight_clones || id=blood_moon count<=1:used:blood_rain/used:call_jaguar

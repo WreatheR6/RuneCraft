@@ -194,6 +194,10 @@ public final class CombatAchievements {
     public static final String FLAG_CHAOS_UNEQUIPPED = "chaos_unequipped";
     /** You attacked the Hunllef with the style it protects from. */
     public static final String FLAG_HUNLLEF_WRONG_WEAPON = "hunllef_wrong_weapon";
+    /** Gauntlet runs (judged by the session): no armour sung, no egniol potion made, at most one attuned weapon sung. */
+    public static final String FLAG_GAUNTLET_NO_ARMOUR = "noarmour";
+    public static final String FLAG_GAUNTLET_NO_EGNIOL = "noegniol";
+    public static final String FLAG_GAUNTLET_ONE_WEAPON = "oneweapon";
     /** Game ticks spent in the Whisperer's Shadow Realm. */
     public static final String COUNT_SHADOW_REALM_TICKS = "shadow_realm_ticks";
     /** A Yt-HurKot healed a Jad. */

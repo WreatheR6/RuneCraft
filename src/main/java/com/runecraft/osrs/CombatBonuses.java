@@ -120,7 +120,8 @@ public final class CombatBonuses {
             case "tumekens_shadow" -> Math.max(1, third + 1);
             case "thammarons_sceptre" -> Math.max(1, third - 8);
             case "accursed_sceptre" -> Math.max(1, third - 6);
-            default -> -1;
+            // The Gauntlet's staves hit a fixed 23 / 31 / 39 regardless of Magic level.
+            default -> com.runecraft.osrs.content.minigames.Gauntlet.staffMaxHit(weaponId);
         };
     }
 

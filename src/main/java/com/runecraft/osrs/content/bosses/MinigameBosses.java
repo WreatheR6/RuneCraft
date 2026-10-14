@@ -87,10 +87,10 @@ public final class MinigameBosses {
         return BossDef.of("crystalline_hunllef", "Crystalline Hunllef").level(674).stats(600, 240, 240, 240, 240, 240).speed(5)
                 .defenceBonus(20, 20, 20, 20, 20)
                 .attack(HUNLLEF_RANGED).attack(HUNLLEF_MAGIC).attack(HUNLLEF_STOMP)
-                // Wiki: The Gauntlet's chest gives each crystal seed at 1/120 and the enhanced seed at 1/2,000.
-                .drops(Drop.of("crystal_shard", 3, 7, 1), Drop.of("crystal_weapon_seed", 1, 1, 120), Drop.of("crystal_armour_seed", 1, 1, 120),
-                        Drop.of("enhanced_crystal_weapon_seed", 1, 1, 2000), Drop.of("runite_bar", 1, 2, 8),
-                        Drop.of("death_rune", 50, 100, 8), Drop.of("coins", 5000, 15000, 4), Drop.of("clue_scroll_elite", 1, 1, 23))
+                // Wiki Reward Chest (The Gauntlet), regular: the 100% and tertiary rows (shards 5-9 since September 2024). The two
+                // main-table rolls come from the minigames module (Gauntlet.REGULAR) on every Hunllef kill; the pet from Pets.
+                .drops(Drop.of("crystal_shard", 5, 9, 1), Drop.of("clue_scroll_elite", 1, 1, 25), Drop.of("crystal_weapon_seed", 1, 1, 120),
+                        Drop.of("crystal_armour_seed", 1, 1, 120), Drop.of("enhanced_crystal_weapon_seed", 1, 1, 2000))
                 .pet("pet_youngllef").at("the_gauntlet").arena(12, "ice")
                 .size(1.6f, 1.8f, 1.8f).moveSpeed(0.22);
     }
@@ -99,10 +99,11 @@ public final class MinigameBosses {
         return BossDef.of("corrupted_hunllef", "Corrupted Hunllef").level(894).stats(1000, 240, 240, 240, 240, 240).speed(5)
                 .defenceBonus(90, 90, 90, 90, 90)
                 .attack(CORRUPTED_RANGED).attack(CORRUPTED_MAGIC).attack(HUNLLEF_STOMP)
-                .drops(Drop.of("crystal_shard", 5, 9, 1), Drop.of("gauntlet_cape", 1, 1, 1), Drop.of("crystal_weapon_seed", 1, 1, 50),
-                        Drop.of("crystal_armour_seed", 1, 1, 50), Drop.of("enhanced_crystal_weapon_seed", 1, 1, 400),
-                        Drop.of("runite_bar", 2, 4, 8), Drop.of("blood_rune", 100, 200, 8), Drop.of("coins", 10000, 30000, 4),
-                        Drop.of("clue_scroll_elite", 1, 1, 20))
+                // Wiki Reward Chest (The Gauntlet), corrupted: 100% and tertiary rows (shards 7-12); three main-table rolls come from
+                // the minigames module (Gauntlet.CORRUPTED).
+                .drops(Drop.of("crystal_shard", 7, 12, 1), Drop.of("gauntlet_cape", 1, 1, 1), Drop.of("clue_scroll_elite", 1, 1, 20),
+                        Drop.of("crystal_weapon_seed", 1, 1, 50), Drop.of("crystal_armour_seed", 1, 1, 50),
+                        Drop.of("enhanced_crystal_weapon_seed", 1, 1, 400))
                 .pet("pet_youngllef").at("the_gauntlet").arena(12, "lava")
                 .size(1.6f, 1.8f, 1.8f).moveSpeed(0.22);
     }
