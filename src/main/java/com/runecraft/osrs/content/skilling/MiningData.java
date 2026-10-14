@@ -262,11 +262,8 @@ public final class MiningData extends SkillingPart {
                 PlaceDef.of("asgarnian_ice_dungeon_blurite", "Blurite rocks", 3049, 3170, PlaceDef.Style.CAVE,
                         List.of("blurite_rock", "blurite_rock")),
                 PlaceDef.of("fossil_island_ash", "Fossil Island ash piles", 3793, 3770, PlaceDef.Style.RUINS,
-                        List.of("ash_pile", "ash_pile", "ash_pile", "ash_pile")),
-                // The Camdozaal Mines (barronite rocks and the Barronite Crusher) beneath Ice Mountain, built as a cave
-                // plaza just west of the ruins' entrance (the mines' real tiles, around 2905-2941, 5806-5822, are an
-                // underground instance). // approx
-                PlaceDef.of("camdozaal_mines", "Camdozaal Mines", 2978, 3494, PlaceDef.Style.CAVE,
-                        List.of(BARRONITE, BARRONITE, BARRONITE, BARRONITE, BARRONITE, BARRONITE, BARRONITE_CRUSHER)));
+                        List.of("ash_pile", "ash_pile", "ash_pile", "ash_pile")));
+        // The Camdozaal Mines' barronite rocks and the Barronite Crusher stand in the dungeons module's Ruins of
+        // Camdozaal under Ice Mountain (dng_ruins_of_camdozaal).
     }
 }

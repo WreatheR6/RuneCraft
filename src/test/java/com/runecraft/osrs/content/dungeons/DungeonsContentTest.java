@@ -93,7 +93,7 @@ class DungeonsContentTest {
         for (BlockDef b : MODULE.blocks()) {
             assertTrue(b.id().startsWith("dng_"), b.id());
         }
-        assertEquals(67, Dungeons.all().size());
+        assertEquals(68, Dungeons.all().size());
     }
 
     @Test
@@ -614,5 +614,31 @@ class DungeonsContentTest {
         // The keys are shared items with unchanged ids.
         assertTrue(com.runecraft.osrs.ItemCatalog.exists("bronze_shade_key"));
         assertTrue(com.runecraft.osrs.ItemCatalog.exists("gold_shade_key_purple"));
+    }
+
+    /** The Ruins of Camdozaal hold the wiki's golem counts and the mine, fishing and altar features. */
+    @Test
+    void ruinsOfCamdozaal() {
+        Dungeons.Dungeon d = dungeon("dng_ruins_of_camdozaal");
+        assertEquals(Map.of("flawed_golem", 8, "mind_golem", 6, "body_golem", 6, "chaos_golem", 7), caps(d));
+        Map<String, Integer> blocks = new HashMap<>();
+        for (Op op : d.structure().ops()) {
+            if (op.block() != null && op.block().startsWith("runecraft:")) {
+                blocks.merge(op.block().substring("runecraft:".length()), 1, Integer::sum);
+            }
+        }
+        assertEquals(18, blocks.get("barronite_rock"));
+        assertEquals(3, blocks.get("clay_rock"));
+        assertEquals(3, blocks.get("tin_rock"));
+        assertEquals(3, blocks.get("copper_rock"));
+        assertEquals(7, blocks.get("camdozaal_fishing_spot"));
+        assertEquals(2, blocks.get("camdozaal_preparation_table"));
+        assertEquals(1, blocks.get("camdozaal_altar"));
+        assertEquals(1, blocks.get("barronite_crusher"));
+        assertEquals(1, blocks.get("camdozaal_sacred_forge"));
+        for (String id : blocks.keySet()) {
+            assertTrue(ContentRegistry.blocks().stream().anyMatch(b -> b.id().equals(id)) || id.endsWith("_rock")
+                    || id.equals("anvil") || id.equals("bank_booth"), "unknown block " + id);
+        }
     }
 }

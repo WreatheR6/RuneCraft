@@ -77,6 +77,7 @@ public final class Dungeons {
             list.add(PoisonWasteDungeon.dungeon());
             list.add(CharredDungeon.dungeon());
             list.add(ShayzienCrypts.dungeon());
+            list.add(CamdozaalRuins.build());
             all = Collections.unmodifiableList(list);
         }
         return all;

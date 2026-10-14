@@ -44,6 +44,7 @@ public final class SkillingHooks implements ModuleHooks {
         GatheringHooks.init();
         AerialFishingHooks.init();
         ShootingStarHooks.init();
+        CamdozaalHooks.init();
         ResourceSitePlacer.init();
         FarmingHooks.init();
         RunecraftHooks.init();

@@ -1,0 +1,67 @@
+# OSRS wiki "Seed pack" reward tables (wikitext dump, July 2026): table, seed, min, max, weight, out of.
+# White lily seeds come only from Tithe Farm packs (not farming contracts).
+low	Potato seed	8	12	2	60
+low	Onion seed	8	12	2	60
+low	Cabbage seed	8	12	2	60
+low	Tomato seed	8	12	2	60
+low	Sweetcorn seed	8	12	2	60
+low	Strawberry seed	8	12	2	60
+low	Barley seed	8	14	2	60
+low	Hammerstone seed	6	8	2	60
+low	Asgarnian seed	6	8	2	60
+low	Jute seed	8	12	2	60
+low	Yanillian seed	6	8	2	60
+low	Krandorian seed	6	8	2	60
+low	Acorn	3	5	2	60
+low	Apple tree seed	3	5	2	60
+low	Banana tree seed	3	5	2	60
+low	Orange tree seed	3	5	2	60
+low	Curry tree seed	3	5	2	60
+low	Redberry seed	6	8	2	60
+low	Cadavaberry seed	6	8	2	60
+low	Dwellberry seed	6	8	2	60
+low	Jangerberry seed	6	8	2	60
+low	Marigold seed	8	12	2	60
+low	Rosemary seed	8	12	2	60
+low	Nasturtium seed	8	12	2	60
+low	Woad seed	8	12	2	60
+low	Guam seed	3	5	2	60
+low	Marrentill seed	3	5	2	60
+low	Tarromin seed	3	5	2	60
+low	Harralander seed	3	5	2	60
+low	Mushroom spore	4	6	1	60
+low	Belladonna seed	4	6	1	60
+medium	Irit seed	2	6	3	30
+medium	Limpwurt seed	4	8	3	30
+medium	Watermelon seed	8	12	2	30
+medium	Snape grass seed	6	8	2	30
+medium	Wildblood seed	8	12	2	30
+medium	Whiteberry seed	6	8	2	30
+medium	Poison ivy seed	6	8	2	30
+medium	Cactus seed	2	6	2	30
+medium	Potato cactus seed	2	6	2	30
+medium	Willow seed	2	4	1	30
+medium	Pineapple seed	3	5	1	30
+medium	Toadflax seed	1	3	1	30
+medium	Avantoe seed	1	3	1	30
+medium	Kwuarm seed	1	3	1	30
+medium	Cadantine seed	1	3	1	30
+medium	Lantadyme seed	1	3	1	30
+medium	Dwarf weed seed	1	3	1	30
+medium	Calquat tree seed	3	6	1	30
+medium	Teak seed	1	3	1	30
+medium	White lily seed	1	1	1	90
+high	Papaya tree seed	1	3	5	44
+high	Palm tree seed	1	2	5	44
+high	Hespori seed	1	1	5	44
+high	Ranarr seed	1	2	4	44
+high	Snapdragon seed	1	1	4	44
+high	Maple seed	1	2	4	44
+high	Mahogany seed	1	2	4	44
+high	Yew seed	1	1	3	44
+high	Dragonfruit tree seed	1	1	3	44
+high	Celastrus seed	1	1	2	44
+high	Torstol seed	1	1	2	44
+high	Magic seed	1	1	1	44
+high	Spirit seed	1	1	1	44
+high	Redwood tree seed	1	1	1	44

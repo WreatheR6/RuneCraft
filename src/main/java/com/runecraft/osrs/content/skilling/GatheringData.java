@@ -135,7 +135,9 @@ public final class GatheringData extends SkillingPart {
             // Minnows (Kylie Minnow's platform, Fishing Guild): small net, 82 Fishing, 26.1 XP per catch of 10-14 minnows
             // (see minnowsPerCatch). The wiki has no success chart: low/high approx.
             new Spot("minnow_fishing_spot", "Fishing spot (minnow)", "small_fishing_net", null, List.of(
-                    Catch.of("minnow", 82, 26.1, 150, 256)), List.of(), 0));
+                    Catch.of("minnow", 82, 26.1, 150, 256)), List.of(), 0),
+            // Ruins of Camdozaal: small net here, big net via Camdozaal.otherNet (the spot block takes both nets).
+            Camdozaal.SMALL_NET);
 
     public static final String MINNOW = "minnow";
     public static final String MINNOW_SPOT = "minnow_fishing_spot";

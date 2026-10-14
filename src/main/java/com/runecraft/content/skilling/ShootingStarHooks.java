@@ -21,6 +21,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -39,8 +40,9 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Shooting Stars ({@link ShootingStars}): a star crashes at a landing site every 75-105 minutes and is announced to
  * every player; mining it gives stardust and Mining XP, each 7 minutes of mining wears a layer away, and Dusuri
- * trades stardust for rewards (talk to buy the selected reward, sneak and talk to see the next). The star, the
- * crash timer and discovery bonuses are kept in memory (a restart clears them, like an OSRS system update). // approx
+ * trades stardust for rewards (talk to buy the selected reward, sneak and talk to see the next). The star (site,
+ * size, wear, discoverer), the time to the next crash and the discovery bonuses are saved in {@link SkillingState}
+ * (section {@value #SECTION}) and survive a restart.
  */
 final class ShootingStarHooks {
     private static final class Star {
@@ -66,6 +68,10 @@ final class ShootingStarHooks {
     private static final Map<UUID, Integer> BONUS = new HashMap<>();
     /** Reward each player has selected at Dusuri's shop. */
     private static final Map<UUID, Integer> SELECTED = new HashMap<>();
+    /** SkillingState section holding the star and the crash timer, and the one holding discovery bonuses. */
+    static final String SECTION = "shooting_star";
+    static final String BONUS_SECTION = "shooting_star_bonus";
+    private static boolean loaded;
 
     private ShootingStarHooks() {
     }
@@ -82,6 +88,17 @@ final class ShootingStarHooks {
             return;
         }
         lastTick = now;
+        if (!loaded) {
+            loaded = true;
+            try {
+                load(server, now);
+            } catch (RuntimeException e) {
+                com.runecraft.RuneCraft.LOGGER.error("Shooting star state failed to load", e);
+            }
+        }
+        if (now % 20 == 0) {
+            save(server, now);
+        }
         ThreadLocalRandom random = ThreadLocalRandom.current();
         if (nextCrash < 0) {
             nextCrash = now + random.nextInt(ShootingStars.FIRST_CRASH_MIN, ShootingStars.FIRST_CRASH_MAX + 1);
@@ -93,6 +110,7 @@ final class ShootingStarHooks {
             } catch (RuntimeException e) {
                 com.runecraft.RuneCraft.LOGGER.error("Shooting star failed to land", e);
             }
+            save(server, now);
             return;
         }
         // A layer wears away only while someone is mining the star.
@@ -108,7 +126,74 @@ final class ShootingStarHooks {
             } else if (world != null) {
                 world.playSound(null, star.pos, SoundEvents.BLOCK_STONE_BREAK, SoundCategory.BLOCKS, 1.0f, 0.7f);
             }
+            save(server, now);
         }
+    }
+
+    /** Restores the star, the crash timer and the discovery bonuses saved before a restart. */
+    private static void load(MinecraftServer server, long now) {
+        SkillingState state = SkillingState.get(server);
+        NbtCompound tag = state.section(SECTION);
+        if (tag.contains("nextIn")) {
+            nextCrash = now + Math.max(1, tag.getLong("nextIn"));
+        }
+        int last = tag.contains("lastSite") ? tag.getInt("lastSite") : -1;
+        lastSite = last >= 0 && last < ShootingStars.SITES.size() ? ShootingStars.SITES.get(last) : null;
+        int site = tag.contains("site") ? tag.getInt("site") : -1;
+        if (site >= 0 && site < ShootingStars.SITES.size() && tag.getInt("size") > 0) {
+            Star s = new Star(new BlockPos(tag.getInt("x"), tag.getInt("y"), tag.getInt("z")), ShootingStars.SITES.get(site),
+                    tag.getInt("size"));
+            s.worn = tag.getInt("worn");
+            if (tag.containsUuid("discoverer")) {
+                s.discoverer = tag.getUuid("discoverer");
+            }
+            star = s;
+        }
+        NbtCompound bonus = state.section(BONUS_SECTION);
+        for (String key : bonus.getKeys()) {
+            try {
+                BONUS.put(UUID.fromString(key), bonus.getInt(key));
+            } catch (IllegalArgumentException ignored) {
+                // not a player id
+            }
+        }
+    }
+
+    /** Writes the star, the crash timer and the bonuses into the world save. */
+    private static void save(MinecraftServer server, long now) {
+        SkillingState state = SkillingState.get(server);
+        NbtCompound tag = new NbtCompound();
+        if (nextCrash >= 0) {
+            tag.putLong("nextIn", Math.max(1, nextCrash - now));
+        }
+        tag.putInt("lastSite", lastSite == null ? -1 : ShootingStars.SITES.indexOf(lastSite));
+        Star s = star;
+        if (s != null) {
+            tag.putInt("site", ShootingStars.SITES.indexOf(s.site));
+            tag.putInt("size", s.size);
+            tag.putInt("worn", s.worn);
+            tag.putInt("x", s.pos.getX());
+            tag.putInt("y", s.pos.getY());
+            tag.putInt("z", s.pos.getZ());
+            if (s.discoverer != null) {
+                tag.putUuid("discoverer", s.discoverer);
+            }
+        }
+        NbtCompound bonus = new NbtCompound();
+        BONUS.forEach((id, n) -> {
+            if (n > 0) {
+                bonus.putInt(id.toString(), n);
+            }
+        });
+        replace(state.section(SECTION), tag);
+        replace(state.section(BONUS_SECTION), bonus);
+    }
+
+    private static void replace(NbtCompound target, NbtCompound with) {
+        for (String key : new java.util.ArrayList<>(target.getKeys())) {
+            target.remove(key);
+        }
+        target.copyFrom(with);
     }
 
     private static boolean isStar(BlockState state) {

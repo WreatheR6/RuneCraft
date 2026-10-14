@@ -504,10 +504,14 @@ final class GatheringHooks {
 
     // ------------------------------------------------------------------ Fishing
 
-    private static void fish(ServerPlayerEntity player, BlockPos pos, GatheringData.Spot spot) {
+    private static void fish(ServerPlayerEntity player, BlockPos pos, GatheringData.Spot clicked) {
         if (!Stun.check(player)) {
             return;
         }
+        // A spot that takes two nets (Camdozaal): the net held in hand, else whichever net is carried.
+        GatheringData.Spot other = com.runecraft.osrs.content.skilling.Camdozaal.otherNet(clicked);
+        GatheringData.Spot spot = other != null && hasFishingTool(player, other)
+                && (!hasFishingTool(player, clicked) || SkillingUtil.heldId(player).equals(other.tool())) ? other : clicked;
         if (!hasFishingTool(player, spot)) {
             Msg.game(player, "You need " + Msg.article(SkillingUtil.lower(SkillingUtil.name(spot.tool()))) + " to fish here.");
             return;

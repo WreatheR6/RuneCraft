@@ -213,6 +213,10 @@
     "moon_gem",
     "frost_tip"
   ],
+  "body_golem": [
+    "core",
+    "head"
+  ],
   "bouncer": [
     "chest",
     "loin",
@@ -383,6 +387,10 @@
     "chaos_mark",
     "staff_orb",
     "hand_spark"
+  ],
+  "chaos_golem": [
+    "core",
+    "head"
   ],
   "chilled_jelly": [
     "dome"
@@ -810,6 +818,10 @@
     "hand_fire_r",
     "shoulder_flame_l",
     "shoulder_flame_r"
+  ],
+  "flawed_golem": [
+    "core",
+    "head"
   ],
   "flesh_crawler": [
     "head"
@@ -1440,6 +1452,10 @@
   "melzar_the_mad": [
     "staff_orb",
     "hand_glow"
+  ],
+  "mind_golem": [
+    "core",
+    "head"
   ],
   "mithril_dragon": [
     "head"
