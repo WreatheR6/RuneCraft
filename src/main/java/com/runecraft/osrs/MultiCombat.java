@@ -277,8 +277,12 @@ public final class MultiCombat {
     /**
      * Multicombat dungeons carved from the cache's tiles beneath their surface entrances, by structure id: their carved
      * air (the structure's CLEAR boxes below y {@link #UNDERGROUND_TOP}) is multi-way, the surface above them is not.
+     * OSRS wiki: Waterbirth Island Dungeon (with the Dagannoth Kings' lair), the Lighthouse dungeon, Kruk's Dungeon and the
+     * Charred Dungeon (all but its lava strykewyrms, which are single-way in OSRS: approx) are multicombat throughout. The Stalker
+     * Den (south-western sections only) and Tonali Cavern (the Moon and Sun chambers) are only partly multi and stay single here.
      */
-    public static final List<String> UNDERGROUND = List.of("dng_kalphite_cave", "dng_shadow_dungeon");
+    public static final List<String> UNDERGROUND = List.of("dng_kalphite_cave", "dng_shadow_dungeon", "dng_waterbirth_dungeon",
+            "dng_lighthouse_dungeon", "dng_kruks_dungeon", "dng_charred_dungeon");
     /** Highest block y that counts as underground for {@link #UNDERGROUND} (the dungeons' DEEP_TOP). */
     public static final int UNDERGROUND_TOP = 50;
 

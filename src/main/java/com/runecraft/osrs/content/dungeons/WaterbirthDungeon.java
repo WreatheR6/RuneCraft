@@ -28,9 +28,10 @@ import static com.runecraft.osrs.content.dungeons.Cave.rc;
  * cache's rooms and the ladders between the floors follow the wiki's walkthrough but not its exact map; the hut stands
  * on the island's west shore, about 12 tiles from the real cave mouth (the islands module builds the cave itself); the
  * circular doors and door-supports let one player through per use and stay in place, and leaving through them is
- * free; the Kings are summoned at the stone rather than always present, and the spinolyps walk on the cave floor; the
- * Lighthouse ladder is one-way (nothing in the Lighthouse leads down); the dagannoth eggs are spawn camps beside the
- * eggs; Bardur and the Askeladden exit are not built.
+ * free; the Kings are always present while anyone is in the lair, each returning 90 seconds after it dies (the stone
+ * still wakes them early), and the spinolyps walk on the cave floor; the iron ladder also leads down from the Lighthouse
+ * tower's ground floor; the whole dungeon is multicombat ({@code MultiCombat.UNDERGROUND}); the dagannoth eggs are spawn
+ * camps beside the eggs; Bardur and the Askeladden exit are not built.
  */
 final class WaterbirthDungeon {
     /** OSRS tile of the entrance hall where the cave's stairs arrive, and the shift that puts it under the hut. */
@@ -116,6 +117,17 @@ final class WaterbirthDungeon {
     /** Block {x, z} of the Lighthouse's surface tile. */
     static int[] lighthouse() {
         return new int[]{StructureDef.bx(LIGHTHOUSE_X), StructureDef.bz(LIGHTHOUSE_Y)};
+    }
+
+    /** Block {x, y, z} beside the iron ladder up to the Lighthouse (plane 1). */
+    static int[] lighthouseLadderArrival() {
+        return new int[]{xs(LIGHTHOUSE_LADDER_X - 2), P1 + 1, zs(LIGHTHOUSE_LADDER_Y)};
+    }
+
+    /** Feet block of King {@code king} (Rex, Prime, Supreme) in the lair: Rex by the stone, Prime west and Supreme east of him. */
+    static int[] kingSpot(int king) {
+        int dx = king == 1 ? -4 : king == 2 ? 4 : 0;
+        return new int[]{xl(2913) + dx, P0 + 1, zl(4449)};
     }
 
     /** Block x of the circular doors. */

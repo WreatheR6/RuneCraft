@@ -282,6 +282,7 @@ final class HouseFurniture {
         if (dest != null && !(own && player.isSneaking())) {
             Msg.action(player, "You step through the portal to " + dest.name() + ".");
             ExtrasUtil.teleport(player, dest.x(), dest.y());
+            com.runecraft.content.GameEvents.fireActivity(player, "poh_portal:" + dest.id());
             return;
         }
         if (!own) {

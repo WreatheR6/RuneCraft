@@ -233,6 +233,8 @@ public final class SpawnTable {
         s("rock_crab", 2525, 3755, 3, 8);              // Waterbirth Island's beaches (3 in OSRS)
         s("mountain_troll", 2870, 3600, 8, 12);        // Death Plateau (9 in OSRS)
         s("mountain_troll", 2848, 3679, 6, 8);         // outside the Troll Stronghold (8 in OSRS)
+        si("mountain_troll", 1225, 3495, 7, 8);         // Kebos Lowlands south of Mount Quidamortem (7 in OSRS)
+        si("mountain_troll", 1235, 3519, 3, 3);
 
         // ============================================================ Karamja
         s("harpie_bug_swarm", 2866, 3110, 6, 6);       // swamp south-west of Musa Point

@@ -6,7 +6,8 @@ import java.util.function.DoubleSupplier;
 
 /**
  * NPC services and objects behind achievement diary tasks (OSRS Wiki tables): Tindel Marchant's rusty sword repair,
- * the Lava Maze muddy chest, the Taverley crystal chest and the Stronghold of Security sceptre assembly.
+ * the Lava Maze muddy chest, the Taverley crystal chest, the Stronghold of Security sceptre assembly, the Hosidius
+ * saltpetre deposits, the Legends' Guild totem pole, the Varrock sawmill operator and fallen Ent trunks.
  */
 public final class DiaryExtras {
     private DiaryExtras() {
@@ -139,5 +140,79 @@ public final class DiaryExtras {
             }
         }
         return null;
+    }
+
+    // ---------------- Round 23: saltpetre, totem pole, sawmill, Ent trunks ----------------
+
+    public static final String SALTPETRE_DEPOSIT = "saltpetre_deposit";
+    /** The five saltpetre deposits north-east of the Woodcutting Guild (wiki map pins). */
+    public static final int[][] SALTPETRE_TILES = {{1708, 3545}, {1716, 3518}, {1687, 3512}, {1686, 3529}, {1702, 3508}};
+
+    /** Saltpetre per dig: two with a chance of roughly the Mining level out of 100 (wiki), otherwise one. */
+    public static int saltpetreDug(int miningLevel, double roll) {
+        return roll < Math.min(99, miningLevel) / 100.0 ? 2 : 1;
+    }
+
+    public static final String LEGENDS_TOTEM = "legends_totem_pole";
+    /** The totem pole in the Legends' Guild main hall (wiki map 2729, 3378). */
+    public static final int TOTEM_X = 2729;
+    public static final int TOTEM_Y = 3378;
+    /** Jewellery the totem pole recharges (to 4 charges, unlike the Fountain of Rune's 6). */
+    public static final List<String> TOTEM_RECHARGES = List.of("skills_necklace", "combat_bracelet");
+    public static final int TOTEM_CHARGES = 4;
+
+    public static final String SAWMILL_OPERATOR = "sawmill_operator";
+    /** The Varrock Lumber Yard's sawmill operator (wiki map 3302, 3492). */
+    public static final int SAWMILL_X = 3302;
+    public static final int SAWMILL_Y = 3492;
+
+    /** A sawmill conversion: logs to planks and the fee per plank (wiki "Sawmill"). */
+    public record Sawmill(String logs, String plank, int fee) {
+    }
+
+    /** Most valuable first: the operator converts every log of the best kind carried in one go. */
+    public static final List<Sawmill> SAWMILL = List.of(
+            new Sawmill("mahogany_logs", "mahogany_plank", 1500),
+            new Sawmill("teak_logs", "teak_plank", 500),
+            new Sawmill("oak_logs", "oak_plank", 250),
+            new Sawmill("logs", "plank", 100));
+
+    /** How many planks the operator makes from {@code logs} logs with {@code coins} coins at {@code fee} each. */
+    public static int sawmillBatch(int logs, int coins, int fee) {
+        return Math.max(0, Math.min(logs, fee <= 0 ? logs : coins / fee));
+    }
+
+    public static final String ENT_TRUNK = "ent_trunk";
+    /** An Ent's trunk lasts 101 ticks after it dies (wiki); a chop roll every 4 ticks gives about 25 attempts. */
+    public static final int ENT_TRUNK_TICKS = 101;
+    public static final int ENT_CHOP_TICKS = 4;
+    /** Woodcutting XP per set of logs from an Ent trunk, whatever the log type (wiki). */
+    public static final double ENT_XP = 25;
+
+    /**
+     * The log type a trunk chop gives at a base Woodcutting level: magic from 75, yew from 61, maple from 45, willow from
+     * 30, oak from 15 (wiki notes); the best available tier comes up half the time, else the tier below. // approx (axe-based split)
+     */
+    public static String entLog(int baseLevel, double roll) {
+        String[] tiers = {"logs", "oak_logs", "willow_logs", "maple_logs", "yew_logs", "magic_logs"};
+        int[] from = {1, 15, 30, 45, 61, 75};
+        int best = 0;
+        for (int i = 0; i < from.length; i++) {
+            if (baseLevel >= from[i]) {
+                best = i;
+            }
+        }
+        return tiers[roll < 0.5 || best == 0 ? best : best - 1];
+    }
+
+    /** Chance a trunk chop succeeds at the current Woodcutting level. // approx (wiki gives no formula) */
+    public static double entChopChance(int level, boolean wildernessDiaryMedium) {
+        double p = Math.min(0.95, 0.25 + level / 200.0);
+        return wildernessDiaryMedium ? Math.min(0.95, p * 1.15) : p;
+    }
+
+    /** Logs per successful chop: 2 in the Wilderness, 1 in the Woodcutting Guild (wiki). */
+    public static int entLogsPerChop(boolean wilderness) {
+        return wilderness ? 2 : 1;
     }
 }

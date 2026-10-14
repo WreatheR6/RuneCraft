@@ -134,8 +134,14 @@ final class ClassicScripts {
         @Override
         public void onSpawn(DataBossEntity boss) {
             ServerPlayerEntity target = boss.getTarget() instanceof ServerPlayerEntity p ? p : null;
-            BossFx.spawnBoss(boss, "dagannoth_prime", boss.getBlockPos().add(-4, 0, 3), target);
-            BossFx.spawnBoss(boss, "dagannoth_supreme", boss.getBlockPos().add(4, 0, 3), target);
+            // The lair keeps the Kings present (dungeons module): only wake the brothers that aren't already there.
+            for (String brother : new String[]{"dagannoth_prime", "dagannoth_supreme"}) {
+                net.minecraft.entity.EntityType<DataBossEntity> type = com.runecraft.registry.ModEntities.DATA_BOSS_TYPES.get(brother);
+                if (type != null && !boss.getWorld().getEntitiesByType(type, boss.getBoundingBox().expand(48), e -> e.isAlive()).isEmpty()) {
+                    continue;
+                }
+                BossFx.spawnBoss(boss, brother, boss.getBlockPos().add(brother.endsWith("prime") ? -4 : 4, 0, 3), target);
+            }
             BossFx.say(boss, "The Dagannoth Kings rise! Rex resists melee, Prime resists magic and Supreme resists ranged.");
         }
     }

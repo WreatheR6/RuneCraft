@@ -53,8 +53,7 @@ public final class DungeonsContent implements ContentModule {
         items.add(FIGHTING_BOOTS, "Fighting boots", Kind.ARMOUR, "boots", 0x8A2A2A).value(0).stack(1)
                 .equipment(new EquipmentDef(Slot.FEET, none, Map.of(), 0, AttackType.CRUSH, WeaponClass.NONE))
                 .examine("Ready for a fight.");
-        // Holds the Waterbirth Island Dungeon's circular doors open (OSRS: from Askeladden in Rellekka; here from the
-        // dungeon's rock pile, approx).
+        // Holds the Waterbirth Island Dungeon's circular doors open: from Askeladden in Rellekka (OSRS).
         items.add(PET_ROCK, "Pet rock", Kind.SIMPLE, "ore", 0x8A8A82).value(0).stack(1)
                 .examine("A very sensible pet.");
     }
@@ -67,6 +66,23 @@ public final class DungeonsContent implements ContentModule {
     @Override
     public List<BlockDef> blocks() {
         return DungeonBlocks.all();
+    }
+
+    /** Askeladden, the Fremennik youth in Rellekka who hands out pet rocks (wiki map 2658, 3660). */
+    public static final String ASKELADDEN = "askeladden";
+    public static final int ASKELADDEN_X = 2658;
+    public static final int ASKELADDEN_Y = 3660;
+
+    @Override
+    public List<com.runecraft.osrs.content.PlaceDef> places() {
+        return List.of(com.runecraft.osrs.content.PlaceDef.of(ASKELADDEN, "Askeladden", ASKELADDEN_X, ASKELADDEN_Y,
+                com.runecraft.osrs.content.PlaceDef.Style.NONE, List.of()));
+    }
+
+    @Override
+    public List<com.runecraft.osrs.content.NpcDef> npcs() {
+        return List.of(com.runecraft.osrs.content.NpcDef.of(ASKELADDEN, "Askeladden", ASKELADDEN, 0, 0, 0xE0B090, 0x8A5A2A, 0x5A3A2A,
+                0xE0C060));
     }
 
     @Override

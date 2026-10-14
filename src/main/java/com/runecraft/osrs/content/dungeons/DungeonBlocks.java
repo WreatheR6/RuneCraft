@@ -89,6 +89,26 @@ public final class DungeonBlocks {
         return WaterbirthDungeon.lighthouse();
     }
 
+    /** Block {x, y, z} beside the Waterbirth sublevel's iron ladder, where climbing down from the Lighthouse arrives. */
+    public static int[] lighthouseLadderBelow() {
+        return WaterbirthDungeon.lighthouseLadderArrival();
+    }
+
+    /** Block {x, z} of the centre of the Lighthouse tower's ground floor (KandarinNorth's tower at tile 2503, 3633). */
+    public static int[] lighthouseTowerCentre() {
+        return new int[]{com.runecraft.osrs.world.StructureDef.bx(2503) + 1, com.runecraft.osrs.world.StructureDef.bz(3633) + 1};
+    }
+
+    /** The Dagannoth Kings, always present in their lair (OSRS), and their stations there: {x, y, z} feet blocks. */
+    public static final List<String> KINGS = List.of("dagannoth_rex", "dagannoth_prime", "dagannoth_supreme");
+
+    public static int[] kingSpot(int king) {
+        return WaterbirthDungeon.kingSpot(king);
+    }
+
+    /** Ticks (game) before a slain King returns: 90 seconds (OSRS). */
+    public static final int KING_RESPAWN_TICKS = 150;
+
     /** True if a player at block x is on the entrance hall's side of the circular doors (west of them). */
     public static boolean outsideCircularDoor(double playerX) {
         return playerX < WaterbirthDungeon.doorX() + 0.5;

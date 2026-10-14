@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/legends_totem_pole_side",
+    "top": "runecraft:block/module/legends_totem_pole_top",
+    "bottom": "runecraft:block/module/legends_totem_pole_bottom"
+  }
+}

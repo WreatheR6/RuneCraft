@@ -94,12 +94,13 @@ public final class Diaries {
      * "minigame_win:" + minigame id, "spellbook:" + book, "teleport:" + jewellery id + ":" + destination slug,
      * "eat:" + item id, "trek_complete:" + follower difficulty, "shop_open:" + shop id, "shop_buy:" / "shop_sell:" + shop id + ":" +
      * item id, "fight_pit_champion", "monkey_cage", "bert_sand", "tindel_identify", "genie_visit", "chest_open:" + chest id,
-     * "join:" + item made by joining two pieces, "cast_on_player:" + spell id, "strut_repair", "essence_mine:" + teleporting NPC id (lower case) and "steal:" + thieving stall/chest block.
+     * "join:" + item made by joining two pieces, "cast_on_player:" + spell id, "strut_repair", "essence_mine:" + teleporting NPC id (lower case), "steal:" + thieving stall/chest block,
+     * "poh_portal:" + house portal destination, "monster_examine:" + creature name slug, "totem_recharge", "dig:saltpetre" and "ent_chop:" + log id.
      */
     public static final List<String> ACTIVITIES = List.of("talk", "minigame_start", "minigame_win", "spellbook", "teleport", "eat",
             "trek_complete", "fight_pit_champion", "monkey_cage", "shop_open", "shop_buy", "shop_sell", "bert_sand", "tindel_identify",
             "genie_visit", "chest_open", "join", "cast_on_player", "strut_repair", "essence_mine", "steal", "kingdom_approval",
-            "ba_blackboard", "tbw_favour", "kudos", "ba_wave");
+            "ba_blackboard", "tbw_favour", "kudos", "ba_wave", "poh_portal", "monster_examine", "totem_recharge", "dig", "ent_chop");
 
     /** The Fishing Platform's deck (an "x,y,r" restriction out at sea, so the land check skips it). */
     public static final String FISHING_PLATFORM = "2788,3285,10";
@@ -370,14 +371,14 @@ public final class Diaries {
         haveAny("Equip an Iban's upgraded staff or upgrade an Iban's staff", "ibans_staff", MAGIC, 50);
         visit("Visit the Island east of the Necromancer's tower", 2700, 3247, 10);
         in("ardougne", Tier.HARD);
-        visit("Recharge some jewellery at the Totem pole in the Legends' Guild", 2729, 3378, 12); approx(); // approx
+        event("Recharge some jewellery at the Totem pole in the Legends' Guild", "totem_recharge", null); // skills necklace / combat bracelet
         visit("Enter the Magic Guild", 2590, 3087, 8, MAGIC, 66);
         xp("Attempt to steal from a chest in Ardougne Castle", THIEVING, 72);
         event("Have a zookeeper put you in Ardougne Zoo's monkey cage", "monkey_cage", null); // talk to him holding a greegree
         needs(lastId, "monkey_madness_i");
         cast("Teleport to the Watchtower", "watchtower_teleport", MAGIC, 58);
         xp("Catch a Red Salamander", HUNTER, 59);
-        xpAt("Check the health of a palm tree near Tree Gnome Village", FARMING, 68, null); approx(); // approx
+        xpAt("Check the health of a palm tree near Tree Gnome Village", FARMING, 68, at(2490, 3179, 8)); // the fruit tree patch
         get("Pick some poison ivy berries from the patch south of Ardougne", "poison_ivy_berries", 1, FARMING, 70);
         makeHere("Smith a Mithril platebody near Ardougne", "mithril_platebody", 1, SMITHING, 68);
         visit("Enter your POH from Yanille", 2544, 3095, 10, CONSTRUCTION, 50);
@@ -656,7 +657,7 @@ public final class Diaries {
         event("Browse the Warrens General Store", "shop_open:warrens_general_store", null);
         visit("Take a boat to Land's End", 1504, 3399, 15);
         visit("Pray at the altar in Kourend Castle", 1616, 3673, 10);
-        xp("Dig up some saltpetre", FARMING, 1); approx(); // approx
+        event("Dig up some saltpetre", "dig:saltpetre", null); // the Hosidius deposits, with a spade
         visit("Enter your POH from Hosidius", 1742, 3517, 10, CONSTRUCTION, 25);
         xpAt("Do a lap of the Shayzien Agility Course", AGILITY, 1, at(1550, 3630, 40));
         makeHere("Create a strength potion in the Lovakengj pub", "strength_potion", 1, HERBLORE, 12);
@@ -665,7 +666,7 @@ public final class Diaries {
         visit("Travel to the fairy ring south of Mount Karuulm", 1302, 3762, 10);
         killAny("Kill a lizardman", "lizardman", 1);
         quest("Use Kharedst's memoirs to teleport to all five cities", "client_of_kourend");
-        xp("Mine some volcanic sulphur", MINING, 42); approx(); // approx
+        get("Mine some volcanic sulphur", "volcanic_sulphur", 1, MINING, 42); // Lovakengj
         visit("Enter the Farming Guild", 1249, 3718, 10, FARMING, 45);
         visit("Switch to the Necromancy spellbook at Tyss", 1712, 3883, 10);
         visit("Repair a Piscarilius crane", 1820, 3740, 15, CRAFTING, 30, CONSTRUCTION, 30);
@@ -684,7 +685,8 @@ public final class Diaries {
         event("Teleport to Xeric's Heart using Xeric's Talisman", "teleport:xerics_talisman:xerics_heart", null);
         xp("Deliver an artefact to Captain Khaled", THIEVING, 49);
         killAny("Kill a wyrm in the Karuulm Slayer Dungeon", "wyrm", 1, SLAYER, 62);
-        killAny("Cast Monster Examine on a mountain troll south of Mount Quidamortem", "mountain troll", 1, MAGIC, 66); approx(); // approx
+        event("Cast Monster Examine on a mountain troll south of Mount Quidamortem", "monster_examine:mountain_troll", at(1228, 3502, 30),
+                MAGIC, 66); // the Kebos Lowlands trolls
         killAt("Kill a Zombie in the Shayzien Crypts", "zombie", 1, at(1503, 3550, 30) + ",u"); // dungeons module ShayzienCrypts
         in("kourend", Tier.ELITE);
         getAt("Craft one or more Blood runes from Dark essence fragments", "blood_rune", 1, null, RUNECRAFT, 77, MINING, 38, CRAFTING, 38);
@@ -739,7 +741,8 @@ public final class Diaries {
         // Enchanting is a spell (an obtain event), not a make-menu product.
         get("Craft, string and enchant an Amulet of Power in Lumbridge", "amulet_of_power", 1, CRAFTING, 70, MAGIC, 57);
         in("lumbridge", Tier.ELITE);
-        quest("Steal from a Dorgesh-Kaan rich chest", "death_to_the_dorgeshuun", THIEVING, 78); approx(); // approx
+        event("Steal from a Dorgesh-Kaan rich chest", "steal:dorgesh_kaan_rich_chest", null, THIEVING, 78);
+        needs(lastId, "death_to_the_dorgeshuun");
         quest("Grapple across a pylon on the Dorgesh-Kaan Agility Course", "death_to_the_dorgeshuun", AGILITY, 70, RANGED, 70,
                 STRENGTH, 70); approx(); // approx
         getAt("Chop some magic logs at the Mage Training Arena", "magic_logs", 1, null, WOODCUTTING, 75);
@@ -776,7 +779,7 @@ public final class Diaries {
         visit("Travel to Dragontooth Isle", 3815, 3560, 20);
         visit("Board the Swamp boat at the Hollows", 3500, 3380, 12);
         in("morytania", Tier.HARD);
-        cast("Enter the Kharyrll portal in your POH", "kharyrll_teleport", MAGIC, 66, CONSTRUCTION, 50); approx(); // approx
+        event("Enter the Kharyrll portal in your POH", "poh_portal:kharyrll", null, MAGIC, 66, CONSTRUCTION, 50);
         visit("Climb the advanced spike chain within Slayer Tower", 3422, 3537, 12, AGILITY, 71);
         getAt("Harvest some Watermelon from the Allotment patch on Harmony Island", "watermelon", 1, null, FARMING, 47);
         getAt("Chop and burn some mahogany logs on Mos Le'Harmless", "mahogany_logs", 1, null, WOODCUTTING, 50, FIREMAKING, 50);
@@ -790,7 +793,7 @@ public final class Diaries {
         in("morytania", Tier.ELITE);
         get("Catch a shark in Burgh de Rott with your bare hands", "raw_shark", 1, FISHING, 96, STRENGTH, 76);
         xp("Cremate any Shade remains on a Magic or Redwood pyre", FIREMAKING, 80);
-        xp("Fertilize the Morytania herb patch using Lunar Magic", FARMING, 1, MAGIC, 83); approx(); // approx
+        castAt("Fertilize the Morytania herb patch using Lunar Magic", "fertile_soil", at(3603, 3527, 8), MAGIC, 83); // cast on a patch there
         makeHere("Craft a Black dragonhide body in Canifis bank", "black_dhide_body", 1, CRAFTING, 84);
         kill("Kill an Abyssal demon in the Slayer Tower", "abyssal demon", 1, SLAYER, 85);
         kc("Loot the Barrows chest while wearing any complete Barrows set", "barrows_chests", 1, DEFENCE, 70);
@@ -822,7 +825,8 @@ public final class Diaries {
         quest("Teleport to the digsite using a Digsite pendant", "the_dig_site");
         cast("Cast the teleport to Varrock spell", "varrock_teleport", MAGIC, 25);
         combat("Get a Slayer task from Vannaka", 40);
-        haveAny("Make 20 Mahogany Planks in one go", "mahogany_plank"); approx(); // approx
+        getAt("Make 20 Mahogany Planks in one go", "mahogany_plank", 20, null); // the sawmill operator converts a whole load
+        inOneGo();
         quest("Pick a White tree fruit", "garden_of_tranquillity", FARMING, 25);
         visit("Use the balloon to travel from Varrock", 3297, 3480, 10, FIREMAKING, 40, FARMING, 30);
         xp("Complete a lap of the Varrock Agility course", AGILITY, 30);
@@ -912,7 +916,7 @@ public final class Diaries {
         wear("Equip any team cape in the Wilderness", teamCapes(), "wilderness");
         in("wilderness", Tier.MEDIUM);
         get("Mine some Mithril ore in the wilderness", "mithril_ore", 1, MINING, 55);
-        get("Chop some yew logs from a fallen Ent", "yew_logs", 1, WOODCUTTING, 61); approx(); // approx
+        event("Chop some yew logs from a fallen Ent", "ent_chop:yew_logs", area, WOODCUTTING, 61); // the trunk a killed Ent leaves
         visit("Enter the Wilderness God Wars Dungeon", 3017, 3738, 12, AGILITY, 60);
         xpAt("Complete a lap of the Wilderness Agility course", AGILITY, 52, at(3000, 3940, 30));
         killAny("Kill a Green Dragon", "green dragon", 1);

@@ -153,7 +153,7 @@ final class MidSlayerMonsters {
                 m("mountain_troll", "Mountain troll", 69, 90, 60, 60, 60, 1, 1).speed(4).attack(crush(8))
                         .drops(Drop.always("big_bones"), coins(10, 200, 4), Drop.herbs(14), Drop.gems(64), clue("medium", 128))
                         .slayer(1, "trolls").skin(0x8A8A6A, 0x6A6A4A, 0x4A4A3A, 0x2A2A1A).size(1.0f, 2.6f, 1.0f)
-                        .spawn(Region.TROLL_COUNTRY, 6, 1, 3),
+                        .spawn(Region.TROLL_COUNTRY, 6, 1, 3).spawn(Region.KOUREND, 2, 1, 3),
                 m("ice_troll", "Ice troll", 82, 80, 70, 70, 70, 1, 1).speed(4).attack(crush(9))
                         .drops(Drop.always("big_bones"), Drop.of("raw_tuna", 1, 1, 10), Drop.herbs(14), Drop.gems(64), clue("hard", 256))
                         .slayer(1, "trolls").skin(0xA0C0D8, 0x7A9AB8, 0x5A7A98, 0xE0F0FF).size(1.0f, 2.6f, 1.0f)

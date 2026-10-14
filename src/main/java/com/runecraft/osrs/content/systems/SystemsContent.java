@@ -94,7 +94,10 @@ public final class SystemsContent implements ContentModule {
                 BlockDef.scripted(com.runecraft.osrs.bank.DepositBoxes.BLOCK, "Bank deposit box", 0x6A5A3A, "chest"),
                 BlockDef.scripted(DiaryExtras.MUDDY_CHEST, "Muddy chest", 0x6A4A2A, "chest"),
                 BlockDef.scripted(DiaryExtras.CRYSTAL_CHEST, "Crystal chest", 0x8AB0C0, "chest"),
-                BlockDef.scripted(Multicannon.BLOCK, "Dwarf multicannon", 0x3A3A40, "machine"));
+                BlockDef.scripted(Multicannon.BLOCK, "Dwarf multicannon", 0x3A3A40, "machine"),
+                BlockDef.scripted(DiaryExtras.SALTPETRE_DEPOSIT, "Saltpetre deposit", 0x9A9A90, "rock"),
+                BlockDef.scripted(DiaryExtras.LEGENDS_TOTEM, "Totem pole", 0x8A5A2A, "totem"),
+                BlockDef.scripted(DiaryExtras.ENT_TRUNK, "Ent trunk", 0x5A4A2A, "stump"));
     }
 
     @Override
@@ -115,6 +118,16 @@ public final class SystemsContent implements ContentModule {
                 PlaceDef.of(Multicannon.NULODION, "Nulodion", Multicannon.NULODION_X, Multicannon.NULODION_Y, PlaceDef.Style.NONE, List.of()),
                 PlaceDef.of(DiaryExtras.CRYSTAL_CHEST, "Crystal chest", DiaryExtras.CRYSTAL_CHEST_X, DiaryExtras.CRYSTAL_CHEST_Y,
                         PlaceDef.Style.NONE, List.of(DiaryExtras.CRYSTAL_CHEST))));
+        // Diary objects (round 23): the hooks put each block on the ground (or hall floor) at its tile.
+        for (int i = 0; i < DiaryExtras.SALTPETRE_TILES.length; i++) {
+            int[] t = DiaryExtras.SALTPETRE_TILES[i];
+            places.add(PlaceDef.of(DiaryExtras.SALTPETRE_DEPOSIT + "_" + (i + 1), "Saltpetre deposit", t[0], t[1], PlaceDef.Style.NONE,
+                    List.of()));
+        }
+        places.add(PlaceDef.of(DiaryExtras.LEGENDS_TOTEM, "Totem pole", DiaryExtras.TOTEM_X, DiaryExtras.TOTEM_Y, PlaceDef.Style.NONE,
+                List.of()));
+        places.add(PlaceDef.of(DiaryExtras.SAWMILL_OPERATOR, "Sawmill", DiaryExtras.SAWMILL_X, DiaryExtras.SAWMILL_Y, PlaceDef.Style.NONE,
+                List.of()));
         // Bank deposit boxes: nothing is levelled; the hooks put the box on the ground at the spot.
         for (com.runecraft.osrs.bank.DepositBoxes.Spot spot : com.runecraft.osrs.bank.DepositBoxes.SPOTS) {
             places.add(PlaceDef.of(spot.id(), spot.name(), spot.osrsX(), spot.osrsY(), PlaceDef.Style.NONE, List.of()));
@@ -133,7 +146,9 @@ public final class SystemsContent implements ContentModule {
                 NpcDef.of(GHOMMAL, "Ghommal", GHOMMAL, 0, 0, 0xC8A080, 0x8A8A90, 0x5A5A60, 0x8A8A90),
                 NpcDef.of(DiaryExtras.TINDEL, "Tindel Marchant", DiaryExtras.TINDEL, 0, 0, 0xE0B898, 0x6A4A2A, 0x3A3A4A, 0x5A3A2A),
                 NpcDef.of(DiaryExtras.GENIE, "Genie", DiaryExtras.GENIE, 0, 0, 0x5A8AE0, 0xC03030, 0x3A6AC0, 0xE0C040),
-                NpcDef.of(Multicannon.NULODION, "Nulodion", Multicannon.NULODION, 0, 0, 0xD8A888, 0x3A3A3A, 0x2A2A2A, 0x6A6A70));
+                NpcDef.of(Multicannon.NULODION, "Nulodion", Multicannon.NULODION, 0, 0, 0xD8A888, 0x3A3A3A, 0x2A2A2A, 0x6A6A70),
+                NpcDef.of(DiaryExtras.SAWMILL_OPERATOR, "Sawmill operator", DiaryExtras.SAWMILL_OPERATOR, 0, 0, 0xE0B090, 0x6A4A2A,
+                        0x3A3A4A, 0x8A6A3A));
     }
 
     @Override

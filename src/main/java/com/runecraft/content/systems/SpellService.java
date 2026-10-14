@@ -645,6 +645,8 @@ public final class SpellService {
                         + st.attackSpeed() + " ticks.");
                 Msg.game(p, "Attack " + st.attack() + ", Strength " + st.strength() + ", Defence " + st.defence() + ", Magic "
                         + st.magic() + ", Ranged " + st.ranged() + ".");
+                com.runecraft.content.GameEvents.fireActivity(p, "monster_examine:"
+                        + com.runecraft.osrs.content.systems.Diaries.slug(st.name()));
             }
             case "cure_other" -> {
                 LivingEntity t = SysCombat.lookTarget(p, 16);

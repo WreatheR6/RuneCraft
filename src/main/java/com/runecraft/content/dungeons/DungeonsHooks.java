@@ -94,6 +94,20 @@ public final class DungeonsHooks implements ModuleHooks {
                 return 0;
             }
         });
+        com.runecraft.world.LandmarkBuilder.registerCustom("lighthouse", (world, centre) -> placeLighthouseLadder(world));
+        com.runecraft.content.GameEvents.onActivity((p, key) -> {
+            if (key.equals("talk:" + DungeonsContent.ASKELADDEN)) {
+                askeladden(p);
+            }
+        });
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (server.getTicks() % 20 == 0) {
+                ServerWorld world = Gielinor.world(server);
+                if (world != null) {
+                    keepKings(world);
+                }
+            }
+        });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (++hazardTicks % HAZARD_INTERVAL != 0) {
                 return;
@@ -107,6 +121,70 @@ public final class DungeonsHooks implements ModuleHooks {
                 }
             }
         });
+    }
+
+    /** Puts the iron ladder down to the Waterbirth Island Dungeon on the Lighthouse tower's ground floor. */
+    private static void placeLighthouseLadder(ServerWorld world) {
+        net.minecraft.block.Block ladder = net.minecraft.registry.Registries.BLOCK.get(com.runecraft.RuneCraft.id(DungeonBlocks.LIGHTHOUSE_LADDER));
+        if (ladder == Blocks.AIR) {
+            return;
+        }
+        int[] c = DungeonBlocks.lighthouseTowerCentre();
+        com.runecraft.world.StructurePlacer.applyIfLoaded(world, c[0] >> 4, c[1] >> 4);
+        for (int[] o : new int[][]{{3, 0}, {-3, 0}, {0, 3}, {0, -3}, {2, 2}, {-2, -2}}) {
+            for (int y = world.getSeaLevel(); y < world.getSeaLevel() + 12; y++) {
+                BlockPos at = new BlockPos(c[0] + o[0], y, c[1] + o[1]);
+                if (world.getBlockState(at).isAir() && world.getBlockState(at.up()).isAir()
+                        && world.getBlockState(at.down()).isSolidBlock(world, at.down())) {
+                    world.setBlockState(at, ladder.getDefaultState(), net.minecraft.block.Block.NOTIFY_LISTENERS);
+                    return;
+                }
+            }
+        }
+    }
+
+    /** Game tick each King was first seen missing (0 = present); the Kings return 90 seconds after dying (OSRS). */
+    private static final long[] KING_DEAD_SINCE = new long[3];
+
+    /**
+     * The Dagannoth Kings are always in their lair in OSRS: while anyone is down there, each missing King comes back
+     * {@link DungeonBlocks#KING_RESPAWN_TICKS} after it is found missing (the summoning stone still wakes them early).
+     */
+    private static void keepKings(ServerWorld world) {
+        boolean visited = false;
+        for (ServerPlayerEntity p : world.getPlayers()) {
+            if (p.isAlive() && DungeonBlocks.inKingsLair(p.getBlockX(), p.getBlockY(), p.getBlockZ())) {
+                visited = true;
+                break;
+            }
+        }
+        if (!visited) {
+            return;
+        }
+        long now = com.runecraft.action.ActionManager.gameTick();
+        int[] centre = DungeonBlocks.kingSpot(0);
+        net.minecraft.util.math.Box lair = new net.minecraft.util.math.Box(new BlockPos(centre[0], centre[1], centre[2])).expand(40, 12, 40);
+        for (int i = 0; i < DungeonBlocks.KINGS.size(); i++) {
+            String id = DungeonBlocks.KINGS.get(i);
+            net.minecraft.entity.EntityType<com.runecraft.boss.DataBossEntity> type = com.runecraft.registry.ModEntities.DATA_BOSS_TYPES.get(id);
+            com.runecraft.osrs.content.BossDef def = com.runecraft.osrs.content.ContentRegistry.boss(id);
+            if (type == null || def == null) {
+                continue;
+            }
+            if (!world.getEntitiesByType(type, lair, e -> e.isAlive()).isEmpty()) {
+                KING_DEAD_SINCE[i] = 0;
+                continue;
+            }
+            if (KING_DEAD_SINCE[i] == 0) {
+                KING_DEAD_SINCE[i] = now;
+                continue;
+            }
+            if (now - KING_DEAD_SINCE[i] >= DungeonBlocks.KING_RESPAWN_TICKS) {
+                int[] s = DungeonBlocks.kingSpot(i);
+                com.runecraft.boss.DataBossService.spawn(world, new BlockPos(s[0], s[1], s[2]), def, null);
+                KING_DEAD_SINCE[i] = 0;
+            }
+        }
     }
 
     /** How often (Minecraft ticks) Ape Atoll's traps and falling rocks are checked. */
@@ -344,20 +422,38 @@ public final class DungeonsHooks implements ModuleHooks {
         if (!(player.getWorld() instanceof ServerWorld world)) {
             return;
         }
+        if (pos.getY() > com.runecraft.osrs.MultiCombat.UNDERGROUND_TOP) {
+            // the iron ladder in the Lighthouse leads down to the Waterbirth Island Dungeon's rock lobsters
+            int[] b = DungeonBlocks.lighthouseLadderBelow();
+            Msg.game(player, "You climb down the long iron ladder into the dungeon below.");
+            player.teleport(world, b[0] + 0.5, b[1], b[2] + 0.5, player.getYaw(), player.getPitch());
+            return;
+        }
         int[] l = DungeonBlocks.lighthouseExit();
         BlockPos to = Gielinor.safeSpot(world, l[0], l[1]);
         Msg.game(player, "You climb the long iron ladder up into the Lighthouse.");
         player.teleport(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYaw(), player.getPitch());
     }
 
-    /** The rock pile by Waterbirth's arrival ladder: one pet rock per player. */
+    /** The rock pile by Waterbirth's arrival ladder: just rocks (pet rocks come from Askeladden in Rellekka, as in OSRS). */
     private static void rockPile(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+        Msg.game(player, Inv.has(player, DungeonsContent.PET_ROCK, 1) ? "Your pet rock would sit nicely on a pressure pad."
+                : "Just a pile of rocks. Askeladden in Rellekka gives out pet rocks that would sit nicely on a pressure pad.");
+    }
+
+    /** Askeladden gives a pet rock once The Fremennik Trials is started (and more after it, OSRS). */
+    private static void askeladden(ServerPlayerEntity player) {
+        com.runecraft.osrs.QuestInfo trials = com.runecraft.osrs.content.ContentRegistry.quest("fremennik_trials");
+        if (trials != null && Players.data(player).questStage(trials) <= 0 && !Players.data(player).questComplete(trials)) {
+            com.runecraft.quest.QuestApi.say(player, "Askeladden", "Hey, outerlander! Come back when you're trying to become one of us.");
+            return;
+        }
         if (Inv.has(player, DungeonsContent.PET_ROCK, 1)) {
-            Msg.game(player, "You already have a pet rock.");
+            com.runecraft.quest.QuestApi.say(player, "Askeladden", "You've already got a pet rock, buddy. It never needs feeding!");
             return;
         }
         Inv.give(player, DungeonsContent.PET_ROCK, 1);
-        Msg.game(player, "You pick a friendly-looking rock out of the pile. It would sit nicely on a pressure pad.");
+        com.runecraft.quest.QuestApi.say(player, "Askeladden", "Here, have a pet ROCK! A faithful companion for life.");
         ServerNetworking.sync(player);
     }
 

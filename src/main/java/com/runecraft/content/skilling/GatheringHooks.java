@@ -68,6 +68,14 @@ final class GatheringHooks {
     }
 
     static void init() {
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (server.getTicks() % 30 == 0) {
+                ServerWorld world = com.runecraft.world.Gielinor.world(server);
+                if (world != null) {
+                    roamImplings(world);
+                }
+            }
+        });
         for (GatheringData.ModTree t : GatheringData.TREES) {
             BlockHooks.register(t.blockId(), (player, pos, state) -> chop(player, pos, t));
         }
@@ -719,6 +727,30 @@ final class GatheringHooks {
     }
 
     // ------------------------------------------------------------------ Implings
+
+    /**
+     * Implings never stand still in OSRS: an idle impling flits off to a random spot up to 12 tiles away now and then
+     * (the spawner's leash still brings strays back toward their spawn area). // approx distances and timing
+     */
+    private static void roamImplings(ServerWorld world) {
+        for (net.minecraft.entity.Entity e : world.iterateEntities()) {
+            if (!(e instanceof OsrsMonsterEntity m) || !m.isAlive() || m.getTarget() != null || !m.getNavigation().isIdle()
+                    || m.stats() == null || m.stats().profile() == null || HunterData.impling(m.stats().profile().id) == null
+                    || m.getRandom().nextInt(3) != 0) {
+                continue;
+            }
+            int x = m.getBlockX() + m.getRandom().nextInt(49) - 24;
+            int z = m.getBlockZ() + m.getRandom().nextInt(49) - 24;
+            if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+                continue;
+            }
+            int y = world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+            if (Math.abs(y - m.getBlockY()) > 12) {
+                continue; // underground (Puro-Puro, dungeons): stay on this floor
+            }
+            m.getNavigation().startMovingTo(x + 0.5, y, z + 0.5, 1.0);
+        }
+    }
 
     /** Nets that catch implings (the magic one adds 20/256 to the catch chance). */
     private static final java.util.Set<String> NETS = java.util.Set.of("butterfly_net", "magic_butterfly_net");
