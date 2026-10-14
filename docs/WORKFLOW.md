@@ -143,6 +143,11 @@ Recurring conflict spots:
   - Sailing as a skill (`SailingTables`, `SailingTraining`, `SailingHooks`): 358 charting tasks, 439 courier tasks, 77 boat parts, facilities, Barracuda Trials, trawling, sail trimming; 30 courier ports; snapshots under `src/test/resources/osrs/sailing/`.
   - Vultures, ducks, terrorbirds and the Mort Myre snails at cache spawns; snelms, hastae, Guthix balance, hollow trees, Lava Maze lava eel spot; diary tasks 407 → 417 faithful.
 
+- **Session 2, round 10: dungeons, flagship boss models, self-test items/combat:**
+  - Six dungeons from cache tiles (`CacheDungeons`): Shadow, Sophanem (3 levels), Lighthouse, Kalphite Cave, Wilderness Slayer Cave, Forthos; shadow hound and locust rider diary tasks real (419 faithful).
+  - Re-sculpted Corp, Kraken, Thermonuclear smoke devil, the Nightmare, Verzik P3, TzKal-Zuk, Kree'arra, Graardor, Vorkath, Cerberus (`bestiary/Flagships.java`); painter materials `crystal`, `smoke`, `spectral` and glow modes `spots`, `rim`, `sigil`; before/after previews `docs/previews/models/round10_*.png`.
+  - Self-test grew to ~2,680 checks (`ItemCombatChecks`): food, potions, every wearable (requirements, bonus totals, 2h), prayers (OSRS drain formula), protection prayers, every spell, attack XP per style, slayer tasks per master, bank/GE/shops. First run 2,644 passed / 21 failed (all a test bug with level-1 requirements, fixed); it also exposed dead Jewellery ids and deposit-all on notes taking unnoted items (both fixed).
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
@@ -168,6 +173,7 @@ Recurring conflict spots:
 - **Diaries:** 75 tasks approximated: shadow hounds and locust riders need the Shadow Dungeon and Contact! dungeon; swordchick/deathwing have no cache spawns; Arceuus lectern tablets; Port Phasmatys has no range; NPC-talk and minigame-internal tasks.
 - **Thieving and Agility:** the Dorgesh-Kaan course is missing; Isle of Souls chests sit on the surface (their real tiles are in the dungeon/tower basement); leaving the Wilderness course doesn't forfeit the fee.
 - **World:**
+  - Missing dungeons: Myths' Guild, Isle of Souls, Giants' Den, Deep Wilderness, Crandor/Karamja, Ourania Cave interior, Stalker Den, Ice Troll Caves. New dungeon huts sit a few tiles off where another module's building occupies the tile; Kalphite Cave task-only rule and its multicombat missing.
   - Kruk's Dungeon: the western plane-1 hordes are carved at y -10 under the atoll (own shift, ladder from the lower north-west hall); the other plane-1 clusters (east of 2500, about 120 monkeys/archers) and the plane-0 clusters west of 2600 are still missing.
   - Waterbirth: the Lighthouse ladder is one-way (nothing in the Lighthouse leads down); doors/supports let one player through per use; the Kings are summoned at the stone rather than always present; the lair is not a multicombat area; Bardur and the Askeladden exit missing; the pet rock comes from a rock pile, not Askeladden. Ape Atoll dungeons are boxes around cache clusters; Zooknock still stands on the surface (quests module); no hot-rock cave or locked doors.
   - Many drop items are missing from the catalog (Fremennik/spined/berserker/warrior helms, rock-shell gloves/boots, monkey bones variants, Ape Atoll bones), so those drop lines are skipped. Trek vampyre juvinates don't count for the vampyres task (it would make Konar assign it with no spawns).
@@ -185,6 +191,6 @@ Recurring conflict spots:
   - Skull timers are in memory only (lost on restart). Heavy ballista wield doesn't check MM2 training; uncut zenyte is a gem-cutting recipe.
   - Seers ring magic damage (0.2%/0.5%) can't be represented with whole-percent magic damage.
   - Ring of the gods imbue should need a holy wrench (nowhere modelled).
-- **Self-test gaps:** the FakePlayer isn't in the player lists, so minigames, raid rooms and boss targeting run empty (a real-player client run is being added); 7 bosses (fumus, umbra, cruor, glacies, zulrah ×3) vanish right after summoning.
+- **Self-test gaps:** PvP minigames need two players; utility spells needing targets/items (enchants, telegrab, bake pie) aren't cast; Guthix balance, olive oil and sacred oil have no drink effect; `TestContext.reset()` doesn't reset systems state or the Slayer profile.
 - **Sailing:** boat combat, bounty tasks, ocean encounters, crew, cargo holds, cannons, hazards, salvaging hook tiers, hull speed; island materials are sold in the tool shop.
 - **Untested in game:** much of the Minecraft-side code has only passed CI's boot test. A play-test pass would be the most valuable round once the data rounds slow down. Use `/run` or the client smoke screenshots.
