@@ -529,8 +529,14 @@ final class KandarinSeers {
         k.counter(candle, GENERAL, "spruce");
         k.set(candle.x1() + 1, 1, candle.z2() - 1, "minecraft:candle[candles=4,lit=true]");
 
-        Bld bank = k.house(2804, 3437, 2812, 3442, 1, STONE.roof("minecraft:spruce"), 's', NO_LADDER | WIDE_DOOR);
-        int bz = bank.z1() + 2;
+        // bank on its OSRS footprint 2806-2812 x 3437-3444, booths across the middle, chequered floor in front
+        Bld bank = k.house(2806, 3437, 2812, 3444, 1, STONE.roof("minecraft:spruce"), 's', NO_LADDER | WIDE_DOOR);
+        int bz = KandarinKit.Z(3441);
+        for (int x = bank.x1() + 1; x < bank.x2(); x++) {
+            for (int z = bz + 1; z < bank.z2(); z++) {
+                k.set(x, -1, z, (((x >> 1) + (z >> 1)) & 1) == 0 ? "minecraft:polished_andesite" : "minecraft:gray_concrete");
+            }
+        }
         k.fill(bank.x1() + 1, 0, bz, bank.x2() - 1, 0, bz, "minecraft:spruce_slab[type=top]");
         for (int x = bank.x1() + 2; x <= bank.x2() - 2; x += 3) {
             k.set(x, 0, bz, BANK);
