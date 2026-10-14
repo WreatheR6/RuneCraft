@@ -376,19 +376,26 @@ final class MinigameRewardChecks {
                 throw failure("wrong Combat Achievement flags " + flags);
             }
             g.selfTestEnterBoss(p());
-            int bosses = g.selfTestAlive(mode.boss);
+            if (!g.inBossFight() || !g.selfTestHunllefAlive()) {
+                throw failure("the barrier did not start the Hunllef fight");
+            }
             for (int i = 0; i < 5 && !s.isEnded(); i++) {
                 MinigameManager.selfTestTick(s);
                 c.heal();
-            }
-            if (bosses < 1) {
-                throw failure("the barrier did not start the Hunllef fight");
             }
         } finally {
             s.end(false);
         }
         if (MinigameManager.session(p()) != null) {
             throw failure("the player is still bound to the Gauntlet after it ended");
+        }
+        if (com.runecraft.content.minigames.GauntletStash.has(p())) {
+            // A player missing from the server's player list (the fake player) is treated like one who logged out mid-run:
+            // the session can't reach them, and their stash comes back as it does on their next login.
+            if (c.realPlayer()) {
+                throw failure("the online player's stash was not restored when the run ended");
+            }
+            com.runecraft.content.minigames.GauntletStash.restore(p());
         }
         if (!Inv.has(p(), "bronze_dagger", 1)) {
             throw failure("the player's items were not given back");

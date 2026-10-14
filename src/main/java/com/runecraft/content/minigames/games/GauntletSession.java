@@ -69,6 +69,9 @@ public final class GauntletSession extends MinigameSession {
     private boolean bossFight;
     private boolean bossDead;
     private int endIn;
+    private final List<ServerPlayerEntity> joining = new ArrayList<>();
+    /** The Hunllef of this run once the fight has started. */
+    private MobEntity hunllef;
 
     public GauntletSession(int id, int slot, ServerWorld world, String variant) {
         super(Minigame.GAUNTLET, id, slot, world, variant);
@@ -163,12 +166,23 @@ public final class GauntletSession extends MinigameSession {
 
     @Override
     protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+        // Called once per joining player before start(): remember them, since online() only sees players in the server's
+        // player list (a player not listed, such as the self-test's fake player, would otherwise keep their items).
+        if (!joining.contains(player)) {
+            joining.add(player);
+        }
+        return startPoint();
+    }
+
+    private BlockPos startPoint() {
         return rel(centre(Gauntlet.START_X), 1, centre(Gauntlet.START_Y) + 2);
     }
 
     @Override
     protected void start() {
-        for (ServerPlayerEntity p : online()) {
+        List<ServerPlayerEntity> entering = new ArrayList<>(joining);
+        joining.clear();
+        for (ServerPlayerEntity p : entering) {
             GauntletStash.stash(p);
             Inv.give(p, Gauntlet.sceptre(mode), 1);
             Inv.give(p, Gauntlet.teleport(mode), 1);
@@ -284,9 +298,11 @@ public final class GauntletSession extends MinigameSession {
         bossFight = true;
         BlockPos at = rel(0, 1, 4);
         p.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 180f, 0f);
-        MobEntity boss = spawn(mode.boss, rel(0, 1, -3));
-        if (boss != null) {
-            boss.setTarget(p);
+        hunllef = spawn(mode.boss, rel(0, 1, -3));
+        if (hunllef != null) {
+            hunllef.setTarget(p);
+        } else {
+            com.runecraft.RuneCraft.LOGGER.warn("The Gauntlet could not spawn {}", mode.boss);
         }
         Msg.red(p, "The " + (mode == Mode.NORMAL ? "Crystalline" : "Corrupted") + " Hunllef awakens!");
     }
@@ -296,9 +312,12 @@ public final class GauntletSession extends MinigameSession {
         enterBoss(p);
     }
 
-    /** Self-test hook: living creatures of this run with the given id. */
-    public int selfTestAlive(String creatureId) {
-        return living(creatureId).size();
+    /**
+     * Self-test hook: whether this run's Hunllef exists and is alive. Checked on the entity itself: a mob spawned in an
+     * instance chunk the player only just reached is not visible to entity box queries until that chunk tracks entities.
+     */
+    public boolean selfTestHunllefAlive() {
+        return hunllef != null && hunllef.isAlive() && !hunllef.isRemoved();
     }
 
     @Override
@@ -555,7 +574,7 @@ public final class GauntletSession extends MinigameSession {
             Msg.game(p, "The Hunllef's lair blocks the crystal's magic.");
             return false;
         }
-        BlockPos at = spawnPoint(p, 0);
+        BlockPos at = startPoint();
         p.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYaw(), p.getPitch());
         return true;
     }
