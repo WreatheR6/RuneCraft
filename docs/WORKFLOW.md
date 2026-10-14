@@ -157,6 +157,11 @@ Recurring conflict spots:
   - Restored the round-10 Zulrah ×3 and Abyssal Sire, veined Kalphite Queen wings, re-sculpted Phantom Muspah and the Whisperer (`bestiary/Flagships3.java`), Nex wing veins. Zilyana, K'ril, wilderness bosses, Leviathan, Vardorvis, Duke and the Wardens kept (no clear improvement).
   - Diaries 438 → 453 faithful (`DiaryExtras`): Tindel Marchant, the Elid genie, camulet, crystal chest and key halves, dwarven helmet, white 2h sword and Sir Vyvin's shop, Motherlode struts, Keldagrim Stonemason, Neitiznot shield, Warrens shop, skull sceptre, team capes, gold helmet smithing, muddy chest, god spells on players.
 
+- **Session 2, round 13: essence mine, places, favour systems:**
+  - Rune essence mine with teleports from Aubury, Sedridor, Distentor, Cromperty and Brimstail (portal returns you; pure essence from 30 Mining); Shayzien Crypts; Keldagrim stalls; Fishing Platform spots; Jatizso mine rocks; essence-mine self-test checks.
+  - Managing Miscellania (coffers, workers, wiki yields, approval decay), Tai Bwo Wannai Cleanup (jungle, fence, favour, sticks, Gabooty's shop), Barbarian Assault role levels and blackboard, Varrock Museum kudos (84-question quiz snapshot, cleaning finds, Historian Minas).
+  - Diaries 453 → 464 faithful of 492.
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
@@ -178,7 +183,7 @@ Recurring conflict spots:
   - Volcanic Mine: heat-proof vessel, gas holes, meteors, multiple boulders; lava beast spawn rate guessed.
   - Dungeon herb, seed and Varlamore crops; coral.
   - Seed pack contents are partly guessed.
-- **Diaries:** 39 tasks approximated: no Rune essence mine (Cromperty), no museum kudos, no BA role levels/blackboard, no Miscellania approval or Tai Bwo Wannai favour, Fishing Platform, Skavid caves, swordchick/deathwing, totem pole, Shayzien Crypts, Jatizso/Arzinian mines, Keldagrim stalls, emotes. Earlier notes: 75: shadow hounds and locust riders need the Shadow Dungeon and Contact! dungeon; swordchick/deathwing have no cache spawns; Arceuus lectern tablets; Port Phasmatys has no range; NPC-talk and minigame-internal tasks.
+- **Diaries:** 28 tasks approximated: Arzinian mine, Skavid caves, swordchick/deathwing, totem pole, emotes, and others. Kingdom/TBW/BA/museum details are approximate (see round 13). Core `Thieving.Stall.GEM` still 160 XP / 300 ticks (wiki 408 XP / 100 ticks; Rocky's pet lookup keys off the XP). Earlier notes: 75: shadow hounds and locust riders need the Shadow Dungeon and Contact! dungeon; swordchick/deathwing have no cache spawns; Arceuus lectern tablets; Port Phasmatys has no range; NPC-talk and minigame-internal tasks.
 - **Thieving and Agility:** the Dorgesh-Kaan course is missing; Isle of Souls chests sit on the surface (their real tiles are in the dungeon/tower basement); leaving the Wilderness course doesn't forfeit the fee.
 - **World:**
   - Missing dungeons: Myths' Guild, Isle of Souls, Giants' Den, Deep Wilderness, Crandor/Karamja, Ourania Cave interior, Stalker Den, Ice Troll Caves. New dungeon huts sit a few tiles off where another module's building occupies the tile; Kalphite Cave task-only rule and its multicombat missing.
