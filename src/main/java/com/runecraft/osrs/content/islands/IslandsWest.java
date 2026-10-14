@@ -88,10 +88,39 @@ final class IslandsWest {
         b.tFlatten(2434, 3076, 2450, 3098, GRASS);
         b.tFlatten(2366, 3074, 2433, 3136, GRASS);
         b.tFlatten(2381, 3031, 2389, 3039, GRASS);
-        // The lobby.
-        building(b, 2436, 3080, 2448, 3094, 2, STONE, "minecraft:polished_andesite", "minecraft:deepslate_tile", "west", true);
+        // The lobby as on the OSRS map (mejrs layers_osrs): two chamfered octagons, 2435-2446 x 3081-3089 and
+        // 3090-3098, with notched sides; the door east at 3089-3090 onto the bridge over the river and a
+        // door north at 2444. An open oculus over 2440,3090 keeps ring-of-dueling arrivals indoors.
+        int g = b.ground();
+        int lx = StructureDef.bx(2435);
+        int lz = StructureDef.bz(3081) + 1;
+        for (int u = 0; u < 24; u++) {
+            for (int w = 0; w < 36; w++) {
+                if (!lobby(u, w)) {
+                    continue;
+                }
+                int x = lx + u;
+                int z = lz - w;
+                boolean edge = !lobby(u - 1, w) || !lobby(u + 1, w) || !lobby(u, w - 1) || !lobby(u, w + 1);
+                b.fill(x, g - 3, z, x, g - 1, z, "minecraft:polished_andesite");
+                if (edge) {
+                    b.fill(x, g, z, x, g + 5, z, STONE);
+                    b.set(x, g + 7, z, "minecraft:stone_brick_wall");
+                } else if ((u + w) % 9 == 0) {
+                    b.set(x, g + 5, z, "minecraft:lantern[hanging=true]");
+                }
+                b.set(x, g + 6, z, "minecraft:stone_bricks");
+            }
+        }
+        for (int w = 16; w <= 19; w++) {
+            b.clear(lx + 18, g, lz - w, lx + 23, g + 2, lz - w);
+        }
+        b.clear(lx + 18, g, lz - 35, lx + 19, g + 2, lz - 35);
+        b.clear(lx + 10, g + 6, lz - 19, lx + 11, g + 7, lz - 18);
+        b.tFill(2446, 3089, 2455, 3090, -1, -1, "minecraft:spruce_planks");
+        b.tFill(2447, 3089, 2455, 3090, -4, -2, "minecraft:spruce_log");
         b.tSet(2442, 3092, 0, rc("castle_wars_entrance"));
-        b.tSet(2446, 3088, 0, rc("castle_wars_rewards"));
+        b.tSet(2443, 3086, 0, rc("castle_wars_rewards"));
         b.tSet(2444, 3082, 0, rc("bank_booth"));
         b.tSet(2439, 3092, 0, "minecraft:blue_stained_glass");
         b.tSet(2439, 3092, 1, "minecraft:blue_stained_glass");
@@ -119,6 +148,18 @@ final class IslandsWest {
         // Fairy ring BKP south of the arena.
         fairyRing(b, IslandsStructures.CASTLE_WARS_RING);
         return b.build();
+    }
+
+    /** Castle Wars lobby footprint in blocks: u east from 2435, w north from 3081 (24 x 36). */
+    private static boolean lobby(int u, int w) {
+        if (u < 0 || u > 23 || w < 0 || w > 35) {
+            return false;
+        }
+        int v = w % 18;
+        if (Math.min(u, 23 - u) + Math.min(v, 17 - v) < 4) {
+            return false; // chamfered corners
+        }
+        return !((u < 4 || u > 21) && v >= 6 && v <= 11); // notched sides
     }
 
     /** Corsair Cove: houses, the tavern and the Corsair Cove Dungeon carved beneath its entrance. */
