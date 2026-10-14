@@ -162,6 +162,10 @@ Recurring conflict spots:
   - Managing Miscellania (coffers, workers, wiki yields, approval decay), Tai Bwo Wannai Cleanup (jungle, fence, favour, sticks, Gabooty's shop), Barbarian Assault role levels and blackboard, Varrock Museum kudos (84-question quiz snapshot, cleaning finds, Historian Minas).
   - Diaries 453 → 464 faithful of 492.
 
+- **Session 2, round 14: combat formulas and skilling rates against reference data:**
+  - `dps_reference.tsv`: 2,250 scenarios from osrs-dps-calc's real `PlayerVsNPCCalc` (generator in `src/test/resources/osrs/combat/generator/`); new pure `osrs/PlayerHitCalc` matches every row, and the Minecraft side uses it through `combat/HitCalcBridge` (melee, ranged, autocast, powered staves, spellbook spells, several specs). Fixed: magic +9 effective level, elemental spells scale with Magic, sang staff, tbow formula, missing bane/demon/dragon effects, fang, void/elite void/slayer helm/salve ordering and flooring. Before: 626/2,250 max hits wrong.
+  - `success_rates.tsv` (793 wiki chart lines), `pickpocket_targets.tsv`, `stalls.tsv` with `SuccessRateSnapshotTest`: 2024 stall rebalance (gem 408 XP / 100 ticks…), pickpocket low/high and XP fixes, glove/diary/cape scaling, Rocky by source; plain-harpoon values with dragon/crystal scaling; exact per-axe tree tables; camphor/ironwood/rosewood trees.
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
@@ -183,7 +187,7 @@ Recurring conflict spots:
   - Volcanic Mine: heat-proof vessel, gas holes, meteors, multiple boulders; lava beast spawn rate guessed.
   - Dungeon herb, seed and Varlamore crops; coral.
   - Seed pack contents are partly guessed.
-- **Diaries:** 28 tasks approximated: Arzinian mine, Skavid caves, swordchick/deathwing, totem pole, emotes, and others. Kingdom/TBW/BA/museum details are approximate (see round 13). Core `Thieving.Stall.GEM` still 160 XP / 300 ticks (wiki 408 XP / 100 ticks; Rocky's pet lookup keys off the XP). Earlier notes: 75: shadow hounds and locust riders need the Shadow Dungeon and Contact! dungeon; swordchick/deathwing have no cache spawns; Arceuus lectern tablets; Port Phasmatys has no range; NPC-talk and minigame-internal tasks.
+- **Diaries:** 28 tasks approximated: Arzinian mine, Skavid caves, swordchick/deathwing, totem pole, emotes, and others. Kingdom/TBW/BA/museum details are approximate (see round 13). Earlier notes: 75: shadow hounds and locust riders need the Shadow Dungeon and Contact! dungeon; swordchick/deathwing have no cache spawns; Arceuus lectern tablets; Port Phasmatys has no range; NPC-talk and minigame-internal tasks.
 - **Thieving and Agility:** the Dorgesh-Kaan course is missing; Isle of Souls chests sit on the surface (their real tiles are in the dungeon/tower basement); leaving the Wilderness course doesn't forfeit the fee.
 - **World:**
   - Missing dungeons: Myths' Guild, Isle of Souls, Giants' Den, Deep Wilderness, Crandor/Karamja, Ourania Cave interior, Stalker Den, Ice Troll Caves. New dungeon huts sit a few tiles off where another module's building occupies the tile; Kalphite Cave task-only rule and its multicombat missing.
@@ -204,6 +208,8 @@ Recurring conflict spots:
   - Skull timers are in memory only (lost on restart). Heavy ballista wield doesn't check MM2 training; uncut zenyte is a gem-cutting recipe.
   - Seers ring magic damage (0.2%/0.5%) can't be represented with whole-percent magic damage.
   - Ring of the gods imbue should need a holy wrench (nowhere modelled).
+- **Combat:** no monster elemental weaknesses; one ranged defence bonus (no light/heavy split); accessory-slot items (Ultor/Venator/Magus rings, Zaryte vambraces, imbued god capes) still multiply separately; magic-blast specs and NPC-vs-player defence use the old paths; vampyrebane, Efaritay's, avarice, rev weapons not modelled.
+- **Skilling gaps:** lead/barronite/volcanic sulphur/stardust rocks, shark lures, minnows, pirate/villager/workman pickpockets; ironwood and rosewood trees aren't placed (Sunbleak Island and Drumstick Isle missing).
 - **Self-test gaps:** PvP minigames need two players; utility spells needing targets/items (enchants, telegrab, bake pie) aren't cast; Guthix balance, olive oil and sacred oil have no drink effect; `TestContext.reset()` doesn't reset systems state or the Slayer profile.
 - **Sailing:** boat combat, bounty tasks, ocean encounters, crew, cargo holds, cannons, hazards, salvaging hook tiers, hull speed; island materials are sold in the tool shop.
 - **Untested in game:** much of the Minecraft-side code has only passed CI's boot test. A play-test pass would be the most valuable round once the data rounds slow down. Use `/run` or the client smoke screenshots.
