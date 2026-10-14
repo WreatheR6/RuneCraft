@@ -51,6 +51,12 @@ public abstract class CombatProfile<T extends CombatProfile<T>> {
      * "leafy", "xerician", "shade", "rat", "penance", "flying"), used by salve amulets, demonbane, dragonbane etc.
      */
     public final Set<String> attributes = new java.util.TreeSet<>();
+    /** OSRS size in tiles (0 = unknown), poison/venom immunity and Slayer XP per kill (0 = the hitpoints); set from
+     * {@link com.runecraft.osrs.data.MonsterTraits}. */
+    public int tiles;
+    public boolean poisonImmune;
+    public boolean venomImmune;
+    public double slayerXp;
     /** True once {@link com.runecraft.osrs.data.MonsterStatsTable} has applied the wiki reference stats. */
     public boolean referenceStats;
     /**

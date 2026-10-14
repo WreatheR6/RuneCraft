@@ -29,12 +29,25 @@ public final class PoisonService {
     }
 
     public static void poison(LivingEntity target, int damage, long gameTick) {
+        if (!(target instanceof ServerPlayerEntity) && com.runecraft.osrs.data.MonsterTraits.poisonImmune(MonsterStats.of(target).traitsKey())) {
+            return; // OSRS: poison-immune monsters (most bosses, undead, demons...) can't be poisoned
+        }
         if (Toxins.poison(state(target), damage, gameTick) && target instanceof ServerPlayerEntity p) {
             p.sendMessage(Text.literal("You have been poisoned!").formatted(Formatting.DARK_GREEN), false);
         }
     }
 
     public static void venom(LivingEntity target, long gameTick) {
+        if (!(target instanceof ServerPlayerEntity)) {
+            String key = MonsterStats.of(target).traitsKey();
+            if (com.runecraft.osrs.data.MonsterTraits.venomImmune(key)) {
+                // OSRS: a venom-immune monster that isn't poison-immune is poisoned (6) instead
+                if (!com.runecraft.osrs.data.MonsterTraits.poisonImmune(key)) {
+                    poison(target, 6, gameTick);
+                }
+                return;
+            }
+        }
         if (Toxins.venom(state(target), gameTick) && target instanceof ServerPlayerEntity p) {
             p.sendMessage(Text.literal("You have been envenomed!").formatted(Formatting.DARK_GREEN), false);
         }

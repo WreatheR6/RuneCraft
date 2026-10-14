@@ -303,7 +303,9 @@ public final class SlayerService {
         }
         CombatProfile<?> prof = stats.profile();
         Superiors.Superior superior = prof == null ? null : Superiors.byId(prof.id);
-        XpService.add(player, Skill.SLAYER, superior != null ? superior.xp() : stats.hitpoints());
+        // OSRS: a kill gives its hitpoints in Slayer XP unless the wiki lists another value (bosses, dragons, ...).
+        XpService.add(player, Skill.SLAYER, superior != null ? superior.xp()
+                : com.runecraft.osrs.data.MonsterTraits.slayerXp(stats.traitsKey(), stats.hitpoints()));
         // "Double Trouble": each Grotesque Guardians kill counts twice.
         p.remaining = Math.max(0, p.remaining - SlayerTasks.killCredit(p.task, p.unlocks));
         Random random = new Random(player.getRandom().nextLong());

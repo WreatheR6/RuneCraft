@@ -404,8 +404,8 @@ public final class SysCombat {
             return true;
         }
         MonsterStats stats = MonsterStats.of(target);
-        if (stats.profile() != null && stats.profile().referenceStats) {
-            return stats.profile().hasAttribute("undead");
+        if (stats.knowsAttributes()) {
+            return stats.attributes().contains("undead");
         }
         String n = stats.name().toLowerCase(java.util.Locale.ROOT);
         return n.contains("zombie") || n.contains("skeleton") || n.contains("ghost") || n.contains("ghoul") || n.contains("shade")
@@ -414,8 +414,8 @@ public final class SysCombat {
 
     public static boolean isDemon(LivingEntity target) {
         MonsterStats stats = MonsterStats.of(target);
-        if (stats.profile() != null && stats.profile().referenceStats) {
-            return stats.profile().hasAttribute("demon");
+        if (stats.knowsAttributes()) {
+            return stats.attributes().contains("demon");
         }
         String n = stats.name().toLowerCase(java.util.Locale.ROOT);
         return n.contains("demon") || n.contains("imp") || n.contains("hellhound") || n.contains("k'ril") || n.contains("skotizo")

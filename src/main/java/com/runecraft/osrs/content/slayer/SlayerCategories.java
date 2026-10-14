@@ -194,6 +194,8 @@ public final class SlayerCategories {
         // Wiki "cat = Monkeys, Zombies" / "Black Demons, Monkeys": a second task the creature also counts for.
         also("zombies", "monkey_zombie", "monkey_zombie_lvl82", "monkey_zombie_lvl129");
         also("monkeys", "demonic_gorilla");
+        also("zombies", "undead_chicken", "zombie_rat");
+        also("ogres", "zogre");
         member("aviansies", "gwd_aviansie", "gwd_aviansie_elite");
         member("tzhaar", "tzhaar_ket", "tzhaar_xil", "tzhaar_mej", "tzhaar_hur_citizen");
         member("crabs", "rock_crab", "sand_crab", "king_sand_crab", "ammonite_crab");

@@ -1,0 +1,702 @@
+# OSRS monster traits for every RuneCraft creature with a wiki counterpart: the DPS calculator data
+# (weirdgloop/osrs-dps-calc monsters.json, matched by name and combat level) for size and attributes, and the
+# monster infobox (Kiyogitpy/osrs-wiki-data, July 2026; osrsreboxed-db where the page lacks it) for poison/venom
+# immunity and Slayer XP. Empty poison/venom = unknown (treated as not immune); empty slayer_xp = the hitpoints.
+key	wiki_name	version	level	hitpoints	size	attributes	poison_immune	venom_immune	slayer_xp
+Monster.AL_KHARID_WARRIOR	Al Kharid warrior		9	19	1		no	no	
+Monster.BARBARIAN	Barbarian	Level 10 (Acelin)	10	18	1		no	no	
+Monster.BLACK_DEMON	Black demon	Level 172	172	157	3	demon	no	no	157
+Monster.CHICKEN	Chicken	Falador Farm	1	3	1		yes	yes	3
+Monster.COW	Cow	1	2	8	2		yes	yes	8
+Monster.DARK_WIZARD	Dark wizard	Level 7	7	12	1		no	no	
+Monster.GHOUL	Ghoul		42	50	1		no	no	50
+Monster.GIANT_RAT	Giant rat	Level 3	3	5	2	rat	no	no	5
+Monster.GIANT_SPIDER	Giant spider	Level 27	27	32	1		no	no	33
+Monster.GOBLIN	Goblin	Level 2	2	5	1		no	no	5
+Monster.GREATER_DEMON	Greater demon	Level 92	92	87	3	demon	no	no	87
+Monster.GUARD	Guard	Edgeville 1	21	22	1		no	no	
+Monster.HILL_GIANT	Hill Giant		28	35	2		no	no	35
+Monster.ICE_GIANT	Ice giant	1	53	70	2		no	no	70
+Monster.LESSER_DEMON	Lesser demon	Level 82	82	79	2	demon	no	no	79
+Monster.MAN	Man	1	2	7	1		no	no	
+Monster.MOSS_GIANT	Moss giant	Level 42	42	60	2		no	no	60
+Monster.SKELETON	Skeleton	Level 22, 1	22	29	1	undead	no	no	
+Monster.SPIDER	Spider	Common	1	2	1		no	no	2
+Monster.WOLF	Wolf	Level 25	25	34	2		no	no	34
+Monster.ZOMBIE	Zombie	Level 13, 1	13	22	1	undead	no	no	22
+aberrant_spectre	Aberrant spectre		96	90	2	spectral,undead	no	no	90
+abhorrent_spectre	Abhorrent spectre		253	250	3	spectral,undead	yes	yes	2500
+abyssal_demon	Abyssal demon	Catacombs of Kourend	124	150	1	demon	no	no	150
+abyssal_guardian	Abyssal guardian		59	50	1		no	no	
+abyssal_leech	Abyssal leech		41	10	1		no	no	
+abyssal_scion	Scion		93	50	2		yes	yes	
+abyssal_sire	Abyssal Sire	Phase 1	350	425	6	demon	yes	yes	478
+abyssal_spawn	Spawn		55	15	1		yes	yes	
+abyssal_walker	Abyssal walker		81	95	1		no	no	
+acidic_araxyte	Acidic Araxyte		114	58	2		yes	yes	58
+adamant_dragon	Adamant dragon		338	295	5	dragon,fiery	yes	yes	324.5
+agrith_na_na	Agrith-Na-Na		146	200	3		no	no	
+agrith_naar	Agrith Naar		100	95	3	demon	no	no	
+ahrim	Ahrim the Blighted		98	100	1	spectral	no	no	102.5
+akkhas_shadow	Akkha's Shadow		108	70	3		yes	yes	
+alchemical_hydra	Alchemical Hydra	Electric	426	1100	6	dragon	yes	yes	1320
+alchemical_hydra_blue	Alchemical Hydra	Electric	426	1100	6	dragon	yes	yes	1320
+alchemical_hydra_enraged	Alchemical Hydra	Electric	426	1100	6	dragon	yes	yes	1320
+alchemical_hydra_red	Alchemical Hydra	Electric	426	1100	6	dragon	yes	yes	1320
+ammonite_crab	Ammonite Crab		25	100	2		no	no	100
+amoxliatl	Amoxliatl	Post-quest	263	520	3	spectral	yes	yes	546
+ancient_wyvern	Ancient Wyvern		210	300	5	dragon	no	no	315
+animated_adamant_armour	Animated Adamant Armour		113	99	1		yes	yes	
+animated_black_armour	Animated Black Armour		69	60	1		yes	yes	
+animated_bronze_armour	Animated Bronze Armour		11	10	1		yes	yes	
+animated_iron_armour	Animated Iron Armour		23	20	1		yes	yes	
+animated_mithril_armour	Animated Mithril Armour		92	80	1		yes	yes	
+animated_rune_armour	Animated Rune Armour		138	120	1		yes	yes	
+animated_steel_armour	Animated Steel Armour		46	40	1		yes	yes	
+ankou	Ankou	Level 75	75	60	1	spectral,undead	no	no	60
+araxxor	Araxxor		890	1020	7		yes	yes	1708
+ardougne_knight	Knight of Ardougne	Female	46	52	1		no	no	
+arrav	Arrav		339	600	1	undead	yes	yes	
+artio	Artio		320	450	3		yes	yes	518
+asyn_shade	Asyn Shade	Shade	100	90	1	shade,spectral,undead	yes	yes	90
+avatar_of_creation	Avatar of Creation		525	1500	5		yes	yes	0
+avatar_of_destruction	Avatar of Destruction		525	1500	5		yes	yes	0
+baby_black_dragon	Baby black dragon	Myths' Guild	83	80	2	dragon	no	no	80
+baby_blue_dragon	Baby blue dragon	1	48	50	2	dragon	no	no	50
+baby_green_dragon	Baby green dragon	1	48	50	2	dragon	no	no	
+baby_impling	Baby impling	Overworld	0	10	0				
+baby_red_dragon	Baby red dragon	1	48	50	2	dragon	no	no	50
+balance_elemental	Balance Elemental	Magic	524	750	3		yes	yes	
+balfrug_kreeyath	Balfrug Kreeyath		151	161	3	demon	no	no	161
+bandit	Bandit	Level 22	22	27	1		no	no	27
+banshee	Banshee		23	22	2	spectral,undead	no	no	22
+bark_blamish_snail	Bark Blamish Snail		15	22	1		no	no	
+basilisk	Basilisk		61	75	2		no	no	75
+basilisk_knight	Basilisk Knight		204	300	3		yes	yes	300
+basilisk_sentinel	Basilisk Sentinel		358	520	3		yes	yes	5590
+bat	Bat		6	8	1		no	no	8
+bear_cub	Bear Cub		15	20	1		no	no	20
+big_wolf	Big Wolf	Feldip Hills	73	74	2		no	no	74
+black_bear	Black bear		19	25	2		no	no	25
+black_dragon	Black dragon	Level 227	227	190	4	dragon,fiery	no	no	194.7
+black_guard	Black Guard	Level 25, 1	25	30	1		no	no	30
+black_knight_titan	Black Knight Titan		120	142	1		no	no	
+blood_blamish_snail	Blood Blamish Snail	Pointed	20	10	1		no	no	
+blood_blamish_snail_pointed	Blood Blamish Snail	Pointed	20	10	1		no	no	
+blood_jaguar	Blood jaguar		40	100	2		yes	yes	
+blood_moon	Blood Moon		329	500	5		yes	yes	
+blood_reaver	Blood Reaver	Nex's chamber	161	150	2	demon	no	no	
+blood_spawn	Blood spawn	Entry	55	7	1		yes	yes	
+bloodveld	Bloodveld	Normal	76	120	2	demon	no	no	120
+blue_dragon	Blue dragon	1	111	105	4	dragon,fiery	no	no	105
+blue_moon	Blue Moon		329	500	5		yes	yes	
+blue_portal	Portal (Pest Control)	Blue, Intermediate/veteran	0	250	3		yes	yes	
+bouncer	Bouncer		137	116	2	demon	no	no	116
+branda_the_fire_queen	Branda the Fire Queen		350	600	3	fiery	yes	yes	735
+brawler	Brawler	Level 129	129	143	2		no	no	
+bree	Bree		146	162	2		no	no	
+brine_rat	Brine rat		70	50	1	rat	no	no	50
+bronze_dragon	Bronze dragon	Standard	131	122	4	dragon,fiery	no	no	125
+bruise_blamish_snail	Bruise Blamish Snail	Pointed	20	15	1		no	no	
+bruise_blamish_snail_pointed	Bruise Blamish Snail	Pointed	20	15	1		no	no	
+brutal_black_dragon	Brutal black dragon		318	315	4	dragon,fiery	yes	yes	346.4
+brutal_blue_dragon	Brutal blue dragon	Catacombs of Kourend	271	245	4	dragon,fiery	yes	yes	257
+brutal_green_dragon	Brutal green dragon		227	175	4	dragon,fiery	yes	yes	
+brutal_red_dragon	Brutal red dragon		289	285	4	dragon,fiery	yes	yes	306.2
+brutus	Brutus		30	58	3		no	no	116
+bryophyta	Bryophyta		128	115	3		no	no	115
+callisto	Callisto		470	1000	5		yes	yes	1300
+calvarion	Calvar'ion	Enraged	264	150	3	undead	yes	yes	322.5
+catablepon	Catablepon	Level 64	64	70	2		no	no	70
+catacomb_abyssal_demon	Abyssal demon	Catacombs of Kourend	124	150	1	demon	no	no	150
+catacomb_ankou	Ankou	Level 75	75	60	1	spectral,undead	no	no	60
+catacomb_black_demon	Black demon	Level 172	172	157	3	demon	no	no	157
+catacomb_dagannoth	Dagannoth	Level 74 (1)	74	70	1		no	no	70
+catacomb_dust_devil	Dust devil	Smoke Dungeon	93	105	1		no	no	105
+catacomb_fire_giant	Fire giant	Level 86	86	111	2	fiery	no	no	111
+catacomb_greater_demon	Greater demon	Level 92	92	87	3	demon	no	no	87
+catacomb_hellhound	Hellhound	Level 122	122	116	2	demon	no	no	116
+catacomb_hill_giant	Hill Giant		28	35	2		no	no	35
+catacomb_moss_giant	Moss giant	Level 42	42	60	2		no	no	60
+cave_abomination	Cave abomination		206	130	2		yes	yes	1300
+cave_bug	Cave bug	Level 6	6	5	1		no	no	5
+cave_crawler	Cave crawler	Icy (1)	23	22	2		no	no	22
+cave_goblin	Cave goblin (monster)	Backpack	3	10	1		no	no	10
+cave_goblin_guard	Cave goblin guard	Level 24	24	26	1		no	no	26
+cave_horror	Cave horror	Alpha	80	55	2		no	no	55
+cave_kraken	Cave kraken	Cave kraken	127	125	2		no	no	125
+cave_lizard	Cave lizard		37	20	1		no	no	
+cave_slime	Cave slime		23	25	1		no	no	25
+cerberus	Cerberus		318	600	5	demon	yes	yes	690
+champion_of_scabaras	Champion of Scabaras		379	600	1	kalphite	yes	yes	
+chaos_druid	Chaos druid		13	20	1		no	no	20
+chaos_dwarf	Chaos dwarf		48	61	1		no	no	61
+chaos_elemental	Chaos Elemental		305	250	3		no	no	268.75
+chaos_fanatic	Chaos Fanatic		202	225	1		no	no	253
+chasm_crawler	Chasm Crawler	Icy	68	60	3		yes	yes	600
+choke_devil	Choke devil		264	300	2		yes	yes	3000
+chompy_bird	Chompy bird		6	10	1		yes	yes	10
+chronozon	Chronozon		170	60	3	demon	no	no	
+cockathrice	Cockathrice		89	95	3		yes	yes	950
+cockatrice	Cockatrice		37	37	2		no	no	37
+colossal_hydra	Colossal Hydra		309	750	5	dragon	yes	yes	8625
+commander_zilyana	Commander Zilyana		596	255	2		yes	yes	350
+corporeal_beast	Corporeal Beast		785	2000	5		yes	yes	
+corrupt_lizardman	Corrupt Lizardman		46	50	1		yes	yes	50
+corrupted_hunllef	Corrupted Hunllef		894	1000	5		yes	yes	
+count_draynor	Count Draynor		34	35	1	vampyre	no	no	0.8
+cox_lizardman_shaman	Lizardman shaman	Lizardman Temple	150	150	2		yes	yes	157.5
+cox_lizardman_spawn	Spawn		55	15	1		yes	yes	
+crawling_hand	Crawling Hand	Level 8 (1)	8	16	1	undead	no	no	16
+crazy_archaeologist	Crazy archaeologist		204	225	1		no	no	275
+crocodile	Crocodile	Land	63	62	2		no	no	62
+cruor	Cruor		285	500	1		yes	yes	
+crushing_hand	Crushing hand		45	55	3	undead	yes	yes	550
+crystalline_hunllef	Crystalline Hunllef		674	600	5		yes	yes	
+culinaromancer	Culinaromancer		75	150	1		no	no	
+cyclops	Cyclops	Level 76	76	100	2		no	no	100
+cyclops_elite	Cyclops	Level 106	106	150	2		no	no	150
+dad	Dad		101	120	3		no	no	126
+dagannoth	Dagannoth	Level 74 (1)	74	70	1		no	no	70
+dagannoth_fledgeling	Dagannoth fledgeling		70	100	2		no	no	0
+dagannoth_lvl88	Dagannoth (Waterbirth Island)	Level 88	88	85	1		no	no	85
+dagannoth_lvl90	Dagannoth (Waterbirth Island)	Level 90	90	95	1		no	no	99.6
+dagannoth_lvl92	Dagannoth	Level 92 (1)	92	120	2		no	no	120
+dagannoth_mother	Dagannoth mother		100	120	3		no	no	126
+dagannoth_prime	Dagannoth Prime		303	255	3		no	no	331.4
+dagannoth_rex	Dagannoth Rex		303	255	3		no	no	331.4
+dagannoth_spawn	Dagannoth spawn		42	35	1		no	no	35
+dagannoth_supreme	Dagannoth Supreme		303	255	3		no	no	255
+damis	Damis	First form	103	90	1		no	no	
+dark_beast	Dark beast		182	220	3		no	no	225.4
+dark_energy_core	Dark energy core		75	25	1		no	no	0
+dark_wizard_lvl11	Dark wizard	Level 11	11	15	1		no	no	
+dark_wizard_lvl23	Dark wizard	Level 23	23	25	1		no	no	
+dawn	Dawn		228	450	4	flying,golem	yes	yes	0
+deadly_red_spider	Deadly red spider		34	35	1		no	no	35
+defiler	Defiler	Level 97	97	97	1		no	no	
+delrith	Delrith		27	7	2		no	no	
+demonic_brutus	Demonic Brutus	Brutus	1224	750	3		yes	yes	
+demonic_gorilla	Demonic gorilla	1	275	380	2	demon	no		408.5
+deranged_archaeologist	Deranged archaeologist		276	200	1		no	no	275
+desert_bandit	Bandit (Bandit Camp)	Level 57	57	50	1		yes	yes	
+desert_lizard	Desert Lizard	Green	24	25	2		no	no	25
+desert_wolf	Desert Wolf	1	27	34	2		no	no	34
+dessourt	Dessourt		121	130	1		no	no	
+dessous	Dessous		139	200	1	vampyre	no	yes	220
+deviant_spectre	Deviant spectre		169	190	2	spectral,undead	no	no	194.5
+dharok	Dharok the Wretched		115	100	1	spectral	no	no	115
+dire_wolf	Dire Wolf	Level 88	88	85	2		no	no	85
+doom_of_mokhaiotl	Doom of Mokhaiotl	Deep Delve	908	625	5	demon	no		
+dragon_impling	Dragon impling		0	10	0				
+drake	Drake		192	225	5	dragon	yes	yes	230.6
+draugen	The Draugen		69	60	1	undead	no	no	
+ds2_vorkath	Vorkath	Dragon Slayer II	392	460	7	dragon,fiery,undead	yes	yes	460
+duck	Duck	Female	1	3	1		yes	yes	3
+duke_sucellus	Duke Sucellus	Post-quest, Awake	758	485	7	demon	no		305
+dusk	Dusk	Second form	328	450	6	golem	yes	yes	1350
+dust_devil	Dust devil	Smoke Dungeon	93	105	1		no	no	105
+dwarf	Dwarf	Worker (8)	7	10	1		no	no	10
+earth_impling	Earth impling		0	10	0				
+earth_warrior	Earth warrior		51	54	1		no	no	54
+earth_warrior_champion	Earth Warrior Champion		102	108	1		no	no	
+eclectic_impling	Eclectic impling		0	10	0				
+eclipse_moon	Eclipse Moon	Clone	329	500	5		yes	yes	
+eldric_the_ice_king	Eldric the Ice King		350	600	3		yes	yes	735
+elf_archer	Elf Archer	1	90	105	1		no	no	105
+elf_warrior	Elf Warrior	1	108	105	1		no	no	107.5
+elidinis_warden	Elidinis' Warden	Damaged	544	880	5				
+elvarg	Elvarg		83	80	4		no	no	80
+enormous_tentacle	Enormous Tentacle	Enormous Tentacle	112	120	2		no		
+ent	Ent	Wilderness	101	105	2				
+essence_impling	Essence impling		0	10	0				
+evil_creature	Evil Creature	Izzie	1	1	1		no	no	
+fareed	Fareed		167	130	1		no	no	
+farmer	Farmer	Green shirt, long sleeves	7	12	1		no	no	
+fever_spider	Fever spider		49	40	2		no	no	40
+fire_giant	Fire giant	Level 86	86	111	2	fiery	no	no	111
+fire_giant_lvl104	Fire giant	Level 104	104	130	2	fiery	no	no	133.5
+fire_giant_lvl109	Fire giant	Level 109	109	150	2	fiery	no	no	153.5
+fire_warrior_of_lesarkus	Fire Warrior of Lesarkus		84	59	1		no	no	
+fiyr_shade	Fiyr Shade	Shade	120	110	1	shade,spectral,undead	yes	yes	110
+flambeed	Flambeed		149	210	5		no	no	
+flaming_pyrelord	Flaming pyrelord		97	125	2	demon	yes	yes	1250
+flesh_crawler	Flesh Crawler	Level 41	41	25	2		no	no	25
+flight_kilisa	Flight Kilisa		159	133	2	flying	no	no	132.5
+flockleader_geerin	Flockleader Geerin		149	132	2	flying	no	no	132.5
+fragment_of_seren	Fragment of Seren		494	1000	3		yes	yes	
+fumus	Fumus		285	500	1		yes	yes	
+gadderanks	Gadderanks		35	20	1		yes	yes	
+galvek	Galvek	Air	608	1200	7	dragon,fiery	yes	yes	
+gargoyle	Gargoyle	Basement	111	105	3	golem	yes	yes	105
+gelatinnoth_mother	Gelatinnoth Mother		130	240	3		no	yes	
+gemstone_crab	Gemstone Crab		160	50000	5		yes	yes	
+general_graardor	General Graardor		624	255	4		yes	yes	338
+general_khazard	General Khazard		142	170	2		no	no	
+ghost	Ghost	Level 19	19	25	1	spectral,undead	no	no	25
+ghoul_champion	Ghoul Champion		85	100	1		no	no	
+giant_bat	Giant bat	Arceuus	27	32	2		no	no	32
+giant_champion	Giant Champion		56	70	2		no	no	
+giant_mole	Giant Mole		230	200	3		no		215
+giant_rat	Giant rat	Level 6	6	10	2	rat	no	no	10
+giant_rock_crab	Giant Rock Crab	1	137	180	2		no	no	198
+giant_rockslug	Giant rockslug		86	77	3		yes	yes	770
+giant_scarab	Giant Scarab		191	130	3	kalphite	no	no	137
+giant_sea_snake	Giant Sea Snake		149	100	5		yes	yes	
+giant_skeleton	Giant skeleton (Shadow Dungeon)	1	80	70	2	undead	no	no	70
+giant_spider	Giant spider	Level 50	50	50	1		no	no	50
+glacies	Glacies		285	500	1		yes	yes	
+glod	Glod		138	160	4		yes	yes	
+glough_black_demon	Black demon	Level 172	172	157	3	demon	no	no	157
+gnome	Gnome	Level 1, 1	1	3	1		no	no	
+gnome_guard	Gnome guard	Halberd	23	31	1		no	no	
+goblin_champion	Goblin Champion		24	32	1		no	no	
+goblin_lvl5	Goblin	Level 5	5	12	1		no	no	12
+gorak	Gorak	Level 145	145	112	2		no	no	
+gourmet_impling	Gourmet impling		0	10	0				
+grave_scorpion	Grave scorpion		12	7	1		no	no	7
+great_olm	Great Olm	Head (Normal)	1043	800	5	dragon,xerician			
+greater_abyssal_demon	Greater abyssal demon		342	400	1	demon	yes	yes	4200
+greater_nechryael	Greater Nechryael	Regular	200	205	1	demon	no	no	210
+greater_skeleton_hellhound	Greater Skeleton Hellhound (Vet'ion)		231	30	2	undead	no	no	33
+green_dragon	Green dragon	Level 79	79	75	4	dragon,fiery	no	no	75
+grizzly_bear	Grizzly bear	Level 21	21	27	2		no	no	27
+grizzly_bear_cub	Grizzly bear cub	Level 36	36	35	1		no	no	35
+growler	Growler		139	146	3		no	no	
+guard_bandit	Guard Bandit		22	27	1		no	no	29
+guard_dog	Guard dog	Hosidius	44	49	1		no	no	49
+guardian_drake	Guardian Drake		376	590	5	dragon	yes	yes	7087
+guthan	Guthan the Infested		115	100	1	spectral	no	no	115
+gwd_aviansie	Aviansie	Level 79 (1)	79	83	2	flying	no	no	83
+gwd_aviansie_elite	Aviansie	Level 131	131	115	2	flying	no	no	115
+gwd_bloodveld	Bloodveld	GWD	81	134	2	demon	no	no	134
+gwd_cyclops	Cyclops	Level 76	76	100	2		no	no	100
+gwd_goblin	Goblin (God Wars Dungeon)	Level 17	17	18	1		no	no	18
+gwd_gorak	Gorak	GWD	149	128	2		no	no	
+gwd_hellhound	Hellhound	Level 127	127	116	2	demon	no	no	116
+gwd_hobgoblin	Hobgoblin	Hobgoblin (GWD)	47	52	1		no	no	52
+gwd_imp	Imp	GWD	7	10	1	demon	no	no	
+gwd_jogre	Jogre	GWD	58	70	2		no	no	
+gwd_knight_of_saradomin	Knight of Saradomin	Level 101	101	108	1		no	no	
+gwd_ogre	Ogre	GWD	58	70	2		no	no	60
+gwd_ork	Ork		107	110	1		no	no	
+gwd_pyrefiend	Pyrefiend	Level 48	48	48	1	demon,fiery	no	no	45
+gwd_saradomin_priest	Saradomin priest		113	89	1		no	no	
+gwd_spiritual_mage_armadyl	Spiritual mage	Armadyl	123	86	2	spectral	no	no	75
+gwd_spiritual_mage_bandos	Spiritual mage	Bandos	121	106	1	spectral	no	no	106
+gwd_spiritual_mage_saradomin	Spiritual mage	Saradomin	120	85	1	spectral	no	no	85
+gwd_spiritual_mage_zamorak	Spiritual mage	Bandos	121	106	1	spectral	no	no	106
+gwd_spiritual_ranger_armadyl	Spiritual ranger	Armadyl	127	89	2	spectral	no	no	120
+gwd_spiritual_ranger_bandos	Spiritual ranger	Bandos	115	131	1	spectral	no	no	131
+gwd_spiritual_ranger_saradomin	Spiritual ranger	Saradomin	122	106	1	spectral	no	no	106
+gwd_spiritual_ranger_zamorak	Spiritual ranger	Zamorak	118	120	1	spectral	no	no	106
+gwd_spiritual_warrior_armadyl	Spiritual warrior	Armadyl	123	98	2	spectral	no	no	98
+gwd_spiritual_warrior_bandos	Spiritual warrior	Bandos	134	131	1	spectral	no	no	135
+gwd_spiritual_warrior_saradomin	Spiritual warrior	Saradomin	125	110	1	spectral	no	no	110
+gwd_spiritual_warrior_zamorak	Spiritual warrior	Zamorak	115	100	1	spectral	no	no	110
+gwd_werewolf	Werewolf	God Wars Dungeon (1)	93	92	1		no	no	100
+harpie_bug_swarm	Harpie Bug Swarm		46	25	1		no	no	25
+hellhound	Hellhound	Level 122	122	116	2	demon	no	no	116
+hero	Hero	1	69	82	1		no	no	
+hespori	Hespori		284	300	3		yes	yes	
+hesporis_flower	Flower		0	10	1				
+highwayman	Highwayman	Hood	5	13	1		no	no	
+hobgoblin	Hobgoblin	Hobgoblin	28	29	1		no	no	29
+hobgoblin_champion	Hobgoblin Champion		56	58	1		no	no	
+hydra	Hydra		194	300	3	dragon	no	no	322.5
+ice_queen	Ice Queen		111	104	1		no	no	
+ice_spider	Ice spider	Normal	61	65	1		no	no	65
+ice_troll_female	Ice troll female	Variant 1	82	80	1		no	no	84
+ice_troll_grunt	Ice troll grunt		100	80	1		no	no	84
+ice_troll_king	Ice Troll King		122	150	2		no	no	161
+ice_troll_runt	Ice troll runt	Variant 1	74	60	1		no	no	63
+ice_warrior	Ice warrior	Asgarnia Ice Dungeon	57	59	1		no	no	59
+icefiend	Icefiend	Level 13	13	15	1	demon	no	no	15
+imp	Imp	Normal	2	8	1	demon	no	no	
+imp_champion	Imp Champion		14	40	1		no	no	
+infernal_mage	Infernal Mage		66	60	1		no	no	60
+insatiable_bloodveld	Insatiable Bloodveld		202	290	3	demon	yes	yes	2900
+insatiable_mutated_bloodveld	Insatiable mutated Bloodveld		278	410	3	demon	yes	yes	4100
+iorwerth_archer	Iorwerth Archer	Female	90	105	1		no	no	105
+iron_dragon	Iron dragon	Standard	189	165	4	dragon,fiery	no	no	169.1
+ithoi_the_navigator	Ithoi the Navigator	Attackable	35	55	1		no	no	
+jackal	Jackal		21	27	1		no	no	27
+jal_ak	Jal-Ak		165	40	3		yes	yes	40
+jal_akrek_ket	Jal-AkRek-Ket		70	15	1		yes	yes	15
+jal_akrek_mej	Jal-AkRek-Mej		70	15	1		yes	yes	15
+jal_akrek_xil	Jal-AkRek-Xil		70	15	1		no	yes	15
+jal_imkot	Jal-ImKot		240	75	4		yes	yes	81
+jal_mejjak	Jal-MejJak		250	75	1		yes	yes	75
+jal_mejrah	Jal-MejRah		85	25	2		yes	yes	25
+jal_nib	Jal-Nib		32	10	1		yes	yes	10
+jal_xil	Jal-Xil		370	125	3		no	yes	125
+jal_zek	Jal-Zek		490	220	4		no	yes	220
+jaltok_jad	JalTok-Jad		900	350	5		yes	yes	350
+jelly	Jelly	Dark	78	75	1		no	no	75
+jogre	Jogre	Normal	53	60	2		no	no	
+jogre_champion	Jogre Champion		107	120	2		no	no	
+jonny_the_beard	Jonny the Beard		2	8	1		no	no	
+judge_of_yama	Judge of Yama		168	400	3	demon	yes	yes	
+jungle_demon	Jungle Demon		195	170	3	demon	no	no	
+jungle_horror	Jungle horror	Guard	70	45	2		no	no	45
+jungle_spider	Jungle spider		44	50	1		no	no	50
+jungle_wolf	Jungle Wolf		64	69	2		no	no	70
+kalphite_guardian	Kalphite Guardian		141	170	4	kalphite	no	no	170
+kalphite_queen	Kalphite Queen	Airborne	333	255	5	kalphite	no	no	535.4
+kalphite_queen_airborne	Kalphite Queen	Airborne	333	255	5	kalphite	no	no	535.4
+kalphite_soldier	Kalphite Soldier	Kalphite Cave (task only)	85	90	3	kalphite	no	no	90
+kalphite_worker	Kalphite Worker		28	40	2	kalphite	no	no	40
+kalrag	Kalrag		89	78	3		no	no	
+kamil	Kamil		154	130	1		no	no	146
+karamel	Karamel		136	250	1		yes	yes	
+karil	Karil the Tainted		98	100	1	spectral	no	no	100
+ket_zek	Ket-Zek	Standard	360	160	5		no	no	160
+khazard_warlord	Khazard warlord		112	170	1		no	no	
+killerwatt	Killerwatt	Attacking	55	51	1		no	no	51
+king_black_dragon	King Black Dragon		276	240	5	dragon,fiery	no	no	258
+king_kurask	King kurask		295	270	5	leafy	yes	yes	2767.4
+king_sand_crab	King Sand Crab	Active	107	200	2		no	no	200
+king_scorpion	King Scorpion		32	30	2		no	no	30
+kraken	Kraken	Kraken	291	255	4		no	no	255
+kreearra	Kree'arra		580	255	5	flying	yes	yes	357
+kril_tsutsaroth	K'ril Tsutsaroth		650	255	5	demon	yes	yes	350.5
+kruk	Kruk		207	210	1		yes	yes	
+kurask	Kurask	Big	106	97	3	leafy	yes	yes	97
+lava_dragon	Lava dragon		252	230	4	dragon,fiery	no	no	248
+leon_dcour	Leon d'Cour		141	123	1		no	no	
+lesser_demon_champion	Lesser Demon Champion		162	148	2	demon	no	no	
+lizard	Lizard		42	40	3		no	no	40
+lizardman	Lizardman	Level 62	62	60	1		yes	yes	60
+lizardman_brute	Lizardman brute	Battlefront	75	60	1		yes	yes	60
+lizardman_shaman	Lizardman shaman	Lizardman Temple	150	150	2		yes	yes	157.5
+loar_shade	Loar Shade	Shade	40	38	1	shade,spectral,undead	yes	yes	38
+locust_rider	Locust rider	Lancer	106	90	2	kalphite	no	no	92.5
+locust_rider_ranger	Locust rider	Ranger	98	90	2	kalphite	no	no	92.5
+long_tailed_wyvern	Long-tailed Wyvern		152	200	3	dragon	no	no	205
+lucky_impling	Lucky impling	Overworld	0	10	0				
+maggot_king	Maggot King	Far	741	1500	5		yes	yes	3675
+magpie_impling	Magpie impling		0	10	0				
+malevolent_mage	Malevolent Mage		162	175	2		yes	yes	1750
+mammoth	Mammoth	Normal	80	130	3		no	no	130
+maniacal_monkey	Maniacal monkey		140	65	1		no	no	65
+maniacal_monkey_archer	Maniacal Monkey Archer		132	60	1		no	no	
+marble_gargoyle	Marble gargoyle		349	270	3	golem	yes	yes	2768
+me	Me	Type A	79	45	1		no	no	
+melzar_the_mad	Melzar the Mad		43	44	1		yes	yes	
+mercenary_captain	Mercenary Captain		47	80	1		no	no	
+minotaur	Minotaur	Level 27	27	22	1		no	no	22
+mirrorback_araxyte	Mirrorback Araxyte		114	58	2		yes	yes	58
+mithril_dragon	Mithril dragon		304	254	4	dragon,fiery	yes	yes	266.5
+mogre	Mogre		60	48	2		yes	yes	48
+molanisk	Molanisk		51	52	1		no	no	52
+monk	Monk	Level 5	5	15	1		no	no	
+monk_of_zamorak	Monk of Zamorak	Level 23	23	16	1		no	no	
+monkey	Monkey (monster)	Common	3	6	1		no	no	6
+monkey_archer	Monkey Archer	Ape Atoll gate	86	50	1		no	no	50
+monkey_guard	Monkey Guard	Bearded	167	130	2		no	no	133
+monkey_zombie	Monkey Zombie	Level 98	98	60	1	undead	no	no	60
+monkey_zombie_lvl129	Monkey Zombie	Level 129	129	90	1	undead	no	no	90
+monkey_zombie_lvl82	Monkey Zombie	Level 82	82	60	1	undead	no	no	60
+monstrous_basilisk	Monstrous basilisk		135	170	3		yes	yes	1700
+moss_guardian	Moss Guardian		84	120	2		no	no	120
+mountain_troll	Mountain troll	Level 69	69	90	1		no	no	90
+mudskipper	Mudskipper	Level 31	31	20	2		no	no	
+mugger	Mugger	Regular	6	8	1		no	no	
+mummy	Mummy (Ancient Pyramid)	1	103	90	1		no	no	
+mutated_bloodveld	Mutated Bloodveld		123	170	2	demon	no	no	170
+myre_blamish_snail	Myre Blamish Snail	Round	9	8	1		no	no	
+myre_blamish_snail_pointed	Myre Blamish Snail	Pointed	10	13	1		no	no	
+nature_impling	Nature impling		0	10	0				
+nazastarool	Nazastarool	Zombie	91	70	2	undead	no	no	70
+nechryael	Nechryael	Normal	115	105	1	demon	no	no	105
+nechryarch	Nechryarch		300	320	2	demon	yes	yes	3280
+nex	Nex		1001	3400	3		yes	yes	
+nezikchened	Nezikchened	Normal	187	150	3	demon	no	no	
+night_beast	Night beast		374	550	4		yes	yes	6462
+nightmare_husk	Husk	Magic	48	20	1		yes	yes	
+nightmare_parasite	Parasite	Weakened	57	40	1		yes	yes	
+ninja_impling	Ninja impling		0	10	0				
+nmz_arrg	Arrg		113	140	2		no	no	150.5
+nmz_black_knight_titan	Black Knight Titan		120	142	1		no	no	
+nmz_bouncer	Bouncer		137	116	2	demon	no	no	116
+nmz_count_draynor	Count Draynor		34	35	1	vampyre	no	no	0.8
+nmz_dad	Dad		101	120	3		no	no	126
+nmz_elvarg	Elvarg		83	80	4		no	no	80
+nmz_glod	Glod		138	160	4		yes	yes	
+nmz_khazard_warlord	Khazard warlord		112	170	1		no	no	
+nmz_king_roald	King Roald	In combat	47	75	1		yes	yes	
+nmz_me	Me	Type A	79	45	1		no	no	
+nmz_the_kendal	The Kendal		70	50	2		no	no	
+nmz_tree_spirit	Tree spirit (Lost City)		101	85	1	spectral,undead	no	no	85
+nuclear_smoke_devil	Nuclear smoke devil		280	240	2		yes	yes	2400
+nylocas_athanatos	Nylocas Athanatos	Entry	107	30	3		yes	yes	
+nylocas_hagios	Nylocas Hagios	Small	162	11	1		yes	yes	
+nylocas_ischyros	Nylocas Ischyros	Small	162	11	1		yes	yes	
+nylocas_matomenos	Nylocas Matomenos	Normal Mode Maiden	115	100	2				
+nylocas_toxobolos	Nylocas Toxobolos	Small	162	11	1		yes	yes	
+nylocas_vasilias	Nylocas Vasilias	Hard	800	2500	4		yes	yes	
+obor	Obor		106	120	2		yes	yes	129
+ochre_blamish_snail	Ochre Blamish Snail	Round	10	10	1		no	no	
+ochre_blamish_snail_pointed	Ochre Blamish Snail	Pointed	15	20	1		no	no	
+ogre	Ogre	Level 53	53	60	2		no	no	60
+ogre_lvl63	Ogre	Level 63	63	60	2		no	no	60
+ogre_shaman	Ogre shaman	1	113	1	2		yes	yes	
+ogress_shaman	Ogress Shaman		82	82	2		no	no	82
+ogress_warrior	Ogress Warrior	1	82	82	2		no	no	82
+olm_left_claw	Great Olm	Left claw (Normal)	750	600	5	dragon,xerician			
+olm_right_claw	Great Olm	Right claw (Normal)	549	600	5	dragon,xerician			
+oomlie_bird	Oomlie bird		46	40	1		no	no	40
+otherworldly_being	Otherworldly being		64	66	1	spectral	no	no	66
+paladin	Paladin		62	57	1		no	no	
+penance_fighter	Penance Fighter	Wave 6	56	49	1	penance	no	yes	
+penance_queen	Penance Queen		209	250	5		yes	yes	
+penance_ranger	Penance Ranger	Wave 7/10	57	50	1	penance	no	yes	
+pestilent_bloat	Pestilent Bloat	Normal	870	2000	5	undead	yes	yes	
+phantom_muspah	Phantom Muspah	Melee	741	850	5	spectral	yes	yes	1763.7
+phosanis_nightmare	Phosani's Nightmare		1024	3200	5		yes	yes	
+phrin_shade	Phrin Shade	Shade	60	56	1	shade,spectral,undead	yes	yes	56
+pirate	Pirate	Brimhaven	23	20	1		no	no	20
+pit_scorpion	Pit Scorpion		28	32	1		no	no	32
+poison_scorpion	Poison Scorpion		20	23	2		no	no	23
+poison_spider	Poison spider	Level 64	64	64	1		no	no	64
+possessed_king_roald	King Roald	In combat	47	75	1		yes	yes	
+prifddinas_guard	Guard (Prifddinas)	1	108	105	1		no	no	107.5
+purple_portal	Portal (Pest Control)	Blue, Intermediate/veteran	0	250	3		yes	yes	
+pyrefiend	Pyrefiend	Level 43	43	45	1	demon,fiery	no	no	45
+pyrelord	Pyrelord	1	60	80	2	demon	no	no	80
+quest_arrg	Arrg		113	140	2		no	no	150.5
+quest_barrelchest	Barrelchest		190	134	3		no	no	
+quest_basilisk_boss	Basilisk Youngling		57	60	1		no	no	60
+quest_black_eye_bethel	Black Eye Bethel	Dragon scimitar	191	180	1		no	no	
+quest_blood_moon	Blood Moon		329	500	5		yes	yes	
+quest_blue_moon	Blue Moon		329	500	5		yes	yes	
+quest_derwen	Derwen		235	320	3		yes	yes	
+quest_eclipse_moon	Eclipse Moon	Clone	329	500	5		yes	yes	
+quest_fear_reaper	Fear reaper	Level 42	42	25	2		no	no	
+quest_giant_lobster	Giant lobster (The Red Reef)		112	100	3		no	no	
+quest_giant_roc	Giant Roc		172	250	5		no	no	250
+quest_gryphon	Gryphon		95	110	2		no	no	110
+quest_justiciar_zachariah	Justiciar Zachariah		348	320	3		yes	yes	
+quest_kolodion	Kolodion	Demon	112	107	3		no	no	107
+quest_mad_angel	Mad Angel	Quest	270	565	3	golem			
+quest_mother	Mother		198	235	3		no	no	
+quest_porazdir	Porazdir		235	320	3	demon	yes	yes	376
+quest_shellbane_gryphon	Shellbane gryphon		235	400	4		yes	yes	400
+quest_sigmund	Sigmund	Another Slice of H.A.M.	64	70	1				
+quest_skeleton_hellhound	Skeleton Hellhound		97	55	2	demon	no	no	55
+quest_slagilith	Slagilith		92	60	2		no	no	
+quest_sourhog	Sourhog		37	40	3		no	no	40
+ranis_drakan	Ranis Drakan	A Taste of Hope	233	400	1	vampyre	yes	yes	400
+rat	Rat	Regular	1	2	1	rat	no	no	2
+ravager	Ravager	Level 106	106	83	1		no	no	
+reanimated_demon_spawn	Reanimated demon spawn		87	85	1	demon	yes	yes	
+red_dragon	Red dragon	1	152	140	4	dragon,fiery	no	no	143.4
+red_portal	Portal (Pest Control)	Blue, Intermediate/veteran	0	250	3		yes	yes	
+repugnant_spectre	Repugnant spectre		335	380	3	spectral,undead	yes	yes	4085
+respiratory_system	Respiratory system		0	50	2	demon			
+revenant_cyclops	Revenant cyclops		82	110	3	spectral,undead	no	no	119
+revenant_dark_beast	Revenant dark beast		120	140	3	spectral,undead	no	no	157
+revenant_demon	Revenant demon		98	80	3	spectral,undead	no	no	86
+revenant_dragon	Revenant dragon		135	155	5	spectral,undead	no	no	186
+revenant_goblin	Revenant goblin		15	14	1	spectral,undead	no	no	14
+revenant_hellhound	Revenant hellhound		90	80	3	spectral,undead	no	no	86
+revenant_hobgoblin	Revenant hobgoblin		60	72	1	spectral,undead	no	no	73
+revenant_imp	Revenant imp		7	10	1	spectral,undead	no	no	10
+revenant_knight	Revenant knight		126	143	1	spectral,undead	no	no	168
+revenant_ork	Revenant ork		105	105	3	spectral,undead	no	no	115
+revenant_pyrefiend	Revenant pyrefiend		52	48	1	spectral,undead	no	no	48
+riyl_shade	Riyl Shade	Shade	80	76	1	shade,spectral,undead	yes	yes	76
+rock_crab	Rock Crab	Active	13	50	1		no	no	50
+rock_lobster	Rock lobster	Active	127	150	2		no	no	
+rockslug	Rockslug	Adult	29	27	1		no	no	27
+rune_dragon	Rune dragon		380	330	5	dragon,fiery	yes	yes	363
+ruptura_araxyte	Ruptura Araxyte		114	58	2		yes	yes	65
+sand_crab	Sand Crab	Active	15	60	1		no	no	60
+sarachnis	Sarachnis		318	400	5		yes	yes	430
+scarab_mage	Scarab Mage	Level 93	93	50	1	kalphite	no	no	51.2
+scorpia	Scorpia		225	200	5		no	no	260
+scorpias_guardian	Scorpia's guardian		47	70	1		no	no	70
+scorpias_offspring	Scorpia's offspring (monster)		15	2	1		no	no	2
+scorpion	Scorpion	Level 14	14	17	2		no	no	17
+screaming_banshee	Screaming banshee		70	61	3	spectral,undead	yes	yes	610
+screaming_twisted_banshee	Screaming twisted banshee		144	220	3	spectral,undead	yes	yes	2200
+scurrius	Scurrius	Group	250	1500	3	rat	no		2137.5
+scurrius_giant_rat	Giant rat (Scurrius)		46	15	2	rat	no	no	15
+sea_snake_young	Sea Snake Young		90	85	2		no	no	85
+sea_troll_queen	Sea Troll Queen		170	200	5		no	no	
+seagull	Seagull	Level 2	2	6	1		no	no	5
+sergeant_grimspike	Sergeant Grimspike		142	146	1		no	no	146
+sergeant_steelwill	Sergeant Steelwill		142	127	1		no	no	127
+sergeant_strongstack	Sergeant Strongstack		141	128	1		no	no	128
+shadow_hound	Shadow Hound		63	62	1		no	no	62
+shadow_of_light	Shadow (Temple of Light)		73	15	1		no	no	
+shadow_spider	Shadow spider		52	55	1		no	no	55
+shadow_warrior	Shadow warrior		48	67	1		no	no	67
+shadow_wyrm	Shadow Wyrm	Attacking	259	290	5	dragon	yes	yes	3520
+shayzien_crypt_skeleton_magic	Skeleton (Shayzien Crypts)	Magic	132	54	1	undead	no	no	54
+shayzien_crypt_skeleton_melee	Skeleton (Shayzien Crypts)	Magic	132	54	1	undead	no	no	54
+shayzien_crypt_skeleton_ranged	Skeleton (Shayzien Crypts)	Magic	132	54	1	undead	no	no	54
+shayzien_crypt_zombie_magic	Zombie (Shayzien Crypts)	Magic	132	54	1	undead	no	no	54.1
+shayzien_crypt_zombie_melee	Zombie (Shayzien Crypts)	Magic	132	54	1	undead	no	no	54.1
+shayzien_crypt_zombie_ranged	Zombie (Shayzien Crypts)	Magic	132	54	1	undead	no	no	54.1
+shellbane_gryphon	Shellbane gryphon		235	400	4		yes	yes	400
+shifter	Shifter	Level 104	104	83	1		yes	yes	
+sir_mordred	Sir Mordred		39	38	1		no	no	
+skeletal_wyvern	Skeletal Wyvern	1	140	200	3	dragon	no	no	210
+skeleton_champion	Skeleton Champion		40	58	1	undead	no	no	
+skeleton_hellhound	Skeleton Hellhound (Vet'ion)		194	30	2	undead	no	no	33
+skeleton_lvl142	Skeleton (Ape Atoll)		142	77	1	undead	no	no	110
+skeleton_lvl25	Skeleton	Level 25, 1	25	17	1	undead	no	no	
+skeleton_lvl45	Skeleton	Level 45, 1	45	59	1	undead	no	no	
+skotizo	Skotizo		321	450	5	demon	yes	yes	618.5
+slash_bash	Slash Bash		111	100	3	undead	no	no	100
+slug_prince	Slug Prince		62	70	2		yes	yes	
+small_lizard	Small Lizard	Green	12	15	1		no	no	15
+smoke_devil	Smoke devil		160	185	1		yes	yes	185
+snakeling	Snakeling	Magic	90	1	1		yes	yes	
+sol_heredit	Sol Heredit		1563	1500	5		yes	yes	
+sorebones	Sorebones	Apron	57	52	1	undead	no	no	22
+sotetseg	Sotetseg	Normal	995	4000	5		yes	yes	
+sourhog	Sourhog		37	40	3		no	no	40
+spawn_of_sarachnis	Spawn of Sarachnis	Level 107	107	30	2		no	no	30.7
+spiked_turoth	Spiked Turoth		244	195	3	leafy	yes	yes	1998
+spindel	Spindel		302	515	4		yes	yes	541
+spinner	Spinner	Level 74	74	73	1		no	no	
+spinolyp	Spinolyp	Spinolyp	76	100	1		no	no	
+spiritual_mage	Spiritual mage	Saradomin	120	85	1	spectral	no	no	85
+spiritual_ranger	Spiritual ranger	Bandos	115	131	1	spectral	no	no	131
+spiritual_warrior	Spiritual warrior	Armadyl	123	98	2	spectral	no	no	98
+spitting_wyvern	Spitting Wyvern		139	200	3	dragon	no	no	205
+splatter	Splatter	Level 54	54	43	1		no	no	
+starlight	Starlight		149	160	2		no	no	
+steel_dragon	Steel dragon	Level 246	246	210	4	dragon,fiery	no	no	215.2
+sulphur_nagua	Sulphur Nagua		98	100	2	spectral	no	no	105
+suqah	Suqah	1	111	105	2		no	no	107.6
+taloned_wyvern	Taloned Wyvern		147	200	3	dragon	no	no	205
+tanglefoot	Tanglefoot		111	102	1		yes	yes	
+temple_guardian	Temple Guardian		30	45	2		no	no	45
+temple_spider	Temple Spider		75	70	1		no	no	70
+terror_dog	Terror dog	Level 100	100	82	1		no	no	82
+terrorbird	Terrorbird	1	28	34	2		no	no	34
+the_hueycoatl	The Hueycoatl	Body	642	250	1	dragon	yes	yes	
+the_inadequacy	The Inadequacy		343	180	5		yes	yes	
+the_kendal	The Kendal		70	50	2		no	no	
+the_leviathan	The Leviathan	Post-quest	798	900	7		no		1777.4
+the_maiden_of_sugadinti	The Maiden of Sugadinti	30% Health	940	1050	6		yes	yes	
+the_mimic	The Mimic		186	230	5		yes	yes	
+the_nightmare	The Nightmare		814	2400	5		yes	yes	
+the_whisperer	The Whisperer	Post-quest	791	900	3		yes	yes	900
+thermonuclear_smoke_devil	Thermonuclear smoke devil		301	240	4		yes	yes	240
+thrower_troll	Thrower Troll		67	95	1		no	no	95
+titan_fire_elemental	Fire elemental (Royal Titans)		37	40	1		no	no	
+titan_ice_elemental	Ice elemental (Royal Titans)		37	40	1		no	no	
+toa_arcane_scarab	Arcane Scarab		89	40	3	kalphite	yes	yes	
+toa_baboon_brawler	Baboon Brawler	Level 56	56	25	1		yes	yes	
+toa_baboon_mage	Baboon Mage	Level 56	56	20	1		yes	yes	
+toa_baboon_thrower	Baboon Thrower	Level 56	56	30	1		yes	yes	
+toa_scarab_swarm	Scarab Swarm (Tombs of Amascut)		8	10	1		yes	yes	
+toa_soldier_scarab	Soldier Scarab		89	40	3	kalphite	yes	yes	
+toa_spitting_scarab	Spitting Scarab		89	40	3	kalphite	yes	yes	
+tok_xil	Tok-Xil	Standard	90	40	3		no	no	40
+torag	Torag the Corrupted		115	100	1	spectral	no	no	112.5
+torcher	Torcher	Level 79	79	57	1		no	no	
+tormented_demon	Tormented Demon	1	450	600	3	demon	no	no	1065
+tortured_gorilla	Tortured gorilla	Level 141	141	210	2		no	no	210
+tortured_soul	Tortured soul		59	51	1	spectral,undead	no	no	51
+tree_spirit	Tree spirit	Level 79	79	85	1		no	no	
+trek_ghast_1	Ghast	Level 79	79	115	2	spectral			
+trek_ghast_2	Ghast	Level 109	109	135	2	spectral			
+trek_ghast_3	Ghast	Level 139	139	160	2	spectral			
+trek_giant_snail_1	Giant snail	Level 80	80	125	3		no	no	
+trek_giant_snail_2	Giant snail	Level 109	109	150	3		no	no	
+trek_giant_snail_3	Giant snail	Level 139	139	160	3		no	no	
+trek_nail_beast_1	Nail beast	Level 69	69	55	2		no	no	
+trek_nail_beast_2	Nail beast	Level 98	98	65	2		no	no	
+trek_nail_beast_3	Nail beast	Level 141	141	75	2		no	no	
+trek_shade_1	Riyl shadow (Temple Trekking)		80	76	1	spectral,undead	no	no	76
+trek_shade_2	Asyn shadow (Temple Trekking)		110	94	1	spectral,undead	no	no	94
+trek_shade_3	Shade	Catacombs of Kourend	140	115	1	spectral,undead	no	no	115
+trek_swamp_snake_1	Swamp snake	Level 80	80	120	3		no	no	
+trek_swamp_snake_2	Swamp snake	Level 109	109	125	4		no	no	
+trek_swamp_snake_3	Swamp snake	Level 139	139	130	5		no	no	
+trek_undead_lumberjack_1	Undead Lumberjack	Level 30	30	10	1	undead	no	no	0
+trek_undead_lumberjack_2	Undead Lumberjack	Level 50	50	14	1	undead	no	no	0
+trek_undead_lumberjack_3	Undead Lumberjack	Level 70	70	18	1	undead	no	no	0
+trek_vampyre_juvinate_1	Vampyre Juvinate	Level 59 (Temple Trekking)	59	50	1	vampyre	yes	yes	50
+trek_vampyre_juvinate_2	Vampyre Juvinate	Level 90 (Temple Trekking)	90	100	1	vampyre	yes	yes	100
+trek_vampyre_juvinate_3	Vampyre Juvinate	Level 119 (Sins of the Father)	119	150	1	vampyre	yes	yes	150
+trek_zombie	Zombie	Level 13, 1	13	22	1	undead	no	no	22
+treus_dayth	Treus Dayth	In combat	95	100	1	spectral,undead	yes	no	100
+troll_general	Troll general	Hammer (brown)	113	140	2		no	no	150.5
+troll_spectator	Troll spectator		71	90	1		no	no	90
+tstanon_karlak	Tstanon Karlak		145	142	3	demon	no	no	142
+tumekens_warden	Tumeken's Warden	Damaged	544	880	5				
+turoth	Turoth	Mum	87	79	2	leafy	no	no	79
+twisted_banshee	Twisted Banshee		89	100	2	spectral,undead	no	no	100
+tz_kek	Tz-Kek	Level 45	45	20	2		no	no	20
+tz_kek_small	Tz-Kek	Level 22	22	10	1		no	no	10
+tz_kih	Tz-Kih		22	10	1		no	no	10
+tzhaar_hur_citizen	TzHaar-Hur		74	80	1		no	no	80
+tzhaar_ket	TzHaar-Ket	Level 149	149	140	1		no	no	140
+tzhaar_mej	TzHaar-Mej		103	100	1		no	no	100
+tzhaar_xil	TzHaar-Xil	Knife	133	120	1		no	no	120
+tzkal_zuk	TzKal-Zuk	Enraged	1400	1200	7		yes	yes	101890
+tztok_jad	TzTok-Jad		702	250	5		no	no	25250
+ulfric	Ulfric		100	60	1	undead	no	yes	60
+umbra	Umbra		285	500	1		yes	yes	
+undead_chicken	Undead chicken		1	3	1	undead	no	no	3
+undead_cow	Undead cow		2	8	2	undead	no	no	8
+undead_druid	Undead Druid		105	140	1	undead	no	no	147
+undead_one	Undead one	Level 73	73	59	1	undead	no	no	59
+urium_shade	Urium Shade	Shade	140	130	1	shade,spectral,undead	yes	yes	130
+vampyre_juvenile	Vampyre Juvenile	Burgh de Rott and Crombwick Manor	45	60	1	vampyre	yes	yes	60
+vanstrom_klause	Vanstrom Klause	Vampyre	169	155	1	vampyre	yes	yes	
+vardorvis	Vardorvis	Post-quest	784	700	2		yes	yes	1085
+venenatis	Venenatis		464	850	4		yes	yes	956.2
+verac	Verac the Defiled		115	100	1	spectral	no	no	112.5
+verzik_vitur	Verzik Vitur	Hard mode, Phase 1	1040	2000	5				
+verzik_vitur_p2	Verzik Vitur	Hard mode, Phase 2	1265	3500	3				
+verzik_vitur_p3	Verzik Vitur	Hard mode, Phase 3	1520	3500	7				
+vetion	Vet'ion	Enraged	454	255	3	undead	yes	yes	322
+vitreous_jelly	Vitreous Jelly		206	190	2		yes	yes	1900
+vitreous_warped_jelly	Vitreous Warped Jelly		241	220	3		yes	yes	2200
+void_knight	Void Knight (Pest Control)	1	0	200	0				
+vorkath	Vorkath	Post-quest	732	750	7	dragon,fiery,undead	yes	yes	750
+vulture	Vulture	Flying	31	10	2		yes	no	10
+vyrewatch_sentinel	Vyrewatch Sentinel	1	151	150	1	vampyre	yes	yes	150
+wall_beast	Wall beast	Beast	49	105	1		yes	yes	105
+wallasalki	Wallasalki	1	98	120	1		no	no	
+warped_jelly	Warped Jelly		112	140	1		no	no	140
+warped_terrorbird	Warped Terrorbird	Level 138	138	200	2		no	no	200
+warriors_guild_cyclops	Cyclops	Level 56	56	75	2		no	no	75
+waterfiend	Waterfiend	Normal	115	128	1	demon	yes	yes	128
+white_knight	White Knight	Initiate (f)	36	52	1		no	no	
+wild_dog	Wild dog	Normal	63	62	1		no	no	62
+wilderness_bandit	Bandit	Level 130	130	155	1		no	no	158.8
+wingman_skree	Wingman Skree		143	121	2	flying	no	no	124
+witchs_experiment	Witch's experiment	Wolf	53	51	2		no	no	
+woman	Woman	1	2	7	1		no	no	
+wyrm	Wyrm	Attacking	97	120	3	dragon	yes	yes	123
+xarpus	Xarpus	Normal mode	960	5000	5				
+yak	Yak		22	50	2		yes	yes	
+yama	Yama	Normal	1238	2500	5	demon	yes	yes	
+yama_void_flare	Void Flare	Fire	130	140	2	demon	no	no	
+yellow_portal	Portal (Pest Control)	Blue, Intermediate/veteran	0	250	3		yes	yes	
+young_impling	Young impling		0	10	0				
+yt_hurkot	Yt-HurKot	Level 108	108	60	1		no	no	60
+yt_mejkot	Yt-MejKot	Standard	180	80	4		no	no	80
+zakln_gritch	Zakl'n Gritch		142	150	2	demon	no	no	150
+zamorak_crafter	Zamorak crafter		19	25	1		no	no	
+zamorak_mage	Zamorak mage	Level 84	84	50	1		no	no	
+zamorak_ranger	Zamorak ranger	Level 81	81	50	1		no	no	
+zamorak_warrior	Zamorak warrior	Level 84	84	45	1		no	no	
+zogre	Zogre		44	71	2	undead	no	no	71
+zombie_lvl18	Zombie	Level 18, 1	18	24	1	undead	no	no	
+zombie_lvl24	Zombie	Level 24, 1	24	30	1	undead	no	no	
+zombie_pirate	Zombie pirate (Braindeath Island)	1	57	52	1	undead	no	no	52
+zombie_rat	Zombie rat	1	3	5	2	rat,undead	no	no	2
+zombies_champion	Zombies Champion		51	60	2		no	no	
+zombified_spawn	Zombified Spawn	Post-quest	64	38	1	undead	yes	yes	
+zulrah	Zulrah	Magma	725	500	5		yes	yes	500
+zulrah_magma	Zulrah	Magma	725	500	5		yes	yes	500
+zulrah_tanzanite	Zulrah	Magma	725	500	5		yes	yes	500
