@@ -346,32 +346,94 @@ final class AsgarniaNorth {
         k.f(gr[0], 5, r[3], gr[2], 5, r[3], mc("iron_bars"));
         k.s(gr[0] - 1, 3, r[3] + 1, mc("red_wall_banner[facing=south]"));
         k.s(gr[2] + 1, 3, r[3] + 1, mc("red_wall_banner[facing=south]"));
-        // courtyard: training dummies of the Imperial Guard
-        for (int i = 0; i < 3; i++) {
-            int x = bx(2889) + i * 4;
-            int z = bz(3556);
-            k.s(x, 0, z, mc("spruce_fence"));
-            k.s(x, 1, z, mc("hay_block"));
-            k.s(x, 2, z, mc("carved_pumpkin[facing=south]"));
+        // training dummies of the Imperial Guard in the ward west of the keep
+        for (int ty : new int[]{3558, 3562, 3566}) {
+            k.st(2888, ty, 0, mc("spruce_fence"));
+            k.st(2888, ty, 1, mc("hay_block"));
+            k.st(2888, ty, 2, mc("carved_pumpkin[facing=east]"));
         }
-        k.path(2897, 3553, 2899, 3561, mc("stone_bricks"), mc("cobblestone"));
-        // keep with Prince Anlaf's throne room
-        AsgarniaRoom keep = k.house(BURTH, 2891, 3562, 2905, 3570, 3, "south", FLAT);
-        keep.fill(keep.len() / 2 - 1, 2, keep.len() / 2, keep.depth() - 1, 0, 0, mc("red_carpet"));
-        keep.fill(keep.len() / 2 - 2, 0, keep.len() / 2 + 1, 1, 0, 0, mc("spruce_slab[type=bottom]"));
-        keep.set(keep.len() / 2, 0, 1, stair(mc("dark_oak_stairs"), "north"));
-        keep.set(keep.len() / 2 - 1, 0, 1, mc("gold_block"));
-        for (int u = 2; u < keep.len() - 1; u += 4) {
-            keep.set(u, 0, 2, mc("red_wall_banner[facing=south]"));
+        k.path(2897, 3553, 2899, 3557, mc("stone_bricks"), mc("cobblestone"));
+        // the keep as on the OSRS map (mejrs layers_osrs, planes 0-1): a cross-shaped two-storey hall with the
+        // chequered floor (2893-2904 x 3558-3569, red-carpeted upstairs) and four corner rooms 2891-2895 /
+        // 2902-2906 x 3555-3560 / 3566-3571, each with its ladder; the door south at 2898-2899, the stairs
+        // up at 2897-2898,3565 (to 3569 upstairs) and the stairs down to the Games Room at 2899-2900,3565
+        // (shortest-path; the Games Room itself is not modelled)
+        String[] plan = {
+                "aaaaa      bbbbb", // 3571
+                "aaaaa      bbbbb", // 3570
+                "aaaaaccccccbbbbb", // 3569
+                "aaaaaccccccbbbbb", // 3568
+                "aaaaaccccccbbbbb", // 3567
+                "aaaaaccccccbbbbb", // 3566
+                "  cccccccccccc", // 3565
+                "  cccccccccccc", // 3564
+                "  cccccccccccc", // 3563
+                "  cccccccccccc", // 3562
+                "  cccccccccccc", // 3561
+                "dddddcccccceeeee", // 3560
+                "dddddcccccceeeee", // 3559
+                "dddddcccccceeeee", // 3558
+                "ddddd      eeeee", // 3557
+                "ddddd      eeeee", // 3556
+                "ddddd      eeeee", // 3555
+        };
+        TileMask.of(2891, 3571, plan).fill(b, k.g - 1, k.g - 1, mc("spruce_planks")).fill(b, k.g, k.g + 12, null);
+        for (int tx = 2893; tx <= 2904; tx++) {
+            for (int ty = 3558; ty <= 3569; ty++) {
+                k.fillT(tx, ty, tx, ty, -1, -1, ((tx + ty) & 1) == 0 ? mc("polished_andesite") : mc("polished_blackstone"));
+            }
         }
-        AsgarniaRoom l1 = keep.level(1);
-        l1.longTable(3, l1.len() - 4, l1.depth() / 2, "dark_oak", mc("red_carpet"));
-        l1.fill(1, 0, 4, 0, 0, 2, mc("bookshelf"));
-        AsgarniaRoom l2 = keep.level(2);
-        for (int u = 2; u < l2.len() - 1; u += 3) {
-            l2.bed(u, 0, "red");
+        TileMask hall = TileMask.of(2891, 3571, "c", plan);
+        hall.fill(b, k.g + 3, k.g + 3, mc("red_wool")).fill(b, k.g + 7, k.g + 7, mc("stone_brick_slab"))
+                .outline(b, k.g, k.g + 7, sb).crenels(b, k.g + 8, sb);
+        for (String c : new String[]{"a", "b", "d", "e"}) {
+            TileMask.of(2891, 3571, c, plan).fill(b, k.g + 3, k.g + 3, mc("spruce_planks"))
+                    .fill(b, k.g + 7, k.g + 7, mc("spruce_planks")).fill(b, k.g + 11, k.g + 11, mc("stone_brick_slab"))
+                    .outline(b, k.g, k.g + 11, sb).crenels(b, k.g + 12, sb);
         }
-        l2.set(l2.len() - 1, l2.depth() - 1, 0, rc("anvil"));
+        // doors: the corner rooms open onto the hall on both floors, the hall's door south
+        for (int y = 0; y <= 4; y += 4) {
+            k.clearT(2895, 3567, 2896, 3567, y, y + 1);
+            k.clearT(2901, 3567, 2902, 3567, y, y + 1);
+            k.clearT(2895, 3559, 2896, 3559, y, y + 1);
+            k.clearT(2901, 3559, 2902, 3559, y, y + 1);
+        }
+        k.clearT(2898, 3558, 2899, 3558, 0, 2);
+        k.s(bx(2898), 0, bz(3558) + 1, mc("spruce_door[facing=north,half=lower,hinge=left]"));
+        k.s(bx(2899) + 1, 0, bz(3558) + 1, mc("spruce_door[facing=north,half=lower,hinge=right]"));
+        // the staircase up and the trapdoor down to the Games Room
+        for (int x = bx(2897); x <= bx(2898) + 1; x++) {
+            for (int i = 0; i < 3; i++) {
+                k.c(x, i + 1, bz(3565) - i, x, i + 3, bz(3565) - i);
+                k.s(x, i, bz(3565) - i, stair(mc("stone_brick_stairs"), "north"));
+                if (i > 0) {
+                    k.f(x, 0, bz(3565) - i, x, i - 1, bz(3565) - i, sb);
+                }
+            }
+        }
+        k.st(2899, 3564, 0, mc("spruce_trapdoor[half=bottom,open=false]"));
+        k.st(2900, 3564, 0, mc("spruce_trapdoor[half=bottom,open=false]"));
+        // ladders in the corner rooms (OSRS 2892,3556 / 2905,3556 / 2905,3571 / 2892,3571), ground to top
+        for (int[] l : new int[][]{{bx(2891) + 1, bz(3556), 0}, {bx(2906), bz(3556), 1}, {bx(2906), bz(3570), 1}, {bx(2891) + 1, bz(3570), 0}}) {
+            k.f(l[0], 0, l[1], l[0], 7, l[1], mc(l[2] == 0 ? "ladder[facing=east]" : "ladder[facing=west]"));
+        }
+        // Prince Anlaf's throne at the north end of the hall, banners; upstairs the feast table, the
+        // armoury (anvil) in the north-east room and the guards' beds in the south-west room
+        k.fillT(2898, 3569, 2899, 3569, 0, 0, mc("spruce_slab[type=bottom]"));
+        k.s(bx(2898) + 1, 1, bz(3569), stair(mc("dark_oak_stairs"), "south"));
+        k.s(bx(2899), 1, bz(3569), mc("gold_block"));
+        k.fillT(2898, 3559, 2899, 3568, -1, -1, mc("red_wool"));
+        for (int tx = 2894; tx <= 2903; tx += 3) {
+            k.s(bx(tx), 2, bz(3565), mc("lantern[hanging=true]"));
+        }
+        k.f(bx(2901), 4, bz(3563), bx(2903), 4, bz(3563), mc("dark_oak_slab[type=top]"));
+        k.f(bx(2901), 4, bz(3562), bx(2903), 4, bz(3562), stair(mc("dark_oak_stairs"), "north"));
+        k.st(2904, 3569, 4, rc("anvil"));
+        k.st(2903, 3570, 4, mc("smithing_table"));
+        for (int ty : new int[]{3557, 3559}) {
+            k.s(bx(2893), 4, bz(ty), mc("red_bed[facing=west,part=foot]"));
+        }
+        k.f(bx(2892), 4, bz(3567), bx(2892), 5, bz(3569), mc("bookshelf"));
         return k.build();
     }
 
@@ -408,47 +470,80 @@ final class AsgarniaNorth {
     }
 
     static StructureDef warriorsGuild() {
+        // The guild on its OSRS footprint (mejrs layers_osrs): 2837-2876 x 3534-3555, three storeys, entered by the
+        // east door at 3546 (shortest-path 2876/2877). Ground floor: two small rooms and the round-pit room along
+        // the north (2837-2860 x 3547-3555), the red-carpeted hall (2841-2848 x 3535-3546) and the dining room
+        // with Lidio (2849-2860 x 3535-3546), the big animation room east (2861-2876); first floor: the dummy
+        // room north-west, the shot put lanes north-east (2861-2876 x 3546-3555); top floor: the cyclops hall.
         StructureDef.Builder b = StructureDef.builder("warriors_guild", "Warriors' Guild").replaces("mg_warriors_guild");
         AsgarniaKit k = new AsgarniaKit(b);
-        k.path(2872, 3536, 2878, 3550, mc("stone_bricks"), mc("polished_andesite"));
-        AsgarniaRoom g = k.house(WARRIOR, 2852, 3532, 2871, 3554, 3, "east", FLAT);
-        int len = g.len();
-        int dep = g.depth();
-        // entrance hall: entrance, Anton's weapon shop, Lidio's food and the animation pedestals
-        g.set(len / 2 + 3, dep - 2, 0, rc("warriors_guild_entrance"));
-        g.fill(2, 2, 8, 2, 0, 0, mc("spruce_slab[type=top]"));
-        g.set(5, 2, 0, rc("weapon_shop"));
-        g.fill(2, 0, 8, 0, 0, 1, mc("grindstone[face=floor,facing=north]"));
-        g.fill(len - 9, 2, len - 3, 2, 0, 0, mc("spruce_slab[type=top]"));
-        g.set(len - 6, 2, 0, rc("cooking_range"));
-        g.fill(len - 9, 0, len - 3, 0, 0, 0, mc("barrel[facing=up]"));
+        k.path(2877, 3536, 2880, 3556, mc("stone_bricks"), mc("polished_andesite"));
+        k.house(WARRIOR, 2837, 3534, 2876, 3555, 3, "east", FLAT);
+        String wall = mc("stone_bricks");
+        // ground-floor partitions (doors as on the map)
+        k.f(bx(2838), 0, bz(3547) + 1, bx(2860) + 1, 2, bz(3547) + 1, wall);
+        k.f(bx(2844), 0, bz(3555), bx(2844), 2, bz(3547) + 1, wall);
+        k.f(bx(2851), 0, bz(3555), bx(2851), 2, bz(3547) + 1, wall);
+        k.f(bx(2861), 0, bz(3555), bx(2861), 2, bz(3535) + 1, wall);
+        k.f(bx(2849), 0, bz(3546), bx(2849), 2, bz(3535) + 1, wall);
+        k.c(bx(2840), 0, bz(3547) + 1, bx(2840) + 1, 1, bz(3547) + 1);
+        k.c(bx(2847), 0, bz(3547) + 1, bx(2847) + 1, 1, bz(3547) + 1);
+        k.c(bx(2854), 0, bz(3547) + 1, bx(2855) + 1, 1, bz(3547) + 1);
+        k.c(bx(2849), 0, bz(3541), bx(2849), 1, bz(3540) + 1);
+        k.c(bx(2861), 0, bz(3546), bx(2861), 1, bz(3545) + 1);
+        k.c(bx(2861), 0, bz(3541), bx(2861), 1, bz(3540) + 1);
+        // the entrance just inside the east door, Anton's weapon counter in the hall, Lidio's range and
+        // round tables in the dining room, the five animator pedestals in the east room
+        k.st(2875, 3546, 0, rc("warriors_guild_entrance"));
+        k.f(bx(2842), 0, bz(3538), bx(2846) + 1, 0, bz(3538), mc("spruce_slab[type=top]"));
+        k.st(2844, 3538, 0, rc("weapon_shop"));
+        k.f(bx(2842), 0, bz(3536) + 1, bx(2846) + 1, 0, bz(3536) + 1, mc("grindstone[face=floor,facing=north]"));
+        k.f(bx(2843), -1, bz(3545), bx(2846) + 1, -1, bz(3539), mc("red_wool"));
+        k.f(bx(2851), 0, bz(3545), bx(2859) + 1, 0, bz(3545), mc("spruce_slab[type=top]"));
+        k.st(2855, 3545, 0, rc("cooking_range"));
+        k.f(bx(2851), 0, bz(3546), bx(2859) + 1, 0, bz(3546), mc("barrel[facing=up]"));
+        k.c(bx(2854), 0, bz(3546), bx(2855) + 1, 0, bz(3545));
+        for (int tx : new int[]{2852, 2858}) {
+            k.st(tx, 3537, 0, mc("spruce_fence"));
+            k.st(tx, 3537, 1, mc("spruce_pressure_plate"));
+        }
         String[] armour = {"iron_block", "gold_block", "diamond_block", "emerald_block", "netherite_block"};
         for (int i = 0; i < armour.length; i++) {
-            int u = 4 + i * 4;
-            g.set(u, dep / 2 + 2, 0, mc("polished_andesite"));
-            g.set(u, dep / 2 + 2, 1, mc(armour[i]));
+            int tx = 2863 + i * 3;
+            k.st(tx, 3551, 0, mc("polished_andesite"));
+            k.st(tx, 3551, 1, mc(armour[i]));
         }
-        g.fill(len / 2 - 1, 3, len / 2, dep - 1, 0, 0, mc("red_carpet"));
-        // first floor: dummies and shot put lanes
-        AsgarniaRoom l1 = g.level(1);
-        for (int u = 3; u < len - 2; u += 4) {
-            l1.set(u, 1, 0, mc("hay_block"));
-            l1.set(u, 1, 1, mc("target"));
+        k.f(bx(2862), -1, bz(3546), bx(2874) + 1, -1, bz(3546) + 1, mc("red_wool"));
+        // the round pit in the north room
+        int px = bx(2856);
+        int pz = bz(3551);
+        k.disc(px, pz, 2.5, -1, -1, mc("sand"));
+        k.ring(px, pz, 3.5, 0, 0, mc("spruce_fence"));
+        k.c(px, 0, pz + 3, px, 0, pz + 3);
+        // first floor: the dummy room north-west and the shot put lanes north-east
+        k.f(bx(2849), 4, bz(3555), bx(2849), 6, bz(3544) + 1, wall);
+        k.f(bx(2838), 4, bz(3544) + 1, bx(2848) + 1, 6, bz(3544) + 1, wall);
+        k.f(bx(2859), 4, bz(3555), bx(2859), 6, bz(3546), wall);
+        k.f(bx(2860), 4, bz(3546), bx(2875) + 1, 6, bz(3546), wall);
+        k.c(bx(2849), 4, bz(3549), bx(2849), 5, bz(3548) + 1);
+        k.c(bx(2859), 4, bz(3549), bx(2859), 5, bz(3548) + 1);
+        k.c(bx(2846), 4, bz(3544) + 1, bx(2846) + 1, 5, bz(3544) + 1);
+        for (int tx = 2839; tx <= 2847; tx += 2) {
+            k.st(tx, 3552, 4, mc("hay_block"));
+            k.st(tx, 3552, 5, mc("target"));
         }
-        l1.fill(2, dep - 4, len - 3, dep - 4, 0, 0, mc("smooth_stone_slab[type=bottom]"));
-        l1.fill(2, dep - 6, len - 3, dep - 6, 0, 0, mc("smooth_stone_slab[type=bottom]"));
-        l1.set(2, dep - 5, 0, mc("cobblestone"));
-        // second floor: the cyclops gate
-        AsgarniaRoom l2 = g.level(2);
-        l2.fill(len / 2 - 2, 0, len / 2 + 1, 0, 0, 2, mc("iron_bars"));
-        l2.set(len / 2, 1, 0, rc("warriors_guild_cyclops_entrance"));
-        l2.fill(2, dep - 2, len - 3, dep - 2, 0, 0, mc("red_carpet"));
-        // banners on the facade
-        for (int z = g.z1 + 2; z <= g.z2 - 2; z += 6) {
-            k.s(g.x2 + 2, 5, z, mc("red_wall_banner[facing=east]"));
+        k.f(bx(2862), 4, bz(3549), bx(2875) + 1, 4, bz(3549), mc("smooth_stone_slab[type=bottom]"));
+        k.f(bx(2862), 4, bz(3553), bx(2875) + 1, 4, bz(3553), mc("smooth_stone_slab[type=bottom]"));
+        k.st(2861, 3551, 4, mc("cobblestone"));
+        k.st(2861, 3547, 4, mc("cobblestone"));
+        // top floor: the cyclops hall behind its barred gate (approx: the gate across the hall at 2848)
+        k.f(bx(2848), 8, bz(3555), bx(2848), 10, bz(3535) + 1, mc("iron_bars"));
+        k.st(2848, 3545, 8, rc("warriors_guild_cyclops_entrance"));
+        k.f(bx(2850), 7, bz(3545), bx(2874) + 1, 7, bz(3545) + 1, mc("red_wool"));
+        // banners on the east front
+        for (int z = bz(3555) + 2; z <= bz(3534) - 1; z += 6) {
+            k.s(bx(2876) + 2, 5, z, mc("red_wall_banner[facing=east]"));
         }
-        k.tower(g.x2 + 1, g.z1, 4, 18, mc("stone_bricks"), mc("polished_andesite"), null, null);
-        k.tower(g.x2 + 1, g.z2, 4, 18, mc("stone_bricks"), mc("polished_andesite"), null, null);
         return k.build();
     }
 

@@ -60,9 +60,10 @@ final class EasternDesert {
         k.patches(3270, 3150, 3326, 3232, "minecraft:sandstone", 50, 11);
         k.patches(3270, 3150, 3326, 3232, "minecraft:red_sand", 25, 12);
 
-        // The border wall along x=3267 and the toll gate to Lumbridge at y 3227-3228.
-        k.wall(3267, 3135, 3267, 3262, 4, SS, CUT);
-        k.tfill(3267, 3135, 3267, 3262, 1, 1, CUT);
+        // The border fence along x=3267 and the toll gate to Lumbridge at y 3227-3228. On the OSRS map it
+        // only runs north of about 3201 (it bends south-west to the river there), so the bank stands clear.
+        k.wall(3267, 3201, 3267, 3262, 4, SS, CUT);
+        k.tfill(3267, 3201, 3267, 3262, 1, 1, CUT);
         k.gate(3267, 3227, 3267, 3228, 4);
         int[] gq = r(3267, 3227, 3267, 3228);
         k.fill(gq[0], g, gq[1], gq[0], g, gq[3], "minecraft:oak_fence_gate[facing=east,open=true]");
@@ -81,16 +82,20 @@ final class EasternDesert {
         k.floor(3292, 3182, 3293, 3185, SMOOTH);
         k.floor(3311, 3156, 3311, 3190, CUT);
 
-        // Al Kharid bank: booths in a north-south row along the west side, bankers behind.
-        int[] bank = k.hall(3269, 3160, 3276, 3172, 1, DESERT_RICH, "east");
-        k.boothsZ(bank[0] + 4, bank[1] + 3, bank[3] - 3, g, CUT);
-        k.fill(bank[0] + 1, g - 1, bank[1] + 1, bank[0] + 3, g - 1, bank[3] - 1, SMOOTH);
+        // Al Kharid bank (OSRS map: 3265-3272 x 3161-3173, door east at 3166-3167): the booths in a north-south
+        // row along x 3268 between the stub walls at its ends (3171-3173 and 3161-3163), bankers behind. The west
+        // and south walls stand in (3266 and 3163, approx) so the rooftop course cable tile (3265, 3162) stays clear.
+        int[] bank = k.hall(3266, 3163, 3272, 3173, 1, DESERT_RICH, "east");
+        k.boothsZ(bx(3268), bz(3170), bz(3164) + 1, g, CUT);
+        k.fill(bx(3268), g, bank[1] + 1, bx(3268), g + 3, bz(3171) + 1, CUT);
+        k.fill(bx(3268), g, bz(3163), bx(3268), g + 3, bank[3] - 1, CUT);
+        k.fill(bank[0] + 1, g - 1, bank[1] + 1, bx(3268) - 1, g - 1, bank[3] - 1, SMOOTH);
         int bmz = (bank[1] + bank[3]) / 2;
-        k.fill(bank[0] + 5, g, bmz, bank[2] - 1, g, bmz + 1, "minecraft:red_carpet");
+        k.fill(bx(3268) + 2, g, bmz, bank[2] - 1, g, bmz + 1, "minecraft:red_carpet");
         k.set(bank[0] + 1, g, bank[1] + 1, "minecraft:chest[facing=east]");
         k.set(bank[0] + 1, g, bank[3] - 1, "minecraft:chest[facing=east]");
-        k.fill(bank[0] + 6, g, bank[1] + 1, bank[2] - 1, g, bank[1] + 1, "minecraft:smooth_sandstone_stairs[facing=north]");
-        k.fill(bank[0] + 6, g, bank[3] - 1, bank[2] - 1, g, bank[3] - 1, "minecraft:smooth_sandstone_stairs[facing=south]");
+        k.fill(bx(3269) + 1, g, bank[1] + 1, bank[2] - 1, g, bank[1] + 1, "minecraft:smooth_sandstone_stairs[facing=north]");
+        k.fill(bx(3269) + 1, g, bank[3] - 1, bank[2] - 1, g, bank[3] - 1, "minecraft:smooth_sandstone_stairs[facing=south]");
         k.dome((bank[0] + bank[2]) / 2, bmz, g + 4, 4.5, 3, SMOOTH, SMOOTH);
         k.set((bank[0] + bank[2]) / 2, g + 7, bmz, GOLD);
 
@@ -154,15 +159,31 @@ final class EasternDesert {
         return k.build();
     }
 
-    /** The Emir's palace: two storeys around a garden courtyard, throne room, corner towers with domes. */
+    /**
+     * The Emir's palace as on the OSRS map (mejrs layers_osrs, planes 0-1): a two-storey block 3282-3303 x
+     * 3159-3177 inside a low perimeter wall (3281-3304 x 3158-3178). The north half holds the west room
+     * (3282-3286), the east room (3299-3303) and between them an arcaded corridor round the open sand
+     * courtyard with its fountain (yard 3290-3295 x 3170-3176, fountain 3292-3293 x 3171-3172); the south half
+     * is one long hall (3159-3166) with the chequered floor (3290-3303 x 3161-3164), the ladder up at 3284,3165
+     * (shortest-path) and the two doors south at 3290 and 3295. The courtyard stays open to the sky so the
+     * Al Kharid teleport (3293, 3174) lands in it.
+     */
     static StructureDef alKharidPalace() {
         EasternKit k = new EasternKit("al_kharid_palace", "Al Kharid palace");
         int g = k.g;
-        int[] q = r(3281, 3156, 3304, 3179);
-        int[] w = r(3287, 3162, 3298, 3173);
-        int[] c = r(3288, 3163, 3297, 3172);
+        int[] q = r(3282, 3159, 3303, 3177);
+        int[] yd = r(3290, 3170, 3295, 3176);
+        int[] mid = r(3287, 3167, 3298, 3177);
+        k.clear(q[0] - 2, g, q[1] - 2, q[2] + 2, g + 16, q[3] + 2);
         k.fill(q[0], g - 1, q[1], q[2], g - 1, q[3], SMOOTH);
-        k.clear(q[0] + 1, g, q[1] + 1, q[2] - 1, g + 12, q[3] - 1);
+        // the low perimeter wall with its gates south (3290, 3295) and east (3162-3163)
+        k.b.walls(bx(3281), g, bz(3178), bx(3304) + 1, g, bz(3158) + 1, "minecraft:sandstone_wall");
+        k.clear(bx(3290), g, bz(3158) + 1, bx(3290) + 1, g, bz(3158) + 1);
+        k.clear(bx(3295), g, bz(3158) + 1, bx(3295) + 1, g, bz(3158) + 1);
+        k.clear(bx(3304) + 1, g, bz(3163), bx(3304) + 1, g, bz(3162) + 1);
+        k.fill(bx(3281) + 1, g - 1, bz(3178) + 1, bx(3304), g - 1, bz(3158), CUT);
+        k.fill(q[0], g - 1, q[1], q[2], g - 1, q[3], SMOOTH);
+        // shell: two storeys, a floor at g+4, the roof at g+9 and crenels
         k.b.walls(q[0], g, q[1], q[2], g + 9, q[3], CUT);
         k.b.walls(q[0], g, q[1], q[2], g, q[3], CHIS);
         k.b.walls(q[0], g + 4, q[1], q[2], g + 4, q[3], CHIS);
@@ -171,190 +192,125 @@ final class EasternDesert {
         k.crenels(q, g + 10, CUT);
         k.slits(q, g + 1, 4, AIR);
         k.slits(q, g + 6, 4, AIR);
-        // Courtyard open to the sky, with arcades.
-        k.clear(c[0], g, c[1], c[2], g + 12, c[3]);
-        k.b.walls(w[0], g, w[1], w[2], g + 9, w[3], CUT);
-        for (int x = w[0] + 2; x <= w[2] - 3; x += 4) {
-            k.clear(x, g, w[1], x + 1, g + 2, w[1]);
-            k.clear(x, g, w[3], x + 1, g + 2, w[3]);
-            k.set(x, g + 6, w[1], "minecraft:air");
-            k.set(x, g + 6, w[3], "minecraft:air");
+        // the wall between the north rooms and the south hall (both storeys), doors at 3292-3293
+        int wz = bz(3167) + 1;
+        k.fill(q[0] + 1, g, wz, q[2] - 1, g + 8, wz, CUT);
+        k.fill(q[0] + 1, g + 4, wz, q[2] - 1, g + 4, wz, CHIS);
+        k.clear(bx(3292), g, wz, bx(3293) + 1, g + 2, wz);
+        k.clear(bx(3292), g + 5, wz, bx(3293) + 1, g + 7, wz);
+        // the west and east rooms' walls with their doors into the corridor at 3171-3172
+        for (int x : new int[]{mid[0], mid[2]}) {
+            k.fill(x, g, q[1] + 1, x, g + 8, wz - 1, CUT);
+            k.fill(x, g + 4, q[1] + 1, x, g + 4, wz - 1, CHIS);
+            k.clear(x, g, bz(3172), x, g + 2, bz(3171) + 1);
+            k.clear(x, g + 5, bz(3172), x, g + 7, bz(3171) + 1);
         }
-        for (int z = w[1] + 2; z <= w[3] - 3; z += 4) {
-            k.clear(w[0], g, z, w[0], g + 2, z + 1);
-            k.clear(w[2], g, z, w[2], g + 2, z + 1);
-            k.set(w[0], g + 6, z, "minecraft:air");
-            k.set(w[2], g + 6, z, "minecraft:air");
+        // the courtyard: open to the sky, sand and the fountain, an arcade of columns round it and a
+        // balustrade round the opening upstairs
+        k.clear(yd[0], g + 4, yd[1], yd[2], g + 16, yd[3]);
+        k.fill(yd[0], g - 1, yd[1], yd[2], g - 1, yd[3], SAND);
+        for (int x = yd[0]; x <= yd[2]; x += 3) {
+            k.pillar(x, yd[1], 4, CHIS, null);
+            k.pillar(x, yd[3], 4, CHIS, null);
         }
-        k.crenels(w, g + 10, CUT);
-        // Garden: grass, cut sandstone paths, fountain, palms and flowers.
-        k.fill(c[0], g - 1, c[1], c[2], g - 1, c[3], GRASS);
-        int mx = (c[0] + c[2]) / 2;
-        int mz = (c[1] + c[3]) / 2;
-        k.fill(mx - 1, g - 1, c[1], mx + 1, g - 1, c[3], CUT);
-        k.fill(c[0], g - 1, mz - 1, c[2], g - 1, mz + 1, CUT);
-        k.fountain(mx, mz, 3, CHIS, CHIS);
-        k.palm(3289, 3164, 5);
-        k.palm(3296, 3164, 5);
-        k.palm(3289, 3171, 5);
-        k.palm(3296, 3171, 5);
-        k.scatter(3288, 3163, 3297, 3172, 0, "minecraft:poppy", 10, 21);
-        k.scatter(3288, 3163, 3297, 3172, 0, "minecraft:dandelion", 8, 22);
-        // Wing partitions with doorways (both storeys).
-        for (int[] p : new int[][]{{3282, 3162, 3286}, {3299, 3162, 3303}, {3282, 3173, 3286}, {3299, 3173, 3303}}) {
-            k.tfill(p[0], p[1], p[2], p[1], 0, 8, CUT);
-            int dx = bx((p[0] + p[2]) / 2);
-            int dz = bz(p[1]);
-            k.clear(dx, g, dz, dx + 1, g + 2, dz + 1);
-            k.clear(dx, g + 5, dz, dx + 1, g + 7, dz + 1);
+        for (int z = yd[1] + 3; z < yd[3]; z += 3) {
+            k.pillar(yd[0], z, 4, CHIS, null);
+            k.pillar(yd[2], z, 4, CHIS, null);
         }
-        // Main entrance (north) and throne room doorway.
-        int ex = bx(3292);
-        k.clear(ex, g, q[1], ex + 3, g + 3, q[1]);
-        k.fill(ex - 1, g, q[1] - 1, ex - 1, g + 4, q[1] - 1, CHIS);
-        k.fill(ex + 4, g, q[1] - 1, ex + 4, g + 4, q[1] - 1, CHIS);
-        k.fill(ex - 1, g + 5, q[1] - 1, ex + 4, g + 5, q[1] - 1, "minecraft:cut_sandstone_slab");
-        k.clear(ex, g, w[1], ex + 3, g + 3, w[1]);
-        k.clear(ex, g, w[3], ex + 3, g + 3, w[3]);
-        k.fill(ex, g, q[1] + 1, ex + 3, g, w[1] - 1, "minecraft:red_carpet");
-        // Throne room.
-        int tz = q[3] - 1;
-        k.fill(ex - 2, g, tz - 2, ex + 5, g, tz, CHIS);
-        k.fill(ex + 1, g + 1, tz - 1, ex + 2, g + 1, tz - 1, "minecraft:quartz_stairs[facing=south]");
-        k.fill(ex + 1, g + 1, tz, ex + 2, g + 3, tz, GOLD);
-        k.set(ex, g + 1, tz, "minecraft:gold_block");
-        k.set(ex + 3, g + 1, tz, "minecraft:gold_block");
-        k.fill(ex + 1, g, w[3] + 1, ex + 2, g, tz - 3, "minecraft:red_carpet");
-        for (int bxx : new int[]{ex - 4, ex - 8, ex + 7, ex + 11}) {
-            k.set(bxx, g + 2, tz, "minecraft:orange_wall_banner[facing=north]");
+        k.b.walls(yd[0] - 1, g + 4, yd[1] - 1, yd[2] + 1, g + 4, yd[3] + 1, CHIS);
+        k.b.walls(yd[0] - 1, g + 5, yd[1] - 1, yd[2] + 1, g + 5, yd[3] + 1, "minecraft:sandstone_wall");
+        k.fountain(bx(3293), bz(3172), 1, CHIS, CHIS);
+        // potted palms in the yard's corners (no trees: the Al Kharid teleport lands in this yard)
+        for (int[] c : new int[][]{{yd[0] + 1, yd[1] + 1}, {yd[2] - 1, yd[1] + 1}, {yd[0] + 1, yd[3] - 1}, {yd[2] - 1, yd[3] - 1}}) {
+            k.set(c[0], g, c[1], "minecraft:potted_bamboo");
         }
+        // doors: the two south doors (3290, 3295) with a portico, the east door at 3162-3163
+        for (int tx : new int[]{3290, 3295}) {
+            k.clear(bx(tx), g, q[3], bx(tx) + 1, g + 2, q[3]);
+            k.fill(bx(tx), g - 1, q[3], bx(tx) + 1, g - 1, bz(3158) + 1, "minecraft:red_terracotta");
+        }
+        k.clear(q[2], g, bz(3163), q[2], g + 2, bz(3162) + 1);
+        // the south hall: chequered floor, the Emir's throne at its east end, banners and lanterns
+        for (int tx = 3290; tx <= 3303; tx++) {
+            for (int ty = 3161; ty <= 3164; ty++) {
+                k.fill(bx(tx), g - 1, bz(ty), bx(tx) + 1, g - 1, bz(ty) + 1, ((tx + ty) & 1) == 0 ? CHIS : "minecraft:polished_blackstone");
+            }
+        }
+        int tx0 = q[2] - 1;
+        int tz = bz(3163);
+        k.fill(tx0 - 1, g, tz - 1, tx0, g, tz + 2, CHIS);
+        k.fill(tx0 - 1, g + 1, tz, tx0 - 1, g + 1, tz + 1, "minecraft:quartz_stairs[facing=west]");
+        k.fill(tx0, g + 1, tz, tx0, g + 3, tz + 1, GOLD);
+        k.fill(bx(3292), g, wz + 1, bx(3293) + 1, g, q[3] - 1, "minecraft:red_carpet");
         for (int x = q[0] + 3; x < q[2] - 2; x += 6) {
-            k.pillar(x, bz(3159), 4, CHIS, null);
+            k.set(x, g + 2, q[3] - 1, "minecraft:orange_wall_banner[facing=north]");
+            k.set(x, g + 2, bz(3164), "minecraft:lantern[hanging=true]");
         }
-        // West wing: kitchen. East wing: barracks.
+        // the ladder up in the hall's west end (OSRS 3284, 3164-3165)
+        k.fill(q[0] + 1, g, bz(3165), q[0] + 1, g + 4, bz(3165), "minecraft:ladder[facing=east]");
+        k.clear(q[0] + 1, g + 5, bz(3165), q[0] + 1, g + 6, bz(3165));
+        // west room: kitchen; east room: barracks
         int ww = q[0] + 1;
-        k.set(ww, g, bz(3166), RANGE);
-        k.set(ww, g, bz(3167), "minecraft:smoker[facing=east]");
-        k.set(ww, g, bz(3168), "minecraft:barrel[facing=up]");
-        k.set(ww, g, bz(3169), "minecraft:barrel[facing=up]");
-        k.set(ww, g, bz(3170), "minecraft:crafting_table");
-        k.fill(ww + 4, g, bz(3168), ww + 6, g, bz(3168), "minecraft:jungle_slab[type=top]");
+        k.set(ww, g, bz(3170), RANGE);
+        k.set(ww, g, bz(3171), "minecraft:smoker[facing=east]");
+        k.set(ww, g, bz(3173), "minecraft:barrel[facing=up]");
+        k.set(ww, g, bz(3174), "minecraft:barrel[facing=up]");
+        k.set(ww, g, bz(3176), "minecraft:crafting_table");
+        k.fill(ww + 3, g, bz(3174), ww + 5, g, bz(3174), "minecraft:jungle_slab[type=top]");
+        k.set(ww + 4, g + 1, bz(3174), "minecraft:cake");
         int ew = q[2] - 1;
-        for (int z = bz(3172) + 1; z <= bz(3163); z += 3) {
+        for (int z = bz(3176); z <= bz(3168); z += 3) {
             k.set(ew - 1, g, z, "minecraft:red_bed[facing=east,part=foot]");
             k.set(ew - 2, g, z, "minecraft:chest[facing=west]");
-            k.set(ew, g + 2, z + 1, "minecraft:lantern[hanging=true]");
         }
-        // weapon racks (armour stands are entities, so grindstones and barrels of spears) in the barracks
-        k.set(ew - 4, g, bz(3171), "minecraft:grindstone[face=floor,facing=east]");
-        k.set(ew - 4, g, bz(3164), "minecraft:smithing_table");
-        k.fill(ew - 4, g, bz(3170), ew - 4, g + 1, bz(3170), "minecraft:barrel[facing=up]");
-        // the kitchen table and hanging game
-        k.fill(ww + 4, g, bz(3166), ww + 6, g, bz(3166), "minecraft:jungle_slab[type=top]");
-        k.fill(ww + 4, g, bz(3165), ww + 6, g, bz(3165), "minecraft:jungle_stairs[facing=south]");
-        k.set(ww + 5, g + 1, bz(3166), "minecraft:cake");
-        k.fill(ww + 2, g + 2, bz(3170), ww + 2, g + 3, bz(3170), "minecraft:chain");
-        k.set(ew - 6, g, bz(3168), "minecraft:chest[facing=east]");
-        k.set(ew - 6, g, bz(3167), "minecraft:chest[facing=east]");
-        // North hall: stairs up at the west end; upstairs the Emir's chambers.
-        k.stairsEast(q[0] + 2, q[1] + 1, 5, SS_STAIRS, SS);
-        for (int x = q[0] + 10; x < q[2] - 2; x += 6) {
-            k.pillar(x, bz(3176), 4, CHIS, null);
-        }
-        k.fill(ex - 6, g + 5, q[1] + 2, ex + 9, g + 5, q[1] + 6, "minecraft:red_carpet");
-        k.fill(q[0] + 1, g + 5, q[1] + 1, q[0] + 1, g + 7, q[1] + 1, AIR);
-        k.fill(ex + 10, g + 5, q[1] + 1, ex + 14, g + 6, q[1] + 1, "minecraft:bookshelf");
-        k.set(ex + 12, g + 5, q[1] + 3, "minecraft:jungle_slab[type=top]");
-        k.set(ex + 12, g + 5, q[1] + 4, "minecraft:jungle_stairs[facing=south]");
-        k.set(ex - 8, g + 5, q[1] + 2, "minecraft:white_carpet");
-        k.fill(ex - 8, g + 5, q[1] + 3, ex - 7, g + 5, q[1] + 3, "minecraft:orange_carpet");
+        k.set(ew - 6, g, bz(3175), "minecraft:grindstone[face=floor,facing=east]");
+        k.set(ew - 6, g, bz(3169), "minecraft:smithing_table");
+        // upstairs: the Emir's chambers over the hall, a library over the west room
+        k.fill(bx(3286), g + 5, bz(3164), bx(3300), g + 5, bz(3161), "minecraft:red_carpet");
+        k.set(bx(3300), g + 5, bz(3163), "minecraft:red_bed[facing=west,part=foot]");
+        k.fill(q[0] + 1, g + 5, bz(3176), q[0] + 1, g + 6, bz(3170), "minecraft:bookshelf");
         for (int x = q[0] + 4; x < q[2] - 2; x += 8) {
-            k.set(x, g + 7, q[1] + 3, "minecraft:lantern[hanging=true]");
-            k.set(x, g + 2, q[1] + 3, "minecraft:lantern[hanging=true]");
-            k.set(x, g + 2, q[3] - 3, "minecraft:lantern[hanging=true]");
+            k.set(x, g + 7, bz(3163), "minecraft:lantern[hanging=true]");
+            k.set(x, g + 2, bz(3175), "minecraft:lantern[hanging=true]");
         }
-        // Corner towers with domes and a great dome over the entrance hall.
-        for (int[] t : new int[][]{{3281, 3179, 1, 1}, {3304, 3179, -1, 1}, {3281, 3156, 1, -1}, {3304, 3156, -1, -1}}) {
-            // Minarets: taller than the palace roof, a balcony ring, then an onion dome with a gold finial.
-            k.tower(t[0], t[1], 3, 21, SMOOTH, CUT, null, null);
-            k.towerPassage(t[0], t[1], t[2], t[3], g, 3);
-            k.towerPassage(t[0], t[1], t[2], t[3], g + 5, 3);
-            k.towerPassage(t[0], t[1], t[2], t[3], g + 10, 3);
-            int ttx = cx(t[0]);
-            int ttz = cz(t[1]);
-            k.ring(ttx, g + 15, g + 15, ttz, 4.5, 3.5, "minecraft:smooth_sandstone_slab[type=top]");
-            k.ring(ttx, g + 16, g + 16, ttz, 4.5, 3.6, "minecraft:sandstone_wall");
-            k.ring(ttx, g + 21, g + 21, ttz, 3.5, 2.5, ORANGE_TERRA);
-            k.d.stairDome(ttx, ttz, g + 22, 4.5, SMOOTH, SMOOTH_STAIRS, GOLD);
-            k.set(ttx, g + 28, ttz, "minecraft:end_rod");
-        }
-        // The great dome over the entrance hall rises on a windowed drum.
-        int dx = ex + 2;
-        int dz = q[1] + 6;
-        k.ring(dx, g + 10, g + 13, dz, 6.5, 5.5, CUT);
-        k.ring(dx, g + 10, g + 10, dz, 6.5, 5.5, CHIS);
-        for (int[] o : new int[][]{{6, 0}, {-6, 0}, {0, 6}, {0, -6}, {4, 4}, {-4, 4}, {4, -4}, {-4, -4}}) {
-            k.fill(dx + o[0], g + 11, dz + o[1], dx + o[0], g + 12, dz + o[1], "minecraft:orange_stained_glass_pane");
-        }
-        k.ring(dx, g + 14, g + 14, dz, 7.5, 6.0, "minecraft:smooth_sandstone_slab");
-        k.d.stairDome(dx, dz, g + 14, 6.5, SMOOTH, SMOOTH_STAIRS, GOLD);
-        k.set(dx, g + 22, dz, "minecraft:end_rod");
-        k.set(dx, g + 9, dz, "minecraft:chain");
-        k.set(dx, g + 8, dz, "minecraft:lantern[hanging=true]");
-        palaceFacade(k, q, ex);
+        palaceFacade(k, q);
         k.palm(3291, 3182, 6);
         k.palm(3295, 3182, 6);
         return k.build();
     }
 
     /** Pilasters, a terracotta string course, banners, window sills and roof-terrace kiosks for the palace. */
-    private static void palaceFacade(EasternKit k, int[] q, int ex) {
+    private static void palaceFacade(EasternKit k, int[] q) {
         int g = k.g;
         k.d.ringReplace(q, g + 8, g + 8, CUT, ORANGE_TERRA);
         k.d.ringReplace(q, g + 5, g + 5, CUT, SMOOTH);
         for (int x = q[0] + 5; x < q[2] - 4; x += 6) {
-            if (x < ex - 2 || x > ex + 5) {
-                k.fill(x, g, q[1] - 1, x, g + 9, q[1] - 1, SMOOTH);
-                k.set(x, g + 10, q[1] - 1, CHIS);
+            k.fill(x, g, q[1] - 1, x, g + 9, q[1] - 1, SMOOTH);
+            k.set(x, g + 10, q[1] - 1, CHIS);
+            if (Math.abs(x - bx(3290)) > 1 && Math.abs(x - bx(3295)) > 1) {
+                k.fill(x, g, q[3] + 1, x, g + 9, q[3] + 1, SMOOTH);
+                k.set(x, g + 10, q[3] + 1, CHIS);
             }
-            k.fill(x, g, q[3] + 1, x, g + 9, q[3] + 1, SMOOTH);
-            k.set(x, g + 10, q[3] + 1, CHIS);
         }
         for (int z = q[1] + 5; z < q[3] - 4; z += 6) {
             k.fill(q[0] - 1, g, z, q[0] - 1, g + 9, z, SMOOTH);
             k.set(q[0] - 1, g + 10, z, CHIS);
-            k.fill(q[2] + 1, g, z, q[2] + 1, g + 9, z, SMOOTH);
-            k.set(q[2] + 1, g + 10, z, CHIS);
+            if (Math.abs(z - bz(3162)) > 2) {
+                k.fill(q[2] + 1, g, z, q[2] + 1, g + 9, z, SMOOTH);
+                k.set(q[2] + 1, g + 10, z, CHIS);
+            }
         }
-        // sills under the upper windows
-        for (int x = q[0] + 2; x <= q[2] - 2; x += 4) {
-            k.set(x, g + 5, q[1] - 1, "minecraft:smooth_sandstone_stairs[facing=south,half=top]");
-            k.set(x, g + 5, q[3] + 1, "minecraft:smooth_sandstone_stairs[facing=north,half=top]");
+        // banners of the Emir either side of the south doors
+        for (int x : new int[]{bx(3289), bx(3291) + 1, bx(3294), bx(3296) + 1}) {
+            k.set(x, g + 3, q[3] + 1, "minecraft:orange_wall_banner[facing=south]");
         }
-        for (int z = q[1] + 2; z <= q[3] - 2; z += 4) {
-            k.set(q[0] - 1, g + 5, z, "minecraft:smooth_sandstone_stairs[facing=east,half=top]");
-            k.set(q[2] + 1, g + 5, z, "minecraft:smooth_sandstone_stairs[facing=west,half=top]");
+        // striped canopies over the two south doors
+        for (int tx : new int[]{3290, 3295}) {
+            k.d.awning(bx(tx) - 1, q[3] + 1, bx(tx) + 2, q[3] + 2, g + 3, "minecraft:orange_wool", "minecraft:white_wool", true);
         }
-        // Banners of the Emir either side of the gate and on the garden front.
-        for (int x : new int[]{ex - 4, ex - 2, ex + 5, ex + 7}) {
-            k.set(x, g + 8, q[1] - 1, "minecraft:orange_wall_banner[facing=north]");
-        }
-        for (int x = q[0] + 3; x < q[2] - 2; x += 6) {
-            k.set(x, g + 8, q[3] + 1, "minecraft:orange_wall_banner[facing=south]");
-        }
-        // Entrance portico: a striped canopy on columns, lanterns and potted palms.
-        k.d.awning(ex - 1, q[1] - 4, ex + 4, q[1] - 2, g + 5, "minecraft:orange_wool", "minecraft:white_wool", true);
-        for (int x : new int[]{ex - 1, ex + 4}) {
-            k.fill(x, g, q[1] - 4, x, g + 4, q[1] - 4, "minecraft:sandstone_wall");
-            k.set(x, g + 4, q[1] - 3, "minecraft:lantern[hanging=true]");
-        }
-        k.fill(ex - 1, g - 1, q[1] - 5, ex + 4, g - 1, q[1] - 1, CHIS);
-        k.fill(ex, g - 1, q[1] - 5, ex + 3, g - 1, q[1] - 1, "minecraft:red_terracotta");
-        k.set(ex - 3, g, q[1] - 2, "minecraft:potted_bamboo");
-        k.set(ex + 6, g, q[1] - 2, "minecraft:potted_bamboo");
-        // Roof terraces: kiosks with little domes over the east and west wings, potted plants and rugs.
-        int mz = (q[1] + q[3]) / 2;
-        for (int kx : new int[]{q[0] + 3, q[2] - 3}) {
+        // roof terraces: kiosks with little domes over the east and west rooms, potted plants
+        int mz = bz(3172);
+        for (int kx : new int[]{q[0] + 4, q[2] - 4}) {
             for (int[] p : new int[][]{{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}) {
                 k.fill(kx + p[0], g + 10, mz + p[1], kx + p[0], g + 11, mz + p[1], "minecraft:sandstone_wall");
             }
@@ -364,7 +320,6 @@ final class EasternDesert {
             k.set(kx, g + 11, mz, "minecraft:lantern[hanging=true]");
         }
         for (int x = q[0] + 4; x < q[2] - 3; x += 7) {
-            k.set(x, g + 10, q[1] + 2, "minecraft:potted_cactus");
             k.set(x, g + 10, q[3] - 2, "minecraft:potted_dead_bush");
         }
     }

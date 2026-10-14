@@ -91,10 +91,40 @@ final class AsgarniaTowns {
 
         // jail as on the OSRS map: an L of stone, 3010-3016 x 3179-3196 with the east wing 3017-3020 x 3179-3190;
         // three cells along the south (3179-3181), three cells up the north-west (3188-3196) opening west
-        // onto the corridor, the hall 3182-3187 with the guards' room 3017-3020 x 3188-3190; door north at 3011
+        // onto the corridor, the hall 3182-3187 with the guards' room 3017-3020 x 3188-3190; door north at 3011.
+        // Upstairs (OSRS plane 1, ladder at 3011,3184 per shortest-path): one long room over the north cells
+        // (3010-3016 x 3188-3196) with its door at 3013, the room over the guards' room (door at 3019) and
+        // a hall over the whole south end (3010-3020 x 3179-3187)
         String jw = SARIM_STONE.wall();
-        k.house(SARIM_STONE, 3010, 3179, 3016, 3196, 1, "north", FLAT);
-        k.house(SARIM_STONE, 3017, 3179, 3020, 3190, 1, "east", FLAT);
+        k.house(SARIM_STONE, 3010, 3179, 3016, 3196, 2, "north", FLAT);
+        k.house(SARIM_STONE, 3017, 3179, 3020, 3190, 2, "east", FLAT);
+        // the houses' corner ladders give way to the OSRS ladder at 3011,3184
+        k.f(bx(3010) + 1, 3, bz(3196), bx(3016), 3, bz(3179) + 1, SARIM_STONE.floor());
+        k.f(bx(3017) + 1, 3, bz(3190), bx(3020), 3, bz(3179) + 1, SARIM_STONE.floor());
+        for (int lx : new int[]{bx(3016), bx(3017) + 1}) {
+            k.c(lx, 0, bz(3179) + 1, lx, 2, bz(3179) + 1);
+            k.c(lx, 4, bz(3179) + 1, lx, 4, bz(3179) + 1);
+        }
+        k.f(bx(3010) + 1, 0, bz(3184), bx(3010) + 1, 3, bz(3184), mc("ladder[facing=east]"));
+        k.c(bx(3010) + 1, 4, bz(3184), bx(3010) + 1, 5, bz(3184));
+        // upstairs walls: north room / hall with the door at 3013, guards' room over the east wing (door 3019)
+        k.f(bx(3010) + 1, 4, bz(3188) + 1, bx(3020), 6, bz(3188) + 1, jw);
+        k.c(bx(3013), 4, bz(3188) + 1, bx(3013), 5, bz(3188) + 1);
+        k.c(bx(3019), 4, bz(3188) + 1, bx(3019), 5, bz(3188) + 1);
+        k.c(bx(3016) + 1, 4, bz(3187), bx(3017), 6, bz(3179) + 1);
+        // (deferred, so the window lintels the house dressing adds later don't block the opening)
+        k.d.fill(bx(3016) + 1, k.g + 4, bz(3187), bx(3017), k.g + 6, bz(3179) + 1, mc("air"));
+        k.f(bx(3016) + 1, 3, bz(3187), bx(3017), 3, bz(3179) + 1, SARIM_STONE.floor());
+        // the guards' quarters: bunks, a table and a weapon rack; a lookout window east at 3182-3183
+        for (int ty : new int[]{3195, 3193, 3191}) {
+            k.st(3010, ty, 4, mc("red_bed[facing=west,part=foot]"));
+        }
+        k.st(3015, 3192, 4, mc("spruce_fence"));
+        k.st(3015, 3192, 5, mc("spruce_pressure_plate"));
+        k.st(3016, 3195, 4, mc("chest[facing=west]"));
+        k.st(3020, 3189, 4, mc("barrel[facing=up]"));
+        k.st(3014, 3181, 4, mc("crafting_table"));
+        k.c(bx(3020) + 1, 5, bz(3183), bx(3020) + 1, 5, bz(3182) + 1);
         k.f(bx(3011), 0, bz(3196), bx(3015) + 1, 2, bz(3196), jw);
         k.f(bx(3020) + 1, 0, bz(3189), bx(3020) + 1, 2, bz(3180) + 1, jw);
         k.c(bx(3011), 0, bz(3196), bx(3011) + 1, 2, bz(3196));
@@ -124,7 +154,7 @@ final class AsgarniaTowns {
         k.st(3019, 3190, 0, mc("barrel[facing=up]"));
         k.st(3016, 3184, 0, mc("spruce_fence"));
         k.st(3016, 3184, 1, mc("spruce_pressure_plate"));
-        k.st(3011, 3184, 0, mc("cauldron"));
+        k.st(3011, 3186, 0, mc("cauldron"));
         // west row of shops and houses
         // Wydin's Food Store (OSRS 3009-3016 x 3203-3210): the shop with the ladder up, and the back room
         // 3009-3011 behind its own door at 3204 (the north-east wall is a diagonal in OSRS // approx)

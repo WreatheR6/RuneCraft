@@ -44,32 +44,29 @@ final class KandarinArdougne {
         k.road(2573, 3307, 2574, 3317, ROAD, null);
         k.road(2570, 3276, 2571, 3281, ROAD, null);
 
-        // --- Market square with stalls and fountain ---
-        k.road(2651, 3293, 2673, 3311, SB, ANDESITE);
-        int[][] stalls = {{2654, 3309}, {2670, 3309}, {2662, 3310}, {2653, 3301}, {2654, 3295}, {2670, 3295}, {2662, 3294}};
+        // --- Market square (OSRS map: an open paved square about 2651-2672 x 3292-3318, no fountain) with the
+        // stalls on their OSRS tiles: baker's stalls 2655,3311 and 2667,3310, silk 2662,3314, silver 2657,3314,
+        // spice 2658,3297, fur 2663,3296 and gems 2667,3303 (approx: object tiles from the wiki map) ---
+        k.road(2651, 3292, 2672, 3312, SB, ANDESITE);
+        k.road(2654, 3313, 2672, 3318, SB, ANDESITE);
+        k.road(2655, 3290, 2668, 3291, SB, ANDESITE);
+        int[][] stalls = {{2655, 3311}, {2667, 3310}, {2662, 3314}, {2657, 3314}, {2658, 3297}, {2667, 3303}, {2663, 3296}};
         String[] ids = {"cake", "cake", "silk", "silver", "spice", "gem", "fur"};
         String[] wool = {"brown", "brown", "purple", "light_gray", "orange", "lime", "gray"};
         for (int i = 0; i < stalls.length; i++) {
             k.stall(KandarinKit.X(stalls[i][0]) + 1, KandarinKit.Z(stalls[i][1]) + 1, "runecraft:" + ids[i] + "_stall", wool[i], "spruce");
         }
-        int fx = KandarinKit.X(2659) + 1;
-        int fz = KandarinKit.Z(3302) + 1;
-        k.disc(fx, fz, -2, -1, 3, SB);
-        k.ring(fx, fz, 0, 0, 3, "minecraft:stone_brick_wall");
-        k.disc(fx, fz, -1, -1, 2, WATER);
-        k.fill(fx, -1, fz, fx, 2, fz, "minecraft:chiseled_stone_bricks");
-        k.set(fx, 3, fz, "minecraft:lantern");
-        for (int[] c : new int[][]{{2651, 3293}, {2673, 3293}, {2651, 3311}, {2673, 3311}}) {
+        for (int[] c : new int[][]{{2651, 3292}, {2672, 3292}, {2651, 3312}, {2672, 3318}}) {
             k.lamp(KandarinKit.X(c[0]), KandarinKit.Z(c[1]), "minecraft:dark_oak_fence");
         }
-        marketDetails(k, fx, fz);
+        marketDetails(k);
 
         // --- Rooftop course houses around the market (flat roofs) ---
         Pal flat = ARDY.roof("flat:minecraft:smooth_stone");
         Bld r0 = k.house(2676, 3290, 2682, 3296, 2, flat, 'w', FURN | FLAT);
         Bld r1 = k.house(2676, 3308, 2682, 3314, 2, flat, 'w', FURN | FLAT);
         Bld r2 = k.house(2665, 3314, 2671, 3320, 2, flat, 's', FURN | FLAT);
-        Bld r3 = k.house(2653, 3314, 2659, 3320, 2, flat, 's', FURN | FLAT);
+        Bld r3 = k.house(2653, 3316, 2659, 3321, 2, flat, 's', FURN | FLAT);
         Bld r4 = k.house(2643, 3313, 2649, 3319, 2, flat, 'e', FURN | FLAT);
         Bld r5 = k.house(2643, 3296, 2649, 3302, 2, flat, 'e', FURN | FLAT);
         ardougneCourse(k, r0, r1, r2, r3, r4, r5);
@@ -166,19 +163,15 @@ final class KandarinArdougne {
      * The Ardougne market's furnishings: a second fountain tier, benches round the basin, flower
      * tubs, crate stacks behind the stalls, a notice board and a paved edge kerb.
      */
-    private static void marketDetails(KandarinKit k, int fx, int fz) {
+    private static void marketDetails(KandarinKit k) {
         int g = k.g;
-        // an upper basin round the fountain column
-        k.d.air(fx - 1, g + 2, fz - 1, fx + 1, g + 2, fz + 1, "minecraft:stone_brick_slab[type=top]");
-        // benches facing the fountain on all four sides
-        k.d.bench(fx - 1, g, fz - 6, 'e', 3, 's', "dark_oak");
-        k.d.bench(fx - 1, g, fz + 6, 'e', 3, 'n', "dark_oak");
-        k.d.bench(fx - 6, g, fz - 1, 's', 3, 'e', "dark_oak");
-        k.d.bench(fx + 6, g, fz - 1, 's', 3, 'w', "dark_oak");
-        // flower tubs at the diagonals
+        // benches along the square's west and east edges
+        k.d.bench(KandarinKit.X(2652), g, KandarinKit.Z(3307), 's', 3, 'e', "dark_oak");
+        k.d.bench(KandarinKit.X(2672) + 1, g, KandarinKit.Z(3300), 's', 3, 'w', "dark_oak");
+        // flower tubs at the corners
         int i = 0;
-        for (int[] p : new int[][]{{-5, -5}, {5, -5}, {-5, 5}, {5, 5}}) {
-            k.d.planter(fx + p[0], g, fz + p[1], i++);
+        for (int[] p : new int[][]{{2652, 3293}, {2671, 3293}, {2652, 3311}, {2671, 3317}}) {
+            k.d.planter(KandarinKit.X(p[0]) + 1, g, KandarinKit.Z(p[1]), i++);
         }
         // the square's kerb, crates behind the stalls and a notice board
         int x1 = KandarinKit.X(2651);
@@ -189,10 +182,10 @@ final class KandarinArdougne {
         k.d.replace(x1, g - 1, z2, x2, g - 1, z2, SB, "minecraft:polished_andesite");
         k.d.replace(x1, g - 1, z1, x1, g - 1, z2, SB, "minecraft:polished_andesite");
         k.d.replace(x2, g - 1, z1, x2, g - 1, z2, SB, "minecraft:polished_andesite");
-        k.d.crates(KandarinKit.X(2657), g, KandarinKit.Z(3311));
-        k.d.crates(KandarinKit.X(2666), g, KandarinKit.Z(3294));
-        k.d.crates(KandarinKit.X(2651) + 1, g, KandarinKit.Z(3305));
-        k.d.signpost(KandarinKit.X(2662), g, KandarinKit.Z(3299), "dark_oak");
+        k.d.crates(KandarinKit.X(2653), g, KandarinKit.Z(3309));
+        k.d.crates(KandarinKit.X(2670), g, KandarinKit.Z(3296));
+        k.d.crates(KandarinKit.X(2651) + 1, g, KandarinKit.Z(3302));
+        k.d.signpost(KandarinKit.X(2662), g, KandarinKit.Z(3300), "dark_oak");
     }
 
     /** Ardougne rooftop course (7 obstacles) over the houses around the market. */
@@ -251,67 +244,124 @@ final class KandarinArdougne {
     // ------------------------------------------------------------------ Ardougne Castle
 
     static StructureDef ardougneCastle() {
+        // Traced from the OSRS map (mejrs layers_osrs, planes 0-1): no moat, but a ditch ring and a path ring
+        // round a curtain of two-storey wall-walks. Octagonal towers at 2570-2573 / 2580-2583 x 3284-3287 /
+        // 3306-3309, wings running diagonally out to the two east towers (2586-2589 x 3290-3293 / 3300-3303)
+        // that flank the gate (3295-3298) with a gatehouse above it, and the keep along the west: the great
+        // hall 2569-2575 x 3294-3301 with its staircase (2571-2572, 3298 up to 3294 upstairs, shortest-path),
+        // the north rooms 2571-2578 x 3302-3305, the throne room 2575-2580 x 3291-3295 and the south wing
+        // 2571-2574 x 3288-3293. The thieving chest is upstairs in the south-east tower (2588, 3291).
         KandarinKit k = new KandarinKit("ardougne_castle", "Ardougne Castle").replaces("ardougne_castle");
+        StructureDef.Builder b = k.b;
+        int g = k.g;
         String w = SB;
-        k.water(2564, 3282, 2596, 3314, 2);
-        k.tFill(2566, 3284, 2594, 3312, -4, -2, "minecraft:dirt");
-        k.floor(2566, 3284, 2594, 3312, GRASS);
-        k.cwallRect(2566, 3284, 2594, 3312, 10, w);
-        KandarinSeers.weather(k, KandarinKit.X(2566), KandarinKit.Z(3312), KandarinKit.X(2594) + 1, KandarinKit.Z(3284) + 1, 0, 9);
-        k.gate(2594, 3297, 2594, 3298, 5, COBBLE);
-        k.pier(2595, 3297, 2596, 3298, "spruce", false);
-        k.fill(KandarinKit.X(2594), 4, KandarinKit.Z(3298), KandarinKit.X(2594) + 1, 4, KandarinKit.Z(3297) + 1, "minecraft:iron_bars");
-        k.tower(2594, 3295, 3, 13, w, "minecraft:spruce_planks", null, 'w');
-        k.tower(2594, 3300, 3, 13, w, "minecraft:spruce_planks", null, 'w');
-        int[][] corners = {{2566, 3284, 1, -1}, {2594, 3284, -1, -1}, {2566, 3312, 1, 1}, {2594, 3312, -1, 1}};
-        for (int[] c : corners) {
-            k.tower(c[0], c[1], 5, 16, w, "minecraft:spruce_planks", null, ' ');
-            k.towerDiagDoor(KandarinKit.X(c[0]) + 1, KandarinKit.Z(c[1]) + 1, 5, c[2], c[3]);
-            k.flag(KandarinKit.X(c[0]) + 1, 16, KandarinKit.Z(c[1]) + 1, "white", "black");
+        k.tClear(2562, 3279, 2598, 3315, 0, 16);
+        k.floor(2562, 3279, 2598, 3315, GRASS);
+        // the path ring and the ditch ring inside it (approx: drawn as rectangles with cut corners)
+        k.tWalls(2564, 3281, 2594, 3313, -1, -1, GRAVEL);
+        k.tWalls(2566, 3283, 2592, 3311, -1, -1, "minecraft:coarse_dirt");
+        k.tWalls(2567, 3284, 2591, 3310, -1, -1, "minecraft:coarse_dirt");
+        // the road in through the gate and over the river bridge
+        k.road(2576, 3295, 2589, 3298, COBBLE, GRAVEL);
+        k.road(2590, 3295, 2598, 3298, "minecraft:spruce_planks", null);
+        k.tFill(2590, 3294, 2598, 3294, 0, 0, "minecraft:spruce_fence");
+        k.tFill(2590, 3299, 2598, 3299, 0, 0, "minecraft:spruce_fence");
+        String[] plan = {
+                "   TT        TT", // 3309
+                "  TTTTWWWWWWTTTT", // 3308
+                "  TTTTWWWWWWTTTT", // 3307
+                "   TT        TT", // 3306
+                "   AAAA      WWWW", // 3305
+                "   AAAABBBB   WWWWW", // 3304
+                "   AAAABBBB     WWWTT", // 3303
+                "   AAAABBBB       TTTT", // 3302
+                " HHHHHHH          TTTT", // 3301
+                " HHHHHHH           TT", // 3300
+                " HHHHHHH", // 3299
+                " HHHHHHH", // 3298
+                " HHHHHHH", // 3297
+                " HHHHHHH", // 3296
+                " HHHHHHDDDDDD", // 3295
+                " HHHHHHDDDDDD", // 3294
+                "   EEEEDDDDDD      TT", // 3293
+                "   EEEEDDDDDD     TTTT", // 3292
+                "   EEEEDDDDDD     TTTT", // 3291
+                "   EEEE         WWWTT", // 3290
+                "   EEEE       WWWWW", // 3289
+                "   EEEE      WWWW", // 3288
+                "   TT        TT", // 3287
+                "  TTTTWWWWWWTTTT", // 3286
+                "  TTTTWWWWWWTTTT", // 3285
+                "   TT        TT", // 3284
+        };
+        TileMask all = TileMask.of(2568, 3309, plan);
+        TileMask towers = TileMask.of(2568, 3309, "T", plan);
+        // floors: flagstones in the keep, planks along the wall-walks; the upper floor (y 3), roof (y 7)
+        all.fill(b, g - 1, g - 1, ANDESITE);
+        TileMask.of(2568, 3309, "TW", plan).fill(b, g - 1, g - 1, "minecraft:spruce_planks");
+        all.fill(b, g + 3, g + 3, "minecraft:spruce_planks");
+        all.fill(b, g + 7, g + 7, "minecraft:stone_brick_slab");
+        towers.fill(b, g + 7, g + 7, "minecraft:spruce_planks");
+        towers.fill(b, g + 11, g + 11, "minecraft:stone_brick_slab");
+        // walls: the outer curtain and every room's own walls
+        all.outline(b, g, g + 7, w);
+        for (String c : new String[]{"TW", "A", "H", "B", "D", "E"}) {
+            TileMask.of(2568, 3309, c, plan).outline(b, g, g + 6, w);
         }
-        k.road(2581, 3297, 2593, 3298, COBBLE, GRAVEL);
-        // Keep
-        Pal keepPal = new Pal(w, ANDESITE, "minecraft:dark_oak_planks", "flat:minecraft:stone_bricks", "dark_oak", PANE);
-        Bld keep = k.house(2569, 3290, 2580, 3306, 3, keepPal, 'e', FLAT | NO_LADDER | WIDE_DOOR);
-        int ty = keep.cz();
-        k.fill(keep.x1() + 1, 0, ty - 2, keep.x1() + 3, 0, ty + 2, "minecraft:polished_andesite");
-        k.set(keep.x1() + 2, 1, ty, "minecraft:dark_oak_stairs[facing=west]");
-        k.set(keep.x1() + 1, 2, ty, "minecraft:gold_block");
-        k.fill(keep.x1() + 4, 0, ty, keep.x2() - 1, 0, ty + 1, "minecraft:purple_carpet");
-        for (int z = keep.z1() + 3; z <= keep.z2() - 3; z += 5) {
-            k.fill(keep.x1() + 1, 1, z, keep.x1() + 1, 2, z, "minecraft:purple_wool");
-            k.fill(keep.x2() - 1, 1, z, keep.x2() - 1, 2, z, "minecraft:purple_wool");
-            k.set(keep.cx(), 2, z, "minecraft:lantern[hanging=true]");
+        towers.outline(b, g + 8, g + 11, w);
+        all.crenels(b, g + 8, w);
+        towers.crenels(b, g + 12, w);
+        // the gatehouse over the gate (plane 1 wall line at 2588-2589, 3293-3300), open below
+        k.tFill(2588, 3294, 2589, 3299, 3, 7, w);
+        k.tFill(2588, 3295, 2589, 3298, 3, 3, "minecraft:spruce_planks");
+        k.tClear(2588, 3295, 2589, 3298, 4, 6);
+        k.tFill(2588, 3295, 2588, 3298, 2, 2, "minecraft:iron_bars");
+        for (int ty = 3294; ty <= 3299; ty++) {
+            k.at(2589, ty, 8, w);
         }
-        k.stairs(keep.x2() - 2, 0, keep.z1() + 2, 's', 4, "minecraft:stone_brick");
-        k.stairs(keep.x2() - 2, 4, keep.z1() + 7, 's', 4, "minecraft:stone_brick");
-        k.stairs(keep.x2() - 2, 8, keep.z1() + 12, 's', 5, "minecraft:stone_brick");
-        // Treasury with the castle chest
-        k.set(keep.x1() + 1, 4, keep.z1() + 1, "runecraft:ardougne_castle_chest");
-        k.fill(keep.x1() + 2, 4, keep.z1() + 1, keep.x1() + 4, 4, keep.z1() + 1, "minecraft:chest[facing=south]");
-        k.walls(keep.x1(), 4, keep.z1(), keep.x1() + 6, 6, keep.z1() + 5, w);
-        k.clear(keep.x1() + 6, 4, keep.z1() + 3, keep.x1() + 6, 5, keep.z1() + 3);
-        for (int z = keep.z1() + 7; z <= keep.z2() - 3; z += 3) {
-            k.bed(keep.x1() + 1, 4, z, "purple");
+        // doors (red on the OSRS map): hall to the courtyard, the keep's inner doors, the wall-walks to the
+        // courtyard and the gate passage; upstairs the keep opens onto the corner towers and the gatehouse
+        // joins the two east towers, so the whole curtain can be walked
+        k.tClear(2575, 3298, 2576, 3299, 0, 2);
+        k.tClear(2574, 3294, 2575, 3294, 0, 2);
+        k.tClear(2574, 3292, 2575, 3292, 0, 2);
+        k.tClear(2577, 3306, 2577, 3307, 0, 2);
+        k.tClear(2577, 3286, 2577, 3287, 0, 2);
+        k.tClear(2587, 3300, 2587, 3300, 0, 2);
+        k.tClear(2587, 3293, 2587, 3293, 0, 2);
+        for (int y = 0; y <= 4; y += 4) {
+            k.tClear(2573, 3301, 2573, 3302, y, y + 2);
+            k.tClear(2574, 3303, 2575, 3303, y, y + 2);
+            k.tClear(2572, 3305, 2572, 3306, y, y + 2);
+            k.tClear(2572, 3293, 2572, 3294, y, y + 2);
+            k.tClear(2572, 3287, 2572, 3288, y, y + 2);
         }
-        k.longTable(keep.x1() + 4, keep.x2() - 4, 8, keep.cz(), "dark_oak");
-        k.set(keep.cx(), 10, keep.cz() - 3, "minecraft:lantern[hanging=true]");
-        k.tower(2569, 3306, 4, 20, w, "minecraft:spruce_planks", "minecraft:deepslate_tiles", 'e');
-        k.tower(2569, 3290, 4, 20, w, "minecraft:spruce_planks", "minecraft:deepslate_tiles", 'e');
-        // Barracks and stables
-        Bld bar = k.house(2583, 3303, 2591, 3309, 1, STONE.roof("minecraft:spruce"), 's', FURN | NO_LADDER);
-        for (int x = bar.x1() + 1; x <= bar.x2() - 1; x += 3) {
-            k.bed(x, 0, bar.z1() + 1, "purple");
+        k.tClear(2588, 3293, 2588, 3294, 4, 6);
+        k.tClear(2588, 3299, 2588, 3300, 4, 6);
+        // the great hall's staircase: up southwards from 3298 to the first floor at 3294
+        for (int x = KandarinKit.X(2571); x <= KandarinKit.X(2571) + 1; x++) {
+            k.stairs(x, 0, KandarinKit.Z(3298) + 1, 's', 3, "minecraft:stone_brick");
         }
-        Bld stab = k.house(2583, 3286, 2591, 3290, 1, STONE.roof("minecraft:spruce"), 'n', NO_LADDER | NO_WINDOWS);
-        for (int x = stab.x1() + 2; x <= stab.x2() - 1; x += 3) {
-            k.fill(x, 0, stab.z1() + 1, x, 0, stab.z2() - 2, "minecraft:spruce_fence");
-            k.set(x + 1, 0, stab.z1() + 1, HAY);
+        // great hall: banners and a long table; throne room: carpet and the king's throne at its east end
+        k.longTable(KandarinKit.X(2573), KandarinKit.X(2575) - 1, 0, KandarinKit.Z(3299), "dark_oak");
+        k.tFill(2576, 3293, 2579, 3293, -1, -1, "minecraft:purple_wool");
+        k.tFill(2576, 3292, 2579, 3292, 0, 0, "minecraft:purple_carpet");
+        k.at(2580, 3293, 0, "minecraft:dark_oak_stairs[facing=west]");
+        k.set(KandarinKit.X(2580) + 1, 1, KandarinKit.Z(3293), "minecraft:gold_block");
+        for (int[] l : new int[][]{{2572, 3300}, {2572, 3296}, {2577, 3293}, {2573, 3290}, {2573, 3304}, {2577, 3303}}) {
+            k.set(KandarinKit.X(l[0]), 2, KandarinKit.Z(l[1]), "minecraft:lantern[hanging=true]");
+            k.set(KandarinKit.X(l[0]), 6, KandarinKit.Z(l[1]), "minecraft:lantern[hanging=true]");
         }
-        // Archery butts
-        for (int i = 0; i < 3; i++) {
-            k.set(KandarinKit.X(2592), 0, KandarinKit.Z(3294) + i * 3, HAY);
-            k.set(KandarinKit.X(2592), 1, KandarinKit.Z(3294) + i * 3, "minecraft:target");
+        // upstairs: the king's bedchambers in the south wing, a study in the north rooms
+        k.bed(KandarinKit.X(2572), 4, KandarinKit.Z(3290), "purple");
+        k.bed(KandarinKit.X(2572), 4, KandarinKit.Z(3292), "purple");
+        k.tFill(2575, 3303, 2577, 3303, 4, 5, "minecraft:bookshelf");
+        // treasury: the thieving chest in the south-east tower's upper room
+        k.at(2588, 3291, 4, "runecraft:ardougne_castle_chest");
+        k.at(2587, 3292, 4, "minecraft:chest[facing=south]");
+        // flags on the four corner towers
+        for (int[] c : new int[][]{{2571, 3308}, {2581, 3308}, {2571, 3285}, {2581, 3285}}) {
+            k.flag(KandarinKit.X(c[0]) + 1, 12, KandarinKit.Z(c[1]) + 1, "white", "black");
         }
         k.well(KandarinKit.X(2583), KandarinKit.Z(3299));
         return k.build();
