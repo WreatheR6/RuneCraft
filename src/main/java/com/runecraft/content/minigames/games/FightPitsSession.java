@@ -148,6 +148,7 @@ public class FightPitsSession extends MinigameSession {
         reward(champion, "tokkul", tokkul);
         MinigameData.of(champion).incrementStat(champion.getUuid(), "kc:" + game.id());
         PitChampionService.crown(champion);
+        com.runecraft.content.GameEvents.fireActivity(champion, "fight_pit_champion");
         Msg.game(champion, "You are the champion! You receive " + tokkul + " tokkul.");
         champion.getServer().getPlayerManager().broadcast(Text.literal(champion.getName().getString()
                 + " is the new champion of the TzHaar Fight Pit!").formatted(Formatting.RED), false);

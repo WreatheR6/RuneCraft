@@ -96,6 +96,7 @@ public final class ItemUses {
         player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_PLAYER_BURP, SoundCategory.PLAYERS, 0.5f, 1.0f);
         Msg.action(player, "You eat the " + def.name().toLowerCase(Locale.ROOT) + ". It heals some health.");
         ActionManager.cancel(player);
+        com.runecraft.content.GameEvents.fireActivity(player, "eat:" + def.id());
     }
 
     private static void bury(ServerPlayerEntity player, ItemStack stack, ItemDef def) {
@@ -111,6 +112,10 @@ public final class ItemUses {
     }
 
     private static void drink(ServerPlayerEntity player, ItemStack stack, Hand hand, ItemDef def) {
+        if (!def.drinkable()) {
+            Msg.game(player, "You can't drink that.");
+            return;
+        }
         Potion potion = null;
         for (Potion p : Potion.values()) {
             if (p.itemId().equals(def.id())) {

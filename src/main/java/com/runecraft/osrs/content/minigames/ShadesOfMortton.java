@@ -474,7 +474,9 @@ public final class ShadesOfMortton {
             items.add(p.id(), p.displayName(), Kind.SIMPLE, "log", 0x8A6A3A).value(p.value())
                     .examine("Logs prepared with sacred oil for a funeral pyre.");
         }
-        items.add("olive_oil", "Olive oil", Kind.POTION, "potion", 0xC0C060).value(22).stack(1).examine("4 doses of olive oil.");
+        // Not drinkable in OSRS (Empty/Drop): it is blessed into sacred oil at the temple.
+        items.add("olive_oil", "Olive oil", Kind.POTION, "potion", 0xC0C060).value(22).stack(1).notDrinkable()
+                .examine("4 doses of olive oil.");
         items.add("timber_beam", "Timber beam", Kind.SIMPLE, "plank", 0x8A6A3A).value(1)
                 .examine("A hefty beam of timber, perfect for building temples.");
         single(items, "flamtaer_hammer", "Flamtaer hammer", "hammer", 0x8A6A4A, 1, "Repairs the Mort'ton temple faster.");

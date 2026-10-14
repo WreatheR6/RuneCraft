@@ -59,6 +59,7 @@ public final class ShopService {
         ActionManager.cancel(player);
         OPEN.put(player.getUuid(), new Session(shopId, where));
         send(player, shopId, true);
+        com.runecraft.content.GameEvents.fireActivity(player, "shop_open:" + shopId);
     }
 
     static void close(ServerPlayerEntity player, String shopId) {
@@ -219,6 +220,7 @@ public final class ShopService {
             Msg.game(player, stock.count(item) <= 0 ? "The shop has run out of stock." : "You don't have enough " + currencyName(def) + ".");
         }
         Msg.action(player, "You buy " + bought + " x " + name(item) + " for " + String.format("%,d", result[1]) + " " + currencyName(def) + ".");
+        com.runecraft.content.GameEvents.fireActivity(player, "shop_buy:" + shopId + ":" + item);
         ServerNetworking.sync(player);
         refresh(shopId);
     }
@@ -246,6 +248,9 @@ public final class ShopService {
             Inv.give(player, def.currency(), (int) Math.min(Integer.MAX_VALUE, paid));
         }
         Msg.action(player, "You sell " + removed + " x " + name(item) + " for " + String.format("%,d", paid) + " " + currencyName(def) + ".");
+        if (removed > 0) {
+            com.runecraft.content.GameEvents.fireActivity(player, "shop_sell:" + shopId + ":" + item);
+        }
         ServerNetworking.sync(player);
         refresh(shopId);
     }

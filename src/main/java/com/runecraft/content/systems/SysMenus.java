@@ -283,6 +283,7 @@ public final class SysMenus {
             }
             sp.book = book;
             sp.autocast = "";
+            DiaryService.onActivity(p, "spellbook:" + book.name().toLowerCase(java.util.Locale.ROOT));
             Msg.action(p, switch (book) {
                 case ANCIENT -> "You feel a strange wisdom fill your mind... The Ancient Magicks are now yours (press B).";
                 case LUNAR -> "Lunar spells activated (press B).";

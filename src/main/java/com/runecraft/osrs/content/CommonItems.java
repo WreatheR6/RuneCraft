@@ -69,7 +69,7 @@ public final class CommonItems {
         // Construction material also used to repair the Mort'ton temple (minigames); sacred oil, made at the temple's
         // fire altar and turned into pyre logs (minigames), is also a Shades of Mort'ton quest item (quests).
         items.add("limestone_brick", "Limestone brick", Kind.SIMPLE, "brick", 0xD8D0B0).value(21);
-        items.add("sacred_oil", "Sacred oil", Kind.POTION, "potion", 0xE0E0A0).value(100).stack(1)
+        items.add("sacred_oil", "Sacred oil", Kind.POTION, "potion", 0xE0E0A0).value(100).stack(1).notDrinkable() // OSRS: Empty/Drop only
                 .examine("4 doses of sacred oil.");
         for (int m = 0; m < SHADE_KEY_METALS.length; m++) {
             String metal = SHADE_KEY_METALS[m];
@@ -104,6 +104,11 @@ public final class CommonItems {
         }
         items.add("blamish_bark_shell", "Blamish bark shell", Kind.SIMPLE, "shell", 0x5A4A3A).value(150)
                 .examine("A snail shell. I could make a snelm from it.");
+        // Karamja cooking ingredients: dropped by the slayer module's jungle spiders and oomlie birds, cooked by the skilling module.
+        items.add("spider_carcass", "Spider carcass", Kind.SIMPLE, "meat_raw", 0x5A4A3A).value(15).weight(0.8)
+                .examine("Its creeping days are over!");
+        items.add("raw_oomlie", "Raw oomlie", Kind.SIMPLE, "meat_raw", 0xC07A6A).value(10).weight(0.225)
+                .examine("Raw meat from the oomlie bird.");
         items.add("thin_snail", "Thin snail", Kind.SIMPLE, "meat_raw", 0x8A7A5A).value(5)
                 .examine("The thin, slimy corpse of a deceased giant snail.");
         items.add("lean_snail", "Lean snail", Kind.SIMPLE, "meat_raw", 0x8A7A5A).value(8)

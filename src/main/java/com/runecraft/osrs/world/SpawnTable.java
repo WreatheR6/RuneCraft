@@ -290,6 +290,12 @@ public final class SpawnTable {
         s("ent", 3210, 3690, 3, 10);
         s("mammoth", 3167, 3593, 6, 7);                // south-east of the Ferox Enclave (8 in OSRS)
         s("ice_spider", 2962, 3924, 6, 9);             // Frozen Waste Plateau (9 in OSRS)
+        s("jungle_spider", 2675, 3090, 6, 9);          // Yanille peninsula, east of the town (17 in OSRS)
+        s("jungle_spider", 2861, 3085, 5, 7);          // north Karamja jungle (13 in OSRS)
+        s("jungle_spider", 2921, 3046, 5, 10);         // south of the Karamja volcano (14 in OSRS)
+        s("jungle_spider", 2890, 3001, 4, 7);          // north of Tai Bwo Wannai (10 in OSRS)
+        s("oomlie_bird", 2905, 2910, 5, 18);           // eastern Kharazi Jungle (10 in OSRS)
+        s("oomlie_bird", 2800, 2918, 5, 20);           // western Kharazi Jungle (22 in OSRS)
         s("bandit", 3040, 3701, 4, 7, 100);            // Wilderness Bandit Camp (60 s respawn)
         s("wilderness_bandit", 3036, 3696, 5, 8, 100); // Wilderness Bandit Camp, level 130s
         // Brine rats, Jormungand's basilisk knights, baby green dragons, sourhogs, shadow warriors and the

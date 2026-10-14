@@ -72,6 +72,9 @@ final class BestiaryLookalikes {
         }
         // God Wars Dungeon: Bandos's ogres, jogres, cyclopes and hobgoblins are the ordinary kinds.
         l.add(ModelSpec.Variant.of("gwd_ogre", "ogre"));
+        // Karamja: jungle spiders are giant spiders; oomlie birds are oversized chickens.
+        l.add(ModelSpec.Variant.of("jungle_spider", "giant_spider", 0.9f));
+        l.add(ModelSpec.Variant.of("oomlie_bird", "chicken", 1.6f));
         l.add(ModelSpec.Variant.of("gwd_jogre", "jogre"));
         l.add(ModelSpec.Variant.of("gwd_cyclops", "cyclops"));
         l.add(ModelSpec.Variant.of("gwd_hobgoblin", "hobgoblin"));

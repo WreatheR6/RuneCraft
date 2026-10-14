@@ -355,6 +355,17 @@ final class ItemCombatChecks {
         if (effect == HerbloreData.Effect.SERUM_207) {
             throw new SelfTest.Skip("not drinkable: used on the Afflicted");
         }
+        ItemDef catalogDef = ItemCatalog.get(id);
+        if (catalogDef != null && !catalogDef.drinkable()) {
+            // OSRS only lets you empty these (Guthix balance, olive and sacred oil): using one must not use a dose.
+            p().setStackInHand(Hand.MAIN_HAND, stack);
+            use(Hand.MAIN_HAND);
+            ItemStack left = p().getMainHandStack();
+            if (left.isEmpty() || left.getItem() != item || left.getDamage() > 0) {
+                throw failure("a potion OSRS doesn't let you drink used a dose");
+            }
+            return "not drinkable (as in OSRS); no dose used";
+        }
         boolean known = mod != null || HerbloreData.mix(id) != null || id.equals("antifire_potion") || id.equals("extended_antifire");
         for (Potion p : Potion.values()) {
             known |= p.itemId().equals(id);

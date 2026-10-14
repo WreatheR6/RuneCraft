@@ -158,6 +158,9 @@ public abstract class MinigameSession {
             Msg.game(p, "Welcome to " + game.displayName() + ".");
         }
         start();
+        for (ServerPlayerEntity p : online()) {
+            com.runecraft.content.GameEvents.fireActivity(p, "minigame_start:" + game.id());
+        }
     }
 
     final void tick() {
@@ -227,6 +230,11 @@ public abstract class MinigameSession {
                 onEnd(success);
             } catch (RuntimeException e) {
                 com.runecraft.RuneCraft.LOGGER.error("Minigame {} failed to hand out rewards", game.id(), e);
+            }
+            if (success) {
+                for (ServerPlayerEntity p : online) {
+                    com.runecraft.content.GameEvents.fireActivity(p, "minigame_win:" + game.id());
+                }
             }
         }
         Box box = box();

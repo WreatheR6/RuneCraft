@@ -84,10 +84,19 @@ public final class Diaries {
 
     /** Types completed by periodic state checks (levels, items held, quests, places, kill counts...). */
     public static final List<Type> PERIODIC_TYPES = List.of(Type.LEVEL, Type.HAVE, Type.QUEST, Type.VISIT, Type.KC, Type.GE, Type.CLUE,
-            Type.CAST, Type.TOTAL_LEVEL, Type.COMBAT_LEVEL, Type.QUEST_POINTS, Type.SKILLCAPE);
+            Type.CAST, Type.TOTAL_LEVEL, Type.COMBAT_LEVEL, Type.QUEST_POINTS, Type.SKILLCAPE, Type.WEAR);
 
     /** Types completed by game events (kills, XP drops, makes, obtains, casts, clues, GE trades). */
-    public static final List<Type> EVENT_TYPES = List.of(Type.XP_IN, Type.KILL, Type.MAKE, Type.OBTAIN, Type.CAST, Type.CLUE, Type.GE);
+    public static final List<Type> EVENT_TYPES = List.of(Type.XP_IN, Type.KILL, Type.MAKE, Type.OBTAIN, Type.CAST, Type.CLUE, Type.GE, Type.EVENT);
+
+    /**
+     * Prefixes of the named activities the game reports (EVENT targets): "talk:" + NPC id, "minigame_start:" /
+     * "minigame_win:" + minigame id, "spellbook:" + book, "teleport:" + jewellery id + ":" + destination slug,
+     * "eat:" + item id, "trek_complete:" + follower difficulty, "shop_open:" + shop id, "shop_buy:" / "shop_sell:" + shop id + ":" +
+     * item id, "fight_pit_champion", "monkey_cage" and "bert_sand".
+     */
+    public static final List<String> ACTIVITIES = List.of("talk", "minigame_start", "minigame_win", "spellbook", "teleport", "eat",
+            "trek_complete", "fight_pit_champion", "monkey_cage", "shop_open", "shop_buy", "shop_sell", "bert_sand");
 
     public enum Type {
         LEVEL, XP_IN, KILL, MAKE, HAVE, QUEST, VISIT, CLUE, GE, KC, CAST, TOTAL_LEVEL,
@@ -97,7 +106,11 @@ public final class Diaries {
         SKILLCAPE,
         COMBAT_LEVEL,
         /** Quest points; level 0 means "every quest complete" (quest point cape). */
-        QUEST_POINTS
+        QUEST_POINTS,
+        /** A named activity reported by the game (see {@link #ACTIVITIES}); '|' separates alternatives. */
+        EVENT,
+        /** Wear a set of items: '&' separates the pieces, each of which may use '|' and '*'. */
+        WEAR
     }
 
     /**
@@ -184,7 +197,31 @@ public final class Diaries {
     }
 
     private static void needs(String taskId, String... quests) {
-        QUEST_REQS.put(taskId, List.of(quests));
+        List<String> all = new ArrayList<>(QUEST_REQS.getOrDefault(taskId, List.of()));
+        for (String q : quests) {
+            if (!all.contains(q)) {
+                all.add(q);
+            }
+        }
+        QUEST_REQS.put(taskId, List.copyOf(all));
+    }
+
+    /** Tasks whose OBTAIN count must arrive in a single event ("craft 140 runes at once"). */
+    private static final Set<String> ONE_GO = new HashSet<>();
+
+    /** Marks the task just added as needing its whole count in one obtain. */
+    private static void inOneGo() {
+        ONE_GO.add(lastId);
+    }
+
+    /** A named game activity (see {@link #ACTIVITIES}), optionally restricted to an area or "x,y,r" circle. */
+    private static void event(String desc, String key, String restrict, Object... req) {
+        add(desc, Type.EVENT, key, 1, restrict, 0, req);
+    }
+
+    /** Wear every '&'-separated piece inside a restriction (null = anywhere). */
+    private static void wear(String desc, String items, String restrict, Object... req) {
+        add(desc, Type.WEAR, items, 1, restrict, 0, req);
     }
 
     private static void level(String desc, Skill s, int lvl) {
@@ -287,9 +324,10 @@ public final class Diaries {
         in("ardougne", Tier.EASY);
         visit("Have Wizard Cromperty teleport you to the Rune essence mine", 2683, 3325, 8); approx(); // approx
         get("Steal a cake from the East Ardougne market stalls", "cake", 1, THIEVING, 5);
-        get("Sell silk to the Silk trader in East Ardougne for 60 coins each", "silk", 1); approx(); // approx: steal silk
+        // Sold at the shop's price (OSRS: haggle him up to 60 coins each).
+        event("Sell silk to the Silk trader in East Ardougne for 60 coins each", "shop_sell:ardougne_silk_trader:silk", null);
         visit("Use the altar in East Ardougne's church", 2616, 3307, 8);
-        visit("Go out fishing on the Fishing Trawler", 2675, 3170, 12); approx(); // approx
+        event("Go out fishing on the Fishing Trawler", "minigame_start:fishing_trawler", null);
         visit("Enter the Combat Training Camp north of West Ardougne", 2518, 3356, 12);
         visit("Have Tindel Marchant identify a rusty sword for you", 2678, 3152, 10); approx(); // approx
         visit("Use the Ardougne lever to teleport to the Wilderness", 3153, 3923, 12);
@@ -301,7 +339,8 @@ public final class Diaries {
         get("Harvest some strawberries from the Ardougne farming patch", "strawberry", 1, FARMING, 31);
         cast("Cast the Ardougne Teleport spell", "ardougne_teleport", MAGIC, 51);
         visit("Travel to Castle Wars by Hot Air Balloon", 2442, 3090, 15, FIREMAKING, 50);
-        quest("Claim buckets of sand from Bert in Yanille", "the_hand_in_the_sand", CRAFTING, 49); approx(); // approx
+        event("Claim buckets of sand from Bert in Yanille", "bert_sand", null, CRAFTING, 49); // 84 a day to the bank
+        needs(lastId, "the_hand_in_the_sand");
         visit("Catch any fish on the Fishing Platform", 2725, 3285, 15); approx(); // approx: Witchaven shore
         xp("Pickpocket the master farmer north of East Ardougne", THIEVING, 38);
         visit("Collect some Cave nightshade from the Skavid caves", 2528, 3034, 15); approx(); // approx
@@ -312,7 +351,8 @@ public final class Diaries {
         visit("Recharge some jewellery at the Totem pole in the Legends' Guild", 2729, 3378, 12); approx(); // approx
         visit("Enter the Magic Guild", 2590, 3087, 8, MAGIC, 66);
         xp("Attempt to steal from a chest in Ardougne Castle", THIEVING, 72);
-        quest("Have a zookeeper put you in Ardougne Zoo's monkey cage", "monkey_madness_i"); approx(); // approx
+        event("Have a zookeeper put you in Ardougne Zoo's monkey cage", "monkey_cage", null); // talk to him holding a greegree
+        needs(lastId, "monkey_madness_i");
         cast("Teleport to the Watchtower", "watchtower_teleport", MAGIC, 58);
         xp("Catch a Red Salamander", HUNTER, 59);
         xpAt("Check the health of a palm tree near Tree Gnome Village", FARMING, 68, null); approx(); // approx
@@ -338,7 +378,7 @@ public final class Diaries {
         xp("Catch a Golden Warbler", HUNTER, 5);
         get("Mine 5 clay in the north-eastern desert", "clay", 5);
         visit("Enter the Kalphite Lair", 3226, 3108, 12);
-        visit("Enter the Desert with a set of desert robes equipped", 3304, 3115, 15); approx(); // approx: Shantay Pass
+        wear("Enter the Desert with a set of desert robes equipped", "desert_shirt&desert_robe&desert_boots", "desert");
         kill("Kill a Vulture", "vulture", 1);
         visit("Have the Nardah herbalist (Zahur) clean a herb for you", 3424, 2908, 8);
         kill("Collect 5 potato cacti from the Kalphite Hive", "kalphite", 5); approx(); // approx
@@ -366,7 +406,7 @@ public final class Diaries {
         kc("Kill the Kalphite Queen", "kalphite_queen", 1);
         xpAt("Complete a lap of the Pollnivneach agility course", AGILITY, 70, at(3359, 2970, 40));
         killAny("Slay a Dust Devil in the desert cave with a Slayer helmet equipped", "dust devil", 1, SLAYER, 65, DEFENCE, 10);
-        visit("Activate Ancient Magicks at the altar in the Jaldraocht Pyramid", 3233, 2898, 10); approx(); // approx
+        event("Activate Ancient Magicks at the altar in the Jaldraocht Pyramid", "spellbook:ancient", at(3233, 2898, 15));
         killAny("Defeat a Locust Rider with Keris", "locust rider", 1, ATTACK, 50); // Sophanem Dungeon (keris not checked)
         needs(lastId, "contact");
         xpAt("Burn some yew logs on the Nardah Mayor's balcony", FIREMAKING, 60, at(3428, 2892, 25));
@@ -409,7 +449,8 @@ public final class Diaries {
         makeHere("Craft a basket on the Falador farm loom", "basket", 1, CRAFTING, 36);
         cast("Teleport to the Falador Party Room", "falador_teleport", MAGIC, 37);
         in("falador", Tier.HARD);
-        getAt("Craft 140 Mind runes simultaneously", "mind_rune", 1, null, RUNECRAFT, 56); approx(); // approx count
+        getAt("Craft 140 Mind runes simultaneously", "mind_rune", 140, null, RUNECRAFT, 56);
+        inOneGo();
         add("Change your family crest to the Saradomin symbol", Type.LEVEL, "PRAYER", 1, null, 70, CONSTRUCTION, 16);
         kc("Kill the Giant Mole beneath Falador Park", "giant_mole", 1);
         killAny("Kill a Skeletal Wyvern in the Asgarnia Ice Dungeon", "skeletal wyvern", 1, SLAYER, 72);
@@ -538,7 +579,7 @@ public final class Diaries {
         quest("Visit the Isle of Crandor via the dungeon below the volcano", "dragon_slayer_i");
         quest("Use Vigroy and Hajedy's cart service", "shilo_village");
         quest("Earn 100% favour in the village of Tai Bwo Wannai", "jungle_potion", WOODCUTTING, 10); approx(); // approx
-        xp("Cook a spider on a stick", COOKING, 16); approx(); // approx: no spider on a stick; cook something in Karamja
+        make("Cook a spider on a stick", "spider_on_shaft", 1, COOKING, 16); // a spider on a shaft counts too (OSRS)
         visit("Charter the Lady of the Waves from Cairn Isle to Port Khazard", 2675, 3150, 12);
         get("Cut a log from a teak tree", "teak_logs", 1, WOODCUTTING, 35);
         get("Cut a log from a mahogany tree", "mahogany_logs", 1, WOODCUTTING, 50);
@@ -553,14 +594,15 @@ public final class Diaries {
         visit("Charter a ship from the shipyard in the far east of Karamja", 2998, 3032, 15);
         get("Mine a red topaz from a gem rock", "uncut_red_topaz", 1, MINING, 40);
         in("karamja", Tier.HARD);
-        visit("Become the Champion of the Fight Pits", 2845, 3170, 12); approx(); // approx
+        event("Become the Champion of the Fight Pits", "fight_pit_champion", null);
         killAny("Kill a Ket-Zek in the Fight Caves", "ket-zek", 1);
-        xp("Eat an oomlie wrap", COOKING, 50); approx(); // approx: no oomlie wrap; cook something in Karamja
+        event("Eat an oomlie wrap", "eat:cooked_oomlie_wrap", null);
         getAt("Craft some nature runes", "nature_rune", 1, null, RUNECRAFT, 44);
         make("Cook a karambwan thoroughly", "cooked_karambwan", 1, COOKING, 30);
         quest("Kill a deathwing in the dungeon under the Kharazi Jungle", "legends_quest"); approx(); // approx
         visit("Use the crossbow shortcut south of the volcano", 2869, 3125, 10, AGILITY, 53, STRENGTH, 21, RANGED, 42);
-        quest("Collect 5 palm leaves", "legends_quest", WOODCUTTING, 15); approx(); // approx
+        get("Collect 5 palm leaves", "palm_leaf", 5, WOODCUTTING, 15); // shaken from the Kharazi Jungle's leafy palm trees
+        needs(lastId, "legends_quest");
         combat("Be assigned a Slayer task by Duradel north of Shilo Village", 100, SLAYER, 50);
         killAny("Kill a metal dragon in Brimhaven Dungeon", "bronze dragon|iron dragon|steel dragon", 1, WOODCUTTING, 10);
         in("karamja", Tier.ELITE);
@@ -604,7 +646,7 @@ public final class Diaries {
         killAny("Kill a lizardman shaman in Molch", "lizardman shaman", 1);
         get("Mine some Lovakite", "lovakite_ore", 1, MINING, 65);
         xp("Plant some Logavano seeds at the Tithe Farm", FARMING, 74);
-        haveAny("Teleport to Xeric's Heart using Xeric's Talisman", "xerics_talisman"); approx(); // approx
+        event("Teleport to Xeric's Heart using Xeric's Talisman", "teleport:xerics_talisman:xerics_heart", null);
         xp("Deliver an artefact to Captain Khaled", THIEVING, 49);
         killAny("Kill a wyrm in the Karuulm Slayer Dungeon", "wyrm", 1, SLAYER, 62);
         killAny("Cast Monster Examine on a mountain troll south of Mount Quidamortem", "mountain troll", 1, MAGIC, 66); approx(); // approx
@@ -654,7 +696,8 @@ public final class Diaries {
         quest("Collect at least 100 Tears of Guthix in one visit", "tears_of_guthix");
         quest("Take the train from Dorgesh-Kaan to Keldagrim", "another_slice_of_ham");
         haveAny("Purchase some Barrows gloves from the Lumbridge bank chest", "barrows_gloves");
-        get("Pick some Belladonna from the farming patch at Draynor Manor", "*belladonna", 1, FARMING, 63); approx(); // approx
+        getAt("Pick some Belladonna from the farming patch at Draynor Manor", "nightshade|cave_nightshade_flower", 1, at(3087, 3355, 12),
+                FARMING, 63);
         xp("Light your mining helmet in the Lumbridge castle basement", FIREMAKING, 65);
         visit("Recharge your prayer at the Emir's Arena with Smite activated", 3369, 3170, 15, PRAYER, 52);
         // Enchanting is a spell (an obtain event), not a make-menu product.
@@ -665,14 +708,15 @@ public final class Diaries {
                 STRENGTH, 70); approx(); // approx
         getAt("Chop some magic logs at the Mage Training Arena", "magic_logs", 1, null, WOODCUTTING, 75);
         make("Smith an adamant platebody down Draynor sewer", "adamant_platebody", 1, SMITHING, 88);
-        getAt("Craft 140 or more Water runes at once from Essence", "water_rune", 1, null, RUNECRAFT, 76);
+        getAt("Craft 140 or more Water runes at once from Essence", "water_rune", 140, null, RUNECRAFT, 76);
+        inOneGo();
         add("Perform the Quest point cape emote in the Wise Old Man's house", Type.QUEST_POINTS, "all", 1, null, 0);
 
         // ======================= Morytania (11 / 11 / 10 / 6) =======================
         in("morytania", Tier.EASY);
         makeHere("Craft any Snelm from scratch in Morytania", "*snelm", 1, CRAFTING, 15);
-        makeAt("Cook a thin Snail on the Port Phasmatys range", "thin_snail_meat", 1, at(3680, 3485, 25), COOKING, 12);
-        approx(); // approx: Port Phasmatys has no range built, so any fire in the town counts
+        // The range is a Port Phasmatys station (Landmark), placed near the town centre.
+        makeAt("Cook a thin Snail on the Port Phasmatys range", "thin_snail_meat", 1, at(3687, 3502, 8), COOKING, 12);
         combat("Get a slayer task from Mazchna", 20);
         killAny("Kill a Banshee in the Slayer Tower", "banshee", 1, SLAYER, 15);
         visit("Have Sbott in Canifis tan something for you", 3490, 3502, 8);
@@ -687,7 +731,8 @@ public final class Diaries {
         xpAt("Complete a lap of the Canifis agility course", AGILITY, 40, at(3507, 3488, 30));
         get("Obtain some Bark from a Hollow tree", "bark", 1, WOODCUTTING, 45);
         killAny("Kill a Terror Dog", "terror dog", 1, SLAYER, 40);
-        quest("Complete a game of Trouble Brewing", "cabin_fever", COOKING, 40); approx(); // approx
+        event("Complete a game of Trouble Brewing", "minigame_win:trouble_brewing", null, COOKING, 40);
+        needs(lastId, "cabin_fever");
         makeHere("Make a batch of cannonballs at the Port Phasmatys furnace", "cannonball", 1, SMITHING, 35);
         killAny("Kill a Fever Spider on Braindeath Island", "fever spider", 1, SLAYER, 42);
         haveAny("Use an ectophial to return to Port Phasmatys", "ectophial");
@@ -699,7 +744,8 @@ public final class Diaries {
         visit("Climb the advanced spike chain within Slayer Tower", 3422, 3537, 12, AGILITY, 71);
         getAt("Harvest some Watermelon from the Allotment patch on Harmony Island", "watermelon", 1, null, FARMING, 47);
         getAt("Chop and burn some mahogany logs on Mos Le'Harmless", "mahogany_logs", 1, null, WOODCUTTING, 50, FIREMAKING, 50);
-        quest("Complete a temple trek with a hard companion", "in_aid_of_the_myreque"); approx(); // approx
+        event("Complete a temple trek with a hard companion", "trek_complete:hard", null);
+        needs(lastId, "in_aid_of_the_myreque");
         killAny("Kill a Cave Horror", "cave horror", 1, SLAYER, 58);
         xp("Harvest some Bittercap Mushrooms", FARMING, 53);
         visit("Pray at the Altar of Nature with Piety activated", 3440, 3335, 15, PRAYER, 70, DEFENCE, 70);
@@ -784,7 +830,7 @@ public final class Diaries {
         quest("Travel to the Feldip Hills by Gnome Glider", "one_small_favour");
         quest("Claim a Chompy bird hat from Rantz after registering at least 30 kills", "big_chompy_bird_hunting");
         quest("Travel from Eagles' Peak to the Feldip Hills by Eagle", "eagles_peak");
-        make("Make a Chocolate Bomb at the Grand Tree", "*chocolate", 1, COOKING, 42); approx(); // approx
+        makeAt("Make a Chocolate Bomb at the Grand Tree", "chocolate_bomb", 1, at(2465, 3495, 20), COOKING, 42);
         visit("Complete a delivery for the Gnome Restaurant", 2449, 3500, 12, COOKING, 29);
         quest("Turn your small crystal seed into a Crystal saw", "the_eyes_of_glouphrie");
         get("Mine some Gold ore underneath the Grand Tree", "gold_ore", 1, MINING, 40);
@@ -807,14 +853,15 @@ public final class Diaries {
         kc("Kill the Thermonuclear Smoke devil", "thermonuclear_smoke_devil", 1, SLAYER, 93);
         xp("Have Prissy Scilla protect your Magic tree", FARMING, 75);
         visit("Use the Elven overpass advanced cliffside shortcut", 2340, 3260, 15, AGILITY, 85);
-        haveAny("Equip any complete void set", "void_knight_top", ATTACK, 42, STRENGTH, 42, DEFENCE, 42, HITPOINTS, 42, RANGED, 42,
-                MAGIC, 42, PRAYER, 22); approx(); // approx: carrying the top
+        wear("Equip any complete void set", "void_knight_top|elite_void_top&void_knight_robe|elite_void_robe&void_knight_gloves"
+                + "&void_melee_helm|void_ranger_helm|void_mage_helm", null, ATTACK, 42, STRENGTH, 42, DEFENCE, 42, HITPOINTS, 42,
+                RANGED, 42, MAGIC, 42, PRAYER, 22);
         quest("Claim a Chompy bird hat from Rantz after registering at least 1000 kills", "big_chompy_bird_hunting");
         xp("Pickpocket an Elf", THIEVING, 85);
 
         // ======================= Wilderness (12 / 11 / 10 / 7) =======================
         in("wilderness", Tier.EASY);
-        visit("Cast Low Alchemy at the Fountain of Rune", 3375, 3893, 10, MAGIC, 21); approx(); // approx
+        castAt("Cast Low Alchemy at the Fountain of Rune", "low_level_alchemy", at(3375, 3893, 10), MAGIC, 21);
         visit("Enter the Wilderness from the Ardougne or Edgeville lever", 3153, 3923, 12);
         visit("Pray at the Chaos Altar in Western Wilderness", 2949, 3820, 10);
         visit("Enter the Chaos Runecrafting temple", 3060, 3591, 10);
@@ -994,6 +1041,36 @@ public final class Diaries {
     /** Quests (ids) that must be complete before the task counts, as listed on the OSRS wiki. */
     public static List<String> questReqs(Task task) {
         return QUEST_REQS.getOrDefault(task.id(), List.of());
+    }
+
+    /** Whether an OBTAIN task needs its whole count from one action. */
+    public static boolean inOneGo(Task task) {
+        return ONE_GO.contains(task.id());
+    }
+
+    /** Whether an activity key matches an EVENT target ('|' alternatives, exact keys). */
+    public static boolean eventMatches(String target, String key) {
+        for (String alt : target.split("\\|")) {
+            if (alt.equals(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Whether the worn item ids cover every '&'-separated piece of a WEAR target. */
+    public static boolean wearingAll(String target, java.util.Collection<String> worn) {
+        for (String piece : target.split("&")) {
+            if (worn.stream().noneMatch(id -> itemMatches(piece, id))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Lower-case id form of a display name ("Xeric's Heart" -> "xerics_heart"), used in activity keys. */
+    public static String slug(String name) {
+        return name.toLowerCase(Locale.ROOT).replace("'", "").replaceAll("[^a-z0-9]+", "_").replaceAll("^_|_$", "");
     }
 
     /** Whether the task's trigger only approximates the OSRS task (a mechanic the game doesn't have). */
