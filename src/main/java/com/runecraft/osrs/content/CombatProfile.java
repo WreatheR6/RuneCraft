@@ -53,6 +53,15 @@ public abstract class CombatProfile<T extends CombatProfile<T>> {
     public final Set<String> attributes = new java.util.TreeSet<>();
     /** True once {@link com.runecraft.osrs.data.MonsterStatsTable} has applied the wiki reference stats. */
     public boolean referenceStats;
+    /**
+     * Light and heavy ranged defence (thrown weapons / crossbows, ballistae and chinchompas); null means the same as the
+     * ranged ("standard", bows) defence bonus. Set from {@link com.runecraft.osrs.data.MonsterDefenceTable}.
+     */
+    public Integer lightRangedDefence;
+    public Integer heavyRangedDefence;
+    /** Elemental weakness ("air", "water", "earth", "fire") and its severity in percent; null for none. */
+    public String weakness;
+    public int weaknessPercent;
 
     protected CombatProfile(String id, String name) {
         this.id = id;
@@ -183,6 +192,27 @@ public abstract class CombatProfile<T extends CombatProfile<T>> {
 
     public int defenceBonus(AttackType type) {
         return defenceBonus.getOrDefault(type, 0);
+    }
+
+    /** Ranged defence against a weapon class: "light", "heavy", "mixed" (the average) or "standard". */
+    public int rangedDefence(String kind) {
+        int standard = defenceBonus(AttackType.RANGED);
+        int light = lightRangedDefence != null ? lightRangedDefence : standard;
+        int heavy = heavyRangedDefence != null ? heavyRangedDefence : standard;
+        return com.runecraft.osrs.PlayerHitCalc.rangedDefence(kind, light, standard, heavy);
+    }
+
+    /** Light / heavy ranged defence and elemental weakness. */
+    public T rangedDefence(int light, int heavy) {
+        this.lightRangedDefence = light;
+        this.heavyRangedDefence = heavy;
+        return self();
+    }
+
+    public T weakness(String element, int percent) {
+        this.weakness = element;
+        this.weaknessPercent = element == null ? 0 : percent;
+        return self();
     }
 
     /** Attack bonus added to the NPC attack roll for an attack style. */

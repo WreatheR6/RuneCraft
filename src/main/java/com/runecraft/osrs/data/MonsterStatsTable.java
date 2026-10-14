@@ -74,6 +74,13 @@ public final class MonsterStatsTable {
                 .attackBonus(r.meleeAttackBonus(), r.magicAttackBonus(), r.rangedAttackBonus());
         p.attributes.clear();
         p.attributes.addAll(r.attributes());
+        MonsterDefenceTable.Row extra = MonsterDefenceTable.row(p.id);
+        if (extra != null) {
+            p.rangedDefence(extra.lightRanged(), extra.heavyRanged()).weakness(extra.weakness(), extra.weaknessPercent());
+        } else {
+            p.lightRangedDefence = null;
+            p.heavyRangedDefence = null;
+        }
         p.referenceStats = true;
         Map<String, Integer> max = MAX_HITS.get(p.id);
         if (max != null) {

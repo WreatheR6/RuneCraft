@@ -100,6 +100,14 @@ const loadouts: Loadout[] = [
   { id: 'msb_void', gear: ['Magic shortbow', 'Amethyst arrow', 'Void ranger helm', ...VOID, 'Necklace of anguish', "Ava's accumulator"], style: 'Accurate' },
   { id: 'rcb_longrange', gear: ['Rune crossbow', 'Runite bolts', ...RANGED], style: 'Longrange' },
   { id: 'rcb_salve_i', gear: ['Rune crossbow', 'Runite bolts', 'Salve amulet(i)', ...noNeckR(RANGED)], style: 'Accurate' },
+  // ---- ranged: thrown weapons roll against light ranged defence, crossbows / ballistae against heavy (round 15)
+  { id: 'blowpipe', gear: ['Toxic blowpipe', ...RANGED], style: 'Rapid' },
+  { id: 'dragon_knife', gear: ['Dragon knife', ...RANGED], style: 'Rapid' },
+  { id: 'dragon_thrownaxe', gear: ['Dragon thrownaxe', ...RANGED], style: 'Accurate' },
+  { id: 'toktz_xil_ul', gear: ['Toktz-xil-ul', ...RANGED], style: 'Longrange' },
+  { id: 'heavy_ballista', gear: ['Heavy ballista', 'Dragon javelin', ...RANGED], style: 'Accurate' },
+  { id: 'dragon_crossbow', gear: ['Dragon crossbow', 'Ruby dragon bolts (e)', ...RANGED], style: 'Rapid' },
+  { id: 'zaryte_crossbow', gear: ['Zaryte crossbow', 'Dragon bolts', ...RANGED], style: 'Rapid' },
   { id: 'black_mask_i_msb', gear: ['Magic shortbow', 'Rune arrow', 'Black mask (i)', ...noHeadR(RANGED)], style: 'Rapid' },
   // ---- magic: powered staves
   { id: 'trident_seas', gear: ['Trident of the seas', ...MAGE], style: 'Accurate' },
@@ -127,6 +135,10 @@ const loadouts: Loadout[] = [
   { id: 'iban_blast', gear: ["Iban's staff", ...MAGE], style: 'Spell', spell: 'Iban Blast' },
   { id: 'slayer_dart', gear: ["Slayer's staff", ...MAGE], style: 'Spell', spell: 'Magic Dart' },
   { id: 'void_mage_fire_surge', gear: ['Kodai wand', 'Void mage helm', ...VOID, 'Occult necklace'], style: 'Spell', spell: 'Fire Surge' },
+  // ---- magic: elemental weaknesses (2024 rework) of every element
+  { id: 'kodai_wind_surge', gear: ['Kodai wand', ...MAGE], style: 'Spell', spell: 'Wind Surge' },
+  { id: 'kodai_earth_surge', gear: ['Kodai wand', ...MAGE], style: 'Spell', spell: 'Earth Surge' },
+  { id: 'staff_water_wave', gear: ['Staff of water', 'Mystic hat', 'Mystic robe top', 'Mystic robe bottom'], style: 'Spell', spell: 'Water Wave' },
   { id: 'slayer_i_fire_surge', gear: ['Kodai wand', 'Slayer helmet (i)', ...noHeadR(MAGE)], style: 'Spell', spell: 'Fire Surge' },
 ];
 
@@ -135,6 +147,8 @@ const MONSTERS: [string, string][] = [
   ['Ankou', 'Level 75'], ['General Graardor', ''], ['Black dragon', 'Level 227'], ['Kalphite Soldier', 'Kalphite Lair'],
   ['Aberrant spectre', ''], ['Gargoyle', 'Upstairs'], ['Cerberus', ''], ["K'ril Tsutsaroth", ''], ['Callisto', ''],
   ['Turoth', 'Dad'], ['Dagannoth Rex', ''], ['Skeletal Wyvern', '1'],
+  // round 15: distinct light / standard / heavy ranged defences and the four elemental weaknesses
+  ['Corporeal Beast', ''], ['Frost dragon', ''], ['Chaos Fanatic', ''], ['Aviansie', 'Level 131'],
 ];
 
 type Profile = { id: string; lvl: number; boost: { atk: number; str: number; ranged: number; magic: number }; prayers: { melee: string[]; ranged: string[]; magic: string[] }; monsters: number };
@@ -158,11 +172,11 @@ function main() {
     PRAYER_KEYS[v.name.toLowerCase().replace(/ /g, '_')] = k;
   }
   const rows: string[] = [];
-  rows.push('# Player-vs-NPC reference from weirdgloop/osrs-dps-calc PlayerVsNPCCalc (src/lib), bundled with esbuild and run under node (round 14).');
+  rows.push('# Player-vs-NPC reference from weirdgloop/osrs-dps-calc PlayerVsNPCCalc (src/lib), bundled with esbuild and run under node (rounds 14-15).');
   rows.push('# Inputs are what the calculator saw: boosted levels, prayers, raw summed gear bonuses (before Tumeken\'s shadow / elite void adjustments),');
-  rows.push('# the NPC defence level and bonus it rolled against. Outputs: min/max hit (per hit; effMax adds the Dharok / berserker necklace damage scaling), attack roll, NPC defence roll, hit chance.');
+  rows.push('# the NPC defence level and bonus it rolled against (and its light / standard / heavy ranged defences). Outputs: min/max hit (per hit; effMax adds the Dharok / berserker necklace damage scaling), attack roll, NPC defence roll, hit chance.');
   rows.push(['id', 'profile', 'monster', 'loadout', 'gear', 'type', 'stance', 'spell', 'atk', 'str', 'ranged', 'magic', 'hpMax', 'hpCur', 'prayers',
-    'offBonus', 'strBonus', 'rangedStr', 'magicDmgTenths', 'npcDefLevel', 'npcDefBonus', 'npcTbowMagic', 'attrs', 'slayerMonster', 'size', 'weakness',
+    'offBonus', 'strBonus', 'rangedStr', 'magicDmgTenths', 'npcDefLevel', 'npcDefBonus', 'npcRangedLight', 'npcRangedStandard', 'npcRangedHeavy', 'npcTbowMagic', 'attrs', 'slayerMonster', 'size', 'weakness',
     'minHit', 'maxHit', 'effMax', 'attackRoll', 'defenceRoll', 'hitChance'].join('\t'));
   let n = 0;
   for (const prof of PROFILES) {
@@ -225,7 +239,7 @@ function main() {
         rows.push([`${prof.id}/${lo.id}/${mn}${mv ? ' (' + mv + ')' : ''}`, prof.id, `${mn}|${mv}`, lo.id, lo.gear.join(','), t, style.stance, lo.spell || '-',
           prof.lvl + prof.boost.atk, prof.lvl + prof.boost.str, prof.lvl + prof.boost.ranged, prof.lvl + prof.boost.magic, prof.lvl, hpCur,
           (prof.prayers as any)[kind].join(',') || '-',
-          raw.off[t], raw.str, raw.rstr, raw.mstr, defLevel, defBonus, tbowMagic, (m.attributes || []).join(',') || '-', calc.isSlayerMonster() ? 1 : 0, m.size, weak,
+          raw.off[t], raw.str, raw.rstr, raw.mstr, defLevel, defBonus, m.defensive.light, m.defensive.standard, m.defensive.heavy, tbowMagic, (m.attributes || []).join(',') || '-', calc.isSlayerMonster() ? 1 : 0, m.size, weak,
           minHit, maxHit, effMax, atkRoll, defRoll, hc.toFixed(6)].join('\t'));
       }
     }

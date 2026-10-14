@@ -19,8 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Diffs {@link PlayerHitCalc} (and the spell / powered staff max hits it uses) against the OSRS Wiki DPS
- * calculator: {@code src/test/resources/osrs/combat/dps_reference.tsv} holds 2,250 scenarios (5 level/prayer
- * profiles x 72 melee, ranged and magic loadouts x 16 monsters) computed by weirdgloop/osrs-dps-calc's
+ * calculator: {@code src/test/resources/osrs/combat/dps_reference.tsv} holds 2,890 scenarios (5 level/prayer
+ * profiles x 82 melee, ranged and magic loadouts x 20 monsters, including thrown weapons and crossbows against the
+ * light / heavy ranged defences and spells of every element against elemental weaknesses) computed by weirdgloop/osrs-dps-calc's
  * {@code PlayerVsNPCCalc}: max hit, min hit, attack roll, NPC defence roll and hit chance.
  * Gear names are mapped to RuneCraft item ids through the item catalogue; gear bonuses are the calculator's sums.
  */
@@ -153,6 +154,9 @@ class CombatReferenceTest {
             in.targetDefenceLevel = Integer.parseInt(r.get("npcDefLevel"));
             in.targetMagicLevel = in.targetDefenceLevel;
             in.targetDefenceBonus = Integer.parseInt(r.get("npcDefBonus"));
+            // The three ranged defences: PlayerHitCalc picks light / standard / heavy from the weapon (thrown, bow, crossbow).
+            in.targetRangedDefence = new int[]{Integer.parseInt(r.get("npcRangedLight")), Integer.parseInt(r.get("npcRangedStandard")),
+                    Integer.parseInt(r.get("npcRangedHeavy"))};
             in.targetTbowMagic = Integer.parseInt(r.get("npcTbowMagic"));
             if (!r.get("attrs").equals("-")) {
                 in.attributes.addAll(List.of(r.get("attrs").split(",")));

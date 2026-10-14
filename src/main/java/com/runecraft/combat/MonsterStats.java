@@ -34,6 +34,26 @@ public record MonsterStats(String name, int combatLevel, int hitpoints, int atta
         return profile != null ? profile.defenceBonus(type) : defenceBonus;
     }
 
+    /** {light, standard, heavy} ranged defence (module creatures), or null when only one ranged defence is known. */
+    public int[] rangedDefences() {
+        if (profile == null) {
+            return null;
+        }
+        int standard = profile.defenceBonus(AttackType.RANGED);
+        return new int[]{profile.lightRangedDefence != null ? profile.lightRangedDefence : standard, standard,
+                profile.heavyRangedDefence != null ? profile.heavyRangedDefence : standard};
+    }
+
+    /** Elemental weakness ("fire", "water", "earth", "air") or null. */
+    public String weakness() {
+        return profile != null ? profile.weakness : null;
+    }
+
+    /** Elemental weakness severity in percent (0 for none). */
+    public int weaknessPercent() {
+        return profile != null ? profile.weaknessPercent : 0;
+    }
+
     public static MonsterStats from(com.runecraft.osrs.content.CombatProfile<?> p) {
         return new MonsterStats(p.name, p.combatLevel, p.hitpoints, p.attack, p.strength, p.defence, p.magic, p.ranged,
                 0, p.attackSpeed, p.primaryStyle(), p.maxHit(), null, p);

@@ -149,7 +149,7 @@ public final class CombatHandler {
         // demonbane, dragonbane, keris, fang, Dharok's...) come from the DPS-calculator-tested PlayerHitCalc.
         com.runecraft.osrs.PlayerHitCalc.Input in = HitCalcBridge.input(player, target, type, null, 0);
         long attackRoll = HitCalcBridge.attackRoll(player, target, in);
-        long defenceRoll = defenceRoll(target, type);
+        long defenceRoll = HitCalcBridge.defenceRoll(target, in);
         int maxHit = HitCalcBridge.maxHit(player, target, in);
         int damage = HitCalcBridge.roll(new java.util.Random(player.getRandom().nextLong()), in, attackRoll, defenceRoll, maxHit);
         damage = CombatHooks.afterRoll(player, target, type, damage);
@@ -183,7 +183,7 @@ public final class CombatHandler {
         CombatStyle style = data.style().forRanged();
         com.runecraft.osrs.PlayerHitCalc.Input in = HitCalcBridge.input(player, target, AttackType.RANGED, arrowItem, rangedStrength);
         long attackRoll = HitCalcBridge.attackRoll(player, target, in);
-        long defenceRoll = defenceRoll(target, AttackType.RANGED);
+        long defenceRoll = HitCalcBridge.defenceRoll(target, in);
         int maxHit = Math.max(1, HitCalcBridge.maxHit(player, target, in));
         java.util.Random rng = new java.util.Random(player.getRandom().nextLong());
         boolean accurate = rng.nextDouble() < com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);

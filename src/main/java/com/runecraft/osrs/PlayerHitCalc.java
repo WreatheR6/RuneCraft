@@ -55,6 +55,11 @@ public final class PlayerHitCalc {
         /** The level the target defends magic with (its Magic level for NPCs). */
         public int targetMagicLevel = 1;
         public int targetDefenceBonus;
+        /**
+         * The target's {light, standard, heavy} ranged defence, or null to use {@link #targetDefenceBonus} for every
+         * ranged weapon. With it, a ranged attack rolls against the class of {@link #weapon} ({@link #rangedDefenceKind}).
+         */
+        public int[] targetRangedDefence;
         /** max(magic level, magic attack bonus) of the target, for the twisted bow. */
         public int targetTbowMagic = 1;
         /** OSRS monster attributes: undead, demon, dragon, kalphite, leafy, golem, xerician, ... */
@@ -533,10 +538,51 @@ public final class PlayerHitCalc {
 
     // ---------------------------------------------------------------- defence and hit chance
 
+    /**
+     * Which of a target's three ranged defences a ranged weapon rolls against (osrs-dps-calc {@code getRangedDamageType}):
+     * "light" for thrown weapons (darts, knives, thrownaxes, blowpipes, Toktz-xil-ul, Morrigan's javelins...), "heavy"
+     * for crossbows, ballistae and chinchompas, "mixed" (the average of the three) for salamanders, "standard" for bows.
+     */
+    public static String rangedDefenceKind(String weapon) {
+        String w = weapon == null ? "" : weapon.startsWith("lms_") ? weapon.substring(4) : weapon;
+        if (w.contains("crossbow") || w.contains("ballista") || w.endsWith("chinchompa") || w.equals("kings_barrage")) {
+            return "heavy";
+        }
+        if (w.endsWith("salamander") || w.equals("swamp_lizard")) {
+            return "mixed";
+        }
+        if (w.endsWith("_dart") || w.endsWith("_knife") || w.endsWith("thrownaxe") || w.endsWith("blowpipe")
+                || w.startsWith("morrigans_") || w.equals("toktz_xil_ul") || w.equals("tonalztics_of_ralos")
+                || w.equals("throwing_knife") || w.equals("throwing_axe") || w.equals("holy_water") || w.equals("blisterwood_stake")
+                || w.equals("hunters_spear") || w.equals("sages_axe") || w.equals("mud_pie") || w.equals("spine")) {
+            return "light";
+        }
+        return "standard";
+    }
+
+    /** Picks the ranged defence for a weapon class (the mixed average is truncated, as in the calculator). */
+    public static int rangedDefence(String kind, int light, int standard, int heavy) {
+        return switch (kind) {
+            case "light" -> light;
+            case "heavy" -> heavy;
+            case "mixed" -> (light + standard + heavy) / 3;
+            default -> standard;
+        };
+    }
+
+    /** The defence bonus this attack rolls against (the weapon's ranged class picks among the three ranged defences). */
+    public static int targetDefenceBonus(Input in) {
+        if (in.type == AttackType.RANGED && in.targetRangedDefence != null) {
+            int[] r = in.targetRangedDefence;
+            return rangedDefence(rangedDefenceKind(in.weapon), r[0], r[1], r[2]);
+        }
+        return in.targetDefenceBonus;
+    }
+
     /** The NPC's defence roll: {@code (level + 9) * (bonus + 64)} with its Magic level against magic. */
     public static long defenceRoll(Input in) {
         int level = in.type == AttackType.MAGIC ? in.targetMagicLevel : in.targetDefenceLevel;
-        return CombatFormulas.npcRoll(level, in.targetDefenceBonus);
+        return CombatFormulas.npcRoll(level, targetDefenceBonus(in));
     }
 
     public static double hitChance(Input in) {

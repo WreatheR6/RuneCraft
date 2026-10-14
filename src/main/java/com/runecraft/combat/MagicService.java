@@ -171,7 +171,7 @@ public final class MagicService {
         com.runecraft.osrs.PlayerHitCalc.Input in = HitCalcBridge.input(player, target, AttackType.MAGIC, null, 0);
         HitCalcBridge.spell(in, spell);
         long attackRoll = HitCalcBridge.attackRoll(player, target, in);
-        long defenceRoll = CombatHandler.defenceRoll(target, AttackType.MAGIC);
+        long defenceRoll = HitCalcBridge.defenceRoll(target, in);
         int maxHit = HitCalcBridge.maxHit(player, target, in);
         boolean splash = player.getRandom().nextDouble() >= com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);
         int damage = splash ? 0 : player.getRandom().nextInt(Math.max(0, maxHit) + 1);
@@ -233,7 +233,7 @@ public final class MagicService {
         // Built-in spell max hit, Tumeken's shadow's x3, accurate +2 and gear effects: PlayerHitCalc.
         com.runecraft.osrs.PlayerHitCalc.Input in = HitCalcBridge.input(player, target, AttackType.MAGIC, null, 0);
         long attackRoll = HitCalcBridge.attackRoll(player, target, in);
-        long defenceRoll = CombatHandler.defenceRoll(target, AttackType.MAGIC);
+        long defenceRoll = HitCalcBridge.defenceRoll(target, in);
         int maxHit = HitCalcBridge.maxHit(player, target, in);
         boolean splash = player.getRandom().nextDouble() >= com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);
         int damage = splash ? 0 : player.getRandom().nextInt(Math.max(0, maxHit) + 1);

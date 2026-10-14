@@ -84,6 +84,9 @@ public final class HitCalcBridge {
         in.targetDefenceLevel = stats.defence();
         in.targetMagicLevel = stats.magic();
         in.targetDefenceBonus = stats.defenceBonus(in.type);
+        in.targetRangedDefence = stats.rangedDefences();
+        in.weaknessElement = stats.weakness();
+        in.weaknessPercent = stats.weaknessPercent();
         in.targetTbowMagic = Math.max(stats.magic(), stats.attackBonus(AttackType.MAGIC));
         if (stats.profile() != null) {
             in.attributes.addAll(stats.profile().attributes);
@@ -109,6 +112,18 @@ public final class HitCalcBridge {
     public static void spell(PlayerHitCalc.Input in, int baseMaxHit, boolean standardBook) {
         in.spellMaxHit = Math.max(0, baseMaxHit);
         in.standardSpell = standardBook;
+    }
+
+    /**
+     * The target's defence roll against this attack: a monster's from {@link PlayerHitCalc#defenceRoll} (so a ranged
+     * weapon rolls against the light, standard or heavy ranged defence of its class), a player's from
+     * {@link CombatHandler#defenceRoll}.
+     */
+    public static long defenceRoll(LivingEntity target, PlayerHitCalc.Input in) {
+        if (target == null || target instanceof ServerPlayerEntity) {
+            return CombatHandler.defenceRoll(target, in.type);
+        }
+        return PlayerHitCalc.defenceRoll(in);
     }
 
     /** Attack roll including the remaining {@link CombatHooks} accuracy modifiers. */
