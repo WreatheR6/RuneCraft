@@ -46,6 +46,28 @@ public final class Gielinor {
 
     /** Finds a safe standing position at the given column (loads/generates the chunk). */
     public static BlockPos safeSpot(ServerWorld world, int x, int z) {
+        BlockPos first = column(world, x, z);
+        if (standable(world, first)) {
+            return first;
+        }
+        // Under a tree canopy, over a ravine or on a roof edge: take the nearest clear column within 8 blocks.
+        for (int r = 1; r <= 8; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != r) {
+                        continue;
+                    }
+                    BlockPos pos = column(world, x + dx, z + dz);
+                    if (standable(world, pos)) {
+                        return pos;
+                    }
+                }
+            }
+        }
+        return first;
+    }
+
+    private static BlockPos column(ServerWorld world, int x, int z) {
         world.getChunk(x >> 4, z >> 4);
         int y = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
         BlockPos pos = new BlockPos(x, Math.max(y, world.getSeaLevel() + 1), z);
@@ -54,6 +76,16 @@ public final class Gielinor {
             pos = new BlockPos(x, world.getSeaLevel() + 1, z);
         }
         return pos;
+    }
+
+    /** Feet and head free of collision and fluid, and something solid (not fluid) underfoot. */
+    private static boolean standable(ServerWorld world, BlockPos pos) {
+        BlockState feet = world.getBlockState(pos);
+        BlockState head = world.getBlockState(pos.up());
+        BlockState below = world.getBlockState(pos.down());
+        return feet.getCollisionShape(world, pos).isEmpty() && head.getCollisionShape(world, pos.up()).isEmpty()
+                && feet.getFluidState().isEmpty() && below.getFluidState().isEmpty()
+                && !below.getCollisionShape(world, pos.down()).isEmpty();
     }
 
     /** Teleports a player to a landmark in Gielinor (from any dimension). */
