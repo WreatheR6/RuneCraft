@@ -5,6 +5,7 @@ import com.runecraft.content.systems.SysCombat;
 import com.runecraft.content.systems.SysState;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.EquipmentStats;
+import com.runecraft.osrs.NpcHitCalc;
 import com.runecraft.osrs.PlayerHitCalc;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.SkillSet;
@@ -52,16 +53,40 @@ public final class HitCalcBridge {
         for (ItemStack stack : SysState.of(p).worn.values()) {
             add(in, stack);
         }
+        in.worn.addAll(extraWornIds.apply(p));
         if (ammoId != null) {
             in.worn.add(ammoId);
         }
-        EquipmentStats eq = Equipment.total(p, s).plus(SysCombat.wornStats(p));
+        EquipmentStats eq = gearStats(p);
         in.attackBonus = eq.attack(type);
+        // A thrown weapon (knife, dart, thrownaxe, Toktz-xil-ul) is fired as ammunition: it is the weapon (its class picks
+        // the light ranged defence, also once the last one has left the hand) and adds its own ranged attack bonus.
+        if (type == AttackType.RANGED && ammoId != null && com.runecraft.osrs.content.skilling.FletchingData.THROWN.contains(ammoId)) {
+            in.weapon = ammoId;
+            in.attackBonus += com.runecraft.osrs.data.EquipmentBonuses.thrownRangedAttack(ammoId);
+        }
         in.strengthBonus = eq.meleeStrength();
         in.rangedStrength = eq.rangedStrength() + ammoStrength;
         in.magicDamageTenths = eq.magicDamagePercent() * 10;
         target(in, p, target);
         return in;
+    }
+
+    /**
+     * Stats of items worn in slots another module keeps (the quests module's cape / hands / neck gear such as the imbued
+     * god capes and chaos gauntlets), added to the gear totals; set by that module.
+     */
+    public static java.util.function.Function<ServerPlayerEntity, EquipmentStats> extraWornStats = p -> EquipmentStats.NONE;
+    /** Ids of those items (for item effects such as the chaos gauntlets' bolt bonus). */
+    public static java.util.function.Function<ServerPlayerEntity, java.util.Collection<String>> extraWornIds = p -> java.util.List.of();
+
+    /**
+     * Every bonus the player wears, summed: armour, weapon and shield, the extra jewellery / cape / gloves / ammo slots and
+     * other modules' worn slots. The totals PlayerHitCalc and the player's defence roll use; no worn item multiplies on
+     * its own.
+     */
+    public static EquipmentStats gearStats(ServerPlayerEntity p) {
+        return Equipment.total(p, Players.data(p).skills()).plus(SysCombat.wornStats(p)).plus(extraWornStats.apply(p));
     }
 
     private static void add(PlayerHitCalc.Input in, ItemStack stack) {
@@ -98,6 +123,54 @@ public final class HitCalcBridge {
             in.attributes.add("demon");
         }
         in.onTask = SlayerService.isOnTask(p, target);
+    }
+
+    // ---------------------------------------------------------------- monsters (and players) attacking a player
+
+    /**
+     * The defending player's side of an attack of {@code style}: boosted Defence and Magic, hitpoints, prayers, stance,
+     * the total defence bonus against the style (every worn slot) and Torag's set.
+     */
+    public static NpcHitCalc.Input defenderInput(ServerPlayerEntity p, AttackType style) {
+        PlayerData d = Players.data(p);
+        SkillSet s = d.skills();
+        NpcHitCalc.Input in = new NpcHitCalc.Input();
+        in.style = style;
+        in.defence = s.currentLevel(Skill.DEFENCE);
+        in.magic = s.currentLevel(Skill.MAGIC);
+        in.hitpointsLevel = Math.max(1, Math.round(p.getMaxHealth()));
+        in.hitpoints = Math.max(0, (int) Math.ceil(p.getHealth()));
+        in.prayers.addAll(d.activePrayers());
+        in.stance = d.style();
+        in.defenceBonus = gearStats(p).defence(style);
+        in.torags = Inv.idOf(p.getEquippedStack(EquipmentSlot.HEAD)).equals("torags_helm")
+                && Inv.idOf(p.getEquippedStack(EquipmentSlot.CHEST)).equals("torags_platebody")
+                && Inv.idOf(p.getEquippedStack(EquipmentSlot.LEGS)).equals("torags_platelegs")
+                && Inv.idOf(p.getMainHandStack()).equals("torags_hammers")
+                && "amulet_of_the_damned".equals(SysState.of(p).wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.NECK));
+        return in;
+    }
+
+    /** The player's defence roll against an attack style (NpcHitCalc, tested against the DPS calculator). */
+    public static long playerDefenceRoll(ServerPlayerEntity p, AttackType style) {
+        return NpcHitCalc.playerDefenceRoll(defenderInput(p, style));
+    }
+
+    /**
+     * A monster's attack roll against a player: {@code (level + 9) * (bonus + 64)} with the monster's (drained) level and
+     * attack bonus for the style.
+     */
+    public static long npcAttackRoll(int level, int attackBonus, AttackType style) {
+        NpcHitCalc.Input in = new NpcHitCalc.Input();
+        in.style = style;
+        in.npcLevel = level;
+        in.npcAttackBonus = attackBonus;
+        return NpcHitCalc.npcAttackRoll(in);
+    }
+
+    /** True when the player's overhead prayer blocks a monster's attack of this style. */
+    public static boolean protectedFrom(ServerPlayerEntity p, AttackType style) {
+        return NpcHitCalc.protectedFrom(Players.data(p).activePrayers(), style);
     }
 
     /** Sets a standard-spellbook spell: max hit scaled with Magic level, element and bolt flag. */

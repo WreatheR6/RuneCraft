@@ -211,17 +211,10 @@ public final class CombatHandler {
         }
     }
 
-    /** Defence roll of any target against an attack style. */
+    /** Defence roll of any target against an attack style (players: NpcHitCalc through HitCalcBridge). */
     public static long defenceRoll(LivingEntity target, AttackType type) {
         if (target instanceof ServerPlayerEntity defender) {
-            PlayerData d = Players.data(defender);
-            SkillSet s = d.skills();
-            EquipmentStats eq = Equipment.total(defender, s);
-            int eff = type == AttackType.MAGIC
-                    ? CombatFormulas.effectiveMagicDefence(s.currentLevel(Skill.MAGIC), PrayerService.magic(d),
-                    s.currentLevel(Skill.DEFENCE), PrayerService.defence(d), d.style())
-                    : CombatFormulas.effectiveDefence(s.currentLevel(Skill.DEFENCE), PrayerService.defence(d), d.style());
-            return CombatFormulas.attackRoll(eff, eq.defence(type));
+            return HitCalcBridge.playerDefenceRoll(defender, type);
         }
         MonsterStats stats = MonsterStats.of(target);
         int level = type == AttackType.MAGIC ? stats.magic() : stats.defence();
@@ -262,11 +255,7 @@ public final class CombatHandler {
 
     /** True if the player has the overhead protection prayer for this attack style active. */
     public static boolean isProtected(PlayerData data, AttackType type) {
-        return switch (type) {
-            case MAGIC -> data.isActive(Prayer.PROTECT_FROM_MAGIC);
-            case RANGED -> data.isActive(Prayer.PROTECT_FROM_MISSILES);
-            default -> data.isActive(Prayer.PROTECT_FROM_MELEE);
-        };
+        return com.runecraft.osrs.NpcHitCalc.protectedFrom(data.activePrayers(), type);
     }
 
     /** Protection prayers only block 40% of damage dealt by other players. */
@@ -320,7 +309,7 @@ public final class CombatHandler {
      */
     public static long npcAttackRoll(LivingEntity mob, MonsterStats stats, AttackType type, int level) {
         int drained = com.runecraft.content.systems.SysCombat.drainedAttackLevel(mob, type, level);
-        return CombatFormulas.npcRoll(drained, stats.attackBonus(type));
+        return HitCalcBridge.npcAttackRoll(drained, stats.attackBonus(type), type);
     }
 
     /** Combat hook passthroughs for MagicService and module code. */

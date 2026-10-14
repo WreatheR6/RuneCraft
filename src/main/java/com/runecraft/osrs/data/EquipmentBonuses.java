@@ -100,6 +100,19 @@ public final class EquipmentBonuses {
         AMMO.put(id, rangedStrength);
     }
 
+    /** Ranged attack bonus of thrown weapons (knives, thrownaxes, Toktz-xil-ul), which are fired as ammunition. */
+    private static final Map<String, Integer> THROWN_ATTACK = Map.ofEntries(
+            Map.entry("bronze_knife", 4), Map.entry("iron_knife", 5), Map.entry("steel_knife", 8), Map.entry("black_knife", 10),
+            Map.entry("mithril_knife", 11), Map.entry("adamant_knife", 15), Map.entry("rune_knife", 25), Map.entry("dragon_knife", 28),
+            Map.entry("bronze_thrownaxe", 4), Map.entry("iron_thrownaxe", 5), Map.entry("steel_thrownaxe", 8),
+            Map.entry("mithril_thrownaxe", 12), Map.entry("adamant_thrownaxe", 17), Map.entry("rune_thrownaxe", 26),
+            Map.entry("dragon_thrownaxe", 36), Map.entry("toktz_xil_ul", 69));
+
+    /** A thrown weapon's ranged attack bonus (osrs-dps-calc equipment.json; darts and javelins have none), or 0. */
+    public static int thrownRangedAttack(String id) {
+        return THROWN_ATTACK.getOrDefault(reference(id), 0);
+    }
+
     static {
         rows0();
         rows1();

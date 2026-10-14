@@ -196,11 +196,7 @@ public final class Mechanics {
         boolean alwaysHits = a.special() == AttackDef.Special.DRAGONFIRE || a.special() == AttackDef.Special.AOE
                 || a.special() == AttackDef.Special.SKY_STRIKE;
         int damage = alwaysHits ? random.nextInt(Math.max(0, maxHit) + 1) : CombatFormulas.roll(random, attackRoll, defenceRoll, maxHit);
-        boolean protectedHit = switch (a.style()) {
-            case MAGIC -> data.isActive(Prayer.PROTECT_FROM_MAGIC);
-            case RANGED -> data.isActive(Prayer.PROTECT_FROM_MISSILES);
-            default -> data.isActive(Prayer.PROTECT_FROM_MELEE);
-        };
+        boolean protectedHit = com.runecraft.osrs.NpcHitCalc.protectedFrom(data.activePrayers(), a.style());
         if (protectedHit && a.special() != AttackDef.Special.PRAYER_PIERCING && a.special() != AttackDef.Special.DRAGONFIRE) {
             damage = 0;
         }

@@ -369,9 +369,10 @@ public final class SpecialAttackService {
             }
             secondary = true;
             try {
-                long att = (long) (baseAttack(p, target, type) * acc * CombatHandler.hookAccuracy(p, target, type));
-                long def = SysCombat.baseDefenceRoll(target, type);
-                int max = (int) Math.floor(baseMax(p, target, type) * dmg * CombatHandler.hookMaxHit(p, target, type));
+                com.runecraft.osrs.PlayerHitCalc.Input in = hitInput(p, target, type);
+                long att = (long) (com.runecraft.osrs.PlayerHitCalc.attackRoll(in) * acc * CombatHandler.hookAccuracy(p, target, type));
+                long def = com.runecraft.combat.HitCalcBridge.defenceRoll(target, in);
+                int max = (int) Math.floor(com.runecraft.osrs.PlayerHitCalc.maxHit(in) * dmg * CombatHandler.hookMaxHit(p, target, type));
                 int damage = SysCombat.roll(p, att, def, max);
                 damage = CombatHandler.hookAfterRoll(p, target, type, damage);
                 int done = SysCombat.hit(p, target, type, damage);
@@ -409,9 +410,10 @@ public final class SpecialAttackService {
         }
         secondary = true;
         try {
-            long att = (long) (baseAttack(p, target, AttackType.RANGED) * spec.accuracy() * CombatHandler.hookAccuracy(p, target, AttackType.RANGED));
-            long def = SysCombat.baseDefenceRoll(target, AttackType.RANGED);
-            int max = (int) Math.floor(baseMax(p, target, AttackType.RANGED) * spec.damage()
+            com.runecraft.osrs.PlayerHitCalc.Input in = hitInput(p, target, AttackType.RANGED);
+            long att = (long) (com.runecraft.osrs.PlayerHitCalc.attackRoll(in) * spec.accuracy() * CombatHandler.hookAccuracy(p, target, AttackType.RANGED));
+            long def = com.runecraft.combat.HitCalcBridge.defenceRoll(target, in);
+            int max = (int) Math.floor(com.runecraft.osrs.PlayerHitCalc.maxHit(in) * spec.damage()
                     * CombatHandler.hookMaxHit(p, target, AttackType.RANGED));
             int damage = SysCombat.roll(p, att, def, Math.max(1, max));
             if (spec.effect() == Effect.DARK_BOW) {
@@ -477,9 +479,13 @@ public final class SpecialAttackService {
                 }
                 int magic = Math.min(99, s.currentLevel(Skill.MAGIC));
                 int max = Math.max(1, spec.param() * magic / 99);
-                long att = (long) (SysCombat.magicAttackRoll(p) * 1.5 * CombatHandler.hookAccuracy(p, t, AttackType.MAGIC));
-                long def = SysCombat.defenceRoll(t, AttackType.MAGIC);
-                int dmg = SysCombat.roll(p, att, def, (int) (max * CombatHandler.hookMaxHit(p, t, AttackType.MAGIC)));
+                // The blast is a spell with this base max hit: gear effects, magic damage and the target's defence come
+                // from PlayerHitCalc through HitCalcBridge; the spec adds +50% accuracy.
+                com.runecraft.osrs.PlayerHitCalc.Input in = com.runecraft.combat.HitCalcBridge.input(p, t, AttackType.MAGIC, null, 0);
+                com.runecraft.combat.HitCalcBridge.spell(in, max, false);
+                long att = (long) (com.runecraft.combat.HitCalcBridge.attackRoll(p, t, in) * 1.5);
+                long def = com.runecraft.combat.HitCalcBridge.defenceRoll(t, in);
+                int dmg = SysCombat.roll(p, att, def, com.runecraft.combat.HitCalcBridge.maxHit(p, t, in));
                 if (p.getWorld() instanceof ServerWorld w) {
                     SysCombat.trail(w, p.getEyePos(), t.getPos().add(0, t.getHeight() / 2, 0), new Vector3f(0.6f, 0.1f, 0.6f));
                 }

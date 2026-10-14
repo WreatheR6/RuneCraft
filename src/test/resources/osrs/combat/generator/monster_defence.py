@@ -1,3 +1,6 @@
+# Generates src/main/java/com/runecraft/osrs/data/MonsterDefenceTable.java (round 15): light/heavy ranged defence and
+# elemental weakness from osrs-dps-calc cdn/json/monsters.json, matched to MonsterStatsTable rows by name, version and stats.
+# Usage: python3 -I monster_defence.py <MonsterStatsTable.java> <monsters.json> <MonsterDefenceTable.java>
 import json, re, sys, collections
 table, monsters_json, out = sys.argv[1], sys.argv[2], sys.argv[3]
 ms = json.load(open(monsters_json))
@@ -79,7 +82,7 @@ public final class MonsterDefenceTable {
     private static final Map<String, Row> ROWS = new HashMap<>();
 
     static {
-        rows();
+        load();
     }
 
     private MonsterDefenceTable() {
@@ -100,7 +103,7 @@ public final class MonsterDefenceTable {
         }
     }
 
-    private static void rows() {
+    private static void load() {
 '''
 MANUAL = [
     ('mountain_troll', 200, 200, 'fire', 50, 'Mountain troll (Level 69)'),

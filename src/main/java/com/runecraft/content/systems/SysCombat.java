@@ -143,14 +143,7 @@ public final class SysCombat {
     /** The core defence roll (no drains). */
     public static long baseDefenceRoll(LivingEntity target, AttackType type) {
         if (target instanceof ServerPlayerEntity defender) {
-            PlayerData d = Players.data(defender);
-            SkillSet s = d.skills();
-            EquipmentStats eq = Equipment.total(defender, s).plus(wornStats(defender));
-            int eff = type == AttackType.MAGIC
-                    ? CombatFormulas.effectiveMagicDefence(s.currentLevel(Skill.MAGIC), PrayerService.magic(d),
-                    s.currentLevel(Skill.DEFENCE), PrayerService.defence(d), d.style())
-                    : CombatFormulas.effectiveDefence(s.currentLevel(Skill.DEFENCE), PrayerService.defence(d), d.style());
-            return CombatFormulas.attackRoll(eff, eq.defence(type));
+            return com.runecraft.combat.HitCalcBridge.playerDefenceRoll(defender, type);
         }
         MonsterStats stats = MonsterStats.of(target);
         int level = type == AttackType.MAGIC ? stats.magic() : stats.defence();

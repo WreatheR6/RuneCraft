@@ -174,18 +174,14 @@ public final class MinigameCombat {
         }
         data.lastAttackTick = now;
         CombatStyle style = data.style().forMelee();
-        EquipmentStats eq = Equipment.total(attacker, skills);
         AttackType type = Equipment.meleeType(attacker, skills);
-        int effAtt = CombatFormulas.effectiveAttack(skills.currentLevel(Skill.ATTACK), PrayerService.attack(data), style);
-        int effStr = CombatFormulas.effectiveStrength(skills.currentLevel(Skill.STRENGTH), PrayerService.strength(data), style);
+        // Same calculation as every other player attack (PlayerHitCalc / NpcHitCalc through HitCalcBridge).
+        com.runecraft.osrs.PlayerHitCalc.Input in = com.runecraft.combat.HitCalcBridge.input(attacker, target, type, null, 0);
+        long attackRoll = com.runecraft.combat.HitCalcBridge.attackRoll(attacker, target, in);
+        long defenceRoll = com.runecraft.combat.HitCalcBridge.defenceRoll(target, in);
+        int maxHit = com.runecraft.combat.HitCalcBridge.maxHit(attacker, target, in);
+        int damage = com.runecraft.combat.HitCalcBridge.roll(new java.util.Random(attacker.getRandom().nextLong()), in, attackRoll, defenceRoll, maxHit);
         PlayerData td = Players.data(target);
-        SkillSet ts = td.skills();
-        EquipmentStats teq = Equipment.total(target, ts);
-        int effDef = CombatFormulas.effectiveDefence(ts.currentLevel(Skill.DEFENCE), PrayerService.defence(td), td.style());
-        long attackRoll = (long) (CombatFormulas.attackRoll(effAtt, eq.attack(type)) * CombatHandler.hookAccuracy(attacker, target, type));
-        long defenceRoll = CombatFormulas.attackRoll(effDef, teq.defence(type));
-        int maxHit = (int) Math.floor(CombatFormulas.meleeMaxHit(effStr, eq.meleeStrength()) * CombatHandler.hookMaxHit(attacker, target, type));
-        int damage = CombatFormulas.roll(new java.util.Random(attacker.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
         if (td.isActive(Prayer.PROTECT_FROM_MELEE)) {
             damage = (int) Math.floor(damage * 0.6);
         }

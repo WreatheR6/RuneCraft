@@ -24,10 +24,9 @@ import java.util.UUID;
 
 /**
  * Accessories worn in virtual slots (hands, cape, neck) that the base equipment system lacks:
- * right-click to wear, {@code /questgear} to list or remove. Their attack and strength bonuses are
- * applied through {@link CombatHooks} as the ratio they add to the player's equipment bonus
- * (accuracy roll and max hit both scale with bonus + 64). Defence bonuses are recorded but not yet
- * applied (CombatHooks has no defence hook). Also enforces quest-locked weapons (dragon longsword,
+ * right-click to wear, {@code /questgear} to list or remove. Their bonuses are added to the gear totals
+ * {@link com.runecraft.combat.HitCalcBridge} feeds the attack and defence calculations (round 15; before, attack and
+ * strength multiplied the roll separately and defence was ignored). Also enforces quest-locked weapons (dragon longsword,
  * dragon scimitar...): without the quest they deal no damage, as OSRS forbids wielding them.
  */
 final class QuestGear {
@@ -57,37 +56,18 @@ final class QuestGear {
                 }
             }
         });
+        // The worn quest gear is part of the gear totals PlayerHitCalc and the defence roll use (no separate multiplier).
+        com.runecraft.combat.HitCalcBridge.extraWornStats = QuestGear::bonus;
+        com.runecraft.combat.HitCalcBridge.extraWornIds = p -> QuestsState.get(p).wornAll(p.getUuid()).values();
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             @Override
             public double accuracy(ServerPlayerEntity player, LivingEntity target, AttackType type) {
-                if (locked(player)) {
-                    return 0.0;
-                }
-                int extra = bonus(player).attack(type);
-                if (extra == 0) {
-                    return 1.0;
-                }
-                int base = Equipment.total(player, Players.data(player).skills()).attack(type);
-                return Math.max(0.1, (base + extra + 64.0) / Math.max(1.0, base + 64.0));
+                return locked(player) ? 0.0 : 1.0;
             }
 
             @Override
             public double maxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
-                if (locked(player)) {
-                    return 0.0;
-                }
-                EquipmentStats extra = bonus(player);
-                EquipmentStats base = Equipment.total(player, Players.data(player).skills());
-                if (type.isMelee() && extra.meleeStrength() != 0) {
-                    return (base.meleeStrength() + extra.meleeStrength() + 64.0) / Math.max(1.0, base.meleeStrength() + 64.0);
-                }
-                if (type == AttackType.RANGED && extra.rangedStrength() != 0) {
-                    return (base.rangedStrength() + extra.rangedStrength() + 64.0) / Math.max(1.0, base.rangedStrength() + 64.0);
-                }
-                if (type == AttackType.MAGIC && extra.magicDamagePercent() != 0) {
-                    return 1.0 + extra.magicDamagePercent() / 100.0;
-                }
-                return 1.0;
+                return locked(player) ? 0.0 : 1.0;
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {

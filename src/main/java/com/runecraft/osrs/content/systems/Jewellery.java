@@ -144,6 +144,18 @@ public final class Jewellery {
         wornExternal("treasonous_ring", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)); // item defined by the godwars module
         wornExternal("tyrannical_ring", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)); // item defined by the godwars module
         wornExternal("ring_of_the_gods", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4)); // item defined by the godwars module
+        // Boss accessories (bosses module BossItems.ACCESSORIES) and the Zaryte vambraces (godwars module): stats from the
+        // DPS calculator's equipment.json, so they count in the gear totals PlayerHitCalc sees (round 15; were unwearable).
+        wornExternal("ultor_ring", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0));
+        wornExternal("bellator_ring", Slot.RING, s(0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0));
+        wornExternal("magus_ring", Slot.RING, s(0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0));
+        wornExternal("venator_ring", Slot.RING, s(0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 2, 0, 0));
+        wornExternal("zaryte_vambraces", Slot.HANDS, s(-8, -8, -8, 0, 18, 8, 8, 8, 5, 8, 0, 2, 0, 1));
+        wornExternal("granite_gloves", Slot.HANDS, s(5, 5, 9, -3, -1, 8, 8, 8, -3, 5, 7, 0, 0, 0));
+        wornExternal("dragonbone_necklace", Slot.NECK, s(10, 10, 10, 10, 10, 2, 2, 2, 2, 2, 2, 0, 0, 12));
+        wornExternal("dizanas_quiver", Slot.CAPE, s(0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 3, 0, 0));
+        wornExternal("pendant_of_ates", Slot.NECK, s(0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 2)); // wiki bonuses (EquipmentWikiSyncTest)
+        wornExternal("giantsoul_amulet", Slot.NECK, NONE);
         worn("ring_of_nature", "Ring of nature", Slot.RING, "ring", 0x30A030, 10000, NONE, Perk.NONE, "A ring of nature.");
         worn("ring_of_coins", "Ring of coins", Slot.RING, "ring", 0xE8C030, 10000, NONE, Perk.NONE, "Turns you into a pile of coins.");
         worn("amulet_of_magic_t", "Amulet of magic (t)", Slot.NECK, "amulet", 0x5070E0, 900, s(0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),

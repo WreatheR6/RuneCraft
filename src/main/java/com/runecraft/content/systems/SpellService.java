@@ -382,7 +382,7 @@ public final class SpellService {
             com.runecraft.osrs.PlayerHitCalc.Input in = com.runecraft.combat.HitCalcBridge.input(p, t, AttackType.MAGIC, null, 0);
             com.runecraft.combat.HitCalcBridge.spell(in, baseMax, s.book() == Spellbooks.Book.STANDARD);
             long att = (long) (com.runecraft.combat.HitCalcBridge.attackRoll(p, t, in) * acc);
-            long def = SysCombat.baseDefenceRoll(t, AttackType.MAGIC);
+            long def = com.runecraft.combat.HitCalcBridge.defenceRoll(t, in);
             int max = (int) Math.floor(com.runecraft.combat.HitCalcBridge.maxHit(p, t, in) * dmgMult);
             boolean hit = p.getRandom().nextDouble() < Chance.hitChance(att, def);
             if (!hit) {
