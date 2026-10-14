@@ -102,6 +102,11 @@ final class QuestItemsData {
                 .equipment(new EquipmentDef(EquipmentDef.Slot.WEAPON, new EquipmentStats(0, 0, 67, 0, 0, 0, 0, 0, 0, 0, 81, 0, 0, 0),
                         Map.of(Skill.ATTACK, 70, Skill.SLAYER, 50), 4, AttackType.CRUSH, EquipmentDef.WeaponClass.MELEE))
                 .examine("A flail of blisterwood, deadly to vampyres."));
+        // Blisterwood sickle (OSRS: blisterwood logs on an enchanted ruby sickle (b); 50 Attack). Stats from EquipmentBonuses.
+        b.items(s -> s.add("blisterwood_sickle", "Blisterwood sickle", Kind.MELEE_WEAPON, "sickle", 0x6A4A6A).value(1).stack(1).tier("dragon")
+                .equipment(new EquipmentDef(EquipmentDef.Slot.WEAPON, new EquipmentStats(30, 38, 0, 0, 0, 1, 2, 2, 2, 2, 32, 0, 0, 5),
+                        Map.of(Skill.ATTACK, 50), 5, AttackType.SLASH, EquipmentDef.WeaponClass.MELEE))
+                .examine("A sickle made of blisterwood. Deadly to vampyres."));
 
         // Quest-locked base-game weapons
         b.gate("dragon_longsword", "lost_city");

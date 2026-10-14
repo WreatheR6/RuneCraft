@@ -631,6 +631,8 @@ public final class EquipmentBonuses {
         put("lunar_staff", 5, 3, 2, 16, 13, 0,  2, 3, 2, 13, 1,  15, 0, 0, 3);
         put("ivandis_flail", 5, 24, 38, 62, 8, 0,  4, 4, 2, 8, 0,  42, 0, 0, 5);
         put("blisterwood_flail", 5, 30, 44, 68, 8, 0,  4, 4, 2, 8, 0,  46, 0, 0, 5);
+        put("blisterwood_sickle", 5, 30, 38, 0, 0, 0,  1, 2, 2, 2, 2,  32, 0, 0, 5);
+        put("rod_of_ivandis", 5, 0, -1, 7, 4, 0,  2, 3, 1, 4, 0,  3, 0, 0, 0);
         put("bearhead", 0, 0, 0, 0, -3, -3,  12, 14, 10, 7, 9,  0, 0, 0, 0);
         put("elemental_shield", 0, 0, 0, 0, 0, 0,  0, 0, 0, 6, 0,  0, 0, 0, 0);
         twoH("crystal_bow_quest", 5, 0, 0, 0, 0, 100,  0, 0, 0, 0, 0,  0, 70, 0, 0);

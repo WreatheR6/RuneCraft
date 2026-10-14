@@ -1,5 +1,6 @@
 // Generates src/test/resources/osrs/combat/npc_reference.tsv from weirdgloop/osrs-dps-calc's NPCVsPlayerCalc (round 15).
-// Same layout and build as gen_dps_reference.ts: node gen/build.mjs gen_npc.ts gen_npc.js && node gen/gen_npc.js npc_reference.tsv.
+// Same layout and build as gen_dps_reference.ts: node gen/build.mjs gen_npc.ts gen_npc.js && node gen/gen_npc.js npc_reference.tsv
+// npc_reduction_reference.tsv (round 17: Elysian, Dinh's bulwark, Justiciar).
 import NPCVsPlayerCalc from '@/lib/NPCVsPlayerCalc';
 import { getMonsters, INITIAL_MONSTER_INPUTS } from '@/lib/Monsters';
 import { calculateEquipmentBonusesFromGear } from '@/lib/Equipment';
@@ -131,6 +132,67 @@ function main() {
   }
   fs.writeFileSync(process.argv[2], rows.join('\n') + '\n');
   console.log('rows', n);
+  if (process.argv[3]) reductions(process.argv[3]);
+}
+
+// Round 17: damage reduction on the defending player (NPCVsPlayerCalc getDistributionImpl): the Elysian spirit shield,
+// Dinh's bulwark in its Block stance and the Justiciar set. Written to npc_reduction_reference.tsv: the gear, the summed
+// defence bonus against the monster's style, the max hit and hit chance the calculator used, then the expected damage and
+// largest hitsplat of its final distribution.
+const REDUCTION_GEARS: Gear[] = [
+  { id: 'elysian', gear: ['Abyssal whip', 'Rune full helm', 'Rune platebody', 'Rune platelegs', 'Elysian spirit shield'], style: 'Lash' },
+  { id: 'elysian_justiciar', gear: ['Ghrazi rapier', 'Justiciar faceguard', 'Justiciar chestguard', 'Justiciar legguards', 'Elysian spirit shield'], style: 'Block' },
+  { id: 'justiciar', gear: ['Ghrazi rapier', 'Justiciar faceguard', 'Justiciar chestguard', 'Justiciar legguards', 'Avernic defender'], style: 'Block' },
+  { id: 'justiciar_two', gear: ['Ghrazi rapier', 'Justiciar faceguard', 'Justiciar chestguard', 'Bandos tassets', 'Avernic defender'], style: 'Block' },
+  { id: 'dinhs_block', gear: ["Dinh's bulwark", 'Torva full helm', 'Torva platebody', 'Torva platelegs'], style: 'Block' },
+  { id: 'dinhs_pummel', gear: ["Dinh's bulwark", 'Torva full helm', 'Torva platebody', 'Torva platelegs'], style: 'Pummel' },
+  { id: 'dinhs_justiciar', gear: ["Dinh's bulwark", 'Justiciar faceguard', 'Justiciar chestguard', 'Justiciar legguards'], style: 'Block' },
+  { id: 'plain', gear: ['Abyssal whip', 'Rune full helm', 'Rune platebody', 'Rune platelegs', 'Rune kiteshield'], style: 'Lash' },
+];
+
+function reductions(file: string) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { Prayer } = require('@/enums/Prayer');
+  const rows: string[] = [];
+  rows.push('# Defending-player damage reduction from weirdgloop/osrs-dps-calc NPCVsPlayerCalc (round 17): Elysian spirit shield (70%: -max(1, hit/4)),');
+  rows.push("# Dinh's bulwark on Block (x0.8), Justiciar set (x(1 - defence bonus / 3000)). expected = the calculator's expected damage per attack, distMax its largest hit.");
+  rows.push(['id', 'gear', 'loadout', 'stance', 'styleName', 'npcStyle', 'defBonus', 'npcMaxHit', 'hitChance', 'expected', 'distMax'].join('\t'));
+  let n = 0;
+  for (const prof of PROFILES.filter((p) => p.id === 'max_piety' || p.id === 'none_half_hp')) {
+    for (const lo of REDUCTION_GEARS) {
+      for (const [mn, mv] of MONSTERS) {
+        const m = monster(mn, mv);
+        const pieces = lo.gear.map(item);
+        const equip: any = { head: null, cape: null, neck: null, ammo: null, weapon: null, body: null, shield: null, legs: null, hands: null, feet: null, ring: null };
+        for (const p of pieces) equip[p.slot] = p;
+        const styles = getCombatStylesForCategory(equip.weapon.category || EquipmentCategory.NONE);
+        const style = styles.find((s: any) => s.name === lo.style);
+        if (!style) throw new Error('style ' + lo.style + ' for ' + lo.id);
+        const hpCur = Math.max(1, Math.trunc(prof.lvl * prof.hpPct / 100));
+        const player: any = {
+          name: 'x', style,
+          skills: { atk: prof.lvl, def: prof.def, hp: prof.lvl, magic: prof.magic, prayer: 99, ranged: prof.lvl, str: prof.lvl, mining: 99, herblore: 99 },
+          boosts: { atk: 0, def: prof.defBoost, hp: hpCur - prof.lvl, magic: prof.magicBoost, prayer: 0, ranged: 0, str: 0, mining: 0, herblore: 0 },
+          equipment: equip, attackSpeed: 4,
+          prayers: prof.prayers.map((p: string) => { const k = PRAYER_KEYS[p]; return Number.isNaN(Number(k)) ? (Prayer as any)[k] : Number(k); }),
+          bonuses: { str: 0, ranged_str: 0, magic_str: 0, prayer: 0 },
+          defensive: { stab: 0, slash: 0, crush: 0, magic: 0, ranged: 0 },
+          offensive: { stab: 0, slash: 0, crush: 0, magic: 0, ranged: 0 },
+          buffs: { potions: [], onSlayerTask: true, inWilderness: false, kandarinDiary: true, chargeSpell: false, markOfDarknessSpell: false, forinthrySurge: false, soulreaperStacks: 0, baAttackerLevel: 0, chinchompaDistance: 4, usingSunfireRunes: false },
+          spell: null,
+        };
+        const calcd = calculateEquipmentBonusesFromGear(player, m);
+        player.bonuses = calcd.bonuses; player.offensive = calcd.offensive; player.defensive = calcd.defensive;
+        const calc: any = new NPCVsPlayerCalc(player, m, { loadoutName: 'x', detailedOutput: false } as any);
+        const dist = calc.getDistribution();
+        n++;
+        rows.push([`${prof.id}/${lo.id}/${mn}${mv ? ' (' + mv + ')' : ''}`, lo.gear.join(','), lo.id, style.stance, style.name, m.style, calc.getPlayerDefensiveBonus(),
+          calc.getNPCMaxHit(), calc.getHitChance().toFixed(8), dist.getExpectedDamage().toFixed(6), dist.getMax()].join('\t'));
+      }
+    }
+  }
+  fs.writeFileSync(file, rows.join('\n') + '\n');
+  console.log('reduction rows', n);
 }
 
 main();

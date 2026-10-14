@@ -1,0 +1,25 @@
+# Monster enum defences from weirdgloop/osrs-dps-calc monsters.json (round 17, generator combat/generator/monster_enum_defence.py).
+monster	wiki	def	magic	stab	slash	crush	magicDef	light	standard	heavy	weakness
+MAN	Man|1	1	1	-21	-21	-21	-21	-21	-21	-21	-
+GOBLIN	Goblin|Level 2	1	1	-15	-15	-15	-15	-15	-15	-15	-
+AL_KHARID_WARRIOR	Al Kharid warrior|	4	1	12	15	10	-1	12	12	12	-
+BARBARIAN	Barbarian|Level 10 (Acelin)	3	1	0	3	2	-3	2	2	2	-
+DARK_WIZARD	Dark wizard|Level 7	5	6	0	0	0	3	0	0	0	-
+GUARD	Guard|Edgeville 1	14	1	18	25	19	-4	20	20	20	-
+HILL_GIANT	Hill Giant|	26	1	0	0	0	0	0	0	0	earth:25
+MOSS_GIANT	Moss giant|Level 42	30	1	0	0	0	0	0	0	0	fire:50
+GHOUL	Ghoul|	30	1	0	0	0	0	0	0	0	-
+ICE_GIANT	Ice giant|1	40	1	0	3	2	0	0	0	0	fire:100
+LESSER_DEMON	Lesser demon|Level 82	71	1	0	0	0	-10	0	0	0	water:40
+GREATER_DEMON	Greater demon|Level 92	81	1	0	0	0	-10	0	0	0	water:40
+BLACK_DEMON	Black demon|Level 172	152	1	0	0	0	-10	0	0	0	water:40
+CHICKEN	Chicken|Falador Farm	1	1	-42	-42	-42	-42	-42	-42	-42	-
+COW	Cow|1	1	1	-21	-21	-21	-21	-21	-21	-21	-
+GIANT_RAT	Giant rat|Level 3	2	1	0	0	0	0	0	0	0	-
+SPIDER	Spider|Common	1	1	-53	-53	-53	-53	-53	-53	-53	fire:50
+GIANT_SPIDER	Giant spider|Level 27	21	1	0	0	0	0	0	0	0	fire:50
+ZOMBIE	Zombie|Level 13, 1	10	1	0	0	0	0	0	0	0	fire:50
+SKELETON	Skeleton|Level 22, 1	17	1	5	5	-5	0	5	5	5	earth:35
+WOLF	Wolf|Level 25	22	1	0	0	0	0	0	0	0	fire:25
+VILLAGER	Man|1	1	1	-21	-21	-21	-21	-21	-21	-21	-
+WITCH	Dark wizard|Level 20	14	22	0	0	0	3	0	0	0	-

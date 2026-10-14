@@ -121,6 +121,12 @@ public final class Jewellery {
         worn("confliction_gauntlets", "Confliction gauntlets", Slot.HANDS, "bracelet", 0x8A3A9A, 4_000_000,
                 s(0, 0, 0, 20, -4, 15, 18, 7, 5, 5, 0, 0, 7, 2), Perk.NONE,
                 "A tormented bracelet woven with Mokhaiotl cloth. A missed spell makes the next one roll accuracy twice.");
+        // Round 17 combat jewellery (effects in PlayerHitCalc): avarice +20% vs revenants (+35% with Forinthry surge when
+        // skulled); Efaritay's aid (an enchanted topaz ring in OSRS; no topaz ring here yet) helps silver weapons vs vampyres.
+        worn("amulet_of_avarice", "Amulet of avarice", Slot.NECK, "amulet", 0x6AD0B0, 60_000, s(10, 10, 10, 10, 10, 3, 3, 3, 3, 3, 6, 0, 0, 3),
+                Perk.NONE, "A hauntingly beautiful amulet. Revenants fear it; the Wilderness covets it.");
+        worn("efaritays_aid", "Efaritay's aid", Slot.RING, "ring", 0xE06A3A, 1_800, NONE, Perk.NONE,
+                "A ring that aids its wearer against vampyres when wielding silver.");
         // ---------- Other worn items ----------
         charged("digsite_pendant", "Digsite pendant", Slot.NECK, "necklace", 0xB08040, 1200, NONE, 5, Teleports.DIGSITE, true);
         charged("necklace_of_passage", "Necklace of passage", Slot.NECK, "necklace", 0x70A0D0, 2000, NONE, 5, Teleports.PASSAGE, true);

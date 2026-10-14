@@ -91,6 +91,62 @@ public final class NpcHitCalc {
         return Chance.hitChance(npcAttackRoll(in), playerDefenceRoll(in));
     }
 
+    // ---------------------------------------------------------------- damage reduction on the defending player
+
+    /** Chance for the Elysian spirit shield's effect to trigger on a hit. */
+    public static final double ELYSIAN_CHANCE = 0.7;
+
+    /** Elysian spirit shield (when it triggers): the hit loses a quarter, at least 1. */
+    public static int elysian(int damage) {
+        return Math.max(0, damage - Math.max(1, damage / 4));
+    }
+
+    /** Dinh's bulwark in its Block stance: hits are reduced by 20% (rounded down). */
+    public static int dinhsBlock(int damage) {
+        return (int) (damage * 0.8);
+    }
+
+    /**
+     * The Justiciar set: a hit is reduced by (defence bonus against its style / 3000), rounded down. A negative bonus doesn't
+     * add damage. // approx: the calculator would scale it up
+     */
+    public static int justiciar(int damage, int defenceBonus) {
+        if (defenceBonus <= 0) {
+            return damage;
+        }
+        return (int) (damage * (1 - defenceBonus / 3000.0));
+    }
+
+    /**
+     * Every defensive reduction on one hit, in the calculator's order ({@code NPCVsPlayerCalc}): the Elysian spirit shield
+     * (if it triggered), Dinh's bulwark on Block, then the Justiciar set with the defence bonus against the hit's style.
+     */
+    public static int reduceIncoming(int damage, boolean elysianTriggered, boolean dinhsBlock, boolean justiciar, int defenceBonus) {
+        if (damage <= 0) {
+            return Math.max(0, damage);
+        }
+        if (elysianTriggered) {
+            damage = elysian(damage);
+        }
+        if (dinhsBlock) {
+            damage = dinhsBlock(damage);
+        }
+        if (justiciar) {
+            damage = justiciar(damage, defenceBonus);
+        }
+        return damage;
+    }
+
+    /** True for the whole Justiciar set (faceguard, chestguard and legguards). */
+    public static boolean justiciarSet(String head, String body, String legs) {
+        return "justiciar_faceguard".equals(head) && "justiciar_chestguard".equals(body) && "justiciar_legguards".equals(legs);
+    }
+
+    /** Dinh's bulwark (or the blazing one) held in its Block stance (the defensive style), which can't attack. */
+    public static boolean dinhsBlocking(String weapon, CombatStyle style) {
+        return ("dinhs_bulwark".equals(weapon) || "dinhs_blazing_bulwark".equals(weapon)) && style == CombatStyle.DEFENSIVE;
+    }
+
     /** True when the player's overhead prayer protects from this style (monsters then deal no damage). */
     public static boolean protectedFrom(Collection<Prayer> prayers, AttackType style) {
         return switch (style) {

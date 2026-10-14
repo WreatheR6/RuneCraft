@@ -1,0 +1,419 @@
+# Defending-player damage reduction from weirdgloop/osrs-dps-calc NPCVsPlayerCalc (round 17): Elysian spirit shield (70%: -max(1, hit/4)),
+# Dinh's bulwark on Block (x0.8), Justiciar set (x(1 - defence bonus / 3000)). expected = the calculator's expected damage per attack, distMax its largest hit.
+id	gear	loadout	stance	styleName	npcStyle	defBonus	npcMaxHit	hitChance	expected	distMax
+max_piety/elysian/Abyssal demon (Catacombs of Kourend)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	stab	226	8	0.07497624	0.247422	8
+max_piety/elysian/Ankou (Level 75)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	8	0.05685882	0.187634	8
+max_piety/elysian/Black demon (Level 172)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	slash	226	16	0.10892774	0.732379	16
+max_piety/elysian/Fire giant (Level 104)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	slash	226	10	0.09323401	0.389040	10
+max_piety/elysian/Hill Giant	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	4	0.02489823	0.035853	4
+max_piety/elysian/Ice giant (1)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	slash	226	7	0.05036361	0.145425	7
+max_piety/elysian/Imp (GWD)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	stab	226	1	0.00340399	0.000511	1
+max_piety/elysian/Moss giant (Level 42)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	6	0.04254290	0.102103	6
+max_piety/elysian/Ogre (GWD)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	8	0.05319269	0.175536	8
+max_piety/elysian/Sergeant Strongstack	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	15	0.09572434	0.604858	15
+max_piety/elysian/Phantom Muspah (Melee)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	stab	226	34	0.82872481	11.784467	34
+max_piety/elysian/Scorpia	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	stab	226	16	0.35494352	2.386473	16
+max_piety/elysian/Vardorvis (Post-quest)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	slash	226	32	0.69184138	9.264385	32
+max_piety/elysian/Wyrd	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	30	0.41942376	5.268504	30
+max_piety/elysian/Avatar of Creation	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	54	0.42572142	9.576410	54
+max_piety/elysian/Aviansie (Level 131)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	ranged	216	15	0.11135276	0.703610	15
+max_piety/elysian/Zulrah (Serpentine)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	ranged	216	41	0.40321879	6.901762	41
+max_piety/elysian/Pestilent Bloat (Normal)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	ranged	216	20	0.52640024	4.421762	20
+max_piety/elysian/Javelin Colossus	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	ranged	216	48	0.37591859	7.523742	48
+max_piety/elysian/Metzli, Teokan of Ranul	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	28	0.89210022	10.465258	28
+max_piety/elysian/Dagannoth Prime	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	50	0.78999231	16.464369	50
+max_piety/elysian/Dark wizard (Level 11)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	5	0.08568207	0.164224	5
+max_piety/elysian/Infernal Mage	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	8	0.37880496	1.250056	8
+max_piety/elysian/Wingman Skree	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	16	0.65132161	4.379180	16
+max_piety/elysian/Verzik Vitur (Normal mode, Phase 1)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	137	0.93975075	53.337665	137
+max_piety/elysian/The Maiden of Sugadinti (50% Health)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	36	0.97284526	14.640007	36
+max_piety/elysian_justiciar/Abyssal demon (Catacombs of Kourend)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	stab	350	8	0.05185514	0.129062	7
+max_piety/elysian_justiciar/Ankou (Level 75)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	8	0.03921508	0.097602	7
+max_piety/elysian_justiciar/Black demon (Level 172)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	slash	350	16	0.07533671	0.409477	14
+max_piety/elysian_justiciar/Fire giant (Level 104)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	slash	350	10	0.06448260	0.211034	8
+max_piety/elysian_justiciar/Hill Giant	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	4	0.01717211	0.013394	3
+max_piety/elysian_justiciar/Ice giant (1)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	slash	350	7	0.03483253	0.073148	6
+max_piety/elysian_justiciar/Imp (GWD)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	stab	350	1	0.00235427	0.000000	0
+max_piety/elysian_justiciar/Moss giant (Level 42)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	6	0.02934150	0.048204	5
+max_piety/elysian_justiciar/Ogre (GWD)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	8	0.03668657	0.091309	7
+max_piety/elysian_justiciar/Sergeant Strongstack	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	15	0.06602032	0.335053	13
+max_piety/elysian_justiciar/Phantom Muspah (Melee)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	stab	350	34	0.75235853	9.090641	30
+max_piety/elysian_justiciar/Scorpia	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	stab	350	16	0.24548637	1.334291	14
+max_piety/elysian_justiciar/Vardorvis (Post-quest)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	slash	350	32	0.55444304	6.290408	28
+max_piety/elysian_justiciar/Wyrd	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	30	0.28927325	3.068163	26
+max_piety/elysian_justiciar/Avatar of Creation	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	54	0.29361669	5.697232	47
+max_piety/elysian_justiciar/Aviansie (Level 131)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	ranged	368	15	0.07126009	0.361645	13
+max_piety/elysian_justiciar/Zulrah (Serpentine)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	ranged	368	41	0.25803947	3.754474	35
+max_piety/elysian_justiciar/Pestilent Bloat (Normal)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	ranged	368	20	0.33781151	2.337334	17
+max_piety/elysian_justiciar/Javelin Colossus	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	ranged	368	48	0.24056873	4.106852	42
+max_piety/elysian_justiciar/Metzli, Teokan of Ranul	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	28	0.94021954	11.029748	28
+max_piety/elysian_justiciar/Dagannoth Prime	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	50	0.88364798	18.416264	50
+max_piety/elysian_justiciar/Dark wizard (Level 11)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	5	0.15466802	0.296447	5
+max_piety/elysian_justiciar/Infernal Mage	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	8	0.63436861	2.093416	8
+max_piety/elysian_justiciar/Wingman Skree	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	16	0.80681930	5.424673	16
+max_piety/elysian_justiciar/Verzik Vitur (Normal mode, Phase 1)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	137	0.96661969	55.063701	138
+max_piety/elysian_justiciar/The Maiden of Sugadinti (50% Health)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	36	0.98495527	14.822246	36
+max_piety/justiciar/Abyssal demon (Catacombs of Kourend)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	stab	317	8	0.05634645	0.175300	7
+max_piety/justiciar/Ankou (Level 75)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	8	0.04432055	0.137886	7
+max_piety/justiciar/Black demon (Level 172)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	slash	314	16	0.08251151	0.548459	14
+max_piety/justiciar/Fire giant (Level 104)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	slash	314	10	0.07062369	0.282495	8
+max_piety/justiciar/Hill Giant	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	4	0.01940777	0.023289	3
+max_piety/justiciar/Ice giant (1)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	slash	314	7	0.03814985	0.100143	6
+max_piety/justiciar/Imp (GWD)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	stab	317	1	0.00255818	0.000000	0
+max_piety/justiciar/Moss giant (Level 42)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	6	0.03316152	0.071060	5
+max_piety/justiciar/Ogre (GWD)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	8	0.04146286	0.128996	7
+max_piety/justiciar/Sergeant Strongstack	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	15	0.07461561	0.466348	13
+max_piety/justiciar/Phantom Muspah (Melee)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	stab	317	34	0.77209746	11.338803	30
+max_piety/justiciar/Scorpia	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	stab	317	16	0.26674862	1.773094	14
+max_piety/justiciar/Vardorvis (Post-quest)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	slash	314	32	0.59318594	8.196751	28
+max_piety/justiciar/Wyrd	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	30	0.32693420	4.271237	27
+max_piety/justiciar/Avatar of Creation	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	54	0.33184312	7.909933	48
+max_piety/justiciar/Aviansie (Level 131)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	ranged	307	15	0.08297651	0.513417	13
+max_piety/justiciar/Zulrah (Serpentine)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	ranged	307	41	0.30046572	5.379767	36
+max_piety/justiciar/Pestilent Bloat (Normal)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	ranged	307	20	0.39335369	3.334141	17
+max_piety/justiciar/Javelin Colossus	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	ranged	307	48	0.28012249	5.899723	43
+max_piety/justiciar/Metzli, Teokan of Ranul	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	28	0.95416122	13.358257	28
+max_piety/justiciar/Dagannoth Prime	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	50	0.91078298	22.769574	50
+max_piety/justiciar/Dark wizard (Level 11)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	5	0.20172528	0.504313	5
+max_piety/justiciar/Infernal Mage	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	8	0.71963920	2.878557	8
+max_piety/justiciar/Wingman Skree	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	16	0.85187187	6.814975	16
+max_piety/justiciar/Verzik Vitur (Normal mode, Phase 1)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	137	0.97440447	67.198604	138
+max_piety/justiciar/The Maiden of Sugadinti (50% Health)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	36	0.98846392	17.792351	36
+max_piety/justiciar_two/Abyssal demon (Catacombs of Kourend)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	stab	293	8	0.06013438	0.240538	8
+max_piety/justiciar_two/Ankou (Level 75)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	8	0.04790328	0.191613	8
+max_piety/justiciar_two/Black demon (Level 172)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	slash	285	16	0.08936764	0.714941	16
+max_piety/justiciar_two/Fire giant (Level 104)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	slash	285	10	0.07649203	0.382460	10
+max_piety/justiciar_two/Hill Giant	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	4	0.02097664	0.041953	4
+max_piety/justiciar_two/Ice giant (1)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	slash	285	7	0.04131984	0.144619	7
+max_piety/justiciar_two/Imp (GWD)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	stab	293	1	0.00273016	0.001365	1
+max_piety/justiciar_two/Moss giant (Level 42)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	6	0.03584219	0.107527	6
+max_piety/justiciar_two/Ogre (GWD)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	8	0.04481458	0.179258	8
+max_piety/justiciar_two/Sergeant Strongstack	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	15	0.08064730	0.604855	15
+max_piety/justiciar_two/Phantom Muspah (Melee)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	stab	293	34	0.78645305	13.369702	34
+max_piety/justiciar_two/Scorpia	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	stab	293	16	0.28468098	2.277448	16
+max_piety/justiciar_two/Vardorvis (Post-quest)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	slash	285	32	0.62439549	9.990328	32
+max_piety/justiciar_two/Wyrd	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	30	0.35336251	5.300438	30
+max_piety/justiciar_two/Avatar of Creation	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	54	0.35866826	9.684043	54
+max_piety/justiciar_two/Aviansie (Level 131)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	ranged	298	15	0.08503943	0.637796	15
+max_piety/justiciar_two/Zulrah (Serpentine)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	ranged	298	41	0.30793573	6.312682	41
+max_piety/justiciar_two/Pestilent Bloat (Normal)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	ranged	298	20	0.40313303	4.031330	20
+max_piety/justiciar_two/Javelin Colossus	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	ranged	298	48	0.28708674	6.890082	48
+max_piety/justiciar_two/Metzli, Teokan of Ranul	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	28	0.93424453	13.079423	28
+max_piety/justiciar_two/Dagannoth Prime	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	50	0.87201870	21.800468	50
+max_piety/justiciar_two/Dark wizard (Level 11)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	5	0.14061055	0.351526	5
+max_piety/justiciar_two/Infernal Mage	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	8	0.59782407	2.391296	8
+max_piety/justiciar_two/Wingman Skree	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	16	0.78751105	6.300088	16
+max_piety/justiciar_two/Verzik Vitur (Normal mode, Phase 1)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	137	0.96328336	65.984910	137
+max_piety/justiciar_two/The Maiden of Sugadinti (50% Health)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	36	0.98345156	17.702128	36
+max_piety/dinhs_block/Abyssal demon (Catacombs of Kourend)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	stab	369	8	0.05053936	0.140387	6
+max_piety/dinhs_block/Ankou (Level 75)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	8	0.03784091	0.105114	6
+max_piety/dinhs_block/Black demon (Level 172)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	slash	358	16	0.07533901	0.452034	12
+max_piety/dinhs_block/Fire giant (Level 104)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	slash	358	10	0.06448457	0.234489	8
+max_piety/dinhs_block/Hill Giant	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	4	0.01657037	0.019884	3
+max_piety/dinhs_block/Ice giant (1)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	slash	358	7	0.03483359	0.082730	5
+max_piety/dinhs_block/Imp (GWD)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	stab	369	1	0.00229453	0.000000	0
+max_piety/dinhs_block/Moss giant (Level 42)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	6	0.02831333	0.056627	4
+max_piety/dinhs_block/Ogre (GWD)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	8	0.03540101	0.098336	6
+max_piety/dinhs_block/Sergeant Strongstack	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	15	0.06370685	0.358351	12
+max_piety/dinhs_block/Phantom Muspah (Melee)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	stab	369	34	0.74591138	9.846030	27
+max_piety/dinhs_block/Scorpia	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	stab	369	16	0.23925741	1.435544	12
+max_piety/dinhs_block/Vardorvis (Post-quest)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	slash	358	32	0.55445666	6.871902	25
+max_piety/dinhs_block/Wyrd	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	30	0.27913660	3.241586	24
+max_piety/dinhs_block/Avatar of Creation	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	54	0.28332784	6.006550	43
+max_piety/dinhs_block/Aviansie (Level 131)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	ranged	449	15	0.06117008	0.344082	12
+max_piety/dinhs_block/Zulrah (Serpentine)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	ranged	449	41	0.22150259	3.544041	32
+max_piety/dinhs_block/Pestilent Bloat (Normal)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	ranged	449	20	0.28997938	2.209367	16
+max_piety/dinhs_block/Javelin Colossus	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	ranged	449	48	0.20650561	3.881463	38
+max_piety/dinhs_block/Metzli, Teokan of Ranul	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	28	0.93769575	10.120647	22
+max_piety/dinhs_block/Dagannoth Prime	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	50	0.87873587	17.230115	40
+max_piety/dinhs_block/Dark wizard (Level 11)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	5	0.14840127	0.247335	4
+max_piety/dinhs_block/Infernal Mage	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	8	0.61893249	1.719257	6
+max_piety/dinhs_block/Wingman Skree	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	16	0.79866365	4.791982	12
+max_piety/dinhs_block/Verzik Vitur (Normal mode, Phase 1)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	137	0.96521045	52.506050	109
+max_piety/dinhs_block/The Maiden of Sugadinti (50% Health)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	36	0.98432012	13.780482	28
+max_piety/dinhs_pummel/Abyssal demon (Catacombs of Kourend)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	stab	369	8	0.05053936	0.202157	8
+max_piety/dinhs_pummel/Ankou (Level 75)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	8	0.03784091	0.151364	8
+max_piety/dinhs_pummel/Black demon (Level 172)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	slash	358	16	0.07533901	0.602712	16
+max_piety/dinhs_pummel/Fire giant (Level 104)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	slash	358	10	0.06448457	0.322423	10
+max_piety/dinhs_pummel/Hill Giant	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	4	0.01657037	0.033141	4
+max_piety/dinhs_pummel/Ice giant (1)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	slash	358	7	0.03483359	0.121918	7
+max_piety/dinhs_pummel/Imp (GWD)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	stab	369	1	0.00229453	0.001147	1
+max_piety/dinhs_pummel/Moss giant (Level 42)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	6	0.02831333	0.084940	6
+max_piety/dinhs_pummel/Ogre (GWD)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	8	0.03540101	0.141604	8
+max_piety/dinhs_pummel/Sergeant Strongstack	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	15	0.06370685	0.477801	15
+max_piety/dinhs_pummel/Phantom Muspah (Melee)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	stab	369	34	0.74591138	12.680494	34
+max_piety/dinhs_pummel/Scorpia	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	stab	369	16	0.23925741	1.914059	16
+max_piety/dinhs_pummel/Vardorvis (Post-quest)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	slash	358	32	0.55445666	8.871307	32
+max_piety/dinhs_pummel/Wyrd	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	30	0.27913660	4.187049	30
+max_piety/dinhs_pummel/Avatar of Creation	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	54	0.28332784	7.649852	54
+max_piety/dinhs_pummel/Aviansie (Level 131)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	ranged	449	15	0.06117008	0.458776	15
+max_piety/dinhs_pummel/Zulrah (Serpentine)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	ranged	449	41	0.22150259	4.540803	41
+max_piety/dinhs_pummel/Pestilent Bloat (Normal)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	ranged	449	20	0.28997938	2.899794	20
+max_piety/dinhs_pummel/Javelin Colossus	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	ranged	449	48	0.20650561	4.956135	48
+max_piety/dinhs_pummel/Metzli, Teokan of Ranul	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	28	0.93769575	13.127740	28
+max_piety/dinhs_pummel/Dagannoth Prime	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	50	0.87873587	21.968397	50
+max_piety/dinhs_pummel/Dark wizard (Level 11)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	5	0.14840127	0.371003	5
+max_piety/dinhs_pummel/Infernal Mage	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	8	0.61893249	2.475730	8
+max_piety/dinhs_pummel/Wingman Skree	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	16	0.79866365	6.389309	16
+max_piety/dinhs_pummel/Verzik Vitur (Normal mode, Phase 1)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	137	0.96521045	66.116916	137
+max_piety/dinhs_pummel/The Maiden of Sugadinti (50% Health)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	36	0.98432012	17.717762	36
+max_piety/dinhs_justiciar/Abyssal demon (Catacombs of Kourend)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	stab	393	8	0.04788526	0.095771	5
+max_piety/dinhs_justiciar/Ankou (Level 75)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	8	0.03689918	0.073798	5
+max_piety/dinhs_justiciar/Black demon (Level 172)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	slash	394	16	0.06941725	0.326669	10
+max_piety/dinhs_justiciar/Fire giant (Level 104)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	slash	394	10	0.05941598	0.162044	6
+max_piety/dinhs_justiciar/Hill Giant	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	4	0.01615799	0.009695	2
+max_piety/dinhs_justiciar/Ice giant (1)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	slash	394	7	0.03209562	0.052155	4
+max_piety/dinhs_justiciar/Imp (GWD)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	stab	393	1	0.00217404	0.000000	0
+max_piety/dinhs_justiciar/Moss giant (Level 42)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	6	0.02760871	0.035497	3
+max_piety/dinhs_justiciar/Ogre (GWD)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	8	0.03452000	0.069040	5
+max_piety/dinhs_justiciar/Sergeant Strongstack	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	15	0.06212141	0.271781	10
+max_piety/dinhs_justiciar/Phantom Muspah (Melee)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	stab	393	34	0.73182837	8.008293	23
+max_piety/dinhs_justiciar/Scorpia	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	stab	393	16	0.22669264	1.066789	10
+max_piety/dinhs_justiciar/Vardorvis (Post-quest)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	slash	394	32	0.51644938	5.289694	21
+max_piety/dinhs_justiciar/Wyrd	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	30	0.27218987	2.616535	20
+max_piety/dinhs_justiciar/Avatar of Creation	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	54	0.27627680	4.962936	37
+max_piety/dinhs_justiciar/Aviansie (Level 131)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	ranged	459	15	0.06000049	0.258752	10
+max_piety/dinhs_justiciar/Zulrah (Serpentine)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	ranged	459	41	0.21726741	2.845168	27
+max_piety/dinhs_justiciar/Pestilent Bloat (Normal)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	ranged	459	20	0.28443490	1.706609	13
+max_piety/dinhs_justiciar/Javelin Colossus	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	ranged	459	48	0.20255718	3.129302	32
+max_piety/dinhs_justiciar/Metzli, Teokan of Ranul	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	28	0.96494055	10.414703	22
+max_piety/dinhs_justiciar/Dagannoth Prime	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	50	0.93176303	18.269863	40
+max_piety/dinhs_justiciar/Dark wizard (Level 11)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	5	0.26377440	0.439624	4
+max_piety/dinhs_justiciar/Infernal Mage	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	8	0.78556816	2.182134	6
+max_piety/dinhs_justiciar/Wingman Skree	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	16	0.88670532	5.320232	12
+max_piety/dinhs_justiciar/Verzik Vitur (Normal mode, Phase 1)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	137	0.98042345	53.724363	110
+max_piety/dinhs_justiciar/The Maiden of Sugadinti (50% Health)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	36	0.99117672	13.876474	28
+max_piety/plain/Abyssal demon (Catacombs of Kourend)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	stab	207	8	0.08023275	0.320931	8
+max_piety/plain/Ankou (Level 75)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	8	0.06329970	0.253199	8
+max_piety/plain/Black demon (Level 172)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	slash	209	16	0.11571063	0.925685	16
+max_piety/plain/Fire giant (Level 104)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	slash	209	10	0.09903966	0.495198	10
+max_piety/plain/Hill Giant	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	4	0.02771866	0.055437	4
+max_piety/plain/Ice giant (1)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	slash	209	7	0.05349973	0.187249	7
+max_piety/plain/Imp (GWD)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	stab	207	1	0.00364264	0.001821	1
+max_piety/plain/Moss giant (Level 42)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	6	0.04736210	0.142086	6
+max_piety/plain/Ogre (GWD)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	8	0.05921827	0.236873	8
+max_piety/plain/Sergeant Strongstack	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	15	0.10656784	0.799259	15
+max_piety/plain/Phantom Muspah (Melee)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	stab	207	34	0.83994579	14.279078	34
+max_piety/plain/Scorpia	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	stab	207	16	0.37982828	3.038626	16
+max_piety/plain/Vardorvis (Post-quest)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	slash	209	32	0.70990505	11.358481	32
+max_piety/plain/Wyrd	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	30	0.46693542	7.004031	30
+max_piety/plain/Avatar of Creation	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	54	0.47394647	12.796555	54
+max_piety/plain/Aviansie (Level 131)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	ranged	205	15	0.11590611	0.869296	15
+max_piety/plain/Zulrah (Serpentine)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	ranged	205	41	0.41970690	8.603991	41
+max_piety/plain/Pestilent Bloat (Normal)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	ranged	205	20	0.54500510	5.450051	20
+max_piety/plain/Javelin Colossus	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	ranged	205	48	0.39129036	9.390969	48
+max_piety/plain/Metzli, Teokan of Ranul	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	28	0.89798401	12.571776	28
+max_piety/plain/Dagannoth Prime	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	50	0.80144404	20.036101	50
+max_piety/plain/Dark wizard (Level 11)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	5	0.09062453	0.226561	5
+max_piety/plain/Infernal Mage	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	8	0.40065584	1.602623	8
+max_piety/plain/Wingman Skree	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	16	0.67033507	5.362681	16
+max_piety/plain/Verzik Vitur (Normal mode, Phase 1)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	137	0.94303615	64.597976	137
+max_piety/plain/The Maiden of Sugadinti (50% Health)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	36	0.97432601	17.537868	36
+none_half_hp/elysian/Abyssal demon (Catacombs of Kourend)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	stab	226	8	0.13141684	0.433676	8
+none_half_hp/elysian/Ankou (Level 75)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	8	0.09966096	0.328881	8
+none_half_hp/elysian/Black demon (Level 172)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	slash	226	16	0.19092635	1.283699	16
+none_half_hp/elysian/Fire giant (Level 104)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	slash	226	10	0.16341870	0.681902	10
+none_half_hp/elysian/Hill Giant	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	4	0.04364109	0.062843	4
+none_half_hp/elysian/Ice giant (1)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	slash	226	7	0.08827632	0.254898	7
+none_half_hp/elysian/Imp (GWD)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	stab	226	1	0.00596645	0.000895	1
+none_half_hp/elysian/Moss giant (Level 42)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	6	0.07456832	0.178964	6
+none_half_hp/elysian/Ogre (GWD)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	8	0.09323504	0.307676	8
+none_half_hp/elysian/Sergeant Strongstack	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	15	0.16778365	1.060183	15
+none_half_hp/elysian/Phantom Muspah (Melee)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	stab	226	34	0.90228205	12.830451	34
+none_half_hp/elysian/Scorpia	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	stab	226	16	0.59815674	4.021724	16
+none_half_hp/elysian/Vardorvis (Post-quest)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	slash	226	32	0.82418570	11.036596	32
+none_half_hp/elysian/Wyrd	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	30	0.65993243	8.289603	30
+none_half_hp/elysian/Avatar of Creation	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	crush	221	54	0.66496289	14.958038	54
+none_half_hp/elysian/Aviansie (Level 131)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	ranged	216	15	0.19517676	1.233273	15
+none_half_hp/elysian/Zulrah (Serpentine)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	ranged	216	41	0.64626565	11.061914	41
+none_half_hp/elysian/Pestilent Bloat (Normal)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	ranged	216	20	0.72979595	6.130286	20
+none_half_hp/elysian/Javelin Colossus	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	ranged	216	48	0.62057731	12.420412	48
+none_half_hp/elysian/Metzli, Teokan of Ranul	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	28	0.93725484	10.994969	28
+none_half_hp/elysian/Dagannoth Prime	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	50	0.87787773	18.296005	50
+none_half_hp/elysian/Dark wizard (Level 11)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	5	0.14735822	0.282437	5
+none_half_hp/elysian/Infernal Mage	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	8	0.61623582	2.033578	8
+none_half_hp/elysian/Wingman Skree	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	16	0.79723887	5.360259	16
+none_half_hp/elysian/Verzik Vitur (Normal mode, Phase 1)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	137	0.96496426	54.768714	137
+none_half_hp/elysian/The Maiden of Sugadinti (50% Health)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Elysian spirit shield	elysian	Controlled	Lash	magic	-9	36	0.98420916	14.811018	36
+none_half_hp/elysian_justiciar/Abyssal demon (Catacombs of Kourend)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	stab	350	8	0.09003318	0.224083	7
+none_half_hp/elysian_justiciar/Ankou (Level 75)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	8	0.06808694	0.169461	7
+none_half_hp/elysian_justiciar/Black demon (Level 172)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	slash	350	16	0.13080292	0.710952	14
+none_half_hp/elysian_justiciar/Fire giant (Level 104)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	slash	350	10	0.11195753	0.366406	8
+none_half_hp/elysian_justiciar/Hill Giant	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	4	0.02981497	0.023256	3
+none_half_hp/elysian_justiciar/Ice giant (1)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	slash	350	7	0.06047777	0.127003	6
+none_half_hp/elysian_justiciar/Imp (GWD)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	stab	350	1	0.00408759	0.000000	0
+none_half_hp/elysian_justiciar/Moss giant (Level 42)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	6	0.05094401	0.083694	5
+none_half_hp/elysian_justiciar/Ogre (GWD)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	8	0.06369684	0.158534	7
+none_half_hp/elysian_justiciar/Sergeant Strongstack	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	15	0.11462738	0.581734	13
+none_half_hp/elysian_justiciar/Phantom Muspah (Melee)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	stab	350	34	0.85736784	10.359453	30
+none_half_hp/elysian_justiciar/Scorpia	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	stab	350	16	0.42622429	2.316654	14
+none_half_hp/elysian_justiciar/Vardorvis (Post-quest)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	slash	350	32	0.74337597	8.433938	28
+none_half_hp/elysian_justiciar/Wyrd	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	30	0.50223879	5.326971	26
+none_half_hp/elysian_justiciar/Avatar of Creation	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	crush	344	54	0.50960192	9.888130	47
+none_half_hp/elysian_justiciar/Aviansie (Level 131)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	ranged	368	15	0.12372498	0.627904	13
+none_half_hp/elysian_justiciar/Zulrah (Serpentine)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	ranged	368	41	0.44801974	6.518687	35
+none_half_hp/elysian_justiciar/Pestilent Bloat (Normal)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	ranged	368	20	0.57375805	3.969859	17
+none_half_hp/elysian_justiciar/Javelin Colossus	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	ranged	368	48	0.41768626	7.130501	42
+none_half_hp/elysian_justiciar/Metzli, Teokan of Ranul	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	28	0.96484933	11.318681	28
+none_half_hp/elysian_justiciar/Dagannoth Prime	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	50	0.93158549	19.415338	50
+none_half_hp/elysian_justiciar/Dark wizard (Level 11)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	5	0.26308957	0.504255	5
+none_half_hp/elysian_justiciar/Infernal Mage	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	8	0.78501023	2.590534	8
+none_half_hp/elysian_justiciar/Wingman Skree	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	16	0.88641053	5.959807	16
+none_half_hp/elysian_justiciar/Verzik Vitur (Normal mode, Phase 1)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	137	0.98037251	55.847133	138
+none_half_hp/elysian_justiciar/The Maiden of Sugadinti (50% Health)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Elysian spirit shield	elysian_justiciar	Defensive	Block	magic	-34	36	0.99115376	14.915525	36
+none_half_hp/justiciar/Abyssal demon (Catacombs of Kourend)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	stab	317	8	0.09783110	0.304363	7
+none_half_hp/justiciar/Ankou (Level 75)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	8	0.07695117	0.239404	7
+none_half_hp/justiciar/Black demon (Level 172)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	slash	314	16	0.14325998	0.952258	14
+none_half_hp/justiciar/Fire giant (Level 104)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	slash	314	10	0.12261984	0.490479	8
+none_half_hp/justiciar/Hill Giant	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	4	0.03369658	0.040436	3
+none_half_hp/justiciar/Ice giant (1)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	slash	314	7	0.06623739	0.173873	6
+none_half_hp/justiciar/Imp (GWD)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	stab	317	1	0.00444162	0.000000	0
+none_half_hp/justiciar/Moss giant (Level 42)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	6	0.05757640	0.123378	5
+none_half_hp/justiciar/Ogre (GWD)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	8	0.07198953	0.223967	7
+none_half_hp/justiciar/Sergeant Strongstack	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	15	0.12955071	0.809692	13
+none_half_hp/justiciar/Phantom Muspah (Melee)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	stab	317	34	0.86873647	12.758016	30
+none_half_hp/justiciar/Scorpia	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	stab	317	16	0.46314029	3.078521	14
+none_half_hp/justiciar/Vardorvis (Post-quest)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	slash	314	32	0.76568992	10.580443	28
+none_half_hp/justiciar/Wyrd	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	30	0.55957584	7.310588	27
+none_half_hp/justiciar/Avatar of Creation	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	crush	297	54	0.56609082	13.493547	48
+none_half_hp/justiciar/Aviansie (Level 131)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	ranged	307	15	0.14406729	0.891416	13
+none_half_hp/justiciar/Zulrah (Serpentine)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	ranged	307	41	0.52077952	9.324433	36
+none_half_hp/justiciar/Pestilent Bloat (Normal)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	ranged	307	20	0.63394193	5.373413	17
+none_half_hp/justiciar/Javelin Colossus	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	ranged	307	48	0.48636041	10.243346	43
+none_half_hp/justiciar/Metzli, Teokan of Ranul	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	28	0.97304406	13.622617	28
+none_half_hp/justiciar/Dagannoth Prime	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	50	0.94753507	23.688377	50
+none_half_hp/justiciar/Dark wizard (Level 11)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	5	0.34311512	0.857788	5
+none_half_hp/justiciar/Infernal Mage	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	8	0.83513111	3.340524	8
+none_half_hp/justiciar/Wingman Skree	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	16	0.91289181	7.303135	16
+none_half_hp/justiciar/Verzik Vitur (Normal mode, Phase 1)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	137	0.98494830	67.925746	138
+none_half_hp/justiciar/The Maiden of Sugadinti (50% Health)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Justiciar legguards,Avernic defender	justiciar	Defensive	Block	magic	-41	36	0.99321610	17.877890	36
+none_half_hp/justiciar_two/Abyssal demon (Catacombs of Kourend)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	stab	293	8	0.10440778	0.417631	8
+none_half_hp/justiciar_two/Ankou (Level 75)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	8	0.08317157	0.332686	8
+none_half_hp/justiciar_two/Black demon (Level 172)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	slash	285	16	0.15516373	1.241310	16
+none_half_hp/justiciar_two/Fire giant (Level 104)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	slash	285	10	0.13280856	0.664043	10
+none_half_hp/justiciar_two/Hill Giant	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	4	0.03642046	0.072841	4
+none_half_hp/justiciar_two/Ice giant (1)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	slash	285	7	0.07174118	0.251094	7
+none_half_hp/justiciar_two/Imp (GWD)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	stab	293	1	0.00474021	0.002370	1
+none_half_hp/justiciar_two/Moss giant (Level 42)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	6	0.06223063	0.186692	6
+none_half_hp/justiciar_two/Ogre (GWD)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	8	0.07780885	0.311235	8
+none_half_hp/justiciar_two/Sergeant Strongstack	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	15	0.14002303	1.050173	15
+none_half_hp/justiciar_two/Phantom Muspah (Melee)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	stab	293	34	0.87700456	14.909077	34
+none_half_hp/justiciar_two/Scorpia	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	stab	293	16	0.49427481	3.954198	16
+none_half_hp/justiciar_two/Vardorvis (Post-quest)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	slash	285	32	0.78366505	12.538641	32
+none_half_hp/justiciar_two/Wyrd	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	30	0.59251414	8.887712	30
+none_half_hp/justiciar_two/Avatar of Creation	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	crush	270	54	0.59854188	16.160631	54
+none_half_hp/justiciar_two/Aviansie (Level 131)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	ranged	298	15	0.14764897	1.107367	15
+none_half_hp/justiciar_two/Zulrah (Serpentine)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	ranged	298	41	0.53240412	10.914284	41
+none_half_hp/justiciar_two/Pestilent Bloat (Normal)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	ranged	298	20	0.64282152	6.428215	20
+none_half_hp/justiciar_two/Javelin Colossus	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	ranged	298	48	0.49845187	11.962845	48
+none_half_hp/justiciar_two/Metzli, Teokan of Ranul	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	28	0.96133731	13.458722	28
+none_half_hp/justiciar_two/Dagannoth Prime	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	50	0.92474996	23.118749	50
+none_half_hp/justiciar_two/Dark wizard (Level 11)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	5	0.23918175	0.597954	5
+none_half_hp/justiciar_two/Infernal Mage	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	8	0.76352985	3.054119	8
+none_half_hp/justiciar_two/Wingman Skree	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	16	0.87506141	7.000491	16
+none_half_hp/justiciar_two/Verzik Vitur (Normal mode, Phase 1)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	137	0.97841146	67.021185	137
+none_half_hp/justiciar_two/The Maiden of Sugadinti (50% Health)	Ghrazi rapier,Justiciar faceguard,Justiciar chestguard,Bandos tassets,Avernic defender	justiciar_two	Defensive	Block	magic	-31	36	0.99026990	17.824858	36
+none_half_hp/dinhs_block/Abyssal demon (Catacombs of Kourend)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	stab	369	8	0.08901719	0.247270	6
+none_half_hp/dinhs_block/Ankou (Level 75)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	8	0.06665085	0.185141	6
+none_half_hp/dinhs_block/Black demon (Level 172)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	slash	358	16	0.13269785	0.796187	12
+none_half_hp/dinhs_block/Fire giant (Level 104)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	slash	358	10	0.11357945	0.413016	8
+none_half_hp/dinhs_block/Hill Giant	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	4	0.02918611	0.035023	3
+none_half_hp/dinhs_block/Ice giant (1)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	slash	358	7	0.06135391	0.145716	5
+none_half_hp/dinhs_block/Imp (GWD)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	stab	369	1	0.00404146	0.000000	0
+none_half_hp/dinhs_block/Moss giant (Level 42)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	6	0.04986949	0.099739	4
+none_half_hp/dinhs_block/Ogre (GWD)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	8	0.06235334	0.173204	6
+none_half_hp/dinhs_block/Sergeant Strongstack	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	15	0.11220965	0.631179	12
+none_half_hp/dinhs_block/Phantom Muspah (Melee)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	stab	369	34	0.85573996	11.295768	27
+none_half_hp/dinhs_block/Scorpia	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	stab	369	16	0.42141451	2.528487	12
+none_half_hp/dinhs_block/Vardorvis (Post-quest)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	slash	358	32	0.74704047	9.258774	25
+none_half_hp/dinhs_block/Wyrd	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	30	0.49165546	5.709547	24
+none_half_hp/dinhs_block/Avatar of Creation	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	crush	367	54	0.49903768	10.579599	43
+none_half_hp/dinhs_block/Aviansie (Level 131)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	ranged	449	15	0.10774172	0.606047	12
+none_half_hp/dinhs_block/Zulrah (Serpentine)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	ranged	449	41	0.39014287	6.242286	32
+none_half_hp/dinhs_block/Pestilent Bloat (Normal)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	ranged	449	20	0.51052757	3.889734	16
+none_half_hp/dinhs_block/Javelin Colossus	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	ranged	449	48	0.36372799	6.836602	38
+none_half_hp/dinhs_block/Metzli, Teokan of Ranul	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	28	0.96396753	10.404201	22
+none_half_hp/dinhs_block/Dagannoth Prime	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	50	0.92986921	18.232730	40
+none_half_hp/dinhs_block/Dark wizard (Level 11)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	5	0.25664837	0.427747	4
+none_half_hp/dinhs_block/Infernal Mage	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	8	0.77961689	2.165602	6
+none_half_hp/dinhs_block/Wingman Skree	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	16	0.88356097	5.301366	12
+none_half_hp/dinhs_block/Verzik Vitur (Normal mode, Phase 1)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	137	0.97988013	53.304059	109
+none_half_hp/dinhs_block/The Maiden of Sugadinti (50% Health)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_block		Block	magic	-32	36	0.99093184	13.873046	28
+none_half_hp/dinhs_pummel/Abyssal demon (Catacombs of Kourend)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	stab	369	8	0.08901719	0.356069	8
+none_half_hp/dinhs_pummel/Ankou (Level 75)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	8	0.06665085	0.266603	8
+none_half_hp/dinhs_pummel/Black demon (Level 172)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	slash	358	16	0.13269785	1.061583	16
+none_half_hp/dinhs_pummel/Fire giant (Level 104)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	slash	358	10	0.11357945	0.567897	10
+none_half_hp/dinhs_pummel/Hill Giant	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	4	0.02918611	0.058372	4
+none_half_hp/dinhs_pummel/Ice giant (1)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	slash	358	7	0.06135391	0.214739	7
+none_half_hp/dinhs_pummel/Imp (GWD)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	stab	369	1	0.00404146	0.002021	1
+none_half_hp/dinhs_pummel/Moss giant (Level 42)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	6	0.04986949	0.149608	6
+none_half_hp/dinhs_pummel/Ogre (GWD)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	8	0.06235334	0.249413	8
+none_half_hp/dinhs_pummel/Sergeant Strongstack	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	15	0.11220965	0.841572	15
+none_half_hp/dinhs_pummel/Phantom Muspah (Melee)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	stab	369	34	0.85573996	14.547579	34
+none_half_hp/dinhs_pummel/Scorpia	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	stab	369	16	0.42141451	3.371316	16
+none_half_hp/dinhs_pummel/Vardorvis (Post-quest)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	slash	358	32	0.74704047	11.952648	32
+none_half_hp/dinhs_pummel/Wyrd	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	30	0.49165546	7.374832	30
+none_half_hp/dinhs_pummel/Avatar of Creation	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	crush	367	54	0.49903768	13.474017	54
+none_half_hp/dinhs_pummel/Aviansie (Level 131)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	ranged	449	15	0.10774172	0.808063	15
+none_half_hp/dinhs_pummel/Zulrah (Serpentine)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	ranged	449	41	0.39014287	7.997929	41
+none_half_hp/dinhs_pummel/Pestilent Bloat (Normal)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	ranged	449	20	0.51052757	5.105276	20
+none_half_hp/dinhs_pummel/Javelin Colossus	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	ranged	449	48	0.36372799	8.729472	48
+none_half_hp/dinhs_pummel/Metzli, Teokan of Ranul	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	28	0.96396753	13.495545	28
+none_half_hp/dinhs_pummel/Dagannoth Prime	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	50	0.92986921	23.246730	50
+none_half_hp/dinhs_pummel/Dark wizard (Level 11)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	5	0.25664837	0.641621	5
+none_half_hp/dinhs_pummel/Infernal Mage	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	8	0.77961689	3.118468	8
+none_half_hp/dinhs_pummel/Wingman Skree	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	16	0.88356097	7.068488	16
+none_half_hp/dinhs_pummel/Verzik Vitur (Normal mode, Phase 1)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	137	0.97988013	67.121789	137
+none_half_hp/dinhs_pummel/The Maiden of Sugadinti (50% Health)	Dinh's bulwark,Torva full helm,Torva platebody,Torva platelegs	dinhs_pummel	Accurate	Pummel	magic	-32	36	0.99093184	17.836773	36
+none_half_hp/dinhs_justiciar/Abyssal demon (Catacombs of Kourend)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	stab	393	8	0.08434244	0.168685	5
+none_half_hp/dinhs_justiciar/Ankou (Level 75)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	8	0.06499216	0.129984	5
+none_half_hp/dinhs_justiciar/Black demon (Level 172)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	slash	394	16	0.12226771	0.575377	10
+none_half_hp/dinhs_justiciar/Fire giant (Level 104)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	slash	394	10	0.10465203	0.285415	6
+none_half_hp/dinhs_justiciar/Hill Giant	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	4	0.02845978	0.017076	2
+none_half_hp/dinhs_justiciar/Ice giant (1)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	slash	394	7	0.05653145	0.091864	4
+none_half_hp/dinhs_justiciar/Imp (GWD)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	stab	393	1	0.00382923	0.000000	0
+none_half_hp/dinhs_justiciar/Moss giant (Level 42)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	6	0.04862843	0.062522	3
+none_half_hp/dinhs_justiciar/Ogre (GWD)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	8	0.06080160	0.121603	5
+none_half_hp/dinhs_justiciar/Sergeant Strongstack	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	15	0.10941718	0.478700	10
+none_half_hp/dinhs_justiciar/Phantom Muspah (Melee)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	stab	393	34	0.84774445	9.276746	23
+none_half_hp/dinhs_justiciar/Scorpia	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	stab	393	16	0.39928388	1.878983	10
+none_half_hp/dinhs_justiciar/Vardorvis (Post-quest)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	slash	394	32	0.72546215	7.430491	21
+none_half_hp/dinhs_justiciar/Wyrd	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	30	0.47942001	4.608618	20
+none_half_hp/dinhs_justiciar/Avatar of Creation	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	crush	378	54	0.48661851	8.741438	37
+none_half_hp/dinhs_justiciar/Aviansie (Level 131)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	ranged	459	15	0.10568169	0.455752	10
+none_half_hp/dinhs_justiciar/Zulrah (Serpentine)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	ranged	459	41	0.38268332	5.011329	27
+none_half_hp/dinhs_justiciar/Pestilent Bloat (Normal)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	ranged	459	20	0.50098662	3.005920	13
+none_half_hp/dinhs_justiciar/Javelin Colossus	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	ranged	459	48	0.35677349	5.511786	32
+none_half_hp/dinhs_justiciar/Metzli, Teokan of Ranul	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	28	0.97971843	10.574202	22
+none_half_hp/dinhs_justiciar/Dagannoth Prime	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	50	0.96052554	18.833834	40
+none_half_hp/dinhs_justiciar/Dark wizard (Level 11)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	5	0.45611403	0.760190	4
+none_half_hp/dinhs_justiciar/Infernal Mage	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	8	0.87595313	2.433203	6
+none_half_hp/dinhs_justiciar/Wingman Skree	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	16	0.93446006	5.606760	12
+none_half_hp/dinhs_justiciar/Verzik Vitur (Normal mode, Phase 1)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	137	0.98867514	54.176532	110
+none_half_hp/dinhs_justiciar/The Maiden of Sugadinti (50% Health)	Dinh's bulwark,Justiciar faceguard,Justiciar chestguard,Justiciar legguards	dinhs_justiciar		Block	magic	-46	36	0.99489581	13.928541	28
+none_half_hp/plain/Abyssal demon (Catacombs of Kourend)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	stab	207	8	0.14063018	0.562521	8
+none_half_hp/plain/Ankou (Level 75)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	8	0.11095019	0.443801	8
+none_half_hp/plain/Black demon (Level 172)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	slash	209	16	0.20281505	1.622520	16
+none_half_hp/plain/Fire giant (Level 104)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	slash	209	10	0.17359453	0.867973	10
+none_half_hp/plain/Hill Giant	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	4	0.04858460	0.097169	4
+none_half_hp/plain/Ice giant (1)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	slash	209	7	0.09377315	0.328206	7
+none_half_hp/plain/Imp (GWD)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	stab	207	1	0.00638474	0.003192	1
+none_half_hp/plain/Moss giant (Level 42)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	6	0.08301514	0.249045	6
+none_half_hp/plain/Ogre (GWD)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	8	0.10379636	0.415185	8
+none_half_hp/plain/Sergeant Strongstack	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	15	0.18678955	1.400922	15
+none_half_hp/plain/Phantom Muspah (Melee)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	stab	207	34	0.90868377	15.447624	34
+none_half_hp/plain/Scorpia	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	stab	207	16	0.62448236	4.995859	16
+none_half_hp/plain/Vardorvis (Post-quest)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	slash	209	32	0.83449126	13.351860	32
+none_half_hp/plain/Wyrd	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	30	0.69453307	10.417996	30
+none_half_hp/plain/Avatar of Creation	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	crush	192	54	0.69905169	18.874396	54
+none_half_hp/plain/Aviansie (Level 131)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	ranged	205	15	0.20315763	1.523682	15
+none_half_hp/plain/Zulrah (Serpentine)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	ranged	205	41	0.66016124	13.533305	41
+none_half_hp/plain/Pestilent Bloat (Normal)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	ranged	205	20	0.74041026	7.404103	20
+none_half_hp/plain/Javelin Colossus	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	ranged	205	48	0.63548200	15.251568	48
+none_half_hp/plain/Metzli, Teokan of Ranul	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	28	0.94067565	13.169459	28
+none_half_hp/plain/Dagannoth Prime	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	50	0.88453572	22.113393	50
+none_half_hp/plain/Dark wizard (Level 11)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	5	0.15585747	0.389644	5
+none_half_hp/plain/Infernal Mage	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	8	0.63715827	2.548633	8
+none_half_hp/plain/Wingman Skree	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	16	0.80829321	6.466346	16
+none_half_hp/plain/Verzik Vitur (Normal mode, Phase 1)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	137	0.96687437	66.230895	137
+none_half_hp/plain/The Maiden of Sugadinti (50% Health)	Abyssal whip,Rune full helm,Rune platebody,Rune platelegs,Rune kiteshield	plain	Controlled	Lash	magic	-12	36	0.98507006	17.731261	36

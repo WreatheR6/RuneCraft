@@ -321,7 +321,11 @@ final class MisthalinMoreQuests {
     private static void inAidOfTheMyreque(QuestBook b) {
         b.npc("cornelius", "Cornelius", "burgh_de_rott", 3, 3, 0xE0B8AB, 0x5A4A3A, 0x3A2A1A, 0x5A3A21);
         b.npc("florin", "Florin", "burgh_de_rott", -3, 3, 0xE0B8AC, 0x6A5A3C, 0x4A3A2C, 0x8A5A2D);
-        b.items(s -> s.add("rod_of_ivandis", "Rod of Ivandis", Kind.SIMPLE, "staff", 0xC0C0D1).value(1).examine("A rod that can bind vampyre juvinates."));
+        // Wieldable (round 17): a silver weapon that deals full damage to tier 2 vampyres (juvinates). Charges not modelled.
+        b.items(s -> s.add("rod_of_ivandis", "Rod of Ivandis", Kind.MELEE_WEAPON, "staff", 0xC0C0D1).value(1).stack(1)
+                .equipment(new EquipmentDef(EquipmentDef.Slot.WEAPON, new EquipmentStats(0, -1, 7, 4, 0, 2, 3, 1, 4, 0, 3, 0, 0, 0),
+                        Map.of(), 5, AttackType.CRUSH, EquipmentDef.WeaponClass.MELEE))
+                .examine("A rod that can bind vampyre juvinates."));
         b.boss(BossDef.of("gadderanks", "Gadderanks").level(35).stats(40, 30, 30, 30, 1, 1).speed(4)
                 .attack(AttackDef.of("sword", AttackType.SLASH, 5, 2.5, 10)).drops(Drop.always("bones"))
                 .skin(0xD0C8C8, 0x3A1A1A, 0x2A0A0A, 0x1A1A1A).at("burgh_de_rott").arena(8, "crypt"));

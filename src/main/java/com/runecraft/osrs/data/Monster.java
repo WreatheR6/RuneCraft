@@ -69,7 +69,7 @@ public enum Monster {
             List.of(Drop.of("zombie_champion_scroll", 1, 1, 5000), Drop.always("bones"), Drop.of("coins", 1, 20, 4), Drop.herbs(40), Drop.of("eye_of_newt", 1, 1, 16))),
     SKELETON("minecraft:skeleton", "Skeleton", 22, 29, 15, 18, 17, 1, 17, 4, AttackType.RANGED, 0, true, 0, 0,
             List.of(Drop.of("skeleton_champion_scroll", 1, 1, 5000), Drop.always("bones"), Drop.of("coins", 2, 30, 4), Drop.of("iron_arrow", 2, 10, 6), Drop.herbs(40))),
-    WOLF("minecraft:wolf", "Wolf", 25, 34, 20, 20, 20, 1, 1, 4, AttackType.STAB, 0, false, 0, 0,
+    WOLF("minecraft:wolf", "Wolf", 25, 34, 20, 20, 22, 1, 1, 4, AttackType.STAB, 0, false, 0, 0,
             List.of(Drop.always("bones"), Drop.of("grey_wolf_fur", 1, 1, 4))),
     VILLAGER("minecraft:villager", "Man", 2, 7, 1, 1, 1, 1, 1, 4, AttackType.CRUSH, 0, false, 0, 0,
             List.of(Drop.always("bones"), Drop.of("coins", 1, 15, 3))),

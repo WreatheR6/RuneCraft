@@ -19,10 +19,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Diffs {@link PlayerHitCalc} (and the spell / powered staff max hits it uses) against the OSRS Wiki DPS
- * calculator: {@code src/test/resources/osrs/combat/dps_reference.tsv} holds 2,890 scenarios (5 level/prayer
+ * calculator: {@code src/test/resources/osrs/combat/dps_reference.tsv} holds 3,298 scenarios (5 level/prayer
  * profiles x 82 melee, ranged and magic loadouts x 20 monsters, including thrown weapons and crossbows against the
- * light / heavy ranged defences and spells of every element against elemental weaknesses) computed by weirdgloop/osrs-dps-calc's
- * {@code PlayerVsNPCCalc}: max hit, min hit, attack roll, NPC defence roll and hit chance.
+ * light / heavy ranged defences and spells of every element against elemental weaknesses; since round 17 also vampyres
+ * of all three tiers against vampyrebane / silver weapons and Efaritay's aid, and revenants against the amulet of avarice
+ * and the revenant weapons in and out of the Wilderness) computed by weirdgloop/osrs-dps-calc's
+ * {@code PlayerVsNPCCalc}: max hit, min hit, attack roll, NPC defence roll, hit chance and the largest hit after the
+ * calculator's hit transforms.
  * Gear names are mapped to RuneCraft item ids through the item catalogue; gear bonuses are the calculator's sums.
  */
 class CombatReferenceTest {
@@ -168,6 +171,11 @@ class CombatReferenceTest {
                 in.weaknessElement = w[0];
                 in.weaknessPercent = Integer.parseInt(w[1]);
             }
+            // Round 17 rows: the calculator's buffs (in the Wilderness, Forinthry surge) and revenants by name.
+            in.revenant = r.get("monster").startsWith("Revenant");
+            String buffs = r.getOrDefault("buffs", "-");
+            in.inWilderness = buffs.contains("wildy");
+            in.forinthrySurge = buffs.contains("surge");
             String id = r.get("id");
             if (missing != null || spellErr != null) {
                 bad.add(id + ": " + (missing != null ? "no RuneCraft item named " + missing : spellErr));
@@ -194,6 +202,11 @@ class CombatReferenceTest {
             }
             if (Math.abs(hc - Double.parseDouble(r.get("hitChance"))) > 1e-5) {
                 diffs.add(String.format(Locale.ROOT, "hit chance %.6f != %s", hc, r.get("hitChance")));
+            }
+            // The largest hitsplat after the calculator's hit transforms (vampyre tiers; 0 when the target is immune).
+            String distMax = r.getOrDefault("distMax", "-");
+            if (!distMax.equals("-") && PlayerHitCalc.afterRoll(in, max) != Integer.parseInt(distMax)) {
+                diffs.add("after-roll max " + PlayerHitCalc.afterRoll(in, max) + " != " + distMax);
             }
             if (!diffs.isEmpty()) {
                 bad.add(id + ": " + String.join(", ", diffs));

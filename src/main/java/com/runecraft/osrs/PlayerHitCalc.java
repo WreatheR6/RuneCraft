@@ -70,6 +70,14 @@ public final class PlayerHitCalc {
         /** The target's elemental weakness and its severity in percent (null / 0 for none). */
         public String weaknessElement;
         public int weaknessPercent;
+        /** The target is a revenant (amulet of avarice). */
+        public boolean revenant;
+        /** Forinthry surge: skulled while wearing the amulet of avarice (+35% instead of +20% against revenants). */
+        public boolean forinthrySurge;
+        /** The player is in the Wilderness (revenant weapons: +50% accuracy and damage while charged). */
+        public boolean inWilderness;
+        /** The weapon holds charges (revenant ether for the revenant weapons). */
+        public boolean weaponCharged = true;
 
         public Input wear(String... ids) {
             for (String id : ids) {
@@ -171,6 +179,69 @@ public final class PlayerHitCalc {
         return in.any("salve_amulet", "salve_amulet_i") && in.attr("undead");
     }
 
+    /** Amulet of avarice against a revenant. */
+    static boolean avarice(Input in) {
+        return in.revenant && in.has("amulet_of_avarice");
+    }
+
+    static final Set<String> REV_MELEE = Set.of("viggoras_chainmace", "ursine_chainmace");
+    static final Set<String> REV_RANGED = Set.of("craws_bow", "webweaver_bow");
+    static final Set<String> REV_MAGIC = Set.of("thammarons_sceptre", "accursed_sceptre");
+
+    /** A charged revenant weapon of the attack's style, used in the Wilderness: +50% accuracy and damage. */
+    public static boolean revWeapon(Input in) {
+        if (!in.inWilderness || !in.weaponCharged) {
+            return false;
+        }
+        return switch (in.type) {
+            case MAGIC -> REV_MAGIC.contains(in.weapon);
+            case RANGED -> REV_RANGED.contains(in.weapon);
+            default -> REV_MELEE.contains(in.weapon);
+        };
+    }
+
+    /** True for a revenant weapon (whatever the style). */
+    public static boolean isRevWeapon(String weapon) {
+        return REV_MELEE.contains(weapon) || REV_RANGED.contains(weapon) || REV_MAGIC.contains(weapon);
+    }
+
+    /** Silver ammunition (silver bolts, poisoned or not). */
+    static final Set<String> SILVER_AMMO = Set.of("silver_bolts", "silver_bolts_p", "silver_bolts_pp", "silver_bolts_ppp");
+    /** Silver melee weapons (osrs-dps-calc {@code isWearingSilverWeapon}). */
+    static final Set<String> SILVER_MELEE = Set.of("blessed_axe", "ivandis_flail", "blisterwood_flail", "hallowed_flail", "silver_sickle",
+            "silver_sickle_b", "emerald_sickle", "emerald_sickle_b", "enchanted_emerald_sickle_b", "ruby_sickle_b", "enchanted_ruby_sickle_b",
+            "blisterwood_sickle", "silverlight", "darklight", "arclight", "rod_of_ivandis", "wolfbane");
+
+    /** A silver weapon (melee) or silver bolts / blisterwood stakes (ranged): hurts vampyres. */
+    public static boolean silverWeapon(Input in) {
+        if (in.type == AttackType.RANGED) {
+            return in.weapon.equals("blisterwood_stake") || in.any(SILVER_AMMO.toArray(new String[0]));
+        }
+        return in.melee() && SILVER_MELEE.contains(in.weapon);
+    }
+
+    /** The target's vampyre tier (1-3; 0 when not a vampyre), from the {@code vampyre1..3} attributes. */
+    public static int vampyreTier(Input in) {
+        for (int t = 3; t >= 1; t--) {
+            if (in.attr("vampyre" + t)) {
+                return t;
+            }
+        }
+        return 0;
+    }
+
+    /** A weapon that deals full damage to tier 2 (or tier 3) vampyres (osrs-dps-calc {@code wearingVampyrebane}). */
+    public static boolean vampyrebane(Input in, int tier) {
+        if (in.type == AttackType.RANGED && in.weapon.equals("blisterwood_stake")) {
+            return true;
+        }
+        if (tier == 2 && in.weapon.equals("rod_of_ivandis")) {
+            return true;
+        }
+        return in.melee() && (in.weapon.equals("ivandis_flail") || in.weapon.equals("blisterwood_sickle")
+                || in.weapon.equals("blisterwood_flail") || in.weapon.equals("hallowed_flail") || in.weapon.equals("sunspear"));
+    }
+
     private static int factor(int value, int num, int den) {
         return (int) ((long) value * num / den);
     }
@@ -222,7 +293,9 @@ public final class PlayerHitCalc {
         }
         int base = eff * (in.attackBonus + 64);
         int roll = base;
-        if (salveE(in)) {
+        if (avarice(in)) {
+            roll = factor(roll, in.forinthrySurge ? 27 : 24, 20);
+        } else if (salveE(in)) {
             roll = factor(roll, 6, 5);
         } else if (salve(in)) {
             roll = factor(roll, 7, 6);
@@ -231,6 +304,9 @@ public final class PlayerHitCalc {
         }
         if (tzhaarWeapon(in) && obsidian(in)) {
             roll += base / 10;
+        }
+        if (revWeapon(in)) {
+            roll = factor(roll, 3, 2);
         }
         boolean demon = in.attr("demon");
         if (demon && (in.weapon.equals("arclight") || in.weapon.equals("emberlight"))) {
@@ -248,6 +324,16 @@ public final class PlayerHitCalc {
         }
         if (in.weapon.equals("keris_partisan_of_breaching") && in.attr("kalphite")) {
             roll = factor(roll, 133, 100);
+        }
+        boolean vampyre = vampyreTier(in) > 0;
+        if (vampyre && (in.weapon.equals("blisterwood_flail") || in.weapon.equals("blisterwood_sickle"))) {
+            roll = factor(roll, 105, 100);
+        }
+        if (vampyre && (in.weapon.equals("hallowed_flail") || in.weapon.equals("sunspear"))) {
+            roll = factor(roll, 125, 100);
+        }
+        if (vampyre && silverWeapon(in) && in.has("efaritays_aid")) {
+            roll = factor(roll, 23, 20);
         }
         if (in.weapon.equals("granite_hammer") && in.attr("golem")) {
             roll = factor(roll, 13, 10);
@@ -275,7 +361,9 @@ public final class PlayerHitCalc {
         if (CombatBonuses.isCrystalBow(in.weapon)) {
             roll = factor(roll, 20 + crystalPieces(in), 20);
         }
-        if (in.has("salve_amulet_ei") && in.attr("undead")) {
+        if (avarice(in)) {
+            roll = factor(roll, in.forinthrySurge ? 27 : 24, 20);
+        } else if (in.has("salve_amulet_ei") && in.attr("undead")) {
             roll = factor(roll, 6, 5);
         } else if (in.has("salve_amulet_i") && in.attr("undead")) {
             roll = factor(roll, 7, 6);
@@ -284,6 +372,9 @@ public final class PlayerHitCalc {
         }
         if (in.weapon.equals("twisted_bow")) {
             roll = factor(roll, CombatBonuses.twistedBowAccuracy(tbowMagic(in)), 100);
+        }
+        if (revWeapon(in)) {
+            roll = factor(roll, 3, 2);
         }
         if (in.weapon.equals("dragon_hunter_crossbow") && in.attr("dragon")) {
             roll = factor(roll, 13, 10);
@@ -316,7 +407,9 @@ public final class PlayerHitCalc {
         int roll = base;
         int additive = 0;
         boolean mask = false;
-        if (in.has("salve_amulet_ei") && in.attr("undead")) {
+        if (avarice(in)) {
+            additive += in.forinthrySurge ? 35 : 20;
+        } else if (in.has("salve_amulet_ei") && in.attr("undead")) {
             additive += 20;
         } else if (in.has("salve_amulet_i") && in.attr("undead")) {
             additive += 15;
@@ -340,6 +433,9 @@ public final class PlayerHitCalc {
         }
         if (mask) {
             roll = factor(roll, 23, 20);
+        }
+        if (revWeapon(in)) {
+            roll = factor(roll, 3, 2);
         }
         if (in.has("tome_of_water") && "water".equals(in.spellElement)) {
             roll = factor(roll, 6, 5);
@@ -380,6 +476,72 @@ public final class PlayerHitCalc {
         return max;
     }
 
+    /**
+     * True when the attack can't damage the target at all: a tier 3 vampyre without an Ivandis flail or blisterwood weapon,
+     * or a tier 2 vampyre without one of those, the Rod of Ivandis, a silver weapon or Efaritay's aid.
+     */
+    public static boolean immune(Input in) {
+        int tier = vampyreTier(in);
+        if (tier == 3) {
+            return !vampyrebane(in, 3);
+        }
+        return tier == 2 && !vampyrebane(in, 2) && !in.has("efaritays_aid") && !silverWeapon(in);
+    }
+
+    /**
+     * Changes to each rolled hit (osrs-dps-calc's hit-distribution transforms, applied after {@link #maxHit}): against
+     * vampyres Efaritay's aid (x1.1) and the weapon's vampyrebane multiplier (blisterwood flail / stake x1.25, sickle x1.15,
+     * Ivandis flail x1.2, other silver weapons x1.1 against tier 1), then against tier 2 a non-vampyrebane weapon deals
+     * half damage with Efaritay's aid or at most 10 with a silver weapon; immune targets take nothing.
+     */
+    public static int afterRoll(Input in, int damage) {
+        if (damage <= 0) {
+            return 0;
+        }
+        int tier = vampyreTier(in);
+        if (tier == 0) {
+            return damage;
+        }
+        if (immune(in)) {
+            return 0;
+        }
+        boolean efaritay = in.has("efaritays_aid");
+        int num = 0;
+        int den = 1;
+        if (in.any("blisterwood_flail", "hallowed_flail", "blisterwood_stake")) {
+            num = 125;
+            den = 100;
+        } else if (in.has("sunspear")) {
+            num = 150;
+            den = 100;
+        } else if (in.has("blisterwood_sickle")) {
+            num = 23;
+            den = 20;
+        } else if (in.has("ivandis_flail")) {
+            num = 6;
+            den = 5;
+        } else if (silverWeapon(in) && tier == 1) {
+            // The calculator's Rod of Ivandis branch never matches (it spells the item "Rod of ivandis"), so the rod only
+            // gets this silver x1.1, against tier 1.
+            num = 11;
+            den = 10;
+        }
+        if (num != 0) {
+            if (efaritay) {
+                damage = damage * 11 / 10;
+            }
+            damage = damage * num / den;
+        }
+        if (tier == 2) {
+            if (!vampyrebane(in, 2) && efaritay) {
+                damage = damage / 2;
+            } else if (silverWeapon(in)) {
+                damage = Math.min(damage, 10);
+            }
+        }
+        return damage;
+    }
+
     static int[] meleeMax(Input in) {
         int eff = prayerStrength(in, in.strength) + 8 + in.style.forMelee().strengthBonus();
         if (meleeVoid(in)) {
@@ -388,7 +550,9 @@ public final class PlayerHitCalc {
         int base = (eff * (in.strengthBonus + 64) + 320) / 640;
         int max = base;
         int min = 0;
-        if (salveE(in)) {
+        if (avarice(in)) {
+            max = factor(max, in.forinthrySurge ? 27 : 24, 20);
+        } else if (salveE(in)) {
             max = factor(max, 6, 5);
         } else if (salve(in)) {
             max = factor(max, 7, 6);
@@ -418,6 +582,9 @@ public final class PlayerHitCalc {
             } else if (in.weapon.equals("granite_hammer")) {
                 max = factor(max, 13, 10);
             }
+        }
+        if (revWeapon(in)) {
+            max = factor(max, 3, 2);
         }
         if (demon && (in.weapon.equals("silverlight") || in.weapon.equals("darklight"))) {
             max = addFactor(max, 60, 100);
@@ -453,12 +620,19 @@ public final class PlayerHitCalc {
             max = factor(max, 40 + crystalPieces(in), 40);
         }
         boolean dragonbane = in.weapon.equals("dragon_hunter_crossbow") && in.attr("dragon");
-        if (in.has("salve_amulet_ei") && in.attr("undead")) {
+        boolean rev = revWeapon(in);
+        if (avarice(in)) {
+            max = factor(max, in.forinthrySurge ? 27 : 24, 20);
+        } else if (in.has("salve_amulet_ei") && in.attr("undead")) {
             max = factor(max, 6, 5);
         } else if (in.has("salve_amulet_i") && in.attr("undead")) {
             max = factor(max, 7, 6);
         } else if (imbuedMask(in) && in.onTask) {
             int num = 23;
+            if (rev) {
+                rev = false;
+                num += 10;
+            }
             if (dragonbane) {
                 dragonbane = false;
                 num += 5;
@@ -467,6 +641,9 @@ public final class PlayerHitCalc {
         }
         if (in.weapon.equals("twisted_bow")) {
             max = factor(max, CombatBonuses.twistedBowDamage(tbowMagic(in)), 100);
+        }
+        if (rev) {
+            max = factor(max, 3, 2);
         }
         if (dragonbane) {
             max = factor(max, 5, 4);
@@ -506,6 +683,8 @@ public final class PlayerHitCalc {
             dmg += 200;
         } else if (in.has("salve_amulet_i") && in.attr("undead")) {
             dmg += 150;
+        } else if (avarice(in)) {
+            dmg += in.forinthrySurge ? 350 : 200;
         } else if (imbuedMask(in) && in.onTask) {
             mask = true;
         }
@@ -526,6 +705,9 @@ public final class PlayerHitCalc {
             } else if (in.weapon.equals("dragon_hunter_crossbow")) {
                 max = factor(max, 5, 4);
             }
+        }
+        if (revWeapon(in)) {
+            max = factor(max, 3, 2);
         }
         if (in.spellElement != null && in.spellElement.equals(in.weaknessElement)) {
             max += baseMax * in.weaknessPercent / 100;

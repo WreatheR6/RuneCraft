@@ -160,6 +160,47 @@ const PROFILES: Profile[] = [
   { id: 'none', lvl: 70, boost: { atk: 0, str: 0, ranged: 0, magic: 0 }, prayers: { melee: [], ranged: [], magic: [] }, monsters: 3 },
 ];
 
+// Round 17: vampyre tiers (vampyrebane weapons, Efaritay's aid, silver weapons and bolts), the amulet of avarice against
+// revenants (with and without Forinthry surge) and the revenant weapons in and out of the Wilderness. Appended after the
+// main grid with their own monsters, so the rows above are unchanged; `buffs` lists the calculator buffs and `distMax` the
+// largest hitsplat of the calculator's final hit distribution (vampyre damage transforms included; 0 when immune).
+type Extra = { profiles: string[]; loadouts: Loadout[]; monsters: [string, string][]; buffs: string[] };
+const VAMP_MONSTERS: [string, string][] = [['Vampyre Juvenile', 'Meiyerditch'], ['Feral Vampyre', 'Level 77 (God Wars Dungeon)'],
+  ['Vampyre Juvinate', 'Level 119 (Temple Trekking)'], ['Vampyre Juvinate', 'Level 54 (Darkmeyer)'], ['Vyrewatch Sentinel', '1']];
+const REV_MONSTERS: [string, string][] = [['Revenant knight', ''], ['Revenant demon', ''], ['Revenant cyclops', ''], ['Revenant imp', '']];
+const VAMP_LOADOUTS: Loadout[] = [
+  { id: 'v_ivandis_flail', gear: ['Ivandis flail', ...MELEE_DEF], style: 'Pound' },
+  { id: 'v_blisterwood_flail', gear: ['Blisterwood flail', ...MELEE_DEF], style: 'Pound' },
+  { id: 'v_blisterwood_flail_efaritay', gear: ['Blisterwood flail', ...MELEE_DEF.filter((x) => x !== 'Ultor ring'), "Efaritay's aid"], style: 'Pound' },
+  { id: 'v_blisterwood_sickle', gear: ['Blisterwood sickle', ...MELEE_DEF], style: 'Slash' },
+  { id: 'v_rod_of_ivandis', gear: ['Rod of Ivandis', ...MELEE_DEF], style: 'Pound' },
+  { id: 'v_rod_of_ivandis_efaritay', gear: ['Rod of Ivandis', ...MELEE_DEF.filter((x) => x !== 'Ultor ring'), "Efaritay's aid"], style: 'Pound' },
+  { id: 'v_silver_sickle_b', gear: ['Silver sickle (b)', ...MELEE_DEF], style: 'Slash' },
+  { id: 'v_silver_sickle_b_efaritay', gear: ['Silver sickle (b)', ...MELEE_DEF.filter((x) => x !== 'Ultor ring'), "Efaritay's aid"], style: 'Slash' },
+  { id: 'v_arclight_efaritay', gear: ['Arclight', ...MELEE_DEF.filter((x) => x !== 'Ultor ring'), "Efaritay's aid"], style: 'Slash' },
+  { id: 'v_whip', gear: ['Abyssal whip', ...MELEE_DEF], style: 'Lash' },
+  { id: 'v_whip_efaritay', gear: ['Abyssal whip', ...MELEE_DEF.filter((x) => x !== 'Ultor ring'), "Efaritay's aid"], style: 'Lash' },
+  { id: 'v_trident', gear: ['Trident of the seas', ...MAGE], style: 'Accurate' },
+];
+const REV_LOADOUTS: Loadout[] = [
+  { id: 'r_avarice_whip', gear: ['Abyssal whip', 'Amulet of avarice', ...noNeck(MELEE_DEF)], style: 'Lash' },
+  { id: 'r_avarice_slayer_whip', gear: ['Abyssal whip', 'Amulet of avarice', 'Slayer helmet (i)', ...noNeck(noHead(MELEE_DEF))], style: 'Lash' },
+  { id: 'r_avarice_msb', gear: ['Magic shortbow', 'Amethyst arrow', 'Amulet of avarice', ...noNeckR(RANGED)], style: 'Rapid' },
+  { id: 'r_avarice_trident', gear: ['Trident of the seas', 'Amulet of avarice', ...noNeckR(MAGE)], style: 'Accurate' },
+  { id: 'r_avarice_fire_surge', gear: ['Kodai wand', 'Amulet of avarice', ...noNeckR(MAGE)], style: 'Spell', spell: 'Fire Surge' },
+  { id: 'r_salve_ei_trident', gear: ['Trident of the seas', 'Salve amulet(ei)', ...noNeckR(MAGE)], style: 'Accurate' },
+  { id: 'r_viggora', gear: ["Viggora's chainmace", 'Amulet of avarice', ...noNeck(MELEE_DEF)], style: 'Pummel' },
+  { id: 'r_ursine', gear: ['Ursine chainmace', ...MELEE_DEF], style: 'Pummel' },
+  { id: 'r_craws', gear: ["Craw's bow", 'Amulet of avarice', ...noNeckR(RANGED)], style: 'Rapid' },
+  { id: 'r_webweaver_slayer_i', gear: ['Webweaver bow', 'Slayer helmet (i)', ...noHeadR(RANGED)], style: 'Rapid' },
+  { id: 'r_thammaron', gear: ["Thammaron's sceptre", 'Amulet of avarice', ...noNeckR(MAGE)], style: 'Accurate' },
+  { id: 'r_accursed', gear: ['Accursed sceptre', ...MAGE], style: 'Accurate' },
+];
+const EXTRAS: Extra[] = [
+  { profiles: ['max', 'mid'], loadouts: VAMP_LOADOUTS, monsters: VAMP_MONSTERS, buffs: ['-'] },
+  { profiles: ['max', 'mid'], loadouts: REV_LOADOUTS, monsters: REV_MONSTERS, buffs: ['-', 'wildy', 'wildy,surge'] },
+];
+
 const PRAYER_KEYS: Record<string, string> = {};
 
 function slotOf(p: any): string { return p.slot; }
@@ -177,12 +218,27 @@ function main() {
   rows.push('# the NPC defence level and bonus it rolled against (and its light / standard / heavy ranged defences). Outputs: min/max hit (per hit; effMax adds the Dharok / berserker necklace damage scaling), attack roll, NPC defence roll, hit chance.');
   rows.push(['id', 'profile', 'monster', 'loadout', 'gear', 'type', 'stance', 'spell', 'atk', 'str', 'ranged', 'magic', 'hpMax', 'hpCur', 'prayers',
     'offBonus', 'strBonus', 'rangedStr', 'magicDmgTenths', 'npcDefLevel', 'npcDefBonus', 'npcRangedLight', 'npcRangedStandard', 'npcRangedHeavy', 'npcTbowMagic', 'attrs', 'slayerMonster', 'size', 'weakness',
-    'minHit', 'maxHit', 'effMax', 'attackRoll', 'defenceRoll', 'hitChance'].join('\t'));
+    'minHit', 'maxHit', 'effMax', 'attackRoll', 'defenceRoll', 'hitChance', 'buffs', 'distMax'].join('\t'));
   let n = 0;
+  const jobs: [Profile, Loadout, string, string, string, boolean][] = [];
   for (const prof of PROFILES) {
     for (const lo of loadouts) {
       const mons = MONSTERS.slice(0, Math.min(prof.monsters, MONSTERS.length));
-      for (const [mn, mv] of (prof.monsters < 99 ? rotate(mons, lo.id) : mons)) {
+      for (const [mn, mv] of (prof.monsters < 99 ? rotate(mons, lo.id) : mons)) jobs.push([prof, lo, mn, mv, '-', false]);
+    }
+  }
+  for (const ex of EXTRAS) {
+    for (const prof of PROFILES.filter((p) => ex.profiles.includes(p.id))) {
+      for (const lo of ex.loadouts) {
+        for (const [mn, mv] of ex.monsters) {
+          for (const b of ex.buffs) jobs.push([prof, lo, mn, mv, b, true]);
+        }
+      }
+    }
+  }
+  {
+    {
+      for (const [prof, lo, mn, mv, buffs, extra] of jobs) {
         const m = monster(mn, mv);
         const pieces = lo.gear.map(item);
         const equip: any = { head: null, cape: null, neck: null, ammo: null, weapon: null, body: null, shield: null, legs: null, hands: null, feet: null, ring: null };
@@ -204,7 +260,7 @@ function main() {
           bonuses: { str: 0, ranged_str: 0, magic_str: 0, prayer: 0 },
           defensive: { stab: 0, slash: 0, crush: 0, magic: 0, ranged: 0 },
           offensive: { stab: 0, slash: 0, crush: 0, magic: 0, ranged: 0 },
-          buffs: { potions: [], onSlayerTask: true, inWilderness: false, kandarinDiary: true, chargeSpell: false, markOfDarknessSpell: false, forinthrySurge: false, soulreaperStacks: 0, baAttackerLevel: 0, chinchompaDistance: 4, usingSunfireRunes: false },
+          buffs: { potions: [], onSlayerTask: true, inWilderness: buffs.includes('wildy'), kandarinDiary: true, chargeSpell: false, markOfDarknessSpell: false, forinthrySurge: buffs.includes('surge'), soulreaperStacks: 0, baAttackerLevel: 0, chinchompaDistance: 4, usingSunfireRunes: false },
           spell: lo.spell ? spells.find((s: any) => s.name === lo.spell) : null,
         };
         if (lo.spell && !player.spell) throw new Error('spell ' + lo.spell);
@@ -240,7 +296,7 @@ function main() {
           prof.lvl + prof.boost.atk, prof.lvl + prof.boost.str, prof.lvl + prof.boost.ranged, prof.lvl + prof.boost.magic, prof.lvl, hpCur,
           (prof.prayers as any)[kind].join(',') || '-',
           raw.off[t], raw.str, raw.rstr, raw.mstr, defLevel, defBonus, m.defensive.light, m.defensive.standard, m.defensive.heavy, tbowMagic, (m.attributes || []).join(',') || '-', calc.isSlayerMonster() ? 1 : 0, m.size, weak,
-          minHit, maxHit, effMax, atkRoll, defRoll, hc.toFixed(6)].join('\t'));
+          minHit, maxHit, effMax, atkRoll, defRoll, hc.toFixed(6), buffs, extra ? calc.getDistribution().getMax() : '-'].join('\t'));
       }
     }
   }
