@@ -115,35 +115,144 @@ final class LateQuestsC {
         Cast.npc(b, "jungle_forester", "Jungle forester", "quest_jungle_forester_camp", 0, 2, Cast.TAN, 0x3A5A2A);
         Cast.npc(b, "quest_brian_archery", "Brian", "PORT_SARIM", -7, 3, Cast.FAIR, 0x6A3A2A);
         Cast.npc(b, "quest_horvik", "Horvik", "VARROCK", 8, 3, Cast.TAN, 0x5A5A5A);
-        Cast.npc(b, "petra_fiyed", "Petra Fiyed", "quest_white_wolf_cave", 0, 3, Cast.PALE, 0x6A6A8A);
+        // OSRS: Petra Fiyed is trapped in a rock sculpture in the Goblin Cave south-east of the Fishing Guild.
+        b.spot("osf_goblin_cave", "Goblin Cave, north-east room", 2623, 3393); // approx: the cave entrance
+        b.spot("osf_ham_hideout", "H.A.M. Hideout", 3166, 3251); // approx: the trapdoor
+        b.spot("osf_fred", "Fred the Farmer's farmhouse", 3189, 3273);
+        b.spot("osf_apothecary", "Varrock Apothecary", 3195, 3404);
+        b.spot("osf_sanfew", "Sanfew's room, Taverley", 2897, 3426);
+        b.spot("osf_dwarven_mine", "Dwarven Mine, west", 3016, 3450); // approx: the Ice Mountain entrance
+        b.spot("osf_white_wolf_glider", "White Wolf Mountain gnome glider", 2847, 3498);
+        b.spot("osf_seers_house", "House north of the Seers' chapel", 2738, 3507); // approx
+        b.spot("osf_tindel", "Port Khazard south dock", 2673, 3150);
+        b.spot("osf_feldip_glider", "Feldip Hills gnome glider", 2544, 2972);
+        Cast.npc(b, "petra_fiyed", "Petra Fiyed", "osf_goblin_cave", 0, 3, Cast.PALE, 0x6A6A8A);
+        Cast.npc(b, "osf_johanhus", "Johanhus Ulsbrecht", "osf_ham_hideout", 2, 2, Cast.FAIR, 0x6A5A3A);
+        Cast.npc(b, "osf_tassie", "Tassie Slipcast", "BARBARIAN_VILLAGE", 4, -6, Cast.FAIR, 0x8A5A3A);
+        Cast.npc(b, "osf_hammerspike", "Hammerspike Stoutbeard", "osf_dwarven_mine", 2, 2, Cast.TAN, 0x3A3A3A);
+        Cast.npc(b, "osf_bleemadge", "Captain Bleemadge", "osf_white_wolf_glider", 2, 2, 0xC8946A, 0x6A4A2A);
+        Cast.npc(b, "osf_phantuwti", "Phantuwti Fanstuwi Farsight", "osf_seers_house", 0, 2, Cast.FAIR, 0x3A3A8A);
+        Cast.npc(b, "osf_gnormadium", "Gnormadium Avlafrim", "osf_feldip_glider", 2, 2, 0xC8946A, 0x4A6A2A);
         b.item("quest_animate_rock_scroll", "Animate rock scroll", "note", 0xC0B090, "A scroll that animates a rock golem.");
-        b.item("quest_broken_cauldron", "Broken cauldron", "pot", 0x3A3A3A, "Aggie's cauldron. It has a hole in it.");
-        b.boss(BossDef.of("quest_slagilith", "Slagilith").level(92).stats(60, 1, 80, 120, 1, 1).speed(5)
-                .defenceBonus(100, 100, 30, 100, 100)
-                .attack(AttackDef.of("slam", AttackType.CRUSH, 15, 3, 6))
+        b.item("quest_broken_cauldron", "Broken cauldron", "pot", 0x3A3A3A, "Aggie's cauldron. It has a hole in it."); // unused since round 25
+        // OSRS Wiki: Slagilith level 92, 60 hitpoints, Attack 60, Strength 120, Defence 75, max hit 13, crush.
+        b.boss(BossDef.of("quest_slagilith", "Slagilith").level(92).stats(60, 60, 120, 75, 1, 1).speed(4)
+                .defenceBonus(50, 50, 5, 5, 50)
+                .attack(AttackDef.of("slam", AttackType.CRUSH, 13, 3, 6))
                 .drops(Drop.always("iron_ore")).skin(0x6A6A6A, 0x5A5A5A, 0x4A4A4A, 0x8A8A8A).size(1.2f, 2.2f, 1.0f)
-                .at("quest_white_wolf_cave").arena(8, "stone"));
+                .at("osf_goblin_cave").arena(8, "stone"));
+        // Hammerspike's gang (levels 44, 48 and 49 in OSRS; the level-48 one stands in for all three).
+        b.boss(BossDef.of("osf_dwarf_gang_member", "Dwarf gang member").level(48).stats(25, 80, 30, 25, 1, 1).speed(5)
+                .defenceBonus(7, 7, 0, 0, 7)
+                .attack(AttackDef.of("punch", AttackType.CRUSH, 4, 2.5, 6))
+                .drops(Drop.always("bones")).skin(Cast.TAN, 0x3A3A3A, 0x2A2A2A, 0x5A3A2A).size(0.7f, 1.3f, 0.8f)
+                .at("osf_dwarven_mine").arena(7, "stone"));
         b.item("osf_blunt_axe", "Blunt axe", "axe", 0x6A6A6A, "The jungle forester's axe. It's very blunt.");
+        b.item("osf_sharp_axe", "Sharpened axe", "axe", 0x9A9AA0, "The jungle forester's axe, sharpened by Brian.");
+        b.item("osf_herb_tea", "Herb tea", "vial", 0x8A6A3A, "Sanfew's special tea for the gnome pilot.");
+        b.item("osf_red_mahogany", "Red mahogany log", "log", 0x8A2A1A, "A log of red mahogany for Yanni Salika.");
         b.quest("one_small_favour", "One Small Favour", Difficulty.EXPERIENCED, 2)
                 .reqQuest("RUNE_MYSTERIES", "shilo_village", "DRUIDIC_RITUAL")
                 .req(Skill.AGILITY, 36).req(Skill.CRAFTING, 25).req(Skill.HERBLORE, 18).req(Skill.SMITHING, 30)
                 .xp(Skill.SMITHING, 10000).xp(Skill.AGILITY, 10000) // two 10,000 XP lamps (skill chosen by the player)
                 .stage("I can start this quest by speaking to Yanni Salika in Shilo Village. (Requires Rune Mysteries, Shilo Village, Druidic Ritual, 36 Agility, 25 Crafting, 18 Herblore, 30 Smithing.)")
-                .talk("yanni_salika").say("Could you do me one small favour? Ask the Jungle forester near Kharazi if he's finished my wooden carving.")
-                .stage("I should visit the Jungle forester.")
-                .talk("jungle_forester").give("osf_blunt_axe").say("The carving? I'd finish it if my axe weren't blunt. Brian in Port Sarim could sharpen it. Small favour?")
-                .stage("I should ask Brian in Port Sarim to sharpen the forester's axe.")
-                .talk("quest_brian_archery").take("osf_blunt_axe").missing("Sharpen what? You'll need to bring me the axe.").say("Sharpen an axe? I'd love to, but my whetstone's at Aggie's. Ask her for it... she'll want a favour too.")
-                .stage("Aggie in Draynor will part with the whetstone if her cauldron is repaired. Horvik in Varrock can fix it (needs a steel bar).")
-                .talk("aggie").stay().unless("quest_broken_cauldron").give("quest_broken_cauldron").say("My cauldron's got a hole! Get it fixed and you can have the stone.")
-                .talk("quest_horvik").take("quest_broken_cauldron", "steel_bar").say("*Horvik patches the cauldron.* Tell Aggie I want a discount on dyes.")
-                .missing("I'll fix a cauldron, but I need a steel bar for the patch.")
-                .stage("With Aggie's cauldron fixed, Petra Fiyed in the White Wolf Mountain cave needs help with a rock golem before the chain of favours can finish.")
-                .talk("petra_fiyed").give("quest_animate_rock_scroll").say("A golem made of slag is loose in my cave! Read this scroll near it to make it fight you, then smash it.")
-                .stage("I must defeat the Slagilith.")
-                .kill("quest_slagilith").take("quest_animate_rock_scroll").flag("osf_slagilith").say("* The Slagilith crumbles. Word travels quickly: every favour in the chain is done.")
-                .stage("I should return to Yanni Salika with his carving.")
-                .talk("yanni_salika").needFlag("osf_slagilith").say("My carving! Was it any trouble? No? Splendid. Here's a little something for your one small favour.");
+                .talk("yanni_salika").say("Could you do me one small favour? The jungle foresters south of here owe me some red mahogany.")
+                .stage("I should ask a Jungle forester south of Shilo Village about the red mahogany.")
+                .talk("jungle_forester").give("osf_blunt_axe").say("Red mahogany? Not with this axe. Brian in Port Sarim could sharpen it... small favour?")
+                // OSRS chain of favours: Brian -> Aggie -> Johanhus -> Fred -> Seth -> Horvik -> Apothecary -> Tassie -> Hammerspike
+                // -> Sanfew -> Captain Bleemadge -> Arhein -> Phantuwti -> Petra's sculpture -> Cromperty -> Tindel -> Rantz -> Gnormadium.
+                .stage("I should ask Brian in Port Sarim to sharpen the forester's axe... and see where that leads.")
+                .talk("quest_brian_archery").stay().need("osf_blunt_axe").unlessFlag("osf_brian").flag("osf_brian")
+                .say("A cursed axe? I'll sharpen it, but I need a character witness first. Ask Aggie in Draynor.")
+                .missing("Sharpen what? You'll need to bring me the axe.")
+                .talk("aggie").stay().needFlag("osf_brian").unlessFlag("osf_aggie").flag("osf_aggie")
+                .say("A character witness? Only if you find my friend Jimmy the Chisel. The H.A.M. have him locked up.")
+                .talk("osf_johanhus").stay().needFlag("osf_aggie").unlessFlag("osf_johanhus").flag("osf_johanhus")
+                .say("Jimmy's worth a few chickens to me. Get Fred the Farmer to sell me some.")
+                .reach("osf_fred", 5).stay().needFlag("osf_johanhus").unlessFlag("osf_fred").flag("osf_fred")
+                .say("* Fred will part with chickens if Seth Groats lends him some cages.")
+                .talk("quest_seth_groats").stay().needFlag("osf_fred").unlessFlag("osf_seth").flag("osf_seth")
+                .say("Cages? Horvik in Varrock makes 'em. He owes me. Well, I owe him. One of us owes someone.")
+                .talk("quest_horvik").stay().needFlag("osf_seth").unlessFlag("osf_horvik").take("steel_bar:3").flag("osf_horvik")
+                .say("Chicken cages, fine - three steel bars. But my lungs are bad from the forge. The Apothecary owes me a tincture.")
+                .missing("I'll need three steel bars before I make any chicken cages.")
+                .reach("osf_apothecary", 4).stay().needFlag("osf_horvik").unlessFlag("osf_apothecary").flag("osf_apothecary")
+                .say("* The Apothecary needs a pot lid from Tassie Slipcast in Barbarian Village to brew Horvik's tincture.")
+                .talk("osf_tassie").stay().needFlag("osf_apothecary").unlessFlag("osf_tassie").flag("osf_tassie")
+                .say("A lid? Gladly - once Hammerspike's gang stops shaking down my pottery. Talk to him in the Dwarven Mine.")
+                .talk("osf_hammerspike").stay().needFlag("osf_tassie").unlessFlag("osf_hammerspike").flag("osf_hammerspike")
+                .say("Leave the potter alone? Get me into the druids' circle and maybe. Ask Sanfew about initiates.")
+                .reach("osf_sanfew", 4).stay().needFlag("osf_hammerspike").unlessFlag("osf_sanfew")
+                .take("cup_of_hot_water", "harralander", "guam_leaf:2", "marrentill").give("osf_herb_tea").flag("osf_sanfew")
+                .say("* Sanfew will take a dwarf initiate if the gnome pilot flies him to the ogres. He shows you how to brew a special tea:",
+                        "* hot water in a teacup, a harralander, two guam leaves and a marrentill.")
+                .missing("* Sanfew's tea needs a cup of hot water, a harralander, two guam leaves and a marrentill.")
+                .talk("osf_bleemadge").needFlag("osf_sanfew").take("osf_herb_tea")
+                .say("Lovely tea. Fly a druid to the ogres? Only if Arhein in Catherby sends my T.R.A.S.H. - Transport, Repair And Spare Hardware.")
+                .missing("Got something for me? Sanfew usually sends tea.")
+                .stage("I should arrange Captain Bleemadge's T.R.A.S.H. with Arhein in Catherby... and whatever that takes.")
+                .talk("quest_ca_arhein").stay().unlessFlag("osf_arhein").flag("osf_arhein")
+                .say("I'll ship it when I know the weather. Phantuwti in Seers' Village does forecasts.")
+                .talk("osf_phantuwti").stay().needFlag("osf_arhein").unlessFlag("osf_phantuwti").flag("osf_phantuwti")
+                .say("My seeing-stones are clouded! Petra, my seer friend, went to the Goblin Cave and never came back. Find her.")
+                .reach("osf_goblin_cave", 6).stay().needFlag("osf_phantuwti").unlessFlag("osf_sculpture").flag("osf_sculpture")
+                .say("* In the north-east room of the Goblin Cave stands a sculpture of a woman. It looks exactly like Petra. It IS Petra.")
+                .talk("wizard_cromperty").stay().needFlag("osf_sculpture").unlessFlag("osf_cromperty").flag("osf_cromperty")
+                .say("Turned to stone? I can write a scroll to undo it... if you bring me iron oxide. Tindel Marchant in Port Khazard has some.")
+                .reach("osf_tindel", 5).stay().needFlag("osf_cromperty").unlessFlag("osf_tindel").flag("osf_tindel")
+                .say("* Tindel will trade his iron oxide for a feather mattress. Rantz the ogre in the Feldip Hills makes them.")
+                .talk("rantz").stay().needFlag("osf_tindel").unlessFlag("osf_rantz").flag("osf_rantz")
+                .say("Rantz make mattress if gnome stop flying noisy glider over Rantz cave. Gnome lights broken. Fix lights.")
+                .talk("osf_gnormadium").needFlag("osf_rantz").need("chisel")
+                .say("* You search each landing light, cut its gem with your chisel and put it back. The glider lights shine true.",
+                        "Splendid! Tell the ogre I'll use the new approach.")
+                .missing("The landing lights' gems are all rough. You'll need a chisel to cut them.")
+                .stage("I should report back up the chain: Rantz, Tindel and Wizard Cromperty.")
+                .talk("rantz").stay().unlessFlag("osf_mattress").flag("osf_mattress").say("Gnome quiet now. Here mattress.")
+                .reach("osf_tindel", 5).stay().needFlag("osf_mattress").unlessFlag("osf_oxide").flag("osf_oxide")
+                .say("* Tindel takes the mattress and hands over the iron oxide.")
+                .talk("wizard_cromperty").needFlag("osf_oxide").give("quest_animate_rock_scroll", "pigeon_cage:5")
+                .say("Iron oxide! Here's your scroll. Read it by the sculpture... though it may animate the wrong rock first.",
+                        "* On your way out you take five pigeon cages from south of the north Ardougne bank; Horvik will want them.")
+                .missing("No iron oxide, no scroll.")
+                .stage("I should read the animate rock scroll by Petra's sculpture in the Goblin Cave.")
+                .reach("osf_goblin_cave", 6).stay().need("quest_animate_rock_scroll").unlessFlag("osf_slagilith").spawn("quest_slagilith")
+                .say("* You read the scroll. The wrong rock animates: a Slagilith lurches out of the wall!")
+                .kill("quest_slagilith").stay().unlessFlag("osf_slagilith").flag("osf_slagilith")
+                .say("* The Slagilith crumbles into slag.")
+                .talk("petra_fiyed").needFlag("osf_slagilith").take("quest_animate_rock_scroll")
+                .say("* You read the scroll again and Petra steps out of the stone.", "Free! Tell Phantuwti I'm on my way home.")
+                .missing("* The sculpture doesn't answer. Perhaps reading the animate rock scroll here would help.")
+                .stage("Now every favour has to be repaid, all the way back to Yanni Salika.")
+                .talk("osf_phantuwti").stay().unlessFlag("osf_vane").need("hammer", "bronze_bar", "iron_bar", "steel_bar").flag("osf_vane")
+                .say("Petra's back, but my weather vane is broken! *You hammer off its three parts, fix each at the anvil with bronze, iron and steel bars, and refit them.*",
+                        "A clear forecast! Take it to Arhein.")
+                .missing("The weather vane on my roof needs fixing: bring a hammer and a bronze, an iron and a steel bar.")
+                .talk("quest_ca_arhein").stay().needFlag("osf_vane").unlessFlag("osf_trash").flag("osf_trash").say("Fair winds. The T.R.A.S.H. is on its way.")
+                .talk("osf_bleemadge").stay().needFlag("osf_trash").unlessFlag("osf_flight").flag("osf_flight").say("Got my T.R.A.S.H. Tell the druid I'll fly the dwarf.")
+                .reach("osf_sanfew", 4).stay().needFlag("osf_flight").unlessFlag("osf_initiate").flag("osf_initiate")
+                .say("* Sanfew agrees to take Hammerspike's man as an initiate.")
+                .talk("osf_hammerspike").stay().needFlag("osf_initiate").unlessFlag("osf_gang").flag("osf_gang").spawn("osf_dwarf_gang_member")
+                .say("An initiate! Tassie can... hey, the lads don't like this. Lads?")
+                .kill("osf_dwarf_gang_member", 3).stay().needFlag("osf_gang").unlessFlag("osf_gang_done").flag("osf_gang_done")
+                .say("* Hammerspike's gang lies groaning. 'Fine! The potter's safe!'")
+                .talk("osf_tassie").stay().needFlag("osf_gang_done").unlessFlag("osf_lid").take("empty_pot").flag("osf_lid")
+                .say("Thank you! Here's some clay - spin it into a lid and fire it. *You fit the pot lid to your pot.*")
+                .missing("Bring an empty pot and I'll help you make a lid for it.")
+                .reach("osf_apothecary", 4).stay().needFlag("osf_lid").unlessFlag("osf_tincture").flag("osf_tincture")
+                .say("* The Apothecary seals Horvik's tincture and breathing salts in your lidded pot.")
+                .talk("quest_horvik").stay().needFlag("osf_tincture").unlessFlag("osf_cages").take("pigeon_cage:5").flag("osf_cages")
+                .say("Ahh, I can breathe! Five pigeon cages and I'll have your chicken cages ready.")
+                .missing("Bring me five pigeon cages and I'll turn them into chicken cages.")
+                .talk("quest_seth_groats").stay().needFlag("osf_cages").unlessFlag("osf_chickens").flag("osf_chickens").say("Cages! Fred can have his chickens.")
+                .talk("osf_johanhus").stay().needFlag("osf_chickens").unlessFlag("osf_jimmy").flag("osf_jimmy").say("A chicken deal? Jimmy's free.")
+                .talk("aggie").stay().needFlag("osf_jimmy").unlessFlag("osf_witness").flag("osf_witness").say("Jimmy's out? Then I'll vouch for you to Brian.")
+                .talk("quest_brian_archery").stay().needFlag("osf_witness").unless("osf_sharp_axe").unlessFlag("osf_mahogany").take("osf_blunt_axe")
+                .give("osf_sharp_axe").say("Aggie vouches for you? Then here's your axe, sharp as anything.")
+                .talk("jungle_forester").stay().needFlag("osf_witness").unlessFlag("osf_mahogany").take("osf_sharp_axe").give("osf_red_mahogany").flag("osf_mahogany")
+                .say("My axe! Sharp as the day I bought it. Here's Yanni's red mahogany.")
+                .talk("yanni_salika").needFlag("osf_mahogany").take("osf_red_mahogany")
+                .say("Red mahogany! Was it any trouble? No? Splendid. Here's a little something for your one small favour.");
     }
 
     private static void ragAndBoneManII(QuestBook b) {

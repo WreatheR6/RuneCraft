@@ -1598,6 +1598,9 @@
     "side_crystal_l",
     "side_crystal_r"
   ],
+  "osf_dwarf_gang_member": [
+    "head"
+  ],
   "otherworldly_being": [
     "shimmer"
   ],

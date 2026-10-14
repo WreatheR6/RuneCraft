@@ -55,6 +55,16 @@ public final class Dt2Bosses {
     public static final AttackDef VARD_BLOOD = AttackDef.of("blood_splat", AttackType.MAGIC, 20, 16, 1).special(Special.SKY_STRIKE, 0)
             .telegraph(3, "Blood splatters across the ground - don't let it heal him!").particle("minecraft:damage_indicator");
 
+    /**
+     * The weaker versions fought during Desert Treasure II (quest module ids {@code dt2_quest_*}) reuse these bosses'
+     * scripts with every max hit scaled by quest/post-quest melee max hit (osrs-dps-calc "Quest" vs "Post-quest"):
+     * Duke 36/56, Leviathan 34/50, Whisperer 30/42, Vardorvis 37/43.
+     */
+    public static final double QUEST_DUKE_SCALE = 36.0 / 56;
+    public static final double QUEST_LEVIATHAN_SCALE = 34.0 / 50;
+    public static final double QUEST_WHISPERER_SCALE = 30.0 / 42;
+    public static final double QUEST_VARDORVIS_SCALE = 37.0 / 43;
+
     public static final int TABLET_RATE = 25;
     public static final int QUARTZ_RATE = 200;
     /** Each boss's teleport tablet and quartz (for the ancient sceptres and the Zaros icons). */

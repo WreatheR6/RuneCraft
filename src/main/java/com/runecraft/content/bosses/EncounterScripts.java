@@ -325,6 +325,22 @@ final class EncounterScripts {
     static final class Duke extends ScriptedBoss {
         private int gaze = 16;
         private boolean pillars;
+        /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
+        private final double scale;
+
+        Duke() {
+            this(1.0);
+        }
+
+        Duke(double scale) {
+            this.scale = scale;
+        }
+
+        @Override
+        protected double multiplier(DataBossEntity boss) {
+            return super.multiplier(boss) * scale;
+        }
+
 
         @Override
         protected boolean driven() {
@@ -342,7 +358,7 @@ final class EncounterScripts {
             if (attackCount % vents == vents - 1) {
                 BossFx.warn(boss, "Poisonous gas erupts from the vents!");
                 for (int i = 0; i < (boss.awakened() ? 5 : 3); i++) {
-                    strike(boss, around(boss, target.getPos(), 4), 2, 20, 1.3, ParticleTypes.SNEEZE, (hit, pos) ->
+                    strike(boss, around(boss, target.getPos(), 4), 2, (int) Math.round(20 * scale), 1.3, ParticleTypes.SNEEZE, (hit, pos) ->
                             com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, 5, 8, boss));
                 }
                 attackCount++;
@@ -380,7 +396,7 @@ final class EncounterScripts {
                     if (boss.canSee(p)) {
                         BossFx.stun(p, 6);
                         CombatHandler.applyDamage(boss, p, (int) Math.round((40 + boss.getRandom().nextInt(36))
-                                * boss.variantHitScale(Dt2Bosses.DUKE_GAZE)));
+                                * boss.variantHitScale(Dt2Bosses.DUKE_GAZE) * scale));
                         Msg.red(p, "The Duke's freezing gaze locks onto you!");
                     } else {
                         Msg.game(p, "You hide from the Duke's gaze.");
@@ -398,6 +414,22 @@ final class EncounterScripts {
     static final class Leviathan extends ScriptedBoss {
         private final List<AttackDef> volley = new ArrayList<>();
         private int pause;
+        /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
+        private final double scale;
+
+        Leviathan() {
+            this(1.0);
+        }
+
+        Leviathan(double scale) {
+            this.scale = scale;
+        }
+
+        @Override
+        protected double multiplier(DataBossEntity boss) {
+            return super.multiplier(boss) * scale;
+        }
+
 
         @Override
         protected boolean driven() {
@@ -414,7 +446,7 @@ final class EncounterScripts {
                 }
                 BossFx.warn(boss, "The Leviathan prepares a barrage of " + n + " projectiles!");
                 for (int i = 0; i < 3; i++) {
-                    strike(boss, around(boss, target.getPos(), 5), 3, maxHit(boss, Dt2Bosses.LEVI_DEBRIS), 1.3, ParticleTypes.ASH);
+                    strike(boss, around(boss, target.getPos(), 5), 3, (int) Math.round(maxHit(boss, Dt2Bosses.LEVI_DEBRIS) * scale), 1.3, ParticleTypes.ASH);
                 }
                 cooldown = 2;
                 return null;
@@ -441,7 +473,7 @@ final class EncounterScripts {
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
             if (target != null && boss.getRandom().nextInt(boss.awakened() ? 18 : 30) == 0) {
-                strike(boss, target.getPos(), 3, maxHit(boss, Dt2Bosses.LEVI_LIGHTNING), 1.3, ParticleTypes.ELECTRIC_SPARK);
+                strike(boss, target.getPos(), 3, (int) Math.round(maxHit(boss, Dt2Bosses.LEVI_LIGHTNING) * scale), 1.3, ParticleTypes.ELECTRIC_SPARK);
                 BossFx.warn(boss, "The Leviathan's shell crackles with lightning!");
             }
         }
@@ -454,6 +486,22 @@ final class EncounterScripts {
     static final class Whisperer extends ScriptedBoss {
         private final List<MobEntity> tentacles = new ArrayList<>();
         private int shadowTicks = -1;
+        /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
+        private final double scale;
+
+        Whisperer() {
+            this(1.0);
+        }
+
+        Whisperer(double scale) {
+            this.scale = scale;
+        }
+
+        @Override
+        protected double multiplier(DataBossEntity boss) {
+            return super.multiplier(boss) * scale;
+        }
+
 
         @Override
         protected boolean driven() {
@@ -512,7 +560,7 @@ final class EncounterScripts {
             if (cleared || shadowTicks == 0) {
                 if (!cleared && target != null) {
                     CombatHandler.applyDamage(boss, target, (int) Math.round((30 + boss.getRandom().nextInt(21))
-                            * boss.variantHitScale(Dt2Bosses.WHISPER_SIPHON)));
+                            * boss.variantHitScale(Dt2Bosses.WHISPER_SIPHON) * scale));
                     Msg.red(target, "The Whisperer consumes part of your soul!");
                 }
                 tentacles.forEach(MobEntity::discard);
@@ -532,6 +580,17 @@ final class EncounterScripts {
      * stand on them.
      */
     static final class Vardorvis extends ScriptedBoss {
+        /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
+        private final double scale;
+
+        Vardorvis() {
+            this(1.0);
+        }
+
+        Vardorvis(double scale) {
+            this.scale = scale;
+        }
+
         @Override
         protected boolean driven() {
             return true;
@@ -544,7 +603,7 @@ final class EncounterScripts {
 
         @Override
         protected double multiplier(DataBossEntity boss) {
-            return 1.0 + (1.0 - boss.getHealth() / boss.getMaxHealth()) * 0.5;
+            return (1.0 + (1.0 - boss.getHealth() / boss.getMaxHealth()) * 0.5) * scale;
         }
 
         @Override
@@ -562,7 +621,7 @@ final class EncounterScripts {
                 Vec3d dir = p.subtract(boss.getPos()).normalize();
                 for (int i = -4; i <= 4; i++) {
                     Vec3d at = p.add(dir.multiply(i * 1.5));
-                    strike(boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, maxHit(boss, Dt2Bosses.VARD_AXES), 1.1,
+                    strike(boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, (int) Math.round(maxHit(boss, Dt2Bosses.VARD_AXES) * scale), 1.1,
                             ParticleTypes.SWEEP_ATTACK);
                 }
                 attackCount++;

@@ -127,19 +127,82 @@ final class LateQuestsA {
 
     private static void gardenOfTranquillity(QuestBook b) {
         b.npc("queen_ellamaria", "Queen Ellamaria", "queens_garden", 0, 0, 0xF0D0C0, 0xC03A8A, 0x8A2A6A, 0xE0C048);
-        b.item("white_tree_sapling", "White tree sapling", "seed", 0xE0E0E3, "A sapling of the white tree.");
+        // OSRS walkthrough: the Wise Old Man charges the ring of charos; six gardeners trade rare seeds for favours; two
+        // statues are wheeled to the garden on a trolley; everything is planted in the Queen's garden for King Roald.
+        b.spot("got_lyra", "Lyra's allotments, west of Port Phasmatys", 3601, 3525);
+        b.spot("got_kragen", "Kragen's allotments, north of Ardougne", 2666, 3374);
+        b.spot("got_elstan", "Elstan's patches, south of Falador", 3053, 3308);
+        b.spot("got_dantaera", "Dantaera's allotments, Catherby", 2809, 3463);
+        b.spot("got_white_tree", "White Tree on Ice Mountain", 3006, 3497); // approx
+        b.spot("got_edgeville_well", "Edgeville well", 3084, 3501); // approx
+        b.spot("got_monastery_garden", "Edgeville Monastery rose garden", 3054, 3503); // approx
+        b.spot("got_burthorpe_vines", "Vines behind the Burthorpe pub", 2921, 3534); // approx
+        b.spot("got_lumbridge_statue", "Statue of a king, Lumbridge", 3222, 3206); // approx
+        b.spot("got_falador_statue", "Saradomin statue, Falador square", 2965, 3382); // approx
+        Cast.npc(b, "got_brother_althric", "Brother Althric", "got_monastery_garden", 2, 2, Cast.PALE, 0x6A4A2A);
+        Cast.npc(b, "got_bernald", "Bernald", "got_burthorpe_vines", 2, 2, Cast.FAIR, 0x4A6A3A);
+        b.item("got_orchid_seed", "Orchid seed", "seed", 0xC080C0, "A rare orchid seed from Lyra.");
+        b.item("got_snowdrop_seed", "Snowdrop seed", "seed", 0xE0E0F0, "A snowdrop seed from Kragen.");
+        b.item("got_delphinium_seed", "Delphinium seed", "seed", 0x4A6AD0, "A delphinium seed from Elstan.");
+        b.item("got_white_tree_shoot", "White tree shoot", "plant_pot", 0xE0E0E3, "A cutting from the White Tree, potted and watered.");
+        b.item("got_rose_seed", "Rose seed", "seed", 0xD03A4A, "Seeds from the red, pink and white roses of the monastery.");
+        b.item("got_vine_seed", "Vine seed", "seed", 0x4A8A3A, "A seed from Bernald's vines.");
+        b.item("got_trolley", "Trolley", "statue", 0x8A6A3A, "A trolley for moving heavy statues.");
         b.quest("garden_of_tranquillity", "Garden of Tranquillity", Difficulty.INTERMEDIATE, 2)
                 .reqQuest("creature_of_fenkenstrain").req(Skill.FARMING, 25).xp(Skill.FARMING, 5000)
+                .reward("apple_seed", "acorn", "guam_seed:5", "compost_potion")
+                .unlock("The activated ring of charos; the Queen's garden and its white tree fruit")
                 .stage("I can start this quest by speaking to Queen Ellamaria in Varrock Palace garden. (Requires Creature of Fenkenstrain, 25 Farming.)")
-                .talk("queen_ellamaria").say("I want a garden fit for my husband King Roald, full of rare plants. A white tree, delphiniums, roses, orchids...")
-                .stage("I need rare plants for the Queen's garden: a white tree sapling, 4 tomato seeds' worth of delphiniums and rose cuttings.")
-                .talk("martin_the_master_gardener").stay().unless("white_tree_sapling").take("coins:500").give("white_tree_sapling")
-                .say("A white tree? I've a sapling from the ruins of Saradomin's garden. 500 coins.")
-                .talk("queen_ellamaria").take("white_tree_sapling", "tomato_seed:4", "strawberry_seed:4")
-                .flag("got_garden").say("*The garden blooms with a white tree, delphiniums and roses.* It's perfect! Roald will love it.")
-                .missing("I still need the white tree sapling and seeds for the flower beds (4 tomato and 4 strawberry seeds will do).")
-                .stage("I should fetch King Roald to see the garden.")
-                .talk("king_roald").needFlag("got_garden").say("What a garden! Ellamaria, it's beautiful. Thank you, adventurer.");
+                .talk("queen_ellamaria").need("ring_of_charos")
+                .say("I want a garden fit for my husband - a garden of peace and serenity. Rare plants, statues... and not a word to Rollie. Um, King Roald.",
+                        "You wear a ring of charos? Have the Wise Old Man in Draynor wake it. The gardeners of Gielinor will be far more agreeable.")
+                .missing("You'll need a way to charm the gardeners of Gielinor. A ring of charos, perhaps? (Creature of Fenkenstrain.)")
+                .stage("I need orchids, snowdrops, delphiniums, a white tree, roses and vines from the gardeners, two statues, and the activated ring of charos.")
+                .talk("quest_wise_old_man").stay().need("ring_of_charos").unlessFlag("got_ring").flag("got_ring")
+                .say("A ring of charos! Answer my questions well and I'll wake it for you. ... Show them a range of colours... Ask me nicely...",
+                        "* The ring glows faintly. It is now an activated ring of charos.")
+                .reach("got_lyra", 6).stay().need("ring_of_charos").needFlag("got_ring").unless("got_orchid_seed").take("onion_seed:3").give("got_orchid_seed:2")
+                .say("* Lyra, charmed by the ring, has you grow a crop of onions in her allotment. Once they're picked she hands over orchid seeds.")
+                .missing("* Lyra wants a crop of onions grown first. Bring 3 onion seeds (and your activated ring of charos).")
+                .reach("got_kragen", 6).stay().need("ring_of_charos").needFlag("got_ring").unless("got_snowdrop_seed").take("cabbage_seed:3").give("got_snowdrop_seed:2")
+                .say("* Kragen grumbles about his cabbages until you grow him a crop. He pays you in snowdrop seeds.")
+                .missing("* Kragen wants a crop of cabbages grown first. Bring 3 cabbage seeds.")
+                .reach("got_elstan", 6).stay().need("ring_of_charos").needFlag("got_ring").unless("got_delphinium_seed").take("marigold_seed").give("got_delphinium_seed:2")
+                .say("* You grow marigolds in Elstan's flower patch and give them to him. He gives you delphinium seeds.")
+                .missing("* Elstan wants marigolds grown in his flower patch. Bring a marigold seed.")
+                .reach("got_dantaera", 6).stay().need("ring_of_charos").needFlag("got_ring").unless("got_white_tree_shoot").unlessFlag("got_dantaera").flag("got_dantaera")
+                .say("* Dantaera tells you of the White Tree on Ice Mountain. Take a cutting with secateurs and keep it in a plant pot.")
+                .reach("got_white_tree", 6).stay().needFlag("got_dantaera").unless("got_white_tree_shoot").need("secateurs", "watering_can")
+                .take("filled_plant_pot").give("got_white_tree_shoot")
+                .say("* You take a cutting from the White Tree with your secateurs, pot it and water it.")
+                .missing("* You need secateurs, a watering can and a filled plant pot to take a cutting of the White Tree.")
+                .talk("got_brother_althric").stay().need("ring_of_charos", "fishing_rod").needFlag("got_ring").unless("got_rose_seed").give("got_rose_seed:3")
+                .say("My roses? Only if you can... oh, how charming you are. Very well.",
+                        "* At Edgeville you throw the ring down the well as a test of faith, take seeds from the red, pink and white roses,",
+                        "* and fish your ring back out with your fishing rod.")
+                .missing("Faith, my child, faith. Bring a fishing rod - you'll see why.")
+                .talk("got_bernald").stay().need("ring_of_charos").needFlag("got_ring").unless("got_vine_seed").take("plant_cure:2", "rune_essence").need("pestle_and_mortar", "hammer")
+                .give("got_vine_seed:2")
+                .say("My vines are dying! Plant cure didn't work... Alain at the Taverley tree patch says to add rune dust.",
+                        "* You crush rune essence into dust, mix it into the second plant cure and save the vines. Bernald gives you vine seeds.")
+                .missing("My vines need two plant cures, and some rune essence crushed with a hammer and pestle and mortar.")
+                .talk("queen_ellamaria").stay().need("ring_of_charos").needFlag("got_ring").unless("got_trolley").unlessFlag("got_statue_lumbridge", "got_statue_falador").give("got_trolley")
+                .say("Statues! The king of Lumbridge's statue and Falador's Saradomin. Here's a trolley. Do be discreet.")
+                .reach("got_lumbridge_statue", 4).stay().need("got_trolley").unlessFlag("got_statue_lumbridge").flag("got_statue_lumbridge")
+                .say("* You load the statue of a king onto the trolley and push it east over the bridge to the eastern plinth in the garden.")
+                .reach("got_falador_statue", 4).stay().need("got_trolley").unlessFlag("got_statue_falador").flag("got_statue_falador")
+                .say("* You load the Saradomin statue and push it north through the gate. A player-killer jumps the guards; nobody notices you.",
+                        "* The statue goes on the southern plinth.")
+                .talk("queen_ellamaria").needFlag("got_statue_lumbridge", "got_statue_falador")
+                .take("got_orchid_seed:2", "got_snowdrop_seed:2", "got_delphinium_seed:2", "got_white_tree_shoot", "got_rose_seed:3", "got_vine_seed:2", "compost:2")
+                .need("ring_of_charos").needFlag("got_ring").flag("got_garden")
+                .say("* You fill two plant pots with compost and plant everything. In a few minutes the garden is in full bloom.",
+                        "It's perfect! Now, fetch Rollie... the King. Wear that ring, or he'll never come.")
+                .missing("I still need the orchids, snowdrops, delphiniums, roses, vines and white tree, two buckets of compost, and both statues.")
+                .stage("I should fetch King Roald to see the garden, wearing the activated ring of charos.")
+                .talk("king_roald").needFlag("got_garden").need("ring_of_charos").needFlag("got_ring")
+                .say("A garden? Now? Oh, very well... *In the garden, the King falls silent.* Ellamaria, it's beautiful. Thank you, adventurer.")
+                .missing("I'm far too busy for gardens. *Perhaps the activated ring of charos would make him more agreeable.*");
     }
 
     private static void pathOfGlouphrie(QuestBook b) {
