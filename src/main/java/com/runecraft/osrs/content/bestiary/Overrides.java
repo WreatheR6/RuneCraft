@@ -32,6 +32,9 @@ final class Overrides {
         l.addAll(Common1.overrides());
         // ---- round 20 re-sculpts, part 2 (shared TzHaar body, wingless demons, slayer creatures) ----
         l.addAll(Common2.overrides());
+        // ---- round 21 re-sculpts, part 3 (creatures here; Jad, JalTok-Jad and other bosses in Flagships4) ----
+        l.addAll(Common3.overrides());
+        l.addAll(Flagships4.overrides());
         return l;
     }
 }
