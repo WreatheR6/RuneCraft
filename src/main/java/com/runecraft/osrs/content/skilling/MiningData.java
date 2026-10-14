@@ -102,6 +102,11 @@ public final class MiningData extends SkillingPart {
             new MineRock("upper_pay_dirt_vein", "Ore vein (upper level)", 30, 60, 105, 0, List.of(new Yield("pay_dirt", 1, 60.0)), 0x7A6A4A),
             // Lead rocks (Sailing islands; Deepfin Point): 25 Mining, 40.5 XP, 112/278 (Mod Ash). Respawn approx.
             new MineRock("lead_rock", "Lead rocks", 25, 112, 278, 10, List.of(new Yield("lead_ore", 1, 40.5)), 0x5A5A68),
+            // Nickel rocks (Sailing islands: Deepfin Point, Ynysdail, Grimstone): 74 Mining, 80.5 XP. The wiki has no success
+            // chart yet (approx 40/140), several ores per rock (approx: depletes 1 in 3), respawn approx.
+            new MineRock("nickel_rock", "Nickel rocks", 74, 40, 140, 20, List.of(new Yield("nickel_ore", 1, 80.5)), 0xA8A890),
+            // Rubium rocks (Charred Dungeon, 60 Sailing): 48 Mining, 30 XP, stackable rubium splinters. Rates approx.
+            new MineRock("rubium_rock", "Rubium rocks", 48, 80, 200, 15, List.of(new Yield("rubium_splinters", 1, 30.0)), 0xC03A2A),
             // Volcanic sulphur (Lovakengj sulphur mine): 42 Mining, 35 XP, 100/220, respawns in 25.2 seconds; needs a
             // breathing filter (gas mask, facemask or slayer helmet) worn.
             new MineRock("volcanic_sulphur_rock", "Volcanic sulphur", 42, 100, 220, 42, List.of(new Yield("volcanic_sulphur", 1, 35.0)), 0xC8B830),

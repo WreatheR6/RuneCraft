@@ -58,7 +58,12 @@ class ArtisanRecipeReferenceTest {
             // OSRS Wiki: 5.8 / 7.9 XP per spike (12 bolts); RuneLite lists 1 / 1.3 per bolt.
             "fletch_kebbit_bolts", "fletch_long_kebbit_bolts",
             // RuneLite lists the 3-dose total (160); RuneCraft awards the 4-dose steps 57 + 63 + 72 (checked below).
-            "mix_sanfew_serum");
+            "mix_sanfew_serum",
+            // Boat cannonballs: OSRS Wiki (July 2026) 8.8 / 17.2 / 34 / 42.4 / 50.8 XP per bar, double for the double
+            // mould; RuneLite still lists the pre-release 9 / 17 / 34 / 42.5 / 50.5.
+            "smith_bronze_cannonball", "smith_bronze_cannonball_double", "smith_iron_cannonball", "smith_iron_cannonball_double",
+            "smith_mithril_cannonball_double", "smith_adamant_cannonball", "smith_adamant_cannonball_double",
+            "smith_rune_cannonball", "smith_rune_cannonball_double");
 
     /**
      * Multi-step dishes: XP from the earlier steps of the chain, added before comparing (gnome dishes are

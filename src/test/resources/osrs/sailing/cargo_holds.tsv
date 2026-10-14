@@ -1,0 +1,9 @@
+# Source: OSRS Wiki wikitext dump (osrs-wiki-data, July 2026), page "Cargo hold" (tiers and capacity limits).
+# hold	sailing level	construction level	construction xp	materials	raft capacity	skiff capacity	sloop capacity
+Basic cargo hold	1	1	232	plank:8;bronze_nails:32	20	30	40
+Oak cargo hold	18	11	491	oak_plank:8;iron_nails:32	30	45	60
+Teak cargo hold	29	21	738	teak_plank:8;steel_nails:32;lead_bar:3	45	60	90
+Mahogany cargo hold	46	41	1153	mahogany_plank:8;mithril_nails:32;lead_bar:3	60	90	120
+Camphor cargo hold	60	53	1326	camphor_plank:8;adamant_nails:32;lead_bar:3	80	120	160
+Ironwood cargo hold	80	77	1492	ironwood_plank:8;rune_nails:32;cupronickel_bar:3	105	150	210
+Rosewood cargo hold	89	84	1634	rosewood_plank:8;dragon_nails:32;cupronickel_bar:3	120	180	240

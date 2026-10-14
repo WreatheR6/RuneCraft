@@ -94,6 +94,8 @@ final class ItemHooks {
         SailingData.WRECKS.forEach(w -> HANDLED.add(w.salvage()));
         com.runecraft.osrs.content.skilling.SailingSea.BALLS.stream().filter(b -> !b.item().equals("cannonball")
                 && !b.item().equals("granite_cannonball")).forEach(b -> HANDLED.add(b.item()));
+        com.runecraft.osrs.content.skilling.SailingCrew.KITS.forEach(k -> HANDLED.add(k.id()));
+        com.runecraft.osrs.content.skilling.SailingCrew.SPECIALS.forEach(b -> HANDLED.add(b.item()));
         HANDLED.addAll(FletchingData.THROWN);
         PrayerData.ASHES.forEach(a -> HANDLED.add(a.id()));
         com.runecraft.osrs.data.Thieving.COIN_POUCHES.forEach(p -> HANDLED.add(p.itemId()));
@@ -181,6 +183,18 @@ final class ItemHooks {
         RunecraftData.Pouch pouch = RunecraftData.pouch(id);
         if (pouch != null) {
             pouch(player, stack, pouch);
+            return true;
+        }
+        // Sneak + use cargo (salvage, cannonballs, repair kits) near your boat: store it in the cargo hold.
+        if (player.isSneaking() && player.getVehicle() == null && com.runecraft.osrs.content.skilling.SailingCrew.storable(id)
+                && SeaHooks.deposit(player, id, stack.getCount())) {
+            return true;
+        }
+        com.runecraft.osrs.content.skilling.SailingCrew.Kit kit = com.runecraft.osrs.content.skilling.SailingCrew.kit(id);
+        if (kit != null) {
+            return SeaHooks.applyKit(player, stack, kit);
+        }
+        if (com.runecraft.osrs.content.skilling.SailingCrew.special(id) != null && SeaHooks.useCannonball(player, id)) {
             return true;
         }
         SailingData.Wreck wreck = SailingData.wreckBySalvage(id);
