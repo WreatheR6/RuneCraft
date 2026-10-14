@@ -208,12 +208,14 @@ final class MinigameRewardChecks {
             throw failure("a low gamble went through before reaching wave 3");
         }
         data.setStat(p().getUuid(), BarbarianAssaultSession.WAVE_STAT, 6);
+        long coinsBefore = Players.data(p()).coins();
         RewardShopService.buy(p(), "barbarian_assault", low, 1);
         int left = data.points(p().getUuid(), key);
         if (left != 1000 - BaGambles.Tier.LOW.cost()) {
             throw failure("a low gamble left " + left + " Attacker points (expected " + (1000 - BaGambles.Tier.LOW.cost()) + ")");
         }
-        if (usedSlots() == 0) {
+        // the coins line (1/31) goes to the coin pouch, not an inventory slot
+        if (usedSlots() == 0 && Players.data(p()).coins() <= coinsBefore) {
             throw failure("the low gamble handed out nothing");
         }
         p().getInventory().clear();
