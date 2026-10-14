@@ -91,6 +91,7 @@ public final class DungeonMonsters {
                 .model("maniacal_monkey").skin(0x4A3020, 0x2A1A10, 0x2A1A10, 0x8AA040).size(0.6f, 0.9f, 1.4f));
         waterbirth(list);
         apeAtoll(list);
+        cacheDungeons(list);
         return list;
     }
 
@@ -173,6 +174,61 @@ public final class DungeonMonsters {
         list.add(m("skeleton_lvl142", "Skeleton", 142, 77, 180, 90, 110, 110, 1).speed(4).attackBonus(50, 0, 0)
                 .attack(melee(AttackType.SLASH, 10)).defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("bones"))
                 .slayer(1, "skeletons").attributes("undead").model("skeleton").skin(0xD8D0B0, 0xB8B090, 0xB8B090, 0x302820));
+    }
+
+    /**
+     * The monsters of the Shadow Dungeon, the Sophanem Dungeon and the Forthos Dungeon ({@link CacheDungeons}). Stats are
+     * the DPS calculator's (weirdgloop/osrs-dps-calc monsters.json) and the wiki's infoboxes; drops follow the wiki's
+     * drop tables (the scarab mage shares the locust riders' table here, approx).
+     */
+    private static void cacheDungeons(List<MonsterDef> list) {
+        // Shadow Dungeon (Desert Treasure I).
+        list.add(m("shadow_hound", "Shadow Hound", 63, 62, 53, 54, 54, 1, 1).speed(4).attack(melee(AttackType.STAB, 6))
+                .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("bones"))
+                .slayer(1, "dogs").model("hellhound").skin(0x1A1A22, 0x101016, 0x101016, 0x6A2A8A).size(0.9f, 1.0f, 1.3f));
+        list.add(m("giant_skeleton", "Giant skeleton", 80, 70, 70, 70, 70, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 8))
+                .defenceBonus(0, 0, 0, 0, 0)
+                .drops(Drop.always("big_bones"), Drop.of("steel_med_helm", 1, 1, 21), Drop.of("steel_sword", 1, 1, 32),
+                        Drop.of("steel_axe", 1, 1, 64), Drop.of("iron_arrow", 24, 24, 64), Drop.of("air_rune", 30, 30, 43),
+                        Drop.of("water_rune", 18, 18, 43), Drop.of("chaos_rune", 8, 8, 43), Drop.of("law_rune", 4, 4, 64),
+                        Drop.of("coins", 10, 20, 3), Drop.of("iron_bar", 1, 1, 26), Drop.herbs(32))
+                .slayer(1, "skeletons").attributes("undead").model("skeleton").skin(0xD8D0B0, 0xB8B090, 0xB8B090, 0x302820)
+                .size(0.9f, 2.4f, 1.0f));
+        // Sophanem Dungeon (Contact!): the locust lancer (106) and ranger (98), and the scarab mage (93).
+        list.add(m("locust_rider", "Locust rider", 106, 90, 100, 90, 90, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 15))
+                .defenceBonus(90, 90, 40, 0, 0).drops(scabariteDrops())
+                .slayer(1, "scabarites").attributes("kalphite").model("kalphite")
+                .skin(0x8A6A3A, 0x5A4A2A, 0x3A2A1A, 0xD0B060).size(1.6f, 2.0f, 1.8f));
+        list.add(m("locust_rider_ranger", "Locust rider", 98, 90, 105, 90, 50, 1, 90).speed(6).attackBonus(0, 0, 80)
+                .attack(AttackDef.of("ranged", AttackType.RANGED, 22, 8, 10)).defenceBonus(50, 90, 50, 34, 66)
+                .drops(scabariteDrops()).slayer(1, "scabarites").attributes("kalphite").model("kalphite")
+                .skin(0x7A5A3A, 0x4A3A2A, 0x3A2A1A, 0xC0A050).size(1.6f, 2.0f, 1.8f));
+        list.add(m("scarab_mage", "Scarab mage", 93, 50, 90, 90, 90, 70, 1).speed(5).attackBonus(0, 70, 0) // speed approx.
+                .attack(AttackDef.of("magic", AttackType.MAGIC, 17, 8, 10)).defenceBonus(40, 90, 90, 34, 0)
+                .drops(scabariteDrops()).slayer(1, "scabarites").attributes("kalphite").model("toa_scarab")
+                .skin(0x3A5A6A, 0x2A3A4A, 0x1A2A3A, 0x60C0D0).size(0.9f, 1.4f, 1.0f));
+        // Forthos Dungeon.
+        list.add(m("temple_spider", "Temple Spider", 75, 70, 120, 50, 10, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 6))
+                .defenceBonus(20, 30, 10, 25, 20).drops(Drop.of("red_spiders_eggs", 1, 1, 8), Drop.herbs(16)) // drops approx.
+                .slayer(1, "spiders").skin(0x6A3A2A, 0x4A2A1A, 0x2A1A10, 0xE0A040).size(1.4f, 0.8f, 1.0f));
+        list.add(m("undead_druid", "Undead Druid", 105, 140, 60, 50, 60, 115, 1).speed(4).attackBonus(50, 100, 0)
+                .attack(melee(AttackType.CRUSH, 6)).attack(AttackDef.of("magic", AttackType.MAGIC, 22, 8, 10))
+                .defenceBonus(40, 30, 80, 140, 40)
+                .drops(Drop.always("bones"), Drop.herbs(4), Drop.of("nature_rune", 3, 9, 16), Drop.of("law_rune", 2, 6, 25),
+                        Drop.of("air_rune", 20, 40, 16)) // drops approx.
+                .attributes("undead").model("skeleton").skin(0x8A9A7A, 0x3A5A2A, 0x2A3A1A, 0x80F060));
+    }
+
+    /** The wiki's locust rider drop table (rarities x/128, noted stacks as plain stacks). */
+    private static Drop[] scabariteDrops() {
+        return new Drop[]{Drop.always("bones"),
+                Drop.of("adamant_kiteshield", 1, 1, 43), Drop.of("battlestaff", 3, 3, 64), Drop.of("rune_dagger", 1, 1, 64),
+                Drop.of("rune_mace", 1, 1, 128), Drop.of("rune_sq_shield", 1, 1, 128), Drop.of("adamant_arrow", 36, 36, 32),
+                Drop.of("blood_rune", 18, 18, 32), Drop.of("fire_rune", 250, 250, 64), Drop.of("cosmic_rune", 35, 35, 64),
+                Drop.of("lava_rune", 150, 150, 64), Drop.of("rune_arrow", 18, 18, 64), Drop.of("raw_lobster", 15, 15, 18),
+                Drop.of("adamantite_ore", 14, 14, 64), Drop.of("coal", 32, 32, 21), Drop.of("mithril_bar", 22, 22, 64),
+                Drop.of("raw_bass", 24, 24, 32), Drop.of("uncut_sapphire", 4, 4, 43), Drop.of("coins", 2000, 3000, 4),
+                Drop.of("lobster", 5, 5, 128)};
     }
 
     private static Drop[] maniacalDrops() {

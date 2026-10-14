@@ -367,7 +367,8 @@ public final class Diaries {
         xpAt("Complete a lap of the Pollnivneach agility course", AGILITY, 70, at(3359, 2970, 40));
         killAny("Slay a Dust Devil in the desert cave with a Slayer helmet equipped", "dust devil", 1, SLAYER, 65, DEFENCE, 10);
         visit("Activate Ancient Magicks at the altar in the Jaldraocht Pyramid", 3233, 2898, 10); approx(); // approx
-        quest("Defeat a Locust Rider with Keris", "contact", ATTACK, 50); approx(); // approx
+        killAny("Defeat a Locust Rider with Keris", "locust rider", 1, ATTACK, 50); // Sophanem Dungeon (keris not checked)
+        needs(lastId, "contact");
         xpAt("Burn some yew logs on the Nardah Mayor's balcony", FIREMAKING, 60, at(3428, 2892, 25));
         makeAt("Create a Mithril Platebody in Nardah", "mithril_platebody", 1, at(3428, 2892, 25), SMITHING, 68);
         in("desert", Tier.ELITE);
@@ -504,7 +505,7 @@ public final class Diaries {
         visit("Enter the Seers' Village courthouse with piety turned on", 2735, 3469, 8, PRAYER, 70, DEFENCE, 70);
         cast("Charge a water orb", "charge_water_orb", MAGIC, 56);
         xp("Burn some maple logs with a bow in Seers' Village", FIREMAKING, 65);
-        killAny("Kill a shadow hound in the Shadow dungeon", "hound", 1, THIEVING, 53); approx(); // approx: no shadow hounds
+        killAny("Kill a shadow hound in the Shadow dungeon", "shadow hound", 1, THIEVING, 53);
         killAny("Kill a Mithril Dragon", "mithril dragon", 1);
         haveAny("Purchase and equip a granite body from Penance Queen", "granite_body", STRENGTH, 50, DEFENCE, 50);
         level("Have the Seers' estate agent decorate your house with Fancy Stone", CONSTRUCTION, 50);

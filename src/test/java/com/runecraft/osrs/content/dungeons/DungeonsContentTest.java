@@ -92,7 +92,7 @@ class DungeonsContentTest {
         for (BlockDef b : MODULE.blocks()) {
             assertTrue(b.id().startsWith("dng_"), b.id());
         }
-        assertEquals(43, Dungeons.all().size());
+        assertEquals(49, Dungeons.all().size());
     }
 
     @Test
@@ -294,6 +294,34 @@ class DungeonsContentTest {
                 assertTrue(landed, d.id() + " ladder does not land in the dungeon: " + ladder);
             }
         }
+    }
+
+    private static Map<String, Integer> caps(String dungeon) {
+        Map<String, Integer> out = new HashMap<>();
+        for (Dungeons.Camp c : Dungeons.camps()) {
+            if (c.dungeon().equals(dungeon)) {
+                for (String m : c.creatures()) {
+                    out.merge(m, c.cap(), Integer::sum);
+                }
+            }
+        }
+        return out;
+    }
+
+    /** The cache-tile dungeons hold exactly the cache's spawns (mejrs/data_osrs NPCList_OSRS.json). */
+    @Test
+    void cacheDungeonsHoldTheCacheSpawnCounts() {
+        assertEquals(Map.of("giant_skeleton", 43, "shadow_hound", 10, "giant_bat", 1, "giant_rat", 2), caps("dng_shadow_dungeon"));
+        assertEquals(Map.of("locust_rider_ranger", 18, "locust_rider", 11, "scarab_mage", 28), caps("dng_sophanem_dungeon"));
+        assertEquals(Map.of("dagannoth", 15, "dagannoth_lvl92", 7), caps("dng_lighthouse_dungeon"));
+        assertEquals(Map.of("kalphite_worker", 18, "kalphite_soldier", 20, "kalphite_guardian", 5), caps("dng_kalphite_cave"));
+        assertEquals(Map.of("ice_giant", 6, "ankou", 10, "lesser_demon", 7, "black_demon", 4, "black_dragon", 3, "green_dragon", 6,
+                "greater_demon", 10, "hellhound", 5), caps("dng_wilderness_slayer_cave"));
+        assertEquals(Map.of("temple_spider", 21, "undead_druid", 18, "red_dragon", 6, "baby_red_dragon", 5), caps("dng_forthos_dungeon"));
+        // The level 63 shadow hound and the level 106/98 locust riders are real monsters now (diary tasks).
+        assertEquals(63, ContentRegistry.monster("shadow_hound").combatLevel);
+        assertEquals(106, ContentRegistry.monster("locust_rider").combatLevel);
+        assertEquals(98, ContentRegistry.monster("locust_rider_ranger").combatLevel);
     }
 
     /** Every indoor Agility shortcut has its two ends carved into a dungeon (or the Slayer Tower), once. */

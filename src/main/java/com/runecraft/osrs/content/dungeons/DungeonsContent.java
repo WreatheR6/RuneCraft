@@ -28,7 +28,9 @@ import java.util.Map;
  * of {@link DungeonsLairs}: the Haunted Mine with Tarn's Lair, the Mort'ton catacombs, the Brine Rat
  * Cavern, the Sourhog Cave, the Legends' Guild dungeon, the Wilderness God Wars Dungeon and
  * Jormungand's Prison, Puro-Puro (the impling maze below Zanaris, {@link PuroPuro}), the Waterbirth Island Dungeon
- * ({@link WaterbirthDungeon}) and Ape Atoll's undead dungeons ({@link ApeAtollDungeons}).
+ * ({@link WaterbirthDungeon}), Ape Atoll's undead dungeons ({@link ApeAtollDungeons}), and the cache-tile dungeons of
+ * {@link CacheDungeons}: the Shadow Dungeon, the Sophanem Dungeon, the Lighthouse dungeon, the Kalphite Cave, the
+ * Wilderness Slayer Cave and the Forthos Dungeon.
  */
 public final class DungeonsContent implements ContentModule {
     public static final String FANCY_BOOTS = "fancy_boots";

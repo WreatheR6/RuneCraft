@@ -312,6 +312,12 @@ public final class AccessGates {
         // The hut over the hole into Kruk's Dungeon west of Marim (dungeons module, KruksDungeon).
         gate("kruks_dungeon", "Kruk's Dungeon", List.of(new Rect(2714, 2788, 2716, 2790)), 2719, 2789,
                 questStarted("monkey_madness_ii", "You see nothing but jungle grass. (You need to start Monkey Madness II.)"));
+        // The huts over the Shadow Dungeon and Sophanem Dungeon ladders (dungeons module, CacheDungeons). OSRS: the
+        // Shadow Dungeon ladder is only visible with a ring of visibility (Desert Treasure I).
+        gate("shadow_dungeon", "Shadow Dungeon", List.of(new Rect(2546, 3404, 2548, 3406)), 2547, 3401,
+                questStarted("desert_treasure_i", "You see nothing there. (You need to start Desert Treasure I.)"));
+        gate("sophanem_dungeon", "Sophanem Dungeon", List.of(new Rect(3335, 2795, 3337, 2797)), 3340, 2796,
+                questStarted("contact", "You need to have started Contact! to enter the Sophanem Dungeon."));
 
         // ---- guilds (rectangles are the hand-built buildings / grounds in osrs/content/world)
         gate("heroes_guild", "Heroes' Guild", List.of(new Rect(2890, 3504, 2901, 3516)),
