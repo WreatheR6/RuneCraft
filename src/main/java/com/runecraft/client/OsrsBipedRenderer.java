@@ -2,6 +2,10 @@ package com.runecraft.client;
 
 import com.runecraft.RuneCraft;
 import com.runecraft.entity.QuestNpcEntity;
+import com.runecraft.osrs.NpcRace;
+import com.runecraft.osrs.QuestNpc;
+import com.runecraft.osrs.content.ContentRegistry;
+import com.runecraft.osrs.content.NpcDef;
 import net.minecraft.client.render.entity.BipedEntityRenderer;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
@@ -10,12 +14,16 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.Identifier;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 /** Renders RuneCraft humanoids with the zombie/player biped model, a custom skin and a scale. */
 public class OsrsBipedRenderer<T extends MobEntity> extends BipedEntityRenderer<T, BipedEntityModel<T>> {
     private final Identifier texture;
     private final float scale;
+    /** NPC race by NPC id (dwarves and gnomes render shorter, elves taller; hitboxes are unchanged). */
+    private static final Map<String, NpcRace> RACES = new HashMap<>();
 
     public OsrsBipedRenderer(EntityRendererFactory.Context ctx, String textureName, float scale) {
         super(ctx, new BipedEntityModel<>(ctx.getPart(EntityModelLayers.ZOMBIE)), 0.5f * scale);
@@ -37,6 +45,23 @@ public class OsrsBipedRenderer<T extends MobEntity> extends BipedEntityRenderer<
 
     @Override
     protected void scale(T entity, MatrixStack matrices, float amount) {
+        if (entity instanceof QuestNpcEntity npc) {
+            NpcRace race = race(npc.npcId());
+            matrices.scale(scale * race.width(), scale * race.height(), scale * race.width());
+            return;
+        }
         matrices.scale(scale, scale, scale);
+    }
+
+    private static NpcRace race(String id) {
+        return RACES.computeIfAbsent(id, key -> {
+            try {
+                QuestNpc q = QuestNpc.valueOf(key);
+                return NpcRace.of(q.name(), q.displayName(), q.landmark().name());
+            } catch (IllegalArgumentException e) {
+                NpcDef def = ContentRegistry.npc(key);
+                return def == null ? NpcRace.of(key, null, null) : NpcRace.of(def.id(), def.name(), def.place());
+            }
+        });
     }
 }

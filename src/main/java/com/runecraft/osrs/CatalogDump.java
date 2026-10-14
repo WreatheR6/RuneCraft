@@ -115,7 +115,8 @@ public final class CatalogDump {
         }
         List<String> npcs = new ArrayList<>();
         for (NpcDef n : ContentRegistry.npcs()) {
-            npcs.add(obj("id", n.id(), "name", n.name(), "colors", n.colors()));
+            npcs.add(obj("id", n.id(), "name", n.name(), "colors", n.colors(),
+                    "race", NpcRace.of(n.id(), n.name(), n.place()).name().toLowerCase(Locale.ROOT)));
         }
         List<String> blocks = new ArrayList<>();
         for (BlockDef b : ContentRegistry.blocks()) {
@@ -144,7 +145,8 @@ public final class CatalogDump {
         List<String> questNpcs = new ArrayList<>();
         for (QuestNpc q : QuestNpc.values()) {
             questNpcs.add(obj("id", q.name().toLowerCase(Locale.ROOT), "name", q.displayName(),
-                    "look", q.look().name().toLowerCase(Locale.ROOT)));
+                    "look", q.look().name().toLowerCase(Locale.ROOT),
+                    "race", NpcRace.of(q.name(), q.displayName(), q.landmark().name()).name().toLowerCase(Locale.ROOT)));
         }
         List<String> quests = new ArrayList<>();
         for (QuestInfo qi : ContentRegistry.quests()) {

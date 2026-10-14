@@ -4949,41 +4949,44 @@ def entity_texture(eid, o):
         else:
             fill_rect(img, (fx + 3, fy + 3, 2, 2), steel, rng, 0.05)  # nose guard
     eyes = o.get("eyes", (255, 255, 255))
-    pupil = (30, 30, 60) if "eyes" not in o else shade(eyes, 0.5)
-    put(img, fx + 1, fy + 4, eyes)
-    put(img, fx + 2, fy + 4, pupil if "eyes" not in o else eyes)
-    put(img, fx + 5, fy + 4, pupil if "eyes" not in o else eyes)
-    put(img, fx + 6, fy + 4, eyes)
-    brow = shade(hair, 0.8)
-    for x in (1, 2, 5, 6):
-        put(img, fx + x, fy + 3, brow)
-    put(img, fx + 3, fy + 5, shade(skin, 0.8))
-    put(img, fx + 4, fy + 5, shade(skin, 0.8))
-    mouth = (90, 30, 30) if not o.get("horns") else (40, 10, 10)
-    for x in range(2, 6):
-        put(img, fx + x, fy + 6, mouth)
-    if o.get("horns") or o.get("ears") and False:
-        pass
-    if o.get("beard"):
-        b = rgb(o["beard"])
-        for x in range(1, 7):
-            put(img, fx + x, fy + 7, b)
-        put(img, fx + 1, fy + 6, b)
-        put(img, fx + 6, fy + 6, b)
-    if o.get("horns"):
-        horn = (230, 220, 200) if eid != "black_demon" else (90, 20, 20)
-        for (x, y) in ((0, 0), (1, 0), (1, 1), (6, 0), (7, 0), (6, 1)):
-            put(img, fx + x, fy + y, horn)
-        tx, ty, _, _ = head["top"]
-        for (x, y) in ((1, 3), (1, 4), (6, 3), (6, 4)):
-            put(img, tx + x, ty + y, horn)
-        # fangs
-        put(img, fx + 2, fy + 7, (240, 240, 230))
-        put(img, fx + 5, fy + 7, (240, 240, 230))
-    if o.get("ears"):
-        for f in ("right", "left"):
-            x, y, w, h = head[f]
-            fill_rect(img, (x + 3, y + 3, 2, 3), shade(skin, 1.1), rng, 0.04)
+    if o.get("v2"):
+        v2_face(img, o, rng, head, skin, hair, fx, fy)
+    else:
+        pupil = (30, 30, 60) if "eyes" not in o else shade(eyes, 0.5)
+        put(img, fx + 1, fy + 4, eyes)
+        put(img, fx + 2, fy + 4, pupil if "eyes" not in o else eyes)
+        put(img, fx + 5, fy + 4, pupil if "eyes" not in o else eyes)
+        put(img, fx + 6, fy + 4, eyes)
+        brow = shade(hair, 0.8)
+        for x in (1, 2, 5, 6):
+            put(img, fx + x, fy + 3, brow)
+        put(img, fx + 3, fy + 5, shade(skin, 0.8))
+        put(img, fx + 4, fy + 5, shade(skin, 0.8))
+        mouth = (90, 30, 30) if not o.get("horns") else (40, 10, 10)
+        for x in range(2, 6):
+            put(img, fx + x, fy + 6, mouth)
+        if o.get("horns") or o.get("ears") and False:
+            pass
+        if o.get("beard"):
+            b = rgb(o["beard"])
+            for x in range(1, 7):
+                put(img, fx + x, fy + 7, b)
+            put(img, fx + 1, fy + 6, b)
+            put(img, fx + 6, fy + 6, b)
+        if o.get("horns"):
+            horn = (230, 220, 200) if eid != "black_demon" else (90, 20, 20)
+            for (x, y) in ((0, 0), (1, 0), (1, 1), (6, 0), (7, 0), (6, 1)):
+                put(img, fx + x, fy + y, horn)
+            tx, ty, _, _ = head["top"]
+            for (x, y) in ((1, 3), (1, 4), (6, 3), (6, 4)):
+                put(img, tx + x, ty + y, horn)
+            # fangs
+            put(img, fx + 2, fy + 7, (240, 240, 230))
+            put(img, fx + 5, fy + 7, (240, 240, 230))
+        if o.get("ears"):
+            for f in ("right", "left"):
+                x, y, w, h = head[f]
+                fill_rect(img, (x + 3, y + 3, 2, 3), shade(skin, 1.1), rng, 0.04)
     # hat overlay region (32..64 x 0..16) left transparent
 
     # body / arms / legs (right side at classic positions, left side at 1.8 positions)
@@ -4998,6 +5001,8 @@ def entity_texture(eid, o):
             if o.get("shirt") is not None and f not in ("top", "bottom"):
                 x, y, w, h = r
                 sleeve = h if o.get("robe") or o.get("chain") or o.get("plate") or o.get("long_sleeves") else 4
+                if o.get("v2"):
+                    sleeve = 4 if o.get("short_sleeves") else h if o.get("plate") else h - 2
                 fill_rect(img, (x, y, w, sleeve), shirt, rng, amt)
         fill_rect(img, a["top"], shirt if o.get("shirt") is not None else skin, rng, amt)
     for lg in legs:
@@ -5077,6 +5082,8 @@ def entity_texture(eid, o):
             x, y = rng.randrange(64), rng.randrange(64)
             if opaque(img, x, y) and not (32 <= x < 64 and y < 16):
                 put(img, x, y, (80, 90, 60) if rng.random() < 0.5 else (110, 100, 80))
+    if o.get("v2"):
+        v2_body(img, o, rng, body, arms, legs, skin, shirt, pants, shoes)
     extra_features(img, o, rng, head, body, arms, legs, skin, shirt, fx, fy)
     biped_finish(img, o, rng)
     if eid == "black_demon":
@@ -5326,7 +5333,9 @@ def hat_layer(img, o, rng):
     hair = rgb(o["hair"])
     covered = o.get("helmet") or o.get("hood")
     kind = o["hat"][0] if o.get("hat") else None
-    if not covered and kind not in ("chef", "pointy", "tophat", "turban") and style != "bald":
+    if o.get("v2") and style in ("tonsure", "receding"):
+        pass  # the fringe of hair stays on the base head (a hat-layer band reads as earmuffs)
+    elif not covered and kind not in ("chef", "pointy", "tophat", "turban") and style not in ("bald", "tonsure", "receding"):
         hp = Pal(hair)
         for f in ("top", "back"):
             x, y, w, h = hat[f]
@@ -5350,11 +5359,76 @@ def hat_layer(img, o, rng):
             put(img, xx, y, hp.m)
             if style in ("long", "short") and (xx - x) in (0, 1, 6, 7):
                 put(img, xx, y + 1, hp.d)
+        if style == "parted" and o.get("v2"):
+            x, y, w, h = hat["front"]
+            for xx in range(x, x + 5):
+                put(img, xx, y + 1, hp.m if xx - x < 4 else hp.d)
+            put(img, x, y + 2, hp.d)
+        if style == "long" and o.get("v2"):
+            x, y, w, h = hat["front"]
+            for yy in range(y + 1, y + 7):
+                put(img, x, yy, hp.d)
+                put(img, x + 7, yy, hp.d)
+        if style == "ponytail" and o.get("v2"):
+            x, y, w, h = hat["back"]
+            for yy in range(y + 4, y + 8):
+                put(img, x + 3, yy, hp.l)
+                put(img, x + 4, yy, hp.m)
         if style == "bun":
             x, y, w, h = hat["back"]
             for yy in range(y + 1, y + 4):
                 for xx in range(x + 2, x + 6):
                     put(img, xx, yy, hp.l)
+    if o.get("v2") and o.get("hood"):
+        hc = Pal(rgb(o.get("hood_col") or o.get("shirt") or o["hair"]))
+        for f in ("top", "back", "right", "left"):
+            x, y, w, h = hat[f]
+            for yy in range(y, y + h):
+                for xx in range(x, x + w):
+                    c = hc.m
+                    if f == "top" and (xx + yy) % 5 == 0:
+                        c = hc.l
+                    elif f == "back" and xx - x in (3, 4) and yy > y + 1:
+                        c = hc.d  # seam
+                    elif f != "top" and yy == y + h - 1:
+                        c = hc.d
+                    put(img, xx, yy, c)
+        x, y, w, h = hat["front"]
+        for xx in range(x, x + w):
+            put(img, xx, y, hc.m)
+            put(img, xx, y + 1, hc.d)
+        for yy in range(y, y + h):
+            put(img, x, yy, hc.d)
+            put(img, x + 7, yy, hc.d)
+    if o.get("v2") and o.get("elf_ears"):
+        ear = rgb(o["skin"])
+        for f in ("right", "left"):
+            x, y, w, h = hat[f]
+            rows = ((1,), (1, 2), (2, 3), (2, 3, 4), (3, 4), (3, 4), (4,))  # tip points up and back
+
+            def ex(dx):
+                return x + (dx if f == "right" else w - 1 - dx)
+            for dy, cols in enumerate(rows):
+                for dx in cols:
+                    put(img, ex(dx), y + dy, light(ear, 1.06) if dx == cols[-1] else ear)
+                put(img, ex(cols[0] - 1), y + dy, shade(ear, 0.62))  # back edge
+                if cols[-1] + 1 < w:
+                    put(img, ex(cols[-1] + 1), y + dy, shade(rgb(o["hair"]), 0.55))  # shadow in front
+            for dy in (3, 4):
+                put(img, ex(3), y + dy, shade(ear, 0.78))  # inner ear
+    if kind == "bandana":
+        cp = Pal(rgb(o["hat"][1]))
+        for f in ("top", "front", "back", "right", "left"):
+            x, y, w, h = hat[f]
+            rows = h if f == "top" else 3 if f != "front" else 2
+            for yy in range(y, y + rows):
+                for xx in range(x, x + w):
+                    dot = (xx * 5 + yy * 3) % 7 == 0
+                    put(img, xx, yy, (235, 230, 220) if dot else cp.m if yy < y + rows - 1 or f == "top" else cp.d)
+        x, y, w, h = hat["back"]
+        for yy in range(y + 3, y + 6):
+            put(img, x + 3, yy, cp.d)
+            put(img, x + 4 + (yy - y - 3) // 2, yy, cp.m)
     if kind in ("straw", "cap", "tophat", "turban", "scarf"):
         c = rgb(o["hat"][1])
         cp = Pal(c)
@@ -5438,11 +5512,367 @@ def merge_outfit(o, over):
     return o
 
 
+# ----------------------------------------------------------------------------------------------
+# Humanoid NPC painter (v2): OSRS-style faces, hair and beards, outfit archetypes and races
+# ----------------------------------------------------------------------------------------------
+
+FEMALE_WORDS = ("woman", "women", "lady", "girl", "wife", "mother", "mrs", "miss", "madam", "queen", "princess",
+                "duchess", "sister", "nun", "maid", "maiden", "daughter", "aunt", "granny", "grandma", "witch",
+                "sorceress", "priestess", "barmaid", "waitress", "seamstress", "oarswoman", "mistress", "matriarch",
+                "countess", "baroness", "empress", "hag", "housekeeper", "headmistress", "huntress", "enchantress")
+# well-known OSRS women whose names carry no hint
+FEMALE_NAMES = {"juliet", "gertrude", "hetty", "aggie", "thessalia", "keli", "aris", "sarah", "betty", "emily",
+                "kaylee", "tina", "alice", "iffie", "irena", "valaine", "ellamaria", "olga", "virginia", "zarah", "ada",
+                "eluned", "nieve", "sinina", "lilly", "anna", "elena", "glarial", "louisa", "hilda", "sigrid", "thora",
+                "yrsa", "lisse", "mairin", "sabreen", "zaida", "jade", "romily", "rachael", "marisi", "tanya", "delilah",
+                "bridget", "philippa", "kara", "ilfeen", "oronwen", "liliwen", "fayeth_no"}
+
+
+def npc_is_female(eid, name):
+    text = f"{eid} {name}"
+    if has_word(text, *FEMALE_WORDS):
+        return True
+    toks, _ = _tokens(text)
+    return any(t in FEMALE_NAMES for t in toks)
+
+
+def npc_v2_hints(eid, name, race, o):
+    """Race, gender and role details for the v2 NPC painter (applied before hand-written NAMED_NPCS overrides)."""
+    text = f"{eid} {name}"
+    o["v2"] = True
+    o["race"] = race
+    skin = rgb(o["skin"])
+    hair = rgb(o.get("hair") or (90, 60, 30))
+    armour = o.get("plate") or o.get("chain")
+    if race == "tzhaar":
+        for k in ("beard", "big_beard", "hat", "helmet", "hood", "apron", "crown", "cape", "robe", "chain", "plate",
+                  "belt", "trim"):
+            o.pop(k, None)
+        o.update(tzhaar=True, shirt=None, pants=shade(skin, 0.6), shoes=None, hair=shade(skin, 0.75),
+                 hair_style="bald", eyes=(255, 232, 120), molten=True, loincloth=True)
+        return o
+    female = npc_is_female(eid, name)
+    old = lum(hair) > 160 and sat(hair) < 0.2
+    o["iris"] = [(72, 46, 28), (52, 70, 110), (44, 32, 24), (60, 80, 50)][int(hash01("iris", eid) * 4)]
+    if female:
+        o["female"] = True
+        o.setdefault("hair_style", ["long", "long", "bun", "ponytail"][int(hash01("fhair", eid) * 4)])
+        o.pop("beard", None)
+        if not (o.get("robe") or armour):
+            o["skirt"] = True
+    else:
+        if old:
+            o.setdefault("hair_style", ["receding", "receding", "short", "bald"][int(hash01("ohair", eid) * 4)])
+        else:
+            o.setdefault("hair_style", ["short", "short", "parted", "parted", "short", "long"][int(hash01("hair", eid) * 6)])
+        if "beard" not in o and "big_beard" not in o and not o.get("helmet") and race != "elf":
+            r = hash01("beard", eid)
+            if old and r < 0.65:
+                o["beard"] = hair
+                o["beard_style"] = "full"
+            elif not old and r < 0.3:
+                o["beard"] = shade(hair, 0.95)
+                o["beard_style"] = ["short", "moustache", "goatee", "full"][int(r / 0.3 * 4)]
+    if race == "dwarf":
+        if "big_beard" not in o:
+            o["big_beard"] = o.pop("beard", None) or hair
+        o.pop("beard", None)
+        if not o.get("helmet") and not o.get("hat") and hash01("dhelm", eid) < 0.4:
+            o.update(helmet=True, helmet_col=(128, 128, 136))
+    elif race == "gnome":
+        o["gnome"] = True
+        if not old:
+            o.pop("beard", None)
+    elif race == "elf":
+        o["elf_ears"] = True
+        o.pop("beard", None)
+        if not female:
+            o["hair_style"] = "long"
+    if has_word(text, "pirate", "buccaneer", "corsair", "swashbuckler"):
+        o.update(hat=("bandana", [(170, 30, 30), (40, 40, 110), (30, 30, 30)][int(hash01("band", eid) * 3)]),
+                 belt=(50, 34, 20))
+        if hash01("patch", eid) < 0.5:
+            o["eyepatch"] = True
+        if hash01("stripe", eid) < 0.6 and o.get("shirt") is not None:
+            o["stripes"] = (232, 228, 220)
+    if has_word(text, "ham") or "h.a.m" in (name or "").lower():
+        o.update(robe=True, hood=True, rope=(70, 56, 40))
+    if has_word(text, "bandit", "pollnivneach", "desert", "nomad", "menaphite", "sophanem", "nardah") \
+            and not o.get("hat") and not o.get("helmet") and not o.get("hood"):
+        o["hat"] = ("scarf", mix(rgb(o.get("shirt") or (200, 180, 140)), (230, 220, 190), 0.5))
+    if has_word(text, "barbarian", "fremennik", "viking", "berserker"):
+        o["short_sleeves"] = True
+        if not female:
+            o["hair_style"] = "long"
+            o.setdefault("beard", hair)
+            o["beard_style"] = "full"
+    if has_word(text, "monk", "brother", "abbot"):
+        o["hair_style"] = "tonsure"
+        o.pop("trim", None)  # OSRS monks wear a plain robe with a rope belt
+        o.setdefault("rope", (210, 190, 140))
+    if o.get("robe") and not o.get("rope") and not o.get("belt"):
+        o["rope"] = mix(rgb(o.get("trim") or shade(rgb(o.get("shirt") or (120, 90, 60)), 0.6)), WHITE, 0.1)
+    if not (o.get("robe") or o.get("plate") or o.get("skirt") or o.get("belt")) and o.get("shirt") is not None:
+        o["belt"] = (64, 42, 24) if lum(rgb(o["shirt"])) > 70 else (110, 80, 50)
+    return o
+
+
+def v2_finalize(o):
+    """Defaults that depend on the hand-written overrides as well."""
+    if o.get("beard") and "beard_style" not in o:
+        o["beard_style"] = "full" if lum(rgb(o["beard"])) > 160 else "short"
+    return o
+
+
+def v2_face(img, o, rng, head, skin, hair, fx, fy):
+    """OSRS-like face: thin brows, small dark eyes, nose shadow, small mouth, soft cheek shading."""
+    style = o.get("hair_style", "short")
+    covered = o.get("helmet") or o.get("hood")
+    bald = style in ("bald", "tonsure", "receding") and not covered and not o.get("hat")
+    if bald:  # base head: bare scalp, a fringe of hair round the back
+        for f in ("top", "front"):
+            x, y, w, h = head[f]
+            fill_rect(img, (x, y, w, h if f == "top" else 2), skin, rng, 0.04)
+        tx, ty, tw, th = head["top"]
+        for xx in range(tx, tx + tw):
+            put(img, xx, ty, light(skin, 1.08))
+        hp = Pal(hair)
+        for f in ("back", "right", "left"):
+            x, y, w, h = head[f]
+            fill_rect(img, (x, y, w, 8), skin, rng, 0.04)
+            if style == "bald":
+                continue
+            for xx in range(x, x + w):
+                if f == "right" and xx - x > 4 or f == "left" and xx - x < 3:
+                    continue  # bare in front of the ears
+                lo = 6 if f == "back" else 5
+                for yy in range(y + 2, y + lo + (1 if f == "back" and 2 <= xx - x <= 5 else 0)):
+                    put(img, xx, yy, shade(hp.m, 1 + (rng.random() - 0.5) * 0.12))
+    tz = o.get("tzhaar")
+    if not o.get("hood") and not o.get("coif"):
+        for yy in range(fy + 2, fy + 8):
+            put(img, fx, yy, shade(skin, 0.9))
+            put(img, fx + 7, yy, shade(skin, 0.86))
+    if tz:
+        for x in range(8):
+            put(img, fx + x, fy + 3, shade(skin, 0.62))  # heavy brow ridge
+        for x in (2, 5):
+            put(img, fx + x, fy + 6, shade(skin, 0.7))
+        return
+    female = o.get("female")
+    brow = shade(hair, 0.8) if lum(hair) < 170 else shade(hair, 0.62)
+    if bald and style == "bald":
+        brow = shade(skin, 0.68)
+    if female:
+        brow = mix(brow, skin, 0.35)
+        for x in (2, 5):
+            put(img, fx + x, fy + 3, brow)
+        put(img, fx + 1, fy + 3, mix(brow, skin, 0.5))
+        put(img, fx + 6, fy + 3, mix(brow, skin, 0.5))
+    else:
+        for x in (1, 2, 5, 6):
+            put(img, fx + x, fy + 3, brow)
+    if "eyes" in o:
+        for x in (1, 2, 5, 6):
+            put(img, fx + x, fy + 4, rgb(o["eyes"]))
+    else:
+        sclera, iris = (226, 222, 212), rgb(o.get("iris", (60, 40, 28)))
+        put(img, fx + 1, fy + 4, sclera)
+        put(img, fx + 2, fy + 4, iris)
+        put(img, fx + 5, fy + 4, iris)
+        put(img, fx + 6, fy + 4, sclera)
+        if female:
+            put(img, fx + 1, fy + 4, mix(sclera, (40, 30, 30), 0.25))
+            put(img, fx + 6, fy + 4, mix(sclera, (40, 30, 30), 0.25))
+    # nose: a lit bridge and a shadow underneath
+    put(img, fx + 3, fy + 4, light(skin, 1.05))
+    put(img, fx + 4, fy + 4, skin)
+    mouth_y = fy + 6
+    if o.get("gnome"):  # gnomes' big noses
+        put(img, fx + 3, fy + 4, light(skin, 1.12))
+        put(img, fx + 4, fy + 4, light(skin, 1.06))
+        put(img, fx + 3, fy + 5, light(skin, 1.04))
+        put(img, fx + 4, fy + 5, shade(skin, 0.86))
+        put(img, fx + 3, fy + 6, shade(skin, 0.74))
+        put(img, fx + 4, fy + 6, shade(skin, 0.7))
+        mouth_y = fy + 7
+    else:
+        put(img, fx + 3, fy + 5, shade(skin, 0.84))
+        put(img, fx + 4, fy + 5, shade(skin, 0.78))
+    for x in (1, 6):
+        put(img, fx + x, fy + 5, mix(skin, (214, 110, 100), 0.14))
+    if female:
+        lip = mix(skin, (186, 52, 64), 0.5)
+        put(img, fx + 3, mouth_y, lip)
+        put(img, fx + 4, mouth_y, lip)
+    else:
+        lip = mix(shade(skin, 0.6), (110, 40, 40), 0.3)
+        put(img, fx + 3, mouth_y, lip)
+        put(img, fx + 4, mouth_y, lip)
+        put(img, fx + 2, mouth_y, shade(skin, 0.86))
+        put(img, fx + 5, mouth_y, shade(skin, 0.86))
+    if mouth_y == fy + 6:
+        for x in range(2, 6):
+            put(img, fx + x, fy + 7, shade(skin, 0.93))
+    if o.get("eyepatch"):
+        patch = (24, 20, 18)
+        for (x, y) in ((1, 4), (2, 4), (1, 5), (2, 5)):
+            put(img, fx + x, fy + y, patch)
+        for x in (0, 3, 4, 5, 6, 7):
+            put(img, fx + x, fy + 3, patch)
+        for f in ("right", "left"):
+            x, y, w, h = head[f]
+            for xx in range(x, x + w):
+                put(img, xx, y + 3, patch)
+    if o.get("beard") and not o.get("big_beard"):
+        b = Pal(rgb(o["beard"]))
+        bs = o.get("beard_style", "short")
+
+        def bp(x, y):
+            put(img, fx + x, fy + y, b.m if (x + y) % 3 else b.d)
+
+        if bs == "full":
+            for x in (0, 1, 6, 7):
+                bp(x, 5)
+            for x in range(8):
+                bp(x, 6)
+                bp(x, 7)
+            put(img, fx + 3, fy + 6, b.dd)
+            put(img, fx + 4, fy + 6, b.dd)
+            put(img, fx + 2, fy + 5, b.d)
+            put(img, fx + 5, fy + 5, b.d)
+        elif bs == "moustache":
+            for x in range(2, 6):
+                bp(x, 6)
+        elif bs == "goatee":
+            for x in range(2, 6):
+                bp(x, 6)
+            bp(3, 7)
+            bp(4, 7)
+        else:
+            for x in range(1, 7):
+                bp(x, 7)
+            bp(1, 6)
+            bp(6, 6)
+            put(img, fx + 2, fy + 6, b.d)
+            put(img, fx + 5, fy + 6, b.d)
+        for f in ("right", "left"):
+            x, y, w, h = head[f]
+            col = x + w - 1 if f == "right" else x
+            if bs in ("full", "short"):
+                for yy in range(3, 8):
+                    put(img, col, y + yy, b.m)
+            if bs == "full":
+                for xx in range(x, x + w):
+                    for yy in (6, 7):
+                        put(img, xx, y + yy, b.m if (xx + yy) % 3 else b.d)
+                for xx in ((x + w - 3, x + w - 2) if f == "right" else (x + 1, x + 2)):
+                    put(img, xx, y + 5, b.m)
+
+
+def v2_body(img, o, rng, body, arms, legs, skin, shirt, pants, shoes):
+    """Cuffs, belts, collars, boots, skirts, robe folds and stripes on the v2 NPC body."""
+    sides = ("front", "back", "right", "left")
+    if o.get("tzhaar"):
+        return
+    has_shirt = o.get("shirt") is not None
+    robe = o.get("robe")
+    armour = o.get("plate") or o.get("chain")
+    if o.get("stripes") and has_shirt:
+        st = rgb(o["stripes"])
+        for part in [body] + arms:
+            for f in sides:
+                x, y, w, h = part[f]
+                for yy in range(y + 1, y + (h if part is body else 9), 2):
+                    for xx in range(x, x + w):
+                        put(img, xx, yy, shade(st, 0.97 if (xx + yy) % 5 else 0.9))
+    if has_shirt and not o.get("short_sleeves") and not o.get("plate"):
+        cuff = shade(shirt, 0.72) if not o.get("trim") else rgb(o["trim"])
+        for a in arms:
+            for f in sides:
+                x, y, w, h = a[f]
+                for xx in range(x, x + w):
+                    put(img, xx, y + h - 3, cuff)
+                    if robe:
+                        put(img, xx, y + h - 4, shade(shirt, 0.82))
+                    put(img, xx, y + h - 2, skin)  # hands
+                    put(img, xx, y + h - 1, shade(skin, 0.9))
+            x, y, w, h = a["bottom"]
+            fill_rect(img, (x, y, w, h), skin, rng, 0.03)
+    if has_shirt and not armour and not robe and not o.get("waistcoat") and not o.get("apron"):
+        x, y, w, h = body["front"]  # V-neck collar
+        put(img, x + 3, y, skin)
+        put(img, x + 4, y, skin)
+        put(img, x + 3, y + 1, shade(skin, 0.85))
+        put(img, x + 4, y + 1, shade(skin, 0.85))
+        put(img, x + 2, y, shade(shirt, 0.75))
+        put(img, x + 5, y, shade(shirt, 0.75))
+    if o.get("skirt"):
+        sk = rgb(o.get("pants") if o.get("pants") is not None else shirt)
+        for f in sides:
+            x, y, w, h = body[f]
+            for yy in range(y + 8, y + h):
+                for xx in range(x, x + w):
+                    put(img, xx, yy, shade(sk, 1 + (rng.random() - 0.5) * 0.06))
+        for lg in legs:
+            for f in sides:
+                x, y, w, h = lg[f]
+                for yy in range(y, y + h - 2):
+                    for xx in range(x, x + w):
+                        k = 0.86 if (f == "front" and xx == x + 3) else 1.0
+                        put(img, xx, yy, shade(sk, k * (1 + (rng.random() - 0.5) * 0.06)))
+                for xx in range(x, x + w):
+                    put(img, xx, y + h - 3, shade(sk, 0.7))
+    if robe:
+        for lg in legs:
+            x, y, w, h = lg["front"]
+            for yy in range(y, y + h - 1):
+                put(img, x + 3, yy, shade(shirt, 0.8))
+            for f in sides:
+                x, y, w, h = lg[f]
+                for xx in range(x, x + w):
+                    put(img, xx, y + h - 2, shade(shirt, 0.7))
+    if o.get("rope") and not armour:
+        rope = rgb(o["rope"])
+        for f in sides:
+            x, y, w, h = body[f]
+            for xx in range(x, x + w):
+                put(img, xx, y + 7, rope if (xx % 2) else shade(rope, 0.82))
+        x, y, w, h = body["front"]
+        for yy in range(y + 8, y + h):
+            put(img, x + 5, yy, shade(rope, 0.9))
+    elif o.get("belt") and not o.get("plate"):
+        bt = rgb(o["belt"])
+        for f in sides:
+            x, y, w, h = body[f]
+            for xx in range(x, x + w):
+                put(img, xx, y + 8, bt)
+        x, y, w, h = body["front"]
+        buckle = (210, 186, 96) if not o.get("chain") else (190, 190, 196)
+        put(img, x + 3, y + 8, buckle)
+        put(img, x + 4, y + 8, buckle)
+    if not robe and not o.get("skirt") and o.get("pants") is not None and not o.get("loincloth"):
+        for lg in legs:
+            x, y, w, h = lg["front"]
+            for yy in range(y, y + h - 3):
+                put(img, x + 3, yy, shade(pants, 0.86))
+    if o.get("shoes") is not None and not robe:
+        for lg in legs:
+            for f in sides:
+                x, y, w, h = lg[f]
+                top = y + h - (2 if o.get("skirt") else 3)
+                for xx in range(x, x + w):
+                    put(img, xx, top, light(shoes, 1.18))
+                    put(img, xx, y + h - 1, shade(shoes, 0.7))
+
+
 def gen_quest_npcs(cat):
     """One skin per built-in quest character (npc_q_<id>.png) in its OSRS outfit."""
     for q in cat.get("quest_npcs", []):
         o = dict(NPC_LOOKS.get(q["look"], NPC_LOOKS["peasant"]))
         merge_outfit(o, QUEST_NPC_OUTFITS.get(q["id"], {}))
+        npc_v2_hints(q["id"], q.get("name", q["id"]), q.get("race", "human"), o)
+        v2_finalize(merge_outfit(o, QUEST_NPC_OUTFITS.get(q["id"], {})))
         save_png(entity_texture("npc_q_" + q["id"], o),
                  os.path.join(ASSETS, "textures", "entity", f"npc_q_{q['id']}.png"), "entity textures")
 
@@ -5770,6 +6200,8 @@ def gen_catalog_creatures(cat):
         o = creature_options(n["id"], n.get("name", n["id"]), n.get("colors"), npc=True)
         merge_outfit(o, npc_role_outfit(n["id"], n.get("name", n["id"])))
         merge_outfit(o, NAMED_NPCS.get(n["id"], {}))
+        npc_v2_hints(n["id"], n.get("name", n["id"]), n.get("race", "human"), o)
+        v2_finalize(merge_outfit(o, NAMED_NPCS.get(n["id"], {})))
         save_png(entity_texture("npc|" + n["id"], o), os.path.join(ASSETS, "textures", "entity", "npc", n["id"] + ".png"),
                  "npc skins")
     return names

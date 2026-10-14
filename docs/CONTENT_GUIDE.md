@@ -64,6 +64,8 @@ Implement the methods you need on your module class (`ContentModule`):
   - Uses real OSRS world coordinates (Lumbridge = 3222, 3218).
   - Built when the chunk first loads, with a plaza in the given style plus the stations and blocks.
 - `npcs()`: `NpcDef.of(id, name, place, dx, dz, skinRGB, topRGB, bottomRGB, hatRGB)`. Talk handlers are registered on the Minecraft side.
+  - The skin is painted by `tools/gen_assets.py` (`npc_v2_hints`, `v2_face`, `v2_body`): an OSRS-style face, a hair style and (for men) a beard picked from the id, a skirt for women (name keywords or `FEMALE_NAMES`), belts and cuffs, and role outfits from keywords (monk tonsure and rope belt, pirate bandana/eyepatch/stripes, H.A.M. hood and robe, desert headwrap, barbarian fur and beard). Hand-written looks go in `NAMED_NPCS` (module NPCs) or `QUEST_NPC_OUTFITS` and always win.
+  - `osrs/NpcRace` decides the race from the id, name and place (Keldagrim → dwarf, Lletya/Prifddinas → elf, "gnome"/"tzhaar" in the id, plus explicit id lists). Dwarves get big beards and render short and stocky, gnomes small with big noses, elves taller with pointed ears, TzHaar as rock with glowing eyes. Only the render scale changes; the hitbox does not.
 - `quests()`: `QuestDef.of(id, name).difficulty(...).points(qp).requires(Skill, lvl).requiresQuest(id).xp(Skill, xp).reward("item:count").step("journal line for stage 0").step(...)`. Stage == number of steps means complete.
 - `blocks()`: `BlockDef.menu(id, name, MenuType, color, look)`, `BlockDef.scripted(id, name, color, look)` and `BlockDef.decor(...)`.
   - The `look` hint drives the texture, e.g. "altar", "chest", "portal_glow", "crate", "statue", "range", "machine", "obelisk".
