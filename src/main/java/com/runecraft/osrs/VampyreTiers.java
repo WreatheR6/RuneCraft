@@ -17,6 +17,7 @@ public final class VampyreTiers {
 
     private static final Map<String, Integer> TIERS = Map.ofEntries(
             Map.entry("vampyre_juvenile", 1), // Vampyre Juvenile (Meiyerditch / Darkmeyer / Burgh de Rott)
+            Map.entry("feral_vampyre", 1), // Feral Vampyre (Burgh de Rott / Haunted Woods)
             Map.entry("gwd_vampire", 1), // Feral Vampyre (God Wars Dungeon)
             Map.entry("count_draynor", 1),
             Map.entry("nmz_count_draynor", 1),
