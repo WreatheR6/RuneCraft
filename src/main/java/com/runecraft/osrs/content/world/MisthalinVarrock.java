@@ -840,57 +840,73 @@ final class MisthalinVarrock {
         k.ring(cx, cz, 16, 1, -1, -1, "minecraft:smooth_stone");
         k.fill(cx - 2, -1, cz - 32, cx + 2, -1, cz + 32, "minecraft:smooth_stone");
         k.fill(cx - 32, -1, cz - 2, cx + 32, -1, cz + 2, "minecraft:smooth_stone");
-        // lawns, trees and benches between the avenues
-        for (int[] q : new int[][]{{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}) {
-            int qx = cx + q[0] * 20;
-            int qz = cz + q[1] * 20;
-            k.disc(qx, qz, 4, -1, -1, GRASS);
-            k.oak(qx, qz);
-            k.set(qx - 3 * q[0], 0, qz - 3 * q[1], "minecraft:spruce_stairs[facing=" + (q[0] > 0 ? "east" : "west") + "]");
-            k.lampPost(cx + q[0] * 14, cz + q[1] * 14);
+        // OSRS map (mejrs layers_osrs): an eight-sided arcade 20 x 20 tiles (3155-3174, 3480-3499) whose
+        // pillars carry the roof, round the central octagonal desk (3161-3167, 3487-3493)
+        for (int x = cx - 20; x < cx + 20; x++) {
+            for (int z = cz - 20; z < cz + 20; z++) {
+                double n = octagon(x + 0.5 - cx, z + 0.5 - cz);
+                if (n > 20) {
+                    continue;
+                }
+                k.set(x, -1, z, n > 18.6 ? STONE_BRICKS : n > 9 ? POLISHED_ANDESITE : "minecraft:smooth_stone");
+                if (n > 18.6) {
+                    k.set(x, 9, z, "minecraft:smooth_quartz");
+                    k.set(x, 10, z, "minecraft:smooth_quartz_slab");
+                } else {
+                    // stepped dome // approx (the OSRS roof is a low dome)
+                    int y = n > 15 ? 10 : n > 11 ? 11 : n > 7 ? 12 : n > 3 ? 13 : 14;
+                    k.set(x, y, z, "minecraft:green_terracotta");
+                }
+            }
         }
-        // eight pillars carrying a domed green canopy
-        int R = 13;
-        for (int a = 0; a < 8; a++) {
-            double ang = Math.PI / 8 + a * Math.PI / 4;
-            int px = cx + (int) Math.round(Math.cos(ang) * R);
-            int pz = cz + (int) Math.round(Math.sin(ang) * R);
-            k.fill(px, 0, pz, px, 8, pz, "minecraft:quartz_pillar");
-            k.set(px, 0, pz, "minecraft:chiseled_quartz_block");
-            k.set(px, 8, pz, "minecraft:chiseled_quartz_block");
+        k.set(cx, 15, cz, "minecraft:gold_block").set(cx, 16, cz, "minecraft:lightning_rod");
+        double[][] pillars = {{19.5, 8.5}, {19.5, 2.5}, {14.5, 14.5}, {8.5, 19.5}, {2.5, 19.5}};
+        for (double[] pl : pillars) {
+            for (int sx = -1; sx <= 1; sx += 2) {
+                for (int sz = -1; sz <= 1; sz += 2) {
+                    for (int sw = 0; sw < 2; sw++) {
+                        double u = sw == 0 ? pl[0] : pl[1];
+                        double v = sw == 0 ? pl[1] : pl[0];
+                        int px = cx + (int) Math.floor(sx * u);
+                        int pz = cz + (int) Math.floor(sz * v);
+                        k.fill(px, 0, pz, px, 8, pz, "minecraft:quartz_pillar");
+                        k.set(px, 0, pz, "minecraft:chiseled_quartz_block").set(px, 8, pz, "minecraft:chiseled_quartz_block");
+                    }
+                }
+            }
         }
-        k.ring(cx, cz, R + 2, 3, 9, 9, "minecraft:smooth_quartz");
-        k.ring(cx, cz, R + 2, 1, 10, 10, "minecraft:smooth_quartz_slab");
-        k.ring(cx, cz, R - 1, 3, 10, 10, "minecraft:green_terracotta");
-        k.ring(cx, cz, R - 4, 3, 11, 11, "minecraft:green_terracotta");
-        k.ring(cx, cz, R - 7, 3, 12, 12, "minecraft:green_terracotta");
-        k.disc(cx, cz, R - 10, 13, 13, "minecraft:green_terracotta");
-        k.set(cx, 14, cz, "minecraft:gold_block");
-        k.set(cx, 15, cz, "minecraft:lightning_rod");
-        // the central counter ring with the exchange booths, open at the four avenues
+        for (int q = 0; q < 4; q++) {
+            int lx = q % 2 == 0 ? cx - 24 : cx + 23;
+            int lz = q < 2 ? cz - 24 : cz + 23;
+            k.lampPost(lx, lz);
+        }
+        // the central desk: Grand Exchange booths on the north and south faces, bank booths on the east and
+        // west faces (as in OSRS)
         k.ring(cx, cz, 7, 1, 0, 0, "minecraft:spruce_planks");
         k.ring(cx, cz, 7, 1, 1, 1, "minecraft:spruce_slab");
-        k.clear(cx - 1, 0, cz - 8, cx + 1, 1, cz + 8);
-        k.clear(cx - 8, 0, cz - 1, cx + 8, 1, cz + 1);
-        int[][] booths = {{-5, -4}, {5, -4}, {-5, 4}, {5, 4}, {-4, -5}, {4, -5}, {-4, 5}, {4, 5}};
-        for (int[] bo : booths) {
-            k.set(cx + bo[0], 0, cz + bo[1], "runecraft:grand_exchange_booth");
+        for (int d = -3; d <= 3; d += 2) {
+            int e = (int) Math.round(Math.sqrt(48.5 - d * d));
+            k.set(cx + d, 0, cz - e, "runecraft:grand_exchange_booth").set(cx + d, 1, cz - e, AIR);
+            k.set(cx + d, 0, cz + e, "runecraft:grand_exchange_booth").set(cx + d, 1, cz + e, AIR);
+            k.set(cx - e, 0, cz + d, BANK).set(cx - e, 1, cz + d, AIR);
+            k.set(cx + e, 0, cz + d, BANK).set(cx + e, 1, cz + d, AIR);
         }
-        // centre: the clerks' platform and statue
+        // clerks' gaps at the diagonals
+        for (int sx = -1; sx <= 1; sx += 2) {
+            for (int sz = -1; sz <= 1; sz += 2) {
+                k.clear(cx + sx * 5, 0, cz + sz * 5, cx + sx * 5, 1, cz + sz * 5);
+            }
+        }
+        // centre: the clerks' floor and statue
         k.disc(cx, cz, 3, -1, -1, "minecraft:smooth_quartz");
         k.disc(cx, cz, 1, 0, 0, "minecraft:quartz_block");
         k.fill(cx, 1, cz, cx, 3, cz, "minecraft:quartz_pillar");
         k.set(cx, 4, cz, "minecraft:gold_block");
-        k.hang(cx + 9, 8, cz).hang(cx - 9, 8, cz).hang(cx, 8, cz + 9).hang(cx, 8, cz - 9);
-        // bank booths on the north-east and south-west, cape stand and diary board
-        k.fill(cx + 15, -1, cz - 19, cx + 23, -1, cz - 16, POLISHED_ANDESITE);
-        k.fill(cx - 23, -1, cz + 16, cx - 15, -1, cz + 19, POLISHED_ANDESITE);
-        k.boothsX(cx + 16, cx + 22, 0, cz - 17);
-        k.boothsX(cx - 22, cx - 16, 0, cz + 17);
-        k.set(cx + 18, 0, cz + 18, "runecraft:skillcape_stand");
-        k.set(cx - 18, 0, cz - 18, "runecraft:achievement_diary_board");
+        k.hang(cx + 12, 8, cz).hang(cx - 12, 8, cz).hang(cx, 8, cz + 12).hang(cx, 8, cz - 12);
+        // cape stand and diary board under the arcade
+        k.set(cx + 13, 0, cz + 13, "runecraft:skillcape_stand");
+        k.set(cx - 14, 0, cz - 14, "runecraft:achievement_diary_board");
         // low wall around the plaza with four gateways
-        k.ring(cx, cz, 32, 1, 0, 0, "minecraft:stone_brick_wall");
         k.ring(cx, cz, 32, 1, 0, 0, "minecraft:stone_brick_wall");
         k.clear(cx - 3, 0, cz - 33, cx + 3, 0, cz + 33);
         k.clear(cx - 33, 0, cz - 3, cx + 33, 0, cz + 3);
@@ -900,6 +916,11 @@ final class MisthalinVarrock {
         k.tStreet(3181, 3470, 3190, 3470, 2);
         k.tStreet(3189, 3470, 3189, 3467, 2);
         return k.build();
+    }
+
+    /** Octagon "radius" with straight edges at 20 and diagonal edges at |u| + |v| = 29 (OSRS GE footprint). */
+    private static double octagon(double u, double v) {
+        return Math.max(Math.max(Math.abs(u), Math.abs(v)), (Math.abs(u) + Math.abs(v)) * 20 / 29.0);
     }
 
     // ------------------------------------------------------------------ outside the walls
