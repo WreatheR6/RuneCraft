@@ -20,7 +20,7 @@ class EmirsArenaTest {
     @Test
     void minigameIsAppendedLastAndEnteredInAlKharid() {
         Minigame[] all = Minigame.values();
-        assertEquals(Minigame.EMIRS_ARENA, all[all.length - 1]);
+        assertEquals(Minigame.EMIRS_ARENA, all[all.length - 2]); // the Fortis Colosseum came after it
         assertEquals(2, Minigame.EMIRS_ARENA.maxPlayers());
         assertTrue(EmirsArena.inArena(Minigame.EMIRS_ARENA.entranceX(), Minigame.EMIRS_ARENA.entranceY()));
         // The ring of dueling's Emir's Arena teleport lands inside the arena grounds.

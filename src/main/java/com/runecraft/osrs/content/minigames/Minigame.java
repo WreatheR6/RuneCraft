@@ -94,7 +94,14 @@ public enum Minigame {
      * built by the world module. Appended last: arena slots use the ordinal.
      */
     EMIRS_ARENA("emirs_arena", "Emir's Arena", EmirsArena.PLACE, EmirsArena.ARENA_X, EmirsArena.ARENA_Y, EmirsArena.ENTRANCE_X,
-            EmirsArena.ENTRANCE_Y, PlaceDef.Style.NONE, 30, 2, null, 0);
+            EmirsArena.ENTRANCE_Y, PlaceDef.Style.NONE, 30, 2, null, 0),
+    /**
+     * The Fortis Colosseum (see {@link FortisColosseum}): twelve waves ending with Sol Heredit, entered beside the Colosseum's
+     * west gate in Civitas illa Fortis (style NONE: the Colosseum is built by the zeah module). Needs Children of the Sun
+     * (checked by the manager). Appended last: arena slots use the ordinal.
+     */
+    FORTIS_COLOSSEUM("fortis_colosseum", "Fortis Colosseum", FortisColosseum.PLACE, FortisColosseum.ARENA_X, FortisColosseum.ARENA_Y,
+            FortisColosseum.ENTRANCE_X, FortisColosseum.ENTRANCE_Y, PlaceDef.Style.NONE, 0, 1, null, 0);
 
     private final String id;
     private final String displayName;

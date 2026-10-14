@@ -36,7 +36,9 @@ public final class MinigamesContent implements ContentModule {
 
     @Override
     public List<MonsterDef> monsters() {
-        return MinigameMonsters.monsters();
+        List<MonsterDef> list = new java.util.ArrayList<>(MinigameMonsters.monsters());
+        list.addAll(FortisColosseum.monsters());
+        return list;
     }
 
     @Override

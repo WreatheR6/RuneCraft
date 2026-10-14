@@ -225,6 +225,7 @@ public final class MinigameWorld {
         list.add(BlockDef.scripted("rogues_den_jewel_trader", "Brian O'Richard's crate", 0x5A5A60, "chest"));
         list.add(BlockDef.scripted(SORCERESS_SHELVES, "Shelves", 0x8A6A3A, "crate"));
         list.add(BlockDef.scripted(KET_RAK_SCOREBOARD, "Scoreboard (TzHaar-Ket-Rak)", 0x6A2A10, "statue"));
+        list.add(BlockDef.scripted(FortisColosseum.SCOREBOARD, "Colosseum scoreboard", 0xC0A060, "statue"));
         list.add(BlockDef.scripted(TempleTrekking.RAMBLE_ENTRANCE, "Burgh de Rott Ramble entrance", 0x8060C0, "portal_glow"));
         list.add(BlockDef.scripted("flamtaer_temple", "Flamtaer temple wall", 0xB0A890, "rock"));
         list.add(BlockDef.scripted("flamtaer_altar", "Sacred fire", 0xE08030, "fire_brazier"));
@@ -261,6 +262,7 @@ public final class MinigameWorld {
         map.get(Minigame.SHADES_OF_MORTTON.place()).addAll(MORTTON_BLOCKS);
         map.get(Minigame.TZHAAR_KET_RAK.place()).add(KET_RAK_SCOREBOARD);
         map.get(Minigame.BARBARIAN_ASSAULT.place()).add(BA_BLACKBOARD);
+        map.get(Minigame.FORTIS_COLOSSEUM.place()).add(FortisColosseum.SCOREBOARD);
         map.put(TempleTrekking.RAMBLE_PLACE, new ArrayList<>(List.of(TempleTrekking.RAMBLE_ENTRANCE)));
         return map;
     }
@@ -295,6 +297,7 @@ public final class MinigameWorld {
                 case TEMPLE_TREKKING -> "Burgh de Rott (Temple Trekking)";
                 case LAST_MAN_STANDING -> "Ferox Enclave (Last Man Standing)";
                 case EMIRS_ARENA -> "Emir's Arena entrance";
+                case FORTIS_COLOSSEUM -> "Fortis Colosseum entrance";
                 default -> m.displayName();
             };
             list.add(PlaceDef.of(m.place(), name, m.entranceX(), m.entranceY(), m.style(), blocks.get(m.place())));

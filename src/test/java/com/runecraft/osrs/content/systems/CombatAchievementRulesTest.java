@@ -178,7 +178,9 @@ class CombatAchievementRulesTest {
         // Every flag and counter a rule checks is one the game reports (a typo would make a task impossible or free).
         Set<String> reported = new java.util.HashSet<>(Set.of("grub_absorbed", "burrowed", "exposed", "mopping_up", "noshield", "noinv",
                 "fluke", "multistyle"));
-        for (java.lang.reflect.Field f : CombatAchievements.class.getFields()) {
+        List<java.lang.reflect.Field> fields = new ArrayList<>(List.of(CombatAchievements.class.getFields()));
+        fields.addAll(List.of(com.runecraft.osrs.content.minigames.FortisColosseum.class.getFields()));
+        for (java.lang.reflect.Field f : fields) {
             if ((f.getName().startsWith("FLAG_") || f.getName().startsWith("COUNT_")) && f.getType() == String.class) {
                 try {
                     reported.add((String) f.get(null));

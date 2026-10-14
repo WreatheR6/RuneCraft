@@ -20,7 +20,7 @@ class LastManStandingTest {
     void minigameIsLastAndEnteredAtFerox() {
         Minigame[] all = Minigame.values();
         assertEquals(Minigame.LAST_MAN_STANDING.ordinal() + 1, Minigame.EMIRS_ARENA.ordinal());
-        assertEquals(Minigame.EMIRS_ARENA, all[all.length - 1]);
+        assertEquals(Minigame.EMIRS_ARENA, all[all.length - 2]); // the Fortis Colosseum came after it
         assertEquals(3142, Minigame.LAST_MAN_STANDING.entranceX());
         assertEquals(3636, Minigame.LAST_MAN_STANDING.entranceY());
         assertEquals(24, Minigame.LAST_MAN_STANDING.maxPlayers());
