@@ -158,7 +158,6 @@ public final class IslandsPlaces {
                 new Camp(APE_ATOLL, 0, 14, 10, 3, SURFACE, List.of("monkey_archer")),
                 new Camp(LUNAR_SUQAH_HILLS, 0, 0, 14, 5, SURFACE, List.of("suqah")),
                 new Camp(NEITIZNOT, -28, 14, 8, 6, SURFACE, List.of("yak")),       // cache: 6 yaks at 2318-2325, 3789-3797
-                new Camp(JATIZSO, -10, -64, 10, 4, SURFACE, List.of("ice_troll")),
                 new Camp(MOS_LE_HARMLESS_JUNGLE, 0, 0, 14, 4, SURFACE, List.of("jungle_horror")),
                 // Cache: moss giants at 2827-2834, 3242-3246 and lesser demons at 2832-2837, 3278-3280.
                 new Camp(CRANDOR, -42, -12, 8, 3, SURFACE, List.of("moss_giant")),

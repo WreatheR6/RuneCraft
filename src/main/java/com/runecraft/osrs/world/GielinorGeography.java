@@ -321,6 +321,10 @@ public final class GielinorGeography {
             new Ellipse("Waterbirth Island", 2530, 3748, 26, 32),
             new Ellipse("Neitiznot", 2336, 3804, 30, 36),
             new Ellipse("Jatizso", 2406, 3803, 34, 34),
+            // The ice trolls' snowfields north of the two islands, across the rope bridges (cache troll spawns at
+            // 2318-2379, 3858-3895 and 2387-2418, 3853-3869; shapes approx)
+            new Ellipse("Neitiznot troll lands", 2350, 3879, 44, 27),
+            new Ellipse("Jatizso troll lands", 2403, 3861, 22, 15),
             new Ellipse("Lunar Isle", 2110, 3905, 68, 58),
             new Ellipse("Pirates' Cove", 2212, 3805, 28, 28),
             new Ellipse("Ungael", 2256, 4048, 30, 30),

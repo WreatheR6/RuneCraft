@@ -41,6 +41,7 @@ final class CacheDungeons {
         out.add(karamjaVolcanoDungeon());
         out.add(iceTrollCaves());
         out.add(ouraniaCave());
+        out.add(TrollStrongholdInterior.build());
         return out;
     }
 

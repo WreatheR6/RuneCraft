@@ -346,6 +346,16 @@ public final class DungeonMonsters {
                 .attackBonus(60, 0, 0).defenceBonus(30, 60, 30, 0, 0).drops(Drop.always("big_bones"), Drop.herbs(14))
                 .slayer(1, "trolls").model("ice_troll").skin(0x90B0C8, 0x6A8AA8, 0x4A6A88, 0xE0F0FF).size(1.1f, 2.8f, 1.1f));
         // Ourania Cave (Zamorak's followers and the cave lizards on the way to the altar).
+        // Shaman Caves (Legends' Quest): death wings (wiki: level 83, 80 hitpoints, 70 attack/strength/defence, stab, max
+        // hit 8 approx, aggressive, spectral; a bat and a ghost for Slayer; only a rare beginner clue drop).
+        list.add(m("death_wing", "Death wing", 83, 80, 70, 70, 70, 1, 1).speed(4).attack(melee(AttackType.STAB, 8))
+                .defenceBonus(0, 0, 0, 0, 0).attributes("spectral").slayer(1, "bats").model("giant_bat")
+                .skin(0x1A1420, 0x2A2030, 0x100C14, 0x6A3A8A).size(1.2f, 1.0f, 1.3f).flying().moveSpeed(0.3));
+        // Clock Tower dungeon: dungeon rats (wiki: level 12, 12 hitpoints, 10 attack/strength/defence, stab max hit 2,
+        // not aggressive; always bones).
+        list.add(m("dungeon_rat", "Dungeon rat", 12, 12, 10, 10, 10, 1, 1).speed(4).attack(melee(AttackType.STAB, 2))
+                .defenceBonus(0, 0, 0, 0, 0).passive().attributes("rat").drops(Drop.always("bones")).slayer(1, "rats")
+                .model("giant_rat").skin(0x5A4A3A, 0x4A3A2A, 0x3A2A1A, 0xD09090).size(0.9f, 0.7f, 1.0f));
         list.add(m("cave_lizard", "Cave lizard", 37, 20, 38, 36, 35, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 5))
                 .defenceBonus(5, 15, 15, 0, 5).model("lizard").skin(0x5A6A3A, 0x3A4A2A, 0x2A3A1A, 0xC0A040));
         list.add(m("zamorak_warrior", "Zamorak warrior", 84, 45, 85, 70, 90, 1, 1).speed(4).attack(melee(AttackType.SLASH, 8))

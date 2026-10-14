@@ -73,6 +73,45 @@ final class KruksDungeon {
             new Cluster("northern horde", 1, 2376, 9263, 2420, 9275, 17, 0),
     };
 
+    /**
+     * The remaining monkeys of the cache's labyrinth (every maniacal monkey west of the Hunter area that no hall above
+     * holds): the plane-0 groups west of 2600 and in the far south and north, and the plane-1 groups east of 2500
+     * (2505-2681, 9037-9275). Each box is one cluster of the cache spawns (spawns within 10 tiles of each other) with
+     * exactly its monsters. Their floors are deeper still ({@link #OUTER0}, {@link #OUTER1}), each with its own shift
+     * that centres it under the atoll; passages chain each floor's boxes and ladders join the floors to the hordes'
+     * (approx: in OSRS they are the passages between the halls above).
+     */
+    static final Cluster[] OUTER = {
+            new Cluster("far south-east passage", 0, 2665, 9038, 2674, 9047, 6, 0),
+            new Cluster("south-west passage", 0, 2521, 9041, 2531, 9045, 3, 0),
+            new Cluster("southern crossing", 0, 2576, 9051, 2587, 9062, 6, 0),
+            new Cluster("western dead end", 0, 2503, 9069, 2511, 9077, 4, 0),
+            new Cluster("far north passage", 0, 2628, 9251, 2635, 9262, 6, 0),
+            new Cluster("upper south passage", 1, 2560, 9037, 2565, 9041, 2, 0),
+            new Cluster("upper south-east maze", 1, 2625, 9039, 2660, 9095, 18, 0),
+            new Cluster("upper southern hall", 1, 2595, 9040, 2614, 9054, 6, 0),
+            new Cluster("upper eastern maze", 1, 2651, 9043, 2681, 9139, 26, 0),
+            new Cluster("upper south-west hall", 1, 2505, 9044, 2512, 9057, 4, 0),
+            new Cluster("upper south-west passage", 1, 2533, 9056, 2551, 9070, 5, 0),
+            new Cluster("upper nook", 1, 2615, 9064, 2617, 9066, 1, 0),
+            new Cluster("upper side passage", 1, 2626, 9068, 2637, 9072, 2, 0),
+            new Cluster("upper western nook", 1, 2519, 9069, 2521, 9071, 1, 0),
+            new Cluster("upper central passage", 1, 2581, 9069, 2614, 9082, 8, 0),
+            new Cluster("upper vine passage", 1, 2663, 9168, 2667, 9174, 2, 0),
+            new Cluster("upper northern nook", 1, 2651, 9199, 2658, 9204, 2, 0),
+            new Cluster("upper north-west nook", 1, 2616, 9201, 2621, 9208, 3, 0),
+            new Cluster("upper north-west passage", 1, 2617, 9217, 2632, 9244, 8, 0),
+            new Cluster("upper far north-west nook", 1, 2554, 9258, 2560, 9266, 3, 0),
+            new Cluster("upper far north passage", 1, 2605, 9269, 2622, 9275, 7, 0),
+    };
+    /** The floors of the remaining plane-0 and plane-1 groups, and their shifts (cluster box centres under the atoll). */
+    static final int OUTER0 = -24;
+    static final int OUTER1 = -38;
+    static final int DX0 = 164;
+    static final int DY0 = -6400;
+    static final int DX1 = 159;
+    static final int DY1 = -6406;
+
     private KruksDungeon() {
     }
 
@@ -106,6 +145,36 @@ final class KruksDungeon {
     /** A room over the cache tile rectangle (inclusive) on floor f. */
     private static void room(Cave c, int tx1, int ty1, int tx2, int ty2, int f, int h) {
         c.room(x(tx1), z(ty2), x(tx2) + 1, z(ty1) + 1, f, h);
+    }
+
+    /** Block x and z of a remaining group's cache tile. */
+    private static int xo(Cluster k, int caveX) {
+        return StructureDef.bx(caveX + (k.plane() == 0 ? DX0 : DX1));
+    }
+
+    private static int zo(Cluster k, int caveY) {
+        return StructureDef.bz(caveY + (k.plane() == 0 ? DY0 : DY1));
+    }
+
+    static int outerFloor(Cluster k) {
+        return k.plane() == 0 ? OUTER0 : OUTER1;
+    }
+
+    /** Block centre {x, z} of a remaining group's box. */
+    private static int[] outerCentre(Cluster k) {
+        return new int[]{(xo(k, k.x1()) + xo(k, k.x2()) + 1) / 2, (zo(k, k.y1()) + zo(k, k.y2()) + 1) / 2};
+    }
+
+    /** Block centre {x, z} of a horde hall. */
+    private static int[] hordeCentre(Cluster k) {
+        return new int[]{(xh(k.x1()) + xh(k.x2()) + 1) / 2, (zh(k.y1()) + zh(k.y2()) + 1) / 2};
+    }
+
+    /** The remaining groups from west to east (the order their passages chain them). */
+    private static java.util.List<Cluster> outerByX() {
+        java.util.List<Cluster> l = new java.util.ArrayList<>(java.util.List.of(OUTER));
+        l.sort(java.util.Comparator.comparingInt(k -> k.x1() + k.x2()));
+        return l;
     }
 
     /** A 3-wide passage between two cache tiles on floor f (along x first, then along z). */
@@ -151,7 +220,32 @@ final class KruksDungeon {
         hordeHall(c, 2387, 9170, 2390, 9170);
         hordeHall(c, 2400, 9180, 2400, 9190);
         hordeHall(c, 2373, 9245, 2376, 9245);
+        // ---- the remaining groups, deeper down: each floor's boxes chained west to east by passages
+        int[] prev0 = null;
+        int[] prev1 = null;
+        for (Cluster k : outerByX()) {
+            c.room(xo(k, k.x1()), zo(k, k.y2()), xo(k, k.x2()) + 1, zo(k, k.y1()) + 1, outerFloor(k), 6);
+            int[] m = outerCentre(k);
+            int[] prev = k.plane() == 0 ? prev0 : prev1;
+            if (prev != null) {
+                c.hall(prev[0], prev[1], m[0], m[1], outerFloor(k), 3, 5);
+            }
+            if (k.plane() == 0) {
+                prev0 = m;
+            } else {
+                prev1 = m;
+            }
+        }
+        // Ladder shafts: from the south-east horde down to the plane-0 groups' first box, and from that floor down to
+        // the plane-1 groups' south-east maze; a passage on the upper floor of each pair reaches the ladder.
+        int[] l0 = outerCentre(OUTER[0]);
+        int[] h0 = hordeCentre(HORDES[5]);
+        c.hall(h0[0], h0[1], l0[0], l0[1], HORDE, 3, 5);
+        int[] l1 = outerCentre(OUTER[6]);
+        c.hall(l0[0], l0[1], l1[0], l1[1], OUTER0, 3, 5);
         c.carve();
+        c.ladderUp(l0[0], l0[1], OUTER0, HORDE);
+        c.ladderUp(l1[0], l1[1], OUTER1, OUTER0);
 
         // The way down: a ladder through the vine hole.
         c.ladderUp(x(holeX), z(holeY), LOWER, UPPER);
@@ -180,6 +274,10 @@ final class KruksDungeon {
             int f = k.plane() == 0 ? LOWER : UPPER;
             c.camp(x(k.x1()), z(k.y2()), x(k.x2()) + 1, z(k.y1()) + 1, f, k.monkeys(), RESPAWN, "maniacal_monkey");
             c.camp(x(k.x1()), z(k.y2()), x(k.x2()) + 1, z(k.y1()) + 1, f, k.archers(), RESPAWN, "maniacal_monkey_archer");
+        }
+        for (Cluster k : OUTER) {
+            c.camp(xo(k, k.x1()), zo(k, k.y2()), xo(k, k.x2()) + 1, zo(k, k.y1()) + 1, outerFloor(k), k.monkeys(), RESPAWN,
+                    "maniacal_monkey");
         }
         for (Cluster k : HORDES) {
             if (k.monkeys() > 0) {

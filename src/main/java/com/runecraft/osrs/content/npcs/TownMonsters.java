@@ -231,6 +231,18 @@ public final class TownMonsters {
                         Drop.of("coal", 1, 1, 64), Drop.of("casket", 1, 1, 128), Drop.of("clue_scroll_easy", 1, 1, 128)) // approx. table
                 .skin(0x7A7468, 0x8A5A3A, 0x5E5A50, 0x6A7A3A).size(1.0f, 0.8f, 1.0f).moveSpeed(0.2)
                 .spawn(Region.FREMENNIK_PROVINCE, 3, 2, 4));
+        // Swamp crabs (wiki): swampy logs south of Port Phasmatys and along the path to Slepe; aggressive within one
+        // tile like rock crabs; crush max hit 1, 75 hitpoints, +100 stab/slash/crush/magic and -55 ranged defence.
+        add(MonsterDef.of("swamp_crab", "Swamp crab").level(55).stats(75, 1, 1, 50, 50, 1).speed(4)
+                .defenceBonus(100, 100, 100, 100, -55)
+                .attack(AttackDef.of("pinch", AttackType.CRUSH, 1, 2.5, 10))
+                .drops(Drop.of("coins", 4, 10, 7), Drop.of("bronze_pickaxe", 1, 1, 11), // 19/128, 12/128 (rounded)
+                        Drop.of("bronze_axe", 1, 1, 21), Drop.of("iron_axe", 1, 1, 26), Drop.of("logs", 8, 8, 32),
+                        Drop.of("tin_ore", 4, 4, 32), Drop.of("oak_logs", 4, 4, 64), Drop.of("copper_ore", 4, 4, 64),
+                        Drop.of("iron_ore", 2, 2, 64), Drop.of("coal", 2, 2, 64), Drop.of("mort_myre_fungus", 1, 1, 64),
+                        Drop.of("willow_logs", 2, 2, 128), Drop.of("yew_logs", 1, 1, 128))
+                .slayer(1, "crabs").skin(0x4A4A2E, 0x5A4A30, 0x3A3A26, 0x6A7A3A).size(1.0f, 0.8f, 1.0f).moveSpeed(0.2)
+                .spawn(Region.MORYTANIA, 3, 2, 4));
         add(MonsterDef.of("imp", "Imp").level(2).stats(8, 4, 3, 2, 1, 1).speed(4).defenceBonus(0, 0, 0, 0, 0) // approx. att/str/def
                 .attack(AttackDef.melee(1)).passive()
                 .drops(Drop.of("imp_champion_scroll", 1, 1, 5000), Drop.always("fiendish_ashes"), Drop.of("black_bead", 1, 1, 12), Drop.of("red_bead", 1, 1, 12), Drop.of("white_bead", 1, 1, 12),

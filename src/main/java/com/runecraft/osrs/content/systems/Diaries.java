@@ -633,7 +633,8 @@ public final class Diaries {
         event("Eat an oomlie wrap", "eat:cooked_oomlie_wrap", null);
         getAt("Craft some nature runes", "nature_rune", 1, null, RUNECRAFT, 44);
         make("Cook a karambwan thoroughly", "cooked_karambwan", 1, COOKING, 30);
-        quest("Kill a deathwing in the dungeon under the Kharazi Jungle", "legends_quest"); approx(); // approx
+        killAny("Kill a deathwing in the dungeon under the Kharazi Jungle", "death wing", 1);
+        needs(lastId, "legends_quest");
         visit("Use the crossbow shortcut south of the volcano", 2869, 3125, 10, AGILITY, 53, STRENGTH, 21, RANGED, 42);
         get("Collect 5 palm leaves", "palm_leaf", 5, WOODCUTTING, 15); // shaken from the Kharazi Jungle's leafy palm trees
         needs(lastId, "legends_quest");

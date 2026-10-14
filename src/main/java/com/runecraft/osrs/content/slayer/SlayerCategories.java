@@ -185,7 +185,7 @@ public final class SlayerCategories {
         member("chaos_druids", "chaos_druid");
         member("goblins", "cave_goblin", "cave_goblin_guard", "gwd_goblin");
         member("hobgoblins", "gwd_hobgoblin");
-        member("rats", "giant_rat");
+        member("rats", "giant_rat", "dungeon_rat");
         member("zombies", "trek_zombie", "trek_undead_lumberjack_1", "trek_undead_lumberjack_2",
                 "trek_undead_lumberjack_3");
         member("shades", "trek_shade_1", "trek_shade_2", "trek_shade_3");
@@ -199,7 +199,7 @@ public final class SlayerCategories {
         also("spiders", "araxyte", "araxyte_lvl146");
         member("aviansies", "gwd_aviansie", "gwd_aviansie_elite");
         member("tzhaar", "tzhaar_ket", "tzhaar_xil", "tzhaar_mej", "tzhaar_hur_citizen");
-        member("crabs", "rock_crab", "sand_crab", "king_sand_crab", "ammonite_crab");
+        member("crabs", "rock_crab", "sand_crab", "king_sand_crab", "ammonite_crab", "swamp_crab");
         member("lesser_nagua", "sulphur_nagua", "frost_nagua");
         member("suqahs", "suqah");
         member("werewolves", "gwd_werewolf");

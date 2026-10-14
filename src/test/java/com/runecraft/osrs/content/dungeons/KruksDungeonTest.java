@@ -38,11 +38,20 @@ class KruksDungeonTest {
             caps.merge(c.creatures().get(0), c.cap(), Integer::sum);
             assertEquals(KruksDungeon.RESPAWN, c.respawnTicks());
             assertTrue(c.feetY() == KruksDungeon.LOWER + 1 || c.feetY() == KruksDungeon.UPPER + 1
-                    || c.feetY() == KruksDungeon.HORDE + 1, c.toString());
+                    || c.feetY() == KruksDungeon.HORDE + 1 || c.feetY() == KruksDungeon.OUTER0 + 1
+                    || c.feetY() == KruksDungeon.OUTER1 + 1, c.toString());
         }
-        // Cache (mejrs NPCList_OSRS.json): halls 11+12+6+5 monkeys and 7+4+4+6 archers, the gallery 6 and 4, and the
-        // western hordes of plane 1 (2311-2452, 9135-9275) 204 monkeys and 54 archers.
-        assertEquals(40 + 204, caps.get("maniacal_monkey"));
+        // Cache (mejrs NPCList_OSRS.json): halls 11+12+6+5 monkeys and 7+4+4+6 archers, the gallery 6 and 4, the
+        // western hordes of plane 1 (2311-2452, 9135-9275) 204 monkeys and 54 archers, and the remaining groups 25
+        // monkeys on plane 0 and 98 on plane 1 (every maniacal monkey of the cache west of the Hunter area).
+        int[] outer = new int[2];
+        for (KruksDungeon.Cluster k : KruksDungeon.OUTER) {
+            outer[k.plane()] += k.monkeys();
+            assertEquals(0, k.archers());
+        }
+        assertEquals(25, outer[0]);
+        assertEquals(98, outer[1]);
+        assertEquals(40 + 204 + 123, caps.get("maniacal_monkey"));
         assertEquals(25 + 54, caps.get("maniacal_monkey_archer"));
         int monkeys = 0;
         int archers = 0;
