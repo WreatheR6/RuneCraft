@@ -68,6 +68,27 @@ public final class Charges {
     public static final String SKULL_SCEPTRE = "skull_sceptre";
     public static final int SKULL_SCEPTRE_MAX = 10;
     public static final int COMBAT_TIMEOUT_TICKS = 8;
+    /** Ring of the elements (wiki): one air, water, earth, fire and law rune per charge, at most 10,000. */
+    public static final String RING_OF_THE_ELEMENTS = "ring_of_the_elements";
+    public static final int RING_OF_THE_ELEMENTS_MAX = 10_000;
+    /** Giantsoul amulet (wiki): one big bones and one law rune per charge, at most 16,000. */
+    public static final String GIANTSOUL_AMULET = "giantsoul_amulet";
+    public static final int GIANTSOUL_AMULET_MAX = 16_000;
+    /** Pendant of ates (wiki): one frozen tear per charge, at most 1,000; it drops inert (uncharged). */
+    public static final String PENDANT_OF_ATES = "pendant_of_ates";
+    public static final int PENDANT_OF_ATES_MAX = 1_000;
+    /**
+     * Pharaoh's sceptre (wiki): holds 3 charges, 10/25/50/100 with the easy/medium/hard/elite Desert Diary; recharged
+     * by the guardian mummy in Jalsavrah for 6 gold, 12 stone or 24 pottery/ivory artefacts.
+     */
+    public static final String PHARAOHS_SCEPTRE = "pharaohs_sceptre";
+    public static final int PHARAOHS_SCEPTRE_MAX = 100;
+    private static final int[] PHARAOHS_SCEPTRE_CAPS = {3, 10, 25, 50, 100};
+
+    /** The sceptre's charge cap for the number of Desert Diary tiers completed (0-4). */
+    public static int pharaohsSceptreCap(int desertTiersDone) {
+        return PHARAOHS_SCEPTRE_CAPS[Math.max(0, Math.min(4, desertTiersDone))];
+    }
 
     private static final Map<String, Spec> SPECS = new LinkedHashMap<>();
 
@@ -132,6 +153,16 @@ public final class Charges {
         put(new Spec(CAMULET, "Camulet", Kind.CHARGED, CAMULET_MAX, CAMULET_MAX, Drain.TELEPORT, ordered(), 1, 0));
         put(new Spec(SKULL_SCEPTRE, "Skull sceptre", Kind.CHARGED, SKULL_SCEPTRE_MAX, SKULL_SCEPTRE_MAX, Drain.TELEPORT,
                 ordered(), 1, 0));
+        // Round 17 teleport items. OSRS tracks the ring of the elements' charges per player; here per ring (approx).
+        put(new Spec(RING_OF_THE_ELEMENTS, "Ring of the elements", Kind.CHARGED, RING_OF_THE_ELEMENTS_MAX, 0, Drain.TELEPORT,
+                ordered("air_rune", 1, "water_rune", 1, "earth_rune", 1, "fire_rune", 1, "law_rune", 1), 1, 0));
+        put(new Spec(GIANTSOUL_AMULET, "Giantsoul amulet", Kind.CHARGED, GIANTSOUL_AMULET_MAX, 0, Drain.TELEPORT,
+                ordered("big_bones", 1, "law_rune", 1), 1, 0));
+        put(new Spec(PENDANT_OF_ATES, "Pendant of ates", Kind.CHARGED, PENDANT_OF_ATES_MAX, 0, Drain.TELEPORT,
+                ordered("frozen_tear", 1), 1, 0));
+        // A sceptre found in the pyramid holds the default 3 charges (approx: OSRS hands it out uncharged since 2022).
+        put(new Spec(PHARAOHS_SCEPTRE, "Pharaoh's sceptre", Kind.CHARGED, PHARAOHS_SCEPTRE_MAX, 3, Drain.TELEPORT,
+                ordered(), 1, 0));
     }
 
     private static Map<String, Integer> ordered(Object... kv) {
@@ -164,7 +195,8 @@ public final class Charges {
 
     /** No bonuses / can't attack: broken Barrows, inactive crystal, uncharged weapons and helms. */
     public static boolean depleted(Spec s, int charges) {
-        return charges <= 0;
+        // Teleport items keep their bonuses when empty (an uncharged pharaoh's sceptre still fights).
+        return s.drain() != Drain.TELEPORT && charges <= 0;
     }
 
     /** Barrows degradation stage shown in the name: 100, 75, 50, 25 or 0 (broken). */

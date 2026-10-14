@@ -109,8 +109,7 @@ public final class MinigamesHooks implements ModuleHooks {
                 + "tether yourself when a wave comes, and strike the spirit pool when it falls. Permits buy from the reward pool.");
         talk("mg_harrallak_menarous", "Harrallak Menarous", "Welcome to the Warriors' Guild. Animate armour on the magical animators "
                 + "to earn tokens, then spend them in the cyclops room for defenders.");
-        talk("mg_guardian_mummy", "Guardian mummy", "You may plunder the pyramid for five minutes. Urns, chests and the sarcophagus "
-                + "hold treasure... and the Pharaoh's sceptre itself, for the lucky.");
+        QuestScripts.onTalk("mg_guardian_mummy", (player, entity) -> guardianMummy(player));
         talk("mg_murphy", "Murphy", "The Fishing Trawler sails soon. Patch leaks, bail water and keep her afloat for the net to fill.");
         talk("mg_mortton_priest", "Ulsquire Shauncy", "The shades plague Mort'ton. Repair the temple and slay the shades to earn "
                 + "sanctity, bless olive oil in the sacred fire and coat logs with it. Burn shade remains on a pyre of those logs: "
@@ -214,6 +213,56 @@ public final class MinigamesHooks implements ModuleHooks {
                                     }
                                     return 1;
                                 })))));
+    }
+
+    /**
+     * The guardian mummy: explains Pyramid Plunder, and recharges a carried pharaoh's sceptre (wiki: 24 ivory/pottery, 12
+     * stone or 6 gold artefacts for a full recharge; 3 charges, up to 100 with the Desert Diary tiers).
+     */
+    private static void guardianMummy(ServerPlayerEntity p) {
+        net.minecraft.item.ItemStack sceptre = net.minecraft.item.ItemStack.EMPTY;
+        for (int i = 0; i < p.getInventory().size(); i++) {
+            net.minecraft.item.ItemStack s = p.getInventory().getStack(i);
+            if (com.runecraft.osrs.content.systems.Charges.PHARAOHS_SCEPTRE.equals(com.runecraft.util.Inv.idOf(s))) {
+                sceptre = s;
+                break;
+            }
+        }
+        if (sceptre.isEmpty()) {
+            QuestApi.say(p, "Guardian mummy", "You may plunder the pyramid for five minutes. Urns, chests and the sarcophagus "
+                    + "hold treasure... and the Pharaoh's sceptre itself, for the lucky.");
+            return;
+        }
+        java.util.Set<String> done = com.runecraft.content.systems.SysState.of(p).diaryDone;
+        int tiers = 0;
+        for (com.runecraft.osrs.content.systems.Diaries.Tier t : com.runecraft.osrs.content.systems.Diaries.Tier.values()) {
+            if (com.runecraft.osrs.content.systems.Diaries.tierComplete(done, "desert", t)) {
+                tiers = t.ordinal() + 1;
+            }
+        }
+        int cap = com.runecraft.osrs.content.systems.Charges.pharaohsSceptreCap(tiers);
+        int now = com.runecraft.item.ItemCharges.get(sceptre);
+        if (now >= cap) {
+            QuestApi.say(p, "Guardian mummy", "Your sceptre is already fully charged, thief.");
+            return;
+        }
+        Map<String, Integer> carried = new java.util.HashMap<>();
+        for (String[] material : com.runecraft.osrs.content.minigames.MinigameRules.PyramidPlunder.SCEPTRE_ARTEFACTS) {
+            for (String id : material) {
+                carried.put(id, com.runecraft.util.Inv.count(p, id));
+            }
+        }
+        Map<String, Integer> cost = com.runecraft.osrs.content.minigames.MinigameRules.PyramidPlunder.sceptreRechargeCost(carried);
+        if (cost == null) {
+            QuestApi.say(p, "Guardian mummy", "You dare carry the Pharaoh's sceptre before me? Bring me 24 ivory or pottery "
+                    + "artefacts, 12 of stone or 6 of gold, and I will restore its power.");
+            return;
+        }
+        for (Map.Entry<String, Integer> e : cost.entrySet()) {
+            com.runecraft.util.Inv.remove(p, e.getKey(), e.getValue());
+        }
+        com.runecraft.item.ItemCharges.set(sceptre, cap);
+        QuestApi.say(p, "Guardian mummy", "Grrr... very well. Your sceptre now holds " + cap + " charges.");
     }
 
     private static void talk(String npc, String name, String line) {

@@ -263,6 +263,9 @@ public final class MinigameItems {
         wear(items, "boots_of_the_eye", "Boots of the eye", "boots", 0x8A2A8A, Slot.FEET, 1,
                 s(0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0)).examine("+10% runes crafted.");
         single(items, "abyssal_needle", "Abyssal needle", "needle", 0x6A2A8A, 1, "Merges essence pouches into a colossal pouch.");
+        // Worn in the ring slot with teleports to the four elemental altars (systems module Jewellery/Charges).
+        single(items, "ring_of_the_elements", "Ring of the elements", "ring", 0xC08040, 1,
+                "A ring that holds the power of the elements.");
         // colossal_pouch is defined by the skilling module.
         wear(items, "abyssal_lantern", "Abyssal lantern", "orb", 0x80C080, Slot.SHIELD, 1,
                 s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)).examine("Burns logs; lights the way in the Abyss.");

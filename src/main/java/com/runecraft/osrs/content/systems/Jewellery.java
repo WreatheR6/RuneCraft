@@ -47,6 +47,13 @@ public final class Jewellery {
     private static final EquipmentStats NONE = EquipmentStats.NONE;
     /** Slayer ring teleport charges (OSRS: 8). */
     public static final int SLAYER_RING_CHARGES = 8;
+    /** Ring of returning teleport charges (OSRS: 5). */
+    public static final int RING_OF_RETURNING_CHARGES = 5;
+    /**
+     * Teleport items held in the hand rather than worn in an extra slot (the pharaoh's sceptre is a weapon): their
+     * teleport menu works like jewellery's, but they can't go in a jewellery slot.
+     */
+    private static final Map<String, Worn> HELD = new LinkedHashMap<>();
 
     static {
         // ---------- Sapphire (Lvl-1 Enchant) ----------
@@ -135,6 +142,9 @@ public final class Jewellery {
                 null, -1, Teleports.SLAYER, false));
         worn("drakans_medallion", "Drakan's medallion", Slot.NECK, "amulet", 0x902020, 3000, NONE, Perk.TELEPORT_ONLY, "A medallion of the Drakan family.");
         teleportsFor("drakans_medallion", Teleports.DRAKAN);
+        // Pharaoh's sceptre (minigames module weapon): wielded, not worn here; per-stack charges (Charges.PHARAOHS_SCEPTRE).
+        HELD.put("pharaohs_sceptre", new Worn("pharaohs_sceptre", "Pharaoh's sceptre", Slot.RING, NONE, Perk.TELEPORT_ONLY, null, -1,
+                Teleports.PHARAOH, false));
         worn("holy_symbol", "Holy symbol", Slot.NECK, "amulet", 0xE0E0E0, 300, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8),
                 Perk.NONE, "A blessed holy symbol of Saradomin.");
         worn("unholy_symbol", "Unholy symbol", Slot.NECK, "amulet", 0x404040, 300, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8),
@@ -154,8 +164,16 @@ public final class Jewellery {
         wornExternal("granite_gloves", Slot.HANDS, s(5, 5, 9, -3, -1, 8, 8, 8, -3, 5, 7, 0, 0, 0));
         wornExternal("dragonbone_necklace", Slot.NECK, s(10, 10, 10, 10, 10, 2, 2, 2, 2, 2, 2, 0, 0, 12));
         wornExternal("dizanas_quiver", Slot.CAPE, s(0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 3, 0, 0));
-        wornExternal("pendant_of_ates", Slot.NECK, s(0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 2)); // wiki bonuses (EquipmentWikiSyncTest)
-        wornExternal("giantsoul_amulet", Slot.NECK, NONE);
+        // Bosses-module drops with per-stack teleport charges (Charges): frozen tears / big bones and law runes.
+        externalTeleporter("pendant_of_ates", "Pendant of ates", Slot.NECK, s(0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 2),
+                Teleports.ATES); // wiki bonuses (EquipmentWikiSyncTest)
+        externalTeleporter("giantsoul_amulet", "Giantsoul amulet", Slot.NECK, NONE, Teleports.GIANTSOUL);
+        // Guardians of the Rift reward (minigames module): elemental altar teleports, one charge of each elemental rune and
+        // a law rune per teleport.
+        externalTeleporter("ring_of_the_elements", "Ring of the elements", Slot.RING, NONE, Teleports.ELEMENTS);
+        // Ring of returning: a jade ring enchanted with Lvl-2 Enchant; five teleports to the respawn point, then it crumbles.
+        charged("ring_of_returning", "Ring of returning", Slot.RING, "ring", 0x50C060, 1140, NONE, RING_OF_RETURNING_CHARGES,
+                Teleports.RETURNING, true); // value approx
         worn("ring_of_nature", "Ring of nature", Slot.RING, "ring", 0x30A030, 10000, NONE, Perk.NONE, "A ring of nature.");
         worn("ring_of_coins", "Ring of coins", Slot.RING, "ring", 0xE8C030, 10000, NONE, Perk.NONE, "Turns you into a pile of coins.");
         worn("amulet_of_magic_t", "Amulet of magic (t)", Slot.NECK, "amulet", 0x5070E0, 900, s(0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
@@ -250,6 +268,11 @@ public final class Jewellery {
         WORN.put(id, new Worn(w.id(), w.name(), w.slot(), w.stats(), w.perk(), null, -1, dests, false));
     }
 
+    /** A worn item another module defines that teleports (charges kept per stack, see {@link Charges}). */
+    private static void externalTeleporter(String id, String name, Slot slot, EquipmentStats stats, List<Teleports.Destination> dests) {
+        WORN.put(id, new Worn(id, name, slot, ref(id, stats), Perk.TELEPORT_ONLY, null, -1, dests, false));
+    }
+
     private static void wornExternal(String id, Slot slot, EquipmentStats stats) {
         WORN.putIfAbsent(id, new Worn(id, id, slot, ref(id, stats), Perk.NONE, null, -1, List.of(), false));
     }
@@ -310,6 +333,16 @@ public final class Jewellery {
         return WORN.get(id);
     }
 
+    /** A hand-held teleport item (pharaoh's sceptre), or null. */
+    public static Worn held(String id) {
+        return HELD.get(id);
+    }
+
+    /** Every hand-held teleport item. */
+    public static List<Worn> allHeld() {
+        return List.copyOf(HELD.values());
+    }
+
     public static List<Worn> all() {
         ensureLoaded();
         return Collections.unmodifiableList(new ArrayList<>(WORN.values()));
@@ -355,6 +388,7 @@ public final class Jewellery {
         enchant(2, "emerald_necklace", "binding_necklace");
         enchant(2, "emerald_amulet", "amulet_of_defence");
         enchant(2, "emerald_bracelet", "castle_wars_bracelet");
+        enchant(2, "jade_ring", "ring_of_returning_" + RING_OF_RETURNING_CHARGES);
         enchant(3, "ruby_ring", "ring_of_forging");
         enchant(3, "ruby_necklace", "dodgy_necklace");
         enchant(3, "ruby_amulet", "amulet_of_strength");
