@@ -41,7 +41,9 @@ public final class Runecrafting {
         Inv.remove(player, "rune_essence", normal);
         int runes = essence * altar.runesPerEssence(level);
         Inv.give(player, altar.rune().itemId(), runes);
-        CollectionLog.obtain(player, altar.rune().itemId());
+        // The whole trip's runes in one obtain event (diary tasks such as "craft 140 runes at once").
+        CollectionLog.record(player, altar.rune().itemId());
+        com.runecraft.content.GameEvents.fireObtain(player, altar.rune().itemId(), runes);
         XpService.add(player, Skill.RUNECRAFT, altar.xp() * essence);
         Msg.game(player, "You bind the temple's power into " + altar.rune().name().toLowerCase(Locale.ROOT) + " runes.");
         ServerWorld world = (ServerWorld) player.getWorld();

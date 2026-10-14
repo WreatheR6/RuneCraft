@@ -137,6 +137,30 @@ class DiaryCompletabilityTest {
                     yield null;
                 }
                 case CLUE -> ClueScrolls.Tier.valueOf(t.target().toUpperCase(Locale.ROOT)) != null ? null : "clue";
+                case WEAR -> {
+                    for (String piece : t.target().split("&")) {
+                        if (!itemTargetExists(piece)) {
+                            yield "no item " + piece;
+                        }
+                    }
+                    yield null;
+                }
+                case EVENT -> {
+                    for (String key : t.target().split("\\|")) {
+                        String prefix = key.contains(":") ? key.substring(0, key.indexOf(':')) : key;
+                        if (!Diaries.ACTIVITIES.contains(prefix)) {
+                            yield "unknown activity " + key;
+                        }
+                        String rest = key.substring(prefix.length()).replaceFirst("^:", "");
+                        if (prefix.equals("talk") && ContentRegistry.npc(rest) == null) {
+                            yield "no NPC " + rest;
+                        }
+                        if (prefix.equals("eat") && ItemCatalog.get(rest) == null) {
+                            yield "no food " + rest;
+                        }
+                    }
+                    yield null;
+                }
                 default -> null;
             };
             if (bad == null && t.restrict() != null && t.restrict().indexOf(',') < 0 && Diaries.area(t.restrict()) == null) {

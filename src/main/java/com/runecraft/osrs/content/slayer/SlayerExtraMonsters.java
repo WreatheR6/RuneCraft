@@ -69,6 +69,16 @@ final class SlayerExtraMonsters {
                         .attack(stab(7).particle("minecraft:snowflake"))
                         .drops(coins(10, 120, 4), Drop.herbs(32), clue("medium", 256)) // approx
                         .slayer(1, "spiders").size(1.2f, 0.7f, 1.0f).spawn(Region.WILDERNESS, 3, 2, 4),
+                // Karamja jungle spiders (osrs-dps-calc stats; not poisonous, aggressive): the spider carcass source.
+                m("jungle_spider", "Jungle spider", 44, 50, 35, 37, 35, 1, 1).speed(4).defenceBonus(20, 20, 10, 17, 20)
+                        .attack(stab(6)).drops(Drop.always("spider_carcass"))
+                        .slayer(1, "spiders").skin(0x4A5A2A, 0x3A4A1A, 0x2A3A12, 0xC03020).size(1.1f, 0.7f, 1.0f)
+                        .spawn(Region.KARAMJA, 3, 2, 4).spawn(Region.KANDARIN, 1, 2, 4),
+                // Kharazi Jungle oomlie birds (osrs-dps-calc stats; not aggressive): bones and raw oomlie.
+                m("oomlie_bird", "Oomlie bird", 46, 40, 40, 40, 40, 1, 1).speed(4).attack(stab(5)).passive()
+                        .drops(Drop.always("bones"), Drop.always("raw_oomlie"))
+                        .slayer(1, "birds").skin(0xC0703A, 0xA05A2A, 0x8A4A1A, 0xE0C040).size(0.9f, 1.4f, 1.0f)
+                        .spawn(Region.KARAMJA, 3, 1, 3),
                 // Wilderness Bandit Camp: level 22 and level 130 bandits (aggressive; fast respawns).
                 m("bandit", "Bandit", 22, 27, 18, 20, 16, 1, 1).speed(4).attack(slash(3)) // approx. skills
                         .drops(Drop.always("bones"), coins(5, 80, 3), Drop.of("iron_scimitar", 1, 1, 32), Drop.herbs(40))

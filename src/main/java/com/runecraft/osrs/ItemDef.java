@@ -23,6 +23,7 @@ public final class ItemDef {
     private int rangedStrength;
     private String examine;
     private double weight;
+    private boolean drinkable = true;
 
     public ItemDef(String id, String name, Kind kind, String shape, int color) {
         this.id = id;
@@ -70,6 +71,12 @@ public final class ItemDef {
     /** OSRS weight in kg (negative for weight-reducing gear such as Graceful). */
     public ItemDef weight(double kg) {
         this.weight = kg;
+        return this;
+    }
+
+    /** A dosed potion that OSRS doesn't let you drink (only "Empty"): Guthix balance, olive oil, sacred oil. */
+    public ItemDef notDrinkable() {
+        this.drinkable = false;
         return this;
     }
 
@@ -137,5 +144,10 @@ public final class ItemDef {
     /** OSRS weight in kg (0 if unknown). */
     public double weight() {
         return weight;
+    }
+
+    /** False for dosed potions that are used on things rather than drunk. */
+    public boolean drinkable() {
+        return drinkable;
     }
 }

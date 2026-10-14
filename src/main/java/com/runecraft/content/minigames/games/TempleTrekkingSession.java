@@ -316,6 +316,8 @@ public class TempleTrekkingSession extends MinigameSession {
             String name = follower == null ? "Your follower" : follower.displayName;
             Msg.game(p, name + ": Thank you for getting me here safely! Please take this token. (" + total + " points)");
             Msg.game(p, "Treks completed: " + kc + ".");
+            com.runecraft.content.GameEvents.fireActivity(p, "trek_complete:"
+                    + (follower == null ? TempleTrekking.Difficulty.EASY : follower.difficulty).name().toLowerCase(java.util.Locale.ROOT));
         }
         end(true);
         // Arrive at the destination rather than back where the trek started.

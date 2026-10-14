@@ -129,6 +129,17 @@ public final class CookingData extends SkillingPart {
                     .examine("A succulently slimy slice of sumptuous snail.");
         }
         simple(s, "burnt_snail", "Burnt snail", "meat_burnt", 0x2A2018, 1).examine("Oops!");
+        // Karamja (OSRS Wiki): spider on shaft (Tai Bwo Wannai Cleanup food; heals 7-10) and the oomlie wrap (Legends' Quest).
+        simple(s, "spider_on_shaft_raw", "Spider on shaft (raw)", "meat_raw", 0x6A5A3A, 1).weight(0.9)
+                .examine("A raw spider threaded onto an arrow shaft.");
+        food(s, "spider_on_shaft", "Spider on shaft", "meat_cooked", 0x8A5A2A, 40, 8).weight(0.9) // approx: OSRS heals 7-10
+                .examine("A nicely roasted spider threaded onto an arrow shaft.");
+        simple(s, "burnt_spider", "Burnt spider", "meat_burnt", 0x2A2018, 1).examine("A badly burnt spider.");
+        simple(s, "palm_leaf", "Palm leaf", "leaf", 0x3A8A2A, 5).weight(0.1).examine("A thick green palm leaf.");
+        simple(s, "wrapped_oomlie", "Wrapped oomlie", "meat_raw", 0x6A9A3A, 16).weight(0.325)
+                .examine("Oomlie meat in a palm leaf pouch. It just needs to be cooked.");
+        food(s, "cooked_oomlie_wrap", "Cooked oomlie wrap", "meat_cooked", 0x7A8A2A, 35, 14).weight(0.325)
+                .examine("Deliciously cooked oomlie meat in a palm leaf pouch.");
         // Containers and basic ingredients
         simple(s, "jug", "Jug", "jug", 0xC0C8D0, 1);
         simple(s, "jug_of_water", "Jug of water", "jug", 0x5080D0, 1);
@@ -214,6 +225,16 @@ public final class CookingData extends SkillingPart {
             out.accept(r("cook_" + sn.raw() + "_meat", C, title(sn.raw()) + " meat", Skill.COOKING, sn.level(), sn.xp())
                     .in(sn.raw(), 1).out(sn.raw() + "_meat", 1).ticks(4).burn(sn.stopBurn(), "burnt_snail").build());
         }
+        // Spider on shaft: carcass + arrow shaft, cooked at 16 for 80 XP, stops burning at 48 (OSRS Wiki).
+        out.accept(r("make_spider_on_shaft_raw", C, "Spider on shaft (raw)", Skill.COOKING, 1, 0).in("spider_carcass", 1)
+                .in("arrow_shaft", 1).out("spider_on_shaft_raw", 1).ticks(1).build());
+        out.accept(r("cook_spider_on_shaft", C, "Spider on shaft", Skill.COOKING, 16, 80.0).in("spider_on_shaft_raw", 1)
+                .out("spider_on_shaft", 1).ticks(4).burn(48, "burnt_spider").build());
+        // Oomlie: wrap the raw meat in a palm leaf (50 Cooking, 10 XP), then cook it (30 XP); a wrapped oomlie never burns.
+        out.accept(r("wrap_oomlie", C, "Wrapped oomlie", Skill.COOKING, 50, 10.0).in("raw_oomlie", 1).in("palm_leaf", 1)
+                .out("wrapped_oomlie", 1).ticks(1).build());
+        out.accept(r("cook_oomlie_wrap", C, "Cooked oomlie wrap", Skill.COOKING, 50, 30.0).in("wrapped_oomlie", 1)
+                .out("cooked_oomlie_wrap", 1).ticks(4).build());
         // Doughs (flour + water)
         out.accept(r("mix_bread_dough", C, "Bread dough", Skill.COOKING, 1, 0).in("pot_of_flour", 1).in("jug_of_water", 1)
                 .out("bread_dough", 1).out("empty_pot", 1).out("jug", 1).ticks(2).build());
@@ -321,6 +342,18 @@ public final class CookingData extends SkillingPart {
 
     @Override
     public List<BlockDef> blocks() {
-        return List.of(BlockDef.menu("dairy_churn", "Dairy churn", MenuType.COOKING, 0xA08060, "churn"));
+        return List.of(BlockDef.menu("dairy_churn", "Dairy churn", MenuType.COOKING, 0xA08060, "churn"),
+                BlockDef.scripted(LEAFY_PALM_TREE, "Leafy palm tree", 0x3A8A2A, "palm_tree"));
+    }
+
+    /** Shaken for palm leaves (Kharazi Jungle). */
+    public static final String LEAFY_PALM_TREE = "leafy_palm_tree";
+
+    @Override
+    public List<com.runecraft.osrs.content.PlaceDef> places() {
+        // The three leafy palm trees near the pool in the middle of the Kharazi Jungle (approx tile: just east of the islands
+        // module's Kharazi clearing).
+        return List.of(com.runecraft.osrs.content.PlaceDef.of("kharazi_leafy_palms", "Kharazi Jungle palms", 2862, 2917,
+                com.runecraft.osrs.content.PlaceDef.Style.CAMP, List.of(LEAFY_PALM_TREE, LEAFY_PALM_TREE, LEAFY_PALM_TREE)));
     }
 }

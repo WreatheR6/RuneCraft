@@ -168,7 +168,14 @@ public final class DiaryService {
     public static void onObtain(ServerPlayerEntity p, String item, int amount) {
         for (Task t : Diaries.tasks()) {
             if (t.type() == Type.OBTAIN && Diaries.itemMatches(t.target(), item) && inArea(p, t.restrict())) {
-                count(p, t, Math.max(1, amount));
+                if (Diaries.inOneGo(t)) {
+                    // "Craft 140 runes at once": a single obtain must reach the count.
+                    if (amount >= t.count()) {
+                        complete(p, t);
+                    }
+                } else {
+                    count(p, t, Math.max(1, amount));
+                }
             }
         }
         DiaryPerks.onObtain(p, item);
@@ -178,6 +185,15 @@ public final class DiaryService {
         SysState.of(p).spellsCast.add(spell);
         for (Task t : Diaries.tasks()) {
             if (t.type() == Type.CAST && Diaries.spellMatches(t.target(), spell) && inArea(p, t.restrict())) {
+                complete(p, t);
+            }
+        }
+    }
+
+    /** A named activity (NPC talk, minigame start/win, spellbook switch, jewellery teleport, food eaten...). */
+    public static void onActivity(ServerPlayerEntity p, String key) {
+        for (Task t : Diaries.tasks()) {
+            if (t.type() == Type.EVENT && Diaries.eventMatches(t.target(), key) && inArea(p, t.restrict())) {
                 complete(p, t);
             }
         }
@@ -226,6 +242,7 @@ public final class DiaryService {
                 case TOTAL_LEVEL -> d.skills().totalLevel() >= t.level();
                 case COMBAT_LEVEL -> CombatLevel.of(d.skills()) >= t.level();
                 case HAVE -> inArea(p, t.restrict()) && haveItem(p, t.target(), t.count());
+                case WEAR -> inArea(p, t.restrict()) && wearingAll(p, t.target());
                 case QUEST -> {
                     QuestInfo q = ContentRegistry.quest(t.target());
                     // A quest that doesn't exist in this world can't block the diary.
@@ -266,6 +283,23 @@ public final class DiaryService {
                 complete(p, t);
             }
         }
+    }
+
+    /** Every '&'-separated piece is worn (armour slots, hands or the extra jewellery/cape slots). */
+    private static boolean wearingAll(ServerPlayerEntity p, String target) {
+        java.util.List<String> worn = new java.util.ArrayList<>();
+        for (net.minecraft.entity.EquipmentSlot slot : net.minecraft.entity.EquipmentSlot.values()) {
+            net.minecraft.item.ItemStack s = p.getEquippedStack(slot);
+            if (!s.isEmpty()) {
+                worn.add(Inv.idOf(s));
+            }
+        }
+        for (net.minecraft.item.ItemStack s : SysState.of(p).worn.values()) {
+            if (!s.isEmpty()) {
+                worn.add(Inv.idOf(s));
+            }
+        }
+        return Diaries.wearingAll(target, worn);
     }
 
     private static boolean haveItem(ServerPlayerEntity p, String target, int count) {

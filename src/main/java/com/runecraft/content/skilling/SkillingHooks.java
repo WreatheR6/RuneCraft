@@ -48,6 +48,15 @@ public final class SkillingHooks implements ModuleHooks {
         ConstructionHooks.init();
         ThievingHooks.init();
         SailingHooks.init();
+        // Kharazi Jungle leafy palm trees: shake one for a palm leaf (oomlie wraps; Karamja hard diary).
+        com.runecraft.content.BlockHooks.register(com.runecraft.osrs.content.skilling.CookingData.LEAFY_PALM_TREE, (player, pos, state) -> {
+            if (!Inv.hasRoomFor(player, "palm_leaf")) {
+                Msg.game(player, "You don't have enough inventory space.");
+                return;
+            }
+            Msg.action(player, "You shake the tree and a palm leaf falls to the ground. You pick it up.");
+            SkillingUtil.give(player, "palm_leaf", 1);
+        });
         BlastFurnaceHooks.init();
         BrewingHooks.init();
         // Barbarian mixes are taught by Otto Godblessed in Barbarian Training.

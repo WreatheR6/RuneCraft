@@ -60,6 +60,14 @@ public final class SystemsHooks implements ModuleHooks {
         GameEvents.onMake(DiaryService::onMake);
         GameEvents.onObtain(DiaryService::onObtain);
         GameEvents.onCast(DiaryService::onCast);
+        GameEvents.onActivity(DiaryService::onActivity);
+        // Ardougne Zoo: talking to the zookeeper as a monkey (greegree held) gets you put in the monkey cage.
+        GameEvents.onActivity((p, key) -> {
+            if (key.equals("talk:charlie_zookeeper") && "monkey_greegree".equals(Inv.idOf(p.getMainHandStack()))) {
+                Msg.game(p, "Zookeeper: Hey! How did that monkey get out? Back in the cage with you!");
+                GameEvents.fireActivity(p, "monkey_cage");
+            }
+        });
 
         SysTicks.everyPlayer((p, tick) -> {
             SpecialAttackService.gameTick(p, tick);

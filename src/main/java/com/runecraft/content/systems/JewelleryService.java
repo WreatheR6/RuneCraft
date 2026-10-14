@@ -274,6 +274,7 @@ public final class JewelleryService {
                     return;
                 }
                 if (SysTeleport.teleport(p, dest, Teleports.wildernessLimit(w.id()))) {
+                    DiaryService.onActivity(p, "teleport:" + w.id() + ":" + com.runecraft.osrs.content.systems.Diaries.slug(dest.name()));
                     if (w.chargeBase() != null) {
                         setStack(p, source, useCharge(p, stack));
                     } else if (charged != null) {

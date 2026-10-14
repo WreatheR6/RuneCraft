@@ -294,11 +294,11 @@ public final class HerbloreData extends SkillingPart {
         simple(s, "weapon_poison_plus_plus_unf", "Weapon poison(++) (unf)", "potion_unf", 0x1A3A0A, 60);
         simple(s, "cadantine_blood_potion_unf", "Cadantine blood potion (unf)", "potion_unf", 0x6A1A2A, 80);
         simple(s, "guthix_rest_unf", "Herbal tea mix", "cup", 0xA0C080, 10);
-        // Guthix balance (In Aid of the Myreque): a restore potion with garlic, finished with silver dust. Its use against
-        // frozen vampyre juveniles isn't modelled; it is a plain potion here.
+        // Guthix balance (In Aid of the Myreque): a restore potion with garlic, finished with silver dust. It is not drinkable
+        // in OSRS (Empty/Drop only): it is used on frozen vampyre juveniles, which isn't modelled.
         simple(s, "guthix_balance_unf", "Guthix balance (unf)", "potion_unf", 0xD08090, 100)
                 .examine("I need another ingredient to finish this Guthix balance potion.");
-        potion(s, "guthix_balance", "Guthix balance", 0xE0A0B0, 200)
+        potion(s, "guthix_balance", "Guthix balance", 0xE0A0B0, 200).notDrinkable()
                 .examine("A potion of harralander, red spiders eggs, garlic and silver dust.");
         simple(s, "silver_dust", "Silver dust", "secondary", 0xD0D0D8, 1).examine("Finely ground silver.");
         simple(s, "magic_essence_unf", "Magic essence (unf)", "potion_unf", 0xE0D060, 75)

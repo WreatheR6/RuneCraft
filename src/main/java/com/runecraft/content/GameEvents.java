@@ -31,6 +31,12 @@ public final class GameEvents {
         void onCast(ServerPlayerEntity player, String spellId);
     }
 
+    /** A named activity such as "talk:" + npc id, "minigame_start:" + game id or "eat:" + item id (see Diaries.ACTIVITIES). */
+    public interface ActivityListener {
+        void onActivity(ServerPlayerEntity player, String key);
+    }
+
+    private static final List<ActivityListener> ACTIVITIES = new ArrayList<>();
     private static final List<XpListener> XP = new ArrayList<>();
     private static final List<KillListener> KILLS = new ArrayList<>();
     private static final List<MakeListener> MAKES = new ArrayList<>();
@@ -60,6 +66,15 @@ public final class GameEvents {
     /** Fired when a standard-spellbook spell (teleport, alchemy, superheat) is cast; ids are lower-case enum names. */
     public static void onCast(CastListener l) {
         CASTS.add(l);
+    }
+
+    /** Fired for named activities other modules can't observe otherwise (NPC talk, minigame starts/wins, food eaten...). */
+    public static void onActivity(ActivityListener l) {
+        ACTIVITIES.add(l);
+    }
+
+    public static void fireActivity(ServerPlayerEntity p, String key) {
+        ACTIVITIES.forEach(l -> l.onActivity(p, key));
     }
 
     public static void fireCast(ServerPlayerEntity p, String spellId) {

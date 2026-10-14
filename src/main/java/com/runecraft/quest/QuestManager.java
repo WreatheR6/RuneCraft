@@ -111,6 +111,7 @@ public final class QuestManager {
 
     public static void talk(ServerPlayerEntity p, QuestNpcEntity entity) {
         QuestNpc npc = entity.npc();
+        com.runecraft.content.GameEvents.fireActivity(p, "talk:" + entity.npcId().toLowerCase(java.util.Locale.ROOT));
         if (npc == null) {
             QuestScripts.talk(p, entity);
             return;

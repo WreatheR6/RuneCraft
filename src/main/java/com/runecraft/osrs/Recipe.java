@@ -86,6 +86,23 @@ public final class Recipe {
         return ticks;
     }
 
+    /**
+     * Doses in each potion this recipe makes, or 0 for a full (4-dose) potion. As in OSRS, a potion mixed from an
+     * unfinished herb potion comes as 3 doses (attack potion(3) ... saradomin brew(3)); potions upgraded from finished ones
+     * (super combat, stamina, divine, anti-venom) keep the dose count of their input, which is full here.
+     */
+    public int outputDoses() {
+        if (menu != MenuType.HERBLORE) {
+            return 0;
+        }
+        for (String in : inputs.keySet()) {
+            if (in.endsWith("_potion_unf")) {
+                return 3;
+            }
+        }
+        return 0;
+    }
+
     /** Fixed success chance (e.g. 0.5 for iron bars); 1.0 for most recipes. */
     public double successChance() {
         return successChance;

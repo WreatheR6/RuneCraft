@@ -36,7 +36,7 @@ public enum Landmark {
     RELLEKKA("Rellekka", 2660, 3657, Station.FURNACE, Station.ANVIL, Station.RANGE, Station.FUR_STALL),
     TROLLHEIM("Trollheim", 2890, 3676, Station.PRAYER_ALTAR),
     CANIFIS("Canifis", 3496, 3488, Station.BANK_BOOTH, Station.RANGE, Station.SLAYER_MASTER),
-    PORT_PHASMATYS("Port Phasmatys", 3687, 3502, Station.BANK_BOOTH, Station.PRAYER_ALTAR, Station.GENERAL_STORE),
+    PORT_PHASMATYS("Port Phasmatys", 3687, 3502, Station.BANK_BOOTH, Station.PRAYER_ALTAR, Station.GENERAL_STORE, Station.RANGE),
     BRIMHAVEN("Brimhaven", 2760, 3178, Station.RANGE, Station.GENERAL_STORE),
     MUSA_POINT("Musa Point", 2914, 3176, Station.GENERAL_STORE),
     SHILO_VILLAGE("Shilo Village", 2852, 2955, Station.BANK_BOOTH, Station.FURNACE, Station.RANGE),
