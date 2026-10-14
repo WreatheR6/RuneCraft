@@ -47,6 +47,7 @@ public final class SystemsHooks implements ModuleHooks {
         ChargeService.register();
         CombatAchievementService.register();
         CaMenus.registerHandlers();
+        DiaryExtrasService.register();
 
         CombatHooks.addModifier(new SysModifier());
         CombatHooks.addHurtListener(JewelleryService::onHurt);
@@ -254,7 +255,7 @@ public final class SystemsHooks implements ModuleHooks {
         if (Jewellery.worn(id) != null && ItemCatalog.get(id) != null) {
             return true;
         }
-        if (id.startsWith("falador_shield_")) {
+        if (id.startsWith("falador_shield_") || DiaryExtrasService.handles(id, sneaking)) {
             return true;
         }
         return sneaking && (!diaryItemTeleports(id).isEmpty() || CombatAchievements.hiltTier(id) > 0);
@@ -297,6 +298,9 @@ public final class SystemsHooks implements ModuleHooks {
         }
         if (id.equals(CluePuzzles.PUZZLE_BOX) || id.equals(CluePuzzles.LIGHT_BOX)) {
             return ClueService.useBox(p, id);
+        }
+        if (DiaryExtrasService.handles(id, sneaking)) {
+            return DiaryExtrasService.use(p, stack, hand, id, sneaking);
         }
         Spellbooks.Tablet tab = Spellbooks.tablet(id);
         if (tab != null) {

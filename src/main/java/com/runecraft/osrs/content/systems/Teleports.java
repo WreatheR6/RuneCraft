@@ -65,6 +65,10 @@ public final class Teleports {
     public static String unlockItem(Destination d) {
         return XERICS_HONOUR.equals(d) ? ANCIENT_TABLET : null;
     }
+    /** Camulet (Enakhra's Lament): the temple entrance; 4 charges, refilled with ugthanki dung in OSRS. */
+    public static final List<Destination> CAMULET = List.of(at("Enakhra's Temple", 3104, 2932, "enakhras_lament"));
+    /** Skull sceptre: the Stronghold of Security entrance in Barbarian Village (usable up to level 20 Wilderness). */
+    public static final Destination SKULL_SCEPTRE = at("Barbarian Village", 3081, 3421);
     public static final List<Destination> DRAKAN = List.of(at("Ver Sinhaza", 3649, 3230),
             at("Darkmeyer", 3592, 3337, "sins_of_the_father"),
             at("Slepe", 3720, 3322)); // relocated: Slepe village (OSRS lands in the Sisterhood Sanctuary below it) approx

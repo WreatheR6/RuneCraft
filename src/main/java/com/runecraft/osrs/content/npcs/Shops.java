@@ -24,6 +24,13 @@ import static com.runecraft.osrs.content.npcs.ShopDef.specialist;
 public final class Shops {
     private static final Map<String, ShopDef> SHOPS = new LinkedHashMap<>();
 
+    /** Wilderness cape merchants (OSRS Wiki): id, name, team pattern (1-10), OSRS x, y. */
+    public static final String[][] CAPE_MERCHANTS = {
+            {"william", "William", "1", "3202", "3864"}, {"ian", "Ian", "2", "2975", "3749"}, {"larry", "Larry", "3", "3238", "3700"},
+            {"darren", "Darren", "4", "3000", "3929"}, {"edward", "Edward", "5", "3286", "3924"}, {"richard", "Richard", "6", "3102", "3515"},
+            {"neil", "Neil", "7", "3033", "3702"}, {"edmond", "Edmond", "8", "3128", "3764"}, {"simon", "Simon", "9", "3237", "3626"},
+            {"sam", "Sam", "10", "3057", "3622"}};
+
     private Shops() {
     }
 
@@ -502,5 +509,28 @@ public final class Shops {
         add(specialist("mage_arena_staffs", "Mage Arena Staffs", "npc_chamber_guardian")
                 .sell("saradomin_staff", 5).sell("guthix_staff", 5).sell("zamorak_staff", 5)
                 .greeting("Greetings. I can supply the staves of the gods to those who have proven themselves."));
+
+        // ------------------------------------------------------------- diary shops
+        // OSRS Wiki: Warrens General Store (not in RuneCraft: Empty jug pack, Empty bucket pack)
+        add(general("warrens_general_store", "Warrens General Store", "npc_warrens_shopkeeper").sell("empty_pot", 3).sell("jug", 2)
+                .sell("minecraft:shears", 2, 1).sell("minecraft:bucket", 2, 2).sell("tinderbox", 2).sell("chisel", 2).sell("hammer", 5)
+                .sell("spade", 5).sell("knife", 4).greeting("Can I help you at all?"));
+        // OSRS Wiki: Keldagrim Stonemason (not in RuneCraft: Condensed gold)
+        add(specialist("keldagrim_stonemason", "Keldagrim Stonemason", "npc_keldagrim_stonemason").sell("limestone_brick", 1000)
+                .sell("marble_block", 20).sell("gold_leaf", 20).sell("magic_stone", 10)
+                .greeting("Fine building materials, the finest in Keldagrim!"));
+        // Sir Vyvin's White Knight equipment (Wanted!): RuneCraft only has the white 2h sword; stock approx. The White Knight
+        // rank (Master, 1,300 kill score, for the 2h sword) is not tracked. // approx
+        add(specialist("white_knight_armoury", "White Knight Armoury", "sir_vyvin").sell("white_2h_sword", 10)
+                .greeting("Welcome, friend of the White Knights. Our armoury is open to you."));
+        // OSRS Wiki: the ten Wilderness cape merchants, each selling one pattern in five colours (team-n capes, 50 coins).
+        for (String[] m : CAPE_MERCHANTS) {
+            ShopDef.Builder b = specialist("cape_merchant_" + m[0], m[1] + "'s capes", "npc_cape_merchant_" + m[0]);
+            int pattern = Integer.parseInt(m[2]);
+            for (int colour = 0; colour < 5; colour++) {
+                b.sell(com.runecraft.osrs.content.CommonItems.teamCape(pattern + colour * 10), 10); // stock approx
+            }
+            add(b.greeting("Capes! Get your team capes here!"));
+        }
     }
 }

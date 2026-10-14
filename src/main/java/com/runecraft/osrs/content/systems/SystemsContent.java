@@ -61,6 +61,10 @@ public final class SystemsContent implements ContentModule {
         recipes.accept(Recipe.builder("make_confliction_gauntlets", MenuType.SMITHING, "Confliction gauntlets")
                 .skill(Skill.CRAFTING, 83, 0).in("tormented_bracelet", 1).in("mokhaiotl_cloth", 1).in("demon_tear", 10000)
                 .out("confliction_gauntlets", 1).ticks(3).build()); // XP approx (none known)
+        // Gold helmet (OSRS Wiki): 3 gold bars and a hammer at an anvil, 50 Smithing, 30 XP. OSRS only lets players who have
+        // started Between a Rock... make it, and only one at a time; neither is enforced here. // approx
+        recipes.accept(Recipe.builder("smith_gold_helmet", MenuType.SMITHING, "Gold helmet")
+                .skill(Skill.SMITHING, 50, 30).in("gold_bar", 3).out("gold_helmet", 1).tool("hammer").ticks(5).build());
         // God books: the god's four clue scroll pages complete a damaged book (CommonEquipment). OSRS adds the pages one at a
         // time by using them on the book; here all four are bound at once in the needle menu. // approx
         String[] gods = {"saradomin", "zamorak", "guthix", "bandos", "armadyl", "ancient"};
@@ -86,7 +90,9 @@ public final class SystemsContent implements ContentModule {
                 BlockDef.scripted(LUNAR_ALTAR, "Lunar altar", 0xC0C0E0, "altar"),
                 BlockDef.scripted(DARK_ALTAR, "Dark altar", 0x2A2A3A, "obelisk"),
                 BlockDef.scripted(DIARY_BOARD, "Achievement diary board", 0x8A6A3A, "crate"),
-                BlockDef.scripted(com.runecraft.osrs.bank.DepositBoxes.BLOCK, "Bank deposit box", 0x6A5A3A, "chest"));
+                BlockDef.scripted(com.runecraft.osrs.bank.DepositBoxes.BLOCK, "Bank deposit box", 0x6A5A3A, "chest"),
+                BlockDef.scripted(DiaryExtras.MUDDY_CHEST, "Muddy chest", 0x6A4A2A, "chest"),
+                BlockDef.scripted(DiaryExtras.CRYSTAL_CHEST, "Crystal chest", 0x8AB0C0, "chest"));
     }
 
     @Override
@@ -99,7 +105,13 @@ public final class SystemsContent implements ContentModule {
                 PlaceDef.of("lunar_isle", "Lunar Isle", 2100, 3914, PlaceDef.Style.TOWN, List.of(LUNAR_ALTAR)),
                 PlaceDef.of("arceuus_dark_altar", "Dark Altar", 1715, 3883, PlaceDef.Style.RUINS, List.of(DARK_ALTAR)),
                 PlaceDef.of(CluePuzzles.FALO, "Falo the Bard", FALO_X, FALO_Y, PlaceDef.Style.NONE, List.of()),
-                PlaceDef.of(GHOMMAL, "Ghommal", CombatAchievements.GHOMMAL_X, CombatAchievements.GHOMMAL_Y, PlaceDef.Style.NONE, List.of())));
+                PlaceDef.of(GHOMMAL, "Ghommal", CombatAchievements.GHOMMAL_X, CombatAchievements.GHOMMAL_Y, PlaceDef.Style.NONE, List.of()),
+                PlaceDef.of(DiaryExtras.TINDEL, "Tindel Marchant", DiaryExtras.TINDEL_X, DiaryExtras.TINDEL_Y, PlaceDef.Style.NONE, List.of()),
+                PlaceDef.of(DiaryExtras.GENIE, "Genie's crevice", DiaryExtras.GENIE_X, DiaryExtras.GENIE_Y, PlaceDef.Style.NONE, List.of()),
+                PlaceDef.of(DiaryExtras.MUDDY_CHEST, "Muddy chest", DiaryExtras.MUDDY_CHEST_X, DiaryExtras.MUDDY_CHEST_Y, PlaceDef.Style.NONE,
+                        List.of(DiaryExtras.MUDDY_CHEST)),
+                PlaceDef.of(DiaryExtras.CRYSTAL_CHEST, "Crystal chest", DiaryExtras.CRYSTAL_CHEST_X, DiaryExtras.CRYSTAL_CHEST_Y,
+                        PlaceDef.Style.NONE, List.of(DiaryExtras.CRYSTAL_CHEST))));
         // Bank deposit boxes: nothing is levelled; the hooks put the box on the ground at the spot.
         for (com.runecraft.osrs.bank.DepositBoxes.Spot spot : com.runecraft.osrs.bank.DepositBoxes.SPOTS) {
             places.add(PlaceDef.of(spot.id(), spot.name(), spot.osrsX(), spot.osrsY(), PlaceDef.Style.NONE, List.of()));
@@ -115,7 +127,9 @@ public final class SystemsContent implements ContentModule {
                 NpcDef.of("watson", "Watson", "grand_exchange", 0, 4, 0xE0B090, 0x6A4A2A, 0x2A2A2A, 0x6A4A2A),
                 NpcDef.of("achievement_diary_master", "Diary master", "grand_exchange", -4, -2, 0xE0B090, 0x8A6A3A, 0x5A3A2A, 0x8A6A3A),
                 NpcDef.of(CluePuzzles.FALO, "Falo the Bard", CluePuzzles.FALO, 0, 0, 0xE0B090, 0x3A6A9A, 0x5A3A2A, 0xC03030),
-                NpcDef.of(GHOMMAL, "Ghommal", GHOMMAL, 0, 0, 0xC8A080, 0x8A8A90, 0x5A5A60, 0x8A8A90));
+                NpcDef.of(GHOMMAL, "Ghommal", GHOMMAL, 0, 0, 0xC8A080, 0x8A8A90, 0x5A5A60, 0x8A8A90),
+                NpcDef.of(DiaryExtras.TINDEL, "Tindel Marchant", DiaryExtras.TINDEL, 0, 0, 0xE0B898, 0x6A4A2A, 0x3A3A4A, 0x5A3A2A),
+                NpcDef.of(DiaryExtras.GENIE, "Genie", DiaryExtras.GENIE, 0, 0, 0x5A8AE0, 0xC03030, 0x3A6AC0, 0xE0C040));
     }
 
     @Override

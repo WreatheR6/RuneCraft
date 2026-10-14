@@ -56,14 +56,14 @@ public final class ThievingData extends SkillingPart {
      * H.A.M. members' pickpocket table (15 Thieving, 22.2 XP): coins, ores, gems, tools and the
      * H.A.M. robes; an easy clue scroll is rolled separately at 1/50 ({@link #HAM_CLUE_CHANCE}).
      * Weights approx.; the rest of the H.A.M. outfit (cloak, logo, gloves, boots) and the junk items
-     * (buttons, rusty swords, damaged armour) are not in the game.
+     * (buttons, damaged armour) are not in the game; rusty swords go to Tindel Marchant.
      */
     public static final List<Loot> HAM_TABLE = List.of(
             Loot.of("coins", 1, 21, 28), Loot.of("iron_ore", 1, 1, 8), Loot.of("coal", 1, 1, 8), Loot.of("uncut_jade", 1, 1, 4),
             Loot.of("uncut_opal", 1, 1, 4), Loot.of("uncut_red_topaz", 1, 1, 2), Loot.of("needle", 1, 1, 6), Loot.of("thread", 1, 5, 6),
             Loot.of("tinderbox", 1, 1, 6), Loot.of("steel_arrow", 1, 13, 5), Loot.of("grimy_guam_leaf", 1, 1, 4),
             Loot.of("grimy_marrentill", 1, 1, 3), Loot.of("grimy_tarromin", 1, 1, 2), Loot.of("ham_hood", 1, 1, 3),
-            Loot.of("ham_shirt", 1, 1, 3), Loot.of("ham_robe", 1, 1, 3));
+            Loot.of("ham_shirt", 1, 1, 3), Loot.of("ham_robe", 1, 1, 3), Loot.of("rusty_sword", 1, 1, 4)); // rusty sword 4/102 (wiki)
     public static final int HAM_CLUE_CHANCE = 50;
     public static final String HOUSE_KEY = "house_key";
     public static final String VALUABLES = "valuables";

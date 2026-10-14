@@ -133,9 +133,7 @@ final class DwarfGoblinQuests {
         Cast.npc(b, "dondakan", "Dondakan the Dwarf", "quest_arzinian_mine", 0, 3, 0xD8A888, 0x8A6A2A);
         Cast.npc(b, "engineer_rolad", "Rolad", "dwarven_mine_north", 3, 3, 0xD8A889, 0x5A5A6A);
         Cast.npc(b, "dwarven_engineer", "Dwarven Engineer", "keldagrim", -3, -3, 0xD8A88A, 0x6A4A2A);
-        b.items(s -> s.add("gold_helmet", "Gold helmet", Kind.ARMOUR, "full_helm", 0xE0C040).value(1).stack(1)
-                .equipment(EquipmentDef.armour(EquipmentDef.Slot.HEAD, new EquipmentStats(0, 0, 0, 0, 0, 3, 4, 2, 0, 2, 0, 0, 0, 0), 1))
-                .examine("A gold helmet. Needed to mine the Arzinian mine's gold."));
+        // The gold helmet itself is in CommonItems (the systems module's anvil recipe smiths more after the quest).
         b.item("arzinian_schematic", "Schematic", "note", 0xD8C8A0, "A dwarven cannon schematic for firing a dwarf into a rock.");
         b.boss(BossDef.of("quest_arzinian_avatar", "Arzinian Avatar").level(150).stats(130, 100, 100, 100, 100, 100).speed(4)
                 .attack(AttackDef.of("strength", AttackType.CRUSH, 18, 3, 4))

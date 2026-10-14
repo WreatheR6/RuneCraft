@@ -1536,6 +1536,13 @@ public final class MonsterDropsTable {
         // the slayer module's spiritual creatures are the Wilderness God Wars ones, so they get none.)
         // Ankou <- parsed:Ankou(75)
         add("ankou", rm(), d("black_robe", 1, 1, 100));
+        // Stronghold of Security sceptre pieces ("roughly 3%" each, Mod Ash; 1/33 approx) and the chaos dwarves' muddy key
+        // (7/128 on the wiki, about 1/18).
+        add("minotaur", rm(), d("right_skull_half", 1, 1, 33));
+        add("flesh_crawler", rm(), d("bottom_of_sceptre", 1, 1, 33));
+        add("catablepon", rm(), d("top_of_sceptre", 1, 1, 33));
+        add("ankou", rm(), d("left_skull_half", 1, 1, 33));
+        add("chaos_dwarf", rm(), d("muddy_key", 1, 1, 18));
         // Fire giant <- parsed:Fire giant(86)
         add("fire_giant", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
         // Mountain troll <- parsed:Mountain troll(69)

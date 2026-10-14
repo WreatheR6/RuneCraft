@@ -243,6 +243,45 @@ final class GatheringHooks {
         return Inv.count(player, "pay_dirt") + sacks.getInt(key) >= Motherlode.sackCapacity(sacks.getBoolean(key + ":upgraded"));
     }
 
+    /** Game tick each water wheel strut breaks (shared by every player, as in OSRS); -1 until first seen. */
+    private static final long[] STRUT_BREAKS = {-1, -1};
+
+    /**
+     * The water wheel struts. The struts are not separate objects here, so they are repaired at the hopper: holding a
+     * hammer repairs a broken strut instead of depositing. While both are broken the wheel stops and nothing is
+     * deposited. Returns true when the click was used up. // approx (OSRS: click the strut by the wheel)
+     */
+    private static boolean struts(ServerPlayerEntity player) {
+        long now = ActionManager.gameTick();
+        int broken = 0;
+        int first = -1;
+        for (int i = 0; i < Motherlode.STRUTS; i++) {
+            if (STRUT_BREAKS[i] < 0) {
+                STRUT_BREAKS[i] = Motherlode.strutBreaksAt(now, player.getRandom().nextInt(3));
+            }
+            if (now >= STRUT_BREAKS[i]) {
+                broken++;
+                first = first < 0 ? i : first;
+            }
+        }
+        if (broken > 0 && "hammer".equals(Inv.idOf(player.getMainHandStack()))) {
+            STRUT_BREAKS[first] = Motherlode.strutBreaksAt(now, player.getRandom().nextInt(3));
+            XpService.addTenths(player, Skill.SMITHING, Motherlode.strutRepairXpTenths(
+                    com.runecraft.player.Players.data(player).skills().currentLevel(Skill.SMITHING)));
+            Msg.action(player, "You hammer the broken strut back into place.");
+            com.runecraft.content.GameEvents.fireActivity(player, "strut_repair");
+            return true;
+        }
+        if (broken == Motherlode.STRUTS) {
+            Msg.game(player, "Both water wheel struts are broken, so the water has stopped. Repair one with a hammer (hold it and use the hopper).");
+            return true;
+        }
+        if (broken > 0) {
+            Msg.game(player, "One of the water wheel struts is broken. Hold a hammer and use the hopper to repair it.");
+        }
+        return false;
+    }
+
     private static void hopper(ServerPlayerEntity player, boolean upper) {
         NbtCompound sacks = SkillingState.get(player.getServer()).section("sacks");
         String key = player.getUuidAsString();
@@ -257,6 +296,9 @@ final class GatheringHooks {
         if (upper && !sacks.getBoolean(key + ":upper_hopper")) {
             Msg.game(player, "Prospector Percy wants " + Motherlode.UPPER_HOPPER_NUGGETS
                     + " golden nuggets before you can use this hopper (sneak-use it to pay).");
+            return;
+        }
+        if (struts(player)) {
             return;
         }
         int carried = Inv.count(player, "pay_dirt");

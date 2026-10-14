@@ -115,6 +115,62 @@ public final class CommonItems {
                 .examine("The lean, slimy corpse of a deceased giant snail.");
         items.add("fat_snail", "Fat snail", Kind.SIMPLE, "meat_raw", 0x8A7A5A).value(10)
                 .examine("The fat, slimy corpse of a deceased giant snail.");
+        diaryItems(items);
         CommonEquipment.add(items);
+    }
+
+    /** Team capes 1-50 (pink 1-10, yellow 11-20, blue 21-30, green 31-40, red 41-50), sold by the Wilderness cape merchants. */
+    public static final int[] TEAM_CAPE_RGB = {0xE070B0, 0xE0D040, 0x3A5AC0, 0x3A9A3A, 0xC03030};
+
+    public static String teamCape(int n) {
+        return "team_" + n + "_cape";
+    }
+
+    /**
+     * Items behind diary tasks that several modules hand out (OSRS Wiki values): the rusty sword (H.A.M. members, Tindel
+     * Marchant), the muddy key (chaos dwarves; the Lava Maze muddy chest), the crystal key (joined from the slayer module's
+     * key halves; the Taverley crystal chest), the Stronghold of Security sceptre pieces, the white 2h sword (Sir Vyvin) and
+     * the team capes (cape merchants).
+     */
+    private static void diaryItems(ItemSink items) {
+        items.add("rusty_sword", "Rusty sword", Kind.SIMPLE, "longsword", 0x8A5A3A).value(1).stack(1).weight(2.267)
+                .examine("A decent-enough weapon gone rusty.");
+        items.add("muddy_key", "Muddy key", Kind.SIMPLE, "key", 0x7A5A3A).value(80).stack(1)
+                .examine("It looks like the key to a chest (Used to open the muddy chest in the lava maze).");
+        items.add("crystal_key", "Crystal key", Kind.SIMPLE, "key", 0xB0E0E8).value(150).stack(1)
+                .examine("A mysterious key for a mysterious chest.");
+        items.add("left_skull_half", "Left skull half", Kind.SIMPLE, "skull", 0xE0D8C0).value(1).stack(1)
+                .examine("The left half of a strange skull.");
+        items.add("right_skull_half", "Right skull half", Kind.SIMPLE, "skull", 0xE0D8C0).value(1).stack(1)
+                .examine("The right half of a strange skull.");
+        items.add("strange_skull", "Strange skull", Kind.SIMPLE, "skull", 0xE0D8C0).value(1).stack(1)
+                .examine("A weird looking skull, it looks like there are holes for a staff.");
+        items.add("top_of_sceptre", "Top of sceptre", Kind.SIMPLE, "staff", 0xA08A50).value(1).stack(1)
+                .examine("The top half of a sceptre.");
+        items.add("bottom_of_sceptre", "Bottom of sceptre", Kind.SIMPLE, "staff", 0xA08A50).value(1).stack(1)
+                .examine("The bottom half of a sceptre.");
+        items.add("runed_sceptre", "Runed sceptre", Kind.SIMPLE, "staff", 0xA08A50).value(1).stack(1)
+                .examine("A sceptre covered in runes, it looks like a skull should fit on top.");
+        items.add("skull_sceptre", "Skull sceptre", Kind.STAFF, "staff_orb", 0xE0D8C0).value(1).stack(1).weight(1.814)
+                .equipment(new EquipmentDef(EquipmentDef.Slot.WEAPON, new EquipmentStats(0, -1, 7, 10, 0, 2, 3, 1, 4, 0, 3, 0, 0, 0),
+                        Map.of(), 5, AttackType.CRUSH, EquipmentDef.WeaponClass.STAFF))
+                .examine("A fragile magical Sceptre.");
+        items.add("white_2h_sword", "White 2h sword", Kind.MELEE_WEAPON, "2h_sword", 0xE8E8F0).value(3840).stack(1).tier("black")
+                .equipment(new EquipmentDef(EquipmentDef.Slot.WEAPON, new EquipmentStats(-4, 27, 21, -4, 0, 0, 0, 0, 0, -1, 26, 0, 0, 1),
+                        Map.of(Skill.ATTACK, 10), 7, AttackType.SLASH, EquipmentDef.WeaponClass.MELEE))
+                .examine("A two handed sword, favoured by the White Knights.");
+        // Gold helmet (Between a Rock...; 3 gold bars at an anvil, 50 Smithing) and dwarven helmet (Grim Tales reward).
+        items.add("gold_helmet", "Gold helmet", Kind.ARMOUR, "full_helm", 0xE0C040).value(1).stack(1).weight(31.751)
+                .equipment(EquipmentDef.armour(EquipmentDef.Slot.HEAD, new EquipmentStats(0, 0, 0, 0, 0, 0, 10, 20, 0, 10, 0, 0, 0, 0), 30))
+                .examine("A gold helmet. Needed to mine the Arzinian mine's gold.");
+        items.add("dwarven_helmet", "Dwarven helmet", Kind.ARMOUR, "full_helm", 0x8A6A3A).value(5000).stack(1)
+                .equipment(EquipmentDef.armour(EquipmentDef.Slot.HEAD, new EquipmentStats(0, 0, 6, -2, -2, 27, 28, 31, 5, 24, 0, 0, 0, 0), 50))
+                .examine("A sturdy dwarven helmet.");
+        for (int n = 1; n <= 50; n++) {
+            items.add(teamCape(n), "Team-" + n + " cape", Kind.SIMPLE, "cape", TEAM_CAPE_RGB[(n - 1) / 10]).value(50).stack(1)
+                    .equipment(new EquipmentDef(EquipmentDef.Slot.HEAD, new EquipmentStats(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0),
+                            Map.of(), 0, AttackType.CRUSH, EquipmentDef.WeaponClass.NONE))
+                    .examine("Ooohhh look at the pretty colours...");
+        }
     }
 }

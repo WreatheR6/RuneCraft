@@ -167,6 +167,14 @@ public final class Jewellery {
         wornExternal("mystic_gloves", Slot.HANDS, s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0));
         wornExternal("mystic_gloves_dusk", Slot.HANDS, s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0));
         wornExternal("black_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0));
+        // Team capes 1-50 (CommonItems): the same bonuses as the plain coloured capes.
+        for (int n = 1; n <= 50; n++) {
+            wornExternal(com.runecraft.osrs.content.CommonItems.teamCape(n), Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0));
+        }
+        // Camulet (quests module, Enakhra's Lament): an amulet that teleports to Enakhra's Temple (per-stack charges:
+        // Charges "camulet").
+        WORN.put("camulet", new Worn("camulet", "Camulet", Slot.NECK, ref("camulet", NONE), Perk.TELEPORT_ONLY, null, -1,
+                Teleports.CAMULET, false));
         wornExternal("pirates_hook", Slot.HANDS, s(0, 0, 0, 0, 0, 1, 5, 3, 0, 0, 0, 0, 0, 0)); // item defined by the minigames module
         wornExternal("salve_amulet", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3));
         wornExternal("salve_amulet_e", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3));

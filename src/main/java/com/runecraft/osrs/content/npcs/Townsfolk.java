@@ -360,5 +360,16 @@ public final class Townsfolk {
         EXTRA_TRADERS.put("candle_maker", "candle_shop");
         EXTRA_TRADERS.put("zambo", "karamja_spirits_bar");
         EXTRA_TRADERS.put("solihib", "solihibs_food_stall");
+        EXTRA_TRADERS.put("sir_vyvin", "white_knight_armoury");
+        // The Warrens are under Port Piscarilius (not carved): the shopkeeper stands by the entrance. Keldagrim's stonemason
+        // stands in RuneCraft's surface Keldagrim. // approx
+        keeper("npc_warrens_shopkeeper", "Shop keeper", "Port Piscarilius", 1813, 3744, "warrens_general_store",
+                look(SKIN, 0x5A6A3A, 0x4A3A2A, 0x3A2A1A));
+        keeper("npc_keldagrim_stonemason", "Stonemason", "Keldagrim", 2740, 3712, "keldagrim_stonemason",
+                look(SKIN, 0x6A4A2A, 0x4A3A2A, 0x8A5A2A));
+        for (String[] m : Shops.CAPE_MERCHANTS) {
+            keeper("npc_cape_merchant_" + m[0], m[1], "Wilderness", Integer.parseInt(m[3]), Integer.parseInt(m[4]), "cape_merchant_" + m[0],
+                    look(SKIN, com.runecraft.osrs.content.CommonItems.TEAM_CAPE_RGB[Integer.parseInt(m[2]) % 5], 0x4A3A2A, 0x3A2A1A));
+        }
     }
 }

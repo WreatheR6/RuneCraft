@@ -170,6 +170,7 @@ public final class EquipmentBonuses {
         put("black_warhammer", 6, -4, -4, 22, -4, 0,  0, 0, 0, 0, 0,  22, 0, 0, 0);
         put("black_battleaxe", 6, -2, 20, 15, 0, 0,  0, 0, 0, 0, -1,  24, 0, 0, 0);
         twoH("black_2h_sword", 7, -4, 27, 21, -4, 0,  0, 0, 0, 0, -1,  26, 0, 0, 0);
+        twoH("white_2h_sword", 7, -4, 27, 21, -4, 0,  0, 0, 0, 0, -1,  26, 0, 0, 1);
         put("black_full_helm", 0, 0, 0, 0, -6, -3,  12, 13, 10, -1, 12,  0, 0, 0, 0);
         put("black_platebody", 0, 0, 0, 0, -30, -15,  41, 40, 30, -6, 40,  0, 0, 0, 0);
         put("black_platelegs", 0, 0, 0, 0, -21, -11,  21, 20, 19, -4, 20,  0, 0, 0, 0);
