@@ -147,6 +147,18 @@ public final class MinigamesHooks implements ModuleHooks {
         });
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) ->
                 !(entity instanceof ServerPlayerEntity player) || MinigameManager.allowDeath(player));
+        // Ectoplasmator (Soul Wars): Prayer XP of 20% of a spectral creature's hitpoints on each kill while carried.
+        com.runecraft.content.GameEvents.onKill((player, entity, stats) -> {
+            if (stats != null && stats.attributes().contains("spectral")
+                    && com.runecraft.util.Inv.has(player, "ectoplasmator", 1)) {
+                int xp = stats.hitpoints() / 5;
+                if (xp > 0) {
+                    com.runecraft.skill.XpService.add(player, com.runecraft.osrs.Skill.PRAYER, xp);
+                }
+            }
+        });
+        // Nightmare Zone absorption soaks up monster damage before it lands.
+        com.runecraft.combat.CombatHooks.addIncomingModifier(com.runecraft.content.minigames.games.NightmareZoneSession::absorb);
         ServerTickEvents.END_SERVER_TICK.register(MinigameManager::serverTick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             MinigameManager.onDisconnect(handler.getPlayer());

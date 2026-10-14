@@ -133,7 +133,7 @@ final class ItemCombatChecks {
         // Food: catalog food plus the module's pies, pizzas and cakes eaten in bites.
         Map<String, Integer> foods = new LinkedHashMap<>();
         for (ItemDef d : ItemCatalog.all()) {
-            if (d.kind() == ItemDef.Kind.FOOD) {
+            if (d.kind() == ItemDef.Kind.FOOD && !MinigameRewardChecks.OWN.contains(d.id())) {
                 foods.put(d.id(), d.heal());
             }
         }
@@ -144,7 +144,7 @@ final class ItemCombatChecks {
         // Potions: catalog potions (brewing kegs excluded: they pour pints) plus the module's potions and mixes.
         Set<String> potions = new LinkedHashSet<>();
         for (ItemDef d : ItemCatalog.all()) {
-            if (d.kind() == ItemDef.Kind.POTION && !d.id().endsWith("_keg")) {
+            if (d.kind() == ItemDef.Kind.POTION && !d.id().endsWith("_keg") && !MinigameRewardChecks.OWN.contains(d.id())) {
                 potions.add(d.id());
             }
         }

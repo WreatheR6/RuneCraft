@@ -164,6 +164,10 @@ public class BarbarianAssaultSession extends MinigameSession {
             int honour = giveHonour(p, r, BarbarianAssault.waveHonour(r, wave, escaped));
             Msg.game(p, "Wave " + wave + " complete! You earn " + honour + " " + roleName(r) + " honour points"
                     + (escaped > 0 ? " (" + escaped + " runner" + (escaped > 1 ? "s" : "") + " escaped)." : "."));
+            // The round's progress (the next wave) unlocks low (wave 3) and medium (wave 6) gambles.
+            if (waveReached(p) < wave + 1) {
+                MinigameData.of(p).setStat(p.getUuid(), WAVE_STAT, wave + 1);
+            }
             GameEvents.fireActivity(p, "ba_wave");
         }
         escaped = 0;
@@ -270,11 +274,9 @@ public class BarbarianAssaultSession extends MinigameSession {
                 addPoints(p, com.runecraft.osrs.content.minigames.MinigameCurrencies.BA_QUEEN, 1);
             }
             Msg.game(p, "Congratulations! You've defeated the Penance Queen. Queen kills: " + kc + ".");
-            if (random.nextInt(BarbarianAssault.PET_CHANCE) == 0) {
-                reward(p, "pet_penance_queen", 1);
-                p.getServer().getPlayerManager().broadcast(Text.literal(p.getName().getString()
-                        + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
-            }
+            // The pet penance queen comes from high gambles (BaGambles), not from the kill itself (OSRS Wiki).
+            // Finishing wave 10 resets the round, so low and medium gambles need new waves.
+            MinigameData.of(p).setStat(p.getUuid(), WAVE_STAT, 0);
             Inv.remove(p, "penance_egg", 1000);
         }
     }
@@ -282,6 +284,36 @@ public class BarbarianAssaultSession extends MinigameSession {
     /** A player's level (1-5) in a role, bought with that role's honour points. */
     public static int roleLevel(ServerPlayerEntity p, int role) {
         return Math.max(1, MinigameData.of(p).stat(p.getUuid(), "ba_level_" + BarbarianAssault.ROLES[role]));
+    }
+
+    /** Stat key: the wave a player has reached in the current round (0 after the queen dies). */
+    public static final String WAVE_STAT = "ba_wave_reached";
+
+    /** The wave a player has reached in the current round (gates low and medium gambles). */
+    public static int waveReached(ServerPlayerEntity p) {
+        return MinigameData.of(p).stat(p.getUuid(), WAVE_STAT);
+    }
+
+    /** Runs one gamble whose cost the reward shop has already taken. */
+    public static void gamble(ServerPlayerEntity p, com.runecraft.osrs.content.minigames.BaGambles.Tier tier) {
+        if (tier == null) {
+            return;
+        }
+        java.util.Random rng = new java.util.Random(p.getRandom().nextLong());
+        for (com.runecraft.osrs.content.minigames.BaGambles.Prize prize : com.runecraft.osrs.content.minigames.BaGambles.roll(tier,
+                rng::nextDouble, item -> com.runecraft.osrs.ItemCatalog.get(item) != null)) {
+            if (prize.noted()) {
+                com.runecraft.content.minigames.MinigameItemUse.giveNoted(p, prize.item(), prize.amount());
+            } else {
+                reward(p, prize.item(), prize.amount());
+            }
+            if (prize.item().equals("pet_penance_queen")) {
+                p.getServer().getPlayerManager().broadcast(Text.literal(p.getName().getString()
+                        + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
+            }
+        }
+        MinigameData.of(p).incrementStat(p.getUuid(), "ba_gambles_" + tier.name().toLowerCase(java.util.Locale.ROOT));
+        Msg.game(p, "Commander Connad hands you the prize of your " + tier.displayName().toLowerCase(java.util.Locale.ROOT) + ".");
     }
 
     /** Every role's level. */

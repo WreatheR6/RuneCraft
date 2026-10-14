@@ -97,6 +97,7 @@ final class GameplayChecks {
         for (Minigame m : Minigame.values()) {
             checks.add(new SelfTest.Check("minigame:" + m.id(), () -> g.minigame(m)));
         }
+        checks.addAll(MinigameRewardChecks.all(context));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }
