@@ -77,6 +77,14 @@ public final class TownMonsters {
         SPAWNS.add(new TownSpawn(creature, x, y, count, radius));
     }
 
+    private static void snail(String id, String name, int level, int hp, int def, int ranged, int maxHit, int speed, String shell,
+                              String meat) {
+        add(MonsterDef.of(id, name).level(level).stats(hp, 1, 1, def, 1, ranged).speed(speed).defenceBonus(0, 0, 0, 0, 0)
+                .attack(AttackDef.of("acid spit", AttackType.RANGED, maxHit, 6, 10))
+                .drops(Drop.always(shell), Drop.always(meat)).model("rockslug").size(0.9f, 0.7f, 0.8f)
+                .spawn(Region.MORYTANIA, 1, 1, 3));
+    }
+
     /** The "Man" drop table (shared by Man and Woman). */
     private static Drop[] manDrops() {
         return new Drop[]{Drop.always("bones"), Drop.of("coins", 3, 3, 4), Drop.of("coins", 5, 25, 12),
@@ -260,6 +268,33 @@ public final class TownMonsters {
                 List.of(Loot.of("tokkul", 3, 14, 70), Loot.of("uncut_sapphire", 1, 1, 6), Loot.of("uncut_emerald", 1, 1, 4),
                         Loot.of("uncut_ruby", 1, 1, 2), Loot.of("uncut_diamond", 1, 1, 1))));
 
+        // ------------------------------------------------------------- wildlife the diaries ask for
+        // Stats from the OSRS Wiki DPS calculator (weirdgloop/osrs-dps-calc monsters.json), drops from osrsreboxed-db,
+        // homes from the cache spawn list (mejrs/data_osrs). None of them is aggressive except the snails.
+        add(MonsterDef.of("vulture", "Vulture").level(31).stats(10, 40, 40, 10, 1, 1).speed(4).defenceBonus(0, 0, 0, 0, 0)
+                .attack(AttackDef.of("peck", AttackType.CRUSH, 5, 2.5, 10)).passive()
+                .drops(Drop.always("bones")).size(1.4f, 1.2f, 1.0f)
+                .spawn(Region.KHARIDIAN_DESERT, 1, 1, 3));
+        add(MonsterDef.of("duck", "Duck").level(1).stats(3, 1, 1, 1, 1, 1).speed(4).defenceBonus(-42, -42, -42, -42, -42)
+                .attackBonus(-47, 0, 0).attack(AttackDef.of("peck", AttackType.STAB, 0, 2.0, 10)).passive()
+                .drops(Drop.always("bones")).size(0.6f, 0.6f, 1.0f)
+                .spawn(Region.ASGARNIA, 1, 1, 2).spawn(Region.MISTHALIN, 1, 1, 2));
+        add(MonsterDef.of("terrorbird", "Terrorbird").level(28).stats(34, 23, 23, 19, 1, 1).speed(4).defenceBonus(0, 0, 0, 0, 0)
+                .attack(AttackDef.of("peck", AttackType.STAB, 3, 2.5, 10)).passive()
+                .drops(Drop.always("bones")).size(1.2f, 2.2f, 1.0f)
+                .spawn(Region.KANDARIN, 1, 1, 3));
+        // Mort Myre and Haunted Woods snails (round and pointed shells): they spit acid at range and always drop their
+        // shell and their corpse.
+        snail("myre_blamish_snail", "Myre Blamish Snail", 9, 8, 22, 5, 2, 4, "blamish_myre_shell_round", "thin_snail");
+        snail("myre_blamish_snail_pointed", "Myre Blamish Snail", 10, 13, 12, 8, 2, 4, "blamish_myre_shell_pointed", "thin_snail");
+        snail("ochre_blamish_snail", "Ochre Blamish Snail", 10, 10, 18, 7, 2, 6, "blamish_ochre_shell_round", "thin_snail");
+        snail("ochre_blamish_snail_pointed", "Ochre Blamish Snail", 15, 20, 25, 8, 2, 6, "blamish_ochre_shell_pointed", "thin_snail");
+        snail("blood_blamish_snail", "Blood Blamish Snail", 20, 13, 45, 12, 2, 6, "blamish_red_shell_round", "fat_snail");
+        snail("blood_blamish_snail_pointed", "Blood Blamish Snail", 20, 10, 30, 21, 3, 6, "blamish_red_shell_pointed", "fat_snail");
+        snail("bruise_blamish_snail", "Bruise Blamish Snail", 20, 12, 40, 15, 2, 6, "blamish_blue_shell_round", "fat_snail");
+        snail("bruise_blamish_snail_pointed", "Bruise Blamish Snail", 20, 15, 27, 20, 3, 6, "blamish_blue_shell_pointed", "fat_snail");
+        snail("bark_blamish_snail", "Bark Blamish Snail", 15, 22, 20, 10, 2, 6, "blamish_bark_shell", "lean_snail");
+
         // ------------------------------------------------------------- where they live (OSRS tiles)
         // Built-in creatures: man, guard, al_kharid_warrior, barbarian, dark_wizard.
         spawn("man", 3222, 3218, 2, 8);         // Lumbridge
@@ -296,6 +331,36 @@ public final class TownMonsters {
         spawn("gnome_guard", 2461, 3385, 2, 6); // Stronghold gate
         spawn("desert_bandit", 3171, 2976, 5, 8); // Bandit Camp
         spawn("pirate", 2790, 3175, 3, 8);      // Brimhaven
+        // Wildlife at their cache spawn clusters.
+        spawn("vulture", 3335, 2863, 3, 4);     // east of Pollnivneach's southern road (cache: 3333-3338, 2860-2864)
+        spawn("vulture", 3298, 2864, 3, 4);
+        spawn("vulture", 3217, 2842, 3, 4);
+        spawn("duck", 2980, 3357, 4, 3);        // Falador Park ponds (cache: 2977-2992, 3356-3384)
+        spawn("duck", 2991, 3382, 4, 3);
+        spawn("duck", 3168, 3351, 8, 10);       // the Champions' Guild pond (cache: 3152-3177, 3345-3357)
+        spawn("duck", 3240, 3236, 6, 8);        // the River Lum by Lumbridge Castle
+        spawn("terrorbird", 2378, 3434, 9, 6);  // the Gnome Stronghold's terrorbird enclosure
+        spawn("terrorbird", 2501, 3140, 2, 3);  // Tree Gnome Village
+        spawn("myre_blamish_snail", 3436, 3294, 8, 12);         // Mort Myre Swamp (cache: 3421-3448, 3284-3308)
+        spawn("myre_blamish_snail_pointed", 3436, 3294, 7, 12);
+        spawn("myre_blamish_snail", 3418, 3368, 5, 10);
+        spawn("myre_blamish_snail_pointed", 3418, 3368, 4, 10);
+        spawn("myre_blamish_snail", 3466, 3422, 4, 10);
+        spawn("myre_blamish_snail_pointed", 3466, 3422, 4, 10);
+        spawn("myre_blamish_snail", 3502, 3389, 8, 12);
+        spawn("ochre_blamish_snail", 3466, 3409, 3, 8);
+        spawn("ochre_blamish_snail_pointed", 3466, 3409, 2, 8);
+        spawn("ochre_blamish_snail", 3421, 3380, 2, 10);
+        spawn("ochre_blamish_snail_pointed", 3472, 3356, 2, 8);
+        spawn("blood_blamish_snail", 3625, 3429, 4, 10);        // south of Port Phasmatys
+        spawn("blood_blamish_snail_pointed", 3636, 3446, 2, 4);
+        spawn("blood_blamish_snail_pointed", 3528, 3435, 2, 8); // the Haunted Woods
+        spawn("bruise_blamish_snail", 3632, 3436, 2, 6);
+        spawn("bruise_blamish_snail_pointed", 3626, 3454, 2, 6);
+        spawn("bruise_blamish_snail", 3486, 3440, 1, 3);
+        spawn("bruise_blamish_snail_pointed", 3486, 3440, 1, 3);
+        spawn("bark_blamish_snail", 3502, 3426, 4, 8);
+        spawn("bark_blamish_snail", 3433, 3311, 3, 5);
         // Prifddinas guards at their cache tiles (plane 0); the south gate's pair stands in this city's south gate,
         // 14 tiles north of the real one (approx).
         spawn("prifddinas_guard", 3264, 6040, 2, 2);

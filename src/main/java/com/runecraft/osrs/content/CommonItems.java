@@ -94,6 +94,22 @@ public final class CommonItems {
         items.add("oyster_pearls", "Oyster pearls", Kind.SIMPLE, "bead", 0xF0F0E8).value(1400)
                 .examine("I could work wonders with a chisel on these pearls.");
         items.add("unicorn_horn", "Unicorn horn", Kind.SIMPLE, "tail", 0xF0F0F0).value(20).examine("This horn has restorative properties.");
+        // Mort Myre snail drops (npcs module): shells chiselled into snelms and snail corpses cooked (skilling).
+        String[][] shells = {{"myre", "7A7A3A"}, {"ochre", "C0902A"}, {"red", "8A1A1A"}, {"blue", "3A4A8A"}};
+        for (String[] sh : shells) {
+            for (String form : new String[]{"round", "pointed"}) {
+                items.add("blamish_" + sh[0] + "_shell_" + form, "Blamish " + sh[0] + " shell (" + form + ")", Kind.SIMPLE, "shell",
+                        Integer.parseInt(sh[1], 16)).value(150).examine("A " + form + " snail shell. I could make a snelm from it.");
+            }
+        }
+        items.add("blamish_bark_shell", "Blamish bark shell", Kind.SIMPLE, "shell", 0x5A4A3A).value(150)
+                .examine("A snail shell. I could make a snelm from it.");
+        items.add("thin_snail", "Thin snail", Kind.SIMPLE, "meat_raw", 0x8A7A5A).value(5)
+                .examine("The thin, slimy corpse of a deceased giant snail.");
+        items.add("lean_snail", "Lean snail", Kind.SIMPLE, "meat_raw", 0x8A7A5A).value(8)
+                .examine("The lean, slimy corpse of a deceased giant snail.");
+        items.add("fat_snail", "Fat snail", Kind.SIMPLE, "meat_raw", 0x8A7A5A).value(10)
+                .examine("The fat, slimy corpse of a deceased giant snail.");
         CommonEquipment.add(items);
     }
 }

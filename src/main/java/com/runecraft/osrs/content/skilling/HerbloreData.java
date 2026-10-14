@@ -294,6 +294,13 @@ public final class HerbloreData extends SkillingPart {
         simple(s, "weapon_poison_plus_plus_unf", "Weapon poison(++) (unf)", "potion_unf", 0x1A3A0A, 60);
         simple(s, "cadantine_blood_potion_unf", "Cadantine blood potion (unf)", "potion_unf", 0x6A1A2A, 80);
         simple(s, "guthix_rest_unf", "Herbal tea mix", "cup", 0xA0C080, 10);
+        // Guthix balance (In Aid of the Myreque): a restore potion with garlic, finished with silver dust. Its use against
+        // frozen vampyre juveniles isn't modelled; it is a plain potion here.
+        simple(s, "guthix_balance_unf", "Guthix balance (unf)", "potion_unf", 0xD08090, 100)
+                .examine("I need another ingredient to finish this Guthix balance potion.");
+        potion(s, "guthix_balance", "Guthix balance", 0xE0A0B0, 200)
+                .examine("A potion of harralander, red spiders eggs, garlic and silver dust.");
+        simple(s, "silver_dust", "Silver dust", "secondary", 0xD0D0D8, 1).examine("Finely ground silver.");
         simple(s, "magic_essence_unf", "Magic essence (unf)", "potion_unf", 0xE0D060, 75)
                 .examine("I need another ingredient to finish this magic essence potion.");
         simple(s, "rogues_purse_potion_unf", "Rogue's purse potion (unf)", "potion_unf", 0xC0A0D0, 5);
@@ -353,6 +360,13 @@ public final class HerbloreData extends SkillingPart {
                 .in("vial_of_blood", 1).out("cadantine_blood_potion_unf", 1).ticks(1).build());
         out.accept(r("mix_guthix_rest_tea", H, "Herbal tea mix", Skill.HERBLORE, 18, 0).in("cup_of_hot_water", 1).in("guam_leaf", 2)
                 .in("marrentill", 1).out("guthix_rest_unf", 1).ticks(2).build());
+        // Guthix balance: garlic into a restore potion, then silver dust (22 Herblore, 25 XP).
+        out.accept(r("unf_guthix_balance", H, "Guthix balance (unf)", Skill.HERBLORE, 22, 0).in("restore_potion", 1).in("garlic", 1)
+                .out("guthix_balance_unf", 1).ticks(2).build());
+        out.accept(r("mix_guthix_balance", H, "Guthix balance", Skill.HERBLORE, 22, 25.0).in("guthix_balance_unf", 1)
+                .in("silver_dust", 1).out("guthix_balance", 1).ticks(2).build());
+        // approx: OSRS grinds silver bars in the Ectofuntus bone grinder.
+        grind(out, "silver_bar", "silver_dust");
         // Finished potions
         mix(out, "guthix_rest", 18, 59.0, "guthix_rest_unf", "harralander");
         mix(out, "compost_potion", 22, 60.0, "harralander_potion_unf", "volcanic_ash");

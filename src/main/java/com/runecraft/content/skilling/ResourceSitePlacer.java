@@ -113,7 +113,8 @@ final class ResourceSitePlacer {
                 if (d >= bestDist || !world.isChunkLoaded(x >> 4, z >> 4)) {
                     continue;
                 }
-                BlockPos p = t.site().kind() == ResourceSites.Kind.FISHING ? shoreWater(world, x, z) : openGround(world, x, z, t.site().kind());
+                BlockPos p = t.site().kind() == ResourceSites.Kind.FISHING ? shoreWater(world, x, z, t.site().block().startsWith("lava"))
+                        : openGround(world, x, z, t.site().kind());
                 if (p != null) {
                     best = p;
                     bestDist = d;
@@ -149,11 +150,14 @@ final class ResourceSitePlacer {
         return false;
     }
 
-    /** Still shoreline water with air above (the surface of the sea, a river or a lake), or null. */
-    private static BlockPos shoreWater(ServerWorld world, int x, int z) {
+    /**
+     * Still shoreline water with air above (the surface of the sea, a river or a lake), or null. Lava eel spots
+     * ({@code lava}) take the shore of a still lava pool instead.
+     */
+    private static BlockPos shoreWater(ServerWorld world, int x, int z, boolean lava) {
         BlockPos p = new BlockPos(x, world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z) - 1, z);
         BlockState s = world.getBlockState(p);
-        if (!s.isOf(Blocks.WATER) || !s.getFluidState().isStill() || !world.getBlockState(p.up()).isAir()) {
+        if (!s.isOf(lava ? Blocks.LAVA : Blocks.WATER) || !s.getFluidState().isStill() || !world.getBlockState(p.up()).isAir()) {
             return null;
         }
         for (Direction d : Direction.Type.HORIZONTAL) {

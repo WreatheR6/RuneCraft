@@ -59,6 +59,8 @@ public final class ResourceSites {
 
     public static final List<Site> SITES = List.of(
             // ---------------------------------------------------------------- fishing
+            // The Lava Maze's lava eel spot (cache tile 3070, 3839), placed on the lava channel next to it.
+            fish("lava_maze_lava_eels", "Lava Maze (lava eels)", "lava_eel_fishing_spot", Region.WILDERNESS, 3070, 3839),
             fish("catherby_net_bait", "Catherby shore (net/bait)", NET_BAIT, Region.KANDARIN, 2836, 3431, 2838, 3431),
             fish("catherby_cage_harpoon", "Catherby shore (cage/harpoon)", CAGE_HARPOON, Region.KANDARIN, 2844, 3429, 2853, 3423),
             fish("catherby_shark", "Catherby shore (big net/harpoon)", SHARK, Region.KANDARIN, 2846, 3429, 2855, 3423, 2859, 3426),

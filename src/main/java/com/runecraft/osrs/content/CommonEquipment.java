@@ -84,6 +84,19 @@ public final class CommonEquipment {
         items.add("mithril_hasta", "Mithril hasta", Kind.MELEE_WEAPON, "hasta", 0x4A5A9C).value(845).stack(1).tier("mithril")
                 .equipment(weapon(s(17, 17, 17, 0, 0, -5, -5, -4, 0, -5, 18, 0, 0, 0), 4, AttackType.STAB, WeaponClass.MELEE, Skill.ATTACK, 20))
                 .examine("A mithril-tipped, one-handed hasta.");
+        // The other barbarian-smithed hastae (Otto's Grotto, Barbarian Training); bonuses from the wiki DPS calculator.
+        items.add("iron_hasta", "Iron hasta", Kind.MELEE_WEAPON, "hasta", 0x8A8A8E).value(91).stack(1).tier("iron")
+                .equipment(weapon(s(8, 8, 8, 0, 0, -2, -2, -2, 0, -2, 10, 0, 0, 0), 4, AttackType.STAB, WeaponClass.MELEE))
+                .examine("An iron-tipped, one-handed hasta.");
+        items.add("steel_hasta", "Steel hasta", Kind.MELEE_WEAPON, "hasta", 0xB8B8C0).value(325).stack(1).tier("steel")
+                .equipment(weapon(s(12, 12, 12, 0, 0, -3, -3, -3, 0, -3, 12, 0, 0, 0), 4, AttackType.STAB, WeaponClass.MELEE, Skill.ATTACK, 5))
+                .examine("A steel-tipped, one-handed hasta.");
+        items.add("adamant_hasta", "Adamant hasta", Kind.MELEE_WEAPON, "hasta", 0x4C7A4C).value(2080).stack(1).tier("adamant")
+                .equipment(weapon(s(24, 24, 24, 0, 0, -6, -7, -5, 0, -6, 28, 0, 0, 0), 4, AttackType.STAB, WeaponClass.MELEE, Skill.ATTACK, 30))
+                .examine("An adamant-tipped, one-handed hasta.");
+        items.add("rune_hasta", "Rune hasta", Kind.MELEE_WEAPON, "hasta", 0x4FB8C8).value(20800).stack(1).tier("rune")
+                .equipment(weapon(s(36, 36, 36, 0, 0, -10, -10, -9, 0, -10, 42, 0, 0, 0), 4, AttackType.STAB, WeaponClass.MELEE, Skill.ATTACK, 40))
+                .examine("A rune-tipped, one-handed hasta.");
         items.add("bronze_halberd", "Bronze halberd", Kind.MELEE_WEAPON, "halberd", 0xB08D57).value(80).stack(1).tier("bronze")
                 .equipment(weapon(s(7, 8, 0, -4, 0, -1, 1, 2, 0, 0, 8, 0, 0, 0), 7, AttackType.SLASH, WeaponClass.MELEE))
                 .examine("A bronze halberd.");

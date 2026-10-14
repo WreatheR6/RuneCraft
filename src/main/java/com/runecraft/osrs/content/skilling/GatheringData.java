@@ -29,7 +29,9 @@ public final class GatheringData extends SkillingPart {
     public static final List<ModTree> TREES = List.of(
             new ModTree("achey_tree", "Achey tree", 1, 25.0, "achey_tree_logs", 64, 200, 1.0, 60, 1, 40.0, 0x8A5A3A),
             new ModTree("arctic_pine_tree", "Arctic pine", 54, 40.0, "arctic_pine_logs", 6, 30, 0.125, 34, 42, 125.0, 0x4A5A3A),
-            new ModTree("sulliuscep", "Sulliuscep", 65, 127.0, "sulliuscep_cap", 4, 20, 0.25, 50, 0, 0, 0xB08A5A));
+            new ModTree("sulliuscep", "Sulliuscep", 65, 127.0, "sulliuscep_cap", 4, 20, 0.25, 50, 0, 0, 0xB08A5A),
+            // Hollow tree (Morytania): bark at 45 Woodcutting for 82.5 XP; maple-like chop chances (approx).
+            new ModTree("hollow_tree", "Hollow tree", 45, 82.5, "bark", 8, 25, 0.125, 45, 0, 0, 0x5A4A3A));
 
     public static ModTree tree(String blockId) {
         for (ModTree t : TREES) {
@@ -114,6 +116,7 @@ public final class GatheringData extends SkillingPart {
         simple(s, "achey_tree_logs", "Achey tree logs", "log", 0x8A5A3A, 4);
         simple(s, "arctic_pine_logs", "Arctic pine logs", "log", 0x4A5A3A, 30);
         simple(s, "sulliuscep_cap", "Sulliuscep cap", "produce", 0xB08A5A, 50);
+        simple(s, "bark", "Bark", "bark", 0x5A4A3A, 1).examine("Bark from a hollow tree.");
         simple(s, "split_log", "Split log", "log", 0x4A5A3A, 15);
         tool(s, "big_fishing_net", "Big fishing net", "net", 0xB0A080, 20);
         tool(s, "barbarian_rod", "Barbarian rod", "rod", 0x7A5A3A, 5);
@@ -199,8 +202,14 @@ public final class GatheringData extends SkillingPart {
                         List.of("arctic_pine_tree", "arctic_pine_tree", "arctic_pine_tree")),
                 PlaceDef.of("fossil_island_sulliuscep", "Sulliuscep grove", 3678, 3733, PlaceDef.Style.CAMP,
                         List.of("sulliuscep", "sulliuscep")),
-                PlaceDef.of("otto_grotto", "Otto's Grotto", 2500, 3497, PlaceDef.Style.CAMP,
+                // Otto's Grotto also has the anvil where barbarian spears and hastae are smithed.
+                new PlaceDef("otto_grotto", "Otto's Grotto", 2500, 3497, PlaceDef.Style.CAMP, List.of(com.runecraft.osrs.Station.ANVIL),
                         List.of("barbarian_fishing_spot", "barbarian_fishing_spot")),
+                // Hollow trees (bark): east of Canifis in the Haunted Woods and south of Port Phasmatys (wiki object tiles).
+                PlaceDef.of("haunted_woods_hollow_trees", "Hollow trees", 3553, 3500, PlaceDef.Style.CAMP,
+                        List.of("hollow_tree", "hollow_tree", "hollow_tree")),
+                PlaceDef.of("phasmatys_hollow_trees", "Hollow trees", 3620, 3430, PlaceDef.Style.CAMP,
+                        List.of("hollow_tree", "hollow_tree", "hollow_tree")),
                 PlaceDef.of("fishing_guild_big_net", "Fishing Guild pier", 2604, 3420, PlaceDef.Style.TOWN,
                         List.of("big_net_fishing_spot", "big_net_fishing_spot")),
                 PlaceDef.of("karamja_river_karambwanji", "Karambwanji spot", 2791, 3019, PlaceDef.Style.CAMP,
