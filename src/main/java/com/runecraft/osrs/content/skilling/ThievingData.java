@@ -189,6 +189,11 @@ public final class ThievingData extends SkillingPart {
      */
     public static final java.util.Map<String, int[]> PICKLOCK = java.util.Map.of(SOUL_CHEST, new int[]{-23, 153, 3, 179});
     public static final int TRAP_CHANCE = 6;
+    /**
+     * Where the Isle of Souls chest's trap throws the player: outside the dungeon's entrance (the dungeons module's hut at
+     * tile 2255, 2925; its door faces south). approx
+     */
+    public static final int[] SOUL_CHEST_TRAP_EXIT = {2255, 2921};
 
     /** Chance to open a container at a Thieving level (1 for containers that always open). */
     public static double openChance(String blockId, int thieving, boolean lockpick) {
@@ -377,10 +382,9 @@ public final class ThievingData extends SkillingPart {
                         List.of("magic_stall", "scimitar_stall")),
                 PlaceDef.of("lovakengj_ore_stall", "Lovakengj ore stall", 1490, 3770, PlaceDef.Style.TOWN, List.of("ore_stall")),
                 // The houses burgled in Stealing valuables (Lavinia's, Victor's and Caius'), approx.: one spot just west of the city walls, as the city structure fills the town.
-                // Isle of Souls: the dungeon chests by the dungeon entrance (2309, 2919 in OSRS) and the Dark Chest in the Crumbling
-                // Tower basement (2131, 2994). Approx: both on the surface and pulled inside the approximate island outline.
-                PlaceDef.of("isle_of_souls_chests", "Isle of Souls Dungeon chests", 2265, 2915, PlaceDef.Style.CAVE,
-                        List.of(SOUL_CHEST, SOUL_CHEST, SOUL_CHEST)),
+                // Isle of Souls: the dungeon chest stands on its OSRS tile inside the dungeons module's Isle of Souls Dungeon
+                // (round 17). The Dark Chest belongs in the Crumbling Tower basement (2131, 2994), which isn't built: approx,
+                // on the surface, pulled inside the approximate island outline.
                 PlaceDef.of("crumbling_tower_dark_chest", "Crumbling Tower", 2180, 2935, PlaceDef.Style.RUINS, List.of(DARK_CHEST)),
                 PlaceDef.of("civitas_houses", "Civitas houses", 1612, 3112, PlaceDef.Style.TOWN,
                         List.of("civitas_house_chest", "civitas_house_wardrobe", "civitas_jewellery_case")),

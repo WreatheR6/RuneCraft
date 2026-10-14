@@ -30,7 +30,19 @@ public final class AgilityRewards {
     public static final int AMYLASE_PACK_CRYSTALS = 100;
     public static final int VARLAMORE_RECOLOUR_TERMITES = 650;
 
+    /**
+     * The Wilderness course's walled yard (OSRS tiles, as built by the world module's structure: the outer walls at
+     * x 2990-3008, y 3916-3965, the dispenser lodge included). The fee is lost on leaving it (wiki: "lost every time a
+     * player dies or leaves the course"; logging out keeps it).
+     */
+    public static final int[] WILDERNESS_COURSE = {2990, 3916, 3008, 3965};
+
     private AgilityRewards() {
+    }
+
+    /** Whether an OSRS tile is inside the Wilderness course's walls. */
+    public static boolean inWildernessCourse(int x, int y) {
+        return x >= WILDERNESS_COURSE[0] && x <= WILDERNESS_COURSE[2] && y >= WILDERNESS_COURSE[1] && y <= WILDERNESS_COURSE[3];
     }
 
     /** Crystal shards given for a Prifddinas lap (approx.: one, as from the old portal). */
