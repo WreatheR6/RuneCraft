@@ -30,6 +30,8 @@ public final class MinigamesContent implements ContentModule {
         MinigameItems.add(items);
         LastManStanding.items(items);
         EmirsArena.items(items);
+        TaiBwoWannai.items(items);
+        VarrockMuseum.items(items);
     }
 
     @Override

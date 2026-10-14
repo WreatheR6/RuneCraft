@@ -1,7 +1,6 @@
 package com.runecraft.content.islands;
 
 import com.runecraft.content.BlockHooks;
-import com.runecraft.content.GameEvents;
 import com.runecraft.content.ModuleHooks;
 import com.runecraft.osrs.content.NpcDef;
 import com.runecraft.osrs.content.islands.IslandsBlocks;
@@ -37,7 +36,7 @@ public final class IslandsHooks implements ModuleHooks {
         BlockHooks.register(IslandsBlocks.APE_OBSTACLE, (player, pos, state) -> IslandsAgilityService.use(player, pos));
         BlockHooks.register(IslandsBlocks.KINGDOM_LEDGER, (player, pos, state) -> IslandsKingdomService.ledger(player));
         BlockHooks.register(IslandsBlocks.KINGDOM_WORKFORCE, (player, pos, state) -> IslandsKingdomService.workforce(player));
-        GameEvents.onXp((player, skill, tenths) -> IslandsKingdomService.onXp(player, skill));
+        IslandsKingdomService.register();
         IslandsCamps.register();
     }
 

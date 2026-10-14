@@ -205,6 +205,8 @@ public final class MinigameWorld {
 
     /** Shelves in the sorceress's house: free beer glasses for the sq'irkjuice. */
     public static final String SORCERESS_SHELVES = "sg_shelves";
+    /** The blackboard at the Barbarian Outpost: honour points, role levels and upgrades. */
+    public static final String BA_BLACKBOARD = "ba_blackboard";
 
     public static List<BlockDef> blocks() {
         List<BlockDef> list = new ArrayList<>();
@@ -228,6 +230,9 @@ public final class MinigameWorld {
         list.add(BlockDef.scripted("flamtaer_altar", "Sacred fire", 0xE08030, "fire_brazier"));
         list.add(BlockDef.scripted("razmire_general_store", "Razmire's general store", 0x8A6A3A, "crate"));
         list.add(BlockDef.scripted("razmire_builders_merchant", "Razmire's builders' merchant", 0x9A7A4A, "crate"));
+        list.add(BlockDef.scripted(BA_BLACKBOARD, "Blackboard (Barbarian Assault)", 0x2A3A2A, "notice_board"));
+        list.addAll(TaiBwoWannai.blocks());
+        list.addAll(VarrockMuseum.blocks());
         for (String[] b : ARENA_BLOCKS) {
             list.add(BlockDef.scripted(b[0], b[1], Integer.parseInt(b[2], 16), b[3]));
         }
@@ -255,6 +260,7 @@ public final class MinigameWorld {
         map.get(Minigame.SORCERESS_GARDEN.place()).add(SORCERESS_SHELVES);
         map.get(Minigame.SHADES_OF_MORTTON.place()).addAll(MORTTON_BLOCKS);
         map.get(Minigame.TZHAAR_KET_RAK.place()).add(KET_RAK_SCOREBOARD);
+        map.get(Minigame.BARBARIAN_ASSAULT.place()).add(BA_BLACKBOARD);
         map.put(TempleTrekking.RAMBLE_PLACE, new ArrayList<>(List.of(TempleTrekking.RAMBLE_ENTRANCE)));
         return map;
     }
@@ -296,6 +302,8 @@ public final class MinigameWorld {
         // The Burgh de Rott Ramble starts outside Paterdomus (style NONE: only its entrance portal is built).
         list.add(PlaceDef.of(TempleTrekking.RAMBLE_PLACE, "Paterdomus (Burgh de Rott Ramble)", TempleTrekking.PATERDOMUS_X,
                 TempleTrekking.PATERDOMUS_Y, PlaceDef.Style.NONE, blocks.get(TempleTrekking.RAMBLE_PLACE)));
+        list.addAll(TaiBwoWannai.places());
+        list.addAll(VarrockMuseum.places());
         return list;
     }
 
@@ -365,6 +373,8 @@ public final class MinigameWorld {
                 0x4A2A6A, 0x2A1A1A));
         list.add(NpcDef.of("mg_mortton_priest", "Ulsquire Shauncy", Minigame.SHADES_OF_MORTTON.place(), 2, 2, 0xB0B0A0, 0x3A3A3A,
                 0x2A2A2A, 0x8A8A8A));
+        list.addAll(TaiBwoWannai.npcs());
+        list.addAll(VarrockMuseum.npcs());
         return list;
     }
 

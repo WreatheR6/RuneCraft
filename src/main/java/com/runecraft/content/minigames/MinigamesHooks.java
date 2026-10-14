@@ -42,6 +42,10 @@ public final class MinigamesHooks implements ModuleHooks {
         PitChampionService.register();
         LmsService.register();
         EmirsArenaService.register();
+        TaiBwoWannaiService.register();
+        MuseumService.register();
+        BlockHooks.register(MinigameWorld.BA_BLACKBOARD, (player, pos, state) ->
+                com.runecraft.content.minigames.games.BarbarianAssaultSession.readBlackboard(player));
         BossScripts.register("tzkal_zuk", ZukScript::new);
         BossScripts.register("penance_queen", PenanceQueenScript::new);
 
@@ -175,6 +179,23 @@ public final class MinigamesHooks implements ModuleHooks {
                                     if (p != null) {
                                         com.runecraft.content.minigames.games.TempleTrekkingSession.claim(p,
                                                 StringArgumentType.getString(ctx, "reward"));
+                                    }
+                                    return 1;
+                                })))
+                        .then(CommandManager.literal("balevel").then(CommandManager.argument("role", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    if (p != null) {
+                                        com.runecraft.content.minigames.games.BarbarianAssaultSession.buyLevel(p,
+                                                StringArgumentType.getString(ctx, "role"));
+                                    }
+                                    return 1;
+                                })))
+                        .then(CommandManager.literal("museum").then(CommandManager.argument("answer", IntegerArgumentType.integer(0, 2))
+                                .executes(ctx -> {
+                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    if (p != null) {
+                                        MuseumService.answer(p, IntegerArgumentType.getInteger(ctx, "answer"));
                                     }
                                     return 1;
                                 })))

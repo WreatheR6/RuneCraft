@@ -58,6 +58,7 @@ public final class MinigameCurrencies {
         NAMES.put(LMS, "Last Man Standing points");
         NAMES.put(EMIRS_ARENA, "PvP Arena reward points");
         NAMES.put(TOKKUL, "Tokkul");
+        NAMES.put("item:" + TaiBwoWannai.STICKS, "Trading sticks");
         NAMES.put(PEARLS, "Abyssal pearls");
         NAMES.put(CW_TICKETS, "Castle wars tickets");
         NAMES.put(WG_TOKENS, "Warrior guild tokens");

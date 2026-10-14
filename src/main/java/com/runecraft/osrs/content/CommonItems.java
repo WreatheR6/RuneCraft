@@ -27,6 +27,8 @@ public final class CommonItems {
     }
 
     public static void add(ItemSink items) {
+        // Machete (npcs: Karamja shops; minigames: Tai Bwo Wannai Cleanup; skilling: hunter loot).
+        items.add("machete", "Machete", Kind.TOOL, "scimitar", 0x9A9AA0).value(40).stack(1).examine("An effective tool for chopping tough jungle plants.");
         items.add("green_dragonhide", "Green dragonhide", Kind.SIMPLE, "hide", 0x3A8A3A).value(1800);
         items.add("blue_dragonhide", "Blue dragonhide", Kind.SIMPLE, "hide", 0x3A5AB0).value(2000);
         items.add("red_dragonhide", "Red dragonhide", Kind.SIMPLE, "hide", 0xB03A3A).value(2400);
