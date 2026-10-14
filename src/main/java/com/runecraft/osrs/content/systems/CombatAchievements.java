@@ -260,6 +260,22 @@ public final class CombatAchievements {
     public static final String COUNT_BABA_BOULDER = "baba_boulder";
     /** Times a Warden's core was ejected in phase 2 (ToA "Down Do Specs"). */
     public static final String COUNT_WARDEN_CORE = "warden_core";
+    /** Crumble Undead was cast on Vorkath's zombified spawn ("Zombie Destroyer" fails). */
+    public static final String FLAG_VORKATH_CRUMBLE = "vorkath_crumble";
+    /** 12 hits on Vorkath during one acid phase without rapid fire or acid damage ("The Walk"). */
+    public static final String FLAG_VORKATH_WALK = "vorkath_walk";
+    /** The player's last damage on the target was a Vengeance recoil (cleared by the player's next attack). */
+    public static final String FLAG_VENGEANCE_LAST = "venge_last";
+    /** Times Dusk used his prison attack (Grotesque Guardians "Done before Dusk"). */
+    public static final String COUNT_DUSK_PRISON = "dusk_prison";
+    /** Times K'ril Tsutsaroth used his "YARRRRRRR!" special ("Yarr No More"). */
+    public static final String COUNT_KRIL_YARR = "kril_yarr";
+    /** Times the Leviathan was stunned by a shadow spell ("Serpentine Solo"). */
+    public static final String COUNT_LEVIATHAN_STUN = "leviathan_stun";
+    /** Someone near Nex is coughing from her Choke virus ("I should see a doctor"; taken back when nobody is). */
+    public static final String FLAG_NEX_COUGHING = "nex_coughing";
+    /** A tormented demon's killing blow landed while its fire shield was down ("Through Fire and Flames"). */
+    public static final String FLAG_TD_SHIELD_DOWN = "td_shield_down";
     /** A fight is forgotten after this many game ticks without either side attacking. */
     public static final int FIGHT_TIMEOUT_TICKS = 100;
 

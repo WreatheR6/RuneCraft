@@ -366,6 +366,7 @@ public final class CombatAchievementService {
         boolean spec = SpecialAttackService.active(p) != null;
         String spell = type == AttackType.MAGIC ? spellOf(p) : null;
         Tracker f = engage(p, target);
+        unflag(p, CombatAchievements.FLAG_VENGEANCE_LAST);
         if (f != null) {
             record(f.m, type, weapon, spell, spec);
             f.m.targetAttacks++;

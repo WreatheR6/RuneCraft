@@ -19,10 +19,10 @@ public final class ZulrahVorkath {
     // ================= Zulrah =================
     public enum Form {
         SERPENTINE("zulrah"), MAGMA("zulrah_magma"), TANZANITE("zulrah_tanzanite"),
-        /** Tanzanite form alternating ranged/magic quickly ("Jad phase"), starting with ranged. */
-        JAD_RANGED("zulrah_tanzanite"),
-        /** Jad phase starting with magic. */
-        JAD_MAGIC("zulrah_tanzanite");
+        /** The green form alternating ranged/magic every attack ("Jad" phase), starting with ranged (rotations 1 and 2). */
+        JAD_RANGED("zulrah"),
+        /** The green "Jad" phase starting with magic (rotations 3 and 4). */
+        JAD_MAGIC("zulrah");
 
         public final String bossId;
 
@@ -44,40 +44,97 @@ public final class ZulrahVorkath {
         }
     }
 
-    /** One surfacing: form, spot, number of attacks before diving, and whether it spits clouds / snakelings. */
-    public record Step(Form form, Spot spot, int attacks, boolean clouds, boolean snakelings) {
+    /**
+     * One surfacing (a wiki "phase"): form, spot and the actions it performs in order before diving, one per attack
+     * cycle: {@code A} an attack, {@code C} a venom cloud barrage, {@code S} a snakeling orb.
+     */
+    public record Step(Form form, Spot spot, String actions) {
+        public Step {
+            if (!actions.matches("[ACS]+")) {
+                throw new IllegalArgumentException("Bad Zulrah actions " + actions);
+            }
+        }
+
+        private long count(char c) {
+            return actions.chars().filter(x -> x == c).count();
+        }
+
+        public int attacks() {
+            return (int) count('A');
+        }
+
+        public int cloudBarrages() {
+            return (int) count('C');
+        }
+
+        public int snakelingOrbs() {
+            return (int) count('S');
+        }
+
+        public boolean clouds() {
+            return cloudBarrages() > 0;
+        }
+
+        public boolean snakelings() {
+            return snakelingOrbs() > 0;
+        }
     }
 
-    private static Step s(Form f, Spot sp, int attacks, boolean clouds, boolean snakes) {
-        return new Step(f, sp, attacks, clouds, snakes);
+    private static Step s(Form f, Spot sp, String actions) {
+        return new Step(f, sp, actions);
     }
+
+    private static final String JAD10 = "AAAAAAAAAA";
 
     /**
-     * The four rotations (Magma A, Magma B, Serpentine, Tanzanite). Every rotation opens with the
-     * serpentine form in the centre spitting clouds; after the last step it loops back to the start.
-     * Attack counts are approximations of the wiki's tick timings.
+     * The first phase of the fight: green, in the middle, filling the shrine with 4 venom cloud barrages without attacking.
+     * Every rotation's first entry is this.
+     */
+    public static final Step OPENING = s(Form.SERPENTINE, Spot.CENTRE, "CCCC");
+    /**
+     * The first phase of every later rotation (the wiki's last phase of each rotation): green, in the middle, 5 ranged
+     * attacks and then 4 venom cloud barrages.
+     */
+    public static final Step LOOP_START = s(Form.SERPENTINE, Spot.CENTRE, "AAAAACCCC");
+
+    /**
+     * The four rotations (OSRS Wiki, Zulrah/Strategies "Rotation overview": Crimson A, Crimson B, Serp, Tanz), phase by
+     * phase. Phase 1 is {@link #OPENING} at the start of the fight and {@link #LOOP_START} when a new rotation begins
+     * after a full one. Where the wiki says "an alternating series" of orbs and barrages, they alternate starting with
+     * the first one named.
      */
     public static final List<List<Step>> ROTATIONS = List.of(
-            List.of(s(Form.SERPENTINE, Spot.CENTRE, 4, true, true), s(Form.MAGMA, Spot.CENTRE, 2, false, false),
-                    s(Form.TANZANITE, Spot.CENTRE, 4, false, true), s(Form.SERPENTINE, Spot.SOUTH, 5, false, false),
-                    s(Form.MAGMA, Spot.CENTRE, 2, false, false), s(Form.TANZANITE, Spot.WEST, 5, false, true),
-                    s(Form.SERPENTINE, Spot.SOUTH, 4, true, true), s(Form.TANZANITE, Spot.SOUTH, 5, false, false),
-                    s(Form.JAD_RANGED, Spot.WEST, 10, false, false), s(Form.MAGMA, Spot.CENTRE, 2, false, false)),
-            List.of(s(Form.SERPENTINE, Spot.CENTRE, 4, true, true), s(Form.MAGMA, Spot.CENTRE, 2, false, false),
-                    s(Form.TANZANITE, Spot.CENTRE, 4, false, true), s(Form.SERPENTINE, Spot.WEST, 5, false, false),
-                    s(Form.TANZANITE, Spot.SOUTH, 5, false, true), s(Form.MAGMA, Spot.CENTRE, 2, false, false),
-                    s(Form.SERPENTINE, Spot.EAST, 4, true, true), s(Form.TANZANITE, Spot.SOUTH, 5, false, false),
-                    s(Form.JAD_RANGED, Spot.WEST, 10, false, false), s(Form.MAGMA, Spot.CENTRE, 2, false, false)),
-            List.of(s(Form.SERPENTINE, Spot.CENTRE, 4, true, true), s(Form.SERPENTINE, Spot.EAST, 5, false, false),
-                    s(Form.MAGMA, Spot.CENTRE, 2, false, false), s(Form.TANZANITE, Spot.WEST, 5, false, true),
-                    s(Form.SERPENTINE, Spot.SOUTH, 4, true, true), s(Form.TANZANITE, Spot.EAST, 5, false, false),
-                    s(Form.SERPENTINE, Spot.CENTRE, 4, true, false), s(Form.SERPENTINE, Spot.WEST, 5, false, true),
-                    s(Form.JAD_MAGIC, Spot.CENTRE, 10, false, false), s(Form.MAGMA, Spot.CENTRE, 2, false, false)),
-            List.of(s(Form.SERPENTINE, Spot.CENTRE, 4, true, true), s(Form.TANZANITE, Spot.EAST, 5, false, false),
-                    s(Form.SERPENTINE, Spot.SOUTH, 5, false, true), s(Form.TANZANITE, Spot.WEST, 5, false, false),
-                    s(Form.MAGMA, Spot.CENTRE, 2, false, false), s(Form.SERPENTINE, Spot.EAST, 4, true, true),
-                    s(Form.TANZANITE, Spot.SOUTH, 5, false, false), s(Form.TANZANITE, Spot.WEST, 4, false, true),
-                    s(Form.JAD_MAGIC, Spot.CENTRE, 10, false, false), s(Form.MAGMA, Spot.CENTRE, 2, false, false)));
+            List.of(OPENING, s(Form.MAGMA, Spot.CENTRE, "AA"), s(Form.TANZANITE, Spot.CENTRE, "AAAA"),
+                    s(Form.SERPENTINE, Spot.SOUTH, "AAAAASSCCSS"), s(Form.MAGMA, Spot.CENTRE, "AA"),
+                    s(Form.TANZANITE, Spot.WEST, "AAAAA"), s(Form.SERPENTINE, Spot.SOUTH, "CCCSSSS"),
+                    s(Form.TANZANITE, Spot.SOUTH, "AAAAASCSCS"), s(Form.JAD_RANGED, Spot.WEST, JAD10 + "CCCC"),
+                    s(Form.MAGMA, Spot.CENTRE, "AA")),
+            List.of(OPENING, s(Form.MAGMA, Spot.CENTRE, "AA"), s(Form.TANZANITE, Spot.CENTRE, "AAAA"),
+                    s(Form.SERPENTINE, Spot.WEST, "CCCSSSS"), s(Form.TANZANITE, Spot.SOUTH, "AAAAASSCCSS"),
+                    s(Form.MAGMA, Spot.CENTRE, "AA"), s(Form.SERPENTINE, Spot.EAST, "AAAAA"),
+                    s(Form.TANZANITE, Spot.SOUTH, "AAAAASCSCS"), s(Form.JAD_RANGED, Spot.WEST, JAD10 + "CCCC"),
+                    s(Form.MAGMA, Spot.CENTRE, "AA")),
+            List.of(OPENING, s(Form.SERPENTINE, Spot.EAST, "AAAAASSS"), s(Form.MAGMA, Spot.CENTRE, "CSCSCSAA"),
+                    s(Form.TANZANITE, Spot.WEST, "AAAAA"), s(Form.SERPENTINE, Spot.SOUTH, "AAAAA"),
+                    s(Form.TANZANITE, Spot.EAST, "AAAAA"), s(Form.SERPENTINE, Spot.CENTRE, "CCCSSS"),
+                    s(Form.SERPENTINE, Spot.WEST, "AAAAA"), s(Form.TANZANITE, Spot.CENTRE, "AAAAACCSSS"),
+                    s(Form.JAD_MAGIC, Spot.EAST, JAD10), s(Form.TANZANITE, Spot.CENTRE, "SSSS")),
+            List.of(OPENING, s(Form.TANZANITE, Spot.EAST, "SSSSAAAAAA"), s(Form.SERPENTINE, Spot.SOUTH, "AAAACC"),
+                    s(Form.TANZANITE, Spot.WEST, "SSSSAAAA"), s(Form.MAGMA, Spot.CENTRE, "AACC"),
+                    s(Form.SERPENTINE, Spot.EAST, "AAAA"), s(Form.SERPENTINE, Spot.SOUTH, "SSSSSSCCC"),
+                    s(Form.TANZANITE, Spot.WEST, "AAAAASSSS"), s(Form.SERPENTINE, Spot.CENTRE, "AAAA"),
+                    s(Form.TANZANITE, Spot.CENTRE, "AAAACCC"), s(Form.JAD_MAGIC, Spot.EAST, "AAAAAAAA"),
+                    s(Form.TANZANITE, Spot.CENTRE, "SSSS")));
+
+    /** Damage to Zulrah is capped at 50; a bigger hit deals 45-50 instead (OSRS Wiki). */
+    public static final int DAMAGE_CAP = 50;
+
+    public static int capDamage(int damage, int roll0to5) {
+        return damage > DAMAGE_CAP ? 45 + roll0to5 : damage;
+    }
+
+    /** Snakelings die off after 40 seconds (67 game ticks) and have 1 hitpoint. */
+    public static final int SNAKELING_LIFE_TICKS = 67;
 
     public static final AttackDef ZULRAH_RANGED = AttackDef.of("venom_spit", AttackType.RANGED, 41, 30, 1)
             .special(Special.VENOM, 0).particle("minecraft:sneeze");
@@ -138,12 +195,30 @@ public final class ZulrahVorkath {
     public static final AttackDef VORKATH_BOMB = AttackDef.of("dragonfire_bomb", AttackType.MAGIC, 121, 30, 1)
             .special(Special.SKY_STRIKE, 0).telegraph(4, "Vorkath launches a dragonfire bomb high into the air!")
             .particle("minecraft:flame");
-    /** Acid phase rapid fire: 25 quick fireballs at your previous tiles. */
-    public static final AttackDef VORKATH_RAPID_FIRE = AttackDef.of("rapid_fire", AttackType.MAGIC, 30, 30, 1)
+    /** Acid phase rapid fire: a fireball every tick at the tile you stand on, 25-41 regardless of dragonfire protection. */
+    public static final AttackDef VORKATH_RAPID_FIRE = AttackDef.of("rapid_fire", AttackType.MAGIC, 41, 30, 1)
             .special(Special.SKY_STRIKE, 0).telegraph(2, null).particle("minecraft:small_flame");
     public static final AttackDef VORKATH_FREEZE = AttackDef.of("ice_dragonfire", AttackType.MAGIC, 0, 30, 1)
             .special(Special.FREEZE, 30).particle("minecraft:snowflake")
             .message("Vorkath's icy breath freezes you solid! Kill the zombified spawn!");
+
+    /** Rapid fire's minimum damage (OSRS Wiki: 25-41). */
+    public static final int RAPID_FIRE_MIN = 25;
+    /** Fireballs in the acid phase (one per tick). */
+    public static final int RAPID_FIRE_SHOTS = 25;
+    /** An acid pool deals up to 10 and Vorkath leeches it as health. */
+    public static final int ACID_MAX = 10;
+    /** Vorkath takes half damage during the acid phase. */
+    public static final double ACID_PHASE_DAMAGE = 0.5;
+    /** The zombified spawn's explosion: up to 60, scaled by its remaining hitpoints (38 at full). */
+    public static final int SPAWN_EXPLOSION_MAX = 60;
+
+    public static int spawnExplosion(double spawnHp, double spawnMaxHp) {
+        return (int) Math.floor(SPAWN_EXPLOSION_MAX * Math.max(0, Math.min(1, spawnHp / spawnMaxHp)));
+    }
+
+    /** Hits on Vorkath during one acid phase that complete "The Walk" (with no rapid fire or acid damage taken). */
+    public static final int THE_WALK_HITS = 12;
 
     static BossDef vorkath() {
         return BossDef.of("vorkath", "Vorkath").level(732).stats(750, 560, 308, 214, 150, 308).speed(5)

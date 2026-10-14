@@ -85,7 +85,8 @@ public class BossEntity extends OsrsMonsterEntity {
         return switch (boss.mechanic()) {
             case MIXED_MAGIC -> adjacent && random.nextBoolean() ? AttackType.CRUSH : AttackType.MAGIC;
             case GRAARDOR -> adjacent && attackCounter % 3 != 2 ? AttackType.CRUSH : AttackType.RANGED;
-            case KRIL -> adjacent ? AttackType.SLASH : AttackType.MAGIC;
+            // OSRS Wiki: 2/3 melee, 1/3 magic, and the magic attack is only used in melee range.
+            case KRIL -> adjacent && random.nextInt(3) == 0 ? AttackType.MAGIC : AttackType.SLASH;
             case JAD -> boss.meleeWhenAdjacent() && adjacent && random.nextInt(3) == 0 ? AttackType.CRUSH
                     : random.nextBoolean() ? AttackType.MAGIC : AttackType.RANGED;
             default -> boss.style();
@@ -128,13 +129,17 @@ public class BossEntity extends OsrsMonsterEntity {
                 }
             }
             case KRIL -> {
-                if (type.isMelee() && random.nextInt(8) == 0) {
-                    // "YARRRRRRR!" special: hits through Protect from Melee and halves prayer points.
+                if (type.isMelee() && Players.data(target).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE) && random.nextInt(9) == 0) {
+                    // "YARRRRRRR!" prayer smash (OSRS Wiki): 1 in 9 melee hits against Protect from Melee; always 35-49
+                    // through prayer, and drains half the target's prayer points (a quarter with a spectral spirit shield).
                     world.getServer().getPlayerManager().getPlayerList().stream().filter(p -> p.squaredDistanceTo(this) < 32 * 32)
                             .forEach(p -> p.sendMessage(Text.literal("K'ril Tsutsaroth: YARRRRRRR!").formatted(Formatting.RED), false));
+                    com.runecraft.content.systems.CombatAchievementService.countNear(this,
+                            com.runecraft.osrs.content.systems.CombatAchievements.COUNT_KRIL_YARR);
                     PlayerData data = Players.data(target);
-                    data.setPrayerPoints(data.prayerPoints() / 2);
-                    int dmg = random.nextInt(50);
+                    boolean spectral = "spectral_spirit_shield".equals(Inv.idOf(target.getOffHandStack()));
+                    data.setPrayerPoints(data.prayerPoints() - data.prayerPoints() / (spectral ? 4 : 2));
+                    int dmg = 35 + random.nextInt(15);
                     swingHand(net.minecraft.util.Hand.MAIN_HAND);
                     CombatHandler.applyDamage(this, target, dmg);
                     ServerNetworking.sync(target);

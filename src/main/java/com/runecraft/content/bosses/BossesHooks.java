@@ -36,6 +36,7 @@ public final class BossesHooks implements ModuleHooks {
             BossScripts.register(form, () -> new ZulrahScript(form));
         }
         BossScripts.register("vorkath", VorkathScript::new);
+        VorkathScript.registerCrumbleUndead();
 
         BossScripts.register("kraken", SlayerScripts.Kraken::new);
         BossScripts.register("thermonuclear_smoke_devil", SlayerScripts.Thermy::new);

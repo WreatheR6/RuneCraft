@@ -1,6 +1,7 @@
 package com.runecraft.content.bosses;
 
 import com.runecraft.boss.DataBossEntity;
+import com.runecraft.combat.CombatHandler;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
@@ -37,7 +38,9 @@ final class ClassicScripts {
 
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
-            if (percent(boss) < 50 && burrowIn < 0 && burrowCooldown == 0 && boss.getRandom().nextInt(4) == 0) {
+            // OSRS Wiki: each attack has a 1/4 chance to make her burrow while she is between 50% and 5% of her hitpoints.
+            double hp = percent(boss);
+            if (hp < 50 && hp > 5 && burrowIn < 0 && burrowCooldown == 0 && boss.getRandom().nextInt(4) == 0) {
                 burrowIn = 2;
                 BossFx.warn(boss, "The Giant Mole starts to dig...");
             }
@@ -78,7 +81,7 @@ final class ClassicScripts {
         }
     }
 
-    /** Kalphite Queen (crawling): magic and ranged are halved by her chitin; at 0 hp she takes flight. */
+    /** Kalphite Queen (crawling): Protect from Magic and Missiles (high magic/ranged defence); at 0 hp she takes flight. */
     static final class KalphiteQueen extends ScriptedBoss {
         private boolean transforming;
         private int wait;
@@ -88,9 +91,8 @@ final class ClassicScripts {
             if (transforming) {
                 return 0;
             }
-            if (type == AttackType.MAGIC || type == AttackType.RANGED) {
-                damage /= 2;
-            }
+            // Her protection prayers only raise her defence (OSRS Wiki), which her defence bonuses already model: no
+            // extra damage reduction.
             if (damage >= boss.getHealth()) {
                 damage = (int) Math.ceil(boss.getHealth()) - 1;
                 transforming = true;
@@ -117,12 +119,8 @@ final class ClassicScripts {
         }
     }
 
-    /** Kalphite Queen (airborne): melee is halved; her lightning chains to every player nearby. */
+    /** Kalphite Queen (airborne): Protect from Melee (high melee defence, no damage cut); lightning chains to everyone nearby. */
     static final class KalphiteQueenAirborne extends ScriptedBoss {
-        @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
-            return type.isMelee() ? damage / 2 : damage;
-        }
 
         @Override
         protected String creditAs() {
@@ -148,14 +146,21 @@ final class ClassicScripts {
     }
 
     /**
-     * Corporeal Beast: only stab attacks with a spear or halberd deal full damage (everything else is
-     * halved); stomps anyone standing beneath it and releases dark energy cores.
+     * Corporeal Beast: only stab attacks with a spear or halberd deal full damage (everything else is halved); stomps
+     * anyone standing beneath it. The dark energy core (OSRS Wiki): a 1/8 chance after it takes a hit of 32 or more, or
+     * when it attacks below 1,000 hitpoints; the core hits players next to it for 5-13 every 2 ticks, healing the Beast
+     * for half, and jumps to a player when nobody is next to it.
      */
     static final class Corp extends ScriptedBoss {
         private MobEntity core;
+        private boolean coreRoll;
+        private int coreTick;
 
         @Override
         public AttackDef chooseAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+            if (boss.getHealth() < mcHp(boss, 1000)) {
+                coreRoll = true; // rolled when it attacks below 1,000 hitpoints
+            }
             double dx = target.getX() - boss.getX();
             double dz = target.getZ() - boss.getZ();
             return dx * dx + dz * dz < boss.getWidth() * boss.getWidth() / 4 ? ClassicBosses.CORP_STOMP : null;
@@ -167,25 +172,60 @@ final class ClassicScripts {
 
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
-            if (type == AttackType.STAB && spearOrHalberd(BossFx.heldId(attacker))) {
-                return damage;
+            int d = type == AttackType.STAB && spearOrHalberd(BossFx.heldId(attacker)) ? damage : damage / 2;
+            if (d >= 32) {
+                coreRoll = true;
             }
-            return damage / 2;
+            return d;
+        }
+
+        private boolean coreAlive() {
+            return core != null && core.isAlive();
         }
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
-            if (target == null || percent(boss) > 75) {
+            if (coreRoll) {
+                coreRoll = false;
+                if (!coreAlive() && target != null && boss.getRandom().nextInt(8) == 0) {
+                    BossFx.say(boss, "The Corporeal Beast releases a dark energy core!");
+                    core = BossFx.spawnMinion(boss, "dark_energy_core", around(boss, target.getPos(), 2), target);
+                }
+            }
+            if (!coreAlive() || ++coreTick % 2 != 0) {
                 return;
             }
-            if ((core == null || !core.isAlive()) && boss.getRandom().nextInt(16) == 0) {
-                BossFx.say(boss, "The Corporeal Beast releases a dark energy core!");
-                core = BossFx.spawnMinion(boss, "dark_energy_core", around(boss, target.getPos(), 2), target);
+            List<ServerPlayerEntity> adjacent = BossFx.world(boss).getPlayers(p -> p.isAlive() && !p.isSpectator()
+                    && p.squaredDistanceTo(core) < 2.0 * 2.0);
+            if (adjacent.isEmpty()) {
+                ServerPlayerEntity to = target != null ? target : null;
+                for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
+                    // The core prefers the northernmost player (then the easternmost).
+                    if (to == null || p.getZ() < to.getZ() - 1 || Math.abs(p.getZ() - to.getZ()) <= 1 && p.getX() > to.getX()) {
+                        to = p;
+                    }
+                }
+                if (to != null) {
+                    Vec3d at = to.getPos().add(1, 0, 0);
+                    core.requestTeleport(at.x, at.y, at.z);
+                    BossFx.burst(core, ParticleTypes.SOUL, 10, 0.5);
+                }
+                return;
             }
-            if (core != null && core.isAlive() && core.squaredDistanceTo(target) > 64) {
-                Vec3d to = target.getPos().add(1, 0, 1);
-                core.requestTeleport(to.x, to.y, to.z);
-                BossFx.burst(core, ParticleTypes.SOUL, 10, 0.5);
+            for (ServerPlayerEntity p : adjacent) {
+                int dmg = 5 + p.getRandom().nextInt(9);
+                com.runecraft.combat.CombatHooks.nameAttack("dark_core", null);
+                CombatHandler.applyDamage(core, p, dmg);
+                if (boss.isAlive()) {
+                    boss.heal(mcHp(boss, dmg / 2));
+                }
+            }
+        }
+
+        @Override
+        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+            if (coreAlive()) {
+                core.discard();
             }
         }
     }

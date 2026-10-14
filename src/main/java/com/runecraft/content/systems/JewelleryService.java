@@ -436,6 +436,8 @@ public final class JewelleryService {
                 int back = damage * 3 / 4;
                 p.sendMessage(Text.literal(p.getName().getString() + ": Taste vengeance!").formatted(Formatting.YELLOW), false);
                 if (back > 0) {
+                    // Combat Achievements "finish with Vengeance": the recoil is the player's latest damage until they attack again.
+                    CombatAchievementService.flag(p, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_VENGEANCE_LAST);
                     CombatHandler.applyDamage(p, attacker, back);
                 }
                 SysNet.sendState(p);

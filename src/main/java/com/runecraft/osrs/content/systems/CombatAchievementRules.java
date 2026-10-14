@@ -266,7 +266,8 @@ public final class CombatAchievementRules {
     }
 
     /** Attack names boss scripts give damage that no {@code AttackDef} carries (Hunllef's tornadoes and floor, Nex's dash...). */
-    public static final Set<String> SCRIPTED_ATTACKS = Set.of("tornado", "damaging_floor", "summoned_soul", "smoke_dash");
+    public static final Set<String> SCRIPTED_ATTACKS = Set.of("tornado", "damaging_floor", "summoned_soul", "smoke_dash",
+            "blinding", "prison", "dark_core", "rapid_fire", "acid_pool", "spawn_explosion");
 
     /** Normalised attack name of a hit (lower case, '_' for spaces), or "mechanic" when the damage had no name. */
     public static String attackKey(String attack) {
@@ -505,7 +506,11 @@ public final class CombatAchievementRules {
      * for RUN (or "delve:" + boss id for a delve run, judged at each level completed), monster names for KILLS.
      * Conditions marked approx in comments are stricter or looser than OSRS where
      * the exact mechanic isn't modelled (e.g. "perfect" kills read as "no scripted, ground or off-prayer damage";
-     * "anyone in the team" reads as yourself; "without leaving" means staying within 64 blocks).
+     * "anyone in the team" reads as yourself; "without leaving" means staying within 64 blocks). Approx: 271 (Zombie
+     * Destroyer) is judged at the Vorkath kill; 511 (Unconventional) only knows mithril weapons, so mithril darts, knives
+     * and thrownaxes count but mithril arrows and bolts fired from a bow don't; 331 (The Spurned Hero) needs a solo kill
+     * (damage per player isn't tracked); 200 (From One King to Another) can't see the bounce off Rex, only the
+     * finishing rune thrownaxe special.
      */
     private static final String TABLE = """
             7;RULE;abyssal_sire;1;nodmg=miasma,hazard
@@ -836,6 +841,23 @@ public final class CombatAchievementRules {
             358;RUN;mg:tempoross;1;flag=ten_permits
             359;RUN;mg:tempoross;1;solo noflag=wave_hit
             360;RUN;mg:tempoross;1;flag=both_cannons
+            227;RULE;zulrah;1;flag=venge_last
+            160;RULE;kalphite_queen;1;flag=venge_last
+            270;RULE;vorkath;1;flag=vorkath_walk
+            271;RULE;vorkath;1;killed>=1:kill:zombified+spawn noflag=vorkath_crumble
+            84;RULE;dusk;1;nodmg=blinding
+            85;RULE;dusk;1;nodmg=prison
+            89;RULE;dusk;1;count<=1:dusk_prison
+            90;RULE;dusk;1;nodmg=blinding,prison,falling_rocks,lightning noflag=dawn_healed count<=1:dusk_prison
+            91;STREAK;dusk;5;nodmg=blinding,prison,falling_rocks,lightning noflag=dawn_healed count<=1:dusk_prison
+            67;RULE;corporeal_beast;1;nodmg=dark_core nokill=kill:dark+energy+core
+            334;RULE;kril_tsutsaroth;1;count<=0:kril_yarr
+            510;RULE;the_leviathan;1;count<=1:leviathan_stun
+            511;RULE;the_leviathan;1;weapon=*mithril maxhp<=25
+            418;RULE;nex;1;flag=nex_coughing
+            552;RULE;kill:tormented demon;1;flag=td_shield_down
+            331;RULE;zalcano;1;solo
+            200;RULE;dagannoth_prime;1;finishspec finish=rune_thrownaxe
             """;
 
     private static final Map<Integer, Spec> SPECS = new LinkedHashMap<>();
