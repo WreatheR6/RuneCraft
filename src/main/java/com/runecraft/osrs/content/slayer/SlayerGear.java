@@ -107,8 +107,22 @@ public final class SlayerGear {
 
     /** The protection a creature needs: its own override, else its task category's. */
     public static Protection protection(String creatureId, String category) {
+        if (creatureId != null && EXEMPT.contains(creatureId)) {
+            return null;
+        }
         Protection own = creatureId == null ? null : CREATURE_PROTECTION.get(creatureId);
         return own != null ? own : protection(category);
+    }
+
+    /**
+     * Creatures of a finisher or protection category that need neither: sulphur and grimy lizards die without an ice
+     * cooler, and Neypotzli's wyrmlings live off the Karuulm Slayer Dungeon's burning floor.
+     */
+    public static final List<String> EXEMPT = List.of("sulphur_lizard", "grimy_lizard", "wyrmling");
+
+    /** The finishing item a creature needs: none for the {@link #EXEMPT} ones, else its task category's. */
+    public static Finisher finisher(String creatureId, String category) {
+        return creatureId != null && EXEMPT.contains(creatureId) ? null : finisher(category);
     }
 
     public static Finisher finisher(String category) {

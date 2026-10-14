@@ -10,7 +10,7 @@ import static com.runecraft.osrs.content.dungeons.Cave.mc;
 /**
  * Morytania and the northern isles: the Slayer Tower basement (carved under the tower the world
  * module built, entered from outside it), the Barrows crypts and tunnels, the Fossil Island Wyvern
- * Cave and the Lithkren Vault.
+ * Cave, the Lithkren Vault and the Morytania Spider Cave.
  */
 final class DungeonsEast {
     private DungeonsEast() {
@@ -22,6 +22,7 @@ final class DungeonsEast {
         out.add(wyvernCave());
         out.add(lithkrenVault());
         out.add(Barrows.dungeon());
+        out.add(morytaniaSpiderCave());
         return out;
     }
 
@@ -114,6 +115,39 @@ final class DungeonsEast {
         c.entrance(ox + 4, oz + 4, f, mc("deepslate_bricks"), mc("polished_deepslate"), 's');
         c.camp(ox - 58, oz - 20, ox - 22, oz + 20, f, 3, 50, "adamant_dragon");
         c.camp(ox + 22, oz - 20, ox + 58, oz + 20, f, 3, 50, "rune_dragon");
+        return c.build();
+    }
+
+    /**
+     * The Morytania Spider Cave (the araxytes' nest): the main cavern and the eastern cavern, which is task-only in OSRS
+     * (here open to all - approx.). Rooms lie under the surface tiles of the wiki's araxyte spawns (3658-3697,
+     * 9824-9855, i.e. y - 6400). Araxxor himself is fought at the bosses module's arena on the real entrance tile
+     * (3657, 3407), so the way down is a hut just north of it (approx.).
+     */
+    static Dungeons.Dungeon morytaniaSpiderCave() {
+        Cave c = new Cave("dng_morytania_spider_cave", "Morytania Spider Cave", mc("deepslate"), mc("tuff"), mc("ochre_froglight"));
+        int f = 16;
+        int ox = bx(3657);
+        int oz = bz(3418);
+        c.room(ox - 6, oz - 6, ox + 6, oz + 6, f, 5);
+        c.hallZ(ox, oz - 6, ox, bz(3423), f, 3, 5);
+        c.room(bx(3648), bz(3446), bx(3672), bz(3423), f, 9);           // main cavern
+        c.hall(bx(3672), bz(3443), bx(3677), bz(3443), f, 3, 5);
+        c.room(bx(3677), bz(3458), bx(3700), bz(3438), f, 9);           // eastern (task-only) cavern
+        c.carve();
+        for (int[] p : new int[][]{{3652, 3428}, {3668, 3428}, {3652, 3441}, {3668, 3441}, {3684, 3441}, {3696, 3454}}) {
+            c.pillar(bx(p[0]), bz(p[1]), f, 9, mc("deepslate_tiles"));
+        }
+        for (int[] p : new int[][]{{3650, 3425}, {3670, 3436}, {3660, 3445}, {3680, 3456}, {3698, 3440}, {3688, 3448}}) {
+            c.set(bx(p[0]), f + 1, bz(p[1]), mc("cobweb"));
+            c.set(bx(p[0]) + 1, f + 9, bz(p[1]), mc("cobweb"));
+        }
+        c.entrance(ox, oz, f, mc("deepslate_bricks"), mc("tuff"), 'e');
+        // OSRS: 15 level-96 and 7 level-146 araxytes in the main cavern, 12 and 21 in the task-only cavern.
+        c.camp(bx(3649), bz(3445), bx(3671), bz(3424), f, 8, 25, "araxyte");
+        c.camp(bx(3649), bz(3445), bx(3671), bz(3424), f, 4, 25, "araxyte_lvl146");
+        c.camp(bx(3678), bz(3457), bx(3699), bz(3439), f, 6, 25, "araxyte");
+        c.camp(bx(3678), bz(3457), bx(3699), bz(3439), f, 10, 25, "araxyte_lvl146");
         return c.build();
     }
 }

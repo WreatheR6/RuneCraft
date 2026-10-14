@@ -93,6 +93,10 @@ public final class DungeonMonsters {
         apeAtoll(list);
         cacheDungeons(list);
         remainingDungeons(list);
+        // Barrows tunnels (not on any Slayer task): wiki DPS-calculator stats, no drops.
+        list.add(m("bloodworm", "Bloodworm", 52, 45, 80, 20, 35, 1, 1).speed(4).attack(melee(AttackType.STAB, 3))
+                .defenceBonus(0, 0, 0, 0, 0).model("abyssal_leech").skin(0x8A1A1A, 0x6A1010, 0x6A1010, 0xC03030)
+                .size(0.8f, 0.6f, 0.8f));
         return list;
     }
 

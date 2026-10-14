@@ -67,6 +67,11 @@ final class SlayerCombat {
         return SlayerService.categoryOf(MonsterStats.of(target));
     }
 
+    private static String creatureId(LivingEntity target) {
+        MonsterStats ms = target instanceof OsrsMonsterEntity ? MonsterStats.of(target) : null;
+        return ms != null && ms.profile() != null ? ms.profile().id : null;
+    }
+
     // ------------------------------------------------------------------ special weapons & finishers
 
     static int afterRoll(ServerPlayerEntity player, LivingEntity target, AttackType type, int damage) {
@@ -83,7 +88,7 @@ final class SlayerCombat {
             Msg.action(player, "The swarm is too fast to hit; you need a lit bug lantern to lure it.");
             return 0;
         }
-        SlayerGear.Finisher f = SlayerGear.finisher(category);
+        SlayerGear.Finisher f = SlayerGear.finisher(creatureId(target), category);
         if (f != null && damage > 0) {
             int health = (int) Math.ceil(target.getHealth());
             if (damage >= health) {
@@ -134,7 +139,7 @@ final class SlayerCombat {
     /** Using a rock hammer / bag of salt / ice cooler / fungicide spray on a weakened creature finishes it. */
     private static boolean useFinisher(ServerPlayerEntity player, LivingEntity target) {
         String category = category(target);
-        SlayerGear.Finisher f = category == null ? null : SlayerGear.finisher(category);
+        SlayerGear.Finisher f = category == null ? null : SlayerGear.finisher(creatureId(target), category);
         if (f == null || !f.item().equals(Inv.idOf(player.getMainHandStack()))) {
             return false;
         }

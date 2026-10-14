@@ -48,6 +48,9 @@
     "halberd_blade",
     "shadow_orb"
   ],
+  "albino_bat": [
+    "head"
+  ],
   "alchemical_hydra": [
     "stain",
     "head_n0",
@@ -101,6 +104,12 @@
     "glow_seam_r",
     "back_crystal_l",
     "back_crystal_r"
+  ],
+  "ancient_zygomite": [
+    "face",
+    "spore0",
+    "spore1",
+    "spore2"
   ],
   "ankou": [
     "head",
@@ -373,6 +382,9 @@
     "staff_orb",
     "hand_spark"
   ],
+  "chilled_jelly": [
+    "dome"
+  ],
   "chronozon": [
     "head",
     "jaw"
@@ -472,6 +484,9 @@
   ],
   "cruor": [
     "orb"
+  ],
+  "crypt_spider": [
+    "eyes"
   ],
   "crystal_impling": [
     "head",
@@ -641,6 +656,9 @@
   "earth_warrior_champion": [
     "head"
   ],
+  "earthen_nagua": [
+    "head"
+  ],
   "eclectic_impling": [
     "head",
     "sparkle"
@@ -649,6 +667,9 @@
     "moon_face",
     "moon_gem",
     "eclipse_ring"
+  ],
+  "elder_custodian_stalker": [
+    "head"
   ],
   "eldric_the_ice_king": [
     "head",
@@ -706,6 +727,9 @@
     "hand_flame_l",
     "hand_flame_r",
     "blade_fire"
+  ],
+  "feral_vampyre": [
+    "head"
   ],
   "fever_spider": [
     "head",
@@ -820,6 +844,9 @@
   "giant_bat": [
     "head"
   ],
+  "giant_crypt_spider": [
+    "eyes"
+  ],
   "giant_scarab": [
     "eyes"
   ],
@@ -879,6 +906,9 @@
     "head"
   ],
   "green_dragon": [
+    "head"
+  ],
+  "grimy_lizard": [
     "head"
   ],
   "growler": [
@@ -1180,6 +1210,9 @@
   "jungle_spider": [
     "eyes"
   ],
+  "juvenile_custodian_stalker": [
+    "head"
+  ],
   "kalphite": [
     "eyes"
   ],
@@ -1356,6 +1389,9 @@
     "sigil1",
     "sigil2",
     "hand_glow"
+  ],
+  "mature_custodian_stalker": [
+    "head"
   ],
   "me": [
     "head",
@@ -2019,6 +2055,9 @@
   "steel_dragon": [
     "head"
   ],
+  "sulphur_lizard": [
+    "head"
+  ],
   "sulphur_nagua": [
     "head"
   ],
@@ -2502,6 +2541,11 @@
     "eyes"
   ],
   "wyrm": [
+    "head",
+    "jaw",
+    "tongue_glow"
+  ],
+  "wyrmling": [
     "head",
     "jaw",
     "tongue_glow"

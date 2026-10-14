@@ -235,7 +235,7 @@ final class DungeonsKaramjaDesert {
 
     /**
      * The Mos Le'Harmless caves (entrance tile 3748, 2973): dark, winding tunnels where the cave
-     * horrors live (bring a witchwood icon), opening into the great cavern of the Cave Horror's den.
+     * horrors and albino bats live (bring a witchwood icon), opening into the great cavern of the Cave Horror's den.
      */
     static Dungeons.Dungeon mosLeHarmlessCaves() {
         Cave c = new Cave("dng_mos_le_harmless_caves", "Mos Le'Harmless caves", mc("mud_bricks"), mc("packed_mud"), null);
@@ -259,6 +259,10 @@ final class DungeonsKaramjaDesert {
         c.camp(ox + 20, oz + 26, ox + 48, oz + 48, f, 4, 25, "cave_horror");
         c.camp(ox - 48, oz + 62, ox + 8, oz + 98, f, 6, 25, "cave_horror");
         c.camp(ox - 18, oz - 54, ox + 18, oz - 32, f, 3, 25, "cave_horror");
+        // Albino bats flit through the whole cave (25 in OSRS, spread over 3718-3833, 9357-9461).
+        c.camp(ox + 20, oz + 26, ox + 48, oz + 48, f, 5, 25, "albino_bat");
+        c.camp(ox - 48, oz + 62, ox + 8, oz + 98, f, 8, 25, "albino_bat");
+        c.camp(ox - 18, oz - 54, ox + 18, oz - 32, f, 4, 25, "albino_bat");
         return c.build();
     }
 }

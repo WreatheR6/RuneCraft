@@ -801,5 +801,33 @@ public final class MonsterTraits {
         t("zulrah", 5, true, true, 500); // Zulrah (Magma)
         t("zulrah_magma", 5, true, true, 500); // Zulrah (Magma)
         t("zulrah_tanzanite", 5, true, true, 500); // Zulrah (Magma)
+        // Round 17 slayer task monsters (SlayerTaskMonsters2)
+        t("albino_bat", 2, false, false, 33); // Albino bat
+        t("crypt_rat", 1, false, false, 35, "rat"); // Crypt rat
+        t("giant_crypt_rat", 2, false, false, 70, "rat"); // Giant crypt rat
+        t("crypt_spider", 1, false, false, 45); // Crypt spider
+        t("giant_crypt_spider", 1, false, false, 80); // Giant crypt spider
+        t("bloodworm", 1, false, false, 0); // Bloodworm
+        t("sulphur_lizard", 2, false, false, 50); // Sulphur Lizard
+        t("araxyte", 1, false, false, 60); // Araxyte
+        t("araxyte_lvl146", 2, false, false, 100); // Araxyte
+        t("feral_vampyre", 1, false, false, 40, "vampyre"); // Feral Vampyre
+        t("ice_wolf", 2, false, false, 70); // Ice wolf
+        t("ice_wolf_lvl132", 2, false, false, 70); // Ice wolf
+        t("pee_hat", 2, false, false, 126); // Pee Hat
+        t("kraka", 2, false, false, 126); // Kraka
+        t("troll_stick", 2, false, false, 141.5); // Stick
+        t("troll_rock", 2, false, false, 150.5); // Rock (Troll)
+        t("ancient_zygomite", 2, false, false, 154); // Ancient Zygomite
+        t("wyrmling", 2, false, false, 65, "dragon"); // Wyrmling
+        t("grimy_lizard", 2, true, true, 75); // Grimy Lizard
+        t("frost_crab", 1, false, false, 60); // Frost Crab
+        t("chilled_jelly", 1, false, false, 140); // Chilled jelly
+        t("earthen_nagua", 2, false, false, 165, "spectral"); // Earthen Nagua
+        t("juvenile_custodian_stalker", 1, true, true, 135); // Juvenile custodian stalker
+        t("mature_custodian_stalker", 1, true, true, 190); // Mature custodian stalker
+        t("elder_custodian_stalker", 1, true, true, 250); // Elder custodian stalker
+        t("skogre", 2, false, false, 71, "undead"); // Skogre
+        t("rooster", 1, true, true, 7); // Rooster (2)
     }
 }
