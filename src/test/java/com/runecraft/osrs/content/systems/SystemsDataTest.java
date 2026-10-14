@@ -43,7 +43,8 @@ class SystemsDataTest {
         assertEquals(30, SpecialAttacks.of("crystal_halberd").cost());
         assertEquals(35, SpecialAttacks.of("elder_maul").param());
         assertNull(SpecialAttacks.of("bronze_dagger"));
-        assertNull(SpecialAttacks.of("soulreaper_axe"));
+        // The soulreaper axe's Behead costs no energy: it consumes soul stacks.
+        assertEquals(SpecialAttacks.Effect.BEHEAD, SpecialAttacks.of("soulreaper_axe").effect());
     }
 
     @Test
@@ -89,12 +90,13 @@ class SystemsDataTest {
             assertEquals(h[0] / 2, h[1]);
             assertEquals(h[1] / 2, h[2]);
             assertEquals(h[2] + 1, h[3]);
+            // osrs-dps-calc dClawDist: a total of 3/4 max to 7/4 max - 1 split dmg / 2, dmg / 4, dmg / 4 + 1
             int[] s = SpecialAttacks.clawHits(r, new boolean[]{false, true, false, false}, 40);
             assertEquals(0, s[0]);
-            assertTrue(s[1] >= 15 && s[1] <= 35);
-            assertEquals(s[1], s[2] + s[3]);
+            assertTrue(s[1] >= 15 && s[1] <= 34);
+            assertEquals(s[2] + 1, s[3]);
             int[] f = SpecialAttacks.clawHits(r, new boolean[]{false, false, false, true}, 40);
-            assertTrue(f[3] >= 10 && f[3] <= 50);
+            assertTrue(f[3] >= 11 && f[3] <= 50);
             int[] m = SpecialAttacks.clawHits(r, new boolean[4], 40);
             assertTrue(m[2] <= 1 && m[3] <= 1 && m[0] == 0 && m[1] == 0);
         }

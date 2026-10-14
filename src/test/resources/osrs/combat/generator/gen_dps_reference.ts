@@ -1,7 +1,7 @@
 // Generates src/test/resources/osrs/combat/dps_reference.tsv from weirdgloop/osrs-dps-calc's PlayerVsNPCCalc.
 // Layout (outside the repo): <dir>/src/osrs-dps-calc (git clone), <dir>/deps (npm i esbuild@0.20.2 d3-array@3.2.4
 // lodash.mergewith@4.6.2 lodash.isequal@4.5.0), <dir>/gen/{build.mjs,gen.ts}. Then: node gen/build.mjs gen.ts gen.js &&
-// node gen/gen.js dps_reference.tsv. build.mjs bundles the calculator, stubbing React/Next/image imports.
+// node gen/gen.js dps_reference.tsv spec_reference.tsv (the second file: special attacks, round 22). build.mjs bundles the calculator, stubbing React/Next/image imports.
 import PlayerVsNPCCalc from '@/lib/PlayerVsNPCCalc';
 import { getMonsters, INITIAL_MONSTER_INPUTS } from '@/lib/Monsters';
 import { calculateEquipmentBonusesFromGear, calculateAttackSpeed } from '@/lib/Equipment';
@@ -313,4 +313,157 @@ function rotate<T>(arr: T[], key: string): T[] {
   return out;
 }
 
+// ---------------------------------------------------------------- special attacks (round 22)
+// The calculator's special attack models (PlayerVsNPCCalc with usingSpecialAttack): accuracy / max hit multipliers, the
+// defence style a special rolls against, minimum hits, hit counts and the largest total of the attacker's hit distribution
+// (before NPC damage transforms). Written to process.argv[3].
+const BLOOD_MOON = ['Blood moon helm', 'Blood moon chestplate', 'Blood moon tassets'];
+const SPEC_LOADOUTS: Loadout[] = [
+  { id: 's_dds', gear: ['Dragon dagger', ...MELEE_DEF], style: 'Lunge' },
+  { id: 's_dds_slash', gear: ['Dragon dagger', ...MELEE_DEF], style: 'Slash' },
+  { id: 's_dlong', gear: ['Dragon longsword', ...MELEE_DEF], style: 'Slash' },
+  { id: 's_dmace', gear: ['Dragon mace', ...MELEE_DEF], style: 'Pound' },
+  { id: 's_dsword', gear: ['Dragon sword', ...MELEE_DEF], style: 'Lunge' },
+  { id: 's_dscim', gear: ['Dragon scimitar', ...MELEE_DEF], style: 'Slash' },
+  { id: 's_dwh', gear: ['Dragon warhammer', ...MELEE_DEF], style: 'Pound' },
+  { id: 's_dclaws', gear: ['Dragon claws', ...MELEE_DEF], style: 'Slash' },
+  { id: 's_burning_claws', gear: ['Burning claws', ...MELEE_DEF], style: 'Slash' },
+  { id: 's_dhalberd', gear: ['Dragon halberd', ...MELEE], style: 'Swipe' },
+  { id: 's_chalberd', gear: ['Crystal halberd', ...MELEE], style: 'Jab' },
+  { id: 's_ags', gear: ['Armadyl godsword', ...MELEE], style: 'Slash' },
+  { id: 's_ags_crush', gear: ['Armadyl godsword', ...MELEE], style: 'Smash' },
+  { id: 's_bgs', gear: ['Bandos godsword', ...MELEE], style: 'Slash' },
+  { id: 's_sgs', gear: ['Saradomin godsword', ...MELEE], style: 'Slash' },
+  { id: 's_zgs', gear: ['Zamorak godsword', ...MELEE], style: 'Slash' },
+  { id: 's_ancient_gs', gear: ['Ancient godsword', ...MELEE], style: 'Slash' },
+  { id: 's_elder_maul', gear: ['Elder maul', ...MELEE], style: 'Pound' },
+  { id: 's_abyssal_dagger', gear: ['Abyssal dagger', ...MELEE_DEF], style: 'Lunge' },
+  { id: 's_bludgeon', gear: ['Abyssal bludgeon', ...MELEE], style: 'Pound' },
+  { id: 's_bludgeon_low_prayer', gear: ['Abyssal bludgeon', ...MELEE], style: 'Pound', tags: 'prayer-60' },
+  { id: 's_whip', gear: ['Abyssal whip', ...MELEE_DEF], style: 'Lash' },
+  { id: 's_fang', gear: ["Osmumten's fang", ...MELEE_DEF], style: 'Lunge' },
+  { id: 's_voidwaker', gear: ['Voidwaker', ...MELEE_DEF], style: 'Slash' },
+  { id: 's_arclight', gear: ['Arclight', ...MELEE_DEF], style: 'Slash' },
+  { id: 's_emberlight', gear: ['Emberlight', ...MELEE_DEF], style: 'Slash' },
+  { id: 's_saradomin_sword', gear: ['Saradomin sword', ...MELEE], style: 'Slash' },
+  { id: 's_barrelchest_anchor', gear: ['Barrelchest anchor', ...MELEE], style: 'Pound' },
+  { id: 's_granite_hammer', gear: ['Granite hammer', ...MELEE_DEF], style: 'Pound' },
+  { id: 's_soulreaper_3', gear: ['Soulreaper axe', ...MELEE], style: 'Hack', tags: 'soul-3' },
+  { id: 's_soulreaper_5', gear: ['Soulreaper axe', ...MELEE], style: 'Hack', tags: 'soul-5' },
+  { id: 's_dual_macuahuitl_set', gear: ['Dual macuahuitl', ...BLOOD_MOON, 'Amulet of torture', 'Ferocious gloves', 'Primordial boots', 'Infernal cape', 'Ultor ring'], style: 'Pummel' },
+  { id: 's_crimson_kisten', gear: ['Crimson kisten', ...MELEE_DEF], style: 'Pound' },
+  // ranged
+  { id: 's_dark_bow', gear: ['Dark bow', 'Amethyst arrow', ...RANGED], style: 'Rapid' },
+  { id: 's_dark_bow_dragon', gear: ['Dark bow', 'Dragon arrow', ...RANGED], style: 'Rapid' },
+  { id: 's_msb', gear: ['Magic shortbow', 'Amethyst arrow', ...RANGED], style: 'Rapid' },
+  { id: 's_msb_i', gear: ['Magic shortbow (i)', 'Amethyst arrow', ...RANGED], style: 'Rapid' },
+  { id: 's_mlb', gear: ['Magic longbow', 'Amethyst arrow', ...RANGED], style: 'Accurate' },
+  { id: 's_seercull', gear: ['Seercull', 'Amethyst arrow', ...RANGED], style: 'Rapid' },
+  { id: 's_blowpipe', gear: ['Toxic blowpipe', ...RANGED], style: 'Rapid' },
+  { id: 's_zcb', gear: ['Zaryte crossbow', 'Dragon bolts', ...RANGED], style: 'Rapid' },
+  { id: 's_heavy_ballista', gear: ['Heavy ballista', 'Dragon javelin', ...RANGED], style: 'Accurate' },
+  { id: 's_light_ballista', gear: ['Light ballista', 'Dragon javelin', ...RANGED], style: 'Rapid' },
+  { id: 's_dragon_knife', gear: ['Dragon knife', ...RANGED], style: 'Rapid' },
+  { id: 's_webweaver', gear: ['Webweaver bow', ...RANGED], style: 'Rapid' },
+  { id: 's_tonalztics', gear: ['Tonalztics of Ralos', ...RANGED], style: 'Rapid' },
+  // magic
+  { id: 's_volatile', gear: ['Volatile Nightmare staff', ...MAGE], style: 'Spell' },
+  { id: 's_eldritch', gear: ['Eldritch Nightmare staff', ...MAGE], style: 'Spell' },
+  { id: 's_accursed', gear: ['Accursed sceptre', ...MAGE], style: 'Accurate' },
+  { id: 's_eye_of_ayak', gear: ['Eye of Ayak', ...MAGE], style: 'Accurate' },
+];
+const SPEC_MONSTERS: [string, string][] = [
+  ['Abyssal demon', 'Standard'], ['Vorkath', 'Post-quest'], ['Kalphite Queen', 'Crawling'], ['Greater demon', 'Level 100'],
+  ['General Graardor', ''], ["K'ril Tsutsaroth", ''], ['Cerberus', ''], ['Aberrant spectre', ''], ['Callisto', ''],
+  ['Corporeal Beast', ''], ['Aviansie', 'Level 131'], ['Skeletal Wyvern', '1'],
+];
+
+function specDefenceStyle(weapon: string, base: string): string {
+  if (['Dragon claws', 'Dragon dagger', 'Dragon halberd', 'Dragon longsword', 'Dragon scimitar', 'Crystal halberd', 'Abyssal dagger',
+    'Saradomin sword', 'Arkan blade'].includes(weapon) || / godsword$/i.test(weapon)) return 'slash';
+  if (['Arclight', 'Emberlight', 'Dragon sword'].includes(weapon)) return 'stab';
+  if (['Voidwaker', "Saradomin's blessed sword"].includes(weapon)) return 'magic';
+  if (['Dragon mace', 'Crimson kisten'].includes(weapon)) return 'crush';
+  return base;
+}
+
+function specMain(out: string) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { Prayer } = require('@/enums/Prayer');
+  const rows: string[] = [];
+  rows.push('# Special attacks from weirdgloop/osrs-dps-calc PlayerVsNPCCalc with usingSpecialAttack (round 22), same inputs as dps_reference.tsv.');
+  rows.push('# specDef: the defence style the special rolls against (npcDefLevel / npcDefBonus are for it); hits: hitsplat groups of the attack;');
+  rows.push('# distMax: the largest total of the attacker hit distribution (before NPC transforms); tags: soul-N soul stacks, prayer-N prayer points missing.');
+  rows.push(['id', 'profile', 'monster', 'loadout', 'gear', 'type', 'stance', 'atk', 'str', 'ranged', 'magic', 'hpMax', 'prayers',
+    'offBonus', 'strBonus', 'rangedStr', 'magicDmgTenths', 'specDef', 'npcDefLevel', 'npcDefBonus', 'npcRangedLight', 'npcRangedStandard', 'npcRangedHeavy',
+    'npcTbowMagic', 'attrs', 'slayerMonster', 'size', 'weakness', 'tags', 'minHit', 'maxHit', 'attackRoll', 'defenceRoll', 'hitChance', 'hits', 'distMax'].join('\t'));
+  let n = 0;
+  for (const prof of PROFILES.filter((p) => p.id === 'max' || p.id === 'mid' || p.id === 'low')) {
+    for (const lo of SPEC_LOADOUTS) {
+      const mons = prof.id === 'max' ? SPEC_MONSTERS : prof.id === 'mid' ? SPEC_MONSTERS.slice(0, 6) : SPEC_MONSTERS.slice(0, 2);
+      for (const [mn, mv] of mons) {
+        const m = monster(mn, mv);
+        const pieces = lo.gear.map(item);
+        const equip: any = { head: null, cape: null, neck: null, ammo: null, weapon: null, body: null, shield: null, legs: null, hands: null, feet: null, ring: null };
+        for (const p of pieces) equip[slotOf(p)] = p;
+        const weapon = equip.weapon;
+        const styles = getCombatStylesForCategory(weapon.category || EquipmentCategory.NONE);
+        const style: any = lo.style === 'Spell' ? styles.find((s: any) => s.stance === 'Autocast') : styles.find((s: any) => s.name === lo.style);
+        if (!style) throw new Error('style ' + lo.style + ' for ' + lo.id + ' in ' + JSON.stringify(styles));
+        const kind = style.type === 'ranged' ? 'ranged' : style.type === 'magic' ? 'magic' : 'melee';
+        const tags = lo.tags || '-';
+        const soul = tags.startsWith('soul-') ? Number(tags.slice(5)) : 0;
+        const prayerMissing = tags.startsWith('prayer-') ? Number(tags.slice(7)) : 0;
+        const player: any = {
+          name: 'x', style,
+          skills: { atk: prof.lvl, def: prof.lvl, hp: prof.lvl, magic: prof.lvl, prayer: 99, ranged: prof.lvl, str: prof.lvl, mining: 99, herblore: 99 },
+          boosts: { atk: prof.boost.atk, def: 0, hp: 0, magic: prof.boost.magic, prayer: -prayerMissing, ranged: prof.boost.ranged, str: prof.boost.str, mining: 0, herblore: 0 },
+          equipment: equip, attackSpeed: 4,
+          prayers: (prof.prayers as any)[kind].map((p: string) => { const k = PRAYER_KEYS[p]; return Number.isNaN(Number(k)) ? (Prayer as any)[k] : Number(k); }),
+          bonuses: { str: 0, ranged_str: 0, magic_str: 0, prayer: 0 },
+          defensive: { stab: 0, slash: 0, crush: 0, magic: 0, ranged: 0 },
+          offensive: { stab: 0, slash: 0, crush: 0, magic: 0, ranged: 0 },
+          buffs: { potions: [], onSlayerTask: true, inWilderness: false, kandarinDiary: true, chargeSpell: false, markOfDarknessSpell: false, forinthrySurge: false, soulreaperStacks: soul, baAttackerLevel: 0, chinchompaDistance: 4, usingSunfireRunes: false },
+          spell: null,
+        };
+        const calcd = calculateEquipmentBonusesFromGear(player, m);
+        player.bonuses = calcd.bonuses; player.offensive = calcd.offensive; player.defensive = calcd.defensive;
+        player.attackSpeed = calculateAttackSpeed(player, m);
+        const calc: any = new PlayerVsNPCCalc(player, m, { loadoutName: 'x', detailedOutput: false, usingSpecialAttack: true } as any);
+        const [minHit, maxHit] = calc.getMinAndMax();
+        const atkRoll = calc.getMaxAttackRoll();
+        const defRoll = calc.getNPCDefenceRoll();
+        const hc = calc.getHitChance();
+        const dist = calc.getAttackerDist();
+        const raw = { off: { stab: 0, slash: 0, crush: 0, magic: 0, ranged: 0 } as any, str: 0, rstr: 0, mstr: 0 };
+        for (const p of pieces) {
+          for (const k of Object.keys(raw.off)) raw.off[k] += p.offensive[k] || 0;
+          raw.str += p.bonuses.str || 0; raw.rstr += p.bonuses.ranged_str || 0; raw.mstr += p.bonuses.magic_str || 0;
+        }
+        const t = style.type;
+        const ds = specDefenceStyle(weapon.name, t);
+        let defBonus: number; let defLevel: number;
+        if (ds === 'ranged') {
+          const rt = getRangedDamageType(weapon.category);
+          defBonus = rt === 'mixed' ? Math.trunc((m.defensive.light + m.defensive.standard + m.defensive.heavy) / 3) : m.defensive[rt];
+          defLevel = m.skills.def;
+        } else if (ds === 'magic') { defBonus = m.defensive.magic; defLevel = m.skills.magic; } else { defBonus = m.defensive[ds]; defLevel = m.skills.def; }
+        if ((defLevel + 9) * (defBonus + 64) !== defRoll) throw new Error('defence roll mismatch for ' + lo.id + ' vs ' + mn);
+        const tbowMagic = Math.max(m.skills.magic, m.offensive.magic);
+        const weak = m.weakness ? `${m.weakness.element}:${m.weakness.severity}` : '-';
+        n++;
+        rows.push([`${prof.id}/${lo.id}/${mn}${mv ? ' (' + mv + ')' : ''}`, prof.id, `${mn}|${mv}`, lo.id, lo.gear.join(','), t, style.stance,
+          prof.lvl + prof.boost.atk, prof.lvl + prof.boost.str, prof.lvl + prof.boost.ranged, prof.lvl + prof.boost.magic, prof.lvl,
+          (prof.prayers as any)[kind].join(',') || '-',
+          raw.off[t], raw.str, raw.rstr, raw.mstr, ds, defLevel, defBonus, m.defensive.light, m.defensive.standard, m.defensive.heavy, tbowMagic,
+          (m.attributes || []).join(',') || '-', calc.isSlayerMonster() ? 1 : 0, m.size, weak, tags,
+          minHit, maxHit, atkRoll, defRoll, hc.toFixed(6), dist.dists.length, dist.getMax()].join('\t'));
+      }
+    }
+  }
+  fs.writeFileSync(out, rows.join('\n') + '\n');
+  console.log('spec rows', n);
+}
+
 main();
+if (process.argv[3]) specMain(process.argv[3]);

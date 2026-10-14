@@ -188,8 +188,9 @@ public final class CombatHandler {
         long defenceRoll = HitCalcBridge.defenceRoll(target, in);
         int maxHit = Math.max(1, HitCalcBridge.maxHit(player, target, in));
         java.util.Random rng = new java.util.Random(player.getRandom().nextLong());
-        boolean accurate = rng.nextDouble() < com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);
-        int damage = accurate ? rng.nextInt(maxHit + 1) : 0;
+        boolean accurate = rng.nextDouble() < HitCalcBridge.hitChance(in, attackRoll, defenceRoll); // specials can always hit
+        int minHit = Math.min(HitCalcBridge.minHit(in), maxHit); // dark bow special: 5 / 8
+        int damage = accurate ? minHit + rng.nextInt(maxHit - minHit + 1) : 0;
         // Enchanted (e) bolt effects (opal to onyx, dragon variants).
         damage = HitCalcBridge.afterRoll(in, damage); // vampyre tiers (silver bolts, blisterwood stakes)
         damage = com.runecraft.content.systems.BoltProcs.apply(player, target, arrowItem, accurate, damage, maxHit);

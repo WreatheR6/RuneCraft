@@ -73,9 +73,19 @@ public final class HitCalcBridge {
         // the amulet of avarice's Forinthry surge while skulled.
         in.inWilderness = com.runecraft.world.Gielinor.wildernessLevel(p) > 0;
         in.forinthrySurge = SkullService.isSkulled(p);
+        // A special attack (armed, matching the style, enough energy): PlayerHitCalc applies its accuracy / damage changes
+        // and the defence style it rolls against. Soul stacks and missing prayer points feed the soulreaper axe and bludgeon.
+        in.special = specialAttack.test(p, type);
+        in.soulreaperStacks = soulStacks.applyAsInt(p);
+        in.prayerMissing = Math.max(0, s.level(Skill.PRAYER) - d.prayerPoints());
         target(in, p, target);
         return in;
     }
+
+    /** True when this attack is the player's special attack; set by the systems module (special attack service). */
+    public static java.util.function.BiPredicate<ServerPlayerEntity, AttackType> specialAttack = (p, type) -> false;
+    /** The player's soulreaper axe soul stacks; set by the systems module. */
+    public static java.util.function.ToIntFunction<ServerPlayerEntity> soulStacks = p -> 0;
 
     /** Vampyre tier immunity and damage multipliers applied to a rolled hit (PlayerHitCalc). */
     public static int afterRoll(PlayerHitCalc.Input in, int damage) {
@@ -116,9 +126,11 @@ public final class HitCalcBridge {
             return;
         }
         MonsterStats stats = MonsterStats.of(target);
-        in.targetDefenceLevel = stats.defence();
-        in.targetMagicLevel = stats.magic();
-        in.targetDefenceBonus = stats.defenceBonus(in.type);
+        // Defence and Magic after stat drains (dragon warhammer, elder maul, Bandos godsword, arclight, spells...).
+        in.targetDefenceLevel = SysCombat.drainedStatLevel(target, Skill.DEFENCE);
+        in.targetMagicLevel = SysCombat.drainedStatLevel(target, Skill.MAGIC);
+        AttackType against = PlayerHitCalc.specialDefenceType(in);
+        in.targetDefenceBonus = stats.defenceBonus(against != null ? against : in.type);
         in.targetRangedDefence = stats.rangedDefences();
         in.weaknessElement = stats.weakness();
         in.weaknessPercent = stats.weaknessPercent();
@@ -211,7 +223,8 @@ public final class HitCalcBridge {
      */
     public static long defenceRoll(LivingEntity target, PlayerHitCalc.Input in) {
         if (target == null || target instanceof ServerPlayerEntity) {
-            return CombatHandler.defenceRoll(target, in.type);
+            AttackType against = PlayerHitCalc.specialDefenceType(in);
+            return CombatHandler.defenceRoll(target, against != null ? against : in.type);
         }
         return PlayerHitCalc.defenceRoll(in);
     }
@@ -233,6 +246,9 @@ public final class HitCalcBridge {
 
     /** Hit chance of these rolls: Osmumten's fang rolls accuracy twice on stab attacks. */
     public static double hitChance(PlayerHitCalc.Input in, long attackRoll, long defenceRoll) {
+        if (PlayerHitCalc.specialAlwaysHits(in)) {
+            return 1.0;
+        }
         if (in.weapon.startsWith("osmumtens_fang") && in.type == AttackType.STAB) {
             return com.runecraft.osrs.Chance.fangHitChance(attackRoll, defenceRoll);
         }

@@ -51,6 +51,9 @@ public final class SystemsHooks implements ModuleHooks {
         CannonService.register();
 
         CombatHooks.addModifier(new SysModifier());
+        // Special attacks: PlayerHitCalc applies their accuracy / damage changes when the attack is a special.
+        com.runecraft.combat.HitCalcBridge.specialAttack = SpecialAttackService::isSpecial;
+        com.runecraft.combat.HitCalcBridge.soulStacks = p -> SysState.of(p).soulStacks;
         CombatHooks.addHurtListener(JewelleryService::onHurt);
 
         GameEvents.onKill((p, e, stats) -> {
