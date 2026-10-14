@@ -376,7 +376,7 @@ public final class PlayerHitCalc {
         if (revWeapon(in)) {
             roll = factor(roll, 3, 2);
         }
-        if (in.weapon.equals("dragon_hunter_crossbow") && in.attr("dragon")) {
+        if (in.weapon.startsWith("dragon_hunter_crossbow") && in.attr("dragon")) {
             roll = factor(roll, 13, 10);
         }
         return roll;
@@ -423,7 +423,7 @@ public final class PlayerHitCalc {
             roll = factor(roll, 100 + additive, 100);
         }
         if (in.attr("dragon")) {
-            if (in.weapon.equals("dragon_hunter_crossbow")) {
+            if (in.weapon.startsWith("dragon_hunter_crossbow")) {
                 roll = factor(roll, 13, 10);
             } else if (in.weapon.equals("dragon_hunter_lance")) {
                 roll = factor(roll, 6, 5);
@@ -619,7 +619,7 @@ public final class PlayerHitCalc {
         if (CombatBonuses.isCrystalBow(in.weapon)) {
             max = factor(max, 40 + crystalPieces(in), 40);
         }
-        boolean dragonbane = in.weapon.equals("dragon_hunter_crossbow") && in.attr("dragon");
+        boolean dragonbane = in.weapon.startsWith("dragon_hunter_crossbow") && in.attr("dragon");
         boolean rev = revWeapon(in);
         if (avarice(in)) {
             max = factor(max, in.forinthrySurge ? 27 : 24, 20);
@@ -702,7 +702,7 @@ public final class PlayerHitCalc {
                 max = factor(max, 6, 5);
             } else if (in.weapon.equals("dragon_hunter_wand")) {
                 max = factor(max, 7, 5);
-            } else if (in.weapon.equals("dragon_hunter_crossbow")) {
+            } else if (in.weapon.startsWith("dragon_hunter_crossbow")) {
                 max = factor(max, 5, 4);
             }
         }

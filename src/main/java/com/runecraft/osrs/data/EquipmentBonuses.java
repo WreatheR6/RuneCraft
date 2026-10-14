@@ -590,6 +590,8 @@ public final class EquipmentBonuses {
         put("tonalztics_of_ralos", 7, 0, 0, 0, 0, 115,  0, 0, 0, 0, 0,  0, 55, 0, 2);
         put("twisted_buckler", 0, -7, -8, -7, -10, 18,  22, 24, 22, 26, 58,  0, 10, 0, 0);
         put("dragon_hunter_crossbow", 6, 0, 0, 0, 0, 95,  0, 0, 0, 0, 0,  0, 0, 0, 0);
+        put("dragon_hunter_crossbow_b", 6, 0, 0, 0, 0, 95,  0, 0, 0, 0, 0,  0, 0, 0, 0);
+        put("dragon_hunter_crossbow_t", 6, 0, 0, 0, 0, 95,  0, 0, 0, 0, 0,  0, 0, 0, 0);
         twoH("dinhs_bulwark", 5, 0, 0, 124, 0, 0,  106, 109, 109, -10, 148,  38, 0, 0, 0);
         put("ancestral_hat", 0, 0, 0, 0, 8, -2,  12, 11, 13, 5, 0,  0, 0, 3, 0);
         put("ancestral_robe_top", 0, 0, 0, 0, 35, -8,  42, 31, 51, 28, 0,  0, 0, 3, 0);

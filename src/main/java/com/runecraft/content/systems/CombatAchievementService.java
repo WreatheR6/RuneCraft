@@ -973,6 +973,18 @@ public final class CombatAchievementService {
             boolean has = Inv.has(p, "avernic_defender", 1);
             s.button(hiltId + "|defender", "Attach to an avernic defender", has ? "" : "You need an avernic defender.", has && hilt >= tier);
         }
+        for (String orn : new String[]{CombatAchievements.DHCB_KBD, CombatAchievements.DHCB_VORKATH}) {
+            Tier need = CombatAchievements.dhcbOrnamentTier(orn);
+            String head = CombatAchievements.dhcbHead(orn);
+            if (hilt >= need.ordinal() + 1 && Inv.has(p, "dragon_hunter_crossbow", 1)) {
+                boolean hasHead = Inv.has(p, head, 1);
+                s.button(hiltId + "|" + orn, "Make a " + ItemCatalog.get(orn).name(), hasHead ? "" : "You need " + ItemCatalog.get(head).name() + ".",
+                        hasHead);
+            }
+            if (Inv.has(p, orn, 1)) {
+                s.button(hiltId + "|revert:" + orn, "Take the head off your " + ItemCatalog.get(orn).name(), "", true);
+            }
+        }
         s.send(p);
     }
 
@@ -988,6 +1000,28 @@ public final class CombatAchievementService {
         }
         int hilt = effectiveHilt(p, hiltId);
         String rest = action.substring(bar + 1);
+        if (rest.startsWith("revert:")) {
+            String orn = rest.substring(7);
+            String head = CombatAchievements.dhcbHead(orn);
+            if (head != null && Inv.has(p, orn, 1)) {
+                Inv.remove(p, orn, 1);
+                Inv.give(p, "dragon_hunter_crossbow", 1);
+                Inv.give(p, head, 1);
+                Msg.action(p, "You take the head off the crossbow.");
+            }
+            return;
+        }
+        Tier ornTier = CombatAchievements.dhcbOrnamentTier(rest);
+        if (ornTier != null) {
+            String head = CombatAchievements.dhcbHead(rest);
+            if (hilt >= ornTier.ordinal() + 1 && Inv.has(p, "dragon_hunter_crossbow", 1) && Inv.has(p, head, 1)) {
+                Inv.remove(p, "dragon_hunter_crossbow", 1);
+                Inv.remove(p, head, 1);
+                Inv.give(p, rest, 1);
+                Msg.action(p, "Ghommal's hilt lets you fix the head to your dragon hunter crossbow.");
+            }
+            return;
+        }
         if (rest.equals("defender")) {
             int tier = CombatAchievements.hiltTier(hiltId);
             if (tier >= 5 && hilt >= tier && Inv.has(p, "avernic_defender", 1)) {
