@@ -41,6 +41,7 @@ public final class Untradeables {
                 "ring_of_the_gods_i", "granite_ring_i", "ring_of_suffering_i", "salve_amulet_i", "salve_amulet_ei", "soul_cape",
                 "scroll_of_imbuing");
         // Recipe for Disaster gloves.
+        add("rfd_hardleather_gloves");
         add("rfd_bronze_gloves", "rfd_iron_gloves", "rfd_steel_gloves", "rfd_black_gloves", "rfd_mithril_gloves",
                 "rfd_adamant_gloves", "rfd_rune_gloves", "rfd_dragon_gloves", "barrows_gloves");
         // Achievement diary rewards.

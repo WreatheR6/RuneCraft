@@ -106,6 +106,8 @@ final class FremennikQuests {
         b.item("seal_of_passage", "Seal of passage", "amulet", 0x8AA0C0, "Lets you be understood by the Moon Clan of Lunar Isle.");
         b.item("waking_sleep_vial", "Waking sleep vial", "potion", 0x8A8AE0, "A potion to enter the dream world.");
         b.item("lunar_moonclan_manual", "Moonclan manual", "book", 0x5A6A8A, "A manual on the Lunar arts.");
+        b.item("ld_lunar_ore", "Lunar ore", "ore", 0x8AA0C0, "Ore from the Lunar Isle mine.");
+        b.spot("lunar_isle_mine", "Lunar Isle mine", 2142, 3944); // approx: the ladder in the north-east of the isle
         b.boss(BossDef.of("me", "Me").level(79).stats(100, 70, 70, 70, 70, 70).speed(4)
                 .attack(AttackDef.of("mirror_strike", AttackType.SLASH, 12, 2.5, 10))
                 .attack(AttackDef.of("mirror_spell", AttackType.MAGIC, 12, 8, 4).particle("minecraft:end_rod"))
@@ -117,21 +119,51 @@ final class FremennikQuests {
                 .xp(Skill.MAGIC, 5000).xp(Skill.RUNECRAFT, 5000).reward("seal_of_passage", "lunar_staff")
                 .unlock("The Lunar spellbook")
                 .stage("I can start this quest by speaking to Lokar Searunner on the Rellekka docks. (Requires Fremennik Trials, Lost City, Rune Mysteries, Shilo Village and many skills.)")
-                .talk("lokar_searunner").travel("quest_lunar_isle").say("Lunar Isle? Few go there. Very well, I'll take you... *A pirate crew attacks your ship, but you fight them off and reach the isle.*")
-                .stage("I've reached Lunar Isle. I should speak to the Oneiromancer.")
-                .talk("oneiromancer").give("seal_of_passage", "lunar_moonclan_manual")
-                .say("Wear this seal so my people can understand you. The Fremennik want peace with the Moon Clan? Then prove yourself to us.",
-                        "Make a waking sleep potion to enter the dream world: guam leaf, marrentill and a vial of water.")
-                .stage("I need to make a waking sleep potion (guam leaf, marrentill, vial of water) and help Pauline Polaris make Lunar equipment.")
-                .talk("pauline_polaris").stay().unlessFlag("ld_equipment").flag("ld_equipment").take("runite_bar")
-                .say("Lunar equipment needs a little rune. *You help her forge the lunar staff and armour.*")
-                .missing("I need a runite bar to forge Lunar equipment.")
-                .talk("oneiromancer").needFlag("ld_equipment").take("guam_leaf", "marrentill", "vial_of_water").give("waking_sleep_vial")
-                .say("*She brews the potion.* Drink this in the shrine. In the dream world you must face your greatest enemy... yourself.")
-                .missing("I need a guam leaf, a marrentill and a vial of water. And Pauline Polaris needs your help with your equipment.")
+                .talk("lokar_searunner").say("Lunar Isle? Few go there, and none without a seal of passage from Brundt. Get one and I'll take you... on my old crew's ship.")
+                // OSRS: Brundt's seal, then Captain Bentley's pirate ship: the cabin boy's emerald lens on a lit lantern reveals five symbols to rub away.
+                .stage("I need a seal of passage from Brundt; then Lokar's pirate friends will sail me to Lunar Isle, where I should speak to the Oneiromancer.")
+                .talk("brundt").stay().unless("seal_of_passage").give("seal_of_passage")
+                .say("The Moon Clan? Wear this seal of passage, or they won't understand a word you say. Be careful, outerlander.")
+                .talk("lokar_searunner").stay().unlessFlag("ld_sailed").need("seal_of_passage", "tinderbox").flag("ld_sailed").travel("quest_lunar_isle")
+                .say("* Captain Bentley's ship is cursed with Lunar symbols. The cabin boy gives you an emerald lens for a lantern; lit, it shows the symbols",
+                        "* on the cannon, the wallchart, a chest, a support pillar and a crate. You rub them away and the ship sails for Lunar Isle.")
+                .missing("Got your seal of passage? And bring a tinderbox; that ship's always dark below decks.")
+                .talk("oneiromancer").needFlag("ld_sailed").need("seal_of_passage").give("lunar_moonclan_manual")
+                .say("You wear the seal, so my people understand you. The Fremennik want peace with the Moon Clan? Then prove yourself to us.",
+                        "Make a waking sleep potion to enter the dream world, and dress in proper Lunar equipment. This manual will guide you.")
+                .missing("* The Oneiromancer cannot understand you. You need a seal of passage.")
+                // OSRS: a suqah tooth for the potion; the dramen staff charged at the air, fire, water and earth altars becomes the Lunar staff;
+                // lunar ore from the mine smithed into a helm; suqah hides tanned and crafted into the torso, trousers, gloves and boots.
+                .stage("I need a waking sleep potion (guam, marrentill, a vial of water and a ground suqah tooth), a Lunar staff from my dramen staff and a set of Lunar equipment.")
+                .drop("suqah", "suqah_tooth", 3)
+                .reach("AIR_ALTAR", 10).stay().need("dramen_staff").unlessFlag("ld_staff_air").flag("ld_staff_air")
+                .say("* You hold the dramen staff over the air altar. It hums.")
+                .reach("FIRE_ALTAR", 10).stay().need("dramen_staff").needFlag("ld_staff_air").unlessFlag("ld_staff_fire").flag("ld_staff_fire")
+                .say("* The fire altar warms the staff.")
+                .reach("WATER_ALTAR", 10).stay().need("dramen_staff").needFlag("ld_staff_fire").unlessFlag("ld_staff_water").flag("ld_staff_water")
+                .say("* The water altar cools the staff.")
+                .reach("EARTH_ALTAR", 10).stay().need("dramen_staff").needFlag("ld_staff_water").unlessFlag("ld_staff").flag("ld_staff")
+                .say("* At the earth altar the staff shimmers: it has become a Lunar staff.")
+                .reach("lunar_isle_mine", 8).stay().unless("ld_lunar_ore").unlessFlag("ld_equipment").needTool("pickaxe").reqSkill(Skill.MINING, 60)
+                .give("ld_lunar_ore").say("* You mine a stalagmite in the Lunar mine for some lunar ore.")
+                .missing("* Lunar ore can be mined from the stalagmites here, with a pickaxe and 60 Mining.")
+                .talk("pauline_polaris").stay().unlessFlag("ld_equipment").take("ld_lunar_ore").need("hammer").flag("ld_equipment")
+                .say("* You smelt the ore into a lunar bar and hammer out a helm.",
+                        "A fine Lunar helm. Meteora, Rimae and Selene will help with the rest: tiara, robes from suqah hide, and the ring.")
+                .missing("Lunar equipment starts with lunar ore from the mine below the isle. And a hammer.")
+                .talk("oneiromancer").needFlag("ld_equipment", "ld_staff").take("guam_leaf", "marrentill", "vial_of_water", "suqah_tooth", "suqah_hide:4")
+                .need("pestle_and_mortar", "spade").give("waking_sleep_vial")
+                .say("* Rimae tans your suqah hides and you craft the torso, trousers, gloves and boots; you dig up Selene's ring with your spade.",
+                        "*She brews the potion with your ground suqah tooth.* Drink this in the shrine. In the dream world you must face your greatest enemy... yourself.")
+                .missing("I need a guam leaf, a marrentill, a vial of water and a suqah tooth (and a pestle and mortar), four suqah hides for your robes,"
+                        + " and a spade for the ring. Pauline Polaris will help with the helm, and charge your dramen staff at the four elemental altars.")
                 .stage("I should drink the waking sleep potion and defeat 'Me' in the dream world.")
                 .talk("oneiromancer").stay().need("waking_sleep_vial").travel("lunar_dream_world").say("Drink the potion... *The world fades into a dream.*")
-                .kill("me").take("waking_sleep_vial").travel("quest_lunar_isle").say("* You defeat your dream self and wake up in the shrine.")
+                // OSRS dream world: five challenges (chance, numbers, mimic, race, memory) before the fight with "Me". Simplified.
+                .reach("lunar_dream_world", 10).stay().unlessFlag("ld_challenges").need("waking_sleep_vial").flag("ld_challenges")
+                .say("* Ethereal Fluke's dice, the Numerator's patterns, the Mimic's emotes, the race and the memory tiles: you pass every challenge.",
+                        "* The Ethereal Being points to the last platform. Your reflection steps out to meet you.")
+                .kill("me").needFlag("ld_challenges").take("waking_sleep_vial").travel("quest_lunar_isle").say("* You defeat your dream self and wake up in the shrine.")
                 .stage("I should tell the Oneiromancer I've defeated myself.")
                 .talk("oneiromancer").take("lunar_moonclan_manual").say("You have shown great wisdom. The Moon Clan will make peace with the Fremennik. Our Lunar magic is yours to learn.")
                 .done("oneiromancer", "May the moon guide your spells.");

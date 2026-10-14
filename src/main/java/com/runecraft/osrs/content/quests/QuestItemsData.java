@@ -18,6 +18,7 @@ final class QuestItemsData {
 
     /** Recipe for Disaster gloves: id, name, colour, attack/def bonus, magic bonus, price (Culinaromancer's chest). */
     static final Object[][] RFD_GLOVES = {
+            {"rfd_hardleather_gloves", "Hardleather gloves", 0x6A4A2A, 1, 1, 65},
             {"rfd_bronze_gloves", "Bronze gloves", 0x8A5A2A, 1, 0, 104},
             {"rfd_iron_gloves", "Iron gloves", 0x6A6A6A, 2, 1, 208},
             {"rfd_steel_gloves", "Steel gloves", 0x9A9AA0, 3, 2, 520},

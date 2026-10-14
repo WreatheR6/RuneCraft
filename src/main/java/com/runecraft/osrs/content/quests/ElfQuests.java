@@ -69,7 +69,16 @@ final class ElfQuests {
         b.npc("arianwyn", "Arianwyn", "LLETYA", 3, 3, 0xF4E0D0, 0x3A8A3A, 0x2A5A2A, 0xE0D090);
         b.npc("tracker_elf", "Elf tracker", "LLETYA", -3, 3, 0xF4E0D1, 0x5A6A2A, 0x3A4A1A, 0xD0B060);
         b.item("barrel_bomb", "Barrel bomb", "pot", 0x6A4A2A, "A barrel packed with explosive coal tar. Handle with care.");
-        b.boss(BossDef.of("king_tyras", "King Tyras").level(110).stats(110, 90, 100, 90, 1, 1).speed(4)
+        b.item("regicide_barrel", "Barrel", "pot", 0x8A6A3A, "An empty barrel from General Hining's camp.");
+        b.item("barrel_of_coal_tar", "Barrel of coal tar", "pot", 0x2A2A2A, "A barrel of sticky coal tar.");
+        b.item("barrel_of_naphtha", "Barrel of naphtha", "pot", 0x6A5A2A, "Distilled from coal tar. Highly flammable.");
+        b.item("regicide_sulphur", "Ground sulphur", "spice", 0xE0D040, "Sulphur from beside the tar pit.");
+        b.item("regicide_book", "Book on chemicals", "book", 0x5A3A2A, "Lord Iorwerth's book on making explosives.");
+        b.spot("regicide_tar_pit", "Tar pit near the Elf Tracker", 2210, 3162); // approx
+        Cast.npc(b, "general_hining", "General Hining", "tyras_camp", 3, 3, Cast.FAIR, 0x8A1A1A);
+        // OSRS: the player never fights King Tyras (the barrel bomb kills him); the level-110 fight is a Tyras guard in the
+        // dense forest. The id stays "king_tyras" so saves and the creature model keep working.
+        b.boss(BossDef.of("king_tyras", "Tyras guard").level(110).stats(110, 90, 100, 90, 1, 1).speed(4)
                 .defenceBonus(60, 60, 60, 0, 60)
                 .attack(AttackDef.of("halberd", AttackType.SLASH, 17, 3, 10))
                 .drops(Drop.always("bones")).skin(0xE8C0AD, 0xC0C0C8, 0x8A1A1A, 0xE0C030).at("tyras_camp").arena(10, "jungle"));
@@ -79,19 +88,41 @@ final class ElfQuests {
                 .unlock("Access to Tirannwn and Lletya")
                 .stage("I can start this quest by speaking to King Lathas in East Ardougne. (Requires Underground Pass, 56 Agility, 10 Crafting.)")
                 .talk("king_lathas").travel("LLETYA").say("My brother Tyras leads an army in Tirannwn. He must be stopped. Go through the pass, find the elves and destroy his camp.",
-                        "* You travel through the Underground Pass into the elven lands.")
-                .stage("I should speak to the elf Arianwyn in Lletya.")
-                .talk("arianwyn").say("Lathas sent you? Tyras's army ravages our forests. His camp lies west of here. You'll need something powerful to break its defences.")
-                .stage("I need a barrel bomb to destroy Tyras's catapult. The chemist in Rimmington knows how to make coal tar explosives.")
-                .talk("chemist").take("coal:5", "minecraft:gunpowder").give("barrel_bomb").say("Coal tar and... yes, this will make quite the bang. Careful!")
-                .missing("A barrel bomb needs 5 coal and some gunpowder.")
-                .stage("I should use the barrel bomb on Tyras's catapult and confront King Tyras.")
-                .talk("tracker_elf").take("barrel_bomb").say("* The elf leads you to Tyras's camp. The barrel bomb destroys the catapult in a huge explosion!",
-                        "Tyras himself is coming!")
-                .stage("I must defeat King Tyras.")
-                .kill("king_tyras").say("* King Tyras falls. His army scatters into the forest.")
-                .stage("I should report to Arianwyn.")
-                .talk("arianwyn").say("Tyras is dead... but I fear Lathas has his own plans. Still, Tirannwn is grateful. You may enter Lletya freely.");
+                        "* You travel through the Underground Pass, down Iban's well and out into the elven lands.")
+                // OSRS: Lord Iorwerth, then the Elf Tracker, whose tracks lead through the dense forest to the Tyras camp.
+                .stage("I should speak to Lord Iorwerth and his Elf Tracker in Tirannwn.")
+                .talk("lord_iorwerth").stay().unlessFlag("reg_iorwerth").flag("reg_iorwerth")
+                .say("Lathas sent you? Tyras's army ravages our forests. My tracker can lead you to his camp, through the dense forest.")
+                .talk("tracker_elf").needFlag("reg_iorwerth")
+                .say("Tyras' scouts came this way. *The tracker points out the tracks north-west of the blue mushrooms.* Follow them into the forest; mind the tripwires.")
+                .missing("Lord Iorwerth hasn't told me to help you, human.")
+                .stage("I should follow the tracks through the dense forest to the Tyras camp and speak to General Hining.")
+                .kill("king_tyras").stay().unlessFlag("reg_guard").flag("reg_guard")
+                .say("* The Tyras guard who ambushed you in the dense forest falls.")
+                .talk("general_hining").needFlag("reg_guard").give("regicide_barrel:2")
+                .say("A visitor who got past the forest? The king can't see anyone. Make yourself useful and shift some of these barrels.")
+                .missing("* A Tyras guard bars the way through the dense forest.")
+                .stage("I need a barrel bomb for the camp's catapult: coal tar from the tar pit by the tracker, then the chemist in Rimmington can distil naphtha.")
+                .reach("regicide_tar_pit", 6).stay().unless("barrel_of_coal_tar", "barrel_bomb").take("regicide_barrel").give("barrel_of_coal_tar", "regicide_sulphur")
+                .say("* You fill a barrel with coal tar and pick up a lump of sulphur beside the pit.")
+                .talk("lord_iorwerth").stay().unless("regicide_book", "barrel_bomb").give("regicide_book")
+                .say("Coal tar, sulphur, quicklime... and a fuse. This book on chemicals explains it. The chemist in Rimmington has a still.")
+                .talk("chemist").need("regicide_book", "pestle_and_mortar").take("barrel_of_coal_tar", "coal:20", "regicide_sulphur", "limestone", "strip_of_cloth")
+                .give("barrel_bomb", "barrel_of_naphtha")
+                .say("* You distil the coal tar over 20 coal in the fractionalising still: naphtha! You burn limestone to quicklime and grind it and the sulphur.",
+                        "* Naphtha, quicklime and sulphur in a barrel, a strip of cloth for a fuse: a barrel bomb. You distil a spare barrel of naphtha too.")
+                .missing("You'll need the coal tar, 20 coal, ground sulphur, limestone for quicklime, a strip of cloth for a fuse, a pestle and mortar and that chemicals book.")
+                .stage("I should take the barrel bomb back through the pass and use it on the catapult north of the Tyras camp.")
+                .reach("tyras_camp", 10).take("barrel_bomb", "minecraft:cooked_rabbit").need("tinderbox")
+                .say("* You hand the catapult guard a cooked rabbit. While he eats, you load the barrel bomb and light the fuse...",
+                        "* The bomb sails into the camp and explodes on King Tyras' tent!")
+                .missing("* The catapult guard won't let you near. Perhaps something to eat would distract him: a cooked rabbit. And a tinderbox for the fuse.")
+                .stage("I should tell Lord Iorwerth, then report to King Lathas.")
+                .talk("lord_iorwerth").stay().unlessFlag("reg_reported").flag("reg_reported")
+                .say("Tyras is dead, and the way to the east is open. Lathas will be pleased... more than you know.")
+                .talk("king_lathas").needFlag("reg_reported")
+                .say("My brother is dead? Then Tirannwn is open to my armies. You may enter Lletya freely; the elves owe you that much.")
+                .missing("Have you dealt with my brother? Speak to Lord Iorwerth first.");
     }
 
     private static void songOfTheElves(QuestBook b) {
@@ -100,10 +131,15 @@ final class ElfQuests {
         b.item("ardougne_knight_helm", "Ardougne knight helm", "helmet", 0xA02A2A, "A red steel full helm of the Ardougne knights.");
         b.item("ardougne_knight_platebody", "Ardougne knight platebody", "platebody", 0x8A8A9A, "A steel platebody with the Ardougne tabard.");
         b.item("crystal_seed_sote", "Crystal seed", "gem", 0xB8F0FF, "The seed of the great crystal of Prifddinas.");
-        b.boss(BossDef.of("fragment_of_seren", "Fragment of Seren").level(494).stats(1000, 300, 200, 300, 400, 1).speed(4)
-                .defenceBonus(100, 100, 100, 100, 100)
-                .attack(AttackDef.of("crystal_slash", AttackType.SLASH, 30, 3, 5))
-                .attack(AttackDef.of("crystal_spike", AttackType.MAGIC, 40, 10, 3).special(Special.SKY_STRIKE, 0)
+        // Fragment of Seren and Essyllt: OSRS Wiki infoboxes (levels, hitpoints, combat stats, max hits, attack speed).
+        b.boss(BossDef.of("sote_essyllt", "Essyllt").level(236).stats(320, 268, 268, 104, 104, 342).speed(4)
+                .attack(AttackDef.of("sword", AttackType.SLASH, 40, 2.5, 5))
+                .attack(AttackDef.of("crossbow", AttackType.RANGED, 51, 10, 5))
+                .drops(Drop.always("bones")).skin(0xF4E0D0, 0x1A1A1A, 0x1A1A1A, 0x2A2A2A).at("west_ardougne_mourners").arena(10, "crypt"));
+        b.boss(BossDef.of("fragment_of_seren", "Fragment of Seren").level(494).stats(1000, 242, 288, 102, 102, 235).speed(7)
+                .defenceBonus(100, 100, 100, 100, 100) // approx
+                .attack(AttackDef.of("crystal_volley", AttackType.RANGED, 24, 10, 5)) // two hits of up to 12
+                .attack(AttackDef.of("crystal_spike", AttackType.MAGIC, 40, 10, 3).special(Special.SKY_STRIKE, 0) // approx: OSRS special hits max HP minus 1
                         .telegraph(3, "Crystals rain down from the sky!").particle("minecraft:end_rod"))
                 .attack(AttackDef.of("fragment_drain", AttackType.MAGIC, 20, 10, 2).special(Special.DRAIN_PRAYER, 15))
                 .phase(66, "The Fragment of Seren shatters into crystals and reforms!", 1.2, false)
@@ -137,11 +173,15 @@ final class ElfQuests {
                 .say("* You grind the crystal shard to dust and mix it with cadantine in a vial of water.",
                         "A crystal tonic! With this I can sing to the crystal again. Now, to Iorwerth.")
                 .missing("I need a tonic to sing to the crystal: cadantine, a crystal shard and a vial of water, ground and mixed with a pestle and mortar.")
-                .talk("lord_iorwerth").needFlag("sote_tonic")
+                .kill("iorwerth_archer").stay().needFlag("sote_arianwyn").unlessFlag("sote_orb").flag("sote_orb")
+                .say("* The Iorwerth archer and his warrior companion fall. You recover the stolen orb.") // approx: the level 108 warrior isn't spawned
+                .talk("lord_iorwerth").needFlag("sote_tonic", "sote_orb")
                 .say("You're too late! I have corrupted the Fragment of Seren. The goddess's song will destroy you all!")
-                .missing("* Iorwerth's guards bar the way. Baxtorian's people must be ready first.")
+                .missing("* Iorwerth's guards bar the way. Baxtorian needs his tonic, and the orb the Iorwerth archers stole must be recovered.")
                 .stage("I must defeat the corrupted Fragment of Seren.")
-                .kill("fragment_of_seren").give("crystal_seed_sote").say("* The Fragment of Seren falls silent. A crystal seed lies where she stood.")
+                .kill("sote_essyllt").stay().unlessFlag("sote_essyllt").flag("sote_essyllt")
+                .say("* Essyllt, Iorwerth's agent among the mourners, falls. The Underground Pass is sealed behind you.")
+                .kill("fragment_of_seren").needFlag("sote_essyllt").give("crystal_seed_sote").say("* The Fragment of Seren falls silent. A crystal seed lies where she stood.")
                 .stage("I should give the crystal seed to Baxtorian so Prifddinas can be rebuilt.")
                 .talk("baxtorian_elf").take("crystal_seed_sote").say("* Baxtorian sings to the seed. Crystal towers rise from the ruins: Prifddinas is restored!",
                         "The elven city welcomes you, hero of Prifddinas.")

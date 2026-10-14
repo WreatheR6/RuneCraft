@@ -148,6 +148,12 @@ final class MahjarratQuests {
         b.item("leviathan_medallion_piece", "Leviathan's medallion", "amulet", 0x2A6A2A, "A piece of the ancient medallion, taken from the Leviathan.");
         b.items(s -> s.add("ring_of_shadows", "Ring of shadows", Kind.SIMPLE, "ring", 0x3A2A4A).value(1).stack(1)
                 .examine("A ring that reveals the shadow realm and teleports to the four strongholds of the old empire."));
+        b.spot("dt2_digsite_east_winch", "Digsite east winch", 3370, 3427); // approx: the easternmost winch
+        // The Ancient Guardian under the Digsite: OSRS Wiki infobox.
+        b.boss(BossDef.of("dt2_ancient_guardian", "Ancient Guardian").level(153).stats(100, 180, 110, 100, 100, 1).speed(5)
+                .attack(AttackDef.of("slam", AttackType.CRUSH, 12, 2.5, 10))
+                .drops(Drop.always("bones")).skin(0x9A9AA0, 0x5A3A6A, 0x3A2A4A, 0x8A8A90).size(1.0f, 2.6f, 1.2f)
+                .at("dt2_digsite_east_winch").arena(8, "sand"));
         b.quest("desert_treasure_ii", "Desert Treasure II - The Fallen Empire", Difficulty.GRANDMASTER, 5)
                 .reqQuest("desert_treasure_i", "secrets_of_the_north", "enakhras_lament", "temple_of_the_eye", "the_garden_of_death",
                         "below_ice_mountain", "his_faithful_servants")
@@ -160,8 +166,20 @@ final class MahjarratQuests {
                 .talk("asgarnia_smith").say("A vault of the old Zarosian empire has been uncovered in the desert! I need someone brave, and preferably expendable, to open it.")
                 .stage("I should investigate the Vault in the Kharidian Desert.")
                 .reach("quest_the_vault", 8).say("* The vault door bears four empty sockets, shaped like pieces of a medallion. An ancient guardian stirs.")
-                .stage("I should speak to the Ancient Guardian of the Vault.")
-                .talk("quest_ancient_guardian_vault").say("The medallion was split among the four strongholds of the empire: the Stranglewood, Ghorrock, Lassar and the Scar. Their keepers have... changed.")
+                // OSRS "The Ancient Guardian": Terry Balando, the east winch, Dr Banikan's rocks (pickaxe), the guardian, then the golem machine
+                // charged by burst spells on the four totems.
+                .stage("I should find out who built the vault: Terry Balando at the Exam Centre, then the military installation under the Digsite.")
+                .talk("terry_balando").stay().unlessFlag("dt2_terry").flag("dt2_terry")
+                .say("Statues of four generals and a plaque in Zarosian? Dr Banikan has found an old military installation beneath the Digsite. Take the east winch.")
+                .reach("dt2_digsite_east_winch", 8).stay().needFlag("dt2_terry").unlessFlag("dt2_rocks").needTool("pickaxe").flag("dt2_rocks").spawn("dt2_ancient_guardian")
+                .say("* Down the winch, Dr Banikan points at a rockfall. You mine through it... and something huge stirs in the crevice!")
+                .missing("* Dr Banikan's rockfall blocks the way. You'll need a pickaxe.")
+                .kill("dt2_ancient_guardian").stay().needFlag("dt2_rocks").unlessFlag("dt2_guardian").flag("dt2_guardian")
+                .say("* The Ancient Guardian crumbles. Behind it lies an old golem machine.")
+                .talk("quest_ancient_guardian_vault").needFlag("dt2_guardian").reqSkill(Skill.MAGIC, 75).take("death_rune:4", "chaos_rune:4")
+                .missing("* The golem machine's cells are empty. Burst spells on the four totems (death and chaos runes) would charge them.")
+                .say("* You charge the cells with burst spells on the totems and set the golem running. It speaks in an ancient voice:",
+                        "The medallion was split among the four strongholds of the empire: the Stranglewood, Ghorrock, Lassar and the Scar. Their keepers have... changed.")
                 .stage("I must recover the four medallion pieces from Vardorvis, Duke Sucellus, the Whisperer and the Leviathan.")
                 .drop("vardorvis", "vardorvis_medallion_piece", 1).drop("duke_sucellus", "sucellus_medallion_piece", 1)
                 .drop("the_whisperer", "whisperer_medallion_piece", 1).drop("the_leviathan", "leviathan_medallion_piece", 1)

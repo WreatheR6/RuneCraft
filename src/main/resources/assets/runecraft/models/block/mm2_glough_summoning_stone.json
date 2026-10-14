@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/mm2_glough_summoning_stone_side",
+    "top": "runecraft:block/mm2_glough_summoning_stone_top",
+    "bottom": "runecraft:block/mm2_glough_summoning_stone_bottom"
+  }
+}

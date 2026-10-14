@@ -260,7 +260,7 @@ final class LateQuestsD {
                 .stage("I should talk to Muriel in the house north-east of Cormac.")
                 .talk("quest_muriel").say("The cathedral golems ran on sunstone. Mine a fragment from the monolith on the south-east coast; you'll need a pickaxe and chisel.")
                 .stage("I should mine a sunstone fragment from the monolith on the coast south-east of Muriel's house.")
-                .reach("quest_sunstone_monolith", 6).reqSkill(Skill.MINING, 53).need("bronze_pickaxe", "chisel").give("quest_sunstone_fragment")
+                .reach("quest_sunstone_monolith", 6).reqSkill(Skill.MINING, 53).needTool("pickaxe").need("chisel").give("quest_sunstone_fragment")
                 .say("* You chip a glowing fragment off the sunstone monolith.")
                 .missing("* I need 53 Mining, a pickaxe and a chisel to take a fragment.")
                 .stage("I should take the sunstone fragment back to Cormac.")

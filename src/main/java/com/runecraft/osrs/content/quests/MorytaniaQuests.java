@@ -388,7 +388,7 @@ final class MorytaniaQuests {
                 .missing("Not yet. Deal with the herb dealer in Slepe and come with the Myreque to the Icyene graveyard.").say("I want my brother overthrown. The Blisterwood tree can kill any vampyre. Cut its logs and craft a weapon.",
                         "But Vanstrom Klause hunts you. Be ready.")
                 .stage("I should cut blisterwood logs (rune axe) and craft a blisterwood flail.")
-                .talk("vanescula_drakan").need("rune_axe").reqSkill(Skill.WOODCUTTING, 62).reqSkill(Skill.FLETCHING, 60).give("blisterwood_logs", "blisterwood_flail")
+                .talk("vanescula_drakan").needTool("axe").reqSkill(Skill.WOODCUTTING, 62).reqSkill(Skill.FLETCHING, 60).give("blisterwood_logs", "blisterwood_flail")
                 .say("* You cut logs from the Blisterwood tree and fletch them into a flail with silver from Vanescula's smiths.")
                 .missing("The Blisterwood tree needs a strong axe. Bring a rune axe.")
                 .stage("Vanstrom Klause has found me! I must defeat him with the blisterwood flail.")

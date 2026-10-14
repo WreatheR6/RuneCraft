@@ -61,6 +61,34 @@ final class RecipeForDisaster {
                 .drops(Drop.always("bones")).skin(0xE8C0B2, 0xF0F0F2, 0x5A1A6A, 0xF0F0F3).at("rfd_lumbridge_cellar").arena(9, "stone"));
 
         b.item("rfd_rock_cake", "Dwarven rock cake", "cake", 0x8A7A6A, "A cake made of... rock? Rohak loves them.");
+        // Subquest ingredients (OSRS Wiki quick guides). Shapes/colours are approximations.
+        b.item("rfd_fishbowl_helmet", "Fishbowl helmet", "full_helm", 0xB8E0F0, "A fishbowl with bronze wire: Murphy says it'll let you breathe underwater.");
+        b.item("rfd_mudskipper_hide", "Mudskipper hide", "hide", 0x6A7A4A, "Nung the fishman wants these for his crab pen.");
+        b.item("rfd_ground_crab_meat", "Ground giant crab meat", "spice", 0xE0A080, "Giant crab meat, ground with a pestle and mortar.");
+        b.item("rfd_ground_kelp", "Ground kelp", "spice", 0x3A6A3A, "Kelp from the sea bed, ground with a pestle and mortar.");
+        b.item("rfd_enchanted_egg", "Enchanted egg", "bait", 0xF0E8D0, "Wizard Traiborn enchanted this egg.");
+        b.item("rfd_enchanted_milk", "Enchanted milk", "vial_water", 0xF0F0FF, "Wizard Traiborn enchanted this milk.");
+        b.item("rfd_enchanted_flour", "Enchanted flour", "pot_item", 0xF0F0E0, "Wizard Traiborn enchanted this flour.");
+        b.item("rfd_hell_rat_spices", "Hell-rat spices", "spice", 0xC06A1A, "Yellow, orange, red and brown spices your cat chased out of the hell-rats.");
+        b.item("rfd_raw_jubbly", "Raw jubbly", "meat_raw", 0xE09090, "A plucked jubbly bird. Skrach wants it roasted on a spit.");
+        b.item("rfd_evil_chicken_egg", "Evil chicken's egg", "bait", 0x8A1A1A, "It's warm. And it's watching you.");
+        b.item("rfd_dragon_token", "Dragon token", "coins", 0x2A2A2A, "Rub it and a black dragon flambes your brulee.");
+        b.item("rfd_vanilla_pod", "Vanilla pod", "produce", 0xE8D8A0, "Picked from a vanilla plant in the Kharazi Jungle.");
+        b.item("rfd_snake_corpse", "Snake corpse", "meat_raw", 0x5A7A3A, "A big snake from the pit on Crash Island.");
+        b.item("rfd_red_banana", "Red banana", "produce", 0xC03A2A, "A red banana from a tree on Ape Atoll, sliced.");
+        b.item("rfd_tchiki_nuts", "Tchiki monkey nuts", "seed", 0x8A6A3A, "Ground tchiki monkey nuts from the Ape Atoll agility course.");
+        b.spot("port_khazard_rfd", "Port Khazard docks", 2674, 3160);
+        b.spot("rfd_crab_pen", "Mogre camp crab pen (under the sea)", 2992, 3114); // approx: the Mudskipper Point dive
+        b.spot("rfd_evil_daves_basement", "Evil Dave's basement", 3080, 3493);
+        b.spot("rfd_evil_chicken_lair", "The Evil Chicken's lair (Zanaris)", 3176, 3150); // approx: Zanaris (2453, 4476 in OSRS) is placed beside its swamp shed
+        b.spot("rfd_crash_island_pit", "Crash Island snake pit", 2896, 2722); // approx
+        Cast.npc(b, "rfd_traiborn", "Wizard Traiborn", "WIZARDS_TOWER", -5, 4, Cast.PALE, 0x5A3A8A);
+        Cast.npc(b, "rfd_murphy", "Murphy", "port_khazard_rfd", 0, 0, Cast.FAIR, 0x3A5A7A);
+        b.boss(BossDef.of("rfd_evil_chicken", "Evil Chicken").level(19).stats(40, 15, 15, 15, 1, 1).speed(4) // approx: its level scales with yours in OSRS
+                .attack(AttackDef.of("peck", AttackType.STAB, 6, 2, 8))
+                .attack(AttackDef.of("egg_bomb", AttackType.MAGIC, 8, 6, 3).particle("minecraft:flame"))
+                .drops(Drop.always("bones")).skin(0x8A1A1A, 0x6A1A1A, 0x4A0A0A, 0xE0A020).size(0.7f, 1.2f, 1.0f)
+                .at("rfd_evil_chicken_lair").arena(7, "stone"));
 
         b.quest("recipe_for_disaster", "Recipe for Disaster", Difficulty.GRANDMASTER, 10)
                 .reqQuest("COOKS_ASSISTANT").req(Skill.COOKING, 10)
@@ -68,49 +96,125 @@ final class RecipeForDisaster {
                 .unlock("The Culinaromancer's chest: food and RFD gloves, up to Barrows gloves")
                 .stage("I can start this quest by speaking to the Gypsy in Lumbridge Castle's dining room. (Requires Cook's Assistant, 10 Cooking.)")
                 .talk("rfd_gypsy").say("The Duke is holding a banquet for the Secret Council of Gielinor, and the Cook is in a terrible state. He needs ingredients!")
-                .stage("Another Cook's Quest: the Cook needs a bucket of milk, an egg and a pot of flour for the banquet.")
-                .talk("rfd_gypsy").take("minecraft:milk_bucket", "minecraft:egg", "pot_of_flour") // Another Cook's Quest: no XP in OSRS
-                .say("* The banquet begins... and a sinister chef appears in a puff of smoke! It's the Culinaromancer!",
+                // OSRS Another Cook's Quest: the Cook's "dirty blast" needs an eye of newt, Greenman's ale, a rotten tomato, a fruit blast and ashes.
+                .stage("Another Cook's Quest: the Cook needs an eye of newt, a Greenman's ale, a rotten tomato, a fruit blast and some ashes.")
+                .talk("rfd_gypsy").take("eye_of_newt", "greenmans_ale", "rotten_tomato", "fruit_blast", "ashes").flag("rfd_cook") // Another Cook's Quest: no XP in OSRS
+                .say("* The Cook mixes his dirty blast and the banquet begins... and a sinister chef appears in a puff of smoke! It's the Culinaromancer!",
                         "@Culinaromancer: Fools! You'll never taste my cooking again! *He freezes the council in time.*",
-                        "I have slowed time to stop him. Free each council member by cooking their favourite dish!")
-                .missing("The Cook needs a bucket of milk, an egg and a pot of flour.")
+                        "I have slowed time to stop him. Free each council member by cooking the dish that reminds them of who they are!")
+                .missing("The Cook needs an eye of newt, a Greenman's ale, a rotten tomato, a fruit blast and some ashes for his dirty blast.")
                 .stage("I must free the eight frozen council members by bringing each the dish that reminds them of who they are.")
-                .talk("rohak").stay().unlessFlag("rfd_dwarf").reqDone("fishing_contest").take("beer:2", "rfd_rock_cake").flag("rfd_dwarf")
+                // --- Mountain Dwarf: get Rohak drunk on four Asgarnian ales for his gran's recipe, bake a rock cake (gloves: it's hot).
+                .talk("rohak").stay().needFlag("rfd_dwarf_ale").unlessFlag("rfd_dwarf").take("rfd_rock_cake").flag("rfd_dwarf")
                 .grantXp(Skill.COOKING, 1000).grantXp(Skill.SLAYER, 1000)
-                .say("Asgarnian ale and a rock cake! *The Mountain Dwarf is freed from the spell.*")
-                .missing("A dwarf likes his ale. And a good rock cake. Bring me two ales and a rock cake. (Requires Fishing Contest.)")
-                .talk("evil_dave").stay().unless("rfd_rock_cake").unlessFlag("rfd_dwarf").give("rfd_rock_cake")
-                .say("Rock cakes? Mother bakes them by the dozen. Take one, just go away.")
-                .talk("general_bentnoze").stay().unlessFlag("rfd_goblins").reqDone("goblin_diplomacy").take("spice", "cake").flag("rfd_goblins")
+                .say("A dwarven rock cake, just like gran used to make! *The Mountain Dwarf is freed from the spell.*")
+                .talk("rohak").stay().needFlag("rfd_dwarf_ale").unlessFlag("rfd_dwarf").unless("rfd_rock_cake")
+                .take("minecraft:milk_bucket", "minecraft:egg", "pot_of_flour", "bowl_of_water").need("leather_gloves").give("rfd_rock_cake")
+                .say("* You mix the batter as Rohak slurs out the recipe and bake it. Your gloves save your fingers from the red-hot cake.")
+                .missing("Gran's rock cake needs a bucket of milk, an egg, a pot of flour and a bowl of water. And gloves: it comes out very hot.")
+                .talk("rohak").stay().unlessFlag("rfd_dwarf_ale", "rfd_dwarf").reqDone("fishing_contest").take("asgarnian_ale:4").flag("rfd_dwarf_ale")
+                .say("*hic* Four ales! Shure, I'll tell you gran's rock cake recipe... milk, egg, flour and water, *hic*, baked till it glowsh.")
+                .missing("A dwarf can't talk recipes sober. Four Asgarnian ales should loosen my tongue. (Requires Fishing Contest.)")
+                // --- Goblin generals: slop of compromise.
+                .talk("general_bentnoze").stay().unlessFlag("rfd_goblins").reqDone("goblin_diplomacy")
+                .take("bread", "orange", "spice", "fishing_bait", "minecraft:water_bucket", "charcoal").need("knife").flag("rfd_goblins")
                 .grantXp(Skill.COOKING, 1000).grantXp(Skill.FARMING, 1000).grantXp(Skill.CRAFTING, 1000)
-                .say("Slop of compromise! *The goblin generals stop arguing long enough to be freed.*")
-                .missing("Goblins want slop! Spicy slop with cake in it!")
-                .talk("pirate_pete").stay().unlessFlag("rfd_pete").reqSkill(Skill.COOKING, 31).take("raw_salmon:2").flag("rfd_pete")
+                .say("* The goblin cook soaks the bread in water and adds orange slices, spice, bait and charcoal for colour...",
+                        "Slop of compromise! *The goblin generals stop arguing long enough to be freed.*")
+                .missing("Goblins want slop! Bread soaked in water, orange slices (you'll need a knife), spice, fishing bait and charcoal!")
+                // --- Pirate Pete: fishcake of ground cod, breadcrumbs, ground kelp and ground giant crab meat from under the sea.
+                .talk("pirate_pete").stay().needFlag("rfd_pete_dive").unlessFlag("rfd_pete").reqSkill(Skill.COOKING, 31)
+                .take("raw_cod", "bread", "rfd_ground_kelp", "rfd_ground_crab_meat").need("pestle_and_mortar", "knife").flag("rfd_pete")
                 .grantXp(Skill.COOKING, 1000).grantXp(Skill.FISHING, 1000).grantXp(Skill.CRAFTING, 1000).grantXp(Skill.SMITHING, 1000)
-                .say("Fishcake! Arr, that's what I was missin'. *Pirate Pete is freed.*")
-                .missing("Arr, a fishcake. Bring me two raw salmon and I'll show ye how.")
-                .talk("lumbridge_guide").stay().unlessFlag("rfd_guide").reqSkill(Skill.COOKING, 40)
-                .reqDone("biohazard", "DEMON_SLAYER", "nature_spirit", "witchs_house", "murder_mystery").take("cake", "chocolate_dust").flag("rfd_guide")
-                .grantXp(Skill.COOKING, 2500).grantXp(Skill.MAGIC, 2500)
-                .say("A cake with chocolate! Just like the ones I give to new adventurers. *The Lumbridge Guide is freed.*")
-                .missing("I would love a chocolate cake... (Requires 40 Cooking, Biohazard, Demon Slayer, Murder Mystery, Nature Spirit and Witch's House.)")
-                .talk("evil_dave").stay().unlessFlag("rfd_dave").reqSkill(Skill.COOKING, 25).reqDone("gertrudes_cat", "shadow_of_the_storm").take("spice:4", "potato").flag("rfd_dave")
+                .say("* You grind the cod, crumb the bread, mix in the kelp and crab meat and fry the fishcake.",
+                        "Fishcake! Arr, that's what I was missin'. *Pirate Pete is freed.*")
+                .missing("Arr, a fishcake: ground cod, breadcrumbs, ground kelp and ground giant crab meat. Murphy in Port Khazard can take ye diving.")
+                .talk("pirate_pete").stay().unlessFlag("rfd_pete_dive", "rfd_pete").reqSkill(Skill.COOKING, 31).flag("rfd_pete_dive")
+                .say("The Cook says a fishcake's what I need. Kelp and giant crab live on the sea bed: Murphy in Port Khazard knows how to get down there.")
+                .missing("Arr, I'd tell ye me favourite dish, but ye don't know the first thing about cookin'. (Requires 31 Cooking.)")
+                .talk("rfd_murphy").stay().needFlag("rfd_pete_dive").unless("rfd_fishbowl_helmet").unlessFlag("rfd_pete")
+                .take("bronze_bar").need("hammer", "needle").give("rfd_fishbowl_helmet")
+                .say("Divin'? Ye'll need a fishbowl helmet. *You hammer the bar into wire and fit it to a fishbowl.* Now get down there!")
+                .missing("Bring a bronze bar for wire, a hammer and a needle and I'll make ye a fishbowl helmet for the dive.")
+                .drop("mudskipper", "rfd_mudskipper_hide", 1)
+                .reach("rfd_crab_pen", 8).stay().needFlag("rfd_pete_dive").need("rfd_fishbowl_helmet", "pestle_and_mortar").take("rfd_mudskipper_hide")
+                .unless("rfd_ground_crab_meat").unlessFlag("rfd_pete").give("rfd_ground_kelp", "rfd_ground_crab_meat")
+                .say("* You pick kelp on the sea bed. Nung the fishman takes your mudskipper hide and lets you into his crab pen.",
+                        "* You kill a giant crab and grind its meat and the kelp with your pestle and mortar.") // approx: OSRS wants 5 hides
+                .missing("* Nung the fishman won't open his crab pen without mudskipper hides, and you'll need a fishbowl helmet to breathe down here.")
+                // --- Lumbridge Guide: cake of guidance from Wizard Traiborn's enchanted egg, milk and flour.
+                .talk("rfd_traiborn").stay().unless("rfd_enchanted_egg").unlessFlag("rfd_guide").reqSkill(Skill.COOKING, 40)
+                .reqDone("big_chompy_bird_hunting", "biohazard", "DEMON_SLAYER", "nature_spirit", "witchs_house", "murder_mystery")
+                .take("minecraft:egg", "minecraft:milk_bucket", "pot_of_flour").give("rfd_enchanted_egg", "rfd_enchanted_milk", "rfd_enchanted_flour")
+                .say("Who has a ponytail and a book? > Reldo. Ingredients in a cake? > Flour, egg and milk. Combat level of a Lumbridge goblin? > Two.",
+                        "Splendid! *Traiborn enchants your egg, milk and flour.*")
+                .missing("Enchant cake ingredients for the Guide? Bring me an egg, a bucket of milk and a pot of flour... and know your trivia. "
+                        + "(Requires 40 Cooking, Big Chompy Bird Hunting, Biohazard, Demon Slayer, Murder Mystery, Nature Spirit and Witch's House.)")
+                .talk("lumbridge_guide").stay().unlessFlag("rfd_guide").take("rfd_enchanted_egg", "rfd_enchanted_milk", "rfd_enchanted_flour", "cake_tin")
+                .flag("rfd_guide").grantXp(Skill.COOKING, 2500).grantXp(Skill.MAGIC, 2500)
+                .say("* You bake the enchanted ingredients in the cake tin: a cake of guidance!", "Just like the cakes I give to new adventurers. *The Lumbridge Guide is freed.*")
+                .missing("A cake of guidance... Wizard Traiborn can enchant the ingredients. Bring them with a cake tin.")
+                // --- Evil Dave: spicy stew with hell-rat spices caught by a cat in his basement.
+                .talk("evil_dave").stay().needFlag("rfd_dave_basement").unlessFlag("rfd_dave").take("stew", "rfd_hell_rat_spices").flag("rfd_dave")
                 .grantXp(Skill.COOKING, 7000)
-                .say("Spicy stew! The darkness... it's so spicy... *Evil Dave is freed. He seems even more evil.*")
-                .missing("Bring me the spiciest stew: four spices and a potato. (Requires 25 Cooking, Gertrude's Cat, Shadow of the Storm.)")
-                .talk("skrach_uglogwee").stay().unlessFlag("rfd_skrach").reqSkill(Skill.COOKING, 41).reqSkill(Skill.FIREMAKING, 20).reqDone("big_chompy_bird_hunting")
-                .take("raw_bird_meat:2").flag("rfd_skrach").grantXp(Skill.COOKING, 1500).grantXp(Skill.RANGED, 1500).grantXp(Skill.CRAFTING, 1500)
-                .say("Chompy! Roasted chompy! *Skrach Uglogwee is freed.*")
-                .missing("Skrach want chompy bird. Two. Roasted. (Requires 41 Cooking, 20 Firemaking, Big Chompy Bird Hunting.)")
+                .say("* You stir the four colours of spice into the stew, a dose at a time, until Dave stops complaining.",
+                        "Spicy stew! The darkness... it's so spicy... *Evil Dave is freed. He seems even more evil.*")
+                .missing("Spicy stew. Proper spicy. The hell-rats in my basement have the spices; send a cat after them.")
+                .talk("evil_dave").stay().unlessFlag("rfd_dave_basement", "rfd_dave").reqSkill(Skill.COOKING, 25).reqDone("gertrudes_cat", "shadow_of_the_storm")
+                .flag("rfd_dave_basement")
+                .say("What did I eat at the council? Why should I... oh, the magic requires it. Spicy stew. Mother keeps hell-rats in the basement for the spices.")
+                .missing("Go away. (Requires 25 Cooking, Gertrude's Cat and Shadow of the Storm.)")
+                .reach("rfd_evil_daves_basement", 6).stay().needFlag("rfd_dave_basement").need("gertrudes_kitten").unless("rfd_hell_rat_spices").unlessFlag("rfd_dave")
+                .give("rfd_hell_rat_spices").say("* Your cat chases the hell-rats around Evil Dave's basement. They drop yellow, orange, red and brown spices.")
+                .missing("* Hell-rats scurry about the basement. A cat could catch them.")
+                // --- Skrach Uglogwee: a jubbly bird shot with an ogre bow, roasted on an iron spit.
+                .talk("skrach_uglogwee").stay().needFlag("rfd_skrach_start").unlessFlag("rfd_skrach").take("rfd_raw_jubbly", "iron_bar", "logs")
+                .need("tinderbox").flag("rfd_skrach").grantXp(Skill.COOKING, 1500).grantXp(Skill.RANGED, 1500).grantXp(Skill.CRAFTING, 1500)
+                .say("* You hammer the iron bar into a spit and roast the jubbly over a fire.", "Jubbly! Roasted jubbly! *Skrach Uglogwee is freed.*")
+                .missing("Skrach want roast jubbly! Cook on iron spit over logs. You need tinderbox.")
+                .talk("skrach_uglogwee").stay().unlessFlag("rfd_skrach_start", "rfd_skrach").reqSkill(Skill.COOKING, 41).reqSkill(Skill.FIREMAKING, 20)
+                .reqDone("big_chompy_bird_hunting").flag("rfd_skrach_start")
+                .say("Skrach want jubbly bird! Rantz know jubbly: they live in Feldip Hills. Blow up toad for bait, then shoot with ogre bow.")
+                .missing("Skrach no talk to weakling. (Requires 41 Cooking, 20 Firemaking and Big Chompy Bird Hunting.)")
+                .reach("feldip_hills", 12).stay().needFlag("rfd_skrach_start").unless("rfd_raw_jubbly").unlessFlag("rfd_skrach")
+                .needTool("axe", "pickaxe").need("ogre_bow").take("ogre_arrow").give("rfd_raw_jubbly")
+                .say("* You chop logs and mine a rock to help Rantz fix his boat, inflate a toad as bait, and shoot the jubbly bird that lands on it.",
+                        "* You pluck the jubbly.")
+                .missing("* Rantz needs his boat fixed before he'll show you the jubblies: bring an axe and a pickaxe, an ogre bow and ogre arrows.")
+                // --- Sir Amik Varze: brulee supreme with the Evil Chicken's egg, flambeed by a black dragon's token.
+                .talk("sir_amik_varze").stay().needFlag("rfd_amik_start").unlessFlag("rfd_amik")
+                .take("minecraft:milk_bucket", "pot_of_cream", "sweetcorn", "rfd_vanilla_pod", "rfd_evil_chicken_egg", "dramen_branch", "rfd_dragon_token")
+                .need("pestle_and_mortar").flag("rfd_amik").grantXp(Skill.COOKING, 4000).grantXp(Skill.HITPOINTS, 4000)
+                .say("* Milk and cream, cornflour, vanilla, the Evil Chicken's egg and cinnamon ground from a dramen branch. You rub the token: a dragon flambes it.",
+                        "Brulee supreme! *Sir Amik Varze is freed.*")
+                .missing("A brulee supreme: milk, cream, cornflour (sweetcorn), a vanilla pod, cinnamon from a dramen branch, the Evil Chicken's egg and a black dragon's token.")
                 // OSRS: Lost City and Legends' Quest started; 107 QP (the Legends' start requirement) stands in for "started". // approx
-                .talk("sir_amik_varze").stay().unlessFlag("rfd_amik").reqDone("lost_city").reqQp(107)
-                .take("minecraft:egg", "minecraft:milk_bucket", "pot_of_flour").flag("rfd_amik").grantXp(Skill.COOKING, 4000).grantXp(Skill.HITPOINTS, 4000)
-                .say("Brulee supreme, with an egg from the Evil Chicken of Zanaris! *Sir Amik Varze is freed.*")
-                .missing("A brulee supreme: egg, milk and flour... and you'll need access to Zanaris. (Requires Lost City and Legends' Quest started: 107 quest points.)")
-                .talk("king_awowogei").stay().unlessFlag("rfd_awowogei").reqDone("monkey_madness_i").reqSkill(Skill.COOKING, 70).reqSkill(Skill.AGILITY, 48)
-                .take("raw_shark").flag("rfd_awowogei").grantXp(Skill.COOKING, 10000).grantXp(Skill.AGILITY, 10000)
-                .say("Ook! Stuffed snake! *King Awowogei is freed, and allows a monkey to join the council.*")
-                .missing("Ook! The king wants stuffed snake. (Requires Monkey Madness I, 70 Cooking, 48 Agility; bring a raw shark.)")
+                .talk("sir_amik_varze").stay().unlessFlag("rfd_amik_start", "rfd_amik").reqDone("lost_city").reqQp(107).flag("rfd_amik_start")
+                .say("The Wise Old Man says my favourite was a brulee supreme. The egg must come from the Evil Chicken itself, in Zanaris.")
+                .missing("You'll need access to Zanaris and the Kharazi Jungle. (Requires Lost City and Legends' Quest started: 107 quest points.)")
+                .reach("kharazi_jungle", 12).stay().needFlag("rfd_amik_start").unless("rfd_vanilla_pod").unlessFlag("rfd_amik").needTool("axe")
+                .give("rfd_vanilla_pod").say("* You hack through the jungle and pick a vanilla pod.")
+                .kill("rfd_evil_chicken").stay().needFlag("rfd_amik_start").unless("rfd_evil_chicken_egg").unlessFlag("rfd_amik")
+                .give("rfd_evil_chicken_egg").say("* The Evil Chicken drops a warm egg.")
+                .drop("black_dragon", "rfd_dragon_token", 1)
+                // --- King Awowogei: stuffed snake with red banana and tchiki nuts, cooked on a hot rock under the temple.
+                .talk("king_awowogei").stay().needFlag("rfd_awo_start").unlessFlag("rfd_awowogei").reqSkill(Skill.COOKING, 70)
+                .take("rfd_snake_corpse", "rfd_red_banana", "rfd_tchiki_nuts").need("monkey_greegree").flag("rfd_awowogei")
+                .grantXp(Skill.COOKING, 10000).grantXp(Skill.AGILITY, 10000)
+                .say("* You stuff the snake and cook it on a hot rock beneath the Temple of Marimbo.",
+                        "Ook! Stuffed snake! *King Awowogei is freed, and allows a monkey to join the council.*")
+                .missing("Ook! The king wants stuffed snake: a big snake from Crash Island, a red banana and ground tchiki nuts.")
+                .talk("king_awowogei").stay().unlessFlag("rfd_awo_start", "rfd_awowogei").reqDone("monkey_madness_i").reqSkill(Skill.COOKING, 70)
+                .reqSkill(Skill.AGILITY, 48).need("monkey_greegree").flag("rfd_awo_start")
+                .say("Ook? The king's favourite dish is stuffed snake. Big snakes live in the pit on Crash Island.")
+                .missing("Ook ook! (Wear a monkey greegree. Requires Monkey Madness I, 70 Cooking, 48 Agility.)")
+                .reach("rfd_crash_island_pit", 8).stay().needFlag("rfd_awo_start").unless("rfd_snake_corpse").unlessFlag("rfd_awowogei")
+                .give("rfd_snake_corpse").say("* You climb into the pit and kill a big snake for its corpse.") // approx: the big snakes are not spawned
+                .reach("ape_atoll", 16).stay().needFlag("rfd_awo_start").unless("rfd_tchiki_nuts").unlessFlag("rfd_awowogei")
+                .need("rope", "knife", "pestle_and_mortar").reqSkill(Skill.AGILITY, 48).give("rfd_red_banana", "rfd_tchiki_nuts")
+                .say("* As a gorilla you rope down a red banana; as a ninja monkey you run the agility course to the tchiki nut bush.",
+                        "* You slice the banana and grind the nuts.")
+                .missing("* You'll need a rope, a knife and a pestle and mortar to gather the stuffing.")
                 .talk("rfd_gypsy").needFlag("rfd_dwarf", "rfd_goblins", "rfd_pete", "rfd_guide", "rfd_dave", "rfd_skrach", "rfd_amik", "rfd_awowogei")
                 .reqQp(175).reqDone("desert_treasure_i", "horror_from_the_deep")
                 .say("Every council member is free! Now the Culinaromancer himself must be defeated. His minions wait in the cellar.")
@@ -131,6 +235,9 @@ final class RecipeForDisaster {
         for (String[] unlock : GLOVE_UNLOCKS) {
             flags.append(flags.length() == 0 ? "" : ",").append(unlock[0]);
         }
+        // Hardleather gloves: after the beginning of the quest (Another Cook's Quest); older saves count any freed member.
+        b.shop("rfd_gypsy", "rfd_hardleather_gloves", price("rfd_hardleather_gloves"), null, "count:1:rfd_cook," + flags, null, 0,
+                "From the Culinaromancer's chest: hardleather gloves.");
         for (int i = 0; i < GLOVE_UNLOCKS.length; i++) {
             String glove = GLOVE_UNLOCKS[i][1];
             b.shop("rfd_gypsy", glove, price(glove), null, "count:" + (i + 1) + ":" + flags, null, 0,

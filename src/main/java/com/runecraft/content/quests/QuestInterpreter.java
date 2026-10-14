@@ -157,7 +157,22 @@ public final class QuestInterpreter {
                 return "You need " + describe(e.getKey(), e.getValue()) + ".";
             }
         }
+        for (String tool : t.tools) {
+            if (!hasTool(p, tool)) {
+                return "You need " + QuestSpec.toolName(tool) + ".";
+            }
+        }
         return null;
+    }
+
+    /** Whether the player carries (or wields) any tool meeting a requirement such as "pickaxe" or "axe:mithril". */
+    static boolean hasTool(ServerPlayerEntity p, String tool) {
+        for (int i = 0; i < p.getInventory().size(); i++) {
+            if (QuestSpec.toolSatisfies(tool, com.runecraft.registry.ModItems.def(p.getInventory().getStack(i)))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static String describe(String item, int count) {

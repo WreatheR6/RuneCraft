@@ -1591,6 +1591,7 @@ public final class ItemValues {
             cox_kindling|-1|0|st|
             cavern_grubs|-1|0|st|
             crondis_water_container|-1|2||
+            rfd_hardleather_gloves|50|0.226||
             rfd_bronze_gloves|100|0.226||
             rfd_iron_gloves|250|0.226||
             rfd_steel_gloves|500|0.226||

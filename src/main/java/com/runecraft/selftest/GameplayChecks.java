@@ -262,6 +262,7 @@ final class GameplayChecks {
     private void prepare(Trigger t) {
         t.need.forEach((item, n) -> Inv.give(p(), item, n));
         t.take.forEach((item, n) -> Inv.give(p(), item, n));
+        t.tools.forEach(tool -> Inv.give(p(), QuestSpec.toolItem(tool), 1));
         QuestsState state = QuestsState.get(p());
         t.needFlags.forEach(f -> state.setFlag(p().getUuid(), f));
         for (String item : t.unlessItems) {
