@@ -2,11 +2,13 @@ package com.runecraft.content.bosses;
 
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.combat.CombatHandler;
+import com.runecraft.content.systems.CombatAchievementService;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.bosses.Dt2Bosses;
 import com.runecraft.osrs.content.bosses.MinigameBosses;
 import com.runecraft.osrs.content.bosses.VarlamoreBosses;
+import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.util.Msg;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -98,6 +100,7 @@ final class EncounterScripts {
         protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
             Category c = category(type);
             if (c == protectedStyle) {
+                CombatAchievementService.flag(attacker, CombatAchievements.FLAG_HUNLLEF_WRONG_WEAPON);
                 Msg.action(attacker, "The Hunllef's prayer protects it from " + c.name().toLowerCase() + "!");
                 return 0;
             }
@@ -143,6 +146,7 @@ final class EncounterScripts {
                     Vec3d d = target.getPos().subtract(t.getPos());
                     double len = d.horizontalLength();
                     if (len < 1.2) {
+                        com.runecraft.combat.CombatHooks.nameAttack("tornado", null);
                         CombatHandler.applyDamage(boss, target, (corrupted ? 15 : 10) + boss.getRandom().nextInt(11));
                     } else {
                         Vec3d step = new Vec3d(d.x / len, 0, d.z / len);
@@ -158,7 +162,7 @@ final class EncounterScripts {
                 tileTimer = 12;
                 BossFx.warn(boss, "The floor begins to corrupt!");
                 for (int i = 0; i < 7; i++) {
-                    strike(boss, around(boss, homeVec(), 10), 4, 20, 1.4, ParticleTypes.CRIMSON_SPORE);
+                    namedStrike("damaging_floor", boss, around(boss, homeVec(), 10), 4, 20, 1.4, ParticleTypes.CRIMSON_SPORE);
                 }
             }
         }
@@ -501,6 +505,9 @@ final class EncounterScripts {
                 return;
             }
             shadowTicks--;
+            if (target != null) {
+                CombatAchievementService.count(target, CombatAchievements.COUNT_SHADOW_REALM_TICKS, 1);
+            }
             boolean cleared = tentacles.stream().noneMatch(MobEntity::isAlive);
             if (cleared || shadowTicks == 0) {
                 if (!cleared && target != null) {

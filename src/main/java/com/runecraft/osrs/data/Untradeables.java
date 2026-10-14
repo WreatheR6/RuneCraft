@@ -27,7 +27,8 @@ public final class Untradeables {
                 "rune_defender", "dragon_defender", "avernic_defender");
         // Combat Achievement rewards.
         add("ghommals_hilt_1", "ghommals_hilt_2", "ghommals_hilt_3", "ghommals_hilt_4", "ghommals_hilt_5", "ghommals_hilt_6",
-                "ghommals_lucky_penny", "ghommals_avernic_defender_5", "ghommals_avernic_defender_6", "ca_antique_lamp_easy",
+                "ghommals_lucky_penny", "ghommals_avernic_defender_5", "ghommals_avernic_defender_6",
+                "dragon_hunter_crossbow_b", "dragon_hunter_crossbow_t", "ca_antique_lamp_easy",
                 "ca_antique_lamp_medium", "ca_antique_lamp_hard", "ca_antique_lamp_elite", "ca_antique_lamp_master",
                 "ca_antique_lamp_grandmaster");
         // Pest Control and Barbarian Assault.

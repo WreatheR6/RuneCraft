@@ -40,7 +40,7 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
 
     /** A dodgeable ground strike. */
     private record Strike(ServerWorld world, Vec3d pos, long due, int maxDamage, double radius, ParticleEffect particle,
-                          BiConsumer<List<ServerPlayerEntity>, Vec3d> onLand) {
+                          BiConsumer<List<ServerPlayerEntity>, Vec3d> onLand, String name) {
     }
 
     private final List<Strike> strikes = new ArrayList<>();
@@ -212,8 +212,24 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
 
     protected void strike(DataBossEntity boss, Vec3d pos, int delayTicks, int maxDamage, double radius, ParticleEffect particle,
                           BiConsumer<List<ServerPlayerEntity>, Vec3d> onLand) {
-        strikes.add(new Strike(BossFx.world(boss), pos, now + delayTicks, maxDamage, radius, particle, onLand));
+        strikes.add(new Strike(BossFx.world(boss), pos, now + delayTicks, maxDamage, radius, particle, onLand, strikeName));
         owner = boss;
+    }
+
+    /** The attack name the next strikes' damage carries (Combat Achievement "no damage from ..." tasks); null: unnamed. */
+    private String strikeName;
+
+    /** A strike whose damage is reported under an attack name (e.g. "lightning"). */
+    protected void namedStrike(String name, DataBossEntity boss, Vec3d pos, int delayTicks, int maxDamage, double radius,
+                               ParticleEffect particle) {
+        namedStrike(name, boss, pos, delayTicks, maxDamage, radius, particle, null);
+    }
+
+    protected void namedStrike(String name, DataBossEntity boss, Vec3d pos, int delayTicks, int maxDamage, double radius,
+                               ParticleEffect particle, BiConsumer<List<ServerPlayerEntity>, Vec3d> onLand) {
+        strikeName = name;
+        strike(boss, pos, delayTicks, maxDamage, radius, particle, onLand);
+        strikeName = null;
     }
 
     private DataBossEntity owner;
@@ -241,6 +257,9 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
                     && p.getPos().squaredDistanceTo(s.pos()) <= s.radius() * s.radius());
             if (s.maxDamage() > 0) {
                 for (ServerPlayerEntity p : hit) {
+                    if (s.name() != null) {
+                        com.runecraft.combat.CombatHooks.nameAttack(s.name(), null);
+                    }
                     CombatHandler.applyDamage(owner != null && owner.isAlive() ? owner : null, p,
                             p.getRandom().nextInt(s.maxDamage() + 1));
                 }

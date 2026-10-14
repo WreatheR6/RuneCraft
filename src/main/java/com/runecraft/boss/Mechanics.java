@@ -77,8 +77,17 @@ public final class Mechanics {
     }
 
     /** Starts an attack; telegraphed attacks land later. {@code multiplier} scales the max hit (enrage phases). */
+    /** Sees every attack a monster or boss performs (Combat Achievements count specials and repeats). */
+    public interface AttackListener {
+        void onAttack(OsrsMonsterEntity mob, ServerPlayerEntity target, AttackDef attack);
+    }
+
+    public static AttackListener attackListener = (mob, target, attack) -> {
+    };
+
     public static void perform(OsrsMonsterEntity mob, ServerPlayerEntity target, AttackDef attack, double multiplier) {
         ServerWorld world = (ServerWorld) mob.getWorld();
+        attackListener.onAttack(mob, target, attack);
         if (attack.message() != null) {
             for (ServerPlayerEntity p : world.getPlayers(pl -> pl.squaredDistanceTo(mob) < 40 * 40)) {
                 Msg.action(p, attack.message());

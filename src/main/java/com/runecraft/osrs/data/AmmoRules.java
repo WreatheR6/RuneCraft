@@ -96,6 +96,8 @@ public final class AmmoRules {
             Map.entry("rune_crossbow", new Launcher(Kind.BOLT, B_RUNE)),
             Map.entry("dragon_crossbow", new Launcher(Kind.BOLT, B_DRAGON)),
             Map.entry("dragon_hunter_crossbow", new Launcher(Kind.BOLT, B_DRAGON)),
+            Map.entry("dragon_hunter_crossbow_b", new Launcher(Kind.BOLT, B_DRAGON)),
+            Map.entry("dragon_hunter_crossbow_t", new Launcher(Kind.BOLT, B_DRAGON)),
             Map.entry("armadyl_crossbow", new Launcher(Kind.BOLT, B_DRAGON)),
             Map.entry("zaryte_crossbow", new Launcher(Kind.BOLT, B_DRAGON)),
             Map.entry("light_ballista", new Launcher(Kind.JAVELIN, DRAGON)),

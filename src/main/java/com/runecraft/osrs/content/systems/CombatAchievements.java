@@ -164,6 +164,70 @@ public final class CombatAchievements {
     public static final int GHOMMAL_Y = 3547;
     /** OSRS demonbane weapons in this world. */
     public static final String DEMONBANE = "arclight|emberlight|darklight|silverlight|scorching_bow|purging_staff|burning_claws";
+
+    // Flags and counters boss scripts and minigames report for rules ({@code flag=}, {@code noflag=}, {@code count<=N:}).
+    /** The Giant Mole resurfaced within the last 10 seconds (Whack-a-Mole). */
+    public static final String FLAG_MOLE_SURFACED = "mole_surfaced";
+    /** Times the Giant Mole burrowed. */
+    public static final String COUNT_MOLE_BURROW = "mole_burrow";
+    /** Cerberus summoned her souls. */
+    public static final String FLAG_CERBERUS_SOULS = "cerberus_souls";
+    /** Summoned soul attacks negated with the right protection prayer. */
+    public static final String COUNT_SOUL_NEGATED = "soul_negated";
+    /** A scion matured at the Abyssal Sire. */
+    public static final String FLAG_SIRE_SCION = "sire_scion";
+    /** The Alchemical Hydra used its flame wall. */
+    public static final String FLAG_HYDRA_FLAME_WALL = "hydra_flame_wall";
+    /** The Alchemical Hydra absorbed the wrong chemicals. */
+    public static final String FLAG_HYDRA_EMPOWERED = "hydra_empowered";
+    /** Dawn healed from an energy sphere. */
+    public static final String FLAG_DAWN_HEALED = "dawn_healed";
+    /** Someone was hit by Nex's Smoke Dash. */
+    public static final String FLAG_NEX_SMOKE_DASH = "nex_smoke_dash";
+    /** Someone was hit by Nex's Shadow Smash. */
+    public static final String FLAG_NEX_SHADOW_SMASH = "nex_shadow_smash";
+    /** Someone took damage from an Ice special (Contain this! or the ice prison). */
+    public static final String FLAG_NEX_ICE = "nex_ice";
+    /** Nex healed from her Blood Siphon. */
+    public static final String FLAG_NEX_SIPHON_HEAL = "nex_siphon_heal";
+    /** The Chaos Elemental unequipped one of your items. */
+    public static final String FLAG_CHAOS_UNEQUIPPED = "chaos_unequipped";
+    /** You attacked the Hunllef with the style it protects from. */
+    public static final String FLAG_HUNLLEF_WRONG_WEAPON = "hunllef_wrong_weapon";
+    /** Game ticks spent in the Whisperer's Shadow Realm. */
+    public static final String COUNT_SHADOW_REALM_TICKS = "shadow_realm_ticks";
+    /** A Yt-HurKot healed a Jad. */
+    public static final String FLAG_HURKOT_HEALED = "hurkot_healed";
+    /** A Yt-MejKot healed a monster. */
+    public static final String FLAG_MEJKOT_HEALED = "mejkot_healed";
+    /** A Jal-ImKot dug. */
+    public static final String FLAG_IMKOT_DUG = "imkot_dug";
+    /** An Inferno pillar fell before wave 67. */
+    public static final String FLAG_PILLAR_EARLY = "pillar_early";
+    /** You healed a fallen pyromancer. */
+    public static final String FLAG_HEALED_PYROMANCER = "healed_pyromancer";
+    /** You repaired a broken brazier. */
+    public static final String FLAG_FIXED_BRAZIER = "fixed_brazier";
+    /** All four braziers were broken at once. */
+    public static final String FLAG_ALL_BRAZIERS_BROKEN = "all_braziers_broken";
+    /** A pyromancer fell. */
+    public static final String FLAG_PYROMANCER_FELL = "pyromancer_fell";
+    /** Four pieces of warm equipment worn when the Wintertodt was subdued. */
+    public static final String FLAG_WARM_GEAR = "warm_gear";
+    /** 3000 or more Wintertodt points. */
+    public static final String FLAG_POINTS_3000 = "points_3000";
+    /** You loaded both of Tempoross' cannons. */
+    public static final String FLAG_BOTH_CANNONS = "both_cannons";
+    /** A Tempoross wave hit you. */
+    public static final String FLAG_WAVE_HIT = "wave_hit";
+    /** 10 reward permits from one Tempoross fight. */
+    public static final String FLAG_TEN_PERMITS = "ten_permits";
+    /** Times Tekton retreated to his anvil. */
+    public static final String COUNT_TEKTON_ANVIL = "tekton_anvil";
+    /** Times Vasa Nistirio used his teleport attack. */
+    public static final String COUNT_VASA_TELEPORT = "vasa_teleport";
+    /** Times the Pestilent Bloat shut down. */
+    public static final String COUNT_BLOAT_SHUTDOWN = "bloat_shutdown";
     /** A fight is forgotten after this many game ticks without either side attacking. */
     public static final int FIGHT_TIMEOUT_TICKS = 100;
 
@@ -744,6 +808,20 @@ public final class CombatAchievements {
                 && (hiltTier(offHandId) > 0 || offHandId.startsWith("ghommals_avernic_defender_"));
     }
 
+    /** Dragon hunter crossbow ornaments: (b) with King Black Dragon heads from the hard tier, (t) with Vorkath's head from elite. */
+    public static final String DHCB_KBD = "dragon_hunter_crossbow_b";
+    public static final String DHCB_VORKATH = "dragon_hunter_crossbow_t";
+
+    /** The crossbow ornament a head makes and the tier it needs, or null. */
+    public static Tier dhcbOrnamentTier(String ornament) {
+        return DHCB_KBD.equals(ornament) ? Tier.HARD : DHCB_VORKATH.equals(ornament) ? Tier.ELITE : null;
+    }
+
+    /** The head an ornamented crossbow uses (given back when it is taken apart). */
+    public static String dhcbHead(String ornament) {
+        return DHCB_KBD.equals(ornament) ? "kbd_heads" : DHCB_VORKATH.equals(ornament) ? "vorkaths_head" : null;
+    }
+
     /** TzTok-Jad / TzKal-Zuk slayer task size: 1, 2 from master, 3 from grandmaster. */
     public static int tzhaarTaskKills(Tier unlocked) {
         return unlocked == Tier.GRANDMASTER ? 3 : unlocked == Tier.MASTER ? 2 : 1;
@@ -782,11 +860,13 @@ public final class CombatAchievements {
             case HARD -> List.of("Antique lamp: 15,000 XP in a skill of level 40+", "Ghommal's hilt 3: unlimited God Wars Dungeon teleports",
                     "5% higher hard clue scroll drop chance", "Like a boss: up to 50 boss kills per task",
                     "God Wars Dungeon boss rooms need 35 kill count", "+3 Void Knight commendation points per Pest Control game",
-                    "Nightmare Zone and Soul Wars imbues cost half");
+                    "Nightmare Zone and Soul Wars imbues cost half",
+                    "Ghommal's hilt 3: attach King Black Dragon heads to a dragon hunter crossbow (b)");
             case ELITE -> List.of("Antique lamp: 25,000 XP in a skill of level 50+", "Ghommal's hilt 4: 3 daily teleports to Mor Ul Rek",
                     "5% higher elite clue scroll drop chance", "Like a boss: up to 55 boss kills per task",
                     "God Wars Dungeon boss rooms need 30 kill count",
-                    "Superior slayer monsters appear 1/150 instead of 1/200");
+                    "Superior slayer monsters appear 1/150 instead of 1/200",
+                    "Ghommal's hilt 4: attach Vorkath's head to a dragon hunter crossbow (t)");
             case MASTER -> List.of("Antique lamp: 35,000 XP in a skill of level 60+", "Ghommal's hilt 5: 5 daily teleports to Mor Ul Rek",
                     "Ghommal's lucky penny: 5% chance not to use a charge of a charged item",
                     "Combine the hilt with an avernic defender into Ghommal's avernic defender 5",
@@ -829,6 +909,15 @@ public final class CombatAchievements {
         }
         Defs.worn(items, LUCKY_PENNY, "Ghommal's lucky penny", "coins", 0xC08040, 1, Jewellery.Slot.AMMO, EquipmentStats.NONE, Map.of(),
                 Jewellery.Perk.NONE, List.of()).examine("I'm sure he won't mind me borrowing this... (5% chance to save a charge)");
+        // Dragon hunter crossbow (b) / (t): cosmetic, same stats as the crossbow (OSRS: made at the hard / elite tier).
+        for (String[] v : new String[][]{{DHCB_KBD, "Dragon hunter crossbow (b)", "kbd_heads", "the King Black Dragon"},
+                {DHCB_VORKATH, "Dragon hunter crossbow (t)", "vorkaths_head", "Vorkath"}}) {
+            items.add(v[0], v[1], com.runecraft.osrs.ItemDef.Kind.BOW, "crossbow", v[0].equals(DHCB_KBD) ? 0x2A2A2A : 0x6A7A6A)
+                    .value(70_000_000).stack(1).tier("dragon")
+                    .equipment(new EquipmentDef(EquipmentDef.Slot.WEAPON, new EquipmentStats(0, 0, 0, 0, 95, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+                            Map.of(Skill.RANGED, 65), 6, AttackType.RANGED, EquipmentDef.WeaponClass.BOW))
+                    .examine("A dragon hunter crossbow adorned with the head of " + v[3] + ".");
+        }
         for (int n = 5; n <= 6; n++) {
             Defs.armour(items, "ghommals_avernic_defender_" + n, "Ghommal's avernic defender " + n, "defender", n == 5 ? 0xA040C0 : 0xE8C030,
                     "dragon", 0, EquipmentDef.Slot.SHIELD, new EquipmentStats(30, 29, 28, -5, -4, 30, 29, 28, -5, -4, 8, 0, 0, 0),

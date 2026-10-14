@@ -79,8 +79,26 @@ class CombatAchievementsTest {
     }
 
     @Test
+    void dragonHunterCrossbowOrnaments() {
+        ContentRegistry.bosses();
+        assertEquals(Tier.HARD, CombatAchievements.dhcbOrnamentTier(CombatAchievements.DHCB_KBD));
+        assertEquals(Tier.ELITE, CombatAchievements.dhcbOrnamentTier(CombatAchievements.DHCB_VORKATH));
+        assertNull(CombatAchievements.dhcbOrnamentTier("dragon_hunter_crossbow"));
+        ItemDef base = ItemCatalog.get("dragon_hunter_crossbow");
+        for (String orn : List.of(CombatAchievements.DHCB_KBD, CombatAchievements.DHCB_VORKATH)) {
+            ItemDef d = ItemCatalog.get(orn);
+            assertNotNull(d, orn);
+            assertEquals(base.equipment().stats(), d.equipment().stats(), orn);
+            assertEquals(base.equipment().attackSpeed(), d.equipment().attackSpeed(), orn);
+            assertNotNull(ItemCatalog.get(CombatAchievements.dhcbHead(orn)), orn);
+            assertTrue(com.runecraft.osrs.data.AmmoRules.canFire(orn, "dragon_bolts"), orn);
+            assertFalse(com.runecraft.osrs.data.AmmoRules.canFire(orn, "rune_arrow"), orn);
+        }
+    }
+
+    @Test
     void awakenedAndDelveTasksAreTracked() {
-        assertEquals(468, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
+        assertEquals(510, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
         for (int id : new int[]{490, 499, 508, 517, 610, 611, 612, 616, 617, 618, 619, 621, 622, 623}) {
             assertTrue(CombatAchievements.task("ca_" + id).track() != Track.UNTRACKED, "ca_" + id);
         }

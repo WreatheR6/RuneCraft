@@ -148,6 +148,8 @@ public final class SpecialAttacks {
         ranged("zaryte_crossbow", "Evoke", 75, 2.0, 1.0, Effect.NONE, 0, "Double accuracy; bolt effects always activate.");
         ranged("dragon_crossbow", "Annihilate", 60, 1.0, 1.2, Effect.AREA, 0, "+20% damage and splash damage around the target.");
         ranged("dragon_hunter_crossbow", "None", 0, 1.0, 1.0, Effect.NONE, 0, "");
+        ranged("dragon_hunter_crossbow_b", "None", 0, 1.0, 1.0, Effect.NONE, 0, "");
+        ranged("dragon_hunter_crossbow_t", "None", 0, 1.0, 1.0, Effect.NONE, 0, "");
         ranged("heavy_ballista", "Power Shot", 65, 1.25, 1.25, Effect.NONE, 0, "+25% accuracy and damage.");
         ranged("light_ballista", "Power Shot", 65, 1.25, 1.25, Effect.NONE, 0, "+25% accuracy and damage.");
         ranged("dragon_knife", "Duality", 25, 1.0, 1.0, Effect.DOUBLE_SHOT, 0, "Two knives thrown at once.");

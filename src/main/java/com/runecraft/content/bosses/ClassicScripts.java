@@ -7,6 +7,8 @@ import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.bosses.ClassicBosses;
 import com.runecraft.skill.XpService;
 import com.runecraft.collection.CollectionLog;
+import com.runecraft.content.systems.CombatAchievementService;
+import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -29,6 +31,8 @@ final class ClassicScripts {
     static final class GiantMole extends ScriptedBoss {
         private int burrowIn = -1;
         private int burrowCooldown;
+        /** Game ticks left of the "just resurfaced" window (Whack-a-Mole: a kill within 10 seconds). */
+        private int surfacedFor;
 
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
@@ -49,6 +53,9 @@ final class ClassicScripts {
             if (burrowCooldown > 0) {
                 burrowCooldown--;
             }
+            if (surfacedFor > 0 && --surfacedFor == 0) {
+                CombatAchievementService.unflagNear(boss, CombatAchievements.FLAG_MOLE_SURFACED);
+            }
             if (burrowIn > 0) {
                 burrowIn--;
                 BossFx.burst(boss, ParticleTypes.CAMPFIRE_COSY_SMOKE, 12, 1.0);
@@ -60,6 +67,9 @@ final class ClassicScripts {
                         p.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 60, 0, false, false));
                     }
                     BossFx.say(boss, "The Giant Mole digs away! Your light source is extinguished.");
+                    CombatAchievementService.countNear(boss, CombatAchievements.COUNT_MOLE_BURROW);
+                    CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_MOLE_SURFACED);
+                    surfacedFor = 17; // 10 seconds
                     burrowIn = -1;
                     burrowCooldown = 15;
                 }

@@ -106,6 +106,8 @@ final class WildernessScripts {
                 player.requestTeleport(x, y, z);
             } else if (attack == WildernessBosses.CHAOS_MADNESS) {
                 if (unequip(player, false)) {
+                    com.runecraft.content.systems.CombatAchievementService.flag(player,
+                            com.runecraft.osrs.content.systems.CombatAchievements.FLAG_CHAOS_UNEQUIPPED);
                     Msg.red(player, "The Chaos Elemental's madness makes you remove an item!");
                 }
             }

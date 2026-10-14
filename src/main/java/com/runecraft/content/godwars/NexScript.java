@@ -4,6 +4,8 @@ import com.runecraft.action.ActionManager;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.boss.DataBossService;
 import com.runecraft.combat.CombatHandler;
+import com.runecraft.combat.CombatHooks;
+import com.runecraft.content.systems.CombatAchievementService;
 import com.runecraft.combat.PoisonService;
 import com.runecraft.network.ServerNetworking;
 import com.runecraft.osrs.AttackType;
@@ -11,6 +13,7 @@ import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.godwars.GwdBosses;
+import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Msg;
@@ -165,6 +168,9 @@ final class NexScript extends GwdScript {
     public int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
         if (siphonUntil > ActionManager.gameTick()) {
             healReal(boss, damage);
+            if (damage > 0) {
+                CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_SIPHON_HEAL);
+            }
             Msg.action(attacker, "Nex siphons your attack to heal herself!");
             return 0;
         }
@@ -217,6 +223,9 @@ final class NexScript extends GwdScript {
                     for (ServerPlayerEntity p : nearby) {
                         strike(boss, p.getPos(), 3, 50, 1.3, ParticleTypes.SQUID_INK, ParticleTypes.LARGE_SMOKE, (hit, dmg) -> {
                             drainPrayer(hit, 10);
+                            if (dmg > 0) {
+                                CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_SHADOW_SMASH);
+                            }
                         });
                     }
                 } else {
@@ -245,6 +254,9 @@ final class NexScript extends GwdScript {
                     shout(boss, "Contain this!");
                     strike(boss, boss.getPos(), 2, 60, 3.5, ParticleTypes.SNOWFLAKE, ParticleTypes.ITEM_SNOWBALL, (hit, dmg) -> {
                         drainPrayer(hit, Players.data(hit).prayerPoints() / 4);
+                        if (dmg > 0) {
+                            CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_ICE);
+                        }
                     });
                 }
             }
@@ -278,7 +290,10 @@ final class NexScript extends GwdScript {
         }
         for (ServerPlayerEntity p : players(boss, 24)) {
             if (segmentDistance(p.getPos(), from, end) < 1.6) {
-                CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(51));
+                CombatHooks.nameAttack("smoke_dash", null);
+                if (CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(51)) > 0) {
+                    CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_SMOKE_DASH);
+                }
             }
         }
         boss.requestTeleport(end.x, end.y, end.z);
@@ -348,7 +363,9 @@ final class NexScript extends GwdScript {
             return;
         }
         if (prisoner.isAlive() && prisoner.getPos().squaredDistanceTo(prisonCentre) < 1.5 * 1.5) {
-            CombatHandler.applyDamage(boss, prisoner, boss.getRandom().nextInt(61));
+            if (CombatHandler.applyDamage(boss, prisoner, boss.getRandom().nextInt(61)) > 0) {
+                CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_ICE);
+            }
             Msg.red(prisoner, "The ice prison shatters around you!");
         }
         world.spawnParticles(ParticleTypes.ITEM_SNOWBALL, prisonCentre.x, prisonCentre.y + 1, prisonCentre.z, 30, 1, 1, 1, 0.1);

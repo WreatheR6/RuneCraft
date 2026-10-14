@@ -208,6 +208,7 @@ final class TobRooms {
                     stateTicks = 0;
                     stateLength = 10;
                     say("The Bloat shuts down. Attack it now!");
+                    com.runecraft.content.systems.CombatAchievementService.countNear(bloat, com.runecraft.osrs.content.systems.CombatAchievements.COUNT_BLOAT_SHUTDOWN);
                 }
             } else {
                 world().spawnParticles(ParticleTypes.SMOKE, bloat.getX(), bloat.getY() + 2, bloat.getZ(), 4, 0.8, 0.4, 0.8, 0.01);

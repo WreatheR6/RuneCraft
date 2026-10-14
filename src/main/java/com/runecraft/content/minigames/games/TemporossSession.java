@@ -36,6 +36,9 @@ public class TemporossSession extends MinigameSession {
     private static final Random POOL_RANDOM = new Random();
     private final Map<UUID, Integer> points = new HashMap<>();
     private final Map<UUID, Long> tethered = new HashMap<>();
+    /** Combat Achievement conditions per player: cannons loaded (by x position), wave hits, permits earned. */
+    private final Map<UUID, java.util.Set<String>> caPlayerFlags = new HashMap<>();
+    private final Map<UUID, java.util.Set<Integer>> cannonsLoaded = new HashMap<>();
     private int energy = 100;
     private int essence = 100;
     private long vulnerableUntil = -1;
@@ -145,6 +148,10 @@ public class TemporossSession extends MinigameSession {
                     return true;
                 }
                 addPoints(player, Tempoross.POINTS_LOAD_RAW * raw + Tempoross.POINTS_LOAD_COOKED * cooked);
+                if (cannonsLoaded.computeIfAbsent(player.getUuid(), u -> new java.util.HashSet<>()).add(pos.getX())
+                        && cannonsLoaded.get(player.getUuid()).size() >= 2) {
+                    caFlag(player, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_BOTH_CANNONS);
+                }
                 xp(player, Skill.FISHING, TemporossRewards.cannonXp(level(player, Skill.FISHING)) * (raw + cooked));
                 if (!vulnerable()) {
                     energy = Math.max(0, energy - raw * Tempoross.RAW_DAMAGE - cooked * Tempoross.COOKED_DAMAGE);
@@ -214,6 +221,7 @@ public class TemporossSession extends MinigameSession {
                 int lost = Inv.remove(p, "raw_harpoonfish", 1 + random.nextInt(10)) + Inv.remove(p, "harpoonfish", random.nextInt(5));
                 ActionManager.cancel(p);
                 hurt(p, 5 + random.nextInt(6));
+                caFlag(p, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_WAVE_HIT);
                 Msg.red(p, "The wave slams into you" + (lost > 0 ? " and washes away " + lost + " fish!" : "!"));
             }
             world.spawnParticles(ParticleTypes.SPLASH, origin.getX(), origin.getY() + 2, origin.getZ(), 200, 15, 1, 15, 0.2);
@@ -228,6 +236,15 @@ public class TemporossSession extends MinigameSession {
         }
     }
 
+    private void caFlag(ServerPlayerEntity p, String flag) {
+        caPlayerFlags.computeIfAbsent(p.getUuid(), u -> new java.util.HashSet<>()).add(flag);
+    }
+
+    @Override
+    public java.util.Set<String> caFlags(ServerPlayerEntity player) {
+        return new java.util.HashSet<>(caPlayerFlags.getOrDefault(player.getUuid(), java.util.Set.of()));
+    }
+
     @Override
     protected void onEnd(boolean success) {
         if (!success) {
@@ -238,6 +255,9 @@ public class TemporossSession extends MinigameSession {
             int pts = points.getOrDefault(p.getUuid(), 0);
             int permits = Tempoross.permits(pts, random.nextDouble());
             int kc = MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+            if (permits >= 10) {
+                caFlag(p, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_TEN_PERMITS);
+            }
             if (permits > 0) {
                 reward(p, "reward_permit", permits);
                 Msg.game(p, "You earned " + pts + " points and " + permits + " reward permit" + (permits > 1 ? "s" : "")
