@@ -72,6 +72,7 @@ public final class Dungeons {
             list.add(WaterbirthDungeon.build());
             list.addAll(ApeAtollDungeons.all());
             list.addAll(CacheDungeons.all());
+            list.add(ShayzienCrypts.dungeon());
             all = Collections.unmodifiableList(list);
         }
         return all;

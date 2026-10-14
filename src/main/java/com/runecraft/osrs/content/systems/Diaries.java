@@ -94,11 +94,18 @@ public final class Diaries {
      * "minigame_win:" + minigame id, "spellbook:" + book, "teleport:" + jewellery id + ":" + destination slug,
      * "eat:" + item id, "trek_complete:" + follower difficulty, "shop_open:" + shop id, "shop_buy:" / "shop_sell:" + shop id + ":" +
      * item id, "fight_pit_champion", "monkey_cage", "bert_sand", "tindel_identify", "genie_visit", "chest_open:" + chest id,
-     * "join:" + item made by joining two pieces, "cast_on_player:" + spell id and "strut_repair".
+     * "join:" + item made by joining two pieces, "cast_on_player:" + spell id, "strut_repair", "essence_mine:" + teleporting NPC id (lower case) and "steal:" + thieving stall/chest block.
      */
     public static final List<String> ACTIVITIES = List.of("talk", "minigame_start", "minigame_win", "spellbook", "teleport", "eat",
             "trek_complete", "fight_pit_champion", "monkey_cage", "shop_open", "shop_buy", "shop_sell", "bert_sand", "tindel_identify",
-            "genie_visit", "chest_open", "join", "cast_on_player", "strut_repair");
+            "genie_visit", "chest_open", "join", "cast_on_player", "strut_repair", "essence_mine", "steal");
+
+    /** The Fishing Platform's deck (an "x,y,r" restriction out at sea, so the land check skips it). */
+    public static final String FISHING_PLATFORM = "2788,3285,10";
+    /** Jatizso and its mine (the mine's tiles are shifted under the island; see the dungeons module's Ice Troll Caves). */
+    public static final String JATIZSO_MINE = "2398,3825,30";
+    /** Restrictions centred at sea on purpose (platforms and the like). */
+    public static final Set<String> SEA_RESTRICTIONS = Set.of(FISHING_PLATFORM);
 
     /** Block y below which a player counts as underground (restrictions ending in ",u"). */
     public static final int UNDERGROUND_BELOW_Y = 55;
@@ -336,7 +343,7 @@ public final class Diaries {
     static {
         // ======================= Ardougne (10 / 12 / 12 / 8) =======================
         in("ardougne", Tier.EASY);
-        visit("Have Wizard Cromperty teleport you to the Rune essence mine", 2683, 3325, 8); approx(); // approx
+        event("Have Wizard Cromperty teleport you to the Rune essence mine", "essence_mine:wizard_cromperty", null);
         get("Steal a cake from the East Ardougne market stalls", "cake", 1, THIEVING, 5);
         // Sold at the shop's price (OSRS: haggle him up to 60 coins each).
         event("Sell silk to the Silk trader in East Ardougne for 60 coins each", "shop_sell:ardougne_silk_trader:silk", null);
@@ -355,7 +362,7 @@ public final class Diaries {
         visit("Travel to Castle Wars by Hot Air Balloon", 2442, 3090, 15, FIREMAKING, 50);
         event("Claim buckets of sand from Bert in Yanille", "bert_sand", null, CRAFTING, 49); // 84 a day to the bank
         needs(lastId, "the_hand_in_the_sand");
-        visit("Catch any fish on the Fishing Platform", 2725, 3285, 15); approx(); // approx: Witchaven shore
+        xpAt("Catch any fish on the Fishing Platform", FISHING, 1, FISHING_PLATFORM);
         xp("Pickpocket the master farmer north of East Ardougne", THIEVING, 38);
         visit("Collect some Cave nightshade from the Skavid caves", 2528, 3034, 15); approx(); // approx
         quest("Kill a swordchick in the Tower of Life", "tower_of_life"); approx(); // approx
@@ -497,7 +504,9 @@ public final class Diaries {
         event("Browse the Stonemasons shop", "shop_open:keldagrim_stonemason", null);
         needs(lastId, "the_giant_dwarf");
         visit("Collect a Snape grass on Waterbirth Island", 2546, 3757, 15);
-        quest("Steal from the Keldagrim crafting or baker's stall", "the_giant_dwarf", THIEVING, 5); approx(); // approx
+        event("Steal from the Keldagrim crafting or baker's stall", "steal:keldagrim_crafting_stall|steal:keldagrim_bakery_stall", null,
+                THIEVING, 5);
+        needs(lastId, "the_giant_dwarf");
         have("Fill a bucket with water at the Rellekka well", "*vial_of_water|bucket_of_water"); approx(); // approx
         visit("Enter the Troll Stronghold", 2839, 3690, 12);
         get("Chop and burn some oak logs in the Fremennik Province", "oak_logs", 1, WOODCUTTING, 15, FIREMAKING, 15);
@@ -515,11 +524,12 @@ public final class Diaries {
         cast("Teleport to Trollheim", "trollheim_teleport", MAGIC, 61);
         xp("Catch a Sabre-toothed Kyatt", HUNTER, 55);
         makeHere("Mix a Super defence potion in the Fremennik province", "super_defence", 1, HERBLORE, 66);
-        quest("Steal from the Keldagrim Gem Stall", "the_giant_dwarf", THIEVING, 75); approx(); // approx
+        event("Steal from the Keldagrim Gem Stall", "steal:keldagrim_gem_stall", null, THIEVING, 75);
+        needs(lastId, "the_giant_dwarf");
         // The Neitiznot (Fremennik round) shield, made by the Neitiznot woodcutting stump.
         makeAt("Craft a Fremennik shield on Neitiznot", "neitiznot_shield", 1, at(2335, 3805, 35), WOODCUTTING, 56);
         needs(lastId, "the_fremennik_isles");
-        getAt("Mine 5 adamantite ores on Jatizso", "adamantite_ore", 5, null, MINING, 70); approx(); // approx: anywhere
+        getAt("Mine 5 adamantite ores on Jatizso", "adamantite_ore", 5, JATIZSO_MINE, MINING, 70);
         level("Obtain the Blast Furnace Foreman's permission to use the Blast Furnace for free", SMITHING, 60);
         cast("Teleport to Waterbirth Island", "waterbirth_teleport", MAGIC, 72);
         visit("Obtain 100% support from your kingdom subjects", 2502, 3860, 15); approx(); // approx: visit Miscellania castle
@@ -672,7 +682,7 @@ public final class Diaries {
         xp("Deliver an artefact to Captain Khaled", THIEVING, 49);
         killAny("Kill a wyrm in the Karuulm Slayer Dungeon", "wyrm", 1, SLAYER, 62);
         killAny("Cast Monster Examine on a mountain troll south of Mount Quidamortem", "mountain troll", 1, MAGIC, 66); approx(); // approx
-        killAny("Kill a Zombie in the Shayzien Crypts", "zombie", 1); approx(); // approx: the crypts are not built
+        killAt("Kill a Zombie in the Shayzien Crypts", "zombie", 1, at(1503, 3550, 30) + ",u"); // dungeons module ShayzienCrypts
         in("kourend", Tier.ELITE);
         getAt("Craft one or more Blood runes from Dark essence fragments", "blood_rune", 1, null, RUNECRAFT, 77, MINING, 38, CRAFTING, 38);
         get("Chop some redwood logs", "redwood_logs", 1, WOODCUTTING, 90);
@@ -687,7 +697,8 @@ public final class Diaries {
         in("lumbridge", Tier.EASY);
         xpAt("Complete a lap of the Draynor Village rooftop course", AGILITY, 10, at(3093, 3255, 30));
         killAny("Slay a cave bug beneath Lumbridge Swamp", "cave bug", 1, SLAYER, 7);
-        quest("Have Sedridor teleport you to the Essence mine", "RUNE_MYSTERIES");
+        event("Have Sedridor teleport you to the Essence mine", "essence_mine:sedridor", null);
+        needs(lastId, "RUNE_MYSTERIES");
         getAt("Craft some water runes", "water_rune", 1, null, RUNECRAFT, 5);
         visit("Learn your age from Hans in Lumbridge", 3222, 3218, 12);
         xp("Pickpocket a man or woman in Lumbridge", THIEVING, 1);
@@ -784,7 +795,8 @@ public final class Diaries {
         // ======================= Varrock (14 / 13 / 10 / 5) =======================
         in("varrock", Tier.EASY);
         visit("Browse Thessalia's store", 3204, 3417, 8);
-        quest("Have Aubury teleport you to the Essence mine", "RUNE_MYSTERIES");
+        event("Have Aubury teleport you to the Essence mine", "essence_mine:aubury", null);
+        needs(lastId, "RUNE_MYSTERIES");
         get("Mine some Iron in the south east Varrock mine", "iron_ore", 1, MINING, 15);
         visit("Make a normal plank at the Sawmill", 3302, 3491, 10);
         visit("Enter the second level of the Stronghold of Security", 3081, 3421, 10);
@@ -839,7 +851,7 @@ public final class Diaries {
         quest("Claim any Chompy bird hat from Rantz", "big_chompy_bird_hunting");
         visit("Teleport to Pest Control using the Minigame teleports", 2662, 2653, 15);
         visit("Collect a swamp toad at the Gnome Stronghold", 2420, 3510, 15);
-        visit("Have Brimstail teleport you to the Essence mine", 2410, 3415, 12);
+        event("Have Brimstail teleport you to the Essence mine", "essence_mine:brimstail", null);
         makeHere("Fletch an Oak shortbow in the Gnome Stronghold", "oak_shortbow", 1, FLETCHING, 20);
         killAt("Kill a Terrorbird in the Terrorbird enclosure", "terrorbird", 1, at(2378, 3434, 12));
         in("western", Tier.MEDIUM);

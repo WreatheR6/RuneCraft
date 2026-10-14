@@ -282,6 +282,10 @@ public final class Townsfolk {
                 "Spare some change, guv?", "Times are hard, mate. Times are hard.");
         ambient("npc_barbarian_village_drunk", "Drunken man", "Barbarian Village", 3080, 3440, look(SKIN, 0x8A5A3A, 0x4A3A2A, 0xB08060),
                 "*hic* Who are you?", "Ish a lovely day, *hic*, a lovely day for a drink.");
+        // Wizard Distentor, on the Wizards' Guild ground floor (tile approx): teleports to the Rune essence mine after
+        // Rune Mysteries (the dungeons module's EssenceMine adds the Teleport option).
+        ambient("npc_wizard_distentor", "Wizard Distentor", "Yanille", 2591, 3088, look(SKIN, 0x3A3A9A, 0x2A2A7A, 0x3A3A9A),
+                "Welcome to the Magicians' Guild!", "I can teleport you to the Rune essence mine, if you know of it.");
 
         // ------------------------------------------------------------- travel
         travel("npc_captain_tobias", "Captain Tobias", "Port Sarim", 3028, 3216, "boat_port_sarim_karamja", sailor,

@@ -166,7 +166,7 @@ class DiaryCompletabilityTest {
             if (bad == null && t.restrict() != null && t.restrict().indexOf(',') < 0 && Diaries.area(t.restrict()) == null) {
                 bad = "bad restriction " + t.restrict();
             }
-            if (bad == null && t.restrict() != null && t.restrict().indexOf(',') > 0) {
+            if (bad == null && t.restrict() != null && t.restrict().indexOf(',') > 0 && !Diaries.SEA_RESTRICTIONS.contains(t.restrict())) {
                 int[] c = Diaries.visitTarget(t.restrict());
                 if (!onLand(c[0], c[1], c[2])) {
                     bad = "restriction at sea " + t.restrict();

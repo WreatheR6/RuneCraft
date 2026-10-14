@@ -65,6 +65,20 @@ public enum Rock {
         return oreName;
     }
 
+    /** Mining level from which a rune essence rock gives pure essence (OSRS: members with 30 Mining). */
+    public static final int PURE_ESSENCE_LEVEL = 30;
+
+    /**
+     * The item mined at a Mining level: a rune essence rock (the Rune Essence mine's outcrops) gives pure essence
+     * from {@link #PURE_ESSENCE_LEVEL} (every player counts as a member); other rocks give {@link #oreItem()}.
+     */
+    public String minedItem(int miningLevel) {
+        if (this == RUNE_ESSENCE && miningLevel >= PURE_ESSENCE_LEVEL) {
+            return PURE_ESSENCE.ore;
+        }
+        return ore;
+    }
+
     public int level() {
         return level;
     }

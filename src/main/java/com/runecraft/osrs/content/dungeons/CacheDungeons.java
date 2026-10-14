@@ -729,7 +729,13 @@ final class CacheDungeons {
         }
         s.hallZ(2400, 10230, 2400, 10254, f);
         c.carve();
-        c.rocks(s.x(2380), s.z(10200), s.x(2420), s.z(10200), f + 1, 8, rc("coal_rock"), rc("iron_rock"), rc("mithril_rock"));
+        // Jatizso mine's rocks (wiki: 11 tin, 10 iron, 8 coal, 16 mithril, 14 adamantite) in rows south of the trolls
+        // (rows and counts approx).
+        c.rocks(s.x(2380), s.z(10192), s.x(2420), s.z(10192), f + 1, 8, rc("tin_rock"));
+        c.rocks(s.x(2384), s.z(10196), s.x(2420), s.z(10196), f + 1, 8, rc("iron_rock"));
+        c.rocks(s.x(2388), s.z(10200), s.x(2416), s.z(10200), f + 1, 8, rc("coal_rock"));
+        c.rocks(s.x(2380), s.z(10204), s.x(2420), s.z(10204), f + 1, 5, rc("mithril_rock"));
+        c.rocks(s.x(2380), s.z(10208), s.x(2420), s.z(10208), f + 1, 6, rc("adamantite_rock"));
         c.pool(s.x(2386), s.z(10262), s.x(2394), s.z(10260), f, mc("water")); // under the rope bridges
         // The stairs (2399, 3812) are inside the islands module's levelled Jatizso, so the hut stands 14 tiles west of
         // them, on the island's western rise (approx).

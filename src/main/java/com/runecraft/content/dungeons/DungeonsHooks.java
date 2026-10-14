@@ -55,6 +55,7 @@ public final class DungeonsHooks implements ModuleHooks {
             final int chest = i;
             BlockHooks.register(DungeonBlocks.SOS_CHESTS.get(i), (player, pos, state) -> rewardChest(player, chest));
         }
+        EssenceMineService.register();
         BlockHooks.register(DungeonBlocks.VINES, DungeonsHooks::vines);
         BlockHooks.register(DungeonBlocks.MINING_GUILD_DOOR, DungeonsHooks::miningGuildDoor);
         BlockHooks.register(DungeonBlocks.ABYSS_PASSAGE, (player, pos, state) -> {

@@ -146,7 +146,7 @@ public final class Gathering {
             Msg.game(player, "You need a pickaxe to mine this rock. You do not have a pickaxe which you have the Mining level to use.");
             return;
         }
-        String item = rock.oreItem() == null ? "uncut_sapphire" : rock.oreItem();
+        String item = rock.oreItem() == null ? "uncut_sapphire" : rock.minedItem(skills.currentLevel(Skill.MINING));
         if (!Inv.hasRoomFor(player, item)) {
             Msg.game(player, "Your inventory is too full to hold any more " + rock.oreName().toLowerCase(Locale.ROOT) + ".");
             return;
@@ -176,7 +176,7 @@ public final class Gathering {
                 if (random.nextDouble() >= chance) {
                     return true;
                 }
-                String mined = rock.oreItem() != null ? rock.oreItem() : rollGemRock(random);
+                String mined = rock.oreItem() != null ? rock.minedItem(s.currentLevel(Skill.MINING)) : rollGemRock(random);
                 if (!Inv.hasRoomFor(p, mined)) {
                     Msg.game(p, "Your inventory is too full to hold any more ore.");
                     return false;

@@ -71,6 +71,8 @@ public final class DungeonsContent implements ContentModule {
 
     @Override
     public List<StructureDef> structures() {
-        return Dungeons.structures();
+        List<StructureDef> out = new java.util.ArrayList<>(Dungeons.structures());
+        out.add(EssenceMine.structure());
+        return out;
     }
 }

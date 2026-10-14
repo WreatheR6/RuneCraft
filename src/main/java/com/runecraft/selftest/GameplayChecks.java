@@ -109,6 +109,9 @@ final class GameplayChecks {
         for (Map.Entry<String, int[]> e : destinations().entrySet()) {
             checks.add(new SelfTest.Check("teleport:" + e.getKey(), () -> g.teleport(e.getValue()[0], e.getValue()[1])));
         }
+        for (String npcId : com.runecraft.osrs.content.dungeons.EssenceMine.TELEPORTERS.keySet()) {
+            checks.add(new SelfTest.Check("essencemine:" + npcId.toLowerCase(Locale.ROOT), () -> g.essenceMine(npcId)));
+        }
         // Items, combat and interactions (after the teleports, which generate the spell destinations' chunks).
         checks.addAll(ItemCombatChecks.all(context));
         return checks;
@@ -577,6 +580,69 @@ final class GameplayChecks {
 
     private static String key(String name) {
         return name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_");
+    }
+
+    /**
+     * A Rune essence mine teleporter: without Rune Mysteries the teleport is refused; with it the player lands on the mine's
+     * floor beside an outcrop of rune essence rock and a portal, and the portal returns them to where they stood.
+     */
+    private String essenceMine(String npcId) {
+        boolean builtIn = false;
+        try {
+            com.runecraft.osrs.QuestNpc.valueOf(npcId);
+            builtIn = true;
+        } catch (IllegalArgumentException ignored) {
+            // A module NPC.
+        }
+        if (!builtIn && ContentRegistry.npc(npcId) == null) {
+            throw failure("no NPC " + npcId);
+        }
+        c.home();
+        if (ContentRegistry.quest(com.runecraft.osrs.content.dungeons.EssenceMine.QUEST) != null
+                && com.runecraft.content.dungeons.EssenceMineService.teleport(p(), npcId)) {
+            throw failure("teleported before Rune Mysteries");
+        }
+        c.completeQuests(null);
+        c.home();
+        BlockPos start = p().getBlockPos();
+        if (!com.runecraft.content.dungeons.EssenceMineService.teleport(p(), npcId)) {
+            throw failure("teleport refused after Rune Mysteries");
+        }
+        BlockPos at = p().getBlockPos();
+        int ox = GielinorMap.toOsrsX(at.getX());
+        int oy = GielinorMap.toOsrsY(at.getZ());
+        String where = ox + "," + oy + " y " + at.getY();
+        if (!com.runecraft.osrs.content.dungeons.EssenceMine.contains(ox, oy, at.getY())
+                || !com.runecraft.osrs.content.dungeons.EssenceMine.inRoom(ox, oy)) {
+            throw failure("landed outside the mine at " + where);
+        }
+        BlockState feet = c.world.getBlockState(at);
+        BlockState below = c.world.getBlockState(at.down());
+        if (!feet.getCollisionShape(c.world, at).isEmpty() || below.getCollisionShape(c.world, at.down()).isEmpty()) {
+            throw failure("no clear footing at " + where + " (feet " + feet + ", below " + below + ")");
+        }
+        int[] o = com.runecraft.osrs.content.dungeons.EssenceMine.OUTCROPS.get(0);
+        BlockState rock = c.world.getBlockState(new BlockPos(GielinorMap.toBlockX(o[0]),
+                com.runecraft.osrs.content.dungeons.EssenceMine.FLOOR + 1, GielinorMap.toBlockZ(o[1])));
+        if (!(rock.getBlock() instanceof com.runecraft.block.RockBlock rb) || rb.rock() != com.runecraft.osrs.data.Rock.RUNE_ESSENCE) {
+            throw failure("no rune essence outcrop, found " + rock);
+        }
+        int[] portal = com.runecraft.osrs.content.dungeons.EssenceMine.PORTALS.get(0);
+        BlockState portalState = c.world.getBlockState(new BlockPos(GielinorMap.toBlockX(portal[0]),
+                com.runecraft.osrs.content.dungeons.EssenceMine.FLOOR + 1, GielinorMap.toBlockZ(portal[1])));
+        String portalId = net.minecraft.registry.Registries.BLOCK.getId(portalState.getBlock()).getPath();
+        if (!portalId.equals(com.runecraft.osrs.content.dungeons.DungeonBlocks.ESSENCE_PORTAL)) {
+            throw failure("no portal, found " + portalId);
+        }
+        if (!npcId.equals(com.runecraft.content.dungeons.EssenceMineService.lastTeleporter(p()))) {
+            throw failure("teleporter not remembered: " + com.runecraft.content.dungeons.EssenceMineService.lastTeleporter(p()));
+        }
+        com.runecraft.content.dungeons.EssenceMineService.leave(p());
+        BlockPos back = p().getBlockPos();
+        if (back.getSquaredDistance(start) > 4) {
+            throw failure("portal returned to " + back + " instead of " + start);
+        }
+        return "landed at " + where;
     }
 
     private String teleport(int x, int z) {

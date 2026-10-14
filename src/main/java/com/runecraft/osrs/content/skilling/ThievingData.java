@@ -263,6 +263,17 @@ public final class ThievingData extends SkillingPart {
                             Loot.of("law_rune", 1)), "stall", 0x5A3A8A),
             new Container("scimitar_stall", "Scimitar stall", false, 65, 100.0, 133, List.of(),
                     List.of(Loot.of("iron_scimitar", 4), Loot.of("steel_scimitar", 1)), "stall", 0x8A8A9A),
+            // Keldagrim's market (OSRS Wiki): the Carefree Crafting Stall (5 Thieving, 20 XP, restocks in 4.8 s; 54ths), Keldagrim's
+            // Best Bread (a bakery stall: 5 Thieving, 16 XP, bread 5/20, cake 13/20, chocolate slice 2/20; restocks twice as slowly
+            // as Ardougne's, approx 8 ticks) and Green Gemstone Gems (75 Thieving, 408 XP, restocks in 60 s).
+            new Container("keldagrim_crafting_stall", "Crafting stall", false, 5, 20.0, 8, List.of(),
+                    List.of(Loot.of("amulet_mould", 12), Loot.of("bracelet_mould", 12), Loot.of("chisel", 6), Loot.of("gold_bar", 2),
+                            Loot.of("necklace_mould", 11), Loot.of("ring_mould", 11)), "stall", 0x8A7A5A),
+            new Container("keldagrim_bakery_stall", "Bakery stall", false, 5, 16.0, 8, List.of(),
+                    List.of(Loot.of("bread", 5), Loot.of("cake", 13), Loot.of("chocolate_slice", 2)), "stall", 0xC09A5A),
+            new Container("keldagrim_gem_stall", "Gem stall", false, 75, 408.0, 100, List.of(),
+                    List.of(Loot.of("uncut_sapphire", 105), Loot.of("uncut_emerald", 17), Loot.of("uncut_ruby", 5),
+                            Loot.of("uncut_diamond", 1)), "stall", 0x3A8A5A),
             new Container("ore_stall", "Ore stall", false, 82, 180.0, 100, List.of(),
                     List.of(Loot.of("iron_ore", 30), Loot.of("silver_ore", 15), Loot.of("coal", 30), Loot.of("gold_ore", 12),
                             Loot.of("mithril_ore", 8), Loot.of("adamantite_ore", 4), Loot.of("runite_ore", 1)), "stall", 0x6A6A6A));
@@ -328,7 +339,8 @@ public final class ThievingData extends SkillingPart {
                         List.of("fruit_stall", "fruit_stall")),
                 PlaceDef.of("varrock_tea_stall", "Varrock tea stall", 3270, 3410, PlaceDef.Style.TOWN, List.of("tea_stall")),
                 PlaceDef.of("keldagrim_stalls", "Keldagrim market", 2765, 3712, PlaceDef.Style.CAVE,
-                        List.of("crossbow_stall", "blast_furnace_stairs")),
+                        List.of("crossbow_stall", "blast_furnace_stairs", "keldagrim_crafting_stall", "keldagrim_bakery_stall",
+                                "keldagrim_gem_stall")),
                 PlaceDef.of("ape_atoll_stalls", "Ape Atoll market", 2760, 2785, PlaceDef.Style.CAMP,
                         List.of("magic_stall", "scimitar_stall")),
                 PlaceDef.of("lovakengj_ore_stall", "Lovakengj ore stall", 1490, 3770, PlaceDef.Style.TOWN, List.of("ore_stall")),

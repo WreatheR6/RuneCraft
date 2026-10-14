@@ -113,6 +113,9 @@ public final class DungeonBlocks {
     /** Coins from each chest (the Cradle of Life gives boots instead). */
     public static final List<Integer> SOS_COINS = List.of(2000, 3000, 5000, 0);
 
+    /** A portal out of the Rune essence mine: returns the player to the NPC who teleported them ({@link EssenceMine}). */
+    public static final String ESSENCE_PORTAL = "dng_essence_mine_portal";
+
     /** Blocks that are passed through (the player is moved to the far side) when used. */
     public static final List<String> PASSABLE = List.of(GATE_OF_WAR, RICKETY_DOOR, OOZING_BARRIER, PORTAL_OF_DEATH, VINES,
             MINING_GUILD_DOOR, ABYSS_PASSAGE);
@@ -139,7 +142,8 @@ public final class DungeonBlocks {
                 BlockDef.scripted(CIRCULAR_DOOR, "Door", 0x4A5A5A, "portal_door"),
                 BlockDef.scripted(DOOR_SUPPORT, "Door-support", 0x6A5A3A, "statue"),
                 BlockDef.scripted(LIGHTHOUSE_LADDER, "Iron ladder (Lighthouse)", 0x5A5A5A, "pit"),
-                BlockDef.scripted(ROCK_PILE, "Pile of rocks", 0x7A7A72, "boulder")));
+                BlockDef.scripted(ROCK_PILE, "Pile of rocks", 0x7A7A72, "boulder"),
+                BlockDef.scripted(ESSENCE_PORTAL, "Portal", 0xC8D8F0, "portal_glow")));
         for (String metal : com.runecraft.osrs.content.CommonItems.SHADE_KEY_METALS) {
             list.add(BlockDef.scripted(shadeDoor(metal), "Wooden doors (" + metal + " lock)", 0x6A4A2A, "portal_door"));
         }

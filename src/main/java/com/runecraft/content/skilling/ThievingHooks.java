@@ -177,6 +177,7 @@ final class ThievingHooks {
         SkillingUtil.giveAll(player, c.always(), player.getRandom());
         SkillingUtil.roll(player, c.table(), player.getRandom());
         XpService.add(player, Skill.THIEVING, c.xp());
+        com.runecraft.content.GameEvents.fireActivity(player, "steal:" + c.blockId());
         Msg.action(player, c.chest() ? "You find treasure inside!" : "You steal from the " + SkillingUtil.lower(c.name()) + ".");
         GatheringHooks.deplete(world, pos, c.respawnTicks());
         ServerNetworking.sync(player);

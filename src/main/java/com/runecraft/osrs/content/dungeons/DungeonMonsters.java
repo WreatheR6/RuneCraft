@@ -256,6 +256,21 @@ public final class DungeonMonsters {
                 .attack(melee(AttackType.STAB, 5).special(Special.DRAIN_PRAYER, 0)) // OSRS: drains Prayer by a quarter (approx)
                 .defenceBonus(20, 15, 10, 15, 15).slayer(1, "spiders").model("giant_spider")
                 .skin(0x2A2A3A, 0x1A1A2A, 0x10101A, 0x6A4A8A).size(1.3f, 0.8f, 1.0f));
+        // The Shayzien Crypts' zombies and skeletons (osrs-dps-calc): one melee, ranged and magic version of each, level 132,
+        // 54 Hitpoints, 160 Attack, 62 Defence, 180 in their style, max hit 19, attack speed 5. Drops: bones (approx).
+        for (String kind : new String[]{"zombie", "skeleton"}) {
+            String name = (kind.equals("zombie") ? "Zombie" : "Skeleton") + " (Shayzien Crypts)";
+            int skin = kind.equals("zombie") ? 0x6A8A5A : 0xD8D0B8;
+            list.add(m("shayzien_crypt_" + kind + "_melee", name, 132, 54, 160, 180, 62, 1, 1).speed(5)
+                    .attack(melee(AttackType.SLASH, 19)).defenceBonus(25, 20, 25, 10, 30).drops(Drop.always("bones"))
+                    .model(kind).skin(skin, 0x4A4A3A, 0x3A3A2A, skin));
+            list.add(m("shayzien_crypt_" + kind + "_ranged", name, 132, 54, 160, 1, 62, 1, 180).speed(5)
+                    .attack(AttackDef.of("ranged", AttackType.RANGED, 19, 8, 10)).defenceBonus(15, 10, 15, 30, 20)
+                    .drops(Drop.always("bones")).model(kind).skin(skin, 0x3A4A2A, 0x3A3A2A, skin));
+            list.add(m("shayzien_crypt_" + kind + "_magic", name, 132, 54, 160, 1, 62, 180, 1).speed(5)
+                    .attack(AttackDef.of("magic", AttackType.MAGIC, 19, 8, 10)).defenceBonus(35, 30, 35, 20, 10)
+                    .drops(Drop.always("bones")).model(kind).skin(skin, 0x3A2A4A, 0x3A3A2A, skin));
+        }
         list.add(m("chaos_dwarf", "Chaos dwarf", 48, 61, 38, 42, 28, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 6))
                 .attackBonus(13, 0, 0).defenceBonus(40, 34, 25, 10, 35).drops(Drop.always("bones"), Drop.of("coal", 1, 1, 8))
                 .slayer(1, "dwarves").model("dwarf").skin(0xC89070, 0x6A1A1A, 0x3A1A1A, 0xE04020));

@@ -620,6 +620,21 @@ final class KandarinArdougne {
         }
         d.lamp(x1 + 1, z1 + 1, "minecraft:spruce_fence");
         d.lamp(x2 - 1, z1 + 1, "minecraft:spruce_fence");
+        // The small net fishing spots off the platform's east side (cache: 2789-2795, 3273-3283), fished from a landing
+        // stage just above the water, down a ladder from the deck (layout approx).
+        k.fill(x2 + 1, 0, z1 + 3, x2 + 3, 0, z2 - 3, "minecraft:spruce_planks");
+        for (int z = (z1 + z2) / 2; z < z2 - 3; z++) {
+            if (((x2 + 1) >> 4) == (x2 >> 4)) {
+                k.fill(x2, 0, z, x2, 2, z, "minecraft:stripped_dark_oak_log");
+            }
+            if (k.ladder(x2 + 1, z, 1, 3, "east")) {
+                d.clear(x2, 0, z, x2, 1, z);
+                break;
+            }
+        }
+        for (int z = z1 + 4; z <= z2 - 4; z += 5) {
+            k.set(x2 + 4, -1, z, "runecraft:net_bait_fishing_spot");
+        }
         return k.build();
     }
 }
