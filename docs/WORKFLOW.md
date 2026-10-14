@@ -150,8 +150,12 @@ Recurring conflict spots:
 
 - **Session 2, round 11: remaining dungeons, flagship models part 2, diary close-out:**
   - Seven more cache dungeons: Giants' Den, Isle of Souls, Myths' Guild, Deep Wilderness, Karamja Volcano (+ Crandor tunnels), Ice Troll Caves, Ourania Cave (ZMI altar moved inside); Kalphite Cave task-only and underground multicombat (`MultiCombat.UNDERGROUND`).
-  - Re-sculpted Zulrah ×3, Alchemical Hydra ×4, KBD, Kalphite Queen ×2, Dusk/Dawn, Sarachnis, Abyssal Sire (`bestiary/Flagships2.java`); restored Corp's green, Vorkath's frost veins, Cerberus's heads. Review: Zulrah, KQ airborne and Sire afters read worse than before — restore or redo.
+  - Re-sculpted Alchemical Hydra ×4, KBD, Kalphite Queen ×2, Dusk/Dawn, Sarachnis (`bestiary/Flagships2.java`); restored Corp's green, Vorkath's frost veins, Cerberus's heads.
   - Diaries 419 → 438 faithful via `EVENT`/`WEAR` task types and `GameEvents.fireActivity` keys; spider on a stick, oomlie wrap, palm leaves, jungle spiders and oomlie birds; Bert's daily sand; non-drinkable potions; 3-dose outputs for potions made from an unfinished potion.
+
+- **Session 2, round 12: model fixes, diary tasks:**
+  - Restored the round-10 Zulrah ×3 and Abyssal Sire, veined Kalphite Queen wings, re-sculpted Phantom Muspah and the Whisperer (`bestiary/Flagships3.java`), Nex wing veins. Zilyana, K'ril, wilderness bosses, Leviathan, Vardorvis, Duke and the Wardens kept (no clear improvement).
+  - Diaries 438 → 453 faithful (`DiaryExtras`): Tindel Marchant, the Elid genie, camulet, crystal chest and key halves, dwarven helmet, white 2h sword and Sir Vyvin's shop, Motherlode struts, Keldagrim Stonemason, Neitiznot shield, Warrens shop, skull sceptre, team capes, gold helmet smithing, muddy chest, god spells on players.
 
 ## Backlog (things agents reported as missing or approximate)
 
@@ -174,7 +178,7 @@ Recurring conflict spots:
   - Volcanic Mine: heat-proof vessel, gas holes, meteors, multiple boulders; lava beast spawn rate guessed.
   - Dungeon herb, seed and Varlamore crops; coral.
   - Seed pack contents are partly guessed.
-- **Diaries:** 54 tasks approximated (Cromperty, Tindel, genie, kudos, missing shops, dwarven helmet, gold helmet, Fremennik shield, muddy key, crystal chest, team capes, skull sceptre, Camulet, Fishing Platform, Shayzien Crypts, BA roles, Motherlode struts, Miscellania support). Previously 75: shadow hounds and locust riders need the Shadow Dungeon and Contact! dungeon; swordchick/deathwing have no cache spawns; Arceuus lectern tablets; Port Phasmatys has no range; NPC-talk and minigame-internal tasks.
+- **Diaries:** 39 tasks approximated: no Rune essence mine (Cromperty), no museum kudos, no BA role levels/blackboard, no Miscellania approval or Tai Bwo Wannai favour, Fishing Platform, Skavid caves, swordchick/deathwing, totem pole, Shayzien Crypts, Jatizso/Arzinian mines, Keldagrim stalls, emotes. Earlier notes: 75: shadow hounds and locust riders need the Shadow Dungeon and Contact! dungeon; swordchick/deathwing have no cache spawns; Arceuus lectern tablets; Port Phasmatys has no range; NPC-talk and minigame-internal tasks.
 - **Thieving and Agility:** the Dorgesh-Kaan course is missing; Isle of Souls chests sit on the surface (their real tiles are in the dungeon/tower basement); leaving the Wilderness course doesn't forfeit the fee.
 - **World:**
   - Missing dungeons: Myths' Guild, Isle of Souls, Giants' Den, Deep Wilderness, Crandor/Karamja, Ourania Cave interior, Stalker Den, Ice Troll Caves. New dungeon huts sit a few tiles off where another module's building occupies the tile; Kalphite Cave task-only rule and its multicombat missing.
