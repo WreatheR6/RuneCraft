@@ -42,6 +42,8 @@ final class CoxRooms {
         private int fight;
         private int anvilTicks;
         private int enrage;
+        /** OSRS: at the anvil Tekton repairs himself by roughly 1.11-1.33% of his hitpoints every few ticks. */
+        private static final int ANVIL_HEAL_EVERY = 3;
 
         Tekton(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -69,6 +71,9 @@ final class CoxRooms {
             if (anvilTicks > 0) {
                 anvilTicks--;
                 tekton.getNavigation().stop();
+                if (anvilTicks % ANVIL_HEAL_EVERY == 0) {
+                    raid.heal(tekton, Math.max(1, raid.maxHitpoints(tekton) * 12 / 1000)); // approx 1.2%
+                }
                 world().spawnParticles(ParticleTypes.LAVA, anvil.x + 2, anvil.y + 1, anvil.z, 6, 0.4, 0.3, 0.4, 0);
                 if (anvilTicks % 2 == 0) {
                     for (ServerPlayerEntity p : players()) {
@@ -96,9 +101,14 @@ final class CoxRooms {
             }
         }
 
+        /** OSRS: Tekton is immune to Ranged and takes 80% less Magic damage. */
         @Override
         public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
-            return anvilTicks > 0 ? damage / 2 : damage;
+            if (type == AttackType.RANGED) {
+                Msg.game(attacker, "Tekton is immune to ranged attacks.");
+                return 0;
+            }
+            return type == AttackType.MAGIC ? damage / 5 : damage;
         }
 
         @Override
@@ -238,10 +248,13 @@ final class CoxRooms {
                 Msg.action(attacker, "Only a pickaxe can harm the Guardians.");
                 return 0;
             }
-            if (damage > 0) {
-                XpService.add(attacker, Skill.MINING, damage * 2.0);
+            // OSRS: damage x (50 + Mining level + pickaxe level) / 150, the pickaxe capped at a dragon pickaxe.
+            int dealt = RaidScaling.coxGuardianDamage(damage, level(attacker, Skill.MINING),
+                    RaidScaling.pickaxeLevel(Inv.idOf(attacker.getMainHandStack())));
+            if (dealt > 0) {
+                XpService.add(attacker, Skill.MINING, dealt * 2.0);
             }
-            return damage + (damage > 0 ? level(attacker, Skill.MINING) / 20 : 0);
+            return dealt;
         }
     }
 
@@ -370,6 +383,8 @@ final class CoxRooms {
                     } else {
                         feeding.put(m, f - 1);
                         raid.heal(m, Math.max(1, raid.maxHitpoints(m) * 3 / 100));
+                        com.runecraft.content.systems.CombatAchievementService.flagNear(m,
+                                com.runecraft.osrs.content.systems.CombatAchievements.FLAG_MEAT_TREE_HEAL);
                         world().spawnParticles(ParticleTypes.HEART, m.getX(), m.getY() + 1.5, m.getZ(), 1, 0.3, 0.3, 0.3, 0);
                     }
                     continue;
@@ -491,6 +506,8 @@ final class CoxRooms {
                         raid.setCurrentHitpoints(g, (int) Math.round(avg * raid.maxHitpoints(g)));
                     }
                     warn("The Vanguards' health is too uneven - they reset!");
+                    com.runecraft.content.systems.CombatAchievementService.flagNear(live.get(0),
+                            com.runecraft.osrs.content.systems.CombatAchievements.FLAG_VANGUARD_RESET);
                     resetCooldown = 8;
                 }
             }
@@ -524,10 +541,24 @@ final class CoxRooms {
         }
     }
 
-    /** Vespula: kill the abyssal portal while Vespula and her soldiers defend it. */
+    /**
+     * Vespula (OSRS): four lux grubs lie around the abyssal portal and Vespula stings them as she flies; a grub stung
+     * to death hatches into a vespine soldier, and living soldiers heal Vespula and the portal. At 20% health she
+     * lands for about 20 seconds, when the portal can be attacked safely; attacking the portal while she flies
+     * enrages her and she stings everyone near it. Destroying the portal ends the encounter.
+     */
     static final class Vespula extends RoomLogic {
+        /** Stings that hatch a lux grub. // approx: OSRS grubs have a health bar Vespula's stings deplete */
+        private static final int GRUB_STINGS = 4;
+        /** Game ticks Vespula stays on the ground (OSRS: about 20 seconds). */
+        private static final int LANDED_TICKS = 33;
+        private static final int[][] GRUBS = {{11, -6}, {11, 6}, {16, -6}, {16, 6}};
         private DataBossEntity vespula;
         private DataBossEntity portal;
+        private final int[] grubStings = new int[GRUBS.length];
+        private int landedTicks;
+        private boolean landedOnce;
+        private int enragedTicks;
 
         Vespula(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -539,13 +570,28 @@ final class CoxRooms {
                 RaidBuilder.pillar(world(), center().add(4, 0, i * 9), 0, 4, Blocks.JUNGLE_LOG.getDefaultState());
                 RaidBuilder.set(world(), center().add(4, 5, i * 9), Blocks.BEE_NEST.getDefaultState());
             }
+            for (int[] g : GRUBS) {
+                RaidBuilder.set(world(), at(g[0], g[1]), Blocks.HONEYCOMB_BLOCK.getDefaultState());
+            }
         }
 
         @Override
         public void start() {
+            java.util.Arrays.fill(grubStings, 0);
+            landedTicks = 0;
+            landedOnce = false;
+            enragedTicks = 0;
             portal = spawnBoss("vespula_portal", at(15, 0));
-            anchor(portal);
+            if (portal != null) {
+                anchor(portal);
+                // OSRS: the portal itself never attacks.
+                portal.setAiDisabled(true);
+            }
             vespula = spawnBoss("vespula", at(8, 0), false);
+        }
+
+        private boolean flying() {
+            return alive(vespula) && landedTicks <= 0;
         }
 
         @Override
@@ -554,11 +600,75 @@ final class CoxRooms {
                 complete();
                 return;
             }
-            autoAttack(portal, tick, 6);
-            if (tick % 20 == 0 && living("vespine_soldier").size() < 2 + raid.partySize()) {
-                spawnMob("vespine_soldier", at(13, rnd().nextInt(7) - 3), false);
-                say("A lux grub hatches into a vespine soldier!");
+            if (alive(vespula) && !landedOnce && raid.healthFraction(vespula) <= 0.2) {
+                landedOnce = true;
+                landedTicks = LANDED_TICKS;
+                vespula.setAiDisabled(true);
+                warn("Vespula crashes to the ground, exhausted! Destroy the portal now!");
+                com.runecraft.content.systems.CombatAchievementService.flagNear(portal,
+                        com.runecraft.osrs.content.systems.CombatAchievements.FLAG_VESPULA_LANDED);
             }
+            if (landedTicks > 0 && --landedTicks == 0 && alive(vespula)) {
+                vespula.setAiDisabled(false);
+                say("Vespula takes to the air again.");
+            }
+            // Vespula stings the lux grubs while she flies.
+            if (flying() && tick % 8 == 0) {
+                List<Integer> live = new ArrayList<>();
+                for (int i = 0; i < GRUBS.length; i++) {
+                    if (grubStings[i] < GRUB_STINGS) {
+                        live.add(i);
+                    }
+                }
+                if (!live.isEmpty()) {
+                    int g = live.get(rnd().nextInt(live.size()));
+                    BlockPos pos = at(GRUBS[g][0], GRUBS[g][1]);
+                    world().spawnParticles(ParticleTypes.CRIT, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 8, 0.3, 0.3, 0.3, 0.05);
+                    if (++grubStings[g] >= GRUB_STINGS) {
+                        RaidBuilder.set(world(), pos, Blocks.AIR.getDefaultState());
+                        spawnMob("vespine_soldier", pos, false);
+                        warn("A lux grub hatches into a vespine soldier! Its kin will heal Vespula and the portal.");
+                    }
+                }
+            }
+            // Vespine soldiers heal Vespula and the portal while they live. // approx rate
+            if (tick % 4 == 0) {
+                int soldiers = living("vespine_soldier").size();
+                if (soldiers > 0) {
+                    for (DataBossEntity b : new DataBossEntity[]{vespula, portal}) {
+                        if (alive(b)) {
+                            raid.heal(b, soldiers * Math.max(1, raid.maxHitpoints(b) / 100));
+                        }
+                    }
+                }
+            }
+            // Enraged: she darts back and forth in front of the portal, stinging anyone close to it.
+            if (enragedTicks > 0) {
+                enragedTicks--;
+                if (tick % 2 == 0 && alive(vespula)) {
+                    for (ServerPlayerEntity p : players()) {
+                        if (p.squaredDistanceTo(portal) < 5 * 5) {
+                            RaidEffects.hit(vespula, p, 5 + rnd().nextInt(16), null, true);
+                        }
+                    }
+                }
+            }
+        }
+
+        @Override
+        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            if (boss == portal && damage > 0) {
+                if (flying()) {
+                    if (enragedTicks <= 0) {
+                        warn("Vespula is enraged by the attack on her portal!");
+                    }
+                    enragedTicks = 6;
+                } else if (landedOnce) {
+                    com.runecraft.content.systems.CombatAchievementService.flag(attacker,
+                            com.runecraft.osrs.content.systems.CombatAchievements.FLAG_VESPULA_LANDED);
+                }
+            }
+            return damage;
         }
 
         @Override

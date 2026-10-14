@@ -747,7 +747,8 @@ final class TobRooms {
                                 Vec3d v = a.lerp(b, i / 10.0);
                                 world().spawnParticles(ParticleTypes.ELECTRIC_SPARK, v.x, v.y, v.z, 2, 0.1, 0.1, 0.1, 0);
                             }
-                            RaidEffects.hit(verzik, p, 30 + rnd().nextInt(46), null, true);
+                            // OSRS: an unshielded P1 blast hits up to 137 in normal mode.
+                            RaidEffects.hit(verzik, p, rnd().nextInt(138), null, true);
                         } else {
                             Msg.action(p, "The pillar shields you from the blast.");
                         }

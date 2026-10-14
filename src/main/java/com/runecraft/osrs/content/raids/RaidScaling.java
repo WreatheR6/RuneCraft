@@ -239,6 +239,48 @@ public final class RaidScaling {
         return Math.max(4_500, Math.max(0, totalThievingLevels) / 6 * 150);
     }
 
+    /** Highest pickaxe level that counts against the Guardians (OSRS: the crystal pickaxe hits like a dragon one). */
+    public static final int COX_GUARDIAN_PICKAXE_CAP = 61;
+
+    /**
+     * Damage a pickaxe hit deals to a CoX Guardian (OSRS wiki): damage x (50 + Mining level + pickaxe level) / 150,
+     * the pickaxe's level requirement capped at {@link #COX_GUARDIAN_PICKAXE_CAP}.
+     */
+    public static int coxGuardianDamage(int damage, int miningLevel, int pickaxeLevel) {
+        if (damage <= 0) {
+            return 0;
+        }
+        int p = Math.max(1, Math.min(COX_GUARDIAN_PICKAXE_CAP, pickaxeLevel));
+        return damage * (50 + Math.max(1, miningLevel) + p) / 150;
+    }
+
+    /** Mining level a pickaxe needs (OSRS), by item id; 1 for unknown pickaxes. */
+    public static int pickaxeLevel(String itemId) {
+        if (itemId == null) {
+            return 1;
+        }
+        String id = itemId.replace("_pickaxe", "");
+        return switch (id) {
+            case "steel" -> 6;
+            case "black" -> 11;
+            case "mithril" -> 21;
+            case "adamant" -> 31;
+            case "rune", "gilded" -> 41;
+            case "dragon", "dragon_or", "infernal", "3rd_age", "third_age" -> 61;
+            case "crystal" -> 71;
+            default -> id.startsWith("dragon") || id.startsWith("infernal") ? 61 : id.startsWith("crystal") ? 71 : 1;
+        };
+    }
+
+    /**
+     * CoX Guardian hitpoints (OSRS wiki): 151 x (1 + floor(team / 2)) + floor(average Mining level) x team, so 250
+     * for a solo player with 99 Mining. Challenge Mode adds 50%.
+     */
+    public static int coxGuardianHp(int partySize, int averageMining) {
+        int n = clampParty(partySize, 100);
+        return 151 * (1 + n / 2) + Math.max(1, averageMining) * n;
+    }
+
     /** The Great Olm's left claw clenches after a hit of at least 1/20 of its health (OSRS). */
     public static int olmClenchThreshold(int clawMaxHp) {
         return Math.max(1, clawMaxHp / 20);
@@ -383,9 +425,18 @@ public final class RaidScaling {
         return Math.max(1, hp);
     }
 
-    /** ToA boss damage multiplier: approximated as +1% per 10 raid levels (OSRS uses per-invocation effects). // approx */
+    /**
+     * ToA creature damage multiplier (OSRS wiki): +2% per 5 raid levels, additively, capped at +150% (so x1.4 at
+     * raid level 100, x2.2 at 300 and x2.5 from 375).
+     */
     public static double toaDamage(int raidLevel) {
-        return 1.0 + Math.max(0, raidLevel) / 1000.0;
+        int pct = Math.min(150, Math.max(0, raidLevel) / 5 * 2);
+        return 1.0 + pct / 100.0;
+    }
+
+    /** ToA accuracy and Defence multiplier (OSRS wiki): +2% per 5 raid levels, uncapped. */
+    public static double toaAccuracy(int raidLevel) {
+        return 1.0 + Math.max(0, raidLevel) / 5 * 2 / 100.0;
     }
 
     /** Path level damage bonus of path monsters (OSRS): +8% at path level 1 and +5% per further level. */

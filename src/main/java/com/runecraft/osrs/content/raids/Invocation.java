@@ -9,8 +9,10 @@ import java.util.Set;
  * Tombs of Amascut invocations. The raid level is the sum of the selected invocations' values
  * (approximately the OSRS values). Invocations in the same {@link #group} are mutually exclusive.
  *
- * <p>Implemented effects: every 1 raid level scales boss hitpoints, damage and loot (see
- * {@link RaidScaling}); the attempts group limits how many times a wiped party may retry a room.
+ * <p>Implemented effects: the raid level scales creature hitpoints, damage and loot (see {@link RaidScaling});
+ * the attempts group limits the wipes over the whole raid; time limits lower the raid level when missed; Quiet
+ * Prayers, Deadly Prayers, On a Diet, Dehydration and Overly Draining change the player's rules; and several boss
+ * invocations change their encounters (see the static helpers below).
  */
 public enum Invocation {
     TRY_AGAIN("Try Again", 5, "attempts"),
@@ -119,21 +121,103 @@ public enum Invocation {
         return true;
     }
 
-    /** Retries a wiped party gets per room: unlimited (-1) without an attempts invocation. */
-    public static int roomRetries(Set<Invocation> set) {
+    /**
+     * Attempts the party has for the whole raid (OSRS): Try Again 10, Persistence 5, Softcore Run 3, Hardcore Run 1;
+     * unlimited (-1) without an attempts invocation. A wipe during a challenge uses one.
+     */
+    public static int attempts(Set<Invocation> set) {
         if (set.contains(HARDCORE_RUN)) {
-            return 0;
-        }
-        if (set.contains(SOFTCORE_RUN)) {
             return 1;
         }
-        if (set.contains(PERSISTENCE)) {
-            return 2;
-        }
-        if (set.contains(TRY_AGAIN)) {
+        if (set.contains(SOFTCORE_RUN)) {
             return 3;
         }
+        if (set.contains(PERSISTENCE)) {
+            return 5;
+        }
+        if (set.contains(TRY_AGAIN)) {
+            return 10;
+        }
         return -1;
+    }
+
+    /** Wipes a party can recover from over the whole raid: {@link #attempts} minus the first, or -1 (unlimited). */
+    public static int roomRetries(Set<Invocation> set) {
+        int a = attempts(set);
+        return a < 0 ? -1 : a - 1;
+    }
+
+    /** Time limit in minutes of the active time-limit invocation (OSRS: 40/35/30/25), or 0 for none. */
+    public static int timeLimitMinutes(Set<Invocation> set) {
+        if (set.contains(SPRINT_FOR_IT)) {
+            return 25;
+        }
+        if (set.contains(RUN_FOR_IT)) {
+            return 30;
+        }
+        if (set.contains(JOG_FOR_IT)) {
+            return 35;
+        }
+        return set.contains(WALK_FOR_IT) ? 40 : 0;
+    }
+
+    /** Raid levels lost when the time limit is missed (OSRS: 20/30/40/50). */
+    public static int timeLimitPenalty(Set<Invocation> set) {
+        if (set.contains(SPRINT_FOR_IT)) {
+            return 50;
+        }
+        if (set.contains(RUN_FOR_IT)) {
+            return 40;
+        }
+        if (set.contains(JOG_FOR_IT)) {
+            return 30;
+        }
+        return set.contains(WALK_FOR_IT) ? 20 : 0;
+    }
+
+    /**
+     * Share of a protected hit that still lands (OSRS: Quiet Prayers makes protection prayers 10% less effective).
+     */
+    public static double protectionLeak(Set<Invocation> set) {
+        return set.contains(QUIET_PRAYERS) ? 0.10 : 0.0;
+    }
+
+    /** Prayer points drained per point of damage taken (OSRS: Deadly Prayers drains 20% of the damage). */
+    public static double prayerDrainPerDamage(Set<Invocation> set) {
+        return set.contains(DEADLY_PRAYERS) ? 0.20 : 0.0;
+    }
+
+    /** Whether food may be eaten (OSRS: not with On a Diet; health-restoring potions are still allowed). */
+    public static boolean foodAllowed(Set<Invocation> set) {
+        return !set.contains(ON_A_DIET);
+    }
+
+    /** Whether potions that restore hitpoints may be drunk (OSRS: not with Dehydration). */
+    public static boolean healingPotionsAllowed(Set<Invocation> set) {
+        return !set.contains(DEHYDRATION);
+    }
+
+    /** Special attack energy every special attack costs (OSRS: Overly Draining makes them all cost 100%), or -1. */
+    public static int specialCost(Set<Invocation> set) {
+        return set.contains(OVERLY_DRAINING) ? 100 : -1;
+    }
+
+    /** Kephri's Mass Incubation eggs (OSRS: 2, or 4 with Lively Larvae). */
+    public static int kephriEggs(Set<Invocation> set) {
+        return set.contains(LIVELY_LARVAE) ? 4 : 2;
+    }
+
+    /** Blood clouds Zebak's blood magic summons (OSRS: 1 with Not Just a Head, 3 with Blood Thinners too). */
+    public static int zebakBloodClouds(Set<Invocation> set) {
+        if (!set.contains(NOT_JUST_A_HEAD)) {
+            return 0;
+        }
+        return set.contains(BLOOD_THINNERS) ? 3 : 1;
+    }
+
+    /** Akkha's special attack interval in attacks (OSRS: every 7th attack, every 6th with Stay Vigilant). */
+    public static int akkhaSpecialEvery(Set<Invocation> set) {
+        return set.contains(STAY_VIGILANT) ? 6 : 7;
     }
 
     private static final List<Preset> PRESETS = new ArrayList<>();

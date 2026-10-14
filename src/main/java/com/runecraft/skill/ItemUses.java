@@ -49,6 +49,17 @@ public final class ItemUses {
     private ItemUses() {
     }
 
+    /** A rule that may forbid eating or drinking (e.g. ToA invocations); returns the message to show, or null. */
+    public interface ConsumeGuard {
+        String blocked(ServerPlayerEntity player, ItemDef def);
+    }
+
+    private static final java.util.List<ConsumeGuard> CONSUME_GUARDS = new java.util.ArrayList<>();
+
+    public static void addConsumeGuard(ConsumeGuard guard) {
+        CONSUME_GUARDS.add(guard);
+    }
+
     public static boolean hasUse(ItemDef def) {
         return switch (def.kind()) {
             case FOOD, BONES, POTION, GRIMY_HERB, SLAYER_GEM, VIAL -> true;
@@ -65,6 +76,15 @@ public final class ItemUses {
         if (com.runecraft.quest.QuestItems.hasUse(def.id())) {
             com.runecraft.quest.QuestItems.use(player, stack, def.id());
             return;
+        }
+        if (def.kind() == ItemDef.Kind.FOOD || def.kind() == ItemDef.Kind.POTION) {
+            for (ConsumeGuard guard : CONSUME_GUARDS) {
+                String why = guard.blocked(player, def);
+                if (why != null) {
+                    Msg.game(player, why);
+                    return;
+                }
+            }
         }
         switch (def.kind()) {
             case FOOD -> eat(player, stack, def);

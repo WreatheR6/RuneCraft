@@ -230,6 +230,12 @@ public final class CombatAchievements {
     public static final String COUNT_TEKTON_ANVIL = "tekton_anvil";
     /** Times Vasa Nistirio used his teleport attack. */
     public static final String COUNT_VASA_TELEPORT = "vasa_teleport";
+    /** The Vanguards reset their health (CoX "Perfectly Balanced"). */
+    public static final String FLAG_VANGUARD_RESET = "vanguard_reset";
+    /** A Muttadile healed at the meat tree (CoX "Mutta-diet"). */
+    public static final String FLAG_MEAT_TREE_HEAL = "meat_tree_heal";
+    /** Vespula was forced to land (CoX "Redemption Enthusiast"). */
+    public static final String FLAG_VESPULA_LANDED = "vespula_landed";
     /** Times the Pestilent Bloat shut down. */
     public static final String COUNT_BLOAT_SHUTDOWN = "bloat_shutdown";
     /** A fight is forgotten after this many game ticks without either side attacking. */

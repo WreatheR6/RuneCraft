@@ -803,6 +803,9 @@ public final class CombatAchievementRules {
             643;RULE;maggot_king;1;moved<=40
             631;STREAK;shellbane_gryphon;5;weight<40
             493;RULE;vardorvis;1;gearvalue<=2000000
+            302;RULE;vanguard_melee|vanguard_ranged|vanguard_magic;1;noflag=vanguard_reset
+            307;RULE;muttadile;1;noflag=meat_tree_heal
+            308;RULE;vespula_portal;1;noflag=vespula_landed
             310;RULE;tekton;1;count<=1:tekton_anvil
             309;RULE;vasa_nistirio;1;count<=1:vasa_teleport
             240;RULE;pestilent_bloat;1;mode=normal count<=2:bloat_shutdown

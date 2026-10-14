@@ -114,10 +114,13 @@ public final class RaidEffects {
      * Returns the damage dealt.
      */
     public static int hit(LivingEntity source, ServerPlayerEntity player, int damage, AttackType style, boolean piercing) {
-        if (!piercing && style != null && protectedFrom(player, style)) {
-            damage = 0;
-        }
         RaidInstance raid = RaidManager.of(player);
+        if (!piercing && style != null && protectedFrom(player, style)) {
+            // ToA Quiet Prayers (OSRS): protection prayers are 10% less effective.
+            double leak = raid != null && raid.type == com.runecraft.osrs.content.raids.RaidType.TOA
+                    ? com.runecraft.osrs.content.raids.Invocation.protectionLeak(raid.invocations()) : 0;
+            damage = (int) Math.round(damage * leak);
+        }
         if (raid != null) {
             damage = (int) Math.round(damage * raid.damageMultiplier(source));
         }
@@ -125,6 +128,7 @@ public final class RaidEffects {
         int dealt = CombatHandler.applyDamage(attacker, player, damage);
         if (dealt > 0) {
             RaidManager.hurt(player, dealt);
+            RaidManager.deadlyPrayers(player, dealt);
         }
         return dealt;
     }
