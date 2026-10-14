@@ -116,12 +116,22 @@ public final class ThievingData extends SkillingPart {
                     List.of(), List.of(Loot.of("coins", 280, 350, 60), Loot.of("death_rune", 2, 2, 10), Loot.of("nature_rune", 3, 3, 10),
                     Loot.of("diamond", 3), Loot.of("gold_ore", 5), Loot.of("fire_orb", 4), Loot.of("crystal_dust", 3, 6, 4)),
                     new int[]{0xE0D0B0, 0x3A8A5A, 0x2A5A3A, 0xE0E0A0}),
+            // Digsite workmen (25 Thieving, 10.4 XP, 1 damage): loose coins, not a pouch. The wiki's table also has a
+            // specimen brush (3/11), a bucket and an animal skull (3/11, The Dig Site), which are other modules' items. The
+            // wiki has no success chart: low/high approx.
+            new Target("digsite_workman", "Digsite workman", "digsite_workmen", 0, 0, 25, 10.4, 120, 240, 1,
+                    List.of(), List.of(Loot.of("coins", 10, 10, 4), Loot.of("rope", 1), Loot.of("leather_gloves", 1), Loot.of("spade", 1)),
+                    new int[]{0xC8A080, 0x8A6A3A, 0x5A4A3A, 0xC0A060}),
+            // Pollnivneach villagers (30 Thieving, 8 XP, 2 damage, 5 coins): blackjack targets after The Feud. Low/high approx.
+            new Target("pollnivneach_villager", "Villager", "POLLNIVNEACH", 2, 3, 30, 8.0, 110, 240, 2,
+                    List.of(Loot.of("coins", 5, 5, 1)), List.of(), new int[]{0xA07850, 0xC0A880, 0x8A7A5A, 0xE0D8C0}),
             new Target("tzhaar_hur", "TzHaar-Hur", "MOR_UL_REK", 5, 5, 90, 103.4, -200, 200, 4,
                     List.of(), List.of(Loot.of("tokkul", 3, 14, 70), Loot.of("uncut_sapphire", 6), Loot.of("uncut_emerald", 4),
                     Loot.of("uncut_ruby", 2), Loot.of("uncut_diamond", 1)), new int[]{0x8A3A1A, 0x5A2A1A, 0x4A2A1A, 0xE06010}));
 
     /** Targets that can be knocked out with a blackjack first (Pollnivneach, after The Feud). */
-    public static final List<String> BLACKJACK_TARGETS = List.of("menaphite_thug", "bearded_pollnivneach_bandit", "pollnivneach_bandit");
+    public static final List<String> BLACKJACK_TARGETS = List.of("menaphite_thug", "bearded_pollnivneach_bandit", "pollnivneach_bandit",
+            "pollnivneach_villager");
     /** Ordinary blackjacks (no Attack requirement), sold by the blackjack seller in Pollnivneach. */
     public static final List<String> BLACKJACKS = List.of("oak_blackjack", "willow_blackjack");
     public static final String BLACKJACK_SELLER = "pollnivneach_blackjack_seller";
@@ -361,6 +371,8 @@ public final class ThievingData extends SkillingPart {
                         List.of(SOUL_CHEST, SOUL_CHEST, SOUL_CHEST)),
                 PlaceDef.of("crumbling_tower_dark_chest", "Crumbling Tower", 2180, 2935, PlaceDef.Style.RUINS, List.of(DARK_CHEST)),
                 PlaceDef.of("civitas_houses", "Civitas houses", 1612, 3112, PlaceDef.Style.TOWN,
-                        List.of("civitas_house_chest", "civitas_house_wardrobe", "civitas_jewellery_case")));
+                        List.of("civitas_house_chest", "civitas_house_wardrobe", "civitas_jewellery_case")),
+                // The Digsite workmen's spawns (cache tiles 3350-3373, 3385-3429); one stands at their centre.
+                PlaceDef.of("digsite_workmen", "Digsite", 3362, 3408, PlaceDef.Style.NONE, List.of()));
     }
 }

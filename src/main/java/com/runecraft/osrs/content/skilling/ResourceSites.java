@@ -68,7 +68,12 @@ public final class ResourceSites {
             fish("fishing_guild_cage_harpoon", "Fishing Guild (cage/harpoon)", CAGE_HARPOON, Region.KANDARIN,
                     2599, 3419, 2603, 3419, 2604, 3417, 2602, 3426),
             fish("fishing_guild_shark", "Fishing Guild (big net/harpoon)", SHARK, Region.KANDARIN, 2602, 3412, 2605, 3420, 2601, 3422),
-            fish("fishing_guild_small_net", "Fishing Guild (small net)", NET_BAIT, Region.KANDARIN, 2612, 3444, 2617, 3444),
+            // Kylie Minnow's platform: the guild's small-net spots are the minnow spots (cache tiles of NPCs 7730-7733).
+            fish("fishing_guild_small_net", "Fishing Guild (minnows)", GatheringData.MINNOW_SPOT, Region.KANDARIN,
+                    2609, 3443, 2612, 3444, 2617, 3444, 2620, 3443),
+            // Lake Molch's aerial fishing spots around Molch Island (cache tiles of NPC 8523).
+            fish("lake_molch_aerial", "Lake Molch (aerial fishing)", AerialFishing.SPOT, Region.KOUREND,
+                    1355, 3621, 1355, 3627, 1357, 3630, 1355, 3634, 1355, 3638, 1359, 3619, 1362, 3624, 1381, 3631),
             fish("musa_point_net_bait", "Musa Point (net/bait)", NET_BAIT, Region.KARAMJA, 2924, 3181, 2926, 3176),
             fish("musa_point_cage_harpoon", "Musa Point (cage/harpoon)", CAGE_HARPOON, Region.KARAMJA, 2923, 3180, 2926, 3179),
             fish("shilo_village_river", "Shilo Village river (lure/bait)", LURE_BAIT, Region.KARAMJA, 2855, 2974, 2855, 2977, 2856, 2971),
@@ -116,5 +121,11 @@ public final class ResourceSites {
             rock("barbarian_village_coal", "Barbarian Village mine", "coal", Region.MISTHALIN, 3081, 3421, 3082, 3422),
             rock("barbarian_village_tin", "Barbarian Village mine", "tin", Region.MISTHALIN, 3079, 3418, 3080, 3419),
             rock("seers_coal_trucks", "Coal trucks mine", "coal", Region.KANDARIN, 2581, 3481, 2584, 3483, 2586, 3478, 2589, 3481), // approx
-            rock("lava_maze_runite", "Lava Maze runite rocks", "runite", Region.WILDERNESS, 3059, 3884, 3060, 3885));   // approx
+            rock("lava_maze_runite", "Lava Maze runite rocks", "runite", Region.WILDERNESS, 3059, 3884, 3060, 3885),   // approx
+            // Lead rocks on Deepfin Point (wiki object tiles; the Onyx Crest and the Pandemonium Cave's rocks are not built).
+            rock("deepfin_point_lead", "Deepfin Point lead rocks", "lead", Region.UNCHARTED_ISLES,
+                    1935, 2795, 1933, 2794, 1936, 2794, 1934, 2792, 1932, 2791, 1930, 2789, 1939, 2789),
+            // The Lovakengj sulphur mine's volcanic sulphur deposits (wiki object tiles).
+            rock("lovakengj_sulphur", "Lovakengj sulphur mine", "volcanic_sulphur", Region.KOUREND,
+                    1423, 3872, 1445, 3863, 1439, 3869, 1432, 3866, 1446, 3873));
 }

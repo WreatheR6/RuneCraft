@@ -77,6 +77,7 @@ final class GatheringHooks {
         BlockHooks.register("pay_dirt_hopper", (player, pos, state) -> hopper(player, false));
         BlockHooks.register(MiningData.UPPER_HOPPER, (player, pos, state) -> hopper(player, true));
         BlockHooks.register("pay_dirt_sack", (player, pos, state) -> sack(player));
+        BlockHooks.register(MiningData.BARRONITE_CRUSHER, (player, pos, state) -> crushBarronite(player, pos));
         for (GatheringData.Spot s : GatheringData.SPOTS) {
             BlockHooks.register(s.blockId(), (player, pos, state) -> fish(player, pos, s));
         }
@@ -175,6 +176,14 @@ final class GatheringHooks {
             Msg.game(player, "You need a pickaxe to mine this rock. You do not have a pickaxe which you have the Mining level to use.");
             return;
         }
+        if (rock.blockId().equals(MiningData.SULPHUR)) {
+            ItemStack head = player.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD);
+            if (head.isEmpty() || !MiningData.BREATHING_FILTERS.contains(Inv.idOf(head))) {
+                Msg.game(player, "You'll choke on the fumes if you try to mine without protection.");
+                return;
+            }
+        }
+        boolean barronite = rock.blockId().equals(MiningData.BARRONITE);
         boolean vein = MiningData.isPayDirtVein(rock.blockId());
         boolean upper = rock.blockId().equals(MiningData.UPPER_VEIN);
         boolean inner = rock.blockId().equals(MiningData.INNER_VEIN);
@@ -200,7 +209,7 @@ final class GatheringHooks {
                 if (got == null) {
                     return true;
                 }
-                SkillingUtil.give(p, got.item(), 1);
+                SkillingUtil.give(p, got.item(), got.amount(random.nextDouble()));
                 XpService.add(p, Skill.MINING, got.xp());
                 if (vein) {
                     // The pay-dirt's ore is decided now, at the current (boosted) level; the hopper only washes it.
@@ -227,11 +236,57 @@ final class GatheringHooks {
                     }
                     return !sackFull(p);
                 }
+                if (barronite) {
+                    // A barronite rock lasts 20 seconds from its first success, then respawns after a minute.
+                    String key = SkillingUtil.key(world, pos);
+                    long now = ActionManager.gameTick();
+                    Long until = VEIN_EXPIRY.get(key);
+                    if (until == null) {
+                        VEIN_EXPIRY.put(key, now + MiningData.BARRONITE_LIFE_TICKS);
+                    } else if (now >= until) {
+                        VEIN_EXPIRY.remove(key);
+                        deplete(world, pos, rock.respawnTicks());
+                        return false;
+                    }
+                    return true;
+                }
                 if (rock.respawnTicks() > 0) {
                     deplete(world, pos, rock.respawnTicks());
                     return false;
                 }
                 return true;
+            }
+        });
+    }
+
+    /** The Barronite Crusher: crushes the barronite deposits carried with a hammer (14 Smithing, 30 XP each). */
+    private static void crushBarronite(ServerPlayerEntity player, BlockPos pos) {
+        if (!SkillingUtil.need(player, Skill.SMITHING, MiningData.CRUSH_LEVEL, "crush barronite deposits")) {
+            return;
+        }
+        if (!Inv.has(player, "hammer", 1)) {
+            Msg.game(player, "You need a hammer to crush the deposits.");
+            return;
+        }
+        if (!Inv.has(player, "barronite_deposit", 1)) {
+            Msg.game(player, "You have no barronite deposits to crush.");
+            return;
+        }
+        Msg.action(player, "You place a deposit in the crusher.");
+        SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, MiningData.BARRONITE_CRUSHER, 4) {
+            @Override
+            boolean roll(ServerPlayerEntity p, Random random) {
+                if (!Inv.has(p, "barronite_deposit", 1) || !Inv.has(p, "hammer", 1)) {
+                    return false;
+                }
+                Inv.remove(p, "barronite_deposit", 1);
+                Loot got = SkillingUtil.roll(p, MiningData.CRUSH_TABLE, random);
+                XpService.add(p, Skill.SMITHING, MiningData.CRUSH_XP);
+                p.getWorld().playSound(null, pos, SoundEvents.BLOCK_ANVIL_USE, SoundCategory.PLAYERS, 0.5f, 1.2f);
+                if (got != null && !got.item().equals("barronite_shards")) {
+                    Msg.red(p, "You find " + Msg.article(SkillingUtil.lower(SkillingUtil.name(got.item()))) + " in the deposit!");
+                }
+                return Inv.has(p, "barronite_deposit", 1);
             }
         });
     }
@@ -508,7 +563,8 @@ final class GatheringHooks {
                         if (spot.bait() != null) {
                             Inv.remove(p, spot.bait(), 1);
                         }
-                        SkillingUtil.give(p, c.item(), 1);
+                        boolean minnows = c.item().equals(GatheringData.MINNOW);
+                        SkillingUtil.give(p, c.item(), minnows ? GatheringData.minnowsPerCatch(fishing) : 1);
                         XpService.add(p, Skill.FISHING, c.xp());
                         if (c.agilityXp() > 0) {
                             XpService.add(p, Skill.AGILITY, c.agilityXp());

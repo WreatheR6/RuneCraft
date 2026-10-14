@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Mining: sandstone, granite, blurite, limestone, volcanic ash and the Motherlode Mine (pay-dirt veins, hopper,
+ * Mining: sandstone, granite, blurite, limestone, volcanic ash, lead, volcanic sulphur, barronite (with the
+ * Barronite Crusher) and the Motherlode Mine (pay-dirt veins, hopper,
  * sack, golden nuggets and the prospector kit, which boosts Mining XP by up to 2.5%).
  * Levels/XP are OSRS values; success rates are approximations on the usual 1-99 interpolation.
  */
@@ -63,10 +64,22 @@ public final class MiningData extends SkillingPart {
         }
     }
 
-    /** A possible yield: item, weight (single-roll rocks), XP, and its own low/high for cascading rocks (0/0 otherwise). */
-    public record Yield(String item, int weight, double xp, int low, int high) {
+    /**
+     * A possible yield: item, weight (single-roll rocks), XP, its own low/high for cascading rocks (0/0 otherwise) and
+     * how many are given (barronite shards come 4-6 at a time).
+     */
+    public record Yield(String item, int weight, double xp, int low, int high, int min, int max) {
+        public Yield(String item, int weight, double xp, int low, int high) {
+            this(item, weight, xp, low, high, 1, 1);
+        }
+
         public Yield(String item, int weight, double xp) {
-            this(item, weight, xp, 0, 0);
+            this(item, weight, xp, 0, 0, 1, 1);
+        }
+
+        /** Amount for a uniform roll in [0, 1). */
+        public int amount(double u) {
+            return min + (int) Math.floor(u * (max - min + 1));
         }
     }
 
@@ -86,7 +99,36 @@ public final class MiningData extends SkillingPart {
             // The lower level's inner ring (around the central pillar): respawns after 150 ticks instead of 100.
             new MineRock("inner_pay_dirt_vein", "Ore vein (inner ring)", 30, 60, 105, 0, List.of(new Yield("pay_dirt", 1, 60.0)), 0x5A4A30),
             // The Motherlode Mine's upper level (57 Mining and 100 nuggets paid to Prospector Percy; veins last longer).
-            new MineRock("upper_pay_dirt_vein", "Ore vein (upper level)", 30, 60, 105, 0, List.of(new Yield("pay_dirt", 1, 60.0)), 0x7A6A4A));
+            new MineRock("upper_pay_dirt_vein", "Ore vein (upper level)", 30, 60, 105, 0, List.of(new Yield("pay_dirt", 1, 60.0)), 0x7A6A4A),
+            // Lead rocks (Sailing islands; Deepfin Point): 25 Mining, 40.5 XP, 112/278 (Mod Ash). Respawn approx.
+            new MineRock("lead_rock", "Lead rocks", 25, 112, 278, 10, List.of(new Yield("lead_ore", 1, 40.5)), 0x5A5A68),
+            // Volcanic sulphur (Lovakengj sulphur mine): 42 Mining, 35 XP, 100/220, respawns in 25.2 seconds; needs a
+            // breathing filter (gas mask, facemask or slayer helmet) worn.
+            new MineRock("volcanic_sulphur_rock", "Volcanic sulphur", 42, 100, 220, 42, List.of(new Yield("volcanic_sulphur", 1, 35.0)), 0xC8B830),
+            // Barronite rocks (Ruins of Camdozaal): 14 Mining, 80/100; 76% 4-6 barronite shards (16 XP), 24% a barronite
+            // deposit (32 XP). A rock depletes 20 seconds after it starts being mined and respawns after a minute.
+            new MineRock("barronite_rock", "Barronite rocks", 14, 80, 100, 100, List.of(new Yield("barronite_shards", 76, 16.0, 0, 0, 4, 6),
+                    new Yield("barronite_deposit", 24, 32.0)), 0x7A6A8A));
+
+    public static final String LEAD = "lead_rock";
+    public static final String SULPHUR = "volcanic_sulphur_rock";
+    public static final String BARRONITE = "barronite_rock";
+    public static final String BARRONITE_CRUSHER = "barronite_crusher";
+    /** Game ticks a barronite rock lasts once someone starts mining it (20 seconds). */
+    public static final int BARRONITE_LIFE_TICKS = 33;
+    /** Worn head items that filter the sulphur fumes (any slayer helmet counts). */
+    public static final List<String> BREATHING_FILTERS = List.of("gas_mask", "facemask", "slayer_helmet", "slayer_helmet_i");
+
+    /** Smithing level and XP for crushing a barronite deposit at the Barronite Crusher with a hammer. */
+    public static final int CRUSH_LEVEL = 14;
+    public static final double CRUSH_XP = 30.0;
+    /**
+     * What a crushed barronite deposit gives (OSRS Wiki drop log, weights per 4,200): 6-8 shards 12/13, 15-35 shards
+     * 1/20, barronite head 1/200, broken Imcando hammer about 1/300 and each ancient relic 1/350. // approx
+     */
+    public static final List<Loot> CRUSH_TABLE = List.of(Loot.of("barronite_shards", 6, 8, 3780), Loot.of("barronite_shards", 15, 35, 210),
+            Loot.of("barronite_head", 21), Loot.of("imcando_hammer_broken", 14), Loot.of("ancient_astroscope", 12),
+            Loot.of("ancient_carcanet", 12), Loot.of("ancient_globe", 12), Loot.of("ancient_ledger", 12), Loot.of("ancient_treatise", 12));
 
     /** Block ids of the upper-level vein and hopper of the Motherlode Mine. */
     public static final String UPPER_VEIN = "upper_pay_dirt_vein";
@@ -143,6 +185,17 @@ public final class MiningData extends SkillingPart {
             }
         }
         simple(s, "limestone", "Limestone", "ore", 0xD8D0B0, 10);
+        simple(s, "lead_ore", "Lead ore", "ore", 0x5A5A68, 30).examine("This needs refining.");   // value approx
+        simple(s, "volcanic_sulphur", "Volcanic sulphur", "ore", 0xC8B830, 10)
+                .examine("Minerals from an unstable area, very rich in sulphur.");
+        simple(s, "barronite_shards", "Barronite shards", "shard", 0x7A6A8A, 1).stack(Integer.MAX_VALUE)
+                .examine("Shards of barronite. The Camdozaal dwarves trade with these.");
+        simple(s, "barronite_deposit", "Barronite deposit", "ore", 0x6A5A7A, 1).examine("Something might be hidden inside.");
+        simple(s, "barronite_head", "Barronite head", "headless", 0x7A6A8A, 1).examine("The head of a barronite mace.");
+        simple(s, "imcando_hammer_broken", "Imcando hammer (broken)", "hammer", 0x6A5A5A, 1).examine("A broken dwarven hammer.");
+        for (String relic : new String[]{"ancient_astroscope", "ancient_carcanet", "ancient_globe", "ancient_ledger", "ancient_treatise"}) {
+            simple(s, relic, title(relic), "package", 0x9A8A6A, 1).examine("A relic of Camdozaal. Ramarno would be interested.");
+        }
         simple(s, "pay_dirt", "Pay-dirt", "ore", 0x6A5A3A, 1);
         simple(s, "golden_nugget", "Golden nugget", "nugget", 0xE8C030, 1).examine("Prospector Percy accepts these.");
         simple(s, "bucket_of_sand", "Bucket of sand", "bucket", 0xE0D090, 3);
@@ -174,6 +227,9 @@ public final class MiningData extends SkillingPart {
         // Limestone is chiselled into limestone bricks (12 Crafting, 6 XP).
         out.accept(r("chisel_limestone_brick", MenuType.GEM_CUTTING, "Limestone brick", Skill.CRAFTING, 12, 6.0).in("limestone", 1)
                 .out("limestone_brick", 1).tool("chisel").ticks(2).build());
+        // Lead bar: two lead ore at a furnace (25 Smithing, 15.5 XP).
+        out.accept(r("smelt_lead_bar", MenuType.SMELTING, "Lead bar", Skill.SMITHING, 25, 15.5).in("lead_ore", 2).out("lead_bar", 1)
+                .ticks(5).build());
         out.accept(plain("empty_bucket_of_sand", MenuType.SMELTING, "Sand (empty bucket of sand)").in("bucket_of_sand", 1)
                 .out("minecraft:sand", 1).out("minecraft:bucket", 1).ticks(1).build());
         out.accept(r("smelt_molten_glass_bucket", MenuType.SMELTING, "Molten glass (bucket of sand)", Skill.CRAFTING, 1, 20.0)
@@ -189,6 +245,7 @@ public final class MiningData extends SkillingPart {
         list.add(BlockDef.scripted("pay_dirt_hopper", "Hopper", 0x7A6A5A, "machine"));
         list.add(BlockDef.scripted(UPPER_HOPPER, "Hopper (upper level)", 0x8A7A5A, "machine"));
         list.add(BlockDef.scripted("pay_dirt_sack", "Sack", 0xA08060, "crate"));
+        list.add(BlockDef.scripted(BARRONITE_CRUSHER, "Barronite Crusher", 0x6A6A70, "machine"));
         return list;
     }
 
@@ -205,6 +262,11 @@ public final class MiningData extends SkillingPart {
                 PlaceDef.of("asgarnian_ice_dungeon_blurite", "Blurite rocks", 3049, 3170, PlaceDef.Style.CAVE,
                         List.of("blurite_rock", "blurite_rock")),
                 PlaceDef.of("fossil_island_ash", "Fossil Island ash piles", 3793, 3770, PlaceDef.Style.RUINS,
-                        List.of("ash_pile", "ash_pile", "ash_pile", "ash_pile")));
+                        List.of("ash_pile", "ash_pile", "ash_pile", "ash_pile")),
+                // The Camdozaal Mines (barronite rocks and the Barronite Crusher) beneath Ice Mountain, built as a cave
+                // plaza just west of the ruins' entrance (the mines' real tiles, around 2905-2941, 5806-5822, are an
+                // underground instance). // approx
+                PlaceDef.of("camdozaal_mines", "Camdozaal Mines", 2978, 3494, PlaceDef.Style.CAVE,
+                        List.of(BARRONITE, BARRONITE, BARRONITE, BARRONITE, BARRONITE, BARRONITE, BARRONITE_CRUSHER)));
     }
 }
