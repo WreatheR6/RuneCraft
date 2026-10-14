@@ -220,18 +220,9 @@ public final class ZeahPlaces {
                 new Camp(KOUREND_CASTLE, 0, 10, 40, 12, ZeahStructures.CATACOMBS_FLOOR_Y + 1, ZeahMonsters.CATACOMB_CREATURES),
                 new Camp(CAM_TORUM, 0, 20, 12, 4, SURFACE, List.of("sulphur_nagua")),
                 new Camp(RALOS_RISE, 0, 0, 12, 3, SURFACE, List.of("sulphur_nagua")),
-                new Camp(MOONS_OF_PERIL, 0, -28, 12, 4, SURFACE, List.of("frost_nagua")),
-                // Round 17 slayer creatures of unbuilt Varlamore dungeons, at their entrances (approx.): Neypotzli's wyrmlings
-                // and grimy lizards, the Ruins of Tapoyauik's frost crabs and chilled jellies, the Tonali Cavern's earthen
-                // nagua and the Stalker Den's custodian stalkers.
-                new Camp(MOONS_OF_PERIL, 26, -20, 10, 3, SURFACE, List.of("wyrmling")),
-                new Camp(MOONS_OF_PERIL, 10, 24, 10, 4, SURFACE, List.of("grimy_lizard")),
-                new Camp(RUINS_OF_TAPOYAUIK, 0, 0, 12, 6, SURFACE, List.of("frost_crab")),
-                new Camp(RUINS_OF_TAPOYAUIK, 0, -26, 10, 3, SURFACE, List.of("chilled_jelly")),
-                new Camp(TONALI_CAVERN, 0, -10, 12, 4, SURFACE, List.of("earthen_nagua")),
-                new Camp(STALKER_DEN, -20, 0, 10, 4, SURFACE, List.of("juvenile_custodian_stalker")),
-                new Camp(STALKER_DEN, 6, 10, 10, 3, SURFACE, List.of("mature_custodian_stalker")),
-                new Camp(STALKER_DEN, 26, 16, 10, 2, SURFACE, List.of("elder_custodian_stalker")),
+                // The frost nagua and the round 17 Varlamore slayer creatures (wyrmlings, grimy lizards, frost crabs, chilled
+                // jellies, earthen nagua, custodian stalkers) live in the dungeons module's Neypotzli, Ruins of Tapoyauik,
+                // Tonali Cavern and Stalker Den.
                 new Camp(CIVITAS, 0, 10, 40, 4, SURFACE, List.of("fortis_guard")),
                 new Camp(OUTER_FORTIS, 0, 0, 12, 2, SURFACE, List.of("fortis_guard")));
     }
