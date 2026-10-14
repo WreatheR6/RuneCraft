@@ -338,6 +338,20 @@ final class KandarinMoreQuests {
         b.item("mourner_gear", "Mourner gear", "cloth", 0x2A2A2A, "A full set of mourner gear, as a disguise.");
         b.item("coloured_toads", "Dyed toad", "creature", 0x8A3AA0, "A toad dyed in sheep dye... it's a long story.");
         b.item("light_crystal", "Death talisman", "talisman", 0xE0E0FF, "The key to the Temple of Light.");
+        b.item("me_bloody_mourner_top", "Bloody mourner top", "cloth", 0x5A1A1A, "A mourner's top, covered in blood. It needs a good wash.");
+        b.item("me_torn_mourner_trousers", "Torn mourner trousers", "cloth", 0x2A2A2A, "Mourner trousers with a big tear in them.");
+        b.item("me_mourner_top", "Mourner top", "cloth", 0x2A2A2A, "A clean mourner top.");
+        b.item("me_mourner_trousers", "Mourner trousers", "cloth", 0x2A2A2A, "Mended mourner trousers.");
+        b.item("me_sieve", "Sieve", "net", 0xA08A5A, "Elena's sieve.");
+        b.item("me_toxic_powder", "Toxic powder", "spice", 0x6AA03A, "Dried toxic naphtha. Don't eat it.");
+        b.item("me2_new_key", "New key", "key", 0x8A8A9A, "Essyllt's key to the newly dug caves.");
+        b.item("me2_black_crystal", "Chipped black crystal", "gem", 0x1A1A2A, "A shard of the dark crystal in the Temple of Light.");
+        b.item("me2_newly_made_crystal", "Newly made crystal", "gem", 0xE0F0FF, "Arianwyn sang the dark shard into this crystal.");
+        b.spot("me_arandar_gate", "Arandar Pass gate", 2416, 3330); // approx
+        b.spot("me_apple_orchard", "Rotten apple orchard", 2490, 3365); // approx: north-east of the Outpost
+        Cast.npc(b, "tegid", "Tegid", "TAVERLEY", 6, 6, Cast.FAIR, 0x6A6A8A);
+        Cast.npc(b, "oronwen", "Oronwen", "LLETYA", -4, 4, Cast.PALE, 0x6A3A6A);
+        Cast.npc(b, "essyllt", "Essyllt", "mourner_hq", 2, 2, Cast.PALE, 0x1A1A1A);
         b.boss(BossDef.of("shadow_of_light", "Shadow").level(73).stats(80, 70, 70, 70, 1, 1).speed(4)
                 .attack(AttackDef.of("shadow_touch", AttackType.SLASH, 11, 2.5, 10).special(Special.DRAIN_PRAYER, 2))
                 .drops(Drop.always("bones")).skin(0x1A1A2A, 0x0A0A1A, 0x0A0A0A, 0x3A3A6A).at("temple_of_light").arena(9, "void"));
@@ -345,22 +359,74 @@ final class KandarinMoreQuests {
                 .xp(Skill.THIEVING, 40000).xp(Skill.HITPOINTS, 25000) // OSRS (current quest XP rewards)
                 .reqQuest("roving_elves", "big_chompy_bird_hunting", "sheep_herder").req(Skill.RANGED, 60).req(Skill.THIEVING, 50)
                 .stage("I can start this quest by speaking to Islwyn in Tirannwn. (Requires Roving Elves, Big Chompy Bird Hunting, Sheep Herder, 60 Ranged, 50 Thieving.)")
-                .talk("islwyn").say("The mourners of West Ardougne are not what they seem. Arianwyn needs someone to infiltrate them.")
-                .stage("I should get a mourner disguise. The mourners' camp is near the elf camp; one may be careless.")
-                .talk("mourner_spy").take("coins:500").give("mourner_gear").say("*The mourner looks around, then hands over a spare set of gear for a bribe.* You didn't get this from me.")
-                .missing("Move along. Unless you've got some coin to make it worth my while... (500 coins)")
-                .stage("Disguised, I should help the mourners' 'research': they want dyed toads, for some reason.")
-                .talk("mourner_spy").need("mourner_gear").take("bloated_toad").give("coloured_toads").say("Ah, a toad. We'll dye it. Don't ask. *You overhear: the mourners serve Lord Iorwerth!*")
-                .missing("We need a bloated toad for the 'experiment'.")
-                .stage("I should tell Arianwyn what I learned.")
-                .talk("arianwyn").take("coloured_toads").say("The mourners serve Iorwerth! Thank you. We must find out what they are hiding beneath West Ardougne.");
+                .talk("islwyn").say("The mourners of West Ardougne are not what they seem. Arianwyn in Lletya needs someone to infiltrate them.")
+                // OSRS: kill a mourner at the Arandar gate for its gear; Tegid's soap cleans the bloody top, Oronwen mends the torn trousers.
+                .stage("I need a mourner disguise: the mourners guarding the Arandar Pass carry their gear. Tegid and Oronwen can fix what's damaged.")
+                .reach("me_arandar_gate", 8).stay().unless("me_bloody_mourner_top", "me_mourner_top", "mourner_gear")
+                .give("me_bloody_mourner_top", "me_torn_mourner_trousers")
+                .say("* You kill a mourner at the Arandar gate. His potion drains your stats as he dies.",
+                        "* He drops a mask, gloves, boots, a cloak, a letter... a bloody top and torn trousers.")
+                .talk("tegid").stay().take("me_bloody_mourner_top", "minecraft:water_bucket").give("me_mourner_top")
+                .say("Soap? Take some of mine, from the laundry basket. *You scrub the top clean in a bucket of water.*")
+                .missing("That top won't clean itself. A bucket of water and my soap should do it.")
+                .talk("oronwen").stay().take("me_torn_mourner_trousers", "silk", "bear_fur").give("me_mourner_trousers")
+                .say("Torn mourner trousers? With silk and bear fur I can mend them. There.")
+                .missing("I could mend those with some silk and a bear fur.")
+                .talk("arianwyn").take("me_mourner_top", "me_mourner_trousers").give("mourner_gear")
+                .say("A clean top, mended trousers, and the rest of the outfit. You'll pass as a mourner. Enter their headquarters in West Ardougne.")
+                .missing("The disguise must be perfect: a clean mourner top and mended trousers. Tegid in Taverley and Oronwen here can help.")
+                .stage("Disguised, I should report to Essyllt at the mourner headquarters and help with their 'research': dyed toads.")
+                .hint("mourner_spy", "Recruit? Essyllt runs things here. Down the trapdoor in the headquarters, and keep that mask on.")
+                .talk("essyllt").stay().need("mourner_gear").unlessFlag("me_essyllt").flag("me_essyllt")
+                .say("New recruit? Good. Our gnome technician has broken down. Get him working, then dye toads for the sheep experiment.")
+                .missing("* The mourners won't let you past without a full mourner outfit.")
+                .reach("mourner_hq", 8).stay().needFlag("me_essyllt").unlessFlag("me_gnome").need("mourner_gear", "minecraft:feather")
+                .take("leather", "magic_logs", "toad_crunchies").flag("me_gnome")
+                .say("* You tickle the gnome on the rack with a feather until he talks, then release him.",
+                        "@Gnome: Leather, a magic log and toad crunchies? I'll fix the dye bellows for you!")
+                .missing("* A gnome hangs on a rack in the basement. He might talk if tickled (a feather), and wants leather, a magic log and toad crunchies.")
+                .talk("essyllt").needFlag("me_gnome").need("mourner_gear").take("bloated_toad:3", "redberries", "onion", "woad_leaf")
+                .say("* You dye the bellows red, yellow and blue, inflate a toad of each colour in the swamp and re-dye the sheep.",
+                        "Excellent. The experiment... proceeds. *You overhear: the mourners serve Lord Iorwerth!*")
+                .missing("Toads, three of them, and dyes: redberries, onions and woad leaves.")
+                .stage("I must poison two of West Ardougne's grain stores with toxic naphtha, then tell Essyllt and Arianwyn.")
+                .talk("elena").stay().unless("me_sieve", "me_toxic_powder").unlessFlag("me_poisoned").give("me_sieve")
+                .say("Rotten apples and naphtha? You'll want a sieve. Don't ask me why I have one.")
+                .reach("me_apple_orchard", 8).stay().need("me_sieve").unless("me_toxic_powder").unlessFlag("me_poisoned").take("barrel_of_naphtha")
+                .give("me_toxic_powder:2")
+                .say("* You fill a barrel with rotten apples, mash them in the press, add your naphtha and sieve it, then bake the mixture into two toxic powders.")
+                .missing("* Rotten apples, mashed and mixed with a barrel of naphtha (left over from Regicide) and sieved... Elena may have a sieve.")
+                .reach("west_ardougne", 10).stay().unlessFlag("me_poisoned").take("me_toxic_powder:2").flag("me_poisoned")
+                .say("* You add the toxic powder to two of West Ardougne's grain sacks.")
+                .talk("arianwyn").needFlag("me_poisoned")
+                .say("The grain is poisoned and the mourners think the plague is back... and serve Iorwerth! We must find out what they are digging for beneath West Ardougne.")
+                .missing("Have you dealt with the grain stores?");
         b.quest("mournings_end_part_ii", "Mourning's End Part II", Difficulty.MASTER, 2)
                 .xp(Skill.AGILITY, 60000) // OSRS (current quest XP rewards)
                 .reqQuest("mournings_end_part_i")
                 .stage("I can start this quest by speaking to Arianwyn in Lletya. (Requires Mourning's End Part I.)")
                 .talk("arianwyn").give("light_crystal").say("The mourners dig for the Temple of Light, the resting place of the Dark Lord's death altar. Take this talisman and go there first.")
+                // OSRS Temple of Light (simplified): Essyllt's new key, a chip of the black crystal enchanted by Arianwyn, then the light-beam puzzle
+                // over three floors (yellow, cyan + yellow = green, blue, and the two fractured crystals) to light the death altar's pillar.
                 .stage("I should enter the Temple of Light beneath the mourner headquarters and solve its light puzzle.")
-                .reach("temple_of_light", 8).say("* You realign the temple's crystals. Light pours into the chamber... and a shadow rises from the darkness!")
+                .talk("essyllt").stay().need("mourner_gear").unless("me2_new_key").unlessFlag("me2_light").give("me2_new_key")
+                .say("The dig has broken through. Here's the new key; go and see what's down there.")
+                .missing("* The mourners won't let you past without a full mourner outfit.")
+                .reach("temple_of_light", 10).stay().need("me2_new_key", "chisel").unless("me2_black_crystal", "me2_newly_made_crystal").unlessFlag("me2_crystal")
+                .give("me2_black_crystal")
+                .say("* Dead mourners lie by the entrance. Edern's journal maps the caves to a black crystal; you chip a piece off with your chisel.")
+                .missing("* The temple caves are locked: Essyllt has the new key. You'd want a chisel too.")
+                .talk("arianwyn").stay().take("me2_black_crystal").give("me2_newly_made_crystal").flag("me2_crystal")
+                .say("A shard of the dark crystal! *Arianwyn sings it into a newly made crystal.* It will focus the temple's light.")
+                .reach("temple_of_light", 10).stay().needFlag("me2_crystal").unlessFlag("me2_yellow").need("rope", "me2_newly_made_crystal")
+                .flag("me2_yellow").say("* You rope down the rocks and collect mirrors and a yellow crystal from the dispenser. The beam turns yellow.")
+                .reach("temple_of_light", 10).stay().needFlag("me2_yellow").unlessFlag("me2_green").flag("me2_green")
+                .say("* Across the gap a chest holds a cyan crystal. Cyan and yellow together: the beam turns green and opens the next barrier.")
+                .reach("temple_of_light", 10).stay().needFlag("me2_green").unlessFlag("me2_blue").flag("me2_blue")
+                .say("* On the top floor a mirror turns the light blue; below, a chest gives up the fractured crystals.")
+                .reach("temple_of_light", 10).needFlag("me2_yellow", "me2_green", "me2_blue").take("me2_newly_made_crystal").flag("me2_light")
+                .say("* With the fractured crystals in place, every colour reaches the central pillar. You set the newly made crystal in it:"
+                        + " light pours into the chamber... and a shadow rises from the darkness!")
                 .stage("I must defeat the shadow guarding the temple.")
                 .kill("shadow_of_light").take("light_crystal").say("* The shadow is banished. The mourners will never reach the Death Altar now.")
                 .stage("I should report to Arianwyn.")

@@ -121,7 +121,7 @@ final class KaramjaQuests {
                 .stage("I should speak to the freed shaman Ungadulu.")
                 .talk("ungadulu").give("yommi_tree_seeds").say("You saved me! My people need a sacred totem pole. Plant these Yommi seeds with pure water, then carve the tree.")
                 .stage("I need to grow the Yommi tree (seeds + vial of water) and carve a totem pole with an axe.")
-                .talk("gujuo").take("yommi_tree_seeds", "vial_of_water").need("rune_axe").give("totem_pole")
+                .talk("gujuo").take("yommi_tree_seeds", "vial_of_water").needTool("axe:rune").give("totem_pole")
                 .say("* The Yommi tree grows in an instant. You fell it with your axe and carve a totem pole; Gujuo blesses it.")
                 .missing("You'll need the Yommi seeds, a vial of pure water and a strong axe (rune).")
                 .stage("I should take the map and the totem pole to Radimus Erkle.")

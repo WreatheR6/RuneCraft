@@ -32,7 +32,7 @@ class QuestDepthTest {
     /** Whether a stage has an objective beyond plain talking. */
     private static boolean objective(Stage s) {
         for (Trigger t : s.triggers) {
-            if (t.kind != Trigger.Kind.TALK || !t.need.isEmpty() || !t.take.isEmpty() || !t.needFlags.isEmpty()
+            if (t.kind != Trigger.Kind.TALK || !t.need.isEmpty() || !t.take.isEmpty() || !t.needFlags.isEmpty() || !t.tools.isEmpty()
                     || !t.skills.isEmpty() || t.spawn != null) {
                 return true;
             }

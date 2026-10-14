@@ -232,6 +232,16 @@ final class DesertQuests {
         b.item("shadow_diamond", "Shadow diamond", "gem", 0x2A2A3A, "One of the four Diamonds of Azzanadra.");
         b.item("ice_diamond", "Ice diamond", "gem", 0xA0D8F0, "One of the four Diamonds of Azzanadra.");
         b.item("blood_diamond", "Blood diamond", "gem", 0xA01A1A, "One of the four Diamonds of Azzanadra.");
+        b.item("dt_etchings", "Etchings", "note", 0xC0A070, "Etchings of an ancient Zarosian inscription.");
+        b.item("dt_translation", "Translation", "note", 0xE0D0A8, "Terry Balando's translation of the etchings.");
+        b.item("dt_gilded_cross", "Gilded cross", "amulet", 0xE0C040, "Rasolo's gilded cross, stolen by the bandits.");
+        b.item("dt_silver_pot", "Silver pot", "pot_item", 0xC8C8D0, "A silver pot made by Ruantun.");
+        b.item("dt_blessed_pot", "Blessed pot", "pot_item", 0xE0E0F0, "A silver pot blessed by the High Priest of Entrana.");
+        b.item("dt_pot_of_blood", "Blessed pot of blood", "pot_item", 0x8A1A1A, "Your blood, in a blessed pot. Dessous will smell it.");
+        b.spot("dt_draynor_sewer", "Draynor sewer entrance", 3118, 3244);
+        Cast.npc(b, "terry_balando", "Terry Balando", "exam_centre", 3, -3, Cast.FAIR, 0x6A5A3A);
+        Cast.npc(b, "dt_bartender", "Bartender", "bandit_camp", -4, 2, Cast.TAN, 0x8A6A3A);
+        Cast.npc(b, "ruantun", "Ruantun", "dt_draynor_sewer", 0, 0, Cast.VAMPYRE, 0x2A2A2A); // stands in for his room in the Draynor sewers
         b.boss(BossDef.of("kamil", "Kamil").level(154).stats(130, 140, 130, 120, 80, 1).speed(4)
                 .defenceBonus(25, 25, 25, 0, 25)
                 .attack(AttackDef.of("ice_sword", AttackType.SLASH, 24, 2.5, 6))
@@ -261,21 +271,75 @@ final class DesertQuests {
                 .xp(Skill.MAGIC, 20000)
                 .unlock("The Ancient Magicks spellbook")
                 .stage("I can start this quest by speaking to the Archaeologist in the Bandit Camp. (Requires Dig Site, Temple of Ikov, Tourist Trap, Troll Stronghold, Priest in Peril, Waterfall Quest and 53 Thieving, 50 Firemaking, 50 Magic, 10 Slayer.)")
-                .talk("archaeologist").say("I've found an ancient diary that speaks of a fabulous treasure in the desert... Eblis, a bandit here, knows the old tongue.")
-                .stage("I should ask Eblis about the treasure.")
-                .talk("eblis").take("magic_logs:12", "steel_bar:6", "blood_rune", "bones").give("ancient_diary")
-                .say("To scry where the four Diamonds of Azzanadra are, I must make mirrors and a ritual fire: 12 magic logs, 6 steel bars, a blood rune and bones.",
-                        "*Eblis performs the ritual.* I see... four warriors of Zaros guard the diamonds: Damis of Shadow, Fareed of Smoke, Kamil of Ice and Dessous of Blood.")
-                .missing("I need 12 magic logs, 6 steel bars, a blood rune and some bones for the scrying ritual.")
+                .talk("archaeologist").give("dt_etchings")
+                .say("I've found some ancient etchings that speak of a fabulous treasure in the desert... Could you take them to Terry Balando at the Digsite Exam Centre for a translation?")
+                // OSRS: Terry translates the etchings, a 650-coin drink loosens the bartender's tongue, and Eblis needs the scrying materials.
+                .stage("I should get the etchings translated by Terry Balando at the Exam Centre, ask around the Bandit Camp bar about the four diamonds and help Eblis.")
+                .talk("terry_balando").stay().unless("dt_translation").unlessFlag("dt_translated").take("dt_etchings").give("dt_translation")
+                .say("Zarosian script! Give me a moment... *Terry writes out a translation.* It speaks of four diamonds and a pyramid. Fascinating!")
+                .talk("archaeologist").stay().unlessFlag("dt_translated").take("dt_translation").flag("dt_translated")
+                .say("The Diamonds of Azzanadra! Someone in the Bandit Camp must know more. Try the bar; bandits talk when they drink.")
+                .talk("dt_bartender").stay().needFlag("dt_translated").unlessFlag("dt_bar").take("coins:650").flag("dt_bar")
+                .say("That's 650 for the beer. *He pockets the coins.* Four diamonds? You want Eblis. He's in the building east of the bar.")
+                .missing("Drinks are 650 coins here. No coin, no talk.")
+                .talk("eblis").needFlag("dt_bar")
+                .take("magic_logs:12", "steel_bar:6", "molten_glass:6", "ashes", "charcoal", "blood_rune", "bones").give("ancient_diary")
+                .say("*Eblis builds six mirrors from your glass and steel and performs the ritual over the magic logs, ashes, charcoal, blood rune and bones.*",
+                        "I see... four warriors of Zaros guard the diamonds: Damis of Shadow, Fareed of Smoke, Kamil of Ice and Dessous of Blood.")
+                .missing("To scry where the diamonds are I need 12 magic logs, 6 steel bars, 6 molten glass, ashes, charcoal, a blood rune and some bones.")
                 .stage("I must recover the Smoke, Shadow, Ice and Blood diamonds from Fareed, Damis, Kamil and Dessous.")
-                .talk("rasolo").stay().say("Damis hides in the Shadow Dungeon east of the Baxtorian Falls. He can only be fought in melee, and only seen with a ring of visibility.")
-                .talk("malak").stay().say("Dessous, the vampyre? He lurks in the graveyard south-east of Canifis. Bring the strongest blows you have.")
-                .talk("troll_child").stay().say("Kamil froze my mummy and daddy! He's up the Ice Path, north of Trollheim. Please help!")
-                .kill("damis").stay().unless("shadow_diamond").give("shadow_diamond").say("* Damis fades into the shadows, leaving behind the Shadow diamond.")
-                .kill("fareed").stay().unless("smoke_diamond").give("smoke_diamond").say("* Fareed's flames gutter out. You take the Smoke diamond.")
-                .kill("kamil").stay().unless("ice_diamond").give("ice_diamond").say("* Kamil shatters. The troll child's parents are freed, and you take the Ice diamond.")
-                .kill("dessous").stay().unless("blood_diamond").give("blood_diamond").say("* Dessous crumbles to dust. You take the Blood diamond.")
-                .reach("quest_jaldraocht_pyramid", 10).take("smoke_diamond", "shadow_diamond", "ice_diamond", "blood_diamond")
+                // --- Smoke diamond: light the four torches in the Smoke Dungeon (facemask) and take the warm key; Fareed waits behind the gate.
+                .reach("smoke_dungeon", 10).stay().unlessFlag("dt_torches").unless("smoke_diamond").need("facemask", "tinderbox").flag("dt_torches")
+                .say("* Masked against the smoke, you light the four standing torches before any burns out. The chest opens: a warm key.",
+                        "* The warm key opens the gate to Fareed's chamber.")
+                .missing("* Choking smoke fills the dungeon. You need a facemask, and a tinderbox for the four torches.")
+                .kill("fareed").stay().needFlag("dt_torches").unless("smoke_diamond").unlessFlag("dt_smoke_placed").give("smoke_diamond")
+                .say("* Fareed's flames gutter out. You take the Smoke diamond.") // OSRS: ice gloves or water spells to hit him
+                // --- Shadow diamond: pick the bandits' secure chest for the gilded cross; Rasolo trades it for a ring of visibility.
+                .talk("rasolo").stay().unlessFlag("dt_rasolo").flag("dt_rasolo")
+                .say("Damis hides in the Shadow Dungeon east of here, invisible to mortal eyes. Bring me the gilded cross the bandits stole and I'll give you a ring of visibility.")
+                .reach("bandit_camp", 8).stay().needFlag("dt_rasolo").unless("dt_gilded_cross", "ring_of_visibility").unlessFlag("dt_damis")
+                .reqSkill(Skill.THIEVING, 53).take("lockpick").give("dt_gilded_cross")
+                .say("* You pick the three locks of the secure chest in the southern tent, one after another. Inside: a gilded cross.")
+                .missing("* The secure chest has three locks. You'd need a lockpick and 53 Thieving.")
+                .talk("rasolo").stay().take("dt_gilded_cross").give("ring_of_visibility").flag("dt_ring")
+                .say("My cross! Here, this ring of visibility lets you see into the shadows. Damis lurks down the ladder east of here.")
+                .kill("damis").stay().need("ring_of_visibility").unless("shadow_diamond").unlessFlag("dt_damis").give("shadow_diamond").flag("dt_damis")
+                .say("* Damis fades into the shadows for the last time, leaving behind the Shadow diamond.")
+                // --- Ice diamond: feed the troll child, fight through the ice trolls and Kamil, climb the ledge in spiked boots, free the trolls with fire.
+                .talk("troll_child").stay().unlessFlag("dt_troll_child").take("cake").flag("dt_troll_child")
+                .say("Cake! *munch* Kamil froze my mummy and daddy! He's up the Ice Path, north-west of Trollheim. Please help!")
+                .missing("*sniff* I'm hungry... have you got anything sweet?")
+                .kill("ice_troll").stay().needFlag("dt_troll_child").unlessFlag("dt_ice_trolls").flag("dt_ice_trolls")
+                .say("* The ice trolls guarding the gate are slain. The Ice Path lies open.") // approx: OSRS wants five kills
+                .kill("kamil").stay().needFlag("dt_ice_trolls").unlessFlag("dt_kamil").flag("dt_kamil")
+                .say("* Kamil shatters into shards of ice. Further west, two trolls stand frozen in ice.")
+                .reach("ice_path", 10).stay().needFlag("dt_kamil").unless("ice_diamond").unlessFlag("dt_ice_freed").need("spiked_boots").take("fire_rune:5")
+                .flag("dt_ice_freed").give("ice_diamond")
+                .say("* In spiked boots you climb the ice ledge, then melt the frozen trolls with fire spells.",
+                        "@Troll mother: Our baby's hero! Take this diamond; Kamil left it behind.")
+                .missing("* The frozen trolls are up an icy ledge. You'll need spiked boots to climb it and fire runes to melt the ice.")
+                // --- Blood diamond: Malak wants Dessous dead; a blessed silver pot of blood, spiced and garlicked, lures him from his tomb.
+                .talk("malak").stay().needFlag("dt_dessous").unless("blood_diamond").unlessFlag("dt_blood_given").give("blood_diamond").flag("dt_blood_given")
+                .say("Dessous is gone? Then I keep my word. *Malak hands you the Blood diamond.*")
+                .talk("malak").stay().unlessFlag("dt_malak").flag("dt_malak")
+                .say("Dessous, the vampyre? Kill him and the diamond is yours. He'll only rise for blood in a pot blessed by a priest: "
+                        + "Ruantun in the Draynor sewers can make a silver pot, and the High Priest of Entrana can bless it.")
+                .talk("ruantun").stay().needFlag("dt_malak").unless("dt_silver_pot", "dt_blessed_pot", "dt_pot_of_blood").take("silver_bar").give("dt_silver_pot")
+                .say("Silver for the master? Ruantun makes a pot. *He hammers the bar into a silver pot.*")
+                .missing("Ruantun needs silver. A silver bar.")
+                .talk("high_priest_entrana").stay().take("dt_silver_pot").give("dt_blessed_pot")
+                .say("A vessel for a holy purpose? Saradomin's blessing upon it.")
+                .talk("malak").stay().needFlag("dt_malak").take("dt_blessed_pot").give("dt_pot_of_blood")
+                .say("*Malak bites you and fills the pot with your blood.* Add spice and garlic and pour it on Dessous' tomb, south of Canifis.")
+                .reach("dessous_graveyard", 8).stay().unlessFlag("dt_blood_poured", "dt_dessous").take("dt_pot_of_blood", "spice", "garlic").need("pestle_and_mortar")
+                .flag("dt_blood_poured").spawn("dessous")
+                .say("* You grind the garlic, stir it and the spice into the blood and pour it over the tomb. Dessous rises, hungry!")
+                .missing("* The tomb lies silent. A blessed pot of blood, spice and garlic powder might draw its occupant out.")
+                .kill("dessous").stay().needFlag("dt_blood_poured").unlessFlag("dt_dessous").flag("dt_dessous")
+                .say("* Dessous crumbles to dust. Malak will want to hear of this.")
+                // --- The obelisks.
+                .reach("quest_jaldraocht_pyramid", 10).take("smoke_diamond", "shadow_diamond", "ice_diamond", "blood_diamond").flag("dt_smoke_placed")
                 .say("* You place the four diamonds in the obelisks around the Jaldraocht Pyramid. The doors grind open...")
                 .stage("I should enter the pyramid and speak to whoever was imprisoned within.")
                 .talk("azzanadra").say("Free... after millennia! I am Azzanadra, servant of Zaros. You have my gratitude, mortal.",

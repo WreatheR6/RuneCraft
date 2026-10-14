@@ -1,8 +1,10 @@
 package com.runecraft.osrs.content.quests;
 
+import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.Quest;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.QuestDef;
+import com.runecraft.osrs.data.ToolTier;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -193,6 +195,76 @@ public final class QuestSpec {
         return this;
     }
 
+    /**
+     * Requires any tool of a kind ("pickaxe", "axe"), optionally of at least a metal tier
+     * ("pickaxe:mithril"): bronze to dragon, crystal and infernal tools all count (crystal/infernal as dragon).
+     */
+    public QuestSpec needTool(String... tools) {
+        for (String tool : tools) {
+            String kind = tool.contains(":") ? tool.substring(0, tool.indexOf(':')) : tool;
+            if (!TOOL_KINDS.containsKey(kind)) {
+                throw new IllegalArgumentException(id() + ": unknown tool kind " + tool);
+            }
+            if (tool.contains(":") && toolTier(tool) < 0) {
+                throw new IllegalArgumentException(id() + ": unknown tool tier " + tool);
+            }
+            cur().tools.add(tool);
+        }
+        return this;
+    }
+
+    /** Tool kind -> item kind and the cheapest tool of that kind (the self-test hands it over). */
+    public static final Map<String, ItemDef.Kind> TOOL_KINDS = Map.of("pickaxe", ItemDef.Kind.PICKAXE, "axe", ItemDef.Kind.AXE);
+
+    /** Minimum {@link ToolTier} ordinal of a tool requirement ("pickaxe:rune"), 0 for any; -1 if unknown. */
+    public static int toolTier(String tool) {
+        int colon = tool.indexOf(':');
+        if (colon < 0) {
+            return 0;
+        }
+        String metal = tool.substring(colon + 1);
+        for (ToolTier t : ToolTier.values()) {
+            if (t.metal().id().equals(metal)) {
+                return t.ordinal();
+            }
+        }
+        return -1;
+    }
+
+    /** Whether an item satisfies a tool requirement ("pickaxe", "axe:mithril"). */
+    public static boolean toolSatisfies(String tool, ItemDef item) {
+        if (item == null) {
+            return false;
+        }
+        String kind = tool.contains(":") ? tool.substring(0, tool.indexOf(':')) : tool;
+        if (item.kind() != TOOL_KINDS.get(kind)) {
+            return false;
+        }
+        int min = toolTier(tool);
+        for (ToolTier t : ToolTier.values()) {
+            if (t.metal().id().equals(item.tier())) {
+                return t.ordinal() >= min;
+            }
+        }
+        return min == 0;
+    }
+
+    /** The item the self-test hands over for a tool requirement: the cheapest tool that satisfies it. */
+    public static String toolItem(String tool) {
+        String kind = tool.contains(":") ? tool.substring(0, tool.indexOf(':')) : tool;
+        ToolTier tier = ToolTier.values()[Math.max(0, toolTier(tool))];
+        return kind.equals("pickaxe") ? tier.pickaxeId() : tier.axeId();
+    }
+
+    /** How a tool requirement reads in messages: "a pickaxe", "a mithril axe or better". */
+    public static String toolName(String tool) {
+        String kind = tool.contains(":") ? tool.substring(0, tool.indexOf(':')) : tool;
+        if (!tool.contains(":")) {
+            return (kind.startsWith("a") ? "an " : "a ") + kind;
+        }
+        return "a " + tool.substring(tool.indexOf(':') + 1) + " " + kind + " or better";
+    }
+
     /** Items consumed by the trigger (also required). */
     public QuestSpec take(String... items) {
         parse(cur().take, items);
@@ -331,6 +403,8 @@ public final class QuestSpec {
         public final List<String> missing = new ArrayList<>();
         public final Map<String, Integer> need = new LinkedHashMap<>();
         public final Map<String, Integer> take = new LinkedHashMap<>();
+        /** Tool requirements ("pickaxe", "axe:mithril"): any tool of that kind and tier carried. */
+        public final List<String> tools = new ArrayList<>();
         public final Map<String, Integer> give = new LinkedHashMap<>();
         public final List<String> unlessItems = new ArrayList<>();
         public final List<String> setFlags = new ArrayList<>();

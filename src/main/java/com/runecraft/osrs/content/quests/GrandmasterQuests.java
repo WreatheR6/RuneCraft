@@ -39,6 +39,20 @@ final class GrandmasterQuests {
                 .attack(AttackDef.of("roar", AttackType.MAGIC, 18, 8, 2).special(Special.DRAIN_PRAYER, 8))
                 .phase(50, "Kruk roars and pounds his chest!", 1.25, false)
                 .drops(Drop.always("big_bones")).size(1.3f, 2.4f, 1.0f).at("kruks_dungeon").arena(13, "jungle"));
+        b.item("mm2_mysterious_note", "Mysterious note", "note", 0xE0D8B0, "A note from Glough's house, written in invisible ink.");
+        b.item("mm2_kruk_greegree", "Kruk monkey greegree", "talisman", 0x5A3A26, "Zooknock's greegree, made from Kruk's paw.");
+        b.item("mm2_deconstructed_onyx", "Deconstructed onyx", "gem", 0x2A2A2A, "The charged onyx from Glough's device, chiselled apart.");
+        b.spot("glough_cave", "Glough's cave", 2490, 3520); // approx: north-east of the Gnome Stronghold
+        Cast.npc(b, "kob", "Kob", "troll_stronghold", 4, 4, Cast.TROLL, 0x5A4A3A);
+        Cast.npc(b, "keef", "Keef", "gu_tanoth", 3, -3, Cast.TROLL, 0x6A5A2A);
+        // Glough (Monkey Madness II final boss): OSRS Wiki infobox.
+        b.boss(BossDef.of("mm2_glough", "Glough").level(431).stats(575, 260, 270, 248, 250, 262).speed(6)
+                .attack(AttackDef.of("staff_slam", AttackType.CRUSH, 61, 2.5, 6))
+                .attack(AttackDef.of("demonic_blast", AttackType.MAGIC, 45, 10, 3).particle("minecraft:soul_fire_flame")) // approx: 40+
+                .attack(AttackDef.of("rock_throw", AttackType.RANGED, 45, 10, 3).special(Special.SKY_STRIKE, 0)
+                        .telegraph(2, "Glough hurls a rock into the air!"))
+                .drops(Drop.always("bones")).skin(0xC09060, 0x3A3A3A, 0x2A2A2A, 0x5A1A1A).size(0.9f, 2.0f, 1.2f)
+                .at("glough_cave").arena(12, "crypt"));
         b.quest("monkey_madness_ii", "Monkey Madness II", Difficulty.GRANDMASTER, 4)
                 .xp(Skill.SLAYER, 80000).xp(Skill.AGILITY, 60000).xp(Skill.THIEVING, 50000).xp(Skill.HUNTER, 50000) // OSRS (current quest XP rewards)
                 .reqQuest("monkey_madness_i", "the_grand_tree", "troll_stronghold")
@@ -51,14 +65,42 @@ final class GrandmasterQuests {
                 .talk("king_narnode").needFlag("rfd_awowogei")
                 .missing("King Awowogei is still frozen at the Lumbridge banquet. Free him first. (Requires Recipe for Disaster: Freeing King Awowogei.)")
                 .say("Glough has escaped from his prison! And there are rumours of monkeys sneaking into the Stronghold. Investigate, please.")
-                .stage("I should travel to Ape Atoll and find out what the monkeys are planning.")
-                .talk("lumdo").travel("ape_atoll").say("Back to Ape Atoll? Hold on. *Lumdo sails you across.*")
-                .stage("I should talk to Garkor on Ape Atoll.")
-                .talk("garkor").say("Glough has allied with Kruk, a monkey general. Together they've made monstrous demonic gorillas. Kruk hides in the caverns beneath the atoll.")
-                .stage("I must defeat Kruk in his dungeon beneath Ape Atoll.")
-                .kill("kruk").give("kruks_paw").say("* Kruk falls with a thunderous crash! Glough flees but is captured by the 10th squad.")
+                // OSRS chapter I: Glough's house hides a note in invisible ink (lemon juice, grapes, a candle); Auguste on Entrana saw the airships.
+                .stage("I should search Glough's house, have the king translate what I find and ask Auguste on Entrana about it. Then on to Ape Atoll.")
+                .reach("GNOME_STRONGHOLD", 12).stay().unless("mm2_mysterious_note").unlessFlag("mm2_note").need("pestle_and_mortar")
+                .take("lemon", "grapes").give("mm2_mysterious_note")
+                .say("* Up the trees of Glough's house you turn the gnome statue and search the cupboard. In the fire remains: a blank note.",
+                        "* You coat a brush in lemon and grape juice and paint the note. Writing appears!")
+                .missing("* The note in the fire remains looks blank. Juice from a lemon and some grapes (and a pestle and mortar) might reveal it.")
+                .talk("king_narnode").stay().take("mm2_mysterious_note").flag("mm2_note")
+                .say("*He translates it.* 'Airships'... 'Ape Atoll'... 'the 10th squad'. Glough was building something. Ask Auguste on Entrana; he knows flying.")
+                .talk("auguste").stay().needFlag("mm2_note").unlessFlag("mm2_auguste").flag("mm2_auguste")
+                .say("Giant flying machines? Over Karamja? Mon dieu, I saw them myself from my balloon! They flew south-west.")
+                .talk("lumdo").needFlag("mm2_auguste").travel("ape_atoll").say("Back to Ape Atoll? Hold on. *Lumdo sails you across.*")
+                .missing("The king hasn't ordered me anywhere. Find out what Glough was up to first.")
+                // OSRS chapter II: Garkor and Awowogei, the monkey archers' tracks, the maze under the island and Kruk.
+                .stage("I should talk to Garkor on Ape Atoll and follow the monkey archers' tracks to whoever is leading them.")
+                .talk("garkor").stay().unlessFlag("mm2_garkor").flag("mm2_garkor")
+                .say("Glough has allied with Kruk, a monkey general. Together they've made monstrous demonic gorillas. Ask the archers on the west hill about Kruk.")
+                .kill("kruk").needFlag("mm2_garkor").give("kruks_paw")
+                .say("* You follow the tracks to a trapdoor in the jungle grass and through the maze beneath. Kruk falls with a thunderous crash!")
+                .stage("I must stop Glough: a Kruk greegree from Zooknock, the troll generals Kob and Keef, Glough's laboratory and his gorillas.")
+                .talk("zooknock").stay().unless("mm2_kruk_greegree").take("kruks_paw", "monkey_talisman").give("mm2_kruk_greegree")
+                .say("Kruk's paw! With a talisman I can make a greegree from it. Glough won't suspect a thing.")
+                .talk("kob").stay().unlessFlag("mm2_kob").reqSkill(Skill.SLAYER, 69).flag("mm2_kob")
+                .say("* Kob fights until he gives up.", "Kob not fight for Glough no more. Kob promise.")
+                .talk("keef").stay().needFlag("mm2_kob").unlessFlag("mm2_keef").flag("mm2_keef")
+                .say("* Keef fights until he gives up.", "Okay, okay! Keef's trolls stay home.")
+                .reach("kruks_dungeon", 12).stay().needFlag("mm2_keef").unlessFlag("mm2_lab").need("mm2_kruk_greegree", "chisel", "hammer").take("onyx")
+                .flag("mm2_lab")
+                .say("* As Kruk you swing across the monkey bars into Glough's laboratory and ride a stunted demonic gorilla downstairs.",
+                        "* You chisel the charged onyx apart and jam the device: the incubation chambers go dark.")
+                .missing("* Glough's laboratory lies beyond monkey bars only Kruk could use. You'd also want a chisel, a hammer and an onyx for his device.")
+                .kill("tortured_gorilla").stay().needFlag("mm2_lab").unlessFlag("mm2_gorillas").flag("mm2_gorillas")
+                .say("* Nieve and you drive the tortured gorillas out of the Gnome Stronghold. Garkor has found Glough's cave.") // approx: OSRS wants four
+                .kill("mm2_glough").needFlag("mm2_gorillas").say("* Glough falls at last. His gorilla army will never fly.")
                 .stage("I should report to King Narnode.")
-                .talk("king_narnode").take("kruks_paw").say("Kruk is dead and Glough is caught. Take this royal seed pod; it will always bring you home to the Grand Tree.")
+                .talk("king_narnode").say("Glough is dead and Kruk with him. Take this royal seed pod; it will always bring you home to the Grand Tree.")
                 .done("garkor", "The 10th squad will remember you.");
     }
 
@@ -92,6 +134,13 @@ final class GrandmasterQuests {
                         AttackDef.of("earthquake", AttackType.CRUSH, 35, 10, 4).special(Special.AOE, 6).telegraph(2, "The ground shakes violently!"),
                         AttackDef.of("dragonfire", AttackType.MAGIC, 55, 12, 5).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"))
                 .drops(Drop.always("superior_dragon_bones")).size(2.6f, 2.2f, 1.0f).at("galveks_sea").arena(16, "water"));
+        b.item("ds2_key_karamja", "Dragon key piece (Karamja)", "key", 0x8A2A2A, "A piece of the dragon key, from the maze under the Kharazi Jungle.");
+        b.item("ds2_key_morytania", "Dragon key piece (Morytania)", "key", 0x8A2A2B, "A piece of the dragon key, dug up in Mort Myre Swamp.");
+        b.item("ds2_key_kourend", "Dragon key piece (Kourend)", "key", 0x8A2A2C, "A piece of the dragon key, from a tomb in Great Kourend.");
+        b.item("ds2_key_ungael", "Dragon key piece (Ungael)", "key", 0x8A2A2D, "A piece of the dragon key, from Vorkath's stone chest.");
+        b.item("ds2_locator_orb", "Locator orb", "orb", 0x3A8A5A, "Ava's dragonstone locator. It hurts to use.");
+        b.spot("ds2_mort_myre", "Mort Myre Swamp", 3440, 3400); // approx: the buried piece is at a random swamp tile in OSRS
+        b.spot("ds2_kourend_tomb", "Kourend crypt", 1563, 3580); // approx
         b.quest("dragon_slayer_ii", "Dragon Slayer II", Difficulty.GRANDMASTER, 5)
                 .xp(Skill.SMITHING, 80000).xp(Skill.MINING, 60000).xp(Skill.AGILITY, 50000).xp(Skill.THIEVING, 50000) // OSRS (current quest XP rewards)
                 .qp(200).reqQuest("legends_quest", "animal_magnetism", "ghosts_ahoy", "bone_voyage")
@@ -100,20 +149,47 @@ final class GrandmasterQuests {
                 .req(Skill.AGILITY, 60).req(Skill.THIEVING, 60).req(Skill.CONSTRUCTION, 50).req(Skill.HITPOINTS, 50)
                 .unlock("Access to the Myths' Guild and Vorkath").unlock("Ability to smith dragon platebodies and kiteshields")
                 .stage("I can start this quest by speaking to Alec Kincade outside the Myths' Guild. (Requires 200 quest points, Legends' Quest and much more.)")
-                .talk("alec_kincade").say("Dragons are stirring all over Gielinor. Something is uniting them. An archaeologist, Dallas Jones, has found something in Varrock.")
-                .stage("I should speak to Dallas Jones at the Varrock Museum.")
-                .talk("dallas_jones").say("A dragonkin journal! It mentions a lab on Fossil Island. The dragonkin were creating something... and a dragon named Galvek.")
-                .stage("I should search for dragonkin ruins on Fossil Island.")
-                .reach("fossil_island", 12).give("ancient_mural_map").say("* Beneath Fossil Island you find a dragonkin mural. It shows an island in the far north: Ungael.")
-                .stage("I need a ship to Ungael. Brundt of the Fremennik may lend me one.")
-                .talk("brundt").need("ancient_mural_map").travel("quest_ungael").say("A voyage to the frozen north? The Fremennik will sail you. *Your longship lands on Ungael.*")
+                .talk("alec_kincade").say("Dragons are stirring all over Gielinor. Something is uniting them. An archaeologist, Dallas Jones, has been asking questions.")
+                .stage("I should speak to Dallas Jones.")
+                .talk("dallas_jones").say("A dragonkin journal! It mentions a house on a hill on Fossil Island... and a dragon named Galvek.")
+                // OSRS: the House on the Hill's map puzzle, then Lithkren with Dallas (Aivas' diary and the mural).
+                .stage("I should search the House on the Hill on Fossil Island, then sail to Lithkren with Dallas Jones.")
+                .reach("fossil_island", 12).stay().unlessFlag("ds2_house").flag("ds2_house")
+                .say("* In the House on the Hill you piece the torn map together. Jardric at the museum camp recognises the island on it: Lithkren.")
+                .talk("dallas_jones").needFlag("ds2_house").give("ancient_mural_map")
+                .say("* On Lithkren you find Aivas' skeleton and his diary. A dragonkin mural shows a sealed vault, opened only by a dragon key...",
+                        "The key was split in four: Karamja, Morytania, Kourend and a frozen island in the north. Ungael!")
+                .missing("Find out where that map leads first. The House on the Hill, on Fossil Island.")
+                // OSRS: the four dragon key pieces (Kharazi maze, Mort Myre via Reldo's research and Ava's locator orb, a Kourend tomb, Ungael).
+                .stage("I need the four pieces of the dragon key: the Kharazi maze, Mort Myre Swamp, a Kourend tomb, and Ungael beyond Rellekka.")
+                .reach("kharazi_jungle", 12).stay().unless("ds2_key_karamja").unlessFlag("ds2_forged").reqSkill(Skill.THIEVING, 60).reqSkill(Skill.AGILITY, 60)
+                .give("ds2_key_karamja")
+                .say("* Down the stairs on the Kharazi coast, past spikes and coloured golems, you take a key piece from the centre of the maze.")
+                .talk("reldo").stay().unlessFlag("ds2_reldo").flag("ds2_reldo")
+                .say("A dragon key piece in Morytania? This book mentions it: buried in Mort Myre. Sarah in Port Phasmatys says Ava could make a locator.")
+                .talk("ava").stay().needFlag("ds2_reldo").unless("ds2_locator_orb", "ds2_key_morytania").unlessFlag("ds2_forged")
+                .take("dragonstone", "molten_glass:2").need("glassblowing_pipe", "chisel").give("ds2_locator_orb")
+                .say("* You blow an inert orb around the dragonstone. Ava charges it into a locator orb.")
+                .missing("A locator orb? Bring a dragonstone, 2 molten glass, a glassblowing pipe and a chisel.")
+                .reach("ds2_mort_myre", 16).stay().need("ds2_locator_orb", "spade").unless("ds2_key_morytania").unlessFlag("ds2_forged").give("ds2_key_morytania")
+                .say("* The locator stings you each time you feel it, but it leads you to a patch of swamp. You dig up a key piece.")
+                .reach("ds2_kourend_tomb", 10).stay().unless("ds2_key_kourend").unlessFlag("ds2_forged").give("ds2_key_kourend")
+                .say("* You search the old tomb and find a dragon key piece.")
+                .talk("brundt").need("ancient_mural_map").travel("quest_ungael").say("The dragonkin fortress in the frozen north? Torfinn will sail you. *Your longship lands on Ungael.*")
                 .stage("I must defeat the undead dragon Vorkath on Ungael.")
-                .kill("ds2_vorkath").take("ancient_mural_map").give("dragonkin_key").say("* Vorkath collapses. In its lair you find a dragonkin key.")
-                .stage("I should take the dragonkin key to Alec Kincade.")
+                .kill("ds2_vorkath").take("ancient_mural_map").give("ds2_key_ungael").say("* Vorkath collapses. In the stone chest you find the last dragon key piece.")
+                .stage("I should reforge the dragon key on Lithkren, open the dragonkin vault and tell Alec Kincade.")
+                .reach("fossil_island", 12).stay().unlessFlag("ds2_forged").take("ds2_key_karamja", "ds2_key_morytania", "ds2_key_kourend", "ds2_key_ungael")
+                .need("hammer").reqSkill(Skill.SMITHING, 70).flag("ds2_forged").give("dragonkin_key")
+                .say("* On Lithkren's dragonkin anvil you forge the four pieces into the dragon key.")
+                .missing("* The dragonkin anvil waits on Lithkren. You'll need all four key pieces, a hammer and 70 Smithing.")
                 .talk("alec_kincade").take("dragonkin_key").say("The key opens the dragonkin vault! But Galvek has risen and leads the dragons against us. Robert the Strong, the hero of old, has returned to fight beside you.")
                 .stage("I must defeat Galvek, the dragon of the dragonkin, on the Western Sea.")
                 .talk("robert_the_strong").stay().say("Together, as I fought beside Camorra of old! To the ships!")
-                .kill("galvek").say("* Galvek falls into the sea. The dragon threat is ended.")
+                // OSRS assault on the Myths' Guild: green, blue, black, steel, brutal red, mithril, adamant and rune dragons, then Galvek.
+                .kill("green_dragon").stay().unlessFlag("ds2_assault").flag("ds2_assault")
+                .say("* The first wave of dragons falls before the Myths' Guild. More arrive on the ship, one at a time... then Galvek himself.") // approx: one kill stands for the waves
+                .kill("galvek").needFlag("ds2_assault").say("* Galvek falls into the sea. The dragon threat is ended.")
                 .stage("I should report to Alec Kincade at the Myths' Guild.")
                 .talk("alec_kincade").say("Galvek is dead! You are a true slayer of dragons. The Myths' Guild is open to you.")
                 .done("robert_the_strong", "It was an honour to fight beside you.");
