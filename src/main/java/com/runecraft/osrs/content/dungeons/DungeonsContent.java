@@ -30,7 +30,8 @@ import java.util.Map;
  * Jormungand's Prison, Puro-Puro (the impling maze below Zanaris, {@link PuroPuro}), the Waterbirth Island Dungeon
  * ({@link WaterbirthDungeon}), Ape Atoll's undead dungeons ({@link ApeAtollDungeons}), and the cache-tile dungeons of
  * {@link CacheDungeons}: the Shadow Dungeon, the Sophanem Dungeon, the Lighthouse dungeon, the Kalphite Cave, the
- * Wilderness Slayer Cave and the Forthos Dungeon.
+ * Wilderness Slayer Cave, the Forthos Dungeon, the Giants' Den, the Isle of Souls Dungeon, the Myths' Guild dungeon, the
+ * Deep Wilderness Dungeon, the Karamja Volcano dungeon, the Ice Troll Caves and the Ourania Cave.
  */
 public final class DungeonsContent implements ContentModule {
     public static final String FANCY_BOOTS = "fancy_boots";

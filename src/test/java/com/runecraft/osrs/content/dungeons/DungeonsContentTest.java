@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -92,7 +93,7 @@ class DungeonsContentTest {
         for (BlockDef b : MODULE.blocks()) {
             assertTrue(b.id().startsWith("dng_"), b.id());
         }
-        assertEquals(49, Dungeons.all().size());
+        assertEquals(56, Dungeons.all().size());
     }
 
     @Test
@@ -311,17 +312,49 @@ class DungeonsContentTest {
     /** The cache-tile dungeons hold exactly the cache's spawns (mejrs/data_osrs NPCList_OSRS.json). */
     @Test
     void cacheDungeonsHoldTheCacheSpawnCounts() {
-        assertEquals(Map.of("giant_skeleton", 43, "shadow_hound", 10, "giant_bat", 1, "giant_rat", 2), caps("dng_shadow_dungeon"));
-        assertEquals(Map.of("locust_rider_ranger", 18, "locust_rider", 11, "scarab_mage", 28), caps("dng_sophanem_dungeon"));
+        assertEquals(Map.of("giant_skeleton", 43, "shadow_hound", 10, "giant_bat", 1, "giant_rat", 2, "rat", 12, "bat", 8),
+                caps("dng_shadow_dungeon"));
+        assertEquals(Map.of("locust_rider_ranger", 18, "locust_rider", 11, "scarab_mage", 28, "mummy", 1), caps("dng_sophanem_dungeon"));
         assertEquals(Map.of("dagannoth", 15, "dagannoth_lvl92", 7), caps("dng_lighthouse_dungeon"));
         assertEquals(Map.of("kalphite_worker", 18, "kalphite_soldier", 20, "kalphite_guardian", 5), caps("dng_kalphite_cave"));
         assertEquals(Map.of("ice_giant", 6, "ankou", 10, "lesser_demon", 7, "black_demon", 4, "black_dragon", 3, "green_dragon", 6,
-                "greater_demon", 10, "hellhound", 5), caps("dng_wilderness_slayer_cave"));
+                "greater_demon", 10, "hellhound", 5, "rat", 3, "wilderness_bandit", 1), caps("dng_wilderness_slayer_cave"));
         assertEquals(Map.of("temple_spider", 21, "undead_druid", 18, "red_dragon", 6, "baby_red_dragon", 5), caps("dng_forthos_dungeon"));
+        assertEquals(Map.of("moss_giant", 10, "hill_giant", 8, "fire_giant_lvl104", 4, "fire_giant_lvl109", 4), caps("dng_giants_den"));
+        assertEquals(Map.of("blue_dragon", 4, "baby_blue_dragon", 3, "fire_giant", 8, "greater_demon", 7, "iron_dragon", 3,
+                "lesser_demon", 4, "skeleton_lvl25", 4), caps("dng_isle_of_souls_dungeon"));
+        assertEquals(Map.of("baby_black_dragon", 1, "baby_blue_dragon", 3, "baby_green_dragon", 1, "baby_red_dragon", 2,
+                "black_dragon", 2, "blue_dragon", 5, "green_dragon", 2, "red_dragon", 3), caps("dng_myths_guild_dungeon"));
+        assertEquals(Map.of("chaos_dwarf", 4, "fire_giant", 5, "hill_giant", 6, "monk_of_zamorak", 2, "shadow_spider", 12,
+                "skeleton_lvl25", 8), caps("dng_deep_wilderness_dungeon"));
+        assertEquals(Map.of("lesser_demon", 11, "deadly_red_spider", 5, "giant_bat", 3, "minecraft:skeleton", 5, "skeleton_lvl25", 7,
+                "skeleton_lvl45", 7, "rat", 2), caps("dng_karamja_volcano_dungeon"));
+        assertEquals(Map.of("ice_troll_runt", 10, "ice_troll_female", 12, "ice_troll", 9, "ice_troll_grunt", 6), caps("dng_ice_troll_caves"));
+        assertEquals(Map.of("cave_lizard", 9, "zamorak_crafter", 2, "zamorak_mage", 3, "zamorak_ranger", 3, "zamorak_warrior", 3),
+                caps("dng_ourania_cave"));
         // The level 63 shadow hound and the level 106/98 locust riders are real monsters now (diary tasks).
         assertEquals(63, ContentRegistry.monster("shadow_hound").combatLevel);
         assertEquals(106, ContentRegistry.monster("locust_rider").combatLevel);
         assertEquals(98, ContentRegistry.monster("locust_rider_ranger").combatLevel);
+    }
+
+    /** The Kalphite Cave and the Shadow Dungeon are multicombat underground only; the Kalphite Cave is task-only. */
+    @Test
+    void kalphiteCaveAndShadowDungeonRules() {
+        int sx = StructureDef.bx(2700 + CacheDungeons.SHADOW_DX);
+        int sz = StructureDef.bz(5080 + CacheDungeons.SHADOW_DY);
+        assertTrue(com.runecraft.osrs.MultiCombat.isMultiAtBlock(sx, 17, sz), "Shadow Dungeon");
+        assertTrue(!com.runecraft.osrs.MultiCombat.isMultiAtBlock(sx, 64, sz), "the surface above the Shadow Dungeon");
+        assertNull(Dungeons.taskOnly(sx, 17, sz));
+        int kx = StructureDef.bx(3305 + CacheDungeons.KC_DX);
+        int kz = StructureDef.bz(9500 + CacheDungeons.KC_DY);
+        assertTrue(com.runecraft.osrs.MultiCombat.isMultiAtBlock(kx, 31, kz), "Kalphite Cave");
+        assertEquals("kalphite", Dungeons.taskOnly(kx, 31, kz));
+        assertNull(Dungeons.taskOnly(kx, 70, kz));
+        // The Ourania altar stands in the cave's ZMI chamber.
+        long altars = Dungeons.all().stream().filter(d -> d.id().equals("dng_ourania_cave"))
+                .flatMap(d -> d.structure().ops().stream()).filter(op -> "runecraft:ourania_altar".equals(op.block())).count();
+        assertEquals(1, altars);
     }
 
     /** Every indoor Agility shortcut has its two ends carved into a dungeon (or the Slayer Tower), once. */

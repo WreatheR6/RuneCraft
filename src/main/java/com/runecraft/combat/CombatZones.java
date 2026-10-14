@@ -37,7 +37,7 @@ public final class CombatZones {
                 : com.runecraft.content.minigames.MinigameManager.owner(e) != null) {
             return true;
         }
-        return MultiCombat.isMultiAtBlock(e.getBlockX(), e.getBlockZ());
+        return MultiCombat.isMultiAtBlock(e.getBlockX(), e.getBlockY(), e.getBlockZ());
     }
 
     /** Bosses and their encounter monsters (minions, raid and minigame creatures) ignore single-way rules. */
