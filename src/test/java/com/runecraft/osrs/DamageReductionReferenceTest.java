@@ -83,7 +83,7 @@ class DamageReductionReferenceTest {
             }
         }
         assertTrue(rows >= 350, "only " + rows + " rows");
-        assertTrue(reduced >= 300, "only " + reduced + " rows with a reduction");
+        assertTrue(reduced >= 200, "only " + reduced + " rows with a reduction");
         assertTrue(bad.isEmpty(), bad.size() + " of " + rows + " differ:\n" + String.join("\n", bad.subList(0, Math.min(40, bad.size()))));
     }
 

@@ -175,6 +175,7 @@ public final class MagicService {
         int maxHit = HitCalcBridge.maxHit(player, target, in);
         boolean splash = player.getRandom().nextDouble() >= com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);
         int damage = splash ? 0 : player.getRandom().nextInt(Math.max(0, maxHit) + 1);
+        damage = HitCalcBridge.afterRoll(in, damage); // vampyre tiers
         damage = CombatHandler.hookAfterRoll(player, target, AttackType.MAGIC, damage);
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, AttackType.MAGIC);
@@ -237,6 +238,7 @@ public final class MagicService {
         int maxHit = HitCalcBridge.maxHit(player, target, in);
         boolean splash = player.getRandom().nextDouble() >= com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);
         int damage = splash ? 0 : player.getRandom().nextInt(Math.max(0, maxHit) + 1);
+        damage = HitCalcBridge.afterRoll(in, damage); // vampyre tiers
         damage = CombatHandler.hookAfterRoll(player, target, AttackType.MAGIC, damage);
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, AttackType.MAGIC);

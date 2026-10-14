@@ -31,6 +31,10 @@ public final class SetEffectHooks {
                 Inv.idOf(p.getMainHandStack()));
     }
 
+    private static boolean damned(ServerPlayerEntity p) {
+        return "amulet_of_the_damned".equals(com.runecraft.content.systems.SysState.of(p).wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.NECK));
+    }
+
     public static void register() {
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             @Override
@@ -50,11 +54,21 @@ public final class SetEffectHooks {
                 if (VERAC_PROC.remove(player.getUuid()) != null) {
                     return damage + 1;
                 }
+                // Ahrim's set with the amulet of the damned: 25% of spells deal 30% more damage (osrs-dps-calc).
+                if (type == AttackType.MAGIC && damage > 0 && barrows(player) == SetEffects.AHRIM && damned(player)
+                        && player.getRandom().nextDouble() < SetEffects.BARROWS_PROC_CHANCE) {
+                    return SetEffects.ahrimDamned(damage);
+                }
                 return damage;
             }
 
             @Override
             public void afterHit(ServerPlayerEntity player, LivingEntity target, AttackType type, int dealt) {
+                // Karil's set with the amulet of the damned: 25% of shots hit a second time for half the damage.
+                if (dealt > 1 && type == AttackType.RANGED && barrows(player) == SetEffects.KARIL && damned(player)
+                        && target.isAlive() && player.getRandom().nextDouble() < SetEffects.BARROWS_PROC_CHANCE) {
+                    CombatHandler.applyDamage(player, target, SetEffects.karilDamnedSecondHit(dealt));
+                }
                 if (dealt > 0 && type.isMelee() && barrows(player) == SetEffects.GUTHAN
                         && player.getRandom().nextDouble() < SetEffects.BARROWS_PROC_CHANCE) {
                     player.heal(dealt); // "Infestation": heals the damage dealt, up to full health

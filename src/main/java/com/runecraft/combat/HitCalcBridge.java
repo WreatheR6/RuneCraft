@@ -68,8 +68,17 @@ public final class HitCalcBridge {
         in.strengthBonus = eq.meleeStrength();
         in.rangedStrength = eq.rangedStrength() + ammoStrength;
         in.magicDamageTenths = eq.magicDamagePercent() * 10;
+        // Revenant weapons (+50% in the Wilderness; revenant ether charges aren't modelled, so they count as charged) and
+        // the amulet of avarice's Forinthry surge while skulled.
+        in.inWilderness = com.runecraft.world.Gielinor.wildernessLevel(p) > 0;
+        in.forinthrySurge = SkullService.isSkulled(p);
         target(in, p, target);
         return in;
+    }
+
+    /** Vampyre tier immunity and damage multipliers applied to a rolled hit (PlayerHitCalc). */
+    public static int afterRoll(PlayerHitCalc.Input in, int damage) {
+        return PlayerHitCalc.afterRoll(in, damage);
     }
 
     /**
@@ -114,6 +123,11 @@ public final class HitCalcBridge {
         in.weaknessPercent = stats.weaknessPercent();
         in.targetTbowMagic = Math.max(stats.magic(), stats.attackBonus(AttackType.MAGIC));
         in.attributes.addAll(stats.attributes());
+        int vampyre = com.runecraft.osrs.VampyreTiers.tier(stats.traitsKey(), stats.attributes());
+        if (vampyre > 0) {
+            in.attributes.add("vampyre" + vampyre);
+        }
+        in.revenant = stats.name().startsWith("Revenant");
         int tiles = com.runecraft.osrs.data.MonsterTraits.size(stats.traitsKey());
         if (tiles > 0) {
             in.targetSize = tiles; // OSRS size in tiles (colossal blade), not the Minecraft hitbox

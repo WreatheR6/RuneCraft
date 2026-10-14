@@ -62,6 +62,7 @@ public final class CombatHandler {
         PrayerEffectsService.register();
         SkullService.register();
         SetEffectHooks.register();
+        DefenceEffects.register();
     }
 
     private static boolean allowDamage(LivingEntity target, DamageSource source, float amount) {
@@ -152,6 +153,7 @@ public final class CombatHandler {
         long defenceRoll = HitCalcBridge.defenceRoll(target, in);
         int maxHit = HitCalcBridge.maxHit(player, target, in);
         int damage = HitCalcBridge.roll(new java.util.Random(player.getRandom().nextLong()), in, attackRoll, defenceRoll, maxHit);
+        damage = HitCalcBridge.afterRoll(in, damage); // vampyre tiers (immunity, vampyrebane, Efaritay's aid)
         damage = CombatHooks.afterRoll(player, target, type, damage);
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, type);
@@ -189,6 +191,7 @@ public final class CombatHandler {
         boolean accurate = rng.nextDouble() < com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);
         int damage = accurate ? rng.nextInt(maxHit + 1) : 0;
         // Enchanted (e) bolt effects (opal to onyx, dragon variants).
+        damage = HitCalcBridge.afterRoll(in, damage); // vampyre tiers (silver bolts, blisterwood stakes)
         damage = com.runecraft.content.systems.BoltProcs.apply(player, target, arrowItem, accurate, damage, maxHit);
         damage = CombatHooks.afterRoll(player, target, AttackType.RANGED, damage);
         if (target instanceof OsrsMonsterEntity monster) {
@@ -364,6 +367,9 @@ public final class CombatHandler {
             }
         }
         if (target instanceof ServerPlayerEntity damaged) {
+            if (attacker != null && attacker != damaged && damage > 0) {
+                damage = DefenceEffects.reduce(damaged, attacker, CombatHooks.namedStyle(), damage);
+            }
             CombatHooks.damaged(damaged, attacker, Math.max(0, damage));
         } else {
             CombatHooks.clearAttackName();

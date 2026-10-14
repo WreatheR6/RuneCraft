@@ -79,6 +79,11 @@ public final class CombatHooks {
         }
     }
 
+    /** The style of the attack named by {@link #nameAttack} that is being applied (null when unknown). */
+    static AttackType namedStyle() {
+        return attackStyle;
+    }
+
     /** Forgets an attack name that didn't reach a player. */
     static void clearAttackName() {
         attackName = null;

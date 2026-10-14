@@ -54,6 +54,16 @@ public final class SetEffects {
         return 1.0 + (lost / 100.0) * (maxHp / 100.0);
     }
 
+    /** Ahrim's set with the amulet of the damned: a triggered spell deals 30% more (rounded down). */
+    public static int ahrimDamned(int damage) {
+        return damage * 13 / 10;
+    }
+
+    /** Karil's set with the amulet of the damned: a triggered shot adds a second hitsplat of half its damage. */
+    public static int karilDamnedSecondHit(int damage) {
+        return damage / 2;
+    }
+
     /**
      * Inquisitor's armour: crush accuracy and damage +0.5% for the great helm and +1% each for the hauberk and
      * plateskirt (2.5% for the set). Since the July 2026 rework the mace no longer multiplies this.

@@ -31,13 +31,18 @@ public record MonsterStats(String name, int combatLevel, int hitpoints, int atta
 
     /** Defence bonus against a specific style (module creatures have per-style bonuses). */
     public int defenceBonus(AttackType type) {
-        return profile != null ? profile.defenceBonus(type) : defenceBonus;
+        if (profile != null) {
+            return profile.defenceBonus(type);
+        }
+        com.runecraft.osrs.data.MonsterEnumDefence.Row row = com.runecraft.osrs.data.MonsterEnumDefence.row(monster);
+        return row != null ? row.bonus(type) : defenceBonus;
     }
 
     /** {light, standard, heavy} ranged defence (module creatures), or null when only one ranged defence is known. */
     public int[] rangedDefences() {
         if (profile == null) {
-            return null;
+            com.runecraft.osrs.data.MonsterEnumDefence.Row row = com.runecraft.osrs.data.MonsterEnumDefence.row(monster);
+            return row != null ? row.ranged() : null;
         }
         int standard = profile.defenceBonus(AttackType.RANGED);
         return new int[]{profile.lightRangedDefence != null ? profile.lightRangedDefence : standard, standard,
@@ -71,12 +76,20 @@ public record MonsterStats(String name, int combatLevel, int hitpoints, int atta
 
     /** Elemental weakness ("fire", "water", "earth", "air") or null. */
     public String weakness() {
-        return profile != null ? profile.weakness : null;
+        if (profile != null) {
+            return profile.weakness;
+        }
+        com.runecraft.osrs.data.MonsterEnumDefence.Row row = com.runecraft.osrs.data.MonsterEnumDefence.row(monster);
+        return row != null ? row.weakness() : null;
     }
 
     /** Elemental weakness severity in percent (0 for none). */
     public int weaknessPercent() {
-        return profile != null ? profile.weaknessPercent : 0;
+        if (profile != null) {
+            return profile.weaknessPercent;
+        }
+        com.runecraft.osrs.data.MonsterEnumDefence.Row row = com.runecraft.osrs.data.MonsterEnumDefence.row(monster);
+        return row != null ? row.weaknessPercent() : 0;
     }
 
     public static MonsterStats from(com.runecraft.osrs.content.CombatProfile<?> p) {
