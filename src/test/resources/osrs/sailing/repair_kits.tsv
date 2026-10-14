@@ -1,0 +1,9 @@
+# Source: OSRS Wiki wikitext dump (osrs-wiki-data, July 2026), pages "Repair kit" .. "Rosewood repair kit" (Creation infobox).
+# kit	heals	construction level	construction xp	plank	planks	nails	nails qty	swamp paste	kits made
+Repair kit	5	1	43.5	plank	2	bronze_nails	10	5	2
+Oak repair kit	10	19	90	oak_plank	2	iron_nails	10	5	2
+Teak repair kit	20	30	135	teak_plank	2	steel_nails	10	5	2
+Mahogany repair kit	30	47	210	mahogany_plank	2	mithril_nails	10	5	2
+Camphor repair kit	40	66	255	camphor_plank	2	adamant_nails	10	5	2
+Ironwood repair kit	45	80	300	ironwood_plank	1	rune_nails	10	5	3
+Rosewood repair kit	50	92	330	rosewood_plank	1	dragon_nails	5	5	3

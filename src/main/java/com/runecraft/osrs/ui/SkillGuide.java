@@ -254,8 +254,11 @@ public final class SkillGuide {
         for (SailingTraining.Trial t : SailingTraining.TRIALS) {
             b.add(Skill.SAILING, t.level(), "Barracuda Trials: " + t.name());
         }
-        for (SailingTraining.Facility f : SailingTraining.FACILITIES) {
+        for (SailingTraining.Facility f : com.runecraft.osrs.content.skilling.SailingCrew.allFacilities()) {
             b.add(Skill.SAILING, f.sailing(), "Build: " + f.name());
+        }
+        for (com.runecraft.osrs.content.skilling.SailingCrew.Crewmate c : com.runecraft.osrs.content.skilling.SailingCrew.CREW) {
+            b.add(Skill.SAILING, c.level(), "Recruit crewmate: " + c.name() + " (" + c.location() + ")");
         }
         for (SailingTraining.Part p : SailingTraining.PARTS) {
             if (p.tier() > 0 && !p.boat().equals("raft")) {

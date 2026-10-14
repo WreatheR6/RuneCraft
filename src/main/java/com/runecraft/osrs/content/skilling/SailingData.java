@@ -5,6 +5,7 @@ import com.runecraft.osrs.Recipe;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.BlockDef;
 import com.runecraft.osrs.content.ItemSink;
+import com.runecraft.osrs.content.NpcDef;
 import com.runecraft.osrs.content.PlaceDef;
 
 import java.util.ArrayList;
@@ -221,6 +222,22 @@ public final class SailingData extends SkillingPart {
             simple(s, balls[i][0] + "_cannonball", SailingSea.title(balls[i][0]) + " cannonball", "cannonball",
                     Integer.parseInt(balls[i][1], 16), ballValue[i]).stack(Integer.MAX_VALUE).examine("Ammo for a boat cannon.");
         }
+        // Chainshot and incendiary cannonballs, repair kits, chain, rubium splinters, nickel ore and shark paint (wiki; values approx).
+        for (SailingCrew.Special sp : SailingCrew.SPECIALS) {
+            SailingSea.Ball base = SailingSea.ball(sp.base());
+            simple(s, sp.item(), sp.name(), "cannonball", sp.chainshot() ? 0x5A5A60 : 0xC04A20, 10 + base.tier() * 40)
+                    .stack(Integer.MAX_VALUE).examine(sp.chainshot() ? "Two cannonballs chained together; slows what it hits."
+                            : "A cannonball packed with rubium; sets what it hits alight.");
+        }
+        for (SailingCrew.Kit k : SailingCrew.KITS) {
+            simple(s, k.id(), k.name(), "package", 0x8A6A3A, k.heals() * 100).examine("Apply it on your boat to repair "
+                    + k.heals() + " hitpoints.");
+        }
+        simple(s, "chain", "Chain", "rope", 0x7A7A80, 60).examine("Links two cannonballs together.");
+        simple(s, "rubium_splinters", "Rubium splinters", "shard", 0xC03A2A, 20).stack(Integer.MAX_VALUE)
+                .examine("Splinters of a volatile red mineral.");
+        simple(s, "nickel_ore", "Nickel ore", "ore", 0xA8A890, 200).examine("This needs refining.");
+        simple(s, "shark_paint", "Shark paint", "pot_item", 0x5A6A7A, 1000).examine("Paint for the trim of a skiff or sloop.");
         // Salvage, sea creature and bounty items (wiki names; values approx).
         for (String[] it : SEA_ITEMS) {
             simple(s, SailingSea.itemId(it[0]), it[0], it[1], Integer.parseInt(it[2], 16), Integer.parseInt(it[3]));
@@ -269,6 +286,39 @@ public final class SailingData extends SkillingPart {
                 .in("iron_nails", 30).in("bolt_of_cloth", 2).in("rope", 4).out("skiff_kit", 1).tool("hammer").ticks(4).build());
         out.accept(r("build_sloop_kit", MenuType.CONSTRUCTION, "Sloop kit", Skill.CONSTRUCTION, 50, 900.0).in("teak_plank", 40)
                 .in("steel_nails", 60).in("bolt_of_cloth", 6).in("rope", 8).out("sloop_kit", 1).tool("hammer").ticks(4).build());
+        // Repair kits at a workbench (wiki: plank, nails and swamp paste; 2 or 3 kits an action, 4 ticks).
+        for (SailingCrew.Kit k : SailingCrew.KITS) {
+            out.accept(r("build_" + k.id(), MenuType.CONSTRUCTION, k.made() + " x " + k.name(), Skill.CONSTRUCTION, k.construction(), k.xp())
+                    .in(k.plank(), k.planks()).in(k.nails(), k.nailQty()).in("swamp_paste", k.paste()).out(k.id(), k.made())
+                    .tool("hammer").ticks(4).build());
+        }
+        // Boat cannonballs at a furnace with an ammo mould (wiki: 4 balls a bar, 8 ticks; steel is SmithingData's).
+        String[][] metals = {{"bronze", "bronze_bar", "5", "8.8"}, {"iron", "iron_bar", "20", "17.2"}, {"mithril", "mithril_bar", "55", "34"},
+                {"adamant", "adamantite_bar", "75", "42.4"}, {"rune", "runite_bar", "90", "50.8"}};
+        for (String[] m : metals) {
+            int lvl = Integer.parseInt(m[2]);
+            double xp = Double.parseDouble(m[3]);
+            out.accept(r("smith_" + m[0] + "_cannonball", MenuType.SMELTING, "4 " + m[0] + " cannonballs", Skill.SMITHING, lvl, xp)
+                    .in(m[1], 1).out(m[0] + "_cannonball", 4).tool("ammo_mould").ticks(8).build());
+            out.accept(r("smith_" + m[0] + "_cannonball_double", MenuType.SMELTING, "8 " + m[0] + " cannonballs (double mould)",
+                    Skill.SMITHING, lvl, xp * 2).in(m[1], 2).out(m[0] + "_cannonball", 8).tool("double_ammo_mould").ticks(8).build());
+        }
+        // Chain (34 Smithing, 37.5 XP, a steel bar) and the chainshot / incendiary cannonballs, 2 a time at an anvil.
+        out.accept(r("smith_chain", MenuType.SMITHING, "Chain", Skill.SMITHING, 34, 37.5).in("steel_bar", 1).out("chain", 1)
+                .tool("hammer").ticks(5).build());
+        for (SailingCrew.Special sp : SailingCrew.SPECIALS) {
+            out.accept(r("smith_" + sp.item(), MenuType.SMITHING, "2 x " + sp.name(), Skill.SMITHING, sp.smithing(), sp.xp())
+                    .in(sp.base(), 2).in(sp.chainshot() ? "chain" : "rubium_splinters", sp.chainshot() ? 1 : 10).out(sp.item(), 2)
+                    .tool("hammer").ticks(sp.chainshot() ? 2 : 3).build());
+        }
+        // Cupronickel bar: 2 copper ore and 1 nickel ore at a furnace (74 Smithing, 42 XP).
+        out.accept(r("smelt_cupronickel_bar", MenuType.SMELTING, "Cupronickel bar", Skill.SMITHING, 74, SailingCrew.CUPRONICKEL_XP)
+                .in("copper_ore", 2).in("nickel_ore", 1).out("cupronickel_bar", 1).ticks(4).build());
+        // Sailing woods at the sawmill (wiki fees).
+        for (Object[] w : SailingCrew.SAWMILL) {
+            out.accept(plain("saw_" + w[0], MenuType.CONSTRUCTION, title((String) w[0]) + " (" + w[2] + " coins)").in((String) w[1], 1)
+                    .in("coins", (Integer) w[2]).out((String) w[0], 1).ticks(0).build());
+        }
         Object[][] shop = {{"spyglass", 50}, {"salvaging_hook", 40}, {"trawling_net", 60}, {"rope", 18}, {"crowbar", 30},
                 {"current_duck", 40}, {"diving_apparatus", 200}, {"portable_weather_station", 100}};
         for (Object[] o : shop) {
@@ -283,11 +333,22 @@ public final class SailingData extends SkillingPart {
         }
     }
 
-    /** Shipwright supplies: Sailing materials that have no source in RuneCraft's world yet (approx prices). */
-    public static final Object[][] SHIPWRIGHT_SUPPLIES = {{"camphor_logs", 150}, {"ironwood_logs", 300}, {"rosewood_logs", 500},
-            {"camphor_plank", 600}, {"ironwood_plank", 1200}, {"rosewood_plank", 2000}, {"lead_bar", 120}, {"cupronickel_bar", 400},
-            {"bolt_of_linen", 150}, {"bolt_of_canvas", 400}, {"bolt_of_cotton", 900}, {"dragon_nails", 1500},
+    /**
+     * Shipwright supplies: Sailing materials that have no source in RuneCraft's world yet (approx prices). The Sailing woods
+     * (camphor, ironwood and rosewood trees), lead (lead rocks) and cupronickel (nickel rocks and copper) are gathered on
+     * the islands and sawn or smelted instead.
+     */
+    public static final Object[][] SHIPWRIGHT_SUPPLIES = {{"bolt_of_linen", 150}, {"bolt_of_canvas", 400}, {"bolt_of_cotton", 900}, {"dragon_nails", 1500},
             {"dragon_metal_sheet", 30000}, {"swamp_paste", 30}};
+
+    @Override
+    public List<NpcDef> npcs() {
+        List<NpcDef> list = new ArrayList<>();
+        for (SailingCrew.Crewmate c : SailingCrew.CREW) {
+            list.add(NpcDef.of(c.id(), c.name(), c.placeId(), 0, 0, 0xC8A080, 0x2A4A7A, 0x3A3A4A, 0x6A4A2A));
+        }
+        return list;
+    }
 
     @Override
     public List<BlockDef> blocks() {
@@ -331,6 +392,10 @@ public final class SailingData extends SkillingPart {
         list.add(PlaceDef.of("chart_entrana", "Charting point: Entrana", 2830, 3360, PlaceDef.Style.NONE, List.of()));
         for (SailingTraining.Trial t : SailingTraining.TRIALS) {
             list.add(PlaceDef.of(t.placeId(), t.name(), t.objectiveB()[0], t.objectiveB()[1], PlaceDef.Style.NONE, List.of()));
+        }
+        // Crewmates wait at their wiki towns (tiles approx); talking to one recruits them.
+        for (SailingCrew.Crewmate c : SailingCrew.CREW) {
+            list.add(PlaceDef.of(c.placeId(), c.name(), c.x(), c.y(), PlaceDef.Style.NONE, List.of()));
         }
         for (int i = 0; i < PORTS.size(); i++) {
             Port p = PORTS.get(i);

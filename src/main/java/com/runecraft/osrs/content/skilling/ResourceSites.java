@@ -132,6 +132,12 @@ public final class ResourceSites {
                     1935, 2795, 1933, 2794, 1936, 2794, 1934, 2792, 1932, 2791, 1930, 2789, 1939, 2789),
             rock("onyx_crest_lead", "Onyx Crest lead rocks", "lead", Region.UNCHARTED_ISLES,
                     2975, 2255, 2975, 2253, 2977, 2253, 2974, 2252, 2975, 2251, 2978, 2251),
+            // Nickel rocks on Deepfin Point (wiki object tiles; Ynysdail is not traced and the Deepfin Mine and Grimstone ones are not built).
+            rock("deepfin_point_nickel", "Deepfin Point nickel rocks", "nickel", Region.UNCHARTED_ISLES,
+                    1930, 2794, 1931, 2795, 1932, 2794, 1931, 2788, 1933, 2787, 1936, 2791, 1937, 2793, 1939, 2792, 1940, 2791),
+            // Rubium rocks: OSRS has them in the Charred Dungeon below Charred Island; here on the island above it (approx).
+            rock("charred_island_rubium", "Charred Island rubium rocks", "rubium", Region.UNCHARTED_ISLES,
+                    2645, 2405, 2647, 2404, 2649, 2406, 2646, 2408),
             // The 14 ironwood trees of Sunbleak Island and the 10 rosewood trees of Drumstick Isle (wiki object tiles).
             modTree("sunbleak_island_ironwood", "Sunbleak Island ironwood trees", "ironwood_tree", Region.UNCHARTED_ISLES,
                     2200, 2328, 2231, 2334, 2228, 2340, 2227, 2330, 2223, 2347, 2223, 2323, 2221, 2344, 2221, 2319, 2211, 2320,

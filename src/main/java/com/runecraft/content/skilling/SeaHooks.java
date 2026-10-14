@@ -8,31 +8,43 @@ import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.MonsterDef;
+import com.runecraft.osrs.content.skilling.SailingCrew;
 import com.runecraft.osrs.content.skilling.SailingData;
 import com.runecraft.osrs.content.skilling.SailingSea;
 import com.runecraft.osrs.content.skilling.SailingTraining;
+import com.runecraft.quest.QuestApi;
+import com.runecraft.quest.QuestScripts;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.world.Gielinor;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -56,6 +68,24 @@ public final class SeaHooks {
         BlockHooks.register("port_salvaging_station", (player, pos, state) ->
                 Msg.game(player, "Use salvage while standing at the salvaging station to sort it."));
         GameEvents.onKill(SeaHooks::onKill);
+        for (SailingCrew.Crewmate c : SailingCrew.CREW) {
+            QuestScripts.onTalk(c.id(), (player, npc) -> crewTalk(player, c));
+        }
+        // Sneak + use your boat with an empty hand: empty its cargo hold into your inventory.
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+            if (hand != Hand.MAIN_HAND || !(entity instanceof BoatEntity) || !player.isSneaking() || !player.getMainHandStack().isEmpty()) {
+                return ActionResult.PASS;
+            }
+            if (world.isClient() || !(player instanceof ServerPlayerEntity sp)) {
+                return ActionResult.PASS;
+            }
+            String type = SailingHooks.boatType(entity);
+            if (type == null) {
+                return ActionResult.PASS;
+            }
+            withdrawAll(sp, type);
+            return ActionResult.SUCCESS;
+        });
     }
 
     // ------------------------------------------------------------------ salvage sorting
@@ -222,6 +252,10 @@ public final class SeaHooks {
         int spawnTicks;
         int cannonCooldown;
         UUID target;
+        int crewCannon;
+        int crewRepair;
+        UUID speedVehicle;
+        double speed = 1;
     }
 
     private static final Map<UUID, Sea> SEA = new HashMap<>();
@@ -232,6 +266,9 @@ public final class SeaHooks {
         final SailingSea.SeaCreature creature;
         int cooldown;
         boolean engaged;
+        /** Hits left on each burn (incendiary cannonballs; at most 5 stack). */
+        final List<Integer> burns = new ArrayList<>();
+        int burnTimer;
 
         Spawned(UUID owner, SailingSea.SeaCreature creature) {
             this.owner = owner;
@@ -259,6 +296,15 @@ public final class SeaHooks {
             s.hp = maxHp(player, type);
             s.boat = type;
         }
+        // Hull speed (wiki Hull table) for the Sailing boats; the extras module's boats keep their own tier speed.
+        double speed = vehicle instanceof com.runecraft.content.extras.SailBoatEntity ? 1 : SailingCrew.velocityMultiplier(
+                SailingCrew.speedFactor(type, SailingHooks.partTier(player, type, SailingTraining.PartType.HULL)));
+        if (!vehicle.getUuid().equals(s.speedVehicle) || speed != s.speed) {
+            s.speedVehicle = vehicle.getUuid();
+            s.speed = speed;
+            sendSpeed(player, speed);
+        }
+        crewTick(player, vehicle, type, s);
         Vec3d v = vehicle.getVelocity();
         boolean moving = v.x * v.x + v.z * v.z > 0.01;
         if (moving && --s.encounterTicks <= 0) {
@@ -293,6 +339,11 @@ public final class SeaHooks {
 
     /** Called every game tick while the player is not on a boat: tidies up their sea creatures. */
     static void offBoat(ServerPlayerEntity player) {
+        Sea sea = SEA.get(player.getUuid());
+        if (sea != null && sea.speedVehicle != null) {
+            sea.speedVehicle = null;
+            sendSpeed(player, 1);
+        }
         if (SPAWNED.isEmpty()) {
             return;
         }
@@ -397,6 +448,16 @@ public final class SeaHooks {
                 it.remove();
                 continue;
             }
+            if (!sp.burns.isEmpty() && ++sp.burnTimer >= SailingCrew.BURN_INTERVAL) {
+                sp.burnTimer = 0;
+                int burn = sp.burns.size();
+                sp.burns.replaceAll(h -> h - 1);
+                sp.burns.removeIf(h -> h <= 0);
+                CombatHandler.applyDamage(player, mob, burn);
+                if (!mob.isAlive()) {
+                    continue;
+                }
+            }
             if (!(sp.creature.aggressive() || sp.engaged) || mob.distanceTo(player) > SailingSea.CANNON_RANGE || ++sp.cooldown < sp.creature.speed()) {
                 continue;
             }
@@ -421,18 +482,393 @@ public final class SeaHooks {
         }
     }
 
-    /** At 0 hitpoints the boat breaks: you are thrown into the water and the kit must be relaunched (OSRS: shipwright repair). */
+    /**
+     * At 0 hitpoints the boat is wrecked (wiki Boat combat): you wash up at the nearest port, the courier crates, bounty
+     * items and salvage in its cargo hold are lost, and a shipwright must recover the boat before it can sail again.
+     */
     private static void sink(ServerPlayerEntity player, Entity vehicle, String type, Sea s) {
         SailingData.Boat kit = SailingHooks.boatOf(vehicle);
         player.stopRiding();
         vehicle.discard();
         if (kit != null) {
-            Inv.give(player, kit.kit(), 1);
+            SailingHooks.boatState(player).putString("wrecked." + kit.kit(), type);
+        }
+        int lost = 0;
+        NbtCompound hold = hold(player, type);
+        for (String item : new ArrayList<>(hold.getKeys())) {
+            if (SailingCrew.lostOnSinking(item)) {
+                lost += hold.getInt(item);
+                hold.remove(item);
+            }
         }
         s.hp = -1;
         s.target = null;
-        Msg.red(player, "Your " + type + " has been wrecked! You salvage the " + (kit == null ? "boat" : SkillingUtil.lower(kit.name()) + " kit")
-                + " and swim for it.");
+        SailingData.Port port = nearestPort(player);
+        if (port != null) {
+            BlockPos dock = Gielinor.safeSpot((ServerWorld) player.getWorld(), GielinorMap.toBlockX(port.x()), GielinorMap.toBlockZ(port.y()));
+            player.requestTeleport(dock.getX() + 0.5, dock.getY(), dock.getZ() + 0.5);
+        }
+        Msg.red(player, "Your " + type + " has been wrecked! You wash up" + (port == null ? "" : " at " + port.name())
+                + (lost > 0 ? " and the " + lost + " items of cargo in its hold are lost" : "") + ".");
+        Msg.game(player, "A shipwright at the boat schematics can recover your " + type + " for "
+                + SailingCrew.SHIPWRIGHT_GP_PER_HP + " coins a hitpoint.");
+    }
+
+    private static SailingData.Port nearestPort(ServerPlayerEntity player) {
+        int x = GielinorMap.toOsrsX(player.getBlockX());
+        int y = GielinorMap.toOsrsY(player.getBlockZ());
+        SailingData.Port best = null;
+        double bestD = Double.MAX_VALUE;
+        for (SailingData.Port p : SailingData.PORTS) {
+            double d = (double) (p.x() - x) * (p.x() - x) + (double) (p.y() - y) * (p.y() - y);
+            if (d < bestD) {
+                bestD = d;
+                best = p;
+            }
+        }
+        return best;
+    }
+
+    /** True when the player has a wrecked boat waiting for a shipwright. */
+    public static boolean hasWreck(ServerPlayerEntity player) {
+        for (String key : SailingHooks.boatState(player).getKeys()) {
+            if (key.startsWith("wrecked.")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * At the boat schematics: a shipwright recovers each wrecked boat for 50 coins a hitpoint of its full hitpoints
+     * (wiki repair rate; the recovery fee itself is approx) and hands the kit back. True when there was a wreck.
+     */
+    public static boolean recoverWrecks(ServerPlayerEntity player) {
+        NbtCompound state = SailingHooks.boatState(player);
+        boolean any = false;
+        for (String key : new ArrayList<>(state.getKeys())) {
+            if (!key.startsWith("wrecked.")) {
+                continue;
+            }
+            any = true;
+            String kit = key.substring("wrecked.".length());
+            String type = state.getString(key);
+            int fee = maxHp(player, type) * SailingCrew.SHIPWRIGHT_GP_PER_HP;
+            if (!Inv.has(player, Inv.COINS, fee)) {
+                Msg.game(player, "The shipwright wants " + fee + " coins to recover your wrecked " + type + ".");
+                continue;
+            }
+            Inv.remove(player, Inv.COINS, fee);
+            state.remove(key);
+            Inv.give(player, kit, 1);
+            Msg.action(player, "The shipwright recovers your " + type + " for " + fee + " coins and hands you its kit.");
+        }
+        return any;
+    }
+
+    /** Wrecks a boat for the self-test: as if it sank, without the teleport. */
+    public static void markWrecked(ServerPlayerEntity player, String kit, String type) {
+        SailingHooks.boatState(player).putString("wrecked." + kit, type);
+    }
+
+    // ------------------------------------------------------------------ repair kits
+
+    /** Applies a repair kit on your boat (wiki: heals the kit's amount, up to the boat's hitpoints). */
+    static boolean applyKit(ServerPlayerEntity player, ItemStack stack, SailingCrew.Kit kit) {
+        String type = SailingHooks.boatType(player.getVehicle());
+        if (type == null) {
+            if (player.isSneaking() && deposit(player, kit.id(), stack.getCount())) {
+                return true;
+            }
+            Msg.game(player, "You need to be aboard your boat to repair it.");
+            return true;
+        }
+        int max = maxHp(player, type);
+        int hp = boatHp(player, type);
+        if (hp >= max) {
+            Msg.game(player, "Your " + type + " doesn't need repairing.");
+            return true;
+        }
+        stack.decrement(1);
+        int healed = heal(player, type, kit.heals());
+        Msg.action(player, "You repair your " + type + " (+" + healed + ", " + boatHp(player, type) + "/" + max + " hitpoints).");
+        return true;
+    }
+
+    /** Repairs the boat by up to {@code amount} hitpoints; returns the hitpoints restored. Used by the self-test. */
+    public static int heal(ServerPlayerEntity player, String type, int amount) {
+        Sea s = SEA.computeIfAbsent(player.getUuid(), k -> new Sea());
+        int max = maxHp(player, type);
+        if (s.hp < 0 || !type.equals(s.boat)) {
+            s.hp = max;
+            s.boat = type;
+        }
+        int before = s.hp;
+        s.hp = Math.min(max, s.hp + amount);
+        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_WOOD_PLACE, SoundCategory.PLAYERS, 0.8f, 1f);
+        return s.hp - before;
+    }
+
+    /** Sets the boat's hitpoints (self-test). */
+    public static void setBoatHp(ServerPlayerEntity player, String type, int hp) {
+        Sea s = SEA.computeIfAbsent(player.getUuid(), k -> new Sea());
+        s.boat = type;
+        s.hp = hp;
+    }
+
+    // ------------------------------------------------------------------ cargo hold
+
+    static NbtCompound hold(ServerPlayerEntity player, String type) {
+        NbtCompound all = SkillingState.get(player.getServer()).entry("cargo_hold", player.getUuidAsString());
+        if (!all.contains(type)) {
+            all.put(type, new NbtCompound());
+        }
+        return all.getCompound(type);
+    }
+
+    private static Map<String, Integer> holdContents(NbtCompound hold) {
+        Map<String, Integer> m = new HashMap<>();
+        for (String k : hold.getKeys()) {
+            m.put(k, hold.getInt(k));
+        }
+        return m;
+    }
+
+    private static boolean stackable(String item) {
+        return ItemCatalog.exists(item) && ItemCatalog.get(item).maxStack() > 1;
+    }
+
+    /** How many of an item the boat's cargo hold holds. */
+    public static int inHold(ServerPlayerEntity player, String type, String item) {
+        return hold(player, type).getInt(item);
+    }
+
+    /** Puts items straight into a boat's cargo hold (self-test). */
+    public static void stockHold(ServerPlayerEntity player, String type, String item, int count) {
+        NbtCompound hold = hold(player, type);
+        hold.putInt(item, hold.getInt(item) + count);
+    }
+
+    /** Empties a boat's cargo hold (self-test). */
+    public static void clearHold(ServerPlayerEntity player, String type) {
+        NbtCompound hold = hold(player, type);
+        for (String k : new ArrayList<>(hold.getKeys())) {
+            hold.remove(k);
+        }
+    }
+
+    /**
+     * Sneak + use a storable item on (or next to) your boat with a cargo hold: deposits the whole stack, as far as the
+     * hold's capacity allows (wiki capacity by hold tier and boat). Returns false when there's no boat with a hold here.
+     */
+    public static boolean deposit(ServerPlayerEntity player, String item, int count) {
+        String type = SailingHooks.boatType(SailingHooks.nearbyBoat(player));
+        SailingCrew.Hold h = type == null ? null : SailingCrew.bestHold(SailingHooks.facilities(player, type));
+        if (h == null || !SailingCrew.storable(item) || count <= 0) {
+            return false;
+        }
+        NbtCompound hold = hold(player, type);
+        int fit = SailingCrew.room(holdContents(hold), item, count, h.capacity(type), SeaHooks::stackable);
+        int moved = fit <= 0 ? 0 : Inv.remove(player, item, fit);
+        if (moved <= 0) {
+            Msg.game(player, "Your " + SkillingUtil.lower(h.name()) + " is full (" + h.capacity(type) + " slots).");
+            return true;
+        }
+        hold.putInt(item, hold.getInt(item) + moved);
+        Msg.action(player, "You store " + moved + " x " + SkillingUtil.lower(SkillingUtil.name(item)) + " in the cargo hold ("
+                + SailingCrew.slotsUsed(holdContents(hold), SeaHooks::stackable) + "/" + h.capacity(type) + ").");
+        return true;
+    }
+
+    /** Takes everything out of the boat's cargo hold. */
+    static void withdrawAll(ServerPlayerEntity player, String type) {
+        NbtCompound hold = hold(player, type);
+        if (hold.getKeys().isEmpty()) {
+            Msg.game(player, "Your " + type + "'s cargo hold is empty. Sneak and use cargo near the boat to store it.");
+            return;
+        }
+        List<String> names = new ArrayList<>();
+        for (String item : new ArrayList<>(hold.getKeys())) {
+            int n = hold.getInt(item);
+            hold.remove(item);
+            if (n > 0) {
+                SkillingUtil.give(player, item, n);
+                names.add(n + " x " + SkillingUtil.lower(SkillingUtil.name(item)));
+            }
+        }
+        Msg.action(player, "You empty the cargo hold: " + String.join(", ", names) + ".");
+    }
+
+    /** Takes one of the items from the boat's hold (crew repairs and cannon ammunition); false when there's none. */
+    private static boolean takeFromHold(ServerPlayerEntity player, String type, String item) {
+        NbtCompound hold = hold(player, type);
+        int n = hold.getInt(item);
+        if (n <= 0) {
+            return false;
+        }
+        if (n == 1) {
+            hold.remove(item);
+        } else {
+            hold.putInt(item, n - 1);
+        }
+        return true;
+    }
+
+    // ------------------------------------------------------------------ crew
+
+    static NbtCompound crew(ServerPlayerEntity player) {
+        return SkillingState.get(player.getServer()).entry("sailing_crew", player.getUuidAsString());
+    }
+
+    /** Recruited crewmates in crew order. */
+    public static List<String> crewOrder(ServerPlayerEntity player) {
+        String order = crew(player).getString("order");
+        return order.isEmpty() ? new ArrayList<>() : new ArrayList<>(Arrays.asList(order.split(",")));
+    }
+
+    public static void setCrew(ServerPlayerEntity player, List<String> order) {
+        crew(player).putString("order", String.join(",", order));
+    }
+
+    /** Talking to a crewmate recruits them (wiki levels and quests); sneak-talking dismisses them from the crew. */
+    public static void crewTalk(ServerPlayerEntity player, SailingCrew.Crewmate c) {
+        List<String> order = crewOrder(player);
+        if (order.contains(c.id())) {
+            if (player.isSneaking()) {
+                order.remove(c.id());
+                setCrew(player, order);
+                Msg.action(player, c.name() + " leaves your crew.");
+            } else {
+                Msg.game(player, c.name() + ": Ready when you are, captain! (H" + c.helmsmanship() + " P" + c.privateering() + " D"
+                        + c.deckhandiness() + "; sneak-talk to dismiss me.)");
+            }
+            return;
+        }
+        if (SkillingUtil.level(player, Skill.SAILING) < c.level()) {
+            Msg.game(player, c.name() + ": Come back when you've a Sailing level of " + c.level() + ".");
+            return;
+        }
+        if (c.quest() != null && !QuestApi.isComplete(player, c.quest()) && !player.getAbilities().creativeMode) {
+            Msg.game(player, c.name() + ": I'll not sail with you until you've proven yourself (quest required).");
+            return;
+        }
+        if (c.id().equals("cabin_boy_jenkins") && !Inv.has(player, "ghostspeak_amulet", 1) && !player.getAbilities().creativeMode) {
+            Msg.game(player, "You hear a faint voice, but you can't make out the words. (Ghostspeak amulet needed.)");
+            return;
+        }
+        order.add(c.id());
+        setCrew(player, order);
+        Msg.action(player, c.name() + " joins your crew. Crewmates sail with you on a skiff (2) or sloop (5), up to the slots your"
+                + " Sailing level unlocks (" + SailingCrew.crewSlots(SkillingUtil.level(player, Skill.SAILING)) + ").");
+    }
+
+    /**
+     * The crew at work (OSRS assigns them to facilities; here the best one for each job, approx): the best privateer
+     * mans the cannon against creatures in range when you aren't firing it, and the best deckhand repairs the boat with
+     * kits from the cargo hold once it drops below half its hitpoints.
+     */
+    private static void crewTick(ServerPlayerEntity player, Entity vehicle, String type, Sea s) {
+        if (s.crewCannon > 0) {
+            s.crewCannon--;
+        }
+        if (s.crewRepair > 0) {
+            s.crewRepair--;
+        }
+        if (s.crewCannon > 0 && s.crewRepair > 0) {
+            return;
+        }
+        List<SailingCrew.Crewmate> aboard = SailingCrew.aboard(crewOrder(player), type, SkillingUtil.level(player, Skill.SAILING));
+        if (aboard.isEmpty()) {
+            return;
+        }
+        SailingCrew.Crewmate gunner = null;
+        SailingCrew.Crewmate hand = null;
+        for (SailingCrew.Crewmate c : aboard) {
+            if (gunner == null || c.privateering() > gunner.privateering()) {
+                gunner = c;
+            }
+            if (hand == null || c.deckhandiness() > hand.deckhandiness()) {
+                hand = c;
+            }
+        }
+        if (s.crewRepair <= 0 && s.hp >= 0 && s.hp < maxHp(player, type) * SailingCrew.CREW_REPAIR_BELOW) {
+            crewRepair(player, type, hand);
+            s.crewRepair = 4; // approx: the eating delay
+        }
+        SailingSea.Cannon cannon = SailingSea.bestCannon(SailingHooks.facilities(player, type));
+        if (s.crewCannon > 0 || s.target != null || cannon == null || !SailingCrew.canMan(cannon, gunner.privateering())
+                || SkillingUtil.level(player, Skill.RANGED) < cannon.ranged()) {
+            return;
+        }
+        MobEntity target = null;
+        for (Map.Entry<MobEntity, Spawned> e : SPAWNED.entrySet()) {
+            MobEntity mob = e.getKey();
+            Spawned sp = e.getValue();
+            if (sp.owner.equals(player.getUuid()) && mob.isAlive() && (sp.engaged || sp.creature.aggressive())
+                    && mob.distanceTo(player) <= SailingSea.CANNON_RANGE) {
+                target = mob;
+                break;
+            }
+        }
+        if (target != null) {
+            crewFire(player, type, target, cannon, gunner);
+            s.crewCannon = SailingSea.CANNON_TICKS;
+        }
+    }
+
+    /** A crewmate applies the best repair kit in the cargo hold; returns the hitpoints restored (0: no kit). Used by the self-test. */
+    public static int crewRepair(ServerPlayerEntity player, String type, SailingCrew.Crewmate hand) {
+        for (int i = SailingCrew.KITS.size() - 1; i >= 0; i--) {
+            SailingCrew.Kit kit = SailingCrew.KITS.get(i);
+            if (takeFromHold(player, type, kit.id())) {
+                int healed = heal(player, type, SailingCrew.crewRepair(kit, hand.deckhandiness(), RNG));
+                Msg.action(player, hand.name() + " patches the hull with " + Msg.article(SkillingUtil.lower(kit.name())) + " (+" + healed
+                        + ", " + boatHp(player, type) + "/" + maxHp(player, type) + ").");
+                return healed;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * A crewmate fires the cannon: a cannonball from the cargo hold (or your inventory), the wiki crew max hit (your
+     * Sailing level, times (Privateering + 13) / 20). Returns the damage, or -1 with no ammunition. Used by the self-test.
+     */
+    public static int crewFire(ServerPlayerEntity player, String type, MobEntity target, SailingSea.Cannon cannon, SailingCrew.Crewmate c) {
+        SailingSea.Ball ball = null;
+        for (int i = SailingSea.BALLS.size() - 1; i >= 0 && ball == null; i--) {
+            SailingSea.Ball b = SailingSea.BALLS.get(i);
+            if (b.tier() <= cannon.tier() && (takeFromHold(player, type, b.item()) || Inv.remove(player, b.item(), 1) > 0)) {
+                ball = b;
+            }
+        }
+        if (ball == null) {
+            return -1;
+        }
+        Spawned sp = SPAWNED.get(target);
+        if (sp != null) {
+            sp.engaged = true;
+        }
+        ServerWorld world = (ServerWorld) player.getWorld();
+        world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.PLAYERS, 0.5f, 1.5f);
+        world.spawnParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 0.5, target.getZ(), 1, 0, 0, 0, 0);
+        int max = SailingCrew.crewMaxHit(SkillingUtil.level(player, Skill.SAILING), cannon, ball, c.privateering());
+        boolean hit = sp == null || RNG.nextDouble() < SailingSea.cannonAccuracy(cannon, ball, false, sp.creature);
+        int dmg = hit ? RNG.nextInt(max + 1) : 0;
+        CombatHandler.applyDamage(player, target, dmg);
+        if (dmg > 0) {
+            XpService.add(player, Skill.SAILING, dmg); // approx: crew shots give the Sailing share of a player's shot
+        }
+        return dmg;
+    }
+
+    private static void sendSpeed(ServerPlayerEntity player, double speed) {
+        if (!ServerPlayNetworking.canSend(player, SeaNet.BOAT_SPEED)) {
+            return;
+        }
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeDouble(speed);
+        ServerPlayNetworking.send(player, SeaNet.BOAT_SPEED, buf);
     }
 
     // ------------------------------------------------------------------ cannons
@@ -441,7 +877,7 @@ public final class SeaHooks {
     static boolean useCannonball(ServerPlayerEntity player, String ball) {
         String type = SailingHooks.boatType(player.getVehicle());
         if (type == null) {
-            return false;
+            return player.isSneaking() && deposit(player, ball, Inv.count(player, ball));
         }
         SailingSea.Cannon cannon = SailingSea.bestCannon(SailingHooks.facilities(player, type));
         if (cannon == null) {
@@ -475,20 +911,21 @@ public final class SeaHooks {
             s.target = null;
             return;
         }
-        SailingSea.Ball ball = pickBall(player, cannon, preferred);
-        if (ball == null) {
+        String item = pickBall(player, cannon, preferred);
+        if (item == null) {
             Msg.game(player, "You have no cannonballs your " + SkillingUtil.lower(cannon.metal()) + " cannon can fire.");
             s.target = null;
             return;
         }
-        fireCannon(player, target, cannon, ball);
+        fireCannon(player, target, cannon, item);
         s.cannonCooldown = SailingSea.CANNON_TICKS;
     }
 
-    private static SailingSea.Ball pickBall(ServerPlayerEntity player, SailingSea.Cannon cannon, String preferred) {
-        SailingSea.Ball p = preferred == null ? null : SailingSea.ball(preferred);
-        if (p != null && p.tier() <= cannon.tier() && Inv.has(player, p.item(), 1)) {
-            return p;
+    /** The cannonball item to fire: the one used (plain, chainshot or incendiary) if the cannon takes it, else the best plain one. */
+    private static String pickBall(ServerPlayerEntity player, SailingSea.Cannon cannon, String preferred) {
+        SailingSea.Ball p = preferred == null ? null : SailingCrew.ballStats(preferred);
+        if (p != null && p.tier() <= cannon.tier() && Inv.has(player, preferred, 1)) {
+            return preferred;
         }
         SailingSea.Ball best = null;
         for (SailingSea.Ball b : SailingSea.BALLS) {
@@ -496,25 +933,32 @@ public final class SeaHooks {
                 best = b;
             }
         }
-        return best;
+        return best == null ? null : best.item();
     }
 
     /**
      * One cannon shot by the player: uses a cannonball, rolls the wiki max hit (Ranged level) and an accuracy roll, and
-     * gives 1 Sailing and 4 Ranged XP per damage rolled (overkill included). Returns the damage. Used by the self-test.
+     * gives 1 Sailing and 4 Ranged XP per damage rolled (overkill included). Chainshot delays the creature's next attack
+     * (wiki: halves its speed for 8 ticks; approx) and incendiary balls burn it on a hit (wiki Burn: 1 damage every 4 ticks,
+     * 10 times, up to 5 burns; approx: every hit burns). Returns the damage. Used by the self-test.
      */
-    public static int fireCannon(ServerPlayerEntity player, MobEntity target, SailingSea.Cannon cannon, SailingSea.Ball ball) {
+    public static int fireCannon(ServerPlayerEntity player, MobEntity target, SailingSea.Cannon cannon, String item) {
+        SailingSea.Ball ball = SailingCrew.ballStats(item);
+        if (ball == null) {
+            return 0;
+        }
         if (SkillingUtil.level(player, Skill.RANGED) < cannon.ranged()) {
             Msg.game(player, "You need a Ranged level of " + cannon.ranged() + " to fire this cannon.");
             return 0;
         }
-        if (Inv.remove(player, ball.item(), 1) < 1) {
+        if (Inv.remove(player, item, 1) < 1) {
             return 0;
         }
         Spawned sp = SPAWNED.get(target);
         if (sp != null) {
             sp.engaged = true;
         }
+        SailingCrew.Special special = SailingCrew.special(item);
         SailingSea.SeaCreature c = sp != null ? sp.creature : null;
         ServerWorld world = (ServerWorld) player.getWorld();
         world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.PLAYERS, 0.6f, 1.4f);
@@ -522,12 +966,25 @@ public final class SeaHooks {
         int max = SailingSea.cannonMaxHit(SkillingUtil.level(player, Skill.RANGED), cannon, ball, true);
         boolean hit = c == null || RNG.nextDouble() < SailingSea.cannonAccuracy(cannon, ball, true, c);
         int dmg = hit ? RNG.nextInt(max + 1) : 0;
+        if (hit && special != null && sp != null) {
+            if (special.chainshot()) {
+                sp.cooldown = Math.min(sp.cooldown, 0) - SailingCrew.CHAINSHOT_TICKS;
+            } else if (sp.burns.size() < SailingCrew.BURN_MAX_STACKS) {
+                sp.burns.add(SailingCrew.BURN_HITS);
+            }
+        }
         CombatHandler.applyDamage(player, target, dmg);
         if (dmg > 0) {
             XpService.add(player, Skill.SAILING, dmg);
             XpService.add(player, Skill.RANGED, dmg * 4.0);
         }
         return dmg;
+    }
+
+    /** Burn instances on a spawned sea creature (self-test). */
+    public static int burns(MobEntity mob) {
+        Spawned sp = SPAWNED.get(mob);
+        return sp == null ? 0 : sp.burns.size();
     }
 
     // ------------------------------------------------------------------ ocean encounters

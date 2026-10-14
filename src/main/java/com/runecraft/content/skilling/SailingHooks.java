@@ -348,6 +348,10 @@ final class SailingHooks {
                 Inv.give(player, "coins", SailingTraining.courierCoins(t));
                 Msg.action(player, "You deliver the " + SkillingUtil.lower(t.cargoName()) + " to " + here.name() + " for " + (int) xp
                         + " Sailing XP and " + SailingTraining.courierCoins(t) + " coins.");
+                if (player.getRandom().nextInt(com.runecraft.osrs.content.skilling.SailingCrew.SHARK_PAINT_RATE) == 0) {
+                    SkillingUtil.give(player, "shark_paint", 1); // wiki: 1/36 per port task
+                    Msg.action(player, "You've received some paint!");
+                }
                 acted = true;
             } else if (!got && t.cargo().equals(here.id())) {
                 Inv.give(player, "cargo_crate", t.qty());
@@ -433,11 +437,9 @@ final class SailingHooks {
         return null;
     }
 
-    /** Every boat facility: the round-8 ones plus salvaging hooks and cannons. */
+    /** Every boat facility: the round-8 ones, salvaging hooks, cannons and cargo holds. */
     static List<SailingTraining.Facility> allFacilities() {
-        List<SailingTraining.Facility> all = new ArrayList<>(SailingTraining.FACILITIES);
-        all.addAll(com.runecraft.osrs.content.skilling.SailingSea.FACILITIES);
-        return all;
+        return com.runecraft.osrs.content.skilling.SailingCrew.allFacilities();
     }
 
     static NbtCompound boatState(ServerPlayerEntity player) {
@@ -487,6 +489,9 @@ final class SailingHooks {
 
     /** Boat schematics: click to cycle through the next upgrades for your boat, sneak-click to build the one shown. */
     private static void schematics(ServerPlayerEntity player) {
+        if (SeaHooks.recoverWrecks(player)) {
+            return;
+        }
         Entity boat = nearbyBoat(player);
         String type = boatType(boat);
         if (type == null) {
