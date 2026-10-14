@@ -315,6 +315,14 @@ public class SorceressGardenSession extends MinigameSession {
         Inv.give(player, s.fruit(), 1);
         xp(player, Skill.FARMING, s.farmingXp());
         Msg.game(player, "You pick " + (s == Season.AUTUMN ? "an " : "a ") + s.id() + " sq'irk.");
+        // Rocky (the Thieving pet) can be found picking sq'irks: 1/(10,339 - 25 x Thieving level).
+        int thieving = Players.data(player).skills().level(Skill.THIEVING);
+        if (random.nextDouble() < SorceressGarden.rockyChance(thieving) && com.runecraft.osrs.ItemCatalog.get("pet_rocky") != null
+                && !Players.data(player).collectionLog().contains("pet_rocky")) {
+            reward(player, "pet_rocky", 1);
+            player.getServer().getPlayerManager().broadcast(net.minecraft.text.Text.literal(player.getName().getString()
+                    + " has a funny feeling like they're being followed.").formatted(net.minecraft.util.Formatting.GOLD), false);
+        }
         Msg.game(player, "An elemental force emanating from the garden teleports you away.");
         toCentre(player, null);
     }

@@ -369,6 +369,7 @@ public final class CombatHandler {
         if (target instanceof ServerPlayerEntity damaged) {
             if (attacker != null && attacker != damaged && damage > 0) {
                 damage = DefenceEffects.reduce(damaged, attacker, CombatHooks.namedStyle(), damage);
+                damage = CombatHooks.incoming(damaged, attacker, damage);
             }
             CombatHooks.damaged(damaged, attacker, Math.max(0, damage));
         } else {

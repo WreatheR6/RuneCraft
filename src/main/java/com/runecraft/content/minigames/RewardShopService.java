@@ -102,6 +102,9 @@ public final class RewardShopService {
                 case "#herbs" -> RuneCraft.resolve("grimy_ranarr_weed").toString();
                 case "#seeds" -> RuneCraft.resolve("ranarr_seed").toString();
                 case "#ores" -> RuneCraft.resolve("coal").toString();
+                case "#ba_gamble_low" -> RuneCraft.resolve("rune_axe").toString();
+                case "#ba_gamble_medium" -> RuneCraft.resolve("teak_plank").toString();
+                case "#ba_gamble_high" -> RuneCraft.resolve("pet_penance_queen").toString();
                 default -> e.item().startsWith(com.runecraft.osrs.content.minigames.RewardShops.GRACEFUL_RECOLOUR)
                         ? RuneCraft.resolve("graceful_hood" + e.item().substring(
                                 com.runecraft.osrs.content.minigames.RewardShops.GRACEFUL_RECOLOUR.length())).toString()
@@ -128,6 +131,15 @@ public final class RewardShopService {
         }
         if (e.reward() == RewardShop.Reward.UNLOCK && MinigameData.of(player).flag(player.getUuid(), e.item())) {
             return "Already unlocked";
+        }
+        // Barbarian Assault gambles: low and medium need wave 3 / 6 of the current round.
+        com.runecraft.osrs.content.minigames.BaGambles.Tier gamble = com.runecraft.osrs.content.minigames.BaGambles.Tier.of(e.item());
+        if (gamble != null) {
+            String waveLock = com.runecraft.osrs.content.minigames.BaGambles.lock(gamble,
+                    com.runecraft.content.minigames.games.BarbarianAssaultSession.waveReached(player));
+            if (waveLock != null) {
+                return waveLock;
+            }
         }
         // Last Man Standing: tradeable rewards need a won game (OSRS Wiki, May 2026).
         int wins = com.runecraft.osrs.content.minigames.LastManStanding.winsNeeded(e.item());
@@ -260,6 +272,8 @@ public final class RewardShopService {
                     give(player, Drops.rollSeed(player.getRandom()), 1);
                 }
             }
+            case "#ba_gamble_low", "#ba_gamble_medium", "#ba_gamble_high" -> com.runecraft.content.minigames.games.BarbarianAssaultSession
+                    .gamble(player, com.runecraft.osrs.content.minigames.BaGambles.Tier.of(e.item()));
             case "#ores" -> {
                 // Mineral pack (OSRS Wiki): 25 coal and 18 iron ore.
                 give(player, "coal", 25);

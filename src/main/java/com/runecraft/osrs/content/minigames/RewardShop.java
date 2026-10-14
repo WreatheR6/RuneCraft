@@ -124,6 +124,12 @@ public final class RewardShop {
         return this;
     }
 
+    /** A rolled reward ({@code #...} item handled by the shop service) with its own label. */
+    RewardShop labelled(String item, String label, List<Cost> costs) {
+        entries.add(new Entry(Reward.ITEM, item, 1, List.copyOf(costs), label, null, 0, null));
+        return this;
+    }
+
     RewardShop xp(Skill skill, int multiplier, String currency, int amount, int minLevel) {
         entries.add(new Entry(Reward.XP, skill.name(), multiplier, List.of(new Cost(currency, amount)),
                 skill.displayName() + " XP (" + amount + " pts)", skill, minLevel, null));

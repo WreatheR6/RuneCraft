@@ -50,7 +50,21 @@ public final class MinigameItemUse {
                 return TypedActionResult.pass(stack);
             }
             String id = Inv.idOf(stack);
+            if (sp.getItemCooldownManager().isCoolingDown(stack.getItem())) {
+                return TypedActionResult.pass(stack);
+            }
+            if (com.runecraft.content.minigames.games.NightmareZoneSession.drink(sp, stack, hand, id) || blighted(sp, stack, hand, id)) {
+                return TypedActionResult.success(stack);
+            }
             boolean used = switch (id) {
+                case "spoils_of_war" -> {
+                    openSpoils(sp);
+                    yield true;
+                }
+                case "herb_box" -> {
+                    openHerbBox(sp);
+                    yield true;
+                }
                 case "supply_crate" -> {
                     openSupplyCrate(sp, rolls(stack));
                     yield true;
@@ -95,6 +109,98 @@ public final class MinigameItemUse {
         give(p, pet, 1);
         p.getServer().getPlayerManager().broadcast(Text.literal(p.getName().getString()
                 + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
+    }
+
+    /** Gives {@code n} of an item as bank notes when it can be noted (overflow drops at the player's feet). */
+    public static void giveNoted(ServerPlayerEntity p, String item, int n) {
+        if (n <= 0) {
+            return;
+        }
+        net.minecraft.item.ItemStack note = com.runecraft.osrs.bank.BankNotes.canNote(item)
+                ? com.runecraft.bank.Notes.note(item, "", 1) : net.minecraft.item.ItemStack.EMPTY;
+        if (note.isEmpty()) {
+            give(p, item, n);
+            return;
+        }
+        int in = com.runecraft.bank.Notes.insert(p, note, n);
+        if (in < n) {
+            p.dropItem(note.copyWithCount(n - in), false);
+        }
+        CollectionLog.obtain(p, item);
+    }
+
+    /** Soul Wars spoils of war: three rolls plus the Lil' creator roll. */
+    public static void openSpoils(ServerPlayerEntity p) {
+        for (com.runecraft.osrs.content.minigames.SpoilsOfWar.Prize prize
+                : com.runecraft.osrs.content.minigames.SpoilsOfWar.open(RANDOM::nextDouble)) {
+            if (prize.item().equals(com.runecraft.osrs.content.minigames.SpoilsOfWar.PET)) {
+                pet(p, prize.item());
+            } else if (prize.noted()) {
+                giveNoted(p, prize.item(), prize.amount());
+            } else {
+                give(p, prize.item(), prize.amount());
+            }
+        }
+        Msg.game(p, "You open the spoils of war.");
+    }
+
+    /** Herb box (Nightmare Zone): seven rolls on the herb drop table (OSRS Wiki weights out of 128). */
+    public static void openHerbBox(ServerPlayerEntity p) {
+        String[] herbs = {"guam_leaf", "marrentill", "tarromin", "harralander", "ranarr_weed", "irit_leaf", "avantoe", "kwuarm",
+                "cadantine", "lantadyme", "dwarf_weed"};
+        int[] weights = {32, 24, 18, 14, 11, 8, 6, 5, 4, 3, 3};
+        int total = 0;
+        for (int w : weights) {
+            total += w;
+        }
+        for (int i = 0; i < 7; i++) {
+            int r = RANDOM.nextInt(total);
+            for (int h = 0; h < herbs.length; h++) {
+                r -= weights[h];
+                if (r < 0) {
+                    give(p, "grimy_" + herbs[h], 1);
+                    break;
+                }
+            }
+        }
+        Msg.game(p, "You open the herb box.");
+    }
+
+    /**
+     * Blighted supplies only work in the Wilderness. Returns true when the click was handled: blocked outside
+     * the Wilderness, or a blighted super restore drunk inside it (blighted food is eaten as normal food).
+     */
+    static boolean blighted(ServerPlayerEntity p, ItemStack stack, net.minecraft.util.Hand hand, String id) {
+        boolean food = id.equals("blighted_karambwan") || id.equals("blighted_anglerfish") || id.equals("blighted_manta_ray");
+        boolean restore = id.equals("blighted_super_restore");
+        if (!food && !restore) {
+            return false;
+        }
+        if (com.runecraft.world.Gielinor.wildernessLevel(p) <= 0) {
+            Msg.game(p, "You can only use this in the Wilderness.");
+            return true;
+        }
+        if (food) {
+            return false;
+        }
+        com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+        int prayer = com.runecraft.osrs.data.Potion.SUPER_RESTORE.apply(data.skills());
+        if (prayer > 0) {
+            int cap = Math.max(data.skills().level(Skill.PRAYER), data.skills().currentLevel(Skill.PRAYER));
+            data.setPrayerPoints(Math.max(data.prayerPoints(), Math.min(cap, data.prayerPoints() + prayer)));
+        }
+        int used = stack.getDamage() + 1;
+        p.getItemCooldownManager().set(stack.getItem(), 3 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
+        p.getWorld().playSound(null, p.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_GENERIC_DRINK,
+                net.minecraft.sound.SoundCategory.PLAYERS, 0.5f, 1.0f);
+        Msg.action(p, "You drink some of your blighted super restore.");
+        if (used >= 4) {
+            p.setStackInHand(hand, Inv.stack("vial", 1));
+        } else {
+            stack.setDamage(used);
+        }
+        com.runecraft.network.ServerNetworking.sync(p);
+        return true;
     }
 
     /** Wintertodt supply crate: N rolls of the wiki reward table (uniques first, then a skill/coin table). */

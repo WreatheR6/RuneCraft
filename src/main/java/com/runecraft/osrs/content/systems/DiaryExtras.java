@@ -78,7 +78,7 @@ public final class DiaryExtras {
             int r = (int) (rng.getAsDouble() * 21);
             loot.add(r < 3 ? new Loot("blighted_manta_ray", 25) : r < 6 ? new Loot("blighted_karambwan", 25)
                     : r < 9 ? new Loot("blighted_ancient_ice_sack", 25) : r < 12 ? new Loot("blighted_anglerfish", 15)
-                    : r < 15 ? new Loot("blighted_super_restore_4", 3) : new Loot("larrans_key", 1));
+                    : r < 15 ? new Loot("blighted_super_restore", 3) : new Loot("larrans_key", 1));
         }
         return loot;
     }

@@ -859,22 +859,114 @@ public final class MinigameRules {
         public static final int QUESTS_NEEDED = 5;
         /** At most four bosses at once for a solo rumble. */
         public static final int MAX_BOSSES = 4;
-        /** The rumble's quest bosses: creature id, points per kill in a normal rumble with every boss enabled (OSRS Wiki). */
+        /**
+         * The rumble's quest bosses: creature id, points per kill in a normal and in a hard rumble with every boss
+         * enabled, and hitpoints in a hard rumble (OSRS Wiki boss table; hard bosses keep their Defence).
+         */
         public static final Object[][] BOSSES = {
-                {"nmz_count_draynor", 224}, {"nmz_king_roald", 448}, {"nmz_the_kendal", 998}, {"nmz_me", 1263},
-                {"nmz_elvarg", 1385}, {"nmz_tree_spirit", 2078}, {"nmz_dad", 2078}, {"nmz_khazard_warlord", 2547},
-                {"nmz_arrg", 2588}, {"nmz_black_knight_titan", 2934}, {"nmz_bouncer", 3811}, {"nmz_glod", 3872}};
-        /** Hard rumbles pay roughly 3.5 times as much per kill (approx. of the wiki's per-boss hard values). */
-        public static final double HARD_MULTIPLIER = 3.5;
+                {"nmz_count_draynor", 224, 7135, 210}, {"nmz_king_roald", 448, 8056, 150}, {"nmz_the_kendal", 998, 10127, 150},
+                {"nmz_me", 1263, 9207, 135}, {"nmz_elvarg", 1385, 10357, 240}, {"nmz_tree_spirit", 2078, 8976, 187},
+                {"nmz_dad", 2078, 9207, 240}, {"nmz_khazard_warlord", 2547, 8286, 256}, {"nmz_arrg", 2588, 10127, 255},
+                {"nmz_black_knight_titan", 2934, 10127, 255}, {"nmz_bouncer", 3811, 13580, 232}, {"nmz_glod", 3872, 17493, 255}};
+
+        // ---- Benefits: potions sold by the dose at Dom Onion's Reward Shop, usable only inside a dream (OSRS Wiki).
+        public static final String OVERLOAD = "overload";
+        public static final String ABSORPTION = "absorption";
+        public static final String SUPER_RANGING = "super_ranging";
+        public static final String SUPER_MAGIC = "super_magic_potion";
+        public static final List<String> POTIONS = List.of(OVERLOAD, ABSORPTION, SUPER_RANGING, SUPER_MAGIC);
+        /** Overload: +5 + 15% to Attack, Strength, Defence, Ranged and Magic for 5 minutes, re-applied every 15 seconds. */
+        public static final int OVERLOAD_TICKS = 500;
+        public static final int OVERLOAD_REAPPLY_TICKS = 25;
+        /** Overload damage: 50 in five hits of 10 (never absorbed); needs more than 50 Hitpoints; heals 50 when it ends. */
+        public static final int OVERLOAD_HITS = 5;
+        public static final int OVERLOAD_HIT = 10;
+        public static final int OVERLOAD_HEAL = 50;
+        /** Absorption: each dose absorbs the next 50 damage dealt by monsters, up to 1,000 stored. */
+        public static final int ABSORPTION_PER_DOSE = 50;
+        public static final int ABSORPTION_MAX = 1000;
+
+        /** A power-up stays in the arena for one minute. */
+        public static final int POWER_UP_LIFETIME = 100;
+        /** Game ticks between power-ups appearing in a rumble (approx.: the wiki gives no rate). */
+        public static final int POWER_UP_INTERVAL = 150;
+        /** Zapper: max hit, and game ticks between zaps (interval approx.). */
+        public static final int ZAPPER_MAX_HIT = 8;
+        public static final int ZAPPER_INTERVAL = 3;
+        /** Power surge: special attack energy restored per tick (20%). */
+        public static final int POWER_SURGE_PER_TICK = 20;
+
+        /** Power-ups (rumble only; OSRS Wiki). */
+        public enum PowerUp {
+            /** An extra hit of 3/4 of each hit's damage (no XP), 45 seconds. */
+            RECURRENT_DAMAGE("Recurrent damage", 75),
+            /** Zaps nearby bosses for up to 8 damage over time, 1 minute. */
+            ZAPPER("Zapper", 100),
+            /** Fills the special attack bar and regenerates it by 20% a tick, 45 seconds. */
+            POWER_SURGE("Power surge", 75),
+            /** Kills every boss in the arena at once, for no points. */
+            ULTIMATE_FORCE("Ultimate force", 0);
+
+            private final String displayName;
+            private final int ticks;
+
+            PowerUp(String displayName, int ticks) {
+                this.displayName = displayName;
+                this.ticks = ticks;
+            }
+
+            public String displayName() {
+                return displayName;
+            }
+
+            /** How long the effect lasts in game ticks (0 = instant). */
+            public int ticks() {
+                return ticks;
+            }
+        }
 
         private NightmareZone() {
+        }
+
+        /** Points per dose at Dom Onion's: overload 1,500, absorption 1,000, super ranging and super magic 250. */
+        public static int doseCost(String potion) {
+            return switch (potion) {
+                case OVERLOAD -> 1500;
+                case ABSORPTION -> 1000;
+                case SUPER_RANGING, SUPER_MAGIC -> 250;
+                default -> 0;
+            };
+        }
+
+        /** Boost of the overload, super ranging and super magic potion: floor(level * 15 / 100) + 5. */
+        public static int boost(int level) {
+            return level * 15 / 100 + 5;
+        }
+
+        /** Absorption points after one more dose. */
+        public static int absorb(int points) {
+            return Math.min(ABSORPTION_MAX, Math.max(0, points) + ABSORPTION_PER_DOSE);
+        }
+
+        /** Recurrent damage's extra hit: 3/4 of the hit, rounded down (a 35 adds 26). */
+        public static int recurrent(int damage) {
+            return Math.max(0, damage) * 3 / 4;
         }
 
         public static int points(String boss, boolean hard) {
             for (Object[] b : BOSSES) {
                 if (b[0].equals(boss)) {
-                    int pts = (Integer) b[1];
-                    return hard ? (int) Math.round(pts * HARD_MULTIPLIER) : pts;
+                    return (Integer) b[hard ? 2 : 1];
+                }
+            }
+            return 0;
+        }
+
+        /** Hitpoints of a boss in a hard rumble (0 if it isn't a rumble boss). */
+        public static int hardHitpoints(String boss) {
+            for (Object[] b : BOSSES) {
+                if (b[0].equals(boss)) {
+                    return (Integer) b[3];
                 }
             }
             return 0;

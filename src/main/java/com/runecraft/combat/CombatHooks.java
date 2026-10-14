@@ -131,6 +131,27 @@ public final class CombatHooks {
         GATES.add(gate);
     }
 
+    /**
+     * Changes the damage a player is about to take from another entity (not self-inflicted or attacker-less
+     * damage), e.g. Nightmare Zone absorption. Returns the damage that gets through.
+     */
+    public interface IncomingDamageModifier {
+        int modify(ServerPlayerEntity player, LivingEntity attacker, int damage);
+    }
+
+    private static final List<IncomingDamageModifier> INCOMING = new ArrayList<>();
+
+    public static void addIncomingModifier(IncomingDamageModifier modifier) {
+        INCOMING.add(modifier);
+    }
+
+    static int incoming(ServerPlayerEntity player, LivingEntity attacker, int damage) {
+        for (IncomingDamageModifier m : INCOMING) {
+            damage = Math.max(0, m.modify(player, attacker, damage));
+        }
+        return damage;
+    }
+
     /** The first gate's refusal for this attack, or null when the attack may go ahead. */
     public static String deniedAttack(ServerPlayerEntity p, AttackType type) {
         for (AttackGate g : GATES) {

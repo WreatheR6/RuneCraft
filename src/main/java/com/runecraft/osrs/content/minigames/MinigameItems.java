@@ -27,7 +27,7 @@ public final class MinigameItems {
 
     /** Pets awarded by minigames. */
     public static final List<String> PETS = List.of("jal_nib_rek", "phoenix", "tiny_tempor", "abyssal_protector",
-            "pet_penance_queen", "tzrek_zuk");
+            "pet_penance_queen", "tzrek_zuk", SpoilsOfWar.PET);
 
     static EquipmentStats s(int sa, int sl, int cr, int ma, int ra, int sd, int sld, int cd, int md, int rd,
                             int str, int rstr, int mdmg, int prayer) {
@@ -113,6 +113,24 @@ public final class MinigameItems {
                 .examine("A cape from the Isle of Souls. (2,500 zeal)");
         simple(items, "soul_fragment", "Soul fragment", "shard", 0xB080FF, 0, "Lightly pulsing with energy. Offer it at the Soul Obelisk.");
         simple(items, "soul_wars_bones", "Bones", "bones", 0xE8E0D0, 0, "Bury these in your graveyard to strengthen your Avatar.");
+        // Soul Wars reward shop (Nomad): spoils of war, the ectoplasmator and Lil' creator from the spoils.
+        simple(items, SpoilsOfWar.ITEM, "Spoils of war", "casket", 0x6A4AA0, 1, "I wonder what's inside?");
+        items.add("ectoplasmator", "Ectoplasmator", Kind.SIMPLE, "orb", 0x7AE07A).value(1).stack(1)
+                .examine("Carry it to gain Prayer experience from spectral creatures you kill.");
+        pet(items, SpoilsOfWar.PET, "Lil' creator", 0x40A0FF, "A tiny Avatar of Creation.");
+        // Nightmare Zone benefits (Dom Onion's Reward Shop): only usable inside a dream.
+        items.add(MinigameRules.NightmareZone.OVERLOAD, "Overload", Kind.POTION, "potion", 0x2A2A2A).value(1).stack(1)
+                .examine("4 doses of overload. Only usable in the Nightmare Zone.");
+        items.add(MinigameRules.NightmareZone.ABSORPTION, "Absorption", Kind.POTION, "potion", 0xE0E0F0).value(1).stack(1)
+                .examine("4 doses of absorption. Only usable in the Nightmare Zone.");
+        items.add(MinigameRules.NightmareZone.SUPER_RANGING, "Super ranging", Kind.POTION, "potion", 0x3AA0B0).value(1).stack(1)
+                .examine("4 doses of super ranging potion. Only usable in the Nightmare Zone.");
+        items.add(MinigameRules.NightmareZone.SUPER_MAGIC, "Super magic potion", Kind.POTION, "potion", 0x9A5A3A).value(1).stack(1)
+                .examine("4 doses of super magic potion. Only usable in the Nightmare Zone.");
+        // Dom Onion's resources: the herb box (seven herb drop table rolls) and the scroll of redirection.
+        items.add("herb_box", "Herb box", Kind.SIMPLE, "crate", 0x6A8A3A).value(1).stack(1).examine("Contains random herbs.");
+        items.add("scroll_of_redirection", "Scroll of redirection", Kind.SIMPLE, "note", 0xD8C890).value(1)
+                .examine("Redirects a teleport to house tablet.");
     }
 
     // ------------------------------------------------------------------ TzHaar
