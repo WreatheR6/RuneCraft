@@ -15,10 +15,9 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 /**
- * Equipment set effects and prayer damage bonuses that change accuracy and max hit: salve amulets vs undead,
- * Dharok's set, the berserker necklace with obsidian weapons, crystal armour with crystal bows, the twisted bow
- * and the magic damage of Mystic Lore / Mystic Might / Augury. (Void and the obsidian armour set live in the
- * minigames module, the black mask / slayer helmet in the slayer module.)
+ * Helpers for equipment set effects (salve amulets vs undead, Dharok's set, obsidian armour). The accuracy and
+ * max-hit maths of every gear effect lives in {@link com.runecraft.osrs.PlayerHitCalc} (snapshot-tested against the
+ * OSRS Wiki DPS calculator) and is applied by {@link HitCalcBridge}; this modifier no longer multiplies anything.
  */
 public final class GearEffects implements CombatHooks.PlayerAttackModifier {
     private static final double EPS = 1e-9;
@@ -67,49 +66,6 @@ public final class GearEffects implements CombatHooks.PlayerAttackModifier {
         return CombatBonuses.isCrystalBow(Inv.idOf(p.getMainHandStack()));
     }
 
-    @Override
-    public double accuracy(ServerPlayerEntity p, LivingEntity target, AttackType type) {
-        double m = salve(p, target, type);
-        if (type == AttackType.RANGED) {
-            String weapon = Inv.idOf(p.getMainHandStack());
-            if (weapon.equals("twisted_bow")) {
-                m *= CombatBonuses.twistedBowAccuracy(CombatBonuses.twistedBowMagic(targetMagic(target), 0, false)) / 100.0;
-            } else if (crystal(p)) {
-                m *= CombatBonuses.crystalAccuracy(worn(p, EquipmentSlot.HEAD).equals("crystal_helm"),
-                        worn(p, EquipmentSlot.CHEST).equals("crystal_body"), worn(p, EquipmentSlot.LEGS).equals("crystal_legs"));
-            }
-        }
-        return m;
-    }
-
-    @Override
-    public double maxHit(ServerPlayerEntity p, LivingEntity target, AttackType type) {
-        double m = salve(p, target, type);
-        if (type.isMelee()) {
-            if (dharoks(p)) {
-                int max = Math.max(1, Math.round(p.getMaxHealth()));
-                int hp = Math.max(0, (int) Math.ceil(p.getHealth()));
-                m *= CombatBonuses.dharok(max, hp);
-            }
-            if (neck(p).startsWith("berserker_necklace") && CombatBonuses.TZHAAR_MELEE.contains(Inv.idOf(p.getMainHandStack()))) {
-                m *= CombatBonuses.berserkerOnTop(obsidianArmour(p));
-            }
-        } else if (type == AttackType.RANGED) {
-            String weapon = Inv.idOf(p.getMainHandStack());
-            if (weapon.equals("twisted_bow")) {
-                m *= CombatBonuses.twistedBowDamage(CombatBonuses.twistedBowMagic(targetMagic(target), 0, false)) / 100.0;
-            } else if (crystal(p)) {
-                m *= CombatBonuses.crystalDamage(worn(p, EquipmentSlot.HEAD).equals("crystal_helm"),
-                        worn(p, EquipmentSlot.CHEST).equals("crystal_body"), worn(p, EquipmentSlot.LEGS).equals("crystal_legs"));
-            }
-        } else if (type == AttackType.MAGIC) {
-            PlayerData d = Players.data(p);
-            int pct = 0;
-            for (Prayer prayer : d.activePrayers()) {
-                pct = Math.max(pct, prayer.magicDamagePercent());
-            }
-            m *= 1.0 + pct / 100.0;
-        }
-        return m == 1.0 ? 1.0 : m + EPS;
-    }
+    // Accuracy and max-hit effects (salve, Dharok's, berserker necklace, crystal armour, twisted bow, prayer magic
+    // damage) are computed by com.runecraft.osrs.PlayerHitCalc through HitCalcBridge, in the DPS calculator's order.
 }

@@ -78,6 +78,39 @@ public enum Spell {
         return maxHit;
     }
 
+    /**
+     * Max hit when cast at a (boosted) Magic level. Since the 2024 standard spellbook rework an elemental spell hits
+     * as hard as the strongest spell of its tier (Strike, Bolt, Blast, Wave, Surge) the caster has the level for:
+     * Wind Strike at 13 Magic hits 8 like Fire Strike (DPS calculator {@code getSpellMaxHit}).
+     */
+    public int maxHitAt(int magicLevel) {
+        String element = element();
+        if (kind != Kind.COMBAT || element == null) {
+            return maxHit;
+        }
+        String tier = displayName.substring(displayName.indexOf(' '));
+        int best = 0;
+        for (Spell s : values()) {
+            if (s.kind == Kind.COMBAT && s.element() != null && s.displayName.endsWith(tier) && s.level <= magicLevel) {
+                best = Math.max(best, s.maxHit);
+            }
+        }
+        return best > 0 ? best : values()[ordinal() - (ordinal() % 4)].maxHit;
+    }
+
+    /** "air", "water", "earth" or "fire" for an elemental combat spell, else null. */
+    public String element() {
+        if (kind != Kind.COMBAT) {
+            return null;
+        }
+        String first = displayName.substring(0, displayName.indexOf(' ')).toLowerCase(java.util.Locale.ROOT);
+        return switch (first) {
+            case "wind" -> "air";
+            case "water", "earth", "fire" -> first;
+            default -> null;
+        };
+    }
+
     public Map<Rune, Integer> runes() {
         return runes;
     }

@@ -378,10 +378,12 @@ public final class SpellService {
                 acc *= 1.25;
                 dmgMult *= 1.25;
             }
-            long att = (long) (SysCombat.magicAttackRoll(p) * acc * CombatHandler.hookAccuracy(p, t, AttackType.MAGIC));
+            // Magic level, prayers, magic damage and gear effects (salve, slayer helmet, void, smoke staff...): PlayerHitCalc.
+            com.runecraft.osrs.PlayerHitCalc.Input in = com.runecraft.combat.HitCalcBridge.input(p, t, AttackType.MAGIC, null, 0);
+            com.runecraft.combat.HitCalcBridge.spell(in, baseMax, s.book() == Spellbooks.Book.STANDARD);
+            long att = (long) (com.runecraft.combat.HitCalcBridge.attackRoll(p, t, in) * acc);
             long def = SysCombat.baseDefenceRoll(t, AttackType.MAGIC);
-            int max = (int) Math.floor(CombatFormulas.magicMaxHit(baseMax, SysCombat.coreStats(p).magicDamagePercent()) * dmgMult
-                    * CombatHandler.hookMaxHit(p, t, AttackType.MAGIC));
+            int max = (int) Math.floor(com.runecraft.combat.HitCalcBridge.maxHit(p, t, in) * dmgMult);
             boolean hit = p.getRandom().nextDouble() < Chance.hitChance(att, def);
             if (!hit) {
                 world.spawnParticles(ParticleTypes.CLOUD, t.getX(), t.getY() + 1, t.getZ(), 8, 0.3, 0.3, 0.3, 0.02);

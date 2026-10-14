@@ -88,38 +88,43 @@ public final class SysCombat {
         return Equipment.total(p, skills(p));
     }
 
-    // ---------------- Attack rolls (without hooks) ----------------
+    /** Armour, weapon and shield plus the extra slots: the totals every attack roll and max hit uses. */
+    public static EquipmentStats allStats(ServerPlayerEntity p) {
+        return coreStats(p).plus(wornStats(p));
+    }
+
+    // ---------------- Attack rolls (without hooks; gear effects are in PlayerHitCalc) ----------------
 
     public static long meleeAttackRoll(ServerPlayerEntity p, AttackType type) {
         PlayerData d = Players.data(p);
         CombatStyle style = d.style().forMelee();
         int eff = CombatFormulas.effectiveAttack(d.skills().currentLevel(Skill.ATTACK), PrayerService.attack(d), style);
-        return CombatFormulas.attackRoll(eff, coreStats(p).attack(type));
+        return CombatFormulas.attackRoll(eff, allStats(p).attack(type));
     }
 
     public static int meleeMaxHit(ServerPlayerEntity p) {
         PlayerData d = Players.data(p);
         CombatStyle style = d.style().forMelee();
         int eff = CombatFormulas.effectiveStrength(d.skills().currentLevel(Skill.STRENGTH), PrayerService.strength(d), style);
-        return CombatFormulas.meleeMaxHit(eff, coreStats(p).meleeStrength());
+        return CombatFormulas.meleeMaxHit(eff, allStats(p).meleeStrength());
     }
 
     public static long rangedAttackRoll(ServerPlayerEntity p) {
         PlayerData d = Players.data(p);
         int eff = CombatFormulas.effectiveRanged(d.skills().currentLevel(Skill.RANGED), PrayerService.rangedAttack(d), d.style().forRanged());
-        return CombatFormulas.attackRoll(eff, coreStats(p).rangedAttack());
+        return CombatFormulas.attackRoll(eff, allStats(p).rangedAttack());
     }
 
     public static int rangedMaxHit(ServerPlayerEntity p, int ammoStrength) {
         PlayerData d = Players.data(p);
         int eff = CombatFormulas.effectiveRanged(d.skills().currentLevel(Skill.RANGED), PrayerService.rangedStrength(d), d.style().forRanged());
-        return CombatFormulas.rangedMaxHit(eff, ammoStrength + coreStats(p).rangedStrength());
+        return CombatFormulas.rangedMaxHit(eff, ammoStrength + allStats(p).rangedStrength());
     }
 
     public static long magicAttackRoll(ServerPlayerEntity p) {
         PlayerData d = Players.data(p);
         int eff = CombatFormulas.effectiveMagic(d.skills().currentLevel(Skill.MAGIC), PrayerService.magic(d));
-        return CombatFormulas.attackRoll(eff, coreStats(p).magicAttack());
+        return CombatFormulas.attackRoll(eff, allStats(p).magicAttack());
     }
 
     /** Ranged strength of the first arrow in the inventory (what a bow would fire). */

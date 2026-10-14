@@ -164,17 +164,15 @@ public final class MagicService {
         trail((ServerWorld) player.getWorld(), eye, target.getPos().add(0, target.getHeight() / 2, 0), spell);
         XpService.addTenths(player, Skill.MAGIC, spell.xpTenths());
         if (!Gielinor.is(player)) {
-            target.damage(player.getDamageSources().indirectMagic(player, player), spell.maxHit() / 2.0f + 1);
+            target.damage(player.getDamageSources().indirectMagic(player, player), spell.maxHitAt(data.skills().currentLevel(Skill.MAGIC)) / 2.0f + 1);
             return;
         }
-        SkillSet skills = data.skills();
-        EquipmentStats eq = Equipment.total(player, skills);
-        int eff = CombatFormulas.effectiveMagic(skills.currentLevel(Skill.MAGIC), PrayerService.magic(data));
-        long attackRoll = (long) (CombatFormulas.attackRoll(eff, eq.magicAttack())
-                * CombatHandler.hookAccuracy(player, target, AttackType.MAGIC));
+        // Level-scaled spell max hit, magic damage, prayers and gear effects: PlayerHitCalc.
+        com.runecraft.osrs.PlayerHitCalc.Input in = HitCalcBridge.input(player, target, AttackType.MAGIC, null, 0);
+        HitCalcBridge.spell(in, spell);
+        long attackRoll = HitCalcBridge.attackRoll(player, target, in);
         long defenceRoll = CombatHandler.defenceRoll(target, AttackType.MAGIC);
-        int maxHit = (int) Math.floor(CombatFormulas.magicMaxHit(spell.maxHit(), eq.magicDamagePercent())
-                * CombatHandler.hookMaxHit(player, target, AttackType.MAGIC));
+        int maxHit = HitCalcBridge.maxHit(player, target, in);
         boolean splash = player.getRandom().nextDouble() >= com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);
         int damage = splash ? 0 : player.getRandom().nextInt(Math.max(0, maxHit) + 1);
         damage = CombatHandler.hookAfterRoll(player, target, AttackType.MAGIC, damage);
@@ -232,19 +230,11 @@ public final class MagicService {
         data.lastAttackTick = now;
         player.swingHand(Hand.MAIN_HAND, true);
         trail((ServerWorld) player.getWorld(), eye, target.getPos().add(0, target.getHeight() / 2, 0), Spell.WATER_SURGE);
-        int magic = skills.currentLevel(Skill.MAGIC);
-        EquipmentStats eq = Equipment.total(player, skills);
-        int magicAttack = eq.magicAttack();
-        int damagePercent = eq.magicDamagePercent();
-        if (weaponId.equals("tumekens_shadow")) {
-            magicAttack *= CombatBonuses.shadowMultiplier(false);
-            damagePercent = CombatBonuses.shadowMagicDamage(damagePercent, false);
-        }
-        int eff = CombatFormulas.effectiveMagic(magic, PrayerService.magic(data));
-        long attackRoll = (long) (CombatFormulas.attackRoll(eff, magicAttack) * CombatHandler.hookAccuracy(player, target, AttackType.MAGIC));
+        // Built-in spell max hit, Tumeken's shadow's x3, accurate +2 and gear effects: PlayerHitCalc.
+        com.runecraft.osrs.PlayerHitCalc.Input in = HitCalcBridge.input(player, target, AttackType.MAGIC, null, 0);
+        long attackRoll = HitCalcBridge.attackRoll(player, target, in);
         long defenceRoll = CombatHandler.defenceRoll(target, AttackType.MAGIC);
-        int base = CombatBonuses.poweredStaffMaxHit(weaponId, magic);
-        int maxHit = (int) Math.floor(CombatFormulas.magicMaxHit(base, damagePercent) * CombatHandler.hookMaxHit(player, target, AttackType.MAGIC));
+        int maxHit = HitCalcBridge.maxHit(player, target, in);
         boolean splash = player.getRandom().nextDouble() >= com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);
         int damage = splash ? 0 : player.getRandom().nextInt(Math.max(0, maxHit) + 1);
         damage = CombatHandler.hookAfterRoll(player, target, AttackType.MAGIC, damage);

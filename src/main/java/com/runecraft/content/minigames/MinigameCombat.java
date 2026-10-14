@@ -91,33 +91,12 @@ public final class MinigameCombat {
 
     static void register() {
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
-            @Override
-            public double accuracy(ServerPlayerEntity player, LivingEntity target, AttackType type) {
-                double m = 1.0;
-                int style = voidStyle(player);
-                if (style >= 0 && style == styleIndex(type)) {
-                    m *= MinigameRules.PestControl.voidAccuracy(style);
-                }
-                if (obsidianEffect(player, type)) {
-                    m *= 1.10;
-                }
-                return m;
-            }
-
+            // Void knight equipment, the obsidian armour set and the tomes are part of com.runecraft.osrs.PlayerHitCalc
+            // (void: effective level x1.1, mage x1.45 accuracy; obsidian: +10% of the base roll / max hit; tome of
+            // fire / water: x1.1 for matching spells), applied through combat.HitCalcBridge.
             @Override
             public double maxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
                 double m = 1.0;
-                int style = voidStyle(player);
-                if (style >= 0 && style == styleIndex(type)) {
-                    m *= MinigameRules.PestControl.voidDamage(style, eliteVoid(player));
-                }
-                if (obsidianEffect(player, type)) {
-                    m *= 1.10;
-                }
-                String off = Inv.idOf(player.getOffHandStack());
-                if (type == AttackType.MAGIC && (off.equals("tome_of_fire") || off.equals("tome_of_water"))) {
-                    m *= 1.10;
-                }
                 MinigameSession s = MinigameManager.session(player);
                 if (s != null) {
                     m *= s.damageMultiplier(player, target, type);
