@@ -50,7 +50,7 @@ final class QuestItemsData {
         b.items(s -> s.add("avas_accumulator", "Ava's accumulator", Kind.SIMPLE, "cape", 0x8A6A3A).value(999).stack(1)
                 .examine("A superbly animated chicken that collects ammunition. Right-click to wear."));
         b.gear("avas_attractor", QuestBook.GearSlot.CAPE, new EquipmentStats(0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0), null);
-        b.gear("avas_accumulator", QuestBook.GearSlot.CAPE, new EquipmentStats(0, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 0, 0), null);
+        b.gear("avas_accumulator", QuestBook.GearSlot.CAPE, new EquipmentStats(0, 0, 0, 0, 4, 0, 1, 0, 4, 0, 0, 0, 0, 0), null);
         // Cape of Legends (Legends' Quest): +7 all defences.
         b.items(s -> s.add("cape_of_legends", "Cape of legends", Kind.SIMPLE, "cape", 0xE8E8E8).value(450).stack(1)
                 .examine("The cape worn by members of the Legends' Guild. Right-click to wear."));

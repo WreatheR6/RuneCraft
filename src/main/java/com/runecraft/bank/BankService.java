@@ -269,15 +269,17 @@ public final class BankService {
         }
         ItemStack target = inv.main.get(slot);
         String[] k = keyOf(target);
-        // Every stack of the same item (and its notes) counts towards the quantity, as in OSRS.
+        boolean noted = Notes.isNote(target);
+        // Every stack of the same item counts towards the quantity, as in OSRS; notes and unnoted items are
+        // different items there, so only stacks of the clicked kind count.
         long available = 0;
         for (ItemStack s : inv.main) {
-            if (!s.isEmpty() && sameBankItem(s, k)) {
+            if (!s.isEmpty() && sameBankItem(s, k) && Notes.isNote(s) == noted) {
                 available += s.getCount();
             }
         }
         long n = BankQuantity.amount(mode, x, available);
-        depositMatching(player, bank, k, n, tab, slot);
+        depositMatching(player, bank, k, n, tab, slot, noted);
     }
 
     private static boolean sameBankItem(ItemStack s, String[] k) {
@@ -286,7 +288,8 @@ public final class BankService {
     }
 
     /** Moves {@code n} matching items (clicked slot first) into the bank. */
-    private static void depositMatching(ServerPlayerEntity player, BankModel bank, String[] k, long n, int tab, int first) {
+    private static void depositMatching(ServerPlayerEntity player, BankModel bank, String[] k, long n, int tab, int first,
+                                        boolean noted) {
         if (n <= 0) {
             return;
         }
@@ -303,7 +306,7 @@ public final class BankService {
                     continue;
                 }
                 ItemStack s = inv.main.get(i);
-                if (!s.isEmpty() && sameBankItem(s, k)) {
+                if (!s.isEmpty() && sameBankItem(s, k) && Notes.isNote(s) == noted) {
                     int take = (int) Math.min(left, s.getCount());
                     s.decrement(take);
                     left -= take;

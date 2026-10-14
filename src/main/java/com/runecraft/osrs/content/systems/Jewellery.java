@@ -157,11 +157,8 @@ public final class Jewellery {
         wornExternal("fire_cape", Slot.CAPE, s(1, 1, 1, 1, 1, 11, 11, 11, 11, 11, 4, 0, 0, 2));
         wornExternal("infernal_cape", Slot.CAPE, s(4, 4, 4, 1, 1, 12, 12, 12, 12, 12, 8, 0, 0, 2));
         wornExternal("champions_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
-        wornExternal("ava_s_accumulator", Slot.CAPE, s(0, 0, 0, 0, 4, 0, 1, 0, 4, 0, 0, 0, 0, 0));
         wornExternal("avas_accumulator", Slot.CAPE, s(0, 0, 0, 0, 4, 0, 1, 0, 4, 0, 0, 0, 0, 0));
-        wornExternal("avas_assembler", Slot.CAPE, s(0, 0, 0, 0, 8, 1, 1, 1, 8, 2, 0, 2, 0, 0));
         wornExternal("barrows_gloves", Slot.HANDS, s(12, 12, 12, 6, 12, 12, 12, 12, 6, 12, 12, 0, 0, 0));
-        wornExternal("dragon_gloves", Slot.HANDS, s(9, 9, 9, 5, 9, 9, 9, 9, 5, 9, 9, 0, 0, 0));
         wornExternal("ferocious_gloves", Slot.HANDS, s(16, 16, 16, -16, -16, 0, 0, 0, 0, 0, 14, 0, 0, 0));
         wornExternal("occult_necklace", Slot.NECK, s(0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0));
         // Items defined in osrs/content/CommonEquipment (the salve amulets below are too).
@@ -197,7 +194,6 @@ public final class Jewellery {
         wornExternal("infinity_gloves", Slot.HANDS, s(0, 0, 0, 5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0));
         wornExternal("soul_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8));
         wornExternal("brimstone_ring", Slot.RING, s(4, 4, 4, 6, 4, 0, 0, 0, 0, 0, 4, 0, 0, 0));
-        wornExternal("legends_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 0, 0, 0, 0));
         wornExternal("obsidian_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 0, 0, 0, 0));
         wornExternal("graceful_cape", Slot.CAPE, NONE);   // item defined by the skilling module
         wornExternal("graceful_gloves", Slot.HANDS, NONE); // item defined by the skilling module
