@@ -649,7 +649,6 @@
     "sparkle"
   ],
   "drake": [
-    "sores",
     "head"
   ],
   "draugen": [
@@ -1217,22 +1216,21 @@
     "mantle_r"
   ],
   "jaltok_jad": [
-    "body",
-    "chest",
     "shoulder_l",
     "shoulder_r",
-    "neck",
-    "mane",
+    "mane_tip0",
+    "mane_tip1",
+    "mane_tip2",
+    "spike_tip_l",
+    "spike_tip_r",
     "head",
     "jaw",
-    "crest",
-    "leg_f_l",
-    "leg_f_r",
-    "leg_b_l",
-    "leg_b_r",
-    "shin_b_l",
-    "shin_b_r",
-    "tail"
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r",
+    "leg_l",
+    "leg_r"
   ],
   "jelly": [
     "dome"
@@ -2397,24 +2395,21 @@
     "forearm_r"
   ],
   "tztok_jad": [
-    "hips",
-    "torso",
-    "chest",
-    "belly",
     "shoulder_l",
     "shoulder_r",
+    "mane_tip0",
+    "mane_tip1",
+    "mane_tip2",
+    "spike_tip_l",
+    "spike_tip_r",
     "head",
     "jaw",
     "arm_l",
     "arm_r",
     "forearm_l",
     "forearm_r",
-    "forearm_plate_l",
-    "forearm_plate_r",
     "leg_l",
-    "leg_r",
-    "shin_l",
-    "shin_r"
+    "leg_r"
   ],
   "ulfric": [
     "head",
