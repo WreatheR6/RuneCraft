@@ -188,12 +188,23 @@ Recurring conflict spots:
   - Combat Achievements 468 → 510 tracked (`Mechanics.attackListener`, named strikes, tiles walked, gear weight/value/tier via `EquipmentWeights`); five "no damage from X" tasks that always passed now can fail; dragon hunter crossbow (b)/(t).
   - CI: server 2,811 / 1 (an NMZ waking check that can't work for the fake player; now deferred to the real-player run), client 275 / 0.
 
+- **Session 2, round 19: the Gauntlet, the Fortis Colosseum, the multicannon, common-creature models:**
+  - The Gauntlet and Corrupted Gauntlet (`Minigame.GAUNTLET`): per-run 7×7 maze, prep timer, gathering, demi-bosses, singing bowl (post-2026 shard costs), egniol, armour tier damage table, Hunllef drop fixes and the wiki chest tables (`gauntlet.tsv`, `GauntletTest`); items stashed crash-safe on entry.
+  - The Fortis Colosseum (`Minigame.FORTIS_COLOSSEUM`): 12 wiki waves with reinforcements, nine wave monsters from dps-calc, all 14 modifiers (several simplified), Glory and ranks, per-wave wiki chest tables (`ColosseumRewards`), Minimus quiver trade, Sol Heredit only as wave 12; snapshots `colosseum_*.tsv`.
+  - Dwarf multicannon (`Multicannon`, `CannonService`): set-up, loading (30/35/45/60 capacity by CA tier), 8-direction rotation matching RuneLite's double-hit tiles, accuracy from the player's attack roll, 25/35-minute decay, Nulodion, no-cannon zones, granite cannonballs; ecumenical key 1/60 → 1/40 by CA tier, Wilderness GWD only, cap 3; cannonball drops.
+  - Re-sculpted TzHaar-Ket, gargoyle, bloodveld, abyssal demon, cave kraken, smoke devil, pyrefiend, ghost (`bestiary/Common1.java`); 9 attempts rejected; sheet `docs/previews/models/round19_sheet.png`.
+  - Combat Achievements 510 → 529 tracked. MinigameSession gains `onClose()`.
+  - CI on the merge: server 2,857 / 3, client 277 / 3 (Gauntlet stash missed players outside the player list, Hunllef and Colosseum wave monsters invisible to box queries in a not-yet-ticking instance chunk); fixed by tracking spawned mobs directly and force-loading the Colosseum arena.
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
-  - 136 tasks untracked: Gauntlet and Colosseum (no minigame), most ToB/ToA/CoX room and puzzle tasks, unmodelled mechanics (Dusk prison/blind, Tempoross fires, growthlings, sleepwalkers, Yama contracts/void flares, Vengeance kills, F2P worlds, ratbane weapons, Hueycoatl armour). ~130 items have no weight (approx 0).
-  - Rewards not wired (feature missing): cannon capacity (no multicannon), instance fees, cosmetic slayer helms, extra Jad/Zuk slayer kills (no Jad/Zuk tasks); ecumenical key rate (our key rate is a flat approx 1/250).
+  - 117 tasks untracked: remaining Gauntlet/Colosseum tasks (Showboating, prep details), most ToB/ToA/CoX room and puzzle tasks, unmodelled mechanics (Dusk prison/blind, Tempoross fires, growthlings, sleepwalkers, Yama contracts/void flares, Vengeance kills, F2P worlds, ratbane weapons, Hueycoatl armour). ~130 items have no weight (approx 0).
+  - Rewards not wired (feature missing): instance fees, cosmetic slayer helms, extra Jad/Zuk slayer kills (no Jad/Zuk tasks).
 - **Minigames:**
+  - Gauntlet: demi-boss count and room contents approx, no crystal tools/pestle/grym steps, bows have free arrows, no escape crystal, lobby chest not built, old `the_gauntlet` summoning-stone arenas still exist.
+  - Colosseum: Myopia/Relentless/Red Flag/Mantimayhem III simplified, several damage values guessed, no lobby/bank/Glory unlocks, no Varlamore tokens, Sol's gladiator wall missing.
+  - Multicannon: range 8 tiles and assembly time guessed, no ornament/gold/royal variants, cannon-immune monsters not modelled, parts not sold singly.
   - Emir's Arena: ranked duels use own gear (no account builds), no fun weapons, blighted surge sack inert, no tournaments.
   - LMS: competitive starts at 4 players, no High Stakes, no per-build prayer limits, `lms_*` copies lack specs (map `lms_` → base in `SpecialAttacks.of`).
   - Ket-Rak healer counts guessed; JalRek-Jad metamorphosis is only a flag.
@@ -219,7 +230,7 @@ Recurring conflict spots:
   - Remaining spawn stand-ins: Braindeath (off-map), Mudskipper Point (cache mudskippers are underground at 2950,9525), Jatizso ice trolls (cache tiles 2387-2418, 3853-3869 lie north of the traced coast), Fortis guards (snapshot has no Varlamore).
   - Zeah multicombat polygons are from 2018; Varlamore has none.
   - Overworld implings don't roam.
-- **Models:** remaining humanoid fallbacks (GWD orks/vampires/knights, Bandos/Sara/Zammy spiritual creatures, bloodveld/pyrefiend GWD variants, seasonal/titan elementals, quest giant lobster). Old single-model previews (`bst_*`, `slm_*`) were rendered from below.
+- **Models:** most common creatures are still blocky approximations (round 19 rejected TzHaar Xil/Mej/Hur, dagannoth, hellhound, nechryael, dust devil, aberrant spectre re-sculpts; greater/black demons untried); TzHaar-Ket now differs from the other TzHaar.
 - **Bosses:**
   - Doom: grubs, shield/burrow phases, melee punish missing (CAs 613–615, 620, 624); delve runs and held loot are in memory only. Awakened mechanics are guesses; DT2 tablets/quartzes missing; normal Vardorvis stat row has Str/Def 1.
   - Yama, Doom, Maggot King and Royal Titans lairs are approx (no cache surface tile).
