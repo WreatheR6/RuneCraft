@@ -203,6 +203,12 @@ Recurring conflict spots:
   - World: Troll Stronghold interior (`dng_troll_stronghold`, 3 cache planes), Kruk's Dungeon 244 → 367 monkeys (all cache clusters), Shaman Caves death wings (Karamja hard diary task now real), Clock Tower dungeon rats, Fremennik Isles snowfields and ice trolls at cache tiles, swamp crabs; 67 dungeons.
   - Self-test fixes after round 19: Gauntlet test clears a leftover fake-player stash; BA gamble test counts a coins prize. Never chain a commit after a `timeout`-limited verify: a killed verify leaves half-regenerated textures (happened in `bf3e9ea6`, restored in `32c4db9e`).
 
+- **Session 2, round 21: shallow quests, raids part 2, skilling gaps, models part 3:**
+  - Quests: 22 more quests with real objectives (Merlin's Crystal, Holy Grail, Plague City, Biohazard, The Dig Site, Recruitment Drive with Sir Leye, Children of the Sun, Song of the Elves start fixed to Edmond, Prince Ali Rescue, Underground Pass, Learning the Ropes, Fairytale I/II, Horror from the Deep, Making History, Dream Mentor, Creature of Fenkenstrain, Ghosts Ahoy, In Search of the Myreque, Fremennik Isles, The Golem, Monkey Madness I hangar); shallow 63 → 41, talk-only 0.
+  - Raids: ToA raid-level accuracy/defence scaling ((250+L)/250), all boss invocations (Akkha specials, Ba-Ba, Kephri, Wardens, Overly Draining), Walk the Path's 4 random level-ups; ToB Maiden, Bloat, Sotetseg death ball, Xarpus, Verzik P1 pillar-blocked blast; CAs 532 → 539 tracked; `RaidInvocationsTest`. The server self-test slowdown (189 s → 314 s) is general, not raids.
+  - Skilling: Ruins of Camdozaal as a real cave (`CamdozaalRuins`, fishing/preparation/altar, golems, barronite mace at the Sacred Forge); shooting stars persisted in `SkillingState`; seed pack snapshot (`seed_pack.tsv`); 68 dungeons.
+  - Models: TzTok-Jad re-sculpted after the concept sheet and JalTok-Jad on the same body (`Flagships4`), Giant Mole, semi-upright wingless drake (`Common3`); Hespori rejected; `round21_sheet.png`.
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
@@ -227,7 +233,7 @@ Recurring conflict spots:
   - Volcanic Mine: heat-proof vessel, gas holes, meteors, multiple boulders; lava beast spawn rate guessed.
   - Dungeon herb, seed and Varlamore crops; coral.
   - Seed pack contents are partly guessed.
-- **Quests:** 60 shallow and 3 talk-only quests (e.g. Merlin's Crystal, Holy Grail, Plague City, Biohazard, Dig Site, Underground Pass, Song of the Elves, most Varlamore quests, Learning the Ropes, Recruitment Drive, Children of the Sun); hand-scripted quest NPCs (Cook, Father Urhney, Dr Harlow…) stand near town centres; Wizards' Tower basement and Cauldron of Thunder are stand-ins; Recipe for Disaster and Desert Treasure I not deepened.
+- **Quests:** 41 shallow quests (King's Ransom, The Giant Dwarf, One Small Favour, Tears of Guthix, A Tail of Two Cats, Contact!, most Varlamore quests…); Recruitment Drive offers all 7 rooms; hand-scripted quest NPCs (Cook, Father Urhney, Dr Harlow…) stand near town centres; Wizards' Tower basement and Cauldron of Thunder are stand-ins; Recipe for Disaster and Desert Treasure I not deepened.
 - **Raids:** invocations missing (Overly Draining, Keep Back, Double Trouble, Feeling Special, Jungle Japes, Mind the Gap, Gotta Have Faith, Shaking Things Up, Warden invocations, Lively Larvae, Blowing Mud, More Overlords, Aerial Assault); ToA raid level doesn't scale creature defence/accuracy (`RaidScaling.toaAccuracy` unused); Walk the Path random level-ups; Vasa teleport damage; most ToB/ToA perfection CAs.
 - **Diaries:** 28 tasks approximated: Arzinian mine, Skavid caves, swordchick/deathwing, totem pole, emotes, and others. Kingdom/TBW/BA/museum details are approximate (see round 13). Earlier notes: 75: shadow hounds and locust riders need the Shadow Dungeon and Contact! dungeon; swordchick/deathwing have no cache spawns; Arceuus lectern tablets; Port Phasmatys has no range; NPC-talk and minigame-internal tasks.
 - **Thieving and Agility:** Dorgesh-Kaan course folds Turgall's parts/spring device into the lap, no grapple route, no light-source check, fail chance 0 at 99; the Dark Chest stays on the surface (Crumbling Tower basement not built).
