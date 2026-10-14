@@ -310,8 +310,19 @@ final class KandarinNorth {
     static StructureDef rellekkaLonghall() {
         KandarinKit k = new KandarinKit("rellekka_longhall", "Rellekka Longhall").replaces("rellekka_longhall_basement");
         Pal p = FREM_DARK.roof("minecraft:dark_oak");
-        Bld h = k.house(2648, 3670, 2662, 3684, 2, p, 's', WIDE_DOOR | NO_LADDER);
+        // OSRS map (mejrs layers_osrs): a long narrow hall 2655-2662 x 3665-3685 with its door south at
+        // 2658-2659, the chieftain's rooms partitioned off at the north end (3682-3685) and a small annex
+        // east of them (2663-2666 x 3682-3685) with its own door east at 3683
+        Bld h = k.house(2655, 3665, 2662, 3685, 2, p, 's', WIDE_DOOR | NO_LADDER);
         k.clear(h.x1() + 1, 3, h.z1() + 1, h.x2() - 1, 3, h.z2() - 1);
+        int pz = KandarinKit.Z(3682) + 1;
+        k.fill(h.x1() + 1, 0, pz, h.x2() - 1, 6, pz, "minecraft:spruce_planks");
+        k.clear(h.x1() + 2, 0, pz, h.x1() + 3, 1, pz);
+        k.house(2663, 3682, 2666, 3685, 1, FREM_DARK.roof("minecraft:dark_oak"), 'e', NO_LADDER);
+        k.clear(h.x2(), 0, KandarinKit.Z(3683), KandarinKit.X(2663), 1, KandarinKit.Z(3683));
+        k.bed(h.x2() - 2, 0, h.z1() + 2, "red");
+        k.set(h.x2() - 1, 0, h.z1() + 1, "minecraft:chest[facing=south]");
+        int tz = pz + 1;
         // pillars, shields, tables, fire and the chieftain's throne
         for (int z = h.z1() + 4; z <= h.z2() - 4; z += 6) {
             k.fill(h.x1() + 4, 0, z, h.x1() + 4, 6, z, "minecraft:stripped_spruce_log");
@@ -321,15 +332,15 @@ final class KandarinNorth {
             k.set(h.x1() + 1, 2, z, "minecraft:red_wall_banner[facing=east]");
             k.set(h.x2() - 1, 2, z, "minecraft:yellow_wall_banner[facing=west]");
         }
-        k.longTable(h.x1() + 6, h.x1() + 7, 0, h.cz(), "spruce");
+        k.longTable(h.x1() + 6, h.x1() + 9, 0, h.cz() + 6, "spruce");
         k.fill(h.x1() + 2, 0, h.z1() + 6, h.x1() + 2, 0, h.z2() - 4, "minecraft:spruce_slab[type=top]");
         k.fill(h.x2() - 2, 0, h.z1() + 6, h.x2() - 2, 0, h.z2() - 4, "minecraft:spruce_slab[type=top]");
         k.fill(h.cx() - 1, -1, h.cz() - 1, h.cx() + 1, -1, h.cz() + 1, COBBLE);
         k.set(h.cx(), 0, h.cz(), "minecraft:campfire[lit=true]");
-        k.fill(h.cx() - 2, 0, h.z1() + 1, h.cx() + 2, 0, h.z1() + 2, "minecraft:spruce_planks");
-        k.set(h.cx(), 1, h.z1() + 1, "minecraft:dark_oak_stairs[facing=north]");
-        k.set(h.cx() - 1, 1, h.z1() + 1, "minecraft:white_wool");
-        k.set(h.cx() + 1, 1, h.z1() + 1, "minecraft:white_wool");
+        k.fill(h.cx() - 2, 0, tz, h.cx() + 2, 0, tz + 1, "minecraft:spruce_planks");
+        k.set(h.cx(), 1, tz, "minecraft:dark_oak_stairs[facing=north]");
+        k.set(h.cx() - 1, 1, tz, "minecraft:white_wool");
+        k.set(h.cx() + 1, 1, tz, "minecraft:white_wool");
         k.set(h.cx(), 6, h.cz() + 4, "minecraft:lantern[hanging=true]");
         k.set(h.cx(), 6, h.cz() - 4, "minecraft:lantern[hanging=true]");
         // dragon-headed gable posts

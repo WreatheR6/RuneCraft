@@ -143,19 +143,24 @@ final class AsgarniaKaramja {
         k.flatten(2738, 3140, 2812, 3236);
         k.harbour(2746, 3237, 2802, 3254);
         k.path(2756, 3168, 2768, 3180, mc("coarse_dirt"), mc("cobblestone"));
-        k.path(2762, 3140, 2764, 3236, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2762, 3140, 2764, 3186, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2762, 3200, 2764, 3236, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2765, 3184, 2786, 3186, mc("dirt_path"), mc("coarse_dirt"));
         k.path(2738, 3172, 2812, 3174, mc("dirt_path"), mc("coarse_dirt"));
         k.path(2794, 3161, 2795, 3171, mc("dirt_path"), mc("coarse_dirt"));
         k.path(2769, 3183, 2769, 3185, mc("dirt_path"), mc("coarse_dirt"));
         k.path(2748, 3167, 2749, 3171, mc("dirt_path"), mc("coarse_dirt"));
-        // the Shrimp and Parrot
-        AsgarniaRoom sp = k.house(KAR2, 2770, 3180, 2779, 3188, 1, "west", PITCHED);
+        // Footprints from the OSRS map (mejrs layers_osrs): the Shrimp and Parrot is the big hall 2787-2800 x
+        // 3180-3193 (door south at 2794), the Dead Man's Chest the long building 2791-2799 x 3153-3169 (door
+        // east at 3167), and the block of houses north-west of the square 2759-2782 x 3187-3199 (which is
+        // which in OSRS is approx)
+        AsgarniaRoom sp = k.house(KAR2, 2787, 3180, 2800, 3193, 1, "south", PITCHED);
         sp.inn("jungle");
         sp.set(1, sp.depth() - 1, 0, mc("smoker[facing=west]"));
         k.s(sp.x1 - 3, 3, (sp.z1 + sp.z2) / 2 - 2, mc("jungle_fence"));
         k.s(sp.x1 - 3, 2, (sp.z1 + sp.z2) / 2 - 2, mc("red_wool"));
         // the Dead Man's Chest pub
-        AsgarniaRoom dm = k.house(KAR, 2790, 3152, 2799, 3160, 2, "north", PITCHED);
+        AsgarniaRoom dm = k.house(KAR, 2791, 3153, 2799, 3169, 2, "east", PITCHED);
         dm.inn("dark_oak");
         AsgarniaRoom up = dm.level(1);
         up.bed(up.len() - 1, 0, "black");
@@ -166,9 +171,12 @@ final class AsgarniaKaramja {
         gs.shop(rc("general_store"), mc("jungle_slab[type=top]"), mc("barrel[facing=up]"), mc("chest[facing=north]"),
                 mc("hay_block"));
         k.house(KAR, 2745, 3190, 2751, 3196, 1, "east", PITCHED).home("jungle", "orange");
-        k.house(KAR2, 2754, 3196, 2760, 3202, 1, "east", PITCHED).home("jungle", "yellow");
-        k.house(KAR, 2780, 3196, 2786, 3202, 2, "west", PITCHED).home("jungle", "lime");
-        k.house(KAR2, 2785, 3164, 2791, 3170, 1, "north", PITCHED).home("jungle", "red");
+        k.house(KAR2, 2759, 3187, 2765, 3199, 2, "south", PITCHED).home("jungle", "yellow");
+        k.house(KAR, 2766, 3187, 2777, 3195, 1, "south", PITCHED).home("jungle", "lime");
+        k.house(KAR2, 2766, 3196, 2777, 3199, 1, "north", PITCHED).home("jungle", "red");
+        k.house(KAR, 2778, 3187, 2782, 3199, 1, "east", PITCHED).home("jungle", "purple");
+        k.house(KAR2, 2789, 3194, 2797, 3199, 1, "north", PITCHED).home("jungle", "white");
+        k.house(KAR, 2787, 3173, 2792, 3176, 1, "north", PITCHED).home("jungle", "blue");
         k.house(KAR, 2766, 3150, 2772, 3156, 1, "north", PITCHED).home("jungle", "green");
         k.house(KAR2, 2742, 3176, 2748, 3182, 1, "east", PITCHED).home("jungle", "cyan");
         k.house(KAR, 2776, 3216, 2782, 3222, 1, "west", PITCHED).home("jungle", "brown");
@@ -176,7 +184,7 @@ final class AsgarniaKaramja {
         roundHut(k, bx(2752), bz(3150), 4, mc("bamboo_block[axis=y]"), mc("hay_block"), "east");
         roundHut(k, bx(2802), bz(3150), 4, mc("bamboo_block[axis=y]"), mc("hay_block"), "west");
         palms(k, new int[][]{{2742, 3144}, {2758, 3146}, {2776, 3144}, {2806, 3146}, {2740, 3204}, {2770, 3206},
-                {2790, 3208}, {2742, 3230}, {2796, 3228}, {2806, 3170}, {2752, 3186}, {2774, 3192}, {2788, 3186}});
+                {2790, 3208}, {2742, 3230}, {2796, 3228}, {2806, 3170}, {2752, 3186}, {2774, 3202}, {2784, 3178}});
         return k.build();
     }
 

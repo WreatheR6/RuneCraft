@@ -45,38 +45,111 @@ final class KandarinSouth {
         k.road(2613, 3091, 2614, 3092, COBBLE, null);
         k.road(2576, 3109, 2577, 3112, PATH, null);
 
-        // Bank
-        Bld bank = k.house(2611, 3085, 2617, 3090, 1, YANILLE.roof("minecraft:spruce"), 'n', NO_LADDER | WIDE_DOOR);
-        int bz = bank.z2() - 2;
-        k.fill(bank.x1() + 1, 0, bz, bank.x2() - 1, 0, bz, "minecraft:spruce_slab[type=top]");
-        for (int x = bank.x1() + 2; x <= bank.x2() - 2; x += 3) {
-            k.set(x, 0, bz, BANK);
+        // Bank (OSRS map: 2609-2616 x 3088-3097, chequered floor, the counter along the east side 2615-2616;
+        // door west at 3091-3092 approx)
+        Bld bank = k.house(2609, 3088, 2616, 3097, 1, YANILLE.roof("minecraft:spruce").floor(ANDESITE), 'w', NO_LADDER | WIDE_DOOR);
+        for (int tx = 2610; tx <= 2614; tx++) {
+            for (int ty = 3089; ty <= 3096; ty++) {
+                if (((tx + ty) & 1) == 0) {
+                    k.floor(tx, ty, tx, ty, "minecraft:polished_diorite");
+                }
+            }
         }
-        k.set(bank.cx(), 2, bank.cz() - 1, "minecraft:lantern[hanging=true]");
+        int bkx = KandarinKit.X(2615);
+        k.fill(bkx, 0, bank.z1() + 1, bkx, 0, bank.z2() - 1, "minecraft:spruce_slab[type=top]");
+        for (int z = bank.z1() + 2; z <= bank.z2() - 2; z += 3) {
+            k.set(bkx, 0, z, BANK);
+        }
+        k.set(bank.cx(), 2, bank.cz() - 2, "minecraft:lantern[hanging=true]");
+        k.set(bank.cx(), 2, bank.cz() + 3, "minecraft:lantern[hanging=true]");
 
-        // Wizards' Guild
-        int wx = KandarinKit.X(2591) + 1;
-        int wz = KandarinKit.Z(3086) + 1;
-        k.disc(wx, wz, -1, -1, 12, GRAVEL);
-        k.ring(wx, wz, 0, 1, 12, "minecraft:stone_brick_wall");
-        k.clear(wx - 1, 0, wz - 12, wx + 1, 1, wz - 12);
-        k.fill(wx - 1, -1, wz - 15, wx + 1, -1, wz - 9, COBBLE);
-        k.towerB(wx, wz, 8, 26, SB, "minecraft:dark_oak_planks", "minecraft:blue_terracotta", 'n', 6);
-        k.set(wx, 0, wz + 5, RUNES);
-        k.fill(wx - 2, 0, wz + 4, wx + 2, 0, wz + 4, "minecraft:dark_oak_slab[type=top]");
-        k.set(wx, 0, wz + 4, RUNES);
-        k.ring(wx, wz, 0, 1, 6, "minecraft:bookshelf");
-        k.clear(wx - 1, 0, wz - 6, wx + 1, 1, wz - 6);
-        k.clear(wx + 6, 0, wz - 1, wx + 6, 1, wz + 1);
-        k.clear(wx - 6, 0, wz - 1, wx - 6, 1, wz + 1);
-        k.set(wx, 6, wz, "minecraft:enchanting_table");
-        k.set(wx - 3, 6, wz - 3, "minecraft:brewing_stand");
-        k.set(wx + 3, 6, wz + 3, "minecraft:lectern[facing=north]");
-        k.set(wx, 12, wz, "minecraft:amethyst_block");
-        k.set(wx, 13, wz, "minecraft:amethyst_cluster");
-        k.set(wx, 18, wz, "minecraft:crying_obsidian");
-        k.set(wx, 5, wz, "minecraft:lantern[hanging=true]");
-        k.set(wx, 11, wz, "minecraft:lantern[hanging=true]");
+        // Wizards' Guild (OSRS map: an octagon 2585-2596 x 3082-3093 with doors west and east at 3087-3088,
+        // in an octagonal walled lawn 2582-2599 x 3080-3095; three storeys, the staircases from shortest-path:
+        // ground 2590-2591,3088 up north to 3092, first floor 2590-2591,3083 up north to 3087)
+        String[] lawn = {
+                "   ############", // 3095
+                "  ##############", // 3094
+                " ################", // 3093
+                "##################", // 3092
+                "##################", // 3091
+                "##################", // 3090
+                "##################", // 3089
+                "##################", // 3088
+                "##################", // 3087
+                "##################", // 3086
+                "##################", // 3085
+                "##################", // 3084
+                "##################", // 3083
+                " ################", // 3082
+                "  ##############", // 3081
+                "   ############", // 3080
+        };
+        TileMask lawnMask = TileMask.of(2582, 3095, lawn);
+        lawnMask.fill(k.b, k.g - 1, k.g - 1, GRASS).fill(k.b, k.g, k.g + 8, null).outline(k.b, k.g, k.g, "minecraft:stone_brick_wall");
+        k.tClear(2582, 3086, 2582, 3089, 0, 0);
+        k.tClear(2599, 3086, 2599, 3089, 0, 0);
+        k.road(2582, 3087, 2584, 3088, GRAVEL, null);
+        k.road(2597, 3087, 2599, 3088, GRAVEL, null);
+        String[] guild = {
+                "    ####", // 3093
+                "   ######", // 3092
+                "  ########", // 3091
+                " ##########", // 3090
+                "############", // 3089
+                "############", // 3088
+                "############", // 3087
+                "############", // 3086
+                " ##########", // 3085
+                "  ########", // 3084
+                "   ######", // 3083
+                "    ####", // 3082
+        };
+        TileMask gm = TileMask.of(2585, 3093, guild);
+        gm.fill(k.b, k.g - 1, k.g - 1, "minecraft:dark_oak_planks");
+        gm.fill(k.b, k.g + 3, k.g + 3, "minecraft:dark_oak_planks");
+        gm.fill(k.b, k.g + 7, k.g + 7, "minecraft:dark_oak_planks");
+        gm.fill(k.b, k.g + 11, k.g + 11, "minecraft:stone_brick_slab");
+        gm.outline(k.b, k.g, k.g + 11, SB);
+        gm.crenels(k.b, k.g + 12, SB);
+        int wx = KandarinKit.X(2591);
+        int wz = KandarinKit.Z(3088);
+        for (int y = 1; y <= 9; y += 4) {
+            for (int[] o : new int[][]{{-1, -10}, {0, -10}, {-1, 13}, {0, 13}}) {
+                k.set(wx + o[0], y, wz + o[1], PANE);
+            }
+            if (y > 1) {
+                for (int[] o : new int[][]{{-12, 1}, {-12, 2}, {11, 1}, {11, 2}}) {
+                    k.set(wx + o[0], y, wz + o[1], PANE);
+                }
+            }
+        }
+        k.tClear(2585, 3087, 2585, 3088, 0, 2);
+        k.tClear(2596, 3087, 2596, 3088, 0, 2);
+        k.at(2585, 3088, 0, "minecraft:dark_oak_door[facing=east,half=lower,hinge=right]");
+        k.at(2585, 3087, 0, "minecraft:dark_oak_door[facing=east,half=lower,hinge=left]");
+        k.at(2596, 3088, 0, "minecraft:dark_oak_door[facing=west,half=lower,hinge=left]");
+        k.at(2596, 3087, 0, "minecraft:dark_oak_door[facing=west,half=lower,hinge=right]");
+        for (int x = KandarinKit.X(2590); x <= KandarinKit.X(2591) + 1; x++) {
+            k.stairs(x, 0, KandarinKit.Z(3088), 'n', 3, "minecraft:dark_oak");
+            k.stairs(x, 4, KandarinKit.Z(3083), 'n', 3, "minecraft:dark_oak");
+        }
+        // ground floor: the magic shop counter and bookcases; first floor: study; top floor: the
+        // enchanting room under a blue spire
+        k.fill(KandarinKit.X(2587), 0, KandarinKit.Z(3085), KandarinKit.X(2588) + 1, 0, KandarinKit.Z(3085), "minecraft:dark_oak_slab[type=top]");
+        k.at(2587, 3084, 0, RUNES);
+        k.fill(KandarinKit.X(2593), 0, KandarinKit.Z(3091), KandarinKit.X(2594) + 1, 1, KandarinKit.Z(3091), "minecraft:bookshelf");
+        k.fill(KandarinKit.X(2593), 4, KandarinKit.Z(3091), KandarinKit.X(2594) + 1, 5, KandarinKit.Z(3091), "minecraft:bookshelf");
+        k.at(2594, 3086, 4, "minecraft:lectern[facing=west]");
+        k.at(2587, 3090, 4, "minecraft:brewing_stand");
+        k.at(2593, 3085, 8, "minecraft:enchanting_table");
+        k.at(2588, 3085, 8, "minecraft:amethyst_block");
+        k.at(2588, 3085, 9, "minecraft:amethyst_cluster");
+        k.at(2594, 3085, 0, "minecraft:spruce_trapdoor[half=bottom,open=false]");
+        for (int y = 2; y <= 10; y += 4) {
+            k.set(wx, y, wz - 4, "minecraft:lantern[hanging=true]");
+            k.set(wx, y, wz + 4, "minecraft:lantern[hanging=true]");
+        }
+        k.cone(wx, wz, 13, 5, 2, "minecraft:blue_terracotta", "minecraft:lightning_rod");
 
         // Dragon Inn
         Bld inn = k.house(2549, 3077, 2558, 3084, 2, YANILLE, 'n', FURN | WIDE_DOOR);

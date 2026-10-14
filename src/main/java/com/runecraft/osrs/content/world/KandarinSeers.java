@@ -44,23 +44,52 @@ final class KandarinSeers {
         k.road(2711, 3474, 2712, 3482, PATH, dirt);
 
         // --- Bank (rooftop course start) ---
-        Pal bankPal = new Pal(SB, "minecraft:chiseled_stone_bricks", ANDESITE, "flat:minecraft:smooth_stone", "spruce", PANE);
-        Bld bank = k.house(2721, 3487, 2730, 3494, 1, bankPal, 's', FLAT | NO_LADDER | WIDE_DOOR);
-        int bzc = bank.z1() + 3;
-        k.fill(bank.x1() + 2, 0, bzc, bank.x2() - 2, 0, bzc, "minecraft:spruce_slab[type=top]");
-        for (int x = bank.x1() + 3; x <= bank.x2() - 3; x += 3) {
+        // OSRS map: a broad north hall 2719-2730 x 3494-3497, the chequered banking floor 2721-2729 x 3490-3493
+        // and a porch 2724-2727 x 3487-3489 with the door south; booths across the hall facing south
+        String[] bankPlan = {
+                "############", // 3497
+                "############", // 3496
+                "############", // 3495
+                "############", // 3494
+                "  #########", // 3493
+                "  #########", // 3492
+                "  #########", // 3491
+                "  #########", // 3490
+                "     ####", // 3489
+                "     ####", // 3488
+                "     ####", // 3487
+        };
+        TileMask bankMask = TileMask.of(2719, 3497, bankPlan);
+        bankMask.fill(k.b, k.g - 1, k.g - 1, ANDESITE).inside(k.b, k.g, k.g + 4, null)
+                .outline(k.b, k.g, k.g + 3, SB).fill(k.b, k.g + 4, k.g + 4, "minecraft:smooth_stone");
+        for (int tx = 2721; tx <= 2729; tx++) {
+            for (int ty = 3490; ty <= 3495; ty++) {
+                if (((tx + ty) & 1) == 0) {
+                    k.floor(tx, ty, tx, ty, "minecraft:polished_diorite");
+                }
+            }
+        }
+        Bld bank = new Bld(KandarinKit.X(2721), KandarinKit.Z(3493), KandarinKit.X(2729) + 1, KandarinKit.Z(3490) + 1,
+                1, 's', KandarinKit.X(2725) + 1, KandarinKit.Z(3487) + 1);
+        k.tClear(2725, 3487, 2726, 3487, 0, 2);
+        int bzc = KandarinKit.Z(3495) + 1;
+        k.fill(KandarinKit.X(2720), 0, bzc, KandarinKit.X(2730), 0, bzc, "minecraft:spruce_slab[type=top]");
+        for (int x = KandarinKit.X(2720) + 1; x <= KandarinKit.X(2730); x += 3) {
             k.set(x, 0, bzc, BANK);
         }
-        k.fill(bank.x1() + 1, 0, bank.z1() + 1, bank.x2() - 1, 0, bank.z1() + 1, "minecraft:barrel[facing=south]");
-        k.fill(bank.doorX(), 0, bzc + 1, bank.doorX() + 1, 0, bank.z2() - 1, "minecraft:red_carpet");
-        k.set(bank.x1() + 3, 3, bank.cz(), "minecraft:lantern[hanging=true]");
-        k.set(bank.x2() - 3, 3, bank.cz(), "minecraft:lantern[hanging=true]");
-        k.lamp(bank.doorX() - 2, bank.z2() + 2, "minecraft:spruce_fence");
-        k.lamp(bank.doorX() + 3, bank.z2() + 2, "minecraft:spruce_fence");
+        k.fill(KandarinKit.X(2719) + 1, 0, KandarinKit.Z(3497) + 1, KandarinKit.X(2730), 0, KandarinKit.Z(3497) + 1, "minecraft:barrel[facing=south]");
+        k.fill(bank.doorX(), 0, bzc + 1, bank.doorX() + 1, 0, bank.z2() + 4, "minecraft:red_carpet");
+        k.set(KandarinKit.X(2722), 3, KandarinKit.Z(3492), "minecraft:lantern[hanging=true]");
+        k.set(KandarinKit.X(2728), 3, KandarinKit.Z(3492), "minecraft:lantern[hanging=true]");
+        for (int x = KandarinKit.X(2719); x <= KandarinKit.X(2730) + 1; x += 3) {
+            k.set(x, 1, KandarinKit.Z(3497), PANE);
+        }
+        k.lamp(KandarinKit.X(2723), KandarinKit.Z(3486), "minecraft:spruce_fence");
+        k.lamp(KandarinKit.X(2728), KandarinKit.Z(3486), "minecraft:spruce_fence");
 
         // --- Rooftop course houses (flat roofs) ---
         Pal flat = SEERS.roof("flat:minecraft:spruce_planks");
-        Bld hb = k.house(2711, 3488, 2718, 3495, 1, flat, 's', FURN | FLAT | NO_LADDER);
+        Bld hb = k.house(2711, 3488, 2716, 3495, 1, flat, 's', FURN | FLAT | NO_LADDER);
         Bld hc = k.house(2709, 3466, 2715, 3473, 1, flat, 'w', FURN | FLAT | NO_LADDER);
         Bld hd = k.house(2700, 3466, 2706, 3472, 1, flat, 's', FURN | FLAT | NO_LADDER);
         Bld he = k.house(2691, 3467, 2697, 3473, 1, flat, 'n', FURN | FLAT | NO_LADDER);
