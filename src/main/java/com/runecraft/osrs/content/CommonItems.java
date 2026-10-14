@@ -148,6 +148,21 @@ public final class CommonItems {
                 .examine("Slightly damp seaweed.");
         items.add("ugthanki_kebab", "Ugthanki kebab", Kind.FOOD, "meat_cooked", 0xB07A4A).value(20).heal(19).weight(0.5)
                 .examine("A fresh kebab made from ugthanki meat.");
+        // Blighted supplies (Soul Wars shop and spoils of war, Emir's Arena, muddy chest, Wilderness course): usable only
+        // in the Wilderness (enforced by the minigames module). The spell sacks stand in for runes there (not modelled).
+        items.add("blighted_karambwan", "Blighted karambwan", Kind.FOOD, "fish_cooked", 0x7A5A8A).value(1).heal(18)
+                .examine("Can only be eaten in the Wilderness.");
+        items.add("blighted_anglerfish", "Blighted anglerfish", Kind.FOOD, "fish_cooked", 0x6A3A6A).value(1).heal(22) // approx: 22 at 99 HP
+                .examine("Can only be eaten in the Wilderness.");
+        items.add("blighted_manta_ray", "Blighted manta ray", Kind.FOOD, "fish_cooked", 0x3A3A6A).value(1).heal(22)
+                .examine("Can only be eaten in the Wilderness.");
+        items.add("blighted_super_restore", "Blighted super restore", Kind.POTION, "potion", 0xA03070).value(1).stack(1)
+                .examine("4 doses of blighted super restore. Can only be drunk in the Wilderness.");
+        for (String[] sack : new String[][]{{"vengeance", "Vengeance"}, {"ancient_ice", "Ancient ice"}, {"entangle", "Entangle"},
+                {"teleport_spell", "Teleport spell"}}) {
+            items.add("blighted_" + sack[0] + "_sack", "Blighted " + sack[1].toLowerCase() + " sack", Kind.SIMPLE, "pouch", 0x5A4A6A)
+                    .value(1).stack(100000).examine("A sack of runes that only work in the Wilderness.");
+        }
         for (String[] h : new String[][]{{"cockatrice", "Cockatrice", "2000", "8AA05A"}, {"basilisk", "Basilisk", "4000", "5A8A4A"},
                 {"kurask", "Kurask", "6000", "6A7A4A"}}) {
             items.add(h[0] + "_head", h[1] + " head", Kind.SIMPLE, "skull", Integer.parseInt(h[3], 16)).value(Integer.parseInt(h[2]))

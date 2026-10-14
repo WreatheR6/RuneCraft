@@ -110,6 +110,16 @@ public final class RewardShops {
         ba.itemMulti("healer_hat", queen(allRoles(275)));
         ba.itemMulti("runner_boots", allRoles(100));
         ba.itemMulti("granite_body", queen(List.of(new Cost(COINS, 95_000))));
+        // Gambles: paid from one role of the player's choice (BaGambles); the high gamble also spends a queen kill.
+        String[] roleCurrencies = {BA_ATTACKER, BA_DEFENDER, BA_COLLECTOR, BA_HEALER};
+        for (BaGambles.Tier tier : BaGambles.Tier.values()) {
+            for (int r = 0; r < roleCurrencies.length; r++) {
+                List<Cost> cost = List.of(new Cost(roleCurrencies[r], tier.cost()));
+                String role = MinigameRules.BarbarianAssault.ROLES[r];
+                ba.labelled(tier.id(), tier.displayName() + " (" + Character.toUpperCase(role.charAt(0)) + role.substring(1) + ")",
+                        tier.queen() ? queen(cost) : cost);
+            }
+        }
 
         // Castle Wars: Lanthus' Castle Wars Ticket Exchange (OSRS Wiki prices; each decorative tier
         // costs ten times the one before).
@@ -246,7 +256,8 @@ public final class RewardShops {
             gnome.item((String) dish[0], GNOME_TOKENS, 1);
         }
 
-        // Nightmare Zone: Dom Onion's Reward Shop (OSRS Wiki). Resources and imbues; the potion benefits are not modelled.
+        // Nightmare Zone: Dom Onion's Reward Shop (OSRS Wiki): resources, upgrades (imbues) and benefits. Benefits are sold
+        // by the dose in OSRS and kept in barrels; here they come as 4-dose potions at four times the dose price.
         RewardShop nmz = shop("nightmare_zone", "Dom Onion's Reward Shop")
                 .item("flax", NIGHTMARE_ZONE, 75)
                 .item("bucket_of_sand", NIGHTMARE_ZONE, 200)
@@ -258,7 +269,12 @@ public final class RewardShops {
                 .item("fire_rune", NIGHTMARE_ZONE, 25)
                 .item("rune_essence", NIGHTMARE_ZONE, 60)
                 .item("pure_essence", NIGHTMARE_ZONE, 70)
-                .item("vial_of_water", NIGHTMARE_ZONE, 145);
+                .item("vial_of_water", NIGHTMARE_ZONE, 145)
+                .item("herb_box", NIGHTMARE_ZONE, 9500)
+                .item("scroll_of_redirection", NIGHTMARE_ZONE, 775);
+        for (String potion : MinigameRules.NightmareZone.POTIONS) {
+            nmz.item(potion, NIGHTMARE_ZONE, 4 * MinigameRules.NightmareZone.doseCost(potion));
+        }
         for (Object[] imbue : MinigameRules.Imbues.ITEMS) {
             nmz.upgrade((String) imbue[0], (String) imbue[1], NIGHTMARE_ZONE, (Integer) imbue[2]);
         }
@@ -272,7 +288,17 @@ public final class RewardShops {
             sw.xp(s, 27, ZEAL, 1, 30).xp(s, 27, ZEAL, 10, 30).xp(s, 27, ZEAL, 100, 30);
         }
         sw.xp(Skill.PRAYER, 14, ZEAL, 1, 30).xp(Skill.PRAYER, 14, ZEAL, 10, 30).xp(Skill.PRAYER, 14, ZEAL, 100, 30);
-        sw.item("soul_cape", ZEAL, 2500);
+        sw.item("soul_cape", ZEAL, 2500)
+                .itemSkill("ectoplasmator", 1, ZEAL, 250, Skill.PRAYER, 40)
+                .item(SpoilsOfWar.ITEM, ZEAL, SpoilsOfWar.ZEAL_COST)
+                .item("blighted_entangle_sack", 70, ZEAL, 10)
+                .item("blighted_teleport_spell_sack", 50, ZEAL, 10)
+                .item("blighted_vengeance_sack", 50, ZEAL, 10)
+                .item("blighted_ancient_ice_sack", 30, ZEAL, 10)
+                .item("blighted_manta_ray", 15, ZEAL, 10)
+                .item("blighted_anglerfish", 15, ZEAL, 10)
+                .item("blighted_karambwan", 12, ZEAL, 10)
+                .item("blighted_super_restore", 4, ZEAL, 10);
         for (Object[] imbue : MinigameRules.Imbues.ITEMS) {
             sw.upgrade((String) imbue[0], (String) imbue[1], ZEAL, (Integer) imbue[3]);
         }

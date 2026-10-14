@@ -128,6 +128,9 @@ public final class Pets {
                 "1/4000 per Guardians of the Rift search", "guardians_of_the_rift", 0);
         add("pet_penance_queen", "Pet penance queen", Source.MINIGAME, "penance_queen", 2.4f, false, 0, null,
                 "1/1000 per Barbarian Assault high-level gamble", "barbarian_assault", 0);
+        // approx look: the rift guardian's floating spirit stands in for a tiny Avatar of Creation.
+        add("lil_creator", "Lil' creator", Source.MINIGAME, "ext_pet_rift_guardian", 0.7f, false, 0, null,
+                "1/400 per spoils of war opened", "soul_wars", 0);
         add("bloodhound", "Bloodhound", Source.OTHER, "ext_pet_bloodhound", 0.7f, false, 0, null, "1/1000 per master clue casket",
                 "clue_scroll_master", 0);
         // --- Skilling pets (this module) ---
