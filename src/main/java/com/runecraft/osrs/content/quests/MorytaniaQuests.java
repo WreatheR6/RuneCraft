@@ -319,8 +319,15 @@ final class MorytaniaQuests {
                 .xp(Skill.AGILITY, 7000).xp(Skill.THIEVING, 6000).xp(Skill.CONSTRUCTION, 2000)
                 .stage("I can start this quest by speaking to Veliaf Hurtz. (Requires In Search of the Myreque and more.)")
                 .talk("veliaf_hurtz").say("We've lost contact with Safalaan, our leader, in Meiyerditch. Vanstrom's spies are everywhere. Find him.")
-                .stage("I should sneak into Meiyerditch, the vampyre-ruled ghetto, and find Safalaan.")
-                .talk("safalaan").give("sketch_of_hallowvale").say("You found me! I need sketches of the old city of Hallowvale. *You sketch the ruined statues for him.*")
+                // OSRS: repair the boat and chute at the Burgh de Rott boathouse, then sneak through Meiyerditch's floorboards and walls.
+                .stage("I should repair the boat south-east of Burgh de Rott, sneak into Meiyerditch, the vampyre-ruled ghetto, and find Safalaan.")
+                .reach("burgh_de_rott", 10).stay().unlessFlag("doh_boat").take("plank:2").need("hammer", "steel_nails:10").flag("doh_boat") // approx: nails
+                .say("* You patch the boat with a plank and fix the boat chute with another, then push the boat down the chute and row north.")
+                .missing("* The boat and its chute are broken. You'll need 2 planks, a hammer and some nails.")
+                .reach("meiyerditch", 10).stay().needFlag("doh_boat").unlessFlag("doh_ghetto").reqSkill(Skill.AGILITY, 26).flag("doh_ghetto")
+                .say("* You kick through the floor, climb over the rubble and creep across floorboards and through hidden walls, past the vyrewatch.")
+                .talk("safalaan").needFlag("doh_ghetto").missing("*There's nobody here who'll admit to being Safalaan. Find a way into the ghetto first.*")
+                .give("sketch_of_hallowvale").say("You found me! I need sketches of the old city of Hallowvale. *You sketch the ruined statues for him.*")
                 .stage("I should take the sketches back to Veliaf.")
                 .talk("veliaf_hurtz").take("sketch_of_hallowvale").say("Safalaan is a Hallow, of the old royal line? Then there is hope. Thank you, friend.");
     }
@@ -371,11 +378,17 @@ final class MorytaniaQuests {
                 .unlock("Access to Darkmeyer").unlock("Access to the Hallowed Sepulchre")
                 .stage("I can start this quest by speaking to Veliaf Hurtz in the Myreque hideout. (Requires A Taste of Hope, Vampyre Slayer and more.)")
                 .talk("veliaf_hurtz").say("Vanescula Drakan, Lord Drakan's own sister, wants to meet. It could be a trap... but we must hear her out.")
-                .stage("I should meet Vanescula Drakan in Darkmeyer.")
-                .talk("vanescula_drakan").say("I want my brother overthrown. The Blisterwood tree can kill any vampyre. Cut its logs and craft a weapon.",
+                // OSRS: Kroy's herb lab in Slepe, the trek with Ivan Strom and the Icyene graveyard, then Vanescula.
+                .stage("I should help Veliaf deal with the herb dealer in Slepe, then join the trek to the Icyene graveyard and meet Vanescula Drakan.")
+                .reach("quest_slepe_pub", 8).stay().unlessFlag("sotf_kroy").flag("sotf_kroy")
+                .say("* You follow Carl from the pub to his supplier. In the lab you kill Kroy and destroy both lab tables.")
+                .reach("quest_icyene_graveyard", 8).stay().needFlag("sotf_kroy").unlessFlag("sotf_trek").flag("sotf_trek")
+                .say("* With Ivan Strom you trek across Morytania and take the boat to the Icyene graveyard. Veliaf is waiting.")
+                .talk("vanescula_drakan").needFlag("sotf_trek")
+                .missing("Not yet. Deal with the herb dealer in Slepe and come with the Myreque to the Icyene graveyard.").say("I want my brother overthrown. The Blisterwood tree can kill any vampyre. Cut its logs and craft a weapon.",
                         "But Vanstrom Klause hunts you. Be ready.")
                 .stage("I should cut blisterwood logs (rune axe) and craft a blisterwood flail.")
-                .talk("vanescula_drakan").need("rune_axe").give("blisterwood_logs", "blisterwood_flail")
+                .talk("vanescula_drakan").need("rune_axe").reqSkill(Skill.WOODCUTTING, 62).reqSkill(Skill.FLETCHING, 60).give("blisterwood_logs", "blisterwood_flail")
                 .say("* You cut logs from the Blisterwood tree and fletch them into a flail with silver from Vanescula's smiths.")
                 .missing("The Blisterwood tree needs a strong axe. Bring a rune axe.")
                 .stage("Vanstrom Klause has found me! I must defeat him with the blisterwood flail.")

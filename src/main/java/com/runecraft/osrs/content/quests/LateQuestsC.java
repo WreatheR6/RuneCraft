@@ -123,6 +123,7 @@ final class LateQuestsC {
                 .attack(AttackDef.of("slam", AttackType.CRUSH, 15, 3, 6))
                 .drops(Drop.always("iron_ore")).skin(0x6A6A6A, 0x5A5A5A, 0x4A4A4A, 0x8A8A8A).size(1.2f, 2.2f, 1.0f)
                 .at("quest_white_wolf_cave").arena(8, "stone"));
+        b.item("osf_blunt_axe", "Blunt axe", "axe", 0x6A6A6A, "The jungle forester's axe. It's very blunt.");
         b.quest("one_small_favour", "One Small Favour", Difficulty.EXPERIENCED, 2)
                 .reqQuest("RUNE_MYSTERIES", "shilo_village", "DRUIDIC_RITUAL")
                 .req(Skill.AGILITY, 36).req(Skill.CRAFTING, 25).req(Skill.HERBLORE, 18).req(Skill.SMITHING, 30)
@@ -130,9 +131,9 @@ final class LateQuestsC {
                 .stage("I can start this quest by speaking to Yanni Salika in Shilo Village. (Requires Rune Mysteries, Shilo Village, Druidic Ritual, 36 Agility, 25 Crafting, 18 Herblore, 30 Smithing.)")
                 .talk("yanni_salika").say("Could you do me one small favour? Ask the Jungle forester near Kharazi if he's finished my wooden carving.")
                 .stage("I should visit the Jungle forester.")
-                .talk("jungle_forester").say("The carving? I'd finish it if my axe weren't blunt. Brian in Port Sarim could sharpen it. Small favour?")
+                .talk("jungle_forester").give("osf_blunt_axe").say("The carving? I'd finish it if my axe weren't blunt. Brian in Port Sarim could sharpen it. Small favour?")
                 .stage("I should ask Brian in Port Sarim to sharpen the forester's axe.")
-                .talk("quest_brian_archery").say("Sharpen an axe? I'd love to, but my whetstone's at Aggie's. Ask her for it... she'll want a favour too.")
+                .talk("quest_brian_archery").take("osf_blunt_axe").missing("Sharpen what? You'll need to bring me the axe.").say("Sharpen an axe? I'd love to, but my whetstone's at Aggie's. Ask her for it... she'll want a favour too.")
                 .stage("Aggie in Draynor will part with the whetstone if her cauldron is repaired. Horvik in Varrock can fix it (needs a steel bar).")
                 .talk("aggie").stay().unless("quest_broken_cauldron").give("quest_broken_cauldron").say("My cauldron's got a hole! Get it fixed and you can have the stone.")
                 .talk("quest_horvik").take("quest_broken_cauldron", "steel_bar").say("*Horvik patches the cauldron.* Tell Aggie I want a discount on dyes.")
@@ -140,9 +141,9 @@ final class LateQuestsC {
                 .stage("With Aggie's cauldron fixed, Petra Fiyed in the White Wolf Mountain cave needs help with a rock golem before the chain of favours can finish.")
                 .talk("petra_fiyed").give("quest_animate_rock_scroll").say("A golem made of slag is loose in my cave! Read this scroll near it to make it fight you, then smash it.")
                 .stage("I must defeat the Slagilith.")
-                .kill("quest_slagilith").take("quest_animate_rock_scroll").say("* The Slagilith crumbles. Word travels quickly: every favour in the chain is done.")
+                .kill("quest_slagilith").take("quest_animate_rock_scroll").flag("osf_slagilith").say("* The Slagilith crumbles. Word travels quickly: every favour in the chain is done.")
                 .stage("I should return to Yanni Salika with his carving.")
-                .talk("yanni_salika").say("My carving! Was it any trouble? No? Splendid. Here's a little something for your one small favour.");
+                .talk("yanni_salika").needFlag("osf_slagilith").say("My carving! Was it any trouble? No? Splendid. Here's a little something for your one small favour.");
     }
 
     private static void ragAndBoneManII(QuestBook b) {
@@ -184,11 +185,11 @@ final class LateQuestsC {
                 .reach("quest_tolnas_rift", 6).need("rope").say("* Angry bears and unicorns, hopeless creatures and confused shapes swarm around you. You push through until a reaper blocks the way.")
                 .missing("* The rift is too deep to climb without a rope.")
                 .stage("I must defeat the Fear reaper.")
-                .kill("quest_fear_reaper").say("* The reaper dissolves. At the bottom of the rift sits a young man, alone with his memories.")
+                .kill("quest_fear_reaper").flag("asb_reaper").say("* The reaper dissolves. At the bottom of the rift sits a young man, alone with his memories.")
                 .stage("I should talk to Tolna.")
-                .talk("tolna").say("Mother? She's still waiting for me? I let my anger and fear trap me here... I'll go up.")
+                .talk("tolna").needFlag("asb_reaper").flag("asb_tolna").say("Mother? She's still waiting for me? I let my anger and fear trap me here... I'll go up.")
                 .stage("I should tell Launa that Tolna is safe.")
-                .talk("launa").say("My boy! You brought him back to me. Thank you, adventurer, thank you.");
+                .talk("launa").needFlag("asb_tolna").say("My boy! You brought him back to me. Thank you, adventurer, thank you.");
     }
 
     private static void greatBrainRobbery(QuestBook b) {
@@ -250,11 +251,11 @@ final class LateQuestsC {
                 .stage("I should sail to the Island of Stone and find the exile.")
                 .talk("quest_lady_v").say("I am V's descendant, exiled for... reasons. The basilisks guard Jormungand's prison, and their young one grows strong. Stop it.")
                 .stage("I must craft a mirror shield's worth of protection and kill the Basilisk Youngling in Jormungand's prison.")
-                .kill("quest_basilisk_boss").say("* The Basilisk Youngling falls. Its gaze fades from the stone.")
+                .kill("quest_basilisk_boss").need("mirror_shield").flag("fe_youngling").say("* The Basilisk Youngling falls. Its gaze fades from the stone.")
                 .stage("I should report to Lady V.")
-                .talk("quest_lady_v").say("You did what my people could not. Take V's shield; it was always meant to protect the Fremennik.")
+                .talk("quest_lady_v").needFlag("fe_youngling").flag("fe_v").say("You did what my people could not. Take V's shield; it was always meant to protect the Fremennik.")
                 .stage("I should tell Brundt the basilisks are no longer a threat.")
-                .talk("brundt").say("Basilisks gone and an exile found! Rellekka will sing of this. Skol!");
+                .talk("brundt").needFlag("fe_v").say("Basilisks gone and an exile found! Rellekka will sing of this. Skol!");
     }
 
     private static void nightAtTheTheatre(QuestBook b) {
@@ -274,9 +275,9 @@ final class LateQuestsC {
                 .say("This will do. Now: the Theatre of Blood. You'll go in as a challenger, and survive. I'll handle the rest.")
                 .missing("Spider venom. Giant spiders. Below. Go.")
                 .stage("I must survive a run through the Theatre of Blood's entry mode.")
-                .reach("quest_ver_sinhaza", 10).say("* You fight through the Maiden, the Bloat, the Nylocas, Sotetseg and Xarpus... and Verzik herself watches, amused.")
+                .reach("quest_ver_sinhaza", 10).flag("ant_theatre").say("* You fight through the Maiden, the Bloat, the Nylocas, Sotetseg and Xarpus... and Verzik herself watches, amused.")
                 .stage("I should report to Veliaf.")
-                .talk("veliaf_hurtz").say("You survived the Theatre! And the venom may be our weapon against Verzik. Hope lives in Morytania yet.");
+                .talk("veliaf_hurtz").needFlag("ant_theatre").say("You survived the Theatre! And the venom may be our weapon against Verzik. Hope lives in Morytania yet.");
     }
 
     private static void porcineOfInterest(QuestBook b) {

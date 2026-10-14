@@ -40,6 +40,9 @@ public final class LandmarkBuilder {
     private static final Deque<Landmark> QUEUE = new ArrayDeque<>();
     private static final Map<Long, List<com.runecraft.osrs.content.PlaceDef>> PLACES_BY_CHUNK = new HashMap<>();
     private static final Deque<com.runecraft.osrs.content.PlaceDef> PLACE_QUEUE = new ArrayDeque<>();
+    /** Quest characters standing far from their landmark, by the chunk of their OSRS tile (spawned when it loads). */
+    private static final Map<Long, List<QuestNpc>> REMOTE_NPCS = new HashMap<>();
+    private static final Deque<QuestNpc> NPC_QUEUE = new ArrayDeque<>();
     /** Custom structure builders keyed by Landmark enum name or PlaceDef id: (world, plaza centre at floor level). */
     private static final Map<String, List<java.util.function.BiConsumer<ServerWorld, BlockPos>>> CUSTOM = new HashMap<>();
 
@@ -49,6 +52,11 @@ public final class LandmarkBuilder {
         }
         for (com.runecraft.osrs.content.PlaceDef p : com.runecraft.osrs.content.ContentRegistry.places()) {
             PLACES_BY_CHUNK.computeIfAbsent(ChunkPos.toLong(p.blockX() >> 4, p.blockZ() >> 4), k -> new ArrayList<>()).add(p);
+        }
+        for (QuestNpc n : QuestNpc.values()) {
+            if (n.remote()) {
+                REMOTE_NPCS.computeIfAbsent(ChunkPos.toLong(n.blockX() >> 4, n.blockZ() >> 4), k -> new ArrayList<>()).add(n);
+            }
         }
     }
 
@@ -76,6 +84,14 @@ public final class LandmarkBuilder {
                     }
                 }
             }
+            List<QuestNpc> npcs = REMOTE_NPCS.get(chunk.getPos().toLong());
+            if (npcs != null) {
+                for (QuestNpc n : npcs) {
+                    if (!NPC_QUEUE.contains(n)) {
+                        NPC_QUEUE.add(n);
+                    }
+                }
+            }
             List<com.runecraft.osrs.content.PlaceDef> places = PLACES_BY_CHUNK.get(chunk.getPos().toLong());
             if (places != null) {
                 for (com.runecraft.osrs.content.PlaceDef p : places) {
@@ -86,15 +102,17 @@ public final class LandmarkBuilder {
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (QUEUE.isEmpty() && PLACE_QUEUE.isEmpty()) {
+            if (QUEUE.isEmpty() && PLACE_QUEUE.isEmpty() && NPC_QUEUE.isEmpty()) {
                 return;
             }
             ServerWorld world = Gielinor.world(server);
             if (world != null) {
                 if (!QUEUE.isEmpty()) {
                     buildNow(world, QUEUE.poll());
-                } else {
+                } else if (!PLACE_QUEUE.isEmpty()) {
                     buildNow(world, PLACE_QUEUE.poll());
+                } else {
+                    spawnRemote(world, NPC_QUEUE.poll());
                 }
             }
         });
@@ -460,9 +478,45 @@ public final class LandmarkBuilder {
         }
     }
 
+    /**
+     * Spawns a quest character that stands far from its landmark, once, while the chunk of its OSRS tile is loaded
+     * (the landmark may be built while that chunk is not, so it isn't spawned with the landmark).
+     */
+    private static void spawnRemote(ServerWorld world, QuestNpc npc) {
+        if (npc == null) {
+            return;
+        }
+        int x = npc.blockX();
+        int z = npc.blockZ();
+        if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+            return;
+        }
+        PlayerDataState state = Players.state(world.getServer());
+        String key = "questnpc:" + npc.name();
+        if (state.isBuilt(key)) {
+            return;
+        }
+        state.markBuilt(key);
+        try {
+            QuestNpcEntity entity = ModEntities.QUEST_NPC.create(world);
+            if (entity == null) {
+                return;
+            }
+            StructurePlacer.applyIfLoaded(world, x >> 4, z >> 4);
+            BlockPos feet = NpcFloor.spot(world, x, z, NpcFloor.isBanker(npc.name(), npc.displayName()));
+            entity.refreshPositionAndAngles(feet.getX() + 0.5, NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
+                    world.getRandom().nextFloat() * 360f, 0);
+            entity.setNpc(npc);
+            entity.initialize(world, world.getLocalDifficulty(entity.getBlockPos()), SpawnReason.STRUCTURE, null, null);
+            world.spawnEntity(entity);
+        } catch (RuntimeException e) {
+            RuneCraft.LOGGER.error("Failed to spawn quest NPC {}", npc, e);
+        }
+    }
+
     private static void spawnNpcs(ServerWorld world, Landmark landmark, int cx, int y, int cz) {
         for (QuestNpc npc : QuestNpc.values()) {
-            if (npc.landmark() != landmark) {
+            if (npc.landmark() != landmark || npc.remote()) {
                 continue;
             }
             QuestNpcEntity entity = ModEntities.QUEST_NPC.create(world);

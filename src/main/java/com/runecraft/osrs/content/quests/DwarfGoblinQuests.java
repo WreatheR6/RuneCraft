@@ -66,12 +66,12 @@ final class DwarfGoblinQuests {
                 .say("* Disguised as a H.A.M. member, you slip into the hideout. Zanik hides in your shadow.")
                 .missing("* The H.A.M. guards won't let anyone in without the hood, shirt and robe of the order.")
                 .stage("I should listen to the H.A.M. Deacon's meeting.")
-                .talk("ham_deacon").say("Brothers and sisters! Sigmund has a plan to deal with the cave goblins once and for all. Meet him in the tunnels under the Dwarven Mine!",
+                .talk("ham_deacon").need("ham_hood", "ham_shirt", "ham_robe").missing("Who are you? Only members in H.A.M. robes may attend!").say("Brothers and sisters! Sigmund has a plan to deal with the cave goblins once and for all. Meet him in the tunnels under the Dwarven Mine!",
                         "* Zanik tugs your sleeve. We must follow Sigmund!")
                 .stage("I must follow Sigmund into the tunnels, where H.A.M. guards are digging towards Dorgesh-Kaan, and fight them off.")
-                .kill("guard").say("* The H.A.M. guards are beaten. Sigmund escapes through a crack in the rock, swearing revenge.")
+                .kill("guard").flag("dttd_guards").say("* The H.A.M. guards are beaten. Sigmund escapes through a crack in the rock, swearing revenge.")
                 .stage("I should report to Ur-tag.")
-                .talk("ur_tag").say("You saved the city, and Zanik besides. The Dorgeshuun are in your debt. Keep the H.A.M. clothes; they may yet be useful.");
+                .talk("ur_tag").needFlag("dttd_guards").say("You saved the city, and Zanik besides. The Dorgeshuun are in your debt. Keep the H.A.M. clothes; they may yet be useful.");
     }
 
     private static void anotherSliceOfHam(QuestBook b) {

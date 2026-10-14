@@ -287,6 +287,8 @@ final class DesertQuests {
         b.npc("barge_foreman", "Barge foreman", "digsite_barge", 0, 0, 0xE0B899, 0x8A6A2A, 0x4A3A2A, 0xC0A040);
         b.npc("lead_navigator", "Lead navigator", "digsite_barge", 3, 2, 0xE8C0A7, 0x2A3A6A, 0x1A2A4A, 0xE0E0E1);
         b.item("barge_permit", "Barge permit", "note", 0xE0D0A8, "Permission from the Varrock Museum to use the barge.");
+        b.item("bone_charm", "Bone charm", "bead", 0xE8E0C8, "A charm made of bone. It might bring luck.");
+        b.item("potion_of_sealegs", "Potion of sealegs", "potion", 0x6A8AC0, "Might help with seasickness.");
         b.quest("bone_voyage", "Bone Voyage", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("the_dig_site").reqNote("100 Kudos from the Varrock Museum")
                 .unlock("Access to Fossil Island")
@@ -296,7 +298,13 @@ final class DesertQuests {
                 .talk("barge_foreman").take("barge_permit", "plank:10", "steel_bar:4").say("Planks and steel for the hull! She'll be ready to sail. Talk to the lead navigator.")
                 .missing("The barge still needs 10 planks and 4 steel bars.")
                 .stage("I should speak to the lead navigator.")
-                .talk("lead_navigator").travel("fossil_island").say("The junior navigator got us lost last time... I'll steer. Next stop, Fossil Island! *The barge sets sail.*")
+                .talk("odd_old_man").stay().unless("bone_charm").give("bone_charm")
+                .say("A charm for a navigator? Ah, take this bone charm. Luck's in the bones, they say.")
+                .talk("lead_navigator").stay().unless("potion_of_sealegs").unlessFlag("bv_sealegs").take("vodka:2", "marrentill_potion_unf").give("potion_of_sealegs")
+                .say("*The Apothecary in Varrock brews the vodka into your marrentill potion: a potion of sealegs.*")
+                .missing("I get terribly seasick. The Apothecary in Varrock could brew something, with 2 vodka and a marrentill potion (unf).")
+                .talk("lead_navigator").take("potion_of_sealegs", "bone_charm").travel("fossil_island").say("The junior navigator got us lost last time... I'll steer. Next stop, Fossil Island! *The barge sets sail.*")
+                .missing("I need my potion of sealegs, and the junior navigator wants a lucky charm. The Odd Old Man has charms.")
                 .finish()
                 .done("lead_navigator", "Ready to sail to Fossil Island when you are.");
     }
@@ -313,7 +321,7 @@ final class DesertQuests {
                 .stage("I can start this quest by speaking to Wizard Persten in the Wizards' Tower. (Requires Rune Mysteries, 10 Runecraft.)")
                 .talk("wizard_persten").say("I've found references to a lost temple of runecraft. The Zamorakian mages may know something. Visit the Mage of Zamorak in Varrock.")
                 .stage("I should speak to the Mage of Zamorak in Varrock.")
-                .talk("mage_of_zamorak").give("abyssal_incantation").say("You want to find the Temple of the Eye? Use this incantation in the Abyss, and an amulet... I need a strong tea first.")
+                .talk("mage_of_zamorak").take("cup_of_tea").missing("I'll talk, but not before a strong cup of tea.").give("abyssal_incantation").say("You want to find the Temple of the Eye? Use this incantation in the Abyss, and an amulet... I need a strong tea first.")
                 .stage("I should use the abyssal incantation near the Wizards' Tower to open a rift to the temple.")
                 .reach("temple_of_the_eye", 8).take("abyssal_incantation").say("* The incantation tears a rift in the air. You step through into the ancient Temple of the Eye.")
                 .stage("I should help Apprentice Felix and the wizards awaken the Great Guardian.")

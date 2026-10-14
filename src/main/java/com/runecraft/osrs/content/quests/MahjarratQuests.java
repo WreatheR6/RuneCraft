@@ -126,15 +126,17 @@ final class MahjarratQuests {
                 .stage("I can start this quest by speaking to Evelot in East Ardougne. (Requires Making Friends with My Arm, The General's Shadow, Devious Minds, Hazeel Cult, 69 Agility, 64 Thieving, 56 Hunter.)")
                 .talk("evelot").say("There's been a murder in my house! The victim's body is covered in frost... in summer. The Ardougne guards are useless.")
                 .stage("I should ask Hazel, the victim's friend, what she knows.")
-                .talk("quest_hazel").say("He spoke of Ghorrock, the old Zarosian fortress in the frozen north... and of someone who kept him prisoner there.")
+                .reach("ARDOUGNE", 10).stay().unlessFlag("sotn_scene").flag("sotn_scene")
+                .say("* You search Evelot's house: frost on the body, a broken window and footprints leading north.")
+                .talk("quest_hazel").needFlag("sotn_scene").missing("Have you looked at the house yet? The guards trampled everything.").say("He spoke of Ghorrock, the old Zarosian fortress in the frozen north... and of someone who kept him prisoner there.")
                 .stage("I must travel to the Ghorrock Dungeon in the Wilderness and find out who is held there.")
                 .reach("ghorrock_dungeon", 10).say("* In the frozen halls, the ice cracks. A Mahjarrat lies imprisoned in the ice: Jhallan.")
                 .stage("I should speak to Jhallan in the Ghorrock prison.")
                 .talk("jhallan").say("Free me and you shall know everything. *Behind you, something shimmers: a muspah, its prismatic form shifting.*")
                 .stage("I must defeat the Phantom Muspah.")
-                .kill("phantom_muspah").say("* The Phantom Muspah shatters into shards of ice and shadow.")
+                .kill("phantom_muspah").flag("sotn_muspah").say("* The Phantom Muspah shatters into shards of ice and shadow.")
                 .stage("I should report to Evelot.")
-                .talk("evelot").say("Jhallan... a Mahjarrat? Then the murder was only the beginning. Thank you; the north holds more secrets yet.");
+                .talk("evelot").needFlag("sotn_muspah").say("Jhallan... a Mahjarrat? Then the murder was only the beginning. Thank you; the north holds more secrets yet.");
     }
 
     private static void desertTreasureII(QuestBook b) {
@@ -225,9 +227,9 @@ final class MahjarratQuests {
                 .talk("my_arm").take("goutweed_tuber", "supercompost:3").say("*You and My Arm plant the goutweed in the rooftop patch.* It growing! ...What that shadow?")
                 .missing("My Arm need goutweed tuber from jungle man, and 3 supercompost.")
                 .stage("A Giant Roc swoops down to protect its nest near the patch! I must defeat it.")
-                .kill("quest_giant_roc").say("* The Giant Roc flees, shedding feathers. My Arm's goutweed survives.")
+                .kill("quest_giant_roc").flag("mab_roc").say("* The Giant Roc flees, shedding feathers. My Arm's goutweed survives.")
                 .stage("I should tell My Arm the patch is safe.")
-                .talk("my_arm").say("My Arm farmer now! You can use patch too. Thank you, human friend.");
+                .talk("my_arm").needFlag("mab_roc").say("My Arm farmer now! You can use patch too. Thank you, human friend.");
     }
 
     private static void makingFriendsWithMyArm(QuestBook b) {

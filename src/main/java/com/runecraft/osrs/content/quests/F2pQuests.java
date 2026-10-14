@@ -188,7 +188,9 @@ final class F2pQuests {
                 .stage("I can start this quest by speaking to Veronica outside Draynor Manor.")
                 .talk("veronica").say("My fiance Ernest went into this manor hours ago and hasn't come back!", "> I'll look for him.")
                 .stage("I should look for Ernest inside Draynor Manor.")
-                .talk("professor_oddenstein").say("Ernest? Ah. I'm afraid my latest invention turned him into a chicken.",
+                .reach("DRAYNOR_MANOR", 6).stay().unlessFlag("etc_manor").flag("etc_manor")
+                .say("* The manor door slams shut behind you. Up the stairs, on the top floor, you hear a machine humming.")
+                .talk("professor_oddenstein").needFlag("etc_manor").missing("Who let you in? Come up to my laboratory properly, through the manor.").say("Ernest? Ah. I'm afraid my latest invention turned him into a chicken.",
                         "I can change him back, but the poltergeists have hidden parts of my machine: a pressure gauge, an oil can and a rubber tube.")
                 .stage("Professor Oddenstein needs a pressure gauge, a rubber tube and an oil can to turn Ernest back into a human.")
                 // Pressure gauge: fish food (upstairs) + poison (north-west room), fed to the fountain's piranhas.
