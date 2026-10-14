@@ -649,6 +649,7 @@
     "sparkle"
   ],
   "drake": [
+    "sores",
     "head"
   ],
   "draugen": [
@@ -2327,15 +2328,15 @@
   ],
   "tzhaar_hur_citizen": [
     "torso",
-    "leg_l",
-    "leg_r",
-    "shin_r",
-    "arm_l",
-    "forearm_l",
-    "arm_r",
-    "forearm_r",
+    "belly",
     "head",
-    "brow",
+    "crest",
+    "jaw",
+    "arm_l",
+    "arm_r",
+    "fore_l",
+    "fore_r",
+    "shin_r",
     "tail"
   ],
   "tzhaar_ket": [
@@ -2352,25 +2353,33 @@
     "maul_head"
   ],
   "tzhaar_mej": [
+    "torso",
     "head",
-    "chin",
-    "staff_orb",
-    "tail"
+    "crest",
+    "jaw",
+    "arm_l",
+    "arm_r",
+    "fore_l",
+    "fore_r",
+    "shin_l",
+    "shin_r",
+    "tail",
+    "orb"
   ],
   "tzhaar_xil": [
     "torso",
-    "leg_l",
-    "leg_r",
+    "head",
+    "crest",
+    "jaw",
+    "arm_l",
+    "arm_r",
+    "fore_l",
+    "fore_r",
     "shin_l",
     "shin_r",
-    "arm_l",
-    "forearm_l",
-    "arm_r",
-    "forearm_r",
-    "head",
-    "chin",
-    "brow",
-    "tail"
+    "tail",
+    "blade",
+    "ring"
   ],
   "tzkal_zuk": [
     "mound",

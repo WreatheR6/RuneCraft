@@ -20,7 +20,7 @@ final class Common1 {
 
     static List<ModelSpec> overrides() {
         List<ModelSpec> l = new ArrayList<>();
-        l.add(tzhaarKet());
+        // TzHaar-Ket moved to Common2.tzhaar (one body shared by every TzHaar caste)
         l.add(ghost());
         l.add(bloodveld());
         l.add(caveKraken());
@@ -34,56 +34,6 @@ final class Common1 {
 
     private static final int TOOTH = 0xF0EADA;
     private static final int CLAW = 0x2A2220;
-
-    // ------------------------------------------------------------------------------------------
-    // TzHaar-Ket
-    // ------------------------------------------------------------------------------------------
-
-    /**
-     * TzHaar-Ket, the guards of Mor Ul Rek: a hunched, heavy-shouldered lava-rock body with a big forward-thrust head,
-     * a fin crest running back over the skull, glowing orange eyes and molten seams in the rock, an obsidian chest
-     * plate and pauldrons, and an obsidian maul. (Xil, Mej and Hur re-sculpts were tried and rejected this round.)
-     */
-    static ModelSpec tzhaarKet() {
-        int rock = 0x7A3A26;
-        int deep = 0x3E1C16;
-        int light = 0x9A5032;
-        int lava = 0xFF7A1A;
-        int eye = 0xFFC030;
-        int obs = 0x34303A;
-        ModelSpec.Builder b = ModelSpec.builder("tzhaar_ket").shadow(1.0f);
-        part(b, "hips", null, Role.BODY, rock).accent(lava).at(0, 9, 1).mat("rock").box(-5, -3, -3.5f, 10, 6, 7).add();
-        part(b, "torso", "hips", Role.STATIC, rock).accent(lava).at(0, -2, 0).rot(28, 0, 0).mat("rock").glow("cracks")
-                .box(-6, -11, -4, 12, 11, 8).box(-7.5f, -15, -4.5f, 15, 5, 9).add();
-        part(b, "belly", "torso", Role.STATIC, light).accent(lava).at(0, -5, -4).mat("rock").glow("cracks")
-                .box(-4, -4, -0.8f, 8, 7, 1).add();
-        part(b, "head", "torso", Role.HEAD, rock).accent(eye).at(0, -13, -5).rot(-24, 0, 0).mat("rock").pattern("eyes").glow("eyes")
-                .box(-4.5f, -6.5f, -7.5f, 9, 8, 8).add();
-        part(b, "brow", "head", Role.STATIC, deep).at(0, -6, -7.5f).mat("rock").box(-4.5f, -1, -1, 9, 2, 2).add();
-        part(b, "crest", "head", Role.STATIC, light).accent(lava).at(0, -6.5f, -3).rot(-18, 0, 0).mat("rock").glow("cracks")
-                .box(-1.5f, -5, -4, 3, 5, 10).box(-1, -8, -1, 2, 3, 8).box(-0.5f, -10, 2, 1, 2, 5).add();
-        part(b, "jaw", "head", Role.JAW, deep).accent(lava).at(0, 1.5f, -3).mat("rock").glow("maw").box(-3.5f, 0, -4.5f, 7, 2, 6).add();
-        sym(b, "cheek_fin", "head", false, light).accent(lava).at(4.5f, -3, -2).rot(0, -20, -30).mat("rock").box(0, -2, -1.5f, 3, 4, 3).add();
-        sym(b, "arm", "torso", false, rock).roles(Role.ARM_LEFT, Role.ARM_RIGHT).accent(lava).at(7.5f, -13, 0).rot(-35, 0, -10)
-                .mat("rock").glow("cracks").box(-2.5f, -1, -2.5f, 5, 9, 5).add();
-        sym(b, "fore", "arm", true, rock).accent(lava).at(0, 8, 0).rot(-25, 0, 0).mat("rock").glow("cracks").box(-2.5f, 0, -2.5f, 5, 8, 5).add();
-        sym(b, "fist", "fore", true, deep).at(0, 7.5f, 0).mat("rock").box(-3, 0, -3, 6, 4, 6).add();
-        sym(b, "thigh", "hips", false, rock).roles(Role.LEG_FRONT_LEFT, Role.LEG_FRONT_RIGHT).accent(lava).at(3.5f, 2, 0).rot(-20, 0, 0)
-                .mat("rock").box(-2.5f, -1, -2.5f, 5, 8, 5).add();
-        sym(b, "shin", "thigh", true, rock).accent(lava).at(0, 7, 0).rot(20, 0, 0).mat("rock").glow("cracks").box(-2.5f, 0, -2.5f, 5, 6, 5).add();
-        sym(b, "foot", "shin", true, deep).at(0, 6, 0).mat("rock").box(-3, -1.3f, -4.5f, 6, 2, 7).add();
-        part(b, "tail", "hips", Role.TAIL, rock).accent(lava).at(0, 0, 3.5f).rot(40, 0, 0).mat("rock").glow("cracks")
-                .box(-2, -2, 0, 4, 4, 5).add();
-        part(b, "tail_tip", "tail", Role.STATIC, deep).at(0, 0, 5).rot(15, 0, 0).mat("rock").box(-1, -1, 0, 2, 2, 4).add();
-        part(b, "chest_plate", "torso", Role.STATIC, obs).accent(0x6A6070).at(0, -9, -4.2f).mat("obsidian")
-                .box(-5, -4, -1, 10, 8, 2).add();
-        sym(b, "pauldron", "torso", false, obs).at(7.5f, -15, 0).rot(0, 0, -15).mat("obsidian").box(-3, -2, -3.5f, 6, 3, 7).add();
-        part(b, "maul", "fist_r", Role.STATIC, obs).accent(lava).at(0, 2, -1).rot(12, 0, 0).mat("obsidian")
-                .box(-0.5f, -3, -0.5f, 1, 14, 1).add();
-        part(b, "maul_head", "maul", Role.STATIC, obs).accent(lava).at(0, 11, 0).mat("obsidian").glow("cracks")
-                .box(-3.5f, 0, -2.5f, 7, 5, 5).add();
-        return b.build();
-    }
 
     // ------------------------------------------------------------------------------------------
     // Ghost

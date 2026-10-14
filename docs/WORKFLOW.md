@@ -230,7 +230,7 @@ Recurring conflict spots:
   - Remaining spawn stand-ins: Braindeath (off-map), Mudskipper Point (cache mudskippers are underground at 2950,9525), Jatizso ice trolls (cache tiles 2387-2418, 3853-3869 lie north of the traced coast), Fortis guards (snapshot has no Varlamore).
   - Zeah multicombat polygons are from 2018; Varlamore has none.
   - Overworld implings don't roam.
-- **Models:** most common creatures are still blocky approximations (round 19 rejected TzHaar Xil/Mej/Hur, dagannoth, hellhound, nechryael, dust devil, aberrant spectre re-sculpts; greater/black demons untried); TzHaar-Ket now differs from the other TzHaar.
+- **Models:** most common creatures are still blocky approximations (still open: hellhound, nechryael, dust devil, aberrant spectre, kurask (round 20 attempt rejected), wyrm, hydra, jelly). TzHaar NPCs (shopkeepers, Fight Pit/Ket-Rak NPCs) are biped skins, not the shared TzHaar model.
 - **Bosses:**
   - Doom: grubs, shield/burrow phases, melee punish missing (CAs 613–615, 620, 624); delve runs and held loot are in memory only. Awakened mechanics are guesses; DT2 tablets/quartzes missing; normal Vardorvis stat row has Str/Def 1.
   - Yama, Doom, Maggot King and Royal Titans lairs are approx (no cache surface tile).
