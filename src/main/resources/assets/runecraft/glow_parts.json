@@ -341,29 +341,13 @@
   ],
   "cerberus": [
     "body",
-    "chest",
-    "shoulder_l",
-    "shoulder_r",
-    "haunch_l",
-    "haunch_r",
-    "neck0",
-    "eyes0",
-    "jaw0",
-    "neck1",
-    "eyes1",
-    "jaw1",
-    "neck2",
-    "eyes2",
-    "jaw2",
-    "leg_f_l",
-    "leg_f_r",
-    "fore_f_l",
-    "fore_f_r",
-    "thigh_b_l",
-    "thigh_b_r",
-    "meta_b_l",
-    "meta_b_r",
-    "tail_fire"
+    "head_mid",
+    "jaw_mid",
+    "head_left",
+    "jaw_left",
+    "head_right",
+    "jaw_right",
+    "tail_tip"
   ],
   "champion_of_scabaras": [
     "elytron_l",
@@ -413,14 +397,26 @@
   ],
   "corporeal_beast": [
     "body",
-    "chest",
-    "shoulder_l",
-    "shoulder_r",
-    "eyes",
-    "leg_f_l",
-    "leg_f_r",
-    "thigh_b_l",
-    "thigh_b_r"
+    "hump",
+    "belly",
+    "sigil",
+    "head",
+    "brow",
+    "snout",
+    "jaw",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r",
+    "paw_l",
+    "paw_r",
+    "leg_l",
+    "leg_r",
+    "shin_l",
+    "shin_r",
+    "foot_l",
+    "foot_r",
+    "tail"
   ],
   "corrupt_lizardman": [
     "head",
@@ -825,9 +821,6 @@
     "gem5",
     "gem6",
     "gem7"
-  ],
-  "general_graardor": [
-    "head"
   ],
   "general_khazard": [
     "khazard_eyes"
@@ -1288,8 +1281,8 @@
     "eye_r"
   ],
   "kreearra": [
-    "head",
-    "arma_chest_gem"
+    "chestplate",
+    "head"
   ],
   "kril_tsutsaroth": [
     "head",
@@ -2057,12 +2050,10 @@
     "coins"
   ],
   "the_nightmare": [
-    "heart",
+    "torso",
     "head",
-    "horn0_tip_l",
-    "horn0_tip_r",
-    "cowl_glow",
-    "aura"
+    "bracer_l",
+    "bracer_r"
   ],
   "the_whisperer": [
     "body",
@@ -2080,11 +2071,8 @@
     "tentacle5_3"
   ],
   "thermonuclear_smoke_devil": [
-    "body",
-    "eyes",
-    "maw",
-    "jaw",
-    "embers"
+    "head",
+    "jaw"
   ],
   "titan_fire_elemental": [
     "head",
@@ -2248,28 +2236,19 @@
     "tail"
   ],
   "tzkal_zuk": [
-    "throne",
-    "throne_arm_l",
-    "throne_arm_r",
-    "throne_glow",
-    "body",
-    "heart",
-    "shoulder_l",
-    "shoulder_r",
-    "arm_l",
-    "arm_r",
-    "forearm_l",
-    "forearm_r",
+    "mound",
+    "torso",
     "head",
     "jaw",
-    "crown_band",
-    "fin1_l",
-    "fin1_r",
-    "fin2_l",
-    "fin2_r",
-    "fin3_l",
-    "hood_web",
-    "crown_gem"
+    "crown0_tip",
+    "crown1_tip",
+    "crown2_tip",
+    "crown3_tip",
+    "crown4_tip",
+    "crown5_tip",
+    "crown6_tip",
+    "forearm_l",
+    "forearm_r"
   ],
   "tztok_jad": [
     "hips",
@@ -2361,11 +2340,8 @@
     "blood_orb"
   ],
   "verzik_vitur_p3": [
-    "abd_mark",
-    "head",
-    "jaw",
-    "eye_cluster_l",
-    "eye_cluster_r"
+    "abdomen",
+    "head"
   ],
   "vespine_soldier": [
     "compound_eye_l",
@@ -2393,17 +2369,8 @@
     "halberd_glow"
   ],
   "vorkath": [
-    "body",
-    "shoulder_l",
-    "shoulder_r",
-    "neck",
-    "eyes",
-    "breath",
-    "leg_f_l",
-    "thigh_b_l",
-    "thigh_b_r",
-    "tail0",
-    "tail1"
+    "cavity",
+    "head"
   ],
   "vulture": [
     "eyes"
