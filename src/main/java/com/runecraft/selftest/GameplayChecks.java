@@ -273,19 +273,24 @@ final class GameplayChecks {
         }
     }
 
-    /** Reports a kill of {@code creature} through the real kill hooks; false if it isn't a known entity. */
-    private boolean kill(String creature) {
+    /**
+     * Reports {@code count} kills of {@code creature} through the real kill hooks (multi-kill objectives count each
+     * one); false if it isn't a known entity.
+     */
+    private boolean kill(String creature, int count) {
         EntityType<?> type = ModEntities.typeById(creature);
         if (type == null) {
             return false;
         }
-        Entity e = type.create(c.world);
-        if (!(e instanceof LivingEntity victim)) {
-            return false;
+        for (int i = 0; i < Math.max(1, count); i++) {
+            Entity e = type.create(c.world);
+            if (!(e instanceof LivingEntity victim)) {
+                return false;
+            }
+            victim.refreshPositionAndAngles(p().getX() + 2, p().getY(), p().getZ(), 0f, 0f);
+            QuestManager.onKill(p(), victim, MonsterStats.of(victim));
+            victim.discard();
         }
-        victim.refreshPositionAndAngles(p().getX() + 2, p().getY(), p().getZ(), 0f, 0f);
-        QuestManager.onKill(p(), victim, MonsterStats.of(victim));
-        victim.discard();
         return true;
     }
 
@@ -325,7 +330,7 @@ final class GameplayChecks {
                 boolean handled = true;
                 switch (t.kind) {
                     case TALK -> QuestInterpreter.selfTestTalk(p(), t.target);
-                    case KILL -> handled = kill(t.target);
+                    case KILL -> handled = kill(t.target, t.count);
                     default -> QuestInterpreter.selfTestFire(p(), spec, t);
                 }
                 if (!handled || (data.questStage(q) == s && !data.questComplete(q))) {

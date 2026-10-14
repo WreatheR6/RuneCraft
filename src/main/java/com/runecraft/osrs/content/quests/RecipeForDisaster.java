@@ -84,11 +84,31 @@ final class RecipeForDisaster {
         b.spot("rfd_crash_island_pit", "Crash Island snake pit", 2896, 2722); // approx
         Cast.npc(b, "rfd_traiborn", "Wizard Traiborn", "WIZARDS_TOWER", -5, 4, Cast.PALE, 0x5A3A8A);
         Cast.npc(b, "rfd_murphy", "Murphy", "port_khazard_rfd", 0, 0, Cast.FAIR, 0x3A5A7A);
-        b.boss(BossDef.of("rfd_evil_chicken", "Evil Chicken").level(19).stats(40, 15, 15, 15, 1, 1).speed(4) // approx: its level scales with yours in OSRS
-                .attack(AttackDef.of("peck", AttackType.STAB, 6, 2, 8))
-                .attack(AttackDef.of("egg_bomb", AttackType.MAGIC, 8, 6, 3).particle("minecraft:flame"))
-                .drops(Drop.always("bones")).skin(0x8A1A1A, 0x6A1A1A, 0x4A0A0A, 0xE0A020).size(0.7f, 1.2f, 1.0f)
+        // OSRS Wiki "Evil Chicken (Recipe for Disaster)": a fixed level 159 (only the random-event chicken scales):
+        // 120 HP, 126 Defence, 200 Magic, magic attacks up to 21 every 4 ticks; summoned with a raw chicken at its shrine.
+        b.boss(BossDef.of("rfd_evil_chicken", "Evil Chicken").level(159).stats(120, 1, 1, 126, 200, 1).speed(4)
+                .attack(AttackDef.of("egg_bomb", AttackType.MAGIC, 21, 8, 1).particle("minecraft:flame"))
+                .drops(Drop.always("bones"), Drop.always("minecraft:chicken")).skin(0x8A1A1A, 0x6A1A1A, 0x4A0A0A, 0xE0A020).size(0.7f, 1.2f, 1.0f)
                 .at("rfd_evil_chicken_lair").arena(7, "stone"));
+        // Subquest creatures (OSRS Wiki infoboxes), each raised at its spot while its objective is active.
+        b.spot("rfd_mogre_crab_pen", "Mogre Camp crab pen (sea bed)", 2962, 3152); // approx: the undersea pen, offshore west of Mudskipper Point
+        b.spot("rfd_jubbly_nest", "Jubbly bird nesting ground (Feldip Hills)", 2636, 2964); // approx: south-east of Rantz, by the coast
+        b.boss(BossDef.of("rfd_crab", "Crab").level(21).stats(18, 17, 17, 22, 1, 1).speed(4) // the Mogre Camp crab pen crab
+                .attack(AttackDef.of("pinch", AttackType.CRUSH, 3, 2, 1))
+                .drops(Drop.always("bones")).skin(0xC05A2A, 0xA04A1A, 0x6A2A0A, 0xE0A060).size(0.9f, 0.8f, 1.0f)
+                .at("rfd_mogre_crab_pen").arena(6, "water"));
+        b.boss(BossDef.of("rfd_hell_rat", "Hell-Rat").level(3).stats(5, 2, 2, 2, 1, 1).speed(4) // approx: OSRS hell-rats have no combat stats; only a cat can catch them
+                .attack(AttackDef.of("bite", AttackType.STAB, 1, 1.5, 1))
+                .drops(Drop.always("ashes")).model("giant_rat").size(0.6f, 0.5f, 0.8f)
+                .at("rfd_evil_daves_basement").arena(6, "crypt"));
+        b.boss(BossDef.of("rfd_jubbly_bird", "Jubbly bird").level(9).stats(20, 5, 5, 6, 1, 1).speed(4).passive() // does not attack in OSRS
+                .attack(AttackDef.of("flap", AttackType.CRUSH, 0, 1.5, 1))
+                .drops(Drop.always("bones")).model("chompy_bird").size(0.8f, 1.2f, 1.0f)
+                .at("rfd_jubbly_nest").arena(6, "jungle"));
+        b.boss(BossDef.of("rfd_big_snake", "Big Snake").level(84).stats(120, 60, 60, 60, 1, 1).speed(6).poisonous()
+                .attack(AttackDef.of("bite", AttackType.STAB, 14, 2, 1))
+                .drops(Drop.always("bones")).model("sea_snake").size(1.0f, 0.8f, 1.0f)
+                .at("rfd_crash_island_pit").arena(7, "jungle"));
 
         b.quest("recipe_for_disaster", "Recipe for Disaster", Difficulty.GRANDMASTER, 10)
                 .reqQuest("COOKS_ASSISTANT").req(Skill.COOKING, 10)
@@ -136,12 +156,15 @@ final class RecipeForDisaster {
                 .take("bronze_bar").need("hammer", "needle").give("rfd_fishbowl_helmet")
                 .say("Divin'? Ye'll need a fishbowl helmet. *You hammer the bar into wire and fit it to a fishbowl.* Now get down there!")
                 .missing("Bring a bronze bar for wire, a hammer and a needle and I'll make ye a fishbowl helmet for the dive.")
-                .drop("mudskipper", "rfd_mudskipper_hide", 1)
-                .reach("rfd_crab_pen", 8).stay().needFlag("rfd_pete_dive").need("rfd_fishbowl_helmet", "pestle_and_mortar").take("rfd_mudskipper_hide")
-                .unless("rfd_ground_crab_meat").unlessFlag("rfd_pete").give("rfd_ground_kelp", "rfd_ground_crab_meat")
-                .say("* You pick kelp on the sea bed. Nung the fishman takes your mudskipper hide and lets you into his crab pen.",
-                        "* You kill a giant crab and grind its meat and the kelp with your pestle and mortar.") // approx: OSRS wants 5 hides
-                .missing("* Nung the fishman won't open his crab pen without mudskipper hides, and you'll need a fishbowl helmet to breathe down here.")
+                // OSRS: kill 5 mudskippers for 5 hides; Nung the fishman opens his crab pen for them; kill a crab for its meat.
+                .drop("mudskipper", "rfd_mudskipper_hide", 1).times(5).needFlag("rfd_pete_dive").unlessFlag("rfd_pete_pen", "rfd_pete")
+                .reach("rfd_crab_pen", 8).stay().needFlag("rfd_pete_dive").need("rfd_fishbowl_helmet", "pestle_and_mortar").take("rfd_mudskipper_hide:5")
+                .unlessFlag("rfd_pete_pen", "rfd_pete").flag("rfd_pete_pen").give("rfd_ground_kelp")
+                .say("* You pick kelp on the sea bed and grind it. Nung the fishman takes your five mudskipper hides and opens his crab pen.")
+                .missing("* Nung the fishman won't open his crab pen without 5 mudskipper hides, and you'll need a fishbowl helmet to breathe down here.")
+                .kill("rfd_crab").stay().needFlag("rfd_pete_pen").need("rfd_fishbowl_helmet", "pestle_and_mortar").unless("rfd_ground_crab_meat")
+                .unlessFlag("rfd_pete").give("rfd_ground_crab_meat")
+                .say("* The crab falls. You grind its giant crab meat with your pestle and mortar.")
                 // --- Lumbridge Guide: cake of guidance from Wizard Traiborn's enchanted egg, milk and flour.
                 .talk("rfd_traiborn").stay().unless("rfd_enchanted_egg").unlessFlag("rfd_guide").reqSkill(Skill.COOKING, 40)
                 .reqDone("big_chompy_bird_hunting", "biohazard", "DEMON_SLAYER", "nature_spirit", "witchs_house", "murder_mystery")
@@ -164,9 +187,10 @@ final class RecipeForDisaster {
                 .flag("rfd_dave_basement")
                 .say("What did I eat at the council? Why should I... oh, the magic requires it. Spicy stew. Mother keeps hell-rats in the basement for the spices.")
                 .missing("Go away. (Requires 25 Cooking, Gertrude's Cat and Shadow of the Storm.)")
-                .reach("rfd_evil_daves_basement", 6).stay().needFlag("rfd_dave_basement").need("gertrudes_kitten").unless("rfd_hell_rat_spices").unlessFlag("rfd_dave")
-                .give("rfd_hell_rat_spices").say("* Your cat chases the hell-rats around Evil Dave's basement. They drop yellow, orange, red and brown spices.")
-                .missing("* Hell-rats scurry about the basement. A cat could catch them.")
+                // OSRS: the cat catches hell-rats, each dropping a random spice; four colours are needed (one catch each here).
+                .kill("rfd_hell_rat", 4).stay().needFlag("rfd_dave_basement").need("gertrudes_kitten").unless("rfd_hell_rat_spices").unlessFlag("rfd_dave")
+                .give("rfd_hell_rat_spices").say("* Your cat has caught four hell-rats. Between them they dropped yellow, orange, red and brown spices.")
+                .missing("* Hell-rats scurry about Evil Dave's basement. Bring a cat to chase them.")
                 // --- Skrach Uglogwee: a jubbly bird shot with an ogre bow, roasted on an iron spit.
                 .talk("skrach_uglogwee").stay().needFlag("rfd_skrach_start").unlessFlag("rfd_skrach").take("rfd_raw_jubbly", "iron_bar", "logs")
                 .need("tinderbox").flag("rfd_skrach").grantXp(Skill.COOKING, 1500).grantXp(Skill.RANGED, 1500).grantXp(Skill.CRAFTING, 1500)
@@ -176,11 +200,13 @@ final class RecipeForDisaster {
                 .reqDone("big_chompy_bird_hunting").flag("rfd_skrach_start")
                 .say("Skrach want jubbly bird! Rantz know jubbly: they live in Feldip Hills. Blow up toad for bait, then shoot with ogre bow.")
                 .missing("Skrach no talk to weakling. (Requires 41 Cooking, 20 Firemaking and Big Chompy Bird Hunting.)")
-                .reach("feldip_hills", 12).stay().needFlag("rfd_skrach_start").unless("rfd_raw_jubbly").unlessFlag("rfd_skrach")
-                .needTool("axe", "pickaxe").need("ogre_bow").take("ogre_arrow").give("rfd_raw_jubbly")
-                .say("* You chop logs and mine a rock to help Rantz fix his boat, inflate a toad as bait, and shoot the jubbly bird that lands on it.",
-                        "* You pluck the jubbly.")
-                .missing("* Rantz needs his boat fixed before he'll show you the jubblies: bring an axe and a pickaxe, an ogre bow and ogre arrows.")
+                .reach("feldip_hills", 12).stay().needFlag("rfd_skrach_start").unless("rfd_raw_jubbly").unlessFlag("rfd_skrach", "rfd_jubbly_bait")
+                .needTool("axe", "pickaxe").flag("rfd_jubbly_bait")
+                .say("* You chop logs and mine a rock to help Rantz fix his boat. He shows you how to inflate a toad as jubbly bait.")
+                .missing("* Rantz needs his boat fixed before he'll show you the jubblies: bring an axe and a pickaxe.")
+                .kill("rfd_jubbly_bird").stay().needFlag("rfd_jubbly_bait").need("ogre_bow").take("ogre_arrow").unless("rfd_raw_jubbly").unlessFlag("rfd_skrach")
+                .give("rfd_raw_jubbly").say("* The jubbly bird lands on your bloated toad and you shoot it with an ogre arrow. You pluck the jubbly.")
+                .missing("* You'll need an ogre bow and ogre arrows to shoot the jubbly.")
                 // --- Sir Amik Varze: brulee supreme with the Evil Chicken's egg, flambeed by a black dragon's token.
                 .talk("sir_amik_varze").stay().needFlag("rfd_amik_start").unlessFlag("rfd_amik")
                 .take("minecraft:milk_bucket", "pot_of_cream", "sweetcorn", "rfd_vanilla_pod", "rfd_evil_chicken_egg", "dramen_branch", "rfd_dragon_token")
@@ -194,8 +220,9 @@ final class RecipeForDisaster {
                 .missing("You'll need access to Zanaris and the Kharazi Jungle. (Requires Lost City and Legends' Quest started: 107 quest points.)")
                 .reach("kharazi_jungle", 12).stay().needFlag("rfd_amik_start").unless("rfd_vanilla_pod").unlessFlag("rfd_amik").needTool("axe")
                 .give("rfd_vanilla_pod").say("* You hack through the jungle and pick a vanilla pod.")
-                .kill("rfd_evil_chicken").stay().needFlag("rfd_amik_start").unless("rfd_evil_chicken_egg").unlessFlag("rfd_amik")
-                .give("rfd_evil_chicken_egg").say("* The Evil Chicken drops a warm egg.")
+                .kill("rfd_evil_chicken").stay().needFlag("rfd_amik_start").take("minecraft:chicken").unless("rfd_evil_chicken_egg").unlessFlag("rfd_amik")
+                .give("rfd_evil_chicken_egg").say("* You offered a raw chicken at the shrine and its master came. The Evil Chicken drops a warm egg.")
+                .missing("* The Evil Chicken only answers an offering of a raw chicken at its shrine.")
                 .drop("black_dragon", "rfd_dragon_token", 1)
                 // --- King Awowogei: stuffed snake with red banana and tchiki nuts, cooked on a hot rock under the temple.
                 .talk("king_awowogei").stay().needFlag("rfd_awo_start").unlessFlag("rfd_awowogei").reqSkill(Skill.COOKING, 70)
@@ -209,7 +236,10 @@ final class RecipeForDisaster {
                 .say("Ook? The king's favourite dish is stuffed snake. Big snakes live in the pit on Crash Island.")
                 .missing("Ook ook! (Wear a monkey greegree. Requires Monkey Madness I, 70 Cooking, 48 Agility.)")
                 .reach("rfd_crash_island_pit", 8).stay().needFlag("rfd_awo_start").unless("rfd_snake_corpse").unlessFlag("rfd_awowogei")
-                .give("rfd_snake_corpse").say("* You climb into the pit and kill a big snake for its corpse.") // approx: the big snakes are not spawned
+                .need("rope").unlessFlag("rfd_awo_pit").flag("rfd_awo_pit").say("* You tie your rope and climb down into the snake pit.")
+                .missing("* The pit is too deep to climb down without a rope.")
+                .kill("rfd_big_snake").stay().needFlag("rfd_awo_pit").unless("rfd_snake_corpse").unlessFlag("rfd_awowogei")
+                .give("rfd_snake_corpse").say("* The big snake falls. You take its corpse.")
                 .reach("ape_atoll", 16).stay().needFlag("rfd_awo_start").unless("rfd_tchiki_nuts").unlessFlag("rfd_awowogei")
                 .need("rope", "knife", "pestle_and_mortar").reqSkill(Skill.AGILITY, 48).give("rfd_red_banana", "rfd_tchiki_nuts")
                 .say("* As a gorilla you rope down a red banana; as a ninja monkey you run the agility course to the tchiki nut bush.",

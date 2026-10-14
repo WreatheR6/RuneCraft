@@ -93,15 +93,22 @@ final class QuestBossScripts {
         }
     }
 
-    /** Desert Treasure: Fareed's flames halve melee damage unless the attacker carries ice gloves. */
+    /**
+     * Desert Treasure: Fareed disarms anyone who hits him in melee without ice gloves, so melee does nothing
+     * without them; ranged and magic (water spells in OSRS: any spell here, approx) work from a distance.
+     */
     static final class Fareed implements BossScript {
+        private long lastMessage;
+
         @Override
         public int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
             if (type.isMelee() && !Inv.has(attacker, "ice_gloves", 1)) {
-                if (boss.getRandom().nextInt(4) == 0) {
-                    Msg.action(attacker, "Fareed's flames scorch your hands! Ice gloves would protect you.");
+                long now = boss.getWorld().getTime();
+                if (now - lastMessage > 40) {
+                    lastMessage = now;
+                    Msg.action(attacker, "Fareed's flames scorch your hands and you can't keep hold of your weapon! Ice gloves would protect you.");
                 }
-                return damage / 2;
+                return 0;
             }
             return damage;
         }

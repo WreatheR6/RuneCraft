@@ -107,6 +107,7 @@ final class FremennikQuests {
         b.item("waking_sleep_vial", "Waking sleep vial", "potion", 0x8A8AE0, "A potion to enter the dream world.");
         b.item("lunar_moonclan_manual", "Moonclan manual", "book", 0x5A6A8A, "A manual on the Lunar arts.");
         b.item("ld_lunar_ore", "Lunar ore", "ore", 0x8AA0C0, "Ore from the Lunar Isle mine.");
+        b.item("ld_emerald_lantern", "Emerald lantern", "lantern", 0x3AA05A, "A bullseye lantern with an emerald lens. It shows things hidden to the eye.");
         b.spot("lunar_isle_mine", "Lunar Isle mine", 2142, 3944); // approx: the ladder in the north-east of the isle
         b.boss(BossDef.of("me", "Me").level(79).stats(100, 70, 70, 70, 70, 70).speed(4)
                 .attack(AttackDef.of("mirror_strike", AttackType.SLASH, 12, 2.5, 10))
@@ -124,10 +125,14 @@ final class FremennikQuests {
                 .stage("I need a seal of passage from Brundt; then Lokar's pirate friends will sail me to Lunar Isle, where I should speak to the Oneiromancer.")
                 .talk("brundt").stay().unless("seal_of_passage").give("seal_of_passage")
                 .say("The Moon Clan? Wear this seal of passage, or they won't understand a word you say. Be careful, outerlander.")
-                .talk("lokar_searunner").stay().unlessFlag("ld_sailed").need("seal_of_passage", "tinderbox").flag("ld_sailed").travel("quest_lunar_isle")
+                // OSRS: the cabin boy's bullseye lantern has no oil: fill it with lamp oil (swamp tar in the Rimmington still) and fit the emerald lens.
+                .talk("lokar_searunner").stay().need("seal_of_passage").unless("ld_emerald_lantern").unlessFlag("ld_sailed").take("swamp_tar").give("ld_emerald_lantern")
+                .say("* The cabin boy gives you an empty bullseye lantern and an emerald lens. You fill it with lamp oil distilled from swamp tar and fit the lens.")
+                .missing("The cabin boy's lantern has no oil. Bring some swamp tar to distil into lamp oil (Rimmington has a still).")
+                .talk("lokar_searunner").stay().unlessFlag("ld_sailed").need("seal_of_passage", "tinderbox", "ld_emerald_lantern").flag("ld_sailed").travel("quest_lunar_isle")
                 .say("* Captain Bentley's ship is cursed with Lunar symbols. The cabin boy gives you an emerald lens for a lantern; lit, it shows the symbols",
                         "* on the cannon, the wallchart, a chest, a support pillar and a crate. You rub them away and the ship sails for Lunar Isle.")
-                .missing("Got your seal of passage? And bring a tinderbox; that ship's always dark below decks.")
+                .missing("Got your seal of passage? And bring a tinderbox to light the emerald lantern; that ship's always dark below decks.")
                 .talk("oneiromancer").needFlag("ld_sailed").need("seal_of_passage").give("lunar_moonclan_manual")
                 .say("You wear the seal, so my people understand you. The Fremennik want peace with the Moon Clan? Then prove yourself to us.",
                         "Make a waking sleep potion to enter the dream world, and dress in proper Lunar equipment. This manual will guide you.")

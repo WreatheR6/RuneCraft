@@ -111,7 +111,8 @@ class QuestChainsDepthTest {
         assertTrue(any(q, t -> t.kind == Trigger.Kind.DROP && t.target.equals("mudskipper")));
         assertTrue(any(q, t -> t.target.equals("rfd_traiborn") && t.give.containsKey("rfd_enchanted_egg")));
         assertTrue(any(q, t -> t.need.containsKey("gertrudes_kitten") && t.give.containsKey("rfd_hell_rat_spices")));
-        assertTrue(any(q, t -> t.tools.containsAll(List.of("axe", "pickaxe")) && t.give.containsKey("rfd_raw_jubbly")));
+        assertTrue(any(q, t -> t.tools.containsAll(List.of("axe", "pickaxe")) && t.setFlags.contains("rfd_jubbly_bait")));
+        assertTrue(find(q, Trigger.Kind.KILL, "rfd_jubbly_bird").give.containsKey("rfd_raw_jubbly"));
         assertTrue(find(q, Trigger.Kind.KILL, "rfd_evil_chicken").give.containsKey("rfd_evil_chicken_egg"));
         assertTrue(any(q, t -> t.kind == Trigger.Kind.DROP && t.target.equals("black_dragon") && t.give.containsKey("rfd_dragon_token")));
         assertTrue(any(q, t -> t.take.keySet().containsAll(Set.of("rfd_snake_corpse", "rfd_red_banana", "rfd_tchiki_nuts"))));

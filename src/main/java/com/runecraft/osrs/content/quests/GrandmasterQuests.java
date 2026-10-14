@@ -96,8 +96,8 @@ final class GrandmasterQuests {
                 .say("* As Kruk you swing across the monkey bars into Glough's laboratory and ride a stunted demonic gorilla downstairs.",
                         "* You chisel the charged onyx apart and jam the device: the incubation chambers go dark.")
                 .missing("* Glough's laboratory lies beyond monkey bars only Kruk could use. You'd also want a chisel, a hammer and an onyx for his device.")
-                .kill("tortured_gorilla").stay().needFlag("mm2_lab").unlessFlag("mm2_gorillas").flag("mm2_gorillas")
-                .say("* Nieve and you drive the tortured gorillas out of the Gnome Stronghold. Garkor has found Glough's cave.") // approx: OSRS wants four
+                .kill("tortured_gorilla", 4).stay().needFlag("mm2_lab").unlessFlag("mm2_gorillas").flag("mm2_gorillas")
+                .say("* Nieve and you drive the tortured gorillas out of the Gnome Stronghold. Garkor has found Glough's cave.") // OSRS: kill 4 tortured gorillas
                 .kill("mm2_glough").needFlag("mm2_gorillas").say("* Glough falls at last. His gorilla army will never fly.")
                 .stage("I should report to King Narnode.")
                 .talk("king_narnode").say("Glough is dead and Kruk with him. Take this royal seed pod; it will always bring you home to the Grand Tree.")
@@ -187,8 +187,25 @@ final class GrandmasterQuests {
                 .stage("I must defeat Galvek, the dragon of the dragonkin, on the Western Sea.")
                 .talk("robert_the_strong").stay().say("Together, as I fought beside Camorra of old! To the ships!")
                 // OSRS assault on the Myths' Guild: green, blue, black, steel, brutal red, mithril, adamant and rune dragons, then Galvek.
-                .kill("green_dragon").stay().unlessFlag("ds2_assault").flag("ds2_assault")
-                .say("* The first wave of dragons falls before the Myths' Guild. More arrive on the ship, one at a time... then Galvek himself.") // approx: one kill stands for the waves
+                // Wave 1: two green and two blue dragons battling the Varrockian soldiers (checkpoint).
+                .kill("green_dragon", 2).stay().unlessFlag("ds2_wave_green", "ds2_assault").flag("ds2_wave_green")
+                .say("* The two green dragons fall beside the Varrockian soldiers.")
+                .kill("blue_dragon", 2).stay().unlessFlag("ds2_wave_blue", "ds2_assault").flag("ds2_wave_blue")
+                .say("* The two blue dragons fall. The first wave is beaten.")
+                // Wave 2: black, steel, then brutal red dragons land on the ship one at a time.
+                .kill("black_dragon").stay().needFlag("ds2_wave_green", "ds2_wave_blue").unlessFlag("ds2_wave_black", "ds2_assault").flag("ds2_wave_black")
+                .say("* A black dragon lands on the deck and falls. A steel dragon follows.")
+                .kill("steel_dragon").stay().needFlag("ds2_wave_black").unlessFlag("ds2_wave_steel", "ds2_assault").flag("ds2_wave_steel")
+                .say("* The steel dragon falls. A brutal red dragon swoops in.")
+                .kill("brutal_red_dragon").stay().needFlag("ds2_wave_steel").unlessFlag("ds2_wave_red", "ds2_assault").flag("ds2_wave_red")
+                .say("* The brutal red dragon falls. The second wave is beaten (checkpoint).")
+                // Wave 3: mithril, adamant, then rune dragons.
+                .kill("mithril_dragon").stay().needFlag("ds2_wave_red").unlessFlag("ds2_wave_mithril", "ds2_assault").flag("ds2_wave_mithril")
+                .say("* The mithril dragon falls. An adamant dragon follows.")
+                .kill("adamant_dragon").stay().needFlag("ds2_wave_mithril").unlessFlag("ds2_wave_adamant", "ds2_assault").flag("ds2_wave_adamant")
+                .say("* The adamant dragon falls. A rune dragon crackles with lightning.")
+                .kill("rune_dragon").stay().needFlag("ds2_wave_adamant").unlessFlag("ds2_assault").flag("ds2_assault")
+                .say("* The rune dragon falls: the assault is broken. Galvek himself descends on the ship.")
                 .kill("galvek").needFlag("ds2_assault").say("* Galvek falls into the sea. The dragon threat is ended.")
                 .stage("I should report to Alec Kincade at the Myths' Guild.")
                 .talk("alec_kincade").say("Galvek is dead! You are a true slayer of dragons. The Myths' Guild is open to you.")

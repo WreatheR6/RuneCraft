@@ -336,6 +336,10 @@ final class KandarinMoreQuests {
     private static void mourningsEnd(QuestBook b) {
         b.npc("mourner_spy", "Mourner", "west_ardougne_mourners", 0, 0, 0xE0B8A5, 0x2A2A2B, 0x2A2A2C, 0x1A1A1D);
         b.item("mourner_gear", "Mourner gear", "cloth", 0x2A2A2A, "A full set of mourner gear, as a disguise.");
+        // OSRS Wiki "Mourner" (level 108, the Arandar Pass ones): 105 HP, 95 Attack/Strength, 80 Defence, stab max hit 10.
+        b.boss(BossDef.of("me_mourner", "Mourner").level(108).stats(105, 95, 95, 80, 1, 1).speed(4)
+                .attack(AttackDef.of("stab", AttackType.STAB, 10, 2, 1))
+                .drops(Drop.always("bones")).skin(0xE0B8A6, 0x2A2A2E, 0x2A2A2F, 0x1A1A1E).at("me_arandar_gate").arena(6, "stone"));
         b.item("coloured_toads", "Dyed toad", "creature", 0x8A3AA0, "A toad dyed in sheep dye... it's a long story.");
         b.item("light_crystal", "Death talisman", "talisman", 0xE0E0FF, "The key to the Temple of Light.");
         b.item("me_bloody_mourner_top", "Bloody mourner top", "cloth", 0x5A1A1A, "A mourner's top, covered in blood. It needs a good wash.");
@@ -362,9 +366,9 @@ final class KandarinMoreQuests {
                 .talk("islwyn").say("The mourners of West Ardougne are not what they seem. Arianwyn in Lletya needs someone to infiltrate them.")
                 // OSRS: kill a mourner at the Arandar gate for its gear; Tegid's soap cleans the bloody top, Oronwen mends the torn trousers.
                 .stage("I need a mourner disguise: the mourners guarding the Arandar Pass carry their gear. Tegid and Oronwen can fix what's damaged.")
-                .reach("me_arandar_gate", 8).stay().unless("me_bloody_mourner_top", "me_mourner_top", "mourner_gear")
+                .kill("me_mourner").stay().unless("me_bloody_mourner_top", "me_mourner_top", "mourner_gear")
                 .give("me_bloody_mourner_top", "me_torn_mourner_trousers")
-                .say("* You kill a mourner at the Arandar gate. His potion drains your stats as he dies.",
+                .say("* The mourner at the Arandar gate falls. His potion drains your stats as he dies.",
                         "* He drops a mask, gloves, boots, a cloak, a letter... a bloody top and torn trousers.")
                 .talk("tegid").stay().take("me_bloody_mourner_top", "minecraft:water_bucket").give("me_mourner_top")
                 .say("Soap? Take some of mine, from the laundry basket. *You scrub the top clean in a bucket of water.*")

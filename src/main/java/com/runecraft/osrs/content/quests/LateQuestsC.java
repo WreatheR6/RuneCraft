@@ -184,8 +184,10 @@ final class LateQuestsC {
                 .stage("I should climb down into Tolna's Rift with a rope and face the manifestations of anger, fear, confusion and hopelessness.")
                 .reach("quest_tolnas_rift", 6).need("rope").say("* Angry bears and unicorns, hopeless creatures and confused shapes swarm around you. You push through until a reaper blocks the way.")
                 .missing("* The rift is too deep to climb without a rope.")
-                .stage("I must defeat the Fear reaper.")
-                .kill("quest_fear_reaper").flag("asb_reaper").say("* The reaper dissolves. At the bottom of the rift sits a young man, alone with his memories.")
+                // OSRS: fear reapers hide in the dark holes of the fear cave; killing 5 or 6 of them ends the room.
+                .stage("I must defeat the Fear reapers hiding in the dark holes of the fear cave.")
+                .kill("quest_fear_reaper", 5).flag("asb_reaper")
+                .say("* The last reaper dissolves. Past the confusion and hopelessness caves, at the bottom of the rift, sits a young man, alone with his memories.")
                 .stage("I should talk to Tolna.")
                 .talk("tolna").needFlag("asb_reaper").flag("asb_tolna").say("Mother? She's still waiting for me? I let my anger and fear trap me here... I'll go up.")
                 .stage("I should tell Launa that Tolna is safe.")
@@ -261,6 +263,7 @@ final class LateQuestsC {
     private static void nightAtTheTheatre(QuestBook b) {
         Cast.npc(b, "quest_mysterious_stranger_tob", "Mysterious Stranger", "quest_ver_sinhaza", 3, -3, Cast.VAMPYRE, 0x2A2A2A);
         b.item("quest_spider_venom_sample", "Spider venom sample", "vial", 0x5A8A3A, "A sample of venom from the spiders beneath Ver Sinhaza.");
+        b.item("quest_ranis_head", "Ranis' head", "creature", 0x8A7A8A, "The severed head of Ranis Drakan. Grim.");
         b.quest("a_night_at_the_theatre", "A Night at the Theatre", Difficulty.MASTER, 2)
                 .reqQuest("a_taste_of_hope")
                 .xp(Skill.SLAYER, 20000).xp(Skill.HITPOINTS, 20000) // two 20,000 XP combat lamps (approximate)
@@ -268,7 +271,12 @@ final class LateQuestsC {
                 .stage("I can start this quest by speaking to Veliaf Hurtz in the Myreque hideout. (Requires A Taste of Hope.)")
                 .talk("veliaf_hurtz").say("Lady Verzik Vitur runs a theatre where the condemned fight for her amusement. A stranger in Ver Sinhaza says he can get us in.")
                 .stage("I should meet the Mysterious Stranger in Ver Sinhaza.")
-                .talk("quest_mysterious_stranger_tob").say("You want to stop Verzik? First, there's a poison that could weaken her vampyres. It comes from the spiders below.")
+                // OSRS: beneath Ver Sinhaza, kill a vyrewatch for the key, unlock the gate and open the coffin for Ranis' head.
+                .kill("vyrewatch_sentinel").stay().unless("quest_ranis_head")
+                .give("quest_ranis_head").say("* The vyrewatch drops a key. Behind the gate below Ver Sinhaza you open a coffin: Ranis Drakan's head.")
+                .talk("quest_mysterious_stranger_tob").take("quest_ranis_head")
+                .say("Ranis' head... Verzik will not mourn him. You want to stop her? First, there's a poison that could weaken her vampyres. It comes from the spiders below.")
+                .missing("Prove yourself first. A vyrewatch below Ver Sinhaza holds the key to a coffin. Bring me what's inside.")
                 .stage("I should collect a venom sample from the giant spiders in the caves beneath Ver Sinhaza.")
                 .drop("giant_spider", "quest_spider_venom_sample", 2)
                 .talk("quest_mysterious_stranger_tob").take("quest_spider_venom_sample")
