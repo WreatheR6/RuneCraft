@@ -62,8 +62,11 @@ class DropReferencesTest {
         if (item == null || item.isEmpty() || item.startsWith("#") || item.startsWith("minecraft:")) {
             return;
         }
-        if (!ItemCatalog.exists(item)) {
+        String base = Drop.baseOf(item);
+        if (!ItemCatalog.exists(base)) {
             missing.add(item + " (" + where + ")");
+        } else if (Drop.dosesOf(item) > 0 && ItemCatalog.get(base).kind() != ItemDef.Kind.POTION) {
+            missing.add(item + " (" + where + ": dose suffix on a non-potion)");
         }
     }
 

@@ -1862,6 +1862,28 @@ public final class GePrices {
             drake_bones|3921|7500
             oyster_pearls|653|11000
             unicorn_horn|444|13000
+            spined_helm|41847|70
+            rock_shell_helm|22889|70
+            skeletal_helm|135027|70
+            fremennik_boots|185|150
+            dagannoth_hide|213|11000
+            circular_hide|27178|11000
+            flattened_hide|4210|11000
+            stretched_hide|2603|11000
+            rock_shell_chunk|10672|11000
+            rock_shell_shard|17876|11000
+            rock_shell_splinter|22028|11000
+            skull_piece|75998|11000
+            ribcage_piece|16137|11000
+            fibula_piece|19860|11000
+            edible_seaweed|9|13000
+            ugthanki_kebab|559|10000
+            xerician_fabric|1312|13000
+            contract_of_bloodied_blows|42777|50
+            contract_of_glyphic_attenuation|114953|50
+            contract_of_divine_severance|40632|50
+            contract_of_forfeit_breath|40140|50
+            contract_of_sensory_clouding|221182|50
             """);
     }
 

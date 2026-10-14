@@ -112,7 +112,7 @@ public final class ClassicBosses {
 
     private static BossDef dk(String id, String name, AttackDef attack, String unique1, String unique2, String pet) {
         return BossDef.of(id, name).level(303).speed(4).attack(attack)
-                .drops(Drop.always("dagannoth_bones"), Drop.of(unique1, 1, 1, 128), Drop.of(unique2, 1, 1, 128),
+                .drops(Drop.always("dagannoth_bones"), Drop.always("dagannoth_hide"), Drop.of(unique1, 1, 1, 128), Drop.of(unique2, 1, 1, 128),
                         Drop.of("dragon_axe", 1, 1, 128), Drop.of("rune_axe", 1, 1, 16), Drop.of("adamant_platebody", 1, 1, 16),
                         Drop.of("steel_bar", 15, 30, 16), Drop.of("raw_shark", 5, 5, 16), Drop.of("coins", 1000, 10000, 8),
                         Drop.of("clue_scroll_elite", 1, 1, 750),

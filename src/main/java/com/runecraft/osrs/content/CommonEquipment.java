@@ -331,7 +331,8 @@ public final class CommonEquipment {
      * Prison's ceremonial robes, the terror dog's granite helm, the dark wizards' black robe and the crawling hands'
      * coloured gloves. Bonuses are the wiki's ({@code EquipmentWikiSyncTest}); gloves and capes are worn in the systems
      * module's hands/cape slots (Jewellery). The Fremennik Trials requirement of the helms is not enforced (approx). The
-     * spined, rock-shell and skeletal helms (made by Rellekka's craftsmen from dagannoth hide) are still missing.
+     * spined, rock-shell and skeletal helms are made from dagannoth hide by Rellekka's craftsmen (CraftingData, at the
+     * tanner); their materials are in {@link CommonItems}.
      */
     private static void fremennikDrops(ItemSink items) {
         items.add("berserker_helm", "Berserker helm", Kind.ARMOUR, "full_helm", 0x8A8A9A).value(60000).stack(1).tier("rune")
@@ -353,6 +354,17 @@ public final class CommonEquipment {
             items.add(f[0] + "_boots", f[1] + " boots", Kind.ARMOUR, "boots", rgb).value(650).stack(1).tier("leather")
                     .equipment(wear(Slot.FEET, feet)).examine(f[4]);
         }
+        items.add("spined_helm", "Spined helm", Kind.ARMOUR, "full_helm", 0x6A8A6A).value(60000).stack(1).tier("leather")
+                .equipment(wear(Slot.HEAD, s(-6, -6, -6, -6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0), Skill.DEFENCE, 40, Skill.RANGED, 40))
+                .examine("A helm fit for any Fremennik ranger.");
+        items.add("rock_shell_helm", "Rock-shell helm", Kind.ARMOUR, "full_helm", 0x8A7A5A).value(35200).stack(1).tier("rune")
+                .equipment(wear(Slot.HEAD, s(0, 0, 0, -6, -2, 30, 32, 27, -1, 30, 0, 0, 0, 0), Skill.DEFENCE, 40))
+                .examine("Protective headwear made from crabs. Better than that sounds.");
+        items.add("skeletal_helm", "Skeletal helm", Kind.ARMOUR, "full_helm", 0xD8D0B8).value(10000).stack(1).tier("mystic")
+                .equipment(wear(Slot.HEAD, s(0, 0, 0, 2, -2, 10, 9, 11, 3, 0, 0, 0, 0, 0), Skill.DEFENCE, 40, Skill.MAGIC, 40))
+                .examine("Make your foes cower by wearing a skull as a helmet!");
+        items.add("fremennik_boots", "Fremennik boots", Kind.ARMOUR, "boots", 0x7A5A3A).value(500).stack(1).tier("leather")
+                .equipment(wear(Slot.FEET, feet)).examine("Very stylish!");
         items.add("fremennik_gloves", "Fremennik gloves", Kind.SIMPLE, "gloves", 0x8A6A4A).value(500).stack(1)
                 .equipment(wear(Slot.HEAD, hands)).examine("These will keep my hands warm!");
         items.add("fremennik_brown_shirt", "Fremennik brown shirt", Kind.ARMOUR, "robe_top", 0x7A5A3A).value(250).stack(1).tier("leather")

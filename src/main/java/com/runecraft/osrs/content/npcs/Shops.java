@@ -476,6 +476,12 @@ public final class Shops {
                 .sell("feldip_weasel_fur", 0).sell("desert_devil_fur", 0).sell("larupia_fur", 0).sell("graahk_fur", 0)
                 .sell("kyatt_fur", 0).greeting("Furs! Warm furs for the Fremennik winter!"));
 
+        // OSRS Wiki: Yrsa's Accoutrements (Fremennik clothing, needs The Fremennik Trials - not checked, approx; only the
+        // pieces RuneCraft has: boots 650, gloves 650, brown shirt and cloak 325)
+        add(specialist("yrsas_accoutrements", "Yrsa's Accoutrements", "npc_yrsa").prices(1300, 700, 30)
+                .sell("fremennik_boots", 5).sell("fremennik_gloves", 5).sell("fremennik_brown_shirt", 5)
+                .sell("fremennik_brown_cloak", 5).greeting("Welcome to my clothes shop. Do you like Fremennik fashion?"));
+
         // ------------------------------------------------------------- Morytania
         // OSRS Wiki: Rufus' Meat Emporium (not in RuneCraft: Raw rat meat, Raw bear meat)
         add(specialist("rufus_meat_emporium", "Rufus' Meat Emporium", "npc_rufus").prices(1300, 700, 30)

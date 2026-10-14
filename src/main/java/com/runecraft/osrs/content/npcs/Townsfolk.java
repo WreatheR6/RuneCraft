@@ -190,6 +190,7 @@ public final class Townsfolk {
         // ------------------------------------------------------------- Fremennik, Morytania, Lletya, Wilderness
         keeper("npc_fremennik_fishmonger", "Fish monger", "Rellekka", 2645, 3676, "fremennik_fish_monger", fremennik);
         keeper("npc_fremennik_fur_trader", "Fur trader", "Rellekka", 2642, 3678, "fremennik_fur_trader", fremennik);
+        keeper("npc_yrsa", "Yrsa", "Rellekka", 2625, 3675, "yrsas_accoutrements", fremennik);
         keeper("npc_rufus", "Rufus", "Canifis", 3507, 3492, "rufus_meat_emporium", werewolf);
         keeper("npc_barker", "Barker", "Canifis", 3498, 3505, "barkers_haberdashery", werewolf);
         keeper("npc_lletya_food_seller", "Shop keeper", "Lletya", 2341, 3177, "lletya_food_store", elf);
