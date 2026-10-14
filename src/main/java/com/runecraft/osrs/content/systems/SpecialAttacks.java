@@ -61,7 +61,29 @@ public final class SpecialAttacks {
         /** Magic special that fires a spell of max hit {@code param} at the target (nightmare staffs). */
         MAGIC_BLAST,
         /** Restores the attacker's prayer by {@code param}% of the damage (eldritch nightmare staff). */
-        BLAST_PRAYER
+        BLAST_PRAYER,
+        /** Ancient godsword: marks the target; 8 ticks later it takes 25 damage unless 5+ tiles away, healing the attacker. */
+        BLOOD_SACRIFICE,
+        /** Burning claws: three slashes in a cascade, each may set the target alight. */
+        BURNING_CLAWS,
+        /** Dual macuahuitl with the blood moon set: costs 25% of current hitpoints, +25% min and max hit. */
+        BLOOD_INFUSION,
+        /** Crimson kisten: four accuracy rolls; more successes raise the damage range (70-110% up to 130-170%). */
+        BRUTAL_SWING,
+        /** Adds {@code param} damage to the hit, even a miss (granite hammer). */
+        FLAT_BONUS,
+        /** Tonalztics of Ralos: two throws; damage drains Defence by a share of the target's Magic level. */
+        DIVISION,
+        /** Ursine chainmace: double accuracy and {@code param} extra damage over six seconds. */
+        BEAR_DOWN,
+        /** Scorching bow: binds a demon for {@code param} ticks with 5 burn damage (demons only). */
+        SHACKLES,
+        /** Ancient mace: drains the target's prayer by the damage and restores the attacker's by the same. */
+        PRAYER_SMASH,
+        /** Soulreaper axe: consumes every soul stack (+12% accuracy and +6% min and max hit each). */
+        BEHEAD,
+        /** A hit dealing at least {@code param}% of the max hit (Vesta's longsword's Feint, Statius's Smash). */
+        MIN_DAMAGE
     }
 
     public record Spec(String itemId, String name, int cost, Style style, double accuracy, double damage, Effect effect,
@@ -82,7 +104,7 @@ public final class SpecialAttacks {
         melee("dragon_sword", "Wild Stab", 40, 1.25, 1.25, Effect.NONE, 0, "A stab with +25% accuracy and damage.");
         melee("dragon_warhammer", "Smash", 50, 1.0, 1.5, Effect.DRAIN_DEFENCE_PERCENT, 30, "+50% damage; lowers the target's Defence by 30% on a hit.");
         instant("dragon_battleaxe", "Rampage", 100, Effect.RAMPAGE, 0, null, "Drains Attack, Defence, Magic and Ranged by 10% to boost Strength.");
-        melee("dragon_halberd", "Sweep", 30, 1.0, 1.1, Effect.DOUBLE_HIT, 0, "Two hits with +10% damage against large targets.");
+        melee("dragon_halberd", "Sweep", 30, 1.0, 1.1, Effect.DOUBLE_HIT, 0, "+10% damage; a second hit (-25% accuracy) against large targets.");
         melee("dragon_2h_sword", "Powerstab", 60, 1.0, 1.0, Effect.AREA, 0, "Hits all enemies around you.");
         melee("dragon_spear", "Shove", 25, 1.0, 0.0, Effect.SHOVE, 5, "Pushes your opponent back and stuns them for 3 seconds.");
         alias("dragon_spear_p", "dragon_spear");
@@ -94,7 +116,7 @@ public final class SpecialAttacks {
         melee("abyssal_whip", "Energy Drain", 50, 1.25, 1.0, Effect.NONE, 0, "+25% accuracy; transfers 10% of the target's run energy to you.");
         alias("volcanic_abyssal_whip", "abyssal_whip");
         alias("frozen_abyssal_whip", "abyssal_whip");
-        melee("abyssal_tentacle", "Binding Tentacle", 50, 1.0, 1.0, Effect.FREEZE, 8, "Binds the target for 5 seconds (and may poison).");
+        melee("abyssal_tentacle", "Binding Tentacle", 50, 1.25, 1.0, Effect.FREEZE, 8, "Binds the target for 5 seconds (and may poison).");
         melee("abyssal_dagger", "Abyssal Puncture", 25, 1.25, 0.85, Effect.DOUBLE_HIT, 0, "Two hits with +25% accuracy and 15% less damage.");
         alias("abyssal_dagger_p", "abyssal_dagger");
         melee("abyssal_bludgeon", "Penance", 50, 1.0, 1.0, Effect.PENANCE, 0, "+0.5% damage for every prayer point you are missing.");
@@ -106,11 +128,16 @@ public final class SpecialAttacks {
         alias("saradomin_godsword_or", "saradomin_godsword");
         melee("zamorak_godsword", "Ice Cleave", 50, 2.0, 1.1, Effect.FREEZE, 32, "Freezes the target for 32 ticks (19.2 seconds).");
         alias("zamorak_godsword_or", "zamorak_godsword");
-        melee("ancient_godsword", "Blood Sacrifice", 50, 2.0, 1.1, Effect.HEAL_PERCENT, 25, "Marks the target; heals you for part of the damage.");
+        melee("ancient_godsword", "Blood Sacrifice", 50, 2.0, 1.1, Effect.BLOOD_SACRIFICE, 25,
+                "Marks the target: unless it moves 5 tiles away within 8 ticks it takes 25 damage and heals you 15% of its Hitpoints (max 25).");
+        alias("ancient_godsword_or", "ancient_godsword");
         melee("saradomin_sword", "Saradomin's Lightning", 100, 1.0, 1.1, Effect.LIGHTNING, 16, "+10% damage plus a magic hit of up to 16.");
-        melee("saradomins_blessed_sword", "Saradomin's Lightning", 65, 1.0, 1.25, Effect.NONE, 0, "+25% damage, dealt as magic.");
-        melee("elder_maul", "Hammer Blow", 50, 1.25, 1.0, Effect.DRAIN_DEFENCE_PERCENT, 35, "+25% accuracy; lowers Defence by 35% on a hit.");
-        melee("crystal_halberd", "Sweep", 30, 1.0, 1.1, Effect.DOUBLE_HIT, 0, "Two hits with +10% damage.");
+        melee("saradomins_blessed_sword", "Saradomin's Blessed Lightning", 65, 1.0, 1.25, Effect.NONE, 0, "+25% damage; rolls against magic defence.");
+        melee("elder_maul", "Pulverize", 50, 1.25, 1.0, Effect.DRAIN_DEFENCE_PERCENT, 35, "+25% accuracy; lowers Defence by 35% on a hit.");
+        melee("crystal_halberd", "Sweep", 30, 1.0, 1.1, Effect.DOUBLE_HIT, 0, "+10% damage; a second hit (-25% accuracy) against large targets.");
+        alias("crystal_halberd_basic", "crystal_halberd");
+        alias("crystal_halberd_attuned", "crystal_halberd");
+        alias("crystal_halberd_perfected", "crystal_halberd");
         melee("voidwaker", "Disrupt", 50, 1.0, 1.0, Effect.VOIDWAKER, 0, "A guaranteed magic hit of 50-150% of your max hit.");
         melee("arclight", "Weaken", 50, 1.0, 1.0, Effect.WEAKEN, 5, "Drains Attack, Strength and Defence by 5% (10% vs demons).");
         melee("darklight", "Weaken", 50, 1.0, 1.0, Effect.WEAKEN, 5, "Drains Attack, Strength and Defence by 5% (10% vs demons).");
@@ -120,9 +147,22 @@ public final class SpecialAttacks {
         melee("brine_sabre", "Liquify", 75, 2.0, 1.0, Effect.NONE, 0, "Double accuracy (underwater).");
         melee("osmumtens_fang", "Eviscerate", 25, 1.5, 1.0, Effect.NONE, 0, "+50% accuracy with a narrowed damage range.");
         melee("dragon_scimitar_or", "Sever", 55, 1.25, 1.0, Effect.NONE, 0, "A slash with increased accuracy that disables protection prayers.");
-        melee("dual_macuahuitl", "Blood Moon", 25, 1.0, 1.0, Effect.DOUBLE_HIT, 0, "Two rapid hits.");
-        melee("burning_claws", "Incinerate", 30, 1.0, 1.0, Effect.CLAWS, 0, "Three fiery slashes.");
-        melee("soulreaper_axe", "Reap", 0, 1.0, 1.0, Effect.NONE, 0, "Consumes soul stacks.");
+        melee("dual_macuahuitl", "Blood Infusion", 25, 1.0, 1.0, Effect.BLOOD_INFUSION, 25,
+                "With the blood moon set: sacrifice 25% of your hitpoints for +25% minimum and maximum damage.");
+        melee("burning_claws", "Burning Barrage", 35, 1.0, 1.0, Effect.BURNING_CLAWS, 10, "Three fiery slashes in a cascade that may burn the target.");
+        melee("soulreaper_axe", "Behead", 0, 1.0, 1.0, Effect.BEHEAD, 0, "Consumes your soul stacks: +12% accuracy and +6% damage each.");
+        // Round 22: specials of weapons the mod has (wiki "Special attacks"; the DPS calculator models the first two).
+        melee("granite_hammer", "Hammer Blow", 60, 1.5, 1.0, Effect.FLAT_BONUS, 5, "+50% accuracy; adds 5 damage, even to a miss.");
+        melee("crimson_kisten", "Brutal Swing", 50, 1.0, 1.0, Effect.BRUTAL_SWING, 0, "Rolls accuracy four times; each success raises the damage.");
+        melee("ursine_chainmace", "Bear Down", 50, 2.0, 1.0, Effect.BEAR_DOWN, 20, "Double accuracy; the target takes 20 more damage over 6 seconds.");
+        melee("ancient_mace", "Favour of the War God", 100, 1.0, 1.0, Effect.PRAYER_SMASH, 0,
+                "Drains the target's prayer by the damage dealt and restores yours by the same.");
+        // approx: the wiki gives "-25% to +25%" damage and a 70% Defence drain (the tooltip says 75%)
+        melee("statiuss_warhammer", "Smash", 35, 1.0, 1.25, Effect.MIN_DAMAGE, 25, "+25% damage (at least 25% of your max hit); lowers Defence.");
+        // approx: rolling against a quarter of the target's defence is modelled as four times the accuracy
+        melee("vestas_longsword", "Feint", 25, 4.0, 1.2, Effect.MIN_DAMAGE, 20, "Rolls against 25% of the target's defence; deals 20-120% of your max hit.");
+        melee("dinhs_bulwark", "Shield Bash", 50, 1.2, 1.0, Effect.AREA, 0, "Hits every enemy around your target."); // approx
+        instant("excalibur", "Sanctuary", 100, Effect.SKILL_BOOST, 8, "DEFENCE", "Boosts your Defence level by 8.");
         instant("staff_of_the_dead", "Power of Death", 100, Effect.POWER_OF_DEATH, 100, null, "Halves melee damage you take for one minute.");
         instant("toxic_staff_of_the_dead", "Power of Death", 100, Effect.POWER_OF_DEATH, 100, null, "Halves melee damage you take for one minute.");
         instant("staff_of_light", "Power of Death", 100, Effect.POWER_OF_DEATH, 100, null, "Halves melee damage you take for one minute.");
@@ -131,6 +171,8 @@ public final class SpecialAttacks {
         instant("dragon_axe", "Lumber Up", 100, Effect.SKILL_BOOST, 3, "WOODCUTTING", "Boosts your Woodcutting level by 3.");
         instant("infernal_axe", "Lumber Up", 100, Effect.SKILL_BOOST, 3, "WOODCUTTING", "Boosts your Woodcutting level by 3.");
         instant("crystal_axe", "Lumber Up", 100, Effect.SKILL_BOOST, 3, "WOODCUTTING", "Boosts your Woodcutting level by 3.");
+        instant("3rd_age_axe", "Lumber Up", 100, Effect.SKILL_BOOST, 3, "WOODCUTTING", "Boosts your Woodcutting level by 3.");
+        instant("3rd_age_pickaxe", "Rock Knocker", 100, Effect.SKILL_BOOST, 3, "MINING", "Boosts your Mining level by 3.");
         instant("dragon_pickaxe", "Rock Knocker", 100, Effect.SKILL_BOOST, 3, "MINING", "Boosts your Mining level by 3.");
         instant("infernal_pickaxe", "Rock Knocker", 100, Effect.SKILL_BOOST, 3, "MINING", "Boosts your Mining level by 3.");
         instant("crystal_pickaxe", "Rock Knocker", 100, Effect.SKILL_BOOST, 3, "MINING", "Boosts your Mining level by 3.");
@@ -144,7 +186,7 @@ public final class SpecialAttacks {
         ranged("magic_longbow", "Powershot", 35, 1.0, 1.0, Effect.GUARANTEED, 0, "An arrow that is guaranteed to hit.");
         ranged("magic_comp_bow", "Powershot", 35, 1.0, 1.0, Effect.GUARANTEED, 0, "An arrow that is guaranteed to hit.");
         ranged("toxic_blowpipe", "Toxic Siphon", 50, 2.0, 1.5, Effect.HEAL_PERCENT, 50, "+50% damage, double accuracy; heals half the damage dealt.");
-        ranged("armadyl_crossbow", "Armadyl Eye", 40, 2.0, 1.0, Effect.NONE, 0, "Double accuracy.");
+        ranged("armadyl_crossbow", "Armadyl Eye", 50, 2.0, 1.0, Effect.NONE, 0, "Double accuracy.");
         ranged("zaryte_crossbow", "Evoke", 75, 2.0, 1.0, Effect.NONE, 0, "Double accuracy; bolt effects always activate.");
         ranged("dragon_crossbow", "Annihilate", 60, 1.0, 1.2, Effect.AREA, 0, "+20% damage and splash damage around the target.");
         ranged("dragon_hunter_crossbow", "None", 0, 1.0, 1.0, Effect.NONE, 0, "");
@@ -153,15 +195,21 @@ public final class SpecialAttacks {
         ranged("heavy_ballista", "Power Shot", 65, 1.25, 1.25, Effect.NONE, 0, "+25% accuracy and damage.");
         ranged("light_ballista", "Power Shot", 65, 1.25, 1.25, Effect.NONE, 0, "+25% accuracy and damage.");
         ranged("dragon_knife", "Duality", 25, 1.0, 1.0, Effect.DOUBLE_SHOT, 0, "Two knives thrown at once.");
-        ranged("dragon_thrownaxe", "Chainhit", 25, 1.25, 1.0, Effect.NONE, 0, "+25% accuracy; bounces between targets.");
-        ranged("webweaver_bow", "Arachnid's Wrath", 50, 2.0, 1.0, Effect.DOUBLE_SHOT, 0, "Four rapid shots (two simulated).");
+        ranged("dragon_thrownaxe", "Momentum Throw", 25, 1.25, 1.0, Effect.NONE, 0, "+25% accuracy; your next attack comes a tick sooner.");
+        ranged("webweaver_bow", "Swarm", 50, 2.0, 0.4, Effect.DOUBLE_SHOT, 4, "Four rapid shots with double accuracy, each at 40% of your max hit.");
         ranged("seercull", "Soulshot", 100, 1.0, 1.0, Effect.GUARANTEED, 0, "Lowers the target's Magic by the damage dealt.");
         ranged("rune_thrownaxe", "Chainhit", 10, 1.0, 1.0, Effect.NONE, 0, "Bounces between nearby targets.");
-        ranged("morrigans_javelin", "Phantom Strike", 50, 1.0, 1.0, Effect.NONE, 0, "Deals the damage again over time.");
+        ranged("morrigans_javelin", "Phantom Strike", 50, 1.5, 1.0, Effect.NONE, 0, "+50% accuracy; against players the damage is dealt again over time.");
+        ranged("tonalztics_of_ralos", "Division", 50, 1.5, 1.0, Effect.DIVISION, 0, "+50% accuracy; damage lowers the target's Defence.");
+        ranged("scorching_bow", "Scorching Shackles", 25, 1.0, 1.0, Effect.SHACKLES, 20, "Binds a demon for 12 seconds and burns it.");
         // ---------------- Magic (instant blast at your target) ----------------
-        instant("volatile_nightmare_staff", "Immolate", 55, Effect.MAGIC_BLAST, 66, null, "A powerful blast with a max hit of up to 66.");
-        instant("eldritch_nightmare_staff", "Invocate", 55, Effect.BLAST_PRAYER, 50, null, "A blast that restores prayer equal to half the damage.");
-        instant("accursed_sceptre", "Ambush", 50, Effect.MAGIC_BLAST, 32, null, "A blast with a +50% accuracy that lowers the target's stats.");
+        // The blasts' max hit, accuracy and gear effects come from PlayerHitCalc (special = true); param is the base max hit cap.
+        instant("volatile_nightmare_staff", "Immolate", 55, Effect.MAGIC_BLAST, 58, null, "+50% accuracy; a blast with a base max hit of up to 58.");
+        instant("eldritch_nightmare_staff", "Invocate", 55, Effect.BLAST_PRAYER, 44, null,
+                "A blast (base max hit up to 44) that restores prayer by half the damage, up to 120.");
+        instant("accursed_sceptre", "Condemn", 50, Effect.MAGIC_BLAST, 0, null, "+50% accuracy and damage; lowers the target's Defence and Magic by 15%.");
+        instant("eye_of_ayak", "Soul Rend", 50, Effect.MAGIC_BLAST, 0, null, "Double accuracy, +30% damage; lowers the target's Magic.");
+        instant("purging_staff", "Scatter Ashes", 25, Effect.MAGIC_BLAST, 0, null, "Casts your best demonbane spell at a demon.");
         instant("dawnbringer", "Pulsate", 35, Effect.MAGIC_BLAST, 150, null, "Damages Verzik Vitur.");
     }
 
@@ -191,7 +239,7 @@ public final class SpecialAttacks {
     /** The special attack of a weapon (an LMS copy uses its base weapon's), or null. */
     public static Spec of(String itemId) {
         Spec s = SPECS.get(com.runecraft.osrs.data.EquipmentBonuses.reference(itemId));
-        return s == null || s.cost() <= 0 ? null : s;
+        return s == null || (s.cost() <= 0 && s.effect() != Effect.BEHEAD) ? null : s;
     }
 
     public static List<Spec> all() {
@@ -206,7 +254,7 @@ public final class SpecialAttacks {
     public static final int REGEN_AMOUNT = 10;
 
     public static int regen(int energy, boolean lightbearer, long gameTick) {
-        int period = lightbearer ? REGEN_TICKS / 2 : REGEN_TICKS;
+        int period = lightbearer ? REGEN_TICKS / 2 : REGEN_TICKS; // wiki: 10% every 15 seconds with a lightbearer
         if (gameTick % period != 0) {
             return energy;
         }
@@ -216,37 +264,63 @@ public final class SpecialAttacks {
     // ---------------- Dragon claws ----------------
 
     /**
-     * The dragon claws damage cascade (pre-2023 algorithm, wiki): four accuracy rolls decide which hit
-     * lands first; later hits are halves of the first successful one.
+     * The dragon claws damage cascade (osrs-dps-calc {@code dClawDist}): the first successful one of four accuracy rolls picks
+     * a total damage range (first roll: max to 2 max - 1, then from 3/4, 1/2 and 1/4 of the max upwards) that is split into
+     * the claws' hitsplats; four misses deal 1 + 1 two times in three.
      *
      * @param hits the result of each of the four accuracy rolls
      */
     public static int[] clawHits(Random random, boolean[] hits, int maxHit) {
         int max = Math.max(1, maxHit);
-        if (hits[0]) {
-            int h1 = randBetween(random, max / 2, max - 1);
-            int h2 = h1 / 2;
-            int h3 = h2 / 2;
-            int h4 = h3 + 1;
-            return new int[]{h1, h2, h3, h4};
+        for (int r = 0; r < 4; r++) {
+            if (hits[r]) {
+                int[] range = com.runecraft.osrs.PlayerHitCalc.clawsTotalRange(r, max, false);
+                return com.runecraft.osrs.PlayerHitCalc.clawsSplit(r, randBetween(random, range[0], range[1]), false);
+            }
         }
-        if (hits[1]) {
-            int h2 = randBetween(random, max * 3 / 8, max * 7 / 8);
-            int h3 = h2 / 2;
-            int h4 = h2 - h3;
-            return new int[]{0, h2, h3, h4};
-        }
-        if (hits[2]) {
-            int h3 = randBetween(random, max / 4, max * 3 / 4);
-            int h4 = h3 + 1;
-            return new int[]{0, 0, h3, h4};
-        }
-        if (hits[3]) {
-            int h4 = randBetween(random, max / 4, max * 5 / 4);
-            return new int[]{0, 0, 0, h4};
-        }
-        // Complete miss: two in three chance of 1-damage hits on the last two claws.
         return random.nextInt(3) < 2 ? new int[]{0, 0, 1, 1} : new int[]{0, 0, 0, 0};
+    }
+
+    /**
+     * The burning claws cascade (osrs-dps-calc {@code burningClawSpec}): three accuracy rolls; four in five complete misses
+     * still deal one or two 1s.
+     */
+    public static int[] burningClawHits(Random random, boolean[] hits, int maxHit) {
+        int max = Math.max(1, maxHit);
+        for (int r = 0; r < 3; r++) {
+            if (hits[r]) {
+                int[] range = com.runecraft.osrs.PlayerHitCalc.clawsTotalRange(r, max, true);
+                int[] h = com.runecraft.osrs.PlayerHitCalc.clawsSplit(r, randBetween(random, range[0], range[1]), true);
+                for (int i = 0; i < h.length; i++) {
+                    h[i] = Math.max(0, h[i]);
+                }
+                return h;
+            }
+        }
+        int roll = random.nextInt(5);
+        return roll == 0 ? new int[]{0, 0, 0} : roll <= 2 ? new int[]{1, 0, 0} : new int[]{1, 1, 0};
+    }
+
+    /** Chance (per hitsplat) that a burning claws hit sets the target alight: 15% / 30% / 45% by the successful roll. */
+    public static double burnChance(int successfulRoll) {
+        return 0.15 * (successfulRoll + 1);
+    }
+
+    /**
+     * Crimson kisten's Brutal Swing: with {@code successes} of four accuracy rolls passed the damage is rolled between
+     * (70 + 20 (n - 1))% and (110 + 20 (n - 1))% of the max hit (osrs-dps-calc).
+     */
+    public static int[] kistenRange(int successes, int maxHit) {
+        if (successes <= 0) {
+            return new int[]{0, 0};
+        }
+        int i = Math.min(4, successes) - 1;
+        return new int[]{maxHit * (70 + i * 20) / 100, maxHit * (110 + i * 20) / 100};
+    }
+
+    /** Ancient godsword Blood Sacrifice heal: 15% of the target's Hitpoints level, capped at 25 (15 against players). */
+    public static int bloodSacrificeHeal(int targetHitpointsLevel, boolean player) {
+        return Math.min(player ? 15 : 25, targetHitpointsLevel * 15 / 100);
     }
 
     private static int randBetween(Random random, int lo, int hi) {

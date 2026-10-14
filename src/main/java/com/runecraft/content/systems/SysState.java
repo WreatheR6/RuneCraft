@@ -57,6 +57,8 @@ public final class SysState extends PersistentState {
         public long vengeanceReadyAt;
         public long staminaUntil;
         public long powerOfDeathUntil;
+        /** Soulreaper axe soul stacks (0-5), consumed by its special attack. */
+        public int soulStacks;
         public long markOfDarknessUntil;
         public long chargeUntil;
         public long thrallUntil;

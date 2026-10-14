@@ -13,9 +13,9 @@ import net.minecraft.server.network.ServerPlayerEntity;
 public final class SysModifier implements CombatHooks.PlayerAttackModifier {
     @Override
     public double accuracy(ServerPlayerEntity player, LivingEntity target, AttackType type) {
-        // Items in the extra slots are part of the gear totals HitCalcBridge feeds PlayerHitCalc (and of SysCombat's rolls).
-        double m = SysCombat.drainAccuracy(target, type);
-        return m * SpecialAttackService.accuracy(player, target, type);
+        // Items in the extra slots are part of the gear totals HitCalcBridge feeds PlayerHitCalc (and of SysCombat's rolls); stat
+        // drains lower the target's levels in HitCalcBridge's input, so they are not an accuracy multiplier any more.
+        return SpecialAttackService.accuracy(player, target, type);
     }
 
     @Override

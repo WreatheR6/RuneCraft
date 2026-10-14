@@ -78,6 +78,12 @@ public final class PlayerHitCalc {
         public boolean inWilderness;
         /** The weapon holds charges (revenant ether for the revenant weapons). */
         public boolean weaponCharged = true;
+        /** The attack is the weapon's special attack (osrs-dps-calc {@code usingSpecialAttack}; see {@link #specialWeapon}). */
+        public boolean special;
+        /** Soulreaper axe soul stacks (0-5) consumed by its special attack. */
+        public int soulreaperStacks;
+        /** Prayer points below the Prayer level (abyssal bludgeon's Penance). */
+        public int prayerMissing;
 
         public Input wear(String... ids) {
             for (String id : ids) {
@@ -315,6 +321,9 @@ public final class PlayerHitCalc {
         if (demon && (in.weapon.equals("silverlight") || in.weapon.equals("darklight"))) {
             roll = addFactor(roll, 60, 100);
         }
+        if (demon && in.weapon.equals("burning_claws")) {
+            roll = addFactor(roll, 5, 100); // burning claws: demonbane 5%
+        }
         if (in.attr("dragon")) {
             if (in.weapon.equals("dragon_hunter_lance")) {
                 roll = factor(roll, 6, 5);
@@ -344,7 +353,215 @@ public final class PlayerHitCalc {
                 roll = factor(roll, 200 + inq, 200);
             }
         }
+        if (in.special) {
+            String w = specialWeapon(in);
+            if (godsword(w) || w.equals("brine_sabre") || w.equals("barrelchest_anchor")) {
+                roll = factor(roll, 2, 1);
+            } else if (w.equals("osmumtens_fang") || w.equals("arkan_blade") || w.equals("granite_hammer")) {
+                roll = factor(roll, 3, 2);
+            } else if (w.equals("elder_maul") || w.equals("dragon_mace") || w.equals("dragon_sword") || w.equals("dragon_scimitar")
+                    || w.equals("abyssal_whip") || w.equals("abyssal_dagger")) {
+                roll = factor(roll, 5, 4);
+            } else if (w.equals("dragon_dagger")) {
+                roll = factor(roll, 23, 20);
+            } else if (w.equals("soulreaper_axe")) {
+                roll = factor(roll, 100 + 12 * Math.max(0, Math.min(5, in.soulreaperStacks)), 100);
+            } else {
+                roll = otherSpecial(roll, w, true);
+            }
+        }
         return roll;
+    }
+
+    // ---------------------------------------------------------------- special attacks (osrs-dps-calc usingSpecialAttack)
+
+    private static final java.util.Map<String, String> SPECIAL_ALIASES = java.util.Map.ofEntries(
+            java.util.Map.entry("dragon_dagger_p", "dragon_dagger"), java.util.Map.entry("dragon_dagger_pp", "dragon_dagger"),
+            java.util.Map.entry("dragon_dagger_ppp", "dragon_dagger"), java.util.Map.entry("abyssal_dagger_p", "abyssal_dagger"),
+            java.util.Map.entry("abyssal_dagger_pp", "abyssal_dagger"), java.util.Map.entry("abyssal_dagger_ppp", "abyssal_dagger"),
+            java.util.Map.entry("armadyl_godsword_or", "armadyl_godsword"), java.util.Map.entry("bandos_godsword_or", "bandos_godsword"),
+            java.util.Map.entry("saradomin_godsword_or", "saradomin_godsword"), java.util.Map.entry("zamorak_godsword_or", "zamorak_godsword"),
+            java.util.Map.entry("volcanic_abyssal_whip", "abyssal_whip"), java.util.Map.entry("frozen_abyssal_whip", "abyssal_whip"),
+            java.util.Map.entry("dragon_scimitar_or", "dragon_scimitar"), java.util.Map.entry("granite_maul_or", "granite_maul"),
+            java.util.Map.entry("crystal_halberd_basic", "crystal_halberd"), java.util.Map.entry("crystal_halberd_attuned", "crystal_halberd"),
+            java.util.Map.entry("crystal_halberd_perfected", "crystal_halberd"), java.util.Map.entry("osmumtens_fang_or", "osmumtens_fang"),
+            java.util.Map.entry("dragon_knife_p", "dragon_knife"), java.util.Map.entry("dragon_knife_pp", "dragon_knife"),
+            java.util.Map.entry("dragon_knife_ppp", "dragon_knife"), java.util.Map.entry("blazing_blowpipe", "toxic_blowpipe"),
+            java.util.Map.entry("accursed_sceptre_a", "accursed_sceptre"));
+
+    /** The weapon whose special attack this is: LMS copies, poisoned / ornamented variants and crystal halberds map to the base weapon. */
+    public static String specialWeapon(Input in) {
+        String w = in.weapon == null ? "" : in.weapon.startsWith("lms_") ? in.weapon.substring(4) : in.weapon;
+        return SPECIAL_ALIASES.getOrDefault(w, w);
+    }
+
+    static boolean godsword(String w) {
+        return w.equals("armadyl_godsword") || w.equals("bandos_godsword") || w.equals("saradomin_godsword") || w.equals("zamorak_godsword")
+                || w.equals("ancient_godsword");
+    }
+
+    /** Wearing the full blood moon set (dual macuahuitl special attack). */
+    static boolean bloodMoon(Input in) {
+        return in.has("blood_moon_helm") && in.has("blood_moon_chestplate") && in.has("blood_moon_tassets");
+    }
+
+    /**
+     * Accuracy (or max hit) multiplier of a special attack the DPS calculator doesn't model, from {@code SpecialAttacks}
+     * (armadyl crossbow, dragon crossbow, abyssal tentacle, rune claws, morrigan's javelin...; floored like the calculator's factors).
+     */
+    static int otherSpecial(int value, String weapon, boolean accuracy) {
+        com.runecraft.osrs.content.systems.SpecialAttacks.Spec s = com.runecraft.osrs.content.systems.SpecialAttacks.of(weapon);
+        if (s == null || modelled(weapon)) {
+            return value;
+        }
+        double m = accuracy ? s.accuracy() : s.damage();
+        if (m <= 0 || m == 1.0) {
+            return value;
+        }
+        return (int) Math.floor(value * m + 1e-9);
+    }
+
+    /** Weapons whose special attack accuracy and damage this class takes from the DPS calculator's model. */
+    static final Set<String> MODELLED = Set.of("dragon_dagger", "dragon_longsword", "dragon_mace", "dragon_sword", "dragon_scimitar",
+            "dragon_warhammer", "dragon_claws", "burning_claws", "dragon_halberd", "crystal_halberd", "armadyl_godsword", "bandos_godsword",
+            "saradomin_godsword", "zamorak_godsword", "ancient_godsword", "elder_maul", "abyssal_dagger", "abyssal_bludgeon", "abyssal_whip",
+            "osmumtens_fang", "voidwaker", "arclight", "emberlight", "saradomin_sword", "saradomins_blessed_sword", "barrelchest_anchor",
+            "granite_hammer", "soulreaper_axe", "dual_macuahuitl", "crimson_kisten", "brine_sabre", "dark_bow", "magic_shortbow",
+            "magic_shortbow_i", "magic_longbow", "magic_comp_bow", "seercull", "toxic_blowpipe", "zaryte_crossbow", "heavy_ballista",
+            "light_ballista", "dragon_knife", "webweaver_bow", "tonalztics_of_ralos", "volatile_nightmare_staff", "eldritch_nightmare_staff",
+            "accursed_sceptre", "eye_of_ayak", "dawnbringer", "sunspear", "arkan_blade");
+
+    public static boolean modelled(String weapon) {
+        return MODELLED.contains(weapon);
+    }
+
+    /**
+     * The defence style a special attack rolls against when it isn't the attack's own style (osrs-dps-calc
+     * {@code getNPCDefenceRoll}): slash for godswords, claws, dragon dagger / longsword / scimitar / halberd, crystal halberd,
+     * abyssal dagger and Saradomin sword; stab for arclight, emberlight and dragon sword; magic for the voidwaker and
+     * Saradomin's blessed sword; crush for the dragon mace and crimson kisten. Null when it keeps the attack's style.
+     */
+    public static AttackType specialDefenceType(Input in) {
+        if (!in.special) {
+            return null;
+        }
+        String w = specialWeapon(in);
+        if (godsword(w) || w.equals("dragon_claws") || w.equals("dragon_dagger") || w.equals("dragon_halberd") || w.equals("dragon_longsword")
+                || w.equals("dragon_scimitar") || w.equals("crystal_halberd") || w.equals("abyssal_dagger") || w.equals("saradomin_sword")
+                || w.equals("arkan_blade")) {
+            return AttackType.SLASH;
+        }
+        if (w.equals("arclight") || w.equals("emberlight") || w.equals("dragon_sword")) {
+            return AttackType.STAB;
+        }
+        if (w.equals("voidwaker") || w.equals("saradomins_blessed_sword")) {
+            return AttackType.MAGIC;
+        }
+        if (w.equals("dragon_mace") || w.equals("crimson_kisten")) {
+            return AttackType.CRUSH;
+        }
+        return null;
+    }
+
+    /** True when the special attack always hits (voidwaker, Dawnbringer, magic longbow / comp bow and seercull). */
+    public static boolean specialAlwaysHits(Input in) {
+        if (!in.special) {
+            return false;
+        }
+        String w = specialWeapon(in);
+        return w.equals("voidwaker") || w.equals("dawnbringer") || w.equals("magic_longbow") || w.equals("magic_comp_bow") || w.equals("seercull");
+    }
+
+    /** Ranged strength of the worn ammunition (arrows / bolts), 0 without any. */
+    static int ammoStrength(Input in) {
+        for (String id : in.worn) {
+            Integer s = com.runecraft.osrs.data.EquipmentBonuses.ammoStrength(id);
+            if (s != null) {
+                return s;
+            }
+        }
+        return 0;
+    }
+
+    /** Hitsplat groups of a special attack (osrs-dps-calc's attack distribution: dragon dagger 2, webweaver bow 4, ...). */
+    public static int specialHits(Input in) {
+        if (!in.special) {
+            return 1;
+        }
+        String w = specialWeapon(in);
+        return switch (w) {
+            case "dragon_dagger", "dragon_knife", "magic_shortbow", "magic_shortbow_i", "dark_bow", "rosewood_blowpipe" -> 2;
+            case "dragon_halberd", "crystal_halberd" -> in.targetSize > 1 ? 2 : 1;
+            case "webweaver_bow" -> 4;
+            default -> 1;
+        };
+    }
+
+    /**
+     * The largest total damage of one special attack (osrs-dps-calc's attacker distribution maximum): the per-hit max times
+     * the hits, the dragon / burning claws cascades, dark bow's cap of 48 per arrow, the abyssal dagger's second hit, the
+     * Saradomin sword's lightning (16), the granite hammer's +5, crimson kisten's 170% and the charged Tonalztics' two throws.
+     */
+    public static int specialMaxTotal(Input in) {
+        int[] mm = minMax(in);
+        int max = mm[1];
+        if (!in.special) {
+            return max;
+        }
+        String w = specialWeapon(in);
+        return switch (w) {
+            case "dragon_claws" -> clawsMaxTotal(max, false);
+            case "burning_claws" -> clawsMaxTotal(max, true);
+            case "dark_bow" -> 2 * Math.max(mm[0], Math.min(max, 48));
+            case "abyssal_dagger" -> 2 * max;
+            case "saradomin_sword" -> max + 16;
+            case "granite_hammer" -> max + 5;
+            case "crimson_kisten" -> max * 170 / 100;
+            case "tonalztics_of_ralos" -> in.weaponCharged ? 2 * max : max;
+            default -> specialHits(in) * max;
+        };
+    }
+
+    /**
+     * Total damage range of a claws special whose first successful accuracy roll is {@code accRoll} (0-based; dragon claws
+     * roll 4 times, burning claws 3): {low, high} (osrs-dps-calc {@code generateTotals}).
+     */
+    public static int[] clawsTotalRange(int accRoll, int max, boolean burning) {
+        int rolls = burning ? 3 : 4;
+        int low = max * (rolls - accRoll) / 4;
+        return new int[]{low, max + low + (burning ? 0 : -1)};
+    }
+
+    /** The hitsplats of a claws special for a total {@code dmg} rolled after accuracy roll {@code accRoll} succeeded. */
+    public static int[] clawsSplit(int accRoll, int dmg, boolean burning) {
+        if (burning) {
+            return switch (accRoll) {
+                case 0 -> new int[]{dmg / 2, dmg / 4, dmg / 4};
+                case 1 -> new int[]{dmg / 2 - 1, dmg / 2 - 1, 2};
+                default -> new int[]{dmg - 2, 1, 1};
+            };
+        }
+        return switch (accRoll) {
+            case 0 -> new int[]{dmg / 2, dmg / 4, dmg / 8, dmg / 8 + 1};
+            case 1 -> new int[]{0, dmg / 2, dmg / 4, dmg / 4 + 1};
+            case 2 -> new int[]{0, 0, dmg / 2, dmg / 2 + 1};
+            default -> new int[]{0, 0, 0, dmg + 1};
+        };
+    }
+
+    static int clawsMaxTotal(int max, boolean burning) {
+        int best = burning ? 2 : 2; // a complete miss can still deal 1 + 1
+        for (int r = 0; r < (burning ? 3 : 4); r++) {
+            int[] range = clawsTotalRange(r, max, burning);
+            for (int d = range[0]; d <= range[1]; d++) {
+                int sum = 0;
+                for (int h : clawsSplit(r, d, burning)) {
+                    sum += h;
+                }
+                best = Math.max(best, sum);
+            }
+        }
+        return best;
     }
 
     /** Inquisitor's armour with a crush attack: helm +0.5%, hauberk +1%, plateskirt +1% (no extra set bonus). */
@@ -379,6 +596,20 @@ public final class PlayerHitCalc {
         if (in.weapon.startsWith("dragon_hunter_crossbow") && in.attr("dragon")) {
             roll = factor(roll, 13, 10);
         }
+        if (in.special) {
+            String w = specialWeapon(in);
+            if (w.equals("zaryte_crossbow") || w.equals("webweaver_bow") || w.equals("toxic_blowpipe")) {
+                roll = factor(roll, 2, 1);
+            } else if (w.equals("magic_shortbow") || w.equals("magic_shortbow_i")) {
+                roll = factor(roll, 10, 7);
+            } else if (w.equals("heavy_ballista") || w.equals("light_ballista")) {
+                roll = factor(roll, 5, 4);
+            } else if (w.equals("tonalztics_of_ralos")) {
+                roll = factor(roll, 3, 2);
+            } else {
+                roll = otherSpecial(roll, w, true);
+            }
+        }
         return roll;
     }
 
@@ -399,6 +630,8 @@ public final class PlayerHitCalc {
         int eff = prayerAccuracy(in, in.magic) + 9;
         if (poweredStaff(in) && in.style != CombatStyle.LONGRANGE && in.style != CombatStyle.DEFENSIVE) {
             eff += 2;
+        } else if (in.special && in.spellMaxHit < 0 && specialWeapon(in).endsWith("_nightmare_staff")) {
+            eff += 2; // the nightmare staves' specials cast a built-in spell in the powered staff's accurate stance
         }
         if (magicVoid(in)) {
             eff = factor(eff, 29, 20);
@@ -440,6 +673,14 @@ public final class PlayerHitCalc {
         if (in.has("tome_of_water") && "water".equals(in.spellElement)) {
             roll = factor(roll, 6, 5);
         }
+        if (in.special) {
+            String w = specialWeapon(in);
+            if (w.equals("accursed_sceptre") || w.equals("volatile_nightmare_staff")) {
+                roll = factor(roll, 3, 2);
+            } else if (w.equals("eye_of_ayak")) {
+                roll = factor(roll, 2, 1);
+            }
+        }
         if (in.spellElement != null && in.spellElement.equals(in.weaknessElement)) {
             roll += factor(base, in.weaknessPercent, 100);
         }
@@ -454,7 +695,7 @@ public final class PlayerHitCalc {
         if (in.melee()) {
             mm = meleeMax(in);
         } else if (in.type == AttackType.RANGED) {
-            mm = new int[]{0, rangedMax(in)};
+            mm = rangedMinMax(in);
         } else {
             mm = new int[]{0, magicMax(in)};
         }
@@ -544,6 +785,10 @@ public final class PlayerHitCalc {
 
     static int[] meleeMax(Input in) {
         int eff = prayerStrength(in, in.strength) + 8 + in.style.forMelee().strengthBonus();
+        if (!in.special && specialWeapon(in).equals("soulreaper_axe")) {
+            // Soul stacks: +6% of the Strength level each (not multiplied by prayers; consumed by the special attack)
+            eff += in.strength * 6 * Math.max(0, Math.min(5, in.soulreaperStacks)) / 100;
+        }
         if (meleeVoid(in)) {
             eff = factor(eff, 11, 10);
         }
@@ -562,6 +807,9 @@ public final class PlayerHitCalc {
         boolean demon = in.attr("demon");
         if (demon && (in.weapon.equals("arclight") || in.weapon.equals("emberlight"))) {
             max = addFactor(max, 70, 100);
+        }
+        if (demon && in.weapon.equals("burning_claws")) {
+            max = addFactor(max, 5, 100);
         }
         if (tzhaarWeapon(in) && obsidian(in)) {
             max += base / 10;
@@ -603,7 +851,40 @@ public final class PlayerHitCalc {
         }
         if (fang(in)) {
             min = max * 3 / 20;
-            max -= min;
+            if (!in.special) {
+                max -= min; // Eviscerate keeps the full max hit
+            }
+        }
+        if (in.special) {
+            String w = specialWeapon(in);
+            if (godsword(w)) {
+                max = factor(max, 11, 10);
+            }
+            switch (w) {
+                case "bandos_godsword", "saradomin_sword", "dragon_halberd", "crystal_halberd" -> max = factor(max, 11, 10);
+                case "armadyl_godsword", "dragon_sword", "dragon_longsword", "saradomins_blessed_sword" -> max = factor(max, 5, 4);
+                case "dragon_mace", "dragon_warhammer", "arkan_blade" -> max = factor(max, 3, 2);
+                case "voidwaker" -> {
+                    min = max / 2;
+                    max += min;
+                }
+                case "dragon_dagger" -> max = factor(max, 23, 20);
+                case "abyssal_dagger" -> max = factor(max, 17, 20);
+                case "abyssal_bludgeon" -> max = (int) ((long) max * (200 + Math.max(0, in.prayerMissing)) / 200);
+                case "barrelchest_anchor" -> max = factor(max, 110, 100);
+                case "dual_macuahuitl" -> {
+                    if (bloodMoon(in)) {
+                        min = max / 4;
+                        max += min;
+                    }
+                }
+                case "soulreaper_axe" -> {
+                    int stacks = Math.max(0, Math.min(5, in.soulreaperStacks));
+                    min = max * 6 * stacks / 100;
+                    max = factor(max, 100 + 6 * stacks, 100);
+                }
+                default -> max = otherSpecial(max, w, false);
+            }
         }
         return new int[]{min, max};
     }
@@ -648,11 +929,52 @@ public final class PlayerHitCalc {
         if (dragonbane) {
             max = factor(max, 5, 4);
         }
+        if (in.weapon.equals("tonalztics_of_ralos")) {
+            max = factor(max, 3, 4); // rolls 75% of the max hit (and throws twice when charged)
+        }
         return max;
+    }
+
+    /** {min, max} of a ranged hit, with the special attacks' changes. */
+    static int[] rangedMinMax(Input in) {
+        if (!in.special) {
+            return new int[]{0, rangedMax(in)};
+        }
+        String w = specialWeapon(in);
+        if (w.equals("magic_shortbow") || w.equals("magic_shortbow_i") || w.equals("magic_longbow") || w.equals("magic_comp_bow")
+                || w.equals("seercull")) {
+            // Snapshot / Powershot / Soulshot: Ranged level + 10 and the arrow's strength only; prayers and other gear are ignored.
+            int eff = in.ranged + 10;
+            return new int[]{0, (eff * (ammoStrength(in) + 64) + 320) / 640};
+        }
+        int max = rangedMax(in);
+        int min = 0;
+        switch (w) {
+            case "toxic_blowpipe" -> max = factor(max, 3, 2);
+            case "webweaver_bow" -> max -= max * 6 / 10;
+            case "heavy_ballista", "light_ballista" -> max = factor(max, 5, 4);
+            case "dark_bow" -> {
+                boolean dragon = in.any("dragon_arrow", "lms_dragon_arrow");
+                min = dragon ? 8 : 5;
+                max = factor(max, dragon ? 15 : 13, 10);
+            }
+            default -> max = otherSpecial(max, w, false);
+        }
+        return new int[]{min, max};
     }
 
     /** Base max hit of the attack's spell or powered staff (0 when neither). */
     static int magicBase(Input in) {
+        if (in.special && in.spellMaxHit < 0) {
+            String w = specialWeapon(in);
+            // Invocate / Immolate: a spell whose base max hit scales with Magic up to 44 / 58 (osrs-dps-calc).
+            if (w.equals("eldritch_nightmare_staff")) {
+                return Math.max(1, Math.min(44, (99 + 44 * in.magic) / 99));
+            }
+            if (w.equals("volatile_nightmare_staff")) {
+                return Math.max(1, Math.min(58, (99 + 58 * in.magic) / 99));
+            }
+        }
         if (in.spellMaxHit >= 0) {
             return in.spellMaxHit;
         }
@@ -663,6 +985,9 @@ public final class PlayerHitCalc {
         int max = magicBase(in);
         if (max == 0) {
             return 0;
+        }
+        if (in.special && specialWeapon(in).equals("eye_of_ayak")) {
+            max = factor(max, 13, 10);
         }
         if (in.boltSpell && in.has("chaos_gauntlets")) {
             max += 3;
@@ -707,6 +1032,9 @@ public final class PlayerHitCalc {
             }
         }
         if (revWeapon(in)) {
+            max = factor(max, 3, 2);
+        }
+        if (in.special && specialWeapon(in).equals("accursed_sceptre")) {
             max = factor(max, 3, 2);
         }
         if (in.spellElement != null && in.spellElement.equals(in.weaknessElement)) {
@@ -763,11 +1091,15 @@ public final class PlayerHitCalc {
 
     /** The NPC's defence roll: {@code (level + 9) * (bonus + 64)} with its Magic level against magic. */
     public static long defenceRoll(Input in) {
-        int level = in.type == AttackType.MAGIC ? in.targetMagicLevel : in.targetDefenceLevel;
+        AttackType against = specialDefenceType(in);
+        int level = (against != null ? against : in.type) == AttackType.MAGIC ? in.targetMagicLevel : in.targetDefenceLevel;
         return CombatFormulas.npcRoll(level, targetDefenceBonus(in));
     }
 
     public static double hitChance(Input in) {
+        if (specialAlwaysHits(in)) {
+            return 1.0;
+        }
         long atk = attackRoll(in);
         long def = defenceRoll(in);
         if (fang(in) && in.type == AttackType.STAB) {
