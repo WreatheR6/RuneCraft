@@ -138,7 +138,10 @@ final class VarlamoreQuests {
                 .stage("I can start this quest by speaking to Attala in Cam Torum. (Requires Twilight's Promise, 48 Slayer, 20 Hunter, 20 Fishing, 20 Runecraft, 10 Construction.)")
                 .talk("attala").say("The Twilight Emissaries have taken over the shrines of the moons in Neypotzli. Their champions now wear the moons' power.")
                 .stage("I should go to Neypotzli and speak to the Lunar scholar.")
-                .talk("quest_lunar_scholar").say("Three champions: the Blood Moon, the Blue Moon and the Eclipse Moon. Each must be defeated at its own shrine.")
+                .reach("neypotzli", 10).stay().unlessFlag("pm_camps").need("hammer").flag("pm_camps")
+                .say("* With the building supplies from the crate you build the three camp sites in the corners of Neypotzli.")
+                .missing("* The camp sites need building: bring a hammer.")
+                .talk("quest_lunar_scholar").needFlag("pm_camps").missing("We can't go deeper without camps to fall back to.").say("Three champions: the Blood Moon, the Blue Moon and the Eclipse Moon. Each must be defeated at its own shrine.")
                 .stage("I must defeat the Blood Moon, the Blue Moon and the Eclipse Moon.")
                 .kill("quest_blood_moon").stay().unlessFlag("pm_blood").flag("pm_blood").say("* The Blood Moon falls.")
                 .kill("quest_blue_moon").stay().unlessFlag("pm_blue").flag("pm_blue").say("* The Blue Moon shatters.")
@@ -146,7 +149,7 @@ final class VarlamoreQuests {
                 .talk("quest_lunar_scholar").needFlag("pm_blood", "pm_blue", "pm_eclipse").say("All three moons are free of the cult. The shrines are ours again.")
                 .missing("The moons' champions still stand.")
                 .stage("I should report to Attala in Cam Torum.")
-                .talk("attala").say("The moons are safe, and the Emissaries scattered. Cam Torum is in your debt.");
+                .talk("attala").needFlag("pm_blood", "pm_blue", "pm_eclipse").say("The moons are safe, and the Emissaries scattered. Cam Torum is in your debt.");
     }
 
     private static void atFirstLight(QuestBook b) {
@@ -194,6 +197,7 @@ final class VarlamoreQuests {
         Cast.npc(b, "quest_villa_steward", "Steward", "quest_villa_lucens", 3, -2, Cast.TAN, 0xE0E0D0);
         Cast.npc(b, "quest_aldarin_guard", "Aldarin guard", "zeah_aldarin", 3, 3, Cast.BROWN, 0x8A8A3A);
         b.item("quest_poisoned_goblet", "Goblet", "pot_item", 0xC0A040, "A goblet with a strange residue.");
+        b.item("doti_butler_uniform", "Butler's uniform", "platebody", 0x2A2A2A, "A uniform for the servants of Villa Lucens.");
         b.quest("death_on_the_isle", "Death on the Isle", Difficulty.INTERMEDIATE, 2)
                 .xp(Skill.THIEVING, 10000).xp(Skill.AGILITY, 7500).xp(Skill.CRAFTING, 5000) // OSRS (current quest XP rewards)
                 .reqQuest("children_of_the_sun").req(Skill.THIEVING, 34).req(Skill.AGILITY, 32)
@@ -201,9 +205,14 @@ final class VarlamoreQuests {
                 .stage("I can start this quest by speaking to the Aldarin guard. (Requires Children of the Sun, 34 Thieving, 32 Agility.)")
                 .talk("quest_aldarin_guard").say("There's been a death at Villa Lucens, at a party of all places. We need someone discreet to look into it.")
                 .stage("I should go to Villa Lucens and question Constantinius, the host.")
-                .talk("constantinius").say("A guest collapsed during the toast. Poison, they say! In my house! Find who did this.")
+                .reach("quest_villa_lucens", 8).stay().unless("doti_butler_uniform").unlessFlag("doti_inside").reqSkill(Skill.THIEVING, 34).give("doti_butler_uniform")
+                .say("* You climb in through a house window, wait for the guard to move away and take a uniform from the wardrobe.")
+                .talk("constantinius").need("doti_butler_uniform").flag("doti_inside")
+                .missing("*The Head Butler turns you away: only staff in uniform may enter the villa.*").say("A guest collapsed during the toast. Poison, they say! In my house! Find who did this.")
                 .stage("I should search the villa for clues and question the steward.")
-                .talk("quest_villa_steward").give("quest_poisoned_goblet").say("I poured the wine myself! But... the goblet I served wasn't from our set. Someone swapped it.")
+                .reach("quest_villa_lucens", 8).stay().needFlag("doti_inside").unlessFlag("doti_cellar").reqSkill(Skill.AGILITY, 32).flag("doti_cellar")
+                .say("* In the wine cellar you investigate the antique wine and find a man lying in the room to the east.")
+                .talk("quest_villa_steward").needFlag("doti_cellar").missing("I've nothing to say. Have you even looked in the wine cellar?").give("quest_poisoned_goblet").say("I poured the wine myself! But... the goblet I served wasn't from our set. Someone swapped it.")
                 .stage("I should take the goblet to the Aldarin guard and name the culprit.")
                 .talk("quest_aldarin_guard").take("quest_poisoned_goblet").say("A swapped goblet... it was the victim's own business partner. Well done, detective.");
     }
@@ -261,7 +270,8 @@ final class VarlamoreQuests {
                 .stage("I can start this quest by speaking to the Varlamorian delegate in the Varrock Museum. (Requires Children of the Sun, Shield of Arrav, 25 Thieving.)")
                 .talk("quest_varlamore_delegate").say("Your museum displays a relic stolen from Varlamore. We want it back, and your curator won't listen.")
                 .stage("I should persuade Curator Haig Halen to return the relic.")
-                .talk("curator_haig_halen").give("quest_varlamore_relic").say("Stolen? Our records show... oh dear. Very well. Take it back to them, quietly please.")
+                .talk("curator_haig_halen").reqSkill(Skill.THIEVING, 25).give("quest_varlamore_relic")
+                .missing("*He won't hand it over. With 25 Thieving you could pickpocket his storeroom key.*").say("Stolen? Our records show... oh dear. Very well. Take it back to them, quietly please.")
                 .stage("I should return the relic to the Varlamorian delegate.")
                 .talk("quest_varlamore_delegate").take("quest_varlamore_relic").say("Returned at last. Varlamore will lend the museum other pieces, honestly this time.");
     }
@@ -294,7 +304,9 @@ final class VarlamoreQuests {
                 .stage("I must hunt down the shadow wolves in the Custodia Pass.")
                 .kill("wolf").say("* The wolf dissolves into smoke. The pass grows quiet.")
                 .stage("I should report to the Custodia warden.")
-                .talk("quest_custodia_warden").say("The shadows are gone. The pass is open to travellers again, thanks to you.");
+                .talk("quest_custodia_warden").take("willow_longbow:4", "maple_logs:4").need("hammer")
+                .missing("Before nightfall the guards need 4 willow longbows, and the west wall needs 4 maple logs and a hammer.")
+                .say("The shadows are gone. The pass is open to travellers again, thanks to you.");
     }
 
     private static void finalDawn(QuestBook b) {
@@ -306,10 +318,13 @@ final class VarlamoreQuests {
                 .stage("I can start this quest by speaking to Prince Itzla Arkan at the Sunrise Palace. (Requires The Heart of Darkness, Perilous Moons, 66 Thieving, 52 Fletching, 52 Runecraft.)")
                 .talk("prince_itzla_arkan").say("The Emissaries mean to plunge Varlamore into eternal twilight. This is the final battle. Will you stand with us?")
                 .stage("I should rally the guard of Civitas illa Fortis.")
-                .talk("quest_civitas_guard_captain").say("The guard is ready. To the Fortis Colosseum: the Emissaries gather there.")
+                .reach("quest_tower_of_ascension", 10).stay().unlessFlag("tfd_temple").reqSkill(Skill.THIEVING, 66).flag("tfd_temple")
+                .say("* In emissary robes from the chest at the Tower of Ascension you enter the Twilight Temple (passcode: Final Dawn).",
+                        "* Behind the painting you picklock the blue chest and take an emissary scroll: the plan of attack.")
+                .talk("quest_civitas_guard_captain").needFlag("tfd_temple").missing("Rally the guard on a rumour? Bring me proof of the Emissaries' plans.").say("The guard is ready. To the Fortis Colosseum: the Emissaries gather there.")
                 .stage("I must break the Emissaries' assault at the Fortis Colosseum.")
-                .reach("fortis_colosseum", 10).say("* The battle rages until dawn breaks over the colosseum. The Emissaries are routed.")
+                .reach("fortis_colosseum", 10).flag("tfd_battle").say("* The battle rages until dawn breaks over the colosseum. The Emissaries are routed.")
                 .stage("I should return to Prince Itzla Arkan.")
-                .talk("prince_itzla_arkan").say("The sun rises on a free Varlamore. You will always have a home here, friend.");
+                .talk("prince_itzla_arkan").needFlag("tfd_battle").say("The sun rises on a free Varlamore. You will always have a home here, friend.");
     }
 }

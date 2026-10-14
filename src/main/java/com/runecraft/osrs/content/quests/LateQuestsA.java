@@ -136,10 +136,10 @@ final class LateQuestsA {
                 .talk("martin_the_master_gardener").stay().unless("white_tree_sapling").take("coins:500").give("white_tree_sapling")
                 .say("A white tree? I've a sapling from the ruins of Saradomin's garden. 500 coins.")
                 .talk("queen_ellamaria").take("white_tree_sapling", "tomato_seed:4", "strawberry_seed:4")
-                .say("*The garden blooms with a white tree, delphiniums and roses.* It's perfect! Roald will love it.")
+                .flag("got_garden").say("*The garden blooms with a white tree, delphiniums and roses.* It's perfect! Roald will love it.")
                 .missing("I still need the white tree sapling and seeds for the flower beds (4 tomato and 4 strawberry seeds will do).")
                 .stage("I should fetch King Roald to see the garden.")
-                .talk("king_roald").say("What a garden! Ellamaria, it's beautiful. Thank you, adventurer.");
+                .talk("king_roald").needFlag("got_garden").say("What a garden! Ellamaria, it's beautiful. Thank you, adventurer.");
     }
 
     private static void pathOfGlouphrie(QuestBook b) {
@@ -202,17 +202,49 @@ final class LateQuestsA {
         b.npc("commander_veldaban", "Commander Veldaban", "keldagrim", 0, 3, 0xD8A88A, 0x6A6A3D, 0x4A4A2D, 0xC07A2F);
         b.npc("riki_the_sculptor", "Riki the sculptor's model", "keldagrim", 3, -2, 0xD8A88B, 0x3A5A8D, 0x2A3A5D, 0x6A3A22);
         b.item("dwarven_lore_book", "Book on dwarven lore", "book", 0x6A3A2A, "A book on the history of the dwarves.");
+        b.npc("vermundi", "Vermundi", "keldagrim", 6, 4, 0xD8A88C, 0x8A3A6A, 0x5A2A4A, 0xC08A3F);
+        b.npc("dromund", "Dromund", "keldagrim", -6, 4, 0xD8A88D, 0x5A4A2A, 0x3A2A1A, 0x8A6A40);
+        b.npc("santiri", "Santiri", "keldagrim", -6, -4, 0xD8A88E, 0x6A6A6A, 0x3A3A3A, 0xA0A0A1);
+        b.npc("quest_gd_secretary", "Purple Pewter secretary", "keldagrim", 4, 6, 0xD8A88F, 0x6A2A8A, 0x4A1A5A, 0xC0A0E0);
+        b.npc("quest_gd_director", "Purple Pewter director", "keldagrim", -4, 6, 0xD8A890, 0x5A1A7A, 0x3A0A4A, 0xE0C062);
+        b.item("exquisite_clothes", "Exquisite clothes", "cloth", 0xC0A0E0, "Clothes made of exquisite silk.");
+        b.item("exquisite_boots", "Exquisite boots", "boots", 0x8A5A3A, "A pair of very fine boots.");
+        b.item("gd_dwarven_battleaxe_broken", "Dwarven battleaxe", "battleaxe", 0x6A6A6A, "An old dwarven battleaxe. It needs repairing.");
+        b.item("gd_dwarven_battleaxe", "Dwarven battleaxe", "battleaxe", 0x9A9AB0, "A fine dwarven battleaxe, set with sapphires.");
         b.quest("the_giant_dwarf", "The Giant Dwarf", Difficulty.INTERMEDIATE, 2)
                 .xp(Skill.CRAFTING, 2500).xp(Skill.MINING, 2500).xp(Skill.SMITHING, 2500).xp(Skill.MAGIC, 1500).xp(Skill.FIREMAKING, 1500).xp(Skill.THIEVING, 1500) // OSRS (current quest XP rewards)
                 .req(Skill.CRAFTING, 12).req(Skill.FIREMAKING, 16).req(Skill.MAGIC, 33).req(Skill.THIEVING, 14)
                 .unlock("Access to Keldagrim and the Grand Exchange of the dwarves")
                 .stage("I can start this quest by speaking to Commander Veldaban in Keldagrim. (Requires 12 Crafting, 16 Firemaking, 33 Magic, 14 Thieving.)")
                 .talk("commander_veldaban").say("A human in Keldagrim? You knocked over the statue of King Alvis on your way in! You'll need to repair it... somehow.")
-                .stage("I should help the sculptor rebuild the statue: Riki needs a model and the statue needs 6 iron bars.")
-                .talk("riki_the_sculptor").take("iron_bar:6").say("*You pose while Riki sculpts and the smiths cast the statue.* It's even better than the original!")
-                .missing("The statue needs 6 iron bars.")
-                .stage("I should join one of the dwarven trading companies. Veldaban wants a report.")
-                .talk("commander_veldaban").give("dwarven_lore_book").say("The statue's fixed and you've joined the Consortium! Welcome to Keldagrim, friend. Take this book of our lore.");
+                // OSRS: Blasidar's model needs King Alvis's costume: exquisite clothes from Vermundi, Dromund's boots and Santiri's axe.
+                .stage("I should help Blasidar the sculptor: his model, Riki, needs exquisite clothes, exquisite boots and a dwarven battleaxe.")
+                .talk("vermundi").stay().unless("exquisite_clothes").take("coins:200", "coal", "logs").need("tinderbox").give("exquisite_clothes")
+                .say("Exquisite clothes? My spinning machine's broken... *You load coal and logs into it and light it with your tinderbox.*",
+                        "It's working again! For you, the clothes are 200 coins.")
+                .missing("The spinning machine needs coal and logs, and a tinderbox to light it. Then the clothes are 200 coins.")
+                .talk("dromund").stay().unless("exquisite_boots").reqSkill(Skill.THIEVING, 14).reqSkill(Skill.MAGIC, 33).give("exquisite_boots")
+                .say("My boots? Never! *While he isn't looking you take the left boot, then Telekinetic Grab the right one through the window.*")
+                .missing("*You'd need 14 Thieving to snatch one boot and 33 Magic to telegrab the other.*")
+                .talk("santiri").stay().unless("gd_dwarven_battleaxe_broken", "gd_dwarven_battleaxe").take("sapphire:3").give("gd_dwarven_battleaxe_broken")
+                .say("King Alvis's axe? This one's close. *You set three sapphires in it.* It's damaged though; only Thurgo the Imcando could mend it.")
+                .missing("The axe for the statue needs three sapphires.")
+                .talk("thurgo").stay().unless("gd_dwarven_battleaxe").take("gd_dwarven_battleaxe_broken", "iron_bar").give("gd_dwarven_battleaxe")
+                .say("An old dwarven axe? *Thurgo hammers an iron bar into the blade.* Good as new.")
+                .talk("riki_the_sculptor").take("exquisite_clothes", "exquisite_boots", "gd_dwarven_battleaxe")
+                .say("*Riki dresses as King Alvis and Blasidar sculpts the new statue.* It's even better than the original!")
+                .missing("Blasidar needs me in King Alvis's clothes, his boots and his axe.")
+                // OSRS: ore deliveries for a company's secretary, then bars for its director (any company but the Red Axe). // approx: quantities
+                .stage("I should join one of the dwarven trading companies (ores for the secretary, bars for the director), then report to Veldaban.")
+                .talk("quest_gd_secretary").stay().unlessFlag("gd_ores").take("iron_ore:5", "coal:5").flag("gd_ores")
+                .say("Ores! Just what the Purple Pewter needs. Keep this up and the director will want to meet you.")
+                .missing("Our company needs ores: 5 iron ore and 5 coal, unnoted.")
+                .talk("quest_gd_director").stay().needFlag("gd_ores").unlessFlag("gd_joined").take("steel_bar:5").flag("gd_joined")
+                .say("Bars too? You've worked hard for us. Blasidar sent you? Then join the Purple Pewter, and support the Commander.")
+                .missing("Bring me bars and we'll talk. 5 steel bars.")
+                .talk("commander_veldaban").needFlag("gd_joined").give("dwarven_lore_book")
+                .say("The statue's fixed and you've joined a company! Welcome to Keldagrim, friend. Take this book of our lore.")
+                .missing("Have you joined a company yet? Talk to the secretaries upstairs in the market.");
     }
 
     private static void olafsQuest(QuestBook b) {
@@ -352,6 +384,11 @@ final class LateQuestsA {
         b.npc("sir_lancelot_prisoner", "Sir Lancelot (prisoner)", "castle_wars_knights", 2, 2, 0xF0C8A9, 0x8A8A8E, 0x2A2A8B, 0xE0C061);
         b.npc("black_knight_jailer", "Black Knight jailer", "castle_wars_knights", -2, 2, 0xE0B8B1, 0x1A1A1B, 0x1A1A1C, 0x2A2A2F);
         b.item("lockpick_kr", "Lockpick", "key", 0x5A5A5A, "Useful for opening locks.");
+        b.npc("kr_mansion_guard", "Guard", "sinclair_mansion", 4, -4, 0xE0B8B2, 0x3A3A6A, 0x2A2A4A, 0x8A8A8F);
+        b.npc("kr_anna", "Anna", "SEERS_VILLAGE", -6, 6, 0xF0C8AA, 0x8A2A3A, 0x5A1A2A, 0xC08A40);
+        b.item("kr_scrap_paper", "Scrap paper", "note", 0xE0D8C0, "A scrap of paper from the Sinclair Mansion.");
+        b.item("kr_address_form", "Address form", "note", 0xE0D8C1, "A form with an address on it.");
+        b.item("kr_black_knight_helm", "Black knight helm", "full_helm", 0x2A2A2A, "A helm worn by the Black Knights.");
         b.quest("kings_ransom", "King's Ransom", Difficulty.EXPERIENCED, 1)
                 .reqQuest("black_knights_fortress", "holy_grail", "murder_mystery").reqQuest("one_small_favour")
                 .req(Skill.MAGIC, 45).req(Skill.DEFENCE, 65)
@@ -359,13 +396,39 @@ final class LateQuestsA {
                 .unlock("The Chivalry and Piety prayers (Knight Waves training ground)")
                 .stage("I can start this quest by speaking to Gossip in Seers' Village. (Requires Black Knights' Fortress, Holy Grail, Murder Mystery, 45 Magic, 65 Defence.)")
                 .talk("gossip_kr").say("Have you heard? The Knights of the Round Table have vanished! Folk say the Black Knights took them to a prison in the north.")
-                .stage("I should break into the Black Knights' prison north of Burthorpe and free the knights. The jailer carries a lockpick.")
-                .talk("black_knight_jailer").stay().unless("lockpick_kr").give("lockpick_kr")
-                .say("Halt! Who goes... *You tell him the Black Knight captain wants him. While he's gone you take his lockpick.*")
-                .talk("sir_lancelot_prisoner").take("lockpick_kr").say("*You pick the locks on the cells.* Free! The Black Knights captured all of us. To Camelot!")
-                .missing("We're locked in! The jailer carries a lockpick.")
-                .stage("I should tell King Arthur his knights are free.")
-                .talk("king_arthur").say("My knights are free! As a reward, I grant you entry to the Knight Waves training ground, where you can learn Chivalry and Piety.");
+                // OSRS: evidence from the Sinclair Mansion for the guard, then Anna's trial at the Seers' Village courthouse.
+                .stage("I should find evidence in the Sinclair Mansion for the guard, then prove Anna innocent at her trial in the Seers' Village courthouse.")
+                .reach("sinclair_mansion", 6).stay().unless("kr_address_form").unlessFlag("kr_guard").give("kr_scrap_paper", "kr_address_form", "kr_black_knight_helm")
+                .say("* You climb in through the smashed window. By the dining-room fireplace you find a scrap of paper,",
+                        "* in the library an address form, and in the western bookcase a Black Knight helm.")
+                .talk("kr_mansion_guard").stay().unlessFlag("kr_guard").take("kr_scrap_paper", "kr_address_form", "kr_black_knight_helm").flag("kr_guard")
+                .say("A Black Knight helm in the Sinclair house? And a forwarding address... Anna is being framed. Speak up for her at the trial.")
+                .missing("I can't help Anna without evidence. Search the mansion.")
+                .talk("kr_anna").needFlag("kr_guard")
+                .say("* You call the dog handler (the poison), the butler (the dagger) and the maid (the night of the murder and the thread).",
+                        "Not guilty! Thank you. But the Black Knights did this... and the Knights of the Round Table have vanished. Search the statue east of Camelot.")
+                .missing("My trial is about to start, and I've nobody to speak for me.")
+                // OSRS: the cell under the statue with Merlin, the lock puzzle, Cromperty's animate rock scroll and Arthur's statue.
+                .stage("I should escape the cell with Merlin, get an animate rock scroll from Wizard Cromperty and free King Arthur in the Black Knights' Fortress.")
+                .talk("black_knight_jailer").stay().unless("lockpick_kr").unlessFlag("kr_escaped").reqSkill(Skill.MAGIC, 33).give("lockpick_kr")
+                .say("*From the vent you Telekinetic Grab the hair clip of the guard fixing his hair outside the cell.*")
+                .missing("*You'd need 33 Magic to telegrab the guard's hair clip.*")
+                .talk("sir_lancelot_prisoner").stay().unlessFlag("kr_escaped").take("lockpick_kr").flag("kr_escaped")
+                .say("*You set the four tumblers and the lock springs open.* Free! King Arthur was turned to stone in the Black Knights' Fortress.",
+                        "Merlin says only an animate rock scroll and some granite can undo it. Take the bronze helm and chainbody for the King.")
+                .missing("We're locked in! The guard outside has a hair clip.")
+                .talk("wizard_cromperty").stay().needFlag("kr_escaped").unless("quest_animate_rock_scroll").give("quest_animate_rock_scroll")
+                .say("An animate rock scroll for a stone king? Here you are. Mind you read it next to him.")
+                .reach("black_knights_fortress", 8).stay().needFlag("kr_escaped").unlessFlag("kr_arthur")
+                .need("black_full_helm", "black_platebody", "black_platelegs")
+                .take("quest_animate_rock_scroll", "granite_500g", "bronze_med_helm", "iron_chainbody").flag("kr_arthur")
+                .say("* Disguised in black armour you go through the sturdy door, push the wall and climb down to the statue of King Arthur.",
+                        "* You read the scroll over the granite: the stone cracks and the King stands free. You give him the helm and chainbody.")
+                .missing("* The Black Knights would stop me: I need black armour (full helm, platebody, platelegs),",
+                        "* and the animate rock scroll, granite, a bronze med helm and an iron chainbody for the King.")
+                .talk("king_arthur").needFlag("kr_arthur")
+                .say("My knights are free! As a reward, I grant you entry to the Knight Waves training ground, where you can learn Chivalry and Piety.")
+                .missing("I am still a statue in the Black Knights' Fortress, as far as Camelot knows.");
     }
 
     private static void grimTales(QuestBook b) {

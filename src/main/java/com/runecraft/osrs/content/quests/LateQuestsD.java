@@ -86,9 +86,9 @@ final class LateQuestsD {
                 .talk("quest_cassius").take("quest_groats_principles")
                 .say("It's all here: a bull in the herd turns the milk. That Bull has to go. Gillie will open the pen for you.")
                 .stage("I must open the bull pen in the north-east of the cow field and defeat the Bull (level 30).")
-                .kill("quest_bull").say("* The Bull crashes to the ground. The cows already seem calmer.")
+                .kill("quest_bull").flag("iom_bull").say("* The Bull crashes to the ground. The cows already seem calmer.")
                 .stage("I should return to Cassius.")
-                .talk("quest_cassius").say("Sweet milk again! Gillie says you've earned a cow bell amulet. Ask her for it.")
+                .talk("quest_cassius").needFlag("iom_bull").say("Sweet milk again! Gillie says you've earned a cow bell amulet. Ask her for it.")
                 .done("quest_gillie_groats", "The Bull's back in his pen now, and grumpier than ever. Fancy another round with him?");
     }
 
@@ -135,9 +135,9 @@ final class LateQuestsD {
                 .stage("I should give Arhein the good news and get a current duck from him.")
                 .talk("quest_ca_arhein").give("quest_current_duck").say("A permit at last! Take this current duck: drop it in the bay and follow it with your boat.")
                 .stage("I should follow the current duck by boat; it'll end up south-west of Entrana.")
-                .reach("chart_entrana", 24).need("quest_current_duck").say("* The duck bobs along the current all the way to the waters south-west of Entrana. You chart its course.")
+                .reach("chart_entrana", 24).need("quest_current_duck").flag("ca_charted").say("* The duck bobs along the current all the way to the waters south-west of Entrana. You chart its course.")
                 .stage("I should share what I've learned with Arhein on the Catherby docks.")
-                .talk("quest_ca_arhein").say("The currents run all the way to Entrana! Keep the duck. There are plenty more currents to chart out there.");
+                .talk("quest_ca_arhein").needFlag("ca_charted").say("The currents run all the way to Entrana! Keep the duck. There are plenty more currents to chart out there.");
     }
 
     private static void troubledTortugans(QuestBook b) {
@@ -303,16 +303,18 @@ final class LateQuestsD {
                 .stage("I should talk to Efaritay Hallow in the Icyene Graveyard.")
                 .talk("quest_efaritay_hallow").say("My son Safalaan... he's not been himself. Find Ivan Strom; he'll know where Veliaf is.")
                 .stage("I should find Ivan Strom of the Myreque.")
-                .talk("ivan_strom").say("Veliaf went to Slepe chasing rumours of vyres. Roy at the pub might know more.")
+                .talk("ivan_strom").need("blisterwood_flail").missing("You'll need your blisterwood flail where we're going. Fetch it.").say("Veliaf went to Slepe chasing rumours of vyres. Roy at the pub might know more.")
                 .stage("I should ask Roy the bartender in Slepe about Veliaf's whereabouts.")
                 .talk("quest_roy_bartender").say("The Myreque fella? Headed up to Crombwick Manor, north of here. Place is crawling with vampyres.")
                 .stage("I should find Veliaf.")
-                .talk("veliaf_hurtz").say("*You help Veliaf cut through the vampyres in Crombwick Manor.* Drakan has taken Vanescula. Sugadinti Vitur will help us; she waits at Ver Sinhaza.")
+                .reach("quest_slepe_pub", 10).stay().unlessFlag("bmr_manor").need("blisterwood_flail").flag("bmr_manor")
+                .say("* From Slepe you head north to Crombwick Manor and cut through the vampyres with your blisterwood flail.")
+                .talk("veliaf_hurtz").needFlag("bmr_manor").missing("*Veliaf isn't here. Roy said he went north to Crombwick Manor.*").say("*You help Veliaf cut through the vampyres in Crombwick Manor.* Drakan has taken Vanescula. Sugadinti Vitur will help us; she waits at Ver Sinhaza.")
                 .stage("I should talk to Sugadinti Vitur in front of the Theatre of Blood at Ver Sinhaza.")
-                .talk("quest_sugadinti_vitur").say("My sister's theatre still has its uses. Arm yourself well; the way into Castle Drakan opens beneath the blood moon.")
+                .talk("quest_sugadinti_vitur").needFlag("bmr_manor").say("My sister's theatre still has its uses. Arm yourself well; the way into Castle Drakan opens beneath the blood moon.")
                 .stage("I must storm Castle Drakan and defeat Lowerniel Drakan beneath the blood moon.")
-                .kill("quest_lowerniel_drakan").say("* Lowerniel Drakan falls. As the blood moon sets, the vampyres of Morytania waver.")
+                .kill("quest_lowerniel_drakan").need("blisterwood_flail").flag("bmr_drakan").say("* Lowerniel Drakan falls. As the blood moon sets, the vampyres of Morytania waver.")
                 .stage("I should return to Veliaf.")
-                .talk("veliaf_hurtz").say("Drakan is dead. After all these years... Morytania is free. The Myreque owe you everything, my friend.");
+                .talk("veliaf_hurtz").needFlag("bmr_drakan").say("Drakan is dead. After all these years... Morytania is free. The Myreque owe you everything, my friend.");
     }
 }

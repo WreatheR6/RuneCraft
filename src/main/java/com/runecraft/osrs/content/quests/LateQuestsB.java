@@ -60,15 +60,20 @@ final class LateQuestsB {
                 .stage("I can start this quest by speaking to Awusah the Mayor in Nardah. (Requires 33 Magic, 37 Ranged, Mining and Thieving.)")
                 .talk("awusah").say("The River Elid has dried up! Nardah will die without water. Something blocks the source in the mountains to the north.")
                 .stage("I should ask Ghaslor the Elder about the Elid's source.")
-                .talk("ghaslor").give("ancestral_key").say("Our ancestors sealed the source with three spirits. Take the ancestral key; the spirits are angry that the people stopped honouring them.")
+                .talk("ghaslor").need("needle", "thread").reqSkill(Skill.MAGIC, 33).give("ancestral_key")
+                .missing("The key lies in the house west of mine, with the old robes of Elidinis. Mend them with a needle and thread.").say("Our ancestors sealed the source with three spirits. Take the ancestral key; the spirits are angry that the people stopped honouring them.")
                 .stage("I should go to the source of the Elid, appease the three spirits and remove the blockage.")
-                .reach("elid_cave", 8).take("ancestral_key").say("* You defeat the three golem guardians and speak to the spirits: they forgive the people. The water flows again!")
+                .reach("elid_cave", 8).take("ancestral_key").need("rope").reqSkill(Skill.THIEVING, 37).reqSkill(Skill.MINING, 37)
+                .reqSkill(Skill.RANGED, 37).flag("soe_spirits")
+                .missing("* I need a rope for the root over the cave, and 37 Thieving, Mining and Ranged to clear the three channels.").say("* You defeat the three golem guardians and speak to the spirits: they forgive the people. The water flows again!")
                 .stage("I should tell Awusah the water is back.")
-                .talk("awusah").say("The Elid flows! Nardah is saved. Thank you, my friend.");
+                .talk("awusah").needFlag("soe_spirits").say("The Elid flows! Nardah is saved. Thank you, my friend.");
     }
 
     private static void contact(QuestBook b) {
         b.npc("jex", "Jex", "sophanem", 4, -4, 0xA86A44, 0x5A4A3F, 0x3A2A20, 0x2A1A11);
+        b.npc("maisa", "Maisa", "sophanem_dungeon", -4, 2, 0xA86A46, 0x6A3A5A, 0x3A1A2A, 0x2A1A12);
+        b.item("contact_parchment", "Parchment", "note", 0xD8C8A0, "A parchment found on Kaleef's body.");
         b.items(s -> s.add("keris", "Keris", Kind.MELEE_WEAPON, "dagger", 0xB0A060).value(1).stack(1)
                 .equipment(new EquipmentDef(EquipmentDef.Slot.WEAPON, new EquipmentStats(40, 20, -10, 2, 0, 0, 0, 0, 0, 0, 40, 0, 0, 0),
                         Map.of(Skill.ATTACK, 50), 4, AttackType.STAB, EquipmentDef.WeaponClass.MELEE))
@@ -82,15 +87,30 @@ final class LateQuestsB {
                 .reqQuest("prince_ali_rescue", "icthlarins_little_helper")
                 .xp(Skill.THIEVING, 7000).xp(Skill.RANGED, 7000).reward("keris")
                 .stage("I can start this quest by speaking to the High Priest in Sophanem. (Requires Prince Ali Rescue, Icthlarin's Little Helper.)")
-                .talk("high_priest_sophanem").say("Sophanem and Menaphos have lost contact! Osman, the Emir's spymaster, may know why.")
-                .stage("I should ask Osman in Al Kharid.")
-                .talk("osman").say("Our agent in Sophanem has gone silent. Find Jex, a retired adventurer there.")
-                .stage("I should find Jex in Sophanem.")
-                .talk("jex").say("The tunnels beneath Sophanem lead to Menaphos. I lost my map down there, along with my nerve. Something huge lives below.")
-                .stage("I must explore the dungeon beneath Sophanem and defeat the giant scarab.")
-                .kill("giant_scarab").say("* The giant scarab is slain. Behind it you find the passage to Menaphos and a strange dagger.")
-                .stage("I should report to Osman.")
-                .talk("osman").say("Contact with Menaphos restored! Keep that keris; it'll serve you well against scarabs and kalphites.");
+                .talk("high_priest_sophanem").say("Sophanem and Menaphos have lost contact! Is there any way into Menaphos from below?",
+                        "Jex, a retired adventurer, lives in the north-easternmost building of the city. He knows the tunnels.")
+                .stage("I should find Jex in the north-easternmost building of Sophanem.")
+                .talk("jex").say("The tunnels beneath Sophanem lead to Menaphos. I lost my nerve down there. Something huge lives below.",
+                        "Better get down there. Take a light: the ladder in my house leads down to a trapdoor.")
+                // OSRS: the Sophanem Dungeon labyrinth (floor and wall traps, crushers, sand pits), Kaleef's body and Maisa.
+                .stage("I should explore the dungeon beneath Sophanem with a light source, search the body I find there and speak to Maisa.")
+                .reach("sophanem_dungeon", 10).stay().unless("contact_parchment").unlessFlag("ct_kaleef").need("tinderbox").flag("ct_kaleef").give("contact_parchment")
+                .say("* You light your way past floor traps, wall traps and crusher blocks, and skirt the sand pits.",
+                        "* Near a ladder you find the body of Kaleef, Osman's agent. A parchment is clutched in his hand.")
+                .missing("* It's pitch black down here. You'll need a tinderbox to light your way.")
+                .talk("maisa").needFlag("ct_kaleef").say("You found Kaleef? He was my contact. Tell Osman in Al Kharid: Draynor Village... and Leela.",
+                        "Those words will tell him you speak for me.")
+                .missing("Who are you? I'm waiting for someone. He should have come through the tunnels by now.")
+                .stage("I should take Kaleef's parchment to Osman in front of the Al Kharid palace.")
+                .talk("osman").take("contact_parchment").say("Draynor Village, Leela... you've met Maisa. And Kaleef is dead.",
+                        "A route between Sophanem and Menaphos would drive a wedge between the Menaphite cities. Meet me outside Sophanem's gates.")
+                .missing("I want to talk to you about Sophanem? Then bring me something more than words. What did Kaleef carry?")
+                .stage("I must navigate the tunnels again with Osman and kill the giant scarab, then tell the High Priest.")
+                .kill("giant_scarab").stay().unlessFlag("ct_scarab").flag("ct_scarab")
+                .say("* The giant scarab is slain. Behind it you find the passage to Menaphos and a strange dagger: a keris.",
+                        "@Osman: Contact with Menaphos restored! Keep that keris; it'll serve you well against scarabs and kalphites.")
+                .talk("high_priest_sophanem").needFlag("ct_scarab").say("The way to Menaphos is open again? Icthlarin be praised! Sophanem thanks you.")
+                .missing("The tunnels still crawl with scarabs. Osman waits for you at the gates.");
     }
 
     private static void beneathCursedSands(QuestBook b) {
@@ -218,34 +238,52 @@ final class LateQuestsB {
                 .stage("I can start this quest by speaking to Lord Kandur Hosidius in Hosidius. (Requires Client of Kourend, 18 Agility.)")
                 .talk("lord_kandur_hosidius").say("An ancient Hosidius heir, Lady Arceuus? No... a relic of our house was lost in the Crabclaw Caves. Find it.")
                 .stage("I should search for the lost Hosidius relic beneath Hosidius.")
-                .reach("hosidius", 10).say("* In the caves beneath Hosidius you find the relic: the Book of the Dead's lost pages.")
+                .reach("arceuus", 12).stay().unlessFlag("dod_book").flag("dod_book")
+                .say("* In the Arceuus Library Galana helps you find the Varlamore envoy book. It mentions Artur Hosidius and the Crabclaw Caves.")
+                .reach("hosidius", 10).needFlag("dod_book").flag("dod_chest").missing("* I don't know where to look yet. The Arceuus Library may have records.")
+                .say("* In the Crabclaw Caves you meet the ghost of Artur Hosidius, kill the Sand Snake (level 36) and search the chest.",
+                        "* In the caves beneath Hosidius you find the relic: the Book of the Dead's lost pages.")
                 .stage("I should return to Lord Kandur Hosidius.")
-                .talk("lord_kandur_hosidius").say("The relic is home! Hosidius is grateful.");
+                .talk("lord_kandur_hosidius").needFlag("dod_chest").missing("Any news from the Crabclaw Caves?").say("The relic is home! Hosidius is grateful.");
+        b.item("qot_letter", "Letter", "note", 0xE0D8C2, "A letter found in Councillor Hughes's chest.");
         b.quest("the_queen_of_thieves", "The Queen of Thieves", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("client_of_kourend").req(Skill.THIEVING, 20).xp(Skill.THIEVING, 2000)
                 .stage("I can start this quest by speaking to Lady Shauna Piscarilius in Port Piscarilius. (Requires Client of Kourend, 20 Thieving.)")
                 .talk("lady_shauna_piscarilius").say("Councillor Hughes is corrupt, and only a thief can prove it. The Queen of Thieves runs the Piscarilius underworld. Help her, and she'll help us.")
-                .stage("I should steal Councillor Hughes's ledger from his house.")
-                .reach("great_kourend", 8).say("* You sneak into Hughes's house and copy his ledger: proof of bribery!")
+                .stage("I should prove myself to the Queen of Thieves, then steal evidence from Councillor Hughes's house in Kingstown.")
+                .reach("great_kourend", 8).stay().unlessFlag("qot_warrens").take("stew").flag("qot_warrens")
+                .say("* Robert O'Reilly takes your stew and shows you the manhole into the Warrens. Devan Rutter sends you to 'deal with' Conrad King.",
+                        "* You stage Conrad's murder on the dock, and the Queen of Thieves receives you in her tent.")
+                .missing("* Robert O'Reilly won't talk to an empty-handed stranger. He's hungry: bring him a stew.")
+                .reach("quest_kourend_castle", 10).needFlag("qot_warrens").reqSkill(Skill.THIEVING, 20).give("qot_letter")
+                .say("* In Hughes's house in Kingstown you picklock the chest in the east of the room and find a letter: proof of bribery!")
+                .missing("* The Queen of Thieves hasn't vouched for me yet; the Warrens come first.")
                 .stage("I should take the evidence to Lady Shauna.")
-                .talk("lady_shauna_piscarilius").say("Hughes is finished! The Queen of Thieves sends her regards. So do I.");
+                .talk("lady_shauna_piscarilius").take("qot_letter").missing("Do you have the evidence from Hughes's house?").say("Hughes is finished! The Queen of Thieves sends her regards. So do I.");
         b.quest("tale_of_the_righteous", "Tale of the Righteous", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("client_of_kourend").req(Skill.STRENGTH, 16).req(Skill.MINING, 10)
                 .reward("coins:8000") // OSRS: no XP reward
                 .stage("I can start this quest by speaking to Lord Shiro Shayzien in Shayzien. (Requires Client of Kourend, 16 Strength, 10 Mining.)")
                 .talk("lord_shiro_shayzien").say("A historian discovered that a lizardman corrupted by the old shrine threatens our soldiers. Investigate Lizardman Canyon.")
                 .stage("I must defeat the corrupt lizardman in Lizardman Canyon.")
-                .kill("corrupt_lizardman").say("* The corrupt lizardman falls. The shrine's dark influence fades.")
+                .talk("quest_archeio").stay().unlessFlag("totr_prison").need("rope").flag("totr_prison")
+                .say("Pagida can send you to the Library Historical Archive's Tower of Magic prison.",
+                        "* You push the strange device and attack it with magic, melee and ranged, and investigate the skeleton in the northern cell.")
+                .missing("Phileas Rimor sent you? Bring a rope: the trail ends in a crevice on Mount Quidamortem.")
+                .kill("corrupt_lizardman").flag("totr_lizard").say("* The corrupt lizardman falls. The shrine's dark influence fades.")
                 .stage("I should report to Lord Shiro Shayzien.")
-                .talk("lord_shiro_shayzien").say("Shayzien is safer for your bravery. Thank you.");
+                .talk("lord_shiro_shayzien").needFlag("totr_lizard").say("Shayzien is safer for your bravery. Thank you.");
         b.quest("the_forsaken_tower", "The Forsaken Tower", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("client_of_kourend").xp(Skill.MINING, 500).xp(Skill.SMITHING, 500)
                 .stage("I can start this quest by speaking to Lord Kandur Lovakengj in Lovakengj. (Requires Client of Kourend.)")
                 .talk("lord_kandur_lovakengj").give("lovakengj_plans").say("The old Forsaken Tower could power our forges again. Get its machinery working: here are the plans.")
                 .stage("I should restore the Forsaken Tower's power: 4 coal and 2 steel bars for the furnace and generator.")
-                .reach("forsaken_tower", 8).take("lovakengj_plans", "coal:4", "steel_bar:2").say("* You fix the furnace, solve the power puzzle and the tower hums to life.")
+                .reach("forsaken_tower", 8).take("lovakengj_plans", "coal:4", "steel_bar:2").flag("ft_power")
+                .say("* You inspect the display case, find the generator crank, solve the power grid and measure the jugs (5 and 8 gallons).",
+                        "* With Undor's advice you fix the furnace, and the tower hums to life.")
+                .missing("* The furnace needs 4 coal and the generator 2 steel bars, and I'll need Lord Kandur's plans.")
                 .stage("I should report to Lord Kandur Lovakengj.")
-                .talk("lord_kandur_lovakengj").say("The tower's power flows to our forges! Lovakengj thanks you.");
+                .talk("lord_kandur_lovakengj").needFlag("ft_power").say("The tower's power flows to our forges! Lovakengj thanks you.");
         b.quest("the_ascent_of_arceuus", "The Ascent of Arceuus", Difficulty.INTERMEDIATE, 1)
                 .xp(Skill.HUNTER, 1500).xp(Skill.RUNECRAFT, 500) // OSRS (current quest XP rewards)
                 .reqQuest("client_of_kourend").req(Skill.HUNTER, 12)
@@ -260,11 +298,17 @@ final class LateQuestsB {
                 .xp(Skill.CRAFTING, 4000).xp(Skill.CONSTRUCTION, 3200)
                 .stage("I can start this quest by speaking to Councillor Andrews in Port Piscarilius, who needs help for the Kebos farmers. (Requires Client of Kourend, 30 Crafting, 26 Construction.)")
                 .talk("councillor_andrews").say("A beast terrorises the farms of Kebos. The farmers want to scare it off with a fake head. Help them build one.")
-                .stage("I should build a scary fake beast head (2 planks, clay and a ball of wool).")
-                .talk("councillor_andrews").take("plank:2", "clay", "ball_of_wool").say("*You craft a terrifying head and mount it on the farm gate.* The beast flees!")
-                .missing("We need 2 planks, some clay and a ball of wool for the head.")
+                .stage("I should follow the flour trail to the beast, then make a fake head (soft clay, fur) and mount it with 2 planks and nails.")
+                .reach("kebos_lowlands", 12).stay().unlessFlag("ga_beast").take("pot_of_flour").flag("ga_beast")
+                .say("* You pour flour on the gate by the cow pen and follow the trail to a cave in the Kebos Lowlands mine.",
+                        "* The Headless Beast attacks! You defeat it, but the farmers want something to scare off the next one.")
+                .missing("* The beast leaves no tracks. A pot of flour on the gate by the cow pen would show its trail.")
+                .talk("councillor_andrews").needFlag("ga_beast").need("knife", "needle", "thread", "hammer")
+                .take("soft_clay", "bear_fur", "plank:2", "steel_nails:6").reqSkill(Skill.CRAFTING, 30).reqSkill(Skill.CONSTRUCTION, 26)
+                .flag("ga_head").say("*You carve a clay head, cover it in fur, paint it red and mount it on the wall with two planks and six nails.* The beast's kin will flee!")
+                .missing("A head needs soft clay and bear fur (knife, needle and thread), then 2 planks and 6 nails to mount it, and a hammer.")
                 .stage("I should report the beast is gone.")
-                .talk("councillor_andrews").give("kourend_favour_letter").say("The farms are safe! Take this letter of thanks from the council.");
+                .talk("councillor_andrews").needFlag("ga_head").give("kourend_favour_letter").say("The farms are safe! Take this letter of thanks from the council.");
         b.quest("a_kingdom_divided", "A Kingdom Divided", Difficulty.EXPERIENCED, 2)
                 .reqQuest("the_depths_of_despair", "the_queen_of_thieves", "tale_of_the_righteous", "the_forsaken_tower", "the_ascent_of_arceuus")
                 .req(Skill.AGILITY, 54).req(Skill.THIEVING, 52).req(Skill.WOODCUTTING, 52).req(Skill.HERBLORE, 50)
@@ -274,10 +318,12 @@ final class LateQuestsB {
                 .stage("I can start this quest by speaking to Councillor Andrews in Port Piscarilius. (Requires the five Kourend house quests and more.)")
                 .talk("councillor_andrews").say("The Kourend Council is being picked off one by one. Someone wants the throne. Investigate the attacks.")
                 .stage("I should speak to Kaht B'alam, the lizardman shaman in the Kebos Lowlands, about the dark magic behind the attacks.")
-                .talk("kaht_bbalam").say("The Judge of Yama, a demon of the void, has been summoned. Its servant hides among your council. Face it, and the kingdom may unite.")
+                .reach("kebos_lowlands", 12).stay().unlessFlag("akd_shrine").flag("akd_shrine")
+                .say("* In the swamps of the Kebos Lowlands you find the remains of a ritual circle, still warm. Kaht B'alam's hut is close by.")
+                .talk("kaht_bbalam").needFlag("akd_shrine").missing("Hsss. Show me you have seen the ritual site in the lowlands first.").say("The Judge of Yama, a demon of the void, has been summoned. Its servant hides among your council. Face it, and the kingdom may unite.")
                 .stage("I must defeat the Judge of Yama in the Kebos Lowlands.")
-                .kill("judge_of_yama").say("* The Judge of Yama is banished back to the void!")
+                .kill("judge_of_yama").flag("akd_judge").say("* The Judge of Yama is banished back to the void!")
                 .stage("I should report to Councillor Andrews.")
-                .talk("councillor_andrews").say("The council is safe and the five houses united. Great Kourend is in your debt.");
+                .talk("councillor_andrews").needFlag("akd_judge").say("The council is safe and the five houses united. Great Kourend is in your debt.");
     }
 }

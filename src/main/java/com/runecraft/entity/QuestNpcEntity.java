@@ -24,6 +24,8 @@ import net.minecraft.world.World;
 /** A stationary, invulnerable quest character. Right-click to talk. */
 public class QuestNpcEntity extends PathAwareEntity {
     private static final TrackedData<String> NPC = DataTracker.registerData(QuestNpcEntity.class, TrackedDataHandlerRegistry.STRING);
+    /** A built-in character loaded far from its OSRS tile (left at an old spot): removed on its first tick. */
+    private boolean misplaced;
 
     public QuestNpcEntity(EntityType<? extends PathAwareEntity> type, World world) {
         super(type, world);
@@ -88,10 +90,21 @@ public class QuestNpcEntity extends PathAwareEntity {
             setNpc(def);
         } else {
             try {
-                setNpc(QuestNpc.valueOf(id));
+                QuestNpc q = QuestNpc.valueOf(id);
+                setNpc(q);
+                // Saved by an older version near the town centre: the character now spawns on its own OSRS tile.
+                misplaced = q.remote() && Math.max(Math.abs(getBlockX() - q.blockX()), Math.abs(getBlockZ() - q.blockZ())) > QuestNpc.REMOTE;
             } catch (IllegalArgumentException ignored) {
                 // keep default
             }
+        }
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (misplaced && !getWorld().isClient()) {
+            discard();
         }
     }
 

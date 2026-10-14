@@ -1,8 +1,10 @@
 package com.runecraft.osrs.content.quests;
 
 import com.runecraft.osrs.FreeQuestObjectives;
+import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.Quest;
+import com.runecraft.osrs.QuestNpc;
 import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.quests.QuestSpec.Stage;
@@ -169,14 +171,14 @@ class QuestDepthTest {
         assertTrue(q.triggers().stream().noneMatch(t -> t.target.equals("tutab") && t.give.containsKey("monkey_dentures")));
     }
 
-    /** Regression guard on the survey: no quest advances by talking alone (round 20: 3), few are shallow (round 20: 60). */
+    /** Regression guard on the survey: no quest advances by talking alone (round 20: 3), none is shallow (round 20: 60, round 21: 41). */
     @Test
     void fewTalkOnlyQuests() {
         long talkOnly = QuestBook.get().quests.stream().filter(q -> q.stages.stream().noneMatch(QuestDepthTest::objective)).count();
         assertEquals(0, talkOnly, talkOnly + " talk-only quests");
         long shallow = QuestBook.get().quests.stream()
                 .filter(q -> q.stages.stream().filter(QuestDepthTest::objective).count() * 2 < q.stages.size()).count();
-        assertTrue(shallow <= 41, shallow + " shallow quests (fewer than half their stages have objectives)");
+        assertEquals(0, shallow, shallow + " shallow quests (fewer than half their stages have objectives)");
     }
 
     @Test
@@ -261,6 +263,78 @@ class QuestDepthTest {
                 && t.needFlags.containsAll(List.of("cots_b1", "cots_b2", "cots_b3", "cots_b4"))));
         // Song of the Elves starts with Edmond in East Ardougne (OSRS), not Arianwyn.
         assertTrue(spec("song_of_the_elves").stages.get(0).triggers.get(0).target.equals("edmond"));
+    }
+
+    /** Round 22: the last 41 shallow quests, deepened inside their existing stages. */
+    @Test
+    void round22QuestsKeepTheirStagesAndHaveObjectives() {
+        Map.ofEntries(
+                Map.entry("bone_voyage", 3), Map.entry("temple_of_the_eye", 5), Map.entry("darkness_of_hallowvale", 3),
+                Map.entry("sins_of_the_father", 5), Map.entry("the_slug_menace", 5), Map.entry("rum_deal", 3),
+                Map.entry("client_of_kourend", 3), Map.entry("tears_of_guthix", 3), Map.entry("a_tail_of_two_cats", 4),
+                Map.entry("defender_of_varrock", 3), Map.entry("garden_of_tranquillity", 3), Map.entry("the_giant_dwarf", 3),
+                Map.entry("kings_ransom", 3), Map.entry("spirits_of_the_elid", 4), Map.entry("contact", 5),
+                Map.entry("the_depths_of_despair", 3), Map.entry("the_queen_of_thieves", 3), Map.entry("tale_of_the_righteous", 3),
+                Map.entry("the_forsaken_tower", 3), Map.entry("getting_ahead", 3), Map.entry("a_kingdom_divided", 4),
+                Map.entry("death_to_the_dorgeshuun", 6), Map.entry("secrets_of_the_north", 6),
+                Map.entry("my_arms_big_adventure", 5), Map.entry("one_small_favour", 7), Map.entry("a_souls_bane", 5),
+                Map.entry("the_fremennik_exiles", 5), Map.entry("a_night_at_the_theatre", 5), Map.entry("perilous_moons", 4),
+                Map.entry("death_on_the_isle", 4), Map.entry("ethically_acquired_antiquities", 3),
+                Map.entry("shadows_of_custodia", 3), Map.entry("the_final_dawn", 4), Map.entry("architectural_alliance", 3),
+                Map.entry("daddys_home", 3), Map.entry("into_the_tombs", 3), Map.entry("mage_arena_i", 3),
+                Map.entry("the_ides_of_milk", 6), Map.entry("current_affairs", 6), Map.entry("the_blood_moon_rises", 8))
+                .forEach((id, n) -> {
+                    QuestSpec q = spec(id);
+                    assertEquals(n, q.stages.size(), id);
+                    long real = q.stages.stream().filter(QuestDepthTest::objective).count();
+                    assertTrue(real * 2 >= q.stages.size(), id + ": only " + real + "/" + q.stages.size() + " stages have objectives");
+                });
+    }
+
+    @Test
+    void contactGiantDwarfAndKingsRansomFollowTheWalkthrough() {
+        QuestSpec contact = spec("contact");
+        Trigger kaleef = find(contact, Trigger.Kind.REACH, "sophanem_dungeon");
+        assertTrue(kaleef.give.containsKey("contact_parchment") && kaleef.need.containsKey("tinderbox"));
+        assertTrue(find(contact, Trigger.Kind.TALK, "maisa").needFlags.contains("ct_kaleef"));
+        assertTrue(contact.triggers().stream().anyMatch(t -> t.target.equals("osman") && t.take.containsKey("contact_parchment")));
+        assertTrue(contact.triggers().stream().anyMatch(t -> t.target.equals("high_priest_sophanem") && t.completes()
+                && t.needFlags.contains("ct_scarab")));
+
+        QuestSpec gd = spec("the_giant_dwarf");
+        assertEquals(Set.of("exquisite_clothes", "exquisite_boots", "gd_dwarven_battleaxe"), find(gd, Trigger.Kind.TALK, "riki_the_sculptor").take.keySet());
+        assertEquals(3, find(gd, Trigger.Kind.TALK, "santiri").take.get("sapphire"));
+        assertTrue(find(gd, Trigger.Kind.TALK, "thurgo").take.containsKey("iron_bar"));
+        assertTrue(find(gd, Trigger.Kind.TALK, "vermundi").take.keySet().containsAll(Set.of("coins", "coal", "logs")));
+        assertTrue(gd.triggers().stream().anyMatch(t -> t.target.equals("commander_veldaban") && t.completes() && t.needFlags.contains("gd_joined")));
+
+        QuestSpec kr = spec("kings_ransom");
+        assertTrue(find(kr, Trigger.Kind.TALK, "kr_mansion_guard").take.keySet()
+                .containsAll(Set.of("kr_scrap_paper", "kr_address_form", "kr_black_knight_helm")));
+        Trigger arthur = find(kr, Trigger.Kind.REACH, "black_knights_fortress");
+        assertTrue(arthur.take.keySet().containsAll(Set.of("quest_animate_rock_scroll", "granite_500g", "bronze_med_helm", "iron_chainbody")));
+        assertTrue(arthur.need.keySet().containsAll(Set.of("black_full_helm", "black_platebody", "black_platelegs")));
+        assertTrue(kr.triggers().stream().anyMatch(t -> t.target.equals("king_arthur") && t.completes() && t.needFlags.contains("kr_arthur")));
+        // A Tail of Two Cats: Hild's 5 death runes before Bob can be understood.
+        assertEquals(5, find(spec("a_tail_of_two_cats"), Trigger.Kind.TALK, "quest_hild").take.get("death_rune"));
+        assertTrue(spec("tears_of_guthix").triggers().stream().anyMatch(t -> t.target.equals("juna") && t.need.containsKey("chisel")));
+    }
+
+    /** Hand-scripted F2P characters stand on their OSRS tiles; far ones spawn with their own chunk. */
+    @Test
+    void questNpcsStandOnTheirOsrsTiles() {
+        assertTile(QuestNpc.COOK, 3209, 3215);
+        assertTile(QuestNpc.FATHER_URHNEY, 3146, 3174);
+        assertTile(QuestNpc.DR_HARLOW, 3222, 3397);
+        assertTile(QuestNpc.DORIC, 2952, 3451);
+        assertTrue(QuestNpc.FATHER_URHNEY.remote() && QuestNpc.DR_HARLOW.remote());
+        assertTrue(!QuestNpc.ROMEO.remote() && !QuestNpc.SEDRIDOR.onOsrsTile());
+    }
+
+    private static void assertTile(QuestNpc n, int x, int y) {
+        assertTrue(n.onOsrsTile(), n.name());
+        assertEquals(GielinorMap.toBlockX(x), n.blockX(), n.name());
+        assertEquals(GielinorMap.toBlockZ(y), n.blockZ(), n.name());
     }
 
     private static void assertPlace(String id, int x, int y) {

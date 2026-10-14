@@ -159,8 +159,13 @@ final class MisthalinMoreQuests {
                 .stage("I can start this quest by speaking to Veos on the Port Sarim docks. (Requires X Marks the Spot.)")
                 .talk("veos_port_sarim").give("enchanted_scroll").travel("great_kourend")
                 .say("My client wants opinions on the five houses of Great Kourend. Take this enchanted scroll and ask around. *You sail to Great Kourend.*")
-                .stage("I should ask the people of the five houses of Kourend for their opinions, starting with Leenz in Port Piscarilius.")
-                .talk("leenz").say("The houses? Piscarilius has fish, Arceuus has magic, Hosidius has farms, Lovakengj has dwarves... and Shayzien has soldiers.",
+                .stage("I should ask the shopkeepers of the five houses of Kourend for their opinions (Hosidius, Shayzien, Lovakengj, Arceuus), then Leenz in Port Piscarilius.")
+                .reach("hosidius", 12).stay().unlessFlag("cok_hosidius").flag("cok_hosidius").say("* Horace in the Hosidius general store gives you his opinion of the house.")
+                .reach("shayzien", 12).stay().unlessFlag("cok_shayzien").flag("cok_shayzien").say("* Jennifer in the Shayzien general store gives you her opinion of the house.")
+                .reach("lovakengj", 12).stay().unlessFlag("cok_lovakengj").flag("cok_lovakengj").say("* Munty in the Lovakengj general store gives you his opinion of the house.")
+                .reach("arceuus", 12).stay().unlessFlag("cok_arceuus").flag("cok_arceuus").say("* Regath in the Arceuus general store gives you his opinion of the house.")
+                .talk("leenz").needFlag("cok_hosidius", "cok_shayzien", "cok_lovakengj", "cok_arceuus")
+                .missing("Piscarilius? Fish and trade, that's us. Have you asked the shopkeepers of the other four houses yet?").say("The houses? Piscarilius has fish, Arceuus has magic, Hosidius has farms, Lovakengj has dwarves... and Shayzien has soldiers.",
                         "* Your enchanted scroll glows: it's recorded all five opinions.")
                 .stage("I should return to Veos.")
                 .talk("veos_port_sarim").take("enchanted_scroll").say("My client is delighted! Take this book of memoirs as thanks.");
@@ -176,10 +181,13 @@ final class MisthalinMoreQuests {
                 .stage("I can start this quest by speaking to Juna the serpent in the caves beneath Lumbridge Swamp. (Requires 43 quest points.)")
                 .talk("juna").say("Tell me a story of your adventures, and I will let you collect the Tears of Guthix. You'll need a bowl carved from magic stone.")
                 .stage("I need a stone bowl, carved from the rock by the light creatures' chasm (a chisel and a tinderbox for light).")
-                .talk("juna").need("chisel", "tinderbox").give("stone_bowl").say("* By the light of your lantern you carve a bowl from the magic rock.")
-                .missing("You'll need a chisel to carve the rock and a tinderbox to light your way.")
+                .talk("juna").need("chisel", "tinderbox").reqSkill(Skill.MINING, 20).reqSkill(Skill.CRAFTING, 20)
+                .give("stone_bowl").say("* You light a sapphire lantern and shine it on a light creature, which carries you across the chasm.",
+                        "* You mine a lump of magic stone and carve a bowl from it with your chisel.")
+                .missing("You'll need a tinderbox for the lantern and a chisel to carve the magic rock (20 Mining and Crafting).")
                 .stage("I should tell Juna a story of my adventures.")
-                .talk("juna").say("A fine tale. You may collect the Tears of Guthix once a week. Drink the blue tears, avoid the green.");
+                .talk("juna").need("stone_bowl").say("A fine tale. You may collect the Tears of Guthix once a week. Drink the blue tears, avoid the green.")
+                .missing("Without a bowl of magic stone you cannot catch the tears. Carve one from the rock across the chasm.");
     }
 
     private static void theFeud(QuestBook b) {
@@ -225,16 +233,26 @@ final class MisthalinMoreQuests {
         b.npc("unferth", "Unferth", "BURTHORPE", -5, -6, 0xE8C0B9, 0x6A6A3C, 0x4A4A2C, 0x8A6A3D);
         b.npc("bob_the_cat", "Bob the Cat", "VARROCK", 6, -7, 0x3A3A3A, 0x2A2A2A, 0x1A1A1A, 0x4A4A4A);
         b.item("doctors_hat", "Doctor's hat", "cowl", 0xF0F0F2, "A hat that makes you look medical.");
+        b.npc("quest_hild", "Hild", "BURTHORPE", 6, -6, 0xE8C0BA, 0x5A2A6A, 0x3A1A4A, 0x8A6A3E);
         b.quest("a_tail_of_two_cats", "A Tail of Two Cats", Difficulty.INTERMEDIATE, 2)
                 .reqQuest("icthlarins_little_helper").xp(Skill.COOKING, 2500).xp(Skill.CRAFTING, 2500)
                 .stage("I can start this quest by speaking to Unferth in Burthorpe. (Requires Icthlarin's Little Helper.)")
                 .talk("unferth").say("My cat Bob has run off! He's no ordinary cat... he sees things. Find him, please.")
-                .stage("I should find Bob the Cat. He's been seen in Varrock.")
-                .talk("bob_the_cat").say("Meow. *Bob stares at you knowingly. You get the feeling he's the reincarnation of the hero Robert the Strong.*")
-                .stage("Unferth is unwell after losing Bob. I should look after him (doctor's hat, food) and bring Bob home.")
-                .talk("unferth").take("shark", "minecraft:milk_bucket").give("doctors_hat")
+                // OSRS: Hild enchants the catspeak amulet with 5 death runes so you can talk to Bob.
+                .stage("I should ask Hild in Burthorpe to enchant my catspeak amulet, then find Bob the Cat. He's been seen in Varrock.")
+                .talk("quest_hild").stay().unlessFlag("totc_hild").take("death_rune:5").flag("totc_hild")
+                .say("Bob? Speak to a cat? I can enchant your amulet so you understand him, for 5 death runes.")
+                .missing("I'll need 5 death runes to enchant that amulet.")
+                .talk("gertrude").stay().needFlag("totc_hild").unlessFlag("totc_gertrude").flag("totc_gertrude")
+                .say("Bob? He's a friend of my Fluffs. He mentioned the library... ask Reldo, dear.")
+                .talk("reldo").stay().needFlag("totc_gertrude").unlessFlag("totc_reldo").flag("totc_reldo")
+                .say("Robert the Strong? There's a tale of a hero reborn as a cat... Bob may remember more than he lets on.")
+                .talk("bob_the_cat").needFlag("totc_hild").missing("Meow? *Without an enchanted catspeak amulet you can't understand him.*").say("Meow. *Bob stares at you knowingly. You get the feeling he's the reincarnation of the hero Robert the Strong.*")
+                .stage("Unferth is unwell after losing Bob. I should do his chores and visit him dressed as a doctor (white desert clothes) with some food.")
+                // OSRS: Unferth's chores, then a visit dressed as a doctor (the Apothecary's advice: white desert clothes). // approx: no hat needed
+                .talk("unferth").need("desert_shirt", "desert_robe").take("shark", "minecraft:milk_bucket")
                 .say("*You feed Unferth and he perks up.* Bob is home! I feel much better. Take this silly hat I wore as a doctor.")
-                .missing("I feel awful... some food (a shark) and milk would help.")
+                .missing("I feel awful... Are you a doctor? Some food (a shark) and milk would help.")
                 .stage("I should talk to Bob about his past.")
                 .talk("bob_the_cat").say("Meow. *In a vision, Bob shows you a mighty warrior, Robert the Strong, and a dragon named Galvek. Strange...*");
     }
@@ -322,9 +340,15 @@ final class MisthalinMoreQuests {
                 .stage("I can start this quest by speaking to Captain Rovin in Varrock Palace. (Requires Shield of Arrav, What Lies Below and more.)")
                 .talk("captain_rovin").say("Zombies are rising beneath Varrock! An ancient hero, Arrav, leads them, raised by Zamorakians.")
                 .stage("I should go into the sewers and confront the undead hero Arrav.")
-                .kill("arrav").say("* Arrav, hero of Avarrocka, is freed from the Zamorakian curse. His spirit thanks you.")
+                .reach("jolly_boar_inn", 8).stay().unlessFlag("dov_trail").flag("dov_trail")
+                .say("* With Elias White you follow the trail of plants, rocks and bushes to a trapdoor, collecting a grubby key on the way.")
+                .kill("arrav").needFlag("dov_trail").flag("dov_arrav").say("* Arrav, hero of Avarrocka, is freed from the Zamorakian curse. His spirit thanks you.")
                 .stage("I should report to Captain Rovin.")
-                .talk("captain_rovin").say("Varrock is safe! The city honours you, defender.");
+                .reach("camdozaal", 10).stay().needFlag("dov_arrav").unlessFlag("dov_shield").take("chaos_core").flag("dov_shield")
+                .say("* Ramarno lets you use the Sacred Forge: you imbue barronite with a chaos core and forge a shield.")
+                .missing("* The Sacred Forge needs a chaos core to imbue the barronite.")
+                .talk("captain_rovin").needFlag("dov_shield").missing("Elias told me what you found. Ramarno in Camdozaal could forge a shield against Arrav.")
+                .say("Varrock is safe! The city honours you, defender.");
     }
 
     private static void inAidOfTheMyreque(QuestBook b) {

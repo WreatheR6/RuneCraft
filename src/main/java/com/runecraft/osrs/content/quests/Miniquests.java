@@ -63,9 +63,9 @@ final class Miniquests {
                 .stage("I can start this miniquest by speaking to the ghost Hosa in Kourend Castle. (Requires Client of Kourend, 42 Mining.)")
                 .talk("quest_hosa").say("I was Kourend's architect, long ago. My plans were lost when I died. Find them, and I'll show you a secret of Xeric's.")
                 .stage("I should ask Archeio in Arceuus whether the library kept Hosa's plans.")
-                .talk("quest_archeio").give("quest_kourend_plans").say("Ah, the architect's plans. Dusty, but intact. Take them to him.")
+                .talk("quest_archeio").reqSkill(Skill.MINING, 42).give("quest_kourend_plans").say("Ah, the architect's plans. Dusty, but intact. Take them to him.")
                 .stage("I should bring the plans to Hosa.")
-                .talk("quest_hosa").take("quest_kourend_plans").say("My plans! Xeric's talisman can take you to the heart of his works now. Use it well.");
+                .talk("quest_hosa").take("quest_kourend_plans").reqSkill(Skill.MINING, 42).say("My plans! Xeric's talisman can take you to the heart of his works now. Use it well.");
     }
 
     private static void barbarianTraining(QuestBook b) {
@@ -147,10 +147,10 @@ final class Miniquests {
                 .stage("I can start this miniquest by speaking to Marlo in north-east Varrock.")
                 .talk("marlo").say("My dad's house is falling apart and he won't let me fix it. Maybe he'll let you. Here's what you'll need: planks, nails, a hammer.")
                 .stage("I should repair Old Man Yarlo's house (10 planks, 20 steel nails).")
-                .talk("old_man_yarlo").take("plank:10", "steel_nails:20").need("hammer").say("*You mend the chairs, table and bed.* Hmph. Not bad. Not bad at all.")
+                .talk("old_man_yarlo").take("plank:10", "steel_nails:20").need("hammer").flag("dh_repaired").say("*You mend the chairs, table and bed.* Hmph. Not bad. Not bad at all.")
                 .missing("You'll need 10 planks and 20 steel nails to fix this place, and a hammer.")
                 .stage("I should tell Marlo the house is repaired.")
-                .talk("marlo").say("He actually said thank you? Here, take these supplies. Come back if you want more building work.");
+                .talk("marlo").needFlag("dh_repaired").say("He actually said thank you? Here, take these supplies. Come back if you want more building work.");
     }
 
     private static void enchantedKey(QuestBook b) {
@@ -280,9 +280,9 @@ final class Miniquests {
                 .stage("I can start this miniquest by speaking to the Priest of Tumeken at the Necropolis. (Requires Beneath Cursed Sands.)")
                 .talk("tumeken_priest").say("Amascut's followers gather in the tombs beneath Jaldraocht. Go and see what they plan.")
                 .stage("I should enter the Tombs of Amascut.")
-                .reach("toa_jaldraocht_entrance", 10).say("* In the tombs you hear Amascut's voice, promising the destruction of Tumeken's line.")
+                .reach("toa_jaldraocht_entrance", 10).flag("itt_tombs").say("* In the tombs you hear Amascut's voice, promising the destruction of Tumeken's line.")
                 .stage("I should report to the Priest of Tumeken.")
-                .talk("tumeken_priest").say("So Amascut's plan runs deeper than we feared. The tombs must be raided, again and again.");
+                .talk("tumeken_priest").needFlag("itt_tombs").say("So Amascut's plan runs deeper than we feared. The tombs must be raided, again and again.");
     }
 
     private static void lairOfTarnRazorlor(QuestBook b) {
@@ -346,11 +346,11 @@ final class Miniquests {
                 .stage("I can start this miniquest by speaking to Kolodion in the Mage Arena, deep in the Wilderness. (Requires 60 Magic.)")
                 .talk("kolodion").say("You wish to learn the god spells? First you must defeat me. And I don't fight fair: I change shape as I please.")
                 .stage("I must defeat Kolodion in all of his forms, using only magic.")
-                .kill("quest_kolodion").say("* Kolodion reverts to his human form, laughing. 'Well fought! Now choose your god.'")
+                .kill("quest_kolodion").flag("ma1_kolodion").say("* Kolodion reverts to his human form, laughing. 'Well fought! Now choose your god.'")
                 .stage("I should pray at the statue of the god whose power I want: Saradomin, Guthix or Zamorak.")
-                .talk("quest_statue_saradomin").give("saradomin_staff", "saradomin_cape").say("* A voice like a bell rings out. You receive a Saradomin staff and cape.")
-                .talk("quest_statue_guthix").give("guthix_staff", "guthix_cape").say("* The ground hums with balance. You receive a Guthix staff and cape.")
-                .talk("quest_statue_zamorak").give("zamorak_staff", "zamorak_cape").say("* Fire crackles around you. You receive a Zamorak staff and cape.");
+                .talk("quest_statue_saradomin").needFlag("ma1_kolodion").give("saradomin_staff", "saradomin_cape").say("* A voice like a bell rings out. You receive a Saradomin staff and cape.")
+                .talk("quest_statue_guthix").needFlag("ma1_kolodion").give("guthix_staff", "guthix_cape").say("* The ground hums with balance. You receive a Guthix staff and cape.")
+                .talk("quest_statue_zamorak").needFlag("ma1_kolodion").give("zamorak_staff", "zamorak_cape").say("* Fire crackles around you. You receive a Zamorak staff and cape.");
 
         b.quest("mage_arena_ii", "Mage Arena II (miniquest)", Difficulty.MASTER, 0)
                 .reqQuest("mage_arena_i").req(Skill.MAGIC, 75)
