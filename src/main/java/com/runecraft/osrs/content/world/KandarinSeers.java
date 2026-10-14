@@ -648,31 +648,43 @@ final class KandarinSeers {
 
     static StructureDef sorcerersTower() {
         KandarinKit k = new KandarinKit("sorcerers_tower", "Sorcerer's Tower").replaces("sorcerers_tower");
-        k.flatten(2693, 3396, 2711, 3412);
+        // OSRS map: the tower is 9 tiles across (2698-2706 x 3401-3409, an octagon there // approx: round here) with
+        // its door south at 2702, in a hedged garden 2694-2710 x 3396-3412 with flower beds by the gate
+        k.flatten(2690, 3392, 2714, 3416);
         int cx = KandarinKit.X(2702) + 1;
-        int cz = KandarinKit.Z(3404) + 1;
-        k.disc(cx, cz, -1, -1, 9, GRAVEL);
-        k.towerB(cx, cz, 6, 19, SB, "minecraft:dark_oak_planks", "minecraft:purple_terracotta", 's', 5);
+        int cz = KandarinKit.Z(3405) + 1;
+        k.disc(cx, cz, -1, -1, 13, GRAVEL);
+        k.towerB(cx, cz, 9, 19, SB, "minecraft:dark_oak_planks", "minecraft:purple_terracotta", 's', 5);
         // ground: library; first: alchemy; second: observatory
-        k.ring(cx, cz, 0, 1, 4, "minecraft:bookshelf");
-        k.clear(cx - 1, 0, cz + 4, cx + 1, 1, cz + 4);
-        k.clear(cx + 4, 0, cz - 1, cx + 4, 1, cz + 1);
-        k.clear(cx - 4, 0, cz - 1, cx - 4, 1, cz + 1);
+        k.ring(cx, cz, 0, 1, 6, "minecraft:bookshelf");
+        k.clear(cx - 1, 0, cz + 6, cx + 1, 1, cz + 6);
+        k.clear(cx + 6, 0, cz - 1, cx + 6, 1, cz + 1);
+        k.clear(cx - 6, 0, cz - 1, cx - 6, 1, cz + 1);
         k.set(cx, 0, cz, "minecraft:lectern[facing=south]");
         k.set(cx, 4, cz, "minecraft:enchanting_table");
-        k.set(cx - 2, 4, cz - 2, "minecraft:brewing_stand");
-        k.set(cx + 2, 4, cz - 2, "minecraft:cauldron");
-        k.set(cx - 2, 4, cz + 2, "minecraft:chest[facing=north]");
+        k.set(cx - 3, 4, cz - 3, "minecraft:brewing_stand");
+        k.set(cx + 3, 4, cz - 3, "minecraft:cauldron");
+        k.set(cx - 3, 4, cz + 3, "minecraft:chest[facing=north]");
         k.set(cx, 9, cz, "minecraft:amethyst_cluster");
-        k.set(cx - 2, 9, cz, "minecraft:bookshelf");
-        k.set(cx + 2, 9, cz, "minecraft:crafting_table");
+        k.set(cx - 3, 9, cz, "minecraft:bookshelf");
+        k.set(cx + 3, 9, cz, "minecraft:crafting_table");
         k.set(cx, 14, cz, "minecraft:respawn_anchor");
         k.set(cx, 8, cz, "minecraft:lantern[hanging=true]");
         k.set(cx, 3, cz, "minecraft:lantern[hanging=true]");
-        k.ring(cx, cz, 0, 0, 9, "minecraft:spruce_fence");
-        k.clear(cx - 1, 0, cz + 9, cx + 1, 0, cz + 9);
-        k.oak(cx - 8, cz - 8, 6);
-        k.oak(cx + 8, cz - 7, 5);
+        // the hedge round the garden, open at the south gate, and the flower beds either side of the path
+        int gx1 = KandarinKit.X(2694);
+        int gx2 = KandarinKit.X(2710) + 1;
+        int gz1 = KandarinKit.Z(3412);
+        int gz2 = KandarinKit.Z(3396) + 1;
+        k.walls(gx1, 0, gz1, gx2, 1, gz2, "minecraft:oak_leaves[persistent=true]");
+        k.clear(cx - 2, 0, gz2, cx + 2, 1, gz2);
+        k.fill(cx - 1, -1, cz + 10, cx + 1, -1, gz2, GRAVEL);
+        for (int s = -1; s <= 1; s += 2) {
+            k.fill(cx + s * 5, 0, gz2 - 4, cx + s * 4, 0, gz2 - 2, "minecraft:allium");
+            k.fill(cx + s * 7, 0, gz2 - 4, cx + s * 6, 0, gz2 - 2, "minecraft:oxeye_daisy");
+        }
+        k.oak(gx1 + 3, gz1 + 3, 6);
+        k.oak(gx2 - 3, gz1 + 3, 5);
         return k.build();
     }
 
