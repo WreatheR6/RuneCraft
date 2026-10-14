@@ -137,14 +137,17 @@ final class AsgarniaKandarinQuests {
                 .stage("Hudon's no help. Hadley the tourist guide, south of the falls, might know about the treasure.")
                 .talk("hadley").give("book_on_baxtorian").say("The falls? Legend says the elf king Baxtorian hid his treasure there. Here, read this book.")
                 .stage("The book says the key to Glarial's tomb is held by Golrie, a gnome in the Tree Gnome Village dungeon.")
-                .talk("golrie").take("book_on_baxtorian").give("glarials_pebble")
-                .say("You freed me from this cell! Here, take this old pebble. My grandfather got it from an elf.")
+                // OSRS: Golrie keeps the pebble; the book is the player's to keep.
+                .talk("golrie").need("book_on_baxtorian").give("glarials_pebble")
+                .say("* You unlock Golrie's cell with a key from the dungeon's crates.",
+                        "You freed me from this cell! Here, take this old pebble. My grandfather got it from an elf.")
                 .stage("I should use Glarial's pebble on her tombstone near the falls.")
                 .reach("glarials_tomb", 6).take("glarials_pebble").give("glarials_amulet", "glarials_urn")
                 .say("* The pebble fits the tombstone. Inside the tomb you find Glarial's amulet and urn.")
-                .stage("Wearing Glarial's amulet and carrying her urn, plus 6 air, water and earth runes, I should enter the waterfall dungeon.")
-                .reach("baxtorian_falls", 6).need("glarials_amulet").take("glarials_urn", "air_rune:6", "water_rune:6", "earth_rune:6")
-                .say("* The amulet opens the door beneath the falls. You place a rune on each pillar and lay Glarial's ashes on the chalice.",
+                .stage("Wearing Glarial's amulet and carrying her urn, a rope, and 6 air, water and earth runes, I should enter the waterfall dungeon.")
+                .reach("baxtorian_falls", 6).need("glarials_amulet", "rope").take("glarials_urn", "air_rune:6", "water_rune:6", "earth_rune:6")
+                .say("* You throw your rope over the rock, then over the dead tree, and swing across to the ledge by the falls.",
+                        "* The amulet opens the door beneath the falls. You place a rune on each pillar and lay Glarial's ashes on the chalice.",
                         "* The chalice fills with treasure: diamonds, gold bars and mithril seeds!")
                 .finish()
                 .done("almera", "Thank you for keeping Hudon safe.");

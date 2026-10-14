@@ -102,7 +102,7 @@ final class F2pQuests {
                 .talk("guildmaster").say("Elvarg! The great dragon who laid waste to Crandor. To get there you'll need a map, a ship and protection from her fire.",
                         "The map was split into three pieces. Melzar the Mad has one in his maze near Rimmington, Lozar's piece was stolen by the goblin Wormbrain, now in Port Sarim jail, and Thalzar's lies behind a magic door in the Dwarven Mine. The Oracle on Ice Mountain knows how to open it.",
                         "Klarense in Port Sarim has a ship for sale, and the Duke of Lumbridge has anti-dragon shields. Hans in the castle can fetch you one.")
-                .stage("I need the three pieces of the Crandor map, the ship Lady Lumbridge from Klarense, a captain (Ned in Draynor) and an anti-dragon shield.")
+                .stage("I need the three pieces of the Crandor map, the ship Lady Lumbridge from Klarense (patched with 3 planks and 90 steel nails), a captain (Ned in Draynor) and an anti-dragon shield.")
                 .kill("melzar_the_mad").stay().unless("map_part_melzar", "crandor_map").give("map_part_melzar")
                 .say("* Melzar collapses. Behind him you find a dusty chest holding a piece of the map.")
                 .talk("wormbrain").stay().unless("map_part_lozar", "crandor_map").take("coins:10000").give("map_part_lozar")
@@ -120,7 +120,11 @@ final class F2pQuests {
                 .talk("klarense").stay().unlessFlag("ds1_ship").take("coins:2000").flag("ds1_ship")
                 .say("The Lady Lumbridge? She's yours for 2,000 coins. Bit of a hole in the hull, mind.", "> I'll patch it up.")
                 .missing("She's a fine ship. 2,000 coins and she's yours.")
-                .talk("ned").needFlag("ds1_ship").take("map_part_melzar", "map_part_lozar", "map_part_thalzar").need("anti_dragon_shield")
+                // Wiki walkthrough: the Lady Lumbridge's hull is patched with 3 planks and 90 steel nails (30 a plank) and a hammer.
+                .talk("klarense").stay().needFlag("ds1_ship").unlessFlag("ds1_hull").need("hammer").take("plank:3", "steel_nails:90").flag("ds1_hull")
+                .say("> I've come to patch the hull.", "* You nail three planks over the hole in the Lady Lumbridge's hull.")
+                .missing("She'll sink as she is. Patch the hole with three planks, 90 steel nails and a hammer.")
+                .talk("ned").needFlag("ds1_ship", "ds1_hull").take("map_part_melzar", "map_part_lozar", "map_part_thalzar").need("anti_dragon_shield")
                 .travel("crandor")
                 .say("A ship and a map to Crandor? I've not sailed in years. Let's go!",
                         "* Ned pieces the map together and steers the Lady Lumbridge west. A rock shatters the hull as you run aground on Crandor!")

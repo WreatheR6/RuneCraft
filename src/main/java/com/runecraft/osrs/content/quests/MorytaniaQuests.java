@@ -119,6 +119,10 @@ final class MorytaniaQuests {
         b.item("undead_chicken", "Undead chicken", "creature", 0xB0C0A0, "A chicken from Alice's farm. It's... undead.");
         b.item("selected_iron", "Selected iron", "bar", 0x6A6A7A, "A magnetised iron bar.");
         b.item("undead_twigs", "Undead twigs", "log", 0x5A5A4A, "Twigs from the undead trees near Draynor Manor.");
+        b.npc("am_witch", "Witch", "DRAYNOR_MANOR", -6, -6, 0xB8C898, 0x2A2A2A, 0x1A1A1A, 0x3A2A3A);
+        b.item("bar_magnet", "Bar magnet", "bar", 0x8A3A3A, "A magnetised piece of selected iron.");
+        b.item("polished_buttons", "Polished buttons", "gem", 0xD0C080, "Shiny buttons from the H.A.M. storeroom.");
+        b.item("am_research_notes", "Research notes", "note", 0xE0D8C0, "Ava's garbled notes on the attractor, now deciphered.");
         b.quest("animal_magnetism", "Animal Magnetism", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("RESTLESS_GHOST", "ernest_the_chicken", "priest_in_peril")
                 .req(Skill.SLAYER, 18).req(Skill.CRAFTING, 19).req(Skill.RANGED, 30).req(Skill.WOODCUTTING, 35)
@@ -133,17 +137,29 @@ final class MorytaniaQuests {
                 .say("He said that? Oh, my poor husband. Here, take two chickens.")
                 .missing("My husband won't let me sell the chickens without his say. Talk to him; you'll need ghostspeak.")
                 .stage("I should bring Ava the undead chickens.")
-                .talk("ava").take("undead_chicken:2").say("Lovely, horrid chickens. Next I need a magnetised iron bar. Hammer one while facing north in the Rimmington mine.")
-                .stage("I should magnetise an iron bar by hammering it at the Rimmington mine.")
-                .reach("rimmington_mine", 8).need("hammer").take("iron_bar").give("selected_iron").say("* You face north and hammer the iron bar. It becomes magnetic!")
-                .stage("I should take the selected iron to Ava.")
-                .talk("ava").take("selected_iron").say("Perfect. Now I need twigs from the undead trees outside this manor. You'll need a mithril axe; the trees fight back.")
-                .stage("I need undead twigs (mithril axe) and hard leather for Ava's device.")
-                .reach("DRAYNOR_MANOR", 10).stay().need("mithril_axe").unless("undead_twigs").give("undead_twigs")
-                .say("* You chop at an undead tree with your mithril axe. Some twigs fall off.")
-                .talk("ava").take("undead_twigs", "leather").say("* Ava stitches the twigs, leather, iron and a chicken together.",
+                .talk("ava").take("undead_chicken:2").say("Lovely, horrid chickens. Next I need a magnet. The witch in this manor can pick a suitable iron bar; then hammer it while facing north in the Rimmington mine.")
+                .stage("I should get selected iron from the witch in Draynor Manor and magnetise it by hammering it at the Rimmington mine.")
+                // Wiki walkthrough: bring 5 iron bars; the witch selects the right one.
+                .talk("am_witch").stay().unless("selected_iron", "bar_magnet").take("iron_bar:5").give("selected_iron")
+                .say("Iron for Ava? Hmm... this one. The others are rubbish, I'll keep them.")
+                .missing("Bring me five iron bars and I'll select one fit for a magnet.")
+                .reach("rimmington_mine", 8).need("hammer").take("selected_iron").give("bar_magnet").say("* You face north and hammer the selected iron. It becomes magnetic!")
+                .stage("I should take the magnet to Ava.")
+                .talk("ava").take("bar_magnet").say("Perfect. Now I need twigs from the undead trees outside this manor. Only a blessed mithril axe will cut them; Turael can bless one if you bring a holy symbol.")
+                .stage("I need undead twigs (blessed mithril axe), then the solved research notes, hard leather and polished buttons for Ava's device.")
+                // The blessed axe from Turael (mithril axe + holy symbol) is folded into the chop. // approx
+                .reach("DRAYNOR_MANOR", 10).stay().need("mithril_axe", "holy_symbol").unless("undead_twigs", "am_research_notes").give("undead_twigs")
+                .say("* Your blessed mithril axe bites into an undead tree. Some twigs fall off.")
+                .missing("* The undead tree's bark turns your blade. (You need a mithril axe blessed with a holy symbol.)")
+                .talk("ava").stay().unless("am_research_notes").take("undead_twigs").give("am_research_notes")
+                .say("Splendid twigs. Now, my notes for the container are garbled... can you make sense of them?",
+                        "* You puzzle over the notes and work out the pattern.")
+                .reach("quest_ham_hideout", 8).stay().unless("polished_buttons").give("polished_buttons")
+                .say("* In the H.A.M. storeroom you find some polished buttons.")
+                .talk("ava").take("am_research_notes", "hard_leather", "polished_buttons")
+                .say("* You stitch the hard leather and polished buttons to the pattern and hand Ava the container.",
                         "It works! Your very own Ava's attractor. With 50 Ranged, I'll sell you an improved accumulator for 999 coins.")
-                .missing("I need the undead twigs and a piece of leather.");
+                .missing("I need the solved notes, hard leather and some polished buttons for the container.");
         // Shops are offered best-first (last declared first).
         b.shop("ava", "avas_attractor", 999, "animal_magnetism", null, null, 0, "Lost your attractor? I'll make another for 999 coins.");
         b.shop("ava", "avas_accumulator", 999, "animal_magnetism", null, Skill.RANGED, 50,

@@ -140,16 +140,18 @@ final class KandarinGnomeQuests {
                 .stage("I've crash-landed on Ape Atoll. I should find Garkor and the 10th squad.")
                 .talk("garkor").say("The 10th squad was turned into monkeys by Zooknock's magic, as a disguise. The monkey king Awowogei is allied with Glough!",
                         "Zooknock can make you an amulet to speak with monkeys and a greegree to look like one.")
-                .stage("Zooknock needs a gold bar and monkey dentures to make an amulet of monkey speak, and a monkey talisman for a greegree.")
-                .talk("tutab").stay().unless("monkey_dentures", "monkeyspeak_amulet").take("coins:1000").give("monkey_dentures")
-                .say("Ook! Monkey dentures, 1,000 coins. Very fine teeth.")
+                .stage("Zooknock needs a gold bar and monkey dentures to make an amulet of monkey speak, and a monkey talisman with Karamjan monkey bones for a greegree.")
+                // Wiki walkthrough: the dentures are in a crate on Ape Atoll; Tutab's Magical Market sells the talisman.
+                // (The M'amulet mould from the monkey child is folded into Zooknock's enchant.) // approx
+                .reach("ape_atoll", 12).stay().unless("monkey_dentures", "monkeyspeak_amulet").give("monkey_dentures")
+                .say("* You search a crate in a Marim hut and find some monkey dentures.")
                 .talk("tutab").stay().unless("monkey_talisman", "monkey_greegree").take("coins:1000").give("monkey_talisman")
                 .say("Ook ook! Monkey talisman, 1,000 coins.")
                 .talk("zooknock").stay().unless("monkeyspeak_amulet").take("gold_bar", "monkey_dentures").give("monkeyspeak_amulet")
                 .say("* Zooknock enchants the dentures and gold into an amulet of monkey speak.")
-                .talk("zooknock").need("monkeyspeak_amulet").take("monkey_talisman").give("monkey_greegree")
+                .talk("zooknock").need("monkeyspeak_amulet").take("monkey_talisman", "monkey_bones").give("monkey_greegree")
                 .say("* Zooknock weaves a greegree from the talisman. Hold it and you'll look just like a monkey!")
-                .missing("I need a gold bar, monkey dentures and a monkey talisman. Tutab's shop sells the last two.")
+                .missing("I need a gold bar and monkey dentures for the amulet, and a monkey talisman from Tutab's shop with Karamjan monkey bones for the greegree.")
                 .stage("Disguised as a monkey, I should speak to King Awowogei.")
                 .talk("king_awowogei").need("monkey_greegree", "monkeyspeak_amulet")
                 .say("Ook! A new monkey? You will serve me. Glough promised us the Grand Tree... his jungle demon will guard our temple.")

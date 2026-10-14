@@ -73,9 +73,10 @@ public final class FreeQuestObjectives {
 
     public static final List<Spot> SPOTS = List.of(
             // The Restless Ghost: the skull lies on the altar in the Wizards' Tower basement (3120, 9567); searching it
-            // raises a skeleton (level 13). The mod has no basement, so the altar's surface tile is used. // approx
-            new Spot(Quest.RESTLESS_GHOST, 3, 3, 3120, 9567 - 6400, 4, Action.GIVE, "ghosts_skull", List.of(),
-                    "You search the altar and find a skull! A skeleton rises to guard it.", "minecraft:skeleton"),
+            // raises a skeleton (level 13). The mod has no basement, so going into the tower (3109, 3162) stands in for
+            // climbing down to the altar. // approx
+            new Spot(Quest.RESTLESS_GHOST, 3, 3, 3109, 3162, 5, Action.GIVE, "ghosts_skull", List.of(),
+                    "You climb down to the tower basement and search the altar: a skull! A skeleton rises to guard it.", "minecraft:skeleton"),
             // Romeo & Juliet: wild cadava bushes south-east of Varrock (wiki map pins 3264,3366 / 3268,3370 / 3277,3374).
             new Spot(Quest.ROMEO_AND_JULIET, 1, 4, 3270, 3370, 9, Action.GIVE, "cadava_berries", List.of("cadava_potion"),
                     "You pick some cadava berries from the bush.", null),

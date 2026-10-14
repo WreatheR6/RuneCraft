@@ -133,6 +133,40 @@ class QuestDepthTest {
         assertPlace("tgv_ballista", 2509, 3211);
     }
 
+    @Test
+    void dragonSlayerShipNeedsItsHullPatched() {
+        QuestSpec q = spec("dragon_slayer_i");
+        assertTrue(q.triggers().stream().anyMatch(t -> t.target.equals("klarense") && t.take.getOrDefault("plank", 0) == 3
+                && t.take.getOrDefault("steel_nails", 0) == 90 && t.need.containsKey("hammer")));
+        assertTrue(q.triggers().stream().anyMatch(t -> t.target.equals("ned") && t.needFlags.contains("ds1_hull")));
+        assertEquals(10000, find(q, Trigger.Kind.TALK, "wormbrain").take.get("coins"));
+    }
+
+    @Test
+    void animalMagnetismFollowsTheWalkthrough() {
+        QuestSpec q = spec("animal_magnetism");
+        assertEquals(5, find(q, Trigger.Kind.TALK, "am_witch").take.get("iron_bar"));
+        Trigger hammer = find(q, Trigger.Kind.REACH, "rimmington_mine");
+        assertTrue(hammer.need.containsKey("hammer") && hammer.take.containsKey("selected_iron") && hammer.give.containsKey("bar_magnet"));
+        assertTrue(q.triggers().stream().anyMatch(t -> t.need.containsKey("mithril_axe") && t.need.containsKey("holy_symbol")));
+        assertTrue(q.triggers().stream().anyMatch(t -> t.completes() && t.take.containsKey("hard_leather") && t.take.containsKey("polished_buttons")));
+    }
+
+    @Test
+    void monkeyMadnessGreegreeNeedsMonkeyBones() {
+        QuestSpec q = spec("monkey_madness_i");
+        assertTrue(q.triggers().stream().anyMatch(t -> t.give.containsKey("monkey_greegree") && t.take.containsKey("monkey_bones")
+                && t.take.containsKey("monkey_talisman")));
+        assertTrue(q.triggers().stream().noneMatch(t -> t.target.equals("tutab") && t.give.containsKey("monkey_dentures")));
+    }
+
+    /** Regression guard on the survey (round 20): at most 3 quests advance by talking alone. */
+    @Test
+    void fewTalkOnlyQuests() {
+        long talkOnly = QuestBook.get().quests.stream().filter(q -> q.stages.stream().noneMatch(QuestDepthTest::objective)).count();
+        assertTrue(talkOnly <= 3, talkOnly + " talk-only quests");
+    }
+
     private static void assertPlace(String id, int x, int y) {
         var p = ContentRegistry.place(id);
         assertNotNull(p, id);
@@ -176,7 +210,7 @@ class QuestDepthTest {
         assertEquals(20, FreeQuestObjectives.SHEEP_SHEARER.get("ball_of_wool"));
         // The ghost's skull is on the Wizards' Tower basement altar, the cadava bushes south-east of Varrock.
         FreeQuestObjectives.Spot skull = FreeQuestObjectives.spots(Quest.RESTLESS_GHOST, 3).get(0);
-        assertTrue(skull.contains(3120, 3167) && "ghosts_skull".equals(skull.item()));
+        assertTrue(skull.contains(3109, 3162) && "ghosts_skull".equals(skull.item()) && "minecraft:skeleton".equals(skull.spawn()));
         assertTrue(FreeQuestObjectives.spots(Quest.RESTLESS_GHOST, 2).isEmpty());
         FreeQuestObjectives.Spot cadava = FreeQuestObjectives.spots(Quest.ROMEO_AND_JULIET, 4).get(0);
         assertTrue(cadava.contains(3264, 3366) && cadava.contains(3277, 3374) && !cadava.contains(3211, 3422));
