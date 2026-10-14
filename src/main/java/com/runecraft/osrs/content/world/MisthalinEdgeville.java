@@ -347,37 +347,38 @@ final class MisthalinEdgeville {
     }
 
     private static void longhall(MisthalinKit k) {
-        // the longhall where Gunthor the Brave holds court
-        Box b = t(3073, 3436, 3091, 3446);
-        k.house(b).storeys(1).height(6).wall("minecraft:spruce_log[axis=x]").corner(SPRUCE_LOG).base(COBBLE)
-                .floor(SPRUCE_PLANKS).roof(Roof.THATCH).gable(SPRUCE_PLANKS).window(null).doorAt('s', X(3082), 2, 4).build();
-        k.fill(b.x1(), 0, b.z1() + 1, b.x1(), 5, b.z2() - 1, "minecraft:spruce_log[axis=z]");
-        k.fill(b.x2(), 0, b.z1() + 1, b.x2(), 5, b.z2() - 1, "minecraft:spruce_log[axis=z]");
-        k.clear(X(3082), 0, b.z2(), X(3082) + 1, 3, b.z2());
+        // the longhall where Gunthor the Brave holds court: 8 x 10 tiles (3075-3082, 3436-3445) running
+        // north-south with its door south (3078-3079), traced from the OSRS map (mejrs layers_osrs)
+        Box b = t(3075, 3436, 3082, 3445);
+        k.house(b).storeys(1).height(6).wall("minecraft:spruce_log[axis=z]").corner(SPRUCE_LOG).base(COBBLE)
+                .floor(SPRUCE_PLANKS).roof(Roof.THATCH).gable(SPRUCE_PLANKS).window(null).doorAt('s', X(3078), 4, 4).build();
+        k.fill(b.x1() + 1, 0, b.z1(), b.x2() - 1, 5, b.z1(), "minecraft:spruce_log[axis=x]");
+        k.fill(b.x1() + 1, 0, b.z2(), b.x2() - 1, 5, b.z2(), "minecraft:spruce_log[axis=x]");
+        k.clear(X(3078), 0, b.z2(), X(3079) + 1, 3, b.z2());
         // shutters for light
-        for (int x = b.x1() + 4; x < b.x2() - 2; x += 6) {
-            k.clear(x, 2, b.z1(), x, 2, b.z1());
-            k.clear(x, 2, b.z2(), x, 2, b.z2());
+        for (int z = b.z1() + 4; z < b.z2() - 2; z += 5) {
+            k.clear(b.x1(), 2, z, b.x1(), 2, z);
+            k.clear(b.x2(), 2, z, b.x2(), 2, z);
         }
         Box in = b.inset(1);
         // long hearth down the middle
-        k.fill(in.x1() + 6, -1, in.cz(), in.x2() - 6, -1, in.cz() + 1, COBBLE);
-        for (int x = in.x1() + 7; x <= in.x2() - 7; x += 4) {
-            k.set(x, 0, in.cz(), "minecraft:campfire[lit=true]");
+        k.fill(in.cx(), -1, in.z1() + 5, in.cx() + 1, -1, in.z2() - 5, COBBLE);
+        for (int z = in.z1() + 6; z <= in.z2() - 6; z += 4) {
+            k.set(in.cx(), 0, z, "minecraft:campfire[lit=true]");
         }
-        k.diningX(in.x1() + 6, in.x2() - 6, 0, in.z1() + 3);
-        k.diningX(in.x1() + 6, in.x2() - 6, 0, in.z2() - 3);
-        // Gunthor's seat at the west end, the cooking range at the east end
-        k.fill(in.x1(), -1, in.cz() - 2, in.x1() + 2, -1, in.cz() + 3, "minecraft:spruce_planks");
-        k.set(in.x1(), 0, in.cz(), "minecraft:dark_oak_stairs[facing=west]");
-        k.set(in.x1(), 0, in.cz() + 1, "minecraft:dark_oak_stairs[facing=west]");
-        k.set(in.x1(), 1, in.cz() - 1, "minecraft:skeleton_skull").set(in.x1(), 1, in.cz() + 2, "minecraft:skeleton_skull");
-        k.set(in.x1(), 3, in.cz(), "minecraft:red_wall_banner[facing=east]");
-        k.set(in.x2(), 0, in.z1(), RANGE).set(in.x2(), 0, in.z1() + 1, BARREL).set(in.x2() - 1, 0, in.z1(), BARREL);
-        k.set(in.x2(), 0, in.z2(), BARREL).set(in.x2(), 1, in.z2(), BARREL).set(in.x2() - 1, 0, in.z2(), HAY);
-        for (int x = in.x1() + 4; x <= in.x2() - 4; x += 5) {
-            k.set(x, 0, in.z1(), "minecraft:grindstone[face=floor,facing=south]");
-            k.hang(x, 4, in.cz() + 2);
+        k.diningZ(in.x1() + 2, 0, in.z1() + 5, in.z2() - 5);
+        k.diningZ(in.x2() - 2, 0, in.z1() + 5, in.z2() - 5);
+        // Gunthor's seat at the north end, the cooking range in the south-east corner
+        k.fill(in.cx() - 2, -1, in.z1(), in.cx() + 3, -1, in.z1() + 2, "minecraft:spruce_planks");
+        k.set(in.cx(), 0, in.z1(), "minecraft:dark_oak_stairs[facing=north]");
+        k.set(in.cx() + 1, 0, in.z1(), "minecraft:dark_oak_stairs[facing=north]");
+        k.set(in.cx() - 1, 1, in.z1(), "minecraft:skeleton_skull").set(in.cx() + 2, 1, in.z1(), "minecraft:skeleton_skull");
+        k.set(in.cx(), 3, in.z1(), "minecraft:red_wall_banner[facing=south]");
+        k.set(in.x2(), 0, in.z2(), RANGE).set(in.x2(), 0, in.z2() - 1, BARREL).set(in.x2() - 1, 0, in.z2(), BARREL);
+        k.set(in.x1(), 0, in.z2(), BARREL).set(in.x1(), 1, in.z2(), BARREL).set(in.x1(), 0, in.z2() - 1, HAY);
+        for (int z = in.z1() + 4; z <= in.z2() - 4; z += 5) {
+            k.set(in.x1(), 0, z, "minecraft:grindstone[face=floor,facing=east]");
+            k.hang(in.cx() + 2, 4, z);
         }
     }
 
