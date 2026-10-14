@@ -238,6 +238,18 @@ public final class CombatAchievements {
     public static final String FLAG_VESPULA_LANDED = "vespula_landed";
     /** Times the Pestilent Bloat shut down. */
     public static final String COUNT_BLOAT_SHUTDOWN = "bloat_shutdown";
+    /** A blood spawn lived longer than 10 seconds (ToB "Anticoagulants"). */
+    public static final String FLAG_BLOODSPAWN_OLD = "bloodspawn_old";
+    /** Blood trail tiles the Maiden's blood spawn left (ToB "Stop Right There!"). */
+    public static final String COUNT_MAIDEN_TRAIL = "maiden_trail";
+    /** Xarpus retaliated against an attack from the quadrant he stared at (ToB "Don't Look at Me!"). */
+    public static final String FLAG_XARPUS_REFLECT = "xarpus_reflect";
+    /** Xarpus was healed to full health by exhumeds (ToB "Harder Mode II"). */
+    public static final String FLAG_XARPUS_FULL_HEAL = "xarpus_full_heal";
+    /** Rolling boulders destroyed in Ba-Ba's room (ToA "I'm in a rush"). */
+    public static final String COUNT_BABA_BOULDER = "baba_boulder";
+    /** Times a Warden's core was ejected in phase 2 (ToA "Down Do Specs"). */
+    public static final String COUNT_WARDEN_CORE = "warden_core";
     /** A fight is forgotten after this many game ticks without either side attacking. */
     public static final int FIGHT_TIMEOUT_TICKS = 100;
 

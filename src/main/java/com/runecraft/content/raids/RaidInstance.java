@@ -87,6 +87,9 @@ public final class RaidInstance {
     private RaidMode mode = RaidMode.NORMAL;
     /** ToA paths completed so far (Walk the Path levels the remaining paths). */
     private int pathsCompleted;
+    /** ToA: Walk the Path level-ups each path (index in {@link RaidLayouts#TOA_PATHS}) has received. */
+    private final int[] pathLevelUps = new int[RaidLayouts.TOA_PATHS.size()];
+    private final boolean[] pathDone = new boolean[RaidLayouts.TOA_PATHS.size()];
     private final long startTick;
     private long endTick;
     private long roomStartTick;
@@ -245,9 +248,27 @@ public final class RaidInstance {
         return type == RaidType.TOA && (r.kind() == RoomDef.Kind.COMBAT || r.kind() == RoomDef.Kind.PUZZLE);
     }
 
-    /** The level of the ToA path being attempted. */
+    /** The level of the ToA path being attempted (the Wardens and other rooms count as level 0 paths). */
     public int pathLevel() {
-        return RaidScaling.toaPathLevel(invocations, pathsCompleted);
+        int path = pathIndex(rooms.get(current).id());
+        return path < 0 ? 0 : RaidScaling.toaPathLevel(invocations, pathLevelUps[path]);
+    }
+
+    private static final String[] PATH_GODS = {"Scabaras", "Het", "Apmeken", "Crondis"};
+
+    /** Index in {@link RaidLayouts#TOA_PATHS} of the path a room belongs to, or -1. */
+    static int pathIndex(String roomId) {
+        for (int i = 0; i < RaidLayouts.TOA_PATHS.size(); i++) {
+            if (RaidLayouts.TOA_PATHS.get(i).contains(roomId)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** ToA paths completed so far. */
+    public int pathsCompleted() {
+        return pathsCompleted;
     }
 
     public int raidLevel() {
@@ -706,6 +727,23 @@ public final class RaidInstance {
         if (type == RaidType.TOA) {
             if (def.kind() == RoomDef.Kind.COMBAT) {
                 pathsCompleted++;
+                int path = pathIndex(def.id());
+                if (path >= 0) {
+                    pathDone[path] = true;
+                }
+                if (invocations.contains(Invocation.WALK_THE_PATH)) {
+                    // OSRS Walk the Path: the first path levels two random other paths, the next ones one each.
+                    List<Integer> remaining = new ArrayList<>();
+                    for (int i = 0; i < pathDone.length; i++) {
+                        if (!pathDone[i]) {
+                            remaining.add(i);
+                        }
+                    }
+                    for (int i : RaidScaling.walkThePathLevelUps(remaining, pathsCompleted, random)) {
+                        pathLevelUps[i]++;
+                        say("You hear a mysterious rumbling coming from the Path of " + PATH_GODS[i] + ".", Formatting.LIGHT_PURPLE);
+                    }
+                }
             }
         }
     }
@@ -949,6 +987,7 @@ public final class RaidInstance {
         }
         RaidBuilder.clearEntities(world, RaidBuilder.slotBox(slot));
         RaidEffects.clear(world, RaidBuilder.slotBox(slot));
+        com.runecraft.boss.Mechanics.clearHazards(world, RaidBuilder.slotBox(slot));
         RaidBuilder.unloadSlot(world, slot);
     }
 

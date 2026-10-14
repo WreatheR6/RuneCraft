@@ -673,6 +673,10 @@ public final class CombatAchievementRules {
             248;RULE;xarpus;1;nodmg=boss
             250;RULE;the_maiden_of_sugadinti;1;noprayloss
             251;RULE;xarpus;1;style=melee
+            386;RULE;the_maiden_of_sugadinti;1;mode=entry noflag=bloodspawn_old
+            372;RULE;the_maiden_of_sugadinti;1;mode=hard count<=15:maiden_trail
+            392;RULE;xarpus;1;mode=entry noflag=xarpus_reflect
+            376;RULE;xarpus;1;mode=hard flag=xarpus_full_heal nodmg
             252;RAID;TOB;1;weapon=BARROWS_WEAPONS
             253;RAID;TOB;1;noweapon=scythe_of_vitur
             254;RAID;TOB;1;mode=normal size=2 t<26:00
@@ -714,6 +718,9 @@ public final class CombatAchievementRules {
             453;RULE;baba;1;inv=BABA path>=4 nodeath
             455;RULE;zebak;1;inv=ZEBAK path>=4 nodeath
             456;RULE;kephri;1;inv=KEPHRI path>=4 nodeath
+            452;RULE;baba;1;count<=4:baba_boulder nodeath
+            454;RULE;zebak;1;inv=ZEBAK path>=4 nodeath noprayloss
+            458;RULE;tumekens_warden;1;count<=2:warden_core nodeath
             459;RULE;tumekens_warden;1;inv=AERIAL_ASSAULT,STAY_VIGILANT,INSANITY nodeath
             460;RULE;tumekens_warden;1;inv=WARDENS level>=300 nodeath
             464;RAID;TOA;1;level>=50

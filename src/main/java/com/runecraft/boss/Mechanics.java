@@ -256,6 +256,11 @@ public final class Mechanics {
         HAZARDS.add(new Hazard(world, pos, damage, ActionManager.gameTick() + gameTicks, owner));
     }
 
+    /** Removes every ground hazard inside a box (raid rooms and instances being cleared). */
+    public static void clearHazards(ServerWorld world, net.minecraft.util.math.Box box) {
+        HAZARDS.removeIf(h -> h.world() == world && box.contains(h.pos()));
+    }
+
     private static void tickHazards(long gameTick) {
         Iterator<Hazard> it = HAZARDS.iterator();
         while (it.hasNext()) {

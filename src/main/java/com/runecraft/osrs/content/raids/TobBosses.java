@@ -51,7 +51,7 @@ public final class TobBosses {
                         .size(1.4f, 2.4f, 1.8f).moveSpeed(0.0),
                 raid("verzik_vitur", "Verzik Vitur").level(1040).stats(2000, 400, 400, 20, 400, 400).speed(14)
                         .defenceBonus(20, 20, 20, 20, 20)
-                        .attack(AttackDef.of("electric blast", AttackType.MAGIC, 60, 40, 10).special(Special.AOE, 40)
+                        .attack(AttackDef.of("electric blast", AttackType.MAGIC, 137, 40, 10)
                                 .particle("minecraft:electric_spark").message("Verzik charges a blast of energy!"))
                         .size(1.2f, 2.2f, 1.6f).moveSpeed(0.0),
                 raid("verzik_vitur_p2", "Verzik Vitur").level(1265).stats(3500, 400, 400, 200, 400, 400).speed(4)

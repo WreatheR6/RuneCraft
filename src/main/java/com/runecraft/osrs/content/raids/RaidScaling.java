@@ -348,6 +348,20 @@ public final class RaidScaling {
         };
     }
 
+    /** Nylocas Matomenos the Maiden summons at 70%, 50% and 30% (OSRS): two per player up to 10; always 10 in Hard mode. */
+    public static int tobMaidenNylocas(int partySize, boolean hard) {
+        return hard ? 10 : Math.min(10, 2 * Math.max(1, partySize));
+    }
+
+    /** The Pestilent Bloat's first walk (OSRS: 39-47 game ticks; this is the minimum, plus 0-8). */
+    public static final int TOB_BLOAT_FIRST_WALK = 39;
+    /** The Bloat's later walks after each stomp (OSRS: 34-42 game ticks; minimum, plus 0-8). */
+    public static final int TOB_BLOAT_WALK = 34;
+    /** Game ticks the Bloat stays shut down before it stomps (OSRS: 19.2 seconds). */
+    public static final int TOB_BLOAT_DOWN = 32;
+    /** Sotetseg's ball of death: up to 188 damage, split between the players it lands on (OSRS). */
+    public static final int TOB_SOTETSEG_BALL = 188;
+
     /** ToB purple chance: 1/9.1 with every point, reduced proportionally by deaths (OSRS normal mode). */
     public static double tobPurpleChance(int teamPoints, int partySize) {
         return tobPurpleChance(teamPoints, partySize, RaidMode.NORMAL);
@@ -434,9 +448,21 @@ public final class RaidScaling {
         return 1.0 + pct / 100.0;
     }
 
-    /** ToA accuracy and Defence multiplier (OSRS wiki): +2% per 5 raid levels, uncapped. */
+    /**
+     * ToA accuracy and Defence multiplier (OSRS wiki; the DPS calculator scales the defence roll by (250 + raid level)
+     * / 250): +0.4% per raid level, i.e. +2% per 5 levels, uncapped (x1.4 at 100, x3 at 500). Creatures' attack rolls
+     * and their defence rolls are multiplied by it.
+     */
     public static double toaAccuracy(int raidLevel) {
-        return 1.0 + Math.max(0, raidLevel) / 5 * 2 / 100.0;
+        return (250 + Math.max(0, raidLevel)) / 250.0;
+    }
+
+    /** ToA creatures whose Defence the raid level does not scale (OSRS DPS calculator: Kephri's overlords). */
+    static final Set<String> TOA_UNSCALED_DEFENCE = Set.of("toa_soldier_scarab", "toa_spitting_scarab", "toa_arcane_scarab");
+
+    /** Multiplier of a ToA creature's defence roll at this raid level. */
+    public static double toaDefence(String id, int raidLevel) {
+        return TOA_UNSCALED_DEFENCE.contains(id) ? 1.0 : toaAccuracy(raidLevel);
     }
 
     /** Path level damage bonus of path monsters (OSRS): +8% at path level 1 and +5% per further level. */
@@ -446,10 +472,10 @@ public final class RaidScaling {
     }
 
     /**
-     * Path level of the next path (OSRS): Pathseeker/Pathfinder/Pathmaster level every path 1/2/3
-     * times on entry, and with Walk the Path each completed path levels the remaining ones.
+     * Level of a path (OSRS): Pathseeker/Pathfinder/Pathmaster level every path 1/2/3 times on entry; with Walk the
+     * Path, {@code walkLevelUps} is how many random level-ups that path has received (see {@link #walkThePathLevelUps}).
      */
-    public static int toaPathLevel(Set<Invocation> invocations, int pathsCompleted) {
+    public static int toaPathLevel(Set<Invocation> invocations, int walkLevelUps) {
         int level = 0;
         if (invocations.contains(Invocation.PATHSEEKER)) {
             level = 1;
@@ -459,9 +485,22 @@ public final class RaidScaling {
             level = 3;
         }
         if (invocations.contains(Invocation.WALK_THE_PATH)) {
-            level += Math.max(0, pathsCompleted);
+            level += Math.max(0, walkLevelUps);
         }
         return Math.min(TOA_MAX_PATH_LEVEL, level);
+    }
+
+    /**
+     * Walk the Path (OSRS wiki): four level-ups per raid, given to random paths. Completing the first path levels two
+     * of the other paths, the second one of the remaining two and the third the final path. {@code remaining} are the
+     * paths not yet completed (excluding the one just finished), {@code completed} how many paths are done now (1-3).
+     * Returns the paths that level up, each at most once.
+     */
+    public static List<Integer> walkThePathLevelUps(List<Integer> remaining, int completed, java.util.Random random) {
+        List<Integer> pool = new ArrayList<>(remaining);
+        int n = Math.min(pool.size(), completed == 1 ? 2 : completed <= 3 ? 1 : 0);
+        java.util.Collections.shuffle(pool, random);
+        return new ArrayList<>(pool.subList(0, Math.max(0, n)));
     }
 
     /**
