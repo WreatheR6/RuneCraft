@@ -138,6 +138,11 @@ Recurring conflict spots:
   - Quests: `quest_reference.tsv` (202 quests from the wiki + quest-helper) and `QuestReferenceTest`; 87 fixes (difficulty, requirements, prerequisites, XP); Learning the Ropes added; 341 QP (= OSRS).
   - Diaries: `diary_tasks.tsv` (492 wiki tasks) and `DiaryReferenceTest`; wilderness diary rework, 27 requirement fixes, 76 quest requirements enforced, `approx()` marker (407 faithful / 85 approx), place-bound spell tasks; Falador shield, Explorer's ring, sea boots, Morytania legs, Varrock armour and Rada's blessing perks fixed.
 
+- **Session 2, rounds 8–9: in-game self-test, Sailing, diary monsters:**
+  - In-game self-test (`com.runecraft.selftest`, `/rc selftest [filter]`) run by `smoke_server.sh` after the station checks: ~657 checks (save/load, every menu, one recipe per menu, every quest walked and completed, every minigame and raid ticked, every boss summoned/ticked/killed, every teleport destination). Results are `SELFTEST PASS/FAIL/SLOW` lines in the job log; failures don't fail the job. The smoke server runs with `max-tick-time=-1` and now detects 1.20.1's "This crash report has been saved" message. First full run: 649/657; the 8 failures were `Gielinor.safeSpot` landing under leaves or over air (fixed).
+  - Sailing as a skill (`SailingTables`, `SailingTraining`, `SailingHooks`): 358 charting tasks, 439 courier tasks, 77 boat parts, facilities, Barracuda Trials, trawling, sail trimming; 30 courier ports; snapshots under `src/test/resources/osrs/sailing/`.
+  - Vultures, ducks, terrorbirds and the Mort Myre snails at cache spawns; snelms, hastae, Guthix balance, hollow trees, Lava Maze lava eel spot; diary tasks 407 → 417 faithful.
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
@@ -160,7 +165,7 @@ Recurring conflict spots:
   - Brews come as 4 doses (OSRS 3).
   - Dungeon herb, seed and Varlamore crops; coral.
   - Seed pack contents are partly guessed.
-- **Diaries:** 85 tasks approximated (missing monsters: vulture, duck, terrorbird, swordchick, deathwing, locust rider, shadow hound; missing items: snelm, Guthix balance, bark, rune hasta; NPC-talk and minigame-internal tasks). Wilderness lava eel task impossible (no Lava Maze spot).
+- **Diaries:** 75 tasks approximated: shadow hounds and locust riders need the Shadow Dungeon and Contact! dungeon; swordchick/deathwing have no cache spawns; Arceuus lectern tablets; Port Phasmatys has no range; NPC-talk and minigame-internal tasks.
 - **Thieving and Agility:** the Dorgesh-Kaan course is missing; Isle of Souls chests sit on the surface (their real tiles are in the dungeon/tower basement); leaving the Wilderness course doesn't forfeit the fee.
 - **World:**
   - Kruk's Dungeon: the western plane-1 hordes are carved at y -10 under the atoll (own shift, ladder from the lower north-west hall); the other plane-1 clusters (east of 2500, about 120 monkeys/archers) and the plane-0 clusters west of 2600 are still missing.
@@ -180,4 +185,6 @@ Recurring conflict spots:
   - Skull timers are in memory only (lost on restart). Heavy ballista wield doesn't check MM2 training; uncut zenyte is a gem-cutting recipe.
   - Seers ring magic damage (0.2%/0.5%) can't be represented with whole-percent magic damage.
   - Ring of the gods imbue should need a holy wrench (nowhere modelled).
+- **Self-test gaps:** the FakePlayer isn't in the player lists, so minigames, raid rooms and boss targeting run empty (a real-player client run is being added); 7 bosses (fumus, umbra, cruor, glacies, zulrah ×3) vanish right after summoning.
+- **Sailing:** boat combat, bounty tasks, ocean encounters, crew, cargo holds, cannons, hazards, salvaging hook tiers, hull speed; island materials are sold in the tool shop.
 - **Untested in game:** much of the Minecraft-side code has only passed CI's boot test. A play-test pass would be the most valuable round once the data rounds slow down. Use `/run` or the client smoke screenshots.
