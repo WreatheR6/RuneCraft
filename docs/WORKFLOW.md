@@ -170,6 +170,10 @@ Recurring conflict spots:
   - Light/heavy ranged defence and elemental weakness for 324 monsters (`MonsterDefenceTable`), weapon-class defence selection; `dps_reference.tsv` 2,890 rows. Ultor/Bellator/Magus/Venator rings, Zaryte vambraces and more now wearable with stats; quest-slot gear counted in gear totals (`GearTotalsReferenceTest`); thrown weapons' ranged attack bonus fixed. NPC-vs-player via pure `NpcHitCalc` matching the calculator's `NPCVsPlayerCalc` (`npc_reference.tsv`, 1,040 rows).
   - Lead, volcanic sulphur and barronite rocks (Barronite Crusher); Shooting Stars (83 landing sites snapshot, Dusuri's shop); minnows and Kylie Minnow; aerial fishing on Lake Molch; digsite workman and Pollnivneach villager pickpockets.
 
+- **Session 2, round 16: Sailing-era islands, monster completeness:**
+  - `osrs/world/SeaIslands.java`: 52 islands and 5 lagoons traced from the map squares (Sunbleak, Drumstick, Onyx Crest, Laguna Aurorae, Buccaneers' Haven, the Pandemonium, Isle of Serpents…), `SeaIslandsGeographyTest`; Pandemonium, Buccaneers' Haven, Laguna and Onyx Crest settlements; ironwood, rosewood and lead sites; pickpocketable pirates.
+  - 31 slayer-task monsters at cache spawns (`SlayerTaskMonsters`: bears, wolves, scorpions, vampyre juveniles and Vyrewatch sentinels, zogres, sorebones…); `MonsterTraits` (697 creatures: size, attributes, poison/venom immunity, wiki Slayer XP) applied after `MonsterStatsTable`; poison immunity respected; Slayer XP per kill from the wiki. Mummy, Ghoul and Zombies champions kept undead by hand (the DPS data lists no attributes for them).
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
@@ -213,7 +217,8 @@ Recurring conflict spots:
   - Seers ring magic damage (0.2%/0.5%) can't be represented with whole-percent magic damage.
   - Ring of the gods imbue should need a holy wrench (nowhere modelled).
 - **Combat:** `Monster`-enum monsters keep a single ranged defence; Elysian/Justiciar/Dinh's damage reduction not modelled; vampyrebane, Efaritay's, avarice, rev weapons not modelled.
-- **Skilling gaps:** pirate pickpockets and Onyx Crest/Laguna Aurorae/Buccaneers' Haven, Sunbleak Island and Drumstick Isle (ironwood/rosewood) not built; Daeyalt essence; drift net fishing; shark lures; Camdozaal is a surface stand-in; shooting stars are in memory only; celestial ring has no effect.
+- **Skilling gaps:** island fishing spots, lockboxes and island facilities; Laguna's leeches/mosquitoes/toads; Pandemonium Cave, Sunbleak Cave, Buccaneers' Laboratory; Daeyalt essence; drift net fishing; shark lures; Camdozaal is a surface stand-in; shooting stars are in memory only; celestial ring has no effect.
+- **Monsters missing:** ~66 slayer-task monsters with no surface cache spawns or post-snapshot content (albino bat, crypt rats/spiders, lobstrosity, sulphur lizard, armoured zombies, earthen nagua, custodian stalkers, frost crab, wyrmling, strykewyrms, chilled jelly, ancient zygomite, warped tortoise, araxytes, named Trollheim trolls); vampyre tiers all count as "vampyre". Last Light, Wyrmscraig, Great Conch and Isle of Souls are still ellipses.
 - **Self-test gaps:** PvP minigames need two players; utility spells needing targets/items (enchants, telegrab, bake pie) aren't cast; Guthix balance, olive oil and sacred oil have no drink effect; `TestContext.reset()` doesn't reset systems state or the Slayer profile.
 - **Sailing:** boat combat, bounty tasks, ocean encounters, crew, cargo holds, cannons, hazards, salvaging hook tiers, hull speed; island materials are sold in the tool shop.
 - **Untested in game:** much of the Minecraft-side code has only passed CI's boot test. A play-test pass would be the most valuable round once the data rounds slow down. Use `/run` or the client smoke screenshots.

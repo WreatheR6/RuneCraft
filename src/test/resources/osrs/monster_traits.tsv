@@ -234,7 +234,7 @@ gemstone_crab	Gemstone Crab		160	50000	5		yes	yes
 general_graardor	General Graardor		624	255	4		yes	yes	338
 general_khazard	General Khazard		142	170	2		no	no	
 ghost	Ghost	Level 19	19	25	1	spectral,undead	no	no	25
-ghoul_champion	Ghoul Champion		85	100	1		no	no	
+ghoul_champion	Ghoul Champion		85	100	1	undead	no	no	
 giant_bat	Giant bat	Arceuus	27	32	2		no	no	32
 giant_champion	Giant Champion		56	70	2		no	no	
 giant_mole	Giant Mole		230	200	3		no		215
@@ -402,7 +402,7 @@ moss_guardian	Moss Guardian		84	120	2		no	no	120
 mountain_troll	Mountain troll	Level 69	69	90	1		no	no	90
 mudskipper	Mudskipper	Level 31	31	20	2		no	no	
 mugger	Mugger	Regular	6	8	1		no	no	
-mummy	Mummy (Ancient Pyramid)	1	103	90	1		no	no	
+mummy	Mummy (Ancient Pyramid)	1	103	90	1	undead	no	no	
 mutated_bloodveld	Mutated Bloodveld		123	170	2	demon	no	no	170
 myre_blamish_snail	Myre Blamish Snail	Round	9	8	1		no	no	
 myre_blamish_snail_pointed	Myre Blamish Snail	Pointed	10	13	1		no	no	
@@ -695,7 +695,7 @@ zombie_lvl18	Zombie	Level 18, 1	18	24	1	undead	no	no
 zombie_lvl24	Zombie	Level 24, 1	24	30	1	undead	no	no	
 zombie_pirate	Zombie pirate (Braindeath Island)	1	57	52	1	undead	no	no	52
 zombie_rat	Zombie rat	1	3	5	2	rat,undead	no	no	2
-zombies_champion	Zombies Champion		51	60	2		no	no	
+zombies_champion	Zombies Champion		51	60	2	undead	no	no	
 zombified_spawn	Zombified Spawn	Post-quest	64	38	1	undead	yes	yes	
 zulrah	Zulrah	Magma	725	500	5		yes	yes	500
 zulrah_magma	Zulrah	Magma	725	500	5		yes	yes	500

@@ -329,7 +329,7 @@ public final class MonsterTraits {
         t("general_graardor", 4, true, true, 338); // General Graardor
         t("general_khazard", 2, false, false, 0); // General Khazard
         t("ghost", 1, false, false, 25, "spectral", "undead"); // Ghost (Level 19)
-        t("ghoul_champion", 1, false, false, 0); // Ghoul Champion
+        t("ghoul_champion", 1, false, false, 0, "undead"); // undead per the wiki's undead list (DPS data has no attributes) // Ghoul Champion
         t("giant_bat", 2, false, false, 32); // Giant bat (Arceuus)
         t("giant_champion", 2, false, false, 0); // Giant Champion
         t("giant_mole", 3, false, false, 215); // Giant Mole
@@ -500,7 +500,7 @@ public final class MonsterTraits {
         t("mountain_troll", 1, false, false, 90); // Mountain troll (Level 69)
         t("mudskipper", 2, false, false, 0); // Mudskipper (Level 31)
         t("mugger", 1, false, false, 0); // Mugger (Regular)
-        t("mummy", 1, false, false, 0); // Mummy (Ancient Pyramid) (1)
+        t("mummy", 1, false, false, 0, "undead"); // undead per the wiki's undead list (DPS data has no attributes) // Mummy (Ancient Pyramid) (1)
         t("mutated_bloodveld", 2, false, false, 170, "demon"); // Mutated Bloodveld
         t("myre_blamish_snail", 1, false, false, 0); // Myre Blamish Snail (Round)
         t("myre_blamish_snail_pointed", 1, false, false, 0); // Myre Blamish Snail (Pointed)
@@ -796,7 +796,7 @@ public final class MonsterTraits {
         t("zombie_lvl24", 1, false, false, 0, "undead"); // Zombie (Level 24, 1)
         t("zombie_pirate", 1, false, false, 52, "undead"); // Zombie pirate (Braindeath Island) (1)
         t("zombie_rat", 2, false, false, 2, "rat", "undead"); // Zombie rat (1)
-        t("zombies_champion", 2, false, false, 0); // Zombies Champion
+        t("zombies_champion", 2, false, false, 0, "undead"); // undead per the wiki's undead list (DPS data has no attributes) // Zombies Champion
         t("zombified_spawn", 1, true, true, 0, "undead"); // Zombified Spawn (Post-quest)
         t("zulrah", 5, true, true, 500); // Zulrah (Magma)
         t("zulrah_magma", 5, true, true, 500); // Zulrah (Magma)
