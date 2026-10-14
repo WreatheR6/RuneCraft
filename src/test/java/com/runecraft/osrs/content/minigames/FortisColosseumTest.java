@@ -29,6 +29,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The Fortis Colosseum against the wiki and monsters.json snapshots in {@code src/test/resources/osrs/minigames/}. */
@@ -332,5 +333,64 @@ class FortisColosseumTest {
         }
         assertNotNull(ContentRegistry.boss(FortisColosseum.SOL_HEREDIT));
         assertNotNull(ContentRegistry.npc(FortisColosseum.MINIMUS));
+    }
+
+    @Test
+    void myopiaRelentlessAndRedFlagFollowTheWiki() {
+        // Attack ranges (wiki "Attack range"), longrange +2 capped at 10, Myopia -2/-4/-6 tiles.
+        assertEquals(7, FortisColosseum.attackRange("magic_shortbow", false, false));
+        assertEquals(9, FortisColosseum.attackRange("magic_shortbow", false, true));
+        assertEquals(10, FortisColosseum.attackRange("twisted_bow", false, true));
+        assertEquals(5, FortisColosseum.attackRange("toxic_blowpipe", false, false));
+        assertEquals(3, FortisColosseum.attackRange("rune_dart", false, false));
+        assertEquals(4, FortisColosseum.attackRange("rune_knife", false, false));
+        assertEquals(8, FortisColosseum.attackRange("armadyl_crossbow", false, false));
+        assertEquals(9, FortisColosseum.attackRange("heavy_ballista", false, false));
+        assertEquals(10, FortisColosseum.attackRange("", true, false));
+        assertEquals(1, FortisColosseum.myopiaRange(5, 3));
+        assertEquals(4, FortisColosseum.myopiaRange(10, 3));
+        assertEquals(8, FortisColosseum.myopiaRange(10, 1));
+        // Relentless: 33% / 66% of Defence bypassed, III ignores accuracy; max hit +1 / +3 / +6.
+        assertEquals(1.0, FortisColosseum.relentlessAccuracy(0, 99, 99, false));
+        assertEquals((99 + 9) / (67.0 + 9), FortisColosseum.relentlessAccuracy(1, 99, 99, false), 1e-9);
+        assertEquals((99 + 9) / (34.0 + 9), FortisColosseum.relentlessAccuracy(2, 99, 99, false), 1e-9);
+        assertTrue(FortisColosseum.relentlessAccuracy(1, 99, 99, true) < FortisColosseum.relentlessAccuracy(1, 99, 99, false));
+        assertEquals(FortisColosseum.IGNORE_ACCURACY, FortisColosseum.relentlessAccuracy(3, 99, 99, false));
+        assertEquals(List.of(1, 3, 6), List.of(FortisColosseum.relentlessMaxHitBonus(1), FortisColosseum.relentlessMaxHitBonus(2),
+                FortisColosseum.relentlessMaxHitBonus(3)));
+    }
+
+    @Test
+    void gloryUnlocksTokensAndShowboating() {
+        // Wiki "Glory": bank chest 2,000, respawn point 5,000, ring of dueling 12,000, Fortis Salute 20,000.
+        assertEquals("Brawler", FortisColosseum.rank(FortisColosseum.GLORY_BANK));
+        assertEquals("Challenger", FortisColosseum.rank(FortisColosseum.GLORY_RESPAWN));
+        assertEquals("Hero", FortisColosseum.rank(FortisColosseum.GLORY_DUELING));
+        assertEquals("Grand Champion", FortisColosseum.rank(FortisColosseum.GLORY_SALUTE));
+        // Wiki "Token (Varlamore)" eligibility table (Monday = 1).
+        assertEquals("colosseum", FortisColosseum.tokenActivity(1, 1));
+        assertEquals("colosseum", FortisColosseum.tokenActivity(8, 1));
+        assertEquals("bones", FortisColosseum.tokenActivity(1, 7));
+        assertEquals("colosseum", FortisColosseum.tokenActivity(2, 2));
+        assertEquals("pickpocketing", FortisColosseum.tokenActivity(4, 1));
+        assertEquals("colosseum", FortisColosseum.tokenActivity(5, 5));
+        assertEquals("digging", FortisColosseum.tokenActivity(6, 1));
+        assertEquals("colosseum", FortisColosseum.tokenActivity(7, 7));
+        assertEquals("digging", FortisColosseum.tokenActivity(12, 7));
+        for (int len = 1; len <= 12; len++) {
+            int days = 0;
+            for (int d = 1; d <= 7; d++) {
+                days += FortisColosseum.tokenActivity(len, d).equals("colosseum") ? 1 : 0;
+            }
+            assertEquals(1, days, "one Colosseum day a week for length " + len);
+        }
+        assertNotNull(ItemCatalog.get(FortisColosseum.TOKEN));
+        // Fortis Salute directions (Minecraft yaw: 0 south, 90 west, 180 north, 270 east); diagonals don't count.
+        assertEquals("south", FortisColosseum.saluteDirection(0));
+        assertEquals("west", FortisColosseum.saluteDirection(90));
+        assertEquals("north", FortisColosseum.saluteDirection(-180));
+        assertEquals("east", FortisColosseum.saluteDirection(-90));
+        assertNull(FortisColosseum.saluteDirection(45));
+        assertTrue(CombatAchievements.task("ca_544").track() != Track.UNTRACKED, "Showboating is tracked");
     }
 }

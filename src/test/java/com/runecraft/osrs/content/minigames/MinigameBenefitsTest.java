@@ -68,7 +68,7 @@ class MinigameBenefitsTest {
         Map<BaGambles.Tier, List<String>> seen = new HashMap<>();
         for (String[] row : tsv("ba_gambles.tsv")) {
             BaGambles.Tier tier = BaGambles.Tier.valueOf(row[0].toUpperCase());
-            String item = id(row[1]);
+            String item = id(row[1]).equals("feather") ? BaGambles.FEATHER : id(row[1]);
             if (row[3].equals("1/32") && BaGambles.MISSING.contains(item)) {
                 // Left out until the item exists; adding the item should put its line back.
                 assertNull(ItemCatalog.get(item), item + " exists now: add its line to BaGambles");
@@ -93,7 +93,7 @@ class MinigameBenefitsTest {
         for (BaGambles.Tier tier : BaGambles.Tier.values()) {
             assertEquals(seen.get(tier).size(), BaGambles.table(tier).size(), tier + " has lines the wiki lacks");
             for (BaGambles.Line l : BaGambles.table(tier)) {
-                assertNotNull(ItemCatalog.get(l.item()), "unknown gamble item " + l.item());
+                assertTrue(ItemCatalog.exists(l.item()), "unknown gamble item " + l.item());
             }
         }
         for (String d : BaGambles.DRAGON) {
@@ -194,6 +194,15 @@ class MinigameBenefitsTest {
         assertEquals(1000, cost(nmz, NightmareZone.SUPER_RANGING));
         assertEquals(1000, cost(nmz, NightmareZone.SUPER_MAGIC));
         assertEquals(9500, cost(nmz, "herb_box"));
+        assertEquals(15, RewardShops.dailyLimit("nightmare_zone", "herb_box")); // wiki: 15 a day from the NMZ
+        assertEquals(0, RewardShops.dailyLimit("tithe_farm", "herb_box")); // no limit at Tithe Farm
+        // Scroll of redirection: nine towns, each tablet a real teleport tablet.
+        assertEquals(9, MinigameRules.NightmareZone.REDIRECTS.size());
+        for (MinigameRules.NightmareZone.Redirect r : MinigameRules.NightmareZone.REDIRECTS) {
+            assertNotNull(com.runecraft.osrs.content.systems.Spellbooks.tablet(r.tablet()), r.tablet());
+        }
+        assertEquals(50, MinigameRules.NightmareZone.redirect("yanille").construction());
+        assertEquals("song_of_the_elves", MinigameRules.NightmareZone.redirect("Prifddinas").quest());
         assertEquals(775, cost(nmz, "scroll_of_redirection"));
         for (String potion : NightmareZone.POTIONS) {
             assertNotNull(ItemCatalog.get(potion), potion);

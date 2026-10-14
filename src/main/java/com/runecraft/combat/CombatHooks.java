@@ -138,6 +138,43 @@ public final class CombatHooks {
         return m;
     }
 
+    /**
+     * Changes one monster's attack on one player (e.g. the Fortis Colosseum's Relentless): a factor on the attack roll and
+     * extra max hit.
+     */
+    public interface NpcVersusPlayer {
+        default double accuracy(LivingEntity mob, ServerPlayerEntity target, AttackType type) {
+            return 1.0;
+        }
+
+        default int maxHitBonus(LivingEntity mob, ServerPlayerEntity target, AttackType type) {
+            return 0;
+        }
+    }
+
+    private static final List<NpcVersusPlayer> VERSUS = new ArrayList<>();
+
+    public static void addNpcVersusPlayer(NpcVersusPlayer modifier) {
+        VERSUS.add(modifier);
+    }
+
+    /** The monster's attack roll against this player after every {@link NpcVersusPlayer}. */
+    public static long versusAttackRoll(LivingEntity mob, ServerPlayerEntity target, AttackType type, long roll) {
+        double m = 1.0;
+        for (NpcVersusPlayer v : VERSUS) {
+            m *= v.accuracy(mob, target, type);
+        }
+        return m == 1.0 ? roll : (long) (roll * m);
+    }
+
+    /** The monster's max hit against this player after every {@link NpcVersusPlayer}. */
+    public static int versusMaxHit(LivingEntity mob, ServerPlayerEntity target, AttackType type, int maxHit) {
+        for (NpcVersusPlayer v : VERSUS) {
+            maxHit += v.maxHitBonus(mob, target, type);
+        }
+        return maxHit;
+    }
+
     public static void addModifier(PlayerAttackModifier modifier) {
         MODIFIERS.add(modifier);
     }

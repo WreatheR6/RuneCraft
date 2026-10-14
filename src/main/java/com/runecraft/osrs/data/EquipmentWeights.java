@@ -221,6 +221,8 @@ public final class EquipmentWeights {
             mystic_boots|0.453
             mystic_earth_staff|2.267
             mystic_fire_staff|2.267
+            mystic_lava_staff|2.267
+            granite_shield|6.803
             mystic_gloves_dark|0.453
             mystic_gloves_dusk|0.453
             mystic_gloves_light|0.453

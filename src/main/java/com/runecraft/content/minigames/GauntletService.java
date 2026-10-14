@@ -68,6 +68,16 @@ public final class GauntletService {
                 }
                 return TypedActionResult.success(stack);
             }
+            if (id.equals(Gauntlet.ESCAPE_CRYSTAL)) {
+                if (MinigameManager.session(sp) instanceof GauntletSession) {
+                    stack.decrement(1);
+                    Msg.action(sp, "The crystal shatters and you escape the Gauntlet.");
+                    MinigameManager.leave(sp);
+                } else {
+                    Msg.game(sp, "The crystal only works inside the Gauntlet.");
+                }
+                return TypedActionResult.success(stack);
+            }
             for (Gauntlet.Mode m : Gauntlet.Mode.values()) {
                 if (id.equals(Gauntlet.teleport(m))) {
                     if (MinigameManager.session(sp) instanceof GauntletSession g && g.teleportToStart(sp)) {

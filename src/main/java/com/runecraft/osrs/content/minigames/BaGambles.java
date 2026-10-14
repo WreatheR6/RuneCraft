@@ -89,9 +89,12 @@ public final class BaGambles {
      * Wiki lines left out of the tables because RuneCraft has no such item; the other lines share their chance.
      * // approx
      */
-    public static final List<String> MISSING = List.of("feather", "mystic_lava_staff", "granite_shield");
+    public static final List<String> MISSING = List.of();
 
-    /** Low gamble table (32 lines in OSRS, 1/32 each; feathers left out). Rune dagger(p++) stands in as a plain rune dagger. // approx */
+    /** Feathers are the vanilla item (fishing bait and fletching use it too). */
+    public static final String FEATHER = "minecraft:feather";
+
+    /** Low gamble table (32 lines in OSRS, 1/32 each). Rune dagger(p++) stands in as a plain rune dagger. // approx */
     public static final List<Line> LOW = List.of(
             l("harralander", 15, 25, true), l("toadflax", 15, 25, true), l("irit_leaf", 15, 25, true),
             l("harralander_seed", 5, 7, false), l("toadflax_seed", 5, 7, false), l("irit_seed", 5, 7, false),
@@ -102,29 +105,29 @@ public final class BaGambles {
             l("uncut_emerald", 25, 30, true), l("maple_logs", 150, 200, true), l("oak_plank", 60, 80, true),
             l("mithril_arrow", 300, 400, false), l("raw_lobster", 125, 150, true), l("tuna", 90, 110, true),
             l("cosmic_rune", 150, 200, false), l("chaos_rune", 150, 200, false), l("limpwurt_root", 10, 15, true),
-            l("unicorn_horn", 10, 15, true), l("coins", 15_000, 20_000, false));
+            l("unicorn_horn", 10, 15, true), l(FEATHER, 500, 750, false), l("coins", 15_000, 20_000, false));
 
-    /** Medium gamble table (32 lines in OSRS; feathers and the mystic lava staff are left out, see MISSING). */
+    /** Medium gamble table (32 lines in OSRS, 1/32 each). */
     public static final List<Line> MEDIUM = List.of(
             l("avantoe", 25, 35, true), l("kwuarm", 25, 35, true), l("dwarf_weed", 25, 35, true),
             l("avantoe_seed", 10, 14, false), l("kwuarm_seed", 10, 14, false), l("dwarf_weed_seed", 10, 14, false),
             l("watermelon_seed", 20, false), l("papaya_seed", 1, 2, false), l("yew_seed", 1, 2, false),
-            l("rune_battleaxe", 1, false), l("rune_sq_shield", 1, false), l("rune_full_helm", 1, false),
+            l("rune_battleaxe", 1, false), l("rune_sq_shield", 1, false), l("rune_full_helm", 1, false), l("mystic_lava_staff", 1, false),
             l("loop_half_of_key", 1, false), l("tooth_half_of_key", 1, false),
             l("coal", 400, true), l("adamantite_ore", 40, true), l("adamantite_bar", 25, true),
             l("big_bones", 120, true), l("red_dragonhide", 20, 30, true), l("uncut_ruby", 25, 30, true),
             l("yew_logs", 150, 200, true), l("teak_plank", 60, 80, true), l("adamant_arrow", 400, 500, false),
             l("nature_rune", 250, 300, false), l("death_rune", 250, 300, false), l("raw_swordfish", 180, 210, true),
             l("swordfish", 90, 110, true), l("limpwurt_root", 20, 30, true), l("unicorn_horn", 20, 30, true),
-            l("coins", 30_000, 40_000, false));
+            l(FEATHER, 1200, 1500, false), l("coins", 30_000, 40_000, false));
 
-    /** High gamble table (32 lines in OSRS after the 2/16,000 dragon roll; the granite shield is left out, see MISSING). */
+    /** High gamble table (32 lines in OSRS after the 2/16,000 dragon roll). */
     public static final List<Line> HIGH = List.of(
             l("ranarr_weed", 20, 30, true), l("snapdragon", 20, 30, true), l("torstol", 20, 30, true),
             l("ranarr_seed", 3, 4, false), l("snapdragon_seed", 3, 4, false), l("torstol_seed", 3, 4, false),
             l("watermelon_seed", 50, false), l("palm_seed", 1, 2, false), l("magic_seed", 1, false),
             l("archer_helm", 1, false), l("berserker_helm", 1, false), l("warrior_helm", 1, false), l("farseer_helm", 1, false),
-            l("granite_helm", 1, false), l("rune_kiteshield", 1, false),
+            l("granite_helm", 1, false), l("granite_shield", 1, false), l("rune_kiteshield", 1, false),
             l("coal", 750, true), l("runite_ore", 20, true), l("runite_bar", 15, true), l("dragon_bones", 50, 75, true),
             l("black_dragonhide", 30, 50, true), l("uncut_diamond", 25, 30, true), l("magic_logs", 50, 100, true),
             l("mahogany_plank", 60, 80, true), l("rune_arrow", 400, 500, false), l("raw_shark", 250, 300, true),

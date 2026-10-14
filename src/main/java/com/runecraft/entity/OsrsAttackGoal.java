@@ -54,13 +54,27 @@ public class OsrsAttackGoal extends Goal {
         mob.getLookControl().lookAt(target, 30.0f, 30.0f);
         boolean canSee = mob.getVisibilityCache().canSee(target);
         if (distSq > range || !canSee) {
-            mob.getNavigation().startMovingTo(target, 1.0);
+            chase(target);
         } else if (!melee) {
             mob.getNavigation().stop();
         } else if (distSq > reach * reach * 0.6) {
-            mob.getNavigation().startMovingTo(target, 1.0);
+            chase(target);
         }
         long now = ActionManager.mcTick();
+        tryAttack(target, style, distSq, range, canSee, now);
+    }
+
+    /** Path-finds to the target, or walks straight at it for a creature with OSRS direct ("dumb") pathing. */
+    private void chase(ServerPlayerEntity target) {
+        if (mob.directPathing) {
+            mob.getNavigation().stop();
+            mob.getMoveControl().moveTo(target.getX(), target.getY(), target.getZ(), 1.0);
+        } else {
+            mob.getNavigation().startMovingTo(target, 1.0);
+        }
+    }
+
+    private void tryAttack(ServerPlayerEntity target, AttackType style, double distSq, double range, boolean canSee, long now) {
         long speed = (long) mob.stats().attackSpeed() * ActionManager.MC_TICKS_PER_GAME_TICK;
         if (distSq <= range && canSee && now - lastAttack >= speed
                 && com.runecraft.combat.CombatZones.npcMayAttack(mob, target)) {

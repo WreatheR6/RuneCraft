@@ -86,6 +86,24 @@ public final class MinigamesHooks implements ModuleHooks {
                 com.runecraft.content.minigames.games.ColosseumSession.scoreboard(player));
         QuestScripts.onTalk(com.runecraft.osrs.content.minigames.FortisColosseum.MINIMUS, (player, npc) ->
                 com.runecraft.content.minigames.games.ColosseumSession.minimus(player));
+        // Glory unlocks: the lobby bank chest (Brawler) and the ring of dueling teleport (Hero).
+        BlockHooks.register(com.runecraft.osrs.content.minigames.FortisColosseum.BANK_CHEST, (player, pos, state) ->
+                com.runecraft.content.minigames.games.ColosseumSession.bankChest(player));
+        com.runecraft.content.systems.SysTeleport.addGate((player, dest) ->
+                dest.equals(com.runecraft.osrs.content.systems.Teleports.DUELING.get(3))
+                        ? com.runecraft.content.minigames.games.ColosseumSession.duelingGate(player) : null);
+        // The Gauntlet's lobby reward chest; the Hunllefs' old summoning stones send the player into the Gauntlet itself (in
+        // OSRS the Hunllef is only fought at the end of a Gauntlet run).
+        BlockHooks.register(com.runecraft.osrs.content.minigames.Gauntlet.REWARD_CHEST, (player, pos, state) ->
+                com.runecraft.content.minigames.games.GauntletSession.rewardChest(player));
+        for (com.runecraft.osrs.content.minigames.Gauntlet.Mode mode : com.runecraft.osrs.content.minigames.Gauntlet.Mode.values()) {
+            com.runecraft.boss.DataBossService.requirement(mode.boss, (player, def) -> {
+                Msg.game(player, "The Hunllef only fights at the end of the Gauntlet. You step into the Gauntlet.");
+                MinigameManager.enter(player, Minigame.GAUNTLET, mode == com.runecraft.osrs.content.minigames.Gauntlet.Mode.NORMAL
+                        ? Minigame.GAUNTLET.entranceBlock() : com.runecraft.osrs.content.minigames.Gauntlet.CORRUPTED_ENTRANCE);
+                return false;
+            });
+        }
         com.runecraft.boss.DataBossService.requirement(com.runecraft.osrs.content.minigames.FortisColosseum.SOL_HEREDIT, (player, def) -> {
             Msg.game(player, "Sol Heredit only fights at the end of the Fortis Colosseum. Enter the Colosseum by its west gate.");
             return false;
@@ -208,6 +226,20 @@ public final class MinigamesHooks implements ModuleHooks {
                                     }
                                     return 1;
                                 }))
+                                .then(CommandManager.literal("salute").executes(ctx -> {
+                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    if (p != null) {
+                                        com.runecraft.content.minigames.games.ColosseumSession.salute(p);
+                                    }
+                                    return 1;
+                                }))
+                                .then(CommandManager.literal("respawn").executes(ctx -> {
+                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    if (p != null) {
+                                        com.runecraft.content.minigames.games.ColosseumSession.setRespawn(p);
+                                    }
+                                    return 1;
+                                }))
                                 .then(CommandManager.literal("quiver").then(CommandManager.argument("for", StringArgumentType.word())
                                         .executes(ctx -> {
                                             ServerPlayerEntity p = ctx.getSource().getPlayer();
@@ -217,6 +249,14 @@ public final class MinigamesHooks implements ModuleHooks {
                                             }
                                             return 1;
                                         }))))
+                        .then(CommandManager.literal("redirect").then(CommandManager.argument("town", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    if (p != null) {
+                                        MinigameItemUse.redirect(p, StringArgumentType.getString(ctx, "town"));
+                                    }
+                                    return 1;
+                                })))
                         .then(CommandManager.literal("trek").then(CommandManager.argument("follower", StringArgumentType.word())
                                 .then(CommandManager.argument("route", IntegerArgumentType.integer(1, 3)).executes(ctx -> {
                                     ServerPlayerEntity p = ctx.getSource().getPlayer();

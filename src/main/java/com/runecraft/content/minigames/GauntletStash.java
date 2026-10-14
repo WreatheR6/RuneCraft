@@ -33,6 +33,8 @@ public final class GauntletStash extends PersistentState {
     private static final Set<String> RUN_ITEMS = new HashSet<>(Gauntlet.runItems());
 
     private final Map<UUID, NbtCompound> stashed = new HashMap<>();
+    /** Loot waiting in the lobby's reward chest (OSRS: claimed from the Reward Chest after leaving). */
+    private final Map<UUID, NbtList> chest = new HashMap<>();
 
     public static GauntletStash get(MinecraftServer server) {
         return server.getOverworld().getPersistentStateManager().getOrCreate(GauntletStash::fromNbt, GauntletStash::new, KEY);
@@ -70,6 +72,45 @@ public final class GauntletStash extends PersistentState {
             }
         }
         ServerNetworking.sync(player);
+    }
+
+    /** Puts a run's loot into the player's reward chest in the lobby (saved with the world). */
+    public static void addToChest(ServerPlayerEntity player, List<ItemStack> loot) {
+        if (loot.isEmpty()) {
+            return;
+        }
+        GauntletStash state = get(player.getServer());
+        NbtList list = state.chest.computeIfAbsent(player.getUuid(), u -> new NbtList());
+        for (ItemStack s : loot) {
+            if (!s.isEmpty()) {
+                list.add(s.writeNbt(new NbtCompound()));
+            }
+        }
+        state.markDirty();
+    }
+
+    /** The number of stacks waiting in the player's reward chest. */
+    public static int chestSize(ServerPlayerEntity player) {
+        NbtList list = get(player.getServer()).chest.get(player.getUuid());
+        return list == null ? 0 : list.size();
+    }
+
+    /** Hands the reward chest's loot to the player; returns how many stacks were claimed. */
+    public static int claimChest(ServerPlayerEntity player) {
+        GauntletStash state = get(player.getServer());
+        NbtList list = state.chest.remove(player.getUuid());
+        if (list == null) {
+            return 0;
+        }
+        state.markDirty();
+        for (int i = 0; i < list.size(); i++) {
+            ItemStack s = ItemStack.fromNbt(list.getCompound(i));
+            if (!s.isEmpty()) {
+                Inv.give(player, s);
+            }
+        }
+        ServerNetworking.sync(player);
+        return list.size();
     }
 
     /** Whether an item exists only inside the Gauntlet. */
@@ -119,6 +160,9 @@ public final class GauntletStash extends PersistentState {
         NbtCompound root = new NbtCompound();
         stashed.forEach((uuid, c) -> root.put(uuid.toString(), c));
         nbt.put("Stashed", root);
+        NbtCompound chests = new NbtCompound();
+        chest.forEach((uuid, list) -> chests.put(uuid.toString(), list));
+        nbt.put("Chest", chests);
         return nbt;
     }
 
@@ -128,6 +172,14 @@ public final class GauntletStash extends PersistentState {
         for (String key : root.getKeys()) {
             try {
                 state.stashed.put(UUID.fromString(key), root.getCompound(key));
+            } catch (IllegalArgumentException ignored) {
+                // skip malformed entries
+            }
+        }
+        NbtCompound chests = nbt.getCompound("Chest");
+        for (String key : chests.getKeys()) {
+            try {
+                state.chest.put(UUID.fromString(key), chests.getList(key, NbtElement.COMPOUND_TYPE));
             } catch (IllegalArgumentException ignored) {
                 // skip malformed entries
             }

@@ -2659,6 +2659,8 @@ public final class ItemValues {
             ancient_ceremonial_gloves|40000|0.2|gt|Some ceremonial gloves dedicated to an ancient god.
             ancient_ceremonial_boots|40000|0.3|gt|Some ceremonial boots dedicated to an ancient god.
             granite_helm|46000|4.535|gt|A stone helmet.
+            granite_shield|56000|6.803|gt|A solid stone shield.
+            mystic_lava_staff|45000|2.267|gt|It's a slightly magical stick.
             black_robe|13|0.907|gt|I can do magic better in this.
             purple_gloves|500|0.453|gt|These will keep my hands warm!
             red_gloves|500|0.453|gt|These will keep my hands warm!

@@ -289,9 +289,9 @@ public final class CombatHandler {
             case RANGED -> stats.ranged();
             default -> stats.attack();
         };
-        long attackRoll = npcAttackRoll(mob, stats, type, attackLevel);
+        long attackRoll = CombatHooks.versusAttackRoll(mob, player, type, npcAttackRoll(mob, stats, type, attackLevel));
         long defenceRoll = defenceRoll(player, type);
-        int maxHit = mob instanceof OsrsMonsterEntity m ? m.maxHitAgainst(player, type) : stats.maxHit();
+        int maxHit = CombatHooks.versusMaxHit(mob, player, type, mob instanceof OsrsMonsterEntity m ? m.maxHitAgainst(player, type) : stats.maxHit());
         int damage = CombatFormulas.roll(new java.util.Random(mob.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
         if (isProtected(data, type)) {
             damage = mob instanceof OsrsMonsterEntity m ? m.damageThroughPrayer(damage) : 0;

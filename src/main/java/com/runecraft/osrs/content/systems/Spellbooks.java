@@ -436,6 +436,15 @@ public final class Spellbooks {
             new Tablet("cemetery_teleport_tablet", "Cemetery teleport", Teleports.at("Forgotten Cemetery", 2981, 3764), 800),
             new Tablet("barrows_teleport_tablet", "Barrows teleport", Teleports.at("Barrows", 3564, 3315), 900),
             new Tablet("ape_atoll_teleport_tablet", "Ape atoll teleport", Teleports.at("Ape Atoll", 2770, 2703), 900),
+            // House tablets redirected with a scroll of redirection (Nightmare Zone): outside each town's house portal.
+            new Tablet("rimmington_teleport_tablet", "Rimmington teleport", Teleports.at("Rimmington", 2953, 3224), 1),
+            new Tablet("taverley_teleport_tablet", "Taverley teleport", Teleports.at("Taverley", 2893, 3465), 1),
+            new Tablet("pollnivneach_teleport_tablet", "Pollnivneach teleport", Teleports.at("Pollnivneach", 3340, 3004), 1),
+            new Tablet("hosidius_teleport_tablet", "Hosidius teleport", Teleports.at("Hosidius", 1743, 3517), 1),
+            new Tablet("rellekka_teleport_tablet", "Rellekka teleport", Teleports.at("Rellekka", 2670, 3631), 1),
+            new Tablet("brimhaven_teleport_tablet", "Brimhaven teleport", Teleports.at("Brimhaven", 2757, 3179), 1),
+            new Tablet("yanille_teleport_tablet", "Yanille teleport", Teleports.at("Yanille", 2544, 3096), 1),
+            new Tablet("prifddinas_teleport_tablet", "Prifddinas teleport", Teleports.at("Prifddinas", 3239, 6077), 1),
             // Treasure trail teleport scrolls
             new Tablet("nardah_teleport", "Nardah teleport", Teleports.at("Nardah", 3419, 2917), 2500),
             new Tablet("digsite_teleport", "Digsite teleport", Teleports.at("Digsite", 3325, 3412), 2500),

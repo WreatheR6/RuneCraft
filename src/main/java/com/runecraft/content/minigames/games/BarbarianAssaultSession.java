@@ -301,7 +301,7 @@ public class BarbarianAssaultSession extends MinigameSession {
         }
         java.util.Random rng = new java.util.Random(p.getRandom().nextLong());
         for (com.runecraft.osrs.content.minigames.BaGambles.Prize prize : com.runecraft.osrs.content.minigames.BaGambles.roll(tier,
-                rng::nextDouble, item -> com.runecraft.osrs.ItemCatalog.get(item) != null)) {
+                rng::nextDouble, com.runecraft.osrs.ItemCatalog::exists)) {
             if (prize.noted()) {
                 com.runecraft.content.minigames.MinigameItemUse.giveNoted(p, prize.item(), prize.amount());
             } else {

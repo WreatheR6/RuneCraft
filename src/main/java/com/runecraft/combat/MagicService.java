@@ -66,7 +66,7 @@ public final class MagicService {
         if (id.equals("steam_battlestaff")) {
             return rune == Rune.FIRE || rune == Rune.WATER;
         }
-        if (id.equals("lava_battlestaff")) {
+        if (id.equals("lava_battlestaff") || id.equals("mystic_lava_staff")) {
             return rune == Rune.FIRE || rune == Rune.EARTH;
         }
         if (id.equals("mud_battlestaff")) {

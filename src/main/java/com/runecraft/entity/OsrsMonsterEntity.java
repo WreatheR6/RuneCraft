@@ -41,6 +41,12 @@ public class OsrsMonsterEntity extends HostileEntity {
         }
     }
 
+    /**
+     * OSRS "dumb" NPC pathing: the creature walks straight at its target and stops at obstacles instead of routing around
+     * them, so it can be safespotted (e.g. the Fortis Colosseum's minotaurs without Red Flag). Not saved.
+     */
+    public boolean directPathing;
+
     public MonsterStats stats() {
         if (cachedStats == null) {
             cachedStats = ModEntities.stats(getType());

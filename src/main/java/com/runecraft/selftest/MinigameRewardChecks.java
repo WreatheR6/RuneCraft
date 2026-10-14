@@ -51,11 +51,13 @@ final class MinigameRewardChecks {
         checks.add(new SelfTest.Check("minigame:nmz_potions", g::nmzPotions));
         checks.add(new SelfTest.Check("minigame:nmz_powerups", g::nmzPowerUps));
         checks.add(new SelfTest.Check("minigame:ba_gamble", g::baGamble));
+        checks.add(new SelfTest.Check("minigame:nmz_shop", g::nmzShop));
         checks.add(new SelfTest.Check("minigame:spoils_of_war", g::spoils));
         checks.add(new SelfTest.Check("minigame:blighted_supplies", g::blighted));
         checks.add(new SelfTest.Check("minigame:gauntlet_run", g::gauntlet));
         checks.add(new SelfTest.Check("minigame:colosseum_cash_out", g::colosseumCashOut));
         checks.add(new SelfTest.Check("minigame:colosseum_waves", g::colosseumWaves));
+        checks.add(new SelfTest.Check("minigame:colosseum_glory", g::colosseumGlory));
         return checks;
     }
 
@@ -184,6 +186,49 @@ final class MinigameRewardChecks {
             s.end(true);
         }
         return "recurrent damage, ultimate force and zapper activated";
+    }
+
+    /** Dom Onion's shop: 15 herb boxes a day; a scroll of redirection turns a house tablet into a Rimmington tablet. */
+    private String nmzShop() {
+        MinigameData data = MinigameData.of(p());
+        String key = MinigameCurrencies.key(MinigameCurrencies.NIGHTMARE_ZONE);
+        int before = data.points(p().getUuid(), key);
+        RewardShop shop = RewardShops.get("nightmare_zone");
+        int box = -1;
+        for (int i = 0; i < shop.entries().size(); i++) {
+            if (shop.entries().get(i).item().equals("herb_box")) {
+                box = i;
+            }
+        }
+        if (box < 0) {
+            throw failure("Dom Onion's shop has no herb box");
+        }
+        try {
+            p().getInventory().clear();
+            RewardShopService.resetDaily(p(), "nightmare_zone", "herb_box");
+            data.addPoints(p().getUuid(), key, 20 * 9500 - data.points(p().getUuid(), key));
+            RewardShopService.buy(p(), "nightmare_zone", box, 20);
+            int boxes = Inv.count(p(), "herb_box");
+            if (boxes != 15) {
+                throw failure("bought " + boxes + " herb boxes in a day (expected the limit of 15)");
+            }
+            RewardShopService.buy(p(), "nightmare_zone", box, 1);
+            if (Inv.count(p(), "herb_box") != 15 || data.points(p().getUuid(), key) != 5 * 9500) {
+                throw failure("a 16th herb box was sold today");
+            }
+            p().getInventory().clear();
+            Inv.give(p(), "scroll_of_redirection", 1);
+            Inv.give(p(), "teleport_to_house", 1);
+            if (!com.runecraft.content.minigames.MinigameItemUse.redirect(p(), "rimmington")
+                    || !Inv.has(p(), "rimmington_teleport_tablet", 1) || Inv.has(p(), "scroll_of_redirection", 1)) {
+                throw failure("the scroll of redirection did not make a Rimmington teleport tablet");
+            }
+        } finally {
+            p().getInventory().clear();
+            RewardShopService.resetDaily(p(), "nightmare_zone", "herb_box");
+            data.addPoints(p().getUuid(), key, before - data.points(p().getUuid(), key));
+        }
+        return "15 herb boxes a day; scroll of redirection made a Rimmington tablet";
     }
 
     private int entry(String label) {
@@ -326,10 +371,68 @@ final class MinigameRewardChecks {
             if (c.chest().isEmpty()) {
                 throw failure("the chest is empty after 11 waves");
             }
+            // Showboating: salutes to the four sides while Sol Heredit is below 10% hitpoints.
+            if (!c.selfTestWoundSol(0.05f)) {
+                throw failure("Sol Heredit is not in the arena on wave 12");
+            }
+            float yaw = p().getYaw();
+            for (float y : new float[]{180f, 270f, 0f, 90f}) {
+                p().setYaw(y);
+                c.saluteIn(p());
+            }
+            p().setYaw(yaw);
+            if (c.salutes().size() != 4) {
+                throw failure("salutes counted " + c.salutes() + " (expected north, east, south and west)");
+            }
         } finally {
             c.end(false);
         }
-        return "11 waves cleared, Sol Heredit spawned on wave 12; modifiers " + String.join(", ", seen);
+        return "11 waves cleared, Sol Heredit spawned on wave 12, four salutes counted; modifiers " + String.join(", ", seen);
+    }
+
+    /** Glory unlocks (bank chest, respawn point, ring of dueling) and the daily Varlamore token from wave 3. */
+    private String colosseumGlory() {
+        MinigameData data = MinigameData.of(p());
+        java.util.UUID u = p().getUuid();
+        int glory = data.stat(u, FortisColosseum.STAT_GLORY);
+        var dim = p().getSpawnPointDimension();
+        net.minecraft.util.math.BlockPos spawn = p().getSpawnPointPosition();
+        float angle = p().getSpawnAngle();
+        boolean forced = p().isSpawnForced();
+        try {
+            data.setStat(u, FortisColosseum.STAT_GLORY, FortisColosseum.GLORY_DUELING - 1);
+            if (ColosseumSession.duelingGate(p()) == null) {
+                throw failure("the ring of dueling teleport was allowed below 12,000 Glory");
+            }
+            data.setStat(u, FortisColosseum.STAT_GLORY, FortisColosseum.GLORY_DUELING);
+            if (ColosseumSession.duelingGate(p()) != null) {
+                throw failure("the ring of dueling teleport was refused at 12,000 Glory");
+            }
+            data.setStat(u, FortisColosseum.STAT_GLORY, 0);
+            if (ColosseumSession.setRespawn(p())) {
+                throw failure("Civitas illa Fortis became the respawn point with no Glory");
+            }
+            data.setStat(u, FortisColosseum.STAT_GLORY, FortisColosseum.GLORY_RESPAWN);
+            if (!ColosseumSession.setRespawn(p()) || p().getSpawnPointDimension() != com.runecraft.world.Gielinor.WORLD) {
+                throw failure("Civitas illa Fortis did not become the respawn point at 5,000 Glory");
+            }
+            Inv.remove(p(), FortisColosseum.TOKEN, Inv.count(p(), FortisColosseum.TOKEN));
+            data.setStat(u, ColosseumSession.STAT_TOKEN_DAY, 0);
+            java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneOffset.UTC);
+            boolean eligible = FortisColosseum.tokenActivity(p().getName().getString().length(), today.getDayOfWeek().getValue())
+                    .equals("colosseum");
+            if (ColosseumSession.varlamoreToken(p()) != eligible || Inv.has(p(), FortisColosseum.TOKEN, 1) != eligible) {
+                throw failure("the wave 3 token " + (eligible ? "was not given" : "was given on a day this name can't get it"));
+            }
+            if (ColosseumSession.varlamoreToken(p())) {
+                throw failure("a second token was given the same day");
+            }
+            Inv.remove(p(), FortisColosseum.TOKEN, Inv.count(p(), FortisColosseum.TOKEN));
+            return "dueling teleport at 12,000, respawn point at 5,000, token " + (eligible ? "given once" : "not due today");
+        } finally {
+            data.setStat(u, FortisColosseum.STAT_GLORY, glory);
+            p().setSpawnPoint(dim, spawn, angle, forced, false);
+        }
     }
 
     private String blighted() {
@@ -375,6 +478,10 @@ final class MinigameRewardChecks {
             if (!g.singRecipe(p(), "helm_basic") || !Inv.has(p(), "crystal_helm_basic", 1)) {
                 throw failure("singing a basic crystal helm failed");
             }
+            Inv.give(p(), com.runecraft.osrs.content.minigames.Gauntlet.shards(mode), 200);
+            if (!g.singRecipe(p(), "escape") || !Inv.has(p(), com.runecraft.osrs.content.minigames.Gauntlet.ESCAPE_CRYSTAL, 1)) {
+                throw failure("singing an escape crystal from 200 shards failed");
+            }
             Set<String> flags = g.caFlags(p());
             if (flags.contains("noarmour") || !flags.contains("noegniol") || !flags.contains("oneweapon")) {
                 throw failure("wrong Combat Achievement flags " + flags);
@@ -404,7 +511,8 @@ final class MinigameRewardChecks {
         if (!Inv.has(p(), "bronze_dagger", 1)) {
             throw failure("the player's items were not given back");
         }
-        if (Inv.has(p(), "crystal_helm_basic", 1) || Inv.has(p(), com.runecraft.osrs.content.minigames.Gauntlet.sceptre(mode), 1)) {
+        if (Inv.has(p(), "crystal_helm_basic", 1) || Inv.has(p(), com.runecraft.osrs.content.minigames.Gauntlet.sceptre(mode), 1)
+                || Inv.has(p(), com.runecraft.osrs.content.minigames.Gauntlet.ESCAPE_CRYSTAL, 1)) {
             throw failure("Gauntlet items left the Gauntlet");
         }
         Inv.remove(p(), "bronze_dagger", 1);

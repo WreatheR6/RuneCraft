@@ -177,6 +177,30 @@ public final class RewardShopService {
         ServerPlayNetworking.send(player, MinigameNet.SHOP, buf);
     }
 
+    /** MinigameData stat key for a daily-limited reward: today's UTC epoch day x 1000 + the number bought today. */
+    private static String dailyKey(String shopId, String item) {
+        return "daily:" + shopId + ":" + item;
+    }
+
+    private static long today() {
+        return java.time.LocalDate.now(java.time.ZoneOffset.UTC).toEpochDay();
+    }
+
+    /** How many of a daily-limited reward the player has bought today (OSRS days reset at 00:00 UTC). */
+    public static int boughtToday(ServerPlayerEntity player, String shopId, String item) {
+        int v = MinigameData.of(player).stat(player.getUuid(), dailyKey(shopId, item));
+        return v / 1000 == (int) (today() % 2_000_000) ? v % 1000 : 0;
+    }
+
+    private static void recordToday(ServerPlayerEntity player, String shopId, String item, int count) {
+        MinigameData.of(player).setStat(player.getUuid(), dailyKey(shopId, item), (int) (today() % 2_000_000) * 1000 + count);
+    }
+
+    /** Self-test: forgets today's purchases of a daily-limited reward. */
+    public static void resetDaily(ServerPlayerEntity player, String shopId, String item) {
+        MinigameData.of(player).setStat(player.getUuid(), dailyKey(shopId, item), 0);
+    }
+
     public static void buy(ServerPlayerEntity player, String shopId, int index, int quantity) {
         RewardShop shop = RewardShops.get(shopId);
         if (shop == null || index < 0 || index >= shop.entries().size()) {
@@ -191,6 +215,15 @@ public final class RewardShopService {
             Msg.game(player, lock + ".");
             return;
         }
+        int daily = com.runecraft.osrs.content.minigames.RewardShops.dailyLimit(shop.id(), e.item());
+        if (daily > 0) {
+            int left = daily - boughtToday(player, shop.id(), e.item());
+            if (left <= 0) {
+                Msg.game(player, "You can only buy " + daily + " of those a day.");
+                return;
+            }
+            times = Math.min(times, left);
+        }
         Map<String, Integer> bal = balances(player, shop);
         if (!e.affordable(bal, times)) {
             // Buy as many as affordable.
@@ -201,6 +234,9 @@ public final class RewardShopService {
                 Msg.game(player, "You can't afford that. It costs " + e.costText() + ".");
                 return;
             }
+        }
+        if (daily > 0) {
+            recordToday(player, shop.id(), e.item(), boughtToday(player, shop.id(), e.item()) + times);
         }
         for (RewardShop.Cost c : e.costs()) {
             int amount = c.amount() * times;

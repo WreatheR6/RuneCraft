@@ -612,17 +612,29 @@ public final class GauntletSession extends MinigameSession {
     @Override
     protected void onLeave(ServerPlayerEntity player) {
         GauntletStash.restore(player);
+        // The run's loot waits in the Reward Chest in the lobby (OSRS), saved with the world.
+        List<ItemStack> loot = new ArrayList<>();
         for (ItemStack s : lootStacks) {
-            Inv.give(player, s);
+            loot.add(s.copy());
         }
         lootStacks.clear();
         for (Map.Entry<String, Integer> e : lootItems.entrySet()) {
-            Inv.give(player, e.getKey(), e.getValue());
-        }
-        if (!lootItems.isEmpty()) {
-            Msg.game(player, "You loot the reward chest.");
+            ItemStack s = Inv.stack(e.getKey(), e.getValue());
+            if (!s.isEmpty()) {
+                loot.add(s);
+            }
         }
         lootItems.clear();
+        if (!loot.isEmpty()) {
+            GauntletStash.addToChest(player, loot);
+            Msg.game(player, "Your loot awaits you in the Reward Chest in the Gauntlet lobby.");
+        }
+    }
+
+    /** The lobby's Reward Chest: claims the loot of past runs. */
+    public static void rewardChest(ServerPlayerEntity p) {
+        int n = GauntletStash.claimChest(p);
+        Msg.game(p, n == 0 ? "The reward chest is empty." : "You take your rewards from the chest.");
     }
 
     @Override

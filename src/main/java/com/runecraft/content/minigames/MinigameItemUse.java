@@ -87,6 +87,10 @@ public final class MinigameItemUse {
                     bonesToPeaches(sp);
                     yield false;
                 }
+                case "scroll_of_redirection" -> {
+                    showRedirects(sp);
+                    yield false;
+                }
                 default -> false;
             };
             if (used) {
@@ -145,6 +149,49 @@ public final class MinigameItemUse {
     }
 
     /** Herb box (Nightmare Zone): seven rolls on the herb drop table (OSRS Wiki weights out of 128). */
+    /** The scroll of redirection's towns, as chat links ({@code /minigame redirect <town>}). */
+    static void showRedirects(ServerPlayerEntity p) {
+        Msg.game(p, "Use the scroll on a Teleport to house tablet to redirect it to:");
+        net.minecraft.text.MutableText line = net.minecraft.text.Text.literal("");
+        for (com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.Redirect r
+                : com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.REDIRECTS) {
+            line.append(net.minecraft.text.Text.literal("[" + r.town() + "] ").styled(s -> s.withColor(net.minecraft.util.Formatting.AQUA)
+                    .withClickEvent(new net.minecraft.text.ClickEvent(net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
+                            "/minigame redirect " + r.town().toLowerCase(java.util.Locale.ROOT)))));
+        }
+        p.sendMessage(line, false);
+    }
+
+    /**
+     * Redirects one Teleport to house tablet with a scroll of redirection (both used up), if the player has the Construction
+     * level to move a house to that town and any quest it needs. Returns whether a tablet was made.
+     */
+    public static boolean redirect(ServerPlayerEntity p, String town) {
+        com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.Redirect r =
+                com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.redirect(town);
+        if (r == null) {
+            return false;
+        }
+        if (!Inv.has(p, com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.SCROLL_OF_REDIRECTION, 1)
+                || !Inv.has(p, com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.HOUSE_TABLET, 1)) {
+            Msg.game(p, "You need a scroll of redirection and a Teleport to house tablet.");
+            return false;
+        }
+        if (com.runecraft.player.Players.data(p).skills().level(com.runecraft.osrs.Skill.CONSTRUCTION) < r.construction()) {
+            Msg.game(p, "You need a Construction level of " + r.construction() + " to redirect a tablet to " + r.town() + ".");
+            return false;
+        }
+        if (r.quest() != null && !com.runecraft.quest.QuestApi.isComplete(p, r.quest())) {
+            Msg.game(p, "You can't redirect a tablet to " + r.town() + " yet.");
+            return false;
+        }
+        Inv.remove(p, com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.SCROLL_OF_REDIRECTION, 1);
+        Inv.remove(p, com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.HOUSE_TABLET, 1);
+        Inv.give(p, r.tablet(), 1);
+        Msg.game(p, "You redirect the tablet to " + r.town() + ".");
+        return true;
+    }
+
     public static void openHerbBox(ServerPlayerEntity p) {
         String[] herbs = {"guam_leaf", "marrentill", "tarromin", "harralander", "ranarr_weed", "irit_leaf", "avantoe", "kwuarm",
                 "cadantine", "lantadyme", "dwarf_weed"};

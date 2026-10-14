@@ -755,6 +755,7 @@ public final class CombatAchievementRules {
             547;RUN;mg:fortis_colosseum;1;stage=12 flag=reinforcements
             549;RUN;mg:fortis_colosseum;1;stage=12 flag=total28
             550;RUN;mg:fortis_colosseum;1;stage=12 flag=total24
+            544;RUN;mg:fortis_colosseum;1;stage=12 flag=showboating
             149;RUN;mg:fight_caves;1;offprayerhitby=tztok-jad
             152;RUN;mg:fight_caves;1;noattacker=tz-kih
             153;RUN;mg:fight_caves;1;style=melee

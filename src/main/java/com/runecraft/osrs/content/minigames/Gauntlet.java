@@ -141,6 +141,7 @@ public final class Gauntlet {
         list.add(new String[]{WATER_PUMP, "Water pump", "4A6A9A", "machine"});
         list.add(new String[]{BARRIER, "Barrier", "B0E8FF", "portal_glow"});
         list.add(new String[]{RECIPES_BOOK, "Crystal Singing Recipes", "C0E0F0", "notice_board"});
+        list.add(new String[]{REWARD_CHEST, "Reward Chest (The Gauntlet)", "7A9AB0", "chest"});
         for (Node n : Node.values()) {
             list.add(new String[]{n.block, n.displayName, String.format("%06X", n.colour), n.look});
         }
@@ -156,6 +157,11 @@ public final class Gauntlet {
     public static final String WATER_VIAL = "gauntlet_water_vial";
     public static final String EGNIOL = "egniol_potion";
     public static final String ARROWS = "gauntlet_crystal_arrow";
+    /** Escape crystal (wiki): 200 shards at the singing bowl (100 Crafting and Smithing XP); leaves the Gauntlet at once. */
+    public static final String ESCAPE_CRYSTAL = "gauntlet_escape_crystal";
+    public static final int ESCAPE_CRYSTAL_SHARDS = 200;
+    /** The reward chest in the lobby, where the loot of a run waits after leaving. */
+    public static final String REWARD_CHEST = "gauntlet_reward_chest";
     /** The junk table's items (only found in the Gauntlet's reward chest). */
     public static final String IWANS_FLYER = "iwans_flyer";
     public static final String APOTHECARY_POTION = "apothecary_potion";
@@ -351,6 +357,8 @@ public final class Gauntlet {
     }
 
     public static void items(ItemSink items) {
+        items.add(ESCAPE_CRYSTAL, "Escape crystal", Kind.SIMPLE, "gem", 0xD0F0FF).value(1).stack(1)
+                .examine("A crystal enchanted to allow the user to escape the Gauntlet.");
         for (Mode m : Mode.values()) {
             boolean c = m == Mode.CORRUPTED;
             int col = c ? 0xC04030 : 0x9AD8F0;
@@ -430,7 +438,7 @@ public final class Gauntlet {
                 }
             }
         }
-        ids.addAll(List.of(RAW_PADDLEFISH, PADDLEFISH, BURNT_PADDLEFISH, VIAL, WATER_VIAL, EGNIOL, ARROWS));
+        ids.addAll(List.of(RAW_PADDLEFISH, PADDLEFISH, BURNT_PADDLEFISH, VIAL, WATER_VIAL, EGNIOL, ARROWS, ESCAPE_CRYSTAL));
         return ids;
     }
 
@@ -486,6 +494,7 @@ public final class Gauntlet {
         list.add(new Sing("vial", "Vial", VIAL, 1, 10, 0, 0, 0, null, null, 0, 0, null, null));
         list.add(new Sing("teleport", m == Mode.NORMAL ? "Teleport crystal" : "Corrupted teleport crystal", teleport(m), 1, 50, 0, 0, 0,
                 null, null, 0, 0, null, null));
+        list.add(new Sing("escape", "Escape crystal", ESCAPE_CRYSTAL, 1, ESCAPE_CRYSTAL_SHARDS, 0, 0, 0, null, null, 0, 0, null, null));
         list.add(new Sing("paddlefish", m.word + " paddlefish", upgradedFish(m), 1, 10, 0, 0, 0, PADDLEFISH, null, 1, 0, null, null));
         // Egniol potion: grym leaf + water-filled vial, then 10 crystal dust (10 shards ground); 10 Herblore XP, 3 doses.
         list.add(new Sing("egniol", "Egniol potion", EGNIOL, 1, 10, 0, 0, 0, WATER_VIAL, grym(m), 0, 10, null, null));

@@ -227,6 +227,7 @@ public final class MinigameWorld {
         list.add(BlockDef.scripted(SORCERESS_SHELVES, "Shelves", 0x8A6A3A, "crate"));
         list.add(BlockDef.scripted(KET_RAK_SCOREBOARD, "Scoreboard (TzHaar-Ket-Rak)", 0x6A2A10, "statue"));
         list.add(BlockDef.scripted(FortisColosseum.SCOREBOARD, "Colosseum scoreboard", 0xC0A060, "statue"));
+        list.add(BlockDef.scripted(FortisColosseum.BANK_CHEST, "Bank chest (Fortis Colosseum)", 0x8A6A3A, "chest"));
         list.add(BlockDef.scripted(TempleTrekking.RAMBLE_ENTRANCE, "Burgh de Rott Ramble entrance", 0x8060C0, "portal_glow"));
         list.add(BlockDef.scripted("flamtaer_temple", "Flamtaer temple wall", 0xB0A890, "rock"));
         list.add(BlockDef.scripted("flamtaer_altar", "Sacred fire", 0xE08030, "fire_brazier"));
@@ -267,6 +268,8 @@ public final class MinigameWorld {
         map.get(Minigame.TZHAAR_KET_RAK.place()).add(KET_RAK_SCOREBOARD);
         map.get(Minigame.BARBARIAN_ASSAULT.place()).add(BA_BLACKBOARD);
         map.get(Minigame.FORTIS_COLOSSEUM.place()).add(FortisColosseum.SCOREBOARD);
+        map.get(Minigame.FORTIS_COLOSSEUM.place()).add(FortisColosseum.BANK_CHEST);
+        map.get(Minigame.GAUNTLET.place()).add(Gauntlet.REWARD_CHEST);
         map.put(TempleTrekking.RAMBLE_PLACE, new ArrayList<>(List.of(TempleTrekking.RAMBLE_ENTRANCE)));
         return map;
     }

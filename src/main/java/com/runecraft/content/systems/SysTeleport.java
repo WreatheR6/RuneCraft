@@ -23,6 +23,14 @@ public final class SysTeleport {
     private SysTeleport() {
     }
 
+    private static final java.util.List<java.util.function.BiFunction<ServerPlayerEntity, Teleports.Destination, String>> GATES =
+            new java.util.ArrayList<>();
+
+    /** Adds a check that can refuse a destination (returns the refusal message, or null), e.g. a minigame unlock. */
+    public static void addGate(java.util.function.BiFunction<ServerPlayerEntity, Teleports.Destination, String> gate) {
+        GATES.add(gate);
+    }
+
     public static boolean canTeleport(ServerPlayerEntity p, int maxWilderness) {
         if (com.runecraft.combat.Teleblock.blocked(p)) {
             return false;
@@ -38,6 +46,13 @@ public final class SysTeleport {
 
     /** Teleports a player to OSRS world coordinates (from any dimension). */
     public static boolean teleport(ServerPlayerEntity p, Teleports.Destination dest, int maxWilderness) {
+        for (java.util.function.BiFunction<ServerPlayerEntity, Teleports.Destination, String> gate : GATES) {
+            String refusal = gate.apply(p, dest);
+            if (refusal != null) {
+                Msg.game(p, refusal);
+                return false;
+            }
+        }
         if (dest.quest() != null && com.runecraft.osrs.content.ContentRegistry.quest(dest.quest()) != null
                 && !com.runecraft.quest.QuestApi.isComplete(p, dest.quest())) {
             Msg.game(p, "You need to complete " + com.runecraft.osrs.content.ContentRegistry.quest(dest.quest()).displayName()

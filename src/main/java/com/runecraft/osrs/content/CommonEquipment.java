@@ -181,6 +181,10 @@ public final class CommonEquipment {
         items.add("lava_battlestaff", "Lava battlestaff", Kind.STAFF, "staff_orb", 0xC05020).value(17000).stack(1).tier("adamant")
                 .equipment(weapon(s(7, -1, 28, 12, 0, 2, 3, 1, 12, 0, 35, 0, 0, 0), 5, AttackType.CRUSH, WeaponClass.STAFF, Skill.MAGIC, 30, Skill.ATTACK, 30))
                 .examine("It's a slightly magical stick.");
+        // OSRS Wiki "Mystic lava staff": 40 Attack/Magic, unlimited fire and earth runes (Thormac, Barbarian Assault gambles).
+        items.add("mystic_lava_staff", "Mystic lava staff", Kind.STAFF, "staff_orb", 0xD06020).value(45000).stack(1).tier("rune")
+                .equipment(weapon(s(10, -1, 40, 14, 0, 2, 3, 1, 14, 0, 50, 0, 0, 0), 5, AttackType.CRUSH, WeaponClass.STAFF, Skill.MAGIC, 40, Skill.ATTACK, 40))
+                .examine("It's a slightly magical stick.");
         items.add("blue_wizard_hat", "Blue wizard hat", Kind.ARMOUR, "hood", 0x3050C0).value(2).stack(1).tier("cloth")
                 .equipment(wear(Slot.HEAD, s(0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0)))
                 .examine("A silly pointed hat.");
@@ -390,6 +394,10 @@ public final class CommonEquipment {
         items.add("granite_helm", "Granite helm", Kind.ARMOUR, "full_helm", 0x7A7A80).value(46000).stack(1).tier("rune")
                 .equipment(wear(Slot.HEAD, s(0, 0, 0, -9, -7, 31, 33, 29, -1, 39, 0, 0, 0, 0), Skill.DEFENCE, 50, Skill.STRENGTH, 50))
                 .examine("A stone helmet.");
+        // OSRS Wiki "Granite shield": 50 Defence and Strength, Toktz-ket-xil's defences without its Strength bonus.
+        items.add("granite_shield", "Granite shield", Kind.SHIELD, "kiteshield", 0x7A7A80).value(56000).stack(1).tier("rune")
+                .equipment(wear(Slot.SHIELD, s(0, 0, 0, -12, -8, 40, 42, 38, 0, 65, 0, 0, 0, 0), Skill.DEFENCE, 50, Skill.STRENGTH, 50))
+                .examine("A solid stone shield.");
         items.add("black_robe", "Black robe", Kind.ARMOUR, "robe_top", 0x2A2A2A).value(13).stack(1).tier("mystic")
                 .equipment(wear(Slot.CHEST, s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0))).examine("I can do magic better in this.");
         for (String[] g : new String[][]{{"purple", "Purple", "6A3A8A"}, {"red", "Red", "A02A2A"}, {"teal", "Teal", "2A8A8A"},

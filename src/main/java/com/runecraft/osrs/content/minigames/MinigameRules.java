@@ -846,6 +846,39 @@ public final class MinigameRules {
 
     // ---------------------------------------------------------------- Nightmare Zone
     public static final class NightmareZone {
+        /** Scroll of redirection (775 points): turns a Teleport to house tablet into one for a house-portal town. */
+        public static final String SCROLL_OF_REDIRECTION = "scroll_of_redirection";
+        public static final String HOUSE_TABLET = "teleport_to_house";
+
+        /** A redirection: the tablet made, its town, the Construction level to move a house there and any quest needed. */
+        public record Redirect(String tablet, String town, int construction, String quest) {
+        }
+
+        /**
+         * OSRS Wiki "Scroll of redirection": Rimmington, Taverley (10), Pollnivneach (20), Hosidius (25), Rellekka (30),
+         * Brimhaven (40), Yanille (50), Trollheim (Eadgar's Ruse) and Prifddinas (Song of the Elves, 70). Aldarin (35, Children
+         * of the Sun) is left out: no tablet tile in the transport snapshot. approx
+         */
+        public static final List<Redirect> REDIRECTS = List.of(
+                new Redirect("rimmington_teleport_tablet", "Rimmington", 1, null),
+                new Redirect("taverley_teleport_tablet", "Taverley", 10, null),
+                new Redirect("pollnivneach_teleport_tablet", "Pollnivneach", 20, null),
+                new Redirect("hosidius_teleport_tablet", "Hosidius", 25, null),
+                new Redirect("rellekka_teleport_tablet", "Rellekka", 30, null),
+                new Redirect("brimhaven_teleport_tablet", "Brimhaven", 40, null),
+                new Redirect("yanille_teleport_tablet", "Yanille", 50, null),
+                new Redirect("trollheim_teleport_tablet", "Trollheim", 1, "eadgars_ruse"),
+                new Redirect("prifddinas_teleport_tablet", "Prifddinas", 70, "song_of_the_elves"));
+
+        public static Redirect redirect(String town) {
+            for (Redirect r : REDIRECTS) {
+                if (r.town().equalsIgnoreCase(town) || r.tablet().equals(town)) {
+                    return r;
+                }
+            }
+            return null;
+        }
+
         /** Coins per dream from Dominic's coffer: normal / hard rumble (OSRS Wiki). */
         public static final int RUMBLE_COST = 2000;
         public static final int HARD_RUMBLE_COST = 6000;

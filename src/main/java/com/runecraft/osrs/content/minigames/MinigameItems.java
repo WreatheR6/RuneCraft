@@ -68,6 +68,8 @@ public final class MinigameItems {
     }
 
     public static void add(ItemSink items) {
+        // The capybaras' Varlamore token (OSRS Wiki "Token (Varlamore)"): untradeable, unstackable, 123 coins.
+        single(items, FortisColosseum.TOKEN, "Token", "coins", 0xB04030, 123, "A small token.");
         tzhaar(items);
         pestControl(items);
         wintertodt(items);

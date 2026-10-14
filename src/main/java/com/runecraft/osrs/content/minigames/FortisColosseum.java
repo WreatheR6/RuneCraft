@@ -344,6 +344,68 @@ public final class FortisColosseum {
         return tier <= 0 ? 0 : new int[]{33, 66, 100}[Math.min(tier, 3) - 1];
     }
 
+    /** Relentless (III): enemies skip the accuracy roll; returned as an attack-roll multiplier large enough to always hit. */
+    public static final double IGNORE_ACCURACY = 1_000_000.0;
+
+    /**
+     * Relentless: the factor on an enemy's attack roll that has the same effect as the player's Defence level being cut
+     * by {@link #relentlessDefenceBypass} percent. A player's defence roll is (effective level) x (bonus + 64) with an
+     * effective level of the boosted level + 8 + stance (taken as 1 here; prayers ignored, approx); against magic the
+     * level is 70% Magic + 30% Defence, so only the Defence part is bypassed. Tier III ignores accuracy entirely.
+     */
+    public static double relentlessAccuracy(int tier, int defenceLevel, int magicLevel, boolean magicAttack) {
+        if (tier <= 0) {
+            return 1.0;
+        }
+        if (tier >= 3) {
+            return IGNORE_ACCURACY;
+        }
+        int def = Math.max(0, defenceLevel);
+        int bypassed = def - def * relentlessDefenceBypass(tier) / 100;
+        double full = (magicAttack ? 0.7 * magicLevel + 0.3 * def : def) + 9;
+        double reduced = (magicAttack ? 0.7 * magicLevel + 0.3 * bypassed : bypassed) + 9;
+        return full / Math.max(1.0, reduced);
+    }
+
+    /** The longest attack range (tiles): magic and longbows. */
+    public static final int MAX_RANGE = 10;
+
+    /**
+     * A ranged weapon's attack range in tiles (OSRS Wiki "Attack range"): darts 3, knives and thrownaxes 4, the toxic
+     * blowpipe 5, shortbows and crossbows 7, the Armadyl and zaryte crossbows 8, ballistae and chinchompas 9, longbows,
+     * composite bows and the crystal, twisted and dark bows 10; longrange adds 2 (at most 10). Spells cast from the
+     * autocast menu and powered staves reach 10. Unknown ranged weapons count as 7 (approx).
+     */
+    public static int attackRange(String weapon, boolean magic, boolean longrange) {
+        if (magic) {
+            return MAX_RANGE;
+        }
+        String w = weapon == null ? "" : weapon;
+        int base;
+        if (w.endsWith("_dart") || w.contains("_dart_") || w.endsWith("_dart(p)")) {
+            base = 3;
+        } else if (w.contains("knife") || w.contains("thrownaxe")) {
+            base = 4;
+        } else if (w.contains("blowpipe")) {
+            base = 5;
+        } else if (w.contains("longbow") || w.contains("comp_bow") || w.equals("crystal_bow") || w.startsWith("crystal_bow")
+                || w.contains("twisted_bow") || w.contains("dark_bow") || w.contains("bow_of_faerdhinen") || w.equals("third_age_bow")) {
+            base = 10;
+        } else if (w.contains("ballista") || w.contains("chinchompa")) {
+            base = 9;
+        } else if (w.equals("armadyl_crossbow") || w.equals("zaryte_crossbow")) {
+            base = 8;
+        } else {
+            base = 7; // shortbows, crossbows and anything else
+        }
+        return Math.min(MAX_RANGE, base + (longrange ? 2 : 0));
+    }
+
+    /** Myopia: the attack range left (at least 1 tile) after the tier's reduction. */
+    public static int myopiaRange(int range, int tier) {
+        return Math.max(1, range - myopiaReduction(tier));
+    }
+
     /** Solarflare: ticks between the orb's moves and the pause at a corner (I: 2 / 7, II: 2 / 0, III: 1 / 2). */
     public static int solarflareMoveTicks(int tier) {
         return tier >= 3 ? 1 : 2;
@@ -463,6 +525,62 @@ public final class FortisColosseum {
     public static boolean reinforcements(Map<Modifier, Integer> active) {
         return active.getOrDefault(Modifier.BEES, 0) >= 2 && active.containsKey(Modifier.QUARTET)
                 && active.getOrDefault(Modifier.SOLARFLARE, 0) >= 2;
+    }
+
+    /** "Showboating": Sol Heredit defeated after Fortis Salutes to all four sides while he was below 10% hitpoints. */
+    public static final String FLAG_SHOWBOATING = "showboating";
+    public static final int SHOWBOATING_BELOW_PERCENT = 10;
+
+    /**
+     * The side of the arena a player faces (Minecraft yaw: 0 south, 90 west, 180 north, 270 east), or null when facing
+     * diagonally (wiki: diagonal salutes don't count). Within 22.5 degrees of a side counts as facing it.
+     */
+    public static String saluteDirection(float yaw) {
+        double y = ((yaw % 360) + 360) % 360;
+        String[] sides = {"south", "west", "north", "east"};
+        for (int i = 0; i < 4; i++) {
+            double diff = Math.abs(y - i * 90.0);
+            if (Math.min(diff, 360 - diff) <= 22.5) {
+                return sides[i];
+            }
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------------ Glory unlocks (wiki "Glory")
+
+    /** Brawler: the bank chest in the lobby. */
+    public static final int GLORY_BANK = 2000;
+    /** Challenger: Civitas illa Fortis as a respawn point. */
+    public static final int GLORY_RESPAWN = 5000;
+    /** Hero: the ring of dueling's Fortis Colosseum teleport. */
+    public static final int GLORY_DUELING = 12000;
+    /** Grand Champion: the Fortis Salute emote. */
+    public static final int GLORY_SALUTE = 20000;
+    /** The lobby bank chest (beside the scoreboard). */
+    public static final String BANK_CHEST = "colosseum_bank_chest";
+    /** The respawn point in Civitas illa Fortis (OSRS tile, the city's centre square). approx */
+    public static final int RESPAWN_X = 1681;
+    public static final int RESPAWN_Y = 3133;
+
+    // ------------------------------------------------------------------ Varlamore tokens (wiki "Token (Varlamore)")
+
+    /** The capybaras' token: one per day from the activity a character name's length is assigned that day. */
+    public static final String TOKEN = "varlamore_token";
+    /** The Colosseum's token comes from completing wave 3 (wearing a partyhat in OSRS; no partyhats here, approx). */
+    public static final int TOKEN_WAVE = 3;
+    /** The seven token activities in the wiki table's order (Monday's activity for 1- or 8-letter names first). */
+    public static final List<String> TOKEN_ACTIVITIES = List.of("colosseum", "buffalo", "digging", "mining", "pickpocketing",
+            "fishing", "bones");
+
+    /**
+     * The token activity open to a character name of {@code nameLength} characters on a day (1 = Monday ... 7 = Sunday):
+     * the wiki's table shifts each name length one activity along per day, lengths 8-12 repeating 1-5.
+     */
+    public static String tokenActivity(int nameLength, int dayOfWeek) {
+        int row = Math.floorMod(nameLength - 1, 7);
+        int day = Math.floorMod(dayOfWeek - 1, 7);
+        return TOKEN_ACTIVITIES.get(Math.floorMod(day - row, 7));
     }
 
     /** Dizana's quiver traded to Minimus: 4,000 sunfire splinters or another 1/200 roll at Smol heredit. */

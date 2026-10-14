@@ -52,9 +52,10 @@ import java.util.UUID;
  * logging out or leaving any other way forfeits it. Wave 12 is Sol Heredit; his death ends the run with Dizana's quiver in the chest.
  *
  * <p>Modifiers modelled: Bees!, Blasphemy, Doom, Dynamic Duo, Frailty, Mantimayhem I-II (III: approx, the orbs already come
- * in any order), Myopia (approx: ranged and magic attacks beyond the reduced range miss), Reentry, Red Flag (approx: our
- * minotaurs always path-find), Relentless (approx: extra max hit on landed hits only), Solarflare, Quartet, Totemic and
- * Volatility. Javelin Colossi throw a prayer-ignoring javelin at the player's tile every fifth attack; minotaurs out of
+ * in any order), Myopia (ranged and autocast attacks beyond the weapon's attack range less 2/4/6 tiles do nothing), Reentry,
+ * Red Flag (without it minotaurs walk straight at the player and can be safespotted behind a pillar; with it they
+ * path-find), Relentless (enemy accuracy as if the player's Defence were 33%/66% lower, or no accuracy roll at III, and
+ * +1/+3/+6 max hit), Solarflare, Quartet, Totemic and Volatility. Javelin Colossi throw a prayer-ignoring javelin at the player's tile every fifth attack; minotaurs out of
  * melee reach heal wounded monsters to full.
  */
 public class ColosseumSession extends MinigameSession {
@@ -91,6 +92,8 @@ public class ColosseumSession extends MinigameSession {
     private int orbPause;
     private boolean echoing;
     private long lastMyopiaMessage;
+    /** Showboating: the sides of the arena saluted while Sol Heredit was below 10% hitpoints. */
+    private final Set<String> salutes = new HashSet<>();
     private BlockPos solDiedAt;
     /**
      * The wave's monsters as spawned. Tracked here rather than looked up in the world: an entity added to a chunk that
@@ -426,6 +429,9 @@ public class ColosseumSession extends MinigameSession {
             if (totalTicks <= FortisColosseum.SPEED_RUNNER_TICKS) {
                 waveFlags.add(FortisColosseum.FLAG_SPEED_RUNNER);
             }
+            if (salutes.size() == 4) {
+                waveFlags.add(FortisColosseum.FLAG_SHOWBOATING);
+            }
         }
         // Leftover floor items (none drop in OSRS), molten sand that isn't permanent, bees and totems go.
         for (ItemEntity item : world.getEntitiesByClass(ItemEntity.class, box(), e -> true)) {
@@ -479,6 +485,31 @@ public class ColosseumSession extends MinigameSession {
             }
         }
         Msg.game(p, "The Rewards Chest now holds: " + describeChest() + ".");
+        if (wave == FortisColosseum.TOKEN_WAVE) {
+            varlamoreToken(p);
+        }
+    }
+
+    /** MinigameData stat: the epoch day (+1) of the last Varlamore token from the Colosseum. */
+    public static final String STAT_TOKEN_DAY = "colosseum_token_day";
+
+    /**
+     * Wave 3 hands out a Varlamore token once a day when the player's name length is assigned the Colosseum that day, and
+     * no token is already in the inventory (OSRS also needs a partyhat, which RuneCraft doesn't have - approx).
+     */
+    public static boolean varlamoreToken(ServerPlayerEntity p) {
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneOffset.UTC);
+        String activity = FortisColosseum.tokenActivity(p.getName().getString().length(), today.getDayOfWeek().getValue());
+        MinigameData data = MinigameData.of(p);
+        int day = (int) today.toEpochDay() + 1;
+        if (!activity.equals("colosseum") || data.stat(p.getUuid(), STAT_TOKEN_DAY) == day
+                || Inv.has(p, FortisColosseum.TOKEN, 1)) {
+            return false;
+        }
+        data.setStat(p.getUuid(), STAT_TOKEN_DAY, day);
+        reward(p, FortisColosseum.TOKEN, 1);
+        Msg.game(p, "As the crowd cheers, you spot a small token in the sand and pick it up.");
+        return true;
     }
 
     private String describeChest() {
@@ -577,6 +608,10 @@ public class ColosseumSession extends MinigameSession {
         for (LivingEntity mino : monsters) {
             if (!MinigameManager.creatureId(mino).equals(FortisColosseum.MINOTAUR)) {
                 continue;
+            }
+            // Red Flag gives the minotaurs smart pathing; otherwise they walk straight at the player (safespottable).
+            if (mino instanceof com.runecraft.entity.OsrsMonsterEntity m) {
+                m.directPathing = !active.containsKey(Modifier.RED_FLAG);
             }
             boolean inReach = online().stream().anyMatch(p -> p.squaredDistanceTo(mino) < 16);
             if (inReach) {
@@ -768,14 +803,22 @@ public class ColosseumSession extends MinigameSession {
                 s.playerDamaged(player, attacker, style, damage);
             }
         });
-        CombatHooks.addIncomingModifier((player, attacker, damage) -> {
-            if (MinigameManager.session(player) instanceof ColosseumSession s && damage > 0) {
-                int bonus = FortisColosseum.relentlessMaxHitBonus(s.active.getOrDefault(Modifier.RELENTLESS, 0));
-                if (bonus > 0) {
-                    return damage + s.random.nextInt(bonus + 1); // approx: a higher max hit on hits that land
+        CombatHooks.addNpcVersusPlayer(new CombatHooks.NpcVersusPlayer() {
+            @Override
+            public double accuracy(LivingEntity mob, ServerPlayerEntity target, AttackType type) {
+                if (MinigameManager.owner(mob) instanceof ColosseumSession s) {
+                    return s.relentlessAccuracy(target, type);
                 }
+                return 1.0;
             }
-            return damage;
+
+            @Override
+            public int maxHitBonus(LivingEntity mob, ServerPlayerEntity target, AttackType type) {
+                if (MinigameManager.owner(mob) instanceof ColosseumSession s) {
+                    return FortisColosseum.relentlessMaxHitBonus(s.active.getOrDefault(Modifier.RELENTLESS, 0));
+                }
+                return 0;
+            }
         });
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             @Override
@@ -786,6 +829,17 @@ public class ColosseumSession extends MinigameSession {
                         : 1.0;
             }
         });
+    }
+
+    /** Relentless: the factor on an enemy's attack roll against this player (see FortisColosseum.relentlessAccuracy). */
+    public double relentlessAccuracy(ServerPlayerEntity target, AttackType type) {
+        int tier = active.getOrDefault(Modifier.RELENTLESS, 0);
+        if (tier <= 0) {
+            return 1.0;
+        }
+        PlayerData d = Players.data(target);
+        return FortisColosseum.relentlessAccuracy(tier, d.skills().currentLevel(Skill.DEFENCE), d.skills().currentLevel(Skill.MAGIC),
+                type == AttackType.MAGIC);
     }
 
     private static String styleClass(AttackType type) {
@@ -839,7 +893,7 @@ public class ColosseumSession extends MinigameSession {
     private void extraHit(LivingEntity mob, ServerPlayerEntity player, AttackType type, int max) {
         MonsterStats st = MonsterStats.of(mob);
         int level = type == AttackType.MAGIC ? st.magic() : type == AttackType.RANGED ? st.ranged() : st.attack();
-        long attack = CombatHandler.npcAttackRoll(mob, st, type, level);
+        long attack = CombatHooks.versusAttackRoll(mob, player, type, CombatHandler.npcAttackRoll(mob, st, type, level));
         long defence = CombatHandler.defenceRoll(player, type);
         int damage = CombatFormulas.roll(new java.util.Random(random.nextLong()), attack, defence,
                 max + FortisColosseum.relentlessMaxHitBonus(active.getOrDefault(Modifier.RELENTLESS, 0)));
@@ -860,8 +914,10 @@ public class ColosseumSession extends MinigameSession {
         int myopia = active.getOrDefault(Modifier.MYOPIA, 0);
         if (myopia > 0 && (type == AttackType.RANGED || type == AttackType.MAGIC)) {
             double tiles = Math.sqrt(player.squaredDistanceTo(target)) / 2;
-            int range = Math.max(1, 10 - FortisColosseum.myopiaReduction(myopia)); // approx: a 10-tile weapon range
-            if (tiles > range) {
+            boolean longrange = Players.data(player).style().forRanged() == com.runecraft.osrs.CombatStyle.LONGRANGE;
+            int range = FortisColosseum.myopiaRange(FortisColosseum.attackRange(Inv.idOf(player.getMainHandStack()),
+                    type == AttackType.MAGIC, longrange), myopia);
+            if (tiles > range + 0.75) { // + the target's half width
                 if (ticks - lastMyopiaMessage > 10) {
                     lastMyopiaMessage = ticks;
                     Msg.action(player, "Myopia: your target is too far away to hit.");
@@ -985,6 +1041,15 @@ public class ColosseumSession extends MinigameSession {
     public static void minimus(ServerPlayerEntity p) {
         QuestApi.say(p, "Minimus", "Welcome to the Fortis Colosseum! Twelve waves stand between you and Sol Heredit. Before each wave "
                 + "I'll offer you three modifiers; between waves you may leave with the loot you've earned. Die, and it's lost.");
+        int glory = MinigameData.of(p).stat(p.getUuid(), FortisColosseum.STAT_GLORY);
+        if (glory >= FortisColosseum.GLORY_RESPAWN) {
+            p.sendMessage(Text.literal("Challenger: ").formatted(Formatting.GRAY).append(link("Respawn in Civitas illa Fortis",
+                    "/minigame colosseum respawn", "Set your respawn point to Civitas illa Fortis", Formatting.GOLD)), false);
+        }
+        if (glory >= FortisColosseum.GLORY_SALUTE) {
+            p.sendMessage(Text.literal("Grand Champion: ").formatted(Formatting.GRAY).append(link("Fortis Salute",
+                    "/minigame colosseum salute", "Perform the Fortis Salute emote", Formatting.GOLD)), false);
+        }
         if (Inv.has(p, ColosseumRewards.QUIVER, 1)) {
             MutableText line = Text.literal("Trade a Dizana's quiver: ").formatted(Formatting.GRAY)
                     .append(link(FortisColosseum.QUIVER_SPLINTERS + " sunfire splinters", "/minigame colosseum quiver splinters",
@@ -995,6 +1060,94 @@ public class ColosseumSession extends MinigameSession {
             }
             p.sendMessage(line, false);
         }
+    }
+
+    // ------------------------------------------------------------------ Showboating and the Glory unlocks
+
+    /** Sol Heredit while he is alive in this run's arena, or null. */
+    private LivingEntity sol() {
+        for (LivingEntity e : spawned) {
+            if (e.isAlive() && MinigameManager.creatureId(e).equals(FortisColosseum.SOL_HEREDIT)) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The Fortis Salute (unlocked at 20,000 Glory): facing north, east, south or west while Sol Heredit is below 10%
+     * hitpoints sets that side of the crowd off ("Showboating").
+     */
+    public static void salute(ServerPlayerEntity p) {
+        if (MinigameData.of(p).stat(p.getUuid(), FortisColosseum.STAT_GLORY) < FortisColosseum.GLORY_SALUTE) {
+            Msg.game(p, "You need " + FortisColosseum.GLORY_SALUTE + " Glory (Grand Champion) to perform the Fortis Salute.");
+            return;
+        }
+        p.swingHand(net.minecraft.util.Hand.MAIN_HAND, true);
+        if (MinigameManager.session(p) instanceof ColosseumSession s) {
+            s.saluteIn(p);
+        }
+    }
+
+    /** Records a salute towards the side the player faces (self-test entry point). Returns the side, or null. */
+    public String saluteIn(ServerPlayerEntity p) {
+        LivingEntity sol = sol();
+        String side = FortisColosseum.saluteDirection(p.getYaw());
+        if (sol == null || side == null
+                || sol.getHealth() >= sol.getMaxHealth() * FortisColosseum.SHOWBOATING_BELOW_PERCENT / 100f) {
+            return null;
+        }
+        if (salutes.add(side)) {
+            p.sendMessage(Text.literal("The crowd to the " + side + " goes wild.").formatted(Formatting.GREEN), false);
+        }
+        return side;
+    }
+
+    /** Self-test: drops Sol Heredit to a fraction of his hitpoints; false when he isn't in the arena. */
+    public boolean selfTestWoundSol(float fraction) {
+        LivingEntity sol = sol();
+        if (sol == null) {
+            return false;
+        }
+        sol.setHealth(Math.max(1f, sol.getMaxHealth() * fraction));
+        return true;
+    }
+
+    /** The sides saluted so far this run. */
+    public Set<String> salutes() {
+        return Set.copyOf(salutes);
+    }
+
+    /** The lobby bank chest: usable from 2,000 Glory (Brawler). */
+    public static void bankChest(ServerPlayerEntity p) {
+        if (MinigameData.of(p).stat(p.getUuid(), FortisColosseum.STAT_GLORY) < FortisColosseum.GLORY_BANK) {
+            Msg.game(p, "The chest is reserved for the Colosseum's Brawlers. Earn " + FortisColosseum.GLORY_BANK + " Glory to use it.");
+            return;
+        }
+        com.runecraft.bank.BankService.open(p);
+    }
+
+    /** Sets the player's respawn point to Civitas illa Fortis (5,000 Glory, Challenger). */
+    public static boolean setRespawn(ServerPlayerEntity p) {
+        if (MinigameData.of(p).stat(p.getUuid(), FortisColosseum.STAT_GLORY) < FortisColosseum.GLORY_RESPAWN) {
+            Msg.game(p, "Only Challengers (" + FortisColosseum.GLORY_RESPAWN + " Glory) may call Civitas illa Fortis home.");
+            return false;
+        }
+        ServerWorld world = com.runecraft.world.Gielinor.world(p.getServer());
+        if (world == null) {
+            return false;
+        }
+        BlockPos at = com.runecraft.world.Gielinor.safeSpot(world, com.runecraft.osrs.GielinorMap.toBlockX(FortisColosseum.RESPAWN_X),
+                com.runecraft.osrs.GielinorMap.toBlockZ(FortisColosseum.RESPAWN_Y));
+        p.setSpawnPoint(com.runecraft.world.Gielinor.WORLD, at, 0f, true, false);
+        Msg.game(p, "You will now respawn in Civitas illa Fortis.");
+        return true;
+    }
+
+    /** The ring of dueling's Fortis Colosseum teleport needs 12,000 Glory (Hero); null when allowed. */
+    public static String duelingGate(ServerPlayerEntity p) {
+        return MinigameData.of(p).stat(p.getUuid(), FortisColosseum.STAT_GLORY) >= FortisColosseum.GLORY_DUELING ? null
+                : "You need " + FortisColosseum.GLORY_DUELING + " Glory (Hero) to teleport to the Fortis Colosseum.";
     }
 
     /** Gives Minimus a Dizana's quiver for 4,000 splinters or another 1/200 roll at the pet. */

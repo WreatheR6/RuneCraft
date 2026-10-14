@@ -33,6 +33,11 @@ public final class RewardShops {
     public static boolean noted(String shopId, String item) {
         return NOTED.getOrDefault(shopId, List.of()).contains(item);
     }
+
+    /** Rewards with a daily purchase limit (OSRS Wiki "Herb box": 15 a day from the Nightmare Zone), 0 for none. */
+    public static int dailyLimit(String shopId, String item) {
+        return shopId.equals("nightmare_zone") && item.equals("herb_box") ? 15 : 0;
+    }
     private static final Map<String, RewardShop> SHOPS = new LinkedHashMap<>();
 
     static {
