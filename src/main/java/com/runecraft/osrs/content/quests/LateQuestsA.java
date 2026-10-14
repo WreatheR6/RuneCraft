@@ -358,6 +358,7 @@ final class LateQuestsA {
                 .at("grim_tales_tower").arena(11, "stone"));
         b.quest("grim_tales", "Grim Tales", Difficulty.MASTER, 1)
                 .xp(Skill.WOODCUTTING, 60000).xp(Skill.AGILITY, 25000).xp(Skill.THIEVING, 25000).xp(Skill.HERBLORE, 15000).xp(Skill.FARMING, 10000).xp(Skill.HITPOINTS, 5000) // OSRS (current quest XP rewards)
+                .reward("dwarven_helmet")
                 .reqQuest("witchs_house").req(Skill.FARMING, 45).req(Skill.HERBLORE, 52).req(Skill.THIEVING, 58).req(Skill.AGILITY, 59).req(Skill.WOODCUTTING, 71)
                 .stage("I can start this quest by speaking to Sylas, north-west of Taverley. (Requires Witch's House and more.)")
                 .talk("sylas").say("The witch Grimgnash has a griffin feather I need for my magic beans... and a giant, Glod, lives above the clouds.")

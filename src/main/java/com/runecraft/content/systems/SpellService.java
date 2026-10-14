@@ -339,6 +339,10 @@ public final class SpellService {
         }
         data.lastAttackTick = now;
         pay(p, s);
+        if (target instanceof net.minecraft.entity.player.PlayerEntity) {
+            // Combat spells cast on another player (the God spells task of the hard Wilderness diary).
+            com.runecraft.content.GameEvents.fireActivity(p, "cast_on_player:" + s.id());
+        }
         p.swingHand(Hand.MAIN_HAND, true);
         ServerWorld world = (ServerWorld) p.getWorld();
         SysCombat.trail(world, p.getEyePos(), target.getPos().add(0, target.getHeight() / 2, 0), colour(s));

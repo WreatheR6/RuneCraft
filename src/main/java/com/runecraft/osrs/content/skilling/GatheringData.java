@@ -118,6 +118,11 @@ public final class GatheringData extends SkillingPart {
         simple(s, "sulliuscep_cap", "Sulliuscep cap", "produce", 0xB08A5A, 50);
         simple(s, "bark", "Bark", "bark", 0x5A4A3A, 1).examine("Bark from a hollow tree.");
         simple(s, "split_log", "Split log", "log", 0x4A5A3A, 15);
+        // Neitiznot shield (the Fremennik round shield; OSRS Wiki stats): made from arctic pine logs on Neitiznot.
+        s.add("neitiznot_shield", "Neitiznot shield", Kind.SHIELD, "round_shield", 0x6A5A3A).value(500).stack(1).weight(3.628)
+                .equipment(EquipmentDef.armour(EquipmentDef.Slot.SHIELD,
+                        new com.runecraft.osrs.EquipmentStats(0, 0, 0, -10, -10, 17, 17, 31, -4, 33, 0, 0, 0, 0), 25))
+                .examine("A sturdy Fremennik round shield.");
         tool(s, "big_fishing_net", "Big fishing net", "net", 0xB0A080, 20);
         tool(s, "barbarian_rod", "Barbarian rod", "rod", 0x7A5A3A, 5);
         tool(s, "karambwan_vessel", "Karambwan vessel", "pot", 0xA08050, 5);
@@ -159,6 +164,11 @@ public final class GatheringData extends SkillingPart {
     public void recipes(Consumer<Recipe> out) {
         out.accept(r("fletch_split_log", MenuType.FLETCHING, "Split log (arctic pine)", Skill.FLETCHING, 1, 0)
                 .in("arctic_pine_logs", 1).out("split_log", 1).tool("knife").ticks(2).build());
+        // Neitiznot shield (OSRS Wiki): 2 arctic pine logs, a rope and a bronze nail with a hammer at the Neitiznot woodcutting
+        // stump: 56 Woodcutting, 34 Crafting XP. RuneCraft has no stump, so it is in the fletching menu, and the recipe can only
+        // name one skill, so the 56 Woodcutting is checked by the diary task, not here. // approx
+        out.accept(r("make_neitiznot_shield", MenuType.FLETCHING, "Neitiznot shield", Skill.CRAFTING, 1, 34)
+                .in("arctic_pine_logs", 2).in("rope", 1).in("bronze_nails", 1).out("neitiznot_shield", 1).tool("hammer").ticks(3).build());
         out.accept(plain("shop_general_big_fishing_net", MenuType.SHOP_GENERAL, "Big fishing net - 20 gp").in("coins", 20)
                 .out("big_fishing_net", 1).ticks(0).build());
         out.accept(plain("shop_general_karambwan_vessel", MenuType.SHOP_GENERAL, "Karambwan vessel - 5 gp").in("coins", 5)

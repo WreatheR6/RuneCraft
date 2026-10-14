@@ -63,6 +63,10 @@ public final class Charges {
     /** Charges of a talisman made from the inert one with 100 fangs (the zeah module's recipe). approx */
     public static final int XERICS_TALISMAN_START = 100;
     /** Game ticks without attacking or being attacked after which a player counts as out of combat (approx). */
+    public static final String CAMULET = "camulet";
+    public static final int CAMULET_MAX = 4;
+    public static final String SKULL_SCEPTRE = "skull_sceptre";
+    public static final int SKULL_SCEPTRE_MAX = 10;
     public static final int COMBAT_TIMEOUT_TICKS = 8;
 
     private static final Map<String, Spec> SPECS = new LinkedHashMap<>();
@@ -123,6 +127,11 @@ public final class Charges {
                 ordered("ancient_shard", 3), ARCLIGHT_PER_3_SHARDS, 0));
         put(new Spec(XERICS_TALISMAN, "Xeric's talisman", Kind.CHARGED, XERICS_TALISMAN_MAX, XERICS_TALISMAN_START, Drain.TELEPORT,
                 ordered("lizardman_fang", 1), 1, 0));
+        // Camulet: 4 teleport charges (OSRS: refilled with ugthanki dung, which RuneCraft doesn't have). Skull sceptre: 10
+        // charges, crumbles when empty (the Varrock diary's 14-26 charge caps are not applied). // approx
+        put(new Spec(CAMULET, "Camulet", Kind.CHARGED, CAMULET_MAX, CAMULET_MAX, Drain.TELEPORT, ordered(), 1, 0));
+        put(new Spec(SKULL_SCEPTRE, "Skull sceptre", Kind.CHARGED, SKULL_SCEPTRE_MAX, SKULL_SCEPTRE_MAX, Drain.TELEPORT,
+                ordered(), 1, 0));
     }
 
     private static Map<String, Integer> ordered(Object... kv) {

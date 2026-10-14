@@ -212,7 +212,7 @@ class DiaryReferenceTest {
         long approx = Diaries.tasks().stream().filter(Diaries::isApprox).count();
         System.out.println("Diary tasks: " + total + ", tracked faithfully " + (total - approx) + ", approximated " + approx);
         assertEquals(492, total);
-        assertTrue(total - approx >= 438, "faithfully tracked tasks: " + (total - approx));
+        assertTrue(total - approx >= 453, "faithfully tracked tasks: " + (total - approx));
     }
 
     @Test

@@ -93,10 +93,24 @@ public final class Diaries {
      * Prefixes of the named activities the game reports (EVENT targets): "talk:" + NPC id, "minigame_start:" /
      * "minigame_win:" + minigame id, "spellbook:" + book, "teleport:" + jewellery id + ":" + destination slug,
      * "eat:" + item id, "trek_complete:" + follower difficulty, "shop_open:" + shop id, "shop_buy:" / "shop_sell:" + shop id + ":" +
-     * item id, "fight_pit_champion", "monkey_cage" and "bert_sand".
+     * item id, "fight_pit_champion", "monkey_cage", "bert_sand", "tindel_identify", "genie_visit", "chest_open:" + chest id,
+     * "join:" + item made by joining two pieces, "cast_on_player:" + spell id and "strut_repair".
      */
     public static final List<String> ACTIVITIES = List.of("talk", "minigame_start", "minigame_win", "spellbook", "teleport", "eat",
-            "trek_complete", "fight_pit_champion", "monkey_cage", "shop_open", "shop_buy", "shop_sell", "bert_sand");
+            "trek_complete", "fight_pit_champion", "monkey_cage", "shop_open", "shop_buy", "shop_sell", "bert_sand", "tindel_identify",
+            "genie_visit", "chest_open", "join", "cast_on_player", "strut_repair");
+
+    /** Block y below which a player counts as underground (restrictions ending in ",u"). */
+    public static final int UNDERGROUND_BELOW_Y = 55;
+
+    /** Every team cape id, '|'-separated (a WEAR target). */
+    private static String teamCapes() {
+        StringBuilder b = new StringBuilder();
+        for (int n = 1; n <= 50; n++) {
+            b.append(n == 1 ? "" : "|").append("team_").append(n).append("_cape");
+        }
+        return b.toString();
+    }
 
     public enum Type {
         LEVEL, XP_IN, KILL, MAKE, HAVE, QUEST, VISIT, CLUE, GE, KC, CAST, TOTAL_LEVEL,
@@ -329,7 +343,7 @@ public final class Diaries {
         visit("Use the altar in East Ardougne's church", 2616, 3307, 8);
         event("Go out fishing on the Fishing Trawler", "minigame_start:fishing_trawler", null);
         visit("Enter the Combat Training Camp north of West Ardougne", 2518, 3356, 12);
-        visit("Have Tindel Marchant identify a rusty sword for you", 2678, 3152, 10); approx(); // approx
+        event("Have Tindel Marchant identify a rusty sword for you", "tindel_identify", null); // 100 coins, Port Khazard
         visit("Use the Ardougne lever to teleport to the Wilderness", 3153, 3923, 12);
         visit("View Aleck's Hunter Emporium in Yanille", 2566, 3083, 8);
         visit("Check what pets you have insured with Probita in East Ardougne", 2621, 3294, 8);
@@ -395,8 +409,10 @@ public final class Diaries {
         quest("Travel to the Desert via the Eagle transport system", "eagles_peak");
         visit("Pray at the Elidinis statuette in Nardah", 3427, 2930, 8);
         makeHere("Create a combat potion in the desert", "combat_potion", 1, HERBLORE, 36);
-        quest("Teleport to Enakhra's Temple with the Camulet", "enakhras_lament"); approx(); // approx
-        quest("Visit the genie", "spirits_of_the_elid"); approx(); // approx
+        event("Teleport to Enakhra's Temple with the Camulet", "teleport:camulet:enakhras_temple", null);
+        needs(lastId, "enakhras_lament");
+        event("Visit the genie", "genie_visit", null);
+        needs(lastId, "spirits_of_the_elid");
         visit("Teleport to Pollnivneach with a redirected teleport to house tablet", 3359, 2970, 15, CONSTRUCTION, 20);
         get("Chop some Teak logs near Uzer", "teak_logs", 1, WOODCUTTING, 35);
         in("desert", Tier.HARD);
@@ -430,13 +446,13 @@ public final class Diaries {
         // Tiaras are bound at the altar (an obtain event), not made through a make menu.
         getAt("Make a Mind Tiara", "mind_tiara", 1, null);
         visit("Take the boat to Entrana", 2834, 3335, 15);
-        xp("Repair a broken strut in the Motherlode Mine", MINING, 30); approx(); // approx
+        event("Repair a broken strut in the Motherlode Mine", "strut_repair", null);
         visit("Claim a security book from the Security Guard upstairs at Port Sarim jail", 3013, 3192, 8);
         makeHere("Smith some Blurite Limbs on Doric's Anvil", "blurite_limbs", 1, MINING, 10, SMITHING, 13);
         in("falador", Tier.MEDIUM);
         xpAt("Light a Bullseye lantern at the Chemist's in Rimmington", FIREMAKING, 49, at(2932, 3210, 20));
         castAt("Telegrab some Wine of Zamorak at the Chaos Temple by the Wilderness", "telekinetic_grab", at(2935, 3516, 12), MAGIC, 33);
-        visit("Unlock the crystal chest in Taverley", 2914, 3452, 8); approx(); // approx
+        event("Unlock the crystal chest in Taverley", "chest_open:crystal_chest", null);
         xp("Place a Scarecrow in the Falador farm flower patch", FARMING, 23);
         killAny("Kill a Mogre at Mudskipper Point", "mogre", 1, SLAYER, 32);
         visit("Visit the Port Sarim Rat Pits", 3017, 3233, 8);
@@ -460,10 +476,13 @@ public final class Diaries {
         visit("Crack a wall safe within Rogues' Den", 2906, 3537, 8, THIEVING, 50);
         visit("Recharge your prayer in the Port Sarim church while wearing full Proselyte", 3023, 3208, 15, DEFENCE, 30, PRAYER, 20);
         visit("Enter the Warriors' Guild", 2877, 3546, 8, ATTACK, 65, STRENGTH, 65); // approx reqs: 130 combined
-        quest("Equip a dwarven helmet within the Dwarven mines", "grim_tales", DEFENCE, 50); approx(); // approx
+        // The Dwarven Mine is carved under Falador and Ice Mountain (OSRS 2999-3057, 3379-3452 on the surface map).
+        wear("Equip a dwarven helmet within the Dwarven mines", "dwarven_helmet", at(3028, 3415, 40) + ",u", DEFENCE, 50);
+        needs(lastId, "grim_tales");
         in("falador", Tier.ELITE);
         getAt("Craft 252 Air Runes simultaneously from Essence without the use of Extracts", "air_rune", 1, null, RUNECRAFT, 88);
-        quest("Purchase a White 2h Sword from Sir Vyvin", "wanted"); approx(); // approx
+        event("Purchase a White 2h Sword from Sir Vyvin", "shop_buy:white_knight_armoury:white_2h_sword", null);
+        needs(lastId, "wanted");
         get("Find at least 3 magic roots at once when digging up your magic tree in Falador", "magic_roots", 1, FARMING, 91, WOODCUTTING, 75);
         skillcape("Perform a skillcape or quest cape emote at the top of Falador Castle", 2965, 3340, 12);
         visit("Jump over the strange floor in Taverley dungeon", 2884, 3397, 12, AGILITY, 80);
@@ -475,7 +494,8 @@ public final class Diaries {
         visit("Change your boots at Yrsa's Shoe Store", 2625, 3675, 8);
         kill("Kill 5 Rock crabs", "rock crab", 5);
         makeHere("Craft a tiara from scratch in Rellekka", "tiara", 1, CRAFTING, 23, MINING, 20, SMITHING, 20);
-        quest("Browse the Stonemasons shop", "the_giant_dwarf"); approx(); // approx: Keldagrim
+        event("Browse the Stonemasons shop", "shop_open:keldagrim_stonemason", null);
+        needs(lastId, "the_giant_dwarf");
         visit("Collect a Snape grass on Waterbirth Island", 2546, 3757, 15);
         quest("Steal from the Keldagrim crafting or baker's stall", "the_giant_dwarf", THIEVING, 5); approx(); // approx
         have("Fill a bucket with water at the Rellekka well", "*vial_of_water|bucket_of_water"); approx(); // approx
@@ -496,7 +516,9 @@ public final class Diaries {
         xp("Catch a Sabre-toothed Kyatt", HUNTER, 55);
         makeHere("Mix a Super defence potion in the Fremennik province", "super_defence", 1, HERBLORE, 66);
         quest("Steal from the Keldagrim Gem Stall", "the_giant_dwarf", THIEVING, 75); approx(); // approx
-        quest("Craft a Fremennik shield on Neitiznot", "the_fremennik_isles", WOODCUTTING, 56); approx(); // approx
+        // The Neitiznot (Fremennik round) shield, made by the Neitiznot woodcutting stump.
+        makeAt("Craft a Fremennik shield on Neitiznot", "neitiznot_shield", 1, at(2335, 3805, 35), WOODCUTTING, 56);
+        needs(lastId, "the_fremennik_isles");
         getAt("Mine 5 adamantite ores on Jatizso", "adamantite_ore", 5, null, MINING, 70); approx(); // approx: anywhere
         level("Obtain the Blast Furnace Foreman's permission to use the Blast Furnace for free", SMITHING, 60);
         cast("Teleport to Waterbirth Island", "waterbirth_teleport", MAGIC, 72);
@@ -618,7 +640,7 @@ public final class Diaries {
         killAny("Kill a sand crab", "sand crab", 1);
         visit("Hand in a book in the Arceuus Library", 1632, 3808, 15);
         xp("Steal from a Hosidius food stall", THIEVING, 25);
-        visit("Browse the Warrens General Store", 1640, 3673, 20); approx(); // approx
+        event("Browse the Warrens General Store", "shop_open:warrens_general_store", null);
         visit("Take a boat to Land's End", 1504, 3399, 15);
         visit("Pray at the altar in Kourend Castle", 1616, 3673, 10);
         xp("Dig up some saltpetre", FARMING, 1); approx(); // approx
@@ -794,7 +816,7 @@ public final class Diaries {
         visit("Speak to Orlando Smith when you have achieved 153 kudos", 3256, 3448, 10); approx(); // approx
         xpAt("Make a Waka Canoe near Edgeville", WOODCUTTING, 57, at(3130, 3508, 20));
         cast("Teleport to Paddewwa", "paddewwa_teleport", MAGIC, 54);
-        visit("Teleport to Barbarian Village with a Skull sceptre", 3082, 3420, 12); approx(); // approx
+        event("Teleport to Barbarian Village with a Skull sceptre", "teleport:skull_sceptre:barbarian_village", null);
         get("Chop some yew logs in Varrock and burn them at the top of the Varrock church", "yew_logs", 1, WOODCUTTING, 60, FIREMAKING, 60);
         level("Have the Varrock estate agent decorate your house with Fancy Stone", CONSTRUCTION, 50);
         xp("Collect at least 2 yew roots from the Tree patch in Varrock Palace", FARMING, 68, WOODCUTTING, 60);
@@ -872,7 +894,7 @@ public final class Diaries {
         get("Collect 5 Red spider's eggs from the Wilderness", "red_spiders_eggs", 5);
         get("Mine some Iron ore in the Wilderness", "iron_ore", 1, MINING, 15);
         quest("Have the Mage of Zamorak teleport you to the Abyss", "enter_the_abyss");
-        visit("Equip any team cape in the Wilderness", 3090, 3525, 20); approx(); // approx
+        wear("Equip any team cape in the Wilderness", teamCapes(), "wilderness");
         in("wilderness", Tier.MEDIUM);
         get("Mine some Mithril ore in the wilderness", "mithril_ore", 1, MINING, 55);
         get("Chop some yew logs from a fallen Ent", "yew_logs", 1, WOODCUTTING, 61); approx(); // approx
@@ -882,12 +904,13 @@ public final class Diaries {
         kill("Kill an Ankou in the Wilderness", "ankou", 1);
         cast("Charge an Earth Orb", "charge_earth_orb", MAGIC, 60);
         kill("Kill a Bloodveld in the Wilderness God Wars Dungeon", "bloodveld", 1, SLAYER, 50, AGILITY, 60);
-        quest("Smith a Golden helmet in the Resource Area", "between_a_rock", SMITHING, 50); approx(); // approx
+        // Smithed from 3 gold bars at the Resource Area anvil (pures need not have done Between a Rock..., as in OSRS).
+        makeAt("Smith a Golden helmet in the Resource Area", "gold_helmet", 1, at(3186, 3934, 14), SMITHING, 50);
         visit("Talk to the Emblem Trader in Edgeville about emblems", 3097, 3504, 10);
-        visit("Open the Muddy Chest in the lava maze", 3089, 3859, 8); approx(); // approx: no muddy key
+        event("Open the Muddy Chest in the lava maze", "chest_open:muddy_chest", null);
         in("wilderness", Tier.HARD);
-        castAt("Cast one of the 3 God spells against another player in the Wilderness",
-                "saradomin_strike|claws_of_guthix|flames_of_zamorak", "wilderness", MAGIC, 60); approx(); // approx: any target
+        event("Cast one of the 3 God spells against another player in the Wilderness",
+                "cast_on_player:saradomin_strike|cast_on_player:claws_of_guthix|cast_on_player:flames_of_zamorak", "wilderness", MAGIC, 60);
         cast("Charge an Air Orb", "charge_air_orb", MAGIC, 66);
         xp("Catch a Black Salamander", HUNTER, 67);
         makeHere("Smith an Adamant scimitar in the Resource Area", "adamant_scimitar", 1, SMITHING, 75);

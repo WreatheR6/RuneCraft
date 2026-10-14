@@ -74,6 +74,10 @@ public final class DiaryService {
         if (!Gielinor.is(p)) {
             return false;
         }
+        // "x,y,r,u": the circle, underground (a dungeon carved under that spot, e.g. the Dwarven Mine).
+        if (restrict.endsWith(",u") && p.getBlockY() >= Diaries.UNDERGROUND_BELOW_Y) {
+            return false;
+        }
         int[] at = SysTeleport.osrs(p);
         return Diaries.restrictContains(restrict, Gielinor.region(p).name(), at[0], at[1]);
     }

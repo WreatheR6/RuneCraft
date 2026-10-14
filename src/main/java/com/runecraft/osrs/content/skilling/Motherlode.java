@@ -49,6 +49,24 @@ public final class Motherlode {
     /** At most three golden nuggets reach the sack per hopper deposit. */
     public static final int MAX_NUGGETS_PER_DEPOSIT = 3;
 
+    /**
+     * Struts (OSRS Wiki): two struts hold up the water wheels; they work in rounds of 58 seconds (97 game ticks) and break
+     * 2, 3 or 4 rounds after being repaired. While both are broken no pay-dirt is washed. Repairing one with a hammer gives
+     * 1.5 x the current Smithing level in Smithing XP.
+     */
+    public static final int STRUTS = 2;
+    public static final int STRUT_ROUND_TICKS = 97;
+
+    /** The game tick a strut repaired (or first seen) at {@code now} breaks; {@code roll} is 0, 1 or 2. */
+    public static long strutBreaksAt(long now, int roll) {
+        return now + (long) (2 + Math.floorMod(roll, 3)) * STRUT_ROUND_TICKS;
+    }
+
+    /** Smithing XP (tenths) for repairing a strut at a Smithing level. */
+    public static int strutRepairXpTenths(int smithingLevel) {
+        return smithingLevel * 15;
+    }
+
     /** An ore from pay-dirt: item, Mining level, bonus XP when washed, low/high of its roll. */
     public record Ore(String item, int level, double xp, int low, int high) {
         /** Chance of this roll succeeding at a Mining level (0 below the requirement). */
