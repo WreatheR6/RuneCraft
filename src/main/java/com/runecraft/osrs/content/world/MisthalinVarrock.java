@@ -28,6 +28,7 @@ final class MisthalinVarrock {
         out.add(teaStall());
         out.add(sewers());
         out.add(treePatch());
+        out.add(championsGuild());
         out.add(championsBush());
         out.add(stoneCircle());
     }
@@ -908,7 +909,6 @@ final class MisthalinVarrock {
         cooksGuild(k);
         gertrude(k);
         juliet(k);
-        championsGuild(k);
         eastMine(k);
         lumberYard(k);
         return k.build();
@@ -974,26 +974,62 @@ final class MisthalinVarrock {
         k.tPath(3166, 3430, 3166, 3431, 2);
     }
 
-    private static void championsGuild(MisthalinKit k) {
-        // Champions' Guild south of Varrock: stone hall with a tower, two storeys
+    /**
+     * The Champions' Guild south of Varrock, traced from the OSRS map (mejrs layers_osrs, planes 0-1): a stone
+     * hall on tiles 3188-3194, 3352-3362 with its door north (3191, 3362), a side door east (3194, 3357),
+     * the dividing wall at y 3354 (door at 3192) with the staircase in the south-west corner (3188, 3354), a
+     * walled rose garden to the east (3195-3198, 3352-3359) and the fenced grounds with the gap for the path
+     * north. Its own structure so the champions_guild place builds no plaza over the door.
+     */
+    static StructureDef championsGuild() {
+        MisthalinKit k = new MisthalinKit("champions_guild", "Champions' Guild", "champions_guild");
         k.tFlatten(3180, 3346, 3204, 3370);
-        Box b = t(3187, 3352, 3197, 3362);
+        Box b = t(3188, 3352, 3194, 3362);
         k.house(b).storeys(2).height(5).wall(STONE_BRICKS).corner(CHISELED).beam(POLISHED_ANDESITE).base(COBBLE)
-                .floor(POLISHED_ANDESITE).upperFloor(SPRUCE_PLANKS).roof(Roof.SLATE).doorAt('n', X(3191), 4, 4).build();
+                .floor(POLISHED_ANDESITE).upperFloor(SPRUCE_PLANKS).roof(Roof.SLATE).gable(STONE_BRICKS)
+                .doorAt('n', X(3191), 2, 3).door('e', 3357).build();
         Box in = b.inset(1);
-        k.carpet(new Box(X(3191), in.z1(), X(3192) + 1, in.z2()), 0, "red");
-        k.counterX(in.x1() + 1, in.x1() + 6, 0, in.z2() - 3, "runecraft:weapon_shop");
-        k.set(in.x2(), 0, in.z2(), "minecraft:grindstone[face=floor,facing=west]");
-        for (int z = in.z1() + 3; z < in.z2() - 3; z += 6) {
+        // the dividing wall at y 3354 with its door (3192), the pillar (3190, 3355)
+        int wz = Z(3354);
+        k.fill(in.x1(), 0, wz, in.x2(), 3, wz, STONE_BRICKS).clear(X(3192), 0, wz, X(3192) + 1, 2, wz);
+        k.fill(X(3190), 0, Z(3355) + 1, X(3190) + 1, 3, Z(3355) + 1, CHISELED);
+        // the staircase (3188, 3354-3355) as a ladder against the west wall
+        k.ladder(in.x1(), Z(3355), "east", 0, 4).ladder(in.x1(), Z(3355) + 1, "east", 0, 4);
+        // the hall: red carpet from the door, banners, the weapon counter and the grindstone
+        k.carpet(new Box(X(3191), in.z1(), X(3191) + 1, Z(3356)), 0, "red");
+        for (int z = in.z1() + 2; z < Z(3356); z += 5) {
             k.set(in.x1(), 2, z, "minecraft:yellow_wall_banner[facing=east]");
             k.set(in.x2(), 2, z, "minecraft:yellow_wall_banner[facing=west]");
         }
-        k.ladder(in.x2(), in.z1(), "south", 0, 4);
-        k.diningX(in.x1() + 3, in.x2() - 3, 5, in.cz());
-        k.shelvesX(in.x1(), in.x2() - 2, 5, in.z2(), "north");
-        k.hang(in.cx(), 3, in.cz()).hang(in.cx(), 8, in.cz());
-        k.tower(b.x2(), b.z1(), 4, 15, 5, STONE_BRICKS, SPRUCE_PLANKS, Roof.SLATE, true);
+        k.counterX(in.x1() + 1, in.x1() + 4, 0, Z(3359), "runecraft:weapon_shop");
+        k.set(in.x2(), 0, in.z1(), "minecraft:grindstone[face=floor,facing=west]");
+        k.set(in.x2(), 0, Z(3353), "minecraft:chest[facing=west]").set(in.x2() - 1, 0, Z(3353), BARREL);
+        k.hang(in.cx(), 3, Z(3359)).hang(in.cx(), 3, Z(3353));
+        // first floor: the champions' trophies and the dining table
+        k.diningZ(in.cx(), 5, Z(3361), Z(3356));
+        k.shelvesX(in.x1() + 2, in.x2(), 5, in.z2(), "north");
+        k.set(in.x2(), 5, in.z1(), "minecraft:armor_stand").set(in.x2(), 5, in.z1() + 2, "minecraft:armor_stand");
+        k.hang(in.cx(), 8, Z(3359));
+        // the walled rose garden east of the hall
+        Box garden = t(3195, 3352, 3198, 3359);
+        k.floor(garden, "minecraft:podzol");
+        k.walls(garden, 0, 1, "minecraft:stone_brick_wall");
+        k.clear(garden.x1(), 0, Z(3357), garden.x1(), 1, Z(3357) + 1);
+        for (int z = garden.z1() + 2; z < garden.z2() - 1; z += 3) {
+            k.set(garden.x1() + 2, 0, z, "minecraft:rose_bush[half=lower]").set(garden.x1() + 5, 0, z, "minecraft:rose_bush[half=lower]");
+        }
+        // the grounds' fence: west side, the angled corners and the north side with the path gap (3190-3192)
+        String fence = "minecraft:spruce_fence";
+        k.fence(X(3185), Z(3360), X(3185), Z(3352) + 1, fence);
+        for (int i = 0; i < 4; i++) {
+            k.fence(X(3185) + i, Z(3361) - i, X(3185) + i, Z(3361) - i, fence);
+            k.fence(X(3198) + 1 - i, Z(3361) - i, X(3198) + 1 - i, Z(3361) - i, fence);
+        }
+        k.fence(X(3187), Z(3364) + 1, X(3189) + 1, Z(3364) + 1, fence);
+        k.fence(X(3193), Z(3364) + 1, X(3195) + 1, Z(3364) + 1, fence);
+        k.fence(X(3198) + 1, Z(3360), X(3198) + 1, Z(3360) + 1, fence);
         k.tPath(3191, 3363, 3191, 3383, 2);
+        return k.build();
     }
 
     private static void eastMine(MisthalinKit k) {
