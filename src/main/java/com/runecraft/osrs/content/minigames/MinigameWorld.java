@@ -35,6 +35,7 @@ public final class MinigameWorld {
         EXTRA_ENTRANCES.put("warriors_guild_cyclops_entrance", Minigame.WARRIORS_GUILD);
         EXTRA_ENTRANCES.put("nightmare_zone_hard_entrance", Minigame.NIGHTMARE_ZONE);
         EXTRA_ENTRANCES.put(LastManStanding.COMPETITIVE_ENTRANCE, Minigame.LAST_MAN_STANDING);
+        EXTRA_ENTRANCES.put(Gauntlet.CORRUPTED_ENTRANCE, Minigame.GAUNTLET);
         for (String entrance : KetRakChallenges.extraEntrances()) {
             EXTRA_ENTRANCES.put(entrance, Minigame.TZHAAR_KET_RAK);
         }
@@ -236,6 +237,9 @@ public final class MinigameWorld {
         for (String[] b : ARENA_BLOCKS) {
             list.add(BlockDef.scripted(b[0], b[1], Integer.parseInt(b[2], 16), b[3]));
         }
+        for (String[] b : Gauntlet.blocks()) {
+            list.add(BlockDef.scripted(b[0], b[1], Integer.parseInt(b[2], 16), b[3]));
+        }
         return list;
     }
 
@@ -295,6 +299,7 @@ public final class MinigameWorld {
                 case TEMPLE_TREKKING -> "Burgh de Rott (Temple Trekking)";
                 case LAST_MAN_STANDING -> "Ferox Enclave (Last Man Standing)";
                 case EMIRS_ARENA -> "Emir's Arena entrance";
+                case GAUNTLET -> "The Gauntlet (Prifddinas)";
                 default -> m.displayName();
             };
             list.add(PlaceDef.of(m.place(), name, m.entranceX(), m.entranceY(), m.style(), blocks.get(m.place())));

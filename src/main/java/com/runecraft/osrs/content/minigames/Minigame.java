@@ -94,7 +94,14 @@ public enum Minigame {
      * built by the world module. Appended last: arena slots use the ordinal.
      */
     EMIRS_ARENA("emirs_arena", "Emir's Arena", EmirsArena.PLACE, EmirsArena.ARENA_X, EmirsArena.ARENA_Y, EmirsArena.ENTRANCE_X,
-            EmirsArena.ENTRANCE_Y, PlaceDef.Style.NONE, 30, 2, null, 0);
+            EmirsArena.ENTRANCE_Y, PlaceDef.Style.NONE, 30, 2, null, 0),
+    /**
+     * The Gauntlet and the Corrupted Gauntlet (see {@link Gauntlet}): solo runs through a maze generated per run, entered from
+     * the Gauntlet plaza in north-west Prifddinas (style NONE: the city structure builds the plaza). Appended last: arena slots
+     * use the ordinal.
+     */
+    GAUNTLET("gauntlet", "The Gauntlet", Gauntlet.PLACE, Gauntlet.MAZE_X, Gauntlet.MAZE_Y, Gauntlet.ENTRANCE_X, Gauntlet.ENTRANCE_Y,
+            PlaceDef.Style.NONE, 0, 1, null, 0);
 
     private final String id;
     private final String displayName;

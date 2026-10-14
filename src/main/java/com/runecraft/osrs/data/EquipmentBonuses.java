@@ -555,6 +555,20 @@ public final class EquipmentBonuses {
         put("arcane_spirit_shield", 0, 0, 0, 0, 20, 0,  53, 55, 73, 2, 52,  0, 0, 3, 3);
         put("elysian_spirit_shield", 0, 0, 0, 0, 0, 0,  63, 65, 75, 2, 57,  0, 0, 0, 3);
         twoH("bow_of_faerdhinen", 5, 0, 0, 0, 0, 128,  0, 0, 0, 0, 0,  0, 106, 0, 0);
+        // The Gauntlet (crystal): halberds and bows are two-handed (wiki).
+        twoH("crystal_halberd_basic", 4, 68, 68, 4, 0, 0,  0, 0, 0, 0, 0,  42, 0, 0, 1);
+        twoH("crystal_halberd_attuned", 4, 114, 114, 12, 0, 0,  0, 0, 0, 0, 0,  88, 0, 0, 2);
+        twoH("crystal_halberd_perfected", 4, 166, 166, 28, 0, 0,  0, 0, 0, 0, 0,  138, 0, 0, 3);
+        twoH("crystal_bow_basic", 5, 0, 0, 0, 0, 72,  0, 0, 0, 0, 0,  0, 42, 0, 1);
+        twoH("crystal_bow_attuned", 5, 0, 0, 0, 0, 118,  0, 0, 0, 0, 0,  0, 88, 0, 2);
+        twoH("crystal_bow_perfected", 5, 0, 0, 0, 0, 172,  0, 0, 0, 0, 0,  0, 138, 0, 3);
+        // The Gauntlet (corrupted): halberds and bows are two-handed (wiki).
+        twoH("corrupted_halberd_basic", 4, 68, 68, 4, 0, 0,  0, 0, 0, 0, 0,  42, 0, 0, 1);
+        twoH("corrupted_halberd_attuned", 4, 114, 114, 12, 0, 0,  0, 0, 0, 0, 0,  88, 0, 0, 2);
+        twoH("corrupted_halberd_perfected", 4, 166, 166, 28, 0, 0,  0, 0, 0, 0, 0,  138, 0, 0, 3);
+        twoH("corrupted_bow_basic", 5, 0, 0, 0, 0, 72,  0, 0, 0, 0, 0,  0, 42, 0, 1);
+        twoH("corrupted_bow_attuned", 5, 0, 0, 0, 0, 118,  0, 0, 0, 0, 0,  0, 88, 0, 2);
+        twoH("corrupted_bow_perfected", 5, 0, 0, 0, 0, 172,  0, 0, 0, 0, 0,  0, 138, 0, 3);
         put("blade_of_saeldor", 4, 55, 100, 0, 0, 0,  0, 0, 0, 0, 0,  93, 0, 0, 0);
         put("crystal_helm", 0, 0, 0, 0, -10, 9,  12, 8, 14, 10, 18,  0, 0, 0, 2);
         put("crystal_body", 0, 0, 0, 0, -18, 31,  46, 38, 48, 44, 68,  0, 0, 0, 3);

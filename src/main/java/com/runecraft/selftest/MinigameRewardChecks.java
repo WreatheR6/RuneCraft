@@ -34,7 +34,7 @@ import java.util.Set;
 final class MinigameRewardChecks {
     /** Items the generic food/potion checks skip because they only work inside a dream or the Wilderness. */
     static final Set<String> OWN = Set.of(NightmareZone.OVERLOAD, NightmareZone.ABSORPTION, NightmareZone.SUPER_RANGING,
-            NightmareZone.SUPER_MAGIC, "blighted_super_restore", "blighted_karambwan", "blighted_anglerfish", "blighted_manta_ray");
+            NightmareZone.SUPER_MAGIC, com.runecraft.osrs.content.minigames.Gauntlet.EGNIOL, "blighted_super_restore", "blighted_karambwan", "blighted_anglerfish", "blighted_manta_ray");
 
     private final TestContext c;
 
@@ -50,6 +50,7 @@ final class MinigameRewardChecks {
         checks.add(new SelfTest.Check("minigame:ba_gamble", g::baGamble));
         checks.add(new SelfTest.Check("minigame:spoils_of_war", g::spoils));
         checks.add(new SelfTest.Check("minigame:blighted_supplies", g::blighted));
+        checks.add(new SelfTest.Check("minigame:gauntlet_run", g::gauntlet));
         return checks;
     }
 
@@ -241,5 +242,61 @@ final class MinigameRewardChecks {
             }
         }
         return "refused outside the Wilderness";
+    }
+
+    /**
+     * The Gauntlet: entering stores the player's belongings and hands out the sceptre, the singing bowl sings a basic helm
+     * (and the Combat Achievement flags follow), the barrier starts the Hunllef fight, and leaving gives everything back
+     * without the Gauntlet's items.
+     */
+    private String gauntlet() {
+        com.runecraft.osrs.content.minigames.Gauntlet.Mode mode = com.runecraft.osrs.content.minigames.Gauntlet.Mode.NORMAL;
+        Inv.give(p(), "bronze_dagger", 1);
+        MinigameSession s = MinigameManager.selfTestStart(Minigame.GAUNTLET, Minigame.GAUNTLET.entranceBlock(), p());
+        if (!(s instanceof com.runecraft.content.minigames.games.GauntletSession g)) {
+            s.end(false);
+            throw failure("the Gauntlet did not start a GauntletSession");
+        }
+        try {
+            if (Inv.has(p(), "bronze_dagger", 1)) {
+                throw failure("the player's items were not stored on entry");
+            }
+            if (!Inv.has(p(), com.runecraft.osrs.content.minigames.Gauntlet.sceptre(mode), 1)) {
+                throw failure("no crystal sceptre on entry");
+            }
+            Inv.give(p(), com.runecraft.osrs.content.minigames.Gauntlet.shards(mode), 50);
+            Inv.give(p(), com.runecraft.osrs.content.minigames.Gauntlet.ore(mode), 1);
+            Inv.give(p(), com.runecraft.osrs.content.minigames.Gauntlet.bark(mode), 1);
+            Inv.give(p(), com.runecraft.osrs.content.minigames.Gauntlet.linum(mode), 1);
+            if (!g.singRecipe(p(), "helm_basic") || !Inv.has(p(), "crystal_helm_basic", 1)) {
+                throw failure("singing a basic crystal helm failed");
+            }
+            Set<String> flags = g.caFlags(p());
+            if (flags.contains("noarmour") || !flags.contains("noegniol") || !flags.contains("oneweapon")) {
+                throw failure("wrong Combat Achievement flags " + flags);
+            }
+            g.selfTestEnterBoss(p());
+            int bosses = g.selfTestAlive(mode.boss);
+            for (int i = 0; i < 5 && !s.isEnded(); i++) {
+                MinigameManager.selfTestTick(s);
+                c.heal();
+            }
+            if (bosses < 1) {
+                throw failure("the barrier did not start the Hunllef fight");
+            }
+        } finally {
+            s.end(false);
+        }
+        if (MinigameManager.session(p()) != null) {
+            throw failure("the player is still bound to the Gauntlet after it ended");
+        }
+        if (!Inv.has(p(), "bronze_dagger", 1)) {
+            throw failure("the player's items were not given back");
+        }
+        if (Inv.has(p(), "crystal_helm_basic", 1) || Inv.has(p(), com.runecraft.osrs.content.minigames.Gauntlet.sceptre(mode), 1)) {
+            throw failure("Gauntlet items left the Gauntlet");
+        }
+        Inv.remove(p(), "bronze_dagger", 1);
+        return "sang a helm, Hunllef fight started, belongings restored";
     }
 }

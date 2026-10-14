@@ -44,6 +44,7 @@ public final class MinigamesHooks implements ModuleHooks {
         EmirsArenaService.register();
         TaiBwoWannaiService.register();
         MuseumService.register();
+        GauntletService.register();
         BlockHooks.register(MinigameWorld.BA_BLACKBOARD, (player, pos, state) ->
                 com.runecraft.content.minigames.games.BarbarianAssaultSession.readBlackboard(player));
         BossScripts.register("tzkal_zuk", ZukScript::new);
@@ -120,6 +121,10 @@ public final class MinigamesHooks implements ModuleHooks {
             if (b[0].equals("tempoross_reward_pool")) {
                 continue;
             }
+            BlockHooks.register(b[0], (player, pos, state) -> MinigameManager.onBlock(player, b[0], pos));
+        }
+
+        for (String[] b : com.runecraft.osrs.content.minigames.Gauntlet.blocks()) {
             BlockHooks.register(b[0], (player, pos, state) -> MinigameManager.onBlock(player, b[0], pos));
         }
 
@@ -207,6 +212,15 @@ public final class MinigamesHooks implements ModuleHooks {
                                     ServerPlayerEntity p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         MuseumService.answer(p, IntegerArgumentType.getInteger(ctx, "answer"));
+                                    }
+                                    return 1;
+                                })))
+                        .then(CommandManager.literal("sing").then(CommandManager.argument("recipe", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    if (p != null) {
+                                        com.runecraft.content.minigames.games.GauntletSession.sing(p,
+                                                StringArgumentType.getString(ctx, "recipe"));
                                     }
                                     return 1;
                                 })))
