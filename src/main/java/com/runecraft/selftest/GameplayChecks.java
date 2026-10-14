@@ -25,6 +25,7 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.Spell;
 import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.ContentRegistry;
+import com.runecraft.osrs.content.godwars.GwdBosses;
 import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.quests.QuestBook;
 import com.runecraft.osrs.content.quests.QuestSpec;
@@ -373,8 +374,10 @@ final class GameplayChecks {
     private String minigame(Minigame m) {
         MinigameSession s = MinigameManager.selfTestStart(m, m.entranceBlock(), p());
         int ticks = 0;
+        int online = s.online().size();
         while (ticks < MINIGAME_TICKS && !s.isEnded()) {
             MinigameManager.selfTestTick(s);
+            c.heal();
             ticks++;
         }
         boolean endedItself = s.isEnded();
@@ -382,7 +385,7 @@ final class GameplayChecks {
         if (MinigameManager.session(p()) != null) {
             throw failure("the player is still bound to a session after it ended");
         }
-        return ticks + " game ticks" + (endedItself ? ", ended by itself" : "");
+        return ticks + " game ticks, " + online + " online" + (endedItself ? ", ended by itself" : "");
     }
 
     private String raid(RaidType type) {
@@ -391,12 +394,14 @@ final class GameplayChecks {
         if (raid == null) {
             throw failure("RaidManager.enter did not start a raid (see the log for \"Failed to start a raid\")");
         }
+        int party = raid.players().size();
+        int active = raid.activePlayers().size();
         int rooms = RaidManager.selfTestRun(raid, RAID_ROOM_TICKS);
         RaidManager.selfTestClose(raid);
         if (RaidManager.of(p()) != null) {
             throw failure("the player is still bound to the raid after it closed");
         }
-        return raid.rooms.size() + " rooms, " + rooms + " started";
+        return raid.rooms.size() + " rooms, " + rooms + " started, party " + party + " online / " + active + " active";
     }
 
     // ------------------------------------------------------------------ bosses
@@ -425,6 +430,10 @@ final class GameplayChecks {
         if (def == null) {
             throw failure("no BossDef for a registered data boss type");
         }
+        if (java.util.Arrays.asList(GwdBosses.NEX_MINIONS).contains(id)) {
+            // NexMinionScript discards a general that has no Nex: they only exist in Nex's corners (see boss:nex).
+            throw new SelfTest.Skip("no target: Nex's generals are spawned by Nex and vanish without her (covered by boss:nex)");
+        }
         if (def.key != null) {
             Inv.give(p(), def.key, 1);
         }
@@ -445,18 +454,60 @@ final class GameplayChecks {
         return how + ", " + fight(found.get(0), id);
     }
 
-    /** Ticks a boss next to the player, kills it as the player and checks the kill was counted. */
-    private String fight(LivingEntity boss, String id) {
-        if (boss instanceof net.minecraft.entity.mob.MobEntity mob) {
-            mob.setTarget(p());
+    /** Boss entities (data-driven or legacy) alive around the test platform. */
+    private List<LivingEntity> bossesAround() {
+        Box box = new Box(TestContext.PLATFORM).expand(48);
+        return c.world.getEntitiesByClass(LivingEntity.class, box,
+                e -> e.isAlive() && (e instanceof DataBossEntity || e instanceof BossEntity));
+    }
+
+    private static String bossName(LivingEntity e) {
+        if (e instanceof DataBossEntity d && d.def() != null) {
+            return d.def().id;
         }
+        return net.minecraft.registry.Registries.ENTITY_TYPE.getId(e.getType()).getPath();
+    }
+
+    /**
+     * Ticks a boss next to the player, kills it as the player and checks the kill was counted. A boss that swaps
+     * itself for another entity (Zulrah's forms, Hydra's phases) is followed to the new form.
+     */
+    private String fight(LivingEntity first, String id) {
+        java.util.Set<java.util.UUID> seen = new java.util.HashSet<>();
+        for (LivingEntity e : bossesAround()) {
+            seen.add(e.getUuid());
+        }
+        LivingEntity boss = first;
+        List<String> forms = new ArrayList<>();
         int ticks = 0;
-        while (ticks < BOSS_TICKS && boss.isAlive()) {
-            boss.tick();
-            ticks++;
-        }
-        if (!boss.isAlive()) {
-            return "died or despawned by itself after " + ticks + " ticks";
+        while (true) {
+            seen.add(boss.getUuid());
+            if (boss instanceof net.minecraft.entity.mob.MobEntity mob) {
+                mob.setTarget(p());
+            }
+            while (ticks < BOSS_TICKS && boss.isAlive()) {
+                boss.tick();
+                c.heal();
+                ticks++;
+            }
+            if (boss.isAlive()) {
+                break;
+            }
+            LivingEntity next = null;
+            for (LivingEntity e : bossesAround()) {
+                if (!seen.contains(e.getUuid())) {
+                    next = e;
+                    break;
+                }
+            }
+            if (next == null || forms.size() >= 12) {
+                String how = boss.isRemoved() && boss.getHealth() > 0 ? "despawned" : "died";
+                throw failure(how + " by itself after " + ticks + " ticks without being attacked"
+                        + (forms.isEmpty() ? "" : " (forms " + String.join(" -> ", forms) + ")")
+                        + (c.realPlayer() ? "" : "; the fake player is not in the world's player list"));
+            }
+            forms.add(bossName(boss) + "->" + bossName(next) + "@" + ticks);
+            boss = next;
         }
         int kcBefore = totalKills();
         int logBefore = data().collectionLog().size();
@@ -468,7 +519,7 @@ final class GameplayChecks {
         }
         int drops = c.world.getEntitiesByClass(net.minecraft.entity.ItemEntity.class, new Box(boss.getBlockPos()).expand(6),
                 e -> true).size();
-        return ticks + " ticks, kc +" + kc + ", " + drops + " drops, log +" + (data().collectionLog().size() - logBefore);
+        return ticks + " ticks" + (forms.isEmpty() ? "" : ", forms " + String.join(" ", forms)) + ", kc +" + kc + ", " + drops + " drops, log +" + (data().collectionLog().size() - logBefore);
     }
 
     private int totalKills() {

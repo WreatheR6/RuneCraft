@@ -45,14 +45,17 @@ import java.util.function.Consumer;
  * "smoke"; normally started by {@code --quickPlaySingleplayer}, otherwise from the title screen),
  * goes to Gielinor, visits Lumbridge, Varrock and a boss arena, summons creatures with custom models,
  * places station blocks, opens the side panel tabs, the full interface and the inventory, takes a
- * screenshot at every stop ({@code screenshots/runecraft_*.png} in the run directory) and quits.
+ * screenshot at every stop ({@code screenshots/runecraft_*.png} in the run directory), then runs the in-game
+ * self-test as the real player ({@code /rc selftest real <filter>}, filter {@code -Drunecraft.clientSmoke.selftest},
+ * default minigames, raids and bosses: the checks that need an online player; "none" skips it) and quits.
  * The last line is {@code RUNECRAFT CLIENT SMOKE: OK} or {@code RUNECRAFT CLIENT SMOKE: FAILED}.
  */
 public final class ClientSmokeTest {
     public static final String PROPERTY = "runecraft.clientSmoke";
     private static final Logger LOG = LoggerFactory.getLogger("RuneCraftSmoke");
     private static final int WORLD_TIMEOUT_TICKS = 20 * 60 * 6;
-    private static final int TOTAL_TIMEOUT_TICKS = 20 * 60 * 20;
+    /** Client ticks for the whole run, self-test included (the shell step's wall-clock timeout is the real limit). */
+    private static final int TOTAL_TIMEOUT_TICKS = 20 * 60 * 26;
     private static final List<String> BOSSES = List.of("tztok_jad", "general_graardor", "king_black_dragon", "kreearra",
             "zulrah", "vorkath", "cerberus", "abyssal_sire");
     private static final List<String> MONSTERS = List.of("man", "goblin", "guard", "hill_giant", "hobgoblin");
@@ -75,6 +78,10 @@ public final class ClientSmokeTest {
     private static boolean finished;
     private static boolean triedTitleLoad;
     private static Screen lastScreen;
+    /** While set, the walkthrough waits until it returns true or {@link #untilDeadline} (wall clock) passes. */
+    private static java.util.function.BooleanSupplier until;
+    private static long untilDeadline;
+    private static String untilName;
     private static int screenTicks;
     private static int clicks;
 
@@ -109,6 +116,17 @@ public final class ClientSmokeTest {
             if (wait > 0) {
                 wait--;
                 return;
+            }
+            if (until != null) {
+                if (until.getAsBoolean()) {
+                    LOG.info("[ClientSmoke] done waiting: {}", untilName);
+                    until = null;
+                } else if (System.currentTimeMillis() > untilDeadline) {
+                    ERRORS.add("timed out waiting: " + untilName);
+                    until = null;
+                } else {
+                    return;
+                }
             }
             Step step = STEPS.poll();
             if (step == null) {
@@ -294,6 +312,21 @@ public final class ClientSmokeTest {
         step("arena screenshot", 20, () -> shot(client, "07_boss_arena"));
         step("arena turn around", 100, () -> cmd(client, uuid, "tp @s ~ ~ ~ 180 10"));
         step("arena back screenshot", 60, () -> shot(client, "08_boss_arena_back"));
+
+        // The in-game self-test with this real (online) player, so minigame sessions, raid rooms and boss targeting see it.
+        String filter = System.getProperty(PROPERTY + ".selftest", "minigame:,raid:,boss:");
+        if (!filter.equalsIgnoreCase("none")) {
+            long minutes = Long.getLong(PROPERTY + ".selftestMinutes", 14L);
+            int[] before = new int[1];
+            step("/rc selftest real " + filter, 20, () -> {
+                before[0] = com.runecraft.selftest.SelfTest.finishedRuns();
+                cmd(client, uuid, "rc selftest real " + filter);
+                untilName = "self-test (SELFTEST END)";
+                untilDeadline = System.currentTimeMillis() + minutes * 60_000L;
+                until = () -> com.runecraft.selftest.SelfTest.finishedRuns() > before[0];
+            });
+            step("after self-test screenshot", 20, () -> shot(client, "09_after_selftest"));
+        }
     }
 
     private static void step(String name, int waitAfter, Runnable action) {

@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 
@@ -21,8 +22,16 @@ import java.util.Locale;
 /**
  * In-game play-test: {@code /rc selftest [filter]} (op) queues gameplay checks ({@link GameplayChecks}) that run
  * on the real server against a Fabric fake player, a few per server tick, and logs one line per check:
- * {@code SELFTEST PASS <name>} or {@code SELFTEST FAIL <name>: <exception>} plus the first stack frames, then
- * {@code SELFTEST <n> passed, <m> failed} and {@code SELFTEST END}. Used by tools/smoke_server.sh in CI.
+ * {@code SELFTEST PASS <name>}, {@code SELFTEST SKIP <name>: <reason>} (the check can't run meaningfully, e.g. a
+ * minion that only exists next to its boss) or {@code SELFTEST FAIL <name>: <exception>} plus the first stack frames,
+ * then {@code SELFTEST <n> passed, <m> failed, <k> skipped} and {@code SELFTEST END}. Used by tools/smoke_server.sh in CI.
+ *
+ * <p>{@code /rc selftest real [filter...]} runs the checks against the player who typed the command instead of a fake
+ * player: a real, online player is in the server's player list, so minigame sessions, raid rooms, boss targeting and
+ * area triggers see it. Its RuneCraft data, inventory, position and game mode are saved first and restored at the end;
+ * meanwhile it is in survival mode (bosses ignore creative players), invulnerable and healed before every check. Meant
+ * for a throwaway test world (tools/smoke_client.sh): other per-module state (quest flags, slayer, minigame points)
+ * the checks touch is not restored. Several filter words (separated by spaces or commas) match a check containing any of them.
  * Everything is logged at INFO so a failing check never trips the smoke test's "RuneCraft logged errors" rule.
  */
 public final class SelfTest {
@@ -35,16 +44,26 @@ public final class SelfTest {
     public record Check(String name, Body body) {
     }
 
+    /** Thrown by a check that can't run meaningfully here; logged as SKIP, counted apart from passes and failures. */
+    public static final class Skip extends RuntimeException {
+        public Skip(String reason) {
+            super(reason);
+        }
+    }
+
     /** Time budget per server tick (checks are never split, so one slow check can exceed it). */
     private static final long TICK_BUDGET_NANOS = 40_000_000L;
     private static final int STACK_FRAMES = 6;
 
     private static final Deque<Check> QUEUE = new ArrayDeque<>();
     private static final List<String> FAILURES = new ArrayList<>();
-    private static TestContext context;
+    private static final List<String> SKIPS = new ArrayList<>();
+    private static volatile TestContext context;
+    private static volatile int finishedRuns;
     private static ServerCommandSource reportTo;
     private static int passed;
     private static int failed;
+    private static int skipped;
     private static long startedAt;
 
     private SelfTest() {
@@ -61,26 +80,43 @@ public final class SelfTest {
     private static void register(CommandDispatcher<ServerCommandSource> dispatcher, String root) {
         dispatcher.register(CommandManager.literal(root)
                 .then(CommandManager.literal("selftest").requires(s -> s.hasPermissionLevel(2))
-                        .executes(ctx -> start(ctx.getSource(), ""))
-                        .then(CommandManager.argument("filter", StringArgumentType.word())
-                                .executes(ctx -> start(ctx.getSource(), StringArgumentType.getString(ctx, "filter"))))));
+                        .executes(ctx -> start(ctx.getSource(), "", false))
+                        .then(CommandManager.literal("real")
+                                .executes(ctx -> start(ctx.getSource(), "", true))
+                                .then(CommandManager.argument("filter", StringArgumentType.greedyString())
+                                        .executes(ctx -> start(ctx.getSource(), StringArgumentType.getString(ctx, "filter"), true))))
+                        .then(CommandManager.argument("filter", StringArgumentType.greedyString())
+                                .executes(ctx -> start(ctx.getSource(), StringArgumentType.getString(ctx, "filter"), false)))));
     }
 
     public static boolean running() {
         return context != null;
     }
 
-    private static int start(ServerCommandSource source, String filter) {
+    /** Number of self-test runs that have finished (logged SELFTEST END) since the server started. */
+    public static int finishedRuns() {
+        return finishedRuns;
+    }
+
+    private static int start(ServerCommandSource source, String filter, boolean real) {
         if (running()) {
             source.sendError(Text.literal("A self-test is already running (" + QUEUE.size() + " checks left)."));
             return 0;
         }
         MinecraftServer server = source.getServer();
         ServerWorld world = Gielinor.world(server);
-        log("SELFTEST BEGIN" + (filter.isEmpty() ? "" : " (filter " + filter + ")"));
+        ServerPlayerEntity realPlayer = real ? source.getPlayer() : null;
+        if (real && realPlayer == null) {
+            source.sendError(Text.literal("'/rc selftest real' must be run by a player."));
+            return 0;
+        }
+        log("SELFTEST BEGIN" + (real ? " (real player " + realPlayer.getName().getString() + ")" : "")
+                + (filter.isEmpty() ? "" : " (filter " + filter + ")"));
         passed = 0;
         failed = 0;
+        skipped = 0;
         FAILURES.clear();
+        SKIPS.clear();
         reportTo = source;
         startedAt = System.currentTimeMillis();
         if (world == null) {
@@ -89,7 +125,7 @@ public final class SelfTest {
             return 0;
         }
         try {
-            context = new TestContext(server, world);
+            context = new TestContext(server, world, realPlayer);
             context.setUp();
         } catch (Throwable e) {
             context = null;
@@ -97,9 +133,15 @@ public final class SelfTest {
             finish();
             return 0;
         }
-        String f = filter.toLowerCase(Locale.ROOT);
+        List<String> words = new ArrayList<>();
+        for (String w : filter.toLowerCase(Locale.ROOT).trim().split("[\\s,]+")) {
+            if (!w.isEmpty()) {
+                words.add(w);
+            }
+        }
         for (Check c : GameplayChecks.all(context)) {
-            if (f.isEmpty() || c.name().toLowerCase(Locale.ROOT).contains(f)) {
+            String name = c.name().toLowerCase(Locale.ROOT);
+            if (words.isEmpty() || words.stream().anyMatch(name::contains)) {
                 QUEUE.add(c);
             }
         }
@@ -129,6 +171,13 @@ public final class SelfTest {
         try {
             context.reset();
             note = c.body().run();
+        } catch (Skip e) {
+            skipped++;
+            String line = "SELFTEST SKIP " + c.name() + ": " + e.getMessage();
+            SKIPS.add(line);
+            log(line);
+            cleanUp(c.name());
+            return;
         } catch (Throwable e) {
             fail(c.name(), e);
             cleanUp(c.name());
@@ -189,12 +238,16 @@ public final class SelfTest {
         context = null;
         QUEUE.clear();
         long secs = (System.currentTimeMillis() - startedAt) / 1000;
-        String summary = "SELFTEST " + passed + " passed, " + failed + " failed (" + secs + "s)";
+        String summary = "SELFTEST " + passed + " passed, " + failed + " failed, " + skipped + " skipped (" + secs + "s)";
         log(summary);
         for (String f : FAILURES) {
             log("SELFTEST-SUMMARY " + f);
         }
+        for (String s : SKIPS) {
+            log("SELFTEST-SUMMARY " + s);
+        }
         log("SELFTEST END");
+        finishedRuns++;
         if (reportTo != null) {
             ServerCommandSource src = reportTo;
             src.sendFeedback(() -> Text.literal(summary), false);
