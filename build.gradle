@@ -34,6 +34,9 @@ loom {
             ideConfigGenerated false
             property("runecraft.clientSmoke", "true")
             property("runecraft.clientSmoke.world", "smoke")
+            // Real-player self-test after the walkthrough (tools/smoke_client.sh sets these; "none" skips it).
+            property("runecraft.clientSmoke.selftest", System.getenv("RUNECRAFT_CLIENT_SELFTEST") ?: "minigame:,raid:,boss:")
+            property("runecraft.clientSmoke.selftestMinutes", System.getenv("RUNECRAFT_CLIENT_SELFTEST_MINUTES") ?: "14")
             programArgs("--quickPlaySingleplayer", "smoke", "--width", "1280", "--height", "720")
         }
     }

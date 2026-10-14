@@ -71,6 +71,21 @@ final class ZulrahScript extends ScriptedBoss {
             rotation = boss.getRandom().nextInt(ZulrahVorkath.ROTATIONS.size());
             step = 0;
             home = boss.getBlockPos();
+            // A fresh spawn of a later form (not handed a state by swapForm): start at a step of that form,
+            // so a magma or tanzanite Zulrah doesn't fight a serpentine step and swap form on its first dive.
+            if (!current().form().bossId.equals(formId)) {
+                findStep:
+                for (int r = 0; r < ZulrahVorkath.ROTATIONS.size(); r++) {
+                    List<Step> rot = ZulrahVorkath.ROTATIONS.get((rotation + r) % ZulrahVorkath.ROTATIONS.size());
+                    for (int i = 0; i < rot.size(); i++) {
+                        if (rot.get(i).form().bossId.equals(formId)) {
+                            rotation = (rotation + r) % ZulrahVorkath.ROTATIONS.size();
+                            step = i;
+                            break findStep;
+                        }
+                    }
+                }
+            }
         }
         surface(boss);
     }
