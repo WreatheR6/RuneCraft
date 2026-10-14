@@ -817,6 +817,10 @@ public final class CombatAchievementRules {
             310;RULE;tekton;1;count<=1:tekton_anvil
             309;RULE;vasa_nistirio;1;count<=1:vasa_teleport
             240;RULE;pestilent_bloat;1;mode=normal count<=2:bloat_shutdown
+            46;RULE;skotizo;1;flag=skotizo_no_altars
+            246;RULE;nylocas_vasilias;1;mode=normal noflag=nylo_wrong_style noflag=nylo_pillar_lost nodmg=offprayer
+            374;RULE;nylocas_vasilias;1;mode=hard noflag=prinkipas_changed
+            393;RULE;verzik_vitur;1;mode=entry noflag=verzik_pillar_lost
             380;RAID;TOB;1;mode=hard target deathless nospirit
             427;RAID;TOA;1;geartier<75
             150;RUN;mg:fight_caves;1;noflag=mejkot_healed

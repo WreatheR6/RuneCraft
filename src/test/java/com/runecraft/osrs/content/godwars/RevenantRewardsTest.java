@@ -74,6 +74,24 @@ class RevenantRewardsTest {
     }
 
     @Test
+    void revenantMaledictus() {
+        com.runecraft.osrs.content.BossDef m = ContentRegistry.boss(RevenantRewards.MALEDICTUS);
+        assertNotNull(m);
+        // OSRS DPS calculator: level 397, 1,250 hitpoints, max hit 30.
+        assertEquals(397, m.combatLevel);
+        assertEquals(1250, m.hitpoints);
+        assertEquals(30, m.attacks.get(0).maxHit());
+        assertEquals(231, m.defenceBonus(com.runecraft.osrs.AttackType.RANGED));
+        // The chance grows with the summed combat levels of slain revenants (demon 98, then a cyclops: 98 + 82).
+        assertEquals(98 / RevenantRewards.MALEDICTUS_RATE, RevenantRewards.maledictusChance(98), 1e-12);
+        assertEquals(180 / RevenantRewards.MALEDICTUS_RATE, RevenantRewards.maledictusChance(98 + 82), 1e-12);
+        assertEquals(4500, RevenantRewards.MALEDICTUS_COOLDOWN_TICKS, "45 minutes");
+        assertTrue(RevenantRewards.countsForMaledictus("revenant_demon"));
+        assertFalse(RevenantRewards.countsForMaledictus(RevenantRewards.MALEDICTUS));
+        assertFalse(RevenantRewards.countsForMaledictus("lesser_demon"));
+    }
+
+    @Test
     void semiPreciousEnchants() {
         assertEquals("efaritays_aid", Jewellery.ENCHANT.get("topaz_ring"));
         assertEquals(3, Jewellery.ENCHANT_LEVEL.get("topaz_ring"));

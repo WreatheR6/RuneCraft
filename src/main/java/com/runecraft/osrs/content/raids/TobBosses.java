@@ -36,8 +36,13 @@ public final class TobBosses {
                         .size(1.6f, 1.6f, 2.0f).moveSpeed(0.24),
                 raid("nylocas_vasilias", "Nylocas Vasilias").level(800).stats(2500, 400, 350, 50, 50, 350).speed(4)
                         .defenceBonus(0, 0, 0, 0, 0)
-                        .attack(AttackDef.of("bite", AttackType.STAB, 30, 3, 10))
+                        .attack(AttackDef.of("bite", AttackType.STAB, 70, 3, 10))
                         .size(1.5f, 1.3f, 2.0f).moveSpeed(0.22),
+                // Hard mode only: drops in with waves 10, 20 and 30 and changes style like the Vasilias (OSRS wiki).
+                raid("nylocas_prinkipas", "Nylocas Prinkipas").level(400).stats(400, 200, 175, 25, 25, 175).speed(4)
+                        .defenceBonus(0, 0, 0, 0, 0)
+                        .attack(AttackDef.of("bite", AttackType.STAB, 38, 3, 10))
+                        .model("nylocas_vasilias").size(1.2f, 1.0f, 1.6f).moveSpeed(0.22),
                 raid("sotetseg", "Sotetseg").level(995).stats(4000, 250, 250, 200, 250, 250).speed(5)
                         .defenceBonus(70, 70, 70, 30, 150)
                         .attack(AttackDef.of("red orb", AttackType.MAGIC, 50, 25, 10).particle("minecraft:flame"))
@@ -71,6 +76,7 @@ public final class TobBosses {
     }
 
     public static List<MonsterDef> monsters() {
+        // The wave nylocas are passive: the Nylocas room sends most at the supports and sets the aggressive ones on the team.
         return List.of(
                 MonsterDef.of("nylocas_matomenos", "Nylocas Matomenos").level(115).stats(100, 100, 100, 100, 100, 100).speed(4).passive()
                         .attack(AttackDef.of("nip", AttackType.STAB, 4, 2.5, 10)).model("nylocas_matomenos")
@@ -78,15 +84,15 @@ public final class TobBosses {
                 MonsterDef.of("blood_spawn", "Blood spawn").level(55).stats(120, 1, 1, 0, 0, 1).speed(4).passive()
                         .attack(AttackDef.of("splash", AttackType.MAGIC, 3, 4, 10))
                         .size(0.7f, 0.9f, 1.0f).moveSpeed(0.22),
-                MonsterDef.of("nylocas_ischyros", "Nylocas Ischyros").level(162).stats(11, 200, 160, 1, 1, 200).speed(3)
+                MonsterDef.of("nylocas_ischyros", "Nylocas Ischyros").level(162).stats(11, 200, 160, 1, 1, 200).speed(3).passive()
                         .immune(AttackType.MAGIC, AttackType.RANGED)
                         .attack(AttackDef.of("bite", AttackType.STAB, 17, 2.5, 10))
                         .size(0.8f, 0.7f, 1.0f).moveSpeed(0.24),
-                MonsterDef.of("nylocas_toxobolos", "Nylocas Toxobolos").level(162).stats(11, 200, 160, 1, 1, 200).speed(3)
+                MonsterDef.of("nylocas_toxobolos", "Nylocas Toxobolos").level(162).stats(11, 200, 160, 1, 1, 200).speed(3).passive()
                         .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.MAGIC)
                         .attack(AttackDef.of("spit", AttackType.RANGED, 17, 10, 10).particle("minecraft:crit"))
                         .size(0.8f, 0.7f, 1.0f).moveSpeed(0.24),
-                MonsterDef.of("nylocas_hagios", "Nylocas Hagios").level(162).stats(11, 200, 160, 1, 1, 200).speed(3)
+                MonsterDef.of("nylocas_hagios", "Nylocas Hagios").level(162).stats(11, 200, 160, 1, 1, 200).speed(3).passive()
                         .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.RANGED)
                         .attack(AttackDef.of("blast", AttackType.MAGIC, 17, 10, 10).particle("minecraft:witch"))
                         .size(0.8f, 0.7f, 1.0f).moveSpeed(0.24),

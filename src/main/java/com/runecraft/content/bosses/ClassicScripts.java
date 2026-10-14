@@ -5,6 +5,7 @@ import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.bosses.ClassicBosses;
+import com.runecraft.osrs.content.bosses.SkotizoRules;
 import com.runecraft.skill.XpService;
 import com.runecraft.collection.CollectionLog;
 import com.runecraft.content.systems.CombatAchievementService;
@@ -189,14 +190,38 @@ final class ClassicScripts {
         }
     }
 
-    /** Skotizo: each awakened altar strengthens it; it reawakens altars over time. */
+    /**
+     * Skotizo (OSRS wiki): he randomly awakens the four altars of his lair; each awakened altar cuts the damage he takes
+     * by 25% (15% with Arclight/Emberlight, which also break an altar in one hit). Below a third of his hitpoints he
+     * summons three reanimated demon spawns (again whenever they are all slain), and while an altar is active a random
+     * timer summons a dark ankou, one at a time.
+     */
     static final class Skotizo extends ScriptedBoss {
-        private final MobEntity[] altars = new MobEntity[4];
-        private int reawaken = 30;
+        private final MobEntity[] altars = new MobEntity[SkotizoRules.ALTARS];
+        private final List<MobEntity> spawns = new ArrayList<>();
+        private MobEntity ankou;
+        private int altarTimer = -1;
+        private int ankouTimer = -1;
+        private int resummon = -1;
+        private boolean summoned;
 
         private static final int[][] SPOTS = {{0, -9}, {9, 0}, {0, 9}, {-9, 0}};
 
-        private int awake() {
+        /** Arclight and Emberlight disable an awakened altar in one hit (registered once by the module). */
+        static void registerAltarBreaker() {
+            com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
+                @Override
+                public int afterRoll(ServerPlayerEntity player, net.minecraft.entity.LivingEntity target, AttackType type, int damage) {
+                    if (target != null && target.getType() == com.runecraft.registry.ModEntities.typeById("awakened_altar")
+                            && SkotizoRules.altarBreaker(BossFx.heldId(player))) {
+                        return Math.max(damage, (int) Math.ceil(target.getHealth()));
+                    }
+                    return damage;
+                }
+            });
+        }
+
+        int awake() {
             int n = 0;
             for (MobEntity a : altars) {
                 if (a != null && a.isAlive()) {
@@ -212,30 +237,85 @@ final class ClassicScripts {
                     c.y), null);
         }
 
+        private int between(DataBossEntity boss, int min, int max) {
+            return min + boss.getRandom().nextInt(max - min + 1);
+        }
+
         @Override
         public void onSpawn(DataBossEntity boss) {
             home = boss.getBlockPos();
-            for (int i = 0; i < 4; i++) {
-                awaken(boss, i);
-            }
-            BossFx.say(boss, "Four altars awaken around Skotizo, empowering it. Destroy them!");
+            altarTimer = between(boss, SkotizoRules.ALTAR_MIN_TICKS, SkotizoRules.ALTAR_MAX_TICKS);
+            BossFx.say(boss, "Skotizo awakens! Destroy the altars he awakens, or they will shield him.");
         }
 
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
-            int n = awake();
-            return (int) Math.round(damage * (1 - 0.18 * n));
+            boolean breaker = attacker != null && SkotizoRules.altarBreaker(BossFx.heldId(attacker));
+            return SkotizoRules.damage(damage, awake(), breaker);
+        }
+
+        @Override
+        public void onPhase(DataBossEntity boss, int phase) {
+            summoned = true;
+            summonSpawns(boss);
+        }
+
+        private void summonSpawns(DataBossEntity boss) {
+            spawns.removeIf(m -> !m.isAlive());
+            ServerPlayerEntity target = target(boss);
+            Vec3d c = boss.getPos();
+            for (int i = spawns.size(); i < SkotizoRules.DEMON_SPAWNS; i++) {
+                double a = Math.PI * 2 * i / SkotizoRules.DEMON_SPAWNS;
+                MobEntity m = BossFx.spawnMinion(boss, "reanimated_demon_spawn",
+                        BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 2.5, c.z + Math.sin(a) * 2.5, c.y), target);
+                if (m != null) {
+                    spawns.add(m);
+                }
+            }
         }
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
-            if (--reawaken <= 0) {
-                reawaken = 30;
-                for (int i = 0; i < 4; i++) {
+            int awake = awake();
+            // "Demonic Weakening": the kill counts while no altar is active.
+            if (awake == 0) {
+                CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_SKOTIZO_NO_ALTARS);
+            } else {
+                CombatAchievementService.unflagNear(boss, CombatAchievements.FLAG_SKOTIZO_NO_ALTARS);
+            }
+            if (altarTimer > 0 && --altarTimer == 0) {
+                altarTimer = between(boss, SkotizoRules.ALTAR_MIN_TICKS, SkotizoRules.ALTAR_MAX_TICKS);
+                List<Integer> dormant = new ArrayList<>();
+                for (int i = 0; i < altars.length; i++) {
                     if (altars[i] == null || !altars[i].isAlive()) {
-                        awaken(boss, i);
-                        BossFx.say(boss, "Skotizo reawakens one of its altars!");
-                        break;
+                        dormant.add(i);
+                    }
+                }
+                if (!dormant.isEmpty()) {
+                    awaken(boss, dormant.get(boss.getRandom().nextInt(dormant.size())));
+                    BossFx.say(boss, "Skotizo awakens one of the altars!");
+                }
+            }
+            // A dark ankou timer runs while an altar is active; only one ankou at a time.
+            boolean ankouAlive = ankou != null && ankou.isAlive();
+            if (awake == 0 || ankouAlive) {
+                ankouTimer = -1;
+            } else if (ankouTimer < 0) {
+                ankouTimer = between(boss, SkotizoRules.ANKOU_MIN_TICKS, SkotizoRules.ANKOU_MAX_TICKS);
+            } else if (--ankouTimer <= 0) {
+                ankouTimer = -1;
+                ankou = BossFx.spawnMinion(boss, "dark_ankou", around(boss, homeVec(), 7), null);
+                BossFx.warn(boss, "A dark ankou rises from the shadows.");
+            }
+            if (summoned) {
+                spawns.removeIf(m -> !m.isAlive());
+                if (spawns.isEmpty()) {
+                    if (resummon < 0) {
+                        resummon = SkotizoRules.RESUMMON_TICKS;
+                    } else if (--resummon <= 0) {
+                        resummon = -1;
+                        BossFx.say(boss, "Skotizo: Gar mulno ful taglo!");
+                        summonSpawns(boss);
                     }
                 }
             }
@@ -247,6 +327,10 @@ final class ClassicScripts {
                 if (a != null && a.isAlive()) {
                     a.discard();
                 }
+            }
+            spawns.forEach(MobEntity::discard);
+            if (ankou != null && ankou.isAlive()) {
+                ankou.discard();
             }
             if (boss.getRandom().nextInt(65) == 0) {
                 Inv.give(killer, "pet_skotos", 1);

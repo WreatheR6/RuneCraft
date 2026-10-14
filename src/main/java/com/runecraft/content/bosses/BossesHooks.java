@@ -26,6 +26,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("dagannoth_rex", ClassicScripts.DagannothRex::new);
         BossScripts.register("corporeal_beast", ClassicScripts.Corp::new);
         BossScripts.register("skotizo", ClassicScripts.Skotizo::new);
+        ClassicScripts.Skotizo.registerAltarBreaker();
         BossScripts.register("hespori", ClassicScripts.Hespori::new);
         BossScripts.register("scurrius", ClassicScripts.Scurrius::new);
         BossScripts.register("zalcano", ClassicScripts.Zalcano::new);

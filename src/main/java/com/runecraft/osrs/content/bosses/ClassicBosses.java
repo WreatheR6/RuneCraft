@@ -157,12 +157,15 @@ public final class ClassicBosses {
     }
 
     static BossDef skotizo() {
-        return BossDef.of("skotizo", "Skotizo").level(321).stats(450, 240, 240, 200, 280, 1).speed(5)
-                .defenceBonus(80, 80, 80, 160, 80)
+        // OSRS wiki: Str 250; 80 stab/slash/crush/magic and 130 ranged defence.
+        return BossDef.of("skotizo", "Skotizo").level(321).stats(450, 240, 250, 200, 280, 1).speed(5)
+                .defenceBonus(80, 80, 80, 80, 130)
                 .attack(AttackDef.of("claws", AttackType.SLASH, 38, 3.5, 6))
                 .attack(AttackDef.of("shadow_bolt", AttackType.MAGIC, 38, 12, 4).particle("minecraft:squid_ink"))
-                .phase(50, "Skotizo summons the dead to its side!", 1.0, true)
-                .minion("reanimated_demon_spawn", 3)
+                // Gar mulno ful taglo! Three reanimated demon spawns once two thirds of his hitpoints are gone (OSRS wiki);
+                // the script summons dark ankou and re-summons slain spawns.
+                .phase(SkotizoRules.SPAWN_BELOW_PERCENT, "Gar mulno ful taglo!", 1.0, false)
+                .minion("reanimated_demon_spawn", SkotizoRules.DEMON_SPAWNS)
                 .drops(Drop.always("infernal_ashes"), Drop.of("dark_claw", 1, 1, 25), Drop.of("jar_of_darkness", 1, 1, 200),
                         Drop.of("uncut_onyx", 1, 1, 1000), Drop.of("ancient_shard", 1, 3, 4), Drop.of("dark_totem_base", 1, 1, 8),
                         Drop.of("soul_rune", 100, 200, 8), Drop.of("rune_platebody", 1, 1, 12), Drop.of("coins", 20000, 30000, 4),

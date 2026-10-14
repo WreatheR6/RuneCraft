@@ -63,9 +63,16 @@ public final class BossMinions {
                 // Skotizo
                 MonsterDef.of("awakened_altar", "Awakened altar").level(1).stats(100, 1, 1, 30, 1, 1)
                         .attack(inert()).passive().size(1.0f, 1.2f, 1.0f).moveSpeed(0.0),
-                MonsterDef.of("reanimated_demon_spawn", "Reanimated demon spawn").level(87).stats(87, 70, 70, 60, 1, 1).speed(4)
+                MonsterDef.of("reanimated_demon_spawn", "Reanimated demon spawn").level(87).stats(85, 80, 70, 71, 1, 1).speed(4)
+                        .defenceBonus(0, 0, 0, -10, 0).attributes("demon")
                         .attack(AttackDef.of("claw", AttackType.SLASH, 8, 2.5, 1))
                         .skin(0x5A2A2A, 0x3A1A1A, 0x2A1010, 0xA02020).size(0.6f, 1.6f, 1.0f).moveSpeed(0.25),
+                // OSRS wiki: summoned off a random timer while an awakened altar is active, one at a time; counts for
+                // Ankou Slayer tasks (60 Slayer XP).
+                MonsterDef.of("dark_ankou", "Dark Ankou").level(95).stats(60, 100, 70, 100, 1, 1).speed(4)
+                        .attributes("undead", "spectral")
+                        .attack(AttackDef.of("crush", AttackType.CRUSH, 8, 2.5, 1))
+                        .slayer(1, "ankou").skin(0x8A8A80, 0x1A1A24, 0x1A1A24, 0x050505).size(0.7f, 2.1f, 1.0f).moveSpeed(0.25),
                 // Hespori
                 MonsterDef.of("hesporis_flower", "Flower").level(1).stats(1, 1, 1, 1, 1, 1)
                         .attack(inert()).passive().size(0.7f, 1.0f, 1.0f).moveSpeed(0.0),

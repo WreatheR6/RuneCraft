@@ -202,16 +202,72 @@ final class CoxRooms {
                 warn("Vasa begins to draw power from a glowing crystal! Destroy it!");
                 return;
             }
+            if (charging > 0) {
+                charging--;
+            }
             if (--teleportCooldown <= 0) {
                 teleportCooldown = 25;
-                ServerPlayerEntity p = randomPlayer();
-                if (p != null) {
-                    com.runecraft.content.systems.CombatAchievementService.countNear(vasa, com.runecraft.osrs.content.systems.CombatAchievements.COUNT_VASA_TELEPORT);
-                    raid.teleport(p, vasa.getBlockPos().add(1, 0, 1));
-                    Msg.red(p, "Vasa Nistirio teleports you to him! Run!");
-                    RaidEffects.strike(world(), vasa.getPos(), 4.0, 55, 4, vasa, ParticleTypes.END_ROD);
+                teleport();
+            }
+        }
+
+        /** Game ticks left of Vasa charging his teleport barrage (he can't be harmed meanwhile). */
+        private int charging;
+
+        /**
+         * Vasa's teleport (OSRS wiki): half the team (the player when solo) is pulled next to him, stunned and stripped of
+         * prayers, the rest land at the edges. The barrage then hits everyone next to him for the stunned players'
+         * summed hitpoints minus 5, shared between them; unstunned players can pray Protect from Magic against it.
+         */
+        private void teleport() {
+            List<ServerPlayerEntity> party = new ArrayList<>(players());
+            if (party.isEmpty()) {
+                return;
+            }
+            java.util.Collections.shuffle(party, new java.util.Random(rnd().nextLong()));
+            com.runecraft.content.systems.CombatAchievementService.countNear(vasa, com.runecraft.osrs.content.systems.CombatAchievements.COUNT_VASA_TELEPORT);
+            int n = Math.min(party.size(), RaidScaling.vasaTeleportTargets(party.size()));
+            List<ServerPlayerEntity> stunned = new ArrayList<>(party.subList(0, n));
+            int[] hp = new int[n];
+            for (int i = 0; i < n; i++) {
+                ServerPlayerEntity p = stunned.get(i);
+                hp[i] = com.runecraft.combat.Overheal.hitpoints(p);
+                raid.teleport(p, vasa.getBlockPos().add(i % 2 == 0 ? 2 : -2, 0, i / 2 - 1));
+                com.runecraft.content.systems.SysCombat.freeze(p, RaidScaling.VASA_TELEPORT_DELAY);
+                dropOverheads(p, "Vasa Nistirio teleports you to him and drains your prayers!");
+                Msg.red(p, "Vasa Nistirio teleports you to him!");
+            }
+            for (int i = n; i < party.size(); i++) {
+                ServerPlayerEntity p = party.get(i);
+                raid.teleport(p, at(i % 2 == 0 ? -17 : 17, i % 4 < 2 ? -6 : 6));
+                Msg.red(p, "Vasa Nistirio throws you to the edge of the room! Run in and protect from magic.");
+            }
+            charging = RaidScaling.VASA_TELEPORT_DELAY;
+            world().spawnParticles(ParticleTypes.END_ROD, vasa.getX(), vasa.getY() + 2, vasa.getZ(), 30, 1.5, 1, 1.5, 0.05);
+            RaidEffects.later(RaidScaling.VASA_TELEPORT_DELAY, () -> barrage(stunned, hp));
+        }
+
+        private void barrage(List<ServerPlayerEntity> stunned, int[] hp) {
+            if (!alive(vasa)) {
+                return;
+            }
+            List<ServerPlayerEntity> receivers = new ArrayList<>();
+            for (ServerPlayerEntity p : players()) {
+                if (stunned.contains(p) || p.squaredDistanceTo(vasa) <= 3.5 * 3.5) {
+                    receivers.add(p);
                 }
             }
+            int dmg = RaidScaling.vasaTeleportDamage(hp, receivers.size());
+            world().spawnParticles(ParticleTypes.END_ROD, vasa.getX(), vasa.getY() + 1, vasa.getZ(), 40, 3, 0.5, 3, 0.1);
+            for (ServerPlayerEntity p : receivers) {
+                // Stunned players can't pray; the others' Protect from Magic blocks their share.
+                RaidEffects.hit(vasa, p, dmg, AttackType.MAGIC, stunned.contains(p));
+            }
+        }
+
+        @Override
+        public boolean bossVulnerable(DataBossEntity boss) {
+            return charging <= 0;
         }
 
         @Override
