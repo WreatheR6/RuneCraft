@@ -287,7 +287,7 @@ final class EncounterScripts {
                     speed.setBaseValue(0.3);
                 }
             } else if (phase == 1) {
-                shield = 350;
+                shield = 75;
                 var speed = boss.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
                 if (speed != null) {
                     speed.setBaseValue(0.18);
@@ -298,14 +298,29 @@ final class EncounterScripts {
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
             if (shield > 0) {
-                shield -= damage;
+                // OSRS Wiki: the shielded form is immune to damage; its 75-point prayer shield loses 2 per attack, and
+                // prayer drains speed it up (approx: Smite drains a quarter of the hit, as on players).
+                shield -= 2;
+                if (attacker != null && com.runecraft.player.Players.data(attacker).isActive(com.runecraft.osrs.Prayer.SMITE)) {
+                    shield -= damage / 4;
+                }
                 BossFx.burst(boss, ParticleTypes.SNOWFLAKE, 8, 1.0);
                 if (shield <= 0) {
-                    BossFx.say(boss, "The Phantom Muspah's shield shatters!");
-                    return -shield;
+                    shield = 0;
+                    BossFx.say(boss, "The Phantom Muspah's prayer shield shatters!");
+                } else if (attacker != null) {
+                    Msg.action(attacker, "The Phantom Muspah's prayer shield absorbs your attack. (" + shield + " left)");
                 }
-                Msg.action(attacker, "The frozen shield absorbs your attack. (" + shield + " left)");
                 return 0;
+            }
+            return damage;
+        }
+
+        /** While shielded it also has Soul Split: it heals half the damage it deals. */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+            if (shield > 0 && damage > 1) {
+                boss.heal(mcHp(boss, damage / 2));
             }
             return damage;
         }
@@ -398,10 +413,36 @@ final class EncounterScripts {
     static final class Leviathan extends ScriptedBoss {
         private final List<AttackDef> volley = new ArrayList<>();
         private int pause;
+        /** Game ticks left of a shadow-spell stun (OSRS Wiki: 15 ticks, halved when awakened). */
+        private int stunned;
 
         @Override
         protected boolean driven() {
             return true;
+        }
+
+        @Override
+        protected boolean canAttack(DataBossEntity boss) {
+            return stunned <= 0;
+        }
+
+        /**
+         * A shadow spell during a volley stuns the Leviathan: the volley ends and it stands still for 15 ticks, taking at
+         * most 10 per hit (approx: the gaping wound on its back, which takes full damage, isn't modelled).
+         */
+        @Override
+        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            if (stunned > 0) {
+                return Math.min(damage, 10);
+            }
+            if (attacker != null && type == AttackType.MAGIC && !volley.isEmpty()
+                    && String.valueOf(com.runecraft.content.systems.SysState.of(attacker).autocast).startsWith("shadow_")) {
+                stunned = boss.awakened() ? 7 : 15;
+                volley.clear();
+                CombatAchievementService.count(attacker, CombatAchievements.COUNT_LEVIATHAN_STUN, 1);
+                BossFx.say(boss, "The shadow spell stuns the Leviathan!");
+            }
+            return damage;
         }
 
         @Override
@@ -440,6 +481,11 @@ final class EncounterScripts {
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+            if (stunned > 0) {
+                stunned--;
+                BossFx.burst(boss, ParticleTypes.SMOKE, 6, 1.5);
+                return;
+            }
             if (target != null && boss.getRandom().nextInt(boss.awakened() ? 18 : 30) == 0) {
                 strike(boss, target.getPos(), 3, maxHit(boss, Dt2Bosses.LEVI_LIGHTNING), 1.3, ParticleTypes.ELECTRIC_SPARK);
                 BossFx.warn(boss, "The Leviathan's shell crackles with lightning!");

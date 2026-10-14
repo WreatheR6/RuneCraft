@@ -146,7 +146,13 @@ public final class TormentedDemonCombat implements CombatHooks.PlayerAttackModif
             Msg.action(player, "The tormented demon's prayer protects it from your attack.");
             return 0;
         }
-        return TormentedDemons.throughShield(damage, now >= s.shieldDownUntil, weapon(player));
+        int out = TormentedDemons.throughShield(damage, now >= s.shieldDownUntil, weapon(player));
+        if (now < s.shieldDownUntil && out > 0 && out >= Math.ceil(target.getHealth())) {
+            // "Through Fire and Flames": the killing blow lands while the shield is down.
+            com.runecraft.content.systems.CombatAchievementService.flag(player,
+                    com.runecraft.osrs.content.systems.CombatAchievements.FLAG_TD_SHIELD_DOWN);
+        }
+        return out;
     }
 
     @Override

@@ -202,6 +202,7 @@ final class NexScript extends GwdScript {
         }
         resolveSacrifice(boss, world, gameTick);
         resolvePrison(boss, world, gameTick);
+        tickCough(boss, world, gameTick);
         List<ServerPlayerEntity> nearby = players(boss, 24);
         if (nearby.isEmpty() || shieldIndex >= 0 || gameTick < nextSpecial) {
             return;
@@ -299,15 +300,56 @@ final class NexScript extends GwdScript {
         boss.requestTeleport(end.x, end.y, end.z);
     }
 
-    /** "Let the virus flow through you!": poisons the victim and everyone standing next to them. */
-    private static void virus(DataBossEntity boss, ServerPlayerEntity victim, List<ServerPlayerEntity> nearby, long gameTick) {
+    /** Players coughing from the Choke virus, with the game tick it wears off. */
+    private final java.util.Map<ServerPlayerEntity, Long> coughing = new java.util.HashMap<>();
+    /** How long the cough lasts (approx), and how much shorter with a gas mask, facemask or slayer helmet. */
+    private static final int COUGH_TICKS = 30;
+    private static final int COUGH_TICKS_MASKED = 20;
+
+    private static boolean masked(ServerPlayerEntity p) {
+        String head = com.runecraft.util.Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD));
+        return head.equals("gas_mask") || head.equals("facemask") || head.startsWith("slayer_helmet");
+    }
+
+    private void infect(ServerPlayerEntity p, long gameTick) {
+        if (!coughing.containsKey(p)) {
+            Msg.red(p, "You've been infected by Nex's virus!");
+        }
+        coughing.put(p, gameTick + (masked(p) ? COUGH_TICKS_MASKED : COUGH_TICKS));
+    }
+
+    /**
+     * "Let the virus flow through you!" (OSRS Wiki, Choke): the victim is infected and coughs, losing 2 prayer points
+     * every 2 ticks; the virus spreads to adjacent players, infecting them or resetting their cough.
+     */
+    private void virus(DataBossEntity boss, ServerPlayerEntity victim, List<ServerPlayerEntity> nearby, long gameTick) {
         shout(boss, "Let the virus flow through you!");
-        for (ServerPlayerEntity p : nearby) {
-            if (p == victim || p.squaredDistanceTo(victim) < 2.5 * 2.5) {
-                PoisonService.poison(p, 6, gameTick);
-                drainPrayer(p, 5);
-                Msg.red(p, "You've been infected by Nex's virus!");
+        PoisonService.poison(victim, 6, gameTick);
+        infect(victim, gameTick);
+        CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_COUGHING);
+    }
+
+    private void tickCough(DataBossEntity boss, ServerWorld world, long gameTick) {
+        if (coughing.isEmpty()) {
+            return;
+        }
+        coughing.entrySet().removeIf(e -> !e.getKey().isAlive() || gameTick >= e.getValue());
+        for (ServerPlayerEntity p : new ArrayList<>(coughing.keySet())) {
+            if (gameTick % 2 == 0) {
+                drainPrayer(p, 2);
+                world.spawnParticles(ParticleTypes.SNEEZE, p.getX(), p.getY() + 1.7, p.getZ(), 4, 0.2, 0.1, 0.2, 0.01);
+                if (gameTick % 6 == 0) {
+                    Msg.action(p, "*Cough*");
+                }
             }
+            for (ServerPlayerEntity o : players(boss, 24)) {
+                if (o != p && o.squaredDistanceTo(p) < 2.5 * 2.5) {
+                    infect(o, gameTick);
+                }
+            }
+        }
+        if (coughing.isEmpty()) {
+            CombatAchievementService.unflagNear(boss, CombatAchievements.FLAG_NEX_COUGHING);
         }
     }
 

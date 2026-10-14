@@ -337,6 +337,53 @@ class CombatAchievementRulesTest {
     }
 
     @Test
+    void bossMechanicTasks() {
+        // Grotesque Guardians: the perfect kill needs no blinding/prison/rocks/lightning damage, no Dawn heal and one prison.
+        Metrics m = new Metrics();
+        m.count(CombatAchievements.COUNT_DUSK_PRISON, 1);
+        assertTrue(CombatAchievementRules.meets(task(90).rule(), m));
+        assertTrue(CombatAchievementRules.meets(task(89).rule(), m));
+        m.count(CombatAchievements.COUNT_DUSK_PRISON, 1);
+        assertFalse(CombatAchievementRules.meets(task(89).rule(), m));
+        Metrics blind = new Metrics();
+        blind.took(new CombatAchievementRules.Hit(true, "dusk", "blinding", null, 25, false));
+        assertFalse(CombatAchievementRules.meets(task(84).rule(), blind));
+        assertTrue(CombatAchievementRules.meets(task(85).rule(), blind));
+        assertEquals(Track.STREAK, task(91).track());
+        assertEquals(5, task(91).count());
+        // Vorkath: the spawn must die (not by Crumble Undead); The Walk is judged by the script.
+        Metrics v = new Metrics();
+        assertFalse(CombatAchievementRules.meets(task(271).rule(), v));
+        v.killed("kill:zombified spawn");
+        assertTrue(CombatAchievementRules.meets(task(271).rule(), v));
+        v.flags.add(CombatAchievements.FLAG_VORKATH_CRUMBLE);
+        assertFalse(CombatAchievementRules.meets(task(271).rule(), v));
+        // Vengeance finishers, K'ril's prayer smash, Leviathan stuns, the dark energy core, Nex's cough.
+        Metrics z = new Metrics();
+        assertFalse(CombatAchievementRules.meets(task(227).rule(), z));
+        z.flags.add(CombatAchievements.FLAG_VENGEANCE_LAST);
+        assertTrue(CombatAchievementRules.meets(task(227).rule(), z));
+        assertTrue(CombatAchievementRules.meets(task(160).rule(), z));
+        Metrics k = new Metrics();
+        assertTrue(CombatAchievementRules.meets(task(334).rule(), k));
+        k.count(CombatAchievements.COUNT_KRIL_YARR, 1);
+        assertFalse(CombatAchievementRules.meets(task(334).rule(), k));
+        Metrics l = new Metrics();
+        l.count(CombatAchievements.COUNT_LEVIATHAN_STUN, 1);
+        assertTrue(CombatAchievementRules.meets(task(510).rule(), l));
+        l.count(CombatAchievements.COUNT_LEVIATHAN_STUN, 1);
+        assertFalse(CombatAchievementRules.meets(task(510).rule(), l));
+        Metrics c = new Metrics();
+        assertTrue(CombatAchievementRules.meets(task(67).rule(), c));
+        c.killed("kill:dark energy core");
+        assertFalse(CombatAchievementRules.meets(task(67).rule(), c));
+        Metrics n = new Metrics();
+        assertFalse(CombatAchievementRules.meets(task(418).rule(), n));
+        n.flags.add(CombatAchievements.FLAG_NEX_COUGHING);
+        assertTrue(CombatAchievementRules.meets(task(418).rule(), n));
+    }
+
+    @Test
     void rewardHelpers() {
         assertEquals(35, CombatAchievements.bossTaskMax(35, null));
         assertEquals(40, CombatAchievements.bossTaskMax(35, Tier.EASY));

@@ -23,6 +23,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Data checks for the bosses module: stats, drops, models, places, rotations and recipes. */
@@ -225,9 +226,40 @@ class BossesContentTest {
             assertTrue(rot.stream().anyMatch(s -> s.form() == ZulrahVorkath.Form.JAD_RANGED || s.form() == ZulrahVorkath.Form.JAD_MAGIC));
             for (ZulrahVorkath.Step s : rot) {
                 assertNotNull(ContentRegistry.boss(s.form().bossId));
-                assertTrue(s.attacks() > 0);
+                assertFalse(s.actions().isEmpty());
             }
         }
+        // OSRS Wiki rotation overview: phase counts (with the shared green ranged phase that starts the next rotation),
+        // the Jad phase (green; west starting ranged in Crimson A/B, east starting magic in Serp/Tanz) and its length.
+        int[] phases = {11, 11, 12, 13};
+        for (int r = 0; r < 4; r++) {
+            List<ZulrahVorkath.Step> rot = ZulrahVorkath.ROTATIONS.get(r);
+            assertEquals(phases[r], rot.size() + 1, "rotation " + (r + 1));
+            assertSame(ZulrahVorkath.OPENING, rot.get(0));
+            assertEquals(0, rot.get(0).attacks());
+            ZulrahVorkath.Step jad = rot.stream().filter(s -> s.form() == ZulrahVorkath.Form.JAD_RANGED
+                    || s.form() == ZulrahVorkath.Form.JAD_MAGIC).findFirst().orElseThrow();
+            assertEquals("zulrah", jad.form().bossId);
+            assertEquals(r < 2 ? ZulrahVorkath.Form.JAD_RANGED : ZulrahVorkath.Form.JAD_MAGIC, jad.form());
+            assertEquals(r < 2 ? ZulrahVorkath.Spot.WEST : ZulrahVorkath.Spot.EAST, jad.spot());
+            assertEquals(r == 3 ? 8 : 10, jad.attacks());
+        }
+        assertEquals(ZulrahVorkath.Form.MAGMA, ZulrahVorkath.ROTATIONS.get(0).get(1).form());
+        assertEquals(ZulrahVorkath.Form.SERPENTINE, ZulrahVorkath.ROTATIONS.get(2).get(1).form());
+        assertEquals(ZulrahVorkath.Form.TANZANITE, ZulrahVorkath.ROTATIONS.get(3).get(1).form());
+        assertEquals(ZulrahVorkath.Spot.SOUTH, ZulrahVorkath.ROTATIONS.get(0).get(3).spot());
+        assertEquals(ZulrahVorkath.Spot.WEST, ZulrahVorkath.ROTATIONS.get(1).get(3).spot());
+        assertEquals(5, ZulrahVorkath.LOOP_START.attacks());
+        assertEquals(4, ZulrahVorkath.LOOP_START.cloudBarrages());
+        // Damage cap: 50, bigger hits deal 45-50.
+        assertEquals(50, ZulrahVorkath.capDamage(50, 0));
+        assertEquals(45, ZulrahVorkath.capDamage(70, 0));
+        assertEquals(50, ZulrahVorkath.capDamage(70, 5));
+        // Vorkath: rapid fire 25-41, the spawn's explosion scales with its hitpoints (60 at 38/38).
+        assertEquals(41, ZulrahVorkath.VORKATH_RAPID_FIRE.maxHit());
+        assertEquals(60, ZulrahVorkath.spawnExplosion(38, 38));
+        assertEquals(30, ZulrahVorkath.spawnExplosion(19, 38));
+        assertEquals(0, ZulrahVorkath.spawnExplosion(0, 38));
     }
 
     @Test

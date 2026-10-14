@@ -495,16 +495,31 @@ final class SlayerScripts {
         }
     }
 
-    /** Dusk is shielded while Dawn lives; once she falls he unleashes rock falls and point-blank explosions. */
+    /**
+     * The Grotesque Guardians (OSRS Wiki, Grotesque Guardians/Strategies). Phase 1: Dusk is immune and Dawn is fought
+     * until 55%, when she flies up. Phase 2: Dusk is attackable; after he attacks he charges his blinding attack (step
+     * away or be knocked back for the high 20s) while Dawn throws rockfalls. Phase 3 (Dusk at 55%): lightning across
+     * the rooftop, then Dawn is attackable again and Dusk immune; her energy spheres heal her 90 each unless absorbed.
+     * Phase 4 (Dawn dead): Dusk absorbs her essence and immediately uses his prison attack (immune until it ends):
+     * escape the cell within 5 ticks or take up to 65, which heals him; he repeats it and explodes point blank.
+     */
     static final class Dusk extends ScriptedBoss {
         private DataBossEntity dawn;
         private int special = 15;
+        /** 1-4 as above. */
+        int stage = 1;
+        private boolean firstPrison;
+        private boolean blindNext;
+        private boolean prisonNext = true;
 
         @Override
         public void onSpawn(DataBossEntity boss) {
             ServerPlayerEntity target = boss.getTarget() instanceof ServerPlayerEntity p ? p : null;
             dawn = BossFx.spawnBoss(boss, "dawn", boss.getBlockPos().add(3, 0, 0), target);
-            BossFx.say(boss, "The Grotesque Guardians awaken! Dusk is protected while Dawn flies above. (Dusk: melee only, Dawn: ranged/magic only)");
+            if (dawn != null && dawn.script() instanceof Dawn d) {
+                d.dusk = this;
+            }
+            BossFx.say(boss, "The Grotesque Guardians awaken! Dusk is protected while Dawn fights. (Dusk: melee only, Dawn: ranged/magic only)");
         }
 
         private boolean dawnAlive() {
@@ -513,28 +528,114 @@ final class SlayerScripts {
 
         @Override
         public boolean isVulnerable(DataBossEntity boss) {
-            return !dawnAlive();
+            return stage == 2 || stage == 4 && !firstPrison;
         }
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+            if (stage < 4 && !dawnAlive()) {
+                stage = 4;
+                special = 1;
+                firstPrison = true;
+                prisonNext = true;
+                BossFx.say(boss, "Dusk absorbs the remnants of Dawn's essence!");
+                BossFx.burst(boss, ParticleTypes.SOUL_FIRE_FLAME, 30, 1.5);
+            } else if (stage == 1 && dawn.getHealth() <= dawn.getMaxHealth() * 0.55f) {
+                stage = 2;
+                special = 6;
+                BossFx.say(boss, "Dawn ascends into the sky! Dusk swoops down to attack!");
+            } else if (stage == 2 && boss.getHealth() <= boss.getMaxHealth() * 0.55f) {
+                stage = 3;
+                special = 14;
+                BossFx.say(boss, "Dawn descends. Dusk takes to his perch, and lightning crackles across the rooftop!");
+                if (target != null) {
+                    lightning(boss, target);
+                }
+            }
             if (target == null || --special > 0) {
                 return;
             }
             special = 14;
-            if (dawnAlive()) {
-                BossFx.warn(boss, "Rocks fall from above!");
-                for (int i = 0; i < 4; i++) {
-                    namedStrike("falling_rocks", boss, i == 0 ? target.getPos() : around(boss, target.getPos(), 4), 3, 22, 1.3, ParticleTypes.ASH);
+            switch (stage) {
+                case 1, 3 -> rockfall(boss, target);
+                case 2 -> {
+                    if (blindNext) {
+                        blinding(boss);
+                    } else {
+                        rockfall(boss, target);
+                    }
+                    blindNext = !blindNext;
+                    special = blindNext ? 8 : 10;
                 }
-            } else if (boss.getRandom().nextBoolean()) {
-                perform(boss, target, SlayerBosses.DUSK_EXPLOSION);
-            } else {
-                BossFx.warn(boss, "Lightning crackles across the rooftop!");
-                for (int i = 0; i < 5; i++) {
-                    namedStrike("lightning", boss, around(boss, homeVec(), 10), 3, 15, 1.5, ParticleTypes.ELECTRIC_SPARK);
+                default -> {
+                    if (prisonNext) {
+                        prison(boss, target);
+                    } else {
+                        perform(boss, target, SlayerBosses.DUSK_EXPLOSION);
+                    }
+                    prisonNext = !prisonNext;
+                    special = 12;
                 }
             }
+        }
+
+        private void rockfall(DataBossEntity boss, ServerPlayerEntity target) {
+            if (!dawnAlive()) {
+                return;
+            }
+            BossFx.warn(boss, "Rocks fall from above!");
+            for (int i = 0; i < 4; i++) {
+                namedStrike("falling_rocks", boss, i == 0 ? target.getPos() : around(boss, target.getPos(), 4), 3, 22, 1.3, ParticleTypes.ASH);
+            }
+        }
+
+        private void lightning(DataBossEntity boss, ServerPlayerEntity target) {
+            BossFx.warn(boss, "Lightning crackles across the rooftop!");
+            for (int i = 0; i < 5; i++) {
+                // One vortex always targets the player's tile; each deals 5-10.
+                Vec3d at = i == 0 ? target.getPos() : around(boss, homeVec(), 10);
+                namedStrike("lightning", boss, at, 3, 0, 1.5, ParticleTypes.ELECTRIC_SPARK, (hit, pos) -> {
+                    for (ServerPlayerEntity h : hit) {
+                        com.runecraft.combat.CombatHooks.nameAttack("lightning", null);
+                        CombatHandler.applyDamage(boss, h, 5 + h.getRandom().nextInt(6));
+                    }
+                });
+            }
+        }
+
+        /** Dusk's missing wing glows: anyone next to him is knocked back and hit for the high 20s. */
+        private void blinding(DataBossEntity boss) {
+            BossFx.warn(boss, "Dusk's missing wing begins to glow... step away from him!");
+            double reach = boss.getWidth() / 2 + 1.8;
+            namedStrike("blinding", boss, boss.getPos(), 3, 0, reach, ParticleTypes.END_ROD, (hit, pos) -> {
+                for (ServerPlayerEntity h : hit) {
+                    com.runecraft.combat.CombatHooks.nameAttack("blinding", null);
+                    CombatHandler.applyDamage(boss, h, 22 + h.getRandom().nextInt(8)); // approx: "damage in the high 20s"
+                    h.takeKnockback(1.2, boss.getX() - h.getX(), boss.getZ() - h.getZ());
+                    h.velocityModified = true;
+                    h.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(
+                            net.minecraft.entity.effect.StatusEffects.BLINDNESS, 60, 0, false, false));
+                }
+            });
+        }
+
+        /** Drags the player into a cell of blue flames; still inside after 5 ticks: up to 65, healing Dusk. */
+        private void prison(DataBossEntity boss, ServerPlayerEntity target) {
+            CombatAchievementService.countNear(boss, CombatAchievements.COUNT_DUSK_PRISON);
+            Vec3d cell = around(boss, homeVec(), 6);
+            target.requestTeleport(cell.x, cell.y, cell.z);
+            BossFx.say(boss, "Dusk drags you into a prison of flames! Escape the cell!");
+            namedStrike("prison", boss, cell, 5, 0, 1.4, ParticleTypes.SOUL_FIRE_FLAME, (hit, pos) -> {
+                firstPrison = false;
+                for (ServerPlayerEntity h : hit) {
+                    int dmg = h.getRandom().nextInt(66);
+                    com.runecraft.combat.CombatHooks.nameAttack("prison", null);
+                    CombatHandler.applyDamage(boss, h, dmg);
+                    if (boss.isAlive()) {
+                        boss.heal(mcHp(boss, dmg));
+                    }
+                }
+            });
         }
 
         @Override
@@ -545,9 +646,15 @@ final class SlayerScripts {
         }
     }
 
-    /** Dawn fires energy spheres: stand on them to absorb them, otherwise they heal her. */
+    /** Dawn: immune while she is in the sky (phase 2); in phase 3 her energy spheres heal her 90 unless absorbed. */
     static final class Dawn extends ScriptedBoss {
         private int spheres = 12;
+        Dusk dusk;
+
+        @Override
+        public boolean isVulnerable(DataBossEntity boss) {
+            return dusk == null || dusk.stage != 2;
+        }
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
@@ -555,18 +662,18 @@ final class SlayerScripts {
                 return;
             }
             spheres = 18;
+            if (dusk != null && dusk.stage != 3) {
+                return;
+            }
             BossFx.warn(boss, "Dawn fires energy spheres - stand on them to absorb them!");
             for (int i = 0; i < 3; i++) {
                 strike(boss, around(boss, target.getPos(), 4), 5, 0, 1.0, ParticleTypes.END_ROD, (hit, pos) -> {
                     if (hit.isEmpty()) {
-                        boss.heal(15);
+                        boss.heal(mcHp(boss, 90));
                         CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_DAWN_HEALED);
                         BossFx.world(boss).spawnParticles(ParticleTypes.HEART, boss.getX(), boss.getY() + 2, boss.getZ(), 3, 0.5, 0.3, 0.5, 0);
-                    } else {
-                        for (ServerPlayerEntity p : hit) {
-                            CombatHandler.applyDamage(boss, p, 3 + p.getRandom().nextInt(8));
-                        }
                     }
+                    // Absorbing a sphere has no penalty (OSRS Wiki).
                 });
             }
         }
