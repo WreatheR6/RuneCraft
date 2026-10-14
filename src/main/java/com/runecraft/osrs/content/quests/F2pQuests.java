@@ -300,15 +300,18 @@ final class F2pQuests {
                 .reward("coins:700")
                 .stage("I can start this quest by speaking to Hassan in the Al Kharid palace.")
                 .talk("hassan").say("The Emir's son, Prince Ali, has been kidnapped by Lady Keli! Please speak to Osman, our spymaster.")
-                .stage("I should speak to Osman, the Emir's spymaster.")
-                .talk("osman").say("Ali is held in the jail east of Draynor. You'll need a key, a disguise for the prince and a way to deal with Lady Keli.",
-                        "Leela, our agent in Draynor, will help you. Bring her: an imprint of the key with a bronze bar, a blonde wig, skin paste, a pink skirt and some rope.")
-                .stage("I should gather: a key print of Keli's key and a bronze bar, a wig, skin paste, a pink skirt, rope and beer for the guard.")
-                .talk("lady_keli").stay().unless("key_print", "bronze_key").take("clay").give("key_print")
+                .stage("I should speak to Osman, the Emir's spymaster, and get him an imprint of Lady Keli's key and a bronze bar.")
+                .talk("osman").stay().unlessFlag("pa_osman").flag("pa_osman")
+                .say("Ali is held in the jail east of Draynor. You'll need a key, a disguise for the prince and a way to deal with Lady Keli.",
+                        "First, the key. Get an imprint of Keli's key in soft clay and bring it to me with a bronze bar.")
+                .talk("lady_keli").stay().needFlag("pa_osman").unless("key_print", "bronze_key").take("clay").give("key_print")
                 .say("I'm Lady Keli, the most fearsome kidnapper in Gielinor! You want to see the key? Here... *You press it into your soft clay*")
                 .missing("Ha! You'd need something soft to copy my key with. Not that I'd let you.")
-                .talk("osman").stay().unless("bronze_key").take("key_print", "bronze_bar").give("bronze_key")
-                .say("A key print and a bronze bar? I'll have a key made at once.")
+                .talk("osman").needFlag("pa_osman").take("key_print", "bronze_bar").give("bronze_key")
+                .say("A key print and a bronze bar? I'll have a key made at once. Leela, our agent in Draynor, has it now... here it is.",
+                        "Now the disguise: a blonde wig, skin paste and a pink skirt. And rope for Keli, and beer for the guard.")
+                .missing("Bring me an imprint of Lady Keli's key in soft clay, and a bronze bar to cast it from.")
+                .stage("I should gather a disguise for the prince (a wig, skin paste and a pink skirt), rope and beer for the guard, and show Leela in Draynor.")
                 .talk("aggie").stay().unless("skin_paste").take("pot_of_flour", "vial_of_water").give("skin_paste")
                 .say("Skin paste? Flour and water mixed with some of my special herbs. There you are, dearie.")
                 .missing("Bring me a pot of flour and a vial of water and I'll make you paste, dearie.")
@@ -317,12 +320,19 @@ final class F2pQuests {
                 .missing("Bring me three balls of wool and I'll knit you a wig.")
                 .talk("leela").stay().unless("pink_skirt").take("coins:17").give("pink_skirt", "rope")
                 .say("I can buy you a pink skirt from the clothes shop and rope from the general store. 17 coins.")
-                .talk("leela").take("bronze_key", "blonde_wig", "skin_paste", "pink_skirt", "rope", "beer:3")
-                .say("You have everything! I'll take care of the guard with the beer. Go, tie up Lady Keli and free the prince!")
-                .missing("I need the key, the wig, the paste, the skirt, rope and three beers for the guard Joe.")
-                .stage("With the guard drunk, I should tie up Lady Keli and free Prince Ali.")
-                .talk("prince_ali").say("* You tie up Lady Keli and hand the disguise to Prince Ali.",
+                .talk("leela").need("bronze_key", "blonde_wig", "skin_paste", "pink_skirt", "rope", "beer:3")
+                .say("You have everything! Get the guard Joe drunk, tie up Lady Keli and free the prince!")
+                .missing("I need to see the key, the wig, the paste, the skirt, rope and three beers for the guard Joe.")
+                .stage("I should get the guard Joe drunk, tie up Lady Keli and free Prince Ali.")
+                .talk("joe_jail_guard").stay().unlessFlag("pa_joe").take("beer:3").flag("pa_joe")
+                .say("Beer? For me? Don't mind if I do... *hic* ...and another... *hic*", "* Joe slumps in his chair.")
+                .missing("No visitors. Though I could do with a drink... or three.")
+                .talk("lady_keli").stay().needFlag("pa_joe").unlessFlag("pa_keli").take("rope").flag("pa_keli")
+                .say("* You tie up Lady Keli before she can raise the alarm.")
+                .talk("prince_ali").needFlag("pa_keli").take("bronze_key", "blonde_wig", "skin_paste", "pink_skirt")
+                .say("* You unlock the cell with the bronze key and hand the disguise to Prince Ali.",
                         "Thank you, brave adventurer! I shall slip out disguised as Lady Keli. Tell my father Hassan I am safe!")
+                .missing("* The guard and Lady Keli must be dealt with first, and you need the key and the disguise.")
                 .stage("I should return to Hassan in Al Kharid.")
                 .talk("hassan").say("You have rescued the prince! The Emir thanks you. You may pass the Al Kharid gate for free from now on.")
                 .done("hassan", "You are a friend of Al Kharid.")
@@ -445,8 +455,9 @@ final class F2pQuests {
                 .stage("I can start this quest by speaking to the Quest Guide on Tutorial Island.")
                 .talk("ltr_quest_guide").say("Every adventurer should know how quests work. Your quest journal keeps track of them.",
                         "Head down to the mines and the combat area, then visit the Magic Instructor before you leave.")
-                .stage("I should speak to the Magic Instructor before leaving Tutorial Island.")
-                .talk("ltr_magic_instructor").say("You've learned the ropes. I'll send you to the mainland, to Lumbridge.",
+                .stage("I should kill a chicken with Wind Strike, then speak to the Magic Instructor before leaving Tutorial Island.")
+                .kill("chicken").stay().unlessFlag("ltr_chicken").flag("ltr_chicken").say("* Your Wind Strike hits the chicken. It falls over.")
+                .talk("ltr_magic_instructor").needFlag("ltr_chicken").missing("Cast Wind Strike on one of the chickens over there first.").say("You've learned the ropes. I'll send you to the mainland, to Lumbridge.",
                         "Take this kit with you. Good luck, adventurer!").travel("LUMBRIDGE")
                 .done("ltr_magic_instructor", "Remember: the Lumbridge Home Teleport will always bring you back to Lumbridge.");
     }

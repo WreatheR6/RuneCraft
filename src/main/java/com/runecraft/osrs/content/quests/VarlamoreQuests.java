@@ -47,14 +47,55 @@ final class VarlamoreQuests {
     private static void childrenOfTheSun(QuestBook b) {
         Cast.npc(b, "alina", "Alina", "VARROCK", 8, -3, Cast.TAN, 0xC08A2A);
         Cast.npc(b, "quest_suspicious_guard", "Guard", "VARROCK", -8, 3, Cast.FAIR, 0x8A8A9A);
+        // Wiki walkthrough: hiding spots along the guard's route (Lowe's Archery Emporium, Old Man Yarlo's house, the house by
+        // Aubury's), Sergeant Tobyn (3211, 3437) and the four bandits posing as guards (Aris's tent, Benny's stand, outside Lowe's,
+        // the path to the east bank). // approx tiles
+        b.spot("cots_hide_archery", "Lowe's Archery Emporium", 3232, 3423);
+        b.spot("cots_hide_yarlo", "Old Man Yarlo's house", 3241, 3395);
+        b.spot("cots_bandit_house", "House beside Aubury's Rune Shop", 3255, 3398);
+        b.spot("cots_tobyn", "Varrock Square (north)", 3211, 3437);
+        b.spot("cots_bandit_aris", "By Aris's tent", 3204, 3424);
+        b.spot("cots_bandit_benny", "By Benny's news stand", 3219, 3431);
+        b.spot("cots_bandit_lowe", "Outside Lowe's Archery Emporium", 3234, 3420);
+        b.spot("cots_bandit_east", "Path to Varrock east bank", 3245, 3425);
+        Cast.npc(b, "sergeant_tobyn", "Sergeant Tobyn", "cots_tobyn", 0, 0, Cast.FAIR, 0x8A8A9A);
+        Cast.npc(b, "cots_bandit_1", "Guard", "cots_bandit_aris", 0, 0, Cast.FAIR, 0x8A8A9A);
+        Cast.npc(b, "cots_bandit_2", "Guard", "cots_bandit_benny", 0, 0, Cast.TAN, 0x8A8A9A);
+        Cast.npc(b, "cots_bandit_3", "Guard", "cots_bandit_lowe", 0, 0, Cast.BROWN, 0x8A8A9A);
+        Cast.npc(b, "cots_bandit_4", "Guard", "cots_bandit_east", 0, 0, Cast.FAIR, 0x8A8A9A);
         b.quest("children_of_the_sun", "Children of the Sun", Difficulty.NOVICE, 1)
                 .unlock("Travel to Varlamore by quetzal from Varrock")
                 .stage("I can start this quest by speaking to Alina in Varrock Square.")
-                .talk("alina").say("I'm a Varlamorian envoy. Someone in the Varrock guard is passing secrets to the Twilight cult. Help me find out who.")
-                .stage("I should follow the suspicious guard around Varrock without being seen.")
-                .talk("quest_suspicious_guard").say("* You tail the guard through the streets. He meets a hooded figure and passes over a note bearing a crescent moon.")
-                .stage("I should tell Alina what I saw.")
-                .talk("alina").say("The crescent moon... the Twilight Emissaries. Thank you. My people in Varlamore will want to meet you. The quetzal will take you there.");
+                .talk("alina").say("A delegation from Varlamore is arriving today. But look, that guard with the big bag... he's up to something. Follow him, and don't let him see you!")
+                .stage("I should follow the suspicious guard to south-east Varrock, hiding whenever he turns around: in Lowe's Archery Emporium, "
+                        + "then behind Old Man Yarlo's house.")
+                .hint("quest_suspicious_guard", "* Better not let him see you. Stay out of sight and follow him.")
+                .reach("cots_hide_archery", 3).stay().unlessFlag("cots_hide1").flag("cots_hide1")
+                .say("* You duck into the archery shop as the guard turns around. He doesn't see you.")
+                .reach("cots_hide_yarlo", 3).stay().needFlag("cots_hide1").unlessFlag("cots_hide2").flag("cots_hide2")
+                .say("* You flatten yourself against the wall of Old Man Yarlo's house. The guard looks around, then walks on.")
+                .reach("cots_bandit_house", 4).needFlag("cots_hide1", "cots_hide2")
+                .say("* The guard slips into a house beside Aubury's Rune Shop. Through the window you see him talking with bandits.",
+                        "@Bandit: When the Varlamorians come through, we strike. Our friends in the guard will look the other way.",
+                        "* They're planning to attack the delegation! You should tell Sergeant Tobyn in Varrock Square.")
+                .missing("* You need to follow the guard without being seen. Hide in the archery shop, then behind Old Man Yarlo's house.")
+                .stage("I should tell Sergeant Tobyn in Varrock Square and identify the four bandits posing as Varrock guards.")
+                .talk("sergeant_tobyn").needFlag("cots_b1", "cots_b2", "cots_b3", "cots_b4")
+                .say("All four arrested. Come with me, we'll see what they have to say.",
+                        "* On the palace roof, Prince Itzla Arkan himself helps you interrogate a bandit. Someone paid them to kill Servius, Teokan of Ralos.",
+                        "@Prince Itzla Arkan: You have my thanks, outlander. Varlamore is open to you; Regulus Cento will take you there by quetzal.")
+                .missing("Point out the four bandits pretending to be my guards. Look for anything out of place.")
+                .talk("sergeant_tobyn").stay().unlessFlag("cots_tobyn").flag("cots_tobyn")
+                .say("Bandits disguised as my guards? Then point them out to me. Look for anything out of place.")
+                .talk("cots_bandit_1").stay().needFlag("cots_tobyn").unlessFlag("cots_b1").flag("cots_b1")
+                .say("* No weapon, hands on hips outside Aris's tent. You mark him as a bandit.")
+                .talk("cots_bandit_2").stay().needFlag("cots_tobyn").unlessFlag("cots_b2").flag("cots_b2")
+                .say("* A guard without a helmet by Benny's news stand. You mark her as a bandit.")
+                .talk("cots_bandit_3").stay().needFlag("cots_tobyn").unlessFlag("cots_b3").flag("cots_b3")
+                .say("* Leaning on the wall with arms crossed and no weapon. You mark him as a bandit.")
+                .talk("cots_bandit_4").stay().needFlag("cots_tobyn").unlessFlag("cots_b4").flag("cots_b4")
+                .say("* Varrock guards carry swords, not maces. You mark him as a bandit.")
+                .done("alina", "Thank you. The delegation is safe, thanks to you.");
     }
 
     private static void twilightsPromise(QuestBook b) {

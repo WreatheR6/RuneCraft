@@ -169,35 +169,71 @@ final class AsgarniaKandarinQuests {
                 .defenceBonus(60, 60, 50, -10, 50)
                 .attack(AttackDef.of("sword", AttackType.SLASH, 7, 2.5, 10))
                 .drops(Drop.always("bones")).skin(0xE0B898, 0x1A1A1A, 0x1A1A1A, 0x3A3A3A).at("keep_le_faye").arena(8, "crypt"));
+        // Quest-helper tiles: Arhein's crate (2801, 3442), Catherby beehives (2762, 3443), the repellent house (2807, 3450),
+        // Port Sarim jewellery shop (3016, 3246), the star symbol north-east of Camelot (2780, 3515), Merlin's crystal (2768, 3494).
+        b.spot("arheins_crate", "Arhein's crate", 2801, 3442);
+        b.spot("catherby_beehives", "Catherby beehives", 2762, 3443);
+        b.spot("catherby_repellent_house", "House in north Catherby", 2807, 3450);
+        b.spot("port_sarim_jewellers", "Port Sarim jewellery shop", 3016, 3246);
+        b.spot("camelot_star_symbol", "Magic symbol near Camelot", 2780, 3515);
+        b.spot("merlins_crystal_tower", "Merlin's crystal", 2768, 3494);
+        b.item("insect_repellent", "Insect repellent", "vial", 0xC0D080, "Drives away all known 6 legged creatures.");
+        b.item("bucket_of_wax", "Bucket of wax", "pot", 0xE8E0B0, "It's a bucket of wax.");
         b.quest("merlins_crystal", "Merlin's Crystal", Difficulty.INTERMEDIATE, 6)
                 .reward("excalibur")
                 .stage("I can start this quest by speaking to King Arthur in Camelot.")
                 .talk("king_arthur").say("Merlin has been trapped in a magic crystal by the sorceress Morgan Le Faye. Will you free him?")
                 .stage("I should ask the knights of Camelot for information, starting with Sir Gawain.")
                 .talk("sir_gawain").say("Morgan Le Faye is behind this, that's certain. Ask Lancelot, he's always eavesdropping.")
-                .stage("I should talk to Sir Lancelot.")
-                .talk("sir_lancelot").say("Morgan hides in Keep Le Faye, north of Catherby. Her son Sir Mordred guards it.")
+                .stage("I should talk to Sir Lancelot, then find a way into Keep Le Faye.")
+                .talk("sir_lancelot").stay().unlessFlag("mc_lancelot").flag("mc_lancelot")
+                .say("Morgan hides in Keep Le Faye, north of Catherby. Her son Sir Mordred guards it.",
+                        "Nobody gets in through the front... but Arhein the merchant ships crates there from Catherby.")
+                .reach("arheins_crate", 3).needFlag("mc_lancelot").travel("keep_le_faye")
+                .say("* You climb into Arhein's crate behind the candle shop. After a long, bumpy voyage the crate is unloaded at Keep Le Faye.")
                 .stage("I should storm Keep Le Faye and defeat Sir Mordred.")
                 .kill("sir_mordred").say("* As Mordred falls, Morgan Le Faye begs for his life.")
                 .stage("I should speak to Morgan Le Faye.")
                 .talk("morgan_le_faye").say("Spare my son! I'll tell you how to free Merlin.",
-                        "Summon the demon Thrantax at Camelot with a lit black candle and bat bones, holding Excalibur. Command him with the magic words and he will free Merlin.",
-                        "The Lady of the Lake holds Excalibur. The candle maker in Catherby makes candles.")
-                .stage("I need Excalibur (Lady of the Lake), a lit black candle (Catherby candle maker) and bat bones; then summon Thrantax at Camelot.")
-                .talk("the_lady_of_the_lake").stay().unless("excalibur").give("excalibur")
-                .say("You seek the sword Excalibur? Prove your worth... you showed kindness to a beggar. The sword is yours.")
-                .talk("candle_maker").stay().unless("black_candle").take("minecraft:honeycomb").give("black_candle")
-                .say("A black candle? I'll need black wax... I'll dye this wax for you. *He lights it for you.*")
-                .missing("Black candles need wax. Bring me some wax from the beehives (a honeycomb).")
+                        "Summon the demon Thrantax at the magic symbol near Camelot with a lit black candle and bat bones, holding Excalibur. "
+                                + "Command him with the magic words and he will free Merlin.",
+                        "The Lady of the Lake holds Excalibur. The candle maker in Catherby makes candles. "
+                                + "The magic words are written on the altar of the Zamorakian temple in Varrock.")
+                .stage("I need Excalibur (Lady of the Lake), a black candle (Catherby candle maker), bat bones, a tinderbox and the magic words; "
+                        + "then summon Thrantax at the magic symbol north-east of Camelot.")
+                .hint("thrantax", "* Nothing stirs. Thrantax must be summoned at the magic symbol with the proper ritual.")
+                .talk("the_lady_of_the_lake").stay().unless("excalibur").unlessFlag("mc_lady").flag("mc_lady")
+                .say("You seek the sword Excalibur? I will give it only to one who is worthy.",
+                        "Go to the jewellery shop in Port Sarim. There your worth will be tested.")
+                .reach("port_sarim_jewellers", 3).stay().needFlag("mc_lady").unless("excalibur").take("bread").give("excalibur")
+                .say("* A beggar stops you at the door. 'Spare some bread?' You hand him your bread.",
+                        "* The beggar transforms into the Lady of the Lake! 'You have shown kindness. Take Excalibur, and use it well.'")
+                .missing("* A beggar at the door asks for some bread.")
+                .reach("catherby_repellent_house", 3).stay().unless("insect_repellent", "bucket_of_wax", "black_candle").give("insect_repellent")
+                .say("* You find a bottle of insect repellent in the house.")
+                .reach("catherby_beehives", 4).stay().unless("bucket_of_wax", "black_candle").take("minecraft:bucket").need("insect_repellent")
+                .give("bucket_of_wax")
+                .say("* You spray the hive with insect repellent. The bees drift away and you fill your bucket with wax.")
+                .missing("* The bees swarm angrily. You'll need insect repellent and an empty bucket to collect their wax.")
+                .talk("candle_maker").stay().unless("black_candle").take("bucket_of_wax").give("black_candle")
+                .say("A black candle? I'll need black wax... ah, a whole bucket of it! Here you go.")
+                .missing("Black candles need wax. Bring me a bucket of wax from the Catherby beehives.")
+                .reach("varrock_chaos_temple", 4).stay().unlessFlag("mc_words").flag("mc_words")
+                .say("* Strange words are carved into the altar: 'Snarthon Candtrick Termanto'. This must be the summoning spell.")
                 .drop("giant_bat", "bat_bones", 1)
                 .drop("minecraft:skeleton", "bat_bones", 6)
-                .talk("thrantax").need("excalibur").take("black_candle", "bat_bones")
-                .say("* You light the candle, drop the bat bones and chant: 'Snarthon Candtrick Termanto!'",
-                        "WHO DARES SUMMON THRANTAX? ...I AM BOUND TO OBEY. MERLIN SHALL BE FREED.",
-                        "* The crystal shatters and Merlin is free!")
-                .missing("* Nothing answers. You need Excalibur, a lit black candle and bat bones to summon Thrantax.")
-                .stage("Merlin is free. I should tell King Arthur.")
-                .talk("king_arthur").say("Merlin is free! You have done Camelot a great service. Keep Excalibur, you've earned it.")
+                .reach("camelot_star_symbol", 2).needFlag("mc_words").need("excalibur", "tinderbox").take("black_candle", "bat_bones")
+                .say("* You light the black candle, drop the bat bones in the star and chant: 'Snarthon Candtrick Termanto!'",
+                        "@Thrantax the Mighty: WHO DARES SUMMON THRANTAX? ...I AM BOUND TO OBEY. WHAT IS YOUR COMMAND?",
+                        "> Free Merlin from his crystal prison!",
+                        "@Thrantax the Mighty: SO BE IT. THE CRYSTAL'S POWER IS BROKEN... STRIKE IT WITH EXCALIBUR.")
+                .missing("* This is the magic symbol. You need Excalibur, a black candle, bat bones, a tinderbox and the magic words.")
+                .stage("Thrantax has weakened the crystal. I should smash it with Excalibur at the top of Camelot's tower, then tell King Arthur.")
+                .reach("merlins_crystal_tower", 3).stay().unlessFlag("mc_smashed").need("excalibur").flag("mc_smashed")
+                .say("* You swing Excalibur at the giant crystal. It shatters, and Merlin stumbles free!")
+                .talk("king_arthur").needFlag("mc_smashed")
+                .say("Merlin is free! You have done Camelot a great service. Keep Excalibur, you've earned it.")
+                .missing("Merlin is still imprisoned in his crystal at the top of the tower.")
                 .done("merlin", "Thank you for freeing me from that wretched crystal.")
                 .done("king_arthur", "Welcome back, friend of Camelot.");
     }
@@ -216,6 +252,14 @@ final class AsgarniaKandarinQuests {
                 .requiresWeapon("excalibur")
                 .drops(Drop.always("big_bones")).skin(0xE0B898, 0x1A1A1A, 0x1A1A1A, 0x2A2A2A)
                 .size(0.9f, 2.4f, 2.0f).at("fisher_realm").arena(10, "crypt"));
+        b.npc("grail_fisherman", "Fisherman", "fisher_realm", 6, 4, 0xD8B898, 0x5A5A4A, 0x3A3A2A, 0x6A5A3A);
+        b.item("grail_bell", "Grail bell", "key", 0xE0C060, "Ringing it may summon somebody.");
+        b.item("magic_gold_feather", "Magic gold feather", "mark", 0xF0D040, "It points the way to Sir Percival.");
+        // Quest-helper tiles: whistles on Draynor Manor's top floor (3107, 3359); the tower on Karamja west of Brimhaven (2742, 3236);
+        // Sir Percival's sacks at the Goblin Village (2962, 3506).
+        b.spot("draynor_manor_whistles", "Draynor Manor top floor", 3107, 3359);
+        b.spot("karamja_grail_tower", "Tower near the Karamja gold mine", 2742, 3236);
+        b.spot("goblin_village_sacks", "Sacks in the Goblin Village", 2962, 3506);
         b.quest("holy_grail", "Holy Grail", Difficulty.INTERMEDIATE, 2)
                 .reqQuest("merlins_crystal").req(Skill.ATTACK, 20).xp(Skill.PRAYER, 11000).xp(Skill.DEFENCE, 15300)
                 .stage("I can start this quest by speaking to King Arthur in Camelot. (Requires Merlin's Crystal, 20 Attack.)")
@@ -224,16 +268,33 @@ final class AsgarniaKandarinQuests {
                 .talk("merlin").say("The Grail lies in the realm of the Fisher King. Sir Galahad sought it once; he lives west of McGrubor's Wood.")
                 .stage("I should speak to Sir Galahad.")
                 .talk("sir_galahad").say("I saw the Grail castle once... a magical whistle is needed to reach it. Ask the High Priest on Entrana.")
-                .stage("I should ask the High Priest of Entrana how to reach the Fisher Realm.")
-                .talk("high_priest_entrana").give("magic_whistle", "magic_whistle").travel("fisher_realm")
-                .say("The whistles are kept in Draynor Manor... but take these two. Blow one where the Grail is near. *You blow the whistle.*")
+                .stage("I should find out from the High Priest of Entrana how to reach the Fisher Realm, fetch two magic whistles "
+                        + "from the top of Draynor Manor and blow one below the tower on Karamja, west of Brimhaven, carrying Excalibur.")
+                .talk("high_priest_entrana").stay().unlessFlag("hg_priest").flag("hg_priest")
+                .say("The Grail castle? Magic whistles can take you there. They are kept at the top of Draynor Manor.",
+                        "Blow one beneath the tower on Karamja, near the gold mine west of Brimhaven.")
+                .reach("draynor_manor_whistles", 3).stay().needFlag("hg_priest").unless("magic_whistle").give("magic_whistle:2")
+                .say("* In a small room at the top of the manor you find two magic whistles.")
+                .reach("karamja_grail_tower", 4).need("magic_whistle", "excalibur").travel("fisher_realm")
+                .say("* You blow the whistle beneath the tower. The world shimmers and you find yourself in a desolate, withered land.")
+                .missing("* This is the tower. You need a magic whistle, and the Black Knight Titan beyond can only be slain with Excalibur.")
                 .stage("I'm in the Fisher Realm. A Black Knight Titan bars the way; only Excalibur can harm it.")
                 .kill("black_knight_titan").say("* Excalibur cleaves the Titan in two. The way to the Grail castle is open.")
-                .stage("I should speak to the Fisher King in his castle.")
-                .talk("fisher_king").say("My realm withers... only my son, Sir Percival, can restore it. Find him and bring him here.")
-                .stage("I should find Sir Percival. Rumour says he's somewhere near the Goblin Village.")
-                .talk("sir_percival").say("Thank goodness! The goblins tied me in a sack. I'm the Fisher King's son? Then I must go to him.")
-                .stage("I should return to the Fisher Realm and take the Holy Grail.")
+                .stage("I should talk to the fisherman by the river, ring the grail bell outside the castle and speak to the Fisher King.")
+                .talk("grail_fisherman").stay().unless("grail_bell").give("grail_bell")
+                .say("You want the castle? Nobody goes there now. You'll need to ring the bell outside to be let in. Take it, I've no use for it.")
+                .talk("fisher_king").need("grail_bell")
+                .say("* You ring the grail bell and the castle gate creaks open.",
+                        "My realm withers... only my son, Sir Percival, can restore it. Find him and bring him here.")
+                .missing("* The castle gate is shut fast. Perhaps ringing a bell would get someone's attention.")
+                .stage("I should find Sir Percival. King Arthur may know how to track him down.")
+                .talk("king_arthur").stay().unless("magic_gold_feather").give("magic_gold_feather")
+                .say("Percival? Take this magic gold feather. Hold it and it will point you to him... last I heard, somewhere north of Falador.")
+                .reach("goblin_village_sacks", 4).stay().need("magic_gold_feather").unlessFlag("hg_percival").flag("hg_percival")
+                .say("* The feather points at a pile of sacks. One of them is moving! You open it to find Sir Percival.")
+                .talk("sir_percival").needFlag("hg_percival").say("Thank goodness! The goblins tied me in a sack. I'm the Fisher King's son? Then I must go to him.")
+                .missing("* There's no sign of Percival. The feather from King Arthur would point the way.")
+                .stage("I should return to the Fisher Realm with my second whistle and take the Holy Grail from the top of the castle.")
                 .talk("fisher_king").take("magic_whistle").give("holy_grail").say("My son has returned! Take the Holy Grail to Arthur with my blessing.")
                 .stage("I should bring the Holy Grail to King Arthur.")
                 .talk("king_arthur").take("holy_grail").say("The Holy Grail! You are truly a knight of Camelot.");
@@ -361,27 +422,53 @@ final class AsgarniaKandarinQuests {
         b.item("gas_mask", "Gas mask", "full_helm", 0x6A6A5A, "Stops me from breathing in plague-infected air.");
         b.item("warrant", "Warrant", "note", 0xE8E0C0, "A warrant from Bravek to release Elena.");
         b.item("magic_scroll_ardougne", "A magic scroll", "note", 0xD0C0F0, "Teaches the Ardougne Teleport spell.");
+        b.item("picture_of_elena", "Picture", "note", 0xD8C8A0, "A picture of a lady called Elena.");
+        b.item("plague_house_key", "A small key", "key", 0x8A8A7A, "A small key, found in a barrel in the plague house.");
+        b.npc("milli_rehnison", "Milli Rehnison", "west_ardougne", -5, 4, 0xF0D0B8, 0xC0A060, 0x8A6A3A, 0xC08A3A);
+        b.npc("plague_city_clerk", "Clerk", "west_ardougne", 2, -5, 0xE0C8A8, 0x3A3A6A, 0x2A2A4A, 0x6A6A6A);
+        // Quest-helper tiles: the plague house in the south-east of West Ardougne (2540, 3273), its barrel (2534, 3268).
+        b.spot("plague_house", "Plague house", 2537, 3270);
         b.quest("plague_city", "Plague City", Difficulty.NOVICE, 1)
                 .xp(Skill.MINING, 2425).reward("magic_scroll_ardougne")
                 .stage("I can start this quest by speaking to Edmond in north-west East Ardougne.")
-                .talk("edmond").say("My daughter Elena went into West Ardougne to help the plague victims and hasn't come back. Please help!",
+                .talk("edmond").give("picture_of_elena")
+                .say("My daughter Elena went into West Ardougne to help the plague victims and hasn't come back. Please help!",
+                        "Take this picture of her, in case anyone over there has seen her.",
                         "We can dig under the wall through the sewers. Soften the soil with four buckets of water, and my wife Alrena can make you a gas mask.")
-                .stage("I need 4 buckets of water to soften the soil and a gas mask from Alrena (she needs dwellberries; any berries will do).")
-                .talk("alrena").stay().unless("gas_mask").give("gas_mask").say("Here's the gas mask. Always wear it in West Ardougne!")
-                .talk("edmond").need("gas_mask").take("minecraft:water_bucket:4").give("minecraft:bucket:4").travel("west_ardougne")
-                .say("* You soften the soil and dig through to the sewer. With Edmond's help you pull the grill free and climb into West Ardougne.")
-                .missing("We need four buckets of water and you'll need a gas mask.")
-                .stage("I'm in West Ardougne. I should ask the locals about Elena.")
-                .talk("jethick").say("Elena? She stayed with the Rehnisons, the house to the north.")
-                .stage("I should ask Martha Rehnison about Elena.")
-                .talk("martha_rehnison").say("Elena went to visit the plague house and never came back. Only Bravek, the city warder, can order it opened.")
-                .stage("Bravek is too hungover to help. I need to make a hangover cure: chocolate dust, snape grass and a bucket of milk.")
+                .stage("I need a gas mask from Alrena (she needs dwellberries), four buckets of water to soften the soil, a spade and a rope for the sewer grill.")
+                .talk("alrena").stay().unless("gas_mask").take("dwellberries").give("gas_mask")
+                .say("Dwellberries! Their juice keeps the plague out. Here's the gas mask. Always wear it in West Ardougne!")
+                .missing("I can make you a gas mask, but I'll need some dwellberries. They grow south of McGrubor's Wood.")
+                .talk("edmond").need("gas_mask", "spade").take("minecraft:water_bucket:4", "rope").give("minecraft:bucket:4").travel("west_ardougne")
+                .say("* You pour the water on the soil and dig through to the sewer.",
+                        "* The grill won't budge. You tie your rope to it and, with Edmond's help, pull it free.",
+                        "* Wearing the gas mask, you climb through the pipe into West Ardougne.")
+                .missing("We need four buckets of water to soften the soil, a spade to dig, a rope for the grill... and you'll need a gas mask.")
+                .stage("I'm in West Ardougne. I should show Elena's picture to the locals.")
+                .talk("jethick").need("picture_of_elena")
+                .say("That's Elena! She stayed with the Rehnisons, the tall house to the north. Give them this book, they'll talk to you then.")
+                .missing("Seen anyone? Everyone looks the same under these masks. Got a picture or something?")
+                .stage("I should ask the Rehnisons about Elena.")
+                .talk("martha_rehnison").stay().unlessFlag("pc_martha").flag("pc_martha")
+                .say("Elena? She was a good soul. She went to help a sick family and never came back. Ask Milli, upstairs; she saw where.")
+                .talk("milli_rehnison").needFlag("pc_martha")
+                .say("I saw Elena taken into the plague house, the one in the south-east corner of town. The mourners won't let anyone in.")
+                .missing("*Milli hides behind her mother's chair.*")
+                .stage("Only Bravek, the city warder, can order the plague house opened. He's too hungover to help; I need a hangover cure: "
+                        + "chocolate dust and snape grass mixed into a bucket of milk.")
+                .talk("plague_city_clerk").stay().unlessFlag("pc_clerk").flag("pc_clerk")
+                .say("You want to see Bravek? Go on through... though I doubt he'll be much use this morning.")
                 .talk("bravek").take("chocolate_dust", "snape_grass", "minecraft:milk_bucket").give("warrant")
                 .say("*Bravek gulps the cure* ...Ugh. Much better. Elena? Here's a warrant to open the plague house.")
                 .missing("Ugh... my head... go away unless you have a hangover cure. Chocolate dust, snape grass and milk...")
-                .stage("I should use the warrant to free Elena from the plague house.")
-                .talk("elena").take("warrant").travel("ARDOUGNE")
-                .say("You came for me! There's no plague here, I think... but let's go. Thank you!", "* You escape back through the sewers.")
+                .stage("I should use the warrant to get into the plague house, find the key to Elena's cell and free her.")
+                .reach("plague_house", 4).stay().need("warrant").unless("plague_house_key").give("plague_house_key")
+                .say("* The mourner reads the warrant and lets you in. Searching a barrel, you find a small key. Stairs lead down to a cellar.")
+                .missing("* A mourner blocks the door. 'Nobody goes in there without a warrant.'")
+                .talk("elena").take("warrant", "plague_house_key").travel("ARDOUGNE")
+                .say("* You unlock the cell door.", "You came for me! There's no plague here, I think... but let's go. Thank you!",
+                        "* You escape back through the sewers.")
+                .missing("* Elena is locked in a cell. There must be a key somewhere in the house.")
                 .stage("I should tell Edmond that Elena is safe.")
                 .talk("edmond").say("Elena is home! Thank you. Take this magic scroll, it teaches the Ardougne Teleport.")
                 .done("elena", "Something about this plague doesn't add up...");
@@ -399,21 +486,64 @@ final class AsgarniaKandarinQuests {
         b.boss(BossDef.of("head_mourner", "Head mourner").level(30).stats(40, 25, 25, 25, 1, 1).speed(4)
                 .attack(AttackDef.of("sword", AttackType.SLASH, 5, 2.5, 10)).drops(Drop.always("bones"))
                 .skin(0xE0C0A0, 0x2A2A2A, 0x2A2A2A, 0x1A1A1A).at("mourner_hq").arena(7, "stone"));
+        b.spot("dancing_donkey_inn", "Dancing Donkey Inn", 3270, 3390);
+        b.npc("da_vinci", "Da Vinci", "dancing_donkey_inn", 0, 2, 0xE0C0A0, 0x8A3A6A, 0x4A2A3A, 0x6A3A1A);
+        b.npc("hops", "Hops", "dancing_donkey_inn", 2, 0, 0xD8A880, 0x6A5A2A, 0x3A3A1A, 0x8A5A2A);
+        b.npc("chancy", "Chancy", "dancing_donkey_inn", -2, 0, 0xE0B898, 0x2A4A2A, 0x1A2A1A, 0x2A2A2A);
+        b.item("bird_feed", "Bird feed", "seed", 0xC0A060, "A handful of bird feed.");
+        b.item("pigeon_cage", "Pigeon cage", "pot", 0x8A6A3A, "A cage full of carrier pigeons.");
+        b.item("medical_gown", "Medical gown", "platebody", 0xF0F0E8, "A doctor's gown.");
+        b.item("touch_paper", "Touch paper", "note", 0xE0D8C0, "For scientific testing.");
+        b.item("ethenea", "Ethenea", "vial", 0xA0C0E0, "An expensive colourless liquid.");
+        b.item("liquid_honey", "Liquid honey", "vial", 0xE0B040, "This isn't worth much.");
+        b.item("sulphuric_broline", "Sulphuric broline", "vial", 0x8AA040, "It's highly poisonous.");
+        // Quest-helper tiles: Jerico's house (2612, 3324), the watchtower by the wall (2562, 3301),
+        // the mourner headquarters' cauldron (2543, 3332) and the nurse's house cupboard (2518, 3276).
+        b.spot("biohazard_watchtower", "Watchtower by the Ardougne wall", 2562, 3301);
+        b.spot("mourner_hq_cauldron", "Mourners' cauldron", 2543, 3332);
+        b.spot("nurse_sarahs_house", "Nurse Sarah's house", 2518, 3276);
         b.quest("biohazard", "Biohazard", Difficulty.NOVICE, 3)
                 .reqQuest("plague_city").xp(Skill.THIEVING, 1250)
                 .stage("I can start this quest by speaking to Elena in East Ardougne. (Requires Plague City.)")
                 .talk("elena").say("The mourners stole my distillator. I need it to analyse the plague! Jerico may help you get into their headquarters.")
                 .stage("I should ask Jerico, who keeps carrier pigeons, for help.")
-                .talk("jerico").say("Release my pigeons over the mourners' yard to distract them. Omart can get you over the wall with a rope ladder.")
-                .stage("I should ask Omart to help me over the wall.")
-                .talk("omart").travel("mourner_hq").say("* The pigeons scatter the mourners. Omart throws a rope ladder over the wall and you climb into the mourners' yard.")
-                .stage("I should find the distillator in the mourner headquarters. The head mourner has the key.")
-                .kill("head_mourner").give("distillator").say("* You take the key from the head mourner and find Elena's distillator.")
+                .talk("jerico").give("bird_feed", "pigeon_cage")
+                .say("Release my pigeons over the mourners' yard to distract them. Here's a cage of them and some bird feed from my cupboard.",
+                        "Omart can get you over the wall with a rope ladder.")
+                .stage("I should scatter bird feed by the watchtower near the wall and release the pigeons, then ask Omart to help me over the wall.")
+                .reach("biohazard_watchtower", 4).stay().unlessFlag("bh_pigeons").take("bird_feed", "pigeon_cage").flag("bh_pigeons")
+                .say("* You throw the bird feed over the fence and open the cage. The pigeons flock to the feed, and the watchmen are distracted.")
+                .talk("omart").needFlag("bh_pigeons").need("gas_mask").travel("mourner_hq")
+                .say("* Omart throws a rope ladder over the wall and you climb into West Ardougne.")
+                .missing("The watchtower guards would see us! Distract them first... Jerico's pigeons, perhaps. And wear your gas mask.")
+                .stage("I should sneak into the mourner headquarters (a rotten apple in their stew and a medical gown should help) "
+                        + "and find the distillator. The mourner upstairs has the key.")
+                .reach("mourner_hq_cauldron", 3).stay().unlessFlag("bh_stew").flag("bh_stew")
+                .say("* You pick up a rotten apple in the yard and drop it into the mourners' stew. They'll be sick for days.")
+                .reach("nurse_sarahs_house", 3).stay().unless("medical_gown").give("medical_gown")
+                .say("* You search the cupboard in Nurse Sarah's house and find a medical gown.")
+                .kill("head_mourner").needFlag("bh_stew").need("medical_gown").give("distillator")
+                .say("* Disguised as a doctor you're let in to treat the sick mourners. You defeat the mourner upstairs, take his key and find Elena's distillator.")
                 .stage("I should return the distillator to Elena.")
-                .talk("elena").take("distillator").give("plague_sample").say("My distillator! Take this plague sample to Guidor in Varrock. The chemist in Rimmington can help you smuggle it.")
-                .stage("I should take the plague sample to Guidor in Varrock.")
-                .talk("chemist").stay().say("Hide the sample among my chemicals and the guards won't search you. Off you go to Varrock.")
-                .talk("guidor").take("plague_sample").say("This sample... it's just water and food colouring! There is no plague. King Lathas must be told.")
+                .talk("elena").take("distillator").give("plague_sample", "touch_paper", "ethenea", "liquid_honey", "sulphuric_broline")
+                .say("My distillator! Take this plague sample and touch paper to Guidor in Varrock. He'll need these three chemicals for the test.",
+                        "The guards search everyone at the Varrock gate. Ask the chemist in Rimmington how to smuggle the chemicals past them.")
+                .stage("I should get the plague sample and chemicals past the Varrock guards (the chemist in Rimmington has ideas) "
+                        + "and take them to Guidor, wearing a priest's gown.")
+                .talk("chemist").stay().unlessFlag("bh_chemist").flag("bh_chemist")
+                .say("Give the chemicals to my friends Da Vinci, Hops and Chancy. They're off to Varrock anyway; meet them in the pub there.")
+                .talk("da_vinci").stay().needFlag("bh_chemist").unlessFlag("bh_davinci").flag("bh_davinci")
+                .say("* Da Vinci carried your ethenea safely into Varrock. He hands it back.")
+                .talk("hops").stay().needFlag("bh_chemist").unlessFlag("bh_hops").flag("bh_hops")
+                .say("Shulphuric... broline? Here, *hic*, take it back.")
+                .talk("chancy").stay().needFlag("bh_chemist").unlessFlag("bh_chancy").flag("bh_chancy")
+                .say("Your honey's safe with me, friend. Fancy a bet?")
+                .talk("guidor").needFlag("bh_davinci", "bh_hops", "bh_chancy").need("priest_gown_top", "priest_gown_bottom")
+                .take("plague_sample", "touch_paper", "ethenea", "liquid_honey", "sulphuric_broline")
+                .say("* Guidor's wife lets you in, taking you for a priest.",
+                        "This sample... it's just water and food colouring! There is no plague. King Lathas must be told.")
+                .missing("Guidor is very ill; his wife only lets priests in. Bring the sample, touch paper and the three chemicals, "
+                        + "smuggled past the guards by the chemist's friends.")
                 .stage("There is no plague! I should tell King Lathas in East Ardougne.")
                 .talk("king_lathas").say("I know. The plague was a ruse to keep West Ardougne under control, for reasons I cannot yet share.",
                         "You have been very helpful. I may call on you again.")

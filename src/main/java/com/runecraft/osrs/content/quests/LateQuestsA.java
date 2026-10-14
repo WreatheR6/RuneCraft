@@ -77,13 +77,26 @@ final class LateQuestsA {
         b.boss(BossDef.of("gorak", "Gorak").level(145).stats(112, 120, 120, 110, 1, 1).speed(4)
                 .attack(AttackDef.of("claw", AttackType.SLASH, 16, 2.5, 10).special(Special.DRAIN_STAT, Skill.HITPOINTS.ordinal()))
                 .drops(Drop.always("gorak_claws")).skin(0x6A3A6B, 0x4A2A4A, 0x3A1A3A, 0x8A4A8A).at("gorak_plane").arena(9, "void"));
+        b.item("draynor_skull", "Draynor skull", "skull", 0xE0D8C0, "A skull from the grounds of Draynor Manor.");
+        b.spot("draynor_manor_skull", "North of Draynor Manor", 3106, 3383);
         b.quest("fairytale_i_growing_pains", "Fairytale I - Growing Pains", Difficulty.INTERMEDIATE, 2)
                 .reqQuest("lost_city", "nature_spirit")
                 .xp(Skill.FARMING, 3500).xp(Skill.ATTACK, 2000).xp(Skill.MAGIC, 1000).reward("magic_secateurs")
                 .stage("I can start this quest by speaking to Martin the Master Gardener in Draynor Village. (Requires Lost City, Nature Spirit.)")
                 .talk("martin_the_master_gardener").say("All my crops are dying! Something in Zanaris is to blame, I just know it. Ask the fairies.")
-                .stage("I should ask the Fairy Godfather in Zanaris about the dying crops.")
-                .talk("fairy_godfather").give("magic_secateurs").say("The Fairy Queen is missing and Tanglefoot, her guardian plant, has run amok. Kill it, with these magic secateurs.")
+                .stage("I should ask the Fairy Godfather in Zanaris about the dying crops, then find a way to fight Tanglefoot.")
+                .talk("fairy_godfather").stay().unlessFlag("ft1_godfather").flag("ft1_godfather")
+                .say("The Fairy Queen is... resting, and Tanglefoot, her guardian plant, has run amok. Only magic secateurs can cut it.",
+                        "Ask that necromancer, Malignius Mortifer, west of Port Sarim. He knows about such things.")
+                // Quest-helper: dig for the skull north of Draynor Manor (3106, 3383); the Nature Spirit enchants the secateurs.
+                .reach("draynor_manor_skull", 2).stay().needFlag("ft1_godfather").need("spade").unless("draynor_skull").unlessFlag("ft1_malignius")
+                .give("draynor_skull").say("* You dig in the earth north of Draynor Manor and unearth an old skull.")
+                .talk("malignius_mortifer").stay().needFlag("ft1_godfather").unlessFlag("ft1_malignius").take("draynor_skull").flag("ft1_malignius")
+                .say("A Draynor skull! Good. Fine, I'll tell you: take ordinary secateurs to the Nature Spirit in Mort Myre's grotto. She can enchant them.")
+                .missing("Tanglefoot? Bring me a skull from the grounds of Draynor Manor and we'll talk.")
+                .talk("nature_spirit").needFlag("ft1_malignius").take("secateurs").give("magic_secateurs")
+                .say("Secateurs, for the fairies' sake? *She blesses them.* These will cut through Tanglefoot's vines.")
+                .missing("Bring me a pair of secateurs and I will bless them.")
                 .stage("I must defeat Tanglefoot using the magic secateurs.")
                 .kill("tanglefoot").say("* Tanglefoot withers. The crops of Gielinor begin to recover.")
                 .stage("I should tell Martin the crops will recover.")
@@ -105,7 +118,8 @@ final class LateQuestsA {
                 .say("*She brews the cure and gives it to the Queen.* She stirs! But she needs her secateurs back to regain her power.")
                 .missing("I need a star flower, gorak claws and a vial of water.")
                 .stage("I should steal back the Queen's secateurs from the Fairy Godfather.")
-                .talk("fairy_godfather").give("queens_secateurs").say("*While the Godfather gloats, you swipe the secateurs from his pocket.*")
+                .talk("fairy_godfather").reqSkill(Skill.THIEVING, 40).give("queens_secateurs")
+                .missing("Hmph. What do you want? *His pockets look well guarded.* (Requires 40 Thieving.)").say("*While the Godfather gloats, you swipe the secateurs from his pocket.*")
                 .stage("I should return the secateurs to the Fairy Queen.")
                 .talk("fairy_queen").take("queens_secateurs").say("My power returns! The fairy rings are yours to use, friend of the fairies.")
                 .done("fairy_nuff", "The Queen is herself again, thanks to you.");
@@ -232,6 +246,8 @@ final class LateQuestsA {
                 .attack(AttackDef.of("club", AttackType.CRUSH, 20, 3, 8))
                 .attack(AttackDef.of("ice_breath", AttackType.MAGIC, 15, 8, 3).special(Special.FREEZE, 4).particle("minecraft:snowflake"))
                 .drops(Drop.always("big_bones")).size(1.2f, 2.6f, 1.0f).at("ice_troll_cave").arena(11, "ice"));
+        b.npc("slug_hemligssen", "Slug Hemligssen", "neitiznot", -3, 3, 0xE0B8B0, 0x2A2A2A, 0x1A1A1A, 0x3A3A3A);
+        b.item("jester_costume", "Jester costume", "cloth", 0xC03AA0, "A jester's hat, top, tights and boots.");
         b.quest("the_fremennik_isles", "The Fremennik Isles", Difficulty.EXPERIENCED, 1)
                 .reqQuest("fremennik_trials").req(Skill.CONSTRUCTION, 20) // 40 Agility only for the optional mine shortcut
                 .xp(Skill.CONSTRUCTION, 5000).xp(Skill.CRAFTING, 5000).xp(Skill.WOODCUTTING, 10000).reward("helm_of_neitiznot")
@@ -241,8 +257,13 @@ final class LateQuestsA {
                 .talk("mord_gunnars").travel("neitiznot").say("To the isles? Neitiznot and Jatizso are at war with each other... and with the ice trolls. Off we go.")
                 .stage("I should speak to Mawnis Burowgar, the Burgher of Neitiznot.")
                 .talk("mawnis_burowgar").say("The trolls attack us both. Spy on Jatizso for me, then we'll deal with the trolls together.")
-                .stage("I should visit King Gjuki Sorvott of Jatizso and learn his plans.")
-                .talk("gjuki_sorvott").say("Neitiznot sent you? Ha! The ice trolls are their problem. Though... their king is a threat to us all.")
+                .stage("I should get a jester's disguise from Slug Hemligssen, Neitiznot's spymaster, and learn King Gjuki Sorvott's plans on Jatizso.")
+                .talk("slug_hemligssen").stay().unless("jester_costume").give("jester_costume")
+                .say("A spy? Then you'll need a disguise. The king of Jatizso is looking for a new jester. Wear this and juggle well.")
+                .talk("gjuki_sorvott").need("jester_costume")
+                .say("* Dressed as a jester, you juggle for the king and listen in.",
+                        "Neitiznot? Ha! The ice trolls are their problem. Though... their king is a threat to us all.")
+                .missing("Who let you in? Guards! *You'll need a disguise to get close to the king.*")
                 .stage("The islands must unite against the trolls. I should slay the Ice Troll King in the caves north of the isles.")
                 .kill("ice_troll_king").give("ice_troll_king_head").say("* The Ice Troll King falls! You take his head as proof.")
                 .stage("I should bring the troll king's head to Mawnis Burowgar.")

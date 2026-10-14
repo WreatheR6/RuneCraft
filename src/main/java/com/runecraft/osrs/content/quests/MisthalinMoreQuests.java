@@ -99,6 +99,7 @@ final class MisthalinMoreQuests {
         b.item("outpost_letter", "Letter", "note", 0xE0D8C2, "A historic letter about the Outpost.");
         b.item("outpost_scroll", "Scroll", "note", 0xE0D8C3, "A scroll from Droalak.");
         b.item("outpost_journal", "Journal", "book", 0x6A5A3A, "A journal about the Outpost's history.");
+        b.item("jorrals_letter", "Letter", "note", 0xE0D8C4, "Jorral's history of the Outpost, for King Lathas.");
         b.quest("making_history", "Making History", Difficulty.INTERMEDIATE, 3)
                 .reqQuest("priest_in_peril", "RESTLESS_GHOST")
                 .xp(Skill.CRAFTING, 1000).xp(Skill.PRAYER, 1000).reward("coins:750")
@@ -109,13 +110,15 @@ final class MisthalinMoreQuests {
                 .say("The Outpost? I wrote to my love Melina from there. Take this scroll.")
                 .talk("dron").stay().unless("outpost_letter").give("outpost_letter")
                 .say("My ancestors fought at the Outpost! Here's an old letter. Now leave, I'm busy being scary.")
-                .reach("rellekka_outpost", 8).stay().unless("outpost_journal").give("outpost_journal", "enchanted_key")
-                .say("* Using the enchanted key, you dig up an old chest near the Outpost with a journal inside.")
-                .talk("jorral").take("outpost_scroll", "outpost_letter", "outpost_journal")
-                .say("Wonderful! Let me write this up for King Lathas.")
+                .reach("rellekka_outpost", 8).stay().need("spade").unless("outpost_journal").give("outpost_journal", "enchanted_key")
+                .say("* The enchanted key grows warm. You dig where it's hottest and unearth an old chest with a journal inside.")
+                .missing("* The ground here is disturbed. You'd need a spade to dig.")
+                .talk("jorral").take("outpost_scroll", "outpost_letter", "outpost_journal").give("jorrals_letter")
+                .say("Wonderful! Here, I've written it all up. Take this letter to King Lathas.")
                 .missing("I need the letter from Dron, the scroll from Droalak and the journal from the buried chest.")
                 .stage("I should take the history to King Lathas.")
-                .talk("king_lathas").say("A fascinating history. Very well, the Outpost may stay, and become a museum. Here's a reward.")
+                .talk("king_lathas").take("jorrals_letter").say("A fascinating history. Very well, the Outpost may stay, and become a museum. Here's a reward.")
+                .missing("Jorral's Outpost? Bring me something in writing.")
                 .done("historian_minas", "Jorral's Outpost is a museum now? Splendid! History preserved.");
     }
 
@@ -137,7 +140,10 @@ final class MisthalinMoreQuests {
                 .talk("cyrisus").take("shark:5", "rune_full_helm").say("Food... armour... I feel stronger. But I fear what's in my dreams.")
                 .missing("I'm too weak... I need food (5 sharks) and some armour (a rune full helm)...")
                 .stage("I should enter Cyrisus's dream with him and face his fears.")
-                .talk("oneiromancer").travel("dream_world_cyrisus").say("Drink this and share his dream... *The world fades.*")
+                .talk("oneiromancer").take("vial_of_water", "astral_rune").need("pestle_and_mortar").travel("dream_world_cyrisus")
+                .say("* You grind an astral rune and mix it with goutweed from the Oneiromancer's stores into a vial of water.",
+                        "Drink this dream potion and share his dream... *The world fades.*")
+                .missing("To share his dream you need a dream potion: bring a vial of water, an astral rune and a pestle and mortar to grind it.")
                 .stage("I must defeat The Inadequacy, Cyrisus's worst fear.")
                 .kill("the_inadequacy").travel("quest_lunar_isle").say("* The Inadequacy fades away. Cyrisus wakes with new courage.")
                 .stage("I should speak to Cyrisus.")
@@ -245,8 +251,11 @@ final class MisthalinMoreQuests {
                 .talk("clay_golem").take("clay:4").say("I am whole! Now I must find the demon. The archaeologist Elissa knows of Uzer's history.")
                 .stage("I should ask Elissa about the demon of Uzer.")
                 .talk("elissa").say("Thammaron was defeated long ago. A statuette in the Varrock Museum opens the throne room. Curator Haig Halen has it.")
-                .stage("I should get the statuette from Curator Haig Halen.")
-                .talk("curator_haig_halen").give("statuette").say("The Uzer statuette? I'll lend it to you, for history's sake.")
+                .stage("I should get the statuette from the Varrock Museum. Curator Haig Halen keeps the display case key on him.")
+                .talk("curator_haig_halen").reqSkill(Skill.THIEVING, 25).give("statuette")
+                .say("The Uzer statuette? Certainly not, it's a priceless exhibit!",
+                        "* While he isn't looking, you pick his pocket for the display case key and take the statuette.")
+                .missing("The Uzer statuette? Certainly not! *He pats the key in his pocket.* (Requires 25 Thieving.)")
                 .stage("I should open the throne room and give the golem a new program so it can rest.")
                 .talk("clay_golem").take("statuette")
                 .say("* You place the statuette in the alcove and the throne room opens. Inside lies the demon's skeleton.",
@@ -351,15 +360,49 @@ final class MisthalinMoreQuests {
         b.items(s -> s.add("initiate_sallet", "Initiate sallet", Kind.ARMOUR, "full_helm", 0xA0A0B1).value(1).stack(1)
                 .equipment(EquipmentDef.armour(EquipmentDef.Slot.HEAD, new EquipmentStats(0, 0, 0, -6, -2, 13, 16, 11, -1, 15, 0, 0, 0, 3), 20))
                 .examine("A Temple Knight's initiate helm."));
+        // The test rooms (OSRS picks 5 of these 7 at random; all are offered here). Sir Leye: wiki infobox (level 20, 20 HP, max hit 3).
+        b.npc("sir_spishyus", "Sir Spishyus", "falador_temple_knights", 4, 0, 0xE0C0A0, 0xE0E0F2, 0x3A3A8C, 0x6A4A2A);
+        b.npc("lady_table", "Lady Table", "falador_temple_knights", -4, 0, 0xF0C8B0, 0xE0E0F2, 0x3A3A8C, 0xC08A3A);
+        b.npc("sir_tinley", "Sir Tinley", "falador_temple_knights", 0, 4, 0xD8B090, 0xE0E0F2, 0x3A3A8C, 0x2A2A2A);
+        b.npc("sir_ren_itchood", "Sir Ren Itchood", "falador_temple_knights", 0, -4, 0xE0B898, 0xE0E0F2, 0x3A3A8C, 0x8A6A3A);
+        b.npc("miss_cheevers", "Miss Cheevers", "falador_temple_knights", 4, 4, 0xF0D0B8, 0xE0E0F2, 0x3A3A8C, 0x5A2A1A);
+        b.npc("ms_hynn_terprett", "Ms Hynn Terprett", "falador_temple_knights", -4, 4, 0xF0C8A8, 0xE0E0F2, 0x3A3A8C, 0xE0C060);
+        b.boss(BossDef.of("sir_leye", "Sir Leye").level(20).stats(20, 18, 18, 15, 1, 1).speed(5)
+                .attack(AttackDef.of("warhammer", AttackType.CRUSH, 3, 2.5, 10))
+                .drops(Drop.always("bones")).skin(0xE0B898, 0xE0E0F2, 0x3A3A8C, 0x6A4A2A));
         b.quest("recruitment_drive", "Recruitment Drive", Difficulty.NOVICE, 1)
                 .reqQuest("black_knights_fortress", "DRUIDIC_RITUAL")
                 .xp(Skill.PRAYER, 1000.5).xp(Skill.HERBLORE, 1000.5).xp(Skill.AGILITY, 1000.5).reward("initiate_sallet")
                 .stage("I can start this quest by speaking to Sir Tiffy Cashien in Falador Park. (Requires Black Knights' Fortress, Druidic Ritual.)")
                 .talk("sir_tiffy_cashien").travel("falador_temple_knights").say("I say, we're recruiting for the Temple Knights! Let's see if you pass the tests.")
-                .stage("I must pass the Temple Knights' tests: logic, strength and courage.")
-                .talk("sir_tiffy_training").say("Test one: logic. *You solve the riddle.* Test two: combat. *You defeat Sir Kuam in a sparring bout.* Splendid!")
-                .stage("I should report back to Sir Tiffy.")
-                .talk("sir_tiffy_cashien").say("Top-hole! You're a Temple Knight initiate now. Here's your sallet.");
+                .stage("I must pass the Temple Knights' tests: Sir Spishyus's river crossing, Lady Table's statues and Sir Kuam's duel with Sir Leye.")
+                .talk("sir_spishyus").stay().unlessFlag("rd_spishyus").flag("rd_spishyus")
+                .say("Get the fox, the chicken and the grain across the bridge. You can only carry one at a time, and never leave the fox with the chicken, or the chicken with the grain!",
+                        "* Chicken over. Back. Fox over, chicken back. Grain over. Back. Chicken over.", "Well thought out! You may proceed.")
+                .talk("lady_table").stay().unlessFlag("rd_table").flag("rd_table")
+                .say("Study these statues carefully. When you return, one will be missing.", "* You point to the empty plinth where the statue stood.",
+                        "Excellent observation. Proceed.")
+                .talk("sir_tiffy_training").stay().unlessFlag("rd_leye").spawn("sir_leye")
+                .say("Your test is combat. Defeat Sir Leye! They say no man can defeat him... think on that.")
+                .kill("sir_leye").stay().unlessFlag("rd_leye").flag("rd_leye").say("* Sir Leye yields. 'Well fought!'")
+                .talk("sir_tiffy_training").needFlag("rd_spishyus", "rd_table", "rd_leye")
+                .say("Three tests passed. Splendid! The rest of the examiners are waiting.")
+                .missing("You've not yet passed Sir Spishyus's, Lady Table's and my own test.")
+                .stage("I must pass the remaining tests: Sir Tinley's patience, Sir Ren Itchood's lock, Miss Cheevers's chemistry and Ms Hynn Terprett's riddle; "
+                        + "then report to Sir Tiffy in Falador Park.")
+                .talk("sir_tinley").stay().unlessFlag("rd_tinley").flag("rd_tinley")
+                .say("Ah, a recruit. *He says nothing more.*", "* You wait patiently, doing nothing at all.", "Patience is a virtue. Well done; you may go.")
+                .talk("sir_ren_itchood").stay().unlessFlag("rd_ren").flag("rd_ren")
+                .say("Let me tell you a riddle: the answer opens the door. *His rhyme spells out a four-letter word.*",
+                        "* You turn the dials of the combination lock to spell it and the door swings open.")
+                .talk("miss_cheevers").stay().unlessFlag("rd_cheevers").flag("rd_cheevers")
+                .say("The door is locked tight. Use what's in the shelves, crate and cupboard.",
+                        "* You pour acid on the bronze key mould, dissolve the gypsum with the vials, and work the tin into a key. The door opens.")
+                .talk("ms_hynn_terprett").stay().unlessFlag("rd_hynn").flag("rd_hynn")
+                .say("Answer my riddle and you may pass. What is always coming but never arrives?", "> Tomorrow.", "Correct.")
+                .talk("sir_tiffy_cashien").needFlag("rd_tinley", "rd_ren", "rd_cheevers", "rd_hynn")
+                .say("Top-hole! You're a Temple Knight initiate now. Here's your sallet.")
+                .missing("Not finished the tests yet? Off you go: Sir Tinley, Sir Ren Itchood, Miss Cheevers and Ms Hynn Terprett are waiting.");
     }
 
     private static void lostTribe(QuestBook b) {
