@@ -6,6 +6,7 @@ import com.runecraft.content.BlockHooks;
 import com.runecraft.content.ModuleHooks;
 import com.runecraft.osrs.content.bosses.BossItems;
 import com.runecraft.osrs.content.bosses.BossPlaces;
+import com.runecraft.osrs.content.bosses.Dt2Bosses;
 import com.runecraft.osrs.content.bosses.SlayerBosses.HydraPhase;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
@@ -58,6 +59,11 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("the_leviathan", EncounterScripts.Leviathan::new);
         BossScripts.register("the_whisperer", EncounterScripts.Whisperer::new);
         BossScripts.register("vardorvis", EncounterScripts.Vardorvis::new);
+        // Desert Treasure II's quest versions (quests module ids): the same fights with lower max hits.
+        BossScripts.register("dt2_quest_duke_sucellus", () -> new EncounterScripts.Duke(Dt2Bosses.QUEST_DUKE_SCALE));
+        BossScripts.register("dt2_quest_leviathan", () -> new EncounterScripts.Leviathan(Dt2Bosses.QUEST_LEVIATHAN_SCALE));
+        BossScripts.register("dt2_quest_whisperer", () -> new EncounterScripts.Whisperer(Dt2Bosses.QUEST_WHISPERER_SCALE));
+        BossScripts.register("dt2_quest_vardorvis", () -> new EncounterScripts.Vardorvis(Dt2Bosses.QUEST_VARDORVIS_SCALE));
         AwakenedService.init();
         DoomDelveService.init();
         BossScripts.register("the_hueycoatl", EncounterScripts.Hueycoatl::new);

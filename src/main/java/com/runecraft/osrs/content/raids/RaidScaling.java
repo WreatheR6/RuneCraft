@@ -391,6 +391,9 @@ public final class RaidScaling {
     public static final int TOB_BLOAT_WALK = 34;
     /** Game ticks the Bloat stays shut down before it stomps (OSRS: 19.2 seconds). */
     public static final int TOB_BLOAT_DOWN = 32;
+    /** The Bloat can turn around once every 32 game ticks while walking (OSRS), every 16 in Hard mode. */
+    public static final int TOB_BLOAT_TURN = 32;
+    public static final int TOB_BLOAT_TURN_HARD = 16;
     /** Sotetseg's ball of death: up to 188 damage, split between the players it lands on (OSRS). */
     public static final int TOB_SOTETSEG_BALL = 188;
 

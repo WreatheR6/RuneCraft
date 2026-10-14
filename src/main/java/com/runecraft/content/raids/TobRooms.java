@@ -199,6 +199,9 @@ final class TobRooms {
         private int stateTicks;
         private int stateLength = com.runecraft.osrs.content.raids.RaidScaling.TOB_BLOAT_FIRST_WALK;
         private int waypoint;
+        /** +1 walks the corners clockwise, -1 after a turn. */
+        private int direction = 1;
+        private int turnTicks;
 
         Bloat(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -223,6 +226,8 @@ final class TobRooms {
         public void start() {
             walking = true;
             stateTicks = 0;
+            direction = 1;
+            turnTicks = 0;
             // OSRS: the first walk lasts 39-47 ticks.
             stateLength = com.runecraft.osrs.content.raids.RaidScaling.TOB_BLOAT_FIRST_WALK + rnd().nextInt(9);
             bloat = spawnBoss("pestilent_bloat", BlockPos.ofFloored(waypoint(0)));
@@ -237,12 +242,34 @@ final class TobRooms {
             }
             Vec3d wp = waypoint(waypoint);
             if (boss.getPos().squaredDistanceTo(wp) < 2.0) {
-                waypoint++;
+                waypoint += direction;
                 wp = waypoint(waypoint);
             }
             if (boss.age % 10 == 0 || boss.getNavigation().isIdle()) {
                 boss.getNavigation().startMovingTo(wp.x, wp.y, wp.z, 1.3);
             }
+        }
+
+        /**
+         * OSRS: the Bloat may turn around while it walks, once every 32 ticks at most (Hard mode: every 16 ticks, and it
+         * turns more often); a turn near the end of a walk keeps it up for another 5 ticks.
+         */
+        private void maybeTurn() {
+            int every = hard() ? com.runecraft.osrs.content.raids.RaidScaling.TOB_BLOAT_TURN_HARD
+                    : com.runecraft.osrs.content.raids.RaidScaling.TOB_BLOAT_TURN;
+            if (++turnTicks < every) {
+                return;
+            }
+            turnTicks = 0;
+            if (rnd().nextInt(hard() ? 2 : 4) != 0) { // approx: the turn chance isn't published
+                return;
+            }
+            direction = -direction;
+            waypoint += direction;
+            if (stateLength - stateTicks < 5) {
+                stateLength = stateTicks + 5;
+            }
+            warn("The Bloat turns around!");
         }
 
         @Override
@@ -277,6 +304,7 @@ final class TobRooms {
                     Vec3d at = p.getPos().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2);
                     RaidEffects.strike(world(), at, 1.0, 50, 3, bloat, ParticleTypes.FALLING_LAVA);
                 }
+                maybeTurn();
                 if (stateTicks >= stateLength) {
                     walking = false;
                     stateTicks = 0;
@@ -667,16 +695,19 @@ final class TobRooms {
         }
     }
 
-    /** Sotetseg: shared death balls, and the shadow-realm maze at 66% and 33%. */
+    /**
+     * Sotetseg: shared death balls, and the shadow-realm maze at 66% and 33% (OSRS wiki). One player (Hard mode: all but
+     * one) is dragged into the shadow realm and follows the red path; the players left in the arena must walk the same
+     * path on the arena floor, seeing only the runner's position, and every wrong tile hurts.
+     */
     static final class Sotetseg extends RoomLogic {
         private static final int COLS = 7;
         private static final int ROWS = 14;
         private DataBossEntity sotetseg;
         private final Set<Long> path = new HashSet<>();
-        private UUID runner;
+        private final Set<UUID> runners = new HashSet<>();
         private int mazeTicks;
         private boolean maze66;
-        private boolean maze50;
         private boolean maze33;
         private int ballCooldown = 20;
 
@@ -686,6 +717,11 @@ final class TobRooms {
 
         private BlockPos mazeOrigin() {
             return center().add(-COLS, 0, RaidBuilder.MAZE_OFFSET_Z - ROWS);
+        }
+
+        /** The arena copy of the maze: the same grid laid on the arena floor, west of Sotetseg. */
+        private BlockPos arenaOrigin() {
+            return center().add(-COLS, 0, -ROWS);
         }
 
         @Override
@@ -705,16 +741,19 @@ final class TobRooms {
                     Blocks.RED_NETHER_BRICKS.getDefaultState());
             RaidBuilder.fill(world(), o.getX(), y, o.getZ(), o.getX() + COLS * 2 - 1, y, o.getZ() + ROWS * 2 - 1,
                     Blocks.POLISHED_BLACKSTONE.getDefaultState());
-            RaidBuilder.pillar(world(), center().add(-6, 0, -8), 1, 2, Blocks.CRIMSON_HYPHAE.getDefaultState());
-            RaidBuilder.pillar(world(), center().add(-6, 0, 8), 1, 2, Blocks.CRIMSON_HYPHAE.getDefaultState());
+            // The arena's tiled maze floor (the path itself is invisible from the arena).
+            BlockPos a = arenaOrigin();
+            RaidBuilder.fill(world(), a.getX(), a.getY(), a.getZ(), a.getX() + COLS * 2 - 1, a.getY(), a.getZ() + ROWS * 2 - 1,
+                    Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState());
+            RaidBuilder.pillar(world(), center().add(-12, 0, -8), 1, 2, Blocks.CRIMSON_HYPHAE.getDefaultState()); // clear of the arena maze
+            RaidBuilder.pillar(world(), center().add(-12, 0, 8), 1, 2, Blocks.CRIMSON_HYPHAE.getDefaultState());
         }
 
         @Override
         public void start() {
             maze66 = false;
-            maze50 = false;
             maze33 = false;
-            runner = null;
+            runners.clear();
             sotetseg = spawnBoss("sotetseg", at(13, 0));
             anchor(sotetseg);
         }
@@ -723,9 +762,18 @@ final class TobRooms {
             return ((long) col << 32) | (row & 0xffffffffL);
         }
 
+        private ServerPlayerEntity player(UUID id) {
+            for (ServerPlayerEntity p : raid.activePlayers()) {
+                if (p.getUuid().equals(id)) {
+                    return p;
+                }
+            }
+            return world().getServer().getPlayerManager().getPlayer(id);
+        }
+
         private void startMaze() {
-            ServerPlayerEntity p = randomPlayer();
-            if (p == null) {
+            List<ServerPlayerEntity> party = players();
+            if (party.isEmpty()) {
                 return;
             }
             path.clear();
@@ -738,17 +786,28 @@ final class TobRooms {
                 }
                 col = next;
             }
-            runner = p.getUuid();
+            // OSRS: one player is taken; in Hard mode all but one (they share the maze between them). // approx: each
+            // runner walks the whole path
+            java.util.Collections.shuffle(party, new java.util.Random(rnd().nextLong()));
+            int taken = hard() && party.size() > 1 ? party.size() - 1 : 1;
+            runners.clear();
             mazeTicks = 0;
             BlockPos o = mazeOrigin();
-            raid.teleport(p, new BlockPos(o.getX() + COLS, o.getY() + 1, o.getZ() - 2));
-            warn("Sotetseg drags " + p.getName().getString() + " into the shadow realm! Find the hidden path.");
-            Msg.game(p, "Follow the souls through the maze. Stepping off the path hurts.");
+            for (int i = 0; i < taken; i++) {
+                ServerPlayerEntity p = party.get(i);
+                runners.add(p.getUuid());
+                raid.teleport(p, new BlockPos(o.getX() + COLS - taken / 2 + i, o.getY() + 1, o.getZ() - 2));
+                warn("Sotetseg drags " + p.getName().getString() + " into the shadow realm! Find the hidden path.");
+                Msg.game(p, "Follow the souls through the maze. Stepping off the path hurts.");
+            }
+            for (int i = taken; i < party.size(); i++) {
+                Msg.game(party.get(i), "Follow the red glow across the tiled floor: only the shadow realm runner can see the path.");
+            }
         }
 
         @Override
         public boolean bossVulnerable(DataBossEntity boss) {
-            return runner == null;
+            return runners.isEmpty();
         }
 
         @Override
@@ -757,7 +816,7 @@ final class TobRooms {
             if (!alive(sotetseg)) {
                 return;
             }
-            if (runner != null) {
+            if (!runners.isEmpty()) {
                 mazeTick();
                 return;
             }
@@ -765,86 +824,123 @@ final class TobRooms {
             if ((hp <= 0.66 && !maze66) || (hp <= 0.33 && !maze33)) {
                 if (hp <= 0.33) {
                     maze33 = true;
-                    maze50 = true;
                 }
                 maze66 = true;
                 startMaze();
                 return;
             }
-            // Hard mode: Sotetseg drags a player into the shadow realm once more, at half health. // approx
-            if (hard() && hp <= 0.5 && !maze50) {
-                maze50 = true;
-                startMaze();
-                return;
-            }
             autoAttack(sotetseg, tick, 5);
             if (--ballCooldown <= 0) {
-                // OSRS: the ball of death follows every 10 projectiles (one every 5 ticks).
+                // OSRS: the ball of death follows every 10 projectiles (one every 5 ticks); Hard mode launches two at a time.
                 ballCooldown = 50;
-                ServerPlayerEntity target = randomPlayer();
-                if (target != null) {
-                    warn("Sotetseg launches a ball of death at " + target.getName().getString() + "! Stand together to share it!");
-                    RaidEffects.later(4, () -> {
-                        if (!target.isAlive() || !alive(sotetseg)) {
-                            return;
-                        }
-                        List<ServerPlayerEntity> share = new ArrayList<>();
-                        for (ServerPlayerEntity p : players()) {
-                            if (p.squaredDistanceTo(target) <= 3.5 * 3.5) {
-                                share.add(p);
-                            }
-                        }
-                        if (!share.contains(target)) {
-                            share.add(target);
-                        }
-                        world().spawnParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 1, target.getZ(), 3, 1, 0.5, 1, 0);
-                        // OSRS: up to 188 split between everyone within 3x3 of the target. // approx: scaled like the HP by party
-                        int each = (int) (com.runecraft.osrs.content.raids.RaidScaling.TOB_SOTETSEG_BALL * com.runecraft.osrs.content.raids.RaidScaling.tobHp(raid.partySize())) / share.size();
-                        for (ServerPlayerEntity p : share) {
-                            RaidEffects.hit(sotetseg, p, each, null, true);
-                        }
-                    });
+                List<ServerPlayerEntity> party = players();
+                int balls = hard() && party.size() > 1 ? 2 : 1;
+                java.util.Collections.shuffle(party, new java.util.Random(rnd().nextLong()));
+                for (int i = 0; i < Math.min(balls, party.size()); i++) {
+                    deathBall(party.get(i));
                 }
             }
         }
 
+        private void deathBall(ServerPlayerEntity target) {
+            warn("Sotetseg launches a ball of death at " + target.getName().getString() + "! Stand together to share it!");
+            RaidEffects.later(4, () -> {
+                if (!target.isAlive() || !alive(sotetseg)) {
+                    return;
+                }
+                List<ServerPlayerEntity> share = new ArrayList<>();
+                for (ServerPlayerEntity p : players()) {
+                    if (p.squaredDistanceTo(target) <= 3.5 * 3.5) {
+                        share.add(p);
+                    }
+                }
+                if (!share.contains(target)) {
+                    share.add(target);
+                }
+                world().spawnParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 1, target.getZ(), 3, 1, 0.5, 1, 0);
+                // OSRS: up to 188 split between everyone within 3x3 of the target. // approx: scaled like the HP by party
+                int each = (int) (com.runecraft.osrs.content.raids.RaidScaling.TOB_SOTETSEG_BALL * com.runecraft.osrs.content.raids.RaidScaling.tobHp(raid.partySize())) / share.size();
+                for (ServerPlayerEntity p : share) {
+                    RaidEffects.hit(sotetseg, p, each, null, true);
+                }
+            });
+        }
+
         private void mazeTick() {
-            ServerPlayerEntity p = world().getServer().getPlayerManager().getPlayer(runner);
             BlockPos o = mazeOrigin();
             mazeTicks++;
-            if (p == null || !p.isAlive() || raid.isDowned(p)) {
-                runner = null;
-                return;
+            ServerPlayerEntity lead = null;
+            int leadRow = -1;
+            for (UUID id : new ArrayList<>(runners)) {
+                ServerPlayerEntity p = player(id);
+                if (p == null || !p.isAlive() || raid.isDowned(p)) {
+                    runners.remove(id);
+                    continue;
+                }
+                int col = (int) Math.floor((p.getX() - o.getX()) / 2);
+                int row = (int) Math.floor((p.getZ() - o.getZ()) / 2);
+                if (p.getZ() >= o.getZ() + ROWS * 2) {
+                    raid.teleport(p, at(-14, 0));
+                    say(p.getName().getString() + " escapes the shadow realm!");
+                    runners.remove(id);
+                    continue;
+                }
+                if (mazeTicks > 60) {
+                    raid.teleport(p, at(-14, 0));
+                    RaidEffects.hit(sotetseg, p, 30, null, true);
+                    Msg.red(p, "The shadow realm spits you out.");
+                    runners.remove(id);
+                    continue;
+                }
+                if (mazeTicks % 7 == 0) {
+                    // OSRS: the shadow realm chips the runner for 1-3 every 7 ticks.
+                    RaidEffects.hit(sotetseg, p, 1 + rnd().nextInt(3), null, true);
+                }
+                if (col >= 0 && col < COLS && row >= 0 && row < ROWS && !path.contains(key(col, row)) && !cooldown(p, 2)) {
+                    RaidEffects.hit(sotetseg, p, 15, null, true);
+                    Msg.red(p, "The shadows lash at you!");
+                }
+                int from = Math.max(0, row);
+                for (int r = from; r < Math.min(ROWS, from + 3); r++) {
+                    for (int c = 0; c < COLS; c++) {
+                        if (path.contains(key(c, r))) {
+                            world().spawnParticles(ParticleTypes.SOUL, o.getX() + c * 2 + 1, o.getY() + 1.1, o.getZ() + r * 2 + 1, 1, 0.3, 0,
+                                    0.3, 0);
+                        }
+                    }
+                }
+                if (row > leadRow) {
+                    lead = p;
+                    leadRow = row;
+                }
             }
-            int col = (int) Math.floor((p.getX() - o.getX()) / 2);
-            int row = (int) Math.floor((p.getZ() - o.getZ()) / 2);
-            if (p.getZ() >= o.getZ() + ROWS * 2) {
-                raid.teleport(p, at(-14, 0));
-                say(p.getName().getString() + " escapes the shadow realm!");
-                runner = null;
-                return;
+            if (lead != null) {
+                arenaTick(o, lead);
             }
-            if (mazeTicks > 60) {
-                raid.teleport(p, at(-14, 0));
-                RaidEffects.hit(sotetseg, p, 30, null, true);
-                Msg.red(p, "The shadow realm spits you out.");
-                runner = null;
-                return;
+        }
+
+        /**
+         * The players left in the arena see only the runner's position (a red glow on the arena's tiles) and must walk
+         * the same path: a wrong tile hits for 15 plus 6.67% of current hitpoints every tick (OSRS).
+         */
+        private void arenaTick(BlockPos o, ServerPlayerEntity lead) {
+            BlockPos a = arenaOrigin();
+            int col = (int) Math.floor((lead.getX() - o.getX()) / 2);
+            int row = (int) Math.floor((lead.getZ() - o.getZ()) / 2);
+            if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
+                world().spawnParticles(ParticleTypes.CRIMSON_SPORE, a.getX() + col * 2 + 1, a.getY() + 1.1, a.getZ() + row * 2 + 1, 6, 0.5,
+                        0.1, 0.5, 0);
             }
-            if (mazeTicks % 7 == 0) {
-                // OSRS: the shadow realm chips the runner for 1-3 every 7 ticks.
-                RaidEffects.hit(sotetseg, p, 1 + rnd().nextInt(3), null, true);
-            }
-            if (col >= 0 && col < COLS && row >= 0 && row < ROWS && !path.contains(key(col, row)) && !cooldown(p, 2)) {
-                RaidEffects.hit(sotetseg, p, 15, null, true);
-                Msg.red(p, "The shadows lash at you!");
-            }
-            int from = Math.max(0, row);
-            for (int r = from; r < Math.min(ROWS, from + 3); r++) {
-                for (int c = 0; c < COLS; c++) {
-                    if (path.contains(key(c, r))) {
-                        world().spawnParticles(ParticleTypes.SOUL, o.getX() + c * 2 + 1, o.getY() + 1.1, o.getZ() + r * 2 + 1, 1, 0.3, 0,
-                                0.3, 0);
+            for (ServerPlayerEntity p : players()) {
+                if (runners.contains(p.getUuid())) {
+                    continue;
+                }
+                int c = (int) Math.floor((p.getX() - a.getX()) / 2);
+                int r = (int) Math.floor((p.getZ() - a.getZ()) / 2);
+                if (c >= 0 && c < COLS && r >= 0 && r < ROWS && !path.contains(key(c, r))) {
+                    RaidEffects.hit(sotetseg, p, 15 + (int) (p.getHealth() * 0.0667), null, true);
+                    if (!cooldown(p, 4)) {
+                        Msg.red(p, "That tile isn't on the path!");
                     }
                 }
             }
@@ -853,11 +949,13 @@ final class TobRooms {
         @Override
         public void cleanup() {
             super.cleanup();
-            ServerPlayerEntity p = runner == null ? null : world().getServer().getPlayerManager().getPlayer(runner);
-            if (p != null && p.isAlive()) {
-                raid.teleport(p, at(-14, 0));
+            for (UUID id : runners) {
+                ServerPlayerEntity p = player(id);
+                if (p != null && p.isAlive()) {
+                    raid.teleport(p, at(-14, 0));
+                }
             }
-            runner = null;
+            runners.clear();
         }
     }
 

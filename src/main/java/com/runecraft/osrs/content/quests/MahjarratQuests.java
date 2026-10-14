@@ -115,28 +115,96 @@ final class MahjarratQuests {
     }
 
     private static void secretsOfTheNorth(QuestBook b) {
-        Cast.npc(b, "evelot", "Evelot", "ARDOUGNE", 8, 2, Cast.FAIR, 0x6A2A5A);
-        Cast.npc(b, "quest_hazel", "Hazel", "ARDOUGNE", -8, -2, Cast.PALE, 0x3A6A3A);
-        Cast.npc(b, "jhallan", "Jhallan", "ghorrock_prison", 2, 2, 0x6A7A8A, 0x2A2A3A);
+        // OSRS walkthrough: the Carnillean guard, Evelot (the hired killer) at the Fight Arena, Hazeel, Claus's cellar,
+        // Weiss (Big Fish, Snowflake), the assassin, the ritual room puzzles and the Strange Creature (the Phantom Muspah).
+        b.spot("sotn_evelot_trail", "Evelot's trail", 2600, 3170); // approx: the boulders and bushes east of the Fight Arena bar
+        b.spot("sotn_weiss_cave", "Weiss southern cave", 2860, 3930); // approx: beneath the main building
+        b.spot("sotn_weiss_ritual_room", "Weiss ritual room", 2870, 3925); // approx
+        Cast.npc(b, "sotn_carnillean_guard", "Guard", "carnillean_house", 2, 3, Cast.FAIR, 0x5A5A6A);
+        Cast.npc(b, "evelot", "Evelot", "fight_arena", 6, 6, Cast.FAIR, 0x6A2A5A);
+        Cast.npc(b, "sotn_hazeel", "Hazeel", "hazeel_cult_hideout", -2, 3, 0x7A8A9A, 0x2A1A3A);
+        Cast.npc(b, "sotn_big_fish", "Big Fish", "sotn_weiss_cave", 6, 6, Cast.TROLL, 0x5A6A7A);
+        Cast.npc(b, "sotn_snowflake", "Snowflake", "sotn_weiss_cave", -6, 4, Cast.TROLL, 0xC0C8D0);
+        b.item("sotn_dusty_scroll", "Dusty scroll", "scroll", 0xB0A080, "An old scroll from the Carnilleans' hidden chest. It mentions a ritual in the north.");
+        b.boss(BossDef.of("quest_evelot", "Evelot").level(148).stats(160, 160, 150, 120, 80, 1).speed(4)
+                .defenceBonus(70, 60, 40, 0, 40)
+                .attack(AttackDef.of("mace", AttackType.CRUSH, 34, 2.5, 6))
+                .attack(AttackDef.of("prayer_smash", AttackType.CRUSH, 30, 2.5, 1).special(Special.DRAIN_PRAYER, 10)
+                        .telegraph(2, "Evelot raises her mace - your prayers falter!")) // approx: disables protection prayers
+                .drops(Drop.always("bones")).skin(Cast.FAIR, 0x6A2A5A, 0x3A1A2A, 0x2A1A1A).size(0.6f, 1.9f, 1.0f)
+                .at("sotn_evelot_trail").arena(9, "stone"));
+        b.boss(BossDef.of("quest_assassin", "Assassin").level(262).stats(400, 140, 140, 140, 140, 140).speed(4)
+                .defenceBonus(60, 30, 80, 200, 50)
+                .attack(AttackDef.of("blade", AttackType.SLASH, 39, 2.5, 4))
+                .attack(AttackDef.of("knives", AttackType.RANGED, 39, 10, 4))
+                .attack(AttackDef.of("poison_vial", AttackType.RANGED, 30, 10, 1).special(Special.POISON, 6)
+                        .particle("minecraft:item_slime")) // OSRS: up to 30, poison starting at 6
+                .drops(Drop.always("bones")).skin(Cast.PALE, 0x1A1A1A, 0x101010, 0x2A2A2A).size(0.6f, 1.9f, 1.0f)
+                .at("sotn_weiss_cave").arena(10, "ice"));
+        b.boss(BossDef.of("quest_strange_creature", "Strange Creature").level(368).stats(550, 280, 280, 200, 150, 280).speed(5)
+                .defenceBonus(110, 90, 80, 280, 0) // ranged form (melee form: magic -10, ranged 160)
+                .attack(AttackDef.of("claw", AttackType.STAB, 24, 3, 3))
+                .attack(AttackDef.of("prismatic_bolt", AttackType.RANGED, 32, 12, 4).particle("minecraft:crit"))
+                .attack(AttackDef.of("prismatic_spike", AttackType.MAGIC, 32, 12, 2).particle("minecraft:end_rod")) // approx
+                .phase(50, "The Strange Creature shrouds itself in a prismatic shield!", 1.2, false) // post-shield max hit 38
+                .drops(Drop.always("bones")).model("phantom_muspah").size(2.0f, 2.6f, 1.6f)
+                .at("sotn_weiss_ritual_room").arena(12, "ice"));
         b.quest("secrets_of_the_north", "Secrets of the North", Difficulty.MASTER, 2)
                 .reqQuest("making_friends_with_my_arm", "the_generals_shadow", "devious_minds", "hazeel_cult")
                 .xp(Skill.AGILITY, 60000).xp(Skill.THIEVING, 50000).xp(Skill.HUNTER, 40000) // OSRS (current quest XP rewards)
                 .req(Skill.AGILITY, 69).req(Skill.THIEVING, 64).req(Skill.HUNTER, 56)
                 .unlock("The Phantom Muspah boss in the Ghorrock Dungeon")
-                .stage("I can start this quest by speaking to Evelot in East Ardougne. (Requires Making Friends with My Arm, The General's Shadow, Devious Minds, Hazeel Cult, 69 Agility, 64 Thieving, 56 Hunter.)")
-                .talk("evelot").say("There's been a murder in my house! The victim's body is covered in frost... in summer. The Ardougne guards are useless.")
-                .stage("I should ask Hazel, the victim's friend, what she knows.")
-                .reach("ARDOUGNE", 10).stay().unlessFlag("sotn_scene").flag("sotn_scene")
-                .say("* You search Evelot's house: frost on the body, a broken window and footprints leading north.")
-                .talk("quest_hazel").needFlag("sotn_scene").missing("Have you looked at the house yet? The guards trampled everything.").say("He spoke of Ghorrock, the old Zarosian fortress in the frozen north... and of someone who kept him prisoner there.")
-                .stage("I must travel to the Ghorrock Dungeon in the Wilderness and find out who is held there.")
-                .reach("ghorrock_dungeon", 10).say("* In the frozen halls, the ice cracks. A Mahjarrat lies imprisoned in the ice: Jhallan.")
-                .stage("I should speak to Jhallan in the Ghorrock prison.")
-                .talk("jhallan").say("Free me and you shall know everything. *Behind you, something shimmers: a muspah, its prismatic form shifting.*")
-                .stage("I must defeat the Phantom Muspah.")
-                .kill("phantom_muspah").flag("sotn_muspah").say("* The Phantom Muspah shatters into shards of ice and shadow.")
-                .stage("I should report to Evelot.")
-                .talk("evelot").needFlag("sotn_muspah").say("Jhallan... a Mahjarrat? Then the murder was only the beginning. Thank you; the north holds more secrets yet.");
+                .stage("I can start this quest by speaking to the guard at the Carnillean Mansion in East Ardougne. (Requires Making Friends with My Arm, The General's Shadow, Devious Minds, Hazeel Cult, 69 Agility, 64 Thieving, 56 Hunter.)")
+                .talk("sotn_carnillean_guard").say("Ceril Carnillean's been murdered! Upstairs, in his own home. The captain wants it kept quiet - will you take a look?")
+                .stage("I should investigate Ceril's murder upstairs in the Carnillean Mansion.")
+                .reach("carnillean_house", 8).stay().unlessFlag("sotn_scene").flag("sotn_scene")
+                .say("* You inspect Ceril's corpse and the broken window, knock on the false wall and climb to a hidden room. Its chest has been forced.")
+                .talk("sotn_carnillean_guard").needFlag("sotn_scene")
+                .say("> The window was broken from the outside. Ceril was stabbed from behind. And a hidden room above us was broken into.",
+                        "A professional, then. The Khazard barman at the Fight Arena hears about anyone with a blade for hire. Ask about Evelot.")
+                .missing("Have you looked upstairs yet? Inspect the body, the window... the whole room.")
+                .stage("I should ask the Khazard barman about Evelot and track her down.")
+                .talk("khazard_barman").stay().needFlag("sotn_scene").unlessFlag("sotn_barman").flag("sotn_barman")
+                .say("Evelot? Drank here, paid in old coins, left in a hurry. Try following her tracks outside.")
+                .reach("sotn_evelot_trail", 6).stay().needFlag("sotn_barman").unlessFlag("sotn_tracked").flag("sotn_tracked").spawn("quest_evelot")
+                .say("* Barrels by the bar, a boulder, a bush, a tree stump, another boulder, a bush... Evelot is waiting for you, mace in hand.")
+                .kill("quest_evelot").stay().needFlag("sotn_tracked").unlessFlag("sotn_evelot").flag("sotn_evelot")
+                .say("* Evelot drops to her knees.")
+                .talk("evelot").needFlag("sotn_evelot").say("I was paid to take a scroll from that room, nothing more. The one who paid me wore Hazeel's colours.")
+                .missing("* Evelot won't say a word while she can still fight.")
+                .stage("I should find out who hired Evelot: Hazeel's followers in the cult hideout beneath the Ardougne sewers.")
+                .talk("clivet").stay().unlessFlag("sotn_cult").flag("sotn_cult").say("The master will see you. Take the raft.")
+                .talk("sotn_hazeel").stay().needFlag("sotn_cult").unlessFlag("sotn_hazeel").flag("sotn_hazeel")
+                .say("I did not order a murder. But the Carnilleans hid something of mine: a scroll. Find what the killer missed.")
+                .reach("carnillean_house", 8).stay().needFlag("sotn_hazeel").unless("sotn_dusty_scroll").unlessFlag("sotn_scroll").give("sotn_dusty_scroll")
+                .reqSkill(Skill.THIEVING, 64)
+                .say("* Claus the Chef lets you into the cellar. Behind the cooking shelves a button opens a passage to a locked chest.",
+                        "* You pick the lock pin by pin and take a dusty scroll.")
+                .talk("sotn_hazeel").needFlag("sotn_hazeel").take("sotn_dusty_scroll").flag("sotn_scroll")
+                .say("A ritual... in the north. Weiss. Whoever hired your killer is going there. Follow them.")
+                .missing("The scroll the Carnilleans hid. Search their cellar.")
+                .stage("I should go to Weiss and find out what the killer is after.")
+                .talk("sotn_big_fish").stay().unlessFlag("sotn_big_fish").flag("sotn_big_fish")
+                .say("Stranger came through. Asked about the old cave under the big house. Snowflake saw more.")
+                .talk("sotn_snowflake").stay().needFlag("sotn_big_fish").unlessFlag("sotn_snowflake").flag("sotn_snowflake")
+                .say("Odd man. Hooded. Went down the stairs, to the south cave. Snowflake not follow. Snowflake not stupid.")
+                .reach("sotn_weiss_cave", 6).stay().needFlag("sotn_snowflake").unlessFlag("sotn_cave").flag("sotn_cave").spawn("quest_assassin")
+                .say("* In the southern cave, a hooded assassin turns from the ice. Smoke bombs scatter across the floor!")
+                .kill("quest_assassin").needFlag("sotn_cave").flag("sotn_assassin")
+                .say("* The assassin flees in a puff of smoke, wounded.")
+                .stage("I should open the ritual room's sealed gate under Weiss and face whatever lies beyond.")
+                .talk("sotn_hazeel").stay().needFlag("sotn_assassin").unlessFlag("sotn_hazeel_weiss").flag("sotn_hazeel_weiss")
+                .say("I followed you. The gate ahead is Zarosian work. Its locks answer to old words and old fire.")
+                .reach("sotn_weiss_ritual_room", 6).stay().needFlag("sotn_hazeel_weiss").unlessFlag("sotn_puzzles").need("tinderbox").flag("sotn_puzzles")
+                .say("* You find a lever handle in a barrel, open the gate with BLOOD and the chest with 7402, light the braziers NW, SE, NE, SW,",
+                        "* press LEFT, UP, LEFT, DOWN, pull the lever and join two jewel shards into an ancient jewel. It opens the icy chest: the icy key.")
+                .missing("* The braziers need lighting. You'll need a tinderbox.")
+                .reach("sotn_weiss_ritual_room", 6).stay().needFlag("sotn_puzzles").unlessFlag("sotn_creature").spawn("quest_strange_creature")
+                .say("* Beyond the icy gate, a crevice. Something prismatic unfolds from the dark: a Strange Creature!")
+                .kill("quest_strange_creature").stay().needFlag("sotn_puzzles").unlessFlag("sotn_creature").flag("sotn_creature")
+                .say("* The Strange Creature shatters and flees deeper into the ice. Hazeel teleports you back to Ardougne.")
+                .talk("sotn_carnillean_guard").needFlag("sotn_creature")
+                .say("A Zarosian ritual under Weiss? And a creature like that... Well. The captain will want this kept very quiet indeed. Thank you.");
     }
 
     private static void desertTreasureII(QuestBook b) {
@@ -145,7 +213,8 @@ final class MahjarratQuests {
         b.item("vardorvis_medallion_piece", "Vardorvis' medallion", "amulet", 0x8A2A2A, "A piece of the ancient medallion, taken from Vardorvis.");
         b.item("sucellus_medallion_piece", "Sucellus' medallion", "amulet", 0x2A8A8A, "A piece of the ancient medallion, taken from Duke Sucellus.");
         b.item("whisperer_medallion_piece", "Whisperer's medallion", "amulet", 0x2A2A8A, "A piece of the ancient medallion, taken from the Whisperer.");
-        b.item("leviathan_medallion_piece", "Leviathan's medallion", "amulet", 0x2A6A2A, "A piece of the ancient medallion, taken from the Leviathan.");
+        // OSRS: the Scar's piece is Perseriya's medallion (the Leviathan's keeper); the id is kept for saves.
+        b.item("leviathan_medallion_piece", "Perseriya's medallion", "amulet", 0x2A6A2A, "A piece of the ancient medallion, belonging to Perseriya.");
         b.items(s -> s.add("ring_of_shadows", "Ring of shadows", Kind.SIMPLE, "ring", 0x3A2A4A).value(1).stack(1)
                 .examine("A ring that reveals the shadow realm and teleports to the four strongholds of the old empire."));
         b.spot("dt2_digsite_east_winch", "Digsite east winch", 3370, 3427); // approx: the easternmost winch
@@ -154,6 +223,7 @@ final class MahjarratQuests {
                 .attack(AttackDef.of("slam", AttackType.CRUSH, 12, 2.5, 10))
                 .drops(Drop.always("bones")).skin(0x9A9AA0, 0x5A3A6A, 0x3A2A4A, 0x8A8A90).size(1.0f, 2.6f, 1.2f)
                 .at("dt2_digsite_east_winch").arena(8, "sand"));
+        dt2Chapters(b);
         b.quest("desert_treasure_ii", "Desert Treasure II - The Fallen Empire", Difficulty.GRANDMASTER, 5)
                 .reqQuest("desert_treasure_i", "secrets_of_the_north", "enakhras_lament", "temple_of_the_eye", "the_garden_of_death",
                         "below_ice_mountain", "his_faithful_servants")
@@ -180,18 +250,236 @@ final class MahjarratQuests {
                 .missing("* The golem machine's cells are empty. Burst spells on the four totems (death and chaos runes) would charge them.")
                 .say("* You charge the cells with burst spells on the totems and set the golem running. It speaks in an ancient voice:",
                         "The medallion was split among the four strongholds of the empire: the Stranglewood, Ghorrock, Lassar and the Scar. Their keepers have... changed.")
-                .stage("I must recover the four medallion pieces from Vardorvis, Duke Sucellus, the Whisperer and the Leviathan.")
-                .drop("vardorvis", "vardorvis_medallion_piece", 1).drop("duke_sucellus", "sucellus_medallion_piece", 1)
-                .drop("the_whisperer", "whisperer_medallion_piece", 1).drop("the_leviathan", "leviathan_medallion_piece", 1)
+                .stage("I must recover the four medallion pieces: Vardorvis' in the Stranglewood, Perseriya's in the Scar, Sucellus' in Ghorrock Prison and the Whisperer's in the Lassar Undercity.")
+                // ---- Carnifex Maximus Vardorvis (OSRS walkthrough) ----
+                .talk("dt2_barus").stay().unlessFlag("dt2_v_barus").flag("dt2_v_barus")
+                .say("Kasonde? He came through here talking about the Stranglewood. He left something in the house south of the Hosidius estate agent.")
+                .reach("dt2_hosidius_house", 4).stay().needFlag("dt2_v_barus").unless("dt2_strange_potion").unlessFlag("dt2_v_boat").give("dt2_strange_potion")
+                .say("* On the desk: a strange potion and a note. 'Drink before boarding. It keeps the strangling at bay... for a while.'")
+                .reach("dt2_stranglewood_dock", 5).stay().unlessFlag("dt2_v_boat").take("dt2_strange_potion").flag("dt2_v_boat")
+                .say("* You drink the strange potion and board the boat. Through the mist, a dead forest rises: the Stranglewood.")
+                .missing("* The boatman won't take you without protection from the strangling. (Search the house south of the Hosidius estate agent.)")
+                .talk("kasonde").stay().needFlag("dt2_v_boat").unlessFlag("dt2_v_kasonde").flag("dt2_v_kasonde").spawn("dt2_strangled")
+                .say("You came! Down here, quick - the strangled are coming. Build the barricades, light the satchels, keep them off me!")
+                .kill("dt2_strangled", 4).stay().needFlag("dt2_v_kasonde").unlessFlag("dt2_v_defended").flag("dt2_v_defended")
+                .say("* The last of the strangled falls back. Kasonde catches his breath.",
+                        "@Kasonde: A serum. Korbal herb from the outcrop with the boar, argian berries from the south-west beach. Then we can walk among them.")
+                .reach("dt2_korbal_outcrop", 4).stay().needFlag("dt2_v_defended").unless("dt2_korbal_herb").unlessFlag("dt2_v_serum").give("dt2_korbal_herb")
+                .say("* On a small outcrop, past a wild boar, you pick a korbal herb.")
+                .reach("dt2_argian_beach", 4).stay().needFlag("dt2_v_defended").unless("dt2_argian_berries").unlessFlag("dt2_v_serum").give("dt2_argian_berries")
+                .say("* By the old campfire on the south-west beach, past a lynx, you pick argian berries.")
+                .talk("kasonde").stay().needFlag("dt2_v_defended").unlessFlag("dt2_v_serum").take("dt2_korbal_herb", "dt2_argian_berries").flag("dt2_v_serum")
+                .say("* In the great pyramid you add the korbal herb and the argian berries to Kasonde's unfinished serum and drink it.",
+                        "The strangled won't root you now. Vardorvis waits in the snowy square to the north-west. Bring me the temple key he guards.")
+                .missing("The serum needs a korbal herb and argian berries.")
+                .reach("dt2_vardorvis_square", 6).stay().needFlag("dt2_v_serum").unlessFlag("dt2_v_vardorvis").spawn("dt2_quest_vardorvis")
+                .say("* In the snowy square, a hulking figure with a parasitic head drags his axe through the snow: Vardorvis!")
+                .kill("dt2_quest_vardorvis").stay().needFlag("dt2_v_serum").unlessFlag("dt2_v_vardorvis").flag("dt2_v_vardorvis")
+                .say("* Vardorvis collapses. You pick up the temple key he carried.")
+                .talk("kasonde").stay().needFlag("dt2_v_vardorvis").unlessFlag("dt2_v_betrayal").flag("dt2_v_betrayal").spawn("dt2_kasonde")
+                .say("The key! At last the medallion is... mine. Did you really think I'd share the empire's secrets?")
+                .kill("dt2_kasonde").stay().needFlag("dt2_v_betrayal").unlessFlag("dt2_v_medallion").flag("dt2_v_medallion").give("vardorvis_medallion_piece")
+                .say("* Kasonde yields. He tells you of the tatty page in the temple; it leads back to the stone chest in the barricaded hideout.",
+                        "* In the chest you find Vardorvis' medallion.")
+                // ---- Praefectus Classis Perseriya: the Scar ----
+                .talk("wizard_persten").stay().unlessFlag("dt2_l_persten").flag("dt2_l_persten")
+                .say("You came through the Catalytic Guardian too? Perseriya's ships lie beyond three passages. Solve them all before you leave, or the Scar resets them.")
+                .reach("dt2_scar_central", 5).stay().needFlag("dt2_l_persten").unlessFlag("dt2_l_central").flag("dt2_l_central")
+                .say("* In the central passage you guide the abyssal pathways until the doors seal shut behind you.")
+                .reach("dt2_scar_northwest", 5).stay().needFlag("dt2_l_persten").unlessFlag("dt2_l_northwest").need("tinderbox").flag("dt2_l_northwest")
+                .say("* In the north-west passage you light the braziers one by one, holding your breath against the choking smoke.")
+                .missing("* The braziers here need lighting. You'll need a tinderbox.")
+                .reach("dt2_scar_southeast", 5).stay().needFlag("dt2_l_persten").unlessFlag("dt2_l_southeast").flag("dt2_l_southeast")
+                .say("* In the south-east passage you clear the growths from the pipes while scarred demons claw at you.")
+                .reach("dt2_perseriya_ship", 6).stay().needFlag("dt2_l_central", "dt2_l_northwest", "dt2_l_southeast").unlessFlag("dt2_l_leviathan")
+                .spawn("dt2_quest_leviathan")
+                .say("* The passage opens onto Perseriya's sunken ship. The water heaves: the Leviathan rises from the abyss!")
+                .kill("dt2_quest_leviathan").stay().needFlag("dt2_l_central").unlessFlag("dt2_l_leviathan").flag("dt2_l_leviathan")
+                .say("* The Leviathan sinks back into the depths.")
+                .talk("wizard_persten").stay().needFlag("dt2_l_leviathan").unlessFlag("dt2_l_medallion").flag("dt2_l_medallion").give("leviathan_medallion_piece")
+                .say("You killed it? Then the debris on the little island is safe to search.", "* Among the debris you find Perseriya's medallion.")
+                // ---- Duke Sucellus: Ghorrock Prison ----
+                .reach("dt2_ghorrock_cell", 6).stay().unlessFlag("dt2_d_escape").flag("dt2_d_escape")
+                .say("* Beneath Weiss you reach the prison door - and are thrown into a cell. A voice in the wall talks you through it:",
+                        "* a prisoner's letter in the skeleton, a knife in the bed, a lockpick in the bucket... and the door swings open.",
+                        "* A hooded assassin watches you leave, then vanishes.")
+                .reach("dt2_ghorrock_refugee_camp", 6).stay().needFlag("dt2_d_escape").unlessFlag("dt2_d_keys").flag("dt2_d_keys")
+                .say("* Chest by chest you work through the prison: 214013 for the sapphire key, LIES for the emerald key,",
+                        "* up, right, left, down, right, up for the ruby key and WRATH for the diamond key.")
+                .talk("dt2_assassin").stay().needFlag("dt2_d_keys").unlessFlag("dt2_d_jhallan").flag("dt2_d_jhallan")
+                .say("You found your gear. Good. Light the firecrackers in the refugee camp and keep Jhallan busy until I return.",
+                        "* Jhallan's illusions surround you. You pray against his magic and circle the pillar until the assassin returns and Jhallan withdraws.")
+                .reach("dt2_ghorrock_asylum", 6).stay().needFlag("dt2_d_jhallan").unlessFlag("dt2_d_poisons").needTool("pickaxe").need("pestle_and_mortar")
+                .flag("dt2_d_poisons").spawn("dt2_quest_duke_sucellus")
+                .say("* Past the extremities' gaze you grind arder and musca mushrooms, mine salt and brew two poisons in the vats.",
+                        "* You pour them on the sleeping Duke. Duke Sucellus wakes!")
+                .missing("* You'll need a pickaxe for the salt and a pestle and mortar for the mushrooms (there are spares by the vats).")
+                .kill("dt2_quest_duke_sucellus").stay().needFlag("dt2_d_poisons").unlessFlag("dt2_d_medallion").flag("dt2_d_medallion").give("sucellus_medallion_piece")
+                .say("* Duke Sucellus slumps into the ice. With his key you open the chest in the west room, where the assassin waits: Sucellus' medallion.")
+                // ---- The Whisperer: the Lassar Undercity ----
+                .talk("dt2_ramarno").stay().unlessFlag("dt2_w_ramarno").flag("dt2_w_ramarno")
+                .say("A sinkhole opened in the north-west of the ruins. Prescott has a rope long enough, if you're mad enough to climb down.")
+                .talk("dt2_prescott").stay().needFlag("dt2_w_ramarno").unless("dt2_very_long_rope").unlessFlag("dt2_w_rope").give("dt2_very_long_rope")
+                .say("A very long rope, for a very deep hole. Don't tell Ramarno I lent it.")
+                .reach("dt2_camdozaal_sinkhole", 4).stay().needFlag("dt2_w_ramarno").unlessFlag("dt2_w_rope").take("dt2_very_long_rope").flag("dt2_w_rope")
+                .say("* You tie the very long rope to the rock and climb down into the drowned city of Lassar.")
+                .talk("dt2_ketla").stay().needFlag("dt2_w_rope").unlessFlag("dt2_w_fragment").flag("dt2_w_fragment")
+                .say("A living soul! Take this blackstone fragment; it pulls you out of the Shadow Realm. Bring me schematics and I'll build you what you need.")
+                .reach("dt2_lassar_science", 6).stay().needFlag("dt2_w_fragment").unlessFlag("dt2_w_torches").flag("dt2_w_torches")
+                .say("* With Ketla's shadow blocker, idol and torches you pick the shadow locks of the Science and Residential districts,",
+                        "* burning the tentacles and gathering the green, purple, blue and white shadow keys.")
+                .reach("dt2_lassar_palace", 6).stay().needFlag("dt2_w_torches").unlessFlag("dt2_w_icon").flag("dt2_w_icon")
+                .say("* In the Palace you light the four braziers in the Shadow Realm and take the perfected shadow torch schematic.",
+                        "* With the red key you find both halves of the icon segment and join them into a strange icon.")
+                .talk("dt2_ketla").stay().needFlag("dt2_w_icon").unlessFlag("dt2_w_perfected").flag("dt2_w_perfected")
+                .say("The strange icon fits the ancient pillar below the drain... There. Your perfected shadow torch. The cathedral's tentacles won't stop you now.")
+                .reach("dt2_sunken_cathedral", 6).stay().needFlag("dt2_w_perfected").unlessFlag("dt2_w_whisperer").spawn("dt2_quest_whisperer")
+                .say("* You burn through the tentacles and wade into the Sunken Cathedral. The water stirs, and something sings: the Whisperer!")
+                .kill("dt2_quest_whisperer").stay().needFlag("dt2_w_perfected").unlessFlag("dt2_w_whisperer").flag("dt2_w_whisperer")
+                .give("whisperer_medallion_piece").say("* The Whisperer dissolves into shadow, leaving the Whisperer's medallion in the water.")
                 .talk("quest_ancient_guardian_vault").need("vardorvis_medallion_piece", "sucellus_medallion_piece", "whisperer_medallion_piece", "leviathan_medallion_piece")
-                .say("All four pieces. Place them in the door, and the vault will open.")
-                .missing("The medallion is incomplete. Vardorvis, Duke Sucellus, the Whisperer and the Leviathan each hold a piece.")
-                .stage("I should open the vault with the reassembled medallion.")
-                .reach("quest_the_vault", 6).take("vardorvis_medallion_piece", "sucellus_medallion_piece", "whisperer_medallion_piece", "leviathan_medallion_piece")
-                .say("* The vault opens. Inside, a shadow moves: someone has come for the empire's secret before you. It is a trap!",
-                        "* After a desperate struggle the intruders flee, but something terrible has been woken.")
+                .say("All four pieces. Place them on the statues, and the vault will open.")
+                .missing("The medallion is incomplete. Vardorvis, Perseriya, Duke Sucellus and the Whisperer each hold a piece.")
+                // ---- The Desert Treasure: the Mysterious Figure and Sliske's wights ----
+                .stage("I should place the four medallions on the statues of the generals and open the vault.")
+                .reach("quest_the_vault", 6).stay().unlessFlag("dt2_f_trap")
+                .take("vardorvis_medallion_piece", "sucellus_medallion_piece", "whisperer_medallion_piece", "leviathan_medallion_piece").flag("dt2_f_trap")
+                .spawn("dt2_mysterious_figure")
+                .say("* As the last medallion settles, the floor gives way - a trap. You wake in a cell, pick the lock with a hair clip from the bed",
+                        "* and take your things from the chest. At the altar to the west, a mysterious figure is waiting.")
+                .kill("dt2_mysterious_figure").stay().needFlag("dt2_f_trap").unlessFlag("dt2_f_figure").flag("dt2_f_figure")
+                .say("* The figure staggers and vanishes in a swirl of shadow. The vault stands open.")
+                .reach("quest_the_vault", 6).stay().needFlag("dt2_f_figure").unlessFlag("dt2_f_wights").flag("dt2_f_wights").spawn("dt2_forsaken_assassin")
+                .say("* Inside the vault, Sliske's voice echoes: 'Did you think you were the only ones looking?' Shadowy copies of your allies rise.")
+                .kill("dt2_forsaken_assassin").stay().needFlag("dt2_f_wights").unlessFlag("dt2_f_w1").flag("dt2_f_w1").spawn("dt2_ketla_the_unworthy")
+                .say("* The Forsaken Assassin falls. Ketla the Unworthy steps out of the dark, her clones fanning out around her.")
+                .kill("dt2_ketla_the_unworthy").stay().needFlag("dt2_f_w1").unlessFlag("dt2_f_w2").flag("dt2_f_w2").spawn("dt2_kasonde_the_craven")
+                .say("* Ketla fades. Kasonde the Craven charges, hurling bottles of corruption.")
+                .kill("dt2_kasonde_the_craven").stay().needFlag("dt2_f_w2").unlessFlag("dt2_f_w3").flag("dt2_f_w3").spawn("dt2_persten_the_deceitful")
+                .say("* Kasonde crumbles. Persten the Deceitful tears open a portal of leeches.")
+                .kill("dt2_persten_the_deceitful").needFlag("dt2_f_w3")
+                .say("* The last of Sliske's wights dissolves. In the heart of the vault lies the empire's secret... and an empty space where something was taken.")
                 .stage("I should tell Azzanadra in the Jaldraocht Pyramid what happened at the vault.")
                 .talk("azzanadra").say("The empire stirs. You have done Zaros a great service, and earned a great warning. Keep this ring of shadows; it will guide you back to the four strongholds.");
+    }
+
+    /**
+     * Desert Treasure II's chapters (OSRS walkthrough): helpers, quest items and the quest versions of the four bosses
+     * (osrs-dps-calc "Quest" rows), the Mysterious Figure and Sliske's wights. The quest bosses reuse the real bosses'
+     * scripts (registered by the bosses module) with lower max hits.
+     */
+    private static void dt2Chapters(QuestBook b) {
+        b.spot("dt2_burning_man", "The Burning Man", 1446, 3822); // approx: south-west of Xeric's Inferno
+        b.spot("dt2_hosidius_house", "House south of the Hosidius estate agent", 1779, 3620); // approx
+        b.spot("dt2_stranglewood_dock", "Stranglewood boat dock", 1270, 3550); // approx: west of fairy ring BLS
+        b.spot("dt2_korbal_outcrop", "Stranglewood korbal outcrop", 1150, 3470); // approx
+        b.spot("dt2_argian_beach", "Stranglewood south-west beach", 1120, 3380); // approx
+        b.spot("dt2_vardorvis_square", "Stranglewood snowy square", 1130, 3450); // approx: north-west of the city
+        b.spot("dt2_scar_central", "The Scar, central passage", 3410, 2805); // approx
+        b.spot("dt2_scar_northwest", "The Scar, north-west passage", 3395, 2820); // approx
+        b.spot("dt2_scar_southeast", "The Scar, south-east passage", 3435, 2775); // approx
+        b.spot("dt2_perseriya_ship", "Perseriya's ship", 3450, 2810); // approx
+        b.spot("dt2_ghorrock_cell", "Ghorrock Prison cells", 2900, 3975); // approx: beneath Weiss
+        b.spot("dt2_ghorrock_refugee_camp", "Ghorrock Prison refugee camp", 2925, 3990); // approx
+        b.spot("dt2_ghorrock_asylum", "Ghorrock Prison asylum", 2960, 3990); // approx: behind the dragonstone gate
+        b.spot("dt2_camdozaal_sinkhole", "Camdozaal sinkhole", 2980, 3510); // approx: north-west of the ruins
+        b.spot("dt2_lassar_science", "Lassar Undercity Science District", 3340, 3445); // approx: beside the mod's Lassar Undercity
+        b.spot("dt2_lassar_palace", "Lassar Undercity Palace", 3365, 3455); // approx
+        b.spot("dt2_sunken_cathedral", "Sunken Cathedral", 3385, 3420); // approx
+        Cast.npc(b, "dt2_barus", "Barus", "dt2_burning_man", 2, 2, Cast.TAN, 0x7A3A2A);
+        Cast.npc(b, "dt2_assassin", "Assassin", "dt2_ghorrock_refugee_camp", 2, 2, Cast.PALE, 0x1A1A1A);
+        Cast.npc(b, "dt2_ramarno", "Ramarno", "camdozaal", 3, 2, 0x9A8A70, 0x5A4A3A);
+        Cast.npc(b, "dt2_prescott", "Prescott", "camdozaal", -3, -3, Cast.FAIR, 0x3A4A6A);
+        Cast.npc(b, "dt2_ketla", "Ketla", "dt2_lassar_science", 3, 0, 0xB0A0C0, 0x3A2A5A);
+        b.item("dt2_strange_potion", "Strange potion", "potion", 0x5A8A3A, "Kasonde's potion. It should keep the strangling at bay.");
+        b.item("dt2_korbal_herb", "Korbal herb", "herb", 0x4A7A2A, "A korbal herb from the Stranglewood.");
+        b.item("dt2_argian_berries", "Argian berries", "seed", 0x8A2A4A, "Argian berries from the Stranglewood's south-west beach.");
+        b.item("dt2_very_long_rope", "Very long rope", "rope", 0xA08A5A, "A very long rope. Long enough for a very deep hole.");
+
+        // Quest versions (osrs-dps-calc "Quest" rows: level, hitpoints, levels, defence bonuses, melee max hit).
+        b.boss(BossDef.of("dt2_quest_vardorvis", "Vardorvis").level(572).stats(500, 260, 270, 215, 180, 1).speed(5) // str/def approx (they scale with his hp)
+                .defenceBonus(150, 25, 50, 560, 560)
+                .attack(AttackDef.of("axe_swing", AttackType.SLASH, 37, 4, 6))
+                .attack(AttackDef.of("swinging_axes", AttackType.SLASH, 43, 16, 2).special(Special.SKY_STRIKE, 0) // approx
+                        .telegraph(3, "Axes swing out from the walls!").particle("minecraft:sweep_attack"))
+                .drops(Drop.always("bones")).model("vardorvis").size(0.9f, 2.4f, 1.6f).moveSpeed(0.28)
+                .at("dt2_vardorvis_square").arena(12, "crypt"));
+        b.boss(BossDef.of("dt2_quest_leviathan", "The Leviathan").level(593).stats(720, 250, 270, 200, 130, 130).speed(4)
+                .defenceBonus(200, 150, 180, 220, 50)
+                .attack(AttackDef.of("shadow_strike", AttackType.CRUSH, 34, 16, 1).particle("minecraft:squid_ink"))
+                .attack(AttackDef.of("boulder", AttackType.RANGED, 27, 16, 1).particle("minecraft:crit")) // approx: 40 x 34/50
+                .attack(AttackDef.of("abyssal_orb", AttackType.MAGIC, 27, 16, 1).particle("minecraft:witch")) // approx
+                .drops(Drop.always("bones")).model("the_leviathan").size(2.2f, 2.2f, 2.0f).moveSpeed(0.0)
+                .at("dt2_perseriya_ship").arena(14, "water"));
+        b.boss(BossDef.of("dt2_quest_duke_sucellus", "Duke Sucellus").level(538).stats(330, 250, 280, 215, 230, 1).speed(6)
+                .defenceBonus(210, 30, 160, 400, 300)
+                .attack(AttackDef.of("fist_slam", AttackType.CRUSH, 36, 5, 3))
+                .attack(AttackDef.of("magic_blast", AttackType.MAGIC, 26, 16, 4).particle("minecraft:witch")) // approx: 40 x 36/56
+                .drops(Drop.always("bones")).model("duke_sucellus").size(1.8f, 2.4f, 2.0f).moveSpeed(0.0)
+                .at("dt2_ghorrock_asylum").arena(13, "ice"));
+        b.boss(BossDef.of("dt2_quest_whisperer", "The Whisperer").level(587).stats(660, 240, 250, 200, 130, 130).speed(5)
+                .defenceBonus(150, 250, 180, -10, 250)
+                .attack(AttackDef.of("soul_bolt", AttackType.MAGIC, 25, 16, 3).particle("minecraft:soul")) // approx: 35 x 30/42
+                .attack(AttackDef.of("tentacle_lash", AttackType.RANGED, 25, 16, 3).particle("minecraft:squid_ink")) // approx
+                .phase(50, "The Whisperer drags you into the Shadow Realm!", 1.0, false)
+                .drops(Drop.always("bones")).model("the_whisperer").flying().size(1.8f, 2.6f, 2.0f).moveSpeed(0.18)
+                .at("dt2_sunken_cathedral").arena(13, "void"));
+        // Strangled (level 138) defending Kasonde's hideout, and Kasonde's betrayal (level 231).
+        b.boss(BossDef.of("dt2_strangled", "Strangled").level(138).stats(40, 110, 50, 30, 50, 1).speed(4)
+                .defenceBonus(30, 20, 30, 10, 0)
+                .attack(AttackDef.of("strangle", AttackType.STAB, 3, 2.5, 6).special(Special.FREEZE, 3)) // typeless roots in OSRS
+                .drops(Drop.always("bones")).skin(0x4A5A3A, 0x3A4A2A, 0x2A3A1A, 0x6A8A4A).size(0.7f, 1.9f, 1.0f)
+                .at("dt2_stranglewood_dock").arena(8, "jungle"));
+        b.boss(BossDef.of("dt2_kasonde", "Kasonde").level(231).stats(240, 190, 190, 90, 90, 190).speed(3)
+                .defenceBonus(30, 30, 30, 250, 50)
+                .attack(AttackDef.of("crossbow", AttackType.RANGED, 20, 10, 5))
+                .attack(AttackDef.of("poison_vial", AttackType.RANGED, 15, 10, 2).special(Special.VENOM, 6).particle("minecraft:item_slime")) // approx
+                .attack(AttackDef.of("explosive_vial", AttackType.RANGED, 15, 10, 1).special(Special.HAZARD, 4)
+                        .telegraph(2, "Kasonde hurls an explosive vial!").particle("minecraft:flame")) // approx
+                .drops(Drop.always("bones")).skin(Cast.BROWN, 0x5A6A3A, 0x3A4A2A, 0x2A2A2A).size(0.6f, 1.9f, 1.0f)
+                .at("dt2_korbal_outcrop").arena(9, "jungle"));
+        // The Desert Treasure: the Mysterious Figure (271) and Sliske's four wights.
+        b.boss(BossDef.of("dt2_mysterious_figure", "Mysterious Figure").level(271).stats(450, 120, 120, 120, 120, 120).speed(4)
+                .defenceBonus(20, 40, 60, 30, 20)
+                .attack(AttackDef.of("shadow_strike", AttackType.SLASH, 18, 2.5, 4))
+                .attack(AttackDef.of("shadow_bolt", AttackType.MAGIC, 18, 12, 3).particle("minecraft:squid_ink"))
+                .attack(AttackDef.of("shadow_orbs", AttackType.MAGIC, 18, 12, 1).special(Special.FREEZE, 3)
+                        .telegraph(2, "The figure freezes you and launches dark orbs - move!").particle("minecraft:portal")) // approx
+                .drops(Drop.always("bones")).skin(0x2A2A2A, 0x1A1A2A, 0x101018, 0x6A2A8A).size(0.6f, 1.9f, 1.0f)
+                .at("quest_the_vault").arena(10, "void"));
+        b.boss(BossDef.of("dt2_forsaken_assassin", "The Forsaken Assassin").level(252).stats(200, 160, 160, 140, 140, 160).speed(4)
+                .defenceBonus(60, 30, 80, 200, 50)
+                .attack(AttackDef.of("blade", AttackType.SLASH, 20, 2.5, 4))
+                .attack(AttackDef.of("knives", AttackType.RANGED, 20, 10, 3))
+                .attack(AttackDef.of("poison_bottle", AttackType.RANGED, 12, 10, 1).special(Special.POISON, 6).particle("minecraft:item_slime")) // approx
+                .drops(Drop.always("bones")).skin(Cast.PALE, 0x1A1A1A, 0x101010, 0x3A2A4A).size(0.6f, 1.9f, 1.0f)
+                .at("quest_the_vault").arena(10, "void"));
+        b.boss(BossDef.of("dt2_ketla_the_unworthy", "Ketla the Unworthy").level(236).stats(200, 1, 1, 130, 130, 160).speed(3)
+                .defenceBonus(60, 30, 80, 200, 70)
+                .attack(AttackDef.of("shadow_arrow", AttackType.RANGED, 18, 10, 5))
+                .attack(AttackDef.of("shadow_clones", AttackType.RANGED, 18, 10, 1).special(Special.SUMMON, 3)
+                        .telegraph(2, "Ketla splits into shadow clones!")) // approx
+                .minion("minecraft:vex", 3)
+                .drops(Drop.always("bones")).skin(0xB0A0C0, 0x3A2A5A, 0x2A1A3A, 0x6A4A8A).size(0.6f, 1.9f, 1.0f)
+                .at("quest_the_vault").arena(10, "void"));
+        b.boss(BossDef.of("dt2_kasonde_the_craven", "Kasonde the Craven").level(221).stats(200, 200, 200, 120, 120, 200).speed(3)
+                .defenceBonus(30, 30, 30, 250, 50)
+                .attack(AttackDef.of("crossbow", AttackType.RANGED, 22, 10, 4))
+                .attack(AttackDef.of("slam", AttackType.CRUSH, 22, 2.5, 3))
+                .attack(AttackDef.of("corruption_bottle", AttackType.RANGED, 15, 10, 1).special(Special.HAZARD, 4)
+                        .telegraph(2, "Kasonde hurls a bottle of corruption!")) // approx
+                .drops(Drop.always("bones")).skin(Cast.BROWN, 0x3A3A2A, 0x2A2A1A, 0x6A2A2A).size(0.6f, 1.9f, 1.0f)
+                .at("quest_the_vault").arena(10, "void"));
+        b.boss(BossDef.of("dt2_persten_the_deceitful", "Persten the Deceitful").level(264).stats(200, 1, 1, 130, 250, 1).speed(4)
+                .defenceBonus(70, 70, 70, 200, 20)
+                .attack(AttackDef.of("shadow_blast", AttackType.MAGIC, 32, 12, 5).particle("minecraft:witch"))
+                .attack(AttackDef.of("lightning", AttackType.MAGIC, 25, 12, 1).special(Special.SKY_STRIKE, 0)
+                        .telegraph(3, "Lightning crackles around Persten - find the open tiles!").particle("minecraft:electric_spark")) // approx
+                .attack(AttackDef.of("leech_portal", AttackType.MAGIC, 10, 12, 1).special(Special.SUMMON, 3)
+                        .telegraph(2, "Persten opens a portal - leeches pour out!")) // approx
+                .minion("minecraft:silverfish", 3)
+                .drops(Drop.always("bones")).skin(Cast.PALE, 0x2A2A6A, 0x1A1A4A, 0xE0E0E0).size(0.6f, 1.9f, 1.0f)
+                .at("quest_the_vault").arena(10, "void"));
     }
 
     private static void curseOfArrav(QuestBook b) {
