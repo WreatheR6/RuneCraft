@@ -1,0 +1,29 @@
+# Round 17 slayer task monsters: OSRS combat stats from weirdgloop/osrs-dps-calc monsters.json (Rock: his wiki
+# infobox) and the Slayer level from the wiki infobox (Kiyogitpy/osrs-wiki-data, July 2026). Locked by SlayerTaskMonsters2Test.
+id	wiki_name	version	level	hitpoints	attack	strength	defence	magic	ranged	attack_speed	max_hit	slayer_level
+albino_bat	Albino bat		52	33	57	57	30	1	1	4	7	1
+crypt_rat	Crypt rat		43	35	70	20	20	1	1	4	3	1
+giant_crypt_rat	Giant crypt rat		76	70	80	50	65	1	1	4	6	1
+crypt_spider	Crypt spider		56	60	45	47	45	1	1	4	6	1
+giant_crypt_spider	Giant crypt spider		79	80	65	67	65	1	1	4	8	1
+sulphur_lizard	Sulphur Lizard		50	50	50	45	30	1	1	4	5	44
+araxyte	Araxyte	Level 96	96	60	80	125	60	60	1	4	13	92
+araxyte_lvl146	Araxyte	Level 146	146	100	160	160	70	80	1	4	17	92
+feral_vampyre	Feral Vampyre	Level 61	61	40	55	60	55	40	1	4	7	1
+ice_wolf	Ice wolf	Level 96	96	70	100	90	70	1	1	4	10	1
+ice_wolf_lvl132	Ice wolf	Level 132	132	70	150	150	70	1	1	4	16	1
+pee_hat	Pee Hat		91	120	50	100	50	0	0	6	23	1
+kraka	Kraka		91	120	50	100	50	0	0	6	23	1
+troll_stick	Stick		104	135	60	110	60	0	0	6	27	1
+troll_rock	Rock		111	140	70	110	70	0	0	4	30	1
+ancient_zygomite	Ancient Zygomite		109	150	80	80	80	80	80	4	9	57
+wyrmling	Wyrmling	Attacking (Neypotzli)	55	65	20	30	40	60	15	4	5	62
+grimy_lizard	Grimy Lizard		50	75	65	25	10	25	1	4	3	44
+frost_crab	Frost Crab	Active	15	60	1	1	1	1	1	4	1	1
+chilled_jelly	Chilled jelly		112	140	95	90	70	95	1	4	10	52
+earthen_nagua	Earthen Nagua	Normal	128	160	120	120	40	40	1	4	13	48
+juvenile_custodian_stalker	Juvenile custodian stalker		93	135	95	55	45	25	1	4	6	54
+mature_custodian_stalker	Mature custodian stalker		117	190	105	75	45	40	1	4	8	67
+elder_custodian_stalker	Elder custodian stalker		142	250	120	90	45	75	1	4	10	76
+skogre	Skogre	1	44	71	20	36	35	1	1	6	5	1
+rooster	Rooster	Level 3	3	7	2	2	1	1	1	4	1	1

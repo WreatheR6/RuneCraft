@@ -356,6 +356,26 @@ public final class SpawnTable {
         s("seagull", 3028, 3234, 4, 3);
         s("black_guard", 3015, 3445, 4, 4);            // the Dwarven Mine entrance north of Falador
         si("pyrelord", 2255, 2960, 3, 5);               // Isle of Souls
+        // Round 17 slayer task monsters (SlayerTaskMonsters2) at their cache clusters (wiki tiles for the zygomites).
+        s("feral_vampyre", 3460, 3233, 6, 6);          // west of Burgh de Rott
+        s("feral_vampyre", 3592, 3484, 7, 14);         // the Haunted Woods (19 in OSRS)
+        s("feral_vampyre", 3628, 3466, 10, 18);
+        s("ice_wolf", 2783, 3859, 7, 12);              // Trollweiss Mountain
+        s("ice_wolf_lvl132", 2892, 3728, 10, 8);       // the Ice Path (25 in OSRS)
+        s("ice_wolf_lvl132", 2893, 3753, 11, 9);
+        s("ice_wolf_lvl132", 2925, 3758, 4, 5);        // outside the God Wars Dungeon
+        s("ice_wolf_lvl132", 2850, 3923, 5, 3);        // Weiss, behind its fence
+        si("ice_wolf_lvl132", 1582, 3896, 4, 5);        // the Settlement Ruins
+        s("pee_hat", 2872, 3598, 1, 1);                // Death Plateau's named trolls
+        s("kraka", 2875, 3598, 1, 1);
+        s("troll_stick", 2857, 3591, 1, 1);
+        s("troll_rock", 2855, 3591, 1, 1);
+        s("skogre", 2463, 3046, 4, 8);                 // Jiggig
+        s("rooster", 2680, 3662, 1, 2);                // Rellekka chicken pen
+        s("rooster", 2816, 3560, 1, 2);                // Tenzing's yard
+        si("ancient_zygomite", 3686, 3828, 7, 10);      // Fossil Island's mushroom forest (27 in OSRS)
+        si("ancient_zygomite", 3684, 3852, 10, 12);
+        si("ancient_zygomite", 3690, 3875, 10, 14);
         // Brine rats, Jormungand's basilisk knights, baby green dragons, sourhogs, shadow warriors and the
         // Wilderness God Wars Dungeon's spiritual creatures are dungeon camps (DungeonsLairs).
     }

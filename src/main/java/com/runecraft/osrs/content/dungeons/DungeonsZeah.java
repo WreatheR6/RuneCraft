@@ -60,7 +60,7 @@ final class DungeonsZeah {
     /**
      * The Karuulm Slayer Dungeon inside Mount Karuulm (entrance at the mountain's western foot, tile
      * 1299, 3806 - the Alchemical Hydra's arena is the bosses module's, on the mountain): the wyrms'
-     * hall on the first level and, below, the drakes' terrace and the hydras' lava cavern.
+     * hall and the sulphur lizards' cave on the first level and, below, the drakes' terrace and the hydras' lava cavern.
      */
     static Dungeons.Dungeon karuulm() {
         Cave c = new Cave("dng_karuulm_slayer_dungeon", "Karuulm Slayer Dungeon", mc("blackstone"), mc("basalt[axis=y]"),
@@ -77,6 +77,8 @@ final class DungeonsZeah {
         c.room(ox + 20, lz, ox + 66, lz + 36, f2, 9);                   // drakes
         c.hall(ox + 66, lz + 18, ox + 80, lz + 18, f2, 3, 5);
         c.room(ox + 80, lz - 4, ox + 120, lz + 40, f2, 10);             // hydras
+        c.hall(ox + 66, oz - 16, ox + 78, oz - 16, f, 3, 5);
+        c.room(ox + 78, oz - 34, ox + 108, oz - 2, f, 7);               // sulphur lizards (approx. layout)
         c.carve();
         c.pool(ox + 90, lz + 4, ox + 98, lz + 12, f2, mc("lava"));
         c.pool(ox + 104, lz + 24, ox + 112, lz + 34, f2, mc("lava"));
@@ -89,6 +91,7 @@ final class DungeonsZeah {
         c.camp(ox + 22, oz - 28, ox + 64, oz + 16, f, 5, 25, "wyrm");
         c.camp(ox + 22, lz + 2, ox + 64, lz + 34, f2, 4, 25, "drake");
         c.camp(ox + 82, lz - 2, ox + 118, lz + 38, f2, 4, 25, "hydra");
+        c.camp(ox + 80, oz - 32, ox + 106, oz - 4, f, 6, 25, "sulphur_lizard"); // 13 in OSRS
         return c.build();
     }
 

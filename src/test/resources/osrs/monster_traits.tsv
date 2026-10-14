@@ -700,3 +700,30 @@ zombified_spawn	Zombified Spawn	Post-quest	64	38	1	undead	yes	yes
 zulrah	Zulrah	Magma	725	500	5		yes	yes	500
 zulrah_magma	Zulrah	Magma	725	500	5		yes	yes	500
 zulrah_tanzanite	Zulrah	Magma	725	500	5		yes	yes	500
+albino_bat	Albino bat		52	33	2		no	no	33
+crypt_rat	Crypt rat		43	35	1	rat	no	no	35
+giant_crypt_rat	Giant crypt rat		76	70	2	rat	no	no	70
+crypt_spider	Crypt spider		56	60	1		no	no	45
+giant_crypt_spider	Giant crypt spider		79	80	1		no	no	80
+bloodworm	Bloodworm		52	45	1		no	no	
+sulphur_lizard	Sulphur Lizard		50	50	2		no	no	50
+araxyte	Araxyte	Level 96	96	60	1		no	no	60
+araxyte_lvl146	Araxyte	Level 146	146	100	2		no	no	100
+feral_vampyre	Feral Vampyre	Level 61	61	40	1	vampyre	no	no	40
+ice_wolf	Ice wolf	Level 96	96	70	2		no	no	70
+ice_wolf_lvl132	Ice wolf	Level 132	132	70	2		no	no	70
+pee_hat	Pee Hat		91	120	2		no	no	126
+kraka	Kraka		91	120	2		no	no	126
+troll_stick	Stick		104	135	2		no	no	141.5
+troll_rock	Rock		111	140	2		no	no	150.5
+ancient_zygomite	Ancient Zygomite		109	150	2		no	no	154
+wyrmling	Wyrmling	Attacking (Neypotzli)	55	65	2	dragon	no	no	65
+grimy_lizard	Grimy Lizard		50	75	2		yes	yes	75
+frost_crab	Frost Crab	Active	15	60	1		no	no	60
+chilled_jelly	Chilled jelly		112	140	1		no	no	140
+earthen_nagua	Earthen Nagua	Normal	128	160	2	spectral	no	no	165
+juvenile_custodian_stalker	Juvenile custodian stalker		93	135	1		yes	yes	135
+mature_custodian_stalker	Mature custodian stalker		117	190	1		yes	yes	190
+elder_custodian_stalker	Elder custodian stalker		142	250	1		yes	yes	250
+skogre	Skogre	1	44	71	2	undead	no	no	71
+rooster	Rooster	Level 3	3	7	1		yes	yes	7

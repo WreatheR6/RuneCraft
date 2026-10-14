@@ -287,7 +287,9 @@ public final class Barrows {
             c.set(rc[0] - ROOM_HALF, t + 1, rc[1] - ROOM_HALF, mc("skeleton_skull"));
             c.set(rc[0] + ROOM_HALF, t + 1, rc[1] + ROOM_HALF, mc("cobweb"));
             c.set(rc[0] + ROOM_HALF, t + TUNNEL_HEIGHT, rc[1] - ROOM_HALF, mc("cobweb"));
-            c.camp(rc[0] - 3, rc[1] - 3, rc[0] + 3, rc[1] + 3, t, 2, 50, "giant_rat", "giant_spider", "minecraft:skeleton");
+            // OSRS tunnel monsters: crypt rats and spiders, their giant kin, bloodworms and skeletons.
+            c.camp(rc[0] - 3, rc[1] - 3, rc[0] + 3, rc[1] + 3, t, 2, 50, "crypt_rat", "giant_crypt_rat", "crypt_spider",
+                    "giant_crypt_spider", "bloodworm", "minecraft:skeleton");
         }
         int[] ch = chest();
         int[] cc = roomCentre(CHEST_ROOM);

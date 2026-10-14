@@ -195,7 +195,8 @@ public final class SlayerCategories {
         also("zombies", "monkey_zombie", "monkey_zombie_lvl82", "monkey_zombie_lvl129");
         also("monkeys", "demonic_gorilla");
         also("zombies", "undead_chicken", "zombie_rat");
-        also("ogres", "zogre");
+        also("ogres", "zogre", "skogre");
+        also("spiders", "araxyte", "araxyte_lvl146");
         member("aviansies", "gwd_aviansie", "gwd_aviansie_elite");
         member("tzhaar", "tzhaar_ket", "tzhaar_xil", "tzhaar_mej", "tzhaar_hur_citizen");
         member("crabs", "rock_crab", "sand_crab", "king_sand_crab", "ammonite_crab");
