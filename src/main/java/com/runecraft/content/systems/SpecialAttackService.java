@@ -204,8 +204,8 @@ public final class SpecialAttackService {
         Random r = new Random(p.getRandom().nextLong());
         switch (a.spec.effect()) {
             case CLAWS -> {
-                int max = (int) Math.floor(baseMax(p, type) * SysModifier.wornMaxRatio(p, type));
-                long att = (long) (baseAttack(p, type) * SysModifier.wornAccuracyRatio(p, type));
+                int max = baseMax(p, target, type);
+                long att = (long) baseAttack(p, target, type);
                 long def = SysCombat.defenceRoll(target, type);
                 boolean[] hits = new boolean[4];
                 double chance = com.runecraft.osrs.Chance.hitChance(att, def);
@@ -216,7 +216,7 @@ public final class SpecialAttackService {
                 return a.clawHits[0];
             }
             case VOIDWAKER -> {
-                int max = (int) Math.floor(baseMax(p, type) * SysModifier.wornMaxRatio(p, type));
+                int max = baseMax(p, target, type);
                 return max / 2 + r.nextInt(Math.max(1, max) + 1);
             }
             case DARK_BOW -> {
@@ -348,13 +348,17 @@ public final class SpecialAttackService {
         }
     }
 
-    private static double baseAttack(ServerPlayerEntity p, AttackType type) {
-        return type == AttackType.RANGED ? SysCombat.rangedAttackRoll(p) : type == AttackType.MAGIC ? SysCombat.magicAttackRoll(p)
-                : SysCombat.meleeAttackRoll(p, type);
+    /** Attack roll with the player's gear effects (PlayerHitCalc) but without the other combat hooks. */
+    private static double baseAttack(ServerPlayerEntity p, LivingEntity target, AttackType type) {
+        return com.runecraft.osrs.PlayerHitCalc.attackRoll(hitInput(p, target, type));
     }
 
-    private static int baseMax(ServerPlayerEntity p, AttackType type) {
-        return type == AttackType.RANGED ? SysCombat.rangedMaxHit(p, SysCombat.ammoStrength(p)) : SysCombat.meleeMaxHit(p);
+    private static int baseMax(ServerPlayerEntity p, LivingEntity target, AttackType type) {
+        return com.runecraft.osrs.PlayerHitCalc.maxHit(hitInput(p, target, type));
+    }
+
+    private static com.runecraft.osrs.PlayerHitCalc.Input hitInput(ServerPlayerEntity p, LivingEntity target, AttackType type) {
+        return com.runecraft.combat.HitCalcBridge.input(p, target, type, null, type == AttackType.RANGED ? SysCombat.ammoStrength(p) : 0);
     }
 
     /** Rolls and applies an additional hit with the given multipliers (through the other combat hooks). */
@@ -365,9 +369,9 @@ public final class SpecialAttackService {
             }
             secondary = true;
             try {
-                long att = (long) (baseAttack(p, type) * acc * CombatHandler.hookAccuracy(p, target, type));
+                long att = (long) (baseAttack(p, target, type) * acc * CombatHandler.hookAccuracy(p, target, type));
                 long def = SysCombat.baseDefenceRoll(target, type);
-                int max = (int) Math.floor(baseMax(p, type) * dmg * CombatHandler.hookMaxHit(p, target, type));
+                int max = (int) Math.floor(baseMax(p, target, type) * dmg * CombatHandler.hookMaxHit(p, target, type));
                 int damage = SysCombat.roll(p, att, def, max);
                 damage = CombatHandler.hookAfterRoll(p, target, type, damage);
                 int done = SysCombat.hit(p, target, type, damage);
@@ -405,9 +409,9 @@ public final class SpecialAttackService {
         }
         secondary = true;
         try {
-            long att = (long) (SysCombat.rangedAttackRoll(p) * spec.accuracy() * CombatHandler.hookAccuracy(p, target, AttackType.RANGED));
+            long att = (long) (baseAttack(p, target, AttackType.RANGED) * spec.accuracy() * CombatHandler.hookAccuracy(p, target, AttackType.RANGED));
             long def = SysCombat.baseDefenceRoll(target, AttackType.RANGED);
-            int max = (int) Math.floor(SysCombat.rangedMaxHit(p, SysCombat.ammoStrength(p)) * spec.damage()
+            int max = (int) Math.floor(baseMax(p, target, AttackType.RANGED) * spec.damage()
                     * CombatHandler.hookMaxHit(p, target, AttackType.RANGED));
             int damage = SysCombat.roll(p, att, def, Math.max(1, max));
             if (spec.effect() == Effect.DARK_BOW) {

@@ -65,13 +65,14 @@ public final class SysModifier implements CombatHooks.PlayerAttackModifier {
 
     @Override
     public double accuracy(ServerPlayerEntity player, LivingEntity target, AttackType type) {
-        double m = wornAccuracyRatio(player, type) * SysCombat.drainAccuracy(target, type);
+        // Items in the extra slots are part of the gear totals HitCalcBridge feeds PlayerHitCalc (and of SysCombat's rolls).
+        double m = SysCombat.drainAccuracy(target, type);
         return m * SpecialAttackService.accuracy(player, target, type);
     }
 
     @Override
     public double maxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
-        return wornMaxRatio(player, type) * SpecialAttackService.maxHit(player, target, type);
+        return SpecialAttackService.maxHit(player, target, type);
     }
 
     @Override

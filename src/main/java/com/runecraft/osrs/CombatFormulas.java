@@ -13,15 +13,15 @@ public final class CombatFormulas {
     // ----- Player melee -----
 
     public static int effectiveAttack(int attackLevel, double prayerMultiplier, CombatStyle style) {
-        return (int) Math.floor(attackLevel * prayerMultiplier) + style.attackBonus() + 8;
+        return (int) Math.floor(attackLevel * prayerMultiplier + 1e-9) + style.attackBonus() + 8;
     }
 
     public static int effectiveStrength(int strengthLevel, double prayerMultiplier, CombatStyle style) {
-        return (int) Math.floor(strengthLevel * prayerMultiplier) + style.strengthBonus() + 8;
+        return (int) Math.floor(strengthLevel * prayerMultiplier + 1e-9) + style.strengthBonus() + 8;
     }
 
     public static int effectiveDefence(int defenceLevel, double prayerMultiplier, CombatStyle style) {
-        return (int) Math.floor(defenceLevel * prayerMultiplier) + style.defenceBonus() + 8;
+        return (int) Math.floor(defenceLevel * prayerMultiplier + 1e-9) + style.defenceBonus() + 8;
     }
 
     /** Melee max hit: {@code floor((effStr * (strBonus + 64) + 320) / 640)}. */
@@ -36,7 +36,7 @@ public final class CombatFormulas {
     // ----- Player ranged -----
 
     public static int effectiveRanged(int rangedLevel, double prayerMultiplier, CombatStyle style) {
-        return (int) Math.floor(rangedLevel * prayerMultiplier) + style.rangedBonus() + 8;
+        return (int) Math.floor(rangedLevel * prayerMultiplier + 1e-9) + style.rangedBonus() + 8;
     }
 
     /** Ranged max hit: {@code floor(0.5 + effRangedStr * (rangedStr + 64) / 640)}. */
@@ -46,8 +46,12 @@ public final class CombatFormulas {
 
     // ----- Player magic -----
 
+    /**
+     * Effective magic level for the attack roll: {@code floor(level * prayer) + 9} (the DPS calculator's +9; powered
+     * staves on accurate add 2 more, see {@link PlayerHitCalc}).
+     */
     public static int effectiveMagic(int magicLevel, double prayerMultiplier) {
-        return (int) Math.floor(magicLevel * prayerMultiplier) + 8;
+        return (int) Math.floor(magicLevel * prayerMultiplier + 1e-9) + 9;
     }
 
     /** Spell max hit increased by magic damage % (e.g. occult necklace +10%). */

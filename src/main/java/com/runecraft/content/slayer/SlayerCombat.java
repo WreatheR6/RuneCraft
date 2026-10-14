@@ -42,16 +42,8 @@ final class SlayerCombat {
 
     static void register() {
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
-            @Override
-            public double accuracy(ServerPlayerEntity player, LivingEntity target, AttackType type) {
-                return headgearMultiplier(player, target, type, true);
-            }
-
-            @Override
-            public double maxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
-                // Melee damage is boosted through Slayer.boostMaxHit; imbued gear also boosts ranged & magic.
-                return type.isMelee() ? 1.0 : headgearMultiplier(player, target, type, false);
-            }
+            // The black mask / slayer helmet bonus (melee 7/6, imbued ranged and magic 23/20 on task, never with a
+            // salve amulet) is part of com.runecraft.osrs.PlayerHitCalc, applied through combat.HitCalcBridge.
 
             @Override
             public int afterRoll(ServerPlayerEntity player, LivingEntity target, AttackType type, int damage) {
@@ -66,21 +58,6 @@ final class SlayerCombat {
             return useFinisher(sp, living) ? ActionResult.SUCCESS : ActionResult.PASS;
         });
         ServerTickEvents.END_SERVER_TICK.register(SlayerCombat::tick);
-    }
-
-    private static double headgearMultiplier(ServerPlayerEntity player, LivingEntity target, AttackType type, boolean accuracy) {
-        boolean melee = type.isMelee();
-        if (com.runecraft.combat.GearEffects.salveActive(player, target, type)) {
-            return 1.0; // a salve amulet's bonus never stacks with slayer headgear
-        }
-        if (melee && accuracy && SlayerService.wearingAny(player, SlayerGear.MELEE_BOOST_HEADGEAR)
-                && SlayerService.isOnTask(player, target)) {
-            return 7.0 / 6.0;
-        }
-        if (!melee && SlayerService.wearingAny(player, SlayerGear.IMBUED_HEADGEAR) && SlayerService.isOnTask(player, target)) {
-            return 1.15;
-        }
-        return 1.0;
     }
 
     private static String category(LivingEntity target) {

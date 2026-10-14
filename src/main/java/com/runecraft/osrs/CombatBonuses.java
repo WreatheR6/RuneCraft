@@ -91,17 +91,17 @@ public final class CombatBonuses {
         return Math.max(0, Math.min(chambers ? 350 : 250, Math.max(magicLevel, magicAttackBonus)));
     }
 
-    /** Twisted bow accuracy in percent: {@code 140 + (3M - 10)/100 - (3M/10 - 100)^2/100}, capped at 140. */
+    /** Twisted bow accuracy in percent: {@code 140 + (3M - 10)/100 (3M, not 10 * floor(3M/10)) - (3M/10 - 100)^2/100}, capped at 140. */
     public static int twistedBowAccuracy(int magic) {
         int t = 3 * magic / 10;
-        int acc = 140 + Math.floorDiv(10 * t - 10, 100) - (t - 100) * (t - 100) / 100;
+        int acc = 140 + (3 * magic - 10) / 100 - (t - 100) * (t - 100) / 100;
         return Math.max(0, Math.min(140, acc));
     }
 
     /** Twisted bow damage in percent: {@code 250 + (3M - 14)/100 - (3M/10 - 140)^2/100}, capped at 250. */
     public static int twistedBowDamage(int magic) {
         int t = 3 * magic / 10;
-        int dmg = 250 + Math.floorDiv(10 * t - 14, 100) - (t - 140) * (t - 140) / 100;
+        int dmg = 250 + (3 * magic - 14) / 100 - (t - 140) * (t - 140) / 100;
         return Math.max(0, Math.min(250, dmg));
     }
 
@@ -116,7 +116,7 @@ public final class CombatBonuses {
         return switch (weaponId) {
             case "trident_of_the_seas", "trident_of_the_seas_e" -> Math.max(1, third - 5);
             case "trident_of_the_swamp", "trident_of_the_swamp_e" -> Math.max(1, third - 2);
-            case "sanguinesti_staff", "holy_sanguinesti_staff" -> Math.max(1, third - 1);
+            case "sanguinesti_staff", "holy_sanguinesti_staff" -> Math.max(1, third); // DPS calculator: magic / 3
             case "tumekens_shadow" -> Math.max(1, third + 1);
             case "thammarons_sceptre" -> Math.max(1, third - 8);
             case "accursed_sceptre" -> Math.max(1, third - 6);

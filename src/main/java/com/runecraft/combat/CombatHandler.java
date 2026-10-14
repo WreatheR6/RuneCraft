@@ -144,15 +144,14 @@ public final class CombatHandler {
         }
         ActionManager.cancel(player);
         CombatStyle style = data.style().forMelee();
-        EquipmentStats eq = Equipment.total(player, skills);
         AttackType type = Equipment.meleeType(player, skills);
-        int effAtt = CombatFormulas.effectiveAttack(skills.currentLevel(Skill.ATTACK), PrayerService.attack(data), style);
-        int effStr = CombatFormulas.effectiveStrength(skills.currentLevel(Skill.STRENGTH), PrayerService.strength(data), style);
-        long attackRoll = (long) (CombatFormulas.attackRoll(effAtt, eq.attack(type)) * CombatHooks.accuracy(player, target, type));
+        // Levels, prayers, gear totals and every gear effect (salve, slayer helmet, void, obsidian, inquisitor's,
+        // demonbane, dragonbane, keris, fang, Dharok's...) come from the DPS-calculator-tested PlayerHitCalc.
+        com.runecraft.osrs.PlayerHitCalc.Input in = HitCalcBridge.input(player, target, type, null, 0);
+        long attackRoll = HitCalcBridge.attackRoll(player, target, in);
         long defenceRoll = defenceRoll(target, type);
-        int maxHit = CombatFormulas.meleeMaxHit(effStr, eq.meleeStrength());
-        maxHit = (int) Math.floor(Slayer.boostMaxHit(player, target, maxHit) * CombatHooks.maxHit(player, target, type));
-        int damage = CombatFormulas.roll(new java.util.Random(player.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
+        int maxHit = HitCalcBridge.maxHit(player, target, in);
+        int damage = HitCalcBridge.roll(new java.util.Random(player.getRandom().nextLong()), in, attackRoll, defenceRoll, maxHit);
         damage = CombatHooks.afterRoll(player, target, type, damage);
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, type);
@@ -182,14 +181,10 @@ public final class CombatHandler {
             return;
         }
         CombatStyle style = data.style().forRanged();
-        EquipmentStats eq = Equipment.total(player, skills);
-        int effRanged = CombatFormulas.effectiveRanged(skills.currentLevel(Skill.RANGED), PrayerService.rangedAttack(data), style);
-        int effRangedStr = CombatFormulas.effectiveRanged(skills.currentLevel(Skill.RANGED), PrayerService.rangedStrength(data), style);
-        long attackRoll = (long) (CombatFormulas.attackRoll(effRanged, eq.rangedAttack())
-                * CombatHooks.accuracy(player, target, AttackType.RANGED));
+        com.runecraft.osrs.PlayerHitCalc.Input in = HitCalcBridge.input(player, target, AttackType.RANGED, arrowItem, rangedStrength);
+        long attackRoll = HitCalcBridge.attackRoll(player, target, in);
         long defenceRoll = defenceRoll(target, AttackType.RANGED);
-        int maxHit = Math.max(1, (int) Math.floor(CombatFormulas.rangedMaxHit(effRangedStr, rangedStrength + eq.rangedStrength())
-                * CombatHooks.maxHit(player, target, AttackType.RANGED)));
+        int maxHit = Math.max(1, HitCalcBridge.maxHit(player, target, in));
         java.util.Random rng = new java.util.Random(player.getRandom().nextLong());
         boolean accurate = rng.nextDouble() < com.runecraft.osrs.Chance.hitChance(attackRoll, defenceRoll);
         int damage = accurate ? rng.nextInt(maxHit + 1) : 0;
