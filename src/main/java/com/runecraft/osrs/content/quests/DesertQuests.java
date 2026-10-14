@@ -51,26 +51,116 @@ final class DesertQuests {
         b.item("ancient_talisman", "Ancient talisman", "talisman", 0xA08A4A, "An unusual ancient talisman.");
         b.item("explosive_compound", "Explosive compound", "vial", 0xE0E080, "A dangerously unstable chemical compound.");
         b.item("stone_tablet", "Stone tablet", "note", 0x8A8A8A, "An ancient tablet carved with the history of Zaros.");
+        b.item("unstamped_letter", "Unstamped letter", "note", 0xE8E0C8, "A letter of recommendation, not yet stamped.");
+        b.item("sealed_letter", "Sealed letter", "note", 0xE8D8B0, "A letter of recommendation, sealed by the Varrock Museum curator.");
+        b.item("teddy", "Teddy", "creature", 0xA06A3A, "A cuddly teddy bear.");
+        b.item("special_cup", "Special cup", "pot", 0xE0C060, "A special cup, found while panning.");
+        b.item("animal_skull", "Animal skull", "bones", 0xE0D8C0, "A skull of a dead animal.");
+        b.item("specimen_jar", "Specimen jar", "vial", 0xC0D8E0, "A jar for holding soil samples.");
+        b.item("charcoal", "Charcoal", "ore", 0x2A2A2A, "Hmm, a bit of charcoal.");
+        b.item("arcenia_root", "Arcenia root", "herb", 0x6A8A3A, "The root of an arcenia plant.");
+        b.item("chemical_powder", "Chemical powder", "pot", 0xE8E8E8, "An unidentified white powder.");
+        b.item("unidentified_liquid", "Unidentified liquid", "vial", 0xD0E0C0, "An unidentified liquid.");
+        b.item("invitation_letter", "Invitation letter", "note", 0xE0D8C0, "An invitation to use the private dig shafts.");
+        // Quest-helper / wiki tiles around the Digsite.
+        b.spot("exam_centre_cupboard", "Exam Centre cupboard", 3355, 3332);
+        b.spot("digsite_bushes", "Bushes north of the Exam Centre", 3357, 3372);
+        b.spot("digsite_panning", "Digsite panning point", 3384, 3381);
+        b.spot("digsite_specimen_tray", "Digsite specimen tray", 3367, 3381); // approx
+        b.spot("digsite_chest_tent", "Digsite tent chest", 3374, 3378);
+        b.spot("digsite_barrel", "Digsite barrel", 3364, 3378);
+        b.spot("digsite_west_winch", "Digsite west winch", 3353, 3417);
+        b.spot("digsite_student_west", "Digsite (north-west)", 3345, 3425);
+        b.spot("digsite_student_east", "Digsite (north-east)", 3369, 3419);
+        b.spot("digsite_student_south", "Digsite (south)", 3362, 3398);
+        b.npc("digsite_student_female", "Student", "digsite_student_west", 0, 0, 0xF0C8A8, 0xC05A8A, 0x3A3A6A, 0x8A5A2A);
+        b.npc("digsite_student_orange", "Student", "digsite_student_east", 0, 0, 0xE0B898, 0xE08A2A, 0x3A3A3A, 0x2A1A0A);
+        b.npc("digsite_student_green", "Student", "digsite_student_south", 0, 0, 0xD8B090, 0x3A8A3A, 0x3A3A3A, 0x6A4A2A);
+        b.npc("panning_guide", "Panning guide", "digsite_panning", 1, 3, 0xE0C0A0, 0x6A5A3A, 0x4A3A2A, 0x8A6A3A);
+        b.npc("quest_digsite_workman", "Digsite workman", "digsite_student_south", 6, -6, 0xD0A880, 0xC08A2A, 0x4A3A2A, 0xE0C030);
         b.quest("the_dig_site", "The Dig Site", Difficulty.INTERMEDIATE, 2)
                 .req(Skill.AGILITY, 10).req(Skill.HERBLORE, 10).req(Skill.THIEVING, 25)
                 .xp(Skill.MINING, 15300).xp(Skill.HERBLORE, 2000).reward("gold_bar:2")
                 .stage("I can start this quest by speaking to the Examiner at the Exam Centre north of Al Kharid. (Requires 10 Agility, 10 Herblore, 25 Thieving.)")
-                .talk("examiner").say("You want to dig at the Digsite? First you must pass three Earth Sciences exams. Study the students at the site.")
-                .stage("I should pass the first Earth Sciences exam.")
-                .talk("examiner").say("Question one: what must all visitors to the Digsite do? > Report to the Examiner.", "Correct! You pass level one.")
-                .stage("I should pass the second Earth Sciences exam.")
-                .talk("examiner").say("Question two: what is the proper way to handle finds? > Carefully, with gloves.", "Correct! Level two passed.")
-                .stage("I should pass the third Earth Sciences exam.")
-                .talk("examiner").say("Final question: what should you use to carefully remove soil? > A trowel.", "Excellent! You may now dig at the site.")
-                .stage("I should dig at the Digsite and show any finds to the Archaeological expert.")
-                .reach("dig_site", 10).stay().unless("ancient_talisman").give("ancient_talisman").say("* You dig up an unusual talisman.")
-                .talk("archaeological_expert").take("ancient_talisman").say("Zarosian! Very rare. Doug Deeping is blocked by rocks in the deeper shaft; he'll need explosives.")
-                .stage("I should make an explosive compound (Doug Deeping knows how) and blow up the rocks in the deep shaft.")
-                .talk("doug_deeping").stay().unless("explosive_compound").take("chaos_rune", "vial_of_water", "coal").give("explosive_compound")
-                .say("Mix ammonium nitrate, nitroglycerine, ground charcoal and arcenia root... a chaos rune, water and coal will do in a pinch!")
-                .missing("For an explosive we'll need a chaos rune, a vial of water and some coal.")
-                .reach("dig_site", 6).take("explosive_compound").need("tinderbox").give("stone_tablet")
-                .say("* BOOM! The rocks collapse, revealing an ancient chamber with a stone tablet.")
+                .talk("examiner").give("unstamped_letter")
+                .say("You want to dig at the Digsite? First you must pass three Earth Sciences exams.",
+                        "Take this letter to Curator Haig Halen at the Varrock Museum to have it stamped. Then study the students at the site.")
+                .stage("I should have my letter stamped by the Varrock Museum curator, help the three students at the Digsite study, then pass the first exam.")
+                .talk("curator_haig_halen").stay().unless("sealed_letter").take("unstamped_letter").give("sealed_letter")
+                .say("A letter of recommendation for the Exam Centre? Certainly. *He stamps and seals it.*")
+                .reach("digsite_bushes", 3).stay().unless("teddy").unlessFlag("ds_female1").give("teddy")
+                .say("* Something is caught in the bushes: a teddy bear!")
+                .talk("panning_guide").stay().unlessFlag("ds_tea").take("cup_of_tea").flag("ds_tea")
+                .say("Ahh, a cup of tea! Thank you. You may pan in the river; there's a panning tray in the tent.")
+                .missing("You'll need permission to pan here. I could murder a cup of tea, mind.")
+                .reach("digsite_panning", 3).stay().needFlag("ds_tea").unless("special_cup").unlessFlag("ds_orange1").give("special_cup")
+                .say("* You pick up a panning tray from the tent and pan the river. Among the mud there's a special cup!")
+                .talk("quest_digsite_workman").stay().reqSkill(Skill.THIEVING, 25).unless("animal_skull").unlessFlag("ds_green1")
+                .give("animal_skull", "specimen_brush")
+                .say("* You pick the workman's pocket and find an animal skull and a specimen brush.")
+                .talk("digsite_student_female").stay().unlessFlag("ds_female1").take("teddy").flag("ds_female1")
+                .say("My lucky mascot! The first exam asks what the proper procedure is at the site... visitors must report to the Examiner.")
+                .missing("I've lost my lucky teddy somewhere near the Exam Centre. I can't study without it.")
+                .talk("digsite_student_orange").stay().unlessFlag("ds_orange1").take("special_cup").flag("ds_orange1")
+                .say("My cup! I dropped it panning. The answer you want: finds must be handled carefully, with gloves.")
+                .missing("I lost my special cup in the river while panning. Find it and I'll share my notes.")
+                .talk("digsite_student_green").stay().unlessFlag("ds_green1").take("animal_skull").flag("ds_green1")
+                .say("That's the skull a workman stole from me! Thanks. Remember: always use a trowel to remove soil.")
+                .missing("One of the workmen pinched my animal skull. They're light-fingered... and so might you be.")
+                .talk("examiner").needFlag("ds_female1", "ds_orange1", "ds_green1").take("sealed_letter")
+                .say("A sealed letter from the curator. Very well.",
+                        "Question one: what must all visitors to the Digsite do? > Report to the Examiner.", "Correct! You pass level one.")
+                .missing("Bring me the curator's sealed letter, and make sure you've studied with the students before you sit the exam.")
+                .stage("I should study with the students again and pass the second Earth Sciences exam.")
+                .talk("digsite_student_female").stay().unlessFlag("ds_female2").flag("ds_female2")
+                .say("Exam two? Finds should be cleaned with a specimen brush.")
+                .talk("digsite_student_orange").stay().unlessFlag("ds_orange2").flag("ds_orange2")
+                .say("Samples go in a specimen jar, of course.")
+                .talk("digsite_student_green").stay().unlessFlag("ds_green2").flag("ds_green2")
+                .say("Rock picks are for splitting rocks. And always wear gloves and boots.")
+                .talk("examiner").needFlag("ds_female2", "ds_orange2", "ds_green2")
+                .say("Question two: what is the proper way to handle finds? > Carefully, with gloves.", "Correct! Level two passed.")
+                .missing("You're not ready. Study with the students first.")
+                .stage("I should study with the students one last time (one wants an opal) and pass the third Earth Sciences exam.")
+                .talk("digsite_student_female").stay().unlessFlag("ds_female3").take("opal").flag("ds_female3")
+                .say("An opal! Lovely. For exam three: specimens are dated by the layers of soil they're found in.")
+                .missing("I'll help you with the last exam... for an opal. You might find one panning in the river.")
+                .talk("digsite_student_orange").stay().unlessFlag("ds_orange3").flag("ds_orange3")
+                .say("The level three exam? Study the different layers of soil.")
+                .talk("digsite_student_green").stay().unlessFlag("ds_green3").flag("ds_green3")
+                .say("Gneiss, basalt and sandstone. Learn them!")
+                .talk("examiner").needFlag("ds_female3", "ds_orange3", "ds_green3")
+                .say("Final question: what should you use to carefully remove soil? > A trowel.", "Excellent! You may now dig at the site.")
+                .missing("You're not ready for the final exam. Study with the students first.")
+                .stage("I should dig at the Digsite with a trowel and specimen brush and show any finds to the Archaeological expert.")
+                .reach("dig_site", 10).stay().need("trowel", "specimen_brush").unless("ancient_talisman").give("ancient_talisman")
+                .say("* You carefully dig in the level 3 site and brush off an unusual talisman.")
+                .missing("* You need a trowel to dig and a specimen brush to clean any finds.")
+                .talk("archaeological_expert").take("ancient_talisman").give("invitation_letter")
+                .say("Zarosian! Very rare. Here, an invitation to use the private dig shafts. Doug Deeping is blocked by rocks in the deeper shaft.")
+                .stage("I should make an explosive compound (the Archaeological expert can identify chemicals from the Digsite) and blow up the rocks in the deep shaft.")
+                .talk("doug_deeping").stay().unlessFlag("ds_doug").flag("ds_doug").give("chest_key")
+                .say("Rocks blocking the shaft? You'd need an explosive. There's a chest of chemicals in the tent; here's the key.",
+                        "And don't forget the arcenia root growing down the west shaft. It binds the compound together.")
+                .reach("digsite_west_winch", 3).stay().need("rope", "invitation_letter").unless("arcenia_root", "explosive_compound")
+                .give("arcenia_root")
+                .say("* You show the workman your invitation, tie your rope to the winch and climb down. You pick some arcenia root.")
+                .reach("digsite_chest_tent", 3).stay().take("chest_key").unless("chemical_powder").give("chemical_powder")
+                .say("* You unlock the chest in the tent and take a jar of white powder.")
+                .reach("digsite_barrel", 3).stay().take("vial").unless("unidentified_liquid").give("unidentified_liquid")
+                .say("* You fill a vial with liquid from the barrel. Better handle it carefully.")
+                .reach("exam_centre_cupboard", 2).stay().unless("specimen_jar", "charcoal", "explosive_compound").give("specimen_jar")
+                .say("* You search the cupboard in the Exam Centre and find a specimen jar.")
+                .reach("digsite_specimen_tray", 3).stay().need("specimen_jar").unless("charcoal", "explosive_compound").give("charcoal")
+                .say("* You sift through the specimen tray and find a lump of charcoal.")
+                .talk("archaeological_expert").stay().unless("explosive_compound")
+                .take("chemical_powder", "unidentified_liquid", "charcoal", "arcenia_root").need("pestle_and_mortar").give("explosive_compound")
+                .say("That powder is ammonium nitrate and the liquid... nitroglycerin! Careful!",
+                        "* You mix the two, add charcoal ground with your pestle and mortar, then the arcenia root. You have an explosive compound.")
+                .missing("Bring me any chemicals you find and I'll identify them. You'll also want charcoal, arcenia root and a pestle and mortar.")
+                .reach("digsite_west_winch", 3).take("explosive_compound").need("tinderbox").give("stone_tablet")
+                .say("* You pour the compound on the bricks blocking the shaft and light it. BOOM!",
+                        "* The rocks collapse, revealing an ancient chamber with a stone tablet.")
                 .stage("I should take the stone tablet to the Archaeological expert.")
                 .talk("archaeological_expert").take("stone_tablet").say("A Zarosian tablet! This is the find of the century. Please accept this reward.");
     }

@@ -43,8 +43,15 @@ final class ElfQuests {
                 .xp(Skill.AGILITY, 3000).xp(Skill.ATTACK, 3000).reward("ibans_staff")
                 .stage("I can start this quest by speaking to King Lathas in East Ardougne. (Requires Biohazard, 25 Ranged.)")
                 .talk("king_lathas").say("My scouts must reach the elven lands beyond the mountains. The only way is the Underground Pass, now ruled by the dark lord Iban. Find a way through.")
-                .stage("I should meet Koftik at the Underground Pass entrance west of West Ardougne.")
-                .talk("koftik").travel("underground_pass").say("The pass is full of traps. Follow me, and pray to Saradomin.")
+                .stage("I should meet Koftik at the Underground Pass entrance west of West Ardougne, then find a way across the chasm inside.")
+                .talk("koftik").stay().unlessFlag("up_koftik").flag("up_koftik").travel("underground_pass")
+                .say("The pass is full of traps. Follow me, and pray to Saradomin.",
+                        "The bridge over the chasm is raised. If you could cut the rope holding it up... with a burning arrow, perhaps.")
+                // OSRS: an oily cloth from the abandoned equipment, wrapped round an arrow, lit and shot at the bridge rope (25 Ranged).
+                .reach("underground_pass", 10).needFlag("up_koftik").need("tinderbox").take("bronze_arrow").reqSkill(Skill.RANGED, 25)
+                .say("* You find an oily cloth among some abandoned equipment and wrap it around an arrow.",
+                        "* You light it and fire at the rope holding the bridge. The rope burns through and the bridge crashes down across the chasm.")
+                .missing("* The bridge is raised on the far side. A burning arrow could cut its rope: you'll need an arrow and a tinderbox.")
                 .stage("To destroy Iban I need a doll from the witch Kardia, plus Iban's shadow, conscience and ashes... and venom from the spider Kalrag.")
                 .talk("kardia").stay().unless("doll_of_iban").give("doll_of_iban").say("Iban's doll? Take it... and leave me be! Imbue it with his shadow, conscience, ashes and blood.")
                 .talk("niloof").stay().unless("ibans_shadow").give("ibans_shadow", "ibans_conscience", "ibans_ashes")
@@ -90,6 +97,8 @@ final class ElfQuests {
     private static void songOfTheElves(QuestBook b) {
         b.npc("lord_iorwerth", "Lord Iorwerth", "prifddinas_ruins", 3, 3, 0xF4E0D2, 0x2A2A2A, 0x1A1A1A, 0xA0A0A0);
         b.npc("baxtorian_elf", "Baxtorian", "prifddinas_ruins", -3, 3, 0xF4E0D3, 0x3A8AA0, 0x2A5A6A, 0xE0E0E2);
+        b.item("ardougne_knight_helm", "Ardougne knight helm", "helmet", 0xA02A2A, "A red steel full helm of the Ardougne knights.");
+        b.item("ardougne_knight_platebody", "Ardougne knight platebody", "platebody", 0x8A8A9A, "A steel platebody with the Ardougne tabard.");
         b.item("crystal_seed_sote", "Crystal seed", "gem", 0xB8F0FF, "The seed of the great crystal of Prifddinas.");
         b.boss(BossDef.of("fragment_of_seren", "Fragment of Seren").level(494).stats(1000, 300, 200, 300, 400, 1).speed(4)
                 .defenceBonus(100, 100, 100, 100, 100)
@@ -106,12 +115,31 @@ final class ElfQuests {
                 .req(Skill.AGILITY, 70).req(Skill.CONSTRUCTION, 70).req(Skill.FARMING, 70).req(Skill.HERBLORE, 70)
                 .req(Skill.HUNTER, 70).req(Skill.MINING, 70).req(Skill.SMITHING, 70).req(Skill.WOODCUTTING, 70)
                 .unlock("Access to Prifddinas, the elven city")
-                .stage("I can start this quest by speaking to Arianwyn in Lletya. (Requires Regicide and the Mourning's End quests; 70 in eight skills.)")
-                .talk("arianwyn").say("The time has come to restore Prifddinas. But Lord Iorwerth's forces still hold the ruins, and something darker stirs beneath.")
-                .stage("I should rally the elves and the people of Ardougne. Elena and Edmond may help.")
-                .talk("elena").say("King Lathas has been fighting Iorwerth in secret all along? Then we stand with the elves.")
-                .stage("I should travel to the ruins of Prifddinas and confront Lord Iorwerth.")
-                .talk("lord_iorwerth").say("You're too late! I have corrupted the Fragment of Seren. The goddess's song will destroy you all!")
+                .stage("I can start this quest by speaking to Edmond in East Ardougne. (Requires Regicide and the Mourning's End quests; 70 in eight skills.)")
+                .talk("edmond").say("Elena has been arrested by the king's knights for stirring up trouble against the mourners! Please, help her.")
+                .stage("I should ask King Lathas about Elena, disguise myself as an Ardougne knight (Alrena can help) and speak to Elena in her cell.")
+                .talk("king_lathas").stay().unlessFlag("sote_lathas").flag("sote_lathas")
+                .say("Elena is a troublemaker. She stays where she is. Now leave, I have a war with Iorwerth to fight.")
+                .talk("alrena").stay().needFlag("sote_lathas").unless("ardougne_knight_helm")
+                .take("steel_full_helm", "steel_platebody", "redberries:3").give("ardougne_knight_helm", "ardougne_knight_platebody")
+                .say("A knight's disguise? Dye a steel full helm red and sew the Ardougne tabard onto a steel platebody... there.")
+                .missing("To pass as one of the king's knights you need a steel full helm, a steel platebody and redberries for dye.")
+                .talk("elena").needFlag("sote_lathas").need("ardougne_knight_helm", "ardougne_knight_platebody")
+                .say("* The guards let a fellow knight through.",
+                        "You came! Lathas has been fighting Iorwerth in secret all along. Get word to the elves in Lletya: Ardougne will stand with them.")
+                .missing("* The prison guards turn you away. Perhaps dressed as one of the king's knights...")
+                .stage("I should travel to Lletya, help Baxtorian prepare (he needs a crystal tonic: cadantine and crystal dust in water) "
+                        + "and confront Lord Iorwerth.")
+                .talk("arianwyn").stay().unlessFlag("sote_arianwyn").flag("sote_arianwyn")
+                .say("The time has come to restore Prifddinas. But Lord Iorwerth's forces still hold the ruins. Baxtorian has returned to lead us.")
+                .talk("baxtorian_elf").stay().needFlag("sote_arianwyn").unlessFlag("sote_tonic")
+                .take("cadantine", "vial_of_water", "crystal_shard").need("pestle_and_mortar").reqSkill(Skill.HERBLORE, 70).flag("sote_tonic")
+                .say("* You grind the crystal shard to dust and mix it with cadantine in a vial of water.",
+                        "A crystal tonic! With this I can sing to the crystal again. Now, to Iorwerth.")
+                .missing("I need a tonic to sing to the crystal: cadantine, a crystal shard and a vial of water, ground and mixed with a pestle and mortar.")
+                .talk("lord_iorwerth").needFlag("sote_tonic")
+                .say("You're too late! I have corrupted the Fragment of Seren. The goddess's song will destroy you all!")
+                .missing("* Iorwerth's guards bar the way. Baxtorian's people must be ready first.")
                 .stage("I must defeat the corrupted Fragment of Seren.")
                 .kill("fragment_of_seren").give("crystal_seed_sote").say("* The Fragment of Seren falls silent. A crystal seed lies where she stood.")
                 .stage("I should give the crystal seed to Baxtorian so Prifddinas can be rebuilt.")

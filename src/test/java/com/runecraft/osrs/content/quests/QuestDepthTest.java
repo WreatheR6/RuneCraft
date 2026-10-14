@@ -52,6 +52,15 @@ class QuestDepthTest {
         Map<String, Integer> counts = Map.of("ernest_the_chicken", 3, "witchs_house", 4, "fight_arena", 7,
                 "priest_in_peril", 6, "tree_gnome_village", 5, "dragon_slayer_i", 6, "lost_city", 6, "waterfall_quest", 6);
         counts.forEach((id, n) -> assertEquals(n, spec(id).stages.size(), id));
+        // Round 21: deepened inside their existing stages.
+        Map.ofEntries(Map.entry("merlins_crystal", 7), Map.entry("holy_grail", 9), Map.entry("plague_city", 7), Map.entry("biohazard", 7),
+                Map.entry("the_dig_site", 7), Map.entry("underground_pass", 4), Map.entry("recruitment_drive", 3),
+                Map.entry("children_of_the_sun", 3), Map.entry("song_of_the_elves", 5), Map.entry("monkey_madness_i", 9),
+                Map.entry("fairytale_i_growing_pains", 4), Map.entry("fairytale_ii_cure_a_queen", 6), Map.entry("horror_from_the_deep", 6),
+                Map.entry("making_history", 3), Map.entry("dream_mentor", 5), Map.entry("creature_of_fenkenstrain", 5),
+                Map.entry("ghosts_ahoy", 5), Map.entry("in_search_of_the_myreque", 5), Map.entry("prince_ali_rescue", 5),
+                Map.entry("the_fremennik_isles", 5), Map.entry("the_golem", 6), Map.entry("learning_the_ropes", 2))
+                .forEach((id, n) -> assertEquals(n, spec(id).stages.size(), id));
         assertEquals(2, Quest.COOKS_ASSISTANT.finalStage());
         assertEquals(5, Quest.RESTLESS_GHOST.finalStage());
         assertEquals(3, Quest.WITCHS_POTION.finalStage());
@@ -160,11 +169,98 @@ class QuestDepthTest {
         assertTrue(q.triggers().stream().noneMatch(t -> t.target.equals("tutab") && t.give.containsKey("monkey_dentures")));
     }
 
-    /** Regression guard on the survey (round 20): at most 3 quests advance by talking alone. */
+    /** Regression guard on the survey: no quest advances by talking alone (round 20: 3), few are shallow (round 20: 60). */
     @Test
     void fewTalkOnlyQuests() {
         long talkOnly = QuestBook.get().quests.stream().filter(q -> q.stages.stream().noneMatch(QuestDepthTest::objective)).count();
-        assertTrue(talkOnly <= 3, talkOnly + " talk-only quests");
+        assertEquals(0, talkOnly, talkOnly + " talk-only quests");
+        long shallow = QuestBook.get().quests.stream()
+                .filter(q -> q.stages.stream().filter(QuestDepthTest::objective).count() * 2 < q.stages.size()).count();
+        assertTrue(shallow <= 41, shallow + " shallow quests (fewer than half their stages have objectives)");
+    }
+
+    @Test
+    void round21QuestsAreNoLongerShallow() {
+        for (String id : List.of("merlins_crystal", "holy_grail", "plague_city", "biohazard", "the_dig_site", "underground_pass",
+                "recruitment_drive", "children_of_the_sun", "learning_the_ropes", "song_of_the_elves", "monkey_madness_i",
+                "fairytale_i_growing_pains", "fairytale_ii_cure_a_queen", "horror_from_the_deep", "making_history", "dream_mentor",
+                "creature_of_fenkenstrain", "ghosts_ahoy", "in_search_of_the_myreque", "prince_ali_rescue", "the_fremennik_isles", "the_golem")) {
+            QuestSpec q = spec(id);
+            long real = q.stages.stream().filter(QuestDepthTest::objective).count();
+            assertTrue(real * 2 >= q.stages.size(), id + ": only " + real + "/" + q.stages.size() + " stages have objectives");
+        }
+    }
+
+    @Test
+    void merlinsCrystalRitual() {
+        QuestSpec q = spec("merlins_crystal");
+        assertTrue(find(q, Trigger.Kind.REACH, "arheins_crate").needFlags.contains("mc_lancelot"));
+        Trigger hive = find(q, Trigger.Kind.REACH, "catherby_beehives");
+        assertTrue(hive.need.containsKey("insect_repellent") && hive.take.containsKey("minecraft:bucket") && hive.give.containsKey("bucket_of_wax"));
+        assertTrue(find(q, Trigger.Kind.TALK, "candle_maker").take.containsKey("bucket_of_wax"));
+        Trigger beggar = find(q, Trigger.Kind.REACH, "port_sarim_jewellers");
+        assertTrue(beggar.take.containsKey("bread") && beggar.give.containsKey("excalibur"));
+        Trigger star = find(q, Trigger.Kind.REACH, "camelot_star_symbol");
+        assertEquals(Set.of("black_candle", "bat_bones"), star.take.keySet());
+        assertTrue(star.need.keySet().containsAll(Set.of("excalibur", "tinderbox")) && star.needFlags.contains("mc_words"));
+        assertTrue(find(q, Trigger.Kind.REACH, "merlins_crystal_tower").need.containsKey("excalibur"));
+        assertPlace("camelot_star_symbol", 2780, 3515);
+        assertPlace("port_sarim_jewellers", 3016, 3246);
+    }
+
+    @Test
+    void holyGrailWhistlesBellAndFeather() {
+        QuestSpec q = spec("holy_grail");
+        assertEquals(2, find(q, Trigger.Kind.REACH, "draynor_manor_whistles").give.get("magic_whistle"));
+        assertTrue(find(q, Trigger.Kind.REACH, "karamja_grail_tower").need.keySet().containsAll(Set.of("magic_whistle", "excalibur")));
+        assertTrue(q.triggers().stream().anyMatch(t -> t.target.equals("fisher_king") && t.need.containsKey("grail_bell")));
+        assertTrue(find(q, Trigger.Kind.REACH, "goblin_village_sacks").need.containsKey("magic_gold_feather"));
+        assertPlace("karamja_grail_tower", 2742, 3236);
+    }
+
+    @Test
+    void plagueCityAndBiohazardFollowTheWalkthrough() {
+        QuestSpec pc = spec("plague_city");
+        assertTrue(find(pc, Trigger.Kind.TALK, "alrena").take.containsKey("dwellberries"));
+        assertTrue(pc.triggers().stream().anyMatch(t -> t.target.equals("edmond") && t.take.containsKey("rope")
+                && t.take.getOrDefault("minecraft:water_bucket", 0) == 4 && t.need.containsKey("spade")));
+        assertTrue(find(pc, Trigger.Kind.TALK, "jethick").need.containsKey("picture_of_elena"));
+        assertTrue(find(pc, Trigger.Kind.REACH, "plague_house").give.containsKey("plague_house_key"));
+        QuestSpec bh = spec("biohazard");
+        assertTrue(find(bh, Trigger.Kind.REACH, "biohazard_watchtower").take.keySet().containsAll(Set.of("bird_feed", "pigeon_cage")));
+        assertTrue(find(bh, Trigger.Kind.TALK, "omart").needFlags.contains("bh_pigeons"));
+        assertTrue(find(bh, Trigger.Kind.KILL, "head_mourner").need.containsKey("medical_gown"));
+        Trigger guidor = find(bh, Trigger.Kind.TALK, "guidor");
+        assertTrue(guidor.need.keySet().containsAll(Set.of("priest_gown_top", "priest_gown_bottom")));
+        assertTrue(guidor.take.keySet().containsAll(Set.of("plague_sample", "touch_paper", "ethenea", "liquid_honey", "sulphuric_broline")));
+    }
+
+    @Test
+    void digSiteExamsNeedTheStudents() {
+        QuestSpec q = spec("the_dig_site");
+        List<Trigger> exams = q.triggers().stream().filter(t -> t.target.equals("examiner") && !t.needFlags.isEmpty()).toList();
+        assertEquals(3, exams.size());
+        assertTrue(exams.get(0).take.containsKey("sealed_letter"));
+        assertTrue(q.triggers().stream().anyMatch(t -> t.target.equals("digsite_student_female") && t.take.containsKey("opal")));
+        assertTrue(q.triggers().stream().anyMatch(t -> t.give.containsKey("explosive_compound")
+                && t.take.keySet().containsAll(Set.of("chemical_powder", "unidentified_liquid", "charcoal", "arcenia_root"))));
+        assertTrue(q.triggers().stream().anyMatch(t -> t.take.containsKey("explosive_compound") && t.need.containsKey("tinderbox")
+                && t.give.containsKey("stone_tablet")));
+    }
+
+    @Test
+    void recruitmentDriveAndChildrenOfTheSunHaveRealTests() {
+        QuestSpec rd = spec("recruitment_drive");
+        assertEquals(20, ContentRegistry.boss("sir_leye").combatLevel);
+        assertTrue(find(rd, Trigger.Kind.KILL, "sir_leye").setFlags.contains("rd_leye"));
+        assertTrue(rd.triggers().stream().anyMatch(t -> t.target.equals("sir_tiffy_cashien") && t.completes()
+                && t.needFlags.containsAll(List.of("rd_tinley", "rd_ren", "rd_cheevers", "rd_hynn"))));
+        QuestSpec cots = spec("children_of_the_sun");
+        assertTrue(find(cots, Trigger.Kind.REACH, "cots_bandit_house").needFlags.containsAll(List.of("cots_hide1", "cots_hide2")));
+        assertTrue(cots.triggers().stream().anyMatch(t -> t.target.equals("sergeant_tobyn") && t.completes()
+                && t.needFlags.containsAll(List.of("cots_b1", "cots_b2", "cots_b3", "cots_b4"))));
+        // Song of the Elves starts with Edmond in East Ardougne (OSRS), not Arianwyn.
+        assertTrue(spec("song_of_the_elves").stages.get(0).triggers.get(0).target.equals("edmond"));
     }
 
     private static void assertPlace(String id, int x, int y) {

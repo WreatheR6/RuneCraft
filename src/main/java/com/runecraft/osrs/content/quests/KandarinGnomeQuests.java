@@ -126,6 +126,7 @@ final class KandarinGnomeQuests {
                 .attack(AttackDef.of("water_wave", AttackType.MAGIC, 20, 10, 2).particle("minecraft:splash"))
                 .phase(30, "The jungle demon howls with rage!", 1.15, false)
                 .drops(Drop.always("bones")).size(1.0f, 2.4f, 1.0f).at("ape_atoll_temple").arena(12, "jungle"));
+        b.spot("gnome_glider_hangar", "Glider hangar beneath the Grand Tree", 2459, 3500); // approx: the hangar is underground (2390, 9886)
         b.quest("monkey_madness_i", "Monkey Madness I", Difficulty.MASTER, 3)
                 .reqQuest("tree_gnome_village", "the_grand_tree")
                 .xp(Skill.ATTACK, 17500).xp(Skill.STRENGTH, 17500)
@@ -136,7 +137,14 @@ final class KandarinGnomeQuests {
                 .stage("I should take the orders to G.L.O. Caranock at the Karamja shipyard.")
                 .talk("glo_caranock").take("narnodes_orders").say("Orders from the king? Fine. Daero in the Grand Tree will arrange your flight. ...Mind the monkeys.")
                 .stage("I should speak to Daero in the Grand Tree about getting to Ape Atoll.")
-                .talk("daero").travel("ape_atoll").say("Ape Atoll? Waydar will fly you. Hold on... *The glider crash-lands on the atoll!*")
+                // Quest-helper: talk to Daero, then operate the hangar's reinitialisation panel and solve its sliding puzzle.
+                .talk("daero").needFlag("mm_panel").travel("ape_atoll")
+                .say("Well done. Waydar will fly you. Hold on... *The glider crash-lands on the atoll!*")
+                .missing("The glider in the hangar won't fly until its reinitialisation panel is solved.")
+                .talk("daero").stay().unlessFlag("mm_daero").flag("mm_daero")
+                .say("The 10th squad? Hush. Meet me in the glider hangar beneath the Grand Tree. The glider's controls need reinitialising first.")
+                .reach("gnome_glider_hangar", 3).stay().needFlag("mm_daero").unlessFlag("mm_panel").flag("mm_panel")
+                .say("* You operate the reinitialisation panel and slide its tiles into place. The glider's systems hum back to life.")
                 .stage("I've crash-landed on Ape Atoll. I should find Garkor and the 10th squad.")
                 .talk("garkor").say("The 10th squad was turned into monkeys by Zooknock's magic, as a disguise. The monkey king Awowogei is allied with Glough!",
                         "Zooknock can make you an amulet to speak with monkeys and a greegree to look like one.")
