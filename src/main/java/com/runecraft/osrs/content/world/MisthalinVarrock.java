@@ -1008,7 +1008,7 @@ final class MisthalinVarrock {
         // first floor: the champions' trophies and the dining table
         k.diningZ(in.cx(), 5, Z(3361), Z(3356));
         k.shelvesX(in.x1() + 2, in.x2(), 5, in.z2(), "north");
-        k.set(in.x2(), 5, in.z1(), "minecraft:armor_stand").set(in.x2(), 5, in.z1() + 2, "minecraft:armor_stand");
+        k.set(in.x2(), 5, in.z1(), "minecraft:skeleton_skull").set(in.x2(), 5, in.z1() + 2, "minecraft:skeleton_skull");
         k.hang(in.cx(), 8, Z(3359));
         // the walled rose garden east of the hall
         Box garden = t(3195, 3352, 3198, 3359);
