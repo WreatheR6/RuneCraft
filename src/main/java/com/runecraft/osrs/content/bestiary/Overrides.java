@@ -26,6 +26,8 @@ final class Overrides {
         l.addAll(Flagships.overrides());
         // ---- round 11 flagship boss re-sculpts, part 2 ----
         l.addAll(Flagships2.overrides());
+        // ---- round 12 flagship boss re-sculpts, part 3 ----
+        l.addAll(Flagships3.overrides());
         return l;
     }
 }

@@ -12,9 +12,11 @@
     "mouth"
   ],
   "abyssal_sire": [
-    "mass",
-    "hump",
-    "head",
+    "body",
+    "shoulder_l",
+    "shoulder_r",
+    "eyes",
+    "jaw",
     "arm_l",
     "arm_r"
   ],
@@ -1565,11 +1567,16 @@
     "shard2",
     "shard3",
     "shard4",
+    "shard5",
+    "shard6",
+    "crest",
     "eyes",
     "tusk_l",
     "tusk_r",
     "horn_l",
     "horn_r",
+    "shoulder_shard_l",
+    "shoulder_shard_r",
     "arm_l",
     "arm_r",
     "knuckles_l",
@@ -2049,10 +2056,9 @@
   ],
   "the_whisperer": [
     "body",
-    "spine_glow",
+    "head",
+    "mantle",
     "eyes",
-    "maw",
-    "crest2",
     "claw_l",
     "claw_r",
     "tentacle0_3",
@@ -2552,17 +2558,20 @@
     "eye_r"
   ],
   "zulrah": [
-    "head"
+    "eyes"
   ],
   "zulrah_magma": [
     "coil",
     "coil2",
-    "head"
+    "trunk0",
+    "trunk1",
+    "trunk2",
+    "head",
+    "eyes",
+    "jaw"
   ],
   "zulrah_tanzanite": [
-    "coil",
-    "coil2",
-    "head"
+    "eyes"
   ],
   "zygomite": [
     "face",

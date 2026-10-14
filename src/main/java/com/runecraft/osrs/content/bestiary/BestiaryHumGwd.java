@@ -302,7 +302,7 @@ final class BestiaryHumGwd {
         f.p("skull_crest", "skull_helm", 0x6A5A78).at(0, -0.5f, 0).mat("bone").box(-0.5f, -2, -3, 1, 2, 6).add();
         f.p("rune_core", "breastplate", violet).at(0, 1.5f, -1.2f).mat("energy").glow("full").box(-1, 0, -0.3f, 2, 2, 1).add();
         f.p("tatter_skirt", "hips", 0x2A1E36).at(0, 1, 2.7f).rot(10, 0, 0).mat("cloth").box(-4, 0, -0.5f, 8, 10, 1).add();
-        f.demonWings("chest", 0x3A3046, 0x2A1E3A, violet, 2.5f, -f.chestH + 1.5f, f.depth / 2f + 0.5f, 22, 3, "runes");
+        f.demonWings("chest", 0x3A3046, 0x2A1E3A, violet, 2.5f, -f.chestH + 1.5f, f.depth / 2f + 0.5f, 22, 3, "veins");
         return f.build();
     }
 }

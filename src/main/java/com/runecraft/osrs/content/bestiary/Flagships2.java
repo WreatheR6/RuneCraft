@@ -10,9 +10,9 @@ import static com.runecraft.osrs.content.bestiary.Kit.part;
 import static com.runecraft.osrs.content.bestiary.Kit.sym;
 
 /**
- * Flagship boss re-sculpts, part 2 (round 11): Zulrah's three forms, the Alchemical Hydra's four phases, the King
- * Black Dragon, the Kalphite Queen's two forms, the Abyssal Sire, the Grotesque Guardians (Dusk and Dawn) and
- * Sarachnis. Same style as {@link Flagships}: OSRS
+ * Flagship boss re-sculpts, part 2 (round 11): the Alchemical Hydra's four phases, the King Black Dragon, the
+ * Kalphite Queen's two forms, the Grotesque Guardians (Dusk and Dawn) and Sarachnis. (Round 12 dropped the round-11
+ * Zulrah and Abyssal Sire: the earlier coiled Zulrah and demon-shaped Sire read closer to OSRS.) Same style as {@link Flagships}: OSRS
  * silhouettes and palettes, signature details, painter materials and glows. Registered after it in
  * {@link Overrides}, so these replace every earlier version of the same model id.
  */
@@ -22,9 +22,6 @@ final class Flagships2 {
 
     static List<ModelSpec> overrides() {
         List<ModelSpec> l = new ArrayList<>();
-        l.add(zulrah("zulrah", 0x3E7A2C, 0xB4C46A, 0x24521E, 0xFFE040, null));
-        l.add(zulrah("zulrah_magma", 0x9A2A18, 0xE8823A, 0x5E140C, 0xFFC040, "cracks"));
-        l.add(zulrah("zulrah_tanzanite", 0x2E3486, 0x3EC2C8, 0x1C1E58, 0x8AF6FF, "spots"));
         l.add(hydra("alchemical_hydra", 4, 0x56664A, 0xA0A87A, 0x8AF040));
         l.add(hydra("alchemical_hydra_blue", 3, 0x4C5A66, 0x98A8B0, 0x5AB8FF));
         l.add(hydra("alchemical_hydra_red", 2, 0x66504A, 0xB0948A, 0xFF5A30));
@@ -35,73 +32,11 @@ final class Flagships2 {
         l.add(gargoyle("dusk", 0x4E4A50, 0x2E2B30, 0xFF8A3A, false));
         l.add(gargoyle("dawn", 0xB8B2A8, 0x8A847A, 0x7AD8FF, true));
         l.add(sarachnis());
-        l.add(abyssalSire());
         return l;
     }
 
     private static final int BONE = 0xE6DCC4;
     private static final int TOOTH = 0xF0EADA;
-
-    /**
-     * Zulrah: the great swamp serpent risen from Zul-Andra's water in tight coils, an S-curved neck with pale
-     * banded belly scutes, a back-swept crown of finned spines around the head, a fanged maw, and the arched loop
-     * of its tail breaking the surface behind. The three forms (serpentine, magma, tanzanite) share the shape.
-     */
-    static ModelSpec zulrah(String id, int skin, int belly, int fin, int eye, String glow) {
-        ModelSpec.Builder b = ModelSpec.builder(id).shadow(1.6f);
-        Kit.P coil = part(b, "coil", null, Role.BODY, skin).accent(belly).at(0, 21, 2).mat("scales")
-                .box(-6, -3, -10, 12, 5, 5).box(-6, -3, 5, 12, 5, 5).box(5, -3, -6, 5, 5, 12).box(-10, -3, -6, 5, 5, 12);
-        if (glow != null) {
-            coil.glow(glow);
-        }
-        coil.add();
-        Kit.P coil2 = part(b, "coil2", "coil", Role.STATIC, skin).accent(belly).at(0, -3.5f, 0).rot(0, 45, 0).mat("scales")
-                .box(-5, -2, -8, 10, 4, 4).box(-5, -2, 4, 10, 4, 4).box(4, -2, -5, 4, 4, 10).box(-8, -2, -5, 4, 4, 10);
-        if (glow != null) {
-            coil2.glow(glow);
-        }
-        coil2.add();
-        // S-curved neck: leans back, then forward over the water
-        int[][] seg = {{8, 12, 7}, {7, 11, 6}, {6, 9, 6}};
-        float[] pitch = {-12, 20, 16};
-        String parent = "coil2";
-        float py = -2;
-        for (int i = 0; i < 3; i++) {
-            int w = seg[i][0];
-            int h = seg[i][1];
-            int d = seg[i][2];
-            String n = "neck" + i;
-            part(b, n, parent, Role.NECK, skin).accent(belly).at(0, py, i == 0 ? -4 : 0).rot(pitch[i], 0, 0).mat("scales")
-                    .box(-w / 2f, -h, -d / 2f, w, h, d).add();
-            part(b, n + "_belly", n, Role.STATIC, belly).at(0, -h / 2f, -d / 2f - 0.1f).mat("plates")
-                    .box(-(w - 2) / 2f, -h / 2f, -0.6f, w - 2, h, 1).add();
-            part(b, n + "_dorsal", n, Role.FIN, fin).accent(skin).at(0, -h * 0.6f, d / 2f).rot(-35, 0, 0).mat("membrane")
-                    .box(-0.5f, -5, 0, 1, 5, 3).add();
-            parent = n;
-            py = -h;
-        }
-        // head, levelled out at the top of the neck
-        part(b, "head", parent, Role.HEAD, skin).accent(eye).at(0, -9, 0).rot(-34, 0, 0).mat("scales").pattern("eyes").glow("eyes")
-                .box(-4.5f, -5, -7, 9, 6, 9).add();
-        sym(b, "brow", "head", false, fin).at(3, -5, -6.5f).rot(0, 0, -12).mat("scales").box(-2, -1, -1, 3, 2, 3).add();
-        part(b, "snout", "head", Role.STATIC, skin).accent(belly).at(0, -1.5f, -7).mat("scales").box(-3, -2.5f, -5, 6, 4, 5).add();
-        part(b, "jaw", "head", Role.JAW, belly).at(0, 1, -3).rot(10, 0, 0).mat("plates").box(-3.5f, 0, -9, 7, 2, 9).add();
-        sym(b, "fang", "snout", false, TOOTH).at(2, 1.5f, -4.4f).mat("bone").box(-0.5f, 0, -0.5f, 1, 2, 1).add();
-        // the crown of finned spines fanning around the back of the head
-        part(b, "crest", "head", Role.FIN, fin).accent(belly).at(0, -5, 1).rot(-25, 0, 0).mat("membrane").box(-1.5f, -11, -0.5f, 3, 11, 1).add();
-        part(b, "tongue", "jaw", Role.STATIC, 0xC0283A).at(0, 0, -9).rot(15, 0, 0).mat("flesh").box(-0.5f, -0.5f, -3, 1, 1, 3)
-                .box(-1.5f, -0.5f, -4, 1, 1, 1).box(0.5f, -0.5f, -4, 1, 1, 1).add();
-        for (int k = 0; k < 3; k++) {
-            sym(b, "frill" + k, "head", false, k % 2 == 0 ? fin : skin).roles(Role.FIN, Role.FIN).accent(belly)
-                    .at(3, -4 + k * 1.5f, 1).rot(-22, 0, 26 + k * 28).mat("membrane").box(-1.5f, -10 + k * 2, -0.5f, 3, 10 - k * 2, 1).add();
-        }
-        // the tail loop arching out of the water behind the coils
-        part(b, "tail0", "coil", Role.TAIL, skin).accent(belly).at(5, -2, 7).rot(70, 30, 0).mat("scales").box(-2.5f, -2.5f, 0, 5, 5, 8).add();
-        part(b, "tail1", "tail0", Role.TAIL, skin).accent(belly).at(0, 0, 8).rot(-110, 0, 0).mat("scales").box(-2, -2, 0, 4, 4, 9).add();
-        part(b, "tail2", "tail1", Role.TAIL, skin).accent(belly).at(0, 0, 8).rot(-30, 0, 0).mat("scales").box(-1.5f, -1.5f, 0, 3, 3, 6).add();
-        part(b, "tail_fin", "tail2", Role.FIN, fin).at(0, -1.5f, 3).mat("membrane").box(-0.5f, -3, 0, 1, 3, 5).add();
-        return b.build();
-    }
 
     /**
      * Alchemical Hydra: the hulking, low-slung hydra of the Karuulm laboratory, a heavy scaled body over four
@@ -291,7 +226,7 @@ final class Flagships2 {
      * scythed forelimbs, and the ridged abdomen hanging between the legs.
      */
     static ModelSpec kalphiteQueenAirborne() {
-        int wing = 0xC8D0A8;
+        int wing = 0xD6DCB4;
         ModelSpec.Builder b = ModelSpec.builder("kalphite_queen_airborne").shadow(1.4f);
         part(b, "thorax", null, Role.BODY, KQ_SHELL).accent(KQ_BELLY).at(0, 4, 2).rot(-14, 0, 0).mat("chitin").box(-6, -12, -5, 12, 14, 10).add();
         part(b, "plastron", "thorax", Role.STATIC, KQ_BELLY).at(0, -5, -5).mat("plates").box(-4, -6, -0.6f, 8, 12, 1).add();
@@ -305,10 +240,15 @@ final class Flagships2 {
                 .box(-1.5f, -1.5f, -1.5f, 3, 3, 2).add();
         sym(b, "mandible", "head", false, KQ_DARK).roles(Role.JAW, Role.STATIC).at(2.5f, 0, -6).rot(20, 25, 0).mat("chitin")
                 .box(-1, -1, -5, 2, 2, 5).box(-1, -1, -6, 1, 2, 1).add();
-        // two pairs of veined wings
-        sym(b, "wing", "thorax", false, wing).roles(Role.WING_LEFT, Role.WING_RIGHT).accent(KQ_DARK).at(3, -10, 5).rot(-20, -30, -40)
-                .mat("membrane").box(0, -2, -0.5f, 18, 6, 1).add();
-        sym(b, "wing_hind", "wing", true, wing).accent(KQ_DARK).at(1, 4, 0.5f).rot(0, 0, 25).mat("membrane").box(0, -2, -0.5f, 15, 5, 1).add();
+        // two pairs of veined insect wings: thin tapered membranes (flat panels, so the painter draws the cross veins
+        // on their broad faces) with a dark leading-edge vein, the forewing raised high and the hindwing below it
+        sym(b, "wing", "thorax", false, wing).roles(Role.WING_LEFT, Role.WING_RIGHT).accent(KQ_DARK).at(3, -10, 4).rot(-65, -22, -35)
+                .mat("membrane").box(0, -0.5f, -2, 5, 1, 5).box(5, -0.5f, -2.5f, 9, 1, 7).box(14, -0.5f, -2, 7, 1, 6)
+                .box(21, -0.5f, -1, 3, 1, 4).add();
+        sym(b, "wing_rib", "wing", true, KQ_DARK).at(0, 0, -2.5f).mat("chitin").box(0, -0.8f, -0.5f, 22, 1, 1).add();
+        sym(b, "wing_hind", "wing", true, wing).accent(KQ_DARK).at(1, 1.5f, 3).rot(0, -22, 14).mat("membrane")
+                .box(0, -0.5f, -1.5f, 5, 1, 4).box(5, -0.5f, -2, 8, 1, 6).box(13, -0.5f, -1.5f, 5, 1, 4).box(18, -0.5f, -0.5f, 2, 1, 2).add();
+        sym(b, "wing_hind_rib", "wing_hind", true, KQ_DARK).at(0, 0, -2).mat("chitin").box(0, -0.8f, -0.5f, 18, 1, 1).add();
         // four raised scythed forelimbs
         for (int k = 0; k < 2; k++) {
             String n = "scythe" + k;
@@ -413,59 +353,6 @@ final class Flagships2 {
                     .at(6.5f, -2, -6 + k * 3.5f).rot(0, yaw, -40).mat("chitin").box(0, -1.5f, -1.5f, 11, 3, 3).add();
             sym(b, "leg" + k + "_low", "leg" + k, true, dark).at(11, 0, 0).rot(0, 0, 85).mat("chitin").box(0, -1, -1, 14, 2, 2)
                     .box(13, -0.5f, -0.5f, 2, 1, 1).add();
-        }
-        return b.build();
-    }
-
-    /**
-     * Abyssal Sire: the colossal abyssal demon lord in the Abyssal Nexus, a swollen hunched mass of crimson flesh
-     * lit by glowing vein-work, a small horned head sunk between the shoulders over a gaping fanged maw, clusters
-     * of glowing eyes, two massive clawed arms and a ring of writhing tentacles anchoring it to the floor.
-     */
-    static ModelSpec abyssalSire() {
-        int flesh = 0x8A1E2E;
-        int deep = 0x4E0E1C;
-        int pale = 0xC85A62;
-        int vein = 0xD8405A;
-        int horn = 0x2A1A1E;
-        ModelSpec.Builder b = ModelSpec.builder("abyssal_sire").shadow(2.1f);
-        part(b, "base", null, Role.BODY, deep).accent(vein).at(0, 18, 2).mat("flesh").box(-12, -6, -11, 24, 8, 22).add();
-        part(b, "mass", "base", Role.STATIC, flesh).accent(vein).at(0, -6, 0).rot(10, 0, 0).mat("flesh").glow("veins")
-                .box(-11, -14, -9, 22, 14, 18).add();
-        part(b, "hump", "mass", Role.STATIC, flesh).accent(0xFFE07A).at(0, -14, 2).rot(-10, 0, 0).mat("flesh").glow("spots")
-                .box(-9, -7, -7, 18, 7, 14).add();
-        Kit.P spikes = part(b, "spikes", "hump", Role.STATIC, horn).at(0, -7, 0).mat("horn");
-        for (int i = 0; i < 4; i++) {
-            spikes.box(-6 + i * 4, -4 - (i % 2) * 2, -1 + (i % 2) * 2, 2, 4 + (i % 2) * 2, 2);
-        }
-        spikes.add();
-        part(b, "belly", "mass", Role.STATIC, pale).at(0, -6, -9).mat("flesh").box(-7, -6, -0.6f, 14, 11, 1).add();
-        part(b, "head", "mass", Role.HEAD, flesh).accent(0xFFE07A).at(0, -13, -8).rot(-6, 0, 0).mat("flesh").pattern("eyes").glow("eyes")
-                .box(-5, -6, -6, 10, 7, 7).add();
-        sym(b, "horn", "head", false, horn).at(4, -6, -2).rot(-30, 0, 40).mat("horn").box(-1, -6, -1, 2, 6, 2).add();
-        sym(b, "horn_tip", "horn", true, 0x5A4448).at(0, -6, 0).rot(-40, 0, -25).mat("horn").box(-0.5f, -4, -0.5f, 1, 4, 1).add();
-        part(b, "jaw", "head", Role.JAW, deep).at(0, 1, -3).rot(14, 0, 0).mat("flesh").box(-5, 0, -5, 10, 4, 7).add();
-        Kit.P teeth = part(b, "teeth", "jaw", Role.STATIC, TOOTH).at(0, 0, -4.5f).mat("bone");
-        for (int i = 0; i < 4; i++) {
-            teeth.box(-4 + i * 2.5f, -2, -0.5f, 1, 2, 1);
-        }
-        teeth.add();
-        // massive arms
-        sym(b, "arm", "mass", false, flesh).roles(Role.ARM_LEFT, Role.ARM_RIGHT).accent(vein).at(12, -11, -2).rot(-25, 0, -14).mat("flesh")
-                .glow("veins").box(-4, -2, -4, 8, 12, 8).add();
-        sym(b, "forearm", "arm", true, deep).at(0, 10, 0).rot(-30, 0, 10).mat("flesh").box(-3.5f, 0, -3.5f, 7, 9, 7).add();
-        sym(b, "claws", "forearm", true, horn).at(0, 9, 0).mat("horn").box(-3, 0, -3, 2, 4, 2).box(-1, 0, -3.5f, 2, 5, 2)
-                .box(1, 0, -3, 2, 4, 2).add();
-        // ring of tentacles anchoring it
-        for (int i = 0; i < 6; i++) {
-            float yaw = 30 + i * 60;
-            double r = Math.toRadians(yaw);
-            float px = (float) (-Math.sin(r) * 10);
-            float pz = (float) (-Math.cos(r) * 9);
-            part(b, "tentacle" + i, "base", Role.TENTACLE, i % 2 == 0 ? flesh : deep).accent(vein).at(px, 0, pz).rot(15, yaw, 0)
-                    .mat("flesh").box(-2, -2, -9, 4, 4, 9).add();
-            part(b, "tentacle" + i + "_tip", "tentacle" + i, Role.TENTACLE, pale).at(0, 0, -9).rot(-20, 0, 0).mat("flesh")
-                    .box(-1, -1, -7, 2, 2, 7).add();
         }
         return b.build();
     }
