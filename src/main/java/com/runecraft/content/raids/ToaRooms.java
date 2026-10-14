@@ -6,6 +6,7 @@ import com.runecraft.boss.Mechanics;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
+import com.runecraft.osrs.content.raids.Invocation;
 import com.runecraft.osrs.content.raids.RaidScaling;
 import com.runecraft.osrs.content.raids.RaidsContent;
 import com.runecraft.osrs.content.raids.RoomDef;
@@ -450,7 +451,8 @@ final class ToaRooms {
                     }
                 }
             }
-            if (tick % 20 == 0) {
+            // OSRS: swarms only come outside her shield phases with the Medic! invocation.
+            if (tick % 20 == 0 && raid.invocations().contains(Invocation.MEDIC)) {
                 for (int i = 0; i < 2; i++) {
                     spawnMob("toa_scarab_swarm", at(-6 + rnd().nextInt(12), i % 2 == 0 ? -18 : 18), false);
                 }
@@ -515,7 +517,9 @@ final class ToaRooms {
             if (!alive(akkha)) {
                 return;
             }
-            if (raid.roomTicks() % 12 == 0) {
+            // OSRS: Akkha changes style at set intervals; with Stay Vigilant he swaps at random.
+            boolean vigilant = raid.invocations().contains(Invocation.STAY_VIGILANT);
+            if (vigilant ? rnd().nextInt(10) == 0 : raid.roomTicks() % 12 == 0) {
                 style = rnd().nextInt(3);
                 say("Akkha switches to " + STYLES[style] + "!");
             }
@@ -598,6 +602,14 @@ final class ToaRooms {
                     warn("Ba-Ba summons rolling boulders! Destroy them!");
                     for (int i = 0; i < 3 + raid.partySize() / 2; i++) {
                         spawnMob("baba_boulder", at(-15 + i * 6, -18), false);
+                    }
+                    if (raid.invocations().contains(Invocation.BOULDERDASH)) {
+                        // OSRS: Boulderdash makes the boulders spawn twice as fast; a second line follows.
+                        RaidEffects.later(4, () -> {
+                            for (int i = 0; i < 3 + raid.partySize() / 2; i++) {
+                                spawnMob("baba_boulder", at(-12 + i * 6, -18), false);
+                            }
+                        });
                     }
                 }
             }
@@ -696,8 +708,31 @@ final class ToaRooms {
                 ServerPlayerEntity p = randomPlayer();
                 if (p != null) {
                     Vec3d at = p.getPos();
-                    RaidEffects.strike(world(), at, 1.3, 15, 3, zebak, ParticleTypes.ITEM_SLIME);
-                    RaidEffects.later(3, () -> Mechanics.addHazard(world(), at, 6, 12, zebak));
+                    // OSRS: Upset Stomach spreads the acid pools from 3x3 to 5x5.
+                    double spread = raid.invocations().contains(Invocation.UPSET_STOMACH) ? 2.3 : 1.3;
+                    RaidEffects.strike(world(), at, spread, 15, 3, zebak, ParticleTypes.ITEM_SLIME);
+                    RaidEffects.later(3, () -> {
+                        int r = spread > 2 ? 1 : 0;
+                        for (int dx = -r; dx <= r; dx++) {
+                            for (int dz = -r; dz <= r; dz++) {
+                                Mechanics.addHazard(world(), at.add(dx * 1.5, 0, dz * 1.5), 6, 12, zebak);
+                            }
+                        }
+                    });
+                }
+            }
+            // OSRS Not Just a Head: Zebak's blood magic always hits every player for 8-11 and heals him for about
+            // two thirds of it (Arterial Spray: more healing). // approx: cast every 24 ticks
+            if (tick % 24 == 12 && raid.invocations().contains(Invocation.NOT_JUST_A_HEAD)) {
+                say("Zebak casts blood magic!");
+                int total = 0;
+                for (ServerPlayerEntity p : players()) {
+                    world().spawnParticles(ParticleTypes.DAMAGE_INDICATOR, p.getX(), p.getY() + 1, p.getZ(), 6, 0.3, 0.4, 0.3, 0.1);
+                    total += RaidEffects.hit(zebak, p, 8 + rnd().nextInt(4), null, true);
+                }
+                double share = raid.invocations().contains(Invocation.ARTERIAL_SPRAY) ? 1.0 : 2 / 3.0;
+                if (total > 0) {
+                    raid.heal(zebak, (int) Math.round(total * share));
                 }
             }
         }

@@ -132,7 +132,28 @@ public final class RaidManager {
                 }
             }
         });
-        CombatHooks.addHurtListener((player, attacker, damage) -> hurt(player, damage));
+        CombatHooks.addHurtListener((player, attacker, damage) -> {
+            hurt(player, damage);
+            if (!(attacker instanceof com.runecraft.boss.DataBossEntity)) {
+                deadlyPrayers(player, damage);
+            }
+        });
+        // ToA restoration invocations: On a Diet forbids food, Dehydration forbids health-restoring potions (OSRS).
+        com.runecraft.skill.ItemUses.addConsumeGuard((player, def) -> {
+            RaidInstance raid = of(player);
+            if (raid == null || raid.type != RaidType.TOA) {
+                return null;
+            }
+            if (def.kind() == com.runecraft.osrs.ItemDef.Kind.FOOD && !Invocation.foodAllowed(raid.invocations())) {
+                return "The 'On a Diet' invocation stops you from eating.";
+            }
+            boolean heals = def.id().contains("saradomin_brew") || def.id().contains("xerics_aid") || def.id().contains("nectar")
+                    || def.id().contains("ambrosia");
+            if (def.kind() == com.runecraft.osrs.ItemDef.Kind.POTION && heals && !Invocation.healingPotionsAllowed(raid.invocations())) {
+                return "The 'Dehydration' invocation stops you from drinking that.";
+            }
+            return null;
+        });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ServerPlayerEntity p = handler.player;
             RaidInstance raid = of(p);
@@ -168,6 +189,20 @@ public final class RaidManager {
             ACTIVE.clear();
             BY_PLAYER.clear();
         });
+    }
+
+    /** ToA Deadly Prayers (OSRS): prayer is drained by 20% of the damage taken. */
+    static void deadlyPrayers(ServerPlayerEntity player, int damage) {
+        RaidInstance raid = of(player);
+        if (raid == null || raid.type != RaidType.TOA || damage <= 0) {
+            return;
+        }
+        int drain = (int) Math.round(damage * Invocation.prayerDrainPerDamage(raid.invocations()));
+        if (drain > 0) {
+            var data = com.runecraft.player.Players.data(player);
+            data.setPrayerPoints(Math.max(0, data.prayerPoints() - drain));
+            com.runecraft.network.ServerNetworking.sync(player);
+        }
     }
 
     static void hurt(ServerPlayerEntity player, int damage) {

@@ -39,7 +39,7 @@ public final class RaidLayouts {
         room("vasa", "Vasa Nistirio", RaidType.COX, Kind.COMBAT, "void", List.of("vasa_nistirio"), 0,
                 "Destroy the glowing crystal Vasa draws power from, and run when he teleports you to him.");
         room("guardians", "Guardians", RaidType.COX, Kind.COMBAT, "stone", List.of("cox_guardian", "cox_guardian"), 0,
-                "The Guardians are made of stone. Only a pickaxe will chip them apart.");
+                "The Guardians are made of stone. Only a pickaxe will chip them apart; Mining level and a better pickaxe hit harder.");
         room("mystics", "Skeletal Mystics", RaidType.COX, Kind.COMBAT, "crypt",
                 List.of("skeletal_mystic", "skeletal_mystic", "skeletal_mystic"), 0,
                 "Skeletal Mystics guard this cavern; more of them rise for larger parties.");
@@ -52,7 +52,7 @@ public final class RaidLayouts {
                 List.of("vanguard_melee", "vanguard_ranged", "vanguard_magic"), 0,
                 "Keep the three Vanguards' health even: if one falls too far behind, they all reset.");
         room("vespula", "Vespula", RaidType.COX, Kind.COMBAT, "jungle", List.of("vespula", "vespula_portal"), 0,
-                "Destroy the abyssal portal while Vespula and her soldiers defend it.");
+                "Bring Vespula down to 20% so she lands, then destroy the abyssal portal. Kill any soldiers her lux grubs hatch into.");
         room("ice_demon", "Ice demon", RaidType.COX, Kind.PUZZLE, "ice", List.of(), 0,
                 "Chop the saplings for kindling and light the braziers to thaw the Ice demon, then slay it.");
         room("thieving", "Thieving", RaidType.COX, Kind.PUZZLE, "crypt", List.of(), 0,

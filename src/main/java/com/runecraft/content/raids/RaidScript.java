@@ -52,8 +52,24 @@ public final class RaidScript implements BossScript {
             return 0;
         }
         RoomLogic r = room(boss);
+        if (damage == 0 && type != null && raid.type == com.runecraft.osrs.content.raids.RaidType.TOA
+                && RaidEffects.protectedFrom(player, type)) {
+            // ToA Quiet Prayers (OSRS): protection prayers are 10% less effective. // approx: the blocked roll is redrawn
+            double leak = com.runecraft.osrs.content.raids.Invocation.protectionLeak(raid.invocations());
+            int max = 0;
+            for (AttackDef a : RoomLogic.attacks(boss)) {
+                if (a.style() == type) {
+                    max = Math.max(max, a.maxHit());
+                }
+            }
+            if (leak > 0 && max > 0) {
+                damage = (int) Math.round(boss.getRandom().nextInt(max + 1) * leak);
+            }
+        }
         int d = r == null ? damage : r.bossOutgoing(boss, player, damage, type);
-        return (int) Math.round(d * raid.damageMultiplier(boss));
+        int out = (int) Math.round(d * raid.damageMultiplier(boss));
+        RaidManager.deadlyPrayers(player, out);
+        return out;
     }
 
     @Override

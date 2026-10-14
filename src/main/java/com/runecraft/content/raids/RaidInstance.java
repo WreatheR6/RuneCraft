@@ -90,6 +90,8 @@ public final class RaidInstance {
     private final long startTick;
     private long endTick;
     private long roomStartTick;
+    /** Game tick the party passed the start barrier (the ToA time-limit invocations count from here). */
+    private long beginTick = -1;
 
     RaidInstance(int slot, RaidType type, ServerWorld world, List<ServerPlayerEntity> members, BlockPos entrance) {
         this.slot = slot;
@@ -341,13 +343,26 @@ public final class RaidInstance {
             base = boss.def().hitpoints;
         }
         int hp = switch (type) {
-            case COX -> RaidScaling.coxScaledHp(id, base, partySize, mode == RaidMode.CHALLENGE);
+            case COX -> id.equals("cox_guardian") ? guardianHp()
+                    : RaidScaling.coxScaledHp(id, base, partySize, mode == RaidMode.CHALLENGE);
             case TOB -> RaidScaling.tobScaledHp(id, base, partySize, mode);
             case TOA -> RaidScaling.toaScaledHp(base, raidLevel, pathLevel(), partySize, inPath());
         };
         setHitpoints(e, hp);
         coxPools.remove(e);
         scaleLevels(e, id);
+    }
+
+    /** CoX Guardian hitpoints from the party's average Mining level (OSRS), +50% in Challenge Mode. */
+    private int guardianHp() {
+        int total = 0;
+        int n = 0;
+        for (ServerPlayerEntity p : players()) {
+            total += RoomLogic.level(p, com.runecraft.osrs.Skill.MINING);
+            n++;
+        }
+        int hp = RaidScaling.coxGuardianHp(partySize, n == 0 ? 99 : total / n);
+        return mode == RaidMode.CHALLENGE ? hp + hp / 2 : hp;
     }
 
     /** CoX Defence (and defensive Magic) scaling, and ToB Hard mode level changes. */
@@ -558,9 +573,16 @@ public final class RaidInstance {
         begun = true;
         RaidBuilder.openExit(world, slot, 0);
         logics[0].done = true;
+        beginTick = ActionManager.gameTick();
         if (type == RaidType.TOA) {
+            // OSRS: the attempts invocations count wipes over the whole raid, not per room.
             retriesLeft = Invocation.roomRetries(invocations);
             say("The raid begins at raid level " + raidLevel + ".", Formatting.GOLD);
+            int limit = Invocation.timeLimitMinutes(invocations);
+            if (limit > 0) {
+                say("You have " + limit + " minutes to complete the raid, or the raid level drops by "
+                        + Invocation.timeLimitPenalty(invocations) + ".", Formatting.YELLOW);
+            }
         } else {
             say(player.getName().getString() + " has started the raid (" + mode.displayName() + "). Good luck!", Formatting.GOLD);
         }
@@ -682,7 +704,6 @@ public final class RaidInstance {
         world.playSound(null, center(logic.index), SoundEvents.BLOCK_IRON_DOOR_OPEN, SoundCategory.BLOCKS, 1f, 0.8f);
         reviveAll(logic.index);
         if (type == RaidType.TOA) {
-            retriesLeft = Invocation.roomRetries(invocations);
             if (def.kind() == RoomDef.Kind.COMBAT) {
                 pathsCompleted++;
             }
@@ -711,6 +732,12 @@ public final class RaidInstance {
             pts.put(u.toString(), points(u));
         }
         boolean withinTarget = elapsedTicks() <= RaidScaling.targetTicks(type, mode, partySize);
+        int limit = type == RaidType.TOA ? Invocation.timeLimitMinutes(invocations) : 0;
+        if (limit > 0 && beginTick >= 0 && endTick - beginTick > limit * 100L) {
+            // OSRS: missing a time-limit invocation's limit lowers the raid level (and with it the loot).
+            raidLevel = Math.max(0, raidLevel - Invocation.timeLimitPenalty(invocations));
+            say("You missed the " + limit + "-minute time limit: the raid level drops to " + raidLevel + ".", Formatting.RED);
+        }
         result = RaidRewards.roll(type, mode, pts, raidLevel, withinTarget, random);
         long secs = elapsedTicks() * 6 / 10;
         say("Congratulations - your raid is complete! Duration: " + secs / 60 + ":" + String.format("%02d", secs % 60),

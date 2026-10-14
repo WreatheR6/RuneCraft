@@ -62,7 +62,7 @@ public final class TobBosses {
                         .minion("nylocas_matomenos", 2)
                         .size(1.4f, 2.2f, 1.8f).moveSpeed(0.22),
                 raid("verzik_vitur_p3", "Verzik Vitur").level(1520).stats(3500, 400, 400, 150, 300, 300).speed(7)
-                        .defenceBonus(70, 30, 70, 230, 230)
+                        .defenceBonus(70, 30, 70, 100, 230)
                         .attack(AttackDef.of("spider bite", AttackType.STAB, 34, 3, 10))
                         .attack(AttackDef.of("ranged spit", AttackType.RANGED, 34, 25, 10).particle("minecraft:crit"))
                         .attack(AttackDef.of("magic web", AttackType.MAGIC, 34, 25, 10).particle("minecraft:witch"))
@@ -75,18 +75,18 @@ public final class TobBosses {
                 MonsterDef.of("nylocas_matomenos", "Nylocas Matomenos").level(115).stats(100, 100, 100, 100, 100, 100).speed(4).passive()
                         .attack(AttackDef.of("nip", AttackType.STAB, 4, 2.5, 10)).model("nylocas_matomenos")
                         .size(0.8f, 0.7f, 1.0f).moveSpeed(0.2),
-                MonsterDef.of("blood_spawn", "Blood spawn").level(55).stats(120, 1, 1, 1, 1, 1).speed(4).passive()
+                MonsterDef.of("blood_spawn", "Blood spawn").level(55).stats(120, 1, 1, 0, 0, 1).speed(4).passive()
                         .attack(AttackDef.of("splash", AttackType.MAGIC, 3, 4, 10))
                         .size(0.7f, 0.9f, 1.0f).moveSpeed(0.22),
-                MonsterDef.of("nylocas_ischyros", "Nylocas Ischyros").level(162).stats(11, 200, 160, 1, 1, 200).speed(4)
+                MonsterDef.of("nylocas_ischyros", "Nylocas Ischyros").level(162).stats(11, 200, 160, 1, 1, 200).speed(3)
                         .immune(AttackType.MAGIC, AttackType.RANGED)
                         .attack(AttackDef.of("bite", AttackType.STAB, 17, 2.5, 10))
                         .size(0.8f, 0.7f, 1.0f).moveSpeed(0.24),
-                MonsterDef.of("nylocas_toxobolos", "Nylocas Toxobolos").level(162).stats(11, 200, 160, 1, 1, 200).speed(4)
+                MonsterDef.of("nylocas_toxobolos", "Nylocas Toxobolos").level(162).stats(11, 200, 160, 1, 1, 200).speed(3)
                         .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.MAGIC)
                         .attack(AttackDef.of("spit", AttackType.RANGED, 17, 10, 10).particle("minecraft:crit"))
                         .size(0.8f, 0.7f, 1.0f).moveSpeed(0.24),
-                MonsterDef.of("nylocas_hagios", "Nylocas Hagios").level(162).stats(11, 200, 160, 1, 1, 200).speed(4)
+                MonsterDef.of("nylocas_hagios", "Nylocas Hagios").level(162).stats(11, 200, 160, 1, 1, 200).speed(3)
                         .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.RANGED)
                         .attack(AttackDef.of("blast", AttackType.MAGIC, 17, 10, 10).particle("minecraft:witch"))
                         .size(0.8f, 0.7f, 1.0f).moveSpeed(0.24),

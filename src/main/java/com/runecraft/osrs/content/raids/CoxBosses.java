@@ -24,21 +24,22 @@ public final class CoxBosses {
 
     public static List<BossDef> bosses() {
         return List.of(
-                raid("tekton", "Tekton").level(1244).stats(300, 390, 390, 205, 205, 1).speed(5)
+                raid("tekton", "Tekton").level(1244).stats(300, 390, 390, 205, 205, 1).speed(3)
                         .defenceBonus(155, 165, 105, 0, 0)
                         .attack(AttackDef.of("hammer stab", AttackType.STAB, 52, 3, 10))
                         .attack(AttackDef.of("hammer slash", AttackType.SLASH, 52, 3, 10))
                         .attack(AttackDef.of("hammer crush", AttackType.CRUSH, 52, 3, 10))
                         .size(1.1f, 2.6f, 1.6f).moveSpeed(0.22),
-                raid("vasa_nistirio", "Vasa Nistirio").level(1065).stats(300, 1, 1, 175, 230, 230).speed(5)
+                raid("vasa_nistirio", "Vasa Nistirio").level(1065).stats(300, 1, 1, 175, 230, 230).speed(3)
                         .defenceBonus(170, 190, 40, 400, 40)
                         .attack(AttackDef.of("crystal boulder", AttackType.RANGED, 18, 16, 10).special(Special.AOE, 3)
                                 .particle("minecraft:end_rod").message("Vasa hurls a crystal boulder!"))
                         .attack(AttackDef.of("crystal bolt", AttackType.MAGIC, 22, 16, 10).particle("minecraft:end_rod"))
                         .size(1.2f, 2.4f, 1.6f).moveSpeed(0.15),
-                raid("cox_guardian", "Guardian").level(140).stats(250, 140, 140, 100, 1, 1).speed(5)
-                        .defenceBonus(80, 180, -10, 999, 999)
-                        .attack(AttackDef.of("stone fist", AttackType.CRUSH, 30, 3, 10))
+                raid("cox_guardian", "Guardian").level(140).stats(250, 140, 140, 100, 1, 1).speed(4)
+                        // OSRS: no magic/ranged defence bonuses; only pickaxes can damage them (room logic).
+                        .defenceBonus(80, 180, -10, 0, 0)
+                        .attack(AttackDef.of("stone fist", AttackType.SLASH, 20, 3, 10))
                         .attack(AttackDef.of("ground slam", AttackType.CRUSH, 25, 4, 3).special(Special.AOE, 3)
                                 .telegraph(2, "The Guardian raises its fists...").particle("minecraft:explosion"))
                         .size(1.0f, 2.2f, 1.4f).moveSpeed(0.0),
@@ -81,7 +82,7 @@ public final class CoxBosses {
                         .attack(AttackDef.of("magic blast", AttackType.MAGIC, 22, 18, 10).special(Special.AOE, 3)
                                 .particle("minecraft:witch"))
                         .size(0.9f, 1.9f, 1.4f),
-                raid("vespula", "Vespula").level(1051).stats(200, 150, 150, 88, 88, 150).speed(4)
+                raid("vespula", "Vespula").level(1051).stats(200, 150, 150, 88, 88, 150).speed(3)
                         .defenceBonus(0, 0, 0, 70, 60).immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH).flying()
                         .attack(AttackDef.of("sting", AttackType.RANGED, 14, 16, 10).special(Special.POISON, 12)
                                 .particle("minecraft:crit"))
@@ -96,7 +97,7 @@ public final class CoxBosses {
                                 .particle("minecraft:portal"))
                         .minion("vespine_soldier", 1)
                         .size(1.4f, 2.6f, 1.0f).moveSpeed(0.0),
-                raid("cox_ice_demon", "Ice demon").level(372).stats(140, 1, 1, 160, 390, 390).speed(4)
+                raid("cox_ice_demon", "Ice demon").level(372).stats(140, 1, 1, 160, 390, 390).speed(3)
                         .defenceBonus(70, 70, 110, 40, 140)
                         .attack(AttackDef.of("ice barrage", AttackType.MAGIC, 22, 16, 10).special(Special.FREEZE, 8)
                                 .particle("minecraft:snowflake"))
@@ -122,7 +123,7 @@ public final class CoxBosses {
 
     public static List<MonsterDef> monsters() {
         return List.of(
-                MonsterDef.of("cox_lizardman_spawn", "Spawn").level(55).stats(15, 120, 30, 10, 1, 50).speed(4)
+                MonsterDef.of("cox_lizardman_spawn", "Spawn").level(55).stats(15, 120, 30, 10, 1, 50).speed(4).defenceBonus(0, 0, 0, -10, 0)
                         .attack(AttackDef.of("explode", AttackType.CRUSH, 1, 2, 10)).model("cox_lizardman_spawn")
                         .skin(0x8A3AB0, 0x6A2A90, 0x6A2A90, 0xE0A0FF).size(0.5f, 0.6f, 1.0f).moveSpeed(0.32),
                 MonsterDef.of("vespine_soldier", "Vespine soldier").level(93).stats(100, 150, 150, 40, 40, 1).speed(4)
