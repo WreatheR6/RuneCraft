@@ -255,6 +255,9 @@ public final class SystemsHooks implements ModuleHooks {
         if (Jewellery.worn(id) != null && ItemCatalog.get(id) != null) {
             return true;
         }
+        if (Jewellery.held(id) != null && !sneaking) {
+            return true;
+        }
         if (id.startsWith("falador_shield_") || DiaryExtrasService.handles(id, sneaking)) {
             return true;
         }
@@ -345,6 +348,10 @@ public final class SystemsHooks implements ModuleHooks {
                 }
             }
             return false;
+        }
+        if (Jewellery.held(id) != null && hand == Hand.MAIN_HAND && !sneaking) {
+            JewelleryService.openTeleports(p, "hand"); // the pharaoh's sceptre's teleports
+            return true;
         }
         Jewellery.Worn worn = Jewellery.worn(id);
         if (worn != null && ItemCatalog.get(id) != null) {

@@ -503,6 +503,8 @@ final class CacheDungeons {
     static final int[] IOS_IRON = {2148, 9293, 2153, 9290, 2160, 9294};
     static final int[] IOS_LESSER = {2149, 9337, 2152, 9332, 2155, 9335, 2156, 9330};
     static final int[] IOS_SKELETONS = {2131, 9322, 2150, 9298, 2151, 9316, 2153, 9299};
+    /** The thieving chest (wiki map tile) in the hallway between the two dragon rooms. */
+    static final int[] IOS_CHEST = {2139, 9299};
 
     /**
      * The Isle of Souls Dungeon: blue and baby blue dragons, fire giants, lesser and greater demons, iron dragons and
@@ -524,7 +526,10 @@ final class CacheDungeons {
         for (int[] r : rooms) {
             s.room(r, f, 7);
         }
+        s.room(new int[]{2136, 9296, 2144, 9302}, f, 4); // the hallway between the blue and iron dragon rooms
         c.carve();
+        // The skilling module's Isle of Souls chest (28 Thieving), on its OSRS tile in that hallway.
+        c.set(s.x(IOS_CHEST[0]), f + 1, s.z(IOS_CHEST[1]), rc("isle_of_souls_chest"));
         for (int[] p : new int[][]{{2134, 9318}, {2150, 9322}, {2118, 9300}, {2160, 9332}}) {
             c.pillar(s.x(p[0]), s.z(p[1]), f, 7, mc("mossy_stone_bricks"));
         }

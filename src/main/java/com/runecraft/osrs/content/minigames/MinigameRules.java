@@ -530,8 +530,42 @@ public final class MinigameRules {
         /** Sceptre chance (1 in N) from the Grand Gold Chest per room (approx.). */
         public static final int[] SCEPTRE_CHANCE = {3500, 2250, 1250, 750, 650, 650, 650, 650};
         public static final int GAME_TICKS = 500;
+        /**
+         * Recharging the pharaoh's sceptre at the guardian mummy (wiki): a full recharge costs 24 ivory/pottery, 12 stone
+         * or 6 gold artefacts; shapes may be mixed within one material. The jewelled golden statuette isn't accepted.
+         */
+        public static final String[][] SCEPTRE_ARTEFACTS = {{"ivory_comb", "pottery_scarab", "pottery_statuette"},
+                {"stone_seal", "stone_scarab", "stone_statuette"}, {"gold_seal", "golden_scarab", "golden_statuette"}};
+        public static final int[] SCEPTRE_ARTEFACT_COUNT = {24, 12, 6};
 
         private PyramidPlunder() {
+        }
+
+        /**
+         * The artefacts a full sceptre recharge takes from what the player carries (item -> count), the cheapest material
+         * that suffices first and the cheapest shapes within it; null if no material has enough.
+         */
+        public static java.util.Map<String, Integer> sceptreRechargeCost(java.util.Map<String, Integer> carried) {
+            for (int m = 0; m < SCEPTRE_ARTEFACTS.length; m++) {
+                int need = SCEPTRE_ARTEFACT_COUNT[m];
+                int have = 0;
+                for (String id : SCEPTRE_ARTEFACTS[m]) {
+                    have += carried.getOrDefault(id, 0);
+                }
+                if (have < need) {
+                    continue;
+                }
+                java.util.Map<String, Integer> take = new java.util.LinkedHashMap<>();
+                for (String id : SCEPTRE_ARTEFACTS[m]) {
+                    int n = Math.min(need, carried.getOrDefault(id, 0));
+                    if (n > 0) {
+                        take.put(id, n);
+                        need -= n;
+                    }
+                }
+                return take;
+            }
+            return null;
         }
 
         /** Highest room a Thieving level allows (1-8), or 0. */

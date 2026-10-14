@@ -87,6 +87,7 @@ public final class RewardShops {
                 .item("robe_bottoms_of_the_eye", PEARLS, 350)
                 .item("boots_of_the_eye", PEARLS, 250) // full outfit totals 1,350 pearls
                 .item("abyssal_lantern", PEARLS, 1500)
+                .item("ring_of_the_elements", PEARLS, 400)
                 .itemReq("colossal_pouch", PEARLS, 100, "abyssal_needle")
                 .item("air_talisman", PEARLS, 10).item("water_talisman", PEARLS, 10).item("earth_talisman", PEARLS, 10)
                 .item("fire_talisman", PEARLS, 10).item("mind_talisman", PEARLS, 10).item("body_talisman", PEARLS, 10)

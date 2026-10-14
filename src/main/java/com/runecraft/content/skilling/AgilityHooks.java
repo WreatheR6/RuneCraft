@@ -112,6 +112,30 @@ final class AgilityHooks {
         AgilityPlacer.init();
     }
 
+    /**
+     * Every few game ticks: a player who paid the Wilderness course's fee and is no longer inside its walls (walked out,
+     * teleported away, left Gielinor) forfeits the fee and the lap streak. Uncollected tickets stay at the dispenser.
+     */
+    static void wildernessTick(ServerPlayerEntity player, long gameTick) {
+        if (gameTick % 5 != 0 || player.isDead()) {
+            return;
+        }
+        boolean inside = Gielinor.is(player) && AgilityRewards.inWildernessCourse(GielinorMap.toOsrsX(player.getBlockX()),
+                GielinorMap.toOsrsY(player.getBlockZ()));
+        if (inside) {
+            return;
+        }
+        Wild w = wild(player);
+        if (!w.paid) {
+            return;
+        }
+        w.paid = false;
+        w.streak = 0;
+        w.loot.clear();
+        save(player, w);
+        Msg.game(player, "You have left the Wilderness Agility Course: your fee is lost, and your lap streak is reset.");
+    }
+
     // ------------------------------------------------------------------ shortcuts
 
     /** Uses the agility shortcut whose end is at this block: requirement checks, then off to the other end. */

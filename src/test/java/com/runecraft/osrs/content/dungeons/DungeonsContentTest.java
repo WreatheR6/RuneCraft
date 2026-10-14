@@ -392,8 +392,12 @@ class DungeonsContentTest {
     @Test
     void undergroundAgilityCourses() {
         for (com.runecraft.osrs.data.AgilityCourse course : List.of(com.runecraft.osrs.data.AgilityCourse.WEREWOLF,
-                com.runecraft.osrs.data.AgilityCourse.PENGUIN)) {
-            String id = course == com.runecraft.osrs.data.AgilityCourse.WEREWOLF ? "dng_werewolf_agility_course" : "dng_penguin_agility_course";
+                com.runecraft.osrs.data.AgilityCourse.PENGUIN, com.runecraft.osrs.data.AgilityCourse.DORGESH_KAAN)) {
+            String id = switch (course) {
+                case WEREWOLF -> "dng_werewolf_agility_course";
+                case PENGUIN -> "dng_penguin_agility_course";
+                default -> "dng_lumbridge_cellar_caves"; // the Dorgesh-Kaan course is on the city's upper level
+            };
             Dungeons.Dungeon d = Dungeons.all().stream().filter(x -> x.id().equals(id)).findFirst().orElseThrow();
             int[] count = new int[course.obstacles()];
             for (Op op : d.structure().ops()) {
@@ -408,6 +412,21 @@ class DungeonsContentTest {
             }
             assertTrue(course.handBuilt(), course.name());
         }
+    }
+
+    /** The Isle of Souls chest stands on its OSRS tile (2139, 9299) in the dungeon, shifted like the rest of it. */
+    @Test
+    void isleOfSoulsChestIsInTheDungeon() {
+        Dungeons.Dungeon d = Dungeons.all().stream().filter(x -> x.id().equals("dng_isle_of_souls_dungeon")).findFirst().orElseThrow();
+        int found = 0;
+        for (Op op : d.structure().ops()) {
+            if ("runecraft:isle_of_souls_chest".equals(op.block())) {
+                found++;
+                assertEquals(StructureDef.bx(2139 + CacheDungeons.IOS_DX), op.x1());
+                assertTrue(op.y1() <= Dungeons.DEEP_TOP, "chest underground");
+            }
+        }
+        assertEquals(1, found);
     }
 
     @Test

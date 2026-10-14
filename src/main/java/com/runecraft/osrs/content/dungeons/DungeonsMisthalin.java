@@ -243,8 +243,10 @@ final class DungeonsMisthalin {
         int cz1 = lz - 56;
         int cz2 = lz + 40;
         c.room(cx1, cz1, cx2, cz2, 10, 16, mc("polished_andesite"));
-        c.carve();
         int fc = 10;
+        dorgeshKaanCourseRooms(c, cz2, fc);
+        c.carve();
+        dorgeshKaanCourse(c);
         // Mine rocks along the mine walls.
         c.rocks(3, lz - 17, 31, lz - 17, f + 1, 3, rc("iron_rock"), rc("coal_rock"), rc("silver_rock"), rc("coal_rock"));
         c.rocks(3, lz + 5, 31, lz + 5, f + 1, 4, rc("iron_rock"), rc("coal_rock"), rc("gold_rock"));
@@ -276,6 +278,69 @@ final class DungeonsMisthalin {
         c.camp(4, lz - 15, 30, lz + 3, f, 4, 25, "cave_goblin_guard");
         c.camp(cx1 + 2, cz1 + 2, cx2 - 2, cz2 - 2, fc, 10, 25, "cave_goblin", "cave_goblin", "cave_goblin_guard");
         return c.build();
+    }
+
+    // ------------------------------------------------------------------ Dorgesh-Kaan Agility Course
+
+    /** Floor of the course's upper level (above the city floor, like OSRS's course on the city's upper level). */
+    static final int DK_COURSE_FLOOR = 18;
+    /** The course gallery (blocks): Turgall's working generator at the east end, the old generator at the west end. */
+    static final int[] DK_COURSE = {70, 70, 156, 96};
+    /** Obstacle lanes: out (west) along z 76, back (east) along z 88; eight obstacles each, 9 blocks apart. */
+    static final int DK_OUT_Z = 76;
+    static final int DK_BACK_Z = 88;
+
+    /** Carves the course's upper gallery south of the city and the stairs up to it from the city floor. */
+    private static void dorgeshKaanCourseRooms(Cave c, int cityZ2, int cityFloor) {
+        // The stairs climb south from the city's southern street to the course level.
+        c.stairs(112, cityZ2 - 2, 's', cityFloor, DK_COURSE_FLOOR, 3, 4);
+        c.room(DK_COURSE[0], DK_COURSE[1], DK_COURSE[2], DK_COURSE[3], DK_COURSE_FLOOR, 9, mc("polished_andesite"));
+    }
+
+    /**
+     * The Dorgesh-Kaan Agility Course (Agility route; approx layout): out to the old power generator in the west over a
+     * cable, a cable swing, the monkey-bar ladder, another swing, the jutting wall, the tunnel, a cable and a ladder, then
+     * back over the same obstacles in reverse to Turgall's generator, where the lap (the delivered part) ends. Each
+     * obstacle is a numbered agility obstacle block with a little scenery; the level and quest are checked by the course.
+     */
+    private static void dorgeshKaanCourse(Cave c) {
+        int course = com.runecraft.osrs.data.AgilityCourse.DORGESH_KAAN.ordinal();
+        int f = DK_COURSE_FLOOR;
+        // Obstacle kinds in step order (out); the way back repeats them reversed.
+        String[] kinds = {"cable", "swing", "ladder", "swing", "wall", "tunnel", "cable", "ladder"};
+        for (int i = 0; i < 8; i++) {
+            int xOut = 148 - 9 * i;
+            obstacleScenery(c, kinds[i], xOut, DK_OUT_Z, f);
+            c.obstacle(xOut, DK_OUT_Z, f, course, i);
+            int xBack = 85 + 9 * i;
+            obstacleScenery(c, kinds[7 - i], xBack, DK_BACK_Z, f);
+            c.obstacle(xBack, DK_BACK_Z, f, course, 8 + i);
+        }
+        // The old power generator (west, where the spare part is taken) and Turgall's working one (east).
+        c.fill(72, f + 1, 80, 74, f + 3, 84, mc("waxed_oxidized_copper"));
+        c.set(75, f + 2, 82, mc("lever[face=wall,facing=east]"));
+        c.fill(152, f + 1, 80, 154, f + 3, 84, mc("waxed_copper_block"));
+        c.set(153, f + 4, 82, mc("lightning_rod"));
+        c.set(151, f + 2, 82, mc("redstone_lamp[lit=true]"));
+        for (int x = DK_COURSE[0] + 4; x <= DK_COURSE[2] - 4; x += 12) {
+            c.set(x, f + 9, 82, mc("pearlescent_froglight"));
+        }
+    }
+
+    /** Scenery beside an obstacle block, so each looks like what it is. */
+    private static void obstacleScenery(Cave c, String kind, int x, int z, int f) {
+        switch (kind) {
+            case "cable" -> c.fill(x - 2, f + 3, z, x + 2, f + 3, z, mc("chain[axis=x]"));
+            case "swing" -> c.fill(x, f + 3, z, x, f + 8, z, mc("chain[axis=y]"));
+            case "ladder" -> c.fill(x - 2, f + 4, z - 1, x + 2, f + 4, z + 1, mc("iron_bars"));
+            case "wall" -> c.fill(x, f + 1, z - 2, x, f + 3, z - 1, mc("stone_bricks"));
+            default -> {
+                // The tunnel: a stone arch over the block.
+                c.fill(x - 1, f + 3, z - 1, x + 1, f + 3, z + 1, mc("stone_bricks"));
+                c.fill(x - 1, f + 1, z - 1, x + 1, f + 2, z - 1, mc("stone_bricks"));
+                c.fill(x - 1, f + 1, z + 1, x + 1, f + 2, z + 1, mc("stone_bricks"));
+            }
+        }
     }
 
     /** A Dorgesh-Kaan house: a stone box with a door and lit windows. */

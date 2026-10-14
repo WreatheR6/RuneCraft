@@ -160,8 +160,15 @@ final class ThievingHooks {
         if (player.getRandom().nextDouble() >= chance) {
             Msg.action(player, "You fail to pick the lock.");
             if (player.getRandom().nextInt(ThievingData.TRAP_CHANCE) == 0) {
-                // OSRS teleports the player out of the dungeon; here the trap just hurts (approx).
                 Msg.red(player, "You trigger a trap!");
+                if (c.blockId().equals(ThievingData.SOUL_CHEST)) {
+                    // OSRS: the Isle of Souls chest's trap teleports the player outside the dungeon entrance.
+                    BlockPos out = com.runecraft.world.Gielinor.safeSpot(world,
+                            com.runecraft.osrs.GielinorMap.toBlockX(ThievingData.SOUL_CHEST_TRAP_EXIT[0]),
+                            com.runecraft.osrs.GielinorMap.toBlockZ(ThievingData.SOUL_CHEST_TRAP_EXIT[1]));
+                    player.teleport(world, out.getX() + 0.5, out.getY(), out.getZ() + 0.5, player.getYaw(), player.getPitch());
+                    return;
+                }
                 com.runecraft.combat.CombatHandler.applyDamage(null, player, 2);
                 ServerNetworking.hitsplat(player, 2, com.runecraft.network.Net.SPLAT_DAMAGE);
             }

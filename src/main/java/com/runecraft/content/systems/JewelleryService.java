@@ -41,6 +41,33 @@ public final class JewelleryService {
         return stack.isEmpty() ? null : Jewellery.worn(Inv.idOf(stack));
     }
 
+    /** A worn teleport item or a hand-held one (the pharaoh's sceptre), for the teleport menu only. */
+    static Jewellery.Worn teleDef(ItemStack stack) {
+        Jewellery.Worn w = wornDef(stack);
+        return w != null || stack.isEmpty() ? w : Jewellery.held(Inv.idOf(stack));
+    }
+
+    /**
+     * Activates the locked "visit" destinations (statues of Ates, the Necropolis obelisk) the player stands near; returns
+     * the names activated.
+     */
+    private static List<String> activateNearby(ServerPlayerEntity p, Jewellery.Worn w) {
+        List<String> out = new java.util.ArrayList<>();
+        if (!Gielinor.is(p)) {
+            return out;
+        }
+        int[] at = SysTeleport.osrs(p);
+        SysState.SysPlayer sp = SysState.of(p);
+        for (Teleports.Destination d : w.teleports()) {
+            if (Teleports.needsVisit(d) && !sp.unlocks.contains(d.name())
+                    && Teleports.within(at[0], at[1], d.x(), d.y(), Teleports.ACTIVATE_RADIUS)) {
+                sp.unlocks.add(d.name());
+                out.add(d.name());
+            }
+        }
+        return out;
+    }
+
     /** Wears the item in the given hand (swapping with whatever is in that slot). */
     public static void wear(ServerPlayerEntity p, Hand hand) {
         ItemStack stack = p.getStackInHand(hand);
@@ -111,11 +138,15 @@ public final class JewelleryService {
     /** Opens the teleport menu of the item in hand or in a worn slot. */
     public static void openTeleports(ServerPlayerEntity p, String source) {
         ItemStack stack = stackFor(p, source);
-        Jewellery.Worn w = wornDef(stack);
+        Jewellery.Worn w = teleDef(stack);
         if (w == null) {
             return;
         }
         SysNet.Screen s = new SysNet.Screen("tele", w.name());
+        for (String name : activateNearby(p, w)) {
+            Msg.action(p, "You commune with the " + (w.id().equals("pharaohs_sceptre") ? "obelisk" : "statue")
+                    + ". Your " + w.name().toLowerCase(java.util.Locale.ROOT) + " can now teleport you to " + name + ".");
+        }
         Charges.Spec charged = teleportCharges(stack);
         if (w.chargeBase() != null && w.charges() == 0) {
             s.line("It has no charges left. Recharge it at the Fountain of Heroes (Heroes' Guild, Burthorpe).", 0xFF8080);
@@ -131,10 +162,11 @@ public final class JewelleryService {
             boolean diary = com.runecraft.osrs.content.systems.DiaryRewards.areaOf(w.id()) != null;
             for (int i = 0; i < dests.size(); i++) {
                 String unlock = Teleports.unlockItem(dests.get(i));
-                boolean locked = unlock != null && !SysState.of(p).unlocks.contains(dests.get(i).name());
+                boolean locked = (unlock != null || Teleports.needsVisit(dests.get(i)))
+                        && !SysState.of(p).unlocks.contains(dests.get(i).name());
                 s.button(source + "|" + i, diary ? DiaryService.rewardTeleLabel(p, w.id(), i)
                         : dests.get(i).name() + (locked ? " (locked)" : ""));
-                if (locked && Inv.has(p, unlock, 1)) {
+                if (locked && unlock != null && Inv.has(p, unlock, 1)) {
                     s.button(source + "|unlock" + i, "Use your " + itemName(unlock).toLowerCase() + " to unlock " + dests.get(i).name());
                 }
             }
@@ -150,7 +182,7 @@ public final class JewelleryService {
             s.button(source + "|alch", (com.runecraft.osrs.content.systems.DiaryRewards.explorerHighAlch(tier) ? "High" : "Low")
                     + " alchemy (off-hand item)");
         }
-        if (source.startsWith("hand")) {
+        if (source.startsWith("hand") && Jewellery.worn(w.id()) != null) {
             s.button(source + "|wear", "Wear it");
         }
         s.send(p);
@@ -226,13 +258,17 @@ public final class JewelleryService {
         String source = action.substring(0, bar);
         String what = action.substring(bar + 1);
         ItemStack stack = stackFor(p, source);
-        Jewellery.Worn w = wornDef(stack);
+        Jewellery.Worn w = teleDef(stack);
         if (w == null) {
             Msg.game(p, "You are no longer holding that item.");
             return;
         }
         switch (what) {
-            case "wear" -> wear(p, Hand.MAIN_HAND);
+            case "wear" -> {
+                if (Jewellery.worn(w.id()) != null) {
+                    wear(p, Hand.MAIN_HAND);
+                }
+            }
             case "energy" -> {
                 if (DiaryService.useDaily(p, "explorer_energy", energyUses(tierOf(w.id())))) {
                     RunEnergyService.restore(p, 100 * com.runecraft.osrs.content.systems.DiaryRewards.explorerEnergyPercent(tierOf(w.id())));
@@ -266,6 +302,12 @@ public final class JewelleryService {
                 if (unlockItem != null && !SysState.of(p).unlocks.contains(dest.name())) {
                     Msg.game(p, "You need to use " + article(itemName(unlockItem).toLowerCase()) + " on your "
                             + w.name() + " to unlock " + dest.name() + ".");
+                    return;
+                }
+                if (Teleports.needsVisit(dest) && !SysState.of(p).unlocks.contains(dest.name())) {
+                    Msg.game(p, "You need to commune with the " + (w.id().equals("pharaohs_sceptre") ? "obelisk" : "statue of Ates")
+                            + " at " + dest.name() + " with your " + w.name().toLowerCase(java.util.Locale.ROOT)
+                            + " before you can teleport there.");
                     return;
                 }
                 Charges.Spec charged = teleportCharges(stack);

@@ -75,6 +75,48 @@ public final class Teleports {
     public static final List<Destination> ECTOPHIAL = List.of(at("Ectofuntus", 3660, 3522));
     public static final List<Destination> CRAFTING_CAPE = List.of(at("Crafting Guild", 2931, 3286));
 
+    /*
+     * Round 17 teleport items (OSRS arrival tiles from the shortest-path snapshot, checked by TransportSnapshotTest).
+     */
+    /**
+     * Pharaoh's sceptre (Pyramid Plunder): the four great pyramids, one charge each. Jaltevas must first be unlocked by
+     * communing with the Necropolis obelisk while carrying the sceptre ({@link #needsVisit}).
+     */
+    public static final List<Destination> PHARAOH = List.of(
+            at("Jalsavrah", 3288, 2800), // relocated: OSRS lands in the plane-3 Pyramid Plunder lobby; the minigame's pyramid here
+            at("Jaleustrophos", 3341, 2827), at("Jaldraocht", 3232, 2897), at("Jaltevas", 3313, 2718));
+    /** Ring of the elements (Guardians of the Rift): beside the four elemental altars' entrances. */
+    public static final List<Destination> ELEMENTS = List.of(at("Air Altar", 2981, 3276), at("Water Altar", 3170, 3155),
+            at("Earth Altar", 3288, 3468), at("Fire Altar", 3314, 3279));
+    /**
+     * Ring of returning (jade ring, Lvl-2 Enchant): the player's respawn point. RuneCraft always respawns players in
+     * Lumbridge, so this is the wiki's Lumbridge respawn tile.
+     */
+    public static final List<Destination> RETURNING = List.of(at("Respawn point (Lumbridge)", 3221, 3219));
+    /**
+     * Giantsoul amulet (Royal Titans): the lairs of Bryophyta, Obor and the Royal Titans. All three are underground in
+     * OSRS; here they go to the summoning stones this world builds for them (approx tiles beside each lair).
+     */
+    public static final List<Destination> GIANTSOUL = List.of(
+            at("Bryophyta", 3211, 3424), // relocated: Bryophyta's summoning stone south of Varrock's square (approx)
+            at("Obor", 3090, 3489), // relocated: Obor's summoning stone south of Edgeville (approx)
+            at("Branda and Eldric", 3004, 3146)); // relocated: the Asgarnian Ice Dungeon entrance where the Titans' lair is built
+    /**
+     * Pendant of ates (frost nagua, Amoxliatl): six Varlamore statues of Ates. Each must be activated first, which here
+     * happens when the pendant's menu is opened near the statue's spot ({@link #needsVisit}; the Aldarin icon step of
+     * Death on the Isle is not modelled - approx).
+     */
+    public static final List<Destination> ATES = List.of(at("The Darkfrost", 1491, 3283), at("Twilight Temple", 1668, 3223),
+            at("Ralos' Rise", 1459, 3138), at("North Aldarin", 1426, 2995), at("Kastori", 1366, 3086),
+            at("Nemus Retreat", 1364, 3277));
+    /** How close (tiles) a player must be to a {@link #needsVisit} destination to activate it. approx */
+    public static final int ACTIVATE_RADIUS = 12;
+
+    /** Destinations unlocked by visiting them once with the item (the statues of Ates, the Necropolis obelisk). */
+    public static boolean needsVisit(Destination d) {
+        return ATES.contains(d) || PHARAOH.get(3).equals(d);
+    }
+
     /**
      * Highest Wilderness level an item's teleport works from (OSRS): dragonstone jewellery (glory, wealth,
      * skills, combat) and the slayer ring work up to level 30, everything else up to level 20.

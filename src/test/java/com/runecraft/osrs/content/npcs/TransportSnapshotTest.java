@@ -52,7 +52,11 @@ class TransportSnapshotTest {
             Map.entry("Slayer ring: Dark Beasts", "OSRS lands by the Temple of Light; this world's dark beasts are in the Iorwerth Dungeon"),
             Map.entry("Paddewwa tablet", "Edgeville Dungeon is not built; surface above it"),
             Map.entry("Ape Atoll tablet", "OSRS lands in the Ape Atoll dungeon; the island above it"),
-            Map.entry("Key master teleport", "Cerberus' lair is an instance; Taverley Dungeon entrance"));
+            Map.entry("Key master teleport", "Cerberus' lair is an instance; Taverley Dungeon entrance"),
+            Map.entry("Pharaoh's sceptre: Jalsavrah", "the plane-3 Pyramid Plunder lobby; the minigame's pyramid"),
+            Map.entry("Giantsoul amulet: 1. Bryophyta", "OSRS lands in the Varrock Sewers; Bryophyta's summoning stone"),
+            Map.entry("Giantsoul amulet: 2. Obor", "OSRS lands in the Edgeville Dungeon; Obor's summoning stone"),
+            Map.entry("Giantsoul amulet: 3. Branda and Eldric", "OSRS lands in the Asgarnian Ice Dungeon; its entrance (Titans' lair)"));
 
     // ------------------------------------------------------------------ snapshot reading
 
@@ -487,7 +491,9 @@ class TransportSnapshotTest {
             Map.entry("Digsite pendant", Teleports.DIGSITE), Map.entry("Necklace of passage", Teleports.PASSAGE),
             Map.entry("Burning amulet", Teleports.BURNING), Map.entry("Xeric's talisman", Teleports.XERIC),
             Map.entry("Drakan's medallion", Teleports.DRAKAN), Map.entry("Ectophial", Teleports.ECTOPHIAL),
-            Map.entry("Slayer ring", Teleports.SLAYER));
+            Map.entry("Slayer ring", Teleports.SLAYER), Map.entry("Pharaoh's sceptre", Teleports.PHARAOH),
+            Map.entry("Ring of the elements", Teleports.ELEMENTS), Map.entry("Giantsoul amulet", Teleports.GIANTSOUL),
+            Map.entry("Pendant of ates", Teleports.ATES));
     private static final Map<String, String> ITEM_IDS = Map.ofEntries(
             Map.entry("Amulet of glory", "amulet_of_glory_4"), Map.entry("Ring of dueling", "ring_of_dueling_8"),
             Map.entry("Games necklace", "games_necklace_8"), Map.entry("Skills necklace", "skills_necklace_4"),
@@ -495,11 +501,16 @@ class TransportSnapshotTest {
             Map.entry("Digsite pendant", "digsite_pendant_5"), Map.entry("Necklace of passage", "necklace_of_passage_5"),
             Map.entry("Burning amulet", "burning_amulet_5"), Map.entry("Xeric's talisman", "xerics_talisman"),
             Map.entry("Drakan's medallion", "drakans_medallion"), Map.entry("Ectophial", "ectophial"),
-            Map.entry("Slayer ring", "slayer_ring_8"));
+            Map.entry("Slayer ring", "slayer_ring_8"), Map.entry("Pharaoh's sceptre", "pharaohs_sceptre"),
+            Map.entry("Ring of the elements", "ring_of_the_elements"), Map.entry("Giantsoul amulet", "giantsoul_amulet"),
+            Map.entry("Pendant of ates", "pendant_of_ates"));
     /** RuneCraft destination names that differ from the snapshot's. */
-    private static final Map<String, String> ALIAS = Map.of("Cooks' Guild", "Cooking Guild", "Edgeville Monastery", "Monastery",
-            "Dondakan's Rock", "Dondakan", "Wintertodt Camp", "Wintertodt", "Eagles' Eyrie", "Eagle's Eyrie",
-            "Ectofuntus", "", "Stronghold Slayer Cave", "Stronghold", "Fremennik Slayer Dungeon", "Fremennik");
+    private static final Map<String, String> ALIAS = Map.ofEntries(Map.entry("Cooks' Guild", "Cooking Guild"),
+            Map.entry("Edgeville Monastery", "Monastery"), Map.entry("Dondakan's Rock", "Dondakan"),
+            Map.entry("Wintertodt Camp", "Wintertodt"), Map.entry("Eagles' Eyrie", "Eagle's Eyrie"), Map.entry("Ectofuntus", ""),
+            Map.entry("Stronghold Slayer Cave", "Stronghold"), Map.entry("Fremennik Slayer Dungeon", "Fremennik"),
+            Map.entry("Air Altar", "Air"), Map.entry("Water Altar", "Water"), Map.entry("Earth Altar", "Earth"),
+            Map.entry("Fire Altar", "Fire"));
     /** OSRS destinations not offered (yet). */
     private static final Set<String> NOT_OFFERED = Set.of();
 
@@ -591,6 +602,59 @@ class TransportSnapshotTest {
         assertTrue(com.runecraft.osrs.ItemCatalog.exists("ancient_tablet"));
         for (int n = 1; n <= 8; n++) {
             assertTrue(com.runecraft.osrs.ItemCatalog.exists("slayer_ring_" + n), "slayer_ring_" + n);
+        }
+        // Round 17 teleport items (wiki): per-stack charges, one per teleport ("Consumable" T in the snapshot).
+        Map<String, Object[]> perStack = Map.of(
+                "ring_of_the_elements", new Object[]{10_000, Map.of("air_rune", 1, "water_rune", 1, "earth_rune", 1, "fire_rune", 1,
+                        "law_rune", 1)},
+                "giantsoul_amulet", new Object[]{16_000, Map.of("big_bones", 1, "law_rune", 1)},
+                "pendant_of_ates", new Object[]{1_000, Map.of("frozen_tear", 1)},
+                "pharaohs_sceptre", new Object[]{100, Map.of()});
+        for (Map.Entry<String, Object[]> e : perStack.entrySet()) {
+            com.runecraft.osrs.content.systems.Charges.Spec spec = com.runecraft.osrs.content.systems.Charges.of(e.getKey());
+            assertNotNull(spec, e.getKey());
+            assertEquals(e.getValue()[0], spec.max(), e.getKey() + " max charges");
+            assertEquals(e.getValue()[1], spec.materials(), e.getKey() + " charge cost");
+            assertEquals(com.runecraft.osrs.content.systems.Charges.Drain.TELEPORT, spec.drain(), e.getKey());
+            assertFalse(com.runecraft.osrs.content.systems.Charges.depleted(spec, 0), e.getKey() + " keeps its stats when empty");
+        }
+        for (Map<String, String> r : rows("teleportation_items.tsv")) {
+            String info = r.get("Display info");
+            if (info.startsWith("Pharaoh's sceptre") || info.startsWith("Ring of the elements") || info.startsWith("Giantsoul amulet")
+                    || info.startsWith("Pendant of ates")) {
+                assertEquals("T", r.get("Consumable"), info);
+            }
+        }
+        // Pharaoh's sceptre: 3 charges, 10/25/50/100 with each Desert Diary tier; a hand-held item, not a worn one.
+        assertEquals(List.of(3, 10, 25, 50, 100), java.util.stream.IntStream.rangeClosed(0, 4)
+                .map(com.runecraft.osrs.content.systems.Charges::pharaohsSceptreCap).boxed().toList());
+        assertEquals(null, com.runecraft.osrs.content.systems.Jewellery.worn("pharaohs_sceptre"));
+        assertEquals(Teleports.PHARAOH, com.runecraft.osrs.content.systems.Jewellery.held("pharaohs_sceptre").teleports());
+        // Ring of returning: 5 charges, crumbles; made from a jade ring with Lvl-2 Enchant.
+        assertEquals(5, mine.get("ring_of_returning"));
+        assertTrue(com.runecraft.osrs.content.systems.Jewellery.worn("ring_of_returning_1").crumbles());
+        assertEquals("ring_of_returning_5", com.runecraft.osrs.content.systems.Jewellery.ENCHANT.get("jade_ring"));
+        assertEquals(2, com.runecraft.osrs.content.systems.Jewellery.ENCHANT_LEVEL.get("jade_ring"));
+        assertTrue(com.runecraft.osrs.ItemCatalog.exists("jade_ring"));
+        // Visit-unlocked destinations: the six statues of Ates and the Necropolis obelisk.
+        for (Teleports.Destination d : Teleports.ATES) {
+            assertTrue(Teleports.needsVisit(d), d.name());
+        }
+        assertTrue(Teleports.needsVisit(Teleports.PHARAOH.get(3)));
+        assertFalse(Teleports.needsVisit(Teleports.PHARAOH.get(0)));
+    }
+
+    /** No teleport destination added for an item may land in water (the in-game self-test checks the rest). */
+    @Test
+    void newTeleportDestinationsAreOnLand() {
+        List<Teleports.Destination> all = new ArrayList<>();
+        for (List<Teleports.Destination> l : List.of(Teleports.PHARAOH, Teleports.ELEMENTS, Teleports.RETURNING, Teleports.GIANTSOUL,
+                Teleports.ATES)) {
+            all.addAll(l);
+        }
+        for (Teleports.Destination d : all) {
+            assertFalse(com.runecraft.osrs.world.Elevation.isWater(GielinorMap.toBlockX(d.x()), GielinorMap.toBlockZ(d.y())),
+                    d.name() + " at " + d.x() + "," + d.y() + " is in water");
         }
     }
 

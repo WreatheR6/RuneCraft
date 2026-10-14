@@ -15,8 +15,9 @@ import com.runecraft.osrs.Landmark;
  * 153.5/508, Wilderness 571.4, Colossal Wyrm 504.1/749.6, Prifddinas 1,337, Werewolf 350 plus 380 for
  * the stick = 730, Penguin 540). The Werewolf course (below Canifis: 60 Agility, Creature of
  * Fenkenstrain and a ring of charos) and the Penguin course (below the Iceberg: 30 Agility, Cold War
- * started) are carved into the dungeons module's caves. Not modelled: Dorgesh-Kaan, and the
- * Hallowed Sepulchre (a minigame).
+ * started) are carved into the dungeons module's caves, and the Dorgesh-Kaan course (70 Agility, Death to the
+ * Dorgeshuun, 2,750 a lap) is on an upper level of the dungeons module's Dorgesh-Kaan. Not modelled: the Hallowed
+ * Sepulchre (a minigame).
  *
  * <p>Rooftop courses spawn Marks of grace: a 1/3 chance per lap (Canifis 2/3), cut to 20% once the
  * player is 20+ levels above the course (not at Canifis), and at most one every 3 minutes.
@@ -83,7 +84,14 @@ public enum AgilityCourse {
     // Penguin course below the Iceberg: stepping stones 80, four icicles 40 each, ice slope 180 + lap bonus (lap 540;
     // the split of the bonus approx). Its obstacles can be failed at any level (approx.: here up to level 65).
     PENGUIN("Penguin Agility Course", 30, 540.0, null, true, false,
-            new int[]{0, 1, 2, 3, 4}, 3, 80, 40, 40, 40, 40, 300);
+            new int[]{0, 1, 2, 3, 4}, 3, 80, 40, 40, 40, 40, 300),
+    // Dorgesh-Kaan (wiki): 70 Agility and Death to the Dorgeshuun. The Agility route out to the old power generator and
+    // back: cable 25, cable swing 22, ladder (monkey bars) 25, cable swing 22, jutting wall 7.5, tunnel 7.5, cable 25,
+    // ladder 25, then the same eight in reverse; delivering the part to Turgall adds 2,432 (lap 2,750). Simplified: the
+    // spanner, Turgall's two requested parts and the spring device/power box hand-in are the lap itself, and the grapple
+    // route isn't modelled (approx). The cables and ladders can be failed (a ~10 hit, the lap restarts).
+    DORGESH_KAAN("Dorgesh-Kaan Agility Course", 70, 2750.0, null, true, false,
+            new int[]{0, 2, 6, 7, 8, 9, 13}, 10, 25, 22, 25, 22, 7.5, 7.5, 25, 25, 25, 25, 7.5, 7.5, 22, 25, 22, 2457);
 
     /** Obstacle steps the obstacle block can represent (its {@code step} property is 0..MAX_OBSTACLES-1). */
     public static final int MAX_OBSTACLES = 16;
@@ -204,7 +212,7 @@ public enum AgilityCourse {
      * (not Canifis). Prifddinas' rate is approx. the rooftops'.
      */
     public double markChance(int agilityLevel) {
-        if (!rooftop && this != PRIFDDINAS) {
+        if (!rooftop && this != PRIFDDINAS && this != DORGESH_KAAN) {
             return 0;
         }
         if (this == CANIFIS) {
@@ -221,6 +229,7 @@ public enum AgilityCourse {
         return switch (this) {
             case WEREWOLF -> "creature_of_fenkenstrain";
             case PENGUIN -> "cold_war";
+            case DORGESH_KAAN -> "death_to_the_dorgeshuun";
             default -> null;
         };
     }

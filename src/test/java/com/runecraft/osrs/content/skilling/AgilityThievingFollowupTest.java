@@ -45,7 +45,24 @@ class AgilityThievingFollowupTest {
         assertEquals("cold_war", p.requiredQuest());
         assertTrue(p.questStartedEnough());
         assertNull(p.requiredItem());
-        for (String q : new String[]{w.requiredQuest(), p.requiredQuest()}) {
+        // Dorgesh-Kaan (wiki): 70 Agility, Death to the Dorgeshuun; the Agility route there and back is 2 x 159 XP of
+        // obstacles plus the 2,432 delivery bonus = 2,750 a lap, 16 obstacles (the block's whole step range).
+        AgilityCourse dk = AgilityCourse.DORGESH_KAAN;
+        assertEquals(AgilityCourse.values().length - 1, dk.ordinal(), "appended last");
+        assertEquals(70, dk.level());
+        assertEquals(2750.0, dk.lapXp(), 1e-9);
+        assertEquals(16, dk.obstacles());
+        assertEquals(2457.0, dk.lapBonusXp(), 1e-9); // the last cable (25) + the delivery bonus (2,432)
+        double out = 0;
+        for (int i = 0; i < 8; i++) {
+            out += dk.obstacleXp(i);
+            assertEquals(dk.obstacleXp(i), dk.obstacleXp(15 - i == 15 ? 0 : 15 - i), 1e-9, "the way back mirrors the way out " + i);
+        }
+        assertEquals(159.0, out, 1e-9);
+        assertEquals("death_to_the_dorgeshuun", dk.requiredQuest());
+        assertTrue(dk.handBuilt());
+        assertTrue(dk.canFail(0) && dk.canFail(2) && !dk.canFail(4) && !dk.canFail(15));
+        for (String q : new String[]{w.requiredQuest(), p.requiredQuest(), dk.requiredQuest()}) {
             assertNotNull(ContentRegistry.quest(q), q);
         }
         assertNotNull(ItemCatalog.get("ring_of_charos"));
@@ -269,7 +286,14 @@ class AgilityThievingFollowupTest {
         assertEquals(0.60, ThievingData.openChance(ThievingData.SOUL_CHEST, 99, false), 0.01);
         assertTrue(ThievingData.openChance(ThievingData.SOUL_CHEST, 50, true) > ThievingData.openChance(ThievingData.SOUL_CHEST, 50, false));
         assertEquals(1.0, ThievingData.openChance("ten_coin_chest", 13, false), 1e-9);
-        assertTrue(ContentRegistry.places().stream().anyMatch(p -> p.blocks().contains(ThievingData.SOUL_CHEST)));
+        // The Isle of Souls chest is built inside the Isle of Souls Dungeon (DungeonsContentTest), not on a surface place.
+        assertTrue(ContentRegistry.places().stream().noneMatch(p -> p.blocks().contains(ThievingData.SOUL_CHEST)));
+        // Leaving the Wilderness course's walls forfeits the fee: the dispenser lodge and the obstacles are inside.
+        assertTrue(AgilityRewards.inWildernessCourse(2993, 3921));
+        assertTrue(AgilityRewards.inWildernessCourse(3004, 3940));
+        assertTrue(AgilityRewards.inWildernessCourse(2996, 3943));
+        assertFalse(AgilityRewards.inWildernessCourse(2998, 3910));
+        assertFalse(AgilityRewards.inWildernessCourse(3010, 3940));
         assertTrue(ContentRegistry.places().stream().anyMatch(p -> p.blocks().contains(ThievingData.DARK_CHEST)));
         // The Wilderness course keeps its state across logouts but loses ten laps of streak.
         assertEquals(15, AgilityRewards.streakAfterLogout(25));

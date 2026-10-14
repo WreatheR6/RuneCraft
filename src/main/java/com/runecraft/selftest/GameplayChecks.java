@@ -551,6 +551,9 @@ final class GameplayChecks {
         for (Jewellery.Worn w : Jewellery.all()) {
             dests.addAll(w.teleports());
         }
+        for (Jewellery.Worn w : Jewellery.allHeld()) {
+            dests.addAll(w.teleports());
+        }
         dests.addAll(Teleports.XERIC);
         dests.addAll(Teleports.SLAYER);
         dests.addAll(Teleports.DRAKAN);

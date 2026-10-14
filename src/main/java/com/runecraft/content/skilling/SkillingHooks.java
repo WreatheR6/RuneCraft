@@ -77,6 +77,7 @@ public final class SkillingHooks implements ModuleHooks {
                 ItemHooks.goadingTick(player, gameTick);
                 SailingHooks.boatTick(player);
                 BlastFurnaceHooks.tick(player, gameTick);
+                AgilityHooks.wildernessTick(player, gameTick);
                 if (gameTick % 20 == 0) {
                     RunecraftHooks.fermentWine(player);
                 }
