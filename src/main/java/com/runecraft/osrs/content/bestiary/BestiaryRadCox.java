@@ -704,7 +704,7 @@ final class BestiaryRadCox {
         for (int i = 0; i < cr.length; i++) {
             float[] q = cr[i];
             int h = (int) q[3];
-            p(b, "crystal" + i, "cranium", i % 2 == 0 ? CRYSTAL : 0xB0F8F0).at(q[0], -3, q[2]).rot(q[4], 0, q[5]).mat("ice")
+            p(b, "crystal" + i, "cranium", i % 2 == 0 ? CRYSTAL : 0xB0F8F0).at(q[0], -3, q[2]).rot(q[4], 0, q[5]).mat("crystal")
                     .glow(i % 3 == 0 ? "full" : null).box(-1.5f, -h, -1.5f, 3, h, 3).box(-0.5f, -h - 2, -0.5f, 1, 2, 1).add();
         }
         // gill frills and barbels
@@ -756,7 +756,7 @@ final class BestiaryRadCox {
             float[] q = cr[i];
             int h = (int) q[2];
             p(b, "crystal" + i, "palm_back", i % 2 == 0 ? crystal : shade(crystal, 1.15f)).at(q[0], -1.5f, q[1]).rot(q[3], 0, q[4])
-                    .mat("ice").glow(left && i % 2 == 0 ? "full" : null).box(-1.5f, -h, -1.5f, 3, h, 3).box(-0.5f, -h - 2, -0.5f, 1, 2, 1).add();
+                    .mat("crystal").glow(left && i % 2 == 0 ? "full" : null).box(-1.5f, -h, -1.5f, 3, h, 3).box(-0.5f, -h - 2, -0.5f, 1, 2, 1).add();
         }
         p(b, "scars", "palm", dark).at(0, -4, 5).mat("scales").box(-7, -3, -0.5f, 3, 1, 1).box(3, -5, -0.5f, 4, 1, 1).add();
         for (int i = 0; i < 3; i++) {
@@ -767,7 +767,7 @@ final class BestiaryRadCox {
                 .box(-4, -8.5f, 2, 2, 1, 2).add();
         p(b, "rubble", "rock", 0x3A2E26).at(0, -4, 0).mat("rock").box(-13, -2, -9, 3, 2, 3).box(10, -1, -8, 3, 1, 2)
                 .box(-9, -1, 2, 2, 1, 2).box(7, -2, 0, 2, 2, 2).add();
-        s(b, "side_crystal", "palm", false, crystal).at(9, -5, 2).rot(0, 0, -50).mat("ice").glow(left ? "full" : null)
+        s(b, "side_crystal", "palm", false, crystal).at(9, -5, 2).rot(0, 0, -50).mat("crystal").glow(left ? "full" : null)
                 .box(-1, -4, -1, 2, 4, 2).add();
         return b.build();
     }
