@@ -5,6 +5,8 @@ import com.runecraft.content.BlockHooks;
 import com.runecraft.content.ModuleHooks;
 import com.runecraft.osrs.content.BlockDef;
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.raids.Invocation;
+import com.runecraft.osrs.content.raids.RaidScaling;
 import com.runecraft.osrs.content.raids.RaidType;
 import com.runecraft.osrs.content.raids.RaidsContent;
 import com.runecraft.world.LandmarkBuilder;
@@ -35,9 +37,37 @@ public final class RaidsHooks implements ModuleHooks {
         }
         RaidManager.register();
         RaidCommands.register();
+        registerToaScaling();
         LandmarkBuilder.registerCustom(RaidType.COX.placeId(), RaidsHooks::buildMountQuidamortem);
         LandmarkBuilder.registerCustom(RaidType.TOB.placeId(), RaidsHooks::buildVerSinhaza);
         LandmarkBuilder.registerCustom(RaidType.TOA.placeId(), RaidsHooks::buildPyramid);
+    }
+
+    /**
+     * ToA raid level (OSRS): +2% creature accuracy and defence per 5 raid levels (attack and defence rolls x (250 +
+     * level) / 250), and Overly Draining making every special attack cost 100% energy.
+     */
+    private static void registerToaScaling() {
+        com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
+            @Override
+            public double accuracy(net.minecraft.server.network.ServerPlayerEntity player, net.minecraft.entity.LivingEntity target,
+                                   com.runecraft.osrs.AttackType type) {
+                RaidInstance raid = target == null ? null : RaidManager.at(target);
+                if (raid == null || raid.type != RaidType.TOA) {
+                    return 1.0;
+                }
+                // The creature's defence roll grows with the raid level; dividing the attack roll is equivalent.
+                return 1.0 / RaidScaling.toaDefence(RaidInstance.creatureId(target), raid.raidLevel());
+            }
+        });
+        com.runecraft.combat.CombatHooks.addNpcAccuracyModifier((mob, type) -> {
+            RaidInstance raid = RaidManager.at(mob);
+            return raid == null || raid.type != RaidType.TOA ? 1.0 : RaidScaling.toaAccuracy(raid.raidLevel());
+        });
+        com.runecraft.content.systems.SpecialAttackService.addCostRule((player, spec) -> {
+            RaidInstance raid = RaidManager.of(player);
+            return raid == null || raid.type != RaidType.TOA || !raid.contains(player) ? -1 : Invocation.specialCost(raid.invocations());
+        });
     }
 
     /** A rocky mountainside with a glowing cave mouth, north of the plaza. */

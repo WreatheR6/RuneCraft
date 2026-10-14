@@ -119,6 +119,25 @@ public final class CombatHooks {
     private CombatHooks() {
     }
 
+    /** Scales a monster's attack roll (e.g. the ToA raid level raising creature accuracy). */
+    public interface NpcAccuracyModifier {
+        double accuracy(LivingEntity mob, AttackType type);
+    }
+
+    private static final List<NpcAccuracyModifier> NPC_ACCURACY = new ArrayList<>();
+
+    public static void addNpcAccuracyModifier(NpcAccuracyModifier modifier) {
+        NPC_ACCURACY.add(modifier);
+    }
+
+    static double npcAccuracy(LivingEntity mob, AttackType type) {
+        double m = 1.0;
+        for (NpcAccuracyModifier mod : NPC_ACCURACY) {
+            m *= mod.accuracy(mob, type);
+        }
+        return m;
+    }
+
     public static void addModifier(PlayerAttackModifier modifier) {
         MODIFIERS.add(modifier);
     }

@@ -97,7 +97,7 @@ public final class SysNet {
         buf.writeVarInt(p.thrallTier);
         String weapon = com.runecraft.util.Inv.idOf(player.getMainHandStack());
         com.runecraft.osrs.content.systems.SpecialAttacks.Spec spec = com.runecraft.osrs.content.systems.SpecialAttacks.of(weapon);
-        buf.writeVarInt(spec == null ? -1 : spec.cost());
+        buf.writeVarInt(spec == null ? -1 : SpecialAttackService.cost(player, spec));
         ServerPlayNetworking.send(player, STATE, buf);
     }
 

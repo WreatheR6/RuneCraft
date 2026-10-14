@@ -312,7 +312,9 @@ public final class CombatHandler {
      */
     public static long npcAttackRoll(LivingEntity mob, MonsterStats stats, AttackType type, int level) {
         int drained = com.runecraft.content.systems.SysCombat.drainedAttackLevel(mob, type, level);
-        return HitCalcBridge.npcAttackRoll(drained, stats.attackBonus(type), type);
+        long roll = HitCalcBridge.npcAttackRoll(drained, stats.attackBonus(type), type);
+        double m = CombatHooks.npcAccuracy(mob, type);
+        return m == 1.0 ? roll : (long) (roll * m);
     }
 
     /** Combat hook passthroughs for MagicService and module code. */

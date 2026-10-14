@@ -53,6 +53,28 @@ public final class SpecialAttackService {
     private SpecialAttackService() {
     }
 
+    /** Rules that change a special attack's energy cost (e.g. ToA's Overly Draining); return -1 to keep it. */
+    public interface CostRule {
+        int cost(ServerPlayerEntity p, Spec spec);
+    }
+
+    private static final java.util.List<CostRule> COST_RULES = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    public static void addCostRule(CostRule rule) {
+        COST_RULES.add(rule);
+    }
+
+    /** The energy this player's special attack costs (the weapon's cost unless a {@link CostRule} changes it). */
+    public static int cost(ServerPlayerEntity p, Spec spec) {
+        for (CostRule r : COST_RULES) {
+            int c = r.cost(p, spec);
+            if (c >= 0) {
+                return c;
+            }
+        }
+        return spec.cost();
+    }
+
     public static Spec weaponSpec(ServerPlayerEntity p) {
         if (p.getMainHandStack().isEmpty()) {
             return null;
@@ -75,7 +97,7 @@ public final class SpecialAttackService {
             SysNet.sendState(p);
             return;
         }
-        if (sp.specEnergy < spec.cost()) {
+        if (sp.specEnergy < cost(p, spec)) {
             Msg.game(p, "You do not have enough special attack energy left.");
             return;
         }
@@ -93,7 +115,7 @@ public final class SpecialAttackService {
 
     static void spend(ServerPlayerEntity p, Spec spec) {
         SysState.SysPlayer sp = SysState.of(p);
-        sp.specEnergy = Math.max(0, sp.specEnergy - spec.cost());
+        sp.specEnergy = Math.max(0, sp.specEnergy - cost(p, spec));
         sp.specArmed = false;
         p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.PLAYERS, 0.8f, 0.7f);
         SysNet.sendState(p);
@@ -145,7 +167,7 @@ public final class SpecialAttackService {
             case MAGIC -> type == AttackType.MAGIC;
             case INSTANT -> false;
         };
-        if (!matches || sp.specEnergy < spec.cost()) {
+        if (!matches || sp.specEnergy < cost(p, spec)) {
             return null;
         }
         spend(p, spec);

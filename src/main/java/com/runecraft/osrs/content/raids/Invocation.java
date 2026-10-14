@@ -9,10 +9,11 @@ import java.util.Set;
  * Tombs of Amascut invocations. The raid level is the sum of the selected invocations' values
  * (approximately the OSRS values). Invocations in the same {@link #group} are mutually exclusive.
  *
- * <p>Implemented effects: the raid level scales creature hitpoints, damage and loot (see {@link RaidScaling});
- * the attempts group limits the wipes over the whole raid; time limits lower the raid level when missed; Quiet
- * Prayers, Deadly Prayers, On a Diet, Dehydration and Overly Draining change the player's rules; and several boss
- * invocations change their encounters (see the static helpers below).
+ * <p>Implemented effects: the raid level scales creature hitpoints, accuracy, defence, damage and loot (see
+ * {@link RaidScaling}); the attempts group limits the wipes over the whole raid; time limits lower the raid level when
+ * missed; the path level invocations and Walk the Path's random level-ups scale the paths; Quiet Prayers, Deadly
+ * Prayers, On a Diet, Dehydration and Overly Draining change the player's rules; and every boss invocation changes its
+ * encounter (see the static helpers below). The Helpful Spirit group only adds raid levels (no Helpful Spirit here).
  */
 public enum Invocation {
     TRY_AGAIN("Try Again", 5, "attempts"),
@@ -95,6 +96,8 @@ public enum Invocation {
         return switch (this) {
             case OVERCLOCKED_2 -> OVERCLOCKED;
             case INSANITY -> OVERCLOCKED_2;
+            // OSRS: Arterial Spray and Blood Thinners need Not Just a Head.
+            case ARTERIAL_SPRAY, BLOOD_THINNERS -> NOT_JUST_A_HEAD;
             default -> null;
         };
     }
@@ -220,19 +223,153 @@ public enum Invocation {
         return set.contains(STAY_VIGILANT) ? 6 : 7;
     }
 
+    // ------------------------------------------------------------------ Akkha
+
+    /** Keep Back (OSRS): Akkha also melees whoever stands next to him, just before each ranged or magic attack. */
+    public static boolean akkhaKeepBack(Set<Invocation> set) {
+        return set.contains(KEEP_BACK);
+    }
+
+    /** Special attacks Akkha performs at once (OSRS: two with Double Trouble). */
+    public static int akkhaSpecialsAtOnce(Set<Invocation> set) {
+        return set.contains(DOUBLE_TROUBLE) ? 2 : 1;
+    }
+
+    /**
+     * Game ticks players get to move between Memory Blast's safe quadrants (OSRS: two with Feeling Special?).
+     * // approx: 4 without it
+     */
+    public static int akkhaMemoryBlastTicks(Set<Invocation> set) {
+        return set.contains(FEELING_SPECIAL) ? 2 : 4;
+    }
+
+    /** Orbs Trailing Orbs leaves per player step (OSRS: Feeling Special? adds one in front of the player). */
+    public static int akkhaTrailingOrbs(Set<Invocation> set) {
+        return set.contains(FEELING_SPECIAL) ? 2 : 1;
+    }
+
+    /**
+     * Whether Detonate also explodes diagonally (OSRS: Feeling Special? makes it trigger in more directions, groups
+     * only). // approx: the diagonals
+     */
+    public static boolean akkhaDetonateDiagonals(Set<Invocation> set, int partySize) {
+        return set.contains(FEELING_SPECIAL) && partySize > 1;
+    }
+
+    /** Memory Blast iterations (OSRS: one more for every two path levels, from four path levels at most). */
+    public static int akkhaMemoryBlastRounds(int pathLevel) {
+        return 2 + Math.min(4, Math.max(0, pathLevel)) / 2; // approx: base two quadrants
+    }
+
+    // ------------------------------------------------------------------ Ba-Ba
+
+    /** Banana peels each of Ba-Ba's baboons drops on death (OSRS: two with Jungle Japes). */
+    public static int babaBananaPeels(Set<Invocation> set) {
+        return set.contains(JUNGLE_JAPES) ? 2 : 0;
+    }
+
+    /** Game ticks a banana peel stuns the player who steps on it (OSRS: 3 seconds). */
+    public static final int BANANA_STUN_TICKS = 5;
+
+    /** Whether Ba-Ba's knockback into the bottom pit kills (OSRS: Mind the Gap!). */
+    public static boolean babaMindTheGap(Set<Invocation> set) {
+        return set.contains(MIND_THE_GAP);
+    }
+
+    /**
+     * Extra damage of an open sarcophagus's energy blast with Gotta Have Faith (OSRS: based on the player's remaining
+     * prayer points). // approx: a fifth of them
+     */
+    public static int babaFaithDamage(Set<Invocation> set, int prayerPoints) {
+        return set.contains(GOTTA_HAVE_FAITH) ? Math.max(0, prayerPoints) / 5 : 0;
+    }
+
+    /** Radius in tiles of Ba-Ba's slam shockwave (OSRS: 5x5, 7x7 with Shaking Things Up). */
+    public static int babaSlamRadius(Set<Invocation> set) {
+        return set.contains(SHAKING_THINGS_UP) ? 3 : 2;
+    }
+
+    // ------------------------------------------------------------------ Kephri
+
+    /** Players Kephri's Dung Strike targets (OSRS: two with Blowing Mud; no effect solo). */
+    public static int kephriDungTargets(Set<Invocation> set, int partySize) {
+        return Math.max(1, Math.min(Math.max(1, partySize), set.contains(BLOWING_MUD) ? 2 : 1));
+    }
+
+    /**
+     * The extra overlord More Overlords summons in Kephri's shield phase {@code phase} (1 or 2): a Soldier Scarab,
+     * then a Spitting Scarab (OSRS), or null.
+     */
+    public static String kephriExtraOverlord(Set<Invocation> set, int phase) {
+        if (!set.contains(MORE_OVERLORDS)) {
+            return null;
+        }
+        return phase <= 1 ? "toa_soldier_scarab" : "toa_spitting_scarab";
+    }
+
+    /** Radius in tiles of Kephri's fireball (OSRS: one tile, 3x3 with Aerial Assault). */
+    public static int kephriFireballRadius(Set<Invocation> set) {
+        return set.contains(AERIAL_ASSAULT) ? 1 : 0;
+    }
+
+    /** Kephri's fireball damage multiplier (OSRS: Aerial Assault makes it hit harder). // approx: +25% */
+    public static double kephriFireballDamage(Set<Invocation> set) {
+        return set.contains(AERIAL_ASSAULT) ? 1.25 : 1.0;
+    }
+
+    // ------------------------------------------------------------------ the Wardens
+
+    /** Game ticks between the obelisk's charges in phase 1 (OSRS: faster with Ancient Haste). // approx: 12 / 9 */
+    public static int wardensChargeEvery(Set<Invocation> set) {
+        return set.contains(ANCIENT_HASTE) ? 9 : 12;
+    }
+
+    /** A phase 2 Warden's attack interval in game ticks (OSRS: faster with Acceleration). // approx: 5 / 4 */
+    public static int wardensAttackEvery(Set<Invocation> set) {
+        return set.contains(ACCELERATION) ? 4 : 5;
+    }
+
+    /** Game ticks between the obelisk's phase 2 strikes (OSRS: Acceleration charges it faster). // approx: 15 / 11 */
+    public static int wardensObeliskEvery(Set<Invocation> set) {
+        return set.contains(ACCELERATION) ? 11 : 15;
+    }
+
+    /**
+     * Damage multiplier of the obelisk's phase 2 strikes and whether a hit disables overhead prayers (OSRS:
+     * Penetration). // approx: +50%
+     */
+    public static double wardensObeliskDamage(Set<Invocation> set) {
+        return set.contains(PENETRATION) ? 1.5 : 1.0;
+    }
+
+    public static boolean wardensPenetration(Set<Invocation> set) {
+        return set.contains(PENETRATION);
+    }
+
+    /** Game ticks the phase 3 slam comes sooner (OSRS: Overclocked 1, Overclocked 2 2, Insanity 3). */
+    public static int wardensSlamFaster(Set<Invocation> set) {
+        if (set.contains(INSANITY)) {
+            return 3;
+        }
+        if (set.contains(OVERCLOCKED_2)) {
+            return 2;
+        }
+        return set.contains(OVERCLOCKED) ? 1 : 0;
+    }
+
     private static final List<Preset> PRESETS = new ArrayList<>();
 
     static {
         Set<Invocation> normal = EnumSet.of(HARDCORE_RUN, WALK_FOR_IT, NEED_SOME_HELP, PATHSEEKER, QUIET_PRAYERS, ON_A_DIET,
-                KEEP_BACK, STAY_VIGILANT, JUNGLE_JAPES, BLOOD_THINNERS, MIND_THE_GAP, LIVELY_LARVAE);
+                NOT_JUST_A_HEAD, STAY_VIGILANT, JUNGLE_JAPES, MIND_THE_GAP, LIVELY_LARVAE);
         Set<Invocation> expert = EnumSet.copyOf(normal);
         expert.remove(MIND_THE_GAP);
         expert.addAll(EnumSet.of(DOUBLE_TROUBLE, DEADLY_PRAYERS, OVERLY_DRAINING, FEELING_SPECIAL, SHAKING_THINGS_UP,
                 BOULDERDASH, ANCIENT_HASTE, ACCELERATION, PENETRATION, BLOWING_MUD, MEDIC, AERIAL_ASSAULT));
         Set<Invocation> expertPlus = EnumSet.copyOf(expert);
         expertPlus.remove(PATHSEEKER);
-        expertPlus.addAll(EnumSet.of(PATHFINDER, OVERCLOCKED, ARTERIAL_SPRAY, NOT_JUST_A_HEAD, UPSET_STOMACH, MORE_OVERLORDS,
-                MIND_THE_GAP));
+        expertPlus.addAll(EnumSet.of(PATHFINDER, OVERCLOCKED, ARTERIAL_SPRAY, KEEP_BACK, BLOOD_THINNERS, UPSET_STOMACH,
+                MORE_OVERLORDS, MIND_THE_GAP));
         Set<Invocation> insanity = EnumSet.copyOf(expertPlus);
         insanity.remove(WALK_FOR_IT);
         insanity.remove(NEED_SOME_HELP);

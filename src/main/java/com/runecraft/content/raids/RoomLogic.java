@@ -326,6 +326,21 @@ public class RoomLogic {
         return com.runecraft.player.Players.data(p).skills().currentLevel(skill);
     }
 
+    /** Switches off a player's protection prayers (ToA Penetration, Ba-Ba's sarcophagi...). */
+    public static void dropOverheads(ServerPlayerEntity p, String message) {
+        com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+        if (data.activePrayers().removeIf(pr -> pr == com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE
+                || pr == com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES || pr == com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)) {
+            com.runecraft.network.ServerNetworking.sync(p);
+            Msg.red(p, message);
+        }
+    }
+
+    /** A player's current prayer points. */
+    public static int prayerPoints(ServerPlayerEntity p) {
+        return com.runecraft.player.Players.data(p).prayerPoints();
+    }
+
     /** Per-player cooldown for skilling clicks (game ticks). */
     private final java.util.Map<java.util.UUID, Long> clickCooldown = new java.util.HashMap<>();
 
@@ -469,11 +484,12 @@ public class RoomLogic {
 
     /**
      * Moves healers (Nylocas Matomenos, scarab swarms...) towards {@code boss}; any that reach it heal
-     * the boss by their remaining hitpoints times {@code factor} and vanish.
+     * the boss by their remaining hitpoints times {@code factor} and vanish. Returns how many reached it.
      */
-    public void healers(String id, LivingEntity boss, double factor, String message) {
+    public int healers(String id, LivingEntity boss, double factor, String message) {
+        int reached = 0;
         if (!alive(boss)) {
-            return;
+            return 0;
         }
         for (LivingEntity e : living(id)) {
             if (e instanceof MobEntity mob) {
@@ -491,7 +507,9 @@ public class RoomLogic {
                     say(message);
                 }
                 e.discard();
+                reached++;
             }
         }
+        return reached;
     }
 }
