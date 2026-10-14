@@ -67,6 +67,17 @@ public final class SystemsHooks implements ModuleHooks {
                 Msg.game(p, "Zookeeper: Hey! How did that monkey get out? Back in the cage with you!");
                 GameEvents.fireActivity(p, "monkey_cage");
             }
+            // Yanille: after The Hand in the Sand, Bert sends 84 buckets of sand to your bank once a day.
+            if (key.equals("talk:bert_sandman")) {
+                com.runecraft.osrs.QuestInfo sand = com.runecraft.osrs.content.ContentRegistry.quest("the_hand_in_the_sand");
+                if (sand != null && com.runecraft.player.Players.data(p).questComplete(sand)
+                        && DiaryService.useDaily(p, "bert_sand", 1)) {
+                    long sent = com.runecraft.bank.BankService.depositStack(com.runecraft.player.Players.data(p).bank(),
+                            Inv.stack("bucket_of_sand", 1), 84, 0);
+                    Msg.game(p, "Bert: I've had " + sent + " buckets of sand sent to your bank. Come back tomorrow for more!");
+                    GameEvents.fireActivity(p, "bert_sand");
+                }
+            }
         });
 
         SysTicks.everyPlayer((p, tick) -> {

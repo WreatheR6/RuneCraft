@@ -92,10 +92,11 @@ public final class Diaries {
     /**
      * Prefixes of the named activities the game reports (EVENT targets): "talk:" + NPC id, "minigame_start:" /
      * "minigame_win:" + minigame id, "spellbook:" + book, "teleport:" + jewellery id + ":" + destination slug,
-     * "eat:" + item id, "trek_complete:" + follower difficulty, "fight_pit_champion" and "monkey_cage".
+     * "eat:" + item id, "trek_complete:" + follower difficulty, "shop_open:" + shop id, "shop_buy:" / "shop_sell:" + shop id + ":" +
+     * item id, "fight_pit_champion", "monkey_cage" and "bert_sand".
      */
     public static final List<String> ACTIVITIES = List.of("talk", "minigame_start", "minigame_win", "spellbook", "teleport", "eat",
-            "trek_complete", "fight_pit_champion", "monkey_cage");
+            "trek_complete", "fight_pit_champion", "monkey_cage", "shop_open", "shop_buy", "shop_sell", "bert_sand");
 
     public enum Type {
         LEVEL, XP_IN, KILL, MAKE, HAVE, QUEST, VISIT, CLUE, GE, KC, CAST, TOTAL_LEVEL,
@@ -323,7 +324,8 @@ public final class Diaries {
         in("ardougne", Tier.EASY);
         visit("Have Wizard Cromperty teleport you to the Rune essence mine", 2683, 3325, 8); approx(); // approx
         get("Steal a cake from the East Ardougne market stalls", "cake", 1, THIEVING, 5);
-        get("Sell silk to the Silk trader in East Ardougne for 60 coins each", "silk", 1); approx(); // approx: steal silk
+        // Sold at the shop's price (OSRS: haggle him up to 60 coins each).
+        event("Sell silk to the Silk trader in East Ardougne for 60 coins each", "shop_sell:ardougne_silk_trader:silk", null);
         visit("Use the altar in East Ardougne's church", 2616, 3307, 8);
         event("Go out fishing on the Fishing Trawler", "minigame_start:fishing_trawler", null);
         visit("Enter the Combat Training Camp north of West Ardougne", 2518, 3356, 12);
@@ -337,7 +339,8 @@ public final class Diaries {
         get("Harvest some strawberries from the Ardougne farming patch", "strawberry", 1, FARMING, 31);
         cast("Cast the Ardougne Teleport spell", "ardougne_teleport", MAGIC, 51);
         visit("Travel to Castle Wars by Hot Air Balloon", 2442, 3090, 15, FIREMAKING, 50);
-        quest("Claim buckets of sand from Bert in Yanille", "the_hand_in_the_sand", CRAFTING, 49); approx(); // approx
+        event("Claim buckets of sand from Bert in Yanille", "bert_sand", null, CRAFTING, 49); // 84 a day to the bank
+        needs(lastId, "the_hand_in_the_sand");
         visit("Catch any fish on the Fishing Platform", 2725, 3285, 15); approx(); // approx: Witchaven shore
         xp("Pickpocket the master farmer north of East Ardougne", THIEVING, 38);
         visit("Collect some Cave nightshade from the Skavid caves", 2528, 3034, 15); approx(); // approx
