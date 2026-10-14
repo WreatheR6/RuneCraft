@@ -38,6 +38,7 @@ public final class RaidsHooks implements ModuleHooks {
         RaidManager.register();
         RaidCommands.register();
         registerToaScaling();
+        registerNylocasStyles();
         LandmarkBuilder.registerCustom(RaidType.COX.placeId(), RaidsHooks::buildMountQuidamortem);
         LandmarkBuilder.registerCustom(RaidType.TOB.placeId(), RaidsHooks::buildVerSinhaza);
         LandmarkBuilder.registerCustom(RaidType.TOA.placeId(), RaidsHooks::buildPyramid);
@@ -67,6 +68,21 @@ public final class RaidsHooks implements ModuleHooks {
         com.runecraft.content.systems.SpecialAttackService.addCostRule((player, spec) -> {
             RaidInstance raid = RaidManager.of(player);
             return raid == null || raid.type != RaidType.TOA || !raid.contains(player) ? -1 : Invocation.specialCost(raid.invocations());
+        });
+    }
+
+    /** ToB Nylocas waves: note attacks of a style the nylocas is immune to ("Perfect Nylocas"). */
+    private static void registerNylocasStyles() {
+        com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
+            @Override
+            public int afterRoll(net.minecraft.server.network.ServerPlayerEntity player, net.minecraft.entity.LivingEntity target,
+                                 com.runecraft.osrs.AttackType type, int damage) {
+                TobRooms.Nylocas room = target == null ? null : TobRooms.Nylocas.of(player);
+                if (room != null) {
+                    room.attacked(target, type);
+                }
+                return damage;
+            }
         });
     }
 

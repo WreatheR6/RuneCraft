@@ -30,6 +30,31 @@ public final class RevenantRewards {
 
     public static final List<String> WEAPONS = List.of("craws_bow", "thammarons_sceptre", "viggoras_chainmace");
 
+    // ---- Revenant maledictus (OSRS wiki): a demi-boss that may appear when any revenant is slain ----
+
+    public static final String MALEDICTUS = "revenant_maledictus";
+    /** Divisor of the accumulated revenant combat levels. // approx: Jagex's flat rate is not published */
+    public static final double MALEDICTUS_RATE = 1_000_000;
+    /** After it appears the chance resets and it can't appear again for 45 minutes. */
+    public static final int MALEDICTUS_COOLDOWN_TICKS = 4500;
+    /** It leaves after about 10 minutes if not killed (wiki: citation needed). */
+    public static final int MALEDICTUS_DESPAWN_TICKS = 1000;
+    /** Failsafe: it is guaranteed if it hasn't appeared for this long. // approx: "a decent length of time" */
+    public static final int MALEDICTUS_FAILSAFE_TICKS = 18000;
+    /** The top damager rolls the revenant dragon's table this many times, besides an ancient emblem or totem. */
+    public static final int MALEDICTUS_DRAGON_ROLLS = 2;
+    public static final int REVENANT_DRAGON_LEVEL = 135;
+
+    /** Chance of the maledictus appearing on a kill, from the revenant combat levels slain since it last appeared. */
+    public static double maledictusChance(long accumulatedLevels) {
+        return Math.min(1.0, accumulatedLevels / MALEDICTUS_RATE);
+    }
+
+    /** Whether a slain creature counts towards the maledictus (any revenant but the maledictus itself). */
+    public static boolean countsForMaledictus(String creatureId) {
+        return creatureId != null && creatureId.startsWith("revenant_") && !creatureId.equals(MALEDICTUS);
+    }
+
     /** {@code floor(sqrt(level))}, at least 1. */
     static int root(int level) {
         return Math.max(1, (int) Math.floor(Math.sqrt(Math.max(1, level))));

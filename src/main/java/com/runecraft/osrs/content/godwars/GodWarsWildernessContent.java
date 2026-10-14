@@ -41,6 +41,7 @@ public final class GodWarsWildernessContent implements ContentModule {
     public List<BossDef> bosses() {
         List<BossDef> list = new ArrayList<>(GwdBosses.all());
         list.addAll(WildernessBosses.all());
+        list.add(WildernessBosses.maledictus());
         return list;
     }
 

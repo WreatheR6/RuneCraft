@@ -568,6 +568,9 @@
     "hand_wisp_l",
     "hand_wisp_r"
   ],
+  "dark_ankou": [
+    "head"
+  ],
   "dark_beast": [
     "head",
     "jaw"

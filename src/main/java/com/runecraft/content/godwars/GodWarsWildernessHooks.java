@@ -52,6 +52,8 @@ public final class GodWarsWildernessHooks implements ModuleHooks {
         GwdKillcount.registerBuiltinGate();
         GameEvents.onKill(GwdKillcount::onKill);
         GameEvents.onKill(RevenantLoot::onKill);
+        GameEvents.onKill(MaledictusService::onKill);
+        BossScripts.register(com.runecraft.osrs.content.godwars.RevenantRewards.MALEDICTUS, MaledictusService.Script::new);
         GwdCamps.register();
     }
 }

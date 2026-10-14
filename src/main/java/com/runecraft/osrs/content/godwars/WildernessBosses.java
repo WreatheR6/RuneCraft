@@ -191,6 +191,23 @@ public final class WildernessBosses {
         return list;
     }
 
+    /**
+     * The revenant maledictus (OSRS wiki/DPS calculator stats): spawned by revenant kills in the Revenant Caves, never
+     * summoned, so it has no lair of its own (not part of {@link #all()}).
+     */
+    public static BossDef maledictus() {
+        return BossDef.of(RevenantRewards.MALEDICTUS, "Revenant maledictus").level(397).stats(1250, 106, 126, 90, 130, 130).speed(5)
+                .defenceBonus(201, 206, 188, 101, 231)
+                .attack(AttackDef.of("spike", AttackType.RANGED, 30, 12, 8).particle("minecraft:end_rod"))
+                .attack(AttackDef.of("ice spell", AttackType.MAGIC, 30, 12, 2).special(Special.FREEZE, 5)
+                        .telegraph(3, "The Zarosian symbol on the maledictus glows blue!").particle("minecraft:snowflake"))
+                .attack(AttackDef.of("blood spell", AttackType.MAGIC, 30, 12, 2).special(Special.LIFESTEAL, 50)
+                        .telegraph(3, "The Zarosian symbol on the maledictus glows red!").particle("minecraft:damage_indicator"))
+                .attack(AttackDef.of("air surge", AttackType.MAGIC, 25, 12, 2).special(Special.SKY_STRIKE, 0)
+                        .telegraph(3, "The Zarosian symbol on the maledictus glows white!").particle("minecraft:cloud"))
+                .wilderness().category("Wilderness").model("revenant_knight").size(1.0f, 2.6f, 1.6f).moveSpeed(0.2);
+    }
+
     private static BossDef trio(BossDef def, float width, float height, float scale) {
         return def.wilderness().category("Wilderness").size(width, height, scale);
     }

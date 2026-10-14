@@ -6,6 +6,8 @@ import com.runecraft.boss.Mechanics;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.raids.RoomDef;
+import com.runecraft.osrs.content.raids.TobNylocas;
+import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.util.Msg;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.LivingEntity;
@@ -312,65 +314,168 @@ final class TobRooms {
         }
     }
 
-    /** The Nylocas: waves of coloured nylocas (matching style only), then the Nylocas Vasilias. */
+    /**
+     * The Nylocas (OSRS wiki): 31 fixed waves of nylocas walk in from the east, south and west lanes; most attack the
+     * four supports, the aggressive ones the team. Each breed only takes damage from its own style; big nylocas split
+     * into two smalls; every nylocas self-destructs 30 seconds after spawning. A collapsing support hits the whole team
+     * for up to 50 and losing all four kills everyone. Waves stall while 12 (24 from wave 20) nylocas are alive. In Hard
+     * mode a Nylocas Prinkipas drops in with waves 10, 20 and 30. Then the Nylocas Vasilias: it changes form every 10
+     * ticks, and a hit of the wrong style is reflected onto the attacker and heals it.
+     */
     static final class Nylocas extends RoomLogic {
-        private static final String[] TYPES = {"nylocas_ischyros", "nylocas_toxobolos", "nylocas_hagios"};
         private static final String[] FORMS = {"grey (melee)", "green (ranged)", "blue (magic)"};
-        private static final AttackDef[] FORM_ATTACKS = {
-                AttackDef.of("bite", AttackType.STAB, 30, 3, 10),
-                AttackDef.of("spit", AttackType.RANGED, 30, 12, 10).particle("minecraft:crit"),
-                AttackDef.of("blast", AttackType.MAGIC, 30, 12, 10).particle("minecraft:witch")};
+        /** Support positions (room offsets) and the east, south and west lane mouths. */
+        private static final int[][] PILLARS = {{-5, -5}, {-5, 5}, {5, -5}, {5, 5}};
+        private static final int[][] LANES = {{19, 0}, {0, 19}, {-19, 8}};
+
+        /** One live wave nylocas. */
+        private static final class Nylo {
+            final MobEntity mob;
+            final TobNylocas.Breed breed;
+            final boolean big;
+            final boolean aggressive;
+            int age;
+
+            Nylo(MobEntity mob, TobNylocas.Breed breed, boolean big, boolean aggressive) {
+                this.mob = mob;
+                this.breed = breed;
+                this.big = big;
+                this.aggressive = aggressive;
+            }
+        }
+
+        private final List<Nylo> nylos = new ArrayList<>();
+        private final int[] pillarHp = new int[TobNylocas.PILLARS];
         private int wave;
-        private int waves;
+        private int waveTimer;
         private DataBossEntity vasilias;
         private int form;
+        private int formTimer;
+        private DataBossEntity prinkipas;
+        private int prinkipasForm;
+        private int prinkipasTimer;
+        private boolean wrongStyle;
+        private boolean pillarLost;
+        private boolean prinkipasChanged;
 
         Nylocas(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
         }
 
+        private static AttackDef formAttack(int form, int maxHit) {
+            return switch (form) {
+                case 0 -> AttackDef.of("bite", AttackType.STAB, maxHit, 3, 10);
+                case 1 -> AttackDef.of("spit", AttackType.RANGED, maxHit, 12, 10).particle("minecraft:crit");
+                default -> AttackDef.of("blast", AttackType.MAGIC, maxHit, 12, 10).particle("minecraft:witch");
+            };
+        }
+
+        private BlockPos pillarBase(int i) {
+            return center().add(PILLARS[i][0], 0, PILLARS[i][1]);
+        }
+
         @Override
         public void decorate() {
-            for (int sx = -1; sx <= 1; sx += 2) {
-                for (int sz = -1; sz <= 1; sz += 2) {
-                    RaidBuilder.pillar(world(), center().add(sx * 5, 0, sz * 5), 1, 4, Blocks.POLISHED_DEEPSLATE.getDefaultState());
-                    RaidBuilder.set(world(), center().add(sx * 5, 5, sz * 5), Blocks.SOUL_LANTERN.getDefaultState());
-                }
+            for (int i = 0; i < PILLARS.length; i++) {
+                RaidBuilder.pillar(world(), pillarBase(i), 1, 4, Blocks.POLISHED_DEEPSLATE.getDefaultState());
+                RaidBuilder.set(world(), pillarBase(i).up(5), Blocks.SOUL_LANTERN.getDefaultState());
             }
         }
 
         @Override
         public void start() {
             wave = 0;
-            waves = 12;
+            waveTimer = 2;
             vasilias = null;
+            prinkipas = null;
+            nylos.clear();
+            wrongStyle = false;
+            pillarLost = false;
+            prinkipasChanged = false;
+            java.util.Arrays.fill(pillarHp, TobNylocas.PILLAR_HP);
+            say("Protect the supports! " + TobNylocas.WAVES + " waves of Nylocas approach.");
         }
 
-        private int nylos() {
+        /** The Nylocas room a player is fighting in, if any. */
+        static Nylocas of(ServerPlayerEntity p) {
+            RaidInstance raid = RaidManager.of(p);
+            return raid != null && raid.type == com.runecraft.osrs.content.raids.RaidType.TOB && raid.logic() instanceof Nylocas n
+                    ? n : null;
+        }
+
+        private int standing() {
             int n = 0;
-            for (String t : TYPES) {
-                n += living(t).size();
+            for (int hp : pillarHp) {
+                if (hp > 0) {
+                    n++;
+                }
             }
             return n;
+        }
+
+        private void spawnNylo(TobNylocas.Breed breed, boolean big, boolean aggressive, BlockPos pos) {
+            MobEntity m = spawnMob(breed.creatureId, pos, false);
+            if (m == null) {
+                return;
+            }
+            if (big) {
+                raid.setHitpoints(m, com.runecraft.osrs.content.raids.RaidScaling.tobScaledHp(breed.creatureId, TobNylocas.BIG_HP,
+                        raid.partySize(), raid.mode()));
+            }
+            if (!aggressive) {
+                m.setTarget(null);
+            }
+            nylos.add(new Nylo(m, breed, big, aggressive));
+        }
+
+        private void spawnWave(int number) {
+            TobNylocas.Wave w = TobNylocas.wave(number);
+            for (TobNylocas.Lane lane : TobNylocas.Lane.values()) {
+                int[] g = LANES[lane.ordinal()];
+                boolean south = lane == TobNylocas.Lane.SOUTH;
+                int k = 0;
+                for (TobNylocas.Nylo n : w.lane(lane)) {
+                    int off = k * 2 - 1;
+                    spawnNylo(n.breed(), n.big(), n.aggressive(), at(g[0] + (south ? off : 0), g[1] + (south ? 0 : off)));
+                    k++;
+                }
+            }
+            say("Wave " + number + "/" + TobNylocas.WAVES + " of Nylocas approaches!");
+            if (hard() && TobNylocas.prinkipasWave(number) && !alive(prinkipas)) {
+                prinkipas = spawnBoss("nylocas_prinkipas", at(0, 0), false);
+                prinkipasForm = 0;
+                prinkipasTimer = TobNylocas.FORM_TICKS;
+                if (prinkipas != null) {
+                    anchor(prinkipas);
+                    warn("A Nylocas Prinkipas drops down in its " + FORMS[0] + " form!");
+                }
+            }
         }
 
         @Override
         public void gameTick(long tick) {
             super.gameTick(tick);
+            tickNylos();
+            if (standing() == 0) {
+                return;
+            }
+            if (alive(prinkipas) && --prinkipasTimer <= 0) {
+                prinkipasTimer = TobNylocas.FORM_TICKS;
+                prinkipasForm = TobNylocas.nextForm(prinkipasForm, rnd());
+                prinkipasChanged = true;
+                warn("The Nylocas Prinkipas changes to its " + FORMS[prinkipasForm] + " form!");
+            }
             if (vasilias == null) {
-                if (wave < waves && tick % 8 == 0) {
-                    wave++;
-                    int n = Math.min(6, 2 + raid.partySize() / 2 + wave / 5);
-                    int[][] gates = {{0, -19}, {0, 19}, {19, 0}};
-                    for (int i = 0; i < n; i++) {
-                        int[] g = gates[rnd().nextInt(gates.length)];
-                        spawnMob(TYPES[rnd().nextInt(3)], at(g[0] + rnd().nextInt(3) - 1, g[1] + rnd().nextInt(3) - 1), false);
+                if (wave < TobNylocas.WAVES) {
+                    if (--waveTimer <= 0 && nylos.size() < TobNylocas.cap(wave + 1)) {
+                        wave++;
+                        waveTimer = TobNylocas.WAVE_INTERVAL_TICKS;
+                        spawnWave(wave);
                     }
-                    say("Wave " + wave + "/" + waves + " of Nylocas approaches!");
-                }
-                if (wave >= waves && nylos() == 0) {
+                } else if (nylos.isEmpty() && !alive(prinkipas)) {
                     vasilias = spawnBoss("nylocas_vasilias", at(0, 0));
                     form = 0;
+                    formTimer = formTicks();
                     warn("The Nylocas Vasilias emerges in its " + FORMS[form] + " form!");
                 }
                 return;
@@ -378,8 +483,18 @@ final class TobRooms {
             if (!alive(vasilias)) {
                 return;
             }
-            if (raid.roomTicks() % 10 == 0) {
-                form = (form + 1 + rnd().nextInt(2)) % 3;
+            if (wrongStyle) {
+                com.runecraft.content.systems.CombatAchievementService.flagNear(vasilias, CombatAchievements.FLAG_NYLO_WRONG_STYLE);
+            }
+            if (pillarLost) {
+                com.runecraft.content.systems.CombatAchievementService.flagNear(vasilias, CombatAchievements.FLAG_NYLO_PILLAR_LOST);
+            }
+            if (prinkipasChanged) {
+                com.runecraft.content.systems.CombatAchievementService.flagNear(vasilias, CombatAchievements.FLAG_PRINKIPAS_CHANGED);
+            }
+            if (--formTimer <= 0) {
+                formTimer = formTicks();
+                form = TobNylocas.nextForm(form, rnd());
                 warn("The Nylocas Vasilias changes to its " + FORMS[form] + " form!");
             }
             ParticleEffect colour = switch (form) {
@@ -390,30 +505,164 @@ final class TobRooms {
             world().spawnParticles(colour, vasilias.getX(), vasilias.getY() + 1, vasilias.getZ(), 6, 1, 0.5, 1, 0.01);
         }
 
+        /** Entry mode Vasilias changes form more slowly. // approx: 14 ticks */
+        private int formTicks() {
+            return raid.mode() == com.runecraft.osrs.content.raids.RaidMode.ENTRY ? 14 : TobNylocas.FORM_TICKS;
+        }
+
+        private void tickNylos() {
+            List<Nylo> split = new ArrayList<>();
+            java.util.Iterator<Nylo> it = nylos.iterator();
+            while (it.hasNext()) {
+                Nylo n = it.next();
+                if (!alive(n.mob)) {
+                    it.remove();
+                    if (n.big && n.mob.isDead()) {
+                        split.add(n);
+                    }
+                    continue;
+                }
+                if (++n.age >= TobNylocas.LIFETIME_TICKS) {
+                    explode(n);
+                    it.remove();
+                    continue;
+                }
+                if (n.aggressive) {
+                    if (!(n.mob.getTarget() instanceof ServerPlayerEntity current) || !current.isAlive()) {
+                        ServerPlayerEntity t = randomPlayer();
+                        if (t != null) {
+                            n.mob.setTarget(t);
+                        }
+                    }
+                    continue;
+                }
+                n.mob.setTarget(null);
+                int p = nearestPillar(n.mob.getPos());
+                if (p < 0) {
+                    continue;
+                }
+                Vec3d pc = Vec3d.ofBottomCenter(pillarBase(p).up());
+                double d2 = RaidEffects.horizontalDistSq(n.mob.getPos(), pc);
+                if (d2 > 2.6 * 2.6) {
+                    if (n.age % 8 == 1 || n.mob.getNavigation().isIdle()) {
+                        n.mob.getNavigation().startMovingTo(pc.x, pc.y, pc.z, 1.0);
+                    }
+                } else if (n.age % 3 == 0) {
+                    // Nylocas attack every 3 ticks.
+                    pillarHp[p] -= TobNylocas.pillarDamage(n.big, rnd());
+                    world().spawnParticles(ParticleTypes.CRIT, pc.x, pc.y + 1, pc.z, 2, 0.6, 0.6, 0.6, 0.01);
+                    if (pillarHp[p] <= 0) {
+                        collapse(p);
+                    }
+                }
+            }
+            for (Nylo n : split) {
+                // OSRS: a slain big nylocas splits into two small nylocas of any breed.
+                BlockPos at = n.mob.getBlockPos();
+                TobNylocas.Breed[] breeds = TobNylocas.Breed.values();
+                for (int i = 0; i < 2; i++) {
+                    spawnNylo(breeds[rnd().nextInt(breeds.length)], false, n.aggressive, at.add(i, 0, 0));
+                }
+            }
+        }
+
+        private int nearestPillar(Vec3d pos) {
+            int best = -1;
+            double bestD = Double.MAX_VALUE;
+            for (int i = 0; i < PILLARS.length; i++) {
+                if (pillarHp[i] <= 0) {
+                    continue;
+                }
+                double d = RaidEffects.horizontalDistSq(pos, Vec3d.ofBottomCenter(pillarBase(i)));
+                if (d < bestD) {
+                    bestD = d;
+                    best = i;
+                }
+            }
+            return best;
+        }
+
+        /** A nylocas self-destructs: players next to it take up to 18 (small) or 21 (big). */
+        private void explode(Nylo n) {
+            Vec3d pos = n.mob.getPos();
+            world().spawnParticles(ParticleTypes.EXPLOSION, pos.x, pos.y + 0.5, pos.z, 1, 0, 0, 0, 0);
+            int max = n.big ? TobNylocas.BIG_EXPLOSION : TobNylocas.SMALL_EXPLOSION;
+            double r = n.big ? 2.5 : 1.8;
+            for (ServerPlayerEntity p : players()) {
+                if (p.getPos().squaredDistanceTo(pos) <= r * r) {
+                    RaidEffects.hit(n.mob, p, rnd().nextInt(max + 1), null, true);
+                }
+            }
+            n.mob.discard();
+        }
+
+        /** A support breaks: rocks fall on the whole team (up to 50); with all four gone the roof caves in. */
+        private void collapse(int i) {
+            pillarHp[i] = 0;
+            pillarLost = true;
+            BlockPos b = pillarBase(i);
+            RaidBuilder.pillar(world(), b, 1, 5, Blocks.AIR.getDefaultState());
+            RaidBuilder.pillar(world(), b, 1, 1, Blocks.CRACKED_DEEPSLATE_BRICKS.getDefaultState());
+            world().spawnParticles(ParticleTypes.EXPLOSION, b.getX() + 0.5, b.getY() + 2, b.getZ() + 0.5, 4, 1, 1, 1, 0);
+            if (standing() == 0) {
+                warn("The last support collapses and the roof caves in!");
+                for (ServerPlayerEntity p : players()) {
+                    RaidEffects.hit(null, p, Math.round(p.getMaxHealth()) + 100, null, true);
+                }
+                return;
+            }
+            warn("A support collapses! Rocks fall from the roof! (" + standing() + " left)");
+            for (ServerPlayerEntity p : players()) {
+                RaidEffects.hit(null, p, rnd().nextInt(TobNylocas.PILLAR_COLLAPSE_MAX_HIT + 1), null, true);
+            }
+        }
+
+        /** A player attacked a wave nylocas: the wrong style can't harm it (ToB "Perfect Nylocas"). */
+        void attacked(LivingEntity target, AttackType type) {
+            TobNylocas.Breed b = TobNylocas.Breed.byCreature(RaidInstance.creatureId(target));
+            if (b != null && type != null && !b.weakTo(type)) {
+                wrongStyle = true;
+            }
+        }
+
         @Override
         public AttackDef bossAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
-            return FORM_ATTACKS[form];
+            if (boss == prinkipas) {
+                return formAttack(prinkipasForm, TobNylocas.PRINKIPAS_MAX_HIT);
+            }
+            return formAttack(form, TobNylocas.VASILIAS_MAX_HIT);
         }
 
         @Override
         public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
-            boolean ok = switch (form) {
-                case 0 -> type.isMelee();
-                case 1 -> type == AttackType.RANGED;
-                default -> type == AttackType.MAGIC;
-            };
-            if (!ok) {
-                Msg.action(attacker, "The Vasilias is in its " + FORMS[form] + " form - your attack has no effect.");
-                return 0;
+            int f = boss == prinkipas ? prinkipasForm : form;
+            if (TobNylocas.formWeakTo(f, type)) {
+                return damage;
             }
-            return damage;
+            // OSRS: the wrong style is reflected onto the attacker and heals the boss by the same amount.
+            wrongStyle = true;
+            if (damage > 0 && attacker != null) {
+                Msg.action(attacker, "It is in its " + FORMS[f] + " form - your attack is reflected!");
+                RaidEffects.hit(boss, attacker, damage, null, true);
+                raid.heal(boss, damage);
+            }
+            return 0;
         }
 
         @Override
         public void cleanup() {
             super.cleanup();
-            for (String t : TYPES) {
-                living(t).forEach(LivingEntity::discard);
+            for (Nylo n : nylos) {
+                if (n.mob.isAlive()) {
+                    n.mob.discard();
+                }
+            }
+            nylos.clear();
+            if (prinkipas != null && prinkipas.isAlive()) {
+                prinkipas.discard();
+            }
+            for (TobNylocas.Breed b : TobNylocas.Breed.values()) {
+                living(b.creatureId).forEach(LivingEntity::discard);
             }
         }
     }
@@ -791,10 +1040,59 @@ final class TobRooms {
             }
         }
 
+        /** Phase 1 blasts each supporting pillar has absorbed; -1 once it collapsed. */
+        private final int[] pillarBlasts = new int[PILLARS.length];
+        private boolean pillarLost;
+
+        private Vec3d pillarCentre(int i) {
+            return Vec3d.ofBottomCenter(center().add(PILLARS[i][0], 1, PILLARS[i][1]));
+        }
+
+        /** The standing pillar sheltering a player from Verzik (the nearest one between them), or -1. */
+        private int shelter(ServerPlayerEntity p) {
+            int best = -1;
+            double bestD = 3.5 * 3.5;
+            for (int i = 0; i < PILLARS.length; i++) {
+                if (pillarBlasts[i] < 0) {
+                    continue;
+                }
+                double d = RaidEffects.horizontalDistSq(p.getPos(), pillarCentre(i));
+                if (d < bestD) {
+                    bestD = d;
+                    best = i;
+                }
+            }
+            return best;
+        }
+
+        /**
+         * A pillar collapses (OSRS wiki): players next to it take up to 70 (50 in Entry mode) and are stunned and pushed
+         * away.
+         */
+        private void collapse(int i) {
+            pillarBlasts[i] = -1;
+            Vec3d c = pillarCentre(i);
+            RaidBuilder.pillar(world(), center().add(PILLARS[i][0], 0, PILLARS[i][1]), 1, 5, Blocks.AIR.getDefaultState());
+            world().spawnParticles(ParticleTypes.EXPLOSION, c.x, c.y + 1, c.z, 4, 1, 1, 1, 0);
+            int max = com.runecraft.osrs.content.raids.RaidScaling.verzikPillarCollapse(raid.mode());
+            for (ServerPlayerEntity p : players()) {
+                if (RaidEffects.horizontalDistSq(p.getPos(), c) <= 2.6 * 2.6) {
+                    RaidEffects.hit(verzik, p, rnd().nextInt(max + 1), null, true);
+                    com.runecraft.content.systems.SysCombat.freeze(p, 3);
+                    Vec3d push = p.getPos().subtract(c).multiply(1, 0, 1).normalize().multiply(0.8);
+                    p.addVelocity(push.x, 0.3, push.z);
+                    p.velocityModified = true;
+                    Msg.red(p, "The pillar collapses on top of you!");
+                }
+            }
+        }
+
         @Override
         public void start() {
             form = 1;
             purpleSpawned = false;
+            java.util.Arrays.fill(pillarBlasts, 0);
+            pillarLost = false;
             verzik = spawnBoss("verzik_vitur", at(15, 0).up());
             if (verzik != null) {
                 // Phase 1 only attacks with the room's pillar-blocked blast (OSRS); the generic attack AI would hit through pillars.
@@ -818,6 +1116,12 @@ final class TobRooms {
             if (!alive(verzik)) {
                 if (form == 1) {
                     form = 2;
+                    // Verzik leaves her throne and every remaining pillar collapses.
+                    for (int i = 0; i < PILLARS.length; i++) {
+                        if (pillarBlasts[i] >= 0) {
+                            collapse(i);
+                        }
+                    }
                     pillars(Blocks.AIR.getDefaultState());
                     verzik = spawnBoss("verzik_vitur_p2", BlockPos.ofFloored(pos).add(-3, 0, 0));
                     warn("Verzik Vitur: Let's see how you handle this! The pillars crumble!");
@@ -839,12 +1143,16 @@ final class TobRooms {
         }
 
         private void phaseOne(long tick, List<ServerPlayerEntity> players) {
+            if (pillarLost) {
+                com.runecraft.content.systems.CombatAchievementService.flagNear(verzik, CombatAchievements.FLAG_VERZIK_PILLAR_LOST);
+            }
             if (raid.roomTicks() % 14 == 6) {
                 warn("Verzik charges a blast of energy! Hide behind a pillar!");
                 RaidEffects.later(2, () -> {
                     if (!alive(verzik) || form != 1) {
                         return;
                     }
+                    Set<Integer> struck = new HashSet<>();
                     for (ServerPlayerEntity p : players()) {
                         if (canSee(verzik, p)) {
                             Vec3d a = verzik.getEyePos();
@@ -857,6 +1165,18 @@ final class TobRooms {
                             RaidEffects.hit(verzik, p, rnd().nextInt(138), null, true);
                         } else {
                             Msg.action(p, "The pillar shields you from the blast.");
+                            int pillar = shelter(p);
+                            if (pillar >= 0) {
+                                struck.add(pillar);
+                            }
+                        }
+                    }
+                    // Several players behind one pillar only damage it once.
+                    for (int i : struck) {
+                        if (pillarBlasts[i] >= 0 && ++pillarBlasts[i] >= com.runecraft.osrs.content.raids.RaidScaling.VERZIK_PILLAR_BLASTS) {
+                            pillarLost = true;
+                            warn("A supporting pillar crumbles under Verzik's blasts!");
+                            collapse(i);
                         }
                     }
                 });

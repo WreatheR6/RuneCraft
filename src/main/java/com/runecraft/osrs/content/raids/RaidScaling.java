@@ -355,6 +355,38 @@ public final class RaidScaling {
 
     /** The Pestilent Bloat's first walk (OSRS: 39-47 game ticks; this is the minimum, plus 0-8). */
     public static final int TOB_BLOAT_FIRST_WALK = 39;
+
+    /**
+     * Players Vasa Nistirio's teleport pulls next to him (OSRS wiki: half the team, always the player when solo). The
+     * rest land at the room's edges. // approx: rounding down for odd teams
+     */
+    public static int vasaTeleportTargets(int partySize) {
+        return Math.max(1, partySize / 2);
+    }
+
+    /**
+     * Damage of Vasa Nistirio's teleport barrage (OSRS wiki): the stunned players' current hitpoints added up, minus 5,
+     * divided between everyone next to him when it lands (unstunned players there can pray Protect from Magic against
+     * their share). // approx: the wiki states the minus 5 for one stunned player only
+     */
+    public static int vasaTeleportDamage(int[] stunnedHitpoints, int receivers) {
+        int total = 0;
+        for (int hp : stunnedHitpoints) {
+            total += Math.max(0, hp);
+        }
+        return Math.max(0, total - 5) / Math.max(1, receivers);
+    }
+
+    /** Game ticks between Vasa's teleport and the barrage. // approx */
+    public static final int VASA_TELEPORT_DELAY = 5;
+
+    /** Verzik Vitur's phase 1 supporting pillars: blasts one absorbs before collapsing. // approx: "after several attacks" */
+    public static final int VERZIK_PILLAR_BLASTS = 4;
+
+    /** A collapsing Verzik pillar hits players next to it for up to 70 (50 in Entry mode) and stuns them (OSRS wiki). */
+    public static int verzikPillarCollapse(RaidMode mode) {
+        return mode == RaidMode.ENTRY ? 50 : 70;
+    }
     /** The Bloat's later walks after each stomp (OSRS: 34-42 game ticks; minimum, plus 0-8). */
     public static final int TOB_BLOAT_WALK = 34;
     /** Game ticks the Bloat stays shut down before it stomps (OSRS: 19.2 seconds). */

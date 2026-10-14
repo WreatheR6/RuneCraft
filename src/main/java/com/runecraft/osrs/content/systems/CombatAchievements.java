@@ -246,6 +246,16 @@ public final class CombatAchievements {
     public static final String FLAG_XARPUS_REFLECT = "xarpus_reflect";
     /** Xarpus was healed to full health by exhumeds (ToB "Harder Mode II"). */
     public static final String FLAG_XARPUS_FULL_HEAL = "xarpus_full_heal";
+    /** No awakened altar was active (Skotizo "Demonic Weakening"; taken back while one is). */
+    public static final String FLAG_SKOTIZO_NO_ALTARS = "skotizo_no_altars";
+    /** Someone attacked a nylocas with a style it is immune to (ToB "Perfect Nylocas"). */
+    public static final String FLAG_NYLO_WRONG_STYLE = "nylo_wrong_style";
+    /** A support collapsed in the Nylocas room (ToB "Perfect Nylocas"). */
+    public static final String FLAG_NYLO_PILLAR_LOST = "nylo_pillar_lost";
+    /** A Nylocas Prinkipas changed style (ToB HM "Royal Affairs"). */
+    public static final String FLAG_PRINKIPAS_CHANGED = "prinkipas_changed";
+    /** A supporting pillar collapsed during Verzik's first phase (ToB Entry "No-Pillar"). */
+    public static final String FLAG_VERZIK_PILLAR_LOST = "verzik_pillar_lost";
     /** Rolling boulders destroyed in Ba-Ba's room (ToA "I'm in a rush"). */
     public static final String COUNT_BABA_BOULDER = "baba_boulder";
     /** Times a Warden's core was ejected in phase 2 (ToA "Down Do Specs"). */
