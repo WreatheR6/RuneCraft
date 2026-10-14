@@ -148,6 +148,11 @@ Recurring conflict spots:
   - Re-sculpted Corp, Kraken, Thermonuclear smoke devil, the Nightmare, Verzik P3, TzKal-Zuk, Kree'arra, Graardor, Vorkath, Cerberus (`bestiary/Flagships.java`); painter materials `crystal`, `smoke`, `spectral` and glow modes `spots`, `rim`, `sigil`; before/after previews `docs/previews/models/round10_*.png`.
   - Self-test grew to ~2,680 checks (`ItemCombatChecks`): food, potions, every wearable (requirements, bonus totals, 2h), prayers (OSRS drain formula), protection prayers, every spell, attack XP per style, slayer tasks per master, bank/GE/shops. First run 2,644 passed / 21 failed (all a test bug with level-1 requirements, fixed); it also exposed dead Jewellery ids and deposit-all on notes taking unnoted items (both fixed).
 
+- **Session 2, round 11: remaining dungeons, flagship models part 2, diary close-out:**
+  - Seven more cache dungeons: Giants' Den, Isle of Souls, Myths' Guild, Deep Wilderness, Karamja Volcano (+ Crandor tunnels), Ice Troll Caves, Ourania Cave (ZMI altar moved inside); Kalphite Cave task-only and underground multicombat (`MultiCombat.UNDERGROUND`).
+  - Re-sculpted Zulrah ×3, Alchemical Hydra ×4, KBD, Kalphite Queen ×2, Dusk/Dawn, Sarachnis, Abyssal Sire (`bestiary/Flagships2.java`); restored Corp's green, Vorkath's frost veins, Cerberus's heads. Review: Zulrah, KQ airborne and Sire afters read worse than before — restore or redo.
+  - Diaries 419 → 438 faithful via `EVENT`/`WEAR` task types and `GameEvents.fireActivity` keys; spider on a stick, oomlie wrap, palm leaves, jungle spiders and oomlie birds; Bert's daily sand; non-drinkable potions; 3-dose outputs for potions made from an unfinished potion.
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
@@ -167,10 +172,9 @@ Recurring conflict spots:
 - **Skilling:**
   - GotR: binding necklace and polycatalytic stones; abyssal creatures are abstract.
   - Volcanic Mine: heat-proof vessel, gas holes, meteors, multiple boulders; lava beast spawn rate guessed.
-  - Brews come as 4 doses (OSRS 3).
   - Dungeon herb, seed and Varlamore crops; coral.
   - Seed pack contents are partly guessed.
-- **Diaries:** 75 tasks approximated: shadow hounds and locust riders need the Shadow Dungeon and Contact! dungeon; swordchick/deathwing have no cache spawns; Arceuus lectern tablets; Port Phasmatys has no range; NPC-talk and minigame-internal tasks.
+- **Diaries:** 54 tasks approximated (Cromperty, Tindel, genie, kudos, missing shops, dwarven helmet, gold helmet, Fremennik shield, muddy key, crystal chest, team capes, skull sceptre, Camulet, Fishing Platform, Shayzien Crypts, BA roles, Motherlode struts, Miscellania support). Previously 75: shadow hounds and locust riders need the Shadow Dungeon and Contact! dungeon; swordchick/deathwing have no cache spawns; Arceuus lectern tablets; Port Phasmatys has no range; NPC-talk and minigame-internal tasks.
 - **Thieving and Agility:** the Dorgesh-Kaan course is missing; Isle of Souls chests sit on the surface (their real tiles are in the dungeon/tower basement); leaving the Wilderness course doesn't forfeit the fee.
 - **World:**
   - Missing dungeons: Myths' Guild, Isle of Souls, Giants' Den, Deep Wilderness, Crandor/Karamja, Ourania Cave interior, Stalker Den, Ice Troll Caves. New dungeon huts sit a few tiles off where another module's building occupies the tile; Kalphite Cave task-only rule and its multicombat missing.
