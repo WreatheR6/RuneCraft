@@ -231,6 +231,9 @@ public final class MinigameManager {
         if (game == Minigame.LAST_MAN_STANDING) {
             return com.runecraft.content.minigames.games.LmsSession.requirement(player, variant);
         }
+        if (game == Minigame.FORTIS_COLOSSEUM) {
+            return com.runecraft.content.minigames.games.ColosseumSession.requirement(player);
+        }
         if (game == Minigame.SORCERESS_GARDEN) {
             return com.runecraft.content.minigames.games.SorceressGardenSession.requirement(player);
         }
@@ -305,6 +308,7 @@ public final class MinigameManager {
             case TEMPLE_TREKKING -> new com.runecraft.content.minigames.games.TempleTrekkingSession(id, slot, world, variant);
             case LAST_MAN_STANDING -> new com.runecraft.content.minigames.games.LmsSession(id, slot, world, variant);
             case EMIRS_ARENA -> new com.runecraft.content.minigames.games.EmirsArenaSession(id, slot, world, variant);
+            case FORTIS_COLOSSEUM -> new com.runecraft.content.minigames.games.ColosseumSession(id, slot, world, variant);
         };
     }
 
