@@ -28,6 +28,7 @@ class NpcSpawnReferenceTest {
     private static final Map<String, List<String>> ALIASES = Map.of(
             "rock_crab", List.of("Rocks"),
             "sand_crab", List.of("Sandy rocks"),
+            "swamp_crab", List.of("Swampy log"),
             "king_sand_crab", List.of("Sandy boulder"),
             "ammonite_crab", List.of("Fossil Rock"),
             "elf_warrior", List.of("Elf Warrior", "Iorwerth Warrior"),
@@ -43,7 +44,6 @@ class NpcSpawnReferenceTest {
             Map.entry("pirate@braindeath_island", "Braindeath Island lies off the main map"),
             Map.entry("moss_giant@isl_laguna_aurorae", "the cache snapshot predates Sailing; Laguna Aurorae's tiles are the wiki's"),
             Map.entry("mudskipper@isl_mudskipper_point", "the cache has no Mudskipper Point spawns (they appear when fished up)"),
-            Map.entry("ice_troll@jatizso", "the cache's Jatizso trolls (2387-2418, 3853-3869) sit north of the island's traced coast"),
             Map.entry("fortis_guard", "the cache snapshot has no Varlamore spawns, and plain \"Guard\" would match guards elsewhere"));
 
     private static Map<String, List<int[]>> cache() throws IOException {

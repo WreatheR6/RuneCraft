@@ -197,6 +197,12 @@ public final class SpawnTable {
         s("ghoul", 3433, 3463, 8, 10);                 // past the gate north of Paterdomus (10 in OSRS)
         s("monk_of_zamorak", 3412, 3488, 3, 3);        // Paterdomus temple, Priest in Peril (golden key)
         s("giant_bat", 3747, 3397, 6, 12);             // eastern Morytania (6 in OSRS)
+        // Swamp crabs, disguised as swampy logs (cache): south of Port Phasmatys, in the Haunted Woods and near Slepe.
+        s("swamp_crab", 3691, 3441, 5, 5);
+        s("swamp_crab", 3637, 3424, 4, 3);
+        s("swamp_crab", 3596, 3422, 7, 5);
+        s("swamp_crab", 3597, 3449, 8, 7);
+        s("swamp_crab", 3755, 3360, 6, 7);
         // Terror dogs: Tarn's Lair below the Haunted Mine (a dungeon camp).
         // Shades of Mort'ton: loar shades roam the temple ruins (25 in OSRS); the stronger ones are
         // camps in the catacombs below the town.
@@ -348,6 +354,26 @@ public final class SpawnTable {
         s("thrower_troll", 2891, 3698, 4, 7);          // Trollheim
         s("troll_spectator", 2920, 3606, 3, 6);        // the Troll Stronghold arena
         s("troll_spectator", 2921, 3619, 2, 4);
+        // The Fremennik Isles' ice trolls on their cache clusters ("ice_troll" is the ice troll male): south of the
+        // Neitiznot bridge, on the snowfields north of Neitiznot and north of Jatizso.
+        s("ice_troll_runt", 2330, 3833, 4, 5);
+        s("ice_troll_runt", 2363, 3832, 3, 6);
+        s("ice_troll_female", 2368, 3831, 2, 5);
+        s("ice_troll", 2362, 3834, 1, 2);
+        si("ice_troll_runt", 2340, 3862, 3, 13);
+        si("ice_troll_female", 2342, 3862, 3, 13);
+        si("ice_troll", 2339, 3862, 3, 13);
+        si("ice_troll_runt", 2331, 3892, 2, 12);
+        si("ice_troll_female", 2331, 3892, 4, 14);
+        si("ice_troll", 2332, 3891, 2, 13);
+        si("ice_troll_grunt", 2332, 3891, 2, 10);
+        si("ice_troll_runt", 2369, 3892, 3, 9);
+        si("ice_troll_female", 2369, 3892, 4, 10);
+        si("ice_troll", 2368, 3892, 2, 9);
+        si("ice_troll_grunt", 2371, 3892, 2, 9);
+        si("ice_troll_runt", 2396, 3863, 4, 10);
+        s("ice_troll_female", 2405, 3858, 2, 4);
+        s("ice_troll", 2404, 3861, 5, 13);
         si("sorebones", 3813, 2844, 7, 7);              // Harmony Island
         si("zombie_pirate", 3790, 2846, 3, 6);
         si("zombie_pirate", 3799, 2853, 3, 6);
@@ -442,6 +468,9 @@ public final class SpawnTable {
         m.put("loar_shade", "loar shades roam the ruins of Mort'ton above ground in OSRS");
         m.put("rat", "OSRS rats live in Brian's Archery Supplies in Rimmington (Witch's Potion tails)");
         m.put("monk_of_zamorak", "OSRS Monks of Zamorak guard Paterdomus temple (Priest in Peril golden key)");
+        m.put("ice_troll_runt", "OSRS ice trolls also live on the snowfields of the Fremennik Isles");
+        m.put("ice_troll_female", "OSRS ice trolls also live on the snowfields of the Fremennik Isles");
+        m.put("ice_troll_grunt", "OSRS ice trolls also live on the snowfields of the Fremennik Isles");
         return Collections.unmodifiableMap(m);
     }
 
