@@ -178,6 +178,21 @@ public final class ShopService {
         ServerPlayNetworking.send(player, NpcsNet.SHOP, buf);
     }
 
+    /** Self-test hook: a shop's live (shared) stock. */
+    public static ShopStock selfTestStock(String shopId) {
+        return stock(shopId);
+    }
+
+    /** Self-test hook: buys from an open shop. */
+    public static void selfTestBuy(ServerPlayerEntity player, String shopId, String item, int quantity) {
+        buy(player, shopId, item, quantity);
+    }
+
+    /** Self-test hook: sells to an open shop. */
+    public static void selfTestSell(ServerPlayerEntity player, String shopId, String item, int quantity) {
+        sell(player, shopId, item, quantity);
+    }
+
     static void buy(ServerPlayerEntity player, String shopId, String item, int quantity) {
         ShopStock stock = stock(shopId);
         if (stock == null || !near(player, shopId)) {

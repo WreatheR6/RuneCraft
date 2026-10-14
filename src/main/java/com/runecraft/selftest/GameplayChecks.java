@@ -109,6 +109,8 @@ final class GameplayChecks {
         for (Map.Entry<String, int[]> e : destinations().entrySet()) {
             checks.add(new SelfTest.Check("teleport:" + e.getKey(), () -> g.teleport(e.getValue()[0], e.getValue()[1])));
         }
+        // Items, combat and interactions (after the teleports, which generate the spell destinations' chunks).
+        checks.addAll(ItemCombatChecks.all(context));
         return checks;
     }
 
@@ -372,6 +374,13 @@ final class GameplayChecks {
     // ------------------------------------------------------------------ minigames and raids
 
     private String minigame(Minigame m) {
+        // Entry fees and tickets the real minigames ask for.
+        if (m == Minigame.VOLCANIC_MINE) {
+            Inv.give(p(), "numulite", com.runecraft.osrs.content.minigames.VolcanicMine.ENTRY_NUMULITE);
+        } else if (m == Minigame.CHAMPIONS_CHALLENGE) {
+            data().setQuestPoints(Math.max(data().questPoints(), com.runecraft.osrs.content.minigames.ChampionsChallenge.QUEST_POINTS));
+            Inv.give(p(), "imp_champion_scroll", 1);
+        }
         MinigameSession s = MinigameManager.selfTestStart(m, m.entranceBlock(), p());
         int ticks = 0;
         int online = s.online().size();

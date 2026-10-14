@@ -157,6 +157,11 @@ public final class BankService {
 
     // ------------------------------------------------------------------ requests
 
+    /** Self-test hook: runs one bank request as if the client had sent it (the bank must be open). */
+    public static void selfTestAction(ServerPlayerEntity player, int op, String key, int slot, BankQuantity.Mode mode, long x) {
+        action(player, op, key, "", slot, mode, x, 0);
+    }
+
     static void action(ServerPlayerEntity player, int op, String key, String key2, int slot, BankQuantity.Mode mode, long x, int tab) {
         if (op == OP_CLOSE) {
             OPEN.remove(player.getUuid());

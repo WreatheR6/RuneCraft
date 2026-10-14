@@ -130,6 +130,16 @@ public final class GeService {
         s.send(p);
     }
 
+    /** Self-test hook: runs one Grand Exchange screen action (instant buy/sell, offers, abort, collect). */
+    public static void selfTestAction(ServerPlayerEntity p, String action, Map<String, String> fields) {
+        action(p, action, fields);
+    }
+
+    /** Self-test hook: the guide price the exchange uses for an item. */
+    public static int selfTestGuide(String item) {
+        return guide(item);
+    }
+
     static void action(ServerPlayerEntity p, String action, Map<String, String> fields) {
         SysState state = SysState.get(p.getServer());
         GrandExchange ge = state.ge();
