@@ -274,7 +274,16 @@ public final class MultiCombat {
             "sarachnis", "thermonuclear_smoke_devil", "abyssal_sire", "dusk", "zalcano", "the_hueycoatl",
             "branda_the_fire_queen", "scurrius"); // the Royal Titans share Branda's arena
 
+    /**
+     * Multicombat dungeons carved from the cache's tiles beneath their surface entrances, by structure id: their carved
+     * air (the structure's CLEAR boxes below y {@link #UNDERGROUND_TOP}) is multi-way, the surface above them is not.
+     */
+    public static final List<String> UNDERGROUND = List.of("dng_kalphite_cave", "dng_shadow_dungeon");
+    /** Highest block y that counts as underground for {@link #UNDERGROUND} (the dungeons' DEEP_TOP). */
+    public static final int UNDERGROUND_TOP = 50;
+
     private static volatile List<Box> resolved;
+    private static volatile List<com.runecraft.osrs.world.StructureDef.Op> undergroundAir;
 
     private MultiCombat() {
     }
@@ -342,5 +351,39 @@ public final class MultiCombat {
     /** Multicombat check at a Minecraft block position. */
     public static boolean isMultiAtBlock(int blockX, int blockZ) {
         return isMulti(GielinorMap.toOsrsX(blockX), GielinorMap.toOsrsY(blockZ));
+    }
+
+    /** Multicombat check at a Minecraft block position, including the {@link #UNDERGROUND} dungeons. */
+    public static boolean isMultiAtBlock(int blockX, int blockY, int blockZ) {
+        return isMultiAtBlock(blockX, blockZ) || inUndergroundMulti(blockX, blockY, blockZ);
+    }
+
+    /** True if the block is in the carved air of an {@link #UNDERGROUND} multicombat dungeon. */
+    public static boolean inUndergroundMulti(int blockX, int blockY, int blockZ) {
+        if (blockY > UNDERGROUND_TOP) {
+            return false;
+        }
+        List<com.runecraft.osrs.world.StructureDef.Op> air = undergroundAir;
+        if (air == null) {
+            air = new ArrayList<>();
+            for (com.runecraft.osrs.world.StructureDef s : ContentRegistry.structures()) {
+                if (UNDERGROUND.contains(s.id())) {
+                    for (com.runecraft.osrs.world.StructureDef.Op op : s.ops()) {
+                        if (op.type() == com.runecraft.osrs.world.StructureDef.Op.Type.CLEAR && op.y2() <= UNDERGROUND_TOP) {
+                            air.add(op);
+                        }
+                    }
+                }
+            }
+            air = List.copyOf(air);
+            undergroundAir = air;
+        }
+        for (com.runecraft.osrs.world.StructureDef.Op op : air) {
+            if (blockX >= op.x1() && blockX <= op.x2() && blockZ >= op.z1() && blockZ <= op.z2() && blockY >= op.y1() - 1
+                    && blockY <= op.y2()) {
+                return true;
+            }
+        }
+        return false;
     }
 }

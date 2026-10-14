@@ -72,6 +72,27 @@ public final class DungeonsHooks implements ModuleHooks {
         BlockHooks.register(DungeonBlocks.ROCK_PILE, DungeonsHooks::rockPile);
         DungeonCamps.register();
         BarrowsHooks.register();
+        // Task-only dungeons (the Kalphite Cave): no damage to their monsters without the matching Slayer task.
+        com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
+            @Override
+            public int afterRoll(ServerPlayerEntity player, net.minecraft.entity.LivingEntity target, com.runecraft.osrs.AttackType type,
+                                 int damage) {
+                if (!(target instanceof com.runecraft.entity.OsrsMonsterEntity)) {
+                    return damage;
+                }
+                BlockPos at = target.getBlockPos();
+                String needed = Dungeons.taskOnly(at.getX(), at.getY(), at.getZ());
+                if (needed == null) {
+                    return damage;
+                }
+                var profile = com.runecraft.content.slayer.SlayerService.profile(player);
+                if (profile.hasTask() && needed.equals(profile.task)) {
+                    return damage;
+                }
+                Msg.game(player, "You can only fight the creatures of this cave while on a Slayer task to kill them.");
+                return 0;
+            }
+        });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (++hazardTicks % HAZARD_INTERVAL != 0) {
                 return;

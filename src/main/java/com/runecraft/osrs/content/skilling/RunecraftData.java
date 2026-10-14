@@ -200,7 +200,9 @@ public final class RunecraftData extends SkillingPart {
 
     @Override
     public List<PlaceDef> places() {
-        return List.of(PlaceDef.of("ourania_cave", "Ourania Cave", 2453, 3231, PlaceDef.Style.CAVE, List.of("ourania_altar")),
+        // The Ourania altar stands inside the dungeons module's Ourania Cave (its ZMI chamber); this place only marks the
+        // cave's entrance on the surface.
+        return List.of(PlaceDef.of("ourania_cave", "Ourania Cave", 2453, 3231, PlaceDef.Style.NONE, List.of()),
                 // Approx: in OSRS he stands in the centre of the Abyss (NPCs aren't placed underground here), so he waits a
                 // little west of the Abyss shaft by the Mage of Zamorak's spot.
                 PlaceDef.of("abyss_dark_mage", "Dark Mage", 3094, 3557, PlaceDef.Style.NONE, List.of()));

@@ -102,6 +102,32 @@ public final class Dungeons {
         return out;
     }
 
+    /**
+     * Dungeons whose monsters can only be fought on a Slayer task, by dungeon id: the task category the player must
+     * have. OSRS: the Kalphite Cave's kalphites can only be attacked on a kalphite task.
+     */
+    public static final java.util.Map<String, String> TASK_ONLY = java.util.Map.of("dng_kalphite_cave", "kalphite");
+
+    /** The Slayer task category needed to fight at this block (inside a {@link #TASK_ONLY} dungeon's carved air), or null. */
+    public static String taskOnly(int x, int y, int z) {
+        if (y > DEEP_TOP) {
+            return null;
+        }
+        for (Dungeon d : all()) {
+            String task = TASK_ONLY.get(d.id());
+            if (task == null) {
+                continue;
+            }
+            for (StructureDef.Op op : d.structure().ops()) {
+                if (op.type() == StructureDef.Op.Type.CLEAR && op.y2() <= DEEP_TOP && x >= op.x1() && x <= op.x2()
+                        && z >= op.z1() && z <= op.z2() && y >= op.y1() - 1 && y <= op.y2()) {
+                    return task;
+                }
+            }
+        }
+        return null;
+    }
+
     /** The Abyss rifts (positions are filled in when the Abyss is built). */
     public static List<Rift> rifts() {
         all();

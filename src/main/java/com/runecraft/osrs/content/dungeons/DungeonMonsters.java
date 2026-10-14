@@ -92,6 +92,7 @@ public final class DungeonMonsters {
         waterbirth(list);
         apeAtoll(list);
         cacheDungeons(list);
+        remainingDungeons(list);
         return list;
     }
 
@@ -217,6 +218,78 @@ public final class DungeonMonsters {
                 .drops(Drop.always("bones"), Drop.herbs(4), Drop.of("nature_rune", 3, 9, 16), Drop.of("law_rune", 2, 6, 25),
                         Drop.of("air_rune", 20, 40, 16)) // drops approx.
                 .attributes("undead").model("skeleton").skin(0x8A9A7A, 0x3A5A2A, 0x2A3A1A, 0x80F060));
+    }
+
+    /**
+     * The monsters of the later cache dungeons ({@link CacheDungeons}): the Giants' Den, the Karamja Volcano dungeon,
+     * the Deep Wilderness Dungeon, the Ice Troll Caves, the Ourania Cave and the small creatures of the Shadow Dungeon,
+     * the Sophanem Dungeon and the Wilderness Slayer Cave. Stats are the DPS calculator's (weirdgloop/osrs-dps-calc
+     * monsters.json); drops are the wiki's main lines only (approx).
+     */
+    private static void remainingDungeons(List<MonsterDef> list) {
+        list.add(m("rat", "Rat", 1, 2, 1, 1, 1, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 0)).attackBonus(-47, 0, 0)
+                .defenceBonus(-42, -42, -42, -42, -42).drops(Drop.always("bones")).slayer(1, "rats").attributes("rat")
+                .model("giant_rat").skin(0x6A5A4A, 0x5A4A3A, 0x4A3A2A, 0xD08080).size(0.6f, 0.4f, 0.6f));
+        list.add(m("bat", "Bat", 6, 8, 5, 5, 5, 1, 1).speed(4).attack(melee(AttackType.STAB, 1))
+                .defenceBonus(2, 2, 5, 2, 0).drops(Drop.always("bat_bones")).slayer(1, "bats")
+                .model("giant_bat").skin(0x3A3028, 0x2A2018, 0x2A2018, 0xA02020).size(0.6f, 0.5f, 0.6f));
+        // Sophanem Dungeon (approx stats: the wiki's mummy is not in the DPS calculator data).
+        list.add(m("mummy", "Mummy", 103, 80, 85, 85, 85, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 11)) // approx
+                .defenceBonus(20, 20, 20, 0, 20).drops(Drop.always("bones")).attributes("undead") // approx
+                .skin(0xC8B890, 0xB0A078, 0xB0A078, 0x2A2A1A));
+        // Giants' Den (Zeah): its own level 104 and 109 fire giants.
+        list.add(m("fire_giant_lvl104", "Fire giant", 104, 130, 65, 65, 120, 1, 1).speed(5).attack(melee(AttackType.SLASH, 10))
+                .attackBonus(50, 0, 0).defenceBonus(20, 10, 10, 50, -10).drops(Drop.always("big_bones"), Drop.of("fire_rune", 15, 15, 16))
+                .slayer(1, "fire_giants").attributes("fiery").model("fire_giant").skin(0xC86A3A, 0xA04A2A, 0x7A3A1A, 0xF0A030));
+        list.add(m("fire_giant_lvl109", "Fire giant", 109, 150, 90, 80, 65, 1, 1).speed(5).attack(melee(AttackType.SLASH, 13))
+                .attackBonus(29, 0, 0).defenceBonus(0, 3, 2, 0, 0).drops(Drop.always("big_bones"), Drop.of("fire_rune", 15, 15, 16))
+                .slayer(1, "fire_giants").attributes("fiery").model("fire_giant").skin(0xC86A3A, 0xA04A2A, 0x7A3A1A, 0xF0A030));
+        // Karamja Volcano dungeon.
+        list.add(m("deadly_red_spider", "Deadly red spider", 34, 35, 30, 25, 30, 1, 1).speed(4)
+                .attack(melee(AttackType.STAB, 3).special(Special.POISON, 4)).defenceBonus(15, 16, 7, 12, 16)
+                .slayer(1, "spiders").model("spider").skin(0x8A2A1A, 0x6A1A10, 0x4A1008, 0xE04020).size(1.2f, 0.7f, 1.0f));
+        list.add(m("skeleton_lvl45", "Skeleton", 45, 59, 32, 35, 36, 1, 1).speed(4).attack(melee(AttackType.SLASH, 5))
+                .attackBonus(15, 0, 0).defenceBonus(9, 11, -2, 1, 4).drops(Drop.always("bones"))
+                .slayer(1, "skeletons").attributes("undead").model("skeleton").skin(0xD8D0B0, 0xB8B090, 0xB8B090, 0x302820));
+        // Deep Wilderness Dungeon.
+        list.add(m("shadow_spider", "Shadow spider", 52, 55, 44, 42, 44, 1, 1).speed(4)
+                .attack(melee(AttackType.STAB, 5).special(Special.DRAIN_PRAYER, 0)) // OSRS: drains Prayer by a quarter (approx)
+                .defenceBonus(20, 15, 10, 15, 15).slayer(1, "spiders").model("giant_spider")
+                .skin(0x2A2A3A, 0x1A1A2A, 0x10101A, 0x6A4A8A).size(1.3f, 0.8f, 1.0f));
+        list.add(m("chaos_dwarf", "Chaos dwarf", 48, 61, 38, 42, 28, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 6))
+                .attackBonus(13, 0, 0).defenceBonus(40, 34, 25, 10, 35).drops(Drop.always("bones"), Drop.of("coal", 1, 1, 8))
+                .slayer(1, "dwarves").model("dwarf").skin(0xC89070, 0x6A1A1A, 0x3A1A1A, 0xE04020));
+        list.add(m("monk_of_zamorak", "Monk of Zamorak", 23, 16, 15, 13, 18, 30, 1).speed(4).attack(melee(AttackType.CRUSH, 2))
+                .attack(AttackDef.of("magic", AttackType.MAGIC, 3, 8, 4)).defenceBonus(0, 0, 0, 0, 0)
+                .drops(Drop.always("bones")).model("monk").skin(0xC8A080, 0x8A1A1A, 0x6A1010, 0x2A2A2A));
+        // Ice Troll Caves and the Jatizso mine (the level 82 males are the slayer module's ice troll).
+        list.add(m("ice_troll_runt", "Ice troll runt", 74, 60, 60, 70, 70, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 15))
+                .attackBonus(60, 0, 0).defenceBonus(30, 60, 30, 0, 0).drops(Drop.always("big_bones"), Drop.herbs(14))
+                .slayer(1, "trolls").model("ice_troll").skin(0xA0C0D8, 0x7A9AB8, 0x5A7A98, 0xE0F0FF).size(0.9f, 2.0f, 0.8f));
+        list.add(m("ice_troll_female", "Ice troll female", 82, 80, 80, 80, 40, 1, 1).speed(4)
+                .attack(AttackDef.of("ranged", AttackType.RANGED, 6, 8, 10)).attackBonus(60, 0, 0).defenceBonus(30, 60, 30, 0, 0)
+                .drops(Drop.always("big_bones"), Drop.herbs(14)).slayer(1, "trolls").model("ice_troll")
+                .skin(0xA8C8E0, 0x8AAAC8, 0x6A8AA8, 0xE0F0FF).size(1.0f, 2.4f, 0.95f));
+        list.add(m("ice_troll_grunt", "Ice troll grunt", 100, 80, 100, 100, 60, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 21))
+                .attackBonus(60, 0, 0).defenceBonus(30, 60, 30, 0, 0).drops(Drop.always("big_bones"), Drop.herbs(14))
+                .slayer(1, "trolls").model("ice_troll").skin(0x90B0C8, 0x6A8AA8, 0x4A6A88, 0xE0F0FF).size(1.1f, 2.8f, 1.1f));
+        // Ourania Cave (Zamorak's followers and the cave lizards on the way to the altar).
+        list.add(m("cave_lizard", "Cave lizard", 37, 20, 38, 36, 35, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 5))
+                .defenceBonus(5, 15, 15, 0, 5).model("lizard").skin(0x5A6A3A, 0x3A4A2A, 0x2A3A1A, 0xC0A040));
+        list.add(m("zamorak_warrior", "Zamorak warrior", 84, 45, 85, 70, 90, 1, 1).speed(4).attack(melee(AttackType.SLASH, 8))
+                .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("bones"), Drop.of("law_rune", 2, 2, 16), Drop.of("death_rune", 2, 2, 16))
+                .skin(0xC8A080, 0x6A1A1A, 0x3A3A3A, 0xA02020));
+        list.add(m("zamorak_ranger", "Zamorak ranger", 81, 50, 75, 75, 80, 1, 80).speed(4)
+                .attack(AttackDef.of("ranged", AttackType.RANGED, 9, 8, 10)).defenceBonus(0, 0, 0, 0, 0)
+                .drops(Drop.always("bones"), Drop.of("law_rune", 2, 2, 16), Drop.of("death_rune", 2, 2, 16))
+                .skin(0xC8A080, 0x5A2A1A, 0x3A2A1A, 0xA02020));
+        list.add(m("zamorak_mage", "Zamorak mage", 84, 50, 78, 81, 82, 85, 1).speed(4)
+                .attack(AttackDef.of("magic", AttackType.MAGIC, 9, 8, 10)).defenceBonus(0, 0, 0, 0, 0)
+                .drops(Drop.always("bones"), Drop.of("law_rune", 2, 2, 16), Drop.of("death_rune", 2, 2, 16))
+                .skin(0xC8A080, 0x8A1A1A, 0x6A1010, 0x2A2A2A));
+        list.add(m("zamorak_crafter", "Zamorak crafter", 19, 25, 15, 15, 12, 20, 1).speed(4).attack(melee(AttackType.CRUSH, 2))
+                .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("bones"), Drop.of("pure_essence", 1, 1, 4))
+                .skin(0xC8A080, 0x8A2A2A, 0x5A1A1A, 0x6A4A8A));
     }
 
     /** The wiki's locust rider drop table (rarities x/128, noted stacks as plain stacks). */
