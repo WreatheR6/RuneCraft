@@ -351,6 +351,8 @@ final class MinigameRewardChecks {
      */
     private String gauntlet() {
         com.runecraft.osrs.content.minigames.Gauntlet.Mode mode = com.runecraft.osrs.content.minigames.Gauntlet.Mode.NORMAL;
+        // the generic minigame:gauntlet run can leave the fake player stashed (it is never "online" to be restored)
+        com.runecraft.content.minigames.GauntletStash.restore(p());
         Inv.give(p(), "bronze_dagger", 1);
         MinigameSession s = MinigameManager.selfTestStart(Minigame.GAUNTLET, Minigame.GAUNTLET.entranceBlock(), p());
         if (!(s instanceof com.runecraft.content.minigames.games.GauntletSession g)) {
