@@ -35,6 +35,8 @@ final class Overrides {
         // ---- round 21 re-sculpts, part 3 (creatures here; Jad, JalTok-Jad and other bosses in Flagships4) ----
         l.addAll(Common3.overrides());
         l.addAll(Flagships4.overrides());
+        // ---- round 24 re-sculpts, part 4 (slayer creatures) ----
+        l.addAll(Common4.overrides());
         return l;
     }
 }

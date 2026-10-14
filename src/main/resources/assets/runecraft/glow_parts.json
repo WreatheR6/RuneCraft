@@ -1,7 +1,4 @@
 {
-  "aberrant_spectre": [
-    "head"
-  ],
   "abyssal_demon": [
     "head"
   ],
@@ -399,9 +396,6 @@
     "head",
     "jaw"
   ],
-  "cockatrice": [
-    "head"
-  ],
   "commander_zilyana": [
     "tiara_gem",
     "sword_gem"
@@ -683,9 +677,6 @@
     "eyes"
   ],
   "dusk": [
-    "head"
-  ],
-  "dust_devil": [
     "head"
   ],
   "earth_impling": [
@@ -1072,8 +1063,7 @@
   "hydra": [
     "head0",
     "head1",
-    "head2",
-    "head3"
+    "head2"
   ],
   "ice_giant": [
     "head"
@@ -1369,9 +1359,6 @@
   ],
   "kruk": [
     "eyes"
-  ],
-  "kurask": [
-    "head"
   ],
   "lava_dragon": [
     "body",
@@ -1883,10 +1870,6 @@
   ],
   "revenant_pyrefiend": [
     "body"
-  ],
-  "rockslug": [
-    "stalk_r_eye",
-    "stalk_l_eye"
   ],
   "rune_dragon": [
     "body",
@@ -2547,7 +2530,7 @@
     "head"
   ],
   "wall_beast": [
-    "head"
+    "eyes"
   ],
   "wardens_obelisk": [
     "pillar",
