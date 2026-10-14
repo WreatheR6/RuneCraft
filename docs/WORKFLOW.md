@@ -166,6 +166,10 @@ Recurring conflict spots:
   - `dps_reference.tsv`: 2,250 scenarios from osrs-dps-calc's real `PlayerVsNPCCalc` (generator in `src/test/resources/osrs/combat/generator/`); new pure `osrs/PlayerHitCalc` matches every row, and the Minecraft side uses it through `combat/HitCalcBridge` (melee, ranged, autocast, powered staves, spellbook spells, several specs). Fixed: magic +9 effective level, elemental spells scale with Magic, sang staff, tbow formula, missing bane/demon/dragon effects, fang, void/elite void/slayer helm/salve ordering and flooring. Before: 626/2,250 max hits wrong.
   - `success_rates.tsv` (793 wiki chart lines), `pickpocket_targets.tsv`, `stalls.tsv` with `SuccessRateSnapshotTest`: 2024 stall rebalance (gem 408 XP / 100 ticks…), pickpocket low/high and XP fixes, glove/diary/cape scaling, Rocky by source; plain-harpoon values with dragon/crystal scaling; exact per-axe tree tables; camphor/ironwood/rosewood trees.
 
+- **Session 2, round 15: combat follow-ups, skilling gaps:**
+  - Light/heavy ranged defence and elemental weakness for 324 monsters (`MonsterDefenceTable`), weapon-class defence selection; `dps_reference.tsv` 2,890 rows. Ultor/Bellator/Magus/Venator rings, Zaryte vambraces and more now wearable with stats; quest-slot gear counted in gear totals (`GearTotalsReferenceTest`); thrown weapons' ranged attack bonus fixed. NPC-vs-player via pure `NpcHitCalc` matching the calculator's `NPCVsPlayerCalc` (`npc_reference.tsv`, 1,040 rows).
+  - Lead, volcanic sulphur and barronite rocks (Barronite Crusher); Shooting Stars (83 landing sites snapshot, Dusuri's shop); minnows and Kylie Minnow; aerial fishing on Lake Molch; digsite workman and Pollnivneach villager pickpockets.
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
@@ -208,8 +212,8 @@ Recurring conflict spots:
   - Skull timers are in memory only (lost on restart). Heavy ballista wield doesn't check MM2 training; uncut zenyte is a gem-cutting recipe.
   - Seers ring magic damage (0.2%/0.5%) can't be represented with whole-percent magic damage.
   - Ring of the gods imbue should need a holy wrench (nowhere modelled).
-- **Combat:** no monster elemental weaknesses; one ranged defence bonus (no light/heavy split); accessory-slot items (Ultor/Venator/Magus rings, Zaryte vambraces, imbued god capes) still multiply separately; magic-blast specs and NPC-vs-player defence use the old paths; vampyrebane, Efaritay's, avarice, rev weapons not modelled.
-- **Skilling gaps:** lead/barronite/volcanic sulphur/stardust rocks, shark lures, minnows, pirate/villager/workman pickpockets; ironwood and rosewood trees aren't placed (Sunbleak Island and Drumstick Isle missing).
+- **Combat:** `Monster`-enum monsters keep a single ranged defence; Elysian/Justiciar/Dinh's damage reduction not modelled; vampyrebane, Efaritay's, avarice, rev weapons not modelled.
+- **Skilling gaps:** pirate pickpockets and Onyx Crest/Laguna Aurorae/Buccaneers' Haven, Sunbleak Island and Drumstick Isle (ironwood/rosewood) not built; Daeyalt essence; drift net fishing; shark lures; Camdozaal is a surface stand-in; shooting stars are in memory only; celestial ring has no effect.
 - **Self-test gaps:** PvP minigames need two players; utility spells needing targets/items (enchants, telegrab, bake pie) aren't cast; Guthix balance, olive oil and sacred oil have no drink effect; `TestContext.reset()` doesn't reset systems state or the Slayer profile.
 - **Sailing:** boat combat, bounty tasks, ocean encounters, crew, cargo holds, cannons, hazards, salvaging hook tiers, hull speed; island materials are sold in the tool shop.
 - **Untested in game:** much of the Minecraft-side code has only passed CI's boot test. A play-test pass would be the most valuable round once the data rounds slow down. Use `/run` or the client smoke screenshots.
