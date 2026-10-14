@@ -57,7 +57,8 @@ public final class ModelSpec {
         public final List<int[]> uvs = new ArrayList<>();
         /**
          * Face detail painted by the texture generator: "eyes", "eyes_animal", "face", "skull", "visor", "scales",
-         * "stripes", "spots", "plates", "glow", "none", or "blank" (a HEAD that gets no painted face at all).
+         * "stripes", "spots", "swirls" (pale accent swirl markings), "plates", "glow", "none", or "blank" (a HEAD
+         * that gets no painted face at all).
          */
         public String pattern = "none";
         /** For LEG_EXTRA: index used to alternate the gait. */
@@ -66,7 +67,8 @@ public final class ModelSpec {
          * Emissive detail rendered full-bright on top of the model (an extra "_glow" texture layer):
          * "none", "full" (the whole part), "eyes" (eyes on the front face), "cracks" (lava veins),
          * "maw" (mouth/inner faces), "runes" (glowing glyphs/trim), "spots" (scattered glowing eyes/pores),
-         * "rim" (glowing box edges), "sigil" (Corporeal Beast's spirit sigil on the front face); all in the
+         * "rim" (glowing box edges), "sigil" (Corporeal Beast's spirit sigil on the front face), "veins"
+         * (branching blood/energy veins); all in the
          * accent colour except the eyes/maw.
          */
         public String glow = "none";
@@ -74,7 +76,7 @@ public final class ModelSpec {
          * Surface material for the texture painter (null = inferred from the pattern and names): e.g. "skin",
          * "rock", "scales", "fur", "feathers", "cloth", "leather", "metal", "chain", "bone", "chitin", "membrane",
          * "slime", "hair", "wood", "ghost", "moss", "ice", "flesh", "face", "lava", "crystal", "smoke",
-         * "spectral" (translucent body with a glowing accent rim).
+         * "spectral" (translucent body with a glowing accent rim), "granite" (carved, cracked stone).
          */
         public String material;
 

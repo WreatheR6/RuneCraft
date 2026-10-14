@@ -24,6 +24,8 @@ final class Overrides {
         l.addAll(BestiaryLookalikes.overrides());
         // ---- round 10 flagship boss re-sculpts (last, so they win) ----
         l.addAll(Flagships.overrides());
+        // ---- round 11 flagship boss re-sculpts, part 2 ----
+        l.addAll(Flagships2.overrides());
         return l;
     }
 }

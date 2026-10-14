@@ -12,11 +12,9 @@
     "mouth"
   ],
   "abyssal_sire": [
-    "body",
-    "shoulder_l",
-    "shoulder_r",
-    "eyes",
-    "jaw",
+    "mass",
+    "hump",
+    "head",
     "arm_l",
     "arm_r"
   ],
@@ -49,34 +47,26 @@
     "shadow_orb"
   ],
   "alchemical_hydra": [
-    "vent_glow0",
-    "vent_glow1",
-    "vent_glow2",
-    "eyes0",
-    "eyes1",
-    "eyes2",
-    "eyes3"
+    "stain",
+    "head_n0",
+    "head_n1",
+    "head_n2",
+    "head_n3"
   ],
   "alchemical_hydra_blue": [
-    "vent_glow0",
-    "vent_glow1",
-    "vent_glow2",
-    "eyes0",
-    "eyes1",
-    "eyes2"
+    "stain",
+    "head_n0",
+    "head_n1",
+    "head_n2"
   ],
   "alchemical_hydra_enraged": [
-    "vent_glow0",
-    "vent_glow1",
-    "vent_glow2",
-    "eyes0"
+    "stain",
+    "head_n0"
   ],
   "alchemical_hydra_red": [
-    "vent_glow0",
-    "vent_glow1",
-    "vent_glow2",
-    "eyes0",
-    "eyes1"
+    "stain",
+    "head_n0",
+    "head_n1"
   ],
   "alomone": [
     "staff_orb",
@@ -342,11 +332,8 @@
   "cerberus": [
     "body",
     "head_mid",
-    "jaw_mid",
     "head_left",
-    "jaw_left",
     "head_right",
-    "jaw_right",
     "tail_tip"
   ],
   "champion_of_scabaras": [
@@ -540,7 +527,7 @@
     "rune_sigil"
   ],
   "dawn": [
-    "eyes"
+    "head"
   ],
   "deathly_mage": [
     "head",
@@ -637,7 +624,7 @@
     "eyes"
   ],
   "dusk": [
-    "eyes"
+    "head"
   ],
   "dust_devil": [
     "head"
@@ -1189,10 +1176,12 @@
     "eyes"
   ],
   "kalphite_queen": [
-    "eyes"
+    "eye_l",
+    "eye_r"
   ],
   "kalphite_queen_airborne": [
-    "eyes"
+    "eye_l",
+    "eye_r"
   ],
   "kalrag": [
     "eyes",
@@ -1265,9 +1254,9 @@
     "spark_tip_r"
   ],
   "king_black_dragon": [
-    "eyes0",
-    "eyes1",
-    "eyes2"
+    "head_mid",
+    "head_left",
+    "head_right"
   ],
   "king_tyras": [
     "crown_gem"
@@ -2369,8 +2358,16 @@
     "halberd_glow"
   ],
   "vorkath": [
+    "body",
     "cavity",
-    "head"
+    "neck",
+    "head",
+    "fleg_l",
+    "fleg_r",
+    "bleg_l",
+    "bleg_r",
+    "tail0",
+    "tail1"
   ],
   "vulture": [
     "eyes"
@@ -2549,20 +2546,17 @@
     "eye_r"
   ],
   "zulrah": [
-    "eyes"
+    "head"
   ],
   "zulrah_magma": [
     "coil",
     "coil2",
-    "trunk0",
-    "trunk1",
-    "trunk2",
-    "head",
-    "eyes",
-    "jaw"
+    "head"
   ],
   "zulrah_tanzanite": [
-    "eyes"
+    "coil",
+    "coil2",
+    "head"
   ],
   "zygomite": [
     "face",

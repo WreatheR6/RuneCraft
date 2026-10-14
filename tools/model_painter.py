@@ -531,19 +531,33 @@ def m_spectral(c):
     return col, glow
 
 
+def m_granite(c):
+    """Carved granite: speckled grey-brown stone cut into rough courses with dark chisel grooves and pale
+    chipped edges (Grotesque Guardians, statues, Olm's chamber)."""
+    base = col_arr(c.base, c.shape)
+    speck = cell(c.P, 0.5, c.seed + 2)
+    n = fbm(c.P, 3.0, c.seed) - 0.5
+    course = (c.P[1] % 4.0)
+    crack = isoline(vnoise(c.P, 3.5, c.seed + 6) - 0.5, c.R) & (vnoise(c.P, 6.0, c.seed + 8) > 0.45)
+    shade = n * 0.36 + np.where(speck > 0.86, 0.26, np.where(speck < 0.12, -0.2, 0.0))
+    shade = shade + np.where(course < 0.3, 0.08, 0.0) - np.where(course > 3.8, 0.16, 0.0)
+    col = tone(base, shade - np.where(crack, 0.38, 0.0))
+    return col, None
+
+
 MATERIALS = {
     "hide": m_hide, "skin": m_skin, "face": m_skin, "rock": m_rock, "scales": m_scales, "plates": m_plates,
     "chitin": m_chitin, "fur": m_fur, "hair": m_hair, "feathers": m_feathers, "cloth": m_cloth,
     "leather": m_leather, "metal": m_metal, "chain": m_chain, "bone": m_bone, "horn": m_horn,
     "membrane": m_membrane, "slime": m_slime, "wood": m_wood, "ghost": m_ghost, "moss": m_moss, "ice": m_ice,
     "flesh": m_flesh, "energy": m_energy, "lava": m_lava, "obsidian": m_rock, "patches": m_patches, "wool": m_wool,
-    "crystal": m_crystal, "smoke": m_smoke, "spectral": m_spectral,
+    "crystal": m_crystal, "smoke": m_smoke, "spectral": m_spectral, "granite": m_granite,
 }
 
 # How strongly each material keeps the generic bevel/AO lighting (cloth and fur are soft; metal is crisp).
 BEVEL = {"metal": 1.3, "rock": 1.2, "chitin": 1.1, "cloth": 0.6, "fur": 0.7, "hair": 0.6, "ghost": 0.5,
          "energy": 0.3, "lava": 0.6, "slime": 0.6,
-         "crystal": 1.4, "smoke": 0.4, "spectral": 0.5}
+         "crystal": 1.4, "smoke": 0.4, "spectral": 0.5, "granite": 1.2}
 
 
 # ----------------------------------------------------------------------------------------------
@@ -798,7 +812,7 @@ def paint_box(arr, glow, model_id, part, bi, box, R, material, eyes_mode, light=
         c.dims, c.base, c.accent, c.seed, c.shape, c.R = dims, base, accent, pseed, (H, W), R
         c.long_axis, c.role, c.loc = long_axis, role, (lx, ly, lz)
         col, g = fn(c)
-        if pattern in ("spots", "stripes"):
+        if pattern in ("spots", "stripes", "swirls"):
             col = apply_pattern(col, pattern, c, accent, seed)
         # lighting
         f = np.full((H, W), FACE_LIGHT[face])
@@ -849,6 +863,20 @@ def paint_box(arr, glow, model_id, part, bi, box, R, material, eyes_mode, light=
             col = np.where(crack[..., None], core, np.where(edge[..., None], blend(col, hot, 0.45), col))
             gcr = np.where(crack[..., None], core, np.where(edge[..., None], hot * 0.35, 0))
             gl = gcr if gl is None else np.maximum(gl, gcr)
+        if glow_mode == "veins":
+            # pulsing blood/energy veins running along the part's long axis, branching as they go (Abyssal
+            # Sire's flesh, Vardorvis's axes, the Awakened bosses)
+            Ps = c.P.copy()
+            Ps[c.long_axis] = Ps[c.long_axis] * 0.5
+            n = vnoise(Ps, 4.5, pseed + 91) - 0.5
+            n2 = vnoise(Ps, 2.5, pseed + 92) - 0.5
+            gate = vnoise(c.P, 4.0, pseed + 93)
+            vein = (isoline(n, R) & (gate > 0.42)) | (isoline(n2, R) & (gate > 0.62))
+            hot = np.array(accent, dtype=np.float64)
+            halo = dilate(vein, max(1, R // 2)) & ~vein
+            col = np.where(vein[..., None], blend(col, hot, 0.85), np.where(halo[..., None], blend(col, hot, 0.25), col))
+            gv = np.where(vein[..., None], hot * 0.7, 0)
+            gl = gv if gl is None else np.maximum(gl, gv)
         if glow_mode == "spots":
             # scattered glowing eyes/pores of the accent colour (Nightmare's eyes, Kraken's photophores)
             q = cell(P, 1.6, pseed + 13)
@@ -987,6 +1015,11 @@ def apply_pattern(col, pattern, c, accent, seed):
         wob = np.sin(other * 0.9 + (seed % 100) * 0.06) * 0.6
         m = ((t + wob) % 4.0) < 1.0
         return np.where(m[..., None], blend(col, acc, 0.85), col)
+    if pattern == "swirls":
+        # pale spirit swirls painted over the hide (Corporeal Beast's markings)
+        n = vnoise(c.P, 4.5, seed + 41) - 0.5
+        m = dilate(isoline(n, c.R), max(1, c.R // 3)) & (vnoise(c.P, 7.0, seed + 43) > 0.38)
+        return np.where(m[..., None], blend(col, acc, 0.9), col)
     return col
 
 

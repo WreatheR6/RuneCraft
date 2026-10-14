@@ -41,15 +41,15 @@ final class Flagships {
      * gaping fanged maw, a bony dorsal ridge and its spirit sigil glowing on the chest and brow.
      */
     static ModelSpec corporealBeast() {
-        int body = 0x8EAEB4;
-        int pale = 0xB4CFD2;
-        int deep = 0x5A767E;
-        int rim = 0xCFF8FF;
-        int sigil = 0x7FF4FF;
+        int body = 0x6FAE96;
+        int pale = 0x96CCB6;
+        int deep = 0x467E6C;
+        int rim = 0xE4FFF2;
+        int sigil = 0xF0FFF8;
         ModelSpec.Builder b = ModelSpec.builder("corporeal_beast").shadow(1.8f);
-        part(b, "body", null, Role.BODY, body).accent(rim).at(0, 8, 2).mat("spectral")
+        part(b, "body", null, Role.BODY, body).accent(rim).at(0, 8, 2).mat("spectral").pattern("swirls")
                 .box(-11, -8, -12, 22, 16, 14).box(-9, -5, 2, 18, 12, 13).add();
-        part(b, "hump", "body", Role.STATIC, pale).accent(rim).at(0, -8, -4).rot(-8, 0, 0).mat("spectral")
+        part(b, "hump", "body", Role.STATIC, pale).accent(rim).at(0, -8, -4).rot(-8, 0, 0).mat("spectral").pattern("swirls")
                 .box(-9, -5, -8, 18, 6, 13).add();
         part(b, "belly", "body", Role.STATIC, deep).accent(rim).at(0, 8, 0).mat("spectral").box(-8, -1, -10, 16, 2, 20).add();
         part(b, "sigil", "body", Role.STATIC, deep).accent(sigil).at(0, -2, -12.2f).mat("spectral").glow("sigil")
@@ -62,7 +62,7 @@ final class Flagships {
             }
         }
         // head: low and forward, heavy brow, sigil on the forehead, long fanged jaw
-        part(b, "head", "body", Role.HEAD, pale).accent(sigil).at(0, 6, -12).mat("spectral").glow("eyes").pattern("eyes")
+        part(b, "head", "body", Role.HEAD, pale).accent(0xFF6A50).at(0, 6, -12).mat("spectral").glow("eyes").pattern("eyes")
                 .box(-6.5f, -5, -9, 13, 9, 9).add();
         part(b, "brow", "head", Role.STATIC, body).accent(rim).at(0, -5, -9).rot(14, 0, 0).mat("spectral")
                 .box(-7, -1.5f, -1, 14, 2, 4).add();
@@ -74,14 +74,14 @@ final class Flagships {
         sym(b, "tusk", "head", false, TOOTH).at(4, 3.5f, -12.5f).mat("bone").box(-0.5f, 0, -0.5f, 1, 3, 1).add();
         // towering front legs, shorter hind legs
         sym(b, "arm", null, false, body).roles(Role.LEG_FRONT_LEFT, Role.LEG_FRONT_RIGHT).accent(rim).at(11, 6, -6)
-                .rot(0, 0, -6).mat("spectral").box(-4, -3, -4.5f, 8, 13, 9).add();
+                .rot(0, 0, -6).mat("spectral").pattern("swirls").box(-4, -3, -4.5f, 8, 13, 9).add();
         sym(b, "forearm", "arm", true, pale).accent(rim).at(0, 10, 0).mat("spectral").box(-3.5f, 0, -3.5f, 7, 6, 7).add();
         sym(b, "paw", "forearm", true, deep).accent(rim).at(0, 6, -0.5f).rot(0, 0, 6).mat("spectral").box(-4, 0, -5, 8, 2, 9).add();
         for (int k = 0; k < 3; k++) {
             sym(b, "claw" + k, "paw", true, BONE).at(-2.5f + k * 2.5f, 1, -5).mat("bone").box(-0.5f, -1, -2, 1, 2, 2).add();
         }
         sym(b, "leg", null, false, body).roles(Role.LEG_BACK_LEFT, Role.LEG_BACK_RIGHT).accent(rim).at(8, 12, 11)
-                .mat("spectral").box(-3.5f, -2, -4, 7, 8, 8).add();
+                .mat("spectral").pattern("swirls").box(-3.5f, -2, -4, 7, 8, 8).add();
         sym(b, "shin", "leg", true, pale).accent(rim).at(0, 6, 0.5f).rot(10, 0, 0).mat("spectral").box(-3, 0, -3, 6, 5, 6).add();
         sym(b, "foot", "shin", true, deep).accent(rim).at(0, 5, -0.5f).rot(-10, 0, 0).mat("spectral").box(-3.5f, 0, -5, 7, 2, 7).add();
         part(b, "tail", "body", Role.TAIL, deep).accent(rim).at(0, -2, 15).rot(-20, 0, 0).mat("spectral").box(-2, -2, 0, 4, 4, 7).add();
@@ -476,11 +476,11 @@ final class Flagships {
      * blue glow inside, a bare horned skull with burning blue eyes, tattered wings and a spined bony tail.
      */
     static ModelSpec vorkath() {
-        int hide = 0x4C5862;
-        int dark = 0x2C333C;
+        int hide = 0x46483E;
+        int dark = 0x2A2B26;
         int frost = 0x7FE0FF;
         ModelSpec.Builder b = ModelSpec.builder("vorkath").shadow(1.6f);
-        part(b, "body", null, Role.BODY, hide).accent(frost).at(0, 9, 4).mat("hide").box(-8, -6, -12, 16, 11, 24).add();
+        part(b, "body", null, Role.BODY, hide).accent(frost).at(0, 9, 4).mat("hide").glow("cracks").box(-8, -6, -12, 16, 11, 24).add();
         part(b, "cavity", "body", Role.STATIC, 0x1E2C36).accent(frost).at(0, 0, -2).mat("flesh").glow("spots")
                 .box(-8.6f, -4, -7, 1, 8, 12).box(7.6f, -4, -7, 1, 8, 12).add();
         for (int i = 0; i < 5; i++) {
@@ -492,8 +492,10 @@ final class Flagships {
             part(b, "spine" + i, "body", Role.STATIC, BONE).at(0, -6, -10 + i * 4.2f).rot(-30, 0, 0).mat("bone")
                     .box(-1, -3 - (i % 2), -1, 2, 3 + (i % 2), 2).add();
         }
-        part(b, "neck", "body", Role.NECK, hide).accent(frost).at(0, -3, -11).rot(-38, 0, 0).mat("hide").box(-3, -3, -11, 6, 6, 11).add();
-        part(b, "neck_bones", "neck", Role.STATIC, BONE).at(0, -3.2f, 0).mat("bone").box(-1, -1, -10, 2, 1, 9).add();
+        part(b, "neck", "body", Role.NECK, hide).accent(frost).at(0, -3, -11).rot(-38, 0, 0).mat("hide").glow("cracks").box(-3, -3, -11, 6, 6, 11).add();
+        part(b, "neck_bones", "neck", Role.STATIC, BONE).at(0, -3.2f, 0).mat("bone").box(-1, -1, -10, 2, 1, 9).box(-0.5f, -3, -9, 1, 2, 1)
+                .box(-0.5f, -3, -6, 1, 2, 1).box(-0.5f, -3, -3, 1, 2, 1).add();
+        sym(b, "neck_rib", "neck", false, BONE).at(3.1f, -1, -6).mat("bone").box(-0.5f, -1.5f, -3, 1, 4, 1).box(-0.5f, -1.5f, 0, 1, 4, 1).add();
         part(b, "head", "neck", Role.HEAD, BONE).accent(frost).at(0, 0, -11).rot(38, 0, 0).mat("bone").pattern("skull").glow("eyes")
                 .box(-4, -5, -8, 8, 8, 8).add();
         part(b, "snout", "head", Role.STATIC, BONE).at(0, 2, -8).mat("bone").box(-2.5f, -1.5f, -6, 5, 3, 6).add();
@@ -512,12 +514,12 @@ final class Flagships {
                     .box(0, -0.5f, -0.5f, 9 - k * 2, 1, 1).add();
         }
         // legs: hide thighs, bony lower legs, clawed feet
-        sym(b, "fleg", null, false, hide).roles(Role.LEG_FRONT_LEFT, Role.LEG_FRONT_RIGHT).at(6.5f, 12, -4).mat("hide")
+        sym(b, "fleg", null, false, hide).roles(Role.LEG_FRONT_LEFT, Role.LEG_FRONT_RIGHT).accent(frost).at(6.5f, 12, -4).mat("hide").glow("cracks")
                 .box(-2.5f, -2, -3, 5, 7, 6).add();
         sym(b, "fshin", "fleg", true, BONE).at(0, 5, 0).mat("bone").box(-1.5f, 0, -1.5f, 3, 6, 3).add();
         sym(b, "ffoot", "fshin", true, dark).at(0, 6, 0).mat("hide").box(-2.5f, 0, -4, 5, 1, 6).box(-2.5f, 0, -5, 1, 1, 1)
                 .box(1.5f, 0, -5, 1, 1, 1).add();
-        sym(b, "bleg", null, false, hide).roles(Role.LEG_BACK_LEFT, Role.LEG_BACK_RIGHT).at(6.5f, 11, 13).mat("hide")
+        sym(b, "bleg", null, false, hide).roles(Role.LEG_BACK_LEFT, Role.LEG_BACK_RIGHT).accent(frost).at(6.5f, 11, 13).mat("hide").glow("cracks")
                 .box(-3, -2, -3.5f, 6, 8, 7).add();
         sym(b, "bshin", "bleg", true, BONE).at(0, 6, 1).rot(15, 0, 0).mat("bone").box(-1.5f, 0, -1.5f, 3, 6, 3).add();
         sym(b, "bfoot", "bshin", true, dark).at(0, 6, 0).rot(-15, 0, 0).mat("hide").box(-2.5f, 0, -4, 5, 1, 6).add();
@@ -526,7 +528,7 @@ final class Flagships {
         int[] w = {5, 4, 3, 2};
         for (int i = 0; i < 4; i++) {
             String n = "tail" + i;
-            part(b, n, parent, Role.TAIL, i % 2 == 0 ? hide : dark).at(0, i == 0 ? -2 : 0, i == 0 ? 12 : 8).rot(i == 0 ? 12 : 6, 0, 0)
+            part(b, n, parent, Role.TAIL, i % 2 == 0 ? hide : dark).accent(frost).glow(i < 2 ? "cracks" : "none").at(0, i == 0 ? -2 : 0, i == 0 ? 12 : 8).rot(i == 0 ? 12 : 6, 0, 0)
                     .mat("hide").box(-w[i] / 2f, -w[i] / 2f, 0, w[i], w[i], 8).add();
             part(b, n + "_spike", n, Role.STATIC, BONE).at(0, -w[i] / 2f, 4).rot(-35, 0, 0).mat("bone").box(-0.5f, -2, -0.5f, 1, 2, 1).add();
             parent = n;
@@ -541,44 +543,44 @@ final class Flagships {
      * chains, and a whip of a lava-tipped tail.
      */
     static ModelSpec cerberus() {
-        int hide = 0x2E2220;
-        int dark = 0x1A1210;
+        int hide = 0x5C3C2C;
+        int dark = 0x382218;
         int lava = 0xE8561A;
-        int iron = 0x55555C;
+        int iron = 0x8A8A92;
         ModelSpec.Builder b = ModelSpec.builder("cerberus").shadow(1.7f);
-        part(b, "body", null, Role.BODY, hide).accent(lava).at(0, 9, 3).mat("hide").glow("cracks")
+        part(b, "body", null, Role.BODY, hide).accent(lava).at(0, 9, 3).mat("fur").glow("cracks")
                 .box(-8, -7, -13, 16, 13, 13).box(-7, -5, 0, 14, 10, 13).add();
         for (int i = 0; i < 6; i++) {
             part(b, "spine" + i, "body", Role.STATIC, dark).accent(lava).at(0, -7 + (i > 2 ? 2 : 0), -11 + i * 4.5f).rot(-30, 0, 0)
                     .mat("horn").box(-1, -3, -1, 2, 3, 2).add();
         }
         // three heads on short thick necks, each in a spiked iron collar with a hanging chain
-        float[][] heads = {{0, -1, 0}, {6.5f, 1, -32}, {-6.5f, 1, 32}};
+        float[][] heads = {{0, -2, 0}, {8, 1, -40}, {-8, 1, 40}};
         String[] names = {"mid", "left", "right"};
         for (int i = 0; i < 3; i++) {
             float[] h = heads[i];
             String n = names[i];
-            part(b, "neck_" + n, "body", Role.NECK, hide).accent(lava).at(h[0], -3 + h[1], -12).rot(-25, h[2], 0).mat("hide")
-                    .box(-3, -3, -7, 6, 6, 7).add();
-            part(b, "collar_" + n, "neck_" + n, Role.STATIC, iron).at(0, 0, -3).mat("metal").box(-3.5f, -3.5f, -1, 7, 7, 2).add();
+            part(b, "neck_" + n, "body", Role.NECK, hide).accent(lava).at(h[0], -3 + h[1], -12).rot(-25, h[2], 0).mat("fur")
+                    .box(-3, -3, -9, 6, 6, 9).add();
+            part(b, "collar_" + n, "neck_" + n, Role.STATIC, iron).at(0, 0, -4).mat("metal").box(-3.5f, -3.5f, -1, 7, 7, 2).add();
             part(b, "collar_spikes_" + n, "collar_" + n, Role.STATIC, 0xBFBFC4).at(0, 0, 0).mat("metal")
                     .box(-0.5f, -5.5f, -0.5f, 1, 2, 1).box(3.5f, -0.5f, -0.5f, 2, 1, 1).box(-5.5f, -0.5f, -0.5f, 2, 1, 1).add();
             part(b, "chain_" + n, "collar_" + n, Role.TAIL, iron).at(0, 3.5f, 0).rot(10, 0, 0).mat("chain")
-                    .box(-0.5f, 0, -0.5f, 1, 5 + i, 1).add();
-            part(b, "head_" + n, "neck_" + n, Role.HEAD, hide).accent(lava).at(0, -1, -7).rot(25, 0, 0).mat("hide").pattern("eyes")
+                    .box(-0.5f, 0, -0.5f, 1, 7 + i, 1, 0.2f).add();
+            part(b, "head_" + n, "neck_" + n, Role.HEAD, hide).accent(lava).at(0, -1, -9).rot(25, 0, 0).mat("fur").pattern("eyes")
                     .glow("eyes").box(-3.5f, -4, -5, 7, 6, 6).add();
             part(b, "snout_" + n, "head_" + n, Role.STATIC, dark).at(0, -0.5f, -5).mat("hide").box(-2.5f, -1.5f, -4, 5, 3, 4).add();
-            part(b, "jaw_" + n, "head_" + n, Role.JAW, dark).accent(lava).at(0, 1.5f, -2).rot(12, 0, 0).mat("hide").glow("maw")
+            part(b, "jaw_" + n, "head_" + n, Role.JAW, dark).accent(lava).at(0, 1.5f, -2).rot(12, 0, 0).mat("hide")
                     .box(-2.5f, 0, -7, 5, 2, 7).add();
             sym(b, "ear_" + n, "head_" + n, false, dark).at(2.5f, -4, -1).rot(-25, 0, 20).mat("hide").box(-1, -3, -1, 2, 3, 2).add();
         }
         // legs
-        sym(b, "fleg", null, false, hide).roles(Role.LEG_FRONT_LEFT, Role.LEG_FRONT_RIGHT).accent(lava).at(6, 11, -6).mat("hide")
+        sym(b, "fleg", null, false, hide).roles(Role.LEG_FRONT_LEFT, Role.LEG_FRONT_RIGHT).accent(lava).at(6, 11, -6).mat("fur")
                 .box(-2.5f, -2, -3, 5, 8, 6).add();
         sym(b, "fshin", "fleg", true, hide).at(0, 6, 0).mat("hide").box(-2, 0, -2, 4, 6, 4).add();
         sym(b, "fpaw", "fshin", true, dark).at(0, 6, 0).mat("hide").box(-2.5f, 0, -4, 5, 1, 6).box(-2.5f, 0, -5, 1, 1, 1)
                 .box(-0.5f, 0, -5, 1, 1, 1).box(1.5f, 0, -5, 1, 1, 1).add();
-        sym(b, "bleg", null, false, hide).roles(Role.LEG_BACK_LEFT, Role.LEG_BACK_RIGHT).accent(lava).at(5.5f, 11, 12).mat("hide")
+        sym(b, "bleg", null, false, hide).roles(Role.LEG_BACK_LEFT, Role.LEG_BACK_RIGHT).accent(lava).at(5.5f, 11, 12).mat("fur")
                 .box(-3, -2, -3.5f, 6, 8, 7).add();
         sym(b, "bshin", "bleg", true, hide).at(0, 6, 1).rot(18, 0, 0).mat("hide").box(-2, 0, -2, 4, 6, 4).add();
         sym(b, "bpaw", "bshin", true, dark).at(0, 6, 0).rot(-18, 0, 0).mat("hide").box(-2.5f, 0, -4, 5, 1, 6).add();
