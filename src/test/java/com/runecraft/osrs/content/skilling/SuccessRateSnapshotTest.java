@@ -100,7 +100,7 @@ class SuccessRateSnapshotTest {
 
     /** Targets the wiki has no success chart for (low/high approx). */
     private static final Set<String> NO_CHART = Set.of("Fremennik citizen", "Bearded Pollnivneach bandit", "Pollnivneach bandit",
-            "Cave goblin");
+            "Cave goblin", "Digsite workman", "Villager");
 
     /** Mod pickpocket name -> row name of the Thieving page's NPC table, where they differ. */
     private static final Map<String, String> TABLE_NAMES = Map.of("Woman", "Man", "Al-Kharid warrior", "Warrior",
@@ -287,7 +287,7 @@ class SuccessRateSnapshotTest {
         keys.put("infernal_eel", new String[]{"Infernal eel", "Infernal eel"});
         keys.put("raw_shark", new String[]{"Raw shark", "Harpoon"});
         // Deep sea fishing (manta rays, sea turtles) has no wiki chart: approx.
-        Set<String> noChart = Set.of("raw_manta_ray", "raw_sea_turtle");
+        Set<String> noChart = Set.of("raw_manta_ray", "raw_sea_turtle", GatheringData.MINNOW);
         for (GatheringData.Spot s : GatheringData.SPOTS) {
             for (GatheringData.Catch c : s.catches()) {
                 if (noChart.contains(c.item())) {
@@ -395,7 +395,9 @@ class SuccessRateSnapshotTest {
         Map<String, String[]> mod = Map.of("blurite_rock", new String[]{"Blurite rocks", "Blurite rocks"},
                 "limestone_rock", new String[]{"Limestone rock", "Limestone"},
                 "pay_dirt_vein", new String[]{"Pay-dirt", "Pay-dirt"}, "inner_pay_dirt_vein", new String[]{"Pay-dirt", "Pay-dirt"},
-                "upper_pay_dirt_vein", new String[]{"Pay-dirt", "Pay-dirt"});
+                "upper_pay_dirt_vein", new String[]{"Pay-dirt", "Pay-dirt"}, MiningData.LEAD, new String[]{"Lead rocks", "Lead rocks"},
+                MiningData.BARRONITE, new String[]{"Barronite rocks", "Barronite rock"},
+                MiningData.SULPHUR, new String[]{"Volcanic sulphur", "Volcanic sulphur"});
         Map<String, String[]> sizes = Map.of("sandstone_10kg", new String[]{"Sandstone rocks", "10kg"},
                 "sandstone_5kg", new String[]{"Sandstone rocks", "5kg"}, "sandstone_2kg", new String[]{"Sandstone rocks", "2kg"},
                 "sandstone_1kg", new String[]{"Sandstone rocks", "1kg"}, "granite_5kg", new String[]{"Granite rocks", "5kg"},
@@ -412,5 +414,94 @@ class SuccessRateSnapshotTest {
                 check(r.blockId(), ref(all, k[0], "mining chance", "", k[1]), r.low(), r.high());
             }
         }
+        for (String id : List.of(MiningData.LEAD, MiningData.BARRONITE, MiningData.SULPHUR)) {
+            assertNotNull(MiningData.rock(id), id);
+        }
+        // Crashed stars: one chart for every size (Crashed Star and Shooting Stars pages agree).
+        check("stardust", ref(all, "Crashed Star", "stardust mining chance", "", "Stardust"), ShootingStars.LOW, ShootingStars.HIGH);
+        check("stardust", ref(all, "Shooting Stars", "stardust mining chance", "", "Stardust"), ShootingStars.LOW, ShootingStars.HIGH);
+    }
+
+    // ------------------------------------------------------------------ Shooting Stars, aerial fishing, minnows
+
+    @Test
+    void shootingStarLandingSitesMatchTheWikiList() throws IOException {
+        List<String[]> rows = rows("shooting_stars.tsv");
+        assertEquals(rows.size(), ShootingStars.SITES.size());
+        for (int i = 0; i < rows.size(); i++) {
+            String[] r = rows.get(i);
+            ShootingStars.Site s = ShootingStars.SITES.get(i);
+            assertEquals(r[0], s.region(), r[1]);
+            assertEquals(r[1], s.name());
+            assertEquals(Integer.parseInt(r[2]), s.x(), r[1]);
+            assertEquals(Integer.parseInt(r[3]), s.y(), r[1]);
+        }
+        // Size 6-9 at 25/30/25/20%; 10 Mining per size; 32 XP; 7-minute layers; a crash every 90 +/- 15 minutes.
+        assertEquals(6, ShootingStars.landingSize(0.0));
+        assertEquals(6, ShootingStars.landingSize(0.249));
+        assertEquals(7, ShootingStars.landingSize(0.25));
+        assertEquals(8, ShootingStars.landingSize(0.55));
+        assertEquals(9, ShootingStars.landingSize(0.80));
+        assertEquals(9, ShootingStars.landingSize(0.9999));
+        assertEquals(90, ShootingStars.level(9));
+        assertEquals(10, ShootingStars.level(1));
+        assertEquals(32.0, ShootingStars.XP, 1e-9);
+        assertEquals(700, ShootingStars.LAYER_TICKS);
+        assertEquals(7500, ShootingStars.nextCrashTicks(0.0));
+        assertEquals(10500, ShootingStars.nextCrashTicks(0.99999));
+        // Never the same site twice: a repeat goes to the Daeyalt essence mine entrance, which is never rolled itself.
+        ShootingStars.Site first = ShootingStars.nextSite(null, 0.0);
+        assertEquals("Dwarven Mine northern entrance", first.name());
+        assertEquals(ShootingStars.REPEAT_SITE, ShootingStars.nextSite(first, 0.0).name());
+        for (int i = 0; i < 1000; i++) {
+            assertTrue(!ShootingStars.nextSite(null, i / 1000.0).name().equals(ShootingStars.REPEAT_SITE));
+        }
+        // Dusuri's Star Shop prices.
+        Map<String, Integer> prices = new HashMap<>();
+        for (ShootingStars.Reward r : ShootingStars.SHOP) {
+            prices.put(r.give(), r.stardust());
+        }
+        assertEquals(Map.of("celestial_ring_uncharged", 2000, "star_fragment", 3000, "bag_full_of_gems", 300, "soft_clay", 150), prices);
+    }
+
+    @Test
+    void aerialFishingFollowsModAshsFormulas() {
+        // X = (2 x Fishing + Hunter) / 3; pearls 1 / (100 - (X - 40) x 25 / 59): X = 80 gives 1/83.05 (Mod Ash rounds it to 1/84).
+        assertEquals(80, AerialFishing.x(80, 80));
+        assertEquals(1.0 / (100.0 - 40 * 25.0 / 59.0), AerialFishing.pearlChance(80, 80), 1e-12);
+        assertEquals(1.0 / 100.0, AerialFishing.pearlChance(40, 40), 1e-12);
+        // Wiki table: levels and XP.
+        Map<String, double[]> wiki = Map.of("bluegill", new double[]{43, 11.5, 35, 16.5, 3.5},
+                "common_tench", new double[]{56, 40, 51, 45, 10}, "mottled_eel", new double[]{73, 65, 68, 90, 20},
+                "greater_siren", new double[]{91, 100, 87, 130, 25});
+        assertEquals(wiki.size(), AerialFishing.FISH.size());
+        for (AerialFishing.Fish f : AerialFishing.FISH) {
+            double[] w = wiki.get(f.item());
+            assertEquals(w[0], f.fishing(), f.item());
+            assertEquals(w[1], f.fishingXp(), 1e-9, f.item());
+            assertEquals(w[2], f.hunter(), f.item());
+            assertEquals(w[3], f.hunterXp(), 1e-9, f.item());
+            assertEquals(w[4], f.cookingXp(), 1e-9, f.item());
+        }
+        // 82+ siren, 67+ eel, 52+ tench, else bluegill, each only with the stats.
+        assertEquals("greater_siren", AerialFishing.catchFor(99, 99, 98).item());
+        assertEquals("mottled_eel", AerialFishing.catchFor(99, 86, 98).item());
+        assertEquals("mottled_eel", AerialFishing.catchFor(99, 99, 81).item());
+        assertEquals("common_tench", AerialFishing.catchFor(99, 99, 52).item());
+        assertEquals("bluegill", AerialFishing.catchFor(99, 99, 51).item());
+        assertEquals("bluegill", AerialFishing.catchFor(55, 99, 70).item());
+    }
+
+    @Test
+    void minnowsComeTenToFourteenPerCatch() {
+        int[][] wiki = {{82, 10}, {85, 11}, {90, 12}, {95, 13}, {99, 14}};
+        for (int[] w : wiki) {
+            assertEquals(w[1], GatheringData.minnowsPerCatch(w[0]), "level " + w[0]);
+        }
+        GatheringData.Spot spot = GatheringData.spot(GatheringData.MINNOW_SPOT);
+        assertEquals("small_fishing_net", spot.tool());
+        assertEquals(82, spot.catches().get(0).level());
+        assertEquals(26.1, spot.catches().get(0).xp(), 1e-9);
+        assertEquals(40, GatheringData.MINNOWS_PER_SHARK);
     }
 }

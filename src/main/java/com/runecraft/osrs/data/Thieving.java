@@ -128,9 +128,10 @@ public final class Thieving {
 
     /**
      * Pickpocket targets whose (varying) coins are handed out loose, not in a coin pouch: H.A.M.
-     * members and cave goblins, whose coins are one line of a mixed loot table.
+     * members, cave goblins and Digsite workmen, whose coins are one line of a mixed loot table, and Pollnivneach villagers.
      */
-    public static final java.util.Set<String> LOOSE_COINS = java.util.Set.of("ham_member", "cave_goblin");
+    public static final java.util.Set<String> LOOSE_COINS = java.util.Set.of("ham_member", "cave_goblin", "digsite_workman",
+            "pollnivneach_villager");
 
     /** Pouch key for a pickpocket target id, or null if its coins (if any) are given loose. */
     public static String pouchForNpc(String npcId) {

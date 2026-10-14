@@ -131,7 +131,28 @@ public final class GatheringData extends SkillingPart {
                     Catch.of("infernal_eel", 80, 95.0, 30, 93)), List.of(), 0),
             new Spot("deep_sea_fishing_spot", "Fishing spot (deep sea)", "harpoon", null, List.of(
                     Catch.of("raw_manta_ray", 81, 46.0, 4, 30), Catch.of("raw_sea_turtle", 79, 38.0, 6, 40),
-                    Catch.of("raw_shark", 76, 110.0, 3, 40)), List.of(Loot.of("casket", 1), Loot.of("seaweed", 4)), 4));
+                    Catch.of("raw_shark", 76, 110.0, 3, 40)), List.of(Loot.of("casket", 1), Loot.of("seaweed", 4)), 4),
+            // Minnows (Kylie Minnow's platform, Fishing Guild): small net, 82 Fishing, 26.1 XP per catch of 10-14 minnows
+            // (see minnowsPerCatch). The wiki has no success chart: low/high approx.
+            new Spot("minnow_fishing_spot", "Fishing spot (minnow)", "small_fishing_net", null, List.of(
+                    Catch.of("minnow", 82, 26.1, 150, 256)), List.of(), 0));
+
+    public static final String MINNOW = "minnow";
+    public static final String MINNOW_SPOT = "minnow_fishing_spot";
+    public static final String KYLIE_MINNOW = "kylie_minnow";
+    /** Kylie Minnow trades one raw shark for this many minnows. */
+    public static final int MINNOWS_PER_SHARK = 40;
+
+    /**
+     * Minnows in one catch at a Fishing level (OSRS Wiki: 10 at 82, 11 at 85, 12 at 90, 13 at 95, 14 at 99; the levels
+     * in between are approx).
+     */
+    public static int minnowsPerCatch(int fishing) {
+        if (fishing >= 99) {
+            return 14;
+        }
+        return fishing >= 95 ? 13 : fishing >= 90 ? 12 : fishing >= 85 ? 11 : 10;
+    }
 
     public static Spot spot(String blockId) {
         for (Spot s : SPOTS) {
@@ -170,6 +191,8 @@ public final class GatheringData extends SkillingPart {
         tool(s, "karambwan_vessel", "Karambwan vessel", "pot", 0xA08050, 5);
         tool(s, "oily_fishing_rod", "Oily fishing rod", "rod", 0x4A4A2A, 15);
         simple(s, "raw_karambwanji", "Raw karambwanji", "fish_raw", 0x8AAA5A, 2);
+        simple(s, MINNOW, "Minnow", "fish_raw", 0x9AAAB0, 1).stack(Integer.MAX_VALUE)
+                .examine("A tiny fish. Kylie Minnow swaps forty of them for a raw shark.");
         simple(s, "leaping_trout", "Leaping trout", "fish_raw", 0xC09070, 10);
         simple(s, "leaping_salmon", "Leaping salmon", "fish_raw", 0xE07050, 20);
         simple(s, "leaping_sturgeon", "Leaping sturgeon", "fish_raw", 0x9A8A7A, 40);
@@ -277,6 +300,14 @@ public final class GatheringData extends SkillingPart {
                 PlaceDef.of("zul_andra_shore", "Zul-Andra", 2192, 3058, PlaceDef.Style.CAMP, List.of("sacred_eel_fishing_spot", "sacred_eel_fishing_spot")),
                 PlaceDef.of("mor_ul_rek_eels", "Infernal eel fishing", 2858, 3190, PlaceDef.Style.CAVE,
                         List.of("infernal_eel_fishing_spot", "infernal_eel_fishing_spot")),
-                PlaceDef.of("fishing_platform_deep_sea", "Deep sea fishing", 2770, 3290, PlaceDef.Style.NONE, List.of()));
+                PlaceDef.of("fishing_platform_deep_sea", "Deep sea fishing", 2770, 3290, PlaceDef.Style.NONE, List.of()),
+                // Kylie Minnow on her platform at the Fishing Guild (cache tile 2614, 3446).
+                PlaceDef.of("kylie_minnow_platform", "Kylie Minnow's platform", 2614, 3446, PlaceDef.Style.NONE, List.of()));
+    }
+
+    @Override
+    public List<com.runecraft.osrs.content.NpcDef> npcs() {
+        return List.of(com.runecraft.osrs.content.NpcDef.of(KYLIE_MINNOW, "Kylie Minnow", "kylie_minnow_platform", 0, 0,
+                0xE0B890, 0x3A6A8A, 0x4A5A3A, 0x3A6A8A));
     }
 }

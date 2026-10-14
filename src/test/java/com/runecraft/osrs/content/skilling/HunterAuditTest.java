@@ -207,7 +207,7 @@ class HunterAuditTest {
                 return true;
             }
         }
-        return GatheringData.spot(id) != null;
+        return GatheringData.spot(id) != null || MiningData.rock(id) != null || id.equals(AerialFishing.SPOT);
     }
 
     @Test
