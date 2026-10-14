@@ -5,10 +5,13 @@ import com.runecraft.content.minigames.MinigameManager;
 import com.runecraft.content.minigames.MinigameSession;
 import com.runecraft.content.minigames.RewardShopService;
 import com.runecraft.content.minigames.games.BarbarianAssaultSession;
+import com.runecraft.content.minigames.games.ColosseumSession;
 import com.runecraft.content.minigames.games.NightmareZoneSession;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.SkillSet;
+import com.runecraft.osrs.content.bosses.ColosseumRewards;
 import com.runecraft.osrs.content.minigames.BaGambles;
+import com.runecraft.osrs.content.minigames.FortisColosseum;
 import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameCurrencies;
 import com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone;
@@ -51,6 +54,8 @@ final class MinigameRewardChecks {
         checks.add(new SelfTest.Check("minigame:spoils_of_war", g::spoils));
         checks.add(new SelfTest.Check("minigame:blighted_supplies", g::blighted));
         checks.add(new SelfTest.Check("minigame:gauntlet_run", g::gauntlet));
+        checks.add(new SelfTest.Check("minigame:colosseum_cash_out", g::colosseumCashOut));
+        checks.add(new SelfTest.Check("minigame:colosseum_waves", g::colosseumWaves));
         return checks;
     }
 
@@ -228,6 +233,101 @@ final class MinigameRewardChecks {
             throw failure("the spoils of war contained nothing");
         }
         return "opened into " + slots + " stack(s)";
+    }
+
+    private ColosseumSession colosseum() {
+        MinigameSession s = MinigameManager.selfTestStart(Minigame.FORTIS_COLOSSEUM, Minigame.FORTIS_COLOSSEUM.entranceBlock(), p());
+        if (!(s instanceof ColosseumSession c)) {
+            s.end(false);
+            throw failure("the Fortis Colosseum did not start a ColosseumSession");
+        }
+        return c;
+    }
+
+    /** Clears the current wave and ticks until the next modifier choice. */
+    private void clearWave(ColosseumSession c, int wave) {
+        c.clearWaveForTest();
+        for (int i = 0; i < 12 && !c.choosing() && !c.isEnded(); i++) {
+            MinigameManager.selfTestTick(c);
+            c.clearWaveForTest();
+            this.c.heal();
+        }
+        if (!c.choosing()) {
+            throw failure("wave " + wave + " did not complete after its monsters died");
+        }
+    }
+
+    private String colosseumCashOut() {
+        ColosseumSession c = colosseum();
+        try {
+            List<FortisColosseum.Modifier> first = c.offers().stream().map(FortisColosseum.Offer::modifier).toList();
+            if (!first.equals(FortisColosseum.FIRST_OFFER)) {
+                throw failure("first offers " + first + " (expected Relentless, Blasphemy, Frailty)");
+            }
+            if (!c.pick(p(), 2)) {
+                throw failure("could not pick Blasphemy");
+            }
+            for (int i = 0; i < 10 && c.wave() == 0; i++) {
+                MinigameManager.selfTestTick(c);
+            }
+            int expected = FortisColosseum.startingMonsters(1, c.modifiers(), new java.util.Random()).size();
+            if (c.wave() != 1 || c.monstersAlive() != expected) {
+                throw failure("wave " + c.wave() + " with " + c.monstersAlive() + " monsters (expected wave 1 with " + expected + ")");
+            }
+            clearWave(c, 1);
+            if (!c.chest().equals(List.of(new ColosseumRewards.Reward(ColosseumRewards.SPLINTERS, 80)))) {
+                throw failure("chest after wave 1: " + c.chest());
+            }
+            if (c.offers().size() != 3) {
+                throw failure(c.offers().size() + " modifiers offered before wave 2");
+            }
+            int before = Inv.count(p(), ColosseumRewards.SPLINTERS);
+            if (!c.cashOut(p())) {
+                throw failure("cashing out between waves was refused");
+            }
+            int got = Inv.count(p(), ColosseumRewards.SPLINTERS) - before;
+            if (got != 80) {
+                throw failure("cashing out gave " + got + " sunfire splinters (expected 80)");
+            }
+        } finally {
+            c.end(false);
+        }
+        return "first offer Relentless/Blasphemy/Frailty, wave 1 cleared, 80 splinters claimed";
+    }
+
+    private String colosseumWaves() {
+        ColosseumSession c = colosseum();
+        List<String> seen = new ArrayList<>();
+        try {
+            for (int wave = 1; wave < FortisColosseum.WAVES; wave++) {
+                if (!c.pick(p(), 1)) {
+                    throw failure("no modifier to pick before wave " + wave);
+                }
+                c.startWave();
+                if (c.monstersAlive() < FortisColosseum.wave(wave).monsters().size()) {
+                    throw failure("wave " + wave + " spawned " + c.monstersAlive() + " of " + FortisColosseum.wave(wave).monsters());
+                }
+                clearWave(c, wave);
+            }
+            c.modifiers().forEach((m, t) -> seen.add(m.label(t)));
+            if (!c.pick(p(), 1)) {
+                throw failure("no modifier to pick before wave 12");
+            }
+            c.startWave();
+            if (c.monstersAlive() != 1) {
+                throw failure("wave 12 has " + c.monstersAlive() + " monsters (expected Sol Heredit alone)");
+            }
+            for (int i = 0; i < 5; i++) {
+                MinigameManager.selfTestTick(c);
+                this.c.heal();
+            }
+            if (c.chest().isEmpty()) {
+                throw failure("the chest is empty after 11 waves");
+            }
+        } finally {
+            c.end(false);
+        }
+        return "11 waves cleared, Sol Heredit spawned on wave 12; modifiers " + String.join(", ", seen);
     }
 
     private String blighted() {

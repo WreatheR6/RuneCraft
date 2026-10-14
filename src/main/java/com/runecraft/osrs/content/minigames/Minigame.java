@@ -97,11 +97,18 @@ public enum Minigame {
             EmirsArena.ENTRANCE_Y, PlaceDef.Style.NONE, 30, 2, null, 0),
     /**
      * The Gauntlet and the Corrupted Gauntlet (see {@link Gauntlet}): solo runs through a maze generated per run, entered from
-     * the Gauntlet plaza in north-west Prifddinas (style NONE: the city structure builds the plaza). Appended last: arena slots
+     * the Gauntlet plaza in north-west Prifddinas (style NONE: the city structure builds the plaza). Appended after Emir's Arena: arena slots
      * use the ordinal.
      */
     GAUNTLET("gauntlet", "The Gauntlet", Gauntlet.PLACE, Gauntlet.MAZE_X, Gauntlet.MAZE_Y, Gauntlet.ENTRANCE_X, Gauntlet.ENTRANCE_Y,
-            PlaceDef.Style.NONE, 0, 1, null, 0);
+            PlaceDef.Style.NONE, 0, 1, null, 0),
+    /**
+     * The Fortis Colosseum (see {@link FortisColosseum}): twelve waves ending with Sol Heredit, entered beside the Colosseum's
+     * west gate in Civitas illa Fortis (style NONE: the Colosseum is built by the zeah module). Needs Children of the Sun
+     * (checked by the manager). Appended last: arena slots use the ordinal.
+     */
+    FORTIS_COLOSSEUM("fortis_colosseum", "Fortis Colosseum", FortisColosseum.PLACE, FortisColosseum.ARENA_X, FortisColosseum.ARENA_Y,
+            FortisColosseum.ENTRANCE_X, FortisColosseum.ENTRANCE_Y, PlaceDef.Style.NONE, 0, 1, null, 0);
 
     private final String id;
     private final String displayName;

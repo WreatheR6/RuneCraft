@@ -1,0 +1,12 @@
+# Fortis Colosseum monsters (weirdgloop/osrs-dps-calc cdn/json/monsters.json).
+# name	level	hp	atk	str	def	magic	ranged	speed	dStab	dSlash	dCrush	dMagic	dRanged	aMelee	aMagic	aRanged	max_hit	size
+Fremennik warband berserker	103	48	110	110	80	110	110	6	50	50	50	0	75	150	150	0	29	1
+Fremennik warband archer	104	50	110	110	80	110	110	6	0	0	0	75	50	150	150	150	14	1
+Fremennik warband seer	104	50	110	110	80	110	110	6	50	50	50	30	0	0	150	0	12	1
+Serpent shaman	161	125	100	90	90	220	160	5	30	30	30	15	50	0	50	0	28	1
+Jaguar warrior	234	125	200	330	125	100	160	5	30	30	30	15	45	0	0	0	47 (x3)	2
+Javelin Colossus	278	220	200	300	190	225	360	5	15	15	15	20	30	0	0	25	48	3
+Manticore	320	250	300	300	250	300	350	10	0	0	0	10	25	0	0	0	31 (Melee)	3
+Shockwave Colossus	239	125	120	190	150	350	220	5	15	15	15	5	35	0	55	0	56	3
+Minotaur (Fortis Colosseum)	318	225	300	360	190	250	120	5	0	0	0	0	12	15	0	0	74	3
+Sol Heredit	1563	1500	350	400	200	300	350	0	65	5	30	750	825	250	0	150	44 (Typeless AOE)	5

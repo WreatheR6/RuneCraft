@@ -79,6 +79,17 @@ public final class MinigamesHooks implements ModuleHooks {
         // TzHaar-Ket-Rak and his scoreboard.
         QuestScripts.onTalk("mg_tzhaar_ket_rak", (player, npc) -> ketRak(player));
         BlockHooks.register(MinigameWorld.KET_RAK_SCOREBOARD, (player, pos, state) -> ketRakScoreboard(player));
+        // The Fortis Colosseum: its combat hooks, scoreboard, Minimus (the zeah module's NPC) and Sol Heredit's stone, which
+        // only points the way (in OSRS Sol Heredit is fought only as the Colosseum's twelfth wave).
+        com.runecraft.content.minigames.games.ColosseumSession.register();
+        BlockHooks.register(com.runecraft.osrs.content.minigames.FortisColosseum.SCOREBOARD, (player, pos, state) ->
+                com.runecraft.content.minigames.games.ColosseumSession.scoreboard(player));
+        QuestScripts.onTalk(com.runecraft.osrs.content.minigames.FortisColosseum.MINIMUS, (player, npc) ->
+                com.runecraft.content.minigames.games.ColosseumSession.minimus(player));
+        com.runecraft.boss.DataBossService.requirement(com.runecraft.osrs.content.minigames.FortisColosseum.SOL_HEREDIT, (player, def) -> {
+            Msg.game(player, "Sol Heredit only fights at the end of the Fortis Colosseum. Enter the Colosseum by its west gate.");
+            return false;
+        });
         for (Map.Entry<String, Minigame> e : MinigameWorld.EXTRA_ENTRANCES.entrySet()) {
             BlockHooks.register(e.getKey(), (player, pos, state) -> MinigameManager.enter(player, e.getValue(), e.getKey()));
         }
@@ -180,6 +191,32 @@ public final class MinigamesHooks implements ModuleHooks {
                             }
                             return 1;
                         }))
+                        .then(CommandManager.literal("colosseum")
+                                .then(CommandManager.literal("pick").then(CommandManager.argument("choice", IntegerArgumentType.integer(1, 3))
+                                        .executes(ctx -> {
+                                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                            if (p != null && MinigameManager.session(p)
+                                                    instanceof com.runecraft.content.minigames.games.ColosseumSession c) {
+                                                c.pick(p, IntegerArgumentType.getInteger(ctx, "choice"));
+                                            }
+                                            return 1;
+                                        })))
+                                .then(CommandManager.literal("leave").executes(ctx -> {
+                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    if (p != null && MinigameManager.session(p) instanceof com.runecraft.content.minigames.games.ColosseumSession c) {
+                                        c.cashOut(p);
+                                    }
+                                    return 1;
+                                }))
+                                .then(CommandManager.literal("quiver").then(CommandManager.argument("for", StringArgumentType.word())
+                                        .executes(ctx -> {
+                                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                            if (p != null) {
+                                                com.runecraft.content.minigames.games.ColosseumSession.tradeQuiver(p,
+                                                        StringArgumentType.getString(ctx, "for").equals("pet"));
+                                            }
+                                            return 1;
+                                        }))))
                         .then(CommandManager.literal("trek").then(CommandManager.argument("follower", StringArgumentType.word())
                                 .then(CommandManager.argument("route", IntegerArgumentType.integer(1, 3)).executes(ctx -> {
                                     ServerPlayerEntity p = ctx.getSource().getPlayer();

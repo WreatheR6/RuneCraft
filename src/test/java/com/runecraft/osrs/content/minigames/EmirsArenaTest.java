@@ -21,7 +21,8 @@ class EmirsArenaTest {
     void minigameIsAppendedLastAndEnteredInAlKharid() {
         Minigame[] all = Minigame.values();
         assertEquals(Minigame.EMIRS_ARENA.ordinal() + 1, Minigame.GAUNTLET.ordinal());
-        assertEquals(Minigame.GAUNTLET, all[all.length - 1]);
+        assertEquals(Minigame.GAUNTLET.ordinal() + 1, Minigame.FORTIS_COLOSSEUM.ordinal());
+        assertEquals(Minigame.FORTIS_COLOSSEUM, all[all.length - 1]);
         assertEquals(2, Minigame.EMIRS_ARENA.maxPlayers());
         assertTrue(EmirsArena.inArena(Minigame.EMIRS_ARENA.entranceX(), Minigame.EMIRS_ARENA.entranceY()));
         // The ring of dueling's Emir's Arena teleport lands inside the arena grounds.

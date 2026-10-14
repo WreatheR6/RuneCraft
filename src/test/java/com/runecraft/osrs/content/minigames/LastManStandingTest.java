@@ -21,7 +21,8 @@ class LastManStandingTest {
         Minigame[] all = Minigame.values();
         assertEquals(Minigame.LAST_MAN_STANDING.ordinal() + 1, Minigame.EMIRS_ARENA.ordinal());
         assertEquals(Minigame.EMIRS_ARENA.ordinal() + 1, Minigame.GAUNTLET.ordinal());
-        assertEquals(Minigame.GAUNTLET, all[all.length - 1]);
+        assertEquals(Minigame.GAUNTLET.ordinal() + 1, Minigame.FORTIS_COLOSSEUM.ordinal());
+        assertEquals(Minigame.FORTIS_COLOSSEUM, all[all.length - 1]);
         assertEquals(3142, Minigame.LAST_MAN_STANDING.entranceX());
         assertEquals(3636, Minigame.LAST_MAN_STANDING.entranceY());
         assertEquals(24, Minigame.LAST_MAN_STANDING.maxPlayers());

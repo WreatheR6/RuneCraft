@@ -39,6 +39,7 @@ public final class MinigamesContent implements ContentModule {
     public List<MonsterDef> monsters() {
         List<MonsterDef> list = new java.util.ArrayList<>(MinigameMonsters.monsters());
         list.addAll(Gauntlet.monsters());
+        list.addAll(FortisColosseum.monsters());
         return list;
     }
 

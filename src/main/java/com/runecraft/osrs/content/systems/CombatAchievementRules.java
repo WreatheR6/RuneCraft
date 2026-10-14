@@ -741,6 +741,13 @@ public final class CombatAchievementRules {
             369;RUN;mg:tzhaar_ket_rak;1;stage=3 flag=noinv
             370;RUN;mg:tzhaar_ket_rak;1;stage=6 flag=fluke
             371;RUN;mg:tzhaar_ket_rak;1;stage=3 flag=multistyle
+            548;RULE;kill:jaguar warrior;1;finishspec finish=*claws
+            542;RUN;mg:fortis_colosseum;1;stage=4 flag=nomanticoredmg
+            545;RUN;mg:fortis_colosseum;1;stage=7 flag=nominotaurheal
+            546;RUN;mg:fortis_colosseum;1;stage=11 flag=oneoff
+            547;RUN;mg:fortis_colosseum;1;stage=12 flag=reinforcements
+            549;RUN;mg:fortis_colosseum;1;stage=12 flag=total28
+            550;RUN;mg:fortis_colosseum;1;stage=12 flag=total24
             149;RUN;mg:fight_caves;1;offprayerhitby=tztok-jad
             152;RUN;mg:fight_caves;1;noattacker=tz-kih
             153;RUN;mg:fight_caves;1;style=melee
