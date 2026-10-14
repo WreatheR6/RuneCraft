@@ -61,17 +61,22 @@ final class AsgarniaTowns {
             k.s(q[2] + 1, -1, z, mc("spruce_planks"));
             k.f(q[2] + 1, -8, z, q[2] + 1, -2, z, mc("spruce_log[axis=y]"));
         }
-        // wharf at the landing square and piers
-        k.pier(3028, 3200, 3032, 3212, mc("spruce_planks"), mc("spruce_fence"));
-        k.pier(3028, 3188, 3050, 3189, mc("spruce_planks"), mc("spruce_fence"));
-        k.pier(3028, 3216, 3048, 3218, mc("spruce_planks"), mc("spruce_fence"));
-        k.pier(3028, 3226, 3044, 3227, mc("spruce_planks"), mc("spruce_fence"));
-        // ships: Karamja ship, the monks' ship to Entrana and a merchant ship
-        k.ship(bx(3031), bz(3221), 30, 3, true, 1, 2, mc("dark_oak_planks"), mc("spruce_planks"), mc("white_wool"));
-        k.ship(bx(3030), bz(3231), 26, 3, true, 1, 2, mc("spruce_planks"), mc("birch_planks"), mc("yellow_wool"));
-        k.ship(bx(3031), bz(3185), 34, 3, true, 1, 3, mc("dark_oak_planks"), mc("spruce_planks"), mc("light_gray_wool"));
-        k.rowboat(bx(3033), bz(3214), true);
-        k.rowboat(bx(3036), bz(3193), true);
+        // the OSRS docks (mejrs layers_osrs map, gangplanks from shortest-path): the quay 3026-3029 from 3201
+        // to 3240 with its wide landing (3215-3221), and three piers east: 3202-3205, 3234-3237 and the
+        // south pier 3191-3194 reached by a walkway at 3030-3032
+        k.pier(3028, 3201, 3029, 3240, mc("spruce_planks"), mc("spruce_fence"));
+        k.pier(3028, 3215, 3030, 3221, mc("spruce_planks"), mc("spruce_fence"));
+        k.pier(3030, 3202, 3050, 3205, mc("spruce_planks"), mc("spruce_fence"));
+        k.pier(3030, 3195, 3032, 3201, mc("spruce_planks"), mc("spruce_fence"));
+        k.pier(3027, 3191, 3050, 3194, mc("spruce_planks"), mc("spruce_fence"));
+        k.pier(3030, 3234, 3052, 3237, mc("spruce_planks"), mc("spruce_fence"));
+        // ships at their gangplanks: the Karamja ship off the landing (3032,3217), the monks' ship to
+        // Entrana south of the north pier (3048,3231) and a merchant ship south of the south pier (3038,3189)
+        k.ship(bx(3031), bz(3217) + 1, 26, 3, true, 1, 2, mc("dark_oak_planks"), mc("spruce_planks"), mc("white_wool"));
+        k.ship(bx(3036), bz(3230) + 1, 28, 3, true, 1, 2, mc("spruce_planks"), mc("birch_planks"), mc("yellow_wool"));
+        k.ship(bx(3029), bz(3188) + 1, 32, 3, true, 1, 3, mc("dark_oak_planks"), mc("spruce_planks"), mc("light_gray_wool"));
+        k.rowboat(bx(3034), bz(3210), true);
+        k.rowboat(bx(3036), bz(3225), true);
         // crates and barrels along the quay
         for (int y = 3176; y < 3238; y += 7) {
             k.st(3025, y, 0, mc("barrel[facing=up]"));
@@ -84,28 +89,55 @@ final class AsgarniaTowns {
             k.st(3024, y, 2, mc("lantern"));
         }
 
-        // jail with its exercise yard
-        AsgarniaRoom jail = k.house(SARIM_STONE, 3012, 3178, 3019, 3190, 1, "east", FLAT);
-        for (int u = 1; u < jail.len(); u += 4) {
-            jail.fill(u, 0, u, 2, 0, 2, mc("iron_bars"));
-            jail.set(u + 1, 0, 0, mc("white_carpet"));
-            jail.set(u + 2, 0, 0, mc("cauldron"));
+        // jail as on the OSRS map: an L of stone, 3010-3016 x 3179-3196 with the east wing 3017-3020 x 3179-3190;
+        // three cells along the south (3179-3181), three cells up the north-west (3188-3196) opening west
+        // onto the corridor, the hall 3182-3187 with the guards' room 3017-3020 x 3188-3190; door north at 3011
+        String jw = SARIM_STONE.wall();
+        k.house(SARIM_STONE, 3010, 3179, 3016, 3196, 1, "north", FLAT);
+        k.house(SARIM_STONE, 3017, 3179, 3020, 3190, 1, "east", FLAT);
+        k.f(bx(3011), 0, bz(3196), bx(3015) + 1, 2, bz(3196), jw);
+        k.f(bx(3020) + 1, 0, bz(3189), bx(3020) + 1, 2, bz(3180) + 1, jw);
+        k.c(bx(3011), 0, bz(3196), bx(3011) + 1, 2, bz(3196));
+        k.s(bx(3011), 0, bz(3196), mc("spruce_door[facing=south,half=lower,hinge=left,open=false]"));
+        k.s(bx(3011), 1, bz(3196), mc("spruce_door[facing=south,half=upper,hinge=left,open=false]"));
+        k.c(bx(3016) + 1, 0, bz(3187), bx(3017), 2, bz(3182) + 1);
+        // south cells: stone side walls, barred fronts with an open gate each
+        k.f(bx(3010) + 1, 0, bz(3181), bx(3020), 2, bz(3181), mc("iron_bars"));
+        k.f(bx(3013), 0, bz(3181) + 1, bx(3013), 2, bz(3179) + 1, jw);
+        k.f(bx(3017), 0, bz(3181) + 1, bx(3017), 2, bz(3179) + 1, jw);
+        for (int cell : new int[]{3011, 3014, 3018}) {
+            k.c(bx(cell), 0, bz(3181), bx(cell), 1, bz(3181));
+            k.st(cell + 1, 3179, 0, mc("hay_block"));
         }
-        jail.fill(1, 3, jail.len() - 1, 3, 0, 2, mc("iron_bars"));
-        jail.fill(jail.len() / 2 - 1, 3, jail.len() / 2, 3, 0, 1, mc("air"));
-        jail.table(jail.len() / 2, jail.depth() - 3, "spruce");
-        k.floor(3006, 3178, 3011, 3187, mc("coarse_dirt"));
-        int[] yard = rect(3006, 3178, 3011, 3187);
-        k.w(yard[0], 0, yard[1], yard[2], 2, yard[3], mc("iron_bars"));
-        k.clearT(3008, 3187, 3009, 3187, 0, 2);
-        k.st(3007, 3180, 0, mc("hay_block"));
+        // north-west cells off the corridor (3010-3012)
+        k.f(bx(3013), 0, bz(3196) + 1, bx(3013), 2, bz(3188) + 1, mc("iron_bars"));
+        k.f(bx(3013) + 1, 0, bz(3194) + 1, bx(3016) + 1, 2, bz(3194) + 1, jw);
+        k.f(bx(3013) + 1, 0, bz(3191) + 1, bx(3016) + 1, 2, bz(3191) + 1, jw);
+        for (int cell : new int[]{3195, 3192, 3189}) {
+            k.c(bx(3013), 0, bz(cell), bx(3013), 1, bz(cell));
+            k.st(3016, cell, 0, mc("hay_block"));
+        }
+        // the wall between the hall and the north rooms, with the guards' room door at 3018
+        k.f(bx(3013), 0, bz(3188) + 1, bx(3020), 2, bz(3188) + 1, jw);
+        k.c(bx(3018), 0, bz(3188) + 1, bx(3018), 1, bz(3188) + 1);
+        k.st(3020, 3190, 0, mc("chest[facing=west]"));
+        k.st(3019, 3190, 0, mc("barrel[facing=up]"));
+        k.st(3016, 3184, 0, mc("spruce_fence"));
+        k.st(3016, 3184, 1, mc("spruce_pressure_plate"));
+        k.st(3011, 3184, 0, mc("cauldron"));
         // west row of shops and houses
-        k.house(TIMBER, 3011, 3192, 3017, 3198, 1, "east", PITCHED).home("spruce", "brown");
-        AsgarniaRoom wydin = k.house(TIMBER, 3011, 3201, 3018, 3208, 1, "east", PITCHED);
+        // Wydin's Food Store (OSRS 3009-3016 x 3203-3210): the shop with the ladder up, and the back room
+        // 3009-3011 behind its own door at 3204 (the north-east wall is a diagonal in OSRS // approx)
+        AsgarniaRoom wydin = k.house(TIMBER, 3009, 3203, 3016, 3210, 2, "east", PITCHED);
         wydin.shop(rc("general_store"), mc("spruce_slab[type=top]"), mc("barrel[facing=up]"), mc("hay_block"),
                 mc("melon"), mc("pumpkin"));
         wydin.set(1, wydin.depth() - 1, 0, mc("cake"));
         wydin.set(wydin.len() - 1, wydin.depth() - 1, 0, mc("chest[facing=west]"));
+        k.f(bx(3012), 0, bz(3210) + 1, bx(3012), 2, bz(3203), TIMBER.wall());
+        k.c(bx(3012), 0, bz(3204), bx(3012), 2, bz(3204));
+        k.st(3009, 3210, 0, mc("barrel[facing=up]"));
+        k.st(3010, 3210, 0, mc("barrel[facing=up]"));
+        k.st(3009, 3209, 0, mc("hay_block"));
         k.house(TIMBER2, 3011, 3211, 3017, 3217, 2, "east", PITCHED).home("oak", "blue");
         AsgarniaRoom gerrant = k.house(TIMBER, 3011, 3220, 3018, 3227, 1, "east", PITCHED);
         gerrant.shop(rc("tool_shop"), mc("spruce_slab[type=top]"), mc("barrel[facing=up]"), mc("cobweb"),
@@ -118,7 +150,13 @@ final class AsgarniaTowns {
         AsgarniaRoom brian = k.house(TIMBER, 3025, 3244, 3031, 3250, 1, "west", PITCHED);
         brian.shop(rc("weapon_shop"), mc("spruce_slab[type=top]"), mc("grindstone[face=floor,facing=north]"),
                 mc("barrel[facing=up]"), mc("iron_block"));
-        AsgarniaRoom betty = k.house(TIMBER2, 3011, 3255, 3017, 3261, 1, "east", PITCHED);
+        // Betty's Magic Emporium (OSRS 3011-3016 x 3256-3261) with its chequered floor
+        AsgarniaRoom betty = k.house(TIMBER2, 3011, 3256, 3016, 3261, 1, "east", PITCHED);
+        for (int x = bx(3011) + 1; x <= bx(3016); x++) {
+            for (int z = bz(3261) + 1; z <= bz(3256); z++) {
+                k.s(x, -1, z, (((x >> 1) + (z >> 1)) & 1) == 0 ? mc("black_concrete") : mc("white_concrete"));
+            }
+        }
         betty.shop(rc("rune_shop"), mc("purpur_slab[type=top]"), mc("bookshelf"), mc("brewing_stand"), mc("amethyst_block"));
         betty.fill(1, betty.depth() - 2, betty.len() - 2, betty.depth() - 2, 0, 0, mc("purple_carpet"));
         betty.set(betty.len() - 1, betty.depth() - 1, 0, mc("cauldron"));
