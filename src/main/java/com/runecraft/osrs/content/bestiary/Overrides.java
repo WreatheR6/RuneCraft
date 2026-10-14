@@ -30,6 +30,8 @@ final class Overrides {
         l.addAll(Flagships3.overrides());
         // ---- round 19 re-sculpts of the most commonly met creatures ----
         l.addAll(Common1.overrides());
+        // ---- round 20 re-sculpts, part 2 (shared TzHaar body, wingless demons, slayer creatures) ----
+        l.addAll(Common2.overrides());
         return l;
     }
 }
