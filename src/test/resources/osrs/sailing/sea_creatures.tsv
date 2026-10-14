@@ -1,0 +1,22 @@
+# OSRS Wiki (July 2026 dump, Boat combat + monster pages): name, combat, hitpoints, attack, strength, defence, max hit vs no keel/bronze..dragon keel, attack speed, attack style, aggressive, dlight, dstandard, dheavy, x, y, location
+Dolphin	22	45	25	10	0	2,1,0,0,0,0,0,0	4	SLASH	No	15	15	0	2710	2474	Anglerfish's Light - north-east of Charred Island
+Tern	20	22	25	20	0	3,2,1,0,0,0,0,0	4	STAB	No	30	30	10	3041	3110	Bay of Sarim - south-east of Mudskipper Point
+Eagle ray	44	55	70	1	0	3,2,1,0,0,0,0,0	4	SLASH	No	50	50	20	2754	2228	Anglerfish's Light - south-west of Last Light
+Butterfly ray	68	83	100	35	15	4,3,2,1,0,0,0,0	4	SLASH	No	50	50	20	1334	2861	Dusk's Maw - west of Mistrock
+Bull shark	65	81	80	45	20	5,4,3,2,1,0,0,0	4	SLASH	No	100	20	40	2799	3259	Around Crandor
+Mogre (sea)	54	59	40	50	40	6,5,4,3,2,0,0,0	6	CRUSH	No	0	0	0	2762	2891	Kharazi Strait - south of the Kharazi Jungle
+Osprey	63	72	60	50	40	6,5,4,3,2,0,0,0	4	STAB	No	30	30	10	1890	3403	Around Chinchompa Island
+Stingray	92	106	130	55	25	6,5,4,3,2,0,0,0	4	SLASH	No	50	50	20	2613	2426	The Lonely Sea - west of Charred Island
+Hammerhead shark	90	125	80	65	50	7,6,5,4,3,1,0,0	4	SLASH	Yes	100	20	40	2891	2792	Arrow Passage - north of Crash Island
+Narwhal	111	187	95	65	50	7,6,5,4,3,1,0,0	4	SLASH	No	65	65	40	1838	4056	Everwinter Sea - west of Brittle Isle
+Frigatebird	78	79	80	70	40	8,7,6,5,4,2,0,0	4	STAB	No	30	30	10	2803	2317	Anglerfish's Light - west of Last Light
+Manta ray (monster)	133	194	155	75	40	8,7,6,5,4,2,0,0	4	SLASH	No	50	50	20	1927	2665	The Everdeep - south of Deepfin Point
+Tiger shark	125	174	120	85	60	9,8,7,6,5,3,1,0	4	SLASH	Yes	100	20	40	2691	2356	Anglerfish's Light - south-east of Charred Island
+Pygmy kraken	93	150	1	1	50	10,9,8,7,6,4,2,0	5	MAGIC	Yes	120	75	60	1175	2704	Laguna Aurorae - eastern coastline
+Albatross	110	135	100	90	60	10,9,8,7,6,4,2,0	4	STAB	No	20	25	10	2929	2372	Anglerfish's Light - north-east of Last Light
+Orca	205	370	165	125	75	13,12,11,10,9,7,5,3	4	SLASH	No	150	60	40	2269	3714	Fremennik Strait - south-west of Neitiznot
+Spined kraken	128	177	1	1	75	14,13,12,11,10,8,6,4	5	MAGIC	Yes	120	75	60	1296	2611	Calidum Reach - south-east of Laguna Aurorae
+Great white shark	175	243	155	145	70	15,14,13,12,11,9,7,5	4	SLASH	Yes	100	20	40	1116	2810	Dusk's Maw - north-west of Laguna Aurorae
+Armoured kraken	180	231	1	1	150	18,17,16,15,14,12,10,8	5	MAGIC	Yes	175	125	125	2019	3261	Crystal Sea - south-east of Port Roberts
+Veiled kraken	210	225	200	185	115	19,18,17,16,15,13,11,9	5	CRUSH	Yes	325	325	0	2308	2164	South of Rainbow's End
+Vampyre kraken	211	311	1	1	115	22,21,20,19,18,16,14,12	5	MAGIC	Yes	120	75	60	1890	4145	Everwinter Sea - north of Brittle Isle

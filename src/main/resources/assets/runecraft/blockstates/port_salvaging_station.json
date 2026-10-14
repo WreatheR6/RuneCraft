@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "runecraft:block/module/port_salvaging_station"
+    }
+  }
+}

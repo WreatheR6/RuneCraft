@@ -116,6 +116,7 @@ final class GameplayChecks {
         // Items, combat and interactions (after the teleports, which generate the spell destinations' chunks).
         checks.addAll(ItemCombatChecks.all(context));
         checks.addAll(CannonChecks.all(context));
+        checks.addAll(SeaChecks.all(context));
         return checks;
     }
 

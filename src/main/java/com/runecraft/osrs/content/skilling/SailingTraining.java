@@ -372,7 +372,7 @@ public final class SailingTraining {
             new Facility("inoculation_station", "Inoculation station", 40, 37, 765, mats("teak_plank", 8, "steel_nails", 32,
                     "relicyms_balm", 6), "Protects against fetid waters; needed for the Jubbly Jive."),
             new Facility("salvaging_station", "Salvaging station", 42, 34, 366, mats("teak_plank", 4, "steel_nails", 16),
-                    "Sort salvage at sea (no extra effect in RuneCraft yet)."),
+                    "Sort salvage at sea, on or next to your boat."),
             new Facility("rope_trawling_net", "Rope trawling net", 56, 45, 458, mats("rope", 7, "teak_plank", 4, "steel_bar", 4,
                     "lead_bar", 2), "Trawls shallow shoals."),
             // Yarns are bolts of the same fabric and ray barbs are left out (approx).

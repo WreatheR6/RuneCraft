@@ -92,6 +92,8 @@ final class ItemHooks {
         RunecraftData.POUCHES.forEach(p -> HANDLED.add(p.id()));
         SailingData.BOATS.forEach(b -> HANDLED.add(b.kit()));
         SailingData.WRECKS.forEach(w -> HANDLED.add(w.salvage()));
+        com.runecraft.osrs.content.skilling.SailingSea.BALLS.stream().filter(b -> !b.item().equals("cannonball")
+                && !b.item().equals("granite_cannonball")).forEach(b -> HANDLED.add(b.item()));
         HANDLED.addAll(FletchingData.THROWN);
         PrayerData.ASHES.forEach(a -> HANDLED.add(a.id()));
         com.runecraft.osrs.data.Thieving.COIN_POUCHES.forEach(p -> HANDLED.add(p.itemId()));
@@ -183,10 +185,10 @@ final class ItemHooks {
         }
         SailingData.Wreck wreck = SailingData.wreckBySalvage(id);
         if (wreck != null) {
-            stack.decrement(1);
-            Loot l = SkillingUtil.roll(player, wreck.loot(), player.getRandom());
-            XpService.add(player, Skill.SAILING, wreck.sortXp()); // OSRS: sorting salvage gives Sailing XP
-            Msg.action(player, "You sort through the salvage" + (l == null ? "." : " and find " + SkillingUtil.lower(SkillingUtil.name(l.item())) + "."));
+            SeaHooks.sort(player, stack, wreck); // OSRS: sorted at a salvaging station, wiki loot and Sailing XP
+            return true;
+        }
+        if (com.runecraft.osrs.content.skilling.SailingSea.ball(id) != null && SeaHooks.useCannonball(player, id)) {
             return true;
         }
         if (FletchingData.THROWN.contains(id)) {

@@ -439,6 +439,9 @@ public final class SpawnTable {
             for (String id : List.of("flight_kilisa", "wingman_skree", "flockleader_geerin", "starlight", "growler", "bree")) {
                 m.put(id, "God Wars general's bodyguard");
             }
+            for (com.runecraft.osrs.content.skilling.SailingSea.SeaCreature c : com.runecraft.osrs.content.skilling.SailingSea.CREATURES) {
+                m.put(c.id(), "sea creature: spawned at sea around Sailing boats");
+            }
             m.put("blood_reaver", "minion of nex");
             m.put("skeleton_hellhound", "minion of vetion");
             m.put("greater_skeleton_hellhound", "minion of vetion");
