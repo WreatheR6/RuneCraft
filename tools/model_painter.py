@@ -489,17 +489,61 @@ def m_wool(c):
     return tone(base, shade), None
 
 
+def m_crystal(c):
+    """Cut crystal: diagonal facets with a bright leading edge and a pale glint (Olm's crystals, Zalcano)."""
+    base = col_arr(c.base, c.shape)
+    a = (c.P[0] * 0.8 + c.P[1] * 0.6 + c.P[2] * 0.7)
+    f = (a / 2.2) % 1.0
+    facet = cell(np.stack([np.floor(a / 2.2), c.P[1] * 0, c.P[1] * 0]), 1.0, c.seed) - 0.5
+    shade = facet * 0.5 + np.where(f < 0.12, 0.55, 0) - f * 0.2
+    if c.face == "top":
+        shade = shade + 0.25
+    col = tone(base, shade)
+    return col, None
+
+
+def m_smoke(c):
+    """Billowing smoke: soft swirling puffs, light crowns and dark folds (smoke devils, smoke tails)."""
+    base = col_arr(c.base, c.shape)
+    n = fbm(np.stack([c.P[0] + np.sin(c.P[1] * 0.7) * 1.5, c.P[1], c.P[2] + np.cos(c.P[1] * 0.7) * 1.5]), 3.0, c.seed)
+    puff = cell(c.P, 1.5, c.seed + 4)
+    loc = [(c.P[k] / 1.5) % 1.0 for k in range(3)]
+    r = (loc[0] - 0.5) ** 2 + (loc[2] - 0.5) ** 2 + (loc[1] - 0.35) ** 2
+    crown = (puff > 0.55) & (r < 0.14)
+    shade = (n - 0.5) * 1.0 + np.where(crown, 0.32, 0) - np.where(r > 0.3, 0.12, 0)
+    return tone(base, shade), None
+
+
+def m_spectral(c):
+    """Spectral flesh: a translucent-looking body with a darker core, drifting wisps and an emissive rim
+    of the accent colour along the box edges (Corporeal Beast, wraith-like bosses)."""
+    base = col_arr(c.base, c.shape)
+    rim_c = col_arr(c.accent, c.shape)
+    n = fbm(c.P, 3.0, c.seed) - 0.5
+    wisp = np.sin((c.P[0] * 0.6 + c.P[1] * 0.9 + c.P[2] * 0.5) + n * 5.0)
+    edge = np.minimum(np.minimum(c.s, 1 - c.s) * c.fw, np.minimum(c.t, 1 - c.t) * c.fh)
+    core = np.clip(edge / 3.0, 0, 1)
+    blot = cell(c.P, 2.0, c.seed + 3) - 0.5
+    col = tone(base, n * 0.45 + wisp * 0.12 + blot * 0.16 - core * 0.22)
+    rim = np.clip(1 - edge / 0.5, 0, 1) * (0.55 if c.face in ("top", "front") else 0.35)
+    col = blend(col, rim_c, rim)
+    glow = rim_c * (rim * 0.5)[..., None]
+    return col, glow
+
+
 MATERIALS = {
     "hide": m_hide, "skin": m_skin, "face": m_skin, "rock": m_rock, "scales": m_scales, "plates": m_plates,
     "chitin": m_chitin, "fur": m_fur, "hair": m_hair, "feathers": m_feathers, "cloth": m_cloth,
     "leather": m_leather, "metal": m_metal, "chain": m_chain, "bone": m_bone, "horn": m_horn,
     "membrane": m_membrane, "slime": m_slime, "wood": m_wood, "ghost": m_ghost, "moss": m_moss, "ice": m_ice,
     "flesh": m_flesh, "energy": m_energy, "lava": m_lava, "obsidian": m_rock, "patches": m_patches, "wool": m_wool,
+    "crystal": m_crystal, "smoke": m_smoke, "spectral": m_spectral,
 }
 
 # How strongly each material keeps the generic bevel/AO lighting (cloth and fur are soft; metal is crisp).
 BEVEL = {"metal": 1.3, "rock": 1.2, "chitin": 1.1, "cloth": 0.6, "fur": 0.7, "hair": 0.6, "ghost": 0.5,
-         "energy": 0.3, "lava": 0.6, "slime": 0.6}
+         "energy": 0.3, "lava": 0.6, "slime": 0.6,
+         "crystal": 1.4, "smoke": 0.4, "spectral": 0.5}
 
 
 # ----------------------------------------------------------------------------------------------
@@ -805,6 +849,31 @@ def paint_box(arr, glow, model_id, part, bi, box, R, material, eyes_mode, light=
             col = np.where(crack[..., None], core, np.where(edge[..., None], blend(col, hot, 0.45), col))
             gcr = np.where(crack[..., None], core, np.where(edge[..., None], hot * 0.35, 0))
             gl = gcr if gl is None else np.maximum(gl, gcr)
+        if glow_mode == "spots":
+            # scattered glowing eyes/pores of the accent colour (Nightmare's eyes, Kraken's photophores)
+            q = cell(P, 1.6, pseed + 13)
+            loc = [(P[k] / 1.6) % 1.0 for k in range(3)]
+            r = sum((loc[k] - 0.5) ** 2 for k in range(3))
+            spot = (q > 0.72) & (r < 0.07)
+            hot = np.array(accent, dtype=np.float64)
+            ring = (q > 0.72) & (r >= 0.07) & (r < 0.13)
+            col = np.where(spot[..., None], hot * 0.8, np.where(ring[..., None], col * 0.45, col))
+            gs = np.where(spot[..., None], hot * 0.6, 0)
+            gl = gs if gl is None else np.maximum(gl, gs)
+        if glow_mode == "rim":
+            # emissive outline along every box edge (spectral or charged parts)
+            edge = np.minimum(np.minimum(c.s, 1 - c.s) * c.fw, np.minimum(c.t, 1 - c.t) * c.fh)
+            rim = np.clip(1 - edge / 0.6, 0, 1)
+            hot = np.array(accent, dtype=np.float64)
+            col = blend(col, hot, rim * 0.8)
+            gr = hot * (rim * 0.8)[..., None]
+            gl = gr if gl is None else np.maximum(gl, gr)
+        if glow_mode == "sigil" and face == "front" and fw >= 4 and fh >= 4:
+            sig = sigil_mask(c.s, c.t, fw, fh)
+            hot = np.array(accent, dtype=np.float64)
+            col = np.where(sig[..., None], np.minimum(255, hot * 1.1 + 15), col)
+            gsg = np.where(sig[..., None], hot, 0)
+            gl = gsg if gl is None else np.maximum(gl, gsg)
         if glow_mode == "runes":
             q = cell(P, 2.0, pseed + 5)
             loc = [(P[k] / 2.0) % 1.0 for k in range(3)]
@@ -866,6 +935,19 @@ def paint_box(arr, glow, model_id, part, bi, box, R, material, eyes_mode, light=
                 region[0:R, (fw - 1 - nx) * R:(fw - nx) * R] *= 0.3
             if fh >= 3:
                 region[(fh - 1) * R:fh * R, :] *= 0.5
+
+
+def sigil_mask(s, t, fw, fh):
+    """Corporeal Beast's spirit sigil on a front face: a ring around two upright "nostril" ovals and a
+    short stem (fractional face coords s, t)."""
+    asp = fw / max(1, fh)
+    x = (s - 0.5) * asp * 2
+    y = (t - 0.5) * 2
+    r = np.sqrt(x * x + y * y)
+    ring = (r > 0.62) & (r < 0.78)
+    nos = (((np.abs(x) - 0.22) / 0.13) ** 2 + ((y + 0.05) / 0.32) ** 2) < 1.0
+    stem = (np.abs(x) < 0.07) & (y > 0.3) & (y < 0.62)
+    return ring | nos | stem
 
 
 def dilate(m, r):
