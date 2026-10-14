@@ -255,7 +255,65 @@ public final class MinigameRules {
         private static final int[] HEALER_HP = {27, 32, 37, 43, 49, 55, 60, 67, 76, 60};
         public static final int RUNNER_HP = 5;
 
+        /** Role levels run from 1 to 5; each upgrade is bought with that role's honour points. */
+        public static final int MAX_ROLE_LEVEL = 5;
+        /** Honour points for reaching each level (index = level): 200, 300, 400, 500, 1,400 in all (OSRS Wiki). */
+        private static final int[] LEVEL_COST = {0, 0, 200, 300, 400, 500};
+        /** Healer: hitpoints restored by a heal at each level (10 / 15 / 20 / 25 / 35). */
+        private static final int[] HEALER_HEAL = {0, 10, 15, 20, 25, 35};
+        /** Collector: eggs the collection bag holds at each level (2 / 4 / 6 / 7 / 8). */
+        private static final int[] COLLECTOR_BAG = {0, 2, 4, 6, 7, 8};
+
         private BarbarianAssault() {
+        }
+
+        private static int clampLevel(int level) {
+            return Math.max(1, Math.min(MAX_ROLE_LEVEL, level));
+        }
+
+        /** Honour points needed to buy {@code level} (0 for level 1 or past 5). */
+        public static int levelCost(int level) {
+            return level < 2 || level > MAX_ROLE_LEVEL ? 0 : LEVEL_COST[level];
+        }
+
+        /** Honour points spent to reach {@code level} from level 1. */
+        public static int totalCost(int level) {
+            int sum = 0;
+            for (int l = 2; l <= clampLevel(level); l++) {
+                sum += LEVEL_COST[l];
+            }
+            return sum;
+        }
+
+        public static int healerHeal(int level) {
+            return HEALER_HEAL[clampLevel(level)];
+        }
+
+        public static int collectorBag(int level) {
+            return COLLECTOR_BAG[clampLevel(level)];
+        }
+
+        /** Attacker: +1 to +5 bonus damage. */
+        public static int attackerBonus(int level) {
+            return clampLevel(level);
+        }
+
+        /** Defender: luring range in spaces (4, then 5; the in-game upgrade text beyond level 2 is false). */
+        public static int defenderLure(int level) {
+            return clampLevel(level) == 1 ? 4 : 5;
+        }
+
+        /** Whether every role is at level 5 (the Kandarin elite blackboard task). */
+        public static boolean allMaxed(int[] levels) {
+            if (levels.length < ROLES.length) {
+                return false;
+            }
+            for (int l : levels) {
+                if (l < MAX_ROLE_LEVEL) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         /** Penance per wave: fighters, rangers, runners, healers (approx. of the wiki wave table). */

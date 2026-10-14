@@ -90,7 +90,6 @@ public final class NpcsContent implements ContentModule {
                 .examine("A solid wooden shield.");
         s.add("thread", "Thread", Kind.SIMPLE, "string", 0xE0E0D0).value(1).examine("Use with a needle to make clothes.");
         s.add("candle", "Candle", Kind.SIMPLE, "stake", 0xF0E8C0).value(3).stack(1).examine("A candle.");
-        s.add("machete", "Machete", Kind.TOOL, "scimitar", 0x9A9AA0).value(40).stack(1).examine("An effective tool for chopping tough jungle plants.");
         s.add("kebab", "Kebab", Kind.FOOD, "meat_cooked", 0xC08A4A).value(1).heal(3).examine("A meaty kebab.");
         s.add("waterskin_4", "Waterskin(4)", Kind.SIMPLE, "pot_item", 0x8A6A4A).value(30).stack(1).examine("A full waterskin with four portions of water.");
         s.add("shantay_pass_ticket", "Shantay pass", Kind.SIMPLE, "note", 0xE8D8A0).value(5).examine("Allows you to pass through the Shantay Pass into the Kharidian Desert.");

@@ -96,6 +96,9 @@ public final class RewardShops {
 
         // Barbarian Assault: Commander Connad (honour points of every role; OSRS Wiki). Items marked
         // "Queen" on the wiki also spend one Penance Queen kill; the granite body costs coins only.
+        // Tai Bwo Wannai: Gabooty's Cooperative (trading sticks).
+        TaiBwoWannai.shop(shop(TaiBwoWannai.SHOP, "Gabooty's Tai Bwo Wannai Cooperative"));
+
         RewardShop ba = shop("barbarian_assault", "Commander Connad's Rewards");
         ba.itemMulti("fighter_torso", queen(allRoles(375)));
         ba.itemMulti("penance_gloves", allRoles(150));

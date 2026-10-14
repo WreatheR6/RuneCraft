@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "runecraft:block/module/museum_specimen_rocks"
+  }
+}

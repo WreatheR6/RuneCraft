@@ -475,26 +475,69 @@ class IslandsContentTest {
 
     @Test
     void kingdomManagement() {
-        Kingdom.State s = Kingdom.deposit(Kingdom.State.fresh(), 10_000_000);
-        assertEquals(Kingdom.MAX_COFFER, s.coffer());
+        Kingdom.State s = Kingdom.deposit(Kingdom.State.fresh(), 10_000_000, true);
+        assertEquals(Kingdom.MAX_COFFER_ROYAL_TROUBLE, s.coffer());
+        assertEquals(Kingdom.MAX_COFFER, Kingdom.deposit(Kingdom.State.fresh(), 10_000_000, false).coffer());
         assertEquals(75_000, Kingdom.dailySpend(s.coffer(), true));
         assertEquals(50_000, Kingdom.dailySpend(s.coffer(), false));
         assertEquals(1_000, Kingdom.dailySpend(10_000, true));
-        Kingdom.State full = new Kingdom.State(Kingdom.MAX_COFFER, Kingdom.MAX_APPROVAL, Kingdom.Work.MINING, Map.of());
+        // Wiki: ten workers on maples at 100% approval give 892 logs and 8 nests a day (595 and 5 before Royal Trouble).
+        Kingdom.State full = new Kingdom.State(Kingdom.MAX_COFFER_ROYAL_TROUBLE, Kingdom.MAX_APPROVAL,
+                Map.of(Kingdom.Work.WOODCUTTING, 10), 0, Map.of());
         Kingdom.State day = Kingdom.advance(full, 1, true);
-        assertEquals(Kingdom.MAX_COFFER - 75_000, day.coffer());
-        assertEquals(320, day.stock().get("coal"));
-        assertEquals(Kingdom.MAX_APPROVAL - Kingdom.DAILY_DECAY, day.approval());
+        assertEquals(Kingdom.MAX_COFFER_ROYAL_TROUBLE - 75_000, day.coffer());
+        assertEquals(892, Kingdom.collect(day, true).get("maple_logs"));
+        assertEquals(8, Kingdom.collect(day, true).get("bird_nest"));
+        Kingdom.State pre = Kingdom.advance(full, 1, false);
+        assertEquals(594, Kingdom.collect(pre, false).get("maple_logs")); // wiki 595 (linear scaling)
+        assertEquals(5, Kingdom.collect(pre, false).get("bird_nest"));
+        assertEquals(Kingdom.MAX_APPROVAL - Kingdom.DAILY_DECAY_ROYAL_TROUBLE, day.approval());
+        assertEquals(Kingdom.MAX_APPROVAL - Kingdom.DAILY_DECAY, pre.approval());
+        // The allocation at collection decides the loot: coal 546 a day and its gems (1 + (546-100)/200 = 3).
+        Kingdom.State mining = new Kingdom.State(day.coffer(), day.approval(), Map.of(Kingdom.Work.MINING, 10), day.points(), Map.of());
+        assertEquals(546, Kingdom.collect(mining, true).get("coal"));
+        assertEquals(3, Kingdom.gemsFor(546));
+        assertEquals(0, Kingdom.gemsFor(99));
+        assertEquals(1, Kingdom.gemsFor(299));
+        assertEquals(2, Kingdom.gemsFor(300));
+        // Hardwood: 301 teak, 223 mahogany or 121 + 121; Etceteria labour needs Royal Trouble.
+        Kingdom.State teak = new Kingdom.State(0, 127, Map.of(Kingdom.Work.TEAK, 10), day.points(), Map.of());
+        assertEquals(301, Kingdom.collect(teak, true).get("teak_logs"));
+        assertTrue(Kingdom.collect(teak, false).isEmpty());
+        // Five workers on fishing get half the 440 tuna / 132 swordfish.
+        Kingdom.State fish = new Kingdom.State(0, 127, Map.of(Kingdom.Work.FISHING, 5), day.points(), Map.of());
+        assertEquals(220, Kingdom.collect(fish, true).get("raw_tuna"));
+        assertEquals(66, Kingdom.collect(fish, true).get("raw_swordfish"));
         // Approval never decays below 25% and production scales with it.
-        Kingdom.State month = Kingdom.advance(full, 400, true);
-        assertEquals(Kingdom.MIN_APPROVAL, month.approval());
-        assertTrue(month.stock().get("coal") < 320 * Kingdom.MAX_DAYS);
-        assertEquals(Kingdom.Work.FISHING, Kingdom.reallocate(full).work());
+        Kingdom.State months = Kingdom.advance(full, 400, true);
+        assertEquals(Kingdom.MIN_APPROVAL, months.approval());
+        assertTrue(Kingdom.collect(months, true).get("maple_logs") < 892 * Kingdom.MAX_DAYS);
+        // Allocation limits: 10 (15 after Royal Trouble) subjects, at most 10 per labour group.
+        Kingdom.State alloc = Kingdom.State.fresh();
+        assertEquals(10, alloc.assigned());
+        assertEquals(alloc, Kingdom.assign(alloc, Kingdom.Work.MINING, 1, false));
+        Kingdom.State moved = Kingdom.assign(Kingdom.assign(alloc, Kingdom.Work.WOODCUTTING, -1, false), Kingdom.Work.MINING, 1, false);
+        assertEquals(9, moved.workers(Kingdom.Work.WOODCUTTING));
+        assertEquals(1, moved.workers(Kingdom.Work.MINING));
+        Kingdom.State herbs = new Kingdom.State(0, 127, Map.of(Kingdom.Work.HERBS, 6, Kingdom.Work.FLAX, 4), 0, Map.of());
+        assertEquals(herbs, Kingdom.assign(herbs, Kingdom.Work.FLAX, 1, true)); // herb plot group full
+        Kingdom.State idle = new Kingdom.State(0, 127, Map.of(), 0, Map.of());
+        assertEquals(idle, Kingdom.assign(idle, Kingdom.Work.FARMING, 1, false)); // Etceteria needs Royal Trouble
+        assertEquals(1, Kingdom.assign(idle, Kingdom.Work.FARMING, 1, true).workers(Kingdom.Work.FARMING));
         assertEquals(Kingdom.MAX_APPROVAL, Kingdom.work(full, 5).approval());
+        // Approval actions (wiki): coal +1, gems +2, maple/fish 50% for +1, teak/mahogany +1 after Royal Trouble.
+        assertEquals(1, Kingdom.approvalFor("coal", 0.9, false, 0));
+        assertEquals(2, Kingdom.approvalFor("uncut_ruby", 0.9, false, 0));
+        assertEquals(1, Kingdom.approvalFor("maple_logs", 0.4, false, 0));
+        assertEquals(0, Kingdom.approvalFor("maple_logs", 0.6, false, 0));
+        assertEquals(0, Kingdom.approvalFor("teak_logs", 0.1, false, 0));
+        assertEquals(1, Kingdom.approvalFor("teak_logs", 0.1, true, 0));
         for (Kingdom.Work w : Kingdom.Work.values()) {
             w.fullDay().keySet().forEach(item -> assertTrue(ItemCatalog.exists(item), w + " " + item));
         }
-        assertTrue(Kingdom.collected(day).stock().isEmpty());
+        assertEquals(61, Kingdom.Work.HERBS.fullDay().values().stream().mapToInt(Integer::intValue).sum());
+        assertEquals(481, Kingdom.Work.FARMING.fullDay().values().stream().mapToInt(Integer::intValue).sum());
+        assertTrue(Kingdom.collect(Kingdom.collected(day), true).isEmpty());
         assertNotNull(ContentRegistry.quest("throne_of_miscellania"));
         assertNotNull(ContentRegistry.quest("royal_trouble"));
     }

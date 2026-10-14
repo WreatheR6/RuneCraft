@@ -1,6 +1,7 @@
 package com.runecraft.content.minigames.games;
 
 import com.runecraft.combat.CombatHandler;
+import com.runecraft.content.GameEvents;
 import com.runecraft.content.minigames.MinigameData;
 import com.runecraft.content.minigames.MinigameManager;
 import com.runecraft.content.minigames.MinigameSession;
@@ -15,6 +16,8 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
@@ -161,6 +164,7 @@ public class BarbarianAssaultSession extends MinigameSession {
             int honour = giveHonour(p, r, BarbarianAssault.waveHonour(r, wave, escaped));
             Msg.game(p, "Wave " + wave + " complete! You earn " + honour + " " + roleName(r) + " honour points"
                     + (escaped > 0 ? " (" + escaped + " runner" + (escaped > 1 ? "s" : "") + " escaped)." : "."));
+            GameEvents.fireActivity(p, "ba_wave");
         }
         escaped = 0;
     }
@@ -177,7 +181,9 @@ public class BarbarianAssaultSession extends MinigameSession {
     protected double damageMultiplier(ServerPlayerEntity player, LivingEntity target, AttackType type) {
         String cid = MinigameManager.creatureId(target);
         return switch (role(player)) {
-            case 0 -> cid.equals("penance_fighter") || cid.equals("penance_ranger") ? 1.25 : 1.0;
+            // Attacker level: +1 to +5 bonus damage, approximated as +5% per level over 1. // approx
+            case 0 -> cid.equals("penance_fighter") || cid.equals("penance_ranger")
+                    ? 1.25 + 0.05 * (BarbarianAssault.attackerBonus(roleLevel(player, 0)) - 1) : 1.0;
             case 1 -> cid.equals("penance_runner") ? 2.0 : 1.0;
             case 3 -> cid.equals("penance_healer") ? 1.5 : 1.0;
             default -> 1.0;
@@ -189,7 +195,11 @@ public class BarbarianAssaultSession extends MinigameSession {
         if (creatureId.equals("penance_fighter") || creatureId.equals("penance_ranger")) {
             for (ServerPlayerEntity p : online()) {
                 if (role(p) == 2) {
-                    Inv.give(p, "penance_egg", 1 + random.nextInt(2));
+                    // The collection bag holds 2 / 4 / 6 / 7 / 8 eggs by collector level.
+                    int room = BarbarianAssault.collectorBag(roleLevel(p, 2)) - Inv.count(p, "penance_egg");
+                    if (room > 0) {
+                        Inv.give(p, "penance_egg", Math.min(room, 1 + random.nextInt(2)));
+                    }
                 }
             }
             if (online().stream().noneMatch(p -> role(p) == 2)) {
@@ -228,7 +238,8 @@ public class BarbarianAssaultSession extends MinigameSession {
             int healed = 0;
             for (ServerPlayerEntity p : online()) {
                 if (p.squaredDistanceTo(player) < 64 && p.getHealth() < p.getMaxHealth()) {
-                    p.heal(role(player) == 3 ? 10 : 4);
+                    // Healer level: 10 / 15 / 20 / 25 / 35 hitpoints a heal.
+                    p.heal(role(player) == 3 ? BarbarianAssault.healerHeal(roleLevel(player, 3)) : 4);
                     healed++;
                 }
             }
@@ -268,12 +279,80 @@ public class BarbarianAssaultSession extends MinigameSession {
         }
     }
 
+    /** A player's level (1-5) in a role, bought with that role's honour points. */
+    public static int roleLevel(ServerPlayerEntity p, int role) {
+        return Math.max(1, MinigameData.of(p).stat(p.getUuid(), "ba_level_" + BarbarianAssault.ROLES[role]));
+    }
+
+    /** Every role's level. */
+    public static int[] roleLevels(ServerPlayerEntity p) {
+        int[] levels = new int[BarbarianAssault.ROLES.length];
+        for (int r = 0; r < levels.length; r++) {
+            levels[r] = roleLevel(p, r);
+        }
+        return levels;
+    }
+
+    /** Buys the next level in a role with its honour points; returns whether it did. */
+    public static boolean buyLevel(ServerPlayerEntity p, int role) {
+        int level = roleLevel(p, role);
+        String name = roleName(role);
+        if (level >= BarbarianAssault.MAX_ROLE_LEVEL) {
+            Msg.game(p, "You are already level " + BarbarianAssault.MAX_ROLE_LEVEL + " as a " + name + ".");
+            return false;
+        }
+        int cost = BarbarianAssault.levelCost(level + 1);
+        String key = "ba_" + BarbarianAssault.ROLES[role];
+        MinigameData data = MinigameData.of(p);
+        if (data.points(p.getUuid(), key) < cost) {
+            Msg.game(p, "You need " + cost + " " + name + " honour points for level " + (level + 1) + ".");
+            return false;
+        }
+        data.addPoints(p.getUuid(), key, -cost);
+        data.setStat(p.getUuid(), "ba_level_" + BarbarianAssault.ROLES[role], level + 1);
+        Msg.game(p, "You are now a level " + (level + 1) + " " + name + ".");
+        return true;
+    }
+
+    /** Buys a level by role name ("attacker", "defender", "collector" or "healer"). */
+    public static void buyLevel(ServerPlayerEntity p, String roleName) {
+        for (int r = 0; r < BarbarianAssault.ROLES.length; r++) {
+            if (BarbarianAssault.ROLES[r].equals(roleName)) {
+                buyLevel(p, r);
+                return;
+            }
+        }
+        Msg.game(p, "There is no such role.");
+    }
+
+    /** The blackboard: honour, level and next upgrade per role, with links to buy upgrades. */
+    public static void readBlackboard(ServerPlayerEntity p) {
+        MinigameData data = MinigameData.of(p);
+        p.sendMessage(Text.literal("Barbarian Assault - honour points and role levels").formatted(Formatting.GOLD), false);
+        for (int r = 0; r < BarbarianAssault.ROLES.length; r++) {
+            int level = roleLevel(p, r);
+            int honour = data.points(p.getUuid(), "ba_" + BarbarianAssault.ROLES[r]);
+            MutableText line = Text.literal(" " + roleName(r) + ": level " + level + ", " + honour + " honour")
+                    .formatted(Formatting.GRAY);
+            if (level < BarbarianAssault.MAX_ROLE_LEVEL) {
+                String command = "/minigame balevel " + BarbarianAssault.ROLES[r];
+                line.append(Text.literal(" [Upgrade: " + BarbarianAssault.levelCost(level + 1) + "]").styled(st -> st
+                        .withColor(Formatting.GREEN).withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))));
+            }
+            p.sendMessage(line, false);
+        }
+        GameEvents.fireActivity(p, "ba_blackboard");
+        if (BarbarianAssault.allMaxed(roleLevels(p))) {
+            GameEvents.fireActivity(p, "ba_blackboard:level5");
+        }
+    }
+
     @Override
     protected List<String> hud(ServerPlayerEntity player) {
         int r = role(player);
         int honour = MinigameData.of(player).points(player.getUuid(), "ba_" + BarbarianAssault.ROLES[r]);
         return List.of("Barbarian Assault", "Wave: " + Math.max(1, wave) + " / " + BarbarianAssault.WAVES,
-                "Role: " + roleName(r) + " (" + honour + " honour)", "Penance left: " + mobsAlive(),
+                "Role: " + roleName(r) + " lv " + roleLevel(player, r) + " (" + honour + " honour)", "Penance left: " + mobsAlive(),
                 queen != null && queen.isAlive() ? "Queen: " + (int) queen.getHealth() + " / " + BarbarianAssault.QUEEN_HP : "");
     }
 }

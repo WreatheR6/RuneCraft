@@ -98,7 +98,8 @@ public final class Diaries {
      */
     public static final List<String> ACTIVITIES = List.of("talk", "minigame_start", "minigame_win", "spellbook", "teleport", "eat",
             "trek_complete", "fight_pit_champion", "monkey_cage", "shop_open", "shop_buy", "shop_sell", "bert_sand", "tindel_identify",
-            "genie_visit", "chest_open", "join", "cast_on_player", "strut_repair", "essence_mine", "steal");
+            "genie_visit", "chest_open", "join", "cast_on_player", "strut_repair", "essence_mine", "steal", "kingdom_approval",
+            "ba_blackboard", "tbw_favour", "kudos", "ba_wave");
 
     /** The Fishing Platform's deck (an "x,y,r" restriction out at sea, so the land check skips it). */
     public static final String FISHING_PLATFORM = "2788,3285,10";
@@ -532,7 +533,7 @@ public final class Diaries {
         getAt("Mine 5 adamantite ores on Jatizso", "adamantite_ore", 5, JATIZSO_MINE, MINING, 70);
         level("Obtain the Blast Furnace Foreman's permission to use the Blast Furnace for free", SMITHING, 60);
         cast("Teleport to Waterbirth Island", "waterbirth_teleport", MAGIC, 72);
-        visit("Obtain 100% support from your kingdom subjects", 2502, 3860, 15); approx(); // approx: visit Miscellania castle
+        event("Obtain 100% support from your kingdom subjects", "kingdom_approval:100", null); // Managing Miscellania approval
         in("fremennik", Tier.ELITE);
         kc("Kill each of the Dagannoth Kings", "dagannoth_rex&dagannoth_prime&dagannoth_supreme", 1);
         getAt("Craft 56 astral runes simultaneously from Essence", "astral_rune", 1, null, RUNECRAFT, 82);
@@ -567,7 +568,7 @@ public final class Diaries {
         get("Pick some limpwurt root from the farming patch in Catherby", "limpwurt_root", 1, FARMING, 26);
         quest("Create a Mind helmet", "elemental_workshop_ii");
         killAny("Kill a Fire Giant inside Baxtorian Waterfall", "fire giant", 1);
-        visit("Complete a wave of Barbarian Assault", 2531, 3577, 12);
+        event("Complete a wave of Barbarian Assault", "ba_wave", null);
         xp("Steal from the chest in Hemenster", THIEVING, 47);
         visit("Travel to McGrubor's Wood by Fairy ring", 2644, 3495, 10);
         get("Mine some coal near the coal trucks", "coal", 1, MINING, 30);
@@ -591,7 +592,7 @@ public final class Diaries {
         makeAt("Smith a rune hasta at Otto's Grotto", "rune_hasta", 1, at(2500, 3493, 16), SMITHING, 90);
         xp("Construct a pyre ship from magic logs", FIREMAKING, 85, CRAFTING, 85); approx(); // approx
         cast("Teleport to Catherby", "catherby_teleport", MAGIC, 87);
-        visit("Read the Blackboard at Barbarian Assault after reaching level 5 in every role", 2531, 3577, 12); approx(); // approx: no BA roles
+        event("Read the Blackboard at Barbarian Assault after reaching level 5 in every role", "ba_blackboard:level5", null);
 
         // ======================= Karamja (10 / 19 / 10 / 5) =======================
         in("karamja", Tier.EASY);
@@ -610,7 +611,8 @@ public final class Diaries {
         quest("Discover hidden wall in the dungeon below the volcano", "dragon_slayer_i");
         quest("Visit the Isle of Crandor via the dungeon below the volcano", "dragon_slayer_i");
         quest("Use Vigroy and Hajedy's cart service", "shilo_village");
-        quest("Earn 100% favour in the village of Tai Bwo Wannai", "jungle_potion", WOODCUTTING, 10); approx(); // approx
+        event("Earn 100% favour in the village of Tai Bwo Wannai", "tbw_favour:100", null, WOODCUTTING, 10); // Tai Bwo Wannai Cleanup
+        needs(lastId, "jungle_potion");
         make("Cook a spider on a stick", "spider_on_shaft", 1, COOKING, 16); // a spider on a shaft counts too (OSRS)
         visit("Charter the Lady of the Waves from Cairn Isle to Port Khazard", 2675, 3150, 12);
         get("Cut a log from a teak tree", "teak_logs", 1, WOODCUTTING, 35);
@@ -805,7 +807,7 @@ public final class Diaries {
         visit("Buy a newspaper", 3218, 3432, 10);
         visit("Give a dog a bone!", 3213, 3428, 20); approx(); // approx
         makeAt("Spin a bowl on the pottery wheel and fire it in Barbarian Village", "bowl", 1, at(3086, 3409, 25), CRAFTING, 8);
-        visit("Speak to Haig Halen after obtaining at least 50 kudos", 3256, 3448, 10); approx(); // approx
+        event("Speak to Haig Halen after obtaining at least 50 kudos", "kudos:haig_halen_50", null);
         getAt("Craft some Earth runes from Essence", "earth_rune", 1, null, RUNECRAFT, 9);
         getAt("Catch some trout in the River Lum at Barbarian Village", "raw_trout", 1, at(3104, 3430, 30), FISHING, 20);
         xp("Steal from the tea stall in Varrock", THIEVING, 5);
@@ -825,7 +827,7 @@ public final class Diaries {
         xp("Complete a lap of the Varrock Agility course", AGILITY, 30);
         in("varrock", Tier.HARD);
         haveAny("Trade furs with the Fancy Dress Seller for a spottier cape and equip it", "spottier_cape", HUNTER, 66);
-        visit("Speak to Orlando Smith when you have achieved 153 kudos", 3256, 3448, 10); approx(); // approx
+        event("Speak to Orlando Smith when you have achieved 153 kudos", "kudos:orlando_153", null);
         xpAt("Make a Waka Canoe near Edgeville", WOODCUTTING, 57, at(3130, 3508, 20));
         cast("Teleport to Paddewwa", "paddewwa_teleport", MAGIC, 54);
         event("Teleport to Barbarian Village with a Skull sceptre", "teleport:skull_sceptre:barbarian_village", null);
