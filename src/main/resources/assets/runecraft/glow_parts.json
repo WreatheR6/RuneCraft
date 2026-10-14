@@ -2019,6 +2019,10 @@
   "terror_dog": [
     "head"
   ],
+  "terrorbird": [
+    "eyes",
+    "warp_rift"
+  ],
   "the_hueycoatl": [
     "eyes"
   ],
@@ -2400,6 +2404,9 @@
     "thigh_b_r",
     "tail0",
     "tail1"
+  ],
+  "vulture": [
+    "eyes"
   ],
   "wall_beast": [
     "head"
