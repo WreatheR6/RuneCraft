@@ -466,7 +466,15 @@ final class ItemCombatChecks {
             throw new SelfTest.Skip("worn-slot entry with no catalog item (dead id in Jewellery)");
         }
         c.completeQuests(null); // quest-gated gear
-        Map<Skill, Integer> reqs = def.equipment() == null ? Map.of() : def.equipment().requirements();
+        Map<Skill, Integer> reqs = new java.util.EnumMap<>(Skill.class);
+        if (def.equipment() != null) {
+            // Level-1 requirements are always met, so they can't be tested by dropping the skill to 1.
+            def.equipment().requirements().forEach((skill, level) -> {
+                if (level > 1) {
+                    reqs.put(skill, level);
+                }
+            });
+        }
         if (worn != null) {
             return wearExtra(id, def, worn, reqs);
         }
