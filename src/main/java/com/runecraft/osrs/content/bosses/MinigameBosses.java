@@ -118,9 +118,19 @@ public final class MinigameBosses {
                 .attack(AttackDef.of("golem", AttackType.MAGIC, 0, 16, 1).special(Special.SUMMON, 1)
                         .message("Zalcano animates a golem from the rubble!"))
                 .minion("zalcano_golem", 1)
-                .drops(Drop.of("crystal_shard", 10, 20, 1), Drop.of("crystal_tool_seed", 1, 1, 200), Drop.of("zalcano_shard", 1, 1, 1500),
-                        Drop.of("runite_ore", 3, 8, 4), Drop.of("adamantite_ore", 10, 20, 4), Drop.of("coal", 30, 60, 3),
-                        Drop.of("runite_bar", 2, 4, 6), Drop.of("uncut_onyx", 1, 1, 23), Drop.of("clue_scroll_elite", 1, 1, 23))
+                // Round 28: the OSRS Wiki contribution table (one roll out of 36, as 1/N lines). Quantities scale with
+                // contribution in OSRS; RuneCraft rolls the wiki's whole range (approx). Tertiaries: crystal tool seed table
+                // 1/200 (39/8000 for the seed), Zalcano shard 1/750 (top contributor), uncut onyx 1/8000; the pet (1/2250)
+                // is rolled by Pets. Was: uncut onyx and an elite clue at 1/23, which Zalcano never drops.
+                .drops(Drop.of("crystal_shard", 1, 3, 1), Drop.always("infernal_ashes"),
+                        Drop.of("blood_rune", 64, 480, 36), Drop.of("cosmic_rune", 295, 926, 36), Drop.of("death_rune", 201, 832, 36),
+                        Drop.of("law_rune", 166, 790, 36), Drop.of("soul_rune", 47, 392, 36), Drop.of("nature_rune", 1, 937, 36),
+                        Drop.of("silver_ore", 86, 800, 12), Drop.of("coal", 169, 938, 36), Drop.of("mithril_ore", 56, 469, 18),
+                        Drop.of("adamantite_ore", 51, 343, 18), Drop.of("runite_ore", 3, 31, 18), Drop.of("gold_ore", 86, 756, 12),
+                        Drop.of("steel_bar", 16, 699, 12), Drop.of("mithril_bar", 53, 501, 12), Drop.of("adamantite_bar", 13, 111, 18),
+                        Drop.of("runite_bar", 3, 27, 18), Drop.of("uncut_diamond", 2, 21, 18), Drop.of("uncut_dragonstone", 1, 12, 18),
+                        Drop.of("onyx_bolt_tips", 1, 45, 18), Drop.of("pure_essence", 784, 5500, 36),
+                        Drop.of("crystal_tool_seed", 1, 1, 205), Drop.of("zalcano_shard", 1, 1, 750), Drop.of("uncut_onyx", 1, 1, 8000))
                 .pet("pet_smolcano").at("zalcano_chamber").arena(13, "lava")
                 .size(1.4f, 2.6f, 1.8f).moveSpeed(0.0);
     }

@@ -223,6 +223,14 @@ public final class SystemsHooks implements ModuleHooks {
                 "I'm Falo, the bard. Bring me what my songs ask for and I'll help you on your treasure trail."));
 
         ItemSourcesService.register(); // after QuestsHooks: wraps Eluned's, the Lumbridge Guide's and Sigli's dialogue
+        // Ring of pursuit: one per-player charge (Jewellery.PURSUIT_CHARGES) per noose-wand catch it speeds up.
+        com.runecraft.content.skilling.GatheringHooks.pursuitTrack = p -> {
+            if (!"ring_of_pursuit".equals(SysState.of(p).wornId(Jewellery.Slot.RING))) {
+                return false;
+            }
+            JewelleryService.useCharge(p, Jewellery.Slot.RING, "ring_of_pursuit");
+            return true;
+        };
         UseItemCallback.EVENT.register(SystemsHooks::useItem);
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (hand != Hand.MAIN_HAND || world.isClient() || !(entity instanceof QuestNpcEntity npc) || !(player instanceof ServerPlayerEntity sp)) {

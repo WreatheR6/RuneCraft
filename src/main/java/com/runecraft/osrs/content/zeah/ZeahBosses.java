@@ -20,8 +20,11 @@ public final class ZeahBosses {
     private ZeahBosses() {
     }
 
-    /** Lunar Chest unique rarity per moon kill (approx.). */
-    public static final int MOON_UNIQUE_RARITY = 56;
+    /**
+     * Lunar Chest (OSRS Wiki): each Moon defeated gives a 1/56 chance at one piece of its set, so 1/224 for each of its four
+     * pieces. Was 1/56 per piece (four times too common).
+     */
+    public static final int MOON_UNIQUE_RARITY = 224;
 
     // ---- Blue Moon: spear and freezing weapons ----
     public static final AttackDef BLUE_SPEAR = AttackDef.of("spear thrust", AttackType.STAB, 26, 3.5, 6);
@@ -48,20 +51,24 @@ public final class ZeahBosses {
         return List.of(blueMoon(), eclipseMoon(), bloodMoon());
     }
 
-    private static Drop[] lunarChest(List<String> set, Drop... extra) {
-        Drop[] out = new Drop[set.size() + extra.length + 4];
-        int i = 0;
+    /**
+     * The Lunar Chest's standard loot (OSRS Wiki, one roll out of 30 per Moon defeated, as 1/N lines; RuneCraft fights one
+     * Moon at a time, so one roll). Not in RuneCraft: sun-kissed bones (3/30). Was: coins, big bones, herbs, a hard clue and
+     * runes, none of which the chest gives.
+     */
+    private static final List<Drop> LUNAR_STANDARD = List.of(
+            Drop.of("atlatl_dart", 72, 120, 6), Drop.of("blessed_bone_shards", 160, 179, 15), Drop.of("wyrmling_bones", 42, 54, 30),
+            Drop.of("swamp_tar", 79, 119, 8), Drop.of("water_orb", 30, 45, 15), Drop.of("supercompost", 6, 12, 10),
+            Drop.of("soft_clay", 15, 25, 10), Drop.of("grimy_harralander", 12, 18, 10), Drop.of("grimy_irit_leaf", 12, 18, 30),
+            Drop.of("maple_seed", 1, 2, 15), Drop.of("yew_seed", 1, 1, 30));
+
+    private static Drop[] lunarChest(List<String> set) {
+        List<Drop> out = new java.util.ArrayList<>();
         for (String item : set) {
-            out[i++] = Drop.of(item, 1, 1, MOON_UNIQUE_RARITY);
+            out.add(Drop.of(item, 1, 1, MOON_UNIQUE_RARITY));
         }
-        out[i++] = Drop.of("coins", 5000, 20000, 2);
-        out[i++] = Drop.of("big_bones", 5, 15, 4);
-        out[i++] = Drop.herbs(8);
-        out[i++] = Drop.of("clue_scroll_hard", 1, 1, 20);
-        for (Drop d : extra) {
-            out[i++] = d;
-        }
-        return out;
+        out.addAll(LUNAR_STANDARD);
+        return out.toArray(new Drop[0]);
     }
 
     static BossDef blueMoon() {
@@ -69,7 +76,7 @@ public final class ZeahBosses {
                 .defenceBonus(60, 60, 30, 120, 60)
                 .attack(BLUE_SPEAR).attack(BLUE_FREEZE).attack(BLUE_STORM)
                 .phase(50, "The Blue Moon: The cold will claim you!", 1.15, false, BLUE_SPEAR, BLUE_FREEZE, BLUE_STORM)
-                .drops(lunarChest(ZeahItems.BLUE_MOON, Drop.of("water_rune", 200, 500, 4)))
+                .drops(lunarChest(ZeahItems.BLUE_MOON))
                 .at(ZeahPlaces.MOONS_OF_PERIL).arena(11, "ice").skin(0xA0B8E0, 0x3A5AA0, 0x2A3A6A, 0xE0E8FF)
                 .size(0.9f, 2.4f, 1.3f).moveSpeed(0.26);
     }
@@ -80,7 +87,7 @@ public final class ZeahBosses {
                 .attack(ECLIPSE_SHIELD).attack(ECLIPSE_ATLATL).attack(ECLIPSE_PULL).attack(ECLIPSE_CLONES)
                 .phase(50, "The Eclipse Moon: The light fades!", 1.15, false, ECLIPSE_SHIELD, ECLIPSE_ATLATL, ECLIPSE_PULL,
                         ECLIPSE_CLONES)
-                .drops(lunarChest(ZeahItems.ECLIPSE_MOON, Drop.of("atlatl_dart", 50, 150, 3)))
+                .drops(lunarChest(ZeahItems.ECLIPSE_MOON))
                 .at(ZeahPlaces.MOONS_OF_PERIL).arena(11, "void").skin(0xE0C080, 0xC08A2A, 0x6A4A1A, 0x2A2A2A)
                 .size(0.9f, 2.4f, 1.3f).moveSpeed(0.26);
     }
@@ -91,7 +98,7 @@ public final class ZeahBosses {
                 .attack(BLOOD_SLASH).attack(BLOOD_RAIN).attack(BLOOD_JAGUAR)
                 .phase(50, "The Blood Moon: Your blood will feed the sun!", 1.2, true, BLOOD_SLASH, BLOOD_RAIN, BLOOD_JAGUAR)
                 .minion("blood_jaguar", 1)
-                .drops(lunarChest(ZeahItems.BLOOD_MOON, Drop.of("blood_rune", 50, 150, 4)))
+                .drops(lunarChest(ZeahItems.BLOOD_MOON))
                 .at(ZeahPlaces.MOONS_OF_PERIL).arena(11, "jungle").skin(0xC08070, 0x8A1A1A, 0x4A1010, 0xE0C040)
                 .size(0.9f, 2.4f, 1.3f).moveSpeed(0.28);
     }
