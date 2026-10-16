@@ -220,6 +220,10 @@ final class SkillChecks {
     private String flaxPatch() {
         p().getInventory().clear();
         BlockPos pos = placeNear(com.runecraft.content.minigames.Arena.module("hops_patch"));
+        // Patch state is kept per position in the world save, and the client run loads the server run's world, where
+        // this check already planted flax on the same platform tile.
+        com.runecraft.content.skilling.SkillingState patches = com.runecraft.content.skilling.SkillingState.get(c.server);
+        patches.remove("patches", c.world, pos);
         hold("flax_seed", 3);
         give("seed_dibber", 1);
         int xp0 = xp(Skill.FARMING);
@@ -228,6 +232,7 @@ final class SkillChecks {
             throw failure("planting flax in a hops patch left " + Inv.count(p(), "flax_seed") + " of 3 flax seeds");
         }
         int got = gained(Skill.FARMING, xp0, 160, "planting flax");
+        patches.remove("patches", c.world, pos);
         p().getInventory().clear();
         return "planted 3 flax seeds, +" + got / 10.0 + " xp";
     }
