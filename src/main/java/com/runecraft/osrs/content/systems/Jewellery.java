@@ -218,6 +218,9 @@ public final class Jewellery {
         wornExternal("bellator_ring", Slot.RING, s(0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0));
         wornExternal("magus_ring", Slot.RING, s(0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0));
         wornExternal("venator_ring", Slot.RING, s(0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 2, 0, 0));
+        // Celestial ring (skilling module, Shooting Stars): +4 invisible Mining, stardust charges.
+        wornExternal("celestial_ring_uncharged", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        wornExternal("celestial_ring", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
         wornExternal("zaryte_vambraces", Slot.HANDS, s(-8, -8, -8, 0, 18, 8, 8, 8, 5, 8, 0, 2, 0, 1));
         wornExternal("granite_gloves", Slot.HANDS, s(5, 5, 9, -3, -1, 8, 8, 8, -3, 5, 7, 0, 0, 0));
         wornExternal("dragonbone_necklace", Slot.NECK, s(10, 10, 10, 10, 10, 2, 2, 2, 2, 2, 2, 0, 0, 12));
@@ -470,8 +473,25 @@ public final class Jewellery {
             case "flamtaer_bracelet" -> FLAMTAER_CHARGES;
             case "bracelet_of_slaughter" -> SLAUGHTER_CHARGES;
             case "necklace_of_faith" -> 1;
+            case "binding_necklace" -> BINDING_CHARGES;
             default -> 0;
         };
+    }
+
+    /** Binding necklace: 16 altar clicks of guaranteed combination runes, charges kept per player (OSRS Wiki). */
+    public static final int BINDING_CHARGES = 16;
+
+    /**
+     * Amulet of bounty: seeds used to plant an allotment (normally three); {@code roll} uniform in [0, 1). A save (one
+     * seed instead of three, 25%) uses one of the amulet's charges.
+     */
+    public static int bountySeeds(int seeds, double roll) {
+        return seeds > 1 && roll < BOUNTY_CHANCE ? 1 : seeds;
+    }
+
+    /** Amulet of chemistry: doses of a potion that would be made with three; 5% of them come out with four (no extra XP). */
+    public static int chemistryDoses(int doses, double roll) {
+        return doses == 3 && roll < CHEMISTRY_CHANCE ? 4 : doses;
     }
 
     /**

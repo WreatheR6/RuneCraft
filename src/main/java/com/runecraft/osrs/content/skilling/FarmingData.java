@@ -46,7 +46,9 @@ public final class FarmingData extends SkillingPart {
         FLOWER("flower_patch", "Flower patch", 5, true, false),
         HESPORI("hespori_patch", "Hespori patch", 640, false, false),      // Hespori can't get diseased
         ANIMA("anima_patch", "Anima patch", 640, false, false),            // anima plants are immune to disease
-        CRYSTAL("crystal_tree_patch", "Crystal tree patch", 80, false, false); // crystal trees are immune to disease
+        CRYSTAL("crystal_tree_patch", "Crystal tree patch", 80, false, false), // crystal trees are immune to disease
+        /** Coral nursery (the Coral Nurseries off the Great Conch): frags grow in 4 x 40-minute cycles, no compost. */
+        CORAL("coral_nursery_patch", "Coral nursery", 40, true, false);
 
         public final String blockId;
         public final String displayName;
@@ -113,7 +115,13 @@ public final class FarmingData extends SkillingPart {
     public static final List<String> ANIMA = List.of("kronos", "iasor", "attas");
 
     /** Seeds defined by another module (anima seeds drop from Hespori, see the bosses module). */
-    private static final List<String> EXTERNAL_SEEDS = List.of("kronos_seed", "iasor_seed", "attas_seed");
+    private static final List<String> EXTERNAL_SEEDS = List.of("kronos_seed", "iasor_seed", "attas_seed",
+            // Sailing seeds and coral frags (salvage, sea creatures; items defined in SailingData).
+            "flax_seed", "hemp_seed", "cotton_seed", "camphor_seed", "ironwood_seed", "rosewood_seed", "elkhorn_frag", "pillar_frag",
+            "umbral_frag");
+
+    /** Hardwood trees grown from Sailing seeds: their saplings are made here (the seeds are SailingData's). */
+    public static final List<String> SAILING_TREES = List.of("camphor", "ironwood", "rosewood");
 
     /**
      * Gardeners who look after the patches next to them for a payment (OSRS names; the Farming
@@ -151,7 +159,14 @@ public final class FarmingData extends SkillingPart {
             new Gardener("gardener_kragen", "Kragen", "ardougne_farm", 2, 2),
             new Gardener("gardener_lyra", "Lyra", "morytania_farm", 2, 2),
             new Gardener("gardener_marisi", "Marisi", "hosidius_farm", 0, 0),
-            new Gardener("gardener_oswallt", "Oswallt", "prifddinas_farm", -3, 2));
+            new Gardener("gardener_oswallt", "Oswallt", "prifddinas_farm", -3, 2),
+            // Varlamore (OSRS Wiki gardener pages): Harminia at Ortus Farm, Ehecatl at Kastori's fruit tree patch, Ercos at
+            // Aldarin's hops patch, Marcellus at the Locus Oasis hardwood patch; Chet in the Coral Nurseries.
+            new Gardener("gardener_harminia", "Harminia", "civitas_farm", -2, 1),
+            new Gardener("gardener_ehecatl", "Ehecatl", "kastori_patches", 2, 2),
+            new Gardener("gardener_ercos", "Ercos", "aldarin_hops", 2, -3),
+            new Gardener("gardener_marcellus", "Marcellus", "locus_oasis_hardwood", 2, 2),
+            new Gardener("gardener_chet", "Chet", "coral_nurseries", 2, 2));
 
     /**
      * Tool leprechauns stand by the allotment patches: talking to one notes the harvested produce in
@@ -169,7 +184,9 @@ public final class FarmingData extends SkillingPart {
             new Leprechaun("tool_leprechaun_farming_guild", "farming_guild", 4, -3),
             new Leprechaun("tool_leprechaun_harmony", "harmony_herb_patch", 2, 2),
             new Leprechaun("tool_leprechaun_weiss", "weiss_herb_patch", 2, 2),
-            new Leprechaun("tool_leprechaun_prifddinas", "prifddinas_farm", 3, 2));
+            new Leprechaun("tool_leprechaun_prifddinas", "prifddinas_farm", 3, 2),
+            new Leprechaun("tool_leprechaun_civitas", "civitas_farm", 3, -2),
+            new Leprechaun("tool_leprechaun_coral_nurseries", "coral_nurseries", -2, 2));
 
     /** Whether a tool leprechaun will note this item: harvested farming produce (not seeds, saplings or tools). */
     public static boolean leprechaunNotes(String item) {
@@ -285,6 +302,12 @@ public final class FarmingData extends SkillingPart {
             case "grape" -> new int[]{139, 206};      // approx
             case "cactus" -> new int[]{-78, 178};     // approx
             case "celastrus" -> new int[]{-27, 63};   // approx
+            // Sailing hops-patch crops (wiki Farming yield calculator low/high).
+            case "flax" -> new int[]{140, 194};
+            case "hemp" -> new int[]{120, 178};
+            case "cotton" -> new int[]{82, 142};
+            // Coral: at least 4, "a decent chance of over 16 at 99" (wiki; chance values approx).
+            case "elkhorn", "pillar", "umbral" -> new int[]{140, 200}; // approx
             default -> null;
         };
     }
@@ -293,6 +316,9 @@ public final class FarmingData extends SkillingPart {
     public static boolean secateursBoost(Crop c) {
         return c.patch() == Patch.HOPS || c.patch() == Patch.GRAPE;
     }
+
+    /** Coral nurseries always give at least four coral (OSRS Wiki, Coral nursery). */
+    public static final int CORAL_MIN_YIELD = 4;
 
     /** Most belladonna a harvest can give: 6 at level 63, rising to 18 at 99 (OSRS; the curve in between approx.). */
     public static int belladonnaMax(int level) {
@@ -326,6 +352,12 @@ public final class FarmingData extends SkillingPart {
                     com.runecraft.osrs.FarmingYield.saveChance(0, 0, level, bonus, 0), random) : 6;
         }
         int[] lives = harvestChance(c);
+        if (lives != null && c.patch() == Patch.CORAL) {
+            // Coral can't be composted: three lives plus one guaranteed coral (minimum 4).
+            int chance = com.runecraft.osrs.FarmingYield.saveChance(lives[0], lives[1], level, bonus, 0);
+            return CORAL_MIN_YIELD - com.runecraft.osrs.FarmingYield.lives(0)
+                    + com.runecraft.osrs.FarmingYield.harvest(com.runecraft.osrs.FarmingYield.lives(0), chance, random);
+        }
         if (lives != null) {
             int chance = com.runecraft.osrs.FarmingYield.saveChance(lives[0], lives[1], level, bonus, 0);
             return com.runecraft.osrs.FarmingYield.harvest(com.runecraft.osrs.FarmingYield.lives(compost), chance, random);
@@ -385,12 +417,32 @@ public final class FarmingData extends SkillingPart {
         hops("yanillian", "Yanillian hops", "yanillian_hops", 16, 14.5, 16.0, 60, 4, 0x7AAA5A);
         hops("krandorian", "Krandorian hops", "krandorian_hops", 21, 17.5, 19.5, 70, 3, 0x5A8A3A);
         hops("wildblood", "Wildblood hops", "wildblood_hops", 28, 23.0, 26.0, 80, 3, 0xA03A3A);
+        // Sailing crops in hops patches (OSRS Wiki, 3 seeds each): flax 18 (3 x 20 min), hemp 37 (4 x 20), cotton 71 (5 x 20).
+        hops("flax", "Flax", "flax", 18, 16.0, 17.5, 60, 3, 0x8A9AC0);
+        hops("hemp", "Hemp", "hemp", 37, 33.0, 37.0, 80, 3, 0x7A8A3A);
+        hops("cotton", "Cotton", "cotton_boll", 71, 72.0, 82.0, 100, 3, 0xE0E0D0);
+        // Sailing hardwood trees (OSRS Wiki): camphor 66 (8 x 640 min), ironwood 80 (8 x 640), rosewood 92 (9 x 640);
+        // chopped like their wild trees (GatheringData.TREES block ids).
+        CROPS.add(new Crop("camphor", "Camphor tree", Patch.HARDWOOD, Harvest.CHOP, 66, 88.0, 17840.0, 0, "camphor_seed",
+                "camphor_sapling", 1, "camphor_tree", 0, 0, 5120, 0, null, 0x8A6A4A));
+        CROPS.add(new Crop("ironwood", "Ironwood tree", Patch.HARDWOOD, Harvest.CHOP, 80, 145.0, 20380.0, 0, "ironwood_seed",
+                "ironwood_sapling", 1, "ironwood_tree", 0, 0, 5120, 0, null, 0x5A4A40));
+        CROPS.add(new Crop("rosewood", "Rosewood tree", Patch.HARDWOOD, Harvest.CHOP, 92, 252.0, 23100.0, 0, "rosewood_seed",
+                "rosewood_sapling", 1, "rosewood_tree", 0, 0, 5760, 0, null, 0x9A4A4A));
+        // Coral frags placed in a coral nursery (OSRS Wiki): 4 x 40 minutes, at least 4 coral, harvest XP per coral.
+        CROPS.add(new Crop("elkhorn", "Elkhorn coral", Patch.CORAL, Harvest.ALL, 28, 20.5, 0, 24.0, "elkhorn_frag", "elkhorn_frag",
+                1, "elkhorn_coral", 4, 4, 160, 0, null, 0xD0C0A0));
+        CROPS.add(new Crop("pillar", "Pillar coral", Patch.CORAL, Harvest.ALL, 52, 52.0, 0, 60.0, "pillar_frag", "pillar_frag",
+                1, "pillar_coral", 4, 4, 160, 0, null, 0xE0A0B0));
+        CROPS.add(new Crop("umbral", "Umbral coral", Patch.CORAL, Harvest.ALL, 77, 136.0, 0, 159.0, "umbral_frag", "umbral_frag",
+                1, "umbral_coral", 4, 4, 160, 0, null, 0x5A3A7A));
         CROPS.add(new Crop("cactus", "Cactus", Patch.CACTUS, Harvest.PICK, 55, 66.5, 374.0, 25.0, "cactus_seed", "cactus_seed", 1,
                 "cactus_spine", 3, 3, 560, 20, null, 0x5A8A3A));
         CROPS.add(new Crop("potato_cactus", "Potato cactus", Patch.CACTUS, Harvest.PICK, 64, 68.0, 230.0, 68.0, "potato_cactus_seed",
                 "potato_cactus_seed", 1, "potato_cactus", 6, 6, 70, 5, null, 0x8AA040));
+        // Seaweed spores grow into giant seaweed (OSRS Wiki: 23 Farming, 19 XP to plant, 21 per giant seaweed).
         CROPS.add(new Crop("seaweed", "Giant seaweed", Patch.SEAWEED, Harvest.ALL, 23, 19.0, 0, 21.0, "seaweed_spore",
-                "seaweed_spore", 1, "seaweed", 3, 7, 40, 0, null, 0x3A6A2A));
+                "seaweed_spore", 1, "giant_seaweed", 3, 7, 40, 0, null, 0x3A6A2A));
         CROPS.add(new Crop("bittercap", "Bittercap mushrooms", Patch.MUSHROOM, Harvest.ALL, 53, 61.5, 0, 57.7, "mushroom_spore",
                 "mushroom_spore", 1, "mushroom", 6, 6, 240, 0, null, 0xC0A080));
         // Belladonna gives cave nightshade: 6 to 18 by level, 512 XP per harvest.
@@ -425,7 +477,7 @@ public final class FarmingData extends SkillingPart {
 
     /** Whether a crop needs no tool to be put in its patch (a scarecrow is simply stood in it). */
     public static boolean noPlantingTool(Crop c) {
-        return c.harvest() == Harvest.SCARECROW;
+        return c.harvest() == Harvest.SCARECROW || c.patch() == Patch.CORAL;
     }
 
     public static Crop byPlanted(Patch patch, String item) {
@@ -480,7 +532,7 @@ public final class FarmingData extends SkillingPart {
 
     public static final List<String> COMPOSTABLE = List.of("potato", "onion", "cabbage", "tomato", "sweetcorn", "garlic",
             "redberries", "cadava_berries", "dwellberries", "cooking_apple", "banana", "orange", "barley", "hammerstone_hops",
-            "asgarnian_hops", "jute_fibre", "yanillian_hops", "krandorian_hops", "wildblood_hops", "weeds", "seaweed",
+            "asgarnian_hops", "jute_fibre", "yanillian_hops", "krandorian_hops", "wildblood_hops", "weeds", "seaweed", "giant_seaweed",
             "mushroom", "minecraft:wheat", "minecraft:carrot", "minecraft:beetroot", "minecraft:apple");
 
     @Override
@@ -512,6 +564,19 @@ public final class FarmingData extends SkillingPart {
                 s.add(c.seed(), seedName(c), Kind.SEED, "seed", c.color()).value(Math.max(2, c.level() * 2));
             }
         }
+        for (String t : SAILING_TREES) {
+            Crop c = byId(t);
+            simple(s, c.planted(), c.name().replace(" tree", "") + " sapling", "sapling", c.color(), c.level() * 6);
+        }
+        simple(s, "giant_seaweed", "Giant seaweed", "secondary", 0x2A5A2A, 2).examine("Seaweed of large size.");
+        simple(s, "hemp", "Hemp", "flax", 0x7A8A3A, 30).examine("I should use this with a spinning wheel.");
+        simple(s, "cotton_boll", "Cotton boll", "wool", 0xF0F0E8, 60).examine("I should use this with a spinning wheel.");
+        simple(s, "linen_yarn", "Linen yarn", "string", 0xD8D0B8, 20).examine("Spun from flax, ready for the loom.");
+        simple(s, "hemp_yarn", "Hemp yarn", "string", 0x9AA060, 60).examine("Spun from hemp, ready for the loom.");
+        simple(s, "cotton_yarn", "Cotton yarn", "string", 0xF4F0E8, 120).examine("Spun from cotton, ready for the loom.");
+        simple(s, "elkhorn_coral", "Elkhorn coral", "shard", 0xD0C0A0, 50).examine("A branch of elkhorn coral.");
+        simple(s, "pillar_coral", "Pillar coral", "shard", 0xE0A0B0, 150).examine("A column of pillar coral.");
+        simple(s, "umbral_coral", "Umbral coral", "shard", 0x5A3A7A, 600).examine("A dark piece of umbral coral.");
         food(s, "redberries", "Redberries", "produce", 0xC02040, 3, 2);
         simple(s, "dwellberries", "Dwellberries", "produce", 0x3A5AA0, 4);
         food(s, "cooking_apple", "Cooking apple", "produce", 0x9AB040, 3, 2);
@@ -577,6 +642,19 @@ public final class FarmingData extends SkillingPart {
                 .in("minecraft:milk_bucket", 1).out("monkey_bar", 1).out("minecraft:bucket", 1).ticks(2).build());
         out.accept(r("grind_suqah_tooth", MenuType.HERBLORE, "Ground tooth", Skill.HERBLORE, 1, 0)
                 .in("suqah_tooth", 1).out("ground_tooth", 1).tool("pestle_and_mortar").ticks(1).build());
+        // Giant seaweed burns into 6 soda ash (OSRS Wiki; the fail case below 51 Cooking is not modelled).
+        out.accept(r("burn_giant_seaweed", MenuType.COOKING, "Soda ash (giant seaweed)", Skill.COOKING, 1, 0).in("giant_seaweed", 1)
+                .out("soda_ash", 6).ticks(3).build());
+        // Sailing fibres (OSRS Wiki): spun at a spinning wheel, then two yarn woven into a bolt at a loom (3 ticks each).
+        String[][] fibres = {{"flax", "linen_yarn", "12", "16", "bolt_of_linen", "20"}, {"hemp", "hemp_yarn", "39", "60", "bolt_of_canvas", "75"},
+                {"cotton_boll", "cotton_yarn", "73", "105", "bolt_of_cotton", "132"}};
+        for (String[] f : fibres) {
+            int lvl = Integer.parseInt(f[2]);
+            out.accept(r("spin_" + f[1], MenuType.SPINNING, title(f[1]), Skill.CRAFTING, lvl, Double.parseDouble(f[3])).in(f[0], 1)
+                    .out(f[1], 1).ticks(3).build());
+            out.accept(r("weave_" + f[4], MenuType.SPINNING, title(f[4]), Skill.CRAFTING, lvl, Double.parseDouble(f[5])).in(f[1], 2)
+                    .out(f[4], 1).ticks(3).build());
+        }
         // Plant cure is sold for 25 gp by farming shops and general stores near patches.
         out.accept(plain("shop_general_plant_cure", MenuType.SHOP_GENERAL, "Plant cure - 25 gp").in("coins", 25)
                 .out("plant_cure", 1).ticks(0).build());
@@ -682,6 +760,21 @@ public final class FarmingData extends SkillingPart {
                         List.of("belladonna_patch")),
                 PlaceDef.of("al_kharid_cactus", "Al Kharid cactus patch", 3315, 3202, PlaceDef.Style.CAMP, List.of("cactus_patch")),
                 PlaceDef.of("hosidius_vinery", "Hosidius vinery", 1806, 3554, PlaceDef.Style.CAMP,
-                        List.of("grape_patch", "grape_patch", "grape_patch")));
+                        List.of("grape_patch", "grape_patch", "grape_patch")),
+                // Varlamore patches (OSRS Wiki patch tables): Ortus Farm west of Civitas illa Fortis (two allotments, herb,
+                // flower), Kastori (fruit tree, calquat, flower), Aldarin hops, Locus Oasis hardwood.
+                new PlaceDef("civitas_farm", "Civitas illa Fortis farming patches", 1586, 3099, PlaceDef.Style.CAMP,
+                        List.of(Station.ALLOTMENT_PATCH, Station.ALLOTMENT_PATCH, Station.HERB_PATCH), List.of("flower_patch", "compost_bin")),
+                // Approx: Kastori's calquat patch and its flower patch (1353,3023, too close to the town's plaza for a camp of
+                // its own) stand with the fruit tree patch.
+                PlaceDef.of("kastori_patches", "Kastori farming patches", 1350, 3057, PlaceDef.Style.CAMP,
+                        List.of("fruit_tree_patch", "calquat_patch", "flower_patch")),
+                PlaceDef.of("aldarin_hops", "Aldarin hops patch", 1365, 2939, PlaceDef.Style.CAMP, List.of("hops_patch")),
+                PlaceDef.of("locus_oasis_hardwood", "Locus Oasis hardwood patch", 1684, 2974, PlaceDef.Style.CAMP,
+                        List.of("hardwood_patch")),
+                // The Coral Nurseries lie under water off the Great Conch's east coast (wiki map 3298,8860, entered by the steps
+                // at 3272,2463); approx: the two nurseries stand at the steps.
+                PlaceDef.of("coral_nurseries", "Coral Nurseries", 3272, 2463, PlaceDef.Style.CAMP,
+                        List.of("coral_nursery_patch", "coral_nursery_patch")));
     }
 }

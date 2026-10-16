@@ -202,7 +202,10 @@ class SkillingContentTest {
                 assertEquals(ItemDef.Kind.SEED, ItemCatalog.get(c.seed()).kind(), c.seed());
             }
             if (c.harvest() == FarmingData.Harvest.CHOP) {
-                assertNotNull(Tree.valueOf(c.produce()), c.id());
+                // Sailing hardwood trees are chopped like their wild GatheringData trees; the rest are Tree constants.
+                if (GatheringData.tree(c.produce()) == null) {
+                    assertNotNull(Tree.valueOf(c.produce()), c.id());
+                }
             } else if (c.produce() != null) {
                 exists(c.produce(), c.id());
             }

@@ -494,6 +494,49 @@ public final class JewelleryService {
         return true;
     }
 
+    /**
+     * A worn binding necklace guarantees one altar click's combination runes: uses one of its 16 per-player charges and
+     * returns true; false when none is worn.
+     */
+    public static boolean bindingCharge(ServerPlayerEntity p) {
+        if (!SysState.of(p).wornId(Jewellery.Slot.NECK).equals("binding_necklace")) {
+            return false;
+        }
+        int left = useCharge(p, Jewellery.Slot.NECK, "binding_necklace");
+        if (left > 0) {
+            Msg.game(p, "Your binding necklace has " + left + " charge" + (left == 1 ? "" : "s") + " left.");
+        }
+        return true;
+    }
+
+    /** Amulet of bounty: how many of an allotment's three seeds are used (25% chance of one, using a charge). */
+    public static int bountySeeds(ServerPlayerEntity p, int seeds) {
+        if (!SysState.of(p).wornId(Jewellery.Slot.NECK).equals("amulet_of_bounty")) {
+            return seeds;
+        }
+        int used = Jewellery.bountySeeds(seeds, p.getRandom().nextDouble());
+        if (used < seeds) {
+            int left = useCharge(p, Jewellery.Slot.NECK, "amulet_of_bounty");
+            Msg.game(p, "Your amulet of bounty saves you some seeds." + (left > 0 ? " It has " + left + " charge"
+                    + (left == 1 ? "" : "s") + " left." : ""));
+        }
+        return used;
+    }
+
+    /** Amulet of chemistry: doses of a potion just made with three (5% chance of four, using a charge). */
+    public static int chemistryDoses(ServerPlayerEntity p, int doses) {
+        if (doses != 3 || !SysState.of(p).wornId(Jewellery.Slot.NECK).equals("amulet_of_chemistry")) {
+            return doses;
+        }
+        int made = Jewellery.chemistryDoses(doses, p.getRandom().nextDouble());
+        if (made > doses) {
+            int left = useCharge(p, Jewellery.Slot.NECK, "amulet_of_chemistry");
+            Msg.game(p, "Your amulet of chemistry helps you create a 4-dose potion." + (left > 0 ? " It has " + left
+                    + " charge" + (left == 1 ? "" : "s") + " left." : ""));
+        }
+        return made;
+    }
+
     /** Slayer task credit of a kill with an expeditious bracelet or bracelet of slaughter worn (OSRS: 25%, 30 charges). */
     public static int slayerCredit(ServerPlayerEntity p, int base, boolean jadOrZuk) {
         String hands = SysState.of(p).wornId(Jewellery.Slot.HANDS);

@@ -197,6 +197,35 @@ public final class ShootingStars extends SkillingPart {
             new Reward("bag_full_of_gems", "Bag full of gems (40 uncut gems)", 40, 300),
             new Reward("soft_clay", "Soft clay pack (100 soft clay)", 100, 150));
 
+    /**
+     * Celestial ring (OSRS Wiki): charged or not, an invisible +4 Mining boost (not for level requirements). Each stardust
+     * added is one charge (up to 10,000); charged, it has a 1/10 chance of an extra ore from rocks up to adamantite, using
+     * a charge.
+     */
+    public static final String CELESTIAL_RING = "celestial_ring";
+    public static final String CELESTIAL_RING_UNCHARGED = "celestial_ring_uncharged";
+    public static final int CELESTIAL_BOOST = 4;
+    public static final int CELESTIAL_MAX_CHARGES = 10_000;
+    public static final int CELESTIAL_EXTRA_ORE_ONE_IN = 10;
+    /** Ores the mining enhancers' extra-ore effect applies to (rocks up to adamantite). */
+    public static final List<String> ENHANCER_ORES = List.of("clay", "copper_ore", "tin_ore", "iron_ore", "silver_ore", "coal",
+            "gold_ore", "mithril_ore", "adamantite_ore");
+
+    /** Mining level used for success rolls with a celestial ring worn (+4, invisible). */
+    public static int celestialLevel(int mining, boolean ringWorn) {
+        return ringWorn ? mining + CELESTIAL_BOOST : mining;
+    }
+
+    /** Whether the charged ring gives an extra ore this time ({@code roll} uniform in [0, 1)). */
+    public static boolean celestialExtraOre(String ore, int charges, double roll) {
+        return charges > 0 && ENHANCER_ORES.contains(ore) && roll < 1.0 / CELESTIAL_EXTRA_ORE_ONE_IN;
+    }
+
+    /** Stardust accepted when charging a ring holding {@code charges}. */
+    public static int celestialCharge(int charges, int stardust) {
+        return Math.max(0, Math.min(stardust, CELESTIAL_MAX_CHARGES - Math.max(0, charges)));
+    }
+
     /** Uncut gems in a stardust bag full of gems, by weight. // approx */
     public static final List<Loot> BAG_OF_GEMS = List.of(Loot.of("uncut_sapphire", 500), Loot.of("uncut_emerald", 346),
             Loot.of("uncut_ruby", 136), Loot.of("uncut_diamond", 16), Loot.of("uncut_dragonstone", 2));
@@ -205,9 +234,11 @@ public final class ShootingStars extends SkillingPart {
     public void items(ItemSink s) {
         simple(s, STARDUST, "Stardust", "essence", 0xE8D060, 1).stack(Integer.MAX_VALUE)
                 .examine("Some dust from a fallen star.");
-        // Rings are worn through the systems module's jewellery slots; this one is not wearable yet. // approx
+        // Worn in the systems module's ring slot (Jewellery.wornExternal); charged by using stardust on it.
         simple(s, "celestial_ring_uncharged", "Celestial ring (uncharged)", "ring", 0xD8C890, 2000).stack(1)
                 .examine("A ring made from the remnants of a fallen star.");
+        simple(s, CELESTIAL_RING, "Celestial ring", "ring", 0xF0E0A0, 2000).stack(1)
+                .examine("A ring made from the remnants of a fallen star. It glows with stardust.");
         simple(s, "star_fragment", "Star fragment", "gem", 0xE8E0A0, 3000).stack(1)
                 .examine("A piece of a fallen star, still glowing faintly.");
     }

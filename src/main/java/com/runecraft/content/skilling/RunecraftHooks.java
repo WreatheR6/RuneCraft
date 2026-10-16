@@ -73,6 +73,11 @@ final class RunecraftHooks {
             effects(player, pos);
             return true;
         }
+        // Aether runes: soul runes held at the Cosmic Altar with Magic Imbue (the soul talisman isn't obtainable).
+        if (altar == RuneAltar.COSMIC && held.equals("soul_rune") && com.runecraft.skill.Runecrafting.imbued.test(player)) {
+            aether(player, pos);
+            return true;
+        }
         for (RunecraftData.Combination c : RunecraftData.COMBINATIONS) {
             if (c.altar() == altar && c.talisman().equals(held)) {
                 combination(player, c, pos);
@@ -119,24 +124,42 @@ final class RunecraftHooks {
         effects(player, pos);
     }
 
-    /** Uses a charge of a worn binding necklace; returns false if none is worn. */
+    /** Uses a charge of a worn binding necklace (16 per player, OSRS Wiki); returns false if none is worn. */
     private static boolean useBindingCharge(ServerPlayerEntity player) {
-        com.runecraft.content.systems.SysState.SysPlayer sp = com.runecraft.content.systems.SysState.of(player);
-        com.runecraft.osrs.content.systems.Jewellery.Slot neck = com.runecraft.osrs.content.systems.Jewellery.Slot.NECK;
-        net.minecraft.item.ItemStack worn = sp.worn(neck);
-        if (worn.isEmpty() || !Inv.idOf(worn).equals("binding_necklace")) {
-            return false;
+        return com.runecraft.content.systems.JewelleryService.bindingCharge(player);
+    }
+
+    /**
+     * Aether runes (OSRS Wiki): 90 Runecraft; one essence, soul rune and aether catalyst per rune, 50% each without a binding
+     * necklace. A failed rune loses its essence and soul rune but keeps its catalyst. Daeyalt essence pays 30 XP a rune.
+     */
+    private static void aether(ServerPlayerEntity player, BlockPos pos) {
+        if (!SkillingUtil.need(player, Skill.RUNECRAFT, RunecraftData.AETHER_LEVEL, "craft aether runes")) {
+            return;
         }
-        net.minecraft.nbt.NbtCompound nbt = worn.getOrCreateNbt();
-        int left = (nbt.contains(RunecraftData.BINDING_NBT) ? nbt.getInt(RunecraftData.BINDING_NBT) : RunecraftData.BINDING_CHARGES) - 1;
-        if (left <= 0) {
-            sp.worn.remove(neck);
-            Msg.red(player, "Your binding necklace has disintegrated.");
-        } else {
-            nbt.putInt(RunecraftData.BINDING_NBT, left);
-            Msg.game(player, "Your binding necklace has " + left + " charge" + (left == 1 ? "" : "s") + " left.");
+        boolean daeyalt = Inv.count(player, "daeyalt_essence") > 0;
+        String essenceId = daeyalt ? "daeyalt_essence" : "pure_essence";
+        int n = Math.min(Inv.count(player, essenceId), Math.min(Inv.count(player, "soul_rune"),
+                Inv.count(player, RunecraftData.AETHER_CATALYST)));
+        if (n <= 0) {
+            Msg.game(player, "You need pure essence, soul runes and aether catalysts to make aether runes.");
+            return;
         }
-        return true;
+        Inv.remove(player, essenceId, n);
+        Inv.remove(player, "soul_rune", n);
+        boolean binding = useBindingCharge(player);
+        Random random = player.getRandom();
+        int made = 0;
+        for (int i = 0; i < n; i++) {
+            if (binding || random.nextBoolean()) {
+                made++;
+            }
+        }
+        Inv.remove(player, RunecraftData.AETHER_CATALYST, made);
+        SkillingUtil.give(player, RunecraftData.AETHER_RUNE, made);
+        XpService.add(player, Skill.RUNECRAFT, RunecraftData.essenceXp(RunecraftData.AETHER_XP, made, daeyalt));
+        Msg.game(player, "You bind the temple's power into " + made + " aether rune" + (made == 1 ? "." : "s."));
+        effects(player, pos);
     }
 
     private static void ourania(ServerPlayerEntity player, BlockPos pos) {

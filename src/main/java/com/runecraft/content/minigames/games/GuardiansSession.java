@@ -38,8 +38,12 @@ import java.util.UUID;
  *
  * <p>Defence ({@link GuardiansRift}): uncharged cells from the cell table are charged at the active altar;
  * a charged cell on a cell tile raises, strengthens or recharges a barrier, or with a chisel at an essence
- * pile becomes a rift guardian. After two minutes the rift's creatures wear the barriers down and then the
- * Great Guardian; the game is lost if his health reaches 0.
+ * pile becomes a rift guardian. After two minutes abyssal leeches, guardians and walkers come through the rift,
+ * attack the barriers and then the Great Guardian (shown as creatures walking their lanes; rift guardians fight
+ * them); the game is lost if his health reaches 0.
+ *
+ * <p>A worn binding necklace makes combination runes certain (one charge per altar click). At the catalytic
+ * Cosmic altar, 90 Runecraft, soul runes and aether catalysts make aether runes and polycatalytic stones.
  */
 public class GuardiansSession extends MinigameSession {
     private static final int GAME_TICKS = 1000;
@@ -48,6 +52,8 @@ public class GuardiansSession extends MinigameSession {
     /** Recharging done per player this game: Runecraft XP, energy (both capped). */
     private final Map<UUID, double[]> recharged = new HashMap<>();
     private final GuardiansRift rift = new GuardiansRift();
+    /** The creatures shown for the rift's abyssal creatures, by creature id (tracked directly, not by box queries). */
+    private final Map<Integer, MobEntity> riftMobs = new HashMap<>();
     private double power;
     private int elemental;
     private int catalytic;
@@ -284,17 +290,21 @@ public class GuardiansSession extends MinigameSession {
                 int el = Inv.remove(player, "elemental_guardian_stone", 1000);
                 int cat = Inv.remove(player, "catalytic_guardian_stone", 1000);
                 int poly = Inv.remove(player, GuardiansRewards.POLY_STONE, 1000);
+                int polycat = Inv.remove(player, GuardiansRewards.POLYCATALYTIC_STONE, 1000);
                 el += poly;
+                cat += polycat;
                 if (el + cat == 0) {
                     Msg.game(player, "The Great Guardian needs guardian stones. Craft runes to earn them.");
                     return true;
                 }
                 // Each stone gives 2 energy of its type and 5 Runecraft XP (OSRS Wiki); 250 stones per player fill him.
-                gain(player, GuardiansRewards.stoneEnergy(el - poly, poly), GuardiansRewards.stoneEnergy(cat, 0));
+                gain(player, GuardiansRewards.stoneEnergy(el - poly, poly), GuardiansRewards.catalyticStoneEnergy(cat - polycat, polycat));
                 power = Math.min(100, power + (el + cat) * GuardiansRewards.powerPerStone(Math.max(1, playerCount())));
                 xp(player, Skill.RUNECRAFT, (el + cat) * GuardiansRewards.XP_PER_STONE);
                 Msg.game(player, "You power the Great Guardian with " + (el + cat) + " stone" + (el + cat > 1 ? "s" : "") + ".");
                 if (power >= 100) {
+                    rift.seal();
+                    syncCreatures();
                     broadcastRed("The Great Guardian successfully closed the rift!");
                     end(true);
                 }
@@ -346,7 +356,36 @@ public class GuardiansSession extends MinigameSession {
             }
         }
         double bonus = Guardians.raimentBonus(raiments(p));
-        // Combination runes: another element's talisman and one of its runes per essence (polyelemental stones).
+        // Aether runes at the Cosmic altar: one soul rune and one aether catalyst per rune (polycatalytic stones).
+        if (a[0].equals(GuardiansRewards.AETHER_ALTAR) && level(p, Skill.RUNECRAFT) >= GuardiansRewards.AETHER_LEVEL) {
+            int n = Math.min(ess, Math.min(Inv.count(p, GuardiansRewards.AETHER_INPUT), Inv.count(p, GuardiansRewards.AETHER_CATALYST)));
+            if (n > 0) {
+                Inv.remove(p, GuardiansRewards.AETHER_INPUT, n);
+                boolean binding = com.runecraft.content.systems.JewelleryService.bindingCharge(p);
+                int made = 0;
+                for (int i = 0; i < n; i++) {
+                    if (random.nextDouble() < GuardiansRewards.combinationSuccess(binding)) {
+                        made++;
+                    }
+                }
+                // Extra runes from the raiments cost a catalyst each as well (OSRS Wiki).
+                int runes = Math.min(Inv.count(p, GuardiansRewards.AETHER_CATALYST),
+                        (int) Math.floor(made * (1 + bonus) + random.nextDouble()));
+                Inv.remove(p, GuardiansRewards.AETHER_CATALYST, runes);
+                if (runes > 0) {
+                    reward(p, GuardiansRewards.AETHER_RUNE, runes);
+                }
+                xp(p, Skill.RUNECRAFT, made * GuardiansRewards.AETHER_XP);
+                Inv.give(p, GuardiansRewards.POLYCATALYTIC_STONE, made * GuardiansRewards.STONES_PER_ESSENCE);
+                Msg.game(p, "You bind " + n + " essence into " + runes + " aether rune" + (runes == 1 ? "." : "s."));
+                ess -= n;
+                if (ess == 0) {
+                    return;
+                }
+            }
+        }
+        // Combination runes: another element's talisman and one of its runes per essence (polyelemental stones);
+        // certain with a worn binding necklace, otherwise 50% each.
         for (Object[] c : GuardiansRewards.COMBINATIONS) {
             if (!c[0].equals(a[0]) || level(p, Skill.RUNECRAFT) < (Integer) c[4] || !Inv.has(p, (String) c[1], 1)) {
                 continue;
@@ -356,9 +395,10 @@ public class GuardiansSession extends MinigameSession {
                 continue;
             }
             Inv.remove(p, (String) c[2], n);
+            boolean binding = com.runecraft.content.systems.JewelleryService.bindingCharge(p);
             int made = 0;
             for (int i = 0; i < n; i++) {
-                if (random.nextDouble() < GuardiansRewards.COMBINATION_SUCCESS) {
+                if (random.nextDouble() < GuardiansRewards.combinationSuccess(binding)) {
                     made++;
                 }
             }
@@ -390,6 +430,7 @@ public class GuardiansSession extends MinigameSession {
             rotateAltars();
         }
         String msg = rift.tick(ticks, playerCount(), power, random::nextDouble);
+        syncCreatures();
         if (ticks == GuardiansRift.PREP_TICKS) {
             broadcastRed("Abyssal creatures pour through the rift!");
         }
@@ -402,9 +443,47 @@ public class GuardiansSession extends MinigameSession {
         }
     }
 
+    /**
+     * Shows the rift's creatures: one creature per abyssal creature, walking its lane from the rift to the barrier and on
+     * to the Great Guardian. They are scenery (no AI, invulnerable); only rift guardians fight them.
+     */
+    private void syncCreatures() {
+        java.util.Set<Integer> alive = new java.util.HashSet<>();
+        for (GuardiansRift.Creature c : rift.creatures()) {
+            alive.add(c.id);
+            MobEntity mob = riftMobs.get(c.id);
+            if (mob == null || mob.isRemoved()) {
+                mob = spawn(c.type.creatureId, rel(TILE_X[c.lane], 1, CREATURE_Z[0]));
+                if (mob == null) {
+                    continue;
+                }
+                mob.setAiDisabled(true);
+                mob.setInvulnerable(true);
+                riftMobs.put(c.id, mob);
+            }
+            int from = c.stage().ordinal() < 2 ? CREATURE_Z[0] : CREATURE_Z[1];
+            int to = c.stage().ordinal() < 2 ? CREATURE_Z[1] : CREATURE_Z[2];
+            double z = origin.getZ() + 0.5 + from + (to - from) * c.progress();
+            mob.refreshPositionAndAngles(origin.getX() + TILE_X[c.lane] + 0.5, origin.getY() + 1, z, 180f, 0);
+        }
+        riftMobs.entrySet().removeIf(e -> {
+            if (alive.contains(e.getKey())) {
+                return false;
+            }
+            e.getValue().discard();
+            return true;
+        });
+    }
+
+    /** Creatures' path (arena z): the rift's mouth, just in front of the barriers, the Great Guardian. */
+    private static final int[] CREATURE_Z = {8, 0, -8};
+
     @Override
     protected void onEnd(boolean success) {
+        rift.seal();
+        syncCreatures();
         for (ServerPlayerEntity p : online()) {
+            Inv.remove(p, GuardiansRewards.POLYCATALYTIC_STONE, 1000);
             Inv.remove(p, "guardian_fragments", 1000);
             Inv.remove(p, "guardian_essence", 1000);
             Inv.remove(p, "elemental_guardian_stone", 1000);
@@ -486,6 +565,7 @@ public class GuardiansSession extends MinigameSession {
         return List.of("Guardians of the Rift", "Guardian power: " + (int) power + "%  Health: " + rift.guardianHealth() + "%",
                 "Elemental: " + name(elemental) + "  Catalytic: " + name(catalytic),
                 "Energy: " + e[0] + " elemental / " + e[1] + " catalytic", barriers.toString(),
-                "Rift guardians: " + rift.activeRiftGuardians(), "Time left: " + time(GAME_TICKS - ticks));
+                "Rift guardians: " + rift.activeRiftGuardians() + "  Creatures: " + rift.creatures().size(),
+                "Time left: " + time(GAME_TICKS - ticks));
     }
 }
