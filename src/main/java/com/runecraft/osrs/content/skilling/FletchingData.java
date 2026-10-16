@@ -205,7 +205,7 @@ public final class FletchingData extends SkillingPart {
         simple(s, "flighted_ogre_arrow", "Flighted ogre arrow", "headless", 0x8A5A3A, 1)
                 .examine("A wooden arrow shaft with four flights attached.");
         simple(s, "wolfbone_arrowtips", "Wolfbone arrowtips", "arrowtips", 0xE0D8C0, 3).examine("I can make an ogre arrow with these.");
-        simple(s, "wolf_bones", "Wolf bones", "bones", 0xE0D8C8, 1).examine("Bones of a recently slain wolf.");
+        // wolf_bones is a built-in Bone (osrs/data/Bone) since round 27.
         s.add("dragon_arrow", "Dragon arrow", Kind.ARROW, "arrow", 0xB02020).value(800).rangedStrength(60).tier("dragon");
         for (Dart d : DARTS) {
             s.add(d.tier + "_dart", d.name + " dart", Kind.ARROW, "dart", d.color).value(Math.max(1, d.strength * 3))

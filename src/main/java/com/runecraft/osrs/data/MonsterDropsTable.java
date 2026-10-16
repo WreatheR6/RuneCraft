@@ -45,6 +45,7 @@ public final class MonsterDropsTable {
         rows9();
         rows10();
         rows11();
+        rows12();
     }
 
     private MonsterDropsTable() {
@@ -1840,6 +1841,41 @@ public final class MonsterDropsTable {
         add("wallasalki", rm(), d("fibula_piece", 1, 1, 64), d("ribcage_piece", 1, 1, 64), d("skull_piece", 1, 1, 64));
         // Rock lobster <- parsed:Rock lobster(127)
         add("rock_lobster", rm(), d("edible_seaweed", 1, 3, 13));
+    }
+
+    private static void rows12() {
+        // Round 27: the slayer monsters that dropped nothing and drop items that were missing (parsed-osrs all-monsters.json).
+        // Crypt spiders, giant crypt spiders, bloodworms, death wings and the grave/poison/pit scorpions drop nothing in
+        // OSRS either (only ensouled heads); Konar's brimstone keys come from SlayerService.
+        // Vampyre Juvenile <- parsed:Vampyre Juvenile(45)
+        add("vampyre_juvenile", rm(), d("vampyre_dust", 1, 1, 1));
+        // Zogre / Skogre <- parsed:Zogre(44), Skogre(44)
+        add("zogre", rm(), d("zogre_bones", 1, 1, 1), d("ogre_coffin_key", 1, 1, 1));
+        add("skogre", rm(), d("zogre_bones", 1, 1, 1), d("ogre_coffin_key", 1, 1, 1));
+        // Wyrmling <- parsed:Wyrmling(55)
+        add("wyrmling", rm(), d("wyrmling_bones", 1, 1, 1));
+        // Cave lizard <- parsed:Cave lizard(37)
+        add("cave_lizard", rm(), d("bones", 1, 1, 1));
+        // Vampyres <- parsed:Feral Vampyre(61), Vyrewatch Sentinel(151), Vampyre Juvinate(59/90/119): always vampyre dust
+        add("feral_vampyre", rm(), d("vampyre_dust", 1, 1, 1));
+        add("vyrewatch_sentinel", rm(), d("vampyre_dust", 1, 1, 1));
+        add("trek_vampyre_juvinate_1", rm(), d("vampyre_dust", 1, 1, 1));
+        add("trek_vampyre_juvinate_2", rm(), d("vampyre_dust", 1, 1, 1));
+        add("trek_vampyre_juvinate_3", rm(), d("vampyre_dust", 1, 1, 1));
+        // Araxyte <- parsed:Araxyte(96/146): one venom sac always, 2 or 4 at 5/127 each
+        add("araxyte", rm(), d("araxyte_venom_sac", 1, 1, 1), d("araxyte_venom_sac", 2, 2, 25), d("araxyte_venom_sac", 4, 4, 25));
+        add("araxyte_lvl146", rm(), d("araxyte_venom_sac", 1, 1, 1), d("araxyte_venom_sac", 2, 2, 25),
+                d("araxyte_venom_sac", 4, 4, 25));
+        // Nagua <- parsed:Earthen Nagua(128) 2/32, Frost Nagua(104) 1/34
+        add("earthen_nagua", rm(), d("blessed_bone_shards", 20, 40, 16));
+        add("frost_nagua", rm(), d("blessed_bone_shards", 30, 50, 34));
+        // Blue dragons <- parsed:Blue dragon(111) 1/50, Baby blue dragon(48) 1/200, Brutal blue dragon(271) 1/33
+        add("blue_dragon", rm(), d("scaly_blue_dragonhide", 1, 1, 50));
+        add("baby_blue_dragon", rm(), d("scaly_blue_dragonhide", 1, 1, 200));
+        add("brutal_blue_dragon", rm(), d("scaly_blue_dragonhide", 1, 1, 33));
+        // Elves (Lletya/Prifddinas; the Iorwerth Camp elves don't drop it) <- parsed:Elf Warrior(108), Elf Archer(90) 25/128
+        add("elf_warrior", rm(), d("crystal_teleport_seed", 1, 1, 5));
+        add("elf_archer", rm(), d("crystal_teleport_seed", 1, 1, 5));
     }
 
     private static void add(String key, String[] remove, Drop... put) {

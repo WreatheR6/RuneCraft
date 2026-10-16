@@ -424,6 +424,79 @@ public final class JewelleryService {
 
     // ---------------- Damage reactions ----------------
 
+    /** Uses one charge of a per-player pool (Jewellery.chargePool); the worn item crumbles when the pool runs out. */
+    static int useCharge(ServerPlayerEntity p, Jewellery.Slot slot, String id) {
+        SysState.SysPlayer sp = SysState.of(p);
+        int left = sp.jewelleryCharges.getOrDefault(id, Jewellery.chargePool(id)) - 1;
+        if (left <= 0) {
+            sp.worn.remove(slot);
+            sp.jewelleryCharges.remove(id);
+            ItemDef def = ItemCatalog.get(id);
+            Msg.red(p, "Your " + (def == null ? id : def.name()) + " crumbles to dust.");
+            return 0;
+        }
+        sp.jewelleryCharges.put(id, left);
+        return left;
+    }
+
+    /** Slayer task credit of a kill with an expeditious bracelet or bracelet of slaughter worn (OSRS: 25%, 30 charges). */
+    public static int slayerCredit(ServerPlayerEntity p, int base, boolean jadOrZuk) {
+        String hands = SysState.of(p).wornId(Jewellery.Slot.HANDS);
+        if (!hands.equals("expeditious_bracelet") && !hands.equals("bracelet_of_slaughter")) {
+            return base;
+        }
+        int credit = Jewellery.slayerCredit(base, hands, p.getRandom().nextDouble(), jadOrZuk);
+        if (credit != base) {
+            int left = useCharge(p, Jewellery.Slot.HANDS, hands);
+            Msg.game(p, (credit > base ? "Your expeditious bracelet helps you progress your slayer task faster."
+                    : "Your bracelet of slaughter prevents your slayer count from decreasing.")
+                    + (left > 0 ? " It has " + left + " charge" + (left == 1 ? "" : "s") + " left." : ""));
+        }
+        return credit;
+    }
+
+    /** Bracelet of ethereum: a charged one cuts revenant damage by 75% for one revenant ether per attack. */
+    public static int ethereum(ServerPlayerEntity p, LivingEntity attacker, int damage) {
+        if (attacker == null || damage <= 0
+                || !net.minecraft.registry.Registries.ENTITY_TYPE.getId(attacker.getType()).getPath().startsWith("revenant_")) {
+            return damage;
+        }
+        ItemStack hands = SysState.of(p).worn(Jewellery.Slot.HANDS);
+        if (hands.isEmpty() || !Inv.idOf(hands).equals("bracelet_of_ethereum") || ItemCharges.get(hands) <= 0) {
+            return damage;
+        }
+        if (ItemCharges.drain(hands, 1)) {
+            Msg.red(p, "Your bracelet of ethereum has run out of revenant ether.");
+        }
+        return Jewellery.ethereumDamage(damage);
+    }
+
+    /**
+     * Kills in the Wilderness: the looting bag drop (only while the player owns none) and the charged bracelet of
+     * ethereum absorbing the revenant ether a revenant just dropped.
+     */
+    public static void onKill(ServerPlayerEntity p, LivingEntity mob, com.runecraft.combat.MonsterStats stats) {
+        if (Gielinor.wildernessLevel(mob) <= 0) {
+            return;
+        }
+        String cid = net.minecraft.registry.Registries.ENTITY_TYPE.getId(mob.getType()).getPath();
+        if (!com.runecraft.osrs.content.systems.LootingBag.excluded(cid) && !Inv.has(p, com.runecraft.osrs.content.systems.LootingBag.ID, 1)
+                && p.getRandom().nextDouble() < com.runecraft.osrs.content.systems.LootingBag.chance(stats.combatLevel())) {
+            mob.dropStack(Inv.stack(com.runecraft.osrs.content.systems.LootingBag.ID, 1));
+        }
+        ItemStack hands = SysState.of(p).worn(Jewellery.Slot.HANDS);
+        if (cid.startsWith("revenant_") && !hands.isEmpty() && Inv.idOf(hands).equals("bracelet_of_ethereum")
+                && ItemCharges.get(hands) > 0) {
+            for (net.minecraft.entity.ItemEntity ie : mob.getWorld().getEntitiesByClass(net.minecraft.entity.ItemEntity.class,
+                    mob.getBoundingBox().expand(2.0), ie -> "revenant_ether".equals(Inv.idOf(ie.getStack())))) {
+                int n = ie.getStack().getCount();
+                ItemCharges.set(hands, Math.min(Charges.REVENANT_ETHER_MAX, ItemCharges.get(hands) + n));
+                ie.discard();
+                Msg.game(p, "Your bracelet of ethereum absorbs " + n + " revenant ether.");
+            }
+        }
+    }
+
     public static void onHurt(ServerPlayerEntity p, LivingEntity attacker, int damage) {
         SysState.SysPlayer sp = SysState.of(p);
         long now = SysTicks.now();
@@ -473,6 +546,14 @@ public final class JewelleryService {
             sp.worn.remove(Jewellery.Slot.NECK);
             Msg.red(p, "Your phoenix necklace heals you, but is destroyed in the process.");
             hp = p.getHealth();
+        }
+        // Necklace of faith (OSRS Wiki): below 20% hitpoints it restores 25% of the Prayer level, then crumbles.
+        if (neck.equals("necklace_of_faith") && hp > 0 && hp < max * Jewellery.FAITH_HP_FRACTION) {
+            PlayerData data = Players.data(p);
+            data.setPrayerPoints(data.prayerPoints() + Jewellery.faithRestore(data.skills().level(Skill.PRAYER)));
+            sp.worn.remove(Jewellery.Slot.NECK);
+            Msg.red(p, "Your necklace of faith restores your prayer, then degrades to dust.");
+            ServerNetworking.sync(p);
         }
         String ring = sp.wornId(Jewellery.Slot.RING);
         String cape = sp.wornId(Jewellery.Slot.CAPE);

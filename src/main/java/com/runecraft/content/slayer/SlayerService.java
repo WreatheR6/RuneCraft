@@ -307,7 +307,11 @@ public final class SlayerService {
         XpService.add(player, Skill.SLAYER, superior != null ? superior.xp()
                 : com.runecraft.osrs.data.MonsterTraits.slayerXp(stats.traitsKey(), stats.hitpoints()));
         // "Double Trouble": each Grotesque Guardians kill counts twice.
-        p.remaining = Math.max(0, p.remaining - SlayerTasks.killCredit(p.task, p.unlocks));
+        // Expeditious bracelet / bracelet of slaughter (systems module): 25% chance to double or void the credit.
+        String killed = net.minecraft.registry.Registries.ENTITY_TYPE.getId(entity.getType()).getPath();
+        int credit = com.runecraft.content.systems.JewelleryService.slayerCredit(player, SlayerTasks.killCredit(p.task, p.unlocks),
+                killed.equals("tztok_jad") || killed.equals("tzkal_zuk"));
+        p.remaining = Math.max(0, p.remaining - credit);
         Random random = new Random(player.getRandom().nextLong());
         if (master != null && master.locationRestricted() && random.nextInt(SlayerChests.brimstoneKeyChance(stats.combatLevel())) == 0) {
             reward(player, entity, "brimstone_key", "A brimstone key falls to the floor.");

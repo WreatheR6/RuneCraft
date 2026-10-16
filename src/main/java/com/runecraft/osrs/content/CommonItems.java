@@ -184,6 +184,22 @@ public final class CommonItems {
                 .examine("I should get it stuffed!");
         items.add("xerician_fabric", "Xerician fabric", Kind.SIMPLE, "cloth", 0x4A6A4A).value(3).weight(0.06)
                 .examine("An old scrap of cloth, containing remnants of Xeric's forgotten magicks.");
+        // Round 27 drops (OSRS Wiki values/examines): remains and keys of the slayer monsters, venom sacs, Varlamore shards,
+        // the looting bag (Wilderness drop, SystemsHooks), scaly blue dragonhide and crystal teleport seeds.
+        items.add("vampyre_dust", "Vampyre dust", Kind.SIMPLE, "secondary", 0xB8B0A8).value(2).weight(0.1)
+                .examine("That used to be a vampyre!");
+        items.add("ogre_coffin_key", "Ogre coffin key", Kind.SIMPLE, "key", 0x8A7A5A).value(100).weight(0.01)
+                .examine("A key to open ogre coffins.");
+        items.add("araxyte_venom_sac", "Araxyte venom sac", Kind.SIMPLE, "secondary", 0x6AA03A).value(500).stack(1000).weight(0.1)
+                .examine("A sac of araxyte venom.");
+        items.add("blessed_bone_shards", "Blessed bone shards", Kind.SIMPLE, "bones", 0xE8E0C8).value(18).stack(100000)
+                .examine("Blessed shards of bone, ready to be offered at the libation bowl.");
+        items.add("looting_bag", "Looting bag", Kind.SIMPLE, "pouch", 0x7A5A3A).value(1).stack(1).weight(0.2)
+                .examine("You can store stuff in the bag when you're in the Wilderness.");
+        items.add("scaly_blue_dragonhide", "Scaly blue dragonhide", Kind.SIMPLE, "hide", 0x3A5AA0).value(100).weight(2)
+                .examine("A scaled blue dragonhide.");
+        items.add("crystal_teleport_seed", "Crystal teleport seed", Kind.SIMPLE, "seed", 0x9AE0E0).value(1).weight(0.01)
+                .examine("A seed to be sung into a powerful teleport crystal.");
         for (String c : new String[]{"bloodied_blows", "glyphic_attenuation", "divine_severance", "forfeit_breath", "sensory_clouding"}) {
             String words = c.replace('_', ' ');
             items.add("contract_of_" + c, "Contract of " + words, Kind.SIMPLE, "scroll", 0x8A2A2A).value(75000).weight(0.4)

@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * The TzHaar Fight Cave: 63 waves (see {@link TzHaarWaves}) ending with the built-in TzTok-Jad,
- * who drops the fire cape and tokkul. Tz-Kek split into two smaller Tz-Kek when killed and four
+ * who drops the fire cape and the 8,032 tokkul completion reward ({@link TzHaarWaves#FIGHT_CAVE_TOKKUL}). Tz-Kek split into two smaller Tz-Kek when killed and four
  * Yt-HurKot heal Jad once he drops below half health. Leaving early pays tokkul for the waves
  * completed.
  */
@@ -102,9 +102,10 @@ public class FightCaveSession extends TzHaarSession {
         if (!success || !jadDead) {
             return;
         }
+        // TzTok-Jad's kill (fire cape, the 8,032 tokkul reward, pet roll) and its kill count message come from BossEntity;
+        // this stat only records completions for the Inferno's fire cape check, so the kill isn't announced twice.
         for (ServerPlayerEntity p : online()) {
-            int kc = MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
-            Msg.game(p, "Your TzTok-Jad kill count is: " + kc + ".");
+            MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
         }
     }
 }

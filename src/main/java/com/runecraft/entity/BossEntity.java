@@ -246,6 +246,12 @@ public class BossEntity extends OsrsMonsterEntity {
     @Override
     public void onKilledBy(ServerPlayerEntity player) {
         Boss boss = boss();
+        // TzHaar Fight Pit monsters (its TzTok-Jad included) drop nothing and count no kill (OSRS).
+        if (com.runecraft.content.minigames.MinigameManager.owner(this)
+                instanceof com.runecraft.content.minigames.games.FightPitsSession) {
+            bossBar.clearPlayers();
+            return;
+        }
         if (boss.mechanic() == Boss.Mechanic.VAMPIRE) {
             Inv.remove(player, "stake", 1);
         }

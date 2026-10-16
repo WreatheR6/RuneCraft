@@ -169,6 +169,9 @@ public final class Charges {
                 {"ursine_chainmace", "Ursine chainmace"}, {"accursed_sceptre", "Accursed sceptre"}}) {
             put(new Spec(w[0], w[1], Kind.CHARGED, REVENANT_ETHER_MAX, 0, Drain.ATTACK, ordered("revenant_ether", 1), 1, 0));
         }
+        // Bracelet of ethereum (wiki): up to 16,000 revenant ether; one per revenant attack while worn (JewelleryService).
+        put(new Spec("bracelet_of_ethereum", "Bracelet of ethereum", Kind.CHARGED, REVENANT_ETHER_MAX, 0, Drain.HIT_TAKEN,
+                ordered("revenant_ether", 1), 1, 0));
         // A sceptre found in the pyramid holds the default 3 charges (approx: OSRS hands it out uncharged since 2022).
         put(new Spec(PHARAOHS_SCEPTRE, "Pharaoh's sceptre", Kind.CHARGED, PHARAOHS_SCEPTRE_MAX, 3, Drain.TELEPORT,
                 ordered(), 1, 0));

@@ -156,7 +156,8 @@ public final class ItemCatalog {
 
         // --- Prayer ---
         for (Bone b : Bone.values()) {
-            add(b.itemId(), b.displayName(), Kind.BONES, b == Bone.BONES ? "bones" : "big_bones", b.color())
+            add(b.itemId(), b.displayName(), Kind.BONES,
+                    b == Bone.BONES || b == Bone.BAT_BONES || b == Bone.WOLF_BONES ? "bones" : "big_bones", b.color())
                     .value((int) Math.max(1, b.xp() * 3));
         }
 

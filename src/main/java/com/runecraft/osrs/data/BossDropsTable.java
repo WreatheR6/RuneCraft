@@ -30,7 +30,7 @@ public final class BossDropsTable {
     private static final Map<String, MonsterDropsTable.Patch> PATCHES = new LinkedHashMap<>();
 
     static {
-        rows0(); rows1(); rows2(); rows3(); rows4();
+        rows0(); rows1(); rows2(); rows3(); rows4(); rows5();
     }
 
     private BossDropsTable() {
@@ -693,5 +693,111 @@ public final class BossDropsTable {
                 d("gold_ore", 10, 10, 22), d("onyx_bolt_tips", 6, 6, 22), d("anchovy_pizza", 2, 2, 33),
                 d("prayer_potion(3)", 1, 1, 16), d("potato_with_cheese", 3, 3, 16), d("shark", 2, 2, 16),
                 d("crystal_key", 1, 1, 19), d("long_bone", 1, 1, 66), d("#rare", 1, 1, 22), d("#gems", 1, 1, 22));
+    }
+
+    private static void rows5() {
+        // Round 27: Obor, Bryophyta, the Grotesque Guardians and Araxxor from their wiki DropsLine tables (uniques the
+        // modules already roll, pets, keys and conditional rows left alone; shared tables by marker).
+        // Boss.OBOR <- wiki:Obor(106) DropsLine table
+        p("Boss.OBOR", rm("rune_full_helm"),
+                d("giant_key", 1, 1, 16), d("iron_full_helm", 1, 1, 27), d("iron_dagger", 1, 1, 34),
+                d("iron_kiteshield", 1, 1, 45), d("steel_longsword", 1, 1, 68), d("iron_arrow", 3, 3, 22),
+                d("fire_rune", 15, 15, 45), d("water_rune", 7, 7, 45), d("law_rune", 2, 2, 45),
+                d("steel_arrow", 10, 10, 68), d("mind_rune", 3, 3, 68), d("cosmic_rune", 2, 2, 68),
+                d("nature_rune", 6, 6, 68), d("chaos_rune", 2, 2, 135), d("death_rune", 2, 2, 135),
+                d("coins", 38, 38, 10), d("coins", 52, 52, 14), d("coins", 15, 15, 17),
+                d("coins", 8, 8, 22), d("coins", 88, 88, 68), d("limpwurt_root", 1, 1, 12),
+                d("beer", 1, 1, 22), d("body_talisman", 1, 1, 68), d("long_bone", 1, 1, 400),
+                d("curved_bone", 1, 1, 5012), d("big_bones", 1, 1, 1), d("coins", 5, 5, 8),
+                d("coins", 10, 10, 19), d("#herbs", 1, 1, 19), d("#allotment_seeds", 1, 1, 8),
+                d("#gems", 1, 1, 45));
+        // Boss.BRYOPHYTA <- wiki:Bryophyta(128) DropsLine table
+        p("Boss.BRYOPHYTA", rm("rune_platelegs"),
+                d("black_sq_shield", 1, 1, 26), d("magic_staff", 1, 1, 64), d("steel_med_helm", 1, 1, 64),
+                d("mithril_sword", 1, 1, 64), d("mithril_spear", 1, 1, 64), d("steel_kiteshield", 1, 1, 128),
+                d("law_rune", 3, 3, 32), d("air_rune", 18, 18, 43), d("earth_rune", 27, 27, 43),
+                d("chaos_rune", 7, 7, 43), d("nature_rune", 6, 6, 43), d("cosmic_rune", 3, 3, 64),
+                d("iron_arrow", 15, 15, 64), d("steel_arrow", 30, 30, 128), d("death_rune", 3, 3, 128),
+                d("blood_rune", 1, 1, 128), d("coins", 37, 37, 7), d("coins", 2, 2, 16),
+                d("coins", 119, 119, 13), d("coins", 300, 300, 64), d("steel_bar", 1, 1, 21),
+                d("coal", 1, 1, 128), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012),
+                d("big_bones", 1, 1, 1), d("coins", 10, 10, 26), d("coins", 5, 5, 4),
+                d("coins", 2, 2, 12), d("#herbs", 1, 1, 26), d("#uncommon_seeds", 1, 1, 4),
+                d("#gems", 1, 1, 32));
+        // dusk <- wiki:Grotesque Guardians(328) DropsLine table
+        p("dusk", rm("rune_platebody"),
+                d("granite_dust", 50, 100, 1), d("rune_pickaxe", 1, 1, 24), d("rune_full_helm", 1, 1, 28),
+                d("rune_platelegs", 1, 1, 28), d("rune_2h_sword", 1, 1, 36), d("rune_battleaxe", 1, 1, 47),
+                d("dragon_longsword", 1, 1, 142), d("adamant_boots", 1, 1, 142), d("dragon_med_helm", 1, 1, 142),
+                d("saradomin_brew", 2, 2, 18), d("magic_potion(2)", 1, 1, 24), d("ranging_potion(2)", 1, 1, 24),
+                d("super_combat_potion(2)", 1, 1, 24), d("prayer_potion", 1, 2, 36), d("gold_ore", 40, 50, 20),
+                d("adamantite_bar", 25, 40, 24), d("gold_bar", 35, 50, 24), d("mithril_bar", 35, 45, 24),
+                d("coal", 180, 250, 28), d("runite_ore", 3, 6, 36), d("runite_bar", 3, 5, 47),
+                d("raw_shark", 20, 20, 95), d("raw_sea_turtle", 20, 20, 142), d("coins", 10000, 20000, 14),
+                d("chaos_rune", 100, 150, 18), d("coins", 25000, 25000, 28), d("crystal_key", 1, 1, 28),
+                d("death_rune", 90, 130, 28), d("dragon_dart_tip", 15, 25, 28), d("diamond_bolt_tips", 100, 150, 47),
+                d("dragonstone_bolt_tips", 20, 40, 71), d("onyx_bolt_tips", 10, 15, 71), d("dragon_arrowtips", 50, 150, 142),
+                d("soul_rune", 20, 40, 142));
+        // araxxor <- wiki:Araxxor(890) DropsLine table
+        p("araxxor", rm("rune_platebody", "runite_bar", "super_restore", "coins"),
+                d("araxyte_venom_sac", 1, 1, 16), d("super_combat_potion(1)", 1, 1, 16), d("prayer_potion", 1, 1, 8),
+                d("shark", 2, 3, 16), d("wild_pie", 2, 3, 16), d("rune_kiteshield", 2, 2, 14),
+                d("rune_platelegs", 2, 2, 14), d("dragon_mace", 2, 2, 19), d("rune_2h_sword", 5, 5, 115),
+                d("dragon_platelegs", 2, 2, 115), d("death_rune", 250, 250, 23), d("nature_rune", 80, 80, 58),
+                d("mud_rune", 100, 100, 115), d("blood_rune", 180, 180, 115), d("yew_seed", 1, 1, 29),
+                d("toadflax_seed", 4, 4, 38), d("ranarr_seed", 3, 3, 115), d("snapdragon_seed", 3, 3, 115),
+                d("magic_seed", 2, 2, 115), d("coal", 120, 120, 29), d("adamantite_ore", 85, 85, 29),
+                d("raw_shark", 21, 21, 29), d("yew_logs", 70, 70, 38), d("runite_ore", 12, 12, 58),
+                d("raw_shark", 100, 100, 115), d("raw_monkfish", 120, 120, 115), d("pure_essence", 1200, 1200, 115),
+                d("araxyte_venom_sac", 12, 12, 58), d("earth_orb", 45, 45, 19), d("araxyte_venom_sac", 6, 6, 23), d("mort_myre_fungus", 24, 24, 29),
+                d("antidote_plus_plus(3)", 6, 6, 29), d("wine_of_zamorak", 8, 8, 38), d("red_spiders_eggs", 40, 40, 58),
+                d("bark", 15, 15, 115), d("#tree_herb_seeds", 1, 1, 115),
+                d("#rare", 1, 1, 115));
+        // Rows of the snapshot that were "not in game" until round 27 added the item.
+        // Callisto: Looting bag (was "not in game")
+        add("callisto", d("looting_bag", 1, 1, 3));
+        // Artio: Looting bag (was "not in game")
+        add("artio", d("looting_bag", 1, 1, 3));
+        // Venenatis: Looting bag (was "not in game")
+        add("venenatis", d("looting_bag", 1, 1, 3));
+        // Spindel: Looting bag (was "not in game")
+        add("spindel", d("looting_bag", 1, 1, 3));
+        // Vet'ion: Looting bag (was "not in game")
+        add("vetion", d("looting_bag", 1, 1, 3));
+        // Calvar'ion: Looting bag (was "not in game")
+        add("calvarion", d("looting_bag", 1, 1, 3));
+        // Scorpia: Looting bag (was "not in game")
+        add("scorpia", d("looting_bag", 1, 1, 3));
+        // Chaos Elemental: Blighted ancient ice sack (was "not in game")
+        add("chaos_elemental", d("blighted_ancient_ice_sack", 20, 40, 26));
+        // Chaos Elemental: Looting bag (was "not in game")
+        add("chaos_elemental", d("looting_bag", 1, 1, 3));
+        // Chaos Fanatic: Looting bag (was "not in game")
+        add("chaos_fanatic", d("looting_bag", 1, 1, 3));
+        // Crazy archaeologist: Looting bag (was "not in game")
+        add("crazy_archaeologist", d("looting_bag", 1, 1, 3));
+        // Scurrius: Raw rat meat (was "not in game")
+        add("scurrius", d("raw_rat_meat", 1, 1, 1));
+        // Vorkath: Scaly blue dragonhide (was "not in game")
+        add("vorkath", d("scaly_blue_dragonhide", 1, 1, 10));
+        // Abyssal Sire: Mystic lava staff (was "not in game")
+        add("abyssal_sire", d("mystic_lava_staff", 2, 2, 35));
+        // Amoxliatl: Blessed bone shards (was "not in game")
+        add("amoxliatl", d("blessed_bone_shards", 60, 100, 29));
+        // Shellbane gryphon: Adamant cannonball (was "not in game")
+        add("shellbane_gryphon", d("adamant_cannonball", 35, 50, 16));
+        // Shellbane gryphon: Rune cannonball (was "not in game")
+        add("shellbane_gryphon", d("rune_cannonball", 20, 30, 21));
+        // Shellbane gryphon: Elkhorn frag (was "not in game")
+        add("shellbane_gryphon", d("elkhorn_frag", 1, 1, 128));
+        // Shellbane gryphon: Pillar frag (was "not in game")
+        add("shellbane_gryphon", d("pillar_frag", 1, 1, 128));
+    }
+
+    private static void add(String key, Drop... put) {
+        MonsterDropsTable.Patch old = PATCHES.get(key);
+        List<Drop> lines = new ArrayList<>(old == null ? List.of() : old.put());
+        lines.addAll(List.of(put));
+        PATCHES.put(key, new MonsterDropsTable.Patch(List.copyOf(lines), old == null ? Set.of() : old.remove()));
     }
 }
