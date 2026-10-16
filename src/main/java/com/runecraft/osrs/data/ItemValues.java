@@ -1591,6 +1591,14 @@ public final class ItemValues {
             cox_kindling|-1|0|st|
             cavern_grubs|-1|0|st|
             crondis_water_container|-1|2||
+            nectar|-1|0||
+            tears_of_elidinis|-1|0||
+            ambrosia|-1|0||
+            silk_dressing|-1|0||
+            blessed_crystal_scarab|-1|0||
+            smelling_salts|-1|0||
+            liquid_adrenaline|-1|0||
+            honey_locust|-1|0|s|
             rfd_hardleather_gloves|50|0.226||
             rfd_bronze_gloves|100|0.226||
             rfd_iron_gloves|250|0.226||

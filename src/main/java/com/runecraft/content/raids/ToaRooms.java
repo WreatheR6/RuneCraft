@@ -473,7 +473,12 @@ final class ToaRooms {
             // OSRS: swarms only come outside her shield phases with the Medic! invocation.
             if (tick % 20 == 0 && raid.invocations().contains(Invocation.MEDIC)) {
                 for (int i = 0; i < 2; i++) {
-                    spawnMob("toa_scarab_swarm", at(-6 + rnd().nextInt(12), i % 2 == 0 ? -18 : 18), false);
+                    LivingEntity swarm = spawnMob("toa_scarab_swarm", at(-6 + rnd().nextInt(12), i % 2 == 0 ? -18 : 18), false);
+                    if (swarm != null && Invocation.kephriMedicSwarmSpeed(inv) < 1.0) {
+                        // OSRS: Medic!'s swarms move 50% slower (Slowness III: -45%).
+                        swarm.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(
+                                net.minecraft.entity.effect.StatusEffects.SLOWNESS, 20 * 600, 2, false, false));
+                    }
                 }
             }
             if (tick % 2 == 0 && shielded()) {
@@ -539,6 +544,8 @@ final class ToaRooms {
         private int style;
         /** Auto-attack cycles since the fight began (OSRS: a special attack follows every six autos). */
         private int autos;
+        /** Attacks made with the current style (Stay Vigilant needs two before another switch). */
+        private int styleAttacks;
         /** Game ticks left of Trailing Orbs, and where each player stood last tick. */
         private int trailTicks;
         private final Map<UUID, Vec3d> trailLast = new HashMap<>();
@@ -561,6 +568,8 @@ final class ToaRooms {
             shadows.clear();
             shadow = null;
             autos = 0;
+            style = 0;
+            styleAttacks = 0;
             trailTicks = 0;
             trailLast.clear();
             akkha = spawnBoss("akkha", at(8, 0));
@@ -584,7 +593,6 @@ final class ToaRooms {
                 return;
             }
             Set<Invocation> inv = raid.invocations();
-            boolean vigilant = inv.contains(Invocation.STAY_VIGILANT);
             autoAttack(akkha, tick, 6);
             if (tick % 6 == 0) {
                 // One auto-attack cycle (Akkha attacks every 6 ticks). // approx: counted on the clock, not per landed attack
@@ -597,13 +605,16 @@ final class ToaRooms {
                         }
                     }
                 }
-                if (autos % Invocation.akkhaSpecialEvery(inv) == 0) {
+                styleAttacks++;
+                boolean special = autos % Invocation.akkhaSpecialEvery(inv) == 0;
+                if (special) {
                     specials(inv);
-                    // OSRS: he changes style after each special; with Stay Vigilant only 1 in 5 times.
-                    if (!vigilant || rnd().nextInt(5) == 0) {
-                        switchStyle();
-                    }
-                } else if (vigilant && rnd().nextInt(4) == 0) {
+                }
+                // OSRS: he changes style after each special; with Stay Vigilant a 1/4 roll after an auto-attack and a
+                // 1/5 roll after a special, never before two attacks with a style.
+                int oneIn = Invocation.akkhaSwitchOneIn(inv, special);
+                boolean early = inv.contains(Invocation.STAY_VIGILANT) && styleAttacks < Invocation.AKKHA_MIN_STYLE_ATTACKS;
+                if (oneIn > 0 && !early && rnd().nextInt(oneIn) == 0) {
                     switchStyle();
                 }
             }
@@ -625,8 +636,9 @@ final class ToaRooms {
         }
 
         private void switchStyle() {
-            int next = (style + 1 + rnd().nextInt(2)) % 3;
-            style = next;
+            // OSRS: always the same cycle, melee -> ranged -> magic.
+            style = Invocation.akkhaNextStyle(style);
+            styleAttacks = 0;
             say("Akkha switches to " + STYLES[style] + "!");
         }
 
@@ -838,15 +850,19 @@ final class ToaRooms {
             }
             bananas(tick, inv);
             int baboons = living("toa_baboon_brawler").size() + living("toa_baboon_thrower").size() + living("toa_baboon_mage").size();
-            if (tick % 30 == 0 && baboons < 2 + raid.partySize()) {
+            if (tick % 30 == 0 && baboons < RaidScaling.babaBaboons(raid.partySize())) {
                 String[] kinds = {"toa_baboon_brawler", "toa_baboon_thrower", "toa_baboon_mage"};
-                spawnMob(kinds[rnd().nextInt(3)], at(rnd().nextInt(10), rnd().nextBoolean() ? -10 : 10), false);
+                LivingEntity b = spawnMob(kinds[rnd().nextInt(3)], at(rnd().nextInt(10), rnd().nextBoolean() ? -10 : 10), false);
+                if (b != null) {
+                    // OSRS: Ba-Ba's baboons have 10 static hitpoints.
+                    raid.setHitpoints(b, RaidScaling.BABA_BABOON_HP);
+                }
             }
         }
 
         /**
          * Ba-Ba's scream at 66% and 33% knocks everyone to the bottom of the room (OSRS); with Mind the Gap! anyone in
-         * the middle columns falls into the pit and dies unless they stand on the top row.
+         * the middle columns falls into the pit and dies unless they stand at the northern or southern side.
          */
         private void scream() {
             warn("Ba-Ba screams, knocking you back!");
@@ -854,7 +870,7 @@ final class ToaRooms {
             for (ServerPlayerEntity p : players()) {
                 double dx = p.getX() - (center().getX() + 0.5);
                 double dz = p.getZ() - (center().getZ() + 0.5);
-                if (gap && Math.abs(dx) < 3.5 && dz > -16) {
+                if (gap && Math.abs(dx) < 3.5 && Math.abs(dz) < 14) { // approx: the room's north and south edges are safe
                     Msg.red(p, "You are flung into the gap!");
                     RaidEffects.hit(baba, p, 999, null, true);
                     continue;
