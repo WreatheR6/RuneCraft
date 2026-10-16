@@ -870,6 +870,21 @@ public final class CombatAchievementRules {
             27;RUN;run:barrows;1;killed>=6:barrows_brother nodmg=boss
             30;RUN;run:barrows;1;killed>=6:barrows_brother noflag=had_prayer
             26;RUN;run:barrows;1;killed>=6:barrows_brother noattacker=*dharok/*verac/*torag/*guthan
+            605;RULE;yama;1;nodmg=shadow_orb,shadow_engulf,shadow_stomp,shadow_wave,shadow_crash noflag=yama_crash_far
+            606;RULE;yama;1;nodmg=fire_orb,glyph_flames,meteor_strike,fire_streak,fire_wave noflag=yama_flare_nonspec
+            607;RULE;yama;1;noflag=yama_judge_wrong noflag=yama_exile_hits
+            608;RULE;yama;1;nodmg=shadow_orb,shadow_engulf,shadow_stomp,shadow_wave,shadow_crash,fire_orb,glyph_flames,meteor_strike,fire_streak,fire_wave,void_flare,claw_swipe,offprayer noflag=yama_crash_far noflag=yama_flare_nonspec noflag=yama_judge_wrong noflag=yama_exile_hits
+            609;RULE;yama;1;flag=yama_contract
+            4;RULE;abyssal_sire;1;count<=1:sire_stun
+            5;RULE;abyssal_sire;1;nodmg=tentacle
+            492;RULE;vardorvis;1;count>=300:vardorvis_enrage_ticks noflag=vardorvis_left_centre
+            587;RULE;amoxliatl;1;noflag=amox_ice_shattered
+            642;RULE;maggot_king;1;noflag=maggot_punish_missed
+            645;RULE;maggot_king;1;nodmg=screech,carrion,slam,larva,hazard,offprayer noflag=maggot_healed
+            595;RULE;branda_the_fire_queen;1;noflag=titans_wall_dissipated
+            597;RULE;branda_the_fire_queen;1;count>=10:titan_elemental_kills
+            598;RULE;branda_the_fire_queen;1;flag=titans_charge_kill
+            408;RULE;phosanis_nightmare;1;noflag=phosani_sleepwalker_reached
             """;
 
     private static final Map<Integer, Spec> SPECS = new LinkedHashMap<>();

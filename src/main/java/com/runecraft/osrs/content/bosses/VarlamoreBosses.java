@@ -33,8 +33,9 @@ public final class VarlamoreBosses {
     public static final AttackDef AMOX_ICE = AttackDef.of("ice_shard", AttackType.MAGIC, 22, 14, 4).particle("minecraft:snowflake");
     public static final AttackDef AMOX_FREEZE = AttackDef.of("glacial_burst", AttackType.MAGIC, 20, 14, 2).special(Special.FREEZE, 5)
             .telegraph(3, "Amoxliatl chills the air around you!").particle("minecraft:snowflake");
-    public static final AttackDef AMOX_SPIKES = AttackDef.of("icicle_crash", AttackType.MAGIC, 34, 14, 2).special(Special.SKY_STRIKE, 0)
-            .telegraph(3, "Icicles gather above you!").particle("minecraft:item_snowball");
+    /** Icicle Crash: her prayers-off special; re-activating Protect from Magic before it lands negates it (OSRS Wiki). */
+    public static final AttackDef AMOX_SPIKES = AttackDef.of("icicle_crash", AttackType.MAGIC, 34, 14, 2)
+            .telegraph(3, "Amoxliatl disables your prayers and launches an icicle attack!").particle("minecraft:item_snowball");
 
     // ---- Royal Titans ----
     public static final AttackDef BRANDA_MELEE = AttackDef.of("molten_fist", AttackType.CRUSH, 35, 4, 5);

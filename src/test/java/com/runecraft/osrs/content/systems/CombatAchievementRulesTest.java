@@ -108,6 +108,7 @@ class CombatAchievementRulesTest {
         Set<String> attacks = new java.util.HashSet<>(Set.of("boss", "other", "melee", "bossmelee", "offprayer", "mechanic", "hazard",
                 "poison"));
         attacks.addAll(CombatAchievementRules.SCRIPTED_ATTACKS);
+        attacks.addAll(com.runecraft.osrs.content.bosses.BossMechanics.SCRIPTED_ATTACKS);
         for (AttackType t : AttackType.values()) {
             attacks.add(t.name().toLowerCase(java.util.Locale.ROOT));
         }
@@ -180,6 +181,7 @@ class CombatAchievementRulesTest {
                 "fluke", "multistyle"));
         List<java.lang.reflect.Field> fields = new ArrayList<>(List.of(CombatAchievements.class.getFields()));
         fields.addAll(List.of(com.runecraft.osrs.content.minigames.FortisColosseum.class.getFields()));
+        fields.addAll(List.of(com.runecraft.osrs.content.bosses.BossMechanics.class.getFields()));
         for (java.lang.reflect.Field f : fields) {
             if ((f.getName().startsWith("FLAG_") || f.getName().startsWith("COUNT_")) && f.getType() == String.class) {
                 try {

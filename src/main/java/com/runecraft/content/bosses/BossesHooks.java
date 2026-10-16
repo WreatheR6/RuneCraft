@@ -53,7 +53,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("crystalline_hunllef", () -> new EncounterScripts.Hunllef(false));
         BossScripts.register("corrupted_hunllef", () -> new EncounterScripts.Hunllef(true));
         BossScripts.register("the_nightmare", EncounterScripts.Nightmare::new);
-        BossScripts.register("phosanis_nightmare", EncounterScripts.Nightmare::new);
+        BossScripts.register("phosanis_nightmare", () -> new EncounterScripts.Nightmare(true));
         BossScripts.register("phantom_muspah", EncounterScripts.Muspah::new);
         BossScripts.register("duke_sucellus", EncounterScripts.Duke::new);
         BossScripts.register("the_leviathan", EncounterScripts.Leviathan::new);
@@ -68,6 +68,12 @@ public final class BossesHooks implements ModuleHooks {
         DoomDelveService.init();
         BossScripts.register("the_hueycoatl", EncounterScripts.Hueycoatl::new);
         BossScripts.register("branda_the_fire_queen", EncounterScripts.RoyalTitans::new);
+        MinionRules.register();
+        BossScripts.register("yama", ModernScripts.Yama::new);
+        BossScripts.register("amoxliatl", ModernScripts.Amoxliatl::new);
+        BossScripts.register("maggot_king", ModernScripts.MaggotKing::new);
+        // Yama's sigil contracts: one held in the main hand when challenging him is shown to him (and consumed).
+        com.runecraft.boss.DataBossService.requirement("yama", (player, def) -> ModernScripts.Yama.offerContract(player));
 
         BlockHooks.register(BossPlaces.FONT_OF_CONSUMPTION, BossesHooks::offerUnsired);
 
