@@ -813,14 +813,16 @@ public final class MinigameRules {
                 new Loot("mithril_bolts", 16, 35, 40), new Loot("adamant_bolts", 12, 26, 20), new Loot("bird_nest_seeds", 1, 1, 20),
                 new Loot("coins", 2, 500, 200));
         /**
-         * Hard deliveries roll this table instead: the same tips plus the grand seed pod, a rare tip from Wingstone, Penwie,
-         * Brambickle and Professor Manglethorp (OSRS Wiki "Grand seed pod"; weight approx).
+         * Hard deliveries roll this table instead: the same tips plus the grand seed pod, tipped 5 at a time at 23/512 by
+         * Wingstone, Penwie, Brambickle and Professor Manglethorp (OSRS Wiki "Grand seed pod"). Customers aren't tracked, so the
+         * weight is that rate averaged over all hard-delivery customers (about 4 in 15-20): roughly 1/90 per hard delivery
+         * (approx).
          */
         public static final List<Loot> HARD_TIPS = hardTips();
 
         private static List<Loot> hardTips() {
             List<Loot> out = new java.util.ArrayList<>(TIPS);
-            out.add(new Loot("grand_seed_pod", 1, 1, 4)); // approx: "rare"
+            out.add(new Loot("grand_seed_pod", 5, 5, 7)); // 7/630; weight approx
             return List.copyOf(out);
         }
 

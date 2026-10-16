@@ -85,7 +85,8 @@ class TeleportItemSourcesTest {
         assertEquals(99_000, price("olafs_music_cape", "music_cape"));
         assertEquals("dragon_slayer_ii", Shops.QUEST_GATES.get("mythical_cape_store")[0]);
         assertEquals("fremennik_trials", Shops.QUEST_GATES.get("yrsas_accoutrements")[0]);
-        assertTrue(MinigameRules.GnomeRestaurant.HARD_TIPS.stream().anyMatch(l -> l.item().equals("grand_seed_pod")));
+        assertTrue(MinigameRules.GnomeRestaurant.HARD_TIPS.stream()
+                .anyMatch(l -> l.item().equals("grand_seed_pod") && l.min() == 5 && l.max() == 5), "grand seed pods are tipped 5 at a time");
         assertTrue(MinigameRules.GnomeRestaurant.TIPS.stream().noneMatch(l -> l.item().equals("grand_seed_pod")),
                 "only the four hard-delivery customers tip grand seed pods");
         assertEquals(750, ItemSources.elunedCost(0));
