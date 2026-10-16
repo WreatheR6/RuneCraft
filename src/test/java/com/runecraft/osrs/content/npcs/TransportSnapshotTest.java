@@ -35,28 +35,31 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * tables (skretzo/shortest-path, wiki-derived OSRS tiles, fares and requirements) in
  * {@code src/test/resources/osrs/transport/}: fairy rings, spirit trees, gnome gliders, charter ships, boats,
  * canoes, magic carpets, balloons, Magic Mushtrees, quetzals, the Lovakengj minecarts, teleport jewellery and
- * teleport tablets. Destinations OSRS puts underground or on another plane go to the place this world builds
- * for them; those are listed in {@link #RELOCATED} with the reason.
+ * teleport tablets, the Wilderness levers and obelisks. OSRS dungeon tiles (y 9,000+) land in the dungeon carved under
+ * the surface tile above them where one exists; other destinations OSRS puts underground, in an instance or on another
+ * plane go to the place this world builds for them, listed in {@link #RELOCATED} with the reason.
  */
 class TransportSnapshotTest {
     /** Destinations deliberately moved from their OSRS tile: name -> why. */
     private static final Map<String, String> RELOCATED = Map.ofEntries(
             Map.entry("Games necklace: Corporeal Beast", "lair built on the surface (corporeal_beast_lair)"),
             Map.entry("Games necklace: Tears of Guthix", "cave built on the surface (tears_of_guthix_cave)"),
-            Map.entry("Skills necklace: Mining Guild", "OSRS lands underground; surface guild entrance"),
+            Map.entry("Skills necklace: Mining Guild", "no dungeon carved under OSRS's tile (the guild mine); the surface guild entrance"),
             Map.entry("Ring of wealth: Dondakan", "OSRS lands underground; mine entrance at White Wolf Mountain"),
             Map.entry("Digsite pendant: Lithkren", "OSRS lands in the vault; Lithkren's surface"),
             Map.entry("Drakan's medallion: Slepe", "OSRS lands in the sanctuary under Slepe; the village"),
-            Map.entry("Slayer ring: Fremennik", "OSRS lands inside the dungeon; its entrance south-east of Rellekka"),
             Map.entry("Slayer ring: Tarn's Lair", "an instance in OSRS; the Haunted Mine entrance to the lair as built here"),
             Map.entry("Slayer ring: Dark Beasts", "OSRS lands by the Temple of Light; this world's dark beasts are in the Iorwerth Dungeon"),
-            Map.entry("Paddewwa tablet", "Edgeville Dungeon is not built; surface above it"),
-            Map.entry("Ape Atoll tablet", "OSRS lands in the Ape Atoll dungeon; the island above it"),
+            Map.entry("Kharedst's memoirs: Lunch by the Lancalliums", "OSRS tile is in this world's river; 4 tiles west"),
+            Map.entry("Book of the dead: Lunch by the Lancalliums", "OSRS tile is in this world's river; 4 tiles west"),
             Map.entry("Key master teleport", "Cerberus' lair is an instance; Taverley Dungeon entrance"),
             Map.entry("Pharaoh's sceptre: Jalsavrah", "the plane-3 Pyramid Plunder lobby; the minigame's pyramid"),
-            Map.entry("Giantsoul amulet: 1. Bryophyta", "OSRS lands in the Varrock Sewers; Bryophyta's summoning stone"),
-            Map.entry("Giantsoul amulet: 2. Obor", "OSRS lands in the Edgeville Dungeon; Obor's summoning stone"),
-            Map.entry("Giantsoul amulet: 3. Branda and Eldric", "OSRS lands in the Asgarnian Ice Dungeon; its entrance (Titans' lair)"));
+            Map.entry("Giantsoul amulet: 1. Bryophyta", "this world's Varrock Sewers don't reach under OSRS's tile; Bryophyta's summoning stone"),
+            Map.entry("Giantsoul amulet: 2. Obor", "the Stronghold of Security, not Obor's lair, lies under OSRS's tile here; his summoning stone"),
+            Map.entry("Giantsoul amulet: 3. Branda and Eldric", "this world's Asgarnian Ice Dungeon doesn't reach under OSRS's tile; its entrance (Titans' lair)"),
+            Map.entry("Amulet of the eye", "the Temple of the Eye is an instance; the Guardians of the Rift place on the surface"),
+            Map.entry("Camulet: Enakhra's Temple", "OSRS lands inside the temple (plane 2); its entrance"),
+            Map.entry("Hallowed crystal shard", "the Sepulchre lobby is an instance; the minigame's place in Darkmeyer"));
 
     // ------------------------------------------------------------------ snapshot reading
 
@@ -180,8 +183,9 @@ class TransportSnapshotTest {
                 req.put(code, quests(r.get("Quests")));
             }
         }
-        // Realms built elsewhere (CKP: the Cosmic Altar's plane, BJR: the Fisher Realm, DIR: Gorak's Plane).
-        Set<String> otherRealms = Set.of("CKP", "BJR", "DIR");
+        // Realms built elsewhere (CKP: the Cosmic Altar's plane, BJR: the Fisher Realm, DIR: Gorak's Plane, DIP: the Abyssal
+        // Nexus, DLS: the Myreque hideout), rings carved into dungeons (BLP, ALR, AJQ: checked below) and the house ring.
+        Set<String> otherRealms = Set.of("CKP", "BJR", "DIR", "DIP", "DLS", "BLP", "ALR", "AJQ", "DIQ");
         // CLR's ring is part of the hand-built Ape Atoll course, a few tiles from OSRS's.
         Map<String, Integer> tolerance = Map.of("CLR", 6);
         Set<String> seen = new HashSet<>();
@@ -210,7 +214,178 @@ class TransportSnapshotTest {
                 assertTrue(seen.contains(e.getKey()), "missing fairy ring " + e.getKey() + " at " + xy(t));
             }
         }
-        assertTrue(seen.size() >= 44, "rings " + seen.size());
+        assertTrue(seen.size() >= 50, "rings " + seen.size());
+        for (String code : List.of("BLP", "ALR", "AJQ", "DIP", "DLS", "DIQ")) {
+            assertTrue(seen.contains(code), "missing fairy ring " + code);
+        }
+        assertEquals(IslandsTravel.HOUSE_PLACE, IslandsTravel.FAIRY_RINGS.stop("DIQ").place());
+    }
+
+    /** Whether a structure op puts a block at (x, y, z) (WALLS only on its rim). */
+    private static boolean covers(com.runecraft.osrs.world.StructureDef.Op op, int x, int y, int z) {
+        if (x < op.x1() || x > op.x2() || y < op.y1() || y > op.y2() || z < op.z1() || z > op.z2()) {
+            return false;
+        }
+        return op.type() != com.runecraft.osrs.world.StructureDef.Op.Type.WALLS
+                || x == op.x1() || x == op.x2() || z == op.z1() || z == op.z2();
+    }
+
+    /** The last op of a structure that touches (x, y, z), or null. */
+    private static com.runecraft.osrs.world.StructureDef.Op last(com.runecraft.osrs.world.StructureDef def, int x, int y, int z) {
+        com.runecraft.osrs.world.StructureDef.Op hit = null;
+        for (com.runecraft.osrs.world.StructureDef.Op op : def.ops()) {
+            if (op.type() != com.runecraft.osrs.world.StructureDef.Op.Type.FLATTEN && covers(op, x, y, z)) {
+                hit = op;
+            }
+        }
+        return hit;
+    }
+
+    private static com.runecraft.osrs.content.dungeons.Dungeons.Dungeon dungeon(String id) {
+        for (com.runecraft.osrs.content.dungeons.Dungeons.Dungeon d : com.runecraft.osrs.content.dungeons.Dungeons.all()) {
+            if (d.id().equals(id)) {
+                return d;
+            }
+        }
+        return null;
+    }
+
+    /** Each dungeon realm's ring and arrival spot stand in its dungeon's carved air, on a solid floor. */
+    @Test
+    void dungeonFairyRingsStandInCarvedAir() {
+        assertEquals(3, IslandsTravel.DUNGEON_RINGS.size());
+        for (IslandsTravel.DungeonRing r : IslandsTravel.DUNGEON_RINGS) {
+            com.runecraft.osrs.content.dungeons.Dungeons.Dungeon d = dungeon(r.dungeon());
+            assertNotNull(d, r.code() + " dungeon " + r.dungeon());
+            int[] a = IslandsTravel.dungeonArrival(r);
+            for (int[] at : new int[][]{{r.x(), r.z()}, {a[0], a[2]}}) {
+                for (int up = 1; up <= 2; up++) {
+                    com.runecraft.osrs.world.StructureDef.Op op = last(d.structure(), at[0], r.floorY() + up, at[1]);
+                    assertNotNull(op, r.code() + " not inside " + r.dungeon() + " at " + at[0] + "," + (r.floorY() + up) + "," + at[1]);
+                    assertEquals(com.runecraft.osrs.world.StructureDef.Op.Type.CLEAR, op.type(),
+                            r.code() + " blocked by " + op.block() + " at " + at[0] + "," + (r.floorY() + up) + "," + at[1]);
+                }
+                com.runecraft.osrs.world.StructureDef.Op floor = last(d.structure(), at[0], r.floorY(), at[1]);
+                assertNotNull(floor, r.code() + " floor");
+                assertTrue(floor.type() != com.runecraft.osrs.world.StructureDef.Op.Type.CLEAR && !floor.block().contains("lava")
+                        && !floor.block().contains("water"), r.code() + " floor " + floor.block());
+            }
+            IslandsTravel.Stop stop = IslandsTravel.FAIRY_RINGS.stop(r.code());
+            assertEquals(IslandsTravel.ringPlace(r.code()), stop.place(), r.code());
+            assertTrue(stop.hasBlock(), r.code());
+            // The stop's block offset from its bare place is the ring's own block column.
+            PlaceDef p = ContentRegistry.place(stop.place());
+            assertNotNull(p, stop.place());
+            assertEquals(r.x(), p.blockX() + stop.dx(), r.code());
+            assertEquals(r.z(), p.blockZ() + stop.dz(), r.code());
+        }
+    }
+
+    /**
+     * OSRS dungeon tiles (y 9,000 and up) land in the dungeon carved under the surface tile 6,400 tiles south (SysTeleport
+     * searches 3 blocks around that column), so every such destination needs one there.
+     */
+    @Test
+    void undergroundDestinationsHaveACarvedDungeon() {
+        List<Teleports.Destination> all = new ArrayList<>();
+        JEWELLERY.values().forEach(all::addAll);
+        for (Spellbooks.Tablet t : Spellbooks.TABLETS) {
+            all.add(t.destination());
+        }
+        int checked = 0;
+        for (Teleports.Destination d : all) {
+            if (!Teleports.underground(d)) {
+                continue;
+            }
+            int bx = GielinorMap.toBlockX(d.x());
+            int bz = GielinorMap.toBlockZ(Teleports.surfaceY(d));
+            boolean carved = false;
+            for (com.runecraft.osrs.content.dungeons.Dungeons.Dungeon g : com.runecraft.osrs.content.dungeons.Dungeons.all()) {
+                for (com.runecraft.osrs.world.StructureDef.Op op : g.structure().ops()) {
+                    carved |= op.type() == com.runecraft.osrs.world.StructureDef.Op.Type.CLEAR
+                            && op.y2() <= com.runecraft.osrs.content.dungeons.Dungeons.DEEP_TOP
+                            && bx + 3 >= op.x1() && bx - 3 <= op.x2() && bz + 3 >= op.z1() && bz - 3 <= op.z2();
+                }
+            }
+            assertTrue(carved, d.name() + " at " + d.x() + "," + d.y() + " has no dungeon under " + d.x() + "," + Teleports.surfaceY(d));
+            checked++;
+        }
+        assertTrue(checked >= 3, "underground destinations " + checked);
+    }
+
+    // ------------------------------------------------------------------ Wilderness levers and obelisks
+
+    @Test
+    void wildernessLeversMatch() throws IOException {
+        Set<String> osrs = new HashSet<>();
+        for (Map<String, String> r : rows("teleportation_levers.tsv")) {
+            osrs.add(xy(tile(r.get("Origin"))) + ">" + xy(tile(r.get("Destination"))));
+        }
+        Set<String> mine = new HashSet<>();
+        for (WildernessTransport.Lever l : WildernessTransport.LEVERS) {
+            mine.add(l.x() + "," + l.y() + ">" + l.toX() + "," + l.toY());
+            assertEquals(l, WildernessTransport.leverAt(l.x(), l.y()));
+        }
+        // The King Black Dragon's levers (inside the Lava Maze dungeon and the lair) are not built.
+        Set<String> notBuilt = Set.of("3067,10253>2271,4680", "2271,4680>3067,10254");
+        Set<String> expected = new HashSet<>(osrs);
+        expected.removeAll(notBuilt);
+        assertEquals(expected, mine);
+        assertEquals(5, WildernessTransport.LEVERS.size());
+    }
+
+    @Test
+    void wildernessObelisksMatch() throws IOException {
+        Map<String, Set<String>> platforms = new LinkedHashMap<>();
+        for (Map<String, String> r : rows("wilderness_obelisks.tsv")) {
+            if (r.get("Origin").isEmpty() || !r.get("section").startsWith("Level ")) {
+                continue; // the arrival rows, and the player-owned house's obelisk (the extras module's house)
+            }
+            String level = r.get("section").replaceAll("^Level (\\d+) .*", "$1");
+            platforms.computeIfAbsent(level, k -> new HashSet<>()).add(xy(tile(r.get("Origin"))));
+        }
+        assertEquals(6, platforms.size());
+        assertEquals(6, WildernessTransport.OBELISKS.size());
+        for (WildernessTransport.Obelisk o : WildernessTransport.OBELISKS) {
+            Set<String> mine = new HashSet<>();
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    mine.add((o.x() + dx) + "," + (o.y() + dy));
+                    assertEquals(o, WildernessTransport.platformAt(o.x() + dx, o.y() + dy));
+                }
+            }
+            assertEquals(platforms.get(String.valueOf(o.level())), mine, "obelisk " + o.level());
+            for (int[] c : new int[][]{{-2, -2}, {2, -2}, {-2, 2}, {2, 2}}) {
+                assertEquals(o, WildernessTransport.pillarAt(o.x() + c[0], o.y() + c[1]));
+            }
+            assertEquals(null, WildernessTransport.pillarAt(o.x(), o.y()));
+            // Always another obelisk, and every other one can come up.
+            Set<Integer> reached = new HashSet<>();
+            java.util.Random random = new java.util.Random(o.level());
+            for (int i = 0; i < 200; i++) {
+                WildernessTransport.Obelisk to = WildernessTransport.destination(o, random);
+                assertTrue(to != o);
+                reached.add(to.level());
+            }
+            assertEquals(5, reached.size());
+            assertEquals(o.level(), GielinorMap.wildernessLevel(GielinorMap.toBlockX(o.x()), GielinorMap.toBlockZ(o.y())), "obelisk " + o.level() + " Wilderness level");
+        }
+        // Every lever and obelisk tile on the surface is dry land (the Mage Bank is its own cavern under the sea).
+        for (WildernessTransport.Lever l : WildernessTransport.LEVERS) {
+            if (!l.id().equals("mage_bank")) {
+                assertFalse(com.runecraft.osrs.world.Elevation.isWater(GielinorMap.toBlockX(l.x()), GielinorMap.toBlockZ(l.y())), l.name());
+            }
+        }
+        for (WildernessTransport.Obelisk o : WildernessTransport.OBELISKS) {
+            assertFalse(com.runecraft.osrs.world.Elevation.isWater(GielinorMap.toBlockX(o.x()), GielinorMap.toBlockZ(o.y())), "obelisk " + o.level());
+        }
+        // The Mage Bank's arrival spot and lever lie inside its cavern's carved air.
+        com.runecraft.osrs.world.StructureDef bank = WildernessTransport.mageBank();
+        int[] a = WildernessTransport.mageBankArrival();
+        assertEquals(com.runecraft.osrs.world.StructureDef.Op.Type.CLEAR, last(bank, a[0], a[1], a[2]).type());
+        assertEquals(com.runecraft.osrs.world.StructureDef.Op.Type.CLEAR, last(bank, a[0], a[1] + 1, a[2]).type());
+        WildernessTransport.Lever back = WildernessTransport.leverAt(2539, 4712);
+        assertTrue(last(bank, GielinorMap.toBlockX(back.x()), a[1], GielinorMap.toBlockZ(back.y())).block().startsWith("minecraft:lever"));
     }
 
     // ------------------------------------------------------------------ NPC-run routes
@@ -493,7 +668,14 @@ class TransportSnapshotTest {
             Map.entry("Drakan's medallion", Teleports.DRAKAN), Map.entry("Ectophial", Teleports.ECTOPHIAL),
             Map.entry("Slayer ring", Teleports.SLAYER), Map.entry("Pharaoh's sceptre", Teleports.PHARAOH),
             Map.entry("Ring of the elements", Teleports.ELEMENTS), Map.entry("Giantsoul amulet", Teleports.GIANTSOUL),
-            Map.entry("Pendant of ates", Teleports.ATES));
+            Map.entry("Pendant of ates", Teleports.ATES), Map.entry("Teleport crystal", Teleports.TELEPORT_CRYSTAL),
+            Map.entry("Eternal teleport crystal", Teleports.TELEPORT_CRYSTAL), Map.entry("Royal seed pod", Teleports.SEED_POD),
+            Map.entry("Grand seed pod", Teleports.SEED_POD), Map.entry("Icy basalt", Teleports.ICY_BASALT),
+            Map.entry("Stony basalt", Teleports.STONY_BASALT), Map.entry("Amulet of the eye", Teleports.AMULET_OF_THE_EYE),
+            Map.entry("Chronicle", Teleports.CHRONICLE), Map.entry("Mythical cape", Teleports.MYTHICAL_CAPE),
+            Map.entry("Music cape", Teleports.MUSIC_CAPE), Map.entry("Kharedst's memoirs", Teleports.MEMOIRS),
+            Map.entry("Book of the dead", Teleports.MEMOIRS), Map.entry("Hallowed crystal shard", Teleports.HALLOWED_SHARD),
+            Map.entry("Camulet", Teleports.CAMULET));
     private static final Map<String, String> ITEM_IDS = Map.ofEntries(
             Map.entry("Amulet of glory", "amulet_of_glory_4"), Map.entry("Ring of dueling", "ring_of_dueling_8"),
             Map.entry("Games necklace", "games_necklace_8"), Map.entry("Skills necklace", "skills_necklace_4"),
@@ -503,14 +685,20 @@ class TransportSnapshotTest {
             Map.entry("Drakan's medallion", "drakans_medallion"), Map.entry("Ectophial", "ectophial"),
             Map.entry("Slayer ring", "slayer_ring_8"), Map.entry("Pharaoh's sceptre", "pharaohs_sceptre"),
             Map.entry("Ring of the elements", "ring_of_the_elements"), Map.entry("Giantsoul amulet", "giantsoul_amulet"),
-            Map.entry("Pendant of ates", "pendant_of_ates"));
+            Map.entry("Pendant of ates", "pendant_of_ates"), Map.entry("Teleport crystal", "teleport_crystal"),
+            Map.entry("Eternal teleport crystal", "eternal_teleport_crystal"), Map.entry("Royal seed pod", "royal_seed_pod"),
+            Map.entry("Grand seed pod", "grand_seed_pod"), Map.entry("Icy basalt", "icy_basalt"), Map.entry("Stony basalt", "stony_basalt"),
+            Map.entry("Amulet of the eye", "amulet_of_the_eye"), Map.entry("Chronicle", "chronicle"),
+            Map.entry("Mythical cape", "mythical_cape"), Map.entry("Music cape", "music_cape"),
+            Map.entry("Kharedst's memoirs", "kharedsts_memoirs"), Map.entry("Book of the dead", "book_of_the_dead"),
+            Map.entry("Hallowed crystal shard", "hallowed_crystal_shard"), Map.entry("Camulet", "camulet"));
     /** RuneCraft destination names that differ from the snapshot's. */
     private static final Map<String, String> ALIAS = Map.ofEntries(Map.entry("Cooks' Guild", "Cooking Guild"),
             Map.entry("Edgeville Monastery", "Monastery"), Map.entry("Dondakan's Rock", "Dondakan"),
             Map.entry("Wintertodt Camp", "Wintertodt"), Map.entry("Eagles' Eyrie", "Eagle's Eyrie"), Map.entry("Ectofuntus", ""),
             Map.entry("Stronghold Slayer Cave", "Stronghold"), Map.entry("Fremennik Slayer Dungeon", "Fremennik"),
             Map.entry("Air Altar", "Air"), Map.entry("Water Altar", "Water"), Map.entry("Earth Altar", "Earth"),
-            Map.entry("Fire Altar", "Fire"));
+            Map.entry("Fire Altar", "Fire"), Map.entry("Falo the Bard", "Teleport"));
     /** OSRS destinations not offered (yet). */
     private static final Set<String> NOT_OFFERED = Set.of();
 
@@ -534,6 +722,10 @@ class TransportSnapshotTest {
                         info = k;
                     }
                 }
+                if (r == null && byInfo.containsKey(item)) { // the item's own (unnamed) teleport, e.g. "Stony basalt"
+                    r = byInfo.get(item);
+                    info = item;
+                }
                 assertNotNull(r, item + ": " + d.name());
                 offered.add(info);
                 int[] t = tile(r.get("Destination"));
@@ -541,11 +733,14 @@ class TransportSnapshotTest {
                     assertTrue(same(t, d.x(), d.y()), info + " at " + d.x() + "," + d.y() + ", OSRS " + xy(t));
                 }
                 Set<String> q = quests(r.get("Quests"));
+                if (r.get("Varbits").contains("6528=207")) {
+                    q.add("making_friends_with_my_arm"); // that quest's progress varbit at its completed value
+                }
                 assertEquals(q, d.quest() == null ? Set.of() : Set.of(d.quest()), info + " quest");
                 assertEquals(Integer.parseInt(r.get("Wilderness level")), Teleports.wildernessLimit(ITEM_IDS.get(item)), info + " wilderness");
             }
             for (String k : byInfo.keySet()) {
-                if (k.startsWith(item + ": ") && !NOT_OFFERED.contains(k)) {
+                if ((k.startsWith(item + ": ") || k.equals(item)) && !NOT_OFFERED.contains(k)) {
                     assertTrue(offered.contains(k), "missing " + k);
                 }
             }
@@ -636,6 +831,48 @@ class TransportSnapshotTest {
         assertEquals("ring_of_returning_5", com.runecraft.osrs.content.systems.Jewellery.ENCHANT.get("jade_ring"));
         assertEquals(2, com.runecraft.osrs.content.systems.Jewellery.ENCHANT_LEVEL.get("jade_ring"));
         assertTrue(com.runecraft.osrs.ItemCatalog.exists("jade_ring"));
+        // Round 27: a Pyramid Plunder sceptre starts uncharged; the skull sceptre holds 10 + 4 per Varrock Diary tier.
+        assertEquals(0, com.runecraft.osrs.content.systems.Charges.of("pharaohs_sceptre").initial());
+        assertEquals(List.of(10, 14, 18, 22, 26), java.util.stream.IntStream.rangeClosed(0, 4)
+                .map(com.runecraft.osrs.content.systems.Charges::skullSceptreCap).boxed().toList());
+        assertEquals(26, com.runecraft.osrs.content.systems.Charges.of("skull_sceptre").max());
+        // Teleport crystal: one OSRS item per charge state, (1)-(5), "Consumable" T; the eternal crystal uses none.
+        for (Map<String, String> r : rows("teleportation_items.tsv")) {
+            String info = r.get("Display info");
+            if (info.startsWith("Teleport crystal: ")) {
+                assertEquals("T", r.get("Consumable"));
+                assertEquals(r.get("Items").split("\\|\\|").length, com.runecraft.osrs.content.systems.Charges.of("teleport_crystal").max());
+            }
+            if (info.startsWith("Eternal teleport crystal") || info.startsWith("Royal seed pod") || info.startsWith("Mythical cape")
+                    || info.startsWith("Music cape") || info.startsWith("Amulet of the eye")) {
+                assertEquals("F", r.get("Consumable"), info);
+            }
+            if (info.startsWith("Grand seed pod") || info.startsWith("Icy basalt") || info.startsWith("Stony basalt")
+                    || info.startsWith("Hallowed crystal shard")) {
+                assertEquals("T", r.get("Consumable"), info);
+                assertTrue(com.runecraft.osrs.content.systems.Jewellery.SINGLE_USE.contains(ITEM_IDS.get(info.replaceAll(":.*", ""))), info);
+            }
+        }
+        assertEquals(1000, com.runecraft.osrs.content.systems.Charges.of("chronicle").max());
+        assertEquals(Map.of("teleport_card", 1), com.runecraft.osrs.content.systems.Charges.of("chronicle").materials());
+        // Charges that belong to the player: the ring of the elements and the camulet (refilled by one bucket of dung).
+        assertTrue(com.runecraft.osrs.content.systems.Charges.perPlayer("ring_of_the_elements"));
+        assertTrue(com.runecraft.osrs.content.systems.Charges.perPlayer("camulet"));
+        assertFalse(com.runecraft.osrs.content.systems.Charges.perPlayer("pendant_of_ates")); // "the charges are not shared"
+        assertEquals(4, com.runecraft.osrs.content.systems.Charges.camuletRefill(0, 1));
+        assertEquals(3, com.runecraft.osrs.content.systems.Charges.camuletRefill(1, 1));
+        assertEquals(0, com.runecraft.osrs.content.systems.Charges.camuletRefill(4, 1));
+        assertEquals(0, com.runecraft.osrs.content.systems.Charges.camuletRefill(0, 0));
+        assertTrue(com.runecraft.osrs.ItemCatalog.exists("ugthanki_dung"));
+        assertTrue(com.runecraft.osrs.ItemCatalog.exists("teleport_card"));
+        for (String id : ITEM_IDS.values()) {
+            assertTrue(com.runecraft.osrs.ItemCatalog.exists(id), id);
+            assertTrue(com.runecraft.osrs.content.systems.Jewellery.worn(id) != null || com.runecraft.osrs.content.systems.Jewellery.held(id) != null
+                    || id.equals("slayer_ring_8") || id.startsWith("ring_of_dueling") || id.equals("pharaohs_sceptre"), id + " teleports");
+        }
+        // North Aldarin's statue of Ates needs Death on the Isle.
+        assertEquals("death_on_the_isle", Teleports.activationQuest(Teleports.ATES.get(3)));
+        assertEquals(null, Teleports.activationQuest(Teleports.ATES.get(0)));
         // Visit-unlocked destinations: the six statues of Ates and the Necropolis obelisk.
         for (Teleports.Destination d : Teleports.ATES) {
             assertTrue(Teleports.needsVisit(d), d.name());
@@ -649,10 +886,15 @@ class TransportSnapshotTest {
     void newTeleportDestinationsAreOnLand() {
         List<Teleports.Destination> all = new ArrayList<>();
         for (List<Teleports.Destination> l : List.of(Teleports.PHARAOH, Teleports.ELEMENTS, Teleports.RETURNING, Teleports.GIANTSOUL,
-                Teleports.ATES)) {
+                Teleports.ATES, Teleports.TELEPORT_CRYSTAL, Teleports.SEED_POD, Teleports.ICY_BASALT, Teleports.STONY_BASALT,
+                Teleports.AMULET_OF_THE_EYE, Teleports.CHRONICLE, Teleports.MYTHICAL_CAPE, Teleports.MUSIC_CAPE, Teleports.MEMOIRS,
+                Teleports.HALLOWED_SHARD, Teleports.CAMULET)) {
             all.addAll(l);
         }
         for (Teleports.Destination d : all) {
+            if (Teleports.underground(d)) {
+                continue;
+            }
             assertFalse(com.runecraft.osrs.world.Elevation.isWater(GielinorMap.toBlockX(d.x()), GielinorMap.toBlockZ(d.y())),
                     d.name() + " at " + d.x() + "," + d.y() + " is in water");
         }

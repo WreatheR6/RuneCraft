@@ -87,6 +87,8 @@ public final class SysState extends PersistentState {
         public final Set<String> prayerScrolls = new LinkedHashSet<>();
         /** Permanent item unlocks (e.g. Xeric's Honour after using an ancient tablet on Xeric's talisman). */
         public final Set<String> unlocks = new LinkedHashSet<>();
+        /** Charges that belong to the player rather than an item (Charges.perPlayer: ring of the elements, camulet). */
+        public final Map<String, Integer> playerCharges = new HashMap<>();
         /**
          * Dwarf multicannon (CannonService): set while the player's cannon is out in the world; if it is gone (decayed,
          * logged out, server restart) Nulodion gives it back with the cannonballs it held.
@@ -156,6 +158,9 @@ public final class SysState extends PersistentState {
             NbtCompound daily = new NbtCompound();
             dailyUses.forEach(daily::putInt);
             n.put("Daily", daily);
+            NbtCompound owned = new NbtCompound();
+            playerCharges.forEach(owned::putInt);
+            n.put("PlayerCharges", owned);
             n.putLong("Day", day);
             n.putInt("GeTrades", geTrades);
             n.put("Spells", strings(spellsCast));
@@ -223,6 +228,11 @@ public final class SysState extends PersistentState {
             NbtCompound d = n.getCompound("Daily");
             for (String k : d.getKeys()) {
                 dailyUses.put(k, d.getInt(k));
+            }
+            playerCharges.clear();
+            NbtCompound pc = n.getCompound("PlayerCharges");
+            for (String k : pc.getKeys()) {
+                playerCharges.put(k, pc.getInt(k));
             }
             day = n.contains("Day") ? n.getLong("Day") : -1;
             geTrades = n.getInt("GeTrades");

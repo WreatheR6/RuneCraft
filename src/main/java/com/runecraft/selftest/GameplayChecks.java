@@ -572,9 +572,20 @@ final class GameplayChecks {
         dests.add(Teleports.EDGEVILLE_HOME);
         dests.add(Teleports.LUNAR_HOME);
         dests.add(Teleports.ARCEUUS_HOME);
+        dests.addAll(Teleports.CAMULET);
         for (Teleports.Destination d : dests) {
+            // an OSRS dungeon tile falls back to the surface above it when no dungeon is carved there
             all.putIfAbsent(key(d.name()) + "@" + d.x() + "," + d.y(),
-                    new int[] {GielinorMap.toBlockX(d.x()), GielinorMap.toBlockZ(d.y())});
+                    new int[] {GielinorMap.toBlockX(d.x()), GielinorMap.toBlockZ(Teleports.surfaceY(d))});
+        }
+        // Wilderness obelisks (riders land on the destination's platform) and the surface lever destinations.
+        for (com.runecraft.osrs.content.npcs.WildernessTransport.Obelisk o : com.runecraft.osrs.content.npcs.WildernessTransport.OBELISKS) {
+            all.putIfAbsent("obelisk_" + o.level(), new int[] {GielinorMap.toBlockX(o.x()), GielinorMap.toBlockZ(o.y())});
+        }
+        for (com.runecraft.osrs.content.npcs.WildernessTransport.Lever l : com.runecraft.osrs.content.npcs.WildernessTransport.LEVERS) {
+            if (!l.toName().equals("the Mage Bank")) {
+                all.putIfAbsent("lever_" + l.id(), new int[] {GielinorMap.toBlockX(l.toX()) + 1, GielinorMap.toBlockZ(l.toY()) + 1});
+            }
         }
         for (Spell s : Spell.values()) {
             int[] tile = s.tile();

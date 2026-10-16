@@ -142,7 +142,20 @@ final class DiaryExtrasService {
         }
         Inv.remove(p, join[0], 1);
         Inv.remove(p, join[1], 1);
-        Inv.give(p, join[2], 1);
+        if (join[2].equals(Charges.SKULL_SCEPTRE)) {
+            // Made with the most charges the player's Varrock Diary allows (10, then 14/18/22/26 per tier).
+            int tiers = 0;
+            for (com.runecraft.osrs.content.systems.Diaries.Tier t : com.runecraft.osrs.content.systems.Diaries.Tier.values()) {
+                if (com.runecraft.osrs.content.systems.Diaries.tierComplete(SysState.of(p).diaryDone, "varrock", t)) {
+                    tiers++;
+                }
+            }
+            ItemStack sceptre = Inv.stack(Charges.SKULL_SCEPTRE, 1);
+            com.runecraft.item.ItemCharges.set(sceptre, Charges.skullSceptreCap(tiers));
+            Inv.give(p, sceptre);
+        } else {
+            Inv.give(p, join[2], 1);
+        }
         Msg.action(p, join[2].equals("crystal_key") ? "You join the two halves of the key together."
                 : "You fit the pieces together to make " + Msg.article(ItemCatalog.get(join[2]).name().toLowerCase()) + ".");
         GameEvents.fireActivity(p, "join:" + join[2]);

@@ -150,6 +150,37 @@ public final class Jewellery {
         // Pharaoh's sceptre (minigames module weapon): wielded, not worn here; per-stack charges (Charges.PHARAOHS_SCEPTRE).
         HELD.put("pharaohs_sceptre", new Worn("pharaohs_sceptre", "Pharaoh's sceptre", Slot.RING, NONE, Perk.TELEPORT_ONLY, null, -1,
                 Teleports.PHARAOH, false));
+        // Round 27 teleport items. Worn ones (wiki bonuses, EquipmentWikiSyncTest):
+        worn("amulet_of_the_eye", "Amulet of the eye", Slot.NECK, "amulet", 0x5A6ACA, 1, NONE, Perk.TELEPORT_ONLY,
+                "An amulet passed down by the Lumbridge Guide's family.");
+        teleportsFor("amulet_of_the_eye", Teleports.AMULET_OF_THE_EYE);
+        worn("mythical_cape", "Mythical cape", Slot.CAPE, "cape", 0x3A6A4A, 10_000, s(0, 0, 6, 0, 0, 8, 8, 8, 8, 8, 1, 0, 0, 1),
+                Perk.TELEPORT_ONLY, "A cape worn by those who have proven themselves in the Myths' Guild.");
+        teleportsFor("mythical_cape", Teleports.MYTHICAL_CAPE);
+        worn("music_cape", "Music cape", Slot.CAPE, "cape", 0xC03030, 99_000, s(0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 0, 0, 0, 0),
+                Perk.TELEPORT_ONLY, "The cape worn by those who have unlocked every song.");
+        teleportsFor("music_cape", Teleports.MUSIC_CAPE);
+        // Hand-held ones: teleport crystals (per-stack charges, Charges.TELEPORT_CRYSTAL; the eternal one is unlimited), seed
+        // pods (royal: Monkey Madness II reward, unlimited; grand: single use), basalts and the hallowed crystal shard (single
+        // use), the Chronicle (teleport cards), and the Kourend memoir books (quests module / zeah module items).
+        held("teleport_crystal", "Teleport crystal", "gem", 0x9AE0E8, 1, Teleports.TELEPORT_CRYSTAL,
+                "A tiny crystal that can teleport you to Lletya or Prifddinas.");
+        held("eternal_teleport_crystal", "Eternal teleport crystal", "gem", 0xC8F4FF, 1, Teleports.TELEPORT_CRYSTAL,
+                "A crystal with unlimited teleports to Lletya and Prifddinas.");
+        held("grand_seed_pod", "Grand seed pod", "seed", 0x8AB040, 1, Teleports.SEED_POD, "Squash or launch it to reach the Grand Tree.");
+        HELD.put("royal_seed_pod", new Worn("royal_seed_pod", "Royal seed pod", Slot.RING, NONE, Perk.TELEPORT_ONLY, null, -1,
+                Teleports.SEED_POD, false));
+        held("icy_basalt", "Icy basalt", "ore", 0xB0D8F0, 1, Teleports.ICY_BASALT, "Basalt crusted with efh and te salts.");
+        held("stony_basalt", "Stony basalt", "ore", 0x6A6A6A, 1, Teleports.STONY_BASALT, "Basalt crusted with urt and te salts.");
+        held("chronicle", "Chronicle", "book", 0x6A3A1A, 300, Teleports.CHRONICLE, "A book that charges with teleport cards.");
+        ITEMS.add(new Item("teleport_card", "Teleport card", "note", 0xE0D0A0, 150, "Charges the Chronicle with one teleport."));
+        ITEMS.add(new Item("ugthanki_dung", "Ugthanki dung", "bucket", 0x6A4A2A, 1, "Dung of the Camelus Horribleus variety."));
+        for (String book : new String[]{"kharedsts_memoirs", "book_of_the_dead"}) {
+            HELD.put(book, new Worn(book, book.equals("book_of_the_dead") ? "Book of the dead" : "Kharedst's memoirs", Slot.RING, NONE,
+                    Perk.TELEPORT_ONLY, null, -1, Teleports.MEMOIRS, false));
+        }
+        HELD.put("hallowed_crystal_shard", new Worn("hallowed_crystal_shard", "Hallowed crystal shard", Slot.RING, NONE,
+                Perk.TELEPORT_ONLY, null, -1, Teleports.HALLOWED_SHARD, false));
         worn("holy_symbol", "Holy symbol", Slot.NECK, "amulet", 0xE0E0E0, 300, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8),
                 Perk.NONE, "A blessed holy symbol of Saradomin.");
         worn("unholy_symbol", "Unholy symbol", Slot.NECK, "amulet", 0x404040, 300, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8),
@@ -267,6 +298,17 @@ public final class Jewellery {
         WORN.put(id, new Worn(id, name, slot, ref(id, stats), perk, null, -1, List.of(), false));
         ITEMS.add(new Item(id, name, shape, color, value, examine));
     }
+
+    /** A hand-held teleport item this module defines. */
+    private static void held(String id, String name, String shape, int color, int value, List<Teleports.Destination> dests,
+                             String examine) {
+        HELD.put(id, new Worn(id, name, Slot.RING, NONE, Perk.TELEPORT_ONLY, null, -1, dests, false));
+        ITEMS.add(new Item(id, name, shape, color, value, examine));
+    }
+
+    /** Teleport items used up by one teleport (OSRS "Consumable" with a single charge). */
+    public static final java.util.Set<String> SINGLE_USE = java.util.Set.of("grand_seed_pod", "icy_basalt", "stony_basalt",
+            "hallowed_crystal_shard");
 
     private static void teleportsFor(String id, List<Teleports.Destination> dests) {
         Worn w = WORN.get(id);

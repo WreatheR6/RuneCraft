@@ -39,6 +39,7 @@ public final class NpcsHooks implements ModuleHooks {
     @Override
     public void init() {
         NpcsNet.register();
+        WildernessTransportService.init();
         for (TownNpc n : Townsfolk.all()) {
             QuestScripts.onTalk(n.id(), (player, entity) -> talk(player, entity, n));
         }

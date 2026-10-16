@@ -412,7 +412,7 @@ public final class Spellbooks {
             new Tablet("watchtower_teleport_tablet", "Watchtower teleport", Teleports.at("Watchtower", 2546, 3112), 800),
             new Tablet("trollheim_teleport_tablet", "Trollheim teleport", Teleports.at("Trollheim", 2890, 3679), 800),
             new Tablet("kourend_castle_teleport_tablet", "Kourend castle teleport", Teleports.at("Kourend Castle", 1643, 3673), 800),
-            new Tablet("paddewwa_teleport_tablet", "Paddewwa teleport", Teleports.at("Paddewwa", 3098, 3480), 900),
+            new Tablet("paddewwa_teleport_tablet", "Paddewwa teleport", Teleports.at("Paddewwa", 3097, 9881), 900), // in the Edgeville Dungeon
             new Tablet("senntisten_teleport_tablet", "Senntisten teleport", Teleports.at("Senntisten", 3320, 3337), 900),
             new Tablet("kharyrll_teleport_tablet", "Kharyrll teleport", Teleports.at("Kharyrll", 3494, 3473), 900),
             new Tablet("lassar_teleport_tablet", "Lassar teleport", Teleports.at("Lassar", 3004, 3470), 900),
@@ -435,7 +435,7 @@ public final class Spellbooks {
             new Tablet("harmony_island_teleport_tablet", "Harmony island teleport", Teleports.at("Harmony Island", 3797, 2866), 800),
             new Tablet("cemetery_teleport_tablet", "Cemetery teleport", Teleports.at("Forgotten Cemetery", 2981, 3764), 800),
             new Tablet("barrows_teleport_tablet", "Barrows teleport", Teleports.at("Barrows", 3564, 3315), 900),
-            new Tablet("ape_atoll_teleport_tablet", "Ape atoll teleport", Teleports.at("Ape Atoll", 2770, 2703), 900),
+            new Tablet("ape_atoll_teleport_tablet", "Ape atoll teleport", Teleports.at("Ape Atoll", 2771, 9102), 900), // in the Ape Atoll dungeon
             // House tablets redirected with a scroll of redirection (Nightmare Zone): outside each town's house portal.
             new Tablet("rimmington_teleport_tablet", "Rimmington teleport", Teleports.at("Rimmington", 2953, 3224), 1),
             new Tablet("taverley_teleport_tablet", "Taverley teleport", Teleports.at("Taverley", 2893, 3465), 1),
