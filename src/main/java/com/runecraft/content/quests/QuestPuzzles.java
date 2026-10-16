@@ -216,8 +216,12 @@ public final class QuestPuzzles {
             QuestApi.setStage(p, q.id(), puzzle.failStage);
             p.sendMessage(Text.literal("[" + q.def.displayName() + "] " + q.stages.get(puzzle.failStage).journal).formatted(Formatting.DARK_AQUA), false);
             com.runecraft.network.ServerNetworking.sync(p);
+            // the re-drawn first room is shown again by the reach tick while the player stands at the place
+            String prefix = p.getUuidAsString() + "|" + q.id() + "|";
+            SHOWN.removeIf(k -> k.startsWith(prefix));
         } else {
             Msg.game(p, "Try again.");
+            show(p, q, t);
         }
     }
 
