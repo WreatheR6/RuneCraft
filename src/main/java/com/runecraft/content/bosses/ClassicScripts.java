@@ -448,23 +448,4 @@ final class ClassicScripts {
         }
     }
 
-    /** Sol Heredit: sweeping solar flares in lines across the arena in later phases. */
-    static final class SolHeredit extends ScriptedBoss {
-        private int flare = 20;
-
-        @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
-            if (target == null || boss.phase() < 0 || --flare > 0) {
-                return;
-            }
-            flare = boss.phase() >= 1 ? 14 : 20;
-            BossFx.warn(boss, "Sol Heredit raises his shield to the sun - beams sweep the arena!");
-            Vec3d dir = target.getPos().subtract(boss.getPos()).normalize();
-            Vec3d side = new Vec3d(-dir.z, 0, dir.x);
-            for (int i = -4; i <= 4; i++) {
-                Vec3d p = target.getPos().add(side.multiply(i * 1.5));
-                strike(boss, BossFx.ground(BossFx.world(boss), p.x, p.z, target.getY()), 3 + Math.abs(i) / 2, 40, 1.2, ParticleTypes.END_ROD);
-            }
-        }
-    }
 }

@@ -184,8 +184,9 @@ public final class GauntletSession extends MinigameSession {
         joining.clear();
         for (ServerPlayerEntity p : entering) {
             GauntletStash.stash(p);
-            Inv.give(p, Gauntlet.sceptre(mode), 1);
-            Inv.give(p, Gauntlet.teleport(mode), 1);
+            for (String item : Gauntlet.startingItems(mode)) {
+                Inv.give(p, item, 1);
+            }
             Msg.game(p, "You have " + time(mode.prepTicks) + " to prepare before you are pulled in to face the "
                     + (mode == Mode.NORMAL ? "Crystalline" : "Corrupted") + " Hunllef. Walk into a room to light it.");
         }
@@ -407,7 +408,8 @@ public final class GauntletSession extends MinigameSession {
             case Gauntlet.RECIPES_BOOK -> {
                 Msg.game(player, "Crystal Singing Recipes: armour needs shards, ore, phren bark and linum tirinum; weapons need a "
                         + "weapon frame, then 50 shards, then a spike (halberd), orb (staff) or bowstring (bow) from a demi-boss.");
-                Msg.game(player, "Egniol potion: fill a vial at the water pump, add a grym leaf and 10 shards at the bowl.");
+                Msg.game(player, "Egniol potion: fill a vial at the water pump, add a grym leaf, then ten crystal dust (grind shards "
+                        + "with the pestle and mortar).");
             }
             case Gauntlet.RANGE -> cook(player);
             case Gauntlet.WATER_PUMP -> {
@@ -439,6 +441,12 @@ public final class GauntletSession extends MinigameSession {
         Integer left = nodes.get(pos);
         if (left == null || left <= 0) {
             Msg.game(player, "There is nothing left to gather here.");
+            return;
+        }
+        String tool = node.tool(mode);
+        if (tool != null && !Inv.has(player, tool, 1)) {
+            Msg.game(player, "You need a " + Inv.stack(tool, 1).getName().getString().toLowerCase() + " to gather from the "
+                    + node.displayName.toLowerCase() + ".");
             return;
         }
         Msg.action(player, "You start gathering from the " + node.displayName.toLowerCase() + ".");
@@ -520,6 +528,57 @@ public final class GauntletSession extends MinigameSession {
                 return false;
             }
         }
+        return true;
+    }
+
+    /** Right-clicking the pestle and mortar: grinds ten shards into ten crystal dust; returns how many. */
+    public static int grind(ServerPlayerEntity p) {
+        if (!(MinigameManager.session(p) instanceof GauntletSession g)) {
+            return 0;
+        }
+        String shards = Gauntlet.shards(g.mode);
+        if (!Inv.has(p, shards, Gauntlet.DUST_PER_GRIND)) {
+            Msg.game(p, "You need " + Gauntlet.DUST_PER_GRIND + " shards to grind.");
+            return 0;
+        }
+        Inv.remove(p, shards, Gauntlet.DUST_PER_GRIND);
+        Inv.give(p, Gauntlet.dust(g.mode), Gauntlet.DUST_PER_GRIND);
+        Msg.action(p, "You grind the shards into dust.");
+        return Gauntlet.DUST_PER_GRIND;
+    }
+
+    /** Right-clicking a grym leaf: mixes it into a water-filled vial (grym potion (unf)). */
+    public static boolean mixGrym(ServerPlayerEntity p) {
+        if (!(MinigameManager.session(p) instanceof GauntletSession g)) {
+            return false;
+        }
+        if (!Inv.has(p, Gauntlet.WATER_VIAL, 1)) {
+            Msg.game(p, "You need a water-filled vial to mix the grym leaf into.");
+            return false;
+        }
+        Inv.remove(p, Gauntlet.grym(g.mode), 1);
+        Inv.remove(p, Gauntlet.WATER_VIAL, 1);
+        Inv.give(p, Gauntlet.GRYM_UNF, 1);
+        Msg.action(p, "You put the grym leaf into the vial.");
+        return true;
+    }
+
+    /** Right-clicking a grym potion (unf): ten crystal dust finish an egniol potion (3 doses, 10 Herblore XP). */
+    public static boolean finishEgniol(ServerPlayerEntity p) {
+        if (!(MinigameManager.session(p) instanceof GauntletSession g)) {
+            return false;
+        }
+        String dust = Gauntlet.dust(g.mode);
+        if (!Inv.has(p, dust, Gauntlet.EGNIOL_DUST)) {
+            Msg.game(p, "You need " + Gauntlet.EGNIOL_DUST + " crystal dust to finish the potion.");
+            return false;
+        }
+        Inv.remove(p, dust, Gauntlet.EGNIOL_DUST);
+        Inv.remove(p, Gauntlet.GRYM_UNF, 1);
+        Inv.give(p, com.runecraft.skill.Drops.withDoses(Inv.stack(Gauntlet.EGNIOL, 1), Gauntlet.EGNIOL_DOSES));
+        xp(p, Skill.HERBLORE, Gauntlet.EGNIOL_XP);
+        g.egniolMade = true;
+        Msg.action(p, "You mix the crystal dust into the potion.");
         return true;
     }
 

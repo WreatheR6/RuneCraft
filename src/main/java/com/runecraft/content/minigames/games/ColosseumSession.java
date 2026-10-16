@@ -21,6 +21,7 @@ import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
@@ -51,8 +52,8 @@ import java.util.UUID;
  * Between waves the player may leave with the chest ({@code /minigame colosseum leave}, or the exit portal); dying,
  * logging out or leaving any other way forfeits it. Wave 12 is Sol Heredit; his death ends the run with Dizana's quiver in the chest.
  *
- * <p>Modifiers modelled: Bees!, Blasphemy, Doom, Dynamic Duo, Frailty, Mantimayhem I-II (III: approx, the orbs already come
- * in any order), Myopia (ranged and autocast attacks beyond the weapon's attack range less 2/4/6 tiles do nothing), Reentry,
+ * <p>Modifiers modelled: Bees!, Blasphemy, Doom, Dynamic Duo, Frailty, Mantimayhem (manticores fire three orbs a tick
+ * apart, magic/ranged then melee; I: each orb hits twice, II: unprotected orbs venom, III: the melee orb anywhere), Myopia (ranged and autocast attacks beyond the weapon's attack range less 2/4/6 tiles do nothing), Reentry,
  * Red Flag (without it minotaurs walk straight at the player and can be safespotted behind a pillar; with it they
  * path-find), Relentless (enemy accuracy as if the player's Defence were 33%/66% lower, or no accuracy roll at III, and
  * +1/+3/+6 max hit), Solarflare, Quartet, Totemic and Volatility. Javelin Colossi throw a prayer-ignoring javelin at the player's tile every fifth attack; minotaurs out of
@@ -88,6 +89,10 @@ public class ColosseumSession extends MinigameSession {
     private final List<Sand> sand = new ArrayList<>();
     private final Map<Integer, Integer> javelinTimers = new HashMap<>();
     private final List<long[]> javelins = new ArrayList<>();
+    /** Manticore orbs still to land: the second and third of each triple. */
+    private final List<Orb> orbs = new ArrayList<>();
+    /** Blocks of the gladiator wall around Sol Heredit's arena (relative), removed when the fight ends. */
+    private final List<BlockPos> wall = new ArrayList<>();
     private int orbIndex;
     private int orbPause;
     private boolean echoing;
@@ -104,6 +109,9 @@ public class ColosseumSession extends MinigameSession {
     private final List<Long> forcedChunks = new ArrayList<>();
 
     private record Sand(BlockPos pos, boolean permanent) {
+    }
+
+    private record Orb(LivingEntity mob, ServerPlayerEntity player, AttackType type, long due, int hits) {
     }
 
     private static final int HALF = 18;
@@ -321,6 +329,10 @@ public class ColosseumSession extends MinigameSession {
         doom = 0;
         javelinTimers.clear();
         javelins.clear();
+        orbs.clear();
+        if (wave == FortisColosseum.WAVES) {
+            gladiatorWall();
+        }
         broadcastRed("Wave: " + wave + (wave == FortisColosseum.WAVES ? " - Sol Heredit leaps into the arena!" : ""));
         List<String> monsters = FortisColosseum.startingMonsters(wave, active, random);
         for (String id : monsters) {
@@ -396,6 +408,7 @@ public class ColosseumSession extends MinigameSession {
             completeWave();
             return;
         }
+        orbTick();
         javelinTick(monsters);
         minotaurTick(monsters);
         totemTick(monsters);
@@ -656,7 +669,12 @@ public class ColosseumSession extends MinigameSession {
         for (LivingEntity e : monsters) {
             LivingEntity totem = totems.get(e.getId());
             if (totem != null && totem.isAlive()) {
-                e.heal(e.getMaxHealth() * FortisColosseum.TOTEM_HEAL_PERCENT / 100f);
+                if (e instanceof com.runecraft.boss.DataBossEntity sol && MinigameManager.creatureId(e).equals(FortisColosseum.SOL_HEREDIT)) {
+                    // Sol Heredit: 75 of his 1,500 hitpoints per heal (Minecraft health is scaled to his true hitpoints).
+                    e.heal(com.runecraft.osrs.content.minigames.SolHeredit.TOTEM_HEAL * sol.getMaxHealth() / Math.max(1, sol.trueHitpoints()));
+                } else {
+                    e.heal(e.getMaxHealth() * FortisColosseum.TOTEM_HEAL_PERCENT / 100f);
+                }
                 world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, e.getX(), e.getY() + e.getHeight(), e.getZ(), 5, 0.4, 0.3, 0.4, 0);
             }
         }
@@ -800,6 +818,7 @@ public class ColosseumSession extends MinigameSession {
     public static void register() {
         CombatHooks.addDamageListener((player, attacker, attack, style, damage) -> {
             if (MinigameManager.session(player) instanceof ColosseumSession s) {
+                s.manticoreOrb(player, attacker, attack, style);
                 s.playerDamaged(player, attacker, style, damage);
             }
         });
@@ -874,19 +893,94 @@ public class ColosseumSession extends MinigameSession {
         if (echoing || style == null) {
             return;
         }
-        int mayhem = active.getOrDefault(Modifier.MANTIMAYHEM, 0);
-        if (id.equals(FortisColosseum.MANTICORE)) {
-            if (mayhem >= 2 && !CombatHandler.isProtected(data, style)) {
-                PoisonService.venom(player, com.runecraft.action.ActionManager.gameTick());
-            }
-            if (mayhem >= 1) {
-                extraHit(attacker, player, style, style == AttackType.RANGED ? 36 : 31);
-            }
-        } else if (id.equals(FortisColosseum.JAGUAR)) {
+        if (id.equals(FortisColosseum.JAGUAR)) {
             // Jaguar warriors claw three times per attack.
             extraHit(attacker, player, style, 47);
             extraHit(attacker, player, style, 47);
         }
+    }
+
+    /**
+     * A manticore's own attack is the first orb of its triple (hits and misses alike): Mantimayhem I adds its second hit,
+     * II venoms an unprotected orb, and the other two orbs of the pattern are queued a tick apart.
+     */
+    private void manticoreOrb(ServerPlayerEntity player, LivingEntity attacker, String attack, AttackType style) {
+        if (echoing || attacker == null || style == null || attack == null || !attack.endsWith("_orb")
+                || MinigameManager.owner(attacker) != this || !MinigameManager.creatureId(attacker).equals(FortisColosseum.MANTICORE)) {
+            return;
+        }
+        int tier = active.getOrDefault(Modifier.MANTIMAYHEM, 0);
+        List<AttackType> pattern = FortisColosseum.manticorePattern(tier, style, random);
+        int hits = FortisColosseum.manticoreHitsPerOrb(tier);
+        mayhemVenom(player, style, tier);
+        for (int i = 1; i < hits; i++) {
+            extraHit(attacker, player, style, FortisColosseum.manticoreOrbMaxHit(style));
+        }
+        for (int i = 1; i < pattern.size(); i++) {
+            orbs.add(new Orb(attacker, player, pattern.get(i), ticks + i, hits));
+        }
+    }
+
+    private void mayhemVenom(ServerPlayerEntity player, AttackType style, int tier) {
+        if (tier >= 2 && !CombatHandler.isProtected(Players.data(player), style)) {
+            PoisonService.venom(player, com.runecraft.action.ActionManager.gameTick());
+        }
+    }
+
+    private void orbTick() {
+        int tier = active.getOrDefault(Modifier.MANTIMAYHEM, 0);
+        for (java.util.Iterator<Orb> it = orbs.iterator(); it.hasNext(); ) {
+            Orb o = it.next();
+            if (ticks < o.due()) {
+                continue;
+            }
+            it.remove();
+            if (!o.mob().isAlive() || !o.player().isAlive() || MinigameManager.session(o.player()) != this) {
+                continue;
+            }
+            world.spawnParticles(o.type() == AttackType.MAGIC ? ParticleTypes.WITCH : ParticleTypes.CRIT,
+                    o.player().getX(), o.player().getBodyY(0.6), o.player().getZ(), 6, 0.3, 0.3, 0.3, 0.0);
+            for (int i = 0; i < o.hits(); i++) {
+                extraHit(o.mob(), o.player(), o.type(), FortisColosseum.manticoreOrbMaxHit(o.type()));
+            }
+            mayhemVenom(o.player(), o.type(), tier);
+        }
+    }
+
+    /**
+     * Wave 12: gladiators with shields close the arena down to the square between the four pillars (wiki: "roughly a 16x15
+     * arena"); here a fence ring one block inside the pillars' line. The player is moved inside it.
+     */
+    private void gladiatorWall() {
+        removeWall();
+        BlockState fence = Blocks.SPRUCE_FENCE.getDefaultState();
+        int r = PILLAR;
+        for (int i = -r + 2; i <= r - 2; i++) {
+            for (int[] d : new int[][]{{i, -r}, {i, r}, {-r, i}, {r, i}}) {
+                BlockPos at = new BlockPos(d[0], 1, d[1]);
+                set(at.getX(), at.getY(), at.getZ(), fence);
+                wall.add(at);
+            }
+        }
+        for (ServerPlayerEntity p : online()) {
+            BlockPos rp = relPos(p);
+            if (Math.abs(rp.getX()) >= r || Math.abs(rp.getZ()) >= r) {
+                BlockPos in = rel(0, 1, 4);
+                p.teleport(world, in.getX() + 0.5, in.getY(), in.getZ() + 0.5, p.getYaw(), p.getPitch());
+            }
+        }
+    }
+
+    private void removeWall() {
+        for (BlockPos at : wall) {
+            set(at.getX(), at.getY(), at.getZ(), Blocks.AIR.getDefaultState());
+        }
+        wall.clear();
+    }
+
+    /** Whether the gladiator wall stands (self-test). */
+    public int wallBlocks() {
+        return wall.size();
     }
 
     /** A follow-up hit of a multi-hit attack (own accuracy roll, blocked by the matching protection prayer). */
@@ -960,6 +1054,9 @@ public class ColosseumSession extends MinigameSession {
 
     @Override
     protected void onClose() {
+        removeWall();
+        orbs.clear();
+        com.runecraft.boss.Mechanics.clearHazards(world, box()); // Sol Heredit's molten sand
         for (LivingEntity e : spawned) {
             e.discard();
         }

@@ -1,0 +1,682 @@
+# Dwarf multicannon immunity: the Infobox Monster `immunecannon` field of each RuneCraft creature's wiki page
+# (Kiyogitpy/osrs-wiki-data raw dump, July 2026; one value per infobox version, '-' = the page has no field).
+# Columns: wiki page, RuneCraft ids, immunecannon. Diffed by MulticannonTest.
+Aberrant spectre	aberrant_spectre	No
+Abhorrent spectre	abhorrent_spectre	-
+Abyssal Sire	abyssal_sire	No
+Abyssal demon	abyssal_demon,catacomb_abyssal_demon	No
+Abyssal guardian	abyssal_guardian	-
+Abyssal leech	abyssal_leech	No
+Abyssal walker	abyssal_walker	-
+Acidic Araxyte	acidic_araxyte	Yes
+Adamant dragon	adamant_dragon	-
+Agrith Naar	agrith_naar	-
+Agrith-Na-Na	agrith_na_na	-
+Ahrim the Blighted	ahrim	-
+Akkha's Shadow	akkhas_shadow	Yes
+Al Kharid warrior	al_kharid_warrior	No
+Albino bat	albino_bat	No
+Alchemical Hydra	alchemical_hydra,alchemical_hydra_blue,alchemical_hydra_enraged,alchemical_hydra_red	-
+Alomone	alomone	No
+Ammonite Crab	ammonite_crab	Yes
+Amoxliatl	amoxliatl	Yes
+Ancestral Glyph	ancestral_glyph	-
+Ancient Guardian	ancient_guardian,dt2_ancient_guardian	-
+Ancient Wyvern	ancient_wyvern	No
+Ancient Zygomite	ancient_zygomite	-
+Animated Adamant Armour	animated_adamant_armour	No
+Animated Black Armour	animated_black_armour	No
+Animated Bronze Armour	animated_bronze_armour	no
+Animated Iron Armour	animated_iron_armour	no
+Animated Mithril Armour	animated_mithril_armour	no
+Animated Rune Armour	animated_rune_armour	No
+Animated Steel Armour	animated_steel_armour	no
+Ankou	ankou,catacomb_ankou	No
+Araxxor	araxxor	Yes
+Araxyte	araxyte,araxyte_lvl146	-
+Arcane Scarab	toa_arcane_scarab	Yes
+Arrav	arrav	Yes
+Arrg	nmz_arrg,quest_arrg	-
+Artio	artio	No
+Assassin	quest_assassin	Yes
+Asyn Shade	asyn_shade	-
+Asyn shadow (Temple Trekking)	trek_shade_2	-
+Avatar of Creation	avatar_of_creation	-
+Avatar of Destruction	avatar_of_destruction	-
+Aviansie	gwd_aviansie,gwd_aviansie_elite	No
+Baboon Brawler	toa_baboon_brawler	Yes
+Baboon Mage	toa_baboon_mage	Yes
+Baboon Thrower	toa_baboon_thrower	Yes
+Baby black dragon	baby_black_dragon	No
+Baby blue dragon	baby_blue_dragon	No/No
+Baby green dragon	baby_green_dragon	-
+Baby impling	baby_impling	-
+Baby red dragon	baby_red_dragon	No
+Balance Elemental	balance_elemental	Yes
+Balfrug Kreeyath	balfrug_kreeyath	No
+Bandit	bandit,desert_bandit,wilderness_bandit	No
+Bandit (Bandit Camp)	desert_bandit	-
+Banshee	banshee	No
+Barbarian	barbarian	No
+Bark Blamish Snail	bark_blamish_snail	No
+Barrelchest	quest_barrelchest	-
+Basilisk	basilisk	No
+Basilisk Knight	basilisk_knight	yes
+Basilisk Sentinel	basilisk_sentinel	-
+Basilisk Youngling	quest_basilisk_boss	-
+Bat	bat	-
+Bear Cub	bear_cub	-
+Bee Swarm	colosseum_bee_swarm	-
+Big Snake	rfd_big_snake	No
+Big Wolf	big_wolf	No
+Black Eye Bethel	quest_black_eye_bethel	Immune
+Black Guard	black_guard	No/No
+Black Knight Titan	black_knight_titan,nmz_black_knight_titan	-
+Black bear	black_bear	No
+Black demon	black_demon,catacomb_black_demon,glough_black_demon	No
+Black dragon	black_dragon	No
+Blood Blamish Snail	blood_blamish_snail,blood_blamish_snail_pointed	No
+Blood Moon	blood_moon,quest_blood_moon	Yes
+Blood Reaver	blood_reaver	Yes
+Blood jaguar	blood_jaguar	Yes
+Blood spawn	blood_spawn	-
+Bloodveld	bloodveld,gwd_bloodveld	No
+Bloodworm	bloodworm	No
+Blue Moon	blue_moon,quest_blue_moon	Yes
+Blue dragon	blue_dragon	No/No/No
+Boneguard	quest_boneguard	-
+Boulder	baba_boulder	-
+Bouncer	bouncer,nmz_bouncer	No
+Branda the Fire Queen	branda_the_fire_queen	yes
+Brawler	brawler	No
+Bree	bree	No
+Brine rat	brine_rat	No
+Bronze dragon	bronze_dragon	No
+Bruise Blamish Snail	bruise_blamish_snail,bruise_blamish_snail_pointed	No
+Brutal black dragon	brutal_black_dragon	No
+Brutal blue dragon	brutal_blue_dragon	No
+Brutal green dragon	brutal_green_dragon	No
+Brutal red dragon	brutal_red_dragon	No
+Brutus	brutus	Yes
+Bryophyta	bryophyta	-
+Callisto	callisto	Yes
+Calvar'ion	calvarion	Not
+Catablepon	catablepon	No
+Cave abomination	cave_abomination	-
+Cave bug	cave_bug	No
+Cave crawler	cave_crawler	No/No
+Cave goblin (monster)	cave_goblin	No
+Cave goblin guard	cave_goblin_guard	No
+Cave horror	cave_horror	No
+Cave kraken	cave_kraken	yes
+Cave lizard	cave_lizard	No
+Cave slime	cave_slime	No
+Cerberus	cerberus	No
+Champion of Scabaras	champion_of_scabaras	Yes
+Chaos Elemental	chaos_elemental	No
+Chaos Fanatic	chaos_fanatic	No
+Chaos druid	chaos_druid	No
+Chaos dwarf	chaos_dwarf	No
+Chasm Crawler	chasm_crawler	No/Yes
+Chicken	chicken	No
+Chilled jelly	chilled_jelly	-
+Choke devil	choke_devil	No
+Chompy bird	chompy_bird	-
+Chronozon	chronozon	-
+Cockathrice	cockathrice	-
+Cockatrice	cockatrice	No
+Colossal Hydra	colossal_hydra	-
+Commander Zilyana	commander_zilyana	No
+Corporeal Beast	corporeal_beast	No
+Corrupt Lizardman	corrupt_lizardman	-
+Corrupted Hunllef	corrupted_hunllef	-
+Count Draynor	count_draynor,nmz_count_draynor	No
+Cow	cow	No
+Crab	rfd_crab	No
+Crawling Hand	crawling_hand	No
+Crazy archaeologist	crazy_archaeologist	No
+Crocodile	crocodile	No
+Cruor	cruor	Yes
+Crushing hand	crushing_hand	-
+Crypt rat	crypt_rat	No
+Crypt spider	crypt_spider	No
+Crystalline Hunllef	crystalline_hunllef	-
+Culinaromancer	culinaromancer	-
+Cyclops	cyclops,cyclops_elite,gwd_cyclops,warriors_guild_cyclops	No
+Dad	dad,nmz_dad	No
+Dagannoth	catacomb_dagannoth,dagannoth,dagannoth_lvl92	No
+Dagannoth (Waterbirth Island)	dagannoth_lvl88,dagannoth_lvl90	No
+Dagannoth Prime	dagannoth_prime	No
+Dagannoth Rex	dagannoth_rex	No
+Dagannoth Supreme	dagannoth_supreme	No
+Dagannoth fledgeling	dagannoth_fledgeling	No
+Dagannoth mother	dagannoth_mother	-
+Dagannoth spawn	dagannoth_spawn	No
+Damis	damis	-
+Dark Ankou	dark_ankou	-
+Dark beast	dark_beast	No
+Dark energy core	dark_energy_core	No
+Dark wizard	dark_wizard,dark_wizard_lvl11,dark_wizard_lvl23	No
+Dawn	dawn	-
+Deadly red spider	deadly_red_spider	No
+Deathly mage	deathly_mage	-
+Deathly ranger	deathly_ranger	-
+Defiler	defiler	No
+Delrith	delrith	-
+Demonic Brutus	demonic_brutus	Yes
+Demonic gorilla	demonic_gorilla	Yes
+Deranged archaeologist	deranged_archaeologist	No
+Derwen	quest_derwen	-
+Desert Lizard	desert_lizard	No
+Desert Wolf	desert_wolf	No
+Dessourt	dessourt	-
+Dessous	dessous	-
+Deviant spectre	deviant_spectre	No
+Dharok the Wretched	dharok	No
+Dire Wolf	dire_wolf	No
+Doom of Mokhaiotl	doom_of_mokhaiotl	Immune/Immune/Immune
+Dragon impling	dragon_impling	-
+Drake	drake	No
+Duck	duck	No
+Duke Sucellus	dt2_quest_duke_sucellus,duke_sucellus	Yes/Yes/Yes
+Dusk	dusk	-
+Dust devil	catacomb_dust_devil,dust_devil	No
+Dwarf	dwarf	No
+Dwarf gang member	osf_dwarf_gang_member	No
+Earth Warrior Champion	earth_warrior_champion	-
+Earth impling	earth_impling	-
+Earth warrior	earth_warrior	No
+Earthen Nagua	earthen_nagua	-
+Eclectic impling	eclectic_impling	-
+Eclipse Moon	eclipse_moon,quest_eclipse_moon	Yes
+Elder custodian stalker	elder_custodian_stalker	no
+Eldric the Ice King	eldric_the_ice_king	yes
+Elf Archer	elf_archer	No
+Elf Warrior	elf_warrior	No
+Elidinis' Warden	elidinis_warden	Yes/Yes
+Elvarg	elvarg,nmz_elvarg	-
+Enormous Tentacle	enormous_tentacle	no
+Ent	ent	No
+Essence impling	essence_impling	-
+Essyllt	sote_essyllt	-
+Evelot	quest_evelot	Yes
+Evil Chicken	rfd_evil_chicken	No
+Evil Creature	evil_creature	-
+Fareed	fareed	-
+Farmer	farmer	No
+Fear reaper	quest_fear_reaper	No
+Feral Vampyre	feral_vampyre	No
+Fever spider	fever_spider	No
+Fire Warrior of Lesarkus	fire_warrior_of_lesarkus	-
+Fire elemental	titan_fire_elemental	No
+Fire elemental (Royal Titans)	titan_fire_elemental	No
+Fire giant	catacomb_fire_giant,fire_giant,fire_giant_lvl104,fire_giant_lvl109	No
+Fiyr Shade	fiyr_shade	No
+Flambeed	flambeed	-
+Flaming pyrelord	flaming_pyrelord	-
+Flesh Crawler	flesh_crawler	No
+Flight Kilisa	flight_kilisa	No
+Flockleader Geerin	flockleader_geerin	No
+Flower	hesporis_flower	-
+Forgotten Soul	forgotten_soul	No
+Fragment of Seren	fragment_of_seren	-
+Fremennik warband archer	fremennik_warband_archer	Yes
+Fremennik warband berserker	fremennik_warband_berserker	Yes
+Fremennik warband seer	fremennik_warband_seer	Yes
+Frost Crab	frost_crab	Yes
+Fumus	fumus	Yes
+Gadderanks	gadderanks	-
+Galvek	galvek	-
+Gargoyle	gargoyle	No
+Gelatinnoth Mother	gelatinnoth_mother	-
+Gemstone Crab	gemstone_crab	Immune
+General Graardor	general_graardor	No
+General Khazard	general_khazard	No
+Ghast	trek_ghast_1,trek_ghast_2,trek_ghast_3	-
+Ghost	ghost	No
+Ghoul	ghoul	No
+Ghoul Champion	ghoul_champion	-
+Giant Champion	giant_champion	-
+Giant Mole	giant_mole	no
+Giant Roc	quest_giant_roc	-
+Giant Rock Crab	giant_rock_crab	No
+Giant Scarab	giant_scarab	-
+Giant Sea Snake	giant_sea_snake	-
+Giant bat	giant_bat	No
+Giant crypt rat	giant_crypt_rat	No
+Giant crypt spider	giant_crypt_spider	No
+Giant lobster (The Red Reef)	quest_giant_lobster	Yes
+Giant rat	giant_rat,scurrius_giant_rat	no
+Giant rat (Scurrius)	scurrius_giant_rat	No
+Giant rockslug	giant_rockslug	-
+Giant skeleton (Shadow Dungeon)	giant_skeleton	No
+Giant snail	trek_giant_snail_1,trek_giant_snail_2,trek_giant_snail_3	-
+Giant spider	giant_spider	No
+Glacies	glacies	Yes
+Glod	glod,nmz_glod	-
+Glough	mm2_glough	-
+Glowing crystal	vasa_crystal	-
+Gnome	gnome	No/No
+Gnome guard	gnome_guard	No
+Goblin	goblin,goblin_lvl5,gwd_goblin	No
+Goblin (God Wars Dungeon)	gwd_goblin	No
+Goblin Champion	goblin_champion	-
+Golem	zalcano_golem	-
+Gorak	gorak,gwd_gorak	No
+Gourmet impling	gourmet_impling	-
+Grave scorpion	grave_scorpion	No
+Great Olm	great_olm,olm_left_claw,olm_right_claw	-
+Greater Nechryael	greater_nechryael	No
+Greater Skeleton Hellhound (Vet'ion)	greater_skeleton_hellhound	-
+Greater abyssal demon	greater_abyssal_demon	-
+Greater demon	catacomb_greater_demon,greater_demon	No
+Green dragon	green_dragon	No
+Grimy Lizard	grimy_lizard	-
+Grizzly bear	grizzly_bear	No
+Grizzly bear cub	grizzly_bear_cub	No
+Growler	growler	No
+Gryphon	quest_gryphon	no
+Guard	guard,prifddinas_guard	No/No/No/No
+Guard (Prifddinas)	prifddinas_guard	No
+Guard Bandit	guard_bandit	No
+Guard dog	guard_dog	No
+Guardian Drake	guardian_drake	-
+Guthan the Infested	guthan	No
+Harpie Bug Swarm	harpie_bug_swarm	No
+Healing totem	colosseum_healing_totem	-
+Hell-Rat	rfd_hell_rat	-
+Hellhound	catacomb_hellhound,gwd_hellhound,hellhound	No
+Hero	hero	No
+Hespori	hespori	Yes
+Highwayman	highwayman	No
+Hill Giant	catacomb_hill_giant,hill_giant	No/No/Not/No
+Hobgoblin	gwd_hobgoblin,hobgoblin	No
+Hobgoblin Champion	hobgoblin_champion	-
+Husk	nightmare_husk	-
+Hydra	hydra	-
+Ice Queen	ice_queen	No
+Ice Troll King	ice_troll_king	-
+Ice elemental (Royal Titans)	titan_ice_elemental	No
+Ice giant	ice_giant	No/No
+Ice spider	ice_spider	No
+Ice troll female	ice_troll_female	No
+Ice troll grunt	ice_troll_grunt	No
+Ice troll runt	ice_troll_runt	No
+Ice warrior	ice_warrior	No
+Ice wolf	ice_wolf,ice_wolf_lvl132	No
+Icefiend	icefiend	No
+Imp	gwd_imp,imp	No
+Imp Champion	imp_champion	-
+Infernal Mage	infernal_mage	No
+Insatiable Bloodveld	insatiable_bloodveld	-
+Insatiable mutated Bloodveld	insatiable_mutated_bloodveld	No
+Iorwerth Archer	iorwerth_archer	No
+Iorwerth Warrior	iorwerth_warrior	No
+Iron dragon	iron_dragon	No
+Ithoi the Navigator	ithoi_the_navigator	-
+Jackal	jackal	No
+Jaguar warrior	jaguar_warrior	Yes
+Jal-Ak	jal_ak	No
+Jal-AkRek-Ket	jal_akrek_ket	No
+Jal-AkRek-Mej	jal_akrek_mej	No
+Jal-AkRek-Xil	jal_akrek_xil	-
+Jal-ImKot	jal_imkot	-
+Jal-MejJak	jal_mejjak	-
+Jal-MejRah	jal_mejrah	No
+Jal-Nib	jal_nib	No
+Jal-Xil	jal_xil	-
+Jal-Zek	jal_zek	-
+JalTok-Jad	jaltok_jad	-
+Javelin Colossus	javelin_colossus	Yes
+Jelly	jelly	No/Yes
+Jogre	gwd_jogre,jogre	No
+Jogre Champion	jogre_champion	-
+Jonny the Beard	jonny_the_beard	No
+Jubbly bird	rfd_jubbly_bird	-
+Judge of Yama	judge_of_yama	-
+Jungle Demon	jungle_demon	-
+Jungle Wolf	jungle_wolf	No
+Jungle horror	jungle_horror	No
+Jungle spider	jungle_spider	No
+Justiciar Zachariah	quest_justiciar_zachariah	-
+Juvenile custodian stalker	juvenile_custodian_stalker	no
+K'ril Tsutsaroth	kril_tsutsaroth	No
+Kalphite Guardian	kalphite_guardian	No/No
+Kalphite Queen	kalphite_queen,kalphite_queen_airborne	No
+Kalphite Soldier	kalphite_soldier	No
+Kalphite Worker	kalphite_worker	No
+Kalrag	kalrag	No
+Kamil	kamil	-
+Karamel	karamel	-
+Karil the Tainted	karil	No
+Kasonde	dt2_kasonde	Yes
+Kasonde the Craven	dt2_kasonde_the_craven	yes
+Ket-Zek	ket_zek	-
+Ketla the Unworthy	dt2_ketla_the_unworthy	Yes
+Khazard Ogre	khazard_ogre	No
+Khazard Scorpion	khazard_scorpion	No
+Khazard warlord	khazard_warlord,nmz_khazard_warlord	-
+Killerwatt	killerwatt	No
+King Black Dragon	king_black_dragon	No
+King Roald	nmz_king_roald,possessed_king_roald	-
+King Sand Crab	king_sand_crab	No
+King Scorpion	king_scorpion	No
+King kurask	king_kurask	-
+King rat	rat_king	-
+Knight of Ardougne	ardougne_knight	No/No
+Knight of Saradomin	gwd_knight_of_saradomin	No
+Kolodion	quest_kolodion	-
+Kraka	kraka	No
+Kraken	kraken	Yes
+Kree'arra	kreearra	No
+Kruk	kruk	Yes
+Kurask	kurask	yes
+Lava dragon	lava_dragon	No
+Leon d'Cour	leon_dcour	-
+Lesser Demon Champion	lesser_demon_champion	-
+Lesser demon	lesser_demon	No
+Lizard	lizard	No
+Lizardman	lizardman	No
+Lizardman brute	lizardman_brute	No
+Lizardman shaman	cox_lizardman_shaman,lizardman_shaman	No
+Loar Shade	loar_shade	No
+Locust rider	locust_rider,locust_rider_ranger	No
+Long-tailed Wyvern	long_tailed_wyvern	No
+Lowerniel Drakan	quest_lowerniel_drakan	Yes
+Lucky impling	lucky_impling	-
+Maggot King	maggot_king	-
+Magpie impling	magpie_impling	-
+Malevolent Mage	malevolent_mage	-
+Mammoth	mammoth	No
+Man	man	No
+Maniacal Monkey Archer	maniacal_monkey_archer	No
+Maniacal monkey	maniacal_monkey	No
+Manticore	manticore	-
+Marble gargoyle	marble_gargoyle	-
+Mature custodian stalker	mature_custodian_stalker	no
+Me	me,nmz_me	-
+Melzar the Mad	melzar_the_mad	No
+Mercenary Captain	mercenary_captain	No
+Minotaur	colosseum_minotaur,minotaur	No
+Mirrorback Araxyte	mirrorback_araxyte	Yes
+Mithril dragon	mithril_dragon	No
+Mogre	mogre	-
+Molanisk	molanisk	-
+Monk	monk	No
+Monk of Zamorak	monk_of_zamorak	No
+Monkey (monster)	monkey	No
+Monkey Archer	monkey_archer	No
+Monkey Guard	monkey_guard	No
+Monkey Zombie	monkey_zombie,monkey_zombie_lvl129,monkey_zombie_lvl82	No
+Monstrous basilisk	monstrous_basilisk	-
+Moss Guardian	moss_guardian	-
+Moss giant	catacomb_moss_giant,moss_giant	No
+Mother	quest_mother	-
+Mountain troll	mountain_troll	No
+Mourner	me_mourner	-
+Mudskipper	mudskipper	No
+Mugger	mugger	No
+Mummy (Ancient Pyramid)	mummy	No
+Mutated Bloodveld	mutated_bloodveld	No
+Myre Blamish Snail	myre_blamish_snail,myre_blamish_snail_pointed	No
+Mysterious Figure	dt2_mysterious_figure	-
+Nail beast	trek_nail_beast_1,trek_nail_beast_2,trek_nail_beast_3	-
+Nature impling	nature_impling	-
+Nazastarool	nazastarool	-
+Nechryael	nechryael	No
+Nechryarch	nechryarch	-
+Nex	nex	Yes
+Nezikchened	nezikchened	-
+Night beast	night_beast	-
+Ninja impling	ninja_impling	-
+Nuclear smoke devil	nuclear_smoke_devil	-
+Nylocas Athanatos	nylocas_athanatos	-
+Nylocas Hagios	nylocas_hagios	-
+Nylocas Ischyros	nylocas_ischyros	-
+Nylocas Matomenos	nylocas_matomenos	-
+Nylocas Toxobolos	nylocas_toxobolos	-
+Nylocas Vasilias	nylocas_vasilias	-
+Obor	obor	-
+Ochre Blamish Snail	ochre_blamish_snail,ochre_blamish_snail_pointed	No
+Ogre	gwd_ogre,ogre,ogre_lvl63	No
+Ogre shaman	ogre_shaman	-
+Ogress Shaman	ogress_shaman	No
+Ogress Warrior	ogress_warrior	No
+Oomlie bird	oomlie_bird	No
+Ork	gwd_ork	No
+Otherworldly being	otherworldly_being	No
+Paladin	paladin	No/No/No
+Parasite	nightmare_parasite	-
+Pee Hat	pee_hat	No
+Penance Fighter	penance_fighter	-
+Penance Healer	penance_healer	-
+Penance Queen	penance_queen	-
+Penance Ranger	penance_ranger	-
+Penance Runner	penance_runner	-
+Persten the Deceitful	dt2_persten_the_deceitful	Yes
+Pestilent Bloat	pestilent_bloat	-
+Phantom Muspah	phantom_muspah	Yes
+Phosani's Nightmare	phosanis_nightmare	Yes
+Phrin Shade	phrin_shade	No
+Pirate	pirate	No
+Pit Scorpion	pit_scorpion	No
+Poison Scorpion	poison_scorpion	No
+Poison spider	poison_spider	No
+Porazdir	quest_porazdir	-
+Portal (Pest Control)	blue_portal,purple_portal,red_portal,yellow_portal	-
+Pyrefiend	gwd_pyrefiend,pyrefiend	No
+Pyrelord	pyrelord	No
+Ranis Drakan	ranis_drakan	-
+Rat	rat	No
+Ravager	ravager	No
+Reanimated demon spawn	reanimated_demon_spawn	-
+Red dragon	red_dragon	No
+Repugnant spectre	repugnant_spectre	-
+Respiratory system	respiratory_system	No
+Revenant cyclops	revenant_cyclops	No
+Revenant dark beast	revenant_dark_beast	No
+Revenant demon	revenant_demon	No
+Revenant dragon	revenant_dragon	No
+Revenant goblin	revenant_goblin	No
+Revenant hellhound	revenant_hellhound	No
+Revenant hobgoblin	revenant_hobgoblin	No
+Revenant imp	revenant_imp	No
+Revenant knight	revenant_knight	No
+Revenant ork	revenant_ork	No
+Revenant pyrefiend	revenant_pyrefiend	No
+Riyl Shade	riyl_shade	No
+Riyl shadow (Temple Trekking)	trek_shade_1	-
+Rock	troll_rock	-
+Rock Crab	rock_crab	No
+Rock lobster	rock_lobster	No
+Rockslug	rockslug	No
+Rooster	rooster	No
+Rune dragon	rune_dragon	No
+Ruptura Araxyte	ruptura_araxyte	Yes
+Sand Crab	sand_crab	Yes
+Sarachnis	sarachnis	-
+Saradomin priest	gwd_saradomin_priest	No
+Scarab Mage	scarab_mage	No
+Scarab Swarm (Tombs of Amascut)	toa_scarab_swarm	Yes
+Scion	abyssal_scion	No
+Scorpia	scorpia	No
+Scorpia's guardian	scorpias_guardian	-
+Scorpia's offspring	scorpias_offspring	-
+Scorpia's offspring (monster)	scorpias_offspring	No
+Scorpion	scorpion	No
+Screaming banshee	screaming_banshee	-
+Screaming twisted banshee	screaming_twisted_banshee	-
+Scurrius	scurrius	Yes
+Sea Snake Young	sea_snake_young	No
+Sea Troll Queen	sea_troll_queen	-
+Seagull	seagull	No
+Sergeant Grimspike	sergeant_grimspike	No
+Sergeant Steelwill	sergeant_steelwill	No
+Sergeant Strongstack	sergeant_strongstack	No
+Serpent shaman	serpent_shaman	Yes
+Shade	trek_shade_3	No
+Shadow (Temple of Light)	shadow_of_light	No
+Shadow Hound	shadow_hound	No
+Shadow Wyrm	shadow_wyrm	-
+Shadow spider	shadow_spider	No
+Shadow warrior	shadow_warrior	No
+Shellbane gryphon	quest_shellbane_gryphon,shellbane_gryphon	Yes
+Shifter	shifter	No
+Shockwave Colossus	shockwave_colossus	-
+Sigmund	quest_sigmund	-
+Sir Leye	sir_leye	No
+Sir Mordred	sir_mordred	No
+Skeletal Wyvern	skeletal_wyvern	No
+Skeleton	skeleton,skeleton_lvl25,skeleton_lvl45	No/No/No/No/No
+Skeleton (Ape Atoll)	skeleton_lvl142	No
+Skeleton (Shayzien Crypts)	shayzien_crypt_skeleton_magic,shayzien_crypt_skeleton_melee,shayzien_crypt_skeleton_ranged	No
+Skeleton Champion	skeleton_champion	-
+Skeleton Hellhound	quest_skeleton_hellhound,skeleton_hellhound	-
+Skeleton Hellhound (Vet'ion)	skeleton_hellhound	-
+Skogre	skogre	No
+Skotizo	skotizo	-
+Slagilith	quest_slagilith	-
+Slash Bash	slash_bash	-
+Slug Prince	slug_prince	-
+Small Lizard	small_lizard	No
+Smoke devil	smoke_devil	No
+Snakeling	snakeling	-
+Sol Heredit	sol_heredit	-
+Soldier Scarab	toa_soldier_scarab	Yes
+Solus Dellagar	solus_dellagar	-
+Sorebones	sorebones	No
+Sotetseg	sotetseg	-
+Sourhog	quest_sourhog,sourhog	No
+Spawn	abyssal_spawn,cox_lizardman_spawn	No
+Spawn of Sarachnis	spawn_of_sarachnis	-
+Spider	spider	No
+Spiked Turoth	spiked_turoth	-
+Spindel	spindel	No
+Spinner	spinner	No
+Spinolyp	spinolyp	No
+Spiritual mage	gwd_spiritual_mage_armadyl,gwd_spiritual_mage_bandos,gwd_spiritual_mage_saradomin,gwd_spiritual_mage_zamorak,spiritual_mage	Yes
+Spiritual ranger	gwd_spiritual_ranger_armadyl,gwd_spiritual_ranger_bandos,gwd_spiritual_ranger_saradomin,gwd_spiritual_ranger_zamorak,spiritual_ranger	Yes
+Spiritual warrior	gwd_spiritual_warrior_armadyl,gwd_spiritual_warrior_bandos,gwd_spiritual_warrior_saradomin,gwd_spiritual_warrior_zamorak,spiritual_warrior	Yes
+Spitting Scarab	toa_spitting_scarab	Yes
+Spitting Wyvern	spitting_wyvern	No
+Splatter	splatter	No
+Starlight	starlight	No
+Steel dragon	steel_dragon	No
+Stick	troll_stick	No
+Strange Creature	quest_strange_creature	Yes
+Strangled	dt2_strangled	-
+Sulphur Lizard	sulphur_lizard	No
+Sulphur Nagua	sulphur_nagua	-
+Suqah	suqah	No
+Swamp snake	trek_swamp_snake_1,trek_swamp_snake_2,trek_swamp_snake_3	No
+Taloned Wyvern	taloned_wyvern	No
+Tanglefoot	tanglefoot	-
+Temple Guardian	temple_guardian	Yes
+Temple Spider	temple_spider	No
+Tempoross	tempoross	-
+Tentacle	whisperer_tentacle	-
+Terror dog	terror_dog	No
+Terrorbird	terrorbird	No
+The Draugen	draugen	-
+The Everlasting	the_everlasting	-
+The Forsaken Assassin	dt2_forsaken_assassin	Yes
+The Great Guardian	great_guardian	-
+The Hueycoatl	the_hueycoatl	Yes/Yes/Yes
+The Illusive	the_illusive	-
+The Inadequacy	the_inadequacy	-
+The Kendal	nmz_the_kendal,the_kendal	No
+The Leviathan	dt2_quest_leviathan,the_leviathan	Yes
+The Maiden of Sugadinti	the_maiden_of_sugadinti	-
+The Mimic	the_mimic	-
+The Nightmare	the_nightmare	Yes
+The Untouchable	the_untouchable	-
+The Whisperer	dt2_quest_whisperer,the_whisperer	Yes
+Thermonuclear smoke devil	thermonuclear_smoke_devil	No
+Thrower Troll	thrower_troll	No
+Tok-Xil	tok_xil	-
+Torag the Corrupted	torag	No
+Torcher	torcher	No
+Tormented Demon	tormented_demon	Yes
+Tornado	hunllef_tornado	-
+Tortured gorilla	tortured_gorilla	No/Yes
+Tortured soul	tortured_soul	No
+Totem	nightmare_totem	-
+Tree spirit	nmz_tree_spirit,tree_spirit	No
+Tree spirit (Lost City)	nmz_tree_spirit	-
+Treus Dayth	treus_dayth	-
+Troll general	troll_general	No
+Troll spectator	troll_spectator	No
+Tstanon Karlak	tstanon_karlak	No
+Tumeken's Warden	tumekens_warden	Yes/Yes
+Turoth	turoth	Yes
+Twisted Banshee	twisted_banshee	No
+Tyras guard	king_tyras	No
+Tz-Kek	tz_kek,tz_kek_small	-
+Tz-Kih	tz_kih	-
+TzHaar-Hur	tzhaar_hur_citizen	No
+TzHaar-Ket	tzhaar_ket	No
+TzHaar-Mej	tzhaar_mej	No
+TzHaar-Xil	tzhaar_xil	No
+TzKal-Zuk	tzkal_zuk	-
+TzTok-Jad	tztok_jad	-
+Ulfric	ulfric	-
+Umbra	umbra	Yes
+Undead Druid	undead_druid	No
+Undead Lumberjack	trek_undead_lumberjack_1,trek_undead_lumberjack_2,trek_undead_lumberjack_3	No
+Undead chicken	undead_chicken	No
+Undead cow	undead_cow	No
+Undead one	undead_one	No
+Urium Shade	urium_shade	No
+Vampyre Juvenile	vampyre_juvenile	No
+Vampyre Juvinate	trek_vampyre_juvinate_1,trek_vampyre_juvinate_2,trek_vampyre_juvinate_3	No
+Vanstrom Klause	vanstrom_klause	-
+Vardorvis	dt2_quest_vardorvis,vardorvis	Yes
+Venenatis	venenatis	No
+Verac the Defiled	verac	No
+Verzik Vitur	verzik_vitur,verzik_vitur_p2,verzik_vitur_p3	-
+Vespine soldier	vespine_soldier	-
+Vet'ion	vetion	No
+Vitreous Jelly	vitreous_jelly	-
+Vitreous Warped Jelly	vitreous_warped_jelly	-
+Void Flare	yama_void_flare	No
+Void Knight	void_knight	-
+Void Knight (Pest Control)	void_knight	-
+Vorkath	ds2_vorkath,vorkath	Yes
+Vulture	vulture	No
+Vyrewatch Sentinel	vyrewatch_sentinel	Yes
+Wall beast	wall_beast	No
+Wallasalki	wallasalki	No
+Warped Jelly	warped_jelly	No
+Warped Terrorbird	warped_terrorbird	No
+Waterfiend	waterfiend	No
+Werewolf	gwd_werewolf	No
+White Knight	white_knight	No/No/No/No
+Wild dog	wild_dog	No
+Wingman Skree	wingman_skree	No
+Wintertodt	wintertodt	-
+Witch's experiment	witchs_experiment	-
+Wolf	wolf	No
+Woman	woman	No
+Wyrm	wyrm	Yes
+Wyrmling	wyrmling	-
+Xarpus	xarpus	-
+Yak	yak	No
+Yama	yama	Yes
+Young impling	young_impling	-
+Yt-HurKot	yt_hurkot	-
+Yt-MejKot	yt_mejkot	-
+Zakl'n Gritch	zakln_gritch	No
+Zalcano	zalcano	-
+Zamorak crafter	zamorak_crafter	No
+Zamorak mage	zamorak_mage	No
+Zamorak ranger	zamorak_ranger	No
+Zamorak warrior	zamorak_warrior	No
+Zemouregal	quest_zemouregal	-
+Zogre	zogre	No
+Zombie	trek_zombie,zombie,zombie_lvl18,zombie_lvl24	No/No/No
+Zombie (Shayzien Crypts)	shayzien_crypt_zombie_magic,shayzien_crypt_zombie_melee,shayzien_crypt_zombie_ranged	No
+Zombie pirate (Braindeath Island)	zombie_pirate	No
+Zombie rat	zombie_rat	No
+Zombies Champion	zombies_champion	-
+Zombified Spawn	zombified_spawn	-
+Zulrah	zulrah,zulrah_magma,zulrah_tanzanite	No

@@ -588,6 +588,9 @@ final class MinigameRewardChecks {
             if (c.monstersAlive() != 1) {
                 throw failure("wave 12 has " + c.monstersAlive() + " monsters (expected Sol Heredit alone)");
             }
+            if (c.wallBlocks() == 0) {
+                throw failure("no gladiator wall closed the arena for Sol Heredit");
+            }
             for (int i = 0; i < 5; i++) {
                 MinigameManager.selfTestTick(c);
                 this.c.heal();
@@ -611,7 +614,11 @@ final class MinigameRewardChecks {
         } finally {
             c.end(false);
         }
-        return "11 waves cleared, Sol Heredit spawned on wave 12, four salutes counted; modifiers " + String.join(", ", seen);
+        if (c.wallBlocks() != 0) {
+            throw failure("the gladiator wall is still standing after the run ended");
+        }
+        return "11 waves cleared, Sol Heredit spawned on wave 12 behind the gladiator wall, four salutes counted; modifiers "
+                + String.join(", ", seen);
     }
 
     /** Glory unlocks (bank chest, respawn point, ring of dueling) and the daily Varlamore token from wave 3. */
@@ -709,6 +716,24 @@ final class MinigameRewardChecks {
             Set<String> flags = g.caFlags(p());
             if (flags.contains("noarmour") || !flags.contains("noegniol") || !flags.contains("oneweapon")) {
                 throw failure("wrong Combat Achievement flags " + flags);
+            }
+            // Entry hands out the crystal tools and the pestle and mortar; egniol: grym leaf + water vial, ground shards.
+            for (String item : com.runecraft.osrs.content.minigames.Gauntlet.startingItems(mode)) {
+                if (!Inv.has(p(), item, 1)) {
+                    throw failure("entering the Gauntlet didn't hand out " + item);
+                }
+            }
+            Inv.give(p(), com.runecraft.osrs.content.minigames.Gauntlet.grym(mode), 1);
+            Inv.give(p(), com.runecraft.osrs.content.minigames.Gauntlet.WATER_VIAL, 1);
+            Inv.give(p(), com.runecraft.osrs.content.minigames.Gauntlet.shards(mode), 10);
+            if (!com.runecraft.content.minigames.games.GauntletSession.mixGrym(p())
+                    || com.runecraft.content.minigames.games.GauntletSession.grind(p()) != 10
+                    || !com.runecraft.content.minigames.games.GauntletSession.finishEgniol(p())
+                    || !Inv.has(p(), com.runecraft.osrs.content.minigames.Gauntlet.EGNIOL, 1)) {
+                throw failure("grym leaf + water vial + 10 ground shards didn't make an egniol potion");
+            }
+            if (g.caFlags(p()).contains("noegniol")) {
+                throw failure("making an egniol potion left the no-egniol flag set");
             }
             g.selfTestEnterBoss(p());
             if (!g.inBossFight() || !g.selfTestHunllefAlive()) {

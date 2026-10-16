@@ -29,8 +29,10 @@ import java.util.Random;
  * Gauntlet), each attuned item page, the creature pages. Equipment costs and bonuses are snapshotted in
  * {@code src/test/resources/osrs/minigames/gauntlet.tsv} and diffed by {@code GauntletTest}.
  *
- * <p>Simplifications: the crystal tools and the pestle and mortar are implied (gathering needs no tool, and the egniol potion
- * takes its 10 shards at the singing bowl instead of as ground crystal dust); Minecraft bows need ammunition, so the run keeps a
+ * <p>The player enters with a crystal (corrupted) axe, pickaxe and harpoon and a pestle and mortar: phren roots need the axe,
+ * crystal deposits the pickaxe and fishing spots the harpoon (linum tirinum and grym roots need no tool). Egniol potions are
+ * made as in OSRS: a grym leaf in a water-filled vial gives a grym potion (unf), the pestle grinds shards into dust ten at a
+ * time, and ten dust finish the potion (3 doses, 10 Herblore XP). Simplification: Minecraft bows need ammunition, so the run keeps a
  * quiver of weightless crystal arrows topped up while a Gauntlet bow is carried (OSRS: the bow needs none).
  */
 public final class Gauntlet {
@@ -107,6 +109,16 @@ public final class Gauntlet {
             this.look = look;
         }
 
+        /** The tool gathering needs (wiki: crystal pickaxe, axe, harpoon; none for linum tirinum and grym roots), or null. */
+        public String tool(Mode m) {
+            return switch (this) {
+                case ORE -> m.prefix + "_gauntlet_pickaxe";
+                case BARK -> m.prefix + "_gauntlet_axe";
+                case FISH -> m.prefix + "_gauntlet_harpoon";
+                default -> null;
+            };
+        }
+
         /** The item a node gives in this mode. */
         public String item(Mode m) {
             return switch (this) {
@@ -156,6 +168,13 @@ public final class Gauntlet {
     public static final String VIAL = "gauntlet_vial";
     public static final String WATER_VIAL = "gauntlet_water_vial";
     public static final String EGNIOL = "egniol_potion";
+    /** Given on entry; grinds shards into crystal dust ten at a time. */
+    public static final String PESTLE = "gauntlet_pestle_and_mortar";
+    /** Grym leaf (either mode) + water-filled vial. */
+    public static final String GRYM_UNF = "gauntlet_grym_potion_unf";
+    public static final int DUST_PER_GRIND = 10;
+    public static final int EGNIOL_DUST = 10;
+    public static final double EGNIOL_XP = 10;
     public static final String ARROWS = "gauntlet_crystal_arrow";
     /** Escape crystal (wiki): 200 shards at the singing bowl (100 Crafting and Smithing XP); leaves the Gauntlet at once. */
     public static final String ESCAPE_CRYSTAL = "gauntlet_escape_crystal";
@@ -181,6 +200,16 @@ public final class Gauntlet {
 
     public static String shards(Mode m) {
         return m.prefix + "_gauntlet_shards";
+    }
+
+    /** Crystal dust (corrupted dust): one per shard ground with the pestle and mortar. */
+    public static String dust(Mode m) {
+        return m.prefix + "_gauntlet_dust";
+    }
+
+    /** What the player is handed on entering: the sceptre, a teleport crystal, the three tools and the pestle and mortar. */
+    public static List<String> startingItems(Mode m) {
+        return List.of(sceptre(m), teleport(m), Node.BARK.tool(m), Node.ORE.tool(m), Node.FISH.tool(m), PESTLE);
     }
 
     public static String ore(Mode m) {
@@ -368,6 +397,13 @@ public final class Gauntlet {
             simple(items, linum(m), c ? "Linum tirinum (corrupted)" : "Linum tirinum", "flax", c ? 0xC06060 : 0xC0E0F0, 60000,
                     "A fibrous plant for singing armour.");
             simple(items, grym(m), c ? "Grym leaf (corrupted)" : "Grym leaf", "herb", c ? 0xA04040 : 0x5AA05A, 1, "A herb for egniol potions.");
+            simple(items, dust(m), c ? "Corrupted dust" : "Crystal dust", "secondary", col, 60000,
+                    "Crystal crushed down to the finest form imaginable, useful for making potions.");
+            items.add(Node.BARK.tool(m), m.word + " axe", Kind.TOOL, "axe", col).value(1).stack(1).examine("A very powerful axe.");
+            items.add(Node.ORE.tool(m), m.word + " pickaxe", Kind.TOOL, "pickaxe", col).value(1).stack(1)
+                    .examine("A very powerful pickaxe.");
+            items.add(Node.FISH.tool(m), m.word + " harpoon", Kind.TOOL, "harpoon", col).value(1).stack(1)
+                    .examine("A very powerful harpoon.");
             simple(items, frame(m), c ? "Weapon frame (corrupted)" : "Weapon frame", "shaft", col, 1, "The frame of a crystal weapon.");
             simple(items, component(m, Piece.HALBERD), m.word + " spike", "arrowtips", col, 1, "Perfects a halberd.");
             simple(items, component(m, Piece.STAFF), m.word + " orb", "orb", col, 1, "Perfects a staff.");
@@ -402,6 +438,10 @@ public final class Gauntlet {
                 .examine("A cooked paddlefish.");
         items.add(BURNT_PADDLEFISH, "Burnt fish", Kind.SIMPLE, "fish_burnt", 0x3A3028).value(1).stack(1).examine("Oops!");
         items.add(VIAL, "Vial", Kind.SIMPLE, "vial", 0xC0E0F0).value(1).stack(1).examine("A crystal vial.");
+        items.add(PESTLE, "Pestle and mortar", Kind.TOOL, "pestle", 0x9A9AA0).value(1).stack(1)
+                .examine("I can grind things for potions in this.");
+        items.add(GRYM_UNF, "Grym potion (unf)", Kind.SIMPLE, "potion_unf", 0x70B070).value(1).stack(1)
+                .examine("I need another ingredient to finish this Grym potion.");
         items.add(WATER_VIAL, "Water-filled vial", Kind.SIMPLE, "vial_water", 0x80B0E0).value(1).stack(1).examine("A crystal vial of water.");
         items.add(EGNIOL, "Egniol potion", Kind.POTION, "potion", 0x60C0A0).value(1).stack(1)
                 .examine("Restores prayer and run energy.");
@@ -431,14 +471,16 @@ public final class Gauntlet {
         List<String> ids = new ArrayList<>();
         for (Mode m : Mode.values()) {
             ids.addAll(List.of(shards(m), ore(m), bark(m), linum(m), grym(m), frame(m), component(m, Piece.HALBERD),
-                    component(m, Piece.STAFF), component(m, Piece.BOW), teleport(m), upgradedFish(m), sceptre(m)));
+                    component(m, Piece.STAFF), component(m, Piece.BOW), teleport(m), upgradedFish(m), sceptre(m), dust(m),
+                    Node.BARK.tool(m), Node.ORE.tool(m), Node.FISH.tool(m)));
             for (Piece p : Piece.values()) {
                 for (Tier t : Tier.values()) {
                     ids.add(equipment(m, p, t));
                 }
             }
         }
-        ids.addAll(List.of(RAW_PADDLEFISH, PADDLEFISH, BURNT_PADDLEFISH, VIAL, WATER_VIAL, EGNIOL, ARROWS, ESCAPE_CRYSTAL));
+        ids.addAll(List.of(RAW_PADDLEFISH, PADDLEFISH, BURNT_PADDLEFISH, VIAL, WATER_VIAL, EGNIOL, ARROWS, ESCAPE_CRYSTAL, PESTLE,
+                GRYM_UNF));
         return ids;
     }
 
@@ -496,8 +538,7 @@ public final class Gauntlet {
                 null, null, 0, 0, null, null));
         list.add(new Sing("escape", "Escape crystal", ESCAPE_CRYSTAL, 1, ESCAPE_CRYSTAL_SHARDS, 0, 0, 0, null, null, 0, 0, null, null));
         list.add(new Sing("paddlefish", m.word + " paddlefish", upgradedFish(m), 1, 10, 0, 0, 0, PADDLEFISH, null, 1, 0, null, null));
-        // Egniol potion: grym leaf + water-filled vial, then 10 crystal dust (10 shards ground); 10 Herblore XP, 3 doses.
-        list.add(new Sing("egniol", "Egniol potion", EGNIOL, 1, 10, 0, 0, 0, WATER_VIAL, grym(m), 0, 10, null, null));
+        // Egniol potions aren't sung: see GRYM_UNF, PESTLE and dust().
         for (Piece p : Piece.values()) {
             for (Tier t : Tier.values()) {
                 Gear g = gear(p, t);
@@ -764,7 +805,11 @@ public final class Gauntlet {
         }
     }
 
-    /** Demi-bosses per run: one in each of the four rooms furthest north/east/south/west of the centre, plus two more (approx). */
+    /**
+     * Demi-bosses per run: six (wiki change notes, poll 71: "6 of the 12 specific rooms of the outer areas"); since 22 July 2026
+     * one is guaranteed in each of the rooms furthest north/east/south/west of the centre and the others may be in any edge or
+     * corner room.
+     */
     public static final int DEMI_BOSSES = 6;
 
     /**

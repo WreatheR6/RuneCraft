@@ -92,6 +92,18 @@ public final class MinigameItemUse {
                     showRedirects(sp);
                     yield false;
                 }
+                case com.runecraft.osrs.content.minigames.Gauntlet.PESTLE -> {
+                    com.runecraft.content.minigames.games.GauntletSession.grind(sp);
+                    yield false;
+                }
+                case "crystal_grym_leaf", "corrupted_grym_leaf" -> {
+                    com.runecraft.content.minigames.games.GauntletSession.mixGrym(sp);
+                    yield false;
+                }
+                case com.runecraft.osrs.content.minigames.Gauntlet.GRYM_UNF -> {
+                    com.runecraft.content.minigames.games.GauntletSession.finishEgniol(sp);
+                    yield false;
+                }
                 default -> com.runecraft.content.minigames.games.TempleTrekkingSession.readTome(sp, id);
             };
             if (used) {
