@@ -95,6 +95,7 @@ final class GameplayChecks {
         for (QuestInfo q : ContentRegistry.quests()) {
             checks.add(new SelfTest.Check("quest:" + q.questId(), () -> g.quest(q, specs.get(q.questId()))));
         }
+        checks.add(new SelfTest.Check("quest:puzzle_retry", g::puzzleRetry));
         for (Minigame m : Minigame.values()) {
             checks.add(new SelfTest.Check("minigame:" + m.id(), () -> g.minigame(m)));
         }
@@ -338,6 +339,14 @@ final class GameplayChecks {
                         }
                     }
                     case KILL -> handled = kill(t.target, t.count);
+                    case PUZZLE -> {
+                        // Click the player's own room's solution through the real chat-link handler; a fight room
+                        // (Recruitment Drive's Sir Leye) then needs its foe killed.
+                        String foe = com.runecraft.content.quests.QuestPuzzles.selfTestSolve(p(), spec, t);
+                        if (foe != null) {
+                            handled = kill(foe, 1);
+                        }
+                    }
                     default -> QuestInterpreter.selfTestFire(p(), spec, t);
                 }
                 if (!handled || (data.questStage(q) == s && !data.questComplete(q))) {
@@ -399,6 +408,45 @@ final class GameplayChecks {
             throw failure("completion lost on save/load");
         }
         return walk;
+    }
+
+    /**
+     * Recruitment Drive's test rooms through the puzzle chat-link handler: a wrong answer sends the player back and
+     * re-draws the rooms (attempt counter), the right answer passes the room.
+     */
+    private String puzzleRetry() {
+        QuestSpec rd = QuestBook.get().spec("recruitment_drive");
+        QuestInfo q = ContentRegistry.quest("recruitment_drive");
+        if (rd == null || q == null) {
+            throw failure("recruitment_drive is missing");
+        }
+        c.completeQuests(q);
+        QuestsState state = QuestsState.get(p());
+        Trigger first = rd.stages.get(1).triggers.stream().filter(t -> t.kind == Trigger.Kind.PUZZLE && t.slot == 0).findFirst()
+                .orElseThrow(() -> failure("no first test room"));
+        first.puzzle.failFlags.forEach(f -> state.clearFlag(p().getUuid(), f));
+        String attempts = "puzzle:" + first.puzzle.key;
+        try {
+            data().setQuestStage(q, 1);
+            int before = state.kills(p().getUuid(), attempts);
+            if (!com.runecraft.content.quests.QuestPuzzles.selfTestFail(p(), rd, first)) {
+                throw failure("a wrong answer did not reset the room");
+            }
+            if (state.kills(p().getUuid(), attempts) != before + 1 || data().questStage(q) != first.puzzle.failStage) {
+                throw failure("a wrong answer did not re-draw and send the player back (stage " + data().questStage(q) + ")");
+            }
+            String foe = com.runecraft.content.quests.QuestPuzzles.selfTestSolve(p(), rd, first);
+            if (foe != null) {
+                kill(foe, 1);
+            }
+            if (!state.hasFlag(p().getUuid(), "rd_test0")) {
+                throw failure("solving the first room did not pass it" + (foe != null ? " (fight room: " + foe + ")" : ""));
+            }
+            return "wrong answer re-drew (attempt " + (before + 1) + "), first room passed" + (foe != null ? " by killing " + foe : "");
+        } finally {
+            first.puzzle.failFlags.forEach(f -> state.clearFlag(p().getUuid(), f));
+            data().setQuestStage(q, 0);
+        }
     }
 
     // ------------------------------------------------------------------ minigames and raids

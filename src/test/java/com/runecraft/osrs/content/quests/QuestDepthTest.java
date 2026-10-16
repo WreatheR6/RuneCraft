@@ -254,9 +254,9 @@ class QuestDepthTest {
     void recruitmentDriveAndChildrenOfTheSunHaveRealTests() {
         QuestSpec rd = spec("recruitment_drive");
         assertEquals(20, ContentRegistry.boss("sir_leye").combatLevel);
-        assertTrue(find(rd, Trigger.Kind.KILL, "sir_leye").setFlags.contains("rd_leye"));
-        assertTrue(rd.triggers().stream().anyMatch(t -> t.target.equals("sir_tiffy_cashien") && t.completes()
-                && t.needFlags.containsAll(List.of("rd_tinley", "rd_ren", "rd_cheevers", "rd_hynn"))));
+        // round 30: five random test rooms (QuestPuzzleTest), the last one completes the quest
+        assertEquals(5, rd.triggers().stream().filter(t -> t.kind == Trigger.Kind.PUZZLE).count());
+        assertTrue(rd.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.PUZZLE && t.completes() && t.needFlags.contains("rd_test3")));
         QuestSpec cots = spec("children_of_the_sun");
         assertTrue(find(cots, Trigger.Kind.REACH, "cots_bandit_house").needFlags.containsAll(List.of("cots_hide1", "cots_hide2")));
         assertTrue(cots.triggers().stream().anyMatch(t -> t.target.equals("sergeant_tobyn") && t.completes()
@@ -328,7 +328,15 @@ class QuestDepthTest {
         assertTile(QuestNpc.DR_HARLOW, 3222, 3397);
         assertTile(QuestNpc.DORIC, 2952, 3451);
         assertTrue(QuestNpc.FATHER_URHNEY.remote() && QuestNpc.DR_HARLOW.remote());
-        assertTrue(!QuestNpc.ROMEO.remote() && !QuestNpc.SEDRIDOR.onOsrsTile());
+        assertTrue(!QuestNpc.ROMEO.remote());
+        // round 30: Sedridor in his basement study (wiki 3103, 9571), drawn under the tower; the Restless Ghost altar
+        // (3120, 9567) and the Cauldron of Thunder are underground spots too
+        assertTile(QuestNpc.SEDRIDOR, 3103, 9571 - 6400);
+        assertEquals(-1, QuestNpc.SEDRIDOR.floor());
+        FreeQuestObjectives.Spot altar = FreeQuestObjectives.spots(Quest.RESTLESS_GHOST, 3).get(0);
+        assertTrue(altar.underground() && altar.contains(3120, 3167, true) && !altar.contains(3120, 3167, false));
+        assertTrue(!altar.contains(3109, 3162, false), "no longer on the tower's ground floor");
+        assertTrue(FreeQuestObjectives.spots(Quest.DRUIDIC_RITUAL, 2).get(0).underground());
     }
 
     private static void assertTile(QuestNpc n, int x, int y) {
@@ -380,7 +388,7 @@ class QuestDepthTest {
         assertEquals(20, FreeQuestObjectives.SHEEP_SHEARER.get("ball_of_wool"));
         // The ghost's skull is on the Wizards' Tower basement altar, the cadava bushes south-east of Varrock.
         FreeQuestObjectives.Spot skull = FreeQuestObjectives.spots(Quest.RESTLESS_GHOST, 3).get(0);
-        assertTrue(skull.contains(3109, 3162) && "ghosts_skull".equals(skull.item()) && "minecraft:skeleton".equals(skull.spawn()));
+        assertTrue(skull.contains(3120, 9567) && "ghosts_skull".equals(skull.item()) && "minecraft:skeleton".equals(skull.spawn()));
         assertTrue(FreeQuestObjectives.spots(Quest.RESTLESS_GHOST, 2).isEmpty());
         FreeQuestObjectives.Spot cadava = FreeQuestObjectives.spots(Quest.ROMEO_AND_JULIET, 4).get(0);
         assertTrue(cadava.contains(3264, 3366) && cadava.contains(3277, 3374) && !cadava.contains(3211, 3422));

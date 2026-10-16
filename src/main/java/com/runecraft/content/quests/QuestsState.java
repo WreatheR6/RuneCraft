@@ -67,6 +67,14 @@ public final class QuestsState extends PersistentState {
         }
     }
 
+    /** Clears a quest flag (a failed puzzle run resets its progress flags). */
+    public void clearFlag(UUID player, String flag) {
+        Set<String> s = flags.get(player);
+        if (s != null && s.remove(flag)) {
+            markDirty();
+        }
+    }
+
     /** Kills counted so far towards a multi-kill objective. */
     public int kills(UUID player, String key) {
         return kills.getOrDefault(player, Map.of()).getOrDefault(key, 0);

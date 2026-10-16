@@ -163,8 +163,8 @@ class QuestCompletabilityTest {
         }
         BossDef boss = ContentRegistry.boss(target);
         if (boss != null) {
-            // A boss with a place gets an arena and a summoning stone there.
-            return boss.place != null;
+            // A boss with a place gets an arena and a summoning stone there; a raid boss is fought in its raid.
+            return boss.place != null || boss.raidOnly;
         }
         // Built-in bosses have their own lairs.
         return Boss.byEntity(target) != null;

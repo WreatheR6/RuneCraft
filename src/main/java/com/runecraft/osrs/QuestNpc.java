@@ -11,7 +11,7 @@ public enum QuestNpc {
     RESTLESS_GHOST("Restless ghost", Landmark.LUMBRIDGE, Look.GHOST, 3250, 3195), // by his coffin in the graveyard
     FRED_THE_FARMER("Fred the Farmer", Landmark.LUMBRIDGE, Look.PEASANT, 3189, 3273), // his farmhouse
     FATHER_URHNEY("Father Urhney", Landmark.WATER_ALTAR, Look.PRIEST, 3146, 3174), // his shack in Lumbridge Swamp
-    SEDRIDOR("Sedridor", Landmark.WIZARDS_TOWER, 3, 3, Look.WIZARD), // OSRS: the basement
+    SEDRIDOR("Sedridor", Landmark.WIZARDS_TOWER, Look.WIZARD, 3103, 9571 - 6400, -1), // his study in the basement (wiki 3103, 9571)
     WIZARD_MIZGOG("Wizard Mizgog", Landmark.WIZARDS_TOWER, Look.WIZARD, 3103, 3163, 2), // top floor
     // OSRS 3112,3162 holds a chair in our 1st-floor room, so he stands one tile west // approx
     WIZARD_TRAIBORN("Wizard Traiborn", Landmark.WIZARDS_TOWER, Look.WIZARD, 3111, 3162, 1), // 1st floor
@@ -69,7 +69,7 @@ public enum QuestNpc {
         this.floor = floor;
     }
 
-    /** Storey the character stands on (0 = ground floor; OSRS plane). */
+    /** Storey the character stands on (0 = ground floor; OSRS plane; -1 = the basement under the building). */
     public int floor() {
         return floor;
     }

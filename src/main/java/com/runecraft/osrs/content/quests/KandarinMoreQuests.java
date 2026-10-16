@@ -92,14 +92,64 @@ final class KandarinMoreQuests {
                 .stage("I can start this quest by speaking to the guard at the Sinclair Mansion north of Camelot.")
                 .talk("sinclair_guard").say("Lord Sinclair has been murdered! The family all have alibis. Will you help find the killer?")
                 .stage("I should search the mansion for clues.")
-                .reach("sinclair_mansion", 8).give("silver_dagger_evidence").say("* Beneath the window you find a silver dagger, the murder weapon.")
+                .reach("sinclair_mansion", 8).give("silver_dagger_evidence")
+                .say("* Beneath the smashed window you find the criminal's dagger, and a thread caught on the frame.")
                 .stage("I should lift the fingerprint from the dagger using flour, and compare it with the suspects'.")
                 .talk("sinclair_guard").take("pot_of_flour").give("killers_print").say("Dust it with flour... there, a clear print. Now compare it with the family's.")
                 .missing("You'll need a pot of flour to dust the dagger for prints.")
-                .stage("I should compare prints with the family. David seems nervous.")
-                .talk("david_sinclair").take("killers_print").say("That print... it's mine. Fine! I did it! Father was going to cut me out of his will!")
+                .stage("I should dust the silver items of the suspects whose clothes match the thread, and compare their prints with the dagger's.")
+                .puzzle("sinclair_mansion", MURDER_PRINTS).need("killers_print")
+                .say("* The prints match. Now for the poison: the salesman in Seers' Village says who bought some.")
+                .hint("david_sinclair", "Don't look at me like that. Father and I argued, but I'd never... Talk to the guard if you've found something.")
                 .stage("I should tell the guard who the murderer is.")
-                .talk("sinclair_guard").take("silver_dagger_evidence").say("David?! Arrest him! Excellent work, detective. Here's your reward.");
+                .puzzle("sinclair_guard", MURDER_ACCUSE).take("silver_dagger_evidence", "killers_print")
+                .say("Arrest them! Excellent work, detective. Here's your reward.");
+    }
+
+    /**
+     * Murder Mystery's random murderer (wiki): one of the six Sinclairs. The thread on the smashed window (red: Bob or
+     * Carol, green: Anna or David, blue: Elizabeth or Frank) narrows it to two, whose silver items' prints are compared
+     * with the dagger's; the murderer then lies about what they used the poison on. The print descriptions are approx
+     * (OSRS compares print images).
+     */
+    static final String[] SUSPECTS = {"Anna", "Bob", "Carol", "David", "Elizabeth", "Frank"};
+    private static final String[] THREAD = {"green", "red", "red", "green", "blue", "blue"};
+    private static final String[] SILVER = {"silver necklace", "silver cup", "silver bottle", "silver book", "silver needle", "silver pot"};
+    private static final String[] PRINT = {"a tight whorl with a scar through it", "a double loop, the left one broken",
+            "a plain arch with three short ridges", "a tented arch with a dot at its peak", "a right-slanting loop with a fork",
+            "a wide whorl with ridges bunched at the top"};
+    private static final String[] POISONED = {"the compost heap", "the beehive", "the kitchen drain", "the spiders' nest", "the fountain",
+            "the family crest"};
+    static final QuestPuzzle MURDER_PRINTS = murderPuzzle(true);
+    static final QuestPuzzle MURDER_ACCUSE = murderPuzzle(false);
+
+    private static QuestPuzzle murderPuzzle(boolean prints) {
+        QuestPuzzle.Builder b = QuestPuzzle.builder("murder_mystery").room(prints ? "prints" : "accuse");
+        for (int m = 0; m < SUSPECTS.length; m++) {
+            int other = -1;
+            for (int i = 0; i < SUSPECTS.length; i++) {
+                if (i != m && THREAD[i].equals(THREAD[m])) {
+                    other = i;
+                }
+            }
+            int a = Math.min(m, other);
+            int c = Math.max(m, other);
+            if (prints) {
+                b.variant(null).prompt("* The thread from the window is " + THREAD[m] + ". Only " + SUSPECTS[a] + " and " + SUSPECTS[c]
+                                + " wear " + THREAD[m] + ".",
+                        "* The dagger's print: " + PRINT[m] + ".",
+                        "* " + SUSPECTS[a] + "'s " + SILVER[a] + ": " + PRINT[a] + ".",
+                        "* " + SUSPECTS[c] + "'s " + SILVER[c] + ": " + PRINT[c] + ".",
+                        "* Whose print matches the dagger's?")
+                        .options(SUSPECTS[a] + "'s " + SILVER[a], SUSPECTS[c] + "'s " + SILVER[c]).solution(a == m ? 0 : 1);
+            } else {
+                b.variant(null).prompt("So, who did it?",
+                        "* The poison salesman sold poison to " + SUSPECTS[a] + " and " + SUSPECTS[c] + ". " + SUSPECTS[m]
+                                + " says it was used on " + POISONED[m] + ", but " + POISONED[m] + " shows no sign of poison.")
+                        .options(SUSPECTS).solution(m);
+            }
+        }
+        return b.failLines("I don't think you have the proof to accuse them. Look at the evidence again.").build();
     }
 
     private static void tribalTotem(QuestBook b) {
@@ -113,7 +163,16 @@ final class KandarinMoreQuests {
                 .stage("I need a way into Handelmort Mansion. Wizard Cromperty's teleporter might help.")
                 .talk("wizard_cromperty").travel("handelmort_mansion").say("My experimental teleporter! Let's send you... somewhere. *ZAP* *You land inside the mansion.*")
                 .stage("I should get past the traps and take the totem from the top floor.")
-                .reach("handelmort_mansion", 6).give("tribal_totem").say("* You disarm the trapped stairs and take the totem from its chest.")
+                // The second door's combination lock (wiki): Lord Handelmort's middle name, K U R T.
+                .puzzle("handelmort_mansion", QuestPuzzle.builder("tribal_totem_lock").variant(null)
+                        .prompt("* The second door has a combination lock: four dials, each lettered A to Z.",
+                                "* The guide book at the estate agent's said Lord Handelmort is ever so proud of his middle name, Kurt.")
+                        .options(QuestPuzzle.letters()).solution(QuestPuzzle.word("KURT"))
+                        .failLines("* This combination is incorrect.").build())
+                .unlessFlag("tt_door").flag("tt_door").stay().say("* The lock clicks and the door swings open.")
+                .reach("handelmort_mansion", 6).needFlag("tt_door").reqSkill(Skill.THIEVING, 21).give("tribal_totem")
+                .say("* You investigate the stairs and disarm their trap, then take the totem from the chest upstairs.")
+                .missing("* The door to the stairs is locked with a combination lock.")
                 .stage("I should return the totem to Kangai Mau.")
                 .talk("kangai_mau").take("tribal_totem").say("The totem returns! The Rantuki tribe thanks you. Take these swordfish.");
     }
