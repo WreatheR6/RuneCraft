@@ -152,4 +152,15 @@ public final class TzHaarWaves {
     public static int infernoJadHealers(int wave) {
         return wave == 67 ? 5 : 3;
     }
+
+    /** Game ticks between two heals of a Yt-HurKot (OSRS Wiki "Yt-HurKot", quoting Mod Ash). */
+    public static final int HURKOT_HEAL_TICKS = 4;
+
+    /**
+     * Hitpoints one Yt-HurKot restores to its Jad every {@link #HURKOT_HEAL_TICKS} ticks (OSRS Wiki "Yt-HurKot", quoting Mod Ash):
+     * a flat 5 for the Fight Caves' TzTok-Jad, 15-24 for a JalTok-Jad (the Inferno and TzHaar-Ket-Rak's challenges).
+     */
+    public static int hurKotHeal(String jadId, java.util.Random random) {
+        return JAD.equals(jadId) ? 5 : 15 + random.nextInt(10);
+    }
 }

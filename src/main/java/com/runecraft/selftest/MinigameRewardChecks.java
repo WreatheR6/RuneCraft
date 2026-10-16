@@ -62,6 +62,8 @@ final class MinigameRewardChecks {
         checks.add(new SelfTest.Check("minigame:nmz_barrels", g::nmzBarrels));
         checks.add(new SelfTest.Check("minigame:trek_tomes", g::trekTomes));
         checks.add(new SelfTest.Check("minigame:shades_town", g::shadesTown));
+        checks.add(new SelfTest.Check("minigame:blighted_sacks", g::blightedSacks));
+        checks.add(new SelfTest.Check("minigame:emirs_ranked_build", g::emirsBuild));
         return checks;
     }
 
@@ -667,6 +669,90 @@ final class MinigameRewardChecks {
             data.setStat(u, FortisColosseum.STAT_GLORY, glory);
             p().setSpawnPoint(dim, spawn, angle, forced, false);
         }
+    }
+
+    /** A blighted entangle sack pays for Entangle (one sack, no runes) in the Wilderness only, and not for other spells. */
+    private String blightedSacks() {
+        if (com.runecraft.world.Gielinor.wildernessLevel(p()) > 0) {
+            throw new SelfTest.Skip("the test platform is in the Wilderness");
+        }
+        com.runecraft.osrs.content.systems.Spellbooks.Spell entangle = com.runecraft.osrs.content.systems.Spellbooks.get("entangle");
+        com.runecraft.osrs.content.systems.Spellbooks.Spell barrage = com.runecraft.osrs.content.systems.Spellbooks.get("ice_barrage");
+        if (entangle == null || barrage == null) {
+            throw failure("Entangle or Ice Barrage is missing from the spellbooks");
+        }
+        String sack = com.runecraft.osrs.data.BlightedSacks.ENTANGLE;
+        int had = Inv.count(p(), sack);
+        Inv.give(p(), sack, 1);
+        double x = p().getX();
+        double y = p().getY();
+        double z = p().getZ();
+        try {
+            if (com.runecraft.content.systems.SpellService.blightedPlan(p(), entangle) != null) {
+                throw failure("the entangle sack paid for Entangle outside the Wilderness");
+            }
+            // Stand in level 23 Wilderness (OSRS tile 3100, 3700) for the lookups only.
+            p().setPosition(com.runecraft.osrs.GielinorMap.toBlockX(3100) + 0.5, y, com.runecraft.osrs.GielinorMap.toBlockZ(3700) + 0.5);
+            if (com.runecraft.world.Gielinor.wildernessLevel(p()) <= 0) {
+                throw new SelfTest.Skip("the Wilderness lookup position isn't in the Wilderness");
+            }
+            java.util.Map<String, Integer> plan = com.runecraft.content.systems.SpellService.blightedPlan(p(), entangle);
+            if (plan == null || !plan.equals(java.util.Map.of(sack, 1))) {
+                throw failure("the entangle sack didn't pay for Entangle in the Wilderness: " + plan);
+            }
+            if (com.runecraft.content.systems.SpellService.blightedPlan(p(), barrage) != null) {
+                throw failure("the entangle sack paid for Ice Barrage");
+            }
+        } finally {
+            p().setPosition(x, y, z);
+            int extra = Inv.count(p(), sack) - had;
+            if (extra > 0) {
+                Inv.remove(p(), sack, extra);
+            }
+        }
+        return "the entangle sack pays for Entangle in the Wilderness only";
+    }
+
+    /**
+     * A ranked Emir's Arena fighter plays the week's account build: the 1 Def Pure's levels and kit replace the player's own
+     * (which wait in the LMS stash and come back), and with its 52 Prayer the soul cape (70 Prayer) can't be worn.
+     */
+    private String emirsBuild() {
+        if (com.runecraft.content.minigames.LmsStash.has(p())) {
+            com.runecraft.content.minigames.LmsStash.restore(p());
+        }
+        SkillSet skills = Players.data(p()).skills();
+        int defenceXp = skills.xpTenths(Skill.DEFENCE);
+        int compost = Inv.count(p(), "compost");
+        Inv.give(p(), "compost", 1);
+        try {
+            com.runecraft.content.minigames.games.EmirsArenaSession.equipBuild(p(),
+                    com.runecraft.osrs.content.minigames.EmirsArena.Build.PURE);
+            if (skills.level(Skill.ATTACK) != 60 || skills.level(Skill.DEFENCE) != 1 || skills.level(Skill.PRAYER) != 52
+                    || skills.level(Skill.STRENGTH) != 99) {
+                throw failure("the Pure build's levels weren't applied: attack " + skills.level(Skill.ATTACK) + ", defence "
+                        + skills.level(Skill.DEFENCE) + ", prayer " + skills.level(Skill.PRAYER));
+            }
+            if (Inv.count(p(), "compost") != 0) {
+                throw failure("the player's own items weren't put away");
+            }
+            if (!Inv.idOf(p().getMainHandStack()).equals("lms_ancient_staff") && Inv.count(p(), "lms_ancient_staff") == 0) {
+                throw failure("the Pure kit's ancient staff is missing");
+            }
+            hold("soul_cape");
+            com.runecraft.content.systems.JewelleryService.wear(p(), Hand.MAIN_HAND);
+            if (Inv.idOf(com.runecraft.content.systems.SysState.of(p()).worn(com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE))
+                    .equals("soul_cape")) {
+                throw failure("a soul cape was worn with 52 Prayer");
+            }
+        } finally {
+            com.runecraft.content.minigames.LmsStash.restore(p());
+        }
+        if (skills.xpTenths(Skill.DEFENCE) != defenceXp || Inv.count(p(), "compost") != compost + 1) {
+            throw failure("the player's levels and items didn't come back");
+        }
+        Inv.remove(p(), "compost", 1);
+        return "Pure build 60/99/1 with 52 Prayer and the ghostly kit; soul cape refused; own levels and items restored";
     }
 
     private String blighted() {

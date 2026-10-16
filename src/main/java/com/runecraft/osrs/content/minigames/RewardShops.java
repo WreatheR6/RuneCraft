@@ -294,7 +294,8 @@ public final class RewardShops {
             sw.xp(s, 27, ZEAL, 1, 30).xp(s, 27, ZEAL, 10, 30).xp(s, 27, ZEAL, 100, 30);
         }
         sw.xp(Skill.PRAYER, 14, ZEAL, 1, 30).xp(Skill.PRAYER, 14, ZEAL, 10, 30).xp(Skill.PRAYER, 14, ZEAL, 100, 30);
-        sw.item("soul_cape", ZEAL, 2500)
+        // The soul cape needs 70 Prayer to buy and to wear (OSRS Wiki "Soul cape"; the wear check is Jewellery.wearLevel).
+        sw.itemSkill("soul_cape", 1, ZEAL, 2500, Skill.PRAYER, 70)
                 .itemSkill("ectoplasmator", 1, ZEAL, 250, Skill.PRAYER, 40)
                 .item(SpoilsOfWar.ITEM, ZEAL, SpoilsOfWar.ZEAL_COST)
                 .item("blighted_entangle_sack", 70, ZEAL, 10)

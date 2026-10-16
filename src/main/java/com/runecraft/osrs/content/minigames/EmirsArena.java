@@ -20,8 +20,10 @@ import java.util.Set;
  * or reward points for participating."); wins and losses are counted separately.</li>
  * <li><b>Ranked 1v1 duels</b>: the game pairs two players who signed up at the arena recruitment board. The winner gets 16
  * reward points plus one per win of their current streak (up to +10, so 26), the loser 12; rank moves up or down. In OSRS these
- * run on separate Arena worlds with account builds and a supplies chest; here both players fight with their own gear and
- * levels. // approx</li>
+ * run on separate Arena worlds where the player's own levels and items stay behind: both fighters play the week's account
+ * build ({@link Build}, rotating Max/Med, Zerker, 1 Def Pure every Wednesday) with a kit from the supplies chest. Here the
+ * player's belongings and stats are stashed for the fight and everyone gets the build's starter kit (the Last Man Standing
+ * kits of the same builds; the supplies chest's free choice isn't modelled). // approx</li>
  * <li><b>PvP Arena Rewards</b> (Mubariz, at the entrance): the scroll of imbuing (200 points) and the blighted surge sack (50
  * for 10 points). Reward points are capped at 15,000.</li>
  * </ul>
@@ -247,11 +249,33 @@ public final class EmirsArena {
     }
 
     /**
-     * Fun weapons: the only weapons allowed under Fun Weapons (those with negative attack bonuses; bare fists are not allowed).
-     * The ids are the OSRS item names; RuneCraft has none of them yet, so a Fun Weapons duel can't be won by damage. // approx
+     * Fun weapons: the only weapons allowed under Fun Weapons (OSRS Wiki "Fun weapons": wieldable objects with negative bonuses;
+     * bare fists are not allowed). The ids are the wiki's item names; the cursed goblin hammer, hunting knife, nutcracker staff
+     * and skis are excluded, as in OSRS. Of these RuneCraft has the crier bell (a Treasure Trails reward), so Fun Weapons duels
+     * are fought with crier bells until more of the holiday items exist.
      */
-    public static final List<String> FUN_WEAPONS = List.of("rubber_chicken", "flowers", "birthday_cake", "rubber_mouse_toy",
-            "golden_tench", "easter_basket", "trailblazer_banner");
+    public static final List<String> FUN_WEAPONS = List.of(
+            // quest items
+            "trollweiss", "severed_leg", "undead_chicken",
+            // holiday items, one-handed
+            "rubber_chicken", "easter_basket", "birthday_balloons", "hand_fan", "fine_mesh_net", "prop_sword", "eek",
+            "candy_cane", "carrot_sword", "24_carat_sword", "haunted_wine_bottle", "dragon_candle_dagger", "10th_birthday_balloons",
+            // holiday items, two-handed
+            "giant_present", "birthday_cake", "giant_easter_egg", "skeleton_lantern", "greggs_eastdoor", "giant_boulder",
+            "cursed_banana", "love_crossbow", "archibald",
+            // Treasure Trails
+            "crier_bell", "gilded_spade", "large_spade", "clueless_scroll",
+            // flowers
+            "red_flowers", "blue_flowers", "yellow_flowers", "purple_flowers", "orange_flowers", "mixed_flowers",
+            "assorted_flowers", "black_flowers", "white_flowers",
+            // Leagues and speedrunning trophies
+            "twisted_adamant_trophy", "twisted_rune_trophy", "twisted_dragon_trophy", "trailblazer_adamant_trophy",
+            "trailblazer_rune_trophy", "trailblazer_dragon_trophy", "trailblazer_reloaded_adamant_trophy",
+            "trailblazer_reloaded_rune_trophy", "trailblazer_reloaded_dragon_trophy", "raging_echoes_adamant_trophy",
+            "raging_echoes_rune_trophy", "raging_echoes_dragon_trophy", "bronze_speedrun_trophy", "silver_speedrun_trophy",
+            "gold_speedrun_trophy", "platinum_speedrun_trophy", "diamond_speedrun_trophy",
+            // other
+            "golden_tench", "mouse_toy", "stale_baguette", "giant_stopwatch", "mystic_cards");
 
     public static boolean weaponAllowed(Options o, String weaponId) {
         if (o.has(Rule.FUN_WEAPONS)) {
@@ -319,6 +343,63 @@ public final class EmirsArena {
         return METALS[r / 1000] + " " + ROMAN[(r % 1000) / 250];
     }
 
+    // ---------------------------------------------------------------- ranked account builds
+    /**
+     * The account builds ranked duels rotate through (OSRS Wiki "Emir's Arena", Account Builds, with the 25 March 2026 change:
+     * Zerker 75 Attack / 50 Defence / 63 Prayer, Max/Med 99 Attack, Defence and Prayer). Strength, Hitpoints, Ranged and Magic
+     * are 99 for every build. {@link #kit} names the Last Man Standing build whose starter kit is handed out.
+     */
+    public enum Build {
+        MAX_MED("Max/Med", 99, 99, 99, 99, LastManStanding.Build.MAX_MED),
+        ZERKER("Zerker", 75, 99, 50, 63, LastManStanding.Build.ZERKER),
+        PURE("1 Def Pure", 60, 99, 1, 52, LastManStanding.Build.PURE);
+
+        public final String displayName;
+        public final int attack;
+        public final int strength;
+        public final int defence;
+        public final int prayer;
+        public final LastManStanding.Build kit;
+
+        Build(String displayName, int attack, int strength, int defence, int prayer, LastManStanding.Build kit) {
+            this.displayName = displayName;
+            this.attack = attack;
+            this.strength = strength;
+            this.defence = defence;
+            this.prayer = prayer;
+            this.kit = kit;
+        }
+
+        /** The level this build fights at in one of {@link LastManStanding#BUILD_SKILLS} (0 for other skills). */
+        public int level(com.runecraft.osrs.Skill skill) {
+            return switch (skill) {
+                case ATTACK -> attack;
+                case STRENGTH -> strength;
+                case DEFENCE -> defence;
+                case PRAYER -> prayer;
+                case HITPOINTS, RANGED, MAGIC -> 99;
+                default -> 0;
+            };
+        }
+    }
+
+    /** The rotation's first day, Wednesday 27 July 2022 (a Max/Med week; the wiki's "weekly" counter starts here). */
+    public static final long ROTATION_START_EPOCH_DAY = java.time.LocalDate.of(2022, 7, 27).toEpochDay();
+
+    /**
+     * The build in rotation on {@code epochDay} (days since 1970-01-01, UTC): floor(days since 27 July 2022 / 7) mod 3 picks
+     * Max/Med, Zerker, Pure, as the wiki's rotation template computes it. Builds change with the Wednesday game update.
+     */
+    public static Build weeklyBuild(long epochDay) {
+        long weeks = Math.floorDiv(epochDay - ROTATION_START_EPOCH_DAY, 7);
+        return Build.values()[(int) Math.floorMod(weeks, Build.values().length)];
+    }
+
+    /** The starter kit a ranked fighter gets for the build: the matching Last Man Standing loadout. // approx */
+    public static LastManStanding.Loadout loadout(Build build) {
+        return LastManStanding.loadout(build.kit);
+    }
+
     // ---------------------------------------------------------------- scroll of imbuing
     /**
      * The item the scroll of imbuing turns {@code item} into (the same items Nightmare Zone and Soul Wars imbue), or null. One
@@ -342,8 +423,8 @@ public final class EmirsArena {
     public static void items(ItemSink items) {
         items.add(SCROLL_OF_IMBUING, "Scroll of imbuing", Kind.SIMPLE, "note", 0xB070E0).value(100)
                 .examine("A magical scroll used to imbue a variety of items.");
-        // Lets players in the Wilderness cast the surge spells without runes (the rune-free casting isn't modelled). // approx
+        // Pays for one surge or wave spell in the Wilderness, Castle Wars or Soul Wars (osrs.data.BlightedSacks).
         items.add(BLIGHTED_SURGE_SACK, "Blighted surge sack", Kind.SIMPLE, "package", 0x6A3A8A).value(1)
-                .examine("A sack of runes for surge spells, usable in the Wilderness.");
+                .examine("A sack of runes for surge and wave spells, usable in the Wilderness.");
     }
 }

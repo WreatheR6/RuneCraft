@@ -14,11 +14,19 @@ import static com.runecraft.osrs.content.dungeons.Cave.rc;
  * (the key is kept, as in the minigames module's instanced catacombs), the phrin shades' crypt (bronze), the riyl shades
  * to the east (steel), the asyn shades to the south-east (black), the fiyr shades in the crypt to the south-west (silver)
  * and, since the 2021 rework, the urium shades in the deepest crypt behind the gold doors. Each crypt is lined with
- * coffins. The crypts' key chests belong to the minigames module's instance (approx: none here).
+ * coffins. Each crypt has two key chests of its metal (bronze in the phrin crypt ... gold in the urium crypt; approx: OSRS
+ * scatters more chests of several metals); a chest takes one shade key of its metal and rolls the wiki chest tables.
  */
 public final class ShadeCatacombs {
     /** Floor height of the catacombs. */
     static final int FLOOR = 28;
+
+    /**
+     * The key chest block ids, bronze to gold: the Shades of Mort'ton chest blocks, registered and opened (inside or outside
+     * the minigame's instance) by the minigames module.
+     */
+    public static final List<String> CHESTS = List.of("shade_chest", "shade_chest_steel", "shade_chest_black",
+            "shade_chest_silver", "shade_chest_gold");
 
     /**
      * A key door: the metal of the shade keys that open it, its block column (x, z; the door stands at FLOOR + 1) and
@@ -94,6 +102,12 @@ public final class ShadeCatacombs {
         coffins(c, 3495, 3267, 3509, 3281, f);
         coffins(c, 3473, 3265, 3489, 3283, f);
         coffins(c, 3473, 3247, 3489, 3259, f);
+        // Two key chests of the crypt's metal in its western corners (the minigames module opens them; see CHESTS).
+        int[][] crypts = {{3473, 3289, 3299}, {3495, 3287, 3301}, {3495, 3267, 3281}, {3473, 3265, 3283}, {3473, 3247, 3259}};
+        for (int i = 0; i < crypts.length; i++) {
+            c.set(bx(crypts[i][0]), f + 1, bz(crypts[i][2]), rc(CHESTS.get(i)));
+            c.set(bx(crypts[i][0]), f + 1, bz(crypts[i][1]) + 1, rc(CHESTS.get(i)));
+        }
         for (int[] p : new int[][]{{3481, 3294}, {3502, 3294}, {3502, 3274}, {3481, 3274}, {3481, 3253}}) {
             c.set(bx(p[0]), f + 1, bz(p[1]), mc("soul_campfire"));
         }

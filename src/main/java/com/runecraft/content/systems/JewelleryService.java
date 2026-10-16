@@ -90,6 +90,12 @@ public final class JewelleryService {
                 return;
             }
         }
+        for (Map.Entry<Skill, Integer> req : Jewellery.wearLevels(w.id()).entrySet()) {
+            if (Players.data(p).skills().level(req.getKey()) < req.getValue()) {
+                Msg.game(p, "You need a " + req.getKey().displayName() + " level of " + req.getValue() + " to wear this.");
+                return;
+            }
+        }
         SysState.SysPlayer sp = SysState.of(p);
         ItemStack old = sp.worn(w.slot());
         ItemStack one = stack.split(1);

@@ -270,7 +270,7 @@ public class LmsSession extends MinigameSession {
     }
 
     /** Puts an item straight into its equipment slot (armour, weapon, shield or one of the extra worn slots). */
-    private static void wear(ServerPlayerEntity p, ItemStack stack) {
+    static void wear(ServerPlayerEntity p, ItemStack stack) {
         String id = Inv.idOf(stack);
         Jewellery.Worn worn = Jewellery.worn(id);
         if (worn != null) {

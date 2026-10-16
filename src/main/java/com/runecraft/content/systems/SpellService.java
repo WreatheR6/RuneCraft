@@ -156,6 +156,20 @@ public final class SpellService {
         return remove;
     }
 
+    /**
+     * One blighted spell sack instead of the runes, when the player carries the sack for this spell where sacks work (the
+     * Wilderness, Castle Wars, Soul Wars; see {@link com.runecraft.osrs.data.BlightedSacks}), or null.
+     */
+    public static Map<String, Integer> blightedPlan(ServerPlayerEntity p, Spell s) {
+        String sack = com.runecraft.osrs.data.BlightedSacks.sackFor(s.id());
+        if (sack == null || !Inv.has(p, sack, 1)) {
+            return null;
+        }
+        com.runecraft.content.minigames.MinigameSession session = com.runecraft.content.minigames.MinigameManager.session(p);
+        return com.runecraft.osrs.data.BlightedSacks.usable(sack, com.runecraft.world.Gielinor.wildernessLevel(p),
+                session == null ? null : session.game.id()) ? Map.of(sack, 1) : null;
+    }
+
     static void consume(ServerPlayerEntity p, Map<String, Integer> plan) {
         plan.forEach((item, n) -> Inv.remove(p, item, n));
     }
@@ -216,7 +230,7 @@ public final class SpellService {
             }
             return false;
         }
-        if (runePlan(p, s.runes()) == null) {
+        if (blightedPlan(p, s) == null && runePlan(p, s.runes()) == null) {
             if (!quiet) {
                 Msg.game(p, "You do not have enough runes to cast this spell.");
             }
@@ -227,7 +241,10 @@ public final class SpellService {
 
     /** Takes the runes and awards the base XP for a successful cast. */
     static void pay(ServerPlayerEntity p, Spell s) {
-        Map<String, Integer> plan = runePlan(p, s.runes());
+        Map<String, Integer> plan = blightedPlan(p, s);
+        if (plan == null) {
+            plan = runePlan(p, s.runes());
+        }
         if (plan != null) {
             consume(p, plan);
         }

@@ -56,7 +56,7 @@ public final class LmsService {
             ServerPlayerEntity p = handler.getPlayer();
             if (MinigameManager.session(p) == null && LmsStash.has(p)) {
                 LmsStash.restore(p);
-                Msg.game(p, "Lisa returns the items you had before your game of Last Man Standing.");
+                Msg.game(p, "You get back the items and levels you had before your Last Man Standing game or ranked duel.");
             }
         });
     }
