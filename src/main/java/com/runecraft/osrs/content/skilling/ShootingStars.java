@@ -199,8 +199,8 @@ public final class ShootingStars extends SkillingPart {
 
     /**
      * Celestial ring (OSRS Wiki): charged or not, an invisible +4 Mining boost (not for level requirements). Each stardust
-     * added is one charge (up to 10,000); charged, it has a 1/10 chance of an extra ore from rocks up to adamantite, using
-     * a charge.
+     * added is one charge (up to 10,000); charged, every ore mined from a rock up to adamantite uses a charge, whether or
+     * not the 1/10 extra ore comes.
      */
     public static final String CELESTIAL_RING = "celestial_ring";
     public static final String CELESTIAL_RING_UNCHARGED = "celestial_ring_uncharged";
@@ -216,9 +216,14 @@ public final class ShootingStars extends SkillingPart {
         return ringWorn ? mining + CELESTIAL_BOOST : mining;
     }
 
+    /** Whether mining this ore uses one of the ring's charges (every ore from a suitable rock while charged). */
+    public static boolean celestialUsesCharge(String ore, int charges) {
+        return charges > 0 && ENHANCER_ORES.contains(ore);
+    }
+
     /** Whether the charged ring gives an extra ore this time ({@code roll} uniform in [0, 1)). */
     public static boolean celestialExtraOre(String ore, int charges, double roll) {
-        return charges > 0 && ENHANCER_ORES.contains(ore) && roll < 1.0 / CELESTIAL_EXTRA_ORE_ONE_IN;
+        return celestialUsesCharge(ore, charges) && roll < 1.0 / CELESTIAL_EXTRA_ORE_ONE_IN;
     }
 
     /** Stardust accepted when charging a ring holding {@code charges}. */

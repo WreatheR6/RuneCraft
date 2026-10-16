@@ -2,9 +2,7 @@ package com.runecraft.content.skilling;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.PersistentState;
-import net.minecraft.world.World;
 
 /**
  * World-save storage for the skilling module (key {@code runecraft_skilling}): farming patches,
@@ -44,11 +42,6 @@ public final class SkillingState extends PersistentState {
 
     public void remove(String section, String key) {
         section(section).remove(key);
-    }
-
-    /** Drops what a section stores for one block position (e.g. a farming patch the self-test re-places). */
-    public void remove(String section, World world, BlockPos pos) {
-        remove(section, SkillingUtil.key(world, pos));
     }
 
     /** Skilling progress changes constantly; always save. */

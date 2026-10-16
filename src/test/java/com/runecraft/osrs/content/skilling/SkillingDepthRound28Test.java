@@ -1,19 +1,26 @@
 package com.runecraft.osrs.content.skilling;
 
 import com.runecraft.osrs.FarmingDisease;
+import com.runecraft.osrs.FarmingYield;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.Recipe;
 import com.runecraft.osrs.Recipes;
 import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.ContentRegistry;
+import com.runecraft.osrs.content.NpcDef;
+import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.content.minigames.GuardiansRewards;
 import com.runecraft.osrs.content.minigames.GuardiansRift;
 import com.runecraft.osrs.content.minigames.VolcanicMine;
 import com.runecraft.osrs.content.systems.Jewellery;
+import com.runecraft.osrs.world.StructureDef;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -89,6 +96,20 @@ class SkillingDepthRound28Test {
             assertTrue(min >= FarmingData.CORAL_MIN_YIELD);
             assertTrue(total / 2000.0 > 6, "average coral harvest at " + level);
         }
+        // Coral: 4 harvest lives compost can't raise, with the wiki yield calculator's chances (July 2026 dump).
+        assertEquals(4, FarmingData.CORAL_LIVES);
+        assertEquals(100, FarmingData.harvestChance(FarmingData.byId("elkhorn"))[0]);
+        assertEquals(48, FarmingData.harvestChance(FarmingData.byId("pillar"))[0]);
+        assertEquals(-110, FarmingData.harvestChance(FarmingData.byId("umbral"))[0]);
+        int[] elkhorn = FarmingData.harvestChance(FarmingData.byId("elkhorn"));
+        assertEquals(20.48, FarmingYield.expected(FarmingData.CORAL_LIVES, FarmingYield.saveChance(elkhorn[0], elkhorn[1], 99, 0, 0)),
+                0.01);
+        java.util.Random r = new java.util.Random(5);
+        long elkhornTotal = 0;
+        for (int i = 0; i < 4000; i++) {
+            elkhornTotal += FarmingData.harvestYield(FarmingData.byId("elkhorn"), 99, 3, r::nextInt);
+        }
+        assertEquals(20.48, elkhornTotal / 4000.0, 1.0, "elkhorn at 99 (compost doesn't add lives)");
         // Hops-patch fibres use the wiki's harvest-lives chances.
         assertEquals(140, FarmingData.harvestChance(FarmingData.byId("flax"))[0]);
         assertEquals(178, FarmingData.harvestChance(FarmingData.byId("hemp"))[1]);
@@ -139,6 +160,46 @@ class SkillingDepthRound28Test {
     }
 
     @Test
+    void daeyaltMineInDarkmeyer() {
+        // The rocks are part of the Darkmeyer structure; the place only puts Noranna there (no camp plaza in the city).
+        PlaceDef mine = ContentRegistry.place("daeyalt_essence_mine");
+        assertNotNull(mine);
+        assertEquals(PlaceDef.Style.NONE, mine.style());
+        StructureDef darkmeyer = ContentRegistry.structures().stream().filter(d -> d.id().equals("darkmeyer")).findFirst().orElse(null);
+        assertNotNull(darkmeyer);
+        String rock = "runecraft:" + RunecraftData.DAEYALT_ROCK;
+        List<StructureDef.Op> rocks = darkmeyer.ops().stream().filter(o -> rock.equals(o.block())).toList();
+        assertEquals(RunecraftData.DAEYALT_ROCKS, rocks.size());
+        // Each rock gets its own turn, so exactly one is active at any time.
+        Set<Integer> phases = new HashSet<>();
+        for (StructureDef.Op o : rocks) {
+            phases.add(RunecraftData.daeyaltPhase(o.x1(), o.z1()));
+        }
+        assertEquals(RunecraftData.DAEYALT_ROCKS, phases.size(), "daeyalt rock phases " + phases);
+        // Nothing else of any structure stands on the rocks or on Noranna's spot.
+        NpcDef noranna = ContentRegistry.npcs().stream().filter(n -> n.id().equals(RunecraftData.NORANNA)).findFirst().orElse(null);
+        assertNotNull(noranna);
+        assertEquals(mine.id(), noranna.place());
+        List<int[]> spots = new ArrayList<>();
+        for (StructureDef.Op o : rocks) {
+            spots.add(new int[]{o.x1(), o.z1()});
+        }
+        spots.add(new int[]{mine.blockX() + noranna.dx(), mine.blockZ() + noranna.dz()});
+        for (StructureDef s : ContentRegistry.structures()) {
+            for (StructureDef.Op op : s.ops()) {
+                if (rocks.contains(op) || op.type() == StructureDef.Op.Type.CLEAR || op.type() == StructureDef.Op.Type.FLATTEN
+                        || op.y2() < StructureDef.GROUND) {
+                    continue;
+                }
+                for (int[] at : spots) {
+                    assertFalse(op.x1() <= at[0] && at[0] <= op.x2() && op.z1() <= at[1] && at[1] <= op.z2(),
+                            s.id() + " op " + op + " covers the daeyalt mine at " + at[0] + "," + at[1]);
+                }
+            }
+        }
+    }
+
+    @Test
     void celestialRingAndJewellery() {
         assertEquals(84, ShootingStars.celestialLevel(80, true));
         assertEquals(80, ShootingStars.celestialLevel(80, false));
@@ -146,6 +207,10 @@ class SkillingDepthRound28Test {
         assertFalse(ShootingStars.celestialExtraOre("runite_ore", 1, 0.05));
         assertFalse(ShootingStars.celestialExtraOre("coal", 0, 0.05));
         assertFalse(ShootingStars.celestialExtraOre("coal", 5, 0.1));
+        // Every ore from a suitable rock uses a charge, extra ore or not.
+        assertTrue(ShootingStars.celestialUsesCharge("coal", 5));
+        assertFalse(ShootingStars.celestialUsesCharge("runite_ore", 5));
+        assertFalse(ShootingStars.celestialUsesCharge("coal", 0));
         assertEquals(100, ShootingStars.celestialCharge(9_900, 500));
         assertTrue(ItemCatalog.exists(ShootingStars.CELESTIAL_RING));
         assertNotNull(Jewellery.worn(ShootingStars.CELESTIAL_RING));

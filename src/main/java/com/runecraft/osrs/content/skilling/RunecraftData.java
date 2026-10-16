@@ -241,6 +241,14 @@ public final class RunecraftData extends SkillingPart {
         return Math.floorMod(gameTick / DAEYALT_SWITCH_TICKS + phase, DAEYALT_ROCKS) == 0;
     }
 
+    /**
+     * A daeyalt rock's turn ({@link #daeyaltActive} phase) from its block position. Darkmeyer's three rocks stand 4 blocks
+     * apart in a row along x, so they get the three different phases.
+     */
+    public static int daeyaltPhase(int blockX, int blockZ) {
+        return Math.floorMod(blockX + blockZ, DAEYALT_ROCKS);
+    }
+
     /** The Dark Mage, who repairs essence pouches (talk to him, or reach him with NPC Contact). */
     public static final String DARK_MAGE = "dark_mage";
 
@@ -253,14 +261,14 @@ public final class RunecraftData extends SkillingPart {
                 // little west of the Abyss shaft by the Mage of Zamorak's spot.
                 PlaceDef.of("abyss_dark_mage", "Dark Mage", 3094, 3557, PlaceDef.Style.NONE, List.of()),
                 // The daeyalt essence mine lies beneath Darkmeyer (entrance stairs at 3632,3340, OSRS Wiki); approx: its three
-                // essence rocks and Noranna stand at the entrance instead of in the cave below.
-                PlaceDef.of("daeyalt_essence_mine", "Daeyalt essence mine", 3632, 3340, PlaceDef.Style.CAMP,
-                        List.of(DAEYALT_ROCK, DAEYALT_ROCK, DAEYALT_ROCK)));
+                // essence rocks are part of the Darkmeyer structure, in a yard between the south-east houses, and this
+                // place only puts Noranna there.
+                PlaceDef.of("daeyalt_essence_mine", "Daeyalt essence mine", 3636, 3347, PlaceDef.Style.NONE, List.of()));
     }
 
     @Override
     public List<NpcDef> npcs() {
         return List.of(NpcDef.of(DARK_MAGE, "Dark Mage", "abyss_dark_mage", 0, 0, 0xC8A080, 0x2A1A3A, 0x1A1A2A, 0x2A1A3A),
-                NpcDef.of(NORANNA, "Noranna Tytanin", "daeyalt_essence_mine", 3, 2, 0xD8B090, 0x6A3A3A, 0x3A2A2A, 0x6A3A3A));
+                NpcDef.of(NORANNA, "Noranna Tytanin", "daeyalt_essence_mine", 6, 8, 0xD8B090, 0x6A3A3A, 0x3A2A2A, 0x6A3A3A));
     }
 }

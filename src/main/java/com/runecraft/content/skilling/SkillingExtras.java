@@ -28,7 +28,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 
 /**
- * Round 28 skilling extras: the celestial ring (invisible +4 Mining, stardust charges giving a 1/10 extra ore) and the
+ * Round 28 skilling extras: the celestial ring (invisible +4 Mining, a stardust charge per ore for a 1/10 extra ore) and the
  * daeyalt essence mine (the active essence rock, shards traded with Noranna Tytanin for daeyalt essence).
  */
 public final class SkillingExtras {
@@ -73,19 +73,22 @@ public final class SkillingExtras {
         return nbt != null && nbt.contains(CELESTIAL_NBT) ? nbt.getInt(CELESTIAL_NBT) : 0;
     }
 
+    /** Called for every ore mined: a charged ring uses a charge on each ore from a suitable rock, extra ore or not (OSRS). */
     private static boolean celestialExtraOre(ServerPlayerEntity p, String ore) {
         ItemStack ring = celestialRing(p);
-        if (ring.isEmpty() || !ShootingStars.celestialExtraOre(ore, celestialCharges(ring), p.getRandom().nextDouble())) {
+        int charges = celestialCharges(ring);
+        if (ring.isEmpty() || !ShootingStars.celestialUsesCharge(ore, charges)) {
             return false;
         }
-        int left = celestialCharges(ring) - 1;
+        boolean extra = ShootingStars.celestialExtraOre(ore, charges, p.getRandom().nextDouble());
+        int left = charges - 1;
         if (left <= 0) {
             SysState.of(p).worn.put(Jewellery.Slot.RING, Inv.stack(ShootingStars.CELESTIAL_RING_UNCHARGED, 1));
             Msg.red(p, "Your celestial ring has run out of stardust.");
         } else {
             ring.getOrCreateNbt().putInt(CELESTIAL_NBT, left);
         }
-        return true;
+        return extra;
     }
 
     /**
@@ -132,7 +135,7 @@ public final class SkillingExtras {
     // ------------------------------------------------------------------ daeyalt essence mine
 
     private static int phase(BlockPos pos) {
-        return Math.floorMod(pos.getX() + pos.getZ(), RunecraftData.DAEYALT_ROCKS);
+        return RunecraftData.daeyaltPhase(pos.getX(), pos.getZ());
     }
 
     private static void mineDaeyalt(ServerPlayerEntity player, BlockPos pos) {

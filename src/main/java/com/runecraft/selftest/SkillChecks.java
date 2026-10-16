@@ -220,21 +220,24 @@ final class SkillChecks {
     private String flaxPatch() {
         p().getInventory().clear();
         BlockPos pos = placeNear(com.runecraft.content.minigames.Arena.module("hops_patch"));
-        // Patch state is kept per position in the world save, and the client run loads the server run's world, where
-        // this check already planted flax on the same platform tile.
-        com.runecraft.content.skilling.SkillingState patches = com.runecraft.content.skilling.SkillingState.get(c.server);
-        patches.remove("patches", c.world, pos);
-        hold("flax_seed", 3);
-        give("seed_dibber", 1);
-        int xp0 = xp(Skill.FARMING);
-        useBlock(pos, Direction.UP);
-        if (Inv.count(p(), "flax_seed") != 0) {
-            throw failure("planting flax in a hops patch left " + Inv.count(p(), "flax_seed") + " of 3 flax seeds");
+        // The planted crop is saved with the world and the growing pot sits above the patch: start from an empty patch
+        // (an earlier run may have left one) and empty it again afterwards.
+        c.track(pos.up());
+        com.runecraft.content.skilling.SkillingHooks.clearPatch(c.world, pos);
+        try {
+            hold("flax_seed", 3);
+            give("seed_dibber", 1);
+            int xp0 = xp(Skill.FARMING);
+            useBlock(pos, Direction.UP);
+            if (Inv.count(p(), "flax_seed") != 0) {
+                throw failure("planting flax in a hops patch left " + Inv.count(p(), "flax_seed") + " of 3 flax seeds");
+            }
+            int got = gained(Skill.FARMING, xp0, 160, "planting flax");
+            return "planted 3 flax seeds, +" + got / 10.0 + " xp";
+        } finally {
+            com.runecraft.content.skilling.SkillingHooks.clearPatch(c.world, pos);
+            p().getInventory().clear();
         }
-        int got = gained(Skill.FARMING, xp0, 160, "planting flax");
-        patches.remove("patches", c.world, pos);
-        p().getInventory().clear();
-        return "planted 3 flax seeds, +" + got / 10.0 + " xp";
     }
 
     private static AssertionError failure(String message) {
