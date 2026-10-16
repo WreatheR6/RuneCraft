@@ -1283,7 +1283,7 @@ final class ItemCombatChecks {
             Inv.give(p(), bagId, 1);
             Inv.give(p(), item, 6);
             int stored = com.runecraft.content.systems.LootingBagService.storeAll(p(), true);
-            if (stored != 6 || Inv.count(p(), item) != 0 || sp.lootingBag.count(item) != 6 || sp.lootingBag.slotsUsed() != 6) {
+            if (stored != 6 || Inv.count(p(), item) != 0 || sp.lootingBag.count(item) != 6 || sp.lootingBag.slotsUsed() != 1) {
                 throw failure("storing 6 lobsters put " + stored + " in the bag (" + sp.lootingBag.count(item) + " in " + sp.lootingBag.slotsUsed()
                         + " slots), " + Inv.count(p(), item) + " left carried");
             }

@@ -1,5 +1,6 @@
 package com.runecraft.content.systems;
 
+import com.runecraft.network.ServerNetworking;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.systems.Libation;
 import com.runecraft.player.PlayerData;
@@ -16,7 +17,8 @@ import net.minecraft.util.math.BlockPos;
 
 /**
  * Blessed bone shard sacrifices ({@link Libation}): right-click the shards next to an altar with jugs of wine to offer up
- * to 100 of them for 5 Prayer XP each. The poured wine's remaining allowance is a per-player charge.
+ * to 100 of them for 5 Prayer XP each, draining 2 prayer points. The poured wine's remaining allowance is a per-player
+ * charge.
  */
 public final class PrayerOfferings {
     private PrayerOfferings() {
@@ -76,7 +78,9 @@ public final class PrayerOfferings {
         }
         Inv.remove(p, Libation.SHARDS, offer.shards());
         sp.playerCharges.put(Libation.CHARGE_KEY, offer.allowanceLeft());
+        data.setPrayerPoints(data.prayerPoints() - Libation.PRAYER_COST);
         XpService.add(p, Skill.PRAYER, offer.xp());
+        ServerNetworking.sync(p);
         Msg.action(p, "You sacrifice " + offer.shards() + " blessed bone shards. (" + offer.allowanceLeft() + " more can be offered before the bowl needs more wine.)");
         return offer.shards();
     }

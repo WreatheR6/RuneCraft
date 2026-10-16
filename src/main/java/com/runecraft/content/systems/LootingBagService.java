@@ -12,6 +12,7 @@ import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.entity.ItemEntity;
@@ -28,7 +29,8 @@ import java.util.Map;
  * Minecraft side of {@link LootingBag}: right-click the bag to see its contents and Open/Close it or store tradeable
  * items from the inventory (Wilderness only); while it is open, tradeable items picked up in the Wilderness go into it.
  * Opening a bank or deposit box while holding the bag banks everything in it (BankService). The contents live in the
- * player's {@link SysState} (one bag per player), so they survive logging out and restarts.
+ * player's {@link SysState} (one bag per player), so they survive logging out and restarts; a death in the Wilderness drops
+ * them all where the player died, as in OSRS.
  */
 public final class LootingBagService {
     private static final String SCREEN = "looting_bag";
@@ -71,6 +73,33 @@ public final class LootingBagService {
             open(p);
         });
         ServerTickEvents.END_WORLD_TICK.register(LootingBagService::collect);
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+            if (entity instanceof ServerPlayerEntity p && Gielinor.wildernessLevel(p) > 0) {
+                dropOnDeath(p);
+            }
+        });
+    }
+
+    /** Wilderness death: everything in the bag drops where the player died (the contents are not protected). */
+    private static void dropOnDeath(ServerPlayerEntity p) {
+        SysState.SysPlayer sp = SysState.of(p);
+        sp.lootingBagOpen = false;
+        if (sp.lootingBag.isEmpty()) {
+            return;
+        }
+        for (LootingBag.Stack st : sp.lootingBag.takeAll()) {
+            ItemStack proto = st.noted ? Notes.note(st.item, st.tag, 1) : Notes.stackOf(st.item, st.tag, 1);
+            if (proto.isEmpty()) {
+                continue;
+            }
+            int max = Math.max(1, proto.getMaxCount());
+            for (long left = st.count(); left > 0; ) {
+                int n = (int) Math.min(left, max);
+                p.dropItem(proto.copyWithCount(n), true, false);
+                left -= n;
+            }
+        }
+        Msg.game(p, "The contents of your looting bag are dropped where you died.");
     }
 
     /** The check/deposit screen: contents, Open/Close and one button per tradeable inventory stack. */
@@ -210,9 +239,6 @@ public final class LootingBagService {
 
     /** While the bag is open, tradeable items a player in the Wilderness walks over go into it (before vanilla pickup). */
     private static void collect(ServerWorld world) {
-        if (world.getTime() % 2 != 0) {
-            return;
-        }
         for (ServerPlayerEntity p : world.getPlayers()) {
             if (p.isSpectator() || !p.isAlive() || Gielinor.wildernessLevel(p) <= 0) {
                 continue;
