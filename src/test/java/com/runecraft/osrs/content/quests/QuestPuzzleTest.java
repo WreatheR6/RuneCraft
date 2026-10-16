@@ -66,7 +66,7 @@ class QuestPuzzleTest {
                 }
             }
         }
-        assertTrue(count >= 9, "puzzle triggers: " + count);
+        assertTrue(count >= 12, "puzzle triggers: " + count);
     }
 
     @Test
@@ -139,5 +139,16 @@ class QuestPuzzleTest {
         assertEquals(1, v.check(kurt));
         assertTrue(tt.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.REACH && t.needFlags.contains("tt_door")
                 && t.skills.containsKey(com.runecraft.osrs.Skill.THIEVING)));
+    }
+
+    @Test
+    void whileGuthixSleepsHasMovariosBaseAndTheChasmPuzzles() {
+        QuestSpec wgs = spec("while_guthix_sleeps");
+        assertEquals(6, wgs.stages.size(), "saved stage count");
+        assertEquals("ivy_sophista", wgs.stages.get(0).triggers.get(0).target, "OSRS start: Ivy Sophista");
+        assertEquals(3, puzzles(wgs).size());
+        assertTrue(wgs.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.KILL && t.target.equals("balance_elemental")
+                && t.needFlags.contains("wgs_skulls")));
+        assertTrue(wgs.triggers().stream().anyMatch(t -> t.give.containsKey("movarios_notes") && t.needFlags.containsAll(List.of("wgs_door", "wgs_weights"))));
     }
 }
