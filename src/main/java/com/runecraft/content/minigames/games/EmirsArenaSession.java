@@ -1,5 +1,6 @@
 package com.runecraft.content.minigames.games;
 
+import com.runecraft.content.minigames.LmsStash;
 import com.runecraft.content.minigames.MinigameData;
 import com.runecraft.content.minigames.MinigameSession;
 import com.runecraft.content.systems.SysState;
@@ -11,10 +12,13 @@ import com.runecraft.osrs.content.minigames.EmirsArena;
 import com.runecraft.osrs.content.minigames.EmirsArena.DuelSlot;
 import com.runecraft.osrs.content.minigames.EmirsArena.Options;
 import com.runecraft.osrs.content.minigames.EmirsArena.Rule;
+import com.runecraft.osrs.content.minigames.LastManStanding;
 import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameCurrencies;
 import com.runecraft.osrs.content.systems.Jewellery;
+import com.runecraft.network.ServerNetworking;
 import com.runecraft.player.Players;
+import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.minecraft.block.Blocks;
@@ -35,6 +39,8 @@ import java.util.UUID;
  * A fight in Emir's Arena (see {@link EmirsArena}): a legacy duel between a challenger and the player who accepted, under the
  * challenger's duel options, or a ranked 1v1 duel paired at the recruitment board (reward points and rank). Deaths are safe;
  * the loser is sent back to the hospital and both players are healed. Leaving early (exit portal, logging out) forfeits.
+ * Ranked fighters play the week's account build ({@link EmirsArena#weeklyBuild}): their own items and stats wait in the
+ * crash-safe {@link LmsStash} (given back on leaving, or on the next login) while they fight with the build's levels and kit.
  */
 public class EmirsArenaSession extends MinigameSession {
     private static final int HALF_X = 10;
@@ -47,6 +53,7 @@ public class EmirsArenaSession extends MinigameSession {
     private final Map<UUID, String> weapons = new HashMap<>();
     private final Map<UUID, Integer> specEnergy = new HashMap<>();
     private final Map<UUID, BlockPos> spots = new HashMap<>();
+    private EmirsArena.Build build;
 
     public EmirsArenaSession(int id, int slot, ServerWorld world, String variant) {
         super(Minigame.EMIRS_ARENA, id, slot, world, variant);
@@ -106,6 +113,14 @@ public class EmirsArenaSession extends MinigameSession {
             return;
         }
         List<ServerPlayerEntity> fighters = online();
+        if (ranked) {
+            build = EmirsArena.weeklyBuild(java.time.LocalDate.now(java.time.ZoneOffset.UTC).toEpochDay());
+            for (ServerPlayerEntity p : fighters) {
+                equipBuild(p, build);
+                Msg.game(p, "This week's ranked build is " + build.displayName + ". Your own items and levels wait for you in the "
+                        + "hospital until the fight is over.");
+            }
+        }
         for (ServerPlayerEntity p : fighters) {
             var data = Players.data(p);
             if (options.has(Rule.NO_DRINKS)) {
@@ -136,6 +151,36 @@ public class EmirsArenaSession extends MinigameSession {
         }
         started = true;
         broadcastRed("3... 2... 1... FIGHT!");
+    }
+
+    /**
+     * Stashes the player's items and stats ({@link LmsStash}) and kits them out as {@code b}: the build's levels, no boosts or
+     * prayers, the starter kit worn and carried, the supplies, and full hitpoints, prayer and special attack.
+     */
+    public static void equipBuild(ServerPlayerEntity p, EmirsArena.Build b) {
+        LmsStash.stash(p);
+        var data = Players.data(p);
+        for (Skill s : LastManStanding.BUILD_SKILLS) {
+            XpService.setLevel(p, s, b.level(s));
+        }
+        for (Skill s : Skill.values()) {
+            data.skills().setBoost(s, 0);
+        }
+        data.activePrayers().clear();
+        LastManStanding.Loadout kit = EmirsArena.loadout(b);
+        for (String id : kit.worn()) {
+            LmsSession.wear(p, Inv.stack(id, 1));
+        }
+        for (LastManStanding.Stack st : kit.carried()) {
+            Inv.give(p, st.item(), st.count());
+        }
+        for (LastManStanding.Stack st : LastManStanding.SUPPLIES) {
+            Inv.give(p, st.item(), st.count());
+        }
+        p.setHealth(p.getMaxHealth());
+        data.setPrayerPoints(b.level(Skill.PRAYER));
+        SysState.of(p).specEnergy = 100;
+        ServerNetworking.sync(p);
     }
 
     private ServerPlayerEntity opponent(ServerPlayerEntity p) {
@@ -288,6 +333,10 @@ public class EmirsArenaSession extends MinigameSession {
                 end(true);
             }
         }
+        if (ranked) {
+            // The kit stays in the arena; the player's own items and levels come back.
+            LmsStash.restore(player);
+        }
         Integer spec = specEnergy.remove(player.getUuid());
         if (spec != null) {
             SysState.of(player).specEnergy = spec;
@@ -350,7 +399,7 @@ public class EmirsArenaSession extends MinigameSession {
     @Override
     protected List<String> hud(ServerPlayerEntity player) {
         List<String> lines = new ArrayList<>();
-        lines.add(ranked ? "Emir's Arena: ranked duel" : "Emir's Arena: duel");
+        lines.add(ranked ? "Emir's Arena: ranked duel" + (build == null ? "" : " (" + build.displayName + ")") : "Emir's Arena: duel");
         ServerPlayerEntity other = opponent(player);
         if (other != null) {
             lines.add("Opponent: " + other.getName().getString() + " (" + Math.round(other.getHealth()) + " hp)");

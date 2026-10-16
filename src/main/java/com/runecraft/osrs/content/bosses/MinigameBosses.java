@@ -204,7 +204,8 @@ public final class MinigameBosses {
                         Drop.of("sunfire_fanatic_helm", 1, 1, 90), Drop.of("sunfire_fanatic_cuirass", 1, 1, 90),
                         Drop.of("sunfire_fanatic_chausses", 1, 1, 90), Drop.of("echo_crystal", 1, 1, 60),
                         Drop.of("tonalztics_of_ralos", 1, 1, 150), Drop.of("runite_bar", 5, 10, 4), Drop.of("coins", 50000, 150000, 2))
-                .pet("pet_smol_heredit").at("fortis_colosseum").arena(15, "sand")
+                // Fought only as the Colosseum's wave 12 (ColosseumSession): no summoning stone or surface arena.
+                .pet("pet_smol_heredit").at("fortis_colosseum").arena(15, "sand").raidOnly()
                 .size(0.9f, 2.4f, 1.6f).moveSpeed(0.26);
     }
 }

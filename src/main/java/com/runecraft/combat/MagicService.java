@@ -76,7 +76,24 @@ public final class MagicService {
         return id.equals("staff_of_" + element) || id.equals(element + "_battlestaff") || id.equals("mystic_" + element + "_staff");
     }
 
+    /**
+     * A blighted surge sack that pays for this wave or surge spell where sacks work (the Wilderness, Castle Wars, Soul Wars;
+     * see {@link com.runecraft.osrs.data.BlightedSacks}), or null.
+     */
+    private static String blightedSack(ServerPlayerEntity player, Spell spell) {
+        String sack = com.runecraft.osrs.data.BlightedSacks.sackFor(spell.name());
+        if (sack == null || !Inv.has(player, sack, 1)) {
+            return null;
+        }
+        com.runecraft.content.minigames.MinigameSession session = com.runecraft.content.minigames.MinigameManager.session(player);
+        return com.runecraft.osrs.data.BlightedSacks.usable(sack, Gielinor.wildernessLevel(player),
+                session == null ? null : session.game.id()) ? sack : null;
+    }
+
     private static boolean hasRunes(ServerPlayerEntity player, Spell spell) {
+        if (blightedSack(player, spell) != null) {
+            return true;
+        }
         for (Map.Entry<Rune, Integer> e : spell.runes().entrySet()) {
             if (!staffProvides(player, e.getKey()) && !Inv.has(player, e.getKey().itemId(), e.getValue())) {
                 return false;
@@ -86,6 +103,11 @@ public final class MagicService {
     }
 
     private static void consumeRunes(ServerPlayerEntity player, Spell spell) {
+        String sack = blightedSack(player, spell);
+        if (sack != null) {
+            Inv.remove(player, sack, 1);
+            return;
+        }
         for (Map.Entry<Rune, Integer> e : spell.runes().entrySet()) {
             if (!staffProvides(player, e.getKey())) {
                 Inv.remove(player, e.getKey().itemId(), e.getValue());

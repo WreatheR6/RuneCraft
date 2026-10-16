@@ -34,7 +34,8 @@ public class ShadesSession extends MinigameSession {
     /** Crypt width (x) and the first crypt's west wall; the entrance hall is west of it. */
     private static final int CRYPT = 13;
     private static final int FIRST = -26;
-    private static final String[] CHESTS = {"shade_chest", "shade_chest_steel", "shade_chest_black", "shade_chest_silver",
+    /** The chest blocks, bronze to gold (also placed in the dungeons module's catacombs below Mort'ton). */
+    public static final String[] CHESTS = {"shade_chest", "shade_chest_steel", "shade_chest_black", "shade_chest_silver",
             "shade_chest_gold"};
 
     public ShadesSession(int id, int slot, ServerWorld world, String variant) {
@@ -165,6 +166,20 @@ public class ShadesSession extends MinigameSession {
     }
 
     private void chest(ServerPlayerEntity player, String metal) {
+        List<String> uniques = openChest(player, metal, random);
+        if (uniques != null) {
+            for (String u : uniques) {
+                broadcast(player.getName().getString() + " finds " + ItemCatalog.get(u).name() + " in a " + metal + " chest!");
+            }
+        }
+    }
+
+    /**
+     * Opens a Shade Catacombs chest of {@code metal} with a key of that metal (the one held, else the first colour carried),
+     * which dissolves in the lock, and gives the chest's rolls. Used by this instance and by the chests standing in the
+     * dungeons module's catacombs below Mort'ton. Returns the uniques found, or null when the player has no key.
+     */
+    public static List<String> openChest(ServerPlayerEntity player, String metal, java.util.Random random) {
         String key = null;
         ItemStack held = player.getMainHandStack();
         String[] heldParts = held.isEmpty() ? null : ShadesOfMortton.keyParts(Inv.idOf(held));
@@ -180,7 +195,7 @@ public class ShadesSession extends MinigameSession {
         }
         if (key == null) {
             Msg.game(player, "The " + metal + " chest is locked. You need " + Msg.article(metal) + " key; hold the colour you want to use.");
-            return;
+            return null;
         }
         String colour = ShadesOfMortton.keyParts(key)[1];
         Inv.remove(player, key, 1);
@@ -192,14 +207,17 @@ public class ShadesSession extends MinigameSession {
         }
         ShadesOfMortton.Opening o = ShadesOfMortton.open(ShadesOfMortton.chest(metal, colour), owned,
                 id -> ItemCatalog.exists(id) ? ItemCatalog.get(id).value() : 0, random::nextDouble);
+        List<String> uniques = new java.util.ArrayList<>();
         for (MinigameReward r : o.items()) {
             reward(player, r.item(), r.amount());
             if (ShadeChestRewards.UNIQUES.contains(r.item())) {
-                broadcast(player.getName().getString() + " finds " + ItemCatalog.get(r.item()).name() + " in a " + metal + " chest!");
+                uniques.add(r.item());
             }
         }
-        world.spawnParticles(ParticleTypes.SOUL, player.getX(), player.getY() + 1, player.getZ(), 8, 0.4, 0.4, 0.4, 0.02);
+        ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.SOUL, player.getX(), player.getY() + 1, player.getZ(), 8,
+                0.4, 0.4, 0.4, 0.02);
         Msg.game(player, "The " + colour + " " + metal + " key dissolves in the lock as the chest opens.");
+        return uniques;
     }
 
     @Override

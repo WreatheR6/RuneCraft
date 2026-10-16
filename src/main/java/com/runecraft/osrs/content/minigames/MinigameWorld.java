@@ -35,6 +35,7 @@ public final class MinigameWorld {
         EXTRA_ENTRANCES.put("warriors_guild_cyclops_entrance", Minigame.WARRIORS_GUILD);
         EXTRA_ENTRANCES.put("nightmare_zone_hard_entrance", Minigame.NIGHTMARE_ZONE);
         EXTRA_ENTRANCES.put(LastManStanding.COMPETITIVE_ENTRANCE, Minigame.LAST_MAN_STANDING);
+        EXTRA_ENTRANCES.put(LastManStanding.HIGH_STAKES_ENTRANCE, Minigame.LAST_MAN_STANDING);
         EXTRA_ENTRANCES.put(Gauntlet.CORRUPTED_ENTRANCE, Minigame.GAUNTLET);
         for (String entrance : KetRakChallenges.extraEntrances()) {
             EXTRA_ENTRANCES.put(entrance, Minigame.TZHAAR_KET_RAK);

@@ -408,6 +408,15 @@ public final class Jewellery {
         return WORN.get(id);
     }
 
+    /** Levels a worn item from another module needs to wear (OSRS Wiki): the soul cape needs 70 Prayer. */
+    private static final Map<String, Map<com.runecraft.osrs.Skill, Integer>> WEAR_LEVELS =
+            Map.of("soul_cape", Map.of(com.runecraft.osrs.Skill.PRAYER, 70));
+
+    /** The skill levels needed to wear {@code id} in its extra slot (empty for none). */
+    public static Map<com.runecraft.osrs.Skill, Integer> wearLevels(String id) {
+        return WEAR_LEVELS.getOrDefault(id, Map.of());
+    }
+
     /** A hand-held teleport item (pharaoh's sceptre), or null. */
     public static Worn held(String id) {
         return HELD.get(id);

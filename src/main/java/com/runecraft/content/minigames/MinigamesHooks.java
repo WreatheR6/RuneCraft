@@ -33,6 +33,9 @@ import java.util.Map;
  * boss scripts for TzKal-Zuk and the Penance Queen, NPC dialogue and the /minigame command.
  */
 public final class MinigamesHooks implements ModuleHooks {
+    /** Rolls for the Shade Catacombs chests opened outside the minigame's instance. */
+    private static final java.util.Random SHADE_CHEST_RANDOM = new java.util.Random();
+
     @Override
     public void init() {
         MinigameNet.register();
@@ -104,10 +107,6 @@ public final class MinigamesHooks implements ModuleHooks {
                 return false;
             });
         }
-        com.runecraft.boss.DataBossService.requirement(com.runecraft.osrs.content.minigames.FortisColosseum.SOL_HEREDIT, (player, def) -> {
-            Msg.game(player, "Sol Heredit only fights at the end of the Fortis Colosseum. Enter the Colosseum by its west gate.");
-            return false;
-        });
         for (Map.Entry<String, Minigame> e : MinigameWorld.EXTRA_ENTRANCES.entrySet()) {
             BlockHooks.register(e.getKey(), (player, pos, state) -> MinigameManager.enter(player, e.getValue(), e.getKey()));
         }
@@ -158,6 +157,18 @@ public final class MinigamesHooks implements ModuleHooks {
             BlockHooks.register(b[0], (player, pos, state) -> MinigameManager.onBlock(player, b[0], pos));
         }
 
+        // The Shade Catacombs chests standing in the dungeons module's catacombs below Mort'ton open outside the instance too.
+        for (int i = 0; i < com.runecraft.content.minigames.games.ShadesSession.CHESTS.length; i++) {
+            String metal = com.runecraft.osrs.content.minigames.ShadesOfMortton.METALS[i];
+            BlockHooks.registerFallback(com.runecraft.content.minigames.games.ShadesSession.CHESTS[i], (player, pos, state) -> {
+                java.util.List<String> uniques = com.runecraft.content.minigames.games.ShadesSession.openChest(player, metal, SHADE_CHEST_RANDOM);
+                if (uniques != null) {
+                    for (String u : uniques) {
+                        Msg.game(player, "You find " + com.runecraft.osrs.ItemCatalog.get(u).name() + " in the " + metal + " chest!");
+                    }
+                }
+            });
+        }
         for (String[] b : com.runecraft.osrs.content.minigames.Gauntlet.blocks()) {
             BlockHooks.register(b[0], (player, pos, state) -> MinigameManager.onBlock(player, b[0], pos));
         }

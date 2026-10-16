@@ -2,6 +2,7 @@ package com.runecraft.content.minigames.games;
 
 import com.runecraft.content.minigames.MinigameSession;
 import com.runecraft.osrs.content.minigames.Minigame;
+import com.runecraft.osrs.content.minigames.TzHaarWaves;
 import com.runecraft.util.Msg;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.LivingEntity;
@@ -110,7 +111,7 @@ public abstract class TzHaarSession extends MinigameSession {
 
     /** Yt-HurKot heal their Jad unless a player distracted them; Yt-MejKot heal nearby allies. */
     protected void healers() {
-        if (ticks % 4 != 0) {
+        if (ticks % TzHaarWaves.HURKOT_HEAL_TICKS != 0) {
             return;
         }
         List<LivingEntity> all = living(null);
@@ -122,7 +123,7 @@ public abstract class TzHaarSession extends MinigameSession {
                     if (healer.squaredDistanceTo(jad) > 9) {
                         healer.getNavigation().startMovingTo(jad.getX(), jad.getY(), jad.getZ(), 1.0);
                     } else if (jad.getHealth() < jad.getMaxHealth()) {
-                        jad.heal(random.nextInt(20));
+                        jad.heal(TzHaarWaves.hurKotHeal(com.runecraft.content.minigames.MinigameManager.creatureId(jad), random));
                         caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_HURKOT_HEALED);
                         world.spawnParticles(ParticleTypes.HEART, jad.getX(), jad.getY() + jad.getHeight(), jad.getZ(), 2, 0.4, 0.3, 0.4, 0);
                     }
