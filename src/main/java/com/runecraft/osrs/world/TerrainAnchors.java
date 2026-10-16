@@ -81,7 +81,7 @@ public final class TerrainAnchors {
     public static final Set<String> MOUNTAIN_PLACES = Set.of("ice_mountain", "GOD_WARS_DUNGEON");
 
     /** Hand-built water that is later covered by the structure itself (not a terrain feature). */
-    static final Set<String> COVERED_WATER = Set.of("ardougne_castle");
+    static final Set<String> COVERED_WATER = Set.of(); // none since the Ardougne Castle moat was removed (round 25)
 
     private final List<Anchor> anchors;
     private final List<WaterBox> water;

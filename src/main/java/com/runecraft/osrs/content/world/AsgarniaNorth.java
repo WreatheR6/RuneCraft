@@ -51,6 +51,7 @@ final class AsgarniaNorth {
         out.add(druidsCircle());
         out.add(burthorpe());
         out.add(burthorpeCastle());
+        out.add(burthorpeGamesRoom());
         out.add(roguesDen());
         out.add(warriorsGuild());
         out.add(heroesGuild());
@@ -357,7 +358,7 @@ final class AsgarniaNorth {
         // chequered floor (2893-2904 x 3558-3569, red-carpeted upstairs) and four corner rooms 2891-2895 /
         // 2902-2906 x 3555-3560 / 3566-3571, each with its ladder; the door south at 2898-2899, the stairs
         // up at 2897-2898,3565 (to 3569 upstairs) and the stairs down to the Games Room at 2899-2900,3565
-        // (shortest-path; the Games Room itself is not modelled)
+        // (shortest-path; the Games Room below is burthorpeGamesRoom())
         String[] plan = {
                 "aaaaa      bbbbb", // 3571
                 "aaaaa      bbbbb", // 3570
@@ -434,6 +435,87 @@ final class AsgarniaNorth {
             k.s(bx(2893), 4, bz(ty), mc("red_bed[facing=west,part=foot]"));
         }
         k.f(bx(2892), 4, bz(3567), bx(2892), 5, bz(3569), mc("bookshelf"));
+        return k.build();
+    }
+
+    /**
+     * The Burthorpe Games Room, down the stairs in Burthorpe Castle's hall (2899-2900, 3565). In OSRS it is
+     * a separate map area (2193-2224 x 4934-4960, shortest-path: the stairs arrive at 2205, 4933); here its
+     * ground floor is laid out under the castle with the entrance stairs at the OSRS stairs' tile (shift
+     * +692, -1371): the three south rooms (2885-2892 / 2893-2908 / 2909-2916 x 3565-3572) and the big hall
+     * (2885-2916 x 3573-3589) with its wooden centre, stone aisles, the two fireplaces and every game table
+     * from the cache on its tile, each a chequered board with stools. The gallery upstairs is not modelled.
+     */
+    static StructureDef burthorpeGamesRoom() {
+        StructureDef.Builder b = StructureDef.builder("burthorpe_games_room", "Burthorpe Games Room");
+        AsgarniaKit k = new AsgarniaKit(b);
+        int dx = 692;
+        int dy = -1371;
+        String rock = mc("stone");
+        String wall = mc("stone_bricks");
+        b.tFill(2884, 3564, 2917, 3590, -14, -7, rock);
+        b.tFill(2885, 3565, 2916, 3589, -13, -13, mc("polished_andesite"));
+        b.tClear(2885, 3565, 2916, 3589, -12, -8);
+        // the hall's wooden centre (OSRS 2195-2221 x 4946-4958) and its stone centre aisle (2207-2208)
+        b.tFill(2195 + dx, 4946 + dy, 2221 + dx, 4958 + dy, -13, -13, mc("spruce_planks"));
+        b.tFill(2207 + dx, 4946 + dy, 2208 + dx, 4958 + dy, -13, -13, mc("polished_andesite"));
+        // partitions: hall / south rooms (doors 2196-2197, 2207-2208, 2220-2221), between the south rooms
+        k.f(bx(2885), -12, bz(3572), bx(2916) + 1, -8, bz(3572), wall);
+        for (int tx : new int[]{2196 + dx, 2207 + dx, 2220 + dx}) {
+            k.c(bx(tx), -12, bz(3572), bx(tx) + 3, -10, bz(3572));
+        }
+        for (int tx : new int[]{2893, 2909}) {
+            k.f(bx(tx), -12, bz(3572) + 1, bx(tx), -8, bz(3565) + 1, wall);
+            k.c(bx(tx), -12, bz(3568), bx(tx), -10, bz(3568) + 1);
+        }
+        // the stairs down from the castle hall: twelve steps north from 2899-2900, 3564 to the centre room
+        for (int i = 0; i < 12; i++) {
+            int z = bz(3564) + 1 - i;
+            k.c(bx(2899), -i, z, bx(2900) + 1, -i + 2, z);
+            k.f(bx(2899), -1 - i, z, bx(2900) + 1, -1 - i, z, mc("stone_brick_stairs[facing=south]"));
+            k.f(bx(2899), -14, z, bx(2900) + 1, -2 - i, z, rock);
+        }
+        k.f(bx(2899) - 1, -12, bz(3570), bx(2899) - 1, -8, bz(3564) + 1, wall);
+        k.f(bx(2900) + 2, -12, bz(3570), bx(2900) + 2, -8, bz(3564) + 1, wall);
+        // rails round the stairwell (the castle's own stairs up run along its west side)
+        for (int z = bz(3566); z <= bz(3564) + 1; z++) {
+            k.s(bx(2900) + 2, 0, z, mc("spruce_fence"));
+        }
+        k.f(bx(2899), 0, bz(3566) + 1, bx(2900) + 2, 0, bz(3566) + 1, mc("spruce_fence"));
+        // fireplaces (OSRS 2199, 4951 and 2214, 4951)
+        for (int tx : new int[]{2199 + dx, 2214 + dx}) {
+            int x = bx(tx);
+            int z = bz(4951 + dy);
+            k.f(x - 1, -12, z - 1, x + 2, -8, z - 1, mc("bricks"));
+            k.f(x, -12, z, x + 1, -12, z, mc("campfire[lit=true]"));
+        }
+        // the game tables (cache tiles, 1x1 or 2x1) as chequered boards with stools round them
+        int[][] tables = {{2196, 4948}, {2199, 4948}, {2201, 4948}, {2204, 4948}, {2211, 4948}, {2214, 4948}, {2216, 4948},
+                {2219, 4948}, {2196, 4951}, {2204, 4951}, {2211, 4951}, {2219, 4951}, {2196, 4953}, {2204, 4953}, {2211, 4953},
+                {2219, 4953}, {2196, 4956}, {2199, 4956}, {2201, 4956}, {2204, 4956}, {2211, 4956}, {2214, 4956}, {2216, 4956},
+                {2219, 4956}, {2195, 4936}, {2203, 4936}, {2219, 4936}, {2212, 4937}};
+        for (int[] t : tables) {
+            int x = bx(t[0] + dx);
+            int z = bz(t[1] + dy);
+            int w = t[1] <= 4937 ? 3 : 1;
+            k.f(x, -12, z, x + w, -12, z + 1, mc("spruce_slab[type=top]"));
+            for (int i = 0; i <= w; i++) {
+                k.s(x + i, -11, z, mc(((i & 1) == 0) ? "white_carpet" : "black_carpet"));
+                k.s(x + i, -11, z + 1, mc(((i & 1) == 0) ? "black_carpet" : "white_carpet"));
+            }
+            k.s(x, -12, z - 1, mc("spruce_stairs[facing=south]"));
+            k.s(x + w, -12, z + 2, mc("spruce_stairs[facing=north]"));
+        }
+        // lanterns from the ceiling and banners of the four games
+        for (int tx = 2888; tx <= 2914; tx += 6) {
+            for (int ty : new int[]{3568, 3577, 3584}) {
+                k.s(bx(tx), -8, bz(ty), mc("lantern[hanging=true]"));
+            }
+        }
+        for (String c : new String[]{"red", "blue", "yellow", "green"}) {
+            int i = java.util.Arrays.asList("red", "blue", "yellow", "green").indexOf(c);
+            k.s(bx(2889 + 8 * i), -10, bz(3589), mc(c + "_wall_banner[facing=south]"));
+        }
         return k.build();
     }
 

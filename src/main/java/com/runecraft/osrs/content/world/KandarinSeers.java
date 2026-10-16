@@ -558,21 +558,23 @@ final class KandarinSeers {
         k.counter(candle, GENERAL, "spruce");
         k.set(candle.x1() + 1, 1, candle.z2() - 1, "minecraft:candle[candles=4,lit=true]");
 
-        // bank on its OSRS footprint 2806-2812 x 3437-3444, booths across the middle, chequered floor in front
-        Bld bank = k.house(2806, 3437, 2812, 3444, 1, STONE.roof("minecraft:spruce"), 's', NO_LADDER | WIDE_DOOR);
-        int bz = KandarinKit.Z(3441);
+        // bank on its OSRS footprint 2806-2812 x 3438-3445 (mejrs map), the booths on their cache tiles
+        // (2807, 2809, 2811 at 3442) in a counter across the middle, chequered floor in front
+        Bld bank = k.house(2806, 3438, 2812, 3445, 1, STONE.roof("minecraft:spruce"), 's', NO_LADDER | WIDE_DOOR);
+        int bz = KandarinKit.Z(3442) + 1;
         for (int x = bank.x1() + 1; x < bank.x2(); x++) {
             for (int z = bz + 1; z < bank.z2(); z++) {
                 k.set(x, -1, z, (((x >> 1) + (z >> 1)) & 1) == 0 ? "minecraft:polished_andesite" : "minecraft:gray_concrete");
             }
         }
         k.fill(bank.x1() + 1, 0, bz, bank.x2() - 1, 0, bz, "minecraft:spruce_slab[type=top]");
-        for (int x = bank.x1() + 2; x <= bank.x2() - 2; x += 3) {
-            k.set(x, 0, bz, BANK);
+        for (int tx : new int[]{2807, 2809, 2811}) {
+            k.set(KandarinKit.X(tx), 0, bz, BANK).set(KandarinKit.X(tx) + 1, 0, bz, BANK);
         }
         k.set(bank.cx(), 2, bank.cz() + 1, "minecraft:lantern[hanging=true]");
 
-        Bld hick = k.house(2819, 3437, 2825, 3443, 1, CATHERBY, 's', NO_LADDER);
+        // Hickton's Archery Emporium (2820-2825 x 3440-3445, counter at 2822, 3443-3444)
+        Bld hick = k.house(2820, 3440, 2825, 3445, 1, CATHERBY, 's', NO_LADDER);
         k.counter(hick, ARCHERY, "spruce");
         k.set(hick.x1() + 1, 0, hick.z2() - 1, "minecraft:fletching_table");
         k.set(hick.x2() - 1, 0, hick.z2() - 1, "minecraft:target");
@@ -581,8 +583,13 @@ final class KandarinSeers {
         k.counter(harry, TOOLS, "spruce");
         k.set(harry.x1() + 1, 0, harry.z2() - 1, "minecraft:barrel[facing=up]");
 
-        Bld caleb = k.house(2814, 3446, 2818, 3451, 1, CATHERBY, 's', FURN | NO_LADDER);
-        k.set(caleb.cx(), 0, caleb.z1() + 1, RANGE);
+        // Caleb's house between the bank and Hickton's (2815-2818 x 3439-3444): the cooking range on its tiles
+        // (2817-2818, 3444) against the north wall, his table (2817, 3441)
+        Bld caleb = k.house(2815, 3439, 2818, 3444, 1, CATHERBY, 's', NO_LADDER);
+        k.set(KandarinKit.X(2817), 0, KandarinKit.Z(3444) + 1, RANGE).set(KandarinKit.X(2818), 0, KandarinKit.Z(3444) + 1, RANGE);
+        k.table(KandarinKit.X(2817) + 1, 0, KandarinKit.Z(3441), "spruce");
+        k.set(caleb.x1() + 1, 0, caleb.z1() + 1, "minecraft:barrel[facing=up]");
+        k.house(2814, 3447, 2818, 3452, 1, CATHERBY, 's', FURN);
 
         Bld van = k.house(2820, 3452, 2825, 3457, 1, CATHERBY, 'w', NO_LADDER);
         k.counter(van, GENERAL, "spruce");

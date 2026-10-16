@@ -166,8 +166,7 @@ final class KandarinNorth {
         k.road(2633, 3662, 2634, 3692, PATH, GRAVEL);
         k.road(2640, 3656, 2654, 3668, "minecraft:coarse_dirt", GRAVEL);
 
-        // fur stall in the market square
-        k.stall(KandarinKit.X(2642) + 1, KandarinKit.Z(3657) + 1, "runecraft:fur_stall", "brown", "spruce");
+        // the market square (2636-2649 x 3670-3682) is open ground; its stalls are rellekkaMarket()
         // smithy and range house
         Bld sm = k.house(2664, 3645, 2670, 3651, 1, FREM_DARK, 'w', NO_LADDER);
         k.set(sm.x2() - 1, 0, sm.z1() + 1, FURNACE);
@@ -178,8 +177,7 @@ final class KandarinNorth {
         k.set(rh.cx(), 0, rh.z2() - 1, RANGE);
         // longhouses
         int[][] hs = {{2614, 3646, 2624, 3652, 'n'}, {2626, 3645, 2636, 3651, 'n'}, {2614, 3664, 2624, 3670, 's'},
-                {2614, 3676, 2624, 3682, 's'}, {2626, 3676, 2631, 3684, 'e'}, {2638, 3672, 2645, 3680, 'e'},
-                {2627, 3663, 2631, 3669, 'e'}, {2678, 3684, 2688, 3690, 'w'}, {2614, 3685, 2624, 3690, 's'}};
+                {2614, 3676, 2624, 3682, 's'}, {2626, 3676, 2631, 3684, 'e'}, {2627, 3663, 2631, 3669, 'e'}, {2678, 3684, 2688, 3690, 'w'}, {2614, 3685, 2624, 3690, 's'}};
         for (int i = 0; i < hs.length; i++) {
             int[] h = hs[i];
             k.house(h[0], h[1], h[2], h[3], 1, i % 2 == 0 ? FREM.roof("minecraft:spruce") : FREM_DARK, (char) h[4], FURN);
@@ -364,15 +362,54 @@ final class KandarinNorth {
         return k.build();
     }
 
+    /**
+     * Rellekka's market square as in the OSRS cache: two rows of stalls facing each other across the
+     * square, the west row at x 2638 (fish 3672, fur 3676, fish 3680, facing east) and the east row at
+     * x 2647 (market stall 3672, fish 3676, fur 3680, facing west), with the barrels and crates beside them.
+     * The thieving chest (steel arrowtips) stays by the market's south-east corner (approx; OSRS 2650, 3659).
+     */
     static StructureDef rellekkaMarket() {
         KandarinKit k = new KandarinKit("rellekka_market", "Rellekka market").replaces("rellekka_arrowtip_chest");
-        k.stall(KandarinKit.X(2645) + 1, KandarinKit.Z(3666) + 1, "runecraft:fish_stall", "blue", "spruce");
-        k.stall(KandarinKit.X(2653) + 1, KandarinKit.Z(3657) + 1, "minecraft:barrel[facing=up]", "green", "spruce");
+        k.road(2636, 3670, 2649, 3682, "minecraft:coarse_dirt", GRAVEL);
+        Object[][] stalls = {
+                {2638, 3672, "runecraft:fish_stall", "blue", 'e'}, {2638, 3676, "runecraft:fur_stall", "brown", 'e'},
+                {2638, 3680, "runecraft:fish_stall", "cyan", 'e'}, {2647, 3672, "minecraft:barrel[facing=up]", "green", 'w'},
+                {2647, 3676, "runecraft:fish_stall", "blue", 'w'}, {2647, 3680, "runecraft:fur_stall", "brown", 'w'}};
+        for (Object[] s : stalls) {
+            marketStall(k, (Integer) s[0], (Integer) s[1], (String) s[2], (String) s[3], (Character) s[4]);
+        }
+        for (int[] b : new int[][]{{2637, 3673}, {2638, 3674}, {2649, 3677}, {2648, 3678}, {2637, 3680}, {2637, 3681}, {2640, 3682}}) {
+            k.set(KandarinKit.X(b[0]), 0, KandarinKit.Z(b[1]), "minecraft:barrel[facing=up]");
+        }
+        for (int[] c : new int[][]{{2638, 3665}, {2637, 3666}, {2638, 3666}}) {
+            k.set(KandarinKit.X(c[0]), 0, KandarinKit.Z(c[1]), "minecraft:spruce_planks");
+        }
+        k.set(KandarinKit.X(2638), 1, KandarinKit.Z(3666), "minecraft:spruce_planks");
         k.set(KandarinKit.X(2654), 0, KandarinKit.Z(3666), "runecraft:arrowtip_chest");
         k.set(KandarinKit.X(2654) + 1, 0, KandarinKit.Z(3666), "minecraft:barrel[facing=up]");
-        k.set(KandarinKit.X(2641), 0, KandarinKit.Z(3663), "minecraft:barrel[facing=up]");
-        k.set(KandarinKit.X(2641), 1, KandarinKit.Z(3663), "minecraft:barrel[facing=up]");
         return k.build();
+    }
+
+    /**
+     * A Fremennik market stall on its OSRS tile: the station block on the tile's front block (towards the
+     * aisle), a counter running north-south either side, fence posts and a striped wool canopy.
+     */
+    private static void marketStall(KandarinKit k, int tx, int ty, String station, String wool, char front) {
+        int back = front == 'e' ? KandarinKit.X(tx) - 1 : KandarinKit.X(tx) + 2;
+        int x = front == 'e' ? KandarinKit.X(tx) + 1 : KandarinKit.X(tx);
+        int z = KandarinKit.Z(ty);
+        k.set(x, 0, z, station);
+        k.set(x, 0, z - 1, "minecraft:spruce_slab[type=top]").set(x, 0, z + 1, "minecraft:spruce_slab[type=top]");
+        k.set(x, 0, z + 2, "minecraft:spruce_slab[type=top]");
+        for (int[] p : new int[][]{{x, z - 2}, {x, z + 3}, {back, z - 2}, {back, z + 3}}) {
+            k.fill(p[0], 0, p[1], p[0], 2, p[1], "minecraft:spruce_fence");
+        }
+        int lo = Math.min(x, back);
+        int hi = Math.max(x, back);
+        for (int zz = z - 2; zz <= z + 3; zz++) {
+            k.fill(lo, 3, zz, hi, 3, zz, "minecraft:" + ((zz & 1) == 0 ? wool : "white") + "_wool");
+        }
+        k.set(back, 0, z, "minecraft:barrel[facing=up]");
     }
 
     static StructureDef rellekkaDocks() {

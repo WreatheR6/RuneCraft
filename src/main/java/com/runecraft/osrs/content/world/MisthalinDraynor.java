@@ -108,15 +108,26 @@ final class MisthalinDraynor {
         k.house(b).storeys(1).height(5).wall(STONE_BRICKS).corner(CHISELED).base(COBBLE).floor(POLISHED_ANDESITE)
                 .roof(Roof.SLATE).doorAt('n', X(3092), 4, 4).build();
         Box in = b.inset(1);
-        // booth counter across the room; bankers' side to the south
-        int z = Z(3243);
-        k.boothsX(in.x1() + 1, in.x2() - 1, 0, z);
-        k.fill(in.x1(), 0, z, in.x1(), 1, z, POLISHED_ANDESITE).fill(in.x2(), 0, z, in.x2(), 1, z, POLISHED_ANDESITE);
-        k.carpet(new Box(in.x1(), in.z1(), in.x2(), z - 1), 0, "red");
-        k.carpet(new Box(in.x1(), z + 1, in.x2(), in.z2()), 0, "gray");
-        for (int x = in.x1(); x <= in.x2(); x += 3) {
-            k.set(x, 0, in.z2(), "minecraft:chest[facing=north]");
-            k.set(x + 1, 0, in.z2(), BARREL);
+        // two counters running north-south as in the OSRS cache: the west one at x 3091 (booths 3241-3243 and
+        // 3245, the bankers behind it to the west) and the east one at x 3096 (booths 3241, 3242, 3245); a
+        // hatch in each at 3244 / 3243-3244; the customers' floor between them
+        int wx = X(3091) + 1;
+        int ex = X(3096);
+        for (int ty = 3240; ty <= 3245; ty++) {
+            boolean wb = ty == 3241 || ty == 3242 || ty == 3243 || ty == 3245;
+            boolean eb = ty == 3241 || ty == 3242 || ty == 3245;
+            if (ty != 3244) {
+                k.set(wx, 0, Z(ty), wb ? BANK : POLISHED_ANDESITE).set(wx, 0, Z(ty) + 1, POLISHED_ANDESITE);
+            }
+            if (ty != 3244 && ty != 3243) {
+                k.set(ex, 0, Z(ty), eb ? BANK : POLISHED_ANDESITE).set(ex, 0, Z(ty) + 1, POLISHED_ANDESITE);
+            }
+        }
+        k.carpet(new Box(wx + 1, in.z1() + 1, ex - 1, in.z2()), 0, "red");
+        k.carpet(new Box(in.x1(), in.z1() + 1, wx - 1, in.z2()), 0, "gray");
+        for (int z = in.z1() + 2; z <= in.z2(); z += 3) {
+            k.set(in.x1(), 0, z, "minecraft:chest[facing=east]");
+            k.set(in.x2(), 0, z, BARREL);
         }
         k.hang(in.cx(), 3, in.z1() + 2).hang(in.x1() + 3, 3, in.z1() + 2).hang(in.x2() - 3, 3, in.z1() + 2);
         k.hang(in.cx(), 3, in.z2() - 1);
@@ -228,14 +239,16 @@ final class MisthalinDraynor {
     // ------------------------------------------------------------------ market
 
     static StructureDef market() {
-        // Draynor market square west of the bank: Martin's seed stall, the wine and vegetable stalls
+        // Draynor market square west of the bank, the stalls on their cache tiles: the seed stall (3079, 3253),
+        // the market stall (3083, 3251; the wine stall here), a second seed stall (3075, 3249; the vegetable
+        // stall here, approx) and the toy stall (3079, 3246; the silk stall here, approx)
         MisthalinKit k = new MisthalinKit("draynor_market", "Draynor market", "draynor_market");
-        Box sq = t(3074, 3246, 3086, 3256);
+        Box sq = t(3074, 3246, 3087, 3256);
         k.street(sq);
-        k.stall(X(3077), Z(3253), "runecraft:seed_stall", "green");
-        k.stall(X(3083), Z(3253), "runecraft:wine_stall", "purple");
-        k.stall(X(3080), Z(3249), "runecraft:vegetable_stall", "orange");
-        k.stall(X(3076), Z(3249), "runecraft:silk_stall", "red");
+        k.stall(X(3079) + 1, Z(3253) + 1, "runecraft:seed_stall", "green");
+        k.stall(X(3083) + 1, Z(3251) + 1, "runecraft:wine_stall", "purple");
+        k.stall(X(3075) + 1, Z(3249) + 1, "runecraft:vegetable_stall", "orange");
+        k.stall(X(3079) + 1, Z(3246) + 1, "runecraft:silk_stall", "red");
         k.lampPost(X(3074), Z(3246)).lampPost(X(3086) + 1, Z(3246)).lampPost(X(3074), Z(3256)).lampPost(X(3086) + 1, Z(3256));
         k.crates(X(3085), Z(3255));
         k.crates(X(3074) + 1, Z(3255));
@@ -250,8 +263,8 @@ final class MisthalinDraynor {
      * library's secret bookcase (3097, 3357-3358), the library, the north-west (poison) room, the long north
      * hall, the small rooms north of the staircase hall (Ernest's rubber tube room at 3109-3112, 3364-3367),
      * the entrance room behind the large doors (3108-3109, 3353), the chequered ballroom with its stairs down
-     * (3115, 3356) and the east wing with its north door (3123, 3360). The first floor covers the same
-     * footprint; the top floor is the narrow block 3104-3112, 3356-3370 (Professor Oddenstein's floor). The
+     * (3115, 3356) and the east wing with its north door (3123, 3360). The first floor has its own rooms (OSRS plane 1;
+     * the east wing is single-storey); the top floor is the narrow block 3104-3112, 3356-3370 (Professor Oddenstein's floor). The
      * lever-puzzle cellar keeps its OSRS room grid, shifted so its west arm lies under the ladder (it really is
      * 25 tiles further east, reached by a teleporting ladder). Walls stand on tile edges, one block thick.
      */
@@ -304,19 +317,37 @@ final class MisthalinDraynor {
         Box[] rooms = {wWing, library, nwRoom, strip, northHall, corridor, stairHall, smallRoom, tubeRoom, entrance, ballroom, eWing};
         for (Box r : rooms) {
             k.fill(r, -3, -1, "minecraft:cobbled_deepslate");
-            k.fill(r, 0, 9, wall);
+            k.fill(r, 0, 4, wall);
         }
         for (Box r : rooms) {
             k.walls(r, 4, 4, trim);
         }
         for (Box r : rooms) {
-            k.clear(r.inset(1), 0, 3).clear(r.inset(1), 5, 8);
+            k.clear(r.inset(1), 0, 3);
             k.fill(r.inset(1), -1, -1, DARK_PLANKS).fill(r.inset(1), 4, 4, DARK_PLANKS);
+        }
+        // the first floor has its own rooms (OSRS plane 1): the west block over the wing, library and entrance,
+        // the north-west bedroom, the landing round the stairwell, the north-east room, the long north gallery
+        // and the two rooms over the entrance and ballroom; the east wing is single-storey
+        Box uWest = hull(3091, 3354, 3106, 3362);
+        Box uNw = hull(3097, 3363, 3103, 3368);
+        Box uLanding = hull(3104, 3363, 3113, 3368);
+        Box uNe = hull(3114, 3362, 3119, 3368);
+        Box uGallery = hull(3097, 3369, 3119, 3373);
+        Box uSouth = hull(3107, 3354, 3110, 3361);
+        Box uSe = hull(3111, 3354, 3119, 3361);
+        Box[] upper = {uWest, uNw, uLanding, uNe, uGallery, uSouth, uSe};
+        for (Box r : upper) {
+            k.fill(r, 5, 9, wall);
+        }
+        for (Box r : upper) {
+            k.clear(r.inset(1), 5, 8);
+            k.fill(r.inset(1), 4, 4, DARK_PLANKS);
         }
         // corner quoins on the outer corners
         for (int[] c : new int[][]{{wWing.x1(), wWing.z1()}, {wWing.x1(), wWing.z2()}, {nwRoom.x1(), nwRoom.z1()}, {northHall.x2(), northHall.z1()},
                 {eWing.x2(), eWing.z1()}, {eWing.x2(), eWing.z2()}, {wWing.x2(), wWing.z1()}, {ballroom.x2(), ballroom.z1()}}) {
-            k.fill(c[0], 0, c[1], c[0], 9, c[1], trim);
+            k.fill(c[0], 0, c[1], c[0], c[0] > X(3120) ? 4 : 9, c[1], trim);
         }
         // the ballroom's chequered floor
         Box bIn = ballroom.inset(1);
@@ -338,7 +369,19 @@ final class MisthalinDraynor {
         k.fill(X(3108) - 1, 4, sz + 1, X(3109) + 2, 4, sz + 1, "minecraft:polished_blackstone_brick_slab[type=bottom]");
         k.set(X(3108) - 1, 2, sz + 2, "minecraft:soul_wall_torch[facing=south]").set(X(3109) + 2, 2, sz + 2, "minecraft:soul_wall_torch[facing=south]");
         doorZ(k, Z(3360), 3123, 0, "north");                      // east wing, north door
-        for (int y : new int[]{0, 5}) {
+        // first-floor doors (OSRS plane 1)
+        doorX(k, uSouth.x1(), 3358, 5, "east");
+        doorX(k, uSe.x1(), 3357, 5, "east");
+        doorZ(k, uSe.z1(), 3115, 5, "north");
+        doorX(k, uNe.x1(), 3367, 5, "east");
+        doorX(k, uLanding.x1(), 3366, 5, "east");
+        doorZ(k, uNw.z1(), 3100, 5, "south");
+        doorZ(k, uLanding.z1(), 3109, 5, "south");
+        doorZ(k, uWest.z1(), 3101, 5, "south");
+        doorZ(k, uWest.z1(), 3105, 5, "south");
+        // the grand staircase arrives on the landing (OSRS 3108, 3366 on plane 1) through the stairwell
+        k.clear(X(3108), 5, Z(3362), X(3109) + 1, 8, Z(3361));
+        for (int y : new int[]{0}) {
             doorZ(k, Z(3363), 3103, y, "south");                  // library -> corridor
             doorZ(k, Z(3365), 3099, y, "south");                  // strip -> north-west room
             doorX(k, X(3102), 3364, y, "east");                   // strip -> corridor
@@ -376,10 +419,9 @@ final class MisthalinDraynor {
         }
 
         // ---- roofs: the wings, the south and north ranges, then the top floor block above them
-        k.roof(wWing, 10, Roof.BLACKSTONE, wall);
-        k.roof(hull(3097, 3354, 3119, 3365), 10, Roof.BLACKSTONE, wall);
-        k.roof(hull(3097, 3366, 3119, 3373), 10, Roof.BLACKSTONE, wall);
-        k.roof(eWing, 10, Roof.BLACKSTONE, wall);
+        k.roof(hull(3091, 3354, 3119, 3362), 10, Roof.BLACKSTONE, wall);
+        k.roof(hull(3097, 3363, 3119, 3373), 10, Roof.BLACKSTONE, wall);
+        k.roof(eWing, 5, Roof.BLACKSTONE, wall);
         Box top = hull(3104, 3356, 3112, 3370);
         k.clear(top.grow(1), 10, 30);
         k.fill(top, 9, 14, wall).walls(top, 9, 9, trim);
@@ -399,8 +441,9 @@ final class MisthalinDraynor {
         k.fill(X(3108), 0, Z(3360) + 1, X(3108), 0, Z(3362), "minecraft:dark_oak_fence");
         k.stairs2(X(3106), 5, Z(3360) + 1, 'n', 5, "minecraft:dark_oak_stairs", 'e');
         k.carpet(new Box(X(3108), Z(3359), X(3109) + 1, Z(3357) + 1), 0, "red");
-        // the ballroom stairs down (3115, 3356), railed, into the cellar's east arm (approx: in OSRS they lead
-        // to Count Draynor's basement at 3077, 9771)
+        // the ballroom stairs down (3115, 3356), railed, into Count Draynor's crypt (OSRS: his basement at
+        // 3077, 9771, a separate area; here a sealed vault under the ballroom and east wing, walled off from
+        // the lever cellar)
         Box well = t(3114, 3357, 3117, 3359);
         k.stairs2(well.x2(), -8, well.z1(), 'w', 8, "minecraft:dark_oak_stairs", 's');
         k.connect(well.x1(), 0, well.z1() - 1, well.x2() + 1, 0, well.z1() - 1, "minecraft:dark_oak_fence");
@@ -443,9 +486,8 @@ final class MisthalinDraynor {
         k.carpet(new Box(nh.x1(), nh.cz() - 1, nh.x2(), nh.cz() + 1), 5, "red");
         k.shelvesX(nh.x1() + 2, nh.x2() - 2, 5, nh.z1(), "south");
         k.set(nh.cx(), 5, nh.z2(), "minecraft:cobweb");
-        k.bed(ew.x1(), 5, ew.z1(), 'e', "black");
-        k.set(ew.x2(), 5, ew.z2(), "minecraft:chest[facing=west]");
-        k.diningZ(bIn.cx(), 5, bIn.z1() + 2, bIn.z2() - 2);
+        k.diningZ(bIn.cx(), 5, Z(3360), Z(3355));
+        k.bed(uNe.inset(1).x2() - 1, 5, uNe.inset(1).z1(), 's', "black");
         // ---- top floor: Professor Oddenstein's laboratory, the whistles' room
         Box ti = top.inset(1);
         k.set(X(3111), 10, Z(3368), "minecraft:brewing_stand").set(X(3110), 10, Z(3368), "minecraft:cauldron");
@@ -455,7 +497,7 @@ final class MisthalinDraynor {
         k.hang(X(3110), 12, Z(3366)).hang(X(3108), 12, Z(3358));
 
         // ---- the lever-puzzle cellar: floor -9, rooms -8..-4, a thick ceiling (OSRS 3090-3118, 9744-9767, +1/+6406)
-        Box[] cellar = {cellar(3096, 3357, 3112, 3367), cellar(3090, 3352, 3095, 3357), cellar(3096, 3350, 3118, 3356),
+        Box[] cellar = {cellar(3096, 3357, 3112, 3367), cellar(3090, 3352, 3095, 3357), cellar(3096, 3350, 3112, 3356),
                 cellar(3100, 3344, 3113, 3349)};
         for (Box r : cellar) {
             k.fill(r.grow(1), -10, -2, "minecraft:cobbled_deepslate");
@@ -492,7 +534,19 @@ final class MisthalinDraynor {
         k.fill(lx - 1, -8, lz, lx - 1, -2, lz + 1, "minecraft:cobbled_deepslate");
         k.ladder(lx, lz, "east", -8, -2).ladder(lx, lz + 1, "east", -8, -2);
         k.set(lx, -1, lz + 1, "minecraft:dark_oak_trapdoor[half=top,facing=east]");
-        k.set(cx(3117) + 1, -8, cz(3353), "minecraft:chest[facing=west]");
+        k.set(cx(3112) + 1, -8, cz(3353), "minecraft:chest[facing=west]");
+        // Count Draynor's crypt at the foot of the ballroom stairs: his coffin on a dais, candles
+        Box crypt = t(3115, 3354, 3126, 3360);
+        k.fill(crypt.grow(1), -10, -2, "minecraft:cobbled_deepslate");
+        k.clear(crypt, -8, -4).fill(crypt, -9, -9, "minecraft:polished_blackstone_bricks");
+        k.stairs2(well.x2(), -8, well.z1(), 'w', 8, "minecraft:dark_oak_stairs", 's');
+        int cfx = X(3123);
+        int cfz = Z(3357);
+        k.fill(cfx - 1, -9, cfz - 1, cfx + 2, -9, cfz + 2, "minecraft:polished_blackstone");
+        k.fill(cfx, -8, cfz, cfx + 1, -8, cfz, "minecraft:dark_oak_slab[type=bottom]");
+        k.set(cfx - 1, -8, cfz - 1, "minecraft:candle[candles=3,lit=true]").set(cfx + 2, -8, cfz + 1, "minecraft:candle[candles=3,lit=true]");
+        k.set(X(3120), -4, Z(3357), "minecraft:soul_lantern[hanging=true]").set(X(3125), -4, Z(3355), "minecraft:soul_lantern[hanging=true]");
+        k.set(crypt.x2(), -8, crypt.z1(), "minecraft:cobweb").set(crypt.x2(), -8, crypt.z2(), "minecraft:cobweb");
         for (int[] l : new int[][]{{3093, 3354}, {3098, 3360}, {3103, 3360}, {3108, 3360}, {3108, 3353}, {3102, 3353}, {3107, 3346}}) {
             k.set(cx(l[0]), -4, cz(l[1]), "minecraft:soul_lantern[hanging=true]");
         }
