@@ -37,6 +37,8 @@ import java.util.UUID;
  */
 public class TemporossSession extends MinigameSession {
     private static final Random POOL_RANDOM = new Random();
+    private static final String BUCKET = Tempoross.BUCKET;
+    private static final String WATER_BUCKET = Tempoross.WATER_BUCKET;
     private final Map<UUID, Integer> points = new HashMap<>();
     private final Map<UUID, Long> tethered = new HashMap<>();
     /** Combat Achievement conditions per player: cannons loaded (by x position), wave hits, permits earned. */
@@ -181,8 +183,8 @@ public class TemporossSession extends MinigameSession {
             }
             case "tempoross_supplies" -> {
                 int given = 0;
-                for (String tool : new String[]{"rope", "hammer", "bucket"}) {
-                    if (!Inv.has(player, tool, 1) && !(tool.equals("bucket") && Inv.has(player, "bucket_of_water", 1))) {
+                for (String tool : new String[]{"rope", "hammer", BUCKET}) {
+                    if (!Inv.has(player, tool, 1) && !(tool.equals(BUCKET) && Inv.has(player, WATER_BUCKET, 1))) {
                         Inv.give(player, tool, 1);
                         given++;
                     }
@@ -195,21 +197,21 @@ public class TemporossSession extends MinigameSession {
                 return true;
             }
             case "tempoross_water_pump" -> {
-                int n = Inv.remove(player, "bucket", 28);
+                int n = Inv.remove(player, BUCKET, 28);
                 if (n == 0) {
                     Msg.game(player, "You need an empty bucket to fill.");
                 } else {
-                    Inv.give(player, "bucket_of_water", n);
+                    Inv.give(player, WATER_BUCKET, n);
                     Msg.game(player, "You fill " + (n == 1 ? "the bucket" : n + " buckets") + " with water.");
                 }
                 return true;
             }
             case "tempoross_fire" -> {
-                if (Inv.remove(player, "bucket_of_water", 1) == 0) {
+                if (Inv.remove(player, WATER_BUCKET, 1) == 0) {
                     Msg.game(player, "You need a bucket of water to douse the fire.");
                     return true;
                 }
-                Inv.give(player, "bucket", 1);
+                Inv.give(player, BUCKET, 1);
                 douse(pos);
                 addPoints(player, Tempoross.POINTS_DOUSE);
                 int n = doused.merge(player.getUuid(), 1, Integer::sum);
@@ -294,7 +296,7 @@ public class TemporossSession extends MinigameSession {
                 }
                 // No damage (OSRS Wiki): the wave washes fish and minigame tools away.
                 int lost = Inv.remove(p, "raw_harpoonfish", 1 + random.nextInt(10)) + Inv.remove(p, "harpoonfish", random.nextInt(5));
-                for (String tool : new String[]{"hammer", "rope", "bucket", "bucket_of_water"}) {
+                for (String tool : new String[]{"hammer", "rope", BUCKET, WATER_BUCKET}) {
                     if (random.nextInt(3) == 0) { // approx
                         lost += Inv.remove(p, tool, 1);
                     }
@@ -384,7 +386,7 @@ public class TemporossSession extends MinigameSession {
                     caFlag(p, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_FIRE_HIT);
                     for (String item : Tempoross.LOSABLE) {
                         if (Inv.remove(p, item, 1) > 0) {
-                            Msg.red(p, "The fire burns your " + item.replace('_', ' ') + "!");
+                            Msg.red(p, "The fire burns your " + item.substring(item.indexOf(':') + 1).replace('_', ' ') + "!");
                             break;
                         }
                     }

@@ -193,9 +193,15 @@ public final class MinigameRules {
         public static final int ATTACKS_STOP_ENERGY = 10;
         /** Fires to douse in one fight for "Master of Buckets". */
         public static final int MASTER_OF_BUCKETS = 5;
+        /**
+         * The ordinary Bucket and Bucket of water (the ones shops sell and farming and recipes use): players bring their own,
+         * fill them at the water pump and douse fires with them.
+         */
+        public static final String BUCKET = "minecraft:bucket";
+        public static final String WATER_BUCKET = "minecraft:water_bucket";
         /** Items a wave or fire can destroy (OSRS Wiki); nothing else is ever lost. */
         public static final java.util.List<String> LOSABLE = java.util.List.of("raw_harpoonfish", "harpoonfish", "hammer", "rope",
-                "bucket", "bucket_of_water");
+                BUCKET, WATER_BUCKET);
 
         /** Chance (percent) that a wave breaks a mast or totem pole: 15% rising to 25% with the storm's intensity (0-1). */
         public static int tetherBreakChance(double intensity) {

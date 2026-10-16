@@ -18,6 +18,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -822,7 +823,7 @@ final class EncounterScripts {
         }
 
         /**
-         * Swinging axes: each axe hits a player once for up to 35 (awakened approx 50; Protect from Melee halves it) and
+         * Swinging axes: each axe hits a player once for up to 35 (awakened 96; Protect from Melee halves it) and
          * starts a bleed (3 every 3 ticks for 14 ticks, every tick while running).
          */
         private void axes(DataBossEntity boss, ServerPlayerEntity target) {
@@ -831,8 +832,8 @@ final class EncounterScripts {
             Vec3d p = target.getPos();
             Vec3d toward = p.subtract(boss.getPos());
             double base = Math.atan2(toward.z, toward.x);
-            int max = (int) Math.round((boss.awakened() ? BossMechanics.VARDORVIS_AXE_MAX * 61.0 / 43 : BossMechanics.VARDORVIS_AXE_MAX)
-                    * scale); // awakened: approx, scaled like his melee ramp
+            int max = (int) Math.round((boss.awakened() ? BossMechanics.VARDORVIS_AXE_MAX_AWAKENED : BossMechanics.VARDORVIS_AXE_MAX)
+                    * scale);
             for (int a = 0; a < n; a++) {
                 double ang = base + a * Math.PI / 4 * (a % 2 == 0 ? 1 : -1);
                 Vec3d dir = new Vec3d(Math.cos(ang), 0, Math.sin(ang));
@@ -1064,6 +1065,54 @@ final class EncounterScripts {
         private int eldricDeadCharge = -3;
         private boolean eldricDead;
         private MinionRules.AttackWatcher watcher;
+        /**
+         * Wall blocks saved with Branda when she was unloaded mid-fight (the reloaded boss has a fresh script with no
+         * walls): cleared on her first game tick back so they never stay in the shared lair. Null when there are none.
+         */
+        private long[] savedBlocks;
+        private String savedWorld;
+        private static final String NBT_WALL_BLOCKS = "TitanWallBlocks";
+        private static final String NBT_WALL_WORLD = "TitanWallWorld";
+
+        @Override
+        public void writeNbt(DataBossEntity boss, NbtCompound nbt) {
+            List<Long> all = new ArrayList<>();
+            for (Wall wall : walls) {
+                for (List<BlockPos> placed : wall.blocks.values()) {
+                    for (BlockPos pos : placed) {
+                        all.add(pos.asLong());
+                    }
+                }
+            }
+            if (savedBlocks != null) {
+                for (long pos : savedBlocks) {
+                    all.add(pos);
+                }
+            }
+            if (!all.isEmpty()) {
+                nbt.putLongArray(NBT_WALL_BLOCKS, all.stream().mapToLong(Long::longValue).toArray());
+                nbt.putString(NBT_WALL_WORLD, boss.getWorld().getRegistryKey().getValue().toString());
+            }
+        }
+
+        @Override
+        public void readNbt(DataBossEntity boss, NbtCompound nbt) {
+            if (nbt.contains(NBT_WALL_BLOCKS)) {
+                savedBlocks = nbt.getLongArray(NBT_WALL_BLOCKS);
+                savedWorld = nbt.getString(NBT_WALL_WORLD);
+            }
+        }
+
+        /** Turns the walls saved before an unload back into air (only in the world they were saved in). */
+        private void clearSavedWalls(ServerWorld w) {
+            if (w.getRegistryKey().getValue().toString().equals(savedWorld)) {
+                for (long pos : savedBlocks) {
+                    clearWallBlock(w, BlockPos.fromLong(pos));
+                }
+            }
+            savedBlocks = null;
+            savedWorld = null;
+        }
 
         @Override
         public void onSpawn(DataBossEntity boss) {
@@ -1153,6 +1202,9 @@ final class EncounterScripts {
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
             ServerWorld w = BossFx.world(boss);
+            if (savedBlocks != null) {
+                clearSavedWalls(w);
+            }
             if (!eldricDead && eldric != null && !eldric.isAlive()) {
                 eldricDead = true;
                 eldricDeadCharge = charging() ? chargeId : -3;
@@ -1371,9 +1423,13 @@ final class EncounterScripts {
                 return;
             }
             for (BlockPos pos : placed) {
-                if (w.getBlockState(pos).isOf(Blocks.MAGMA_BLOCK) || w.getBlockState(pos).isOf(Blocks.PACKED_ICE)) {
-                    w.setBlockState(pos, Blocks.AIR.getDefaultState());
-                }
+                clearWallBlock(w, pos);
+            }
+        }
+
+        private static void clearWallBlock(ServerWorld w, BlockPos pos) {
+            if (w.getBlockState(pos).isOf(Blocks.MAGMA_BLOCK) || w.getBlockState(pos).isOf(Blocks.PACKED_ICE)) {
+                w.setBlockState(pos, Blocks.AIR.getDefaultState());
             }
         }
 
@@ -1432,15 +1488,30 @@ final class EncounterScripts {
             if (charging() && eldricDead && eldricDeadCharge == chargeId) {
                 CombatAchievementService.flagNear(boss, BossMechanics.FLAG_TITANS_CHARGE_KILL);
             }
+            cleanUp(boss);
+        }
+
+        /** Discarded or killed without a player kill: the walls and elementals still go. */
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            cleanUp(boss);
+        }
+
+        private void cleanUp(DataBossEntity boss) {
             elementals.forEach(e -> e.mob().discard());
+            elementals.clear();
             if (watcher != null) {
                 MinionRules.unwatch(watcher);
+                watcher = null;
             }
             ServerWorld w = BossFx.world(boss);
             for (Wall wall : walls) {
                 unblockAll(w, wall);
             }
             walls.clear();
+            if (savedBlocks != null) {
+                clearSavedWalls(w);
+            }
         }
     }
 

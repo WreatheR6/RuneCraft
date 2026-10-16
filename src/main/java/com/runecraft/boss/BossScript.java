@@ -2,6 +2,7 @@ package com.runecraft.boss;
 
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 /**
@@ -53,6 +54,24 @@ public interface BossScript {
 
     /** Called when a player kills the boss (after drops). */
     default void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+    }
+
+    /**
+     * Saves what has to outlive the entity being unloaded (chunk unload, logout, restart): a reloaded boss gets a fresh
+     * script, so anything it put in the world (e.g. the Royal Titans' wall blocks) must be recorded here to be cleaned up.
+     */
+    default void writeNbt(DataBossEntity boss, NbtCompound nbt) {
+    }
+
+    /** Reads what {@link #writeNbt} saved, when the boss is loaded again. */
+    default void readNbt(DataBossEntity boss, NbtCompound nbt) {
+    }
+
+    /**
+     * Called (server side) when the boss leaves the world for good, also when {@link #onDeath} never ran: discarded,
+     * killed by something other than a player, or moved to another dimension.
+     */
+    default void onRemoved(DataBossEntity boss) {
     }
 
     /** Whether the boss can be damaged right now (e.g. Zulrah diving, Vorkath's spawn phase). */
