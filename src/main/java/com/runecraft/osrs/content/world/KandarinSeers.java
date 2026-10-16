@@ -40,8 +40,6 @@ final class KandarinSeers {
         k.road(2725, 3445, 2726, 3482, PATH, dirt);
         k.road(2725, 3445, 2737, 3446, PATH, dirt);
         k.road(2736, 3485, 2737, 3495, PATH, dirt);
-        k.road(2703, 3485, 2704, 3485, PATH, null);
-        k.road(2711, 3474, 2712, 3482, PATH, dirt);
 
         // --- Bank (rooftop course start) ---
         // OSRS map: a broad north hall 2719-2730 x 3494-3497, the chequered banking floor 2721-2729 x 3490-3493
@@ -87,19 +85,71 @@ final class KandarinSeers {
         k.lamp(KandarinKit.X(2723), KandarinKit.Z(3486), "minecraft:spruce_fence");
         k.lamp(KandarinKit.X(2728), KandarinKit.Z(3486), "minecraft:spruce_fence");
 
-        // --- Rooftop course houses (flat roofs) ---
+        // --- Rooftop course houses (flat roofs) on their OSRS footprints (mejrs layers_osrs, round 32): B the
+        // cross-shaped house west of the bank 2704-2714 x 3486-3498 (doors south at 2709-2710), C the Elemental
+        // Workshop house 2709-2716 x 3475-3482 (door north at 2713), D 2710-2715 x 3469-3473 (door east at 3472)
+        // and E, Phantuwti's house, 2699-2705 x 3469-3476 (door north at 2701). In OSRS B is two storeys with the
+        // spinning wheel upstairs and the roofs stand at different heights; here every course roof is one storey
+        // up, and the wheel and the archery counter (not in OSRS Seers') stand in B // approx ---
         Pal flat = SEERS.roof("flat:minecraft:spruce_planks");
-        Bld hb = k.house(2711, 3488, 2716, 3495, 1, flat, 's', FURN | FLAT | NO_LADDER);
-        Bld hc = k.house(2709, 3466, 2715, 3473, 1, flat, 'w', FURN | FLAT | NO_LADDER);
-        Bld hd = k.house(2700, 3466, 2706, 3472, 1, flat, 's', FURN | FLAT | NO_LADDER);
-        Bld he = k.house(2691, 3467, 2697, 3473, 1, flat, 'n', FURN | FLAT | NO_LADDER);
+        MapTown mt = new MapTown(k.b);
+        String[] bPlan = {
+                "pp...ppp", // 3498
+                "pp...ppp",
+                "pp...ppp",
+                "ppppppppppp", // 3495
+                "ppppppppppp",
+                "ppppppppppp",
+                "ppppppppppp",
+                "ppppppppppp", // 3491
+                "..pppppp", // 3490
+                "..pppppp",
+                "..pppppp",
+                "..pppppp",
+                "..pppppp", // 3486
+        };
+        mt.bld(2704, 3498, "p", bPlan).wall(SEERS.wall()).trim(SEERS.post()).floor(SEERS.floor(), SEERS.floor())
+                .roof("minecraft:spruce_stairs", "minecraft:spruce_planks").flat("minecraft:spruce_fence")
+                .door(2709, 3486, 's', "oak").door(2710, 3486, 's', "oak").build();
+        k.set(KandarinKit.X(2710), 0, KandarinKit.Z(3497), WHEEL);
+        k.set(KandarinKit.X(2710) + 1, 0, KandarinKit.Z(3497), "minecraft:white_wool");
+        k.set(KandarinKit.X(2709) + 1, 0, KandarinKit.Z(3497), "minecraft:loom[facing=south]");
+        k.set(KandarinKit.X(2704) + 1, 0, KandarinKit.Z(3493), ARCHERY);
+        k.set(KandarinKit.X(2704) + 1, 0, KandarinKit.Z(3492), "minecraft:fletching_table");
+        k.set(KandarinKit.X(2704) + 1, 0, KandarinKit.Z(3497), "minecraft:barrel[facing=up]");
+        k.set(KandarinKit.X(2713), 0, KandarinKit.Z(3494), "minecraft:red_bed[facing=west,part=foot]");
+        k.set(KandarinKit.X(2707), 0, KandarinKit.Z(3494), "minecraft:crafting_table");
+        Bld hb = new Bld(KandarinKit.X(2712), KandarinKit.Z(3495), KandarinKit.X(2714) + 1, KandarinKit.Z(3491) + 1,
+                1, 's', 0, 0);
+        Bld spin = new Bld(KandarinKit.X(2706), KandarinKit.Z(3490), KandarinKit.X(2711) + 1, KandarinKit.Z(3486) + 1,
+                1, 's', KandarinKit.X(2710), KandarinKit.Z(3486) + 1);
+        Pal ewPal = STONE.wall("minecraft:deepslate_bricks").roof("minecraft:cobblestone");
+        Bld hc = k.house(2709, 3475, 2716, 3482, 1, ewPal, 'n', FLAT | NO_LADDER);
+        k.fill(hc.x1() + 1, 0, hc.z2() - 1, hc.x2() - 1, 1, hc.z2() - 1, "minecraft:bookshelf");
+        k.set(hc.cx(), 0, hc.z2() - 1, "minecraft:chiseled_bookshelf[facing=north]");
+        k.fill(hc.x2(), 0, hc.z1() + 2, hc.x2(), 2, hc.z1() + 3, "minecraft:cracked_deepslate_bricks");
+        k.set(hc.x1() + 1, 0, hc.z1() + 1, "minecraft:lectern[facing=south]");
+        Bld hd = k.house(2710, 3469, 2715, 3473, 1, flat, 'e', FURN | FLAT | NO_LADDER);
+        Bld he = k.house(2699, 3469, 2705, 3476, 1, flat, 'n', FURN | FLAT | NO_LADDER);
         seersCourse(k, bank, hb, hc, hd, he);
-
-        // --- Spinning wheel house (wheel upstairs) ---
-        Bld spin = k.house(2702, 3486, 2707, 3492, 2, SEERS, 's', FURN);
-        k.set(spin.x1() + 2, 4, spin.z2() - 2, WHEEL);
-        k.set(spin.x1() + 1, 4, spin.z2() - 1, "minecraft:white_wool");
-        k.set(spin.x1() + 1, 0, spin.z2() - 1, "minecraft:loom[facing=east]");
+        // F: the stone house in the walled yew grove south-west of town, 2690-2703 x 3458-3466 (door east at 3462)
+        String[] fPlan = {
+                "ffffffffffffff", // 3466
+                "ffffffffffffff",
+                "ffffffffffffff",
+                "ffffffffffffff",
+                "ffffffffffffff", // 3462
+                "ffffffffffffff",
+                "ffffffffffffff",
+                "ffffffffffffff",
+                "ffffffffffffff", // 3458
+        };
+        mt.bld(2690, 3466, "f", fPlan).wall(SB).trim("minecraft:stripped_spruce_log[axis=y]")
+                .floor("minecraft:spruce_planks", "minecraft:spruce_planks").roof("minecraft:spruce_stairs", "minecraft:spruce_planks")
+                .door(2703, 3462, 'e', "spruce").build();
+        k.set(KandarinKit.X(2691), 0, KandarinKit.Z(3465), "minecraft:white_bed[facing=south,part=foot]");
+        k.set(KandarinKit.X(2696), 0, KandarinKit.Z(3462), "minecraft:crafting_table");
+        k.set(KandarinKit.X(2702), 0, KandarinKit.Z(3459) + 1, "minecraft:chest[facing=north]");
 
         // --- Forester's Arms: OSRS footprint 2689-2700 x 3487-3498 (mejrs layers_osrs), door south at 2694-2695,
         // the back room 2697-2700 x 3487-3493 behind its own door; OSRS has stairs up at 2698,3495, here a
@@ -123,26 +173,6 @@ final class KandarinSeers {
             k.bed(x, 4, pub.z1() + 1, "green");
         }
         k.set(pub.x1() - 1, 2, pub.z2() + 1, "minecraft:spruce_fence");
-
-        // --- Elemental Workshop house ---
-        Pal ewPal = STONE.wall("minecraft:deepslate_bricks").roof("minecraft:cobblestone");
-        Bld ew = k.house(2716, 3475, 2721, 3481, 1, ewPal, 'n', NO_LADDER);
-        k.fill(ew.x1() + 1, 0, ew.z2() - 1, ew.x2() - 1, 1, ew.z2() - 1, "minecraft:bookshelf");
-        k.set(ew.cx(), 0, ew.z2() - 1, "minecraft:chiseled_bookshelf[facing=north]");
-        k.fill(ew.x2(), 0, ew.z1() + 2, ew.x2(), 2, ew.z1() + 3, "minecraft:cracked_deepslate_bricks");
-        k.set(ew.x1() + 1, 0, ew.z1() + 1, "minecraft:lectern[facing=south]");
-
-        // --- Range house, archery, fillers ---
-        Bld rh = k.house(2730, 3475, 2735, 3480, 1, SEERS, 'n', FURN | NO_LADDER);
-        k.set(rh.cx(), 0, rh.z2() - 1, RANGE);
-        Bld arch = k.house(2701, 3497, 2707, 3503, 1, SEERS, 's', NO_LADDER);
-        k.counter(arch, ARCHERY, "oak");
-        k.set(arch.x1() + 1, 0, arch.z2() - 1, "minecraft:fletching_table");
-        k.house(2690, 3476, 2695, 3481, 1, SEERS, 'n', FURN);
-        k.house(2699, 3476, 2704, 3481, 2, SEERS, 'n', FURN);
-        k.house(2715, 3457, 2720, 3462, 1, SEERS, 'e', FURN);
-        k.house(2722, 3497, 2728, 3502, 1, SEERS, 's', FURN);
-        k.house(2709, 3497, 2715, 3503, 2, SEERS.roof("minecraft:spruce"), 's', FURN);
 
         // --- Courthouse: OSRS 2732-2740 x 3464-3471 on its pale stone terrace 2731-2740 x 3463-3474, door north at
         // 2735-2736, the court room with the two holding rooms along the south (doors 2734 and 2738) ---
@@ -200,7 +230,7 @@ final class KandarinSeers {
         for (int y = 3439; y <= 3449; y += 3) {
             k.at(2753, y, 0, "minecraft:beehive[facing=west]");
         }
-        int[][] yews = {{2690, 3460}, {2696, 3458}, {2702, 3461}, {2708, 3457}};
+        int[][] yews = {{2706, 3463}, {2711, 3464}, {2706, 3458}, {2711, 3457}}; // the grove east of house F (approx)
         for (int[] t : yews) {
             k.bigTree(KandarinKit.X(t[0]), KandarinKit.Z(t[1]), 7, 3, "minecraft:dark_oak_log", "minecraft:dark_oak_leaves");
         }
@@ -275,25 +305,26 @@ final class KandarinSeers {
         k.fill(rx, top, hb.z2() + 1, rx, top, hc.z1() - 1, "minecraft:dark_oak_slab[type=top]");
         k.fill(rx, top - 1, hb.z2() + 1, rx, top - 1, hb.z2() + 1, "minecraft:dark_oak_fence");
         k.set(rx, top, hc.z1() + 1, obstacle(c, 2));
-        // 3: jump west onto house D
-        int z3 = KandarinKit.Z(3469);
-        k.set(hc.x1(), top + 1, z3, AIR);
-        k.set(hd.x2(), top + 1, z3, AIR);
-        k.fill(hd.x2() + 1, top, z3, hc.x1() - 1, top, z3, "minecraft:oak_planks");
-        k.set(hd.x2() + 2, top, z3, AIR);
-        k.set(hd.x2() - 1, top, z3, obstacle(c, 3));
-        // 4: jump west onto house E
-        int z4 = KandarinKit.Z(3470);
+        // 3: jump the gap south onto house D
+        int x3 = KandarinKit.X(2712);
+        k.set(x3, top + 1, hc.z2(), AIR);
+        k.set(x3, top + 1, hd.z1(), AIR);
+        k.fill(x3, top, hc.z2() + 1, x3, top, hd.z1() - 1, "minecraft:oak_planks");
+        k.set(x3, top, hc.z2() + 2, AIR);
+        k.set(x3, top, hd.z1() + 1, obstacle(c, 3));
+        // 4: jump the gap west onto house E
+        int z4 = KandarinKit.Z(3471);
         k.set(hd.x1(), top + 1, z4, AIR);
         k.set(he.x2(), top + 1, z4, AIR);
         k.fill(he.x2() + 1, top, z4, hd.x1() - 1, top, z4, "minecraft:oak_planks");
         k.set(he.x2() + 2, top, z4, AIR);
         k.set(he.x2() - 1, top, z4, obstacle(c, 4));
-        // 5: jump off the edge onto the hay
-        int gx = he.x1() - 4;
-        k.set(he.x1(), top + 1, z4, AIR);
-        k.fill(gx - 1, -1, z4 - 1, gx + 1, -1, z4 + 1, HAY);
-        k.set(gx, -1, z4, obstacle(c, 5));
+        // 5: jump off the south edge onto the hay (OSRS lands at 2704, 3464)
+        int gx = KandarinKit.X(2703);
+        int gz = KandarinKit.Z(3467);
+        k.set(gx, top + 1, he.z2(), AIR);
+        k.fill(gx - 1, -1, gz - 1, gx + 1, -1, gz + 1, HAY);
+        k.set(gx, -1, gz, obstacle(c, 5));
     }
 
     static void churchInterior(KandarinKit k, Bld ch) {
