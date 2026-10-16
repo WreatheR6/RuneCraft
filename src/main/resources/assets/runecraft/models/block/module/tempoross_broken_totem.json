@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/tempoross_broken_totem_side",
+    "top": "runecraft:block/module/tempoross_broken_totem_top",
+    "bottom": "runecraft:block/module/tempoross_broken_totem_bottom"
+  }
+}

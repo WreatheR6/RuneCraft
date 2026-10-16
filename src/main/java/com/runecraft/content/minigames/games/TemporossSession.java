@@ -2,6 +2,7 @@ package com.runecraft.content.minigames.games;
 
 import com.runecraft.action.ActionManager;
 import com.runecraft.collection.CollectionLog;
+import com.runecraft.content.minigames.Arena;
 import com.runecraft.content.minigames.MinigameData;
 import com.runecraft.content.minigames.MinigameSession;
 import com.runecraft.osrs.Skill;
@@ -29,8 +30,10 @@ import java.util.UUID;
 /**
  * Tempoross: harpoon harpoonfish, cook them at the shrine, and load them into the cannons to drain
  * Tempoross's energy. At 0% energy the spirit pool opens; harpoon it to drain his essence before
- * he recovers. Tether to a totem pole when a colossal wave comes or lose your fish. Subduing him
- * with 2,000+ points earns reward permits for the reward pool in the Ruins of Unkah.
+ * he recovers. His attacks deal no damage (OSRS Wiki): tether to a totem pole with a rope when a colossal
+ * wave comes or lose fish and tools, repair totems the wave breaks with a hammer, and douse the fires his
+ * lightning lights with buckets of water (filled at the pump) before they spread and burn your supplies.
+ * Subduing him with 2,000+ points earns reward permits for the reward pool in the Ruins of Unkah.
  */
 public class TemporossSession extends MinigameSession {
     private static final Random POOL_RANDOM = new Random();
@@ -39,6 +42,13 @@ public class TemporossSession extends MinigameSession {
     /** Combat Achievement conditions per player: cannons loaded (by x position), wave hits, permits earned. */
     private final Map<UUID, java.util.Set<String>> caPlayerFlags = new HashMap<>();
     private final Map<UUID, java.util.Set<Integer>> cannonsLoaded = new HashMap<>();
+    /** Burning fires and the tick each was lit (it spreads every {@code FIRE_SPREAD_TICKS}). */
+    private final Map<BlockPos, Long> fires = new HashMap<>();
+    private final Map<UUID, Integer> doused = new HashMap<>();
+    /** Totem poles (arena x offsets) broken by a wave until someone repairs them. */
+    private final java.util.Set<Integer> brokenTotems = new java.util.HashSet<>();
+    private static final int[] TOTEM_X = {-12, 12};
+    private static final int TOTEM_Z = 14;
     private int energy = 100;
     private int essence = 100;
     private long vulnerableUntil = -1;
@@ -68,8 +78,11 @@ public class TemporossSession extends MinigameSession {
         place(-6, -10, "tempoross_cannon");
         place(6, -10, "tempoross_cannon");
         place(0, 4, "tempoross_shrine");
-        place(-12, 14, "tempoross_totem");
-        place(12, 14, "tempoross_totem");
+        for (int x : TOTEM_X) {
+            place(x, TOTEM_Z, "tempoross_totem");
+        }
+        place(-3, 10, "tempoross_supplies");
+        place(3, 10, "tempoross_water_pump");
         place(0, 20, "minigame_exit");
     }
 
@@ -92,6 +105,7 @@ public class TemporossSession extends MinigameSession {
         }
         waveAt = ticks + Tempoross.WAVE_INTERVAL;
         broadcastRed("Tempoross rises from the sea!");
+        broadcast("Ropes, hammers and buckets are in the supply crate; fill buckets at the water pump.");
     }
 
     private void addPoints(ServerPlayerEntity p, int amount) {
@@ -165,7 +179,64 @@ public class TemporossSession extends MinigameSession {
                 }
                 return true;
             }
+            case "tempoross_supplies" -> {
+                int given = 0;
+                for (String tool : new String[]{"rope", "hammer", "bucket"}) {
+                    if (!Inv.has(player, tool, 1) && !(tool.equals("bucket") && Inv.has(player, "bucket_of_water", 1))) {
+                        Inv.give(player, tool, 1);
+                        given++;
+                    }
+                }
+                if (!Inv.has(player, "harpoon", 1) && !Inv.has(player, "dragon_harpoon", 1)) {
+                    Inv.give(player, "harpoon", 1);
+                    given++;
+                }
+                Msg.game(player, given > 0 ? "You take some supplies from the crate." : "You already have everything you need.");
+                return true;
+            }
+            case "tempoross_water_pump" -> {
+                int n = Inv.remove(player, "bucket", 28);
+                if (n == 0) {
+                    Msg.game(player, "You need an empty bucket to fill.");
+                } else {
+                    Inv.give(player, "bucket_of_water", n);
+                    Msg.game(player, "You fill " + (n == 1 ? "the bucket" : n + " buckets") + " with water.");
+                }
+                return true;
+            }
+            case "tempoross_fire" -> {
+                if (Inv.remove(player, "bucket_of_water", 1) == 0) {
+                    Msg.game(player, "You need a bucket of water to douse the fire.");
+                    return true;
+                }
+                Inv.give(player, "bucket", 1);
+                douse(pos);
+                addPoints(player, Tempoross.POINTS_DOUSE);
+                int n = doused.merge(player.getUuid(), 1, Integer::sum);
+                if (n >= Tempoross.MASTER_OF_BUCKETS) {
+                    caFlag(player, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_FIVE_FIRES);
+                }
+                Msg.game(player, "You douse the fire.");
+                return true;
+            }
+            case "tempoross_broken_totem" -> {
+                if (!Inv.has(player, "hammer", 1) && !Inv.has(player, "imcando_hammer", 1)) {
+                    Msg.game(player, "You need a hammer to repair this.");
+                    return true;
+                }
+                int dx = pos.getX() - origin.getX();
+                brokenTotems.remove(dx);
+                place(dx, pos.getZ() - origin.getZ(), "tempoross_totem");
+                addPoints(player, Tempoross.POINTS_REPAIR);
+                caFlag(player, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_TETHER_REPAIRED);
+                Msg.game(player, "You repair the totem pole.");
+                return true;
+            }
             case "tempoross_totem" -> {
+                if (!Inv.has(player, "rope", 1)) {
+                    Msg.game(player, "You need a rope to tether yourself.");
+                    return true;
+                }
                 if (waveAt - ticks <= Tempoross.WAVE_WARNING) {
                     tethered.put(player.getUuid(), waveAt + 2);
                     addPoints(player, Tempoross.POINTS_TETHER);
@@ -211,21 +282,44 @@ public class TemporossSession extends MinigameSession {
         if (ticks == waveAt - Tempoross.WAVE_WARNING) {
             broadcastRed("A colossal wave closes in... Tether yourself to a totem pole!");
         }
-        if (ticks >= waveAt) {
+        boolean attacking = energy > Tempoross.ATTACKS_STOP_ENERGY && !vulnerable();
+        if (ticks >= waveAt && !attacking) {
+            waveAt = ticks + Tempoross.WAVE_INTERVAL; // no attacks at 10% energy or below
+        } else if (ticks >= waveAt) {
             waveAt = ticks + Tempoross.WAVE_INTERVAL;
             for (ServerPlayerEntity p : online()) {
                 if (tethered.getOrDefault(p.getUuid(), -1L) >= ticks) {
                     Msg.game(p, "You hold on tight as the wave crashes over you.");
                     continue;
                 }
+                // No damage (OSRS Wiki): the wave washes fish and minigame tools away.
                 int lost = Inv.remove(p, "raw_harpoonfish", 1 + random.nextInt(10)) + Inv.remove(p, "harpoonfish", random.nextInt(5));
+                for (String tool : new String[]{"hammer", "rope", "bucket", "bucket_of_water"}) {
+                    if (random.nextInt(3) == 0) { // approx
+                        lost += Inv.remove(p, tool, 1);
+                    }
+                }
                 ActionManager.cancel(p);
-                hurt(p, 5 + random.nextInt(6));
                 caFlag(p, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_WAVE_HIT);
-                Msg.red(p, "The wave slams into you" + (lost > 0 ? " and washes away " + lost + " fish!" : "!"));
+                Msg.red(p, "The wave slams into you" + (lost > 0 ? " and washes away " + lost + " item" + (lost > 1 ? "s!" : "!") : "!"));
+            }
+            for (BlockPos f : new java.util.ArrayList<>(fires.keySet())) {
+                douse(f); // the wave puts out every fire
+            }
+            int chance = Tempoross.tetherBreakChance(Math.min(1.0, ticks / 3000.0));
+            for (int x : TOTEM_X) {
+                if (!brokenTotems.contains(x) && random.nextInt(100) < chance) {
+                    brokenTotems.add(x);
+                    place(x, TOTEM_Z, "tempoross_broken_totem");
+                    broadcastRed("The wave smashes a totem pole! Repair it with a hammer.");
+                }
             }
             world.spawnParticles(ParticleTypes.SPLASH, origin.getX(), origin.getY() + 2, origin.getZ(), 200, 15, 1, 15, 0.2);
         }
+        if (attacking && ticks % Tempoross.LIGHTNING_INTERVAL == Tempoross.LIGHTNING_INTERVAL / 2) {
+            lightning();
+        }
+        tickFires();
         if (vulnerable()) {
             BlockPos pool = rel(0, 2, -12);
             world.spawnParticles(ParticleTypes.GLOW, pool.getX() + 0.5, pool.getY(), pool.getZ() + 0.5, 5, 0.6, 0.6, 0.6, 0);
@@ -233,6 +327,70 @@ public class TemporossSession extends MinigameSession {
         if (ticks > 3000) {
             broadcast("Tempoross escapes into the storm.");
             end(false);
+        }
+    }
+
+    /** Lightning strikes near the players and lights fires; anyone standing where one lands is caught in it. */
+    private void lightning() {
+        List<ServerPlayerEntity> on = online();
+        if (on.isEmpty()) {
+            return;
+        }
+        broadcastRed("A strong wind blows as clouds roll in... lightning strikes!");
+        for (int i = 0; i < Tempoross.FIRES_PER_STRIKE && fires.size() < Tempoross.MAX_FIRES; i++) {
+            BlockPos near = relPos(on.get(random.nextInt(on.size())));
+            BlockPos at = randomFloor(near.getX(), near.getZ(), 4);
+            light(at);
+        }
+    }
+
+    private void light(BlockPos at) {
+        if (fires.containsKey(at) || !world.getBlockState(at).isAir()) {
+            return;
+        }
+        fires.put(at, ticks);
+        Arena.set(world, at, Arena.module("tempoross_fire"));
+        world.spawnParticles(ParticleTypes.ELECTRIC_SPARK, at.getX() + 0.5, at.getY() + 1, at.getZ() + 0.5, 20, 0.3, 1.0, 0.3, 0.1);
+    }
+
+    private void douse(BlockPos at) {
+        if (fires.remove(at) != null) {
+            Arena.set(world, at, Blocks.AIR.getDefaultState());
+            world.spawnParticles(ParticleTypes.CLOUD, at.getX() + 0.5, at.getY() + 0.8, at.getZ() + 0.5, 8, 0.3, 0.3, 0.3, 0.02);
+        }
+    }
+
+    /** Fires spread when left alone and burn the supplies of anyone standing in them every 2 ticks. */
+    private void tickFires() {
+        if (fires.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<BlockPos, Long> f : new java.util.ArrayList<>(fires.entrySet())) {
+            BlockPos at = f.getKey();
+            world.spawnParticles(ParticleTypes.FLAME, at.getX() + 0.5, at.getY() + 1.1, at.getZ() + 0.5, 3, 0.3, 0.3, 0.3, 0.01);
+            if ((ticks - f.getValue()) > 0 && (ticks - f.getValue()) % Tempoross.FIRE_SPREAD_TICKS == 0 && fires.size() < Tempoross.MAX_FIRES) {
+                BlockPos rel = at.subtract(origin);
+                light(randomFloor(rel.getX(), rel.getZ(), 2));
+            }
+        }
+        if (ticks % Tempoross.FIRE_BURN_INTERVAL != 0) {
+            return;
+        }
+        for (ServerPlayerEntity p : online()) {
+            for (BlockPos at : fires.keySet()) {
+                double dx = p.getX() - (at.getX() + 0.5);
+                double dz = p.getZ() - (at.getZ() + 0.5);
+                if (dx * dx + dz * dz < 1.0 && Math.abs(p.getY() - at.getY()) < 1.5) {
+                    caFlag(p, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_FIRE_HIT);
+                    for (String item : Tempoross.LOSABLE) {
+                        if (Inv.remove(p, item, 1) > 0) {
+                            Msg.red(p, "The fire burns your " + item.replace('_', ' ') + "!");
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
         }
     }
 

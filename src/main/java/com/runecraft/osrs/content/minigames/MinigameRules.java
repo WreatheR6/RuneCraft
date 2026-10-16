@@ -179,6 +179,28 @@ public final class MinigameRules {
         public static final int VULNERABLE_TICKS = 25;
         public static final int WAVE_INTERVAL = 40;
         public static final int WAVE_WARNING = 6;
+        /**
+         * Tempoross's attacks deal no damage (OSRS Wiki): a wave washes fish and tools (hammer, rope, buckets) away from anyone
+         * not tethered, a lightning strike lights fires that spread unless doused with a bucket of water and destroy those
+         * resources every 2 ticks while a player stands in them. Attacks stop at 10% energy. Interval, fires per strike,
+         * spread time and cap are approx.
+         */
+        public static final int LIGHTNING_INTERVAL = 30;
+        public static final int FIRES_PER_STRIKE = 2;
+        public static final int FIRE_SPREAD_TICKS = 15;
+        public static final int MAX_FIRES = 12;
+        public static final int FIRE_BURN_INTERVAL = 2;
+        public static final int ATTACKS_STOP_ENERGY = 10;
+        /** Fires to douse in one fight for "Master of Buckets". */
+        public static final int MASTER_OF_BUCKETS = 5;
+        /** Items a wave or fire can destroy (OSRS Wiki); nothing else is ever lost. */
+        public static final java.util.List<String> LOSABLE = java.util.List.of("raw_harpoonfish", "harpoonfish", "hammer", "rope",
+                "bucket", "bucket_of_water");
+
+        /** Chance (percent) that a wave breaks a mast or totem pole: 15% rising to 25% with the storm's intensity (0-1). */
+        public static int tetherBreakChance(double intensity) {
+            return 15 + (int) Math.round(10 * Math.max(0, Math.min(1, intensity)));
+        }
 
         private Tempoross() {
         }

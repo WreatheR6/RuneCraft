@@ -77,6 +77,10 @@ public final class MinigameWorld {
             {"tempoross_shrine", "Shrine", "C06030", "fire_shrine"},
             {"tempoross_totem", "Totem pole", "8A6A3A", "totem"},
             {"tempoross_spirit_pool", "Spirit pool", "60E0E0", "portal_glow"},
+            {"tempoross_fire", "Fire", "E06020", "fire_brazier"},
+            {"tempoross_supplies", "Supply crate", "8A6A3A", "crate"},
+            {"tempoross_water_pump", "Water pump", "5A6A7A", "machine"},
+            {"tempoross_broken_totem", "Broken totem pole", "5A4A2A", "totem"},
             {"tempoross_reward_pool", "Reward pool", "4080C0", "portal_glow"},
             // Guardians of the Rift
             {"guardian_remains", "Huge guardian remains", "6A5AC0", "rock"},

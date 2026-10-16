@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -124,8 +125,130 @@ class BossMechanicsTest {
             ids.add(m.id);
         }
         for (String id : new String[]{BossMechanics.YAMA_JUDGE, BossMechanics.YAMA_VOID_FLARE, BossMechanics.UNSTABLE_ICE,
-                BossMechanics.UR_MAGGOT_LARVA, BossMechanics.PHOSANI_SLEEPWALKER}) {
+                BossMechanics.UR_MAGGOT_LARVA, BossMechanics.PHOSANI_SLEEPWALKER, BossMechanics.GROWTHLING,
+                BossMechanics.STRANGLER_SPORE}) {
             assertTrue(ids.contains(id), id);
         }
+    }
+
+    @Test
+    void bryophytaGrowthlings() {
+        // OSRS Wiki "Growthling": level 37, 10 hitpoints, slash max 5 every 4 ticks; three at a time, 1/5 per attack.
+        MonsterDef g = new BossesContent().monsters().stream().filter(m -> m.id.equals(BossMechanics.GROWTHLING)).findFirst().orElseThrow();
+        assertEquals(37, g.combatLevel);
+        assertEquals(10, g.hitpoints);
+        assertEquals(4, g.attackSpeed);
+        assertEquals(5, g.attacks.get(0).maxHit());
+        assertEquals(com.runecraft.osrs.AttackType.SLASH, g.attacks.get(0).style());
+        assertEquals(3, BossMechanics.GROWTHLINGS);
+        assertEquals(5, BossMechanics.GROWTHLING_CHANCE);
+        assertEquals(20, BossMechanics.GROWTHLING_COOLDOWN);
+        // Only an axe (not the blessed axe) or magic secateurs finishes one.
+        assertTrue(BossMechanics.cutsGrowthling("rune_axe", true));
+        assertTrue(BossMechanics.cutsGrowthling("magic_secateurs", false));
+        assertFalse(BossMechanics.cutsGrowthling("blessed_axe", true));
+        assertFalse(BossMechanics.cutsGrowthling("rune_battleaxe", false));
+        assertFalse(BossMechanics.cutsGrowthling(null, false));
+        // "Quick Cutter": all three within 3 seconds (5 ticks) of the first dying.
+        assertTrue(BossMechanics.quickCut(100, 105, 3));
+        assertFalse(BossMechanics.quickCut(100, 106, 3));
+        assertFalse(BossMechanics.quickCut(100, 101, 2));
+    }
+
+    @Test
+    void oborNumbers() {
+        // Melee 22, ranged 26 halved (not blocked) by Protect from Missiles; "Back to the Wall" allows a one-square push.
+        assertEquals(22, BossMechanics.OBOR_MELEE_MAX);
+        assertEquals(26, BossMechanics.OBOR_RANGED_MAX);
+        assertEquals(13, BossMechanics.oborRangedThroughPrayer(26));
+        assertFalse(BossMechanics.oborPushedTooFar(0));
+        assertFalse(BossMechanics.oborPushedTooFar(1));
+        assertTrue(BossMechanics.oborPushedTooFar(2));
+        assertEquals(22, com.runecraft.osrs.data.Boss.OBOR.maxHit());
+    }
+
+    @Test
+    void vardorvisBleed() {
+        // 3 every 3 ticks for 14 ticks standing still (5 hits = 15), every tick while running.
+        BossMechanics.Bleed still = new BossMechanics.Bleed();
+        still.start();
+        int total = 0;
+        int hits = 0;
+        for (int t = 0; t < 20; t++) {
+            int d = still.tick(false);
+            total += d;
+            hits += d > 0 ? 1 : 0;
+        }
+        assertEquals(5, hits);
+        assertEquals(15, total);
+        assertFalse(still.active());
+        BossMechanics.Bleed running = new BossMechanics.Bleed();
+        running.start();
+        int ran = 0;
+        for (int t = 0; t < 20; t++) {
+            ran += running.tick(true);
+        }
+        assertEquals(14 * 3, ran);
+        assertEquals(35, BossMechanics.VARDORVIS_AXE_MAX);
+        assertEquals(25, BossMechanics.VARDORVIS_STRANGLE_DAMAGE);
+        assertEquals(5, BossMechanics.VARDORVIS_STRANGLE_TICKS);
+    }
+
+    @Test
+    void burns() {
+        // OSRS Wiki "Burn": 1 every 4 ticks, a full burn is 10 hits; up to 5 stack, each adding 1 per hit.
+        BossMechanics.Burn b = new BossMechanics.Burn();
+        b.add(BossMechanics.BURN_FULL);
+        int total = 0;
+        for (int t = 0; t < 40; t++) {
+            int d = b.tick();
+            if (d > 0) {
+                assertEquals(3, t % 4);
+            }
+            total += d;
+        }
+        assertEquals(10, total);
+        assertEquals(0, b.stacks());
+        for (int i = 0; i < 7; i++) {
+            b.add(BossMechanics.YAMA_METEOR_BURN);
+        }
+        assertEquals(5, b.stacks());
+        for (int t = 0; t < 3; t++) {
+            assertEquals(0, b.tick());
+        }
+        assertEquals(5, b.tick());
+        assertEquals(8, BossMechanics.YAMA_METEOR_BURN);
+    }
+
+    @Test
+    void yamaDefences() {
+        com.runecraft.osrs.AttackType magic = com.runecraft.osrs.AttackType.MAGIC;
+        // OSRS Wiki infobox: magic -30 against a meleeing target, +60 against a mage, 81 in phase 3.
+        assertEquals(-30, BossMechanics.yamaDefenceBonus(magic, false, false, null));
+        assertEquals(60, BossMechanics.yamaDefenceBonus(magic, true, false, null));
+        assertEquals(81, BossMechanics.yamaDefenceBonus(magic, true, true, null));
+        assertEquals(135, BossMechanics.yamaDefenceBonus(com.runecraft.osrs.AttackType.STAB, false, true, null));
+        assertEquals(108, BossMechanics.yamaDefenceBonus(com.runecraft.osrs.AttackType.SLASH, false, true, null));
+        assertEquals(449, BossMechanics.yamaDefenceBonus(com.runecraft.osrs.AttackType.CRUSH, false, true, null));
+        assertEquals(297, BossMechanics.yamaRangedDefences(true, null)[1]);
+        assertEquals(333, BossMechanics.yamaRangedDefences(false, null)[0]);
+        // Glyphic attenuation: 666 against everything but crush.
+        assertEquals(666, BossMechanics.yamaDefenceBonus(magic, false, false, YamaContract.GLYPHIC_ATTENUATION));
+        assertEquals(80, BossMechanics.yamaDefenceBonus(com.runecraft.osrs.AttackType.CRUSH, false, false, YamaContract.GLYPHIC_ATTENUATION));
+        // The base phase 1-2 bonuses match the BossDef.
+        BossDef yama = ContentRegistry.boss("yama");
+        assertEquals(yama.defenceBonus(com.runecraft.osrs.AttackType.STAB),
+                BossMechanics.yamaDefenceBonus(com.runecraft.osrs.AttackType.STAB, false, false, null));
+        assertEquals(yama.defenceBonus(com.runecraft.osrs.AttackType.CRUSH),
+                BossMechanics.yamaDefenceBonus(com.runecraft.osrs.AttackType.CRUSH, false, false, null));
+        // Fire orbs are magic, shadow orbs ranged.
+        assertEquals(magic, ModernBosses.YAMA_FIRE.style());
+        assertEquals(com.runecraft.osrs.AttackType.RANGED, ModernBosses.YAMA_SHADOW.style());
+    }
+
+    @Test
+    void maggotCarrion() {
+        assertEquals(1, BossMechanics.MAGGOT_CARRION_HEAL);
+        assertTrue(BossMechanics.SCRIPTED_ATTACKS.containsAll(Set.of("bleed", "strangle", "burn", "knockback")));
     }
 }

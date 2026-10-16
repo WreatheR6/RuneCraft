@@ -32,9 +32,10 @@ public final class ModernBosses {
     // ================= Yama =================
     // Auto-attacks alternate between fire (ranged) and shadow (magic) projectiles, max hit 46; the colour of the
     // charging orb tells which prayer to use. Between phases (66% / 33%) the Judge of Yama's void flares appear.
-    public static final AttackDef YAMA_FIRE = AttackDef.of("fire_orb", AttackType.RANGED, 46, 16, 3)
+    // Yama's fire orb is his magic attack and the shadow orb his ranged one (OSRS Wiki).
+    public static final AttackDef YAMA_FIRE = AttackDef.of("fire_orb", AttackType.MAGIC, 46, 16, 3)
             .telegraph(2, "Yama's orb blazes with fire...").particle("minecraft:flame");
-    public static final AttackDef YAMA_SHADOW = AttackDef.of("shadow_orb", AttackType.MAGIC, 46, 16, 3)
+    public static final AttackDef YAMA_SHADOW = AttackDef.of("shadow_orb", AttackType.RANGED, 46, 16, 3)
             .telegraph(2, "Yama's orb swirls with shadow...").particle("minecraft:soul_fire_flame");
     public static final AttackDef YAMA_SLASH = AttackDef.of("claw_swipe", AttackType.SLASH, 46, 4, 2);
     /** Fire meteors rain on your tile: move or take a huge unprotectable hit. */
@@ -139,6 +140,16 @@ public final class ModernBosses {
                 MonsterDef.of(BossMechanics.UR_MAGGOT_LARVA, "Ur-maggot larvae").level(1).stats(10, 1, 1, 1, 1, 1) // hitpoints approx
                         .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()
                         .skin(0xD8C8A0, 0xC0B080, 0xA09060, 0x8A2A2A).size(0.6f, 0.4f, 0.9f).moveSpeed(0.0),
+                // Bryophyta's growthlings (OSRS Wiki): level 37, 10 hitpoints, slash 5 every 4 ticks; only an axe or magic
+                // secateurs finishes one (the Bryophyta script in content/bosses/OldBossScripts sets that rule).
+                MonsterDef.of(BossMechanics.GROWTHLING, "Growthling").level(37).stats(10, 40, 38, 40, 1, 1).speed(4)
+                        .attack(AttackDef.of("melee", AttackType.SLASH, 5, 1.5, 1))
+                        .skin(0x4A7A2A, 0x3A6A1A, 0x2A4A10, 0x9AC04A).size(0.6f, 0.8f, 0.8f),
+                // Vardorvis' Strangle spores: destroy them all (any hit) before the tendrils tighten (approx: the OSRS spores
+                // are clicked on the screen; here they hover around the strangled player).
+                MonsterDef.of(BossMechanics.STRANGLER_SPORE, "Spore").level(1).stats(1, 1, 1, 1, 1, 1)
+                        .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()
+                        .skin(0x8AC04A, 0x6A9A2A, 0x4A7A1A, 0xD0FF60).size(0.5f, 0.5f, 0.7f).moveSpeed(0.0),
                 // Phosani's sleepwalkers: 10 hitpoints, die to any hit; walk to the Nightmare (moved by the script).
                 MonsterDef.of(BossMechanics.PHOSANI_SLEEPWALKER, "Sleepwalker").level(1).stats(10, 1, 1, 1, 1, 1)
                         .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()

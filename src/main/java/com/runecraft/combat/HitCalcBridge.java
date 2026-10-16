@@ -132,6 +132,9 @@ public final class HitCalcBridge {
         AttackType against = PlayerHitCalc.specialDefenceType(in);
         in.targetDefenceBonus = stats.defenceBonus(against != null ? against : in.type);
         in.targetRangedDefence = stats.rangedDefences();
+        if (target instanceof com.runecraft.boss.DataBossEntity boss && boss.script() != null) {
+            boss.script().adjustDefence(boss, p, against != null ? against : in.type, in);
+        }
         in.weaknessElement = stats.weakness();
         in.weaknessPercent = stats.weaknessPercent();
         in.targetTbowMagic = Math.max(stats.magic(), stats.attackBonus(AttackType.MAGIC));

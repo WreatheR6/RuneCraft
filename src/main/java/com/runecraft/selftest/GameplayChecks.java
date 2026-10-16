@@ -108,6 +108,8 @@ final class GameplayChecks {
         for (String id : ModEntities.DATA_BOSS_TYPES.keySet()) {
             checks.add(new SelfTest.Check("boss:" + id, () -> g.dataBoss(id)));
         }
+        checks.add(new SelfTest.Check("boss:bryophyta_growthlings", g::bryophytaGrowthlings));
+        checks.add(new SelfTest.Check("boss:obor_knockback", g::oborKnockback));
         for (Map.Entry<String, int[]> e : destinations().entrySet()) {
             checks.add(new SelfTest.Check("teleport:" + e.getKey(), () -> g.teleport(e.getValue()[0], e.getValue()[1])));
         }
@@ -459,6 +461,41 @@ final class GameplayChecks {
             throw failure("BossService.summon spawned nothing");
         }
         return fight(found.get(0), boss.entityId());
+    }
+
+    /** Summons a legacy boss next to the platform (as {@link #legacyBoss}) and returns it. */
+    private BossEntity summonLegacy(Boss boss) {
+        if (boss.key() != null) {
+            Inv.give(p(), boss.key(), 1);
+        }
+        BlockPos at = c.near(0, 0);
+        BossService.summon(p(), c.world, at, boss);
+        List<BossEntity> found = c.world.getEntitiesByType(ModEntities.BOSS_TYPES.get(boss), new Box(at).expand(48), e -> e.isAlive());
+        if (found.isEmpty()) {
+            throw failure("BossService.summon spawned nothing");
+        }
+        return found.get(0);
+    }
+
+    /** Bryophyta's growthlings: summoned three at a time, she is immune while they live (OldBossScripts). */
+    private String bryophytaGrowthlings() {
+        BossEntity boss = summonLegacy(Boss.BRYOPHYTA);
+        try {
+            return com.runecraft.content.bosses.OldBossScripts.selfTestGrowthlings(boss, p());
+        } finally {
+            boss.discard();
+        }
+    }
+
+    /** Obor's knockback slam pushes the player away from him; his ranged attack has its own max hit. */
+    private String oborKnockback() {
+        BossEntity boss = summonLegacy(Boss.OBOR);
+        try {
+            p().requestTeleport(boss.getX() + 2.5, boss.getY(), boss.getZ());
+            return com.runecraft.content.bosses.OldBossScripts.selfTestKnockback(boss, p());
+        } finally {
+            boss.discard();
+        }
     }
 
     private String dataBoss(String id) {

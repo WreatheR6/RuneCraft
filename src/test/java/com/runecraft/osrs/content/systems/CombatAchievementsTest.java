@@ -100,7 +100,7 @@ class CombatAchievementsTest {
 
     @Test
     void awakenedAndDelveTasksAreTracked() {
-        assertEquals(588, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
+        assertEquals(592, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
         for (int id : new int[]{490, 499, 508, 517, 610, 611, 612, 616, 617, 618, 619, 621, 622, 623}) {
             assertTrue(CombatAchievements.task("ca_" + id).track() != Track.UNTRACKED, "ca_" + id);
         }
@@ -121,6 +121,34 @@ class CombatAchievementsTest {
         assertTrue(CombatAchievementRules.meets("onehand", m));
         m.weapons.add("scythe_of_vitur");
         assertFalse(CombatAchievementRules.meets("onehand", m));
+    }
+
+    @Test
+    void round29BossMechanicTasksAreTracked() {
+        for (int id : new int[]{38, 132, 133, 356, 357}) { // 133 is tracked by the description parser (PRAYED)
+            assertTrue(CombatAchievements.task("ca_" + id).track() != Track.UNTRACKED, "ca_" + id);
+        }
+        CombatAchievementRules.Metrics m = new CombatAchievementRules.Metrics();
+        assertFalse(CombatAchievementRules.meets(CombatAchievements.task("ca_38").rule(), m));
+        m.flags.add(com.runecraft.osrs.content.bosses.BossMechanics.FLAG_BRYOPHYTA_QUICK_CUT);
+        assertTrue(CombatAchievementRules.meets(CombatAchievements.task("ca_38").rule(), m));
+        assertTrue(CombatAchievementRules.meets(CombatAchievements.task("ca_132").rule(), m));
+        m.flags.add(com.runecraft.osrs.content.bosses.BossMechanics.FLAG_OBOR_PUSHED);
+        assertFalse(CombatAchievementRules.meets(CombatAchievements.task("ca_132").rule(), m));
+        // The Lone Angler fails on a fire as well as a wave.
+        CombatAchievementRules.Metrics run = new CombatAchievementRules.Metrics();
+        String lone = CombatAchievements.task("ca_359").rule();
+        assertTrue(CombatAchievementRules.meets(lone, run));
+        run.flags.add(CombatAchievements.FLAG_FIRE_HIT);
+        assertFalse(CombatAchievementRules.meets(lone, run));
+        run.flags.add(CombatAchievements.FLAG_FIVE_FIRES);
+        run.flags.add(CombatAchievements.FLAG_TETHER_REPAIRED);
+        assertTrue(CombatAchievementRules.meets(CombatAchievements.task("ca_356").rule(), run));
+        assertTrue(CombatAchievementRules.meets(CombatAchievements.task("ca_357").rule(), run));
+        // Tempoross: a wave breaks a mast or totem 15% of the time, rising to 25% as the storm intensifies.
+        assertEquals(15, com.runecraft.osrs.content.minigames.MinigameRules.Tempoross.tetherBreakChance(0));
+        assertEquals(25, com.runecraft.osrs.content.minigames.MinigameRules.Tempoross.tetherBreakChance(1));
+        assertNotNull(ItemCatalog.get("bucket_of_water"));
     }
 
     @Test

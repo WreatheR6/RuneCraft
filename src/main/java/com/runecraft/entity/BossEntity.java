@@ -30,11 +30,73 @@ import net.minecraft.world.World;
 
 /** A boss with its OSRS signature mechanics, a boss bar, kill counts and collection log drops. */
 public class BossEntity extends OsrsMonsterEntity {
+    /**
+     * Behaviour a content module adds to one of these bosses (Bryophyta's growthlings, Obor's ranged attack and knockback:
+     * {@code content/bosses/OldBossScripts}). One instance per boss entity; every method has a neutral default.
+     */
+    public interface Script {
+        /** Every game tick while the boss is alive. */
+        default void gameTick(BossEntity boss) {
+        }
+
+        /** The style for the next attack ({@code chosen} is the boss's own choice). */
+        default AttackType chooseStyle(BossEntity boss, ServerPlayerEntity target, double distanceSq, AttackType chosen) {
+            return chosen;
+        }
+
+        /** Called before each attack; true when the script performed it itself. */
+        default boolean performAttack(BossEntity boss, ServerPlayerEntity target, AttackType type) {
+            return false;
+        }
+
+        /** Called after the boss's normal attack has been made. */
+        default void afterAttack(BossEntity boss, ServerPlayerEntity target, AttackType type) {
+        }
+
+        default int maxHit(BossEntity boss, ServerPlayerEntity player, AttackType type, int max) {
+            return max;
+        }
+
+        /** Damage of an attack of {@code type} that the matching protection prayer would otherwise block entirely. */
+        default int throughPrayer(BossEntity boss, AttackType type, int damage) {
+            return 0;
+        }
+
+        default int modifyIncoming(BossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            return damage;
+        }
+
+        /** When the boss dies or is removed. */
+        default void onRemoved(BossEntity boss) {
+        }
+    }
+
+    private static final java.util.Map<Boss, java.util.function.Supplier<Script>> SCRIPTS = new java.util.EnumMap<>(Boss.class);
+
+    /** Gives every boss of this kind a script (called once from a module's hooks). */
+    public static void registerScript(Boss boss, java.util.function.Supplier<Script> factory) {
+        SCRIPTS.put(boss, factory);
+    }
+
     private final ServerBossBar bossBar;
     private int attackCounter;
     private AttackType pendingStyle;
     private ServerPlayerEntity pendingTarget;
     private long pendingAt;
+    private Script script;
+    private boolean scriptMade;
+    private AttackType attackStyle;
+
+    /** This boss's module script, or null. */
+    public Script script() {
+        if (!scriptMade) {
+            scriptMade = true;
+            Boss boss = boss();
+            java.util.function.Supplier<Script> factory = boss == null ? null : SCRIPTS.get(boss);
+            script = factory == null ? null : factory.get();
+        }
+        return script;
+    }
 
     public BossEntity(EntityType<? extends HostileEntity> type, World world) {
         super(type, world);
@@ -69,6 +131,9 @@ public class BossEntity extends OsrsMonsterEntity {
     protected void mobTick() {
         super.mobTick();
         bossBar.setPercent(getHealth() / getMaxHealth());
+        if (script() != null && age % ActionManager.MC_TICKS_PER_GAME_TICK == 0 && isAlive()) {
+            script.gameTick(this);
+        }
         if (pendingStyle != null && ActionManager.mcTick() >= pendingAt) {
             if (pendingTarget != null && pendingTarget.isAlive()) {
                 CombatHandler.npcAttack(this, pendingTarget, pendingStyle);
@@ -80,8 +145,18 @@ public class BossEntity extends OsrsMonsterEntity {
 
     @Override
     public AttackType chooseStyle(ServerPlayerEntity target, double distanceSq) {
+        AttackType chosen = baseStyle(target, distanceSq);
+        return script() != null ? script.chooseStyle(this, target, distanceSq, chosen) : chosen;
+    }
+
+    /** Whether a target at this squared distance is in melee reach. */
+    public boolean adjacent(double distanceSq) {
+        return distanceSq < Math.pow(getWidth() * 1.4 + 1.2, 2);
+    }
+
+    private AttackType baseStyle(ServerPlayerEntity target, double distanceSq) {
         Boss boss = boss();
-        boolean adjacent = distanceSq < Math.pow(getWidth() * 1.4 + 1.2, 2);
+        boolean adjacent = adjacent(distanceSq);
         return switch (boss.mechanic()) {
             case MIXED_MAGIC -> adjacent && random.nextBoolean() ? AttackType.CRUSH : AttackType.MAGIC;
             case GRAARDOR -> adjacent && attackCounter % 3 != 2 ? AttackType.CRUSH : AttackType.RANGED;
@@ -95,6 +170,17 @@ public class BossEntity extends OsrsMonsterEntity {
 
     @Override
     public void performAttack(ServerPlayerEntity target, AttackType type) {
+        attackStyle = type;
+        if (script() != null && script.performAttack(this, target, type)) {
+            return;
+        }
+        bossAttack(target, type);
+        if (script != null) {
+            script.afterAttack(this, target, type);
+        }
+    }
+
+    private void bossAttack(ServerPlayerEntity target, AttackType type) {
         Boss boss = boss();
         attackCounter++;
         ServerWorld world = (ServerWorld) getWorld();
@@ -159,6 +245,11 @@ public class BossEntity extends OsrsMonsterEntity {
 
     @Override
     public int maxHitAgainst(ServerPlayerEntity player, AttackType type) {
+        int max = baseMaxHit(type);
+        return script() != null ? script.maxHit(this, player, type, max) : max;
+    }
+
+    private int baseMaxHit(AttackType type) {
         Boss boss = boss();
         return switch (boss.mechanic()) {
             case DHAROK -> {
@@ -175,6 +266,9 @@ public class BossEntity extends OsrsMonsterEntity {
 
     @Override
     public int damageThroughPrayer(int damage) {
+        if (script() != null && attackStyle != null) {
+            return script.throughPrayer(this, attackStyle, damage);
+        }
         Boss boss = boss();
         if (boss.mechanic() == Boss.Mechanic.VERAC && random.nextInt(4) == 0) {
             return damage; // Verac's hits can pierce prayer
@@ -227,6 +321,9 @@ public class BossEntity extends OsrsMonsterEntity {
 
     @Override
     public int modifyIncoming(ServerPlayerEntity attacker, int damage, AttackType type) {
+        if (script() != null) {
+            damage = script.modifyIncoming(this, attacker, damage, type);
+        }
         Boss boss = boss();
         if (boss.mechanic() == Boss.Mechanic.VAMPIRE && damage >= getHealth()
                 && !(Inv.has(attacker, "stake", 1) && Inv.has(attacker, "hammer", 1))) {
@@ -272,5 +369,8 @@ public class BossEntity extends OsrsMonsterEntity {
     public void remove(RemovalReason reason) {
         super.remove(reason);
         bossBar.clearPlayers();
+        if (script != null) {
+            script.onRemoved(this);
+        }
     }
 }
