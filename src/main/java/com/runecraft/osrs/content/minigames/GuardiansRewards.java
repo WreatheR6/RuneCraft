@@ -280,9 +280,23 @@ public final class GuardiansRewards {
         return null;
     }
 
+    /** Chance an intricate pouch holds the tarnished locket while the player has never had one (approx). */
+    public static final double TARNISHED_LOCKET_CHANCE = 1.0 / 20;
+
     /** Contents of an intricate pouch (approx.: a bigger rune, pearl or essence roll). */
     public static List<MinigameReward> openIntricatePouch(DoubleSupplier random) {
+        return openIntricatePouch(random, true);
+    }
+
+    /**
+     * Contents of an intricate pouch; a player who has never owned the tarnished locket (shown to the Lumbridge Guide for
+     * the amulet of the eye, OSRS Wiki) may find it inside.
+     */
+    public static List<MinigameReward> openIntricatePouch(DoubleSupplier random, boolean hasLocket) {
         List<MinigameReward> out = new ArrayList<>();
+        if (!hasLocket && random.getAsDouble() < TARNISHED_LOCKET_CHANCE) {
+            out.add(new MinigameReward("tarnished_locket", 1));
+        }
         if (random.getAsDouble() < 1.0 / 200) {
             out.add(new MinigameReward("blood_essence", 1));
         }
@@ -308,6 +322,7 @@ public final class GuardiansRewards {
         for (Object[] r : TALISMAN_TABLE) {
             ids.add((String) r[0]);
         }
+        ids.add("tarnished_locket");
         ids.addAll(POUCHES);
         ids.addAll(List.of("abyssal_protector", "blood_essence", "pure_essence"));
         return ids;

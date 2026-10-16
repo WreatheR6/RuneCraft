@@ -1876,6 +1876,8 @@ public final class MonsterDropsTable {
         // Elves (Lletya/Prifddinas; the Iorwerth Camp elves don't drop it) <- parsed:Elf Warrior(108), Elf Archer(90) 25/128
         add("elf_warrior", rm(), d("crystal_teleport_seed", 1, 1, 5));
         add("elf_archer", rm(), d("crystal_teleport_seed", 1, 1, 5));
+        // Prifddinas guards <- parsed:Guard (Prifddinas) crystal teleport seed 25/128, enhanced crystal teleport seed 1/1024
+        add("prifddinas_guard", rm(), d("crystal_teleport_seed", 1, 1, 5), d("enhanced_crystal_teleport_seed", 1, 1, 1024));
     }
 
     private static void add(String key, String[] remove, Drop... put) {

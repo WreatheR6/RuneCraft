@@ -94,13 +94,13 @@ final class DiaryObjectsService {
         return Registries.BLOCK.get(RuneCraft.id(id));
     }
 
-    private static boolean isBlock(BlockState state, String id) {
+    static boolean isBlock(BlockState state, String id) {
         Block b = block(id);
         return b != Blocks.AIR && state.isOf(b);
     }
 
     /** Puts a block on the ground at a place; {@code indoors} uses the first floor above sea level (a hall, not the roof). */
-    private static void place(ServerWorld world, BlockPos centre, String id, boolean indoors) {
+    static void place(ServerWorld world, BlockPos centre, String id, boolean indoors) {
         Block b = block(id);
         if (b == Blocks.AIR) {
             return;

@@ -200,11 +200,39 @@ public final class CommonItems {
                 .examine("A scaled blue dragonhide.");
         items.add("crystal_teleport_seed", "Crystal teleport seed", Kind.SIMPLE, "seed", 0x9AE0E0).value(1).weight(0.01)
                 .examine("A seed to be sung into a powerful teleport crystal.");
+        teleportItems(items);
         for (String c : new String[]{"bloodied_blows", "glyphic_attenuation", "divine_severance", "forfeit_breath", "sensory_clouding"}) {
             String words = c.replace('_', ' ');
             items.add("contract_of_" + c, "Contract of " + words, Kind.SIMPLE, "scroll", 0x8A2A2A).value(75000).weight(0.4)
                     .examine("A contract issued by Yama. Present it to him to discuss some new terms.");
         }
+    }
+
+    /**
+     * Round 27 teleport items whose OSRS source lives in another module (round 28; the systems module's Jewellery still
+     * gives them their teleports and worn stats). OSRS Wiki values. Chronicle and teleport cards: Diango's Toy Store (npcs);
+     * mythical cape: Jack's Mythical Cape Store in the Myths' Guild (npcs); music cape: Olaf the Bard in Rellekka (npcs);
+     * grand seed pod: a rare Gnome Restaurant tip (minigames); eternal teleport crystal: sung from an enhanced crystal
+     * teleport seed and 100 crystal shards (bosses, Prifddinas guards drop the seed); tarnished locket: an intricate pouch
+     * (minigames), shown to the Lumbridge Guide for the amulet of the eye (systems).
+     */
+    private static void teleportItems(ItemSink items) {
+        items.add("chronicle", "Chronicle", Kind.SIMPLE, "book", 0x6A3A1A).value(200).stack(1).weight(0.5)
+                .examine("A book that charges with teleport cards.");
+        items.add("teleport_card", "Teleport card", Kind.SIMPLE, "note", 0xE0D0A0).value(100).stack(100000)
+                .examine("Charges the Chronicle with one teleport.");
+        items.add("mythical_cape", "Mythical cape", Kind.SIMPLE, "cape", 0x3A6A4A).value(10_000).stack(1).weight(0.4)
+                .examine("A cape worn by those who have proven themselves in the Myths' Guild.");
+        items.add("music_cape", "Music cape", Kind.SIMPLE, "cape", 0xC03030).value(99_000).stack(1).weight(0.4)
+                .examine("The cape worn by those who have unlocked every song.");
+        items.add("grand_seed_pod", "Grand seed pod", Kind.SIMPLE, "seed", 0x8AB040).value(250).stack(1).weight(0.01)
+                .examine("Squash or launch it to reach the Grand Tree.");
+        items.add("eternal_teleport_crystal", "Eternal teleport crystal", Kind.SIMPLE, "gem", 0xC8F4FF).value(500).stack(1)
+                .examine("A crystal with unlimited teleports to Lletya and Prifddinas.");
+        items.add("enhanced_crystal_teleport_seed", "Enhanced crystal teleport seed", Kind.SIMPLE, "seed", 0xB8F0FF).value(1).stack(1)
+                .weight(0.01).examine("A seed to be sung into an eternal teleport crystal."); // value approx
+        items.add("tarnished_locket", "Tarnished locket", Kind.SIMPLE, "amulet", 0x8A7A5A).value(1).stack(1)
+                .examine("An old locket. The Lumbridge Guide might know something about it."); // value approx
     }
 
     /** Team capes 1-50 (pink 1-10, yellow 11-20, blue 21-30, green 31-40, red 41-50), sold by the Wilderness cape merchants. */

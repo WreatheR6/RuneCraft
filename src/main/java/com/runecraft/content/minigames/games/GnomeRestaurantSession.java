@@ -99,7 +99,7 @@ public class GnomeRestaurantSession extends MinigameSession {
                 MinigameData.of(player).addPoints(player.getUuid(), key, after - before);
                 reward(player, "gnome_restaurant_token", GnomeRestaurant.tokens(before, after));
                 reward(player, "coins", GnomeRestaurant.TIP_MIN + random.nextInt(GnomeRestaurant.TIP_MAX - GnomeRestaurant.TIP_MIN + 1));
-                rollLoot(player, GnomeRestaurant.TIPS);
+                rollLoot(player, hard ? GnomeRestaurant.HARD_TIPS : GnomeRestaurant.TIPS);
                 xp(player, Skill.COOKING, hard ? 200 : 100); // approx
                 Msg.game(player, "The customer is delighted with their food!");
                 newOrder();

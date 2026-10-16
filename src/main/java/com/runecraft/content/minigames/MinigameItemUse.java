@@ -272,7 +272,10 @@ public final class MinigameItemUse {
 
     /** Guardians of the Rift intricate pouch (approx. contents; 1/200 blood essence pre-roll). */
     public static void openPouch(ServerPlayerEntity p) {
-        for (MinigameReward r : GuardiansRewards.openIntricatePouch(RANDOM::nextDouble)) {
+        boolean hasLocket = Inv.has(p, "tarnished_locket", 1) || Inv.has(p, "amulet_of_the_eye", 1)
+                || com.runecraft.player.Players.data(p).collectionLog().contains("tarnished_locket")
+                || com.runecraft.player.Players.data(p).collectionLog().contains("amulet_of_the_eye");
+        for (MinigameReward r : GuardiansRewards.openIntricatePouch(RANDOM::nextDouble, hasLocket)) {
             give(p, r.item(), r.amount());
         }
     }
