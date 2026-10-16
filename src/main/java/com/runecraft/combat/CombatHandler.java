@@ -154,7 +154,7 @@ public final class CombatHandler {
         int maxHit = HitCalcBridge.maxHit(player, target, in);
         int damage = HitCalcBridge.roll(new java.util.Random(player.getRandom().nextLong()), in, attackRoll, defenceRoll, maxHit);
         damage = HitCalcBridge.afterRoll(in, damage); // vampyre tiers (immunity, vampyrebane, Efaritay's aid)
-        damage = CombatHooks.afterRoll(player, target, type, damage);
+        damage = CombatHooks.afterRoll(player, target, type, damage, maxHit);
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, type);
         }
@@ -194,7 +194,7 @@ public final class CombatHandler {
         // Enchanted (e) bolt effects (opal to onyx, dragon variants).
         damage = HitCalcBridge.afterRoll(in, damage); // vampyre tiers (silver bolts, blisterwood stakes)
         damage = com.runecraft.content.systems.BoltProcs.apply(player, target, arrowItem, accurate, damage, maxHit);
-        damage = CombatHooks.afterRoll(player, target, AttackType.RANGED, damage);
+        damage = CombatHooks.afterRoll(player, target, AttackType.RANGED, damage, maxHit);
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, AttackType.RANGED);
         }
@@ -329,6 +329,11 @@ public final class CombatHandler {
 
     public static int hookAfterRoll(ServerPlayerEntity p, LivingEntity t, AttackType type, int damage) {
         return CombatHooks.afterRoll(p, t, type, damage);
+    }
+
+    /** {@link #hookAfterRoll} for a roll whose max hit is known (targets that always take the max hit get it). */
+    public static int hookAfterRoll(ServerPlayerEntity p, LivingEntity t, AttackType type, int damage, int maxHit) {
+        return CombatHooks.afterRoll(p, t, type, damage, maxHit);
     }
 
     public static void hookAfterHit(ServerPlayerEntity p, LivingEntity t, AttackType type, int dealt) {

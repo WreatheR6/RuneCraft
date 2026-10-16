@@ -631,7 +631,7 @@ public final class SpecialAttackService {
                     damage = com.runecraft.combat.HitCalcBridge.roll(r, in, att, def, max);
                 }
                 damage = com.runecraft.combat.HitCalcBridge.afterRoll(in, damage);
-                damage = CombatHandler.hookAfterRoll(p, target, type, damage);
+                damage = CombatHandler.hookAfterRoll(p, target, type, damage, max);
                 int done = SysCombat.hit(p, target, type, damage);
                 CombatHandler.awardXp(p, type == AttackType.RANGED ? Players.data(p).style().forRanged() : Players.data(p).style().forMelee(),
                         done, false);

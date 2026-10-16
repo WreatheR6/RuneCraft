@@ -215,6 +215,12 @@ class BossesContentTest {
     }
 
     @Test
+    void yamaSpawnsVoidFlaresOnlyThroughHisScript() {
+        // A BossDef minion would make the driven script's idle SUMMON attack spawn untracked void flares.
+        assertTrue(boss("yama").minion == null);
+    }
+
+    @Test
     void zulrahRotations() {
         assertEquals(4, ZulrahVorkath.ROTATIONS.size());
         for (List<ZulrahVorkath.Step> rot : ZulrahVorkath.ROTATIONS) {

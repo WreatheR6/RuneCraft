@@ -24,6 +24,14 @@ public final class CombatHooks {
             return 1.0;
         }
 
+        /**
+         * True when this attack always deals its max hit whatever the roll (e.g. hits on the Judge of Yama). Applied before
+         * {@link #afterRoll} wherever the attack's max hit is known.
+         */
+        default boolean alwaysMaxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+            return false;
+        }
+
         /** Last chance to change the rolled damage (e.g. a special attack hitting twice). */
         default int afterRoll(ServerPlayerEntity player, LivingEntity target, AttackType type, int damage) {
             return damage;
@@ -240,6 +248,17 @@ public final class CombatHooks {
             damage = mod.afterRoll(p, t, type, damage);
         }
         return damage;
+    }
+
+    /** {@link #afterRoll} for a roll whose max hit is known: a modifier that guarantees the max hit raises the damage to it first. */
+    static int afterRoll(ServerPlayerEntity p, LivingEntity t, AttackType type, int damage, int maxHit) {
+        for (PlayerAttackModifier mod : MODIFIERS) {
+            if (mod.alwaysMaxHit(p, t, type)) {
+                damage = Math.max(damage, maxHit);
+                break;
+            }
+        }
+        return afterRoll(p, t, type, damage);
     }
 
     static void afterHit(ServerPlayerEntity p, LivingEntity t, AttackType type, int dealt) {

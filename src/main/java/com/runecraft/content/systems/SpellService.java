@@ -392,7 +392,7 @@ public final class SpellService {
                 continue;
             }
             int damage = max > 0 ? p.getRandom().nextInt(max + 1) : 0;
-            damage = CombatHandler.hookAfterRoll(p, t, AttackType.MAGIC, damage);
+            damage = CombatHandler.hookAfterRoll(p, t, AttackType.MAGIC, damage, max);
             int dealt = max > 0 ? SysCombat.hit(p, t, AttackType.MAGIC, damage) : 0;
             if (max == 0) {
                 t.setAttacker(p);

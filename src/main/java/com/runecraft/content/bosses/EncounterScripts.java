@@ -1,6 +1,7 @@
 package com.runecraft.content.bosses;
 
 import com.runecraft.boss.DataBossEntity;
+import com.runecraft.boss.Mechanics;
 import com.runecraft.combat.CombatHandler;
 import com.runecraft.combat.CombatHooks;
 import com.runecraft.content.systems.CombatAchievementService;
@@ -777,11 +778,28 @@ final class EncounterScripts {
             return (int) Math.round(hpFraction(boss) * BossMechanics.VARDORVIS_HITPOINTS);
         }
 
+        /** The max hit ramp as a factor (1 at full hitpoints) on his other attacks; the axe swing gets the ramp itself. */
         @Override
         protected double multiplier(DataBossEntity boss) {
             boolean awake = boss.awakened();
             double base = awake ? 46 : 32;
             return BossMechanics.vardorvisMaxHit(hpFraction(boss), awake) / base * scale;
+        }
+
+        /**
+         * The axe swing's max hit is the wiki ramp (32 to 43, awakened 46 to 61) whatever the attack's listed max (35, or
+         * the awakened variant's 61), so the multiplier is taken against that listed max.
+         */
+        @Override
+        protected void perform(DataBossEntity boss, ServerPlayerEntity target, AttackDef a) {
+            if (a != Dt2Bosses.VARD_SLASH || a.maxHit() <= 0) {
+                super.perform(boss, target, a);
+                return;
+            }
+            last = a;
+            attackCount++;
+            int max = BossMechanics.vardorvisMaxHit(hpFraction(boss), boss.awakened());
+            Mechanics.perform(boss, target, a, max * scale / a.maxHit());
         }
 
         @Override

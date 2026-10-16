@@ -16,8 +16,10 @@ import com.runecraft.osrs.content.bosses.BossMechanics;
 import com.runecraft.osrs.content.bosses.BossMechanics.YamaContract;
 import com.runecraft.osrs.content.bosses.ModernBosses;
 import com.runecraft.osrs.content.bosses.VarlamoreBosses;
+import com.runecraft.osrs.world.ArenaLayout;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.world.Gielinor;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.particle.ParticleEffect;
@@ -25,6 +27,7 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
@@ -132,7 +135,8 @@ final class ModernScripts {
             }
         }
 
-        private record Flare(MobEntity mob, long due) {
+        /** A void flare and the health it spawned with (its explosion scales with the share of that left). */
+        private record Flare(MobEntity mob, long due, float full) {
         }
 
         private enum Special { GLYPH_FIRE, GLYPH_SHADOW, METEOR, STOMP }
@@ -167,6 +171,7 @@ final class ModernScripts {
 
         @Override
         public void onSpawn(DataBossEntity boss) {
+            home = arenaCentre(boss);
             ServerPlayerEntity challenger = boss.getTarget() instanceof ServerPlayerEntity p ? p : null;
             if (challenger != null) {
                 contract = PENDING.remove(challenger.getUuid());
@@ -237,12 +242,48 @@ final class ModernScripts {
             return damage;
         }
 
-        private void placeGlyphs(DataBossEntity boss) {
+        /**
+         * The centre of the arena Yama was summoned in (the glyphs, the exile spot and the Judge are laid out around it, and
+         * he plants himself there), or his spawn block when he was summoned away from his arena. The summoning stone sits by
+         * the arena's north edge, so his spawn block is not the centre.
+         */
+        private static BlockPos arenaCentre(DataBossEntity boss) {
+            BlockPos at = boss.getBlockPos();
+            ArenaLayout.Arena a = boss.def() == null ? null : ArenaLayout.of(boss.def().id);
+            if (a == null || Math.hypot(at.getX() - a.x(), at.getZ() - a.z()) > a.radius() + 3) {
+                return at;
+            }
+            Vec3d floor = BossFx.ground(BossFx.world(boss), a.x() + 0.5, a.z() + 0.5, at.getY());
+            return new BlockPos(a.x(), (int) Math.floor(floor.y), a.z());
+        }
+
+        /** A floor spot at an offset from the arena centre, pulled in to stay at least two blocks inside the ring wall. */
+        private Vec3d floorSpot(DataBossEntity boss, double dx, double dz) {
+            double max = Math.max(2.0, (boss.def() == null ? 15 : boss.def().arenaRadius) - 2.0);
+            double len = Math.hypot(dx, dz);
+            if (len > max) {
+                dx *= max / len;
+                dz *= max / len;
+            }
             Vec3d c = homeVec();
-            ServerWorld w = BossFx.world(boss);
+            return BossFx.ground(BossFx.world(boss), c.x + dx, c.z + dz, c.y);
+        }
+
+        /** The spot when a player fits there (solid floor, feet and head clear), otherwise the nearest safe column. */
+        private static Vec3d standable(ServerWorld w, Vec3d spot) {
+            BlockPos feet = BlockPos.ofFloored(spot);
+            if (w.getBlockState(feet).getCollisionShape(w, feet).isEmpty()
+                    && w.getBlockState(feet.up()).getCollisionShape(w, feet.up()).isEmpty()
+                    && !w.getBlockState(feet.down()).getCollisionShape(w, feet.down()).isEmpty()) {
+                return spot;
+            }
+            return Vec3d.ofBottomCenter(Gielinor.safeSpot(w, feet.getX(), feet.getZ()));
+        }
+
+        private void placeGlyphs(DataBossEntity boss) {
             int[][] at = {{-6, -5}, {6, 5}, {6, -5}, {-6, 5}};
             for (int i = 0; i < at.length; i++) {
-                glyphs.add(new Glyph(BossFx.ground(w, c.x + at[i][0], c.z + at[i][1], c.y), i < 2));
+                glyphs.add(new Glyph(floorSpot(boss, at[i][0], at[i][1]), i < 2));
             }
         }
 
@@ -382,14 +423,32 @@ final class ModernScripts {
                 if (stage >= 3) {
                     m.setHealth(m.getMaxHealth() / 2); // 71 of 140 in phase 3
                 }
-                flares.add(new Flare(m, now + BossMechanics.VOID_FLARE_TICKS));
+                flares.add(new Flare(m, now + BossMechanics.VOID_FLARE_TICKS, m.getHealth()));
                 boolean resistant = contract == YamaContract.BLOODIED_BLOWS;
-                MinionRules.set(m, (p, minion, type, d) -> {
-                    int dealt = resistant ? d / 2 : d;
-                    if (dealt >= minion.getHealth() && !SpecialAttackService.specialActive(p)) {
-                        CombatAchievementService.flag(p, BossMechanics.FLAG_YAMA_FLARE_NONSPEC);
+                // Magic and ranged attacks always land their max hit on a flare, except under the Contract of bloodied blows.
+                MinionRules.set(m, new MinionRules.Rule() {
+                    @Override
+                    public double accuracy(ServerPlayerEntity p, net.minecraft.entity.LivingEntity minion, AttackType type) {
+                        return guaranteed(type) ? MinionRules.ALWAYS_HITS : 1.0;
                     }
-                    return dealt;
+
+                    @Override
+                    public boolean alwaysMaxHit(ServerPlayerEntity p, net.minecraft.entity.LivingEntity minion, AttackType type) {
+                        return guaranteed(type);
+                    }
+
+                    private boolean guaranteed(AttackType type) {
+                        return !resistant && (type == AttackType.MAGIC || type == AttackType.RANGED);
+                    }
+
+                    @Override
+                    public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity minion, AttackType type, int d) {
+                        int dealt = resistant ? d / 2 : d;
+                        if (dealt >= minion.getHealth() && !SpecialAttackService.specialActive(p)) {
+                            CombatAchievementService.flag(p, BossMechanics.FLAG_YAMA_FLARE_NONSPEC);
+                        }
+                        return dealt;
+                    }
                 });
             }
         }
@@ -477,21 +536,28 @@ final class ModernScripts {
             Vec3d c = homeVec();
             boss.requestTeleport(c.x, c.y, c.z);
             ServerWorld w = BossFx.world(boss);
-            Vec3d spot = BossFx.ground(w, c.x - 12, c.z + 4, c.y);
+            // The exile spot and the Judge sit in the arena's west side, inside the ring wall.
+            Vec3d spot = standable(w, floorSpot(boss, -12, 4));
             for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
                 p.requestTeleport(spot.x, spot.y, spot.z);
                 exilees.add(p);
                 Msg.red(p, "Yama slams his axe down and exiles you from the arena! Defeat the Judge of Yama.");
             }
             ServerPlayerEntity target = exilees.isEmpty() ? null : exilees.get(0);
-            judge = BossFx.spawnMinion(boss, BossMechanics.YAMA_JUDGE, BossFx.ground(w, spot.x, spot.z - 7, spot.y), target);
+            judge = BossFx.spawnMinion(boss, BossMechanics.YAMA_JUDGE, floorSpot(boss, -12, -3), target);
             if (judge != null) {
-                // The Judge prays against ranged and the last style it was hit with (melee at the start); others always hit.
+                // The Judge prays against ranged and the last style it was hit with (melee at the start); other attacks
+                // always land, and always for their max hit.
                 AttackType[] last = {AttackType.CRUSH};
                 MinionRules.set(judge, new MinionRules.Rule() {
                     @Override
                     public double accuracy(ServerPlayerEntity p, net.minecraft.entity.LivingEntity m, AttackType type) {
                         return MinionRules.ALWAYS_HITS;
+                    }
+
+                    @Override
+                    public boolean alwaysMaxHit(ServerPlayerEntity p, net.minecraft.entity.LivingEntity m, AttackType type) {
+                        return true;
                     }
 
                     @Override
@@ -541,8 +607,7 @@ final class ModernScripts {
             judge = null;
             exiled = false;
             stage++;
-            Vec3d c = homeVec();
-            Vec3d front = BossFx.ground(BossFx.world(boss), c.x, c.z + 7, c.y);
+            Vec3d front = floorSpot(boss, 0, 7);
             for (ServerPlayerEntity p : exilees) {
                 if (exileHits.getOrDefault(p.getUuid(), 0) > 1) {
                     CombatAchievementService.flag(p, BossMechanics.FLAG_YAMA_EXILE_HITS);
@@ -720,7 +785,7 @@ final class ModernScripts {
                     continue;
                 }
                 it.remove();
-                double frac = m.getHealth() / m.getMaxHealth();
+                double frac = f.full() <= 0 ? 0 : Math.min(1.0, m.getHealth() / f.full()); // phase 3 flares spawn at half health
                 m.discard();
                 if (glyphProtects(boss, true) || glyphProtects(boss, false)) {
                     BossFx.say(boss, "The glyph absorbs the void flare's explosion.");
