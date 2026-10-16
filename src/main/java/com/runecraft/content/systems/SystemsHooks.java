@@ -222,6 +222,15 @@ public final class SystemsHooks implements ModuleHooks {
         QuestScripts.onTalk(CluePuzzles.FALO, (p, npc) -> QuestApi.say(p, "Falo the Bard",
                 "I'm Falo, the bard. Bring me what my songs ask for and I'll help you on your treasure trail."));
 
+        ItemSourcesService.register(); // after QuestsHooks: wraps Eluned's, the Lumbridge Guide's and Sigli's dialogue
+        // Ring of pursuit: one per-player charge (Jewellery.PURSUIT_CHARGES) per noose-wand catch it speeds up.
+        com.runecraft.content.skilling.GatheringHooks.pursuitTrack = p -> {
+            if (!"ring_of_pursuit".equals(SysState.of(p).wornId(Jewellery.Slot.RING))) {
+                return false;
+            }
+            JewelleryService.useCharge(p, Jewellery.Slot.RING, "ring_of_pursuit");
+            return true;
+        };
         UseItemCallback.EVENT.register(SystemsHooks::useItem);
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (hand != Hand.MAIN_HAND || world.isClient() || !(entity instanceof QuestNpcEntity npc) || !(player instanceof ServerPlayerEntity sp)) {
@@ -257,7 +266,7 @@ public final class SystemsHooks implements ModuleHooks {
     static boolean deterministic(String id, boolean sneaking) {
         if (ClueScrolls.Tier.byScroll(id) != null || ClueScrolls.Tier.byCasket(id) != null || Spellbooks.tablet(id) != null
                 || id.startsWith("antique_lamp_") || id.startsWith(CombatAchievements.LAMP_PREFIX) || RunEnergyService.isEnergyPotion(id) || id.equals("ectophial")
-                || id.equals(CluePuzzles.PUZZLE_BOX) || id.equals(CluePuzzles.LIGHT_BOX)) {
+                || id.equals(CluePuzzles.PUZZLE_BOX) || id.equals(CluePuzzles.LIGHT_BOX) || id.equals("basalt")) {
             return true;
         }
         if (Jewellery.worn(id) != null && ItemCatalog.get(id) != null) {
@@ -309,6 +318,9 @@ public final class SystemsHooks implements ModuleHooks {
         }
         if (id.equals(CluePuzzles.PUZZLE_BOX) || id.equals(CluePuzzles.LIGHT_BOX)) {
             return ClueService.useBox(p, id);
+        }
+        if (id.equals("basalt")) {
+            return ItemSourcesService.combineBasalt(p);
         }
         if (DiaryExtrasService.handles(id, sneaking)) {
             return DiaryExtrasService.use(p, stack, hand, id, sneaking);

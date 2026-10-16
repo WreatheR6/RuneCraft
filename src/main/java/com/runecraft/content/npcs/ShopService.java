@@ -56,6 +56,14 @@ public final class ShopService {
         if (stock(shopId) == null) {
             return;
         }
+        String[] gate = Shops.QUEST_GATES.get(shopId);
+        if (gate != null) {
+            com.runecraft.osrs.QuestInfo quest = com.runecraft.osrs.content.ContentRegistry.quest(gate[0]);
+            if (quest != null && !com.runecraft.player.Players.data(player).questComplete(quest)) {
+                Msg.game(player, gate[1]);
+                return;
+            }
+        }
         ActionManager.cancel(player);
         OPEN.put(player.getUuid(), new Session(shopId, where));
         send(player, shopId, true);

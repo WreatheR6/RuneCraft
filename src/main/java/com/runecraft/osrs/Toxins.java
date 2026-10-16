@@ -26,6 +26,7 @@ public final class Toxins {
     public static final int[] ANTIDOTE_PLUS_PLUS = {1200, 0}; // 12 min
     public static final int[] ANTI_VENOM = {1200, 60}; // 12 min poison, ~36 s venom (approx: wiki gives 36-54 s)
     public static final int[] ANTI_VENOM_PLUS = {1500, 360}; // 15 min poison, ~3.6 min venom
+    public static final int[] EXTENDED_ANTI_VENOM_PLUS = {1770, 630}; // OSRS Wiki: 17.7 min poison, ~6.3 min venom
 
     /** What changed after a cure. */
     public enum Cure { NOTHING, CURED, VENOM_TO_POISON }

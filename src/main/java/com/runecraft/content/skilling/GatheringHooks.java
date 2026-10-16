@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /** Woodcutting, Mining (incl. Motherlode Mine), Fishing spots, Hunter traps and implings, Firemaking. */
-final class GatheringHooks {
+public final class GatheringHooks {
     /** Depleted resource positions -> game tick they come back. */
     private static final Map<String, Long> DEPLETED = new HashMap<>();
     /** Motherlode Mine veins mined since they last respawned: position key -> game tick they deplete. */
@@ -679,6 +679,13 @@ final class GatheringHooks {
     }
 
     /**
+     * Ring of pursuit (systems module sets this): true when the player wears one, after spending one of its charges. OSRS: it
+     * reveals the whole track of a noose-wand creature at once; RuneCraft folds a track into one search, so the ring halves
+     * how long the burrow stays empty after a successful catch instead. // approx
+     */
+    public static java.util.function.Predicate<ServerPlayerEntity> pursuitTrack = p -> false;
+
+    /**
      * Immediate catches: noose-wand tracking (search the burrow for the kebbit or weasel), butterflies
      * (butterfly net, one jar per catch) and falconry (the falcon swoops on the kebbit).
      */
@@ -709,9 +716,13 @@ final class GatheringHooks {
         player.swingHand(Hand.MAIN_HAND, true);
         int level = SkillingUtil.level(player, Skill.HUNTER);
         double chance = HunterRates.catchChance(spot.creature(), spot.level(), level);
+        int emptyFor = spot.kind() == HunterData.TrapKind.BUTTERFLY ? 4 : 8;
         if (player.getRandom().nextDouble() < chance) {
             if (spot.bait() != null) {
                 Inv.remove(player, spot.bait(), 1);
+            }
+            if (spot.kind() == HunterData.TrapKind.TRACKING && pursuitTrack.test(player)) {
+                emptyFor = 4;
             }
             giveCatch(player, spot);
             Msg.action(player, "You've caught " + Msg.article(SkillingUtil.lower(spot.creature())) + "!");
@@ -723,7 +734,7 @@ final class GatheringHooks {
                 default -> "The " + SkillingUtil.lower(spot.creature()) + " escapes your noose.";
             });
         }
-        deplete(world, pos, spot.kind() == HunterData.TrapKind.BUTTERFLY ? 4 : 8);
+        deplete(world, pos, emptyFor);
     }
 
     // ------------------------------------------------------------------ Implings

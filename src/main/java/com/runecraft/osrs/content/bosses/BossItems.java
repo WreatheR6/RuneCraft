@@ -545,6 +545,11 @@ public final class BossItems {
                 .in("enhanced_crystal_weapon_seed", 1).in("crystal_shard", 100).out("bow_of_faerdhinen", 1).build());
         recipes.accept(Recipe.builder("sing_blade_of_saeldor", MenuType.SMITHING, "Blade of saeldor").skill(Skill.SMITHING, 82, 5000)
                 .in("enhanced_crystal_weapon_seed", 1).in("crystal_shard", 100).out("blade_of_saeldor", 1).build());
+        // Eternal teleport crystal (OSRS Wiki): an enhanced crystal teleport seed and 100 shards, 80 Smithing and 80 Crafting,
+        // 5,000 XP in each (RuneCraft recipes take one skill: Smithing is checked and rewarded). // approx
+        recipes.accept(Recipe.builder("sing_eternal_teleport_crystal", MenuType.SMITHING, "Eternal teleport crystal")
+                .skill(Skill.SMITHING, 80, 5000).in("enhanced_crystal_teleport_seed", 1).in("crystal_shard", 100)
+                .out("eternal_teleport_crystal", 1).ticks(3).build());
         recipes.accept(Recipe.builder("sing_crystal_helm", MenuType.SMITHING, "Crystal helm").skill(Skill.CRAFTING, 70, 2500)
                 .in("crystal_armour_seed", 1).in("crystal_shard", 50).out("crystal_helm", 1).build());
         recipes.accept(Recipe.builder("sing_crystal_legs", MenuType.SMITHING, "Crystal legs").skill(Skill.CRAFTING, 72, 5000)

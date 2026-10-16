@@ -48,6 +48,11 @@ public final class SystemsContent implements ContentModule {
                 .examine("Slide the pieces into order to solve the puzzle.");
         Defs.simple(items, CluePuzzles.LIGHT_BOX, "Light box", "package", 0xE0D060, 1).stack(1)
                 .examine("Turn all of the lights on to solve the puzzle.");
+        // Weiss Salt Mine (ItemSources): basalt and the three salts that make the basalt teleports (OSRS Wiki values).
+        Defs.simple(items, "basalt", "Basalt", "ore", 0x3A3A40, 10).stack(1).weight(1).examine("A rock that holds salts well.");
+        Defs.simple(items, "te_salt", "Te salt", "ore", 0xE0E0D0, 1).stack(100000).examine("A salt from Weiss's salt mine.");
+        Defs.simple(items, "efh_salt", "Efh salt", "ore", 0xB0D8F0, 1).stack(100000).examine("A salt from Weiss's salt mine.");
+        Defs.simple(items, "urt_salt", "Urt salt", "ore", 0x9A6A4A, 1).stack(100000).examine("A salt from Weiss's salt mine.");
     }
 
     /**
@@ -97,7 +102,11 @@ public final class SystemsContent implements ContentModule {
                 BlockDef.scripted(Multicannon.BLOCK, "Dwarf multicannon", 0x3A3A40, "machine"),
                 BlockDef.scripted(DiaryExtras.SALTPETRE_DEPOSIT, "Saltpetre deposit", 0x9A9A90, "rock"),
                 BlockDef.scripted(DiaryExtras.LEGENDS_TOTEM, "Totem pole", 0x8A5A2A, "totem"),
-                BlockDef.scripted(DiaryExtras.ENT_TRUNK, "Ent trunk", 0x5A4A2A, "stump"));
+                BlockDef.scripted(DiaryExtras.ENT_TRUNK, "Ent trunk", 0x5A4A2A, "stump"),
+                BlockDef.scripted(ItemSources.SALT_ROCKS.get(0).block(), ItemSources.SALT_ROCKS.get(0).name(), 0x3A3A40, "rock"),
+                BlockDef.scripted(ItemSources.SALT_ROCKS.get(1).block(), ItemSources.SALT_ROCKS.get(1).name(), 0xE0E0D0, "rock"),
+                BlockDef.scripted(ItemSources.SALT_ROCKS.get(2).block(), ItemSources.SALT_ROCKS.get(2).name(), 0xB0D8F0, "rock"),
+                BlockDef.scripted(ItemSources.SALT_ROCKS.get(3).block(), ItemSources.SALT_ROCKS.get(3).name(), 0x9A6A4A, "rock"));
     }
 
     @Override
@@ -128,6 +137,12 @@ public final class SystemsContent implements ContentModule {
                 List.of()));
         places.add(PlaceDef.of(DiaryExtras.SAWMILL_OPERATOR, "Sawmill", DiaryExtras.SAWMILL_X, DiaryExtras.SAWMILL_Y, PlaceDef.Style.NONE,
                 List.of()));
+        // Weiss Salt Mine rocks and the Fremennik armour makers (round 28): the hooks put each rock on the ground at its tile.
+        for (ItemSources.SaltRock r : ItemSources.SALT_ROCKS) {
+            places.add(PlaceDef.of(r.block(), r.name(), r.x(), r.y(), PlaceDef.Style.NONE, List.of()));
+        }
+        places.add(PlaceDef.of(ItemSources.SKULGRIMEN, "Skulgrimen's Battle Gear", 2662, 3693, PlaceDef.Style.NONE, List.of())); // approx tile
+        places.add(PlaceDef.of(ItemSources.PEER_THE_SEER, "Peer the Seer", 2632, 3667, PlaceDef.Style.NONE, List.of())); // approx tile
         // Bank deposit boxes: nothing is levelled; the hooks put the box on the ground at the spot.
         for (com.runecraft.osrs.bank.DepositBoxes.Spot spot : com.runecraft.osrs.bank.DepositBoxes.SPOTS) {
             places.add(PlaceDef.of(spot.id(), spot.name(), spot.osrsX(), spot.osrsY(), PlaceDef.Style.NONE, List.of()));
@@ -148,7 +163,9 @@ public final class SystemsContent implements ContentModule {
                 NpcDef.of(DiaryExtras.GENIE, "Genie", DiaryExtras.GENIE, 0, 0, 0x5A8AE0, 0xC03030, 0x3A6AC0, 0xE0C040),
                 NpcDef.of(Multicannon.NULODION, "Nulodion", Multicannon.NULODION, 0, 0, 0xD8A888, 0x3A3A3A, 0x2A2A2A, 0x6A6A70),
                 NpcDef.of(DiaryExtras.SAWMILL_OPERATOR, "Sawmill operator", DiaryExtras.SAWMILL_OPERATOR, 0, 0, 0xE0B090, 0x6A4A2A,
-                        0x3A3A4A, 0x8A6A3A));
+                        0x3A3A4A, 0x8A6A3A),
+                NpcDef.of(ItemSources.SKULGRIMEN, "Skulgrimen", ItemSources.SKULGRIMEN, 0, 0, 0xE8C0A0, 0x6A5A4A, 0x3A2A1A, 0x8A6A3A),
+                NpcDef.of(ItemSources.PEER_THE_SEER, "Peer the Seer", ItemSources.PEER_THE_SEER, 0, 0, 0xE8C0A0, 0x3A3A6A, 0x2A2A3A, 0xE0C060));
     }
 
     @Override

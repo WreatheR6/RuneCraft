@@ -31,6 +31,14 @@ public final class Shops {
             {"neil", "Neil", "7", "3033", "3702"}, {"edmond", "Edmond", "8", "3128", "3764"}, {"simon", "Simon", "9", "3237", "3626"},
             {"sam", "Sam", "10", "3057", "3622"}};
 
+    /**
+     * Shops whose keeper won't trade before a quest is complete (OSRS Wiki): shop id -> {quest id, refusal line}. Checked by
+     * the npcs module's ShopService when the shop opens.
+     */
+    public static final Map<String, String[]> QUEST_GATES = Map.of(
+            "yrsas_accoutrements", new String[]{"fremennik_trials", "I only sell to Fremennik. Prove yourself in the Fremennik Trials first."},
+            "mythical_cape_store", new String[]{"dragon_slayer_ii", "These capes are only for those who have completed Dragon Slayer II."});
+
     private Shops() {
     }
 
@@ -67,6 +75,11 @@ public final class Shops {
     }
 
     static {
+        // OSRS Wiki: Diango's Toy Store (Draynor Village; 150% sell, 50% buy, 2 per mille change). Only the Chronicle and
+        // teleport cards exist in RuneCraft (OSRS: one Chronicle per player, not enforced here).
+        add(specialist("diangos_toy_store", "Diango's Toy Store", "npc_diango").prices(1500, 500, 2)
+                .sell("chronicle", 1).sell("teleport_card", 100).greeting("Howdy there, partner! Want to see my spinning plates? Or teleport cards?"));
+
         // ------------------------------------------------------------- general stores
         // OSRS Wiki: Lumbridge General Store (not in RuneCraft: Empty jug pack, Empty bucket pack, Newcomer map, Security book)
         add(general("lumbridge_general_store", "Lumbridge General Store", "npc_lumbridge_shopkeeper").sell("empty_pot", 5)
@@ -476,11 +489,19 @@ public final class Shops {
                 .sell("feldip_weasel_fur", 0).sell("desert_devil_fur", 0).sell("larupia_fur", 0).sell("graahk_fur", 0)
                 .sell("kyatt_fur", 0).greeting("Furs! Warm furs for the Fremennik winter!"));
 
-        // OSRS Wiki: Yrsa's Accoutrements (Fremennik clothing, needs The Fremennik Trials - not checked, approx; only the
-        // pieces RuneCraft has: boots 650, gloves 650, brown shirt and cloak 325)
+        // OSRS Wiki: Yrsa's Accoutrements (Fremennik clothing, needs The Fremennik Trials: QUEST_GATES; only the pieces
+        // RuneCraft has: boots 650, gloves 650, brown shirt and cloak 325)
         add(specialist("yrsas_accoutrements", "Yrsa's Accoutrements", "npc_yrsa").prices(1300, 700, 30)
                 .sell("fremennik_boots", 5).sell("fremennik_gloves", 5).sell("fremennik_brown_shirt", 5)
                 .sell("fremennik_brown_cloak", 5).greeting("Welcome to my clothes shop. Do you like Fremennik fashion?"));
+
+        // OSRS Wiki: Mythical Cape Store (Jack, Myths' Guild 2nd floor; Dragon Slayer II): the mythical cape, 10,000 coins.
+        add(specialist("mythical_cape_store", "Mythical Cape Store", "npc_jack").sell("mythical_cape", 10) // stock approx
+                .greeting("Welcome, hero. Looking for a mythical cape?"));
+        // Olaf the Bard sells the music cape for 99,000 coins once every music track is unlocked (OSRS Wiki). RuneCraft has no
+        // music track unlocks, so the cape is sold without that check. // approx
+        add(specialist("olafs_music_cape", "Music cape", "npc_olaf_the_bard").sell("music_cape", 1)
+                .greeting("Ah, a fellow lover of music! Have you heard every song in Gielinor?"));
 
         // ------------------------------------------------------------- Morytania
         // OSRS Wiki: Rufus' Meat Emporium (not in RuneCraft: Raw rat meat, Raw bear meat)

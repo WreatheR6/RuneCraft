@@ -42,7 +42,9 @@ public final class HerbloreData extends SkillingPart {
          * Ancient brew: Magic +2 + 5%, Prayer 2 + 10% of base restored, Attack, Strength and Defence drained by
          * 2 + 10% of their current level. Approx: the restore stops at the base Prayer level (OSRS allows 5% over).
          */
-        ANCIENT_BREW;
+        ANCIENT_BREW,
+        /** Extended anti-venom+ (round 28, appended): anti-venom+ with araxyte venom sacs (Toxins.EXTENDED_ANTI_VENOM_PLUS). */
+        EXTENDED_ANTI_VENOM_PLUS;
 
         /** Goading potion: duration per dose and how often nearby monsters are goaded, in game ticks (OSRS Wiki). */
         public static final int GOADING_DURATION = 600;
@@ -145,6 +147,7 @@ public final class HerbloreData extends SkillingPart {
             new ModPotion("antidote_plus_plus", "Antidote++", Effect.ANTIDOTE_PLUS_PLUS, 0x7A8A30, 600),
             new ModPotion("anti_venom", "Anti-venom", Effect.ANTI_VENOM, 0x3A6A4A, 1200),
             new ModPotion("anti_venom_plus", "Anti-venom+", Effect.ANTI_VENOM_PLUS, 0x2A5A3A, 1800),
+            new ModPotion("extended_anti_venom_plus", "Extended anti-venom+", Effect.EXTENDED_ANTI_VENOM_PLUS, 0x3A6A2A, 1900), // value approx
             new ModPotion("combat_potion", "Combat potion", Effect.COMBAT, 0x50B090, 150),
             new ModPotion("agility_potion", "Agility potion", Effect.AGILITY, 0x60C0C0, 150),
             new ModPotion("fishing_potion", "Fishing potion", Effect.FISHING, 0x4080D0, 200),
@@ -399,6 +402,9 @@ public final class HerbloreData extends SkillingPart {
                 .in("crushed_superior_dragon_bones", 1).out("super_antifire", 1).ticks(2).build());
         out.accept(r("mix_anti_venom_plus", H, "Anti-venom+", Skill.HERBLORE, 94, 125.0).in("anti_venom", 1).in("torstol", 1)
                 .out("anti_venom_plus", 1).ticks(2).build());
+        // Extended anti-venom+ (OSRS Wiki): one araxyte venom sac per dose of anti-venom+, 94 Herblore, 20 XP a dose, 3 ticks.
+        out.accept(r("mix_extended_anti_venom_plus", H, "Extended anti-venom+", Skill.HERBLORE, 94, 80.0).in("anti_venom_plus", 1)
+                .in("araxyte_venom_sac", 4).out("extended_anti_venom_plus", 1).ticks(3).build());
         out.accept(r("mix_extended_super_antifire", H, "Extended super antifire", Skill.HERBLORE, 98, 160.0).in("super_antifire", 1)
                 .in("lava_scale_shard", 4).out("extended_super_antifire", 1).ticks(2).build());
         // Zogre Flesh Eaters: relicym's balm (rogue's purse + snake weed) and the three-step sanfew serum

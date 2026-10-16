@@ -126,6 +126,7 @@ public final class Townsfolk {
         keeper("npc_peksa", "Peksa", "Barbarian Village", 3075, 3428, "peksas_helmet_shop", look(SKIN, 0x7A5A3A, 0x4A3A2A, 0xC0A060));
         keeper("npc_fortunato", "Fortunato", "Draynor Village", 3083, 3252, "fortunatos_fine_wine", look(SKIN, 0x6A1A3A, 0x3A2A2A, 0x1A1A1A));
         keeper("npc_olivia", "Olivia", "Draynor Village", 3075, 3254, "draynor_seed_market", look(SKIN, 0x4A7A2A, 0x5A4A2A, 0xC09040));
+        keeper("npc_diango", "Diango", "Draynor Village", 3081, 3250, "diangos_toy_store", look(SKIN, 0xC03030, 0x3A3A8A, 0x2A2A2A));
 
         // ------------------------------------------------------------- inns
         keeper("npc_blue_moon_bartender", "Bartender", "Varrock", 3226, 3399, "blue_moon_inn", bartender);
@@ -191,6 +192,9 @@ public final class Townsfolk {
         keeper("npc_fremennik_fishmonger", "Fish monger", "Rellekka", 2645, 3676, "fremennik_fish_monger", fremennik);
         keeper("npc_fremennik_fur_trader", "Fur trader", "Rellekka", 2642, 3678, "fremennik_fur_trader", fremennik);
         keeper("npc_yrsa", "Yrsa", "Rellekka", 2625, 3675, "yrsas_accoutrements", fremennik);
+        keeper("npc_olaf_the_bard", "Olaf the Bard", "Rellekka", 2672, 3680, "olafs_music_cape", fremennik); // tile approx
+        // Jack runs the Mythical Cape Store on the Myths' Guild's 2nd floor (RuneCraft: at the guild). // approx
+        keeper("npc_jack", "Jack", "Myths' Guild", 2460, 2849, "mythical_cape_store", look(SKIN, 0x3A6A4A, 0x2A3A2A, 0x5A3A2A));
         keeper("npc_rufus", "Rufus", "Canifis", 3507, 3492, "rufus_meat_emporium", werewolf);
         keeper("npc_barker", "Barker", "Canifis", 3498, 3505, "barkers_haberdashery", werewolf);
         keeper("npc_lletya_food_seller", "Shop keeper", "Lletya", 2341, 3177, "lletya_food_store", elf);

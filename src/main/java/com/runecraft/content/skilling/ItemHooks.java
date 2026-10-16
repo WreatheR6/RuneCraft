@@ -391,6 +391,8 @@ final class ItemHooks {
                     com.runecraft.osrs.Toxins.ANTI_VENOM[1], now);
             case ANTI_VENOM_PLUS -> PoisonService.antiVenom(player, com.runecraft.osrs.Toxins.ANTI_VENOM_PLUS[0],
                     com.runecraft.osrs.Toxins.ANTI_VENOM_PLUS[1], now);
+            case EXTENDED_ANTI_VENOM_PLUS -> PoisonService.antiVenom(player, com.runecraft.osrs.Toxins.EXTENDED_ANTI_VENOM_PLUS[0],
+                    com.runecraft.osrs.Toxins.EXTENDED_ANTI_VENOM_PLUS[1], now);
             case SUPER_ANTIFIRE -> player.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 20 * 180, 1));
             case EXTENDED_SUPER_ANTIFIRE -> player.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 20 * 360, 1));
             case GUTHIX_REST -> {

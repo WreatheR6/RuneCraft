@@ -812,6 +812,17 @@ public final class MinigameRules {
                 new Loot("uncut_jade", 2, 3, 31), new Loot("uncut_opal", 3, 3, 31), new Loot("uncut_red_topaz", 1, 1, 31),
                 new Loot("mithril_bolts", 16, 35, 40), new Loot("adamant_bolts", 12, 26, 20), new Loot("bird_nest_seeds", 1, 1, 20),
                 new Loot("coins", 2, 500, 200));
+        /**
+         * Hard deliveries roll this table instead: the same tips plus the grand seed pod, a rare tip from Wingstone, Penwie,
+         * Brambickle and Professor Manglethorp (OSRS Wiki "Grand seed pod"; weight approx).
+         */
+        public static final List<Loot> HARD_TIPS = hardTips();
+
+        private static List<Loot> hardTips() {
+            List<Loot> out = new java.util.ArrayList<>(TIPS);
+            out.add(new Loot("grand_seed_pod", 1, 1, 4)); // approx: "rare"
+            return List.copyOf(out);
+        }
 
         private GnomeRestaurant() {
         }
