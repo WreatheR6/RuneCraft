@@ -132,6 +132,32 @@ class MinigamesRound31Test {
         assertEquals(EmirsArena.FUN_WEAPONS.size(), new HashSet<>(EmirsArena.FUN_WEAPONS).size(), "no duplicates");
     }
 
+    @Test
+    void lastManStandingHighStakes() {
+        LastManStanding.Mode hs = LastManStanding.Mode.of(LastManStanding.HIGH_STAKES_ENTRANCE);
+        assertEquals(LastManStanding.Mode.HIGH_STAKES, hs);
+        assertEquals(2, hs.ordinal(), "appended after Casual and Competitive");
+        assertTrue(hs.ranked());
+        assertFalse(LastManStanding.Mode.CASUAL.ranked());
+        assertEquals("High Stakes", hs.displayName());
+        assertEquals(24, hs.minPlayers, "the wiki's minimum");
+        assertEquals(500_000, LastManStanding.HIGH_STAKES_FEE);
+        assertEquals(7_500_000, LastManStanding.highStakesPrize(1));
+        assertEquals(2_500_000, LastManStanding.highStakesPrize(2));
+        for (int place = 3; place <= 24; place++) {
+            assertEquals(0, LastManStanding.highStakesPrize(place));
+            assertEquals(place <= 5, LastManStanding.highStakesFreeEntry(place), "place " + place);
+        }
+        assertFalse(LastManStanding.highStakesFreeEntry(1));
+        assertFalse(LastManStanding.highStakesFreeEntry(2));
+        // A minimum game is a coin sink of at least 500,000 (wiki): 12M in, 10M prizes, 1.5M of free entries.
+        long in = (long) hs.minPlayers * LastManStanding.HIGH_STAKES_FEE;
+        long out = LastManStanding.highStakesPrize(1) + LastManStanding.highStakesPrize(2) + 3L * LastManStanding.HIGH_STAKES_FEE;
+        assertEquals(500_000, in - out);
+        assertEquals(Minigame.LAST_MAN_STANDING, MinigameWorld.EXTRA_ENTRANCES.get(LastManStanding.HIGH_STAKES_ENTRANCE));
+        assertTrue(MinigameWorld.placeBlocks().get(Minigame.LAST_MAN_STANDING.place()).contains(LastManStanding.HIGH_STAKES_ENTRANCE));
+    }
+
     // ------------------------------------------------------------------ Soul Wars, TzHaar, Colosseum
 
     @Test

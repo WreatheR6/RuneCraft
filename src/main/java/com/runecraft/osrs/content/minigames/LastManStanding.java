@@ -50,6 +50,8 @@ public final class LastManStanding {
     public static final String SHOP = "last_man_standing";
     public static final String POINTS = "pts:last_man_standing";
     public static final String COMPETITIVE_ENTRANCE = "lms_competitive_entrance";
+    /** The High Stakes portal (Ferox Enclave, 3142, 3639); Justine also signs players up (talk while sneaking). */
+    public static final String HIGH_STAKES_ENTRANCE = "lms_high_stakes_entrance";
     public static final String CHEST = "lms_chest";
     public static final String CRATE = "lms_crate";
     public static final String ROWBOAT = "lms_rowboat";
@@ -70,7 +72,12 @@ public final class LastManStanding {
         /** Casual: no rewards, starts with four players. */
         CASUAL(4),
         /** Competitive: points and rank. OSRS needs 24 players; a Minecraft server rarely has that many. // approx */
-        COMPETITIVE(4);
+        COMPETITIVE(4),
+        /**
+         * High Stakes: competitive with a 500,000-coin entry fee and coin prizes. It keeps the wiki's minimum of 24 players,
+         * which is what makes the prizes (10M of the 12M paid in) a coin sink rather than a source.
+         */
+        HIGH_STAKES(24);
 
         public final int minPlayers;
 
@@ -79,8 +86,43 @@ public final class LastManStanding {
         }
 
         public static Mode of(String entrance) {
-            return COMPETITIVE_ENTRANCE.equals(entrance) ? COMPETITIVE : CASUAL;
+            return COMPETITIVE_ENTRANCE.equals(entrance) ? COMPETITIVE : HIGH_STAKES_ENTRANCE.equals(entrance) ? HIGH_STAKES : CASUAL;
         }
+
+        /** Competitive and High Stakes give points and rank. */
+        public boolean ranked() {
+            return this != CASUAL;
+        }
+
+        public String displayName() {
+            return switch (this) {
+                case CASUAL -> "Casual";
+                case COMPETITIVE -> "Competitive";
+                case HIGH_STAKES -> "High Stakes";
+            };
+        }
+    }
+
+    // ---------------------------------------------------------------- High Stakes (OSRS Wiki "Last Man Standing")
+    /** High Stakes entry fee (raised from 100,000 to 500,000 coins). */
+    public static final int HIGH_STAKES_FEE = 500_000;
+    /** Coins the sole survivor wins. */
+    public static final int HIGH_STAKES_WINNER = 7_500_000;
+    /** Coins the runner-up wins. */
+    public static final int HIGH_STAKES_RUNNER_UP = 2_500_000;
+    /** MinigameData stat: High Stakes winnings waiting in the reward chest by Justine. */
+    public static final String HIGH_STAKES_CHEST = "lms_high_stakes_chest";
+    /** MinigameData stat: free High Stakes entries earned by finishing third to fifth. */
+    public static final String HIGH_STAKES_FREE = "lms_high_stakes_free";
+
+    /** Coins a High Stakes finish puts in the player's reward chest: 7.5M for first, 2.5M for second, nothing else. */
+    public static int highStakesPrize(int place) {
+        return place == 1 ? HIGH_STAKES_WINNER : place == 2 ? HIGH_STAKES_RUNNER_UP : 0;
+    }
+
+    /** Third to fifth place play their next High Stakes game free of charge. */
+    public static boolean highStakesFreeEntry(int place) {
+        return place >= 3 && place <= 5;
     }
 
     /** OSRS needs at most 24 players a game. */

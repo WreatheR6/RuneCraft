@@ -65,16 +65,47 @@ public class LmsSession extends MinigameSession {
         this.mode = Mode.of(variant);
     }
 
-    /** Competitive games need total level 750 and 30 quest points, or 1,500 total. */
+    /**
+     * Competitive and High Stakes games need total level 750 and 30 quest points, or 1,500 total; High Stakes also needs the
+     * 500,000-coin fee (or a free entry), taken when the game starts.
+     */
     public static String requirement(ServerPlayerEntity player, String variant) {
-        if (Mode.of(variant) != Mode.COMPETITIVE) {
+        Mode m = Mode.of(variant);
+        if (!m.ranked()) {
             return null;
         }
         var data = Players.data(player);
         if (!LastManStanding.competitiveAllowed(data.skills().totalLevel(), data.questPoints())) {
-            return "Lisa: Competitive games need a total level of 750 and 30 quest points, or a total level of 1,500.";
+            return "Lisa: " + m.displayName() + " games need a total level of 750 and 30 quest points, or a total level of 1,500.";
+        }
+        if (m == Mode.HIGH_STAKES && MinigameData.of(player).stat(player.getUuid(), LastManStanding.HIGH_STAKES_FREE) <= 0
+                && !Inv.has(player, Inv.COINS, LastManStanding.HIGH_STAKES_FEE)) {
+            return "Lisa: High Stakes games cost " + String.format("%,d", LastManStanding.HIGH_STAKES_FEE) + " coins to enter.";
         }
         return null;
+    }
+
+    /**
+     * Takes every High Stakes player's fee (a free entry first) before the game starts; players who can't pay are sent back.
+     * Returns the players who paid coins, so a cancelled game can refund them.
+     */
+    private List<ServerPlayerEntity> takeFees() {
+        List<ServerPlayerEntity> paid = new ArrayList<>();
+        for (ServerPlayerEntity p : online()) {
+            MinigameData data = MinigameData.of(p);
+            int free = data.stat(p.getUuid(), LastManStanding.HIGH_STAKES_FREE);
+            if (free > 0) {
+                data.setStat(p.getUuid(), LastManStanding.HIGH_STAKES_FREE, free - 1);
+                Msg.game(p, "Lisa: This High Stakes game is on the house.");
+            } else if (Inv.has(p, Inv.COINS, LastManStanding.HIGH_STAKES_FEE)) {
+                Inv.remove(p, Inv.COINS, LastManStanding.HIGH_STAKES_FEE);
+                paid.add(p);
+            } else {
+                Msg.game(p, "Lisa: You can't pay the High Stakes entry fee.");
+                removePlayer(p, true);
+            }
+        }
+        return paid;
     }
 
     @Override
@@ -228,8 +259,12 @@ public class LmsSession extends MinigameSession {
 
     @Override
     protected void start() {
+        List<ServerPlayerEntity> paid = mode == Mode.HIGH_STAKES && playerCount() >= mode.minPlayers ? takeFees() : List.of();
         starters = playerCount();
         if (starters < mode.minPlayers) {
+            for (ServerPlayerEntity p : paid) {
+                Inv.give(p, Inv.COINS, LastManStanding.HIGH_STAKES_FEE);
+            }
             broadcast("Lisa: There aren't enough players for a game. " + mode.minPlayers + " are needed.");
             end(false);
             return;
@@ -253,7 +288,7 @@ public class LmsSession extends MinigameSession {
             equip(p);
             refill(p);
             restoreStats(p);
-            Msg.game(p, (mode == Mode.COMPETITIVE ? "Competitive" : "Casual") + " game: everyone plays the " + build.displayName
+            Msg.game(p, mode.displayName() + " game: everyone plays the " + build.displayName
                     + " build. Your own items are safe with Lisa until you leave.");
         }
         started = true;
@@ -461,8 +496,11 @@ public class LmsSession extends MinigameSession {
         ServerPlayerEntity killer = killerOf(player);
         // The victim's loot (not their supplies) drops for the killer; their own items are safe.
         dropLoot(player);
-        if (mode == Mode.COMPETITIVE) {
+        if (mode.ranked()) {
             award(player, place);
+        }
+        if (mode == Mode.HIGH_STAKES) {
+            highStakes(player, place);
         }
         Msg.red(player, "You have been defeated! You finish in place " + place + ". Your items are returned to you.");
         removePlayer(player, true);
@@ -533,6 +571,20 @@ public class LmsSession extends MinigameSession {
                 + (pts == 1 ? "" : "s") + ". Your rank is now " + rank + " (" + LastManStanding.rankTitle(rank) + ").");
     }
 
+    /** High Stakes prizes go to the reward chest by Justine (7.5M first, 2.5M second); third to fifth play next time free. */
+    private static void highStakes(ServerPlayerEntity p, int place) {
+        MinigameData data = MinigameData.of(p);
+        int prize = LastManStanding.highStakesPrize(place);
+        if (prize > 0) {
+            int held = data.stat(p.getUuid(), LastManStanding.HIGH_STAKES_CHEST);
+            data.setStat(p.getUuid(), LastManStanding.HIGH_STAKES_CHEST, (int) Math.min(Integer.MAX_VALUE, (long) held + prize));
+            Msg.game(p, String.format("%,d", prize) + " coins wait for you in the High Stakes reward chest; ask Justine for them.");
+        } else if (LastManStanding.highStakesFreeEntry(place)) {
+            data.incrementStat(p.getUuid(), LastManStanding.HIGH_STAKES_FREE);
+            Msg.game(p, "Your next High Stakes game is free of charge.");
+        }
+    }
+
     @Override
     protected void onLeave(ServerPlayerEntity player) {
         // Death, forfeit (rowboat, logout, /minigame leave) or the end of the game: everything brought in comes back.
@@ -553,7 +605,10 @@ public class LmsSession extends MinigameSession {
         ServerPlayerEntity winner = left.get(0);
         MinigameData data = MinigameData.of(winner);
         data.incrementStat(winner.getUuid(), "kc:" + game.id());
-        if (mode == Mode.COMPETITIVE) {
+        if (mode == Mode.HIGH_STAKES) {
+            highStakes(winner, 1);
+        }
+        if (mode.ranked()) {
             award(winner, 1);
             int wins = data.incrementStat(winner.getUuid(), LastManStanding.WINS);
             Msg.game(winner, "You have won " + wins + " competitive game" + (wins == 1 ? "" : "s") + " of Last Man Standing.");
@@ -567,7 +622,7 @@ public class LmsSession extends MinigameSession {
     @Override
     protected List<String> hud(ServerPlayerEntity player) {
         List<String> lines = new ArrayList<>();
-        lines.add("Last Man Standing (" + (mode == Mode.COMPETITIVE ? "competitive" : "casual") + ", " + build.displayName + ")");
+        lines.add("Last Man Standing (" + mode.displayName().toLowerCase(java.util.Locale.ROOT) + ", " + build.displayName + ")");
         lines.add("Players left: " + playerCount() + "  Kills: " + kills.getOrDefault(player.getUuid(), 0));
         if (ticks < LastManStanding.START_TICKS) {
             lines.add("Starting in " + time(LastManStanding.START_TICKS - ticks));

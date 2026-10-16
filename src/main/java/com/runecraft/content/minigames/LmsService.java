@@ -5,6 +5,7 @@ import com.runecraft.content.systems.SysState;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.content.minigames.LastManStanding;
+import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.quest.QuestScripts;
@@ -82,6 +83,21 @@ public final class LmsService {
 
     /** Justine: hands out any Victor's cape the player has earned and isn't carrying, then opens her shop. */
     static void justine(ServerPlayerEntity p) {
+        MinigameData md = MinigameData.of(p);
+        int winnings = md.stat(p.getUuid(), LastManStanding.HIGH_STAKES_CHEST);
+        if (winnings > 0) {
+            md.setStat(p.getUuid(), LastManStanding.HIGH_STAKES_CHEST, 0);
+            Inv.give(p, Inv.COINS, winnings);
+            QuestApi.say(p, "Justine", "Here are your High Stakes winnings from the reward chest: " + String.format("%,d", winnings)
+                    + " coins.");
+        }
+        if (p.isSneaking()) {
+            // The High Stakes portal, also for worlds whose Ferox Enclave was built before it existed.
+            QuestApi.say(p, "Justine", "High Stakes it is! " + String.format("%,d", LastManStanding.HIGH_STAKES_FEE)
+                    + " coins to enter, 7,500,000 for the last one standing.");
+            MinigameManager.enter(p, Minigame.LAST_MAN_STANDING, LastManStanding.HIGH_STAKES_ENTRANCE);
+            return;
+        }
         int wins = MinigameData.of(p).stat(p.getUuid(), LastManStanding.WINS);
         for (int i = 0; i < VICTOR_CAPES.length; i++) {
             int w = LastManStanding.VICTOR_WINS[i];
@@ -92,7 +108,8 @@ public final class LmsService {
                 QuestApi.say(p, "Justine", "You've won " + w + " game" + (w == 1 ? "" : "s") + "! Take this Victor's cape.");
             }
         }
-        QuestApi.say(p, "Justine", "Have a look at my stuff for the Last Shopper Standing.");
+        QuestApi.say(p, "Justine", "Have a look at my stuff for the Last Shopper Standing. (Talk to me while sneaking to join a High "
+                + "Stakes game.)");
         RewardShopService.open(p, LastManStanding.SHOP);
     }
 
