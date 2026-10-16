@@ -192,17 +192,19 @@ public final class SailingData extends SkillingPart {
         tool(s, "portable_weather_station", "Portable weather station", "machine", 0x9AA0A8, 100)
                 .examine("Takes readings of the local weather.");
         // Shipbuilding materials of the Sailing islands (OSRS: Sailing woods, lead and nickel ores; sold by shipwrights here, approx).
-        String[][] woods = {{"camphor", "Camphor", "8A6A4A"}, {"ironwood", "Ironwood", "5A4A40"}, {"rosewood", "Rosewood", "9A4A4A"}};
+        // Log values: OSRS Wiki infoboxes (camphor 220, ironwood 360, rosewood 370); plank values approx.
+        String[][] woods = {{"camphor", "Camphor", "8A6A4A", "220"}, {"ironwood", "Ironwood", "5A4A40", "360"},
+                {"rosewood", "Rosewood", "9A4A4A", "370"}};
         for (String[] w : woods) {
             int c = Integer.parseInt(w[2], 16);
-            simple(s, w[0] + "_logs", w[1] + " logs", "log", c, 150).examine("Logs cut from " + w[0] + " trees.");
+            simple(s, w[0] + "_logs", w[1] + " logs", "log", c, Integer.parseInt(w[3])).examine("Logs cut from " + w[0] + " trees.");
             simple(s, w[0] + "_plank", w[1] + " plank", "plank", c, 600).examine("A plank of fine " + w[0] + ".");
         }
         simple(s, "lead_bar", "Lead bar", "bar", 0x6A6A78, 120).examine("A bar of lead.");
         simple(s, "cupronickel_bar", "Cupronickel bar", "bar", 0xB08A6A, 400).examine("An alloy of copper and nickel.");
-        simple(s, "bolt_of_linen", "Bolt of linen", "cloth", 0xE0D8C0, 150).examine("A bolt of linen for sails.");
-        simple(s, "bolt_of_canvas", "Bolt of canvas", "cloth", 0xC8B890, 400).examine("A bolt of canvas for sails.");
-        simple(s, "bolt_of_cotton", "Bolt of cotton", "cloth", 0xF4F0E8, 900).examine("A bolt of cotton for sails.");
+        simple(s, "bolt_of_linen", "Bolt of linen", "cloth", 0xE0D8C0, 20).examine("A bolt of linen for sails.");
+        simple(s, "bolt_of_canvas", "Bolt of canvas", "cloth", 0xC8B890, 100).examine("A bolt of canvas for sails.");
+        simple(s, "bolt_of_cotton", "Bolt of cotton", "cloth", 0xF4F0E8, 400).examine("A bolt of cotton for sails.");
         simple(s, "dragon_nails", "Dragon nails", "nails", 0xA02020, 1500).examine("Keeps things in place very permanently.");
         simple(s, "dragon_metal_sheet", "Dragon metal sheet", "bar", 0xB02A2A, 30000).examine("A sheet of dragon metal.");
         simple(s, "heart_of_ithell", "Heart of Ithell", "orb", 0x80E0D0, 1).examine("A crystal heart from the Gwenith Glide.");
@@ -264,16 +266,16 @@ public final class SailingData extends SkillingPart {
             {1546, 2636, 1861, 2546, 2496, 2289, 3372, 2112}, {1792, 2869, 2088, 3656, 2177, 3804}, {1673, 2384, 1739, 2232},
             {1767, 4090, 2246, 4115}, {1794, 3995}};
 
-    /** Items from salvage, sea creatures and ocean encounters: wiki name, shape, colour, value (approx). */
+    /** Items from salvage, sea creatures and ocean encounters: wiki name, shape, colour, value (approx; the seeds and frags are wiki values). */
     static final String[][] SEA_ITEMS = {
             {"Rusty locket", "amulet", "8A5A3A", "100"}, {"Boat bottle (empty)", "vial", "A0C0C0", "100"},
             {"Facility bottle (empty)", "vial", "A0B0C0", "100"}, {"Sailors' amulet (inert)", "amulet", "4A7AAA", "5000"},
             {"Mouldy block", "package", "6A7A4A", "10"}, {"Dull knife", "knife", "7A7A7A", "10"}, {"Broken compass", "orb", "B09040", "50"},
             {"Rusty coin", "coins", "8A5A3A", "50"}, {"Broken sextant", "orb", "B0A060", "100"}, {"Smashed mirror", "shard", "C0D0E0", "100"},
-            {"Mouldy doll", "pet", "7A6A4A", "200"}, {"Hemp seed", "seed", "7A8A3A", "20"}, {"Flax seed", "seed", "8A9AC0", "20"},
-            {"Cotton seed", "seed", "E0E0D0", "60"}, {"Camphor seed", "seed", "8A6A4A", "200"}, {"Ironwood seed", "seed", "5A4A40", "600"},
-            {"Rosewood seed", "seed", "9A4A4A", "2000"}, {"Elkhorn frag", "shard", "D0C0A0", "50"}, {"Pillar frag", "shard", "E0A0B0", "50"},
-            {"Umbral frag", "shard", "5A3A7A", "500"}, {"Sawmill coupon (wood plank)", "note", "C0A070", "100"},
+            {"Mouldy doll", "pet", "7A6A4A", "200"}, {"Hemp seed", "seed", "7A8A3A", "5"}, {"Flax seed", "seed", "8A9AC0", "5"},
+            {"Cotton seed", "seed", "E0E0D0", "5"}, {"Camphor seed", "seed", "8A6A4A", "60"}, {"Ironwood seed", "seed", "5A4A40", "72"},
+            {"Rosewood seed", "seed", "9A4A4A", "80"}, {"Elkhorn frag", "shard", "D0C0A0", "26"}, {"Pillar frag", "shard", "E0A0B0", "52"},
+            {"Umbral frag", "shard", "5A3A7A", "78"}, {"Sawmill coupon (wood plank)", "note", "C0A070", "100"},
             {"Sawmill coupon (oak plank)", "note", "A08050", "250"}, {"Salvor's paint", "pot_item", "3A6A8A", "1000"},
             {"Inky paint", "pot_item", "202030", "1000"}, {"Broken dragon hook", "hook", "A02020", "50000"},
             {"Dragon cannon barrel", "bar", "B02A2A", "200000"}, {"Echo pearl", "orb", "C0E0F0", "5000"}, {"Ray barbs", "tooth", "8A7A6A", "500"},

@@ -183,7 +183,7 @@ public final class RunecraftData extends SkillingPart {
     public void items(ItemSink s) {
         simple(s, "daeyalt_shard", "Daeyalt shard", "shard", 0x9A90A8, 1).stack(Integer.MAX_VALUE)
                 .examine("A shard of daeyalt essence. Noranna Tytanin will trade them for daeyalt essence.");
-        simple(s, "daeyalt_essence", "Daeyalt essence", "essence", 0x8A8098, 4)
+        simple(s, "daeyalt_essence", "Daeyalt essence", "essence", 0x8A8098, 20)
                 .examine("Imbued with the power of the Stone of Jas: worth half again as much experience as pure essence.");
         for (RuneAltar a : RuneAltar.values()) {
             String name = a.rune().displayName().replace(" rune", "");

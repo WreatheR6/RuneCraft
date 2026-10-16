@@ -453,6 +453,10 @@ final class FarmingHooks {
     private static void emptyPatch(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Patch patch, NbtCompound nbt, String held) {
         FarmingData.Compost compost = FarmingData.Compost.byItem(held);
         if (compost != null) {
+            if (!FarmingData.compostable(patch)) {
+                Msg.game(player, "Coral nurseries can't be treated with compost.");
+                return;
+            }
             if (nbt.getInt("compost") > 0) {
                 Msg.game(player, "This patch has already been treated with compost.");
                 return;

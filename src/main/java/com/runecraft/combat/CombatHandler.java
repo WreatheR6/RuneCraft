@@ -359,6 +359,12 @@ public final class CombatHandler {
 
     /** Applies OSRS damage with a hitsplat; returns the damage actually dealt (capped at remaining HP). */
     public static int applyDamage(LivingEntity attacker, LivingEntity target, int damage) {
+        if (attacker != null && !(target instanceof ServerPlayerEntity) && target.isInvulnerable()) {
+            // Scenery creatures (GotR's abyssal creatures, Sorceress's Garden elementals) can't be hurt by any path (melee,
+            // ranged, magic, cannon, specials), so they never give combat XP.
+            ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS);
+            return 0;
+        }
         if (target instanceof MobEntity mob && attacker != null && mob.getTarget() == null) {
             mob.setTarget(attacker);
         }

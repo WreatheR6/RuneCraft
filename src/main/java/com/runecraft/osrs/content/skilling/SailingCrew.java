@@ -112,6 +112,28 @@ public final class SailingCrew {
         return 0.1 * Math.max(1, Math.min(4, deckhandiness));
     }
 
+    /** Crewmates roll to salvage every 5 ticks (players every 4; OSRS Wiki, Shipwreck salvaging). */
+    public static final int CREW_SALVAGE_TICKS = 5;
+
+    /**
+     * A crewmate's chance to haul salvage: the player's chance at that wreck and hook times Deckhandiness x 10%
+     * (wiki example: 40% for the player, Jobless Jim (3) 12%). The haul gives {@link #salvageShare} of the player's XP.
+     */
+    public static double crewSalvageChance(double playerChance, int deckhandiness) {
+        return playerChance * salvageShare(deckhandiness);
+    }
+
+    /** The crewmate aboard with the best Deckhandiness who can work a hook of this tier (SailingSea metal index), or null. */
+    public static Crewmate salvager(List<Crewmate> aboard, int hookTier) {
+        Crewmate best = null;
+        for (Crewmate c : aboard) {
+            if (bestHook(c.deckhandiness()) >= hookTier && (best == null || c.deckhandiness() > best.deckhandiness())) {
+                best = c;
+            }
+        }
+        return best;
+    }
+
     /** Deckhandiness: the best salvaging hook tier a crewmate can work (1 steel, 2 adamant, 3 rune, 4 dragon). */
     public static int bestHook(int deckhandiness) {
         return switch (Math.max(1, Math.min(4, deckhandiness))) {

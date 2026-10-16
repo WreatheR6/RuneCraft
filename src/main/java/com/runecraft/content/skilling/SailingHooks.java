@@ -7,6 +7,7 @@ import com.runecraft.osrs.Chance;
 import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.skilling.CookingData;
+import com.runecraft.osrs.content.skilling.SailingCrew;
 import com.runecraft.osrs.content.skilling.SailingData;
 import com.runecraft.osrs.content.skilling.SailingTraining;
 import com.runecraft.quest.QuestApi;
@@ -231,14 +232,30 @@ final class SailingHooks {
         }
         Msg.action(player, "You lower your salvaging hook into the wreck.");
         ActionManager.start(player, new SkillingUtil.BlockAction(pos, w.blockId(), com.runecraft.osrs.content.skilling.SailingSea.SALVAGE_TICKS) {
+            private int crewTicks;
+
             @Override
             boolean roll(ServerPlayerEntity p, Random random) {
                 if ((hookTier < 0 && !Inv.has(p, "salvaging_hook", 1)) || GatheringHooks.depleted(world, pos)) {
                     return false;
                 }
                 world.playSound(null, pos, SoundEvents.ENTITY_FISHING_BOBBER_SPLASH, SoundCategory.PLAYERS, 0.5f, 0.8f);
-                if (random.nextDouble() < com.runecraft.osrs.content.skilling.SailingSea.salvageChance(w, SkillingUtil.level(p, Skill.SAILING),
-                        tier)) {
+                double chance = com.runecraft.osrs.content.skilling.SailingSea.salvageChance(w, SkillingUtil.level(p, Skill.SAILING), tier);
+                // The best deckhand aboard works a hook alongside you (approx: OSRS assigns crew to each hook, and they keep
+                // salvaging while you do something else): every 5 ticks, your chance x Deckhandiness x 10%, for that share
+                // of the XP (OSRS Wiki, Shipwreck salvaging).
+                crewTicks += com.runecraft.osrs.content.skilling.SailingSea.SALVAGE_TICKS;
+                while (hookTier >= 0 && crewTicks >= SailingCrew.CREW_SALVAGE_TICKS) {
+                    crewTicks -= SailingCrew.CREW_SALVAGE_TICKS;
+                    SailingCrew.Crewmate hand = SailingCrew.salvager(
+                            SailingCrew.aboard(SeaHooks.crewOrder(p), boatType, SkillingUtil.level(p, Skill.SAILING)), hookTier);
+                    if (hand != null && random.nextDouble() < SailingCrew.crewSalvageChance(chance, hand.deckhandiness())) {
+                        SkillingUtil.give(p, w.salvage(), 1);
+                        XpService.add(p, Skill.SAILING, w.xp() * SailingCrew.salvageShare(hand.deckhandiness()));
+                        Msg.action(p, hand.name() + " hauls up some salvage.");
+                    }
+                }
+                if (random.nextDouble() < chance) {
                     SkillingUtil.give(p, w.salvage(), 1);
                     XpService.add(p, Skill.SAILING, w.xp());
                     Msg.action(p, "You haul up some salvage.");
