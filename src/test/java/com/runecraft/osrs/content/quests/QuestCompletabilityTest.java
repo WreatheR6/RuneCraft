@@ -28,6 +28,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class QuestCompletabilityTest {
     private static final QuestBook BOOK = QuestBook.get();
+    /**
+     * "quest:item" pairs only saves from an older version of a quest carry: the step that handed the item out was
+     * replaced, and a later step still accepts it so those players can finish.
+     */
+    private static final Set<String> LEGACY_SAVE_ITEMS = Set.of("in_search_of_knowledge:quest_lost_tome");
 
     private static String snake(String name) {
         return name.toLowerCase(Locale.ROOT).replace(' ', '_').replace("'", "");
@@ -125,7 +130,7 @@ class QuestCompletabilityTest {
                     for (String item : needed) {
                         if (!item.startsWith("minecraft:") && !ItemCatalog.exists(item)) {
                             problems.add(where + ": unknown item " + item);
-                        } else if (questItems.contains(item) && !obtainable.contains(item)) {
+                        } else if (questItems.contains(item) && !obtainable.contains(item) && !LEGACY_SAVE_ITEMS.contains(q.id() + ":" + item)) {
                             problems.add(where + ": quest item " + item + " is not handed out by this stage");
                         }
                     }

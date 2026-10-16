@@ -25,6 +25,7 @@ import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import com.runecraft.world.LandmarkBuilder;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.registry.Registries;
@@ -68,6 +69,7 @@ public final class QuestInterpreter {
                 reachTick(server);
             }
         });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> QuestPuzzles.forget(handler.player.getUuid()));
     }
 
     /** Self-test hook ({@code com.runecraft.selftest}): talks to a quest NPC through the real dialogue dispatcher. */
@@ -414,13 +416,20 @@ public final class QuestInterpreter {
         return false;
     }
 
+    /** Whether a living quest boss of this id is within 32 blocks of the player. */
+    static boolean bossNearby(ServerPlayerEntity p, String bossId) {
+        EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(bossId);
+        return type != null && p.getWorld() instanceof ServerWorld world
+                && !world.getEntitiesByType(type, new Box(p.getBlockPos()).expand(32), e -> e.isAlive()).isEmpty();
+    }
+
     static void spawnNear(ServerPlayerEntity p, String bossId) {
         BossDef def = ContentRegistry.boss(bossId);
         EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(bossId);
         if (def == null || type == null || !(p.getWorld() instanceof ServerWorld world)) {
             return;
         }
-        if (!world.getEntitiesByType(type, new Box(p.getBlockPos()).expand(32), e -> e.isAlive()).isEmpty()) {
+        if (bossNearby(p, bossId)) {
             Msg.game(p, def.name + " is already nearby!");
             return;
         }

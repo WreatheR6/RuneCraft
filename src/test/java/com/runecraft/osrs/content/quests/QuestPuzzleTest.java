@@ -124,6 +124,9 @@ class QuestPuzzleTest {
             assertTrue(matched.startsWith(KandarinMoreQuests.SUSPECTS[m] + "'s"), matched + " vs " + KandarinMoreQuests.SUSPECTS[m]);
         }
         assertEquals(6, murderers.size(), "any of the six can be the murderer");
+        // a save from before the puzzles reaches the accusation without the print (David took it): the guard lifts another
+        assertTrue(mm.stages.get(4).triggers.stream().anyMatch(t -> t.kind == Trigger.Kind.TALK && t.next == t.stage
+                && t.unlessItems.contains("killers_print") && t.give.containsKey("killers_print")));
     }
 
     @Test

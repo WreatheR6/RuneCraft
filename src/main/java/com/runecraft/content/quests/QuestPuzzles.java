@@ -112,6 +112,10 @@ public final class QuestPuzzles {
         String speaker = QuestInterpreter.npcName(presenter(p, t));
         if (e != null && e.awaitingKill && e.quest.equals(q.id()) && e.stage == t.stage && e.trigger == index) {
             com.runecraft.osrs.content.BossDef boss = ContentRegistry.boss(v.spawn());
+            // The foe can die without this player's kill (another recruit's last hit, suffocation) or be left behind: raise it again.
+            if (v.spawn() != null && !QuestInterpreter.bossNearby(p, v.spawn())) {
+                QuestInterpreter.spawnNear(p, v.spawn());
+            }
             Msg.game(p, "Defeat " + (boss == null ? v.kill().replace('_', ' ') : boss.name) + "!");
             return;
         }
@@ -128,6 +132,13 @@ public final class QuestPuzzles {
         if (v.length() > 1) {
             p.sendMessage(Text.literal("(" + v.length() + " choices in order; click the options one at a time.)").formatted(Formatting.GRAY), false);
         }
+    }
+
+    /** Drops a player's puzzle progress (on disconnect): the room is shown afresh next time. */
+    static void forget(UUID player) {
+        ACTIVE.remove(player);
+        String prefix = player + "|";
+        SHOWN.removeIf(k -> k.startsWith(prefix));
     }
 
     /** {@code /questpuzzle <quest>}: shows the current puzzle of a quest again. */
