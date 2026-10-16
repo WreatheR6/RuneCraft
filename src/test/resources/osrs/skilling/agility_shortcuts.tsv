@@ -1,0 +1,170 @@
+kind	agility	other	shortcut	location	xp
+shortcut	1	-	Stepping stone (Lumbridge Swamp Caves)	Lumbridge Swamp Caves stepping stones	3 (1 on failure)
+shortcut	5	-	Crumbling wall (Falador)	Falador Agility Shortcut	0.5
+shortcut	5	-	Climbing rocks (Yanille)	Yanille	25
+shortcut	8	strength=19,ranged=37	Broken Raft	(Mith grapple) Over the River Lum to Al Kharid	-
+shortcut	10	-	Rocks (Corsair Cove)	Corsair Cove shortcut	1
+shortcut	11	strength=37,ranged=19	Wall (Falador)	(Mith grapple) Scale Falador wall	-
+shortcut	12	-	Stepping stones (Western Brimhaven Dungeon)	Stepping stones in Brimhaven Dungeon	7.5
+shortcut	13	-	Fence (Varrock)	Varrock south fence jump	0
+shortcut	14	-	Tight-gap (Goblin Village)	Scale Goblin Village wall	0
+shortcut	15	-	Pillar (Corsair Cove Dungeon)	Corsair Cove Dungeon shortcut	2
+shortcut	15	-	Rock slide (Cairn Isle)	Cairn Isle rock slide climb	0
+shortcut	16	-	Underwall tunnel (Yanille)	Yanille Agility shortcut	0
+shortcut	17	-	Crack (Southern Catacombs of Kourend)	Catacombs of Kourend southern crack	0
+shortcut	18	-	Broken window (Slayer Tower)	Slayer Tower Banshee shortcut	3
+shortcut	20	-	Log balance (Coal Trucks)	Coal Trucks log balance	8.5
+shortcut	21	-	Underwall tunnel (Grand Exchange)	Grand Exchange Agility shortcut	0
+shortcut	22	-	Pipe (Brimhaven Dungeon Entrance)	Pipe contortion in Brimhaven Dungeon	8.5
+shortcut	23	strength=28,ranged=24	Rocks (Observatory)	(Mith grapple) Scale the Observatory cliff	-
+shortcut	24	-	Broken wall (Nemus Retreat)	South of Nemus Retreat bank	6
+shortcut	25	-	Rocks (Eagles' Peak)	Eagles' Peak Agility shortcut	1
+shortcut	25	-	Fence (Burgh de Rott)	Between Burgh de Rott and the Abandoned Mine	0
+shortcut	26	-	Underwall tunnel (Falador)	Falador Agility shortcut	0
+shortcut	28	-	Stones (Catacombs of Kourend)	North-west corner of the Catacombs of Kourend	2
+shortcut	29	-	Rocks (Mount Karuulm)#Lower	Lower Mount Karuulm cliffside climb	0
+shortcut	30	-	Rocks (Corsair Cove Resource Area)	Rocks in the Corsair Cove Resource Area	2
+shortcut	30	-	Stepping stones (Karamja)	Stepping stones near the waterfall east of Shilo Village	3 or 1 (if failed)
+shortcut	31	-	Stepping stone (Champions' Guild)	Draynor Manor stones to Champions' Guild	3 or 1 (if failed)
+shortcut	32	strength=35,ranged=35	Rocks (Catherby)	(Mith grapple) Scale Catherby cliffside	-
+shortcut	32	-	Stepping stone (Shilo Village)	Shilo Village stepping stones over the river	0
+shortcut	33	-	Log balance (East Ardougne)	Ardougne log balance shortcut	4 or 2 (if failed)
+shortcut	33	-	Tunnel (Nemus Retreat)	Northern wall of Nemus Retreat next to the Tree Patch	7.5
+shortcut	34	-	Crack (Northern Catacombs of Kourend)	Catacombs of Kourend northern crack	0
+shortcut	35	-	Trellis (Varrock)	Varrock Palace garden	0
+shortcut	35	-	Rocky handholds (Rellekka Hunter area)	North east in the Rellekka Hunter area.	1
+shortcut	36	strength=22,ranged=39	Crossbow Tree	(Mith grapple) Escape from the Water Obelisk Island	0
+shortcut	36	-	Stepping stone (Nemus Retreat)	East of Nemus Retreat bank	14
+shortcut	37	-	Rocks (Tree Gnome Stronghold)	Gnome Stronghold shortcut	0
+shortcut	38	-	Rocks (Al Kharid)	Al Kharid mining pit cliffside scramble	0
+shortcut	39	strength=38,ranged=21	Wall (Yanille)	(Mith grapple) Scale Yanille wall	-
+shortcut	40	-	Stepping stones (River Hos)	Hosidius lake isle jump	0
+shortcut	40	-	Log balance (Tlati Rainforest)	Tlati Rainforest log balance	0
+shortcut	41	-	Rocks (Trollheim easy)	Trollheim easy cliffside scramble	0
+shortcut	41	-	Rocks (Nemus Retreat)	North of Nemus Retreat bank	9.5
+shortcut	42	-	Narrow crevice (Dwarven Mine)	Dwarven Mine narrow crevice	0
+shortcut	42	-	Underwall tunnel (Draynor Village)	Draynor narrow tunnel	0
+shortcut	43	-	Rocks (Trollheim medium)	Trollheim medium cliffside scramble	0
+shortcut	43	-	Crevice (Fremennik Slayer Dungeon)	Fremennik Slayer Dungeon near basilisks	0
+shortcut	44	-	Rocks (Trollheim advanced)	Trollheim advanced cliffside scramble	0
+shortcut	45	-	Stepping stones (Hosidius)	Hosidius river jump	0
+shortcut	45	-	Log balance (Auburn Valley)	Auburn Valley log balance	19.5
+shortcut	45	-	Rocks (The Proudspire, lower)	The Proudspire lower scramble	0
+shortcut	46	-	Jutting wall (Zanaris)#Medium	Cosmic Temple - medium narrow walkway	10 (6 on failure)
+shortcut	46	-	Narrow crevice (Deep Wilderness Dungeon)	Deep Wilderness Dungeon narrow shortcut	0
+shortcut	46	-	Log balance (Tonali Cavern)	Tonali Cavern shortcuts	0
+shortcut	47	-	Rocks (Trollheim hard)	Trollheim hard cliffside scramble	8
+shortcut	47	-	Rocks (Ralos' Rise)	Ralos' Rise rock climb	0
+shortcut	48	-	Log balance (Fremennik Province)	Log balance to Fremennik Province	4 (2 on failure)
+shortcut	49	-	Boulder (dense essence mine)	Dense essence mine boulder leap	0
+shortcut	50	-	Stepping stone (Mort Myre Swamp)	Stepping stone into Morytania west of the Nature Grotto	0
+shortcut	50	-	Rocks (The Great Conch)	Summer Shore	0
+shortcut	51	-	Obstacle pipe (Edgeville Dungeon)	Pipe from Edgeville Dungeon to Varrock Sewers	10
+shortcut	52	-	Rocks (dense essence mine, east)	Dense essence mine eastern scramble	0
+shortcut	52	-	Rocks (The Great Conch)	The Great Conch eastern plateau	0
+shortcut	53	strength=21,ranged=42	Strong Tree (Karamja volcano)	(Mith grapple) Karamja Volcano	-
+shortcut	54	-	Dark tunnel (Motherlode Mine)	Motherlode Mine eastern wall shortcut	0
+shortcut	54	-	Dark tunnel (Motherlode Mine)	Motherlode Mine southern wall shortcut	0
+shortcut	54	-	Rocks (Aldarin)	West of Aldarin	-
+shortcut	55	-	Stepping stone (Miscellania)	Stepping stone by Miscellania docks	0
+shortcut	55	-	Rocks (The Great Conch)	Cape Conch	0
+shortcut	56	-	Stepping stones (Eastern Brimhaven Dungeon)	Brimhaven Dungeon eastern stepping stones	0
+shortcut	57	-	Broken fence (Rellekka)	Rellekka east fence shortcut	0
+shortcut	57	-	Rocks (The Great Conch)	The Great Conch eastern plateau (north-east side)	0
+shortcut	58	-	Weathered wall	Port Phasmatys Ectopool shortcut	0
+shortcut	59	-	Rocks (Tirannwn)#Easy	Elven Overpass (Arandar) easy cliffside scramble	0
+shortcut	59	-	Cave (Stalker Den)	Cave to the Stalker Den (after Shadows of Custodia)	0
+shortcut	60	-	Rocky handholds (God Wars Dungeon, Wilderness)	Wilderness from God Wars Dungeon area climb	0
+shortcut	60	-	Stepping stone (Mos Le'Harmless)	Estuary crossing on Mos Le'Harmless	0
+shortcut	60	-	Gap (Wintertodt)	Pillars in the Wintertodt's Prison	18
+shortcut	60	-	Platform (Tombs of Amascut)	Tombs of Amascut	5
+shortcut	60	-	Tunnel (Asgarnian Ice Dungeon, level 60)	Asgarnian Ice Dungeon tunnel	0
+shortcut	61	-	Spikey chain (Slayer Tower medium)	Slayer Tower medium spiked chain climb	0
+shortcut	61	-	Strange floor (Fremennik Slayer Dungeon)	Fremennik Slayer Dungeon near pyrefiends	5 × 2
+shortcut	61	-	Stepping stone (The Great Conch)	The Great Conch	0
+shortcut	61	-	Rocks (Vampyrium)	Vampyrium	27.5
+shortcut	62	-	Rocks (Mount Karuulm)#Upper	Upper Mount Karuulm cliffside climb	0
+shortcut	62	-	Stepping stone (Necropolis)	Stepping stones in Necropolis	0
+shortcut	63	-	Loose railing (Taverley Dungeon)	Taverley Dungeon lesser demon fence	0
+shortcut	63	-	Wall (Darkmeyer)	Darkmeyer north-eastern wall	0
+shortcut	63	-	Strange floor (Forthos Dungeon)	Forthos Dungeon jump	10 (5 on fail)
+shortcut	64	-	Rocks (Wilderness, Trollheim)	Trollheim Wilderness Route	0
+shortcut	64	-	Rope (Fossil Island)	Rope to the Fossil Island Volcano	0
+shortcut	64	-	Stepping stone (Stalker Den)	Stalker Den stepping stone	0
+shortcut	64	-	Bush (Vampyrium)	Vampyrium	2
+shortcut	65	-	Ornate railing	Temple on the Salve to Morytania shortcut	0
+shortcut	65	-	Pillar (Revenant Caves, easy)	Revenant Caves	6.5
+shortcut	66	-	Climbing rocks (Taverley)	Taverley tree patch	25
+shortcut	66	-	Jutting wall (Zanaris)#Advanced	Cosmic Altar advanced narrow walkway	10
+shortcut	66	-	Stepping stone (Lumbridge Swamp)	Lumbridge Swamp to Kharidian Desert	0
+shortcut	67	-	Crevice (Heroes' Guild)	Heroes' Guild tunnel	0
+shortcut	68	-	Rocks (Tirannwn)#Medium	Elven Overpass (Arandar) medium cliffside scramble	0
+shortcut	68	-	Rocks (Ice Mountain)	Ice Mountain western scramble	0
+shortcut	69	-	Rocks (dense essence mine, north)	Dense essence mine northern scramble	0
+shortcut	69	construction=59	Bridge (Mausoleum)	Mausoleum bridge jump	0
+shortcut	70	-	Obstacle pipe (Taverley Dungeon)	Taverley Dungeon pipe squeeze to Blue dragon lair	10
+shortcut	70	-	Hole (Fossil Island)	Fossil Island hardwood shortcut	0
+shortcut	70	-	Big window (Al Kharid)	Al Kharid Palace southern window	0
+shortcut	71	-	Spikey chain (Slayer Tower advanced)	Slayer Tower advanced spiked chain climb	0
+shortcut	71	-	Crumbling wall (Gu'Tanoth)	Eastern Gu'Tanoth	0
+shortcut	71	-	Stepping stone (Pollnivneach)	Pollnivneach	25
+shortcut	71	-	Rocks (The Proudspire, upper)	The Proudspire upper scramble	0
+shortcut	72	-	Dry stone wall (Barrows)	Barrows	25
+shortcut	72	-	Stepping stone (Wilderness Chaos Temple)	Wilderness Chaos Temple	0
+shortcut	72	-	Tunnel (Stronghold Slayer Cave)	Stronghold Slayer Cave narrow tunnel	0
+shortcut	72	-	Tunnel (Asgarnian Ice Dungeon, level 72)	Asgarnian Ice Dungeon tunnel	0
+shortcut	73	-	Rocks (Troll Stronghold)	Troll Stronghold wall-climb	0
+shortcut	73	-	Rocks (dense essence mine, west)	Dense essence mine western descent	0
+shortcut	73	-	Gap (Chasm of Fire)	Chasm of Fire platforms	2.5
+shortcut	73	-	Pillar (Vampyrium)	Vampyrium	1.9
+shortcut	74	-	Zip line (Fossil Island)	Fossil Island zipline	0
+shortcut	74	-	Stepping stone (Lava Dragon Isle)	Lava Dragon Isle jump	0
+shortcut	74	-	Cave (Meiyerditch Laboratories medium)	Meiyerditch Laboratories tunnels	0
+shortcut	75	-	Pillar (Revenant Caves, medium)	Revenant Caves	7.5
+shortcut	75	-	Pillar (Ruins of Mokhaiotl)	Ruins of Mokhaiotl pit jump	0
+shortcut	76	-	Stepping stone (Zul-Andra)	Island crossing near Zul-Andra	0
+shortcut	76	-	Rocks (The Darkfrost)	The Darkfrost cliff scramble	0
+shortcut	77	-	Crevice (Wilderness Slayer Cave)	Wilderness Slayer Cave	10
+shortcut	78	-	Tight gap (North Iorwerth Dungeon)	Iorwerth Dungeon northern shortcut	1
+shortcut	78	-	Rockslide (Vampyrium)	Vampyrium	27.5
+shortcut	79	-	Rocks (Shilo Village)	Shilo Village	0
+shortcut	79	-	Vine (Kharazi Jungle)	Kharazi Jungle vine climb	0
+shortcut	80	-	Strange floor (Taverley Dungeon)	Taverley Dungeon	12.5
+shortcut	81	-	Crevice (Waterbirth Island Dungeon)	Waterbirth Island Dungeon crevice	10
+shortcut	81	-	Ivy	Slayer Tower ivy climb	3
+shortcut	82	-	Stepping stone (Lava Maze)	Lava Maze northern jump	0
+shortcut	82	-	Tunnel (Asgarnian Ice Dungeon, level 82)	Asgarnian Ice Dungeon tunnel	0
+shortcut	83	-	Chain (Chasm of Fire)	Chasm of Fire Chain	4
+shortcut	83	-	Uneven stone ledges	Grimstone uneven ledges	0
+shortcut	84	-	Tight gap (South Iorwerth Dungeon)	Iorwerth Dungeon southern shortcut	1.5
+shortcut	84	-	Rocks (Crandor)	Crandor rock-climb	0
+shortcut	84	-	Crevice (Deepfin Mine)	Deepfin Mine dungeon crevice	0
+shortcut	85	-	Rocks (Tirannwn)#Advanced	Elven Overpass (Arandar) advanced cliffside scramble	0
+shortcut	85	-	Rocks (Waterbirth Island)	Waterbirth Island	0
+shortcut	86	-	Crevice (Kalphite Lair)	Kalphite Lair wall shortcut	0
+shortcut	86	-	Rocks (Darkmeyer)	Darkmeyer wall jump	0
+shortcut	87	-	Vine (Brimhaven Dungeon)	Brimhaven Dungeon vine to baby green dragons	0
+shortcut	88	-	Mysterious pipe	Karuulm Slayer Dungeon	0
+shortcut	89	-	Pillar (Revenant Caves, hard)	Revenant Caves	9
+shortcut	91	-	Rocks (Viyeldi caves)	Viyeldi Caves cliff climb	0
+shortcut	93	-	Cave (Meiyerditch Laboratories advanced)	Meiyerditch Laboratories tunnels	0
+shortcut	96	-	Crevice (Shaman Caves)	Shaman Caves	7.5
+area	1	-	Stepping stone (Lumbridge Swamp Caves)	Lumbridge Swamp Caves stepping stones	3 (1 on failure)
+area	1	-	Basalt rock	Lighthouse basalt rocks	2 (0.5 on failure)
+area	1	-	Bridge (Nature Grotto)	Outside Nature Grotto	15 (2 on failure)
+area	10	-	Ropeswing (Brimhaven)	Rope swing to Moss Giant Island	3
+area	15	-	Monkey bars (Edgeville Dungeon)	Monkey bars under Edgeville	20
+area	25	-	Rock (wrecked ghost ship)	Wrecked ship near Port Phasmatys	10
+area	30	-	Log balance (Brimhaven Dungeon)	South-west of the red dragon area in Brimhaven Dungeon	10
+area	34	-	Pipe (Brimhaven Dungeon)	Pipe contortion in Brimhaven Dungeon	10
+area	40	-	Balancing ledge (Yanille Agility Dungeon)	Yanille Agility Dungeon balance ledge	22
+area	43	-	Rocks (Tlati Rainforest)	Tlati Rainforest rock climb	0
+area	45	-	Log balance (Tirannwn)	Tirannwn log balance	0
+area	49	-	Obstacle pipe (Yanille Agility Dungeon)	Contortion in Yanille Agility Dungeon small room	0
+area	52	-	Stepping stone (Anglers' Retreat)	Anglers' Retreat	0
+area	56	-	Rubble (Temple of the Eye)	Rock climb in the Temple of the Eye	0
+area	57	-	Monkeybars (Yanille Agility Dungeon)	Monkey bars under Yanille	20
+area	60	-	Little crack	Squeeze through to God Wars Dungeon surface access	0
+area	61	-	Stepping stones (Laguna Aurorae)	Laguna Aurorae north-west island	0
+area	67	-	Pile of rubble (Yanille Agility Dungeon)	Yanille Agility Dungeon's rubble climb	6
+area	70	-	Rock (God Wars Dungeon)	Rope descent to Saradomin's Encampment	6

@@ -111,6 +111,9 @@ final class IslandsApeAtoll {
         b.tFloor(2757, 2778, 2767, 2787, "minecraft:jungle_planks");
         b.tSet(2758, 2785, 0, rc("magic_stall"));
         b.tSet(2766, 2785, 0, rc("scimitar_stall"));
+        // The food stall (wiki tile 2768, 2789) and the general stall (2753, 2775), pulled just inside the square (approx).
+        b.tSet(2767, 2788, 0, rc("ape_atoll_food_stall"));
+        b.tSet(2757, 2778, 0, rc("ape_atoll_general_stall"));
         b.tFill(2757, 2784, 2759, 2786, 3, 3, "minecraft:purple_wool");
         b.tFill(2765, 2784, 2767, 2786, 3, 3, "minecraft:red_wool");
         for (int[] p : new int[][]{{2757, 2784}, {2759, 2786}, {2765, 2784}, {2767, 2786}, {2757, 2786}, {2759, 2784},

@@ -189,11 +189,29 @@ public enum AgilityCourse {
             return 0;
         }
         int safe = Math.min(99, level + 35);
+        // Dorgesh-Kaan's cables and monkeybar ladders can be failed even at 99 Agility (wiki); the floor is approx.
+        double floor = this == DORGESH_KAAN ? DORGESH_KAAN_MIN_FAIL : 0;
         if (agilityLevel >= safe) {
-            return 0;
+            return floor;
         }
         double t = (double) (agilityLevel - level) / Math.max(1, safe - level);
-        return Math.max(0, 0.15 * (1 - t));
+        return Math.max(floor, 0.15 * (1 - t));
+    }
+
+    /** Lowest chance of failing a Dorgesh-Kaan cable or ladder (at 99 Agility). // approx: the wiki gives no rate */
+    public static final double DORGESH_KAAN_MIN_FAIL = 0.02;
+
+    /**
+     * Light sources that let a player onto the Dorgesh-Kaan course (wiki: "a light source to access"): the lit ones the game
+     * has (carried, worn, or in the cape slot).
+     */
+    public static final java.util.List<String> LIGHT_SOURCES = java.util.List.of("candle", "bug_lantern", "bruma_torch",
+            "abyssal_lantern", "kandarin_headgear_1", "kandarin_headgear_2", "kandarin_headgear_3", "kandarin_headgear_4",
+            "firemaking_cape", "firemaking_cape_t");
+
+    /** True if the course is dark and needs a light source (Dorgesh-Kaan). */
+    public boolean needsLight() {
+        return this == DORGESH_KAAN;
     }
 
     /** XP for crossing obstacle {@code step} (0-based); the last one includes the lap bonus. */

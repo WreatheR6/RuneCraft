@@ -49,6 +49,7 @@ final class IslandsWest {
         b.tFloor(2512, 3032, 2520, 3044, PACKED_MUD);
         b.tSet(2514, 3034, 0, rc("general_store"));
         b.tSet(2514, 3042, 0, rc("cooking_range"));
+        b.tSet(2513, 3036, 0, rc("gutanoth_counter")); // the rock-cake counter (Thieving, wiki tile)
         for (int[] p : new int[][]{{2513, 3033}, {2515, 3033}, {2513, 3035}, {2515, 3035}}) {
             b.tFill(p[0], p[1], p[0], p[1], 0, 2, "minecraft:spruce_fence");
         }
