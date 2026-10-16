@@ -118,6 +118,7 @@ final class GameplayChecks {
         checks.addAll(ItemCombatChecks.all(context));
         checks.addAll(CannonChecks.all(context));
         checks.addAll(SeaChecks.all(context));
+        checks.addAll(SkillChecks.all(context));
         return checks;
     }
 

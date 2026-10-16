@@ -835,6 +835,10 @@ final class ItemCombatChecks {
                 return "no destination";
             }
             default -> {
+                String product = utilityProduct(s);
+                if (product != null) {
+                    return product;
+                }
                 for (String[] k : SPELL_KIT) {
                     if (!Inv.stack(k[0], 1).isEmpty()) {
                         Inv.give(p(), k[0], Integer.parseInt(k[1]));
@@ -850,6 +854,198 @@ final class ItemCombatChecks {
                 return (cast ? "cast" : "not cast here (needs a target or items)") + ", +" + (magicXp() - xp0) / 10.0 + " xp";
             }
         }
+    }
+
+    // ------------------------------------------------------------------ item-making utility spells
+
+    /**
+     * Utility spells that turn items into other items (enchanting jewellery and bolts, Telekinetic Grab, Bake Pie, Superglass
+     * Make, String Jewellery, Plank Make): hands out the inputs, casts through {@link SpellService#cast} and checks the
+     * product and the Magic XP. Null for any other spell.
+     */
+    private String utilityProduct(Spellbooks.Spell s) {
+        String id = s.id();
+        if (id.equals("enchant_crossbow_bolt")) {
+            return enchantBolts(s);
+        }
+        if (id.startsWith("enchant_")) {
+            return enchantJewellery(s, Integer.parseInt(id.substring("enchant_".length())));
+        }
+        return switch (id) {
+            case "telekinetic_grab" -> telekineticGrab(s);
+            case "bake_pie" -> bakePie(s);
+            case "superglass_make" -> convert(s, Map.of("bucket_of_sand", 3, "seaweed", 3), "molten_glass", 3, Skill.CRAFTING);
+            case "string_jewellery" -> convert(s, Map.of("sapphire_amulet_u", 2), "sapphire_amulet", 2, Skill.CRAFTING);
+            case "plank_make" -> convert(s, Map.of("oak_logs", 1, Inv.COINS, 175), "oak_plank", 1, null);
+            default -> null;
+        };
+    }
+
+    /** Casts {@code s} with only {@code inputs} (and the runes) carried; expects {@code want} more {@code product} and XP. */
+    private String convert(Spellbooks.Spell s, Map<String, Integer> inputs, String product, int want, Skill skill) {
+        stack(product, 1);
+        p().getInventory().clear();
+        giveRunes(s.runes());
+        inputs.forEach((item, n) -> {
+            if (!item.equals(Inv.COINS)) {
+                stack(item, 1);
+            }
+            Inv.give(p(), item, n);
+        });
+        int before = Inv.count(p(), product);
+        int xp0 = magicXp();
+        int skill0 = skill == null ? 0 : data().skills().xpTenths(skill);
+        SpellService.cast(p(), s.id());
+        int made = Inv.count(p(), product) - before;
+        if (made < want) {
+            throw failure("made " + made + " " + product + " from " + inputs + ", expected " + want);
+        }
+        for (Map.Entry<String, Integer> e : inputs.entrySet()) {
+            if (Inv.count(p(), e.getKey()) >= e.getValue()) {
+                throw failure("made " + product + " but the " + e.getKey() + " was not used");
+            }
+        }
+        if (magicXp() - xp0 < Experience.tenths(s.xp())) {
+            throw failure("gave " + (magicXp() - xp0) / 10.0 + " Magic XP, less than the base " + s.xp());
+        }
+        int skillXp = skill == null ? 0 : data().skills().xpTenths(skill) - skill0;
+        if (skill != null && skillXp <= 0) {
+            throw failure("made " + product + " but gave no " + skill.displayName() + " XP");
+        }
+        return inputs + " -> " + made + " " + product + ", +" + (magicXp() - xp0) / 10.0 + " xp"
+                + (skill == null ? "" : ", +" + skillXp / 10.0 + " " + skill.displayName() + " xp");
+    }
+
+    /** Lvl-1 to Lvl-7 Enchant: every jewellery item of that level, one cast each. */
+    private String enchantJewellery(Spellbooks.Spell s, int level) {
+        List<String> made = new ArrayList<>();
+        List<String> wrong = new ArrayList<>();
+        int unregistered = 0;
+        for (Map.Entry<String, Integer> e : Jewellery.ENCHANT_LEVEL.entrySet()) {
+            if (e.getValue() != level) {
+                continue;
+            }
+            String from = e.getKey();
+            String to = Jewellery.ENCHANT.get(from);
+            if (Inv.stack(from, 1).isEmpty()) {
+                unregistered++; // an alias with no item: nobody can carry it
+                continue;
+            }
+            p().getInventory().clear();
+            giveRunes(s.runes());
+            Inv.give(p(), from, 1);
+            int had = Inv.count(p(), to);
+            int xp0 = magicXp();
+            SpellService.cast(p(), s.id());
+            if (Inv.count(p(), from) != 0 || Inv.count(p(), to) != had + 1) {
+                wrong.add(from + " -> " + to + " (now " + Inv.count(p(), from) + " " + from + ", " + Inv.count(p(), to) + " " + to + ")");
+            } else if (magicXp() - xp0 < Experience.tenths(s.xp())) {
+                wrong.add(from + " gave " + (magicXp() - xp0) / 10.0 + " Magic XP, less than " + s.xp());
+            } else {
+                made.add(to);
+            }
+        }
+        if (!wrong.isEmpty()) {
+            throw failure("enchanting failed: " + String.join("; ", wrong));
+        }
+        if (made.isEmpty()) {
+            throw failure("no jewellery is enchanted by Lvl-" + level + " Enchant");
+        }
+        return "enchanted " + String.join(", ", made) + (unregistered > 0 ? " (" + unregistered + " unregistered inputs skipped)" : "");
+    }
+
+    /** Enchant Crossbow Bolt: every gem-tipped bolt (and dragon bolt) type, 10 bolts per cast. */
+    private String enchantBolts(Spellbooks.Spell s) {
+        List<String> made = new ArrayList<>();
+        List<String> wrong = new ArrayList<>();
+        for (com.runecraft.osrs.content.systems.BoltEffects.Enchant en : com.runecraft.osrs.content.systems.BoltEffects.ENCHANTS) {
+            for (String bolts : new String[]{en.bolts(), en.dragonBolts()}) {
+                if (Inv.stack(bolts, 1).isEmpty()) {
+                    if (bolts.equals(en.bolts())) {
+                        wrong.add(bolts + " is not a registered item");
+                    }
+                    continue; // not every gem has dragon bolts
+                }
+                String to = com.runecraft.osrs.content.systems.BoltEffects.enchantedOf(bolts);
+                int per = com.runecraft.osrs.content.systems.BoltEffects.BOLTS_PER_CAST;
+                p().getInventory().clear();
+                giveRunes(en.runes());
+                Inv.give(p(), bolts, per + 5);
+                int had = Inv.count(p(), to);
+                int xp0 = magicXp();
+                SpellService.cast(p(), s.id());
+                int got = Inv.count(p(), to) - had;
+                if (got != per || Inv.count(p(), bolts) != 5) {
+                    wrong.add(bolts + " -> " + got + " " + to + " (expected " + per + "), " + Inv.count(p(), bolts) + " left");
+                } else if (magicXp() - xp0 < Experience.tenths(en.xp())) {
+                    wrong.add(bolts + " gave " + (magicXp() - xp0) / 10.0 + " Magic XP, less than " + en.xp());
+                } else {
+                    made.add(to);
+                }
+            }
+        }
+        if (!wrong.isEmpty()) {
+            throw failure("bolt enchanting failed: " + String.join("; ", wrong));
+        }
+        return made.size() + " bolt types enchanted: " + String.join(", ", made);
+    }
+
+    /** Telekinetic Grab: bones on the floor 4 blocks ahead, looked at, come to the player and can be picked up. */
+    private String telekineticGrab(Spellbooks.Spell s) {
+        p().getInventory().clear();
+        giveRunes(s.runes());
+        BlockPos at = c.near(4, 0);
+        net.minecraft.entity.ItemEntity item = new net.minecraft.entity.ItemEntity(c.world, at.getX() + 0.5, at.getY() + 0.1,
+                at.getZ() + 0.5, stack("bones", 1));
+        item.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
+        item.setPickupDelay(200);
+        c.world.spawnEntity(item);
+        // Look straight at it (the spell picks the ground item under the crosshair).
+        net.minecraft.util.math.Vec3d eye = p().getEyePos();
+        double dx = item.getX() - eye.x;
+        double dy = item.getY() - eye.y;
+        double dz = item.getZ() - eye.z;
+        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        p().setYaw(yaw);
+        p().setHeadYaw(yaw);
+        p().setPitch((float) Math.toDegrees(Math.atan2(-dy, Math.sqrt(dx * dx + dz * dz))));
+        int xp0 = magicXp();
+        int bones = Inv.count(p(), "bones");
+        SpellService.cast(p(), s.id());
+        if (magicXp() - xp0 < Experience.tenths(s.xp())) {
+            throw failure("not cast at bones 4 blocks ahead under the crosshair (+" + (magicXp() - xp0) / 10.0 + " xp)");
+        }
+        double dist = Math.sqrt(item.squaredDistanceTo(p()));
+        if (dist > 1.5) {
+            throw failure("the bones stayed " + fmt(dist) + " blocks away");
+        }
+        item.onPlayerCollision(p()); // what the player's next movement tick does
+        if (Inv.count(p(), "bones") <= bones) {
+            throw failure("the grabbed bones could not be picked up");
+        }
+        return "grabbed bones from 4 blocks, +" + (magicXp() - xp0) / 10.0 + " xp";
+    }
+
+    /** Bake Pie: two of the first uncooked pie in the Cooking recipes; a pie shell and its filling are left alone. */
+    private String bakePie(Spellbooks.Spell s) {
+        if (!Inv.stack("pie_shell", 1).isEmpty() && !Inv.stack("redberries", 1).isEmpty()) {
+            p().getInventory().clear();
+            giveRunes(s.runes());
+            Inv.give(p(), "pie_shell", 1);
+            Inv.give(p(), "redberries", 1);
+            SpellService.cast(p(), s.id());
+            if (Inv.count(p(), "pie_shell") != 1) {
+                throw failure("Bake Pie used up a pie shell (it only bakes uncooked pies)");
+            }
+        }
+        for (com.runecraft.osrs.Recipe r : com.runecraft.osrs.Recipes.menu(com.runecraft.osrs.MenuType.COOKING)) {
+            String raw = r.inputs().keySet().iterator().next();
+            if (r.inputs().size() == 1 && raw.startsWith("uncooked_") && raw.endsWith("_pie") && !r.outputs().isEmpty()
+                    && !Inv.stack(raw, 1).isEmpty()) {
+                return convert(s, Map.of(raw, 2), r.outputs().keySet().iterator().next(), 2, Skill.COOKING);
+            }
+        }
+        throw failure("no uncooked pie in the Cooking recipes");
     }
 
     // ------------------------------------------------------------------ player attacks

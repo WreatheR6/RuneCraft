@@ -977,7 +977,8 @@ public final class SpellService {
         int baked = 0;
         for (Recipe r : Recipes.menu(MenuType.COOKING)) {
             String raw = r.inputs().keySet().iterator().next();
-            if (!raw.contains("pie") || r.outputs().isEmpty()) {
+            // Only baking an uncooked pie (not assembling one from a pie shell and its filling).
+            if (r.inputs().size() != 1 || !raw.startsWith("uncooked_") || !raw.endsWith("_pie") || r.outputs().isEmpty()) {
                 continue;
             }
             String cooked = r.outputs().keySet().iterator().next();
