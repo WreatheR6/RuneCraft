@@ -188,7 +188,9 @@ class SuccessRateSnapshotTest {
             Map.entry("crossbow_stall", "Crossbow stall"), Map.entry("magic_stall", "Magic stall"),
             Map.entry("scimitar_stall", "Scimitar stall"), Map.entry("keldagrim_crafting_stall", "Crafting stall"),
             Map.entry("keldagrim_bakery_stall", "Bakery stall"), Map.entry("keldagrim_gem_stall", "Gem stall"),
-            Map.entry("ore_stall", "Ore stall (Mor Ul Rek)"));
+            Map.entry("ore_stall", "Ore stall (Mor Ul Rek)"), Map.entry("ape_atoll_food_stall", "Monkey food stall"),
+            Map.entry("ape_atoll_general_stall", "Monkey general stall"), Map.entry("gutanoth_counter", "Counter (Gu'Tanoth)"),
+            Map.entry("cannonball_stall", "Cannonball stall"));
 
     /** Respawns that differ from the table's main row (the table notes Keldagrim's bakery restocks in 9.6 s). */
     private static final Map<String, Integer> RESPAWN_OVERRIDES = Map.of("keldagrim_bakery_stall", 16);

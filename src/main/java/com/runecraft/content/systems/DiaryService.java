@@ -231,7 +231,8 @@ public final class DiaryService {
         }
         int[] v = Diaries.visitTarget(target);
         int[] pos = SysTeleport.osrs(p);
-        return Teleports.within(pos[0], pos[1], v[0], v[1], v[2]);
+        // ",u" / ",bN": the spot is in a dungeon carved under the circle (or on one of its lower floors).
+        return Teleports.within(pos[0], pos[1], v[0], v[1], v[2]) && Diaries.visitDepthOk(target, p.getBlockY());
     }
 
     static void check(ServerPlayerEntity p, Type type) {

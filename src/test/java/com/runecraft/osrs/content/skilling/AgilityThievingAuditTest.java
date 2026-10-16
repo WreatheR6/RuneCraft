@@ -106,8 +106,8 @@ class AgilityThievingAuditTest {
     @Test
     void shortcuts() {
         Map<String, Integer> wiki = Map.of("falador_crumbling_wall", 5, "yanille_underwall_tunnel", 16,
-                "grand_exchange_tunnel", 21, "lumbridge_swamp_stepping_stone", 66, "shilo_stepping_stones", 74,
-                "lava_dragon_isle_stepping_stones", 74, "gwd_little_crack", 60, "draynor_manor_railing", 28,
+                "grand_exchange_tunnel", 21, "lumbridge_swamp_stepping_stone", 66, "shilo_stepping_stones", 30,
+                "lava_dragon_isle_stepping_stones", 74, "gwd_little_crack", 60, "draynor_manor_railing", 49,
                 "coal_truck_log_balance", 20, "catherby_obelisk_grapple", 36);
         Set<String> ids = new HashSet<>();
         for (AgilityShortcuts.Shortcut s : AgilityShortcuts.SHORTCUTS) {

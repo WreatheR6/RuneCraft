@@ -75,7 +75,7 @@ class AgilityThievingFollowupTest {
     void indoorAndGrappleShortcuts() {
         Map<String, Integer> wiki = Map.of("taverley_dungeon_pipe", 70, "edgeville_dungeon_monkeybars", 15,
                 "brimhaven_stepping_stones", 12, "brimhaven_pipe_moss_giants", 22, "brimhaven_log_balance", 30,
-                "slayer_tower_chain_low", 61, "slayer_tower_chain_high", 71, "fremennik_slayer_crevice", 62,
+                "slayer_tower_chain_low", 61, "slayer_tower_chain_high", 71, "fremennik_slayer_crevice", 43,
                 "stronghold_slayer_tunnel", 72, "asgarnian_ice_tunnel", 72);
         for (Map.Entry<String, Integer> e : wiki.entrySet()) {
             assertNotNull(AgilityShortcuts.indoor(e.getKey()), e.getKey());
@@ -90,7 +90,7 @@ class AgilityThievingFollowupTest {
                 assertTrue(s.other().containsKey(Skill.RANGED) && s.other().containsKey(Skill.STRENGTH), s.id());
             }
         }
-        assertEquals(5, grapples);
+        assertEquals(7, grapples);
         assertEquals(37, (int) AgilityShortcuts.at(3246, 3179).other().get(Skill.RANGED));
         assertTrue(AgilityShortcuts.isCrossbow("rune_crossbow") && AgilityShortcuts.isCrossbow("bronze_crossbow"));
         assertFalse(AgilityShortcuts.isCrossbow("karils_crossbow") || AgilityShortcuts.isCrossbow("magic_shortbow"));

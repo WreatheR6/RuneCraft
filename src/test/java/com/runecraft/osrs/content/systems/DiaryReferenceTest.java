@@ -212,7 +212,9 @@ class DiaryReferenceTest {
         long approx = Diaries.tasks().stream().filter(Diaries::isApprox).count();
         System.out.println("Diary tasks: " + total + ", tracked faithfully " + (total - approx) + ", approximated " + approx);
         assertEquals(492, total);
-        assertTrue(total - approx >= 474, "faithfully tracked tasks: " + (total - approx));
+        // Round 30: of the 28 quest-completion stand-ins, 24 were marked approx (475 -> 452 faithful) while Crandor (2), the Stronghold, the
+        // digsite pendant, Ava's device and the Salve shortcut became real.
+        assertTrue(total - approx >= 452, "faithfully tracked tasks: " + (total - approx));
     }
 
     @Test

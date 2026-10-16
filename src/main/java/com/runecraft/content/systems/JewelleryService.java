@@ -335,7 +335,8 @@ public final class JewelleryService {
                         stack.decrement(1);
                         Msg.game(p, "Your " + w.name().toLowerCase(java.util.Locale.ROOT) + " is used up.");
                     }
-                    DiaryService.onActivity(p, "teleport:" + w.id() + ":" + com.runecraft.osrs.content.systems.Diaries.slug(dest.name()));
+                    // Charged pieces report their base id (teleport:digsite_pendant:digsite, whatever the charges left).
+                    DiaryService.onActivity(p, com.runecraft.osrs.content.systems.Diaries.teleportKey(w.id(), w.chargeBase(), dest.name()));
                     if (w.chargeBase() != null) {
                         setStack(p, source, useCharge(p, stack));
                     } else if (charged != null) {

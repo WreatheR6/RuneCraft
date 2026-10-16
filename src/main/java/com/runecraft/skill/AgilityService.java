@@ -60,7 +60,26 @@ public final class AgilityService {
         if (item != null && !Inv.has(player, item, 1)) {
             return "The werewolves won't let you train here without a ring of charos.";
         }
+        if (course.needsLight() && !hasLight(player)) {
+            return "It's too dark to train here without a light source.";
+        }
         return null;
+    }
+
+    /** A light source carried, worn in an armour slot or in one of the extra slots (cape, amulet...). */
+    static boolean hasLight(ServerPlayerEntity player) {
+        com.runecraft.content.systems.SysState.SysPlayer sp = com.runecraft.content.systems.SysState.of(player);
+        for (String id : AgilityCourse.LIGHT_SOURCES) {
+            if (Inv.has(player, id, 1) || sp.wearing(id)) {
+                return true;
+            }
+        }
+        for (net.minecraft.entity.EquipmentSlot slot : net.minecraft.entity.EquipmentSlot.values()) {
+            if (AgilityCourse.LIGHT_SOURCES.contains(Inv.idOf(player.getEquippedStack(slot)))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void step(ServerPlayerEntity player, AgilityCourse course, int step) {

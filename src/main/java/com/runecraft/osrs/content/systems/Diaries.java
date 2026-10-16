@@ -95,12 +95,15 @@ public final class Diaries {
      * "eat:" + item id, "trek_complete:" + follower difficulty, "shop_open:" + shop id, "shop_buy:" / "shop_sell:" + shop id + ":" +
      * item id, "fight_pit_champion", "monkey_cage", "bert_sand", "tindel_identify", "genie_visit", "chest_open:" + chest id,
      * "join:" + item made by joining two pieces, "cast_on_player:" + spell id, "strut_repair", "essence_mine:" + teleporting NPC id (lower case), "steal:" + thieving stall/chest block,
-     * "poh_portal:" + house portal destination, "monster_examine:" + creature name slug, "totem_recharge", "dig:saltpetre" and "ent_chop:" + log id.
+     * "poh_portal:" + house portal destination, "monster_examine:" + creature name slug, "totem_recharge", "dig:saltpetre", "ent_chop:" + log id
+     * and "shortcut:" + agility shortcut id (fired when a player uses it). Charged jewellery reports its base id
+     * ({@link #teleportKey}): "teleport:digsite_pendant:digsite", not the per-charge item.
      */
     public static final List<String> ACTIVITIES = List.of("talk", "minigame_start", "minigame_win", "spellbook", "teleport", "eat",
             "trek_complete", "fight_pit_champion", "monkey_cage", "shop_open", "shop_buy", "shop_sell", "bert_sand", "tindel_identify",
             "genie_visit", "chest_open", "join", "cast_on_player", "strut_repair", "essence_mine", "steal", "kingdom_approval",
-            "ba_blackboard", "tbw_favour", "kudos", "ba_wave", "poh_portal", "monster_examine", "totem_recharge", "dig", "ent_chop");
+            "ba_blackboard", "tbw_favour", "kudos", "ba_wave", "poh_portal", "monster_examine", "totem_recharge", "dig", "ent_chop",
+            "shortcut");
 
     /** The Fishing Platform's deck (an "x,y,r" restriction out at sea, so the land check skips it). */
     public static final String FISHING_PLATFORM = "2788,3285,10";
@@ -313,6 +316,21 @@ public final class Diaries {
         add(desc, Type.VISIT, x + "," + y + "," + r, 1, null, 0, req);
     }
 
+    /** Stand in a dungeon carved under the circle (feet below {@link #UNDERGROUND_BELOW_Y}). */
+    private static void visitUnder(String desc, int x, int y, int r, Object... req) {
+        add(desc, Type.VISIT, x + "," + y + "," + r + ",u", 1, null, 0, req);
+    }
+
+    /** Stand in the circle with feet below block y {@code belowY} (a lower floor of a dungeon). */
+    private static void visitBelow(String desc, int x, int y, int r, int belowY, Object... req) {
+        add(desc, Type.VISIT, x + "," + y + "," + r + ",b" + belowY, 1, null, 0, req);
+    }
+
+    /** Use an agility shortcut ({@code AgilityShortcuts} id): the game reports "shortcut:" + id. */
+    private static void shortcut(String desc, String shortcutId, Object... req) {
+        add(desc, Type.EVENT, "shortcut:" + shortcutId, 1, null, 0, req);
+    }
+
     private static void clue(String desc, String clueTier) {
         add(desc, Type.CLUE, clueTier, 1, null, 0);
     }
@@ -358,7 +376,7 @@ public final class Diaries {
         visit("Check what pets you have insured with Probita in East Ardougne", 2621, 3294, 8);
         in("ardougne", Tier.MEDIUM);
         visit("Enter the unicorn pen in Ardougne Zoo using Fairy rings", 2610, 3270, 8);
-        visit("Grapple over Yanille's south wall", 2556, 3072, 10, AGILITY, 39, STRENGTH, 38, RANGED, 21);
+        shortcut("Grapple over Yanille's south wall", "yanille_wall_grapple", AGILITY, 39, STRENGTH, 38, RANGED, 21);
         get("Harvest some strawberries from the Ardougne farming patch", "strawberry", 1, FARMING, 31);
         cast("Cast the Ardougne Teleport spell", "ardougne_teleport", MAGIC, 51);
         visit("Travel to Castle Wars by Hot Air Balloon", 2442, 3090, 15, FIREMAKING, 50);
@@ -415,7 +433,7 @@ public final class Diaries {
         xp("Catch an Orange Salamander", HUNTER, 47);
         xp("Steal a feather from the Desert Phoenix", THIEVING, 25); approx(); // approx
         visit("Travel to Uzer via magic carpet", 3468, 3110, 15);
-        quest("Travel to the Desert via the Eagle transport system", "eagles_peak");
+        quest("Travel to the Desert via the Eagle transport system", "eagles_peak"); approx(); // approx: no eagle transport
         visit("Pray at the Elidinis statuette in Nardah", 3427, 2930, 8);
         makeHere("Create a combat potion in the desert", "combat_potion", 1, HERBLORE, 36);
         event("Teleport to Enakhra's Temple with the Camulet", "teleport:camulet:enakhras_temple", null);
@@ -447,7 +465,7 @@ public final class Diaries {
         // ======================= Falador (11 / 14 / 11 / 6) =======================
         in("falador", Tier.EASY);
         visit("Find out what your family crest is from Sir Renitee", 2982, 3341, 12, CONSTRUCTION, 16);
-        visit("Climb over the western Falador wall", 2936, 3355, 8, AGILITY, 5);
+        shortcut("Climb over the western Falador wall", "falador_crumbling_wall", AGILITY, 5);
         visit("Browse Sarah's Farming Shop", 3039, 3292, 8);
         visit("Get a Haircut from the Falador hairdresser", 2944, 3380, 8);
         have("Fill a bucket from the pump north of Falador West Bank", "*vial_of_water|bucket_of_water"); approx(); // approx
@@ -465,7 +483,7 @@ public final class Diaries {
         xp("Place a Scarecrow in the Falador farm flower patch", FARMING, 23);
         killAny("Kill a Mogre at Mudskipper Point", "mogre", 1, SLAYER, 32);
         visit("Visit the Port Sarim Rat Pits", 3017, 3233, 8);
-        visit("Grapple up and then jump off the north Falador wall", 3033, 3389, 8, AGILITY, 11, STRENGTH, 37, RANGED, 19);
+        shortcut("Grapple up and then jump off the north Falador wall", "falador_wall_grapple", AGILITY, 11, STRENGTH, 37, RANGED, 19);
         xp("Pickpocket a Falador guard", THIEVING, 40);
         visit("Pray at the Altar of Guthix in Taverley whilst wearing full Initiate", 2925, 3483, 10, PRAYER, 10, DEFENCE, 20);
         get("Mine some Gold ore at the Crafting Guild", "gold_ore", 1, MINING, 40, CRAFTING, 40);
@@ -514,7 +532,7 @@ public final class Diaries {
         get("Chop and burn some oak logs in the Fremennik Province", "oak_logs", 1, WOODCUTTING, 15, FIREMAKING, 15);
         in("fremennik", Tier.MEDIUM);
         killAny("Slay a Brine rat", "brine rat", 1, SLAYER, 47);
-        quest("Travel to the Snowy Hunter Area via Eagle", "eagles_peak");
+        quest("Travel to the Snowy Hunter Area via Eagle", "eagles_peak"); approx(); // approx: no eagle transport
         get("Mine some coal in Rellekka", "coal", 1, MINING, 30);
         xp("Steal from the Rellekka Fish stall", THIEVING, 42);
         visit("Travel to Miscellania by Fairy ring", 2513, 3884, 15);
@@ -552,22 +570,22 @@ public final class Diaries {
         visit("Play the church organ in the Seers' Village church", 2692, 3463, 8);
         xp("Plant jute seeds in the farming patch north of McGrubor's Wood", FARMING, 13);
         visit("Have Galahad make you a cup of tea", 2612, 3474, 8);
-        quest("Defeat one of each elemental in the Elemental Workshop", "elemental_workshop_i");
+        quest("Defeat one of each elemental in the Elemental Workshop", "elemental_workshop_i"); approx(); // approx
         visit("Get a pet fish from Harry in Catherby", 2833, 3443, 8);
         visit("Buy a stew from the Seers' Village pub", 2691, 3493, 8);
         visit("Speak to Sherlock between Seers' Village and McGrubor's Wood", 2733, 3415, 8);
-        visit("Cross the Coal truck log shortcut", 2602, 3477, 8, AGILITY, 20);
+        shortcut("Cross the Coal truck log shortcut", "coal_truck_log_balance", AGILITY, 20);
         in("kandarin", Tier.MEDIUM);
         xpAt("Complete a lap of the Barbarian agility course", AGILITY, 35, at(2551, 3554, 25));
         makeHere("Create a Super Antipoison potion from scratch in the Seers/Catherby Area", "superantipoison", 1, HERBLORE, 48);
         visit("Enter the Ranging Guild", 2657, 3439, 8, RANGED, 40);
-        visit("Use the grapple shortcut to get from the water obelisk to Catherby shore", 2841, 3424, 10, AGILITY, 36, STRENGTH, 22,
-                RANGED, 39);
+        shortcut("Use the grapple shortcut to get from the water obelisk to Catherby shore", "catherby_obelisk_grapple", AGILITY, 36,
+                STRENGTH, 22, RANGED, 39);
         makeHere("Catch and cook a bass in Catherby", "bass", 1, FISHING, 46, COOKING, 43);
         cast("Teleport to Camelot", "camelot_teleport", MAGIC, 45);
         makeHere("String a maple shortbow in Seers' Village bank", "maple_shortbow", 1, FLETCHING, 50);
         get("Pick some limpwurt root from the farming patch in Catherby", "limpwurt_root", 1, FARMING, 26);
-        quest("Create a Mind helmet", "elemental_workshop_ii");
+        quest("Create a Mind helmet", "elemental_workshop_ii"); approx(); // approx: no mind helmet
         killAny("Kill a Fire Giant inside Baxtorian Waterfall", "fire giant", 1);
         event("Complete a wave of Barbarian Assault", "ba_wave", null);
         xp("Steal from the chest in Hemenster", THIEVING, 47);
@@ -609,9 +627,13 @@ public final class Diaries {
         killAny("Kill a Jogre in the Pothole dungeon", "jogre", 1);
         in("karamja", Tier.MEDIUM);
         visit("Claim a ticket from the Agility Arena in Brimhaven", 2809, 3191, 10);
-        quest("Discover hidden wall in the dungeon below the volcano", "dragon_slayer_i");
-        quest("Visit the Isle of Crandor via the dungeon below the volcano", "dragon_slayer_i");
-        quest("Use Vigroy and Hajedy's cart service", "shilo_village");
+        // The hidden wall (cache 2836, 9599) and the Crandor tunnels behind it, carved under the volcano by the dungeons module
+        // (its Karamja Volcano dungeon is shifted 6,401 tiles north). OSRS needs Dragon Slayer I started; completion is checked.
+        visitUnder("Discover hidden wall in the dungeon below the volcano", 2836, 3198, 3);
+        needs(lastId, "dragon_slayer_i");
+        visitUnder("Visit the Isle of Crandor via the dungeon below the volcano", 2843, 3236, 8);
+        needs(lastId, "dragon_slayer_i");
+        quest("Use Vigroy and Hajedy's cart service", "shilo_village"); approx(); // approx: no cart service
         event("Earn 100% favour in the village of Tai Bwo Wannai", "tbw_favour:100", null, WOODCUTTING, 10); // Tai Bwo Wannai Cleanup
         needs(lastId, "jungle_potion");
         make("Cook a spider on a stick", "spider_on_shaft", 1, COOKING, 16); // a spider on a shaft counts too (OSRS)
@@ -619,12 +641,12 @@ public final class Diaries {
         get("Cut a log from a teak tree", "teak_logs", 1, WOODCUTTING, 35);
         get("Cut a log from a mahogany tree", "mahogany_logs", 1, WOODCUTTING, 50);
         getAt("Catch a karambwan", "raw_karambwan", 1, null, FISHING, 65);
-        quest("Exchange gems for a machete", "jungle_potion");
-        quest("Use the gnome glider to travel to Karamja", "the_grand_tree");
+        quest("Exchange gems for a machete", "jungle_potion"); approx(); // approx: Safta Doc's trade isn't modelled
+        quest("Use the gnome glider to travel to Karamja", "the_grand_tree"); approx(); // approx: glider rides report nothing
         xp("Grow a healthy fruit tree in the patch near Brimhaven", FARMING, 27);
         xp("Trap a horned graahk", HUNTER, 41);
         visit("Chop the vines to gain deeper access to Brimhaven Dungeon", 2744, 3152, 10, WOODCUTTING, 10);
-        visit("Cross the lava using the stepping stones within Brimhaven Dungeon", 2744, 3152, 10, AGILITY, 12, WOODCUTTING, 10);
+        shortcut("Cross the lava using the stepping stones within Brimhaven Dungeon", "brimhaven_stepping_stones", AGILITY, 12, WOODCUTTING, 10);
         kill("Climb the stairs within Brimhaven Dungeon (slay a dungeon creature)", "dragon|moss giant|fire giant", 1, WOODCUTTING, 10); approx(); // approx
         visit("Charter a ship from the shipyard in the far east of Karamja", 2998, 3032, 15);
         get("Mine a red topaz from a gem rock", "uncut_red_topaz", 1, MINING, 40);
@@ -636,7 +658,7 @@ public final class Diaries {
         make("Cook a karambwan thoroughly", "cooked_karambwan", 1, COOKING, 30);
         killAny("Kill a deathwing in the dungeon under the Kharazi Jungle", "death wing", 1);
         needs(lastId, "legends_quest");
-        visit("Use the crossbow shortcut south of the volcano", 2869, 3125, 10, AGILITY, 53, STRENGTH, 21, RANGED, 42);
+        shortcut("Use the crossbow shortcut south of the volcano", "karamja_volcano_grapple", AGILITY, 53, STRENGTH, 21, RANGED, 42);
         get("Collect 5 palm leaves", "palm_leaf", 5, WOODCUTTING, 15); // shaken from the Kharazi Jungle's leafy palm trees
         needs(lastId, "legends_quest");
         combat("Be assigned a Slayer task by Duradel north of Shilo Village", 100, SLAYER, 50);
@@ -665,14 +687,14 @@ public final class Diaries {
         in("kourend", Tier.MEDIUM);
         visit("Travel to the fairy ring south of Mount Karuulm", 1302, 3762, 10);
         killAny("Kill a lizardman", "lizardman", 1);
-        quest("Use Kharedst's memoirs to teleport to all five cities", "client_of_kourend");
+        quest("Use Kharedst's memoirs to teleport to all five cities", "client_of_kourend"); approx(); // approx: no memoirs teleports
         get("Mine some volcanic sulphur", "volcanic_sulphur", 1, MINING, 42); // Lovakengj
         visit("Enter the Farming Guild", 1249, 3718, 10, FARMING, 45);
         visit("Switch to the Necromancy spellbook at Tyss", 1712, 3883, 10);
         visit("Repair a Piscarilius crane", 1820, 3740, 15, CRAFTING, 30, CONSTRUCTION, 30);
         visit("Deliver some intelligence to Captain Ginea", 1504, 3632, 12);
         xp("Catch a Bluegill on Molch Island", FISHING, 43, HUNTER, 35);
-        visit("Use the boulder leap in the Arceuus essence mine", 1760, 3880, 15, AGILITY, 49);
+        shortcut("Use the boulder leap in the Arceuus essence mine", "dense_essence_boulder", AGILITY, 49);
         xpAt("Subdue the Wintertodt", FIREMAKING, 50, at(1630, 3980, 50));
         xp("Catch a chinchompa in the Kourend Woodland", HUNTER, 53);
         get("Chop some mahogany logs north of the Farming Guild", "mahogany_logs", 1, WOODCUTTING, 50);
@@ -715,8 +737,9 @@ public final class Diaries {
         visit("Enter the H.A.M. Hideout", 3166, 3252, 8);
         in("lumbridge", Tier.MEDIUM);
         xpAt("Complete a lap of the Al Kharid rooftop course", AGILITY, 20, at(3273, 3195, 40));
-        visit("Grapple across the River Lum", 3252, 3179, 10, AGILITY, 8, STRENGTH, 19, RANGED, 37);
-        quest("Purchase an upgraded device from Ava", "animal_magnetism", RANGED, 50);
+        shortcut("Grapple across the River Lum", "lumbridge_river_grapple", AGILITY, 8, STRENGTH, 19, RANGED, 37);
+        haveAny("Purchase an upgraded device from Ava", "avas_accumulator", RANGED, 50); // the accumulator (50 Ranged) is the upgrade
+        needs(lastId, "animal_magnetism");
         visit("Travel to the Wizards' Tower by Fairy ring", 3109, 3162, 12);
         cast("Cast the teleport to Lumbridge spell", "lumbridge_teleport", MAGIC, 31);
         get("Catch some salmon in Lumbridge", "raw_salmon", 1, FISHING, 30);
@@ -731,8 +754,8 @@ public final class Diaries {
         visit("Squeeze past the jutting wall on your way to the cosmic altar", 2405, 3380, 15, AGILITY, 46);
         getAt("Craft 56 cosmic runes simultaneously from Essence", "cosmic_rune", 1, null, RUNECRAFT, 59);
         visit("Travel from Lumbridge to Edgeville on a Waka Canoe", 3130, 3508, 12, WOODCUTTING, 57);
-        quest("Collect at least 100 Tears of Guthix in one visit", "tears_of_guthix");
-        quest("Take the train from Dorgesh-Kaan to Keldagrim", "another_slice_of_ham");
+        quest("Collect at least 100 Tears of Guthix in one visit", "tears_of_guthix"); approx(); // approx: tears aren't counted
+        quest("Take the train from Dorgesh-Kaan to Keldagrim", "another_slice_of_ham"); approx(); // approx: no train
         haveAny("Purchase some Barrows gloves from the Lumbridge bank chest", "barrows_gloves");
         getAt("Pick some Belladonna from the farming patch at Draynor Manor", "nightshade|cave_nightshade_flower", 1, at(3087, 3355, 12),
                 FARMING, 63);
@@ -764,7 +787,7 @@ public final class Diaries {
         xp("Place a Scarecrow in the Morytania flower patch", FARMING, 23);
         visit("Offer some Bonemeal at the Ectofuntus", 3660, 3522, 10);
         kill("Kill a Werewolf in its human form using the Wolfbane Dagger", "werewolf", 1);
-        quest("Restore your prayer points at the nature altar", "nature_spirit");
+        quest("Restore your prayer points at the nature altar", "nature_spirit"); approx(); // approx
         in("morytania", Tier.MEDIUM);
         xp("Catch a swamp lizard", HUNTER, 29);
         xpAt("Complete a lap of the Canifis agility course", AGILITY, 40, at(3507, 3488, 30));
@@ -780,7 +803,7 @@ public final class Diaries {
         visit("Board the Swamp boat at the Hollows", 3500, 3380, 12);
         in("morytania", Tier.HARD);
         event("Enter the Kharyrll portal in your POH", "poh_portal:kharyrll", null, MAGIC, 66, CONSTRUCTION, 50);
-        visit("Climb the advanced spike chain within Slayer Tower", 3422, 3537, 12, AGILITY, 71);
+        shortcut("Climb the advanced spike chain within Slayer Tower", "slayer_tower_chain_high", AGILITY, 71);
         getAt("Harvest some Watermelon from the Allotment patch on Harmony Island", "watermelon", 1, null, FARMING, 47);
         getAt("Chop and burn some mahogany logs on Mos Le'Harmless", "mahogany_logs", 1, null, WOODCUTTING, 50, FIREMAKING, 50);
         event("Complete a temple trek with a hard companion", "trek_complete:hard", null);
@@ -788,7 +811,7 @@ public final class Diaries {
         killAny("Kill a Cave Horror", "cave horror", 1, SLAYER, 58);
         xp("Harvest some Bittercap Mushrooms", FARMING, 53);
         visit("Pray at the Altar of Nature with Piety activated", 3440, 3335, 15, PRAYER, 70, DEFENCE, 70);
-        visit("Use the shortcut to get to the bridge over the Salve", 3424, 3476, 15, AGILITY, 65); approx(); // approx tile
+        shortcut("Use the shortcut to get to the bridge over the Salve", "salve_ornate_railing", AGILITY, 65);
         get("Mine some Mithril ore in the Abandoned Mine", "mithril_ore", 1, MINING, 55);
         in("morytania", Tier.ELITE);
         get("Catch a shark in Burgh de Rott with your bare hands", "raw_shark", 1, FISHING, 96, STRENGTH, 76);
@@ -805,8 +828,9 @@ public final class Diaries {
         needs(lastId, "RUNE_MYSTERIES");
         get("Mine some Iron in the south east Varrock mine", "iron_ore", 1, MINING, 15);
         visit("Make a normal plank at the Sawmill", 3302, 3491, 10);
-        visit("Enter the second level of the Stronghold of Security", 3081, 3421, 10);
-        visit("Jump over the fence south of Varrock", 3240, 3335, 10, AGILITY, 13);
+        // The Catacomb of Famine: the dungeons module's floor 2 (feet at block y 21) is centred 15 tiles west and 14 south of the entrance.
+        visitBelow("Enter the second level of the Stronghold of Security", 3066, 3407, 25, 30);
+        shortcut("Jump over the fence south of Varrock", "varrock_south_fence", AGILITY, 13);
         get("Chop down a dying tree in the Lumber Yard", "logs", 1);
         visit("Buy a newspaper", 3218, 3432, 10);
         visit("Give a dog a bone!", 3213, 3428, 20); approx(); // approx
@@ -818,16 +842,17 @@ public final class Diaries {
         in("varrock", Tier.MEDIUM);
         visit("Have the Apothecary in Varrock make you a strength potion", 3195, 3404, 8);
         visit("Enter the Champions' Guild", 3191, 3362, 8);
-        quest("Select a colour for your kitten", "gertrudes_cat");
+        quest("Select a colour for your kitten", "gertrudes_cat"); approx(); // approx: no kittens
         visit("Use the spirit tree in the north eastern corner of Grand Exchange", 3183, 3508, 8);
         visit("Perform the 4 emotes from the Stronghold of Security", 3081, 3421, 10); approx(); // approx
-        quest("Enter the Tolna dungeon after completing A Soul's Bane", "a_souls_bane");
-        quest("Teleport to the digsite using a Digsite pendant", "the_dig_site");
+        quest("Enter the Tolna dungeon after completing A Soul's Bane", "a_souls_bane"); approx(); // approx: the rift isn't built
+        event("Teleport to the digsite using a Digsite pendant", "teleport:digsite_pendant:digsite", null);
+        needs(lastId, "the_dig_site");
         cast("Cast the teleport to Varrock spell", "varrock_teleport", MAGIC, 25);
         combat("Get a Slayer task from Vannaka", 40);
         getAt("Make 20 Mahogany Planks in one go", "mahogany_plank", 20, null); // the sawmill operator converts a whole load
         inOneGo();
-        quest("Pick a White tree fruit", "garden_of_tranquillity", FARMING, 25);
+        quest("Pick a White tree fruit", "garden_of_tranquillity", FARMING, 25); approx(); // approx: no white tree
         visit("Use the balloon to travel from Varrock", 3297, 3480, 10, FIREMAKING, 40, FARMING, 30);
         xp("Complete a lap of the Varrock Agility course", AGILITY, 30);
         in("varrock", Tier.HARD);
@@ -855,25 +880,25 @@ public final class Diaries {
         get("Mine some Iron Ore near Piscatoris", "iron_ore", 1, MINING, 15);
         xpAt("Complete a lap of the Gnome Agility Course", AGILITY, 1, at(2474, 3436, 25));
         visit("Score a goal in a Gnome Ball match", 2400, 3487, 12);
-        quest("Claim any Chompy bird hat from Rantz", "big_chompy_bird_hunting");
+        quest("Claim any Chompy bird hat from Rantz", "big_chompy_bird_hunting"); approx(); // approx: chompy kills aren't counted
         visit("Teleport to Pest Control using the Minigame teleports", 2662, 2653, 15);
         visit("Collect a swamp toad at the Gnome Stronghold", 2420, 3510, 15);
         event("Have Brimstail teleport you to the Essence mine", "essence_mine:brimstail", null);
         makeHere("Fletch an Oak shortbow in the Gnome Stronghold", "oak_shortbow", 1, FLETCHING, 20);
         killAt("Kill a Terrorbird in the Terrorbird enclosure", "terrorbird", 1, at(2378, 3434, 12));
         in("western", Tier.MEDIUM);
-        visit("Take the agility shortcut from the Grand Tree to Otto's Grotto", 2486, 3515, 10, AGILITY, 37);
-        quest("Travel to the Gnome Stronghold by Spirit Tree", "tree_gnome_village");
+        shortcut("Take the agility shortcut from the Grand Tree to Otto's Grotto", "grand_tree_ottos_grotto", AGILITY, 37);
+        quest("Travel to the Gnome Stronghold by Spirit Tree", "tree_gnome_village"); approx(); // approx: spirit tree rides report nothing
         xp("Trap a Spined Larupia", HUNTER, 31);
         getAt("Fish some Bass on Ape Atoll", "raw_bass", 1, at(2755, 2775, 50), FISHING, 46);
         getAt("Chop and burn some teak logs on Ape Atoll", "teak_logs", 1, at(2755, 2775, 50), WOODCUTTING, 35, FIREMAKING, 35);
         combat("Complete an intermediate game of Pest Control", 70);
-        quest("Travel to the Feldip Hills by Gnome Glider", "one_small_favour");
-        quest("Claim a Chompy bird hat from Rantz after registering at least 30 kills", "big_chompy_bird_hunting");
-        quest("Travel from Eagles' Peak to the Feldip Hills by Eagle", "eagles_peak");
+        quest("Travel to the Feldip Hills by Gnome Glider", "one_small_favour"); approx(); // approx
+        quest("Claim a Chompy bird hat from Rantz after registering at least 30 kills", "big_chompy_bird_hunting"); approx(); // approx
+        quest("Travel from Eagles' Peak to the Feldip Hills by Eagle", "eagles_peak"); approx(); // approx: no eagle transport
         makeAt("Make a Chocolate Bomb at the Grand Tree", "chocolate_bomb", 1, at(2465, 3495, 20), COOKING, 42);
         visit("Complete a delivery for the Gnome Restaurant", 2449, 3500, 12, COOKING, 29);
-        quest("Turn your small crystal seed into a Crystal saw", "the_eyes_of_glouphrie");
+        quest("Turn your small crystal seed into a Crystal saw", "the_eyes_of_glouphrie"); approx(); // approx: no crystal saw
         get("Mine some Gold ore underneath the Grand Tree", "gold_ore", 1, MINING, 40);
         in("western", Tier.HARD);
         kill("Kill an Elf with a Crystal bow", "elf", 1, RANGED, 70);
@@ -884,8 +909,8 @@ public final class Diaries {
         getAt("Chop and burn some Mahogany logs on Ape Atoll", "mahogany_logs", 1, at(2755, 2775, 50), WOODCUTTING, 50, FIREMAKING, 50);
         get("Mine some Adamantite ore in Tirannwn", "adamantite_ore", 1, MINING, 70);
         xpAt("Check the health of your Palm tree in Lletya", FARMING, 68, at(2340, 3170, 40));
-        quest("Claim a Chompy bird hat from Rantz after registering at least 125 kills", "big_chompy_bird_hunting");
-        quest("Build an Isafdar painting in your POH Quest hall", "roving_elves", CONSTRUCTION, 65);
+        quest("Claim a Chompy bird hat from Rantz after registering at least 125 kills", "big_chompy_bird_hunting"); approx(); // approx
+        quest("Build an Isafdar painting in your POH Quest hall", "roving_elves", CONSTRUCTION, 65); approx(); // approx
         kc("Kill Zulrah", "zulrah", 1);
         cast("Teleport to Ape Atoll", "ape_atoll_teleport", MAGIC, 64);
         xp("Pickpocket a Gnome", THIEVING, 75);
@@ -893,11 +918,11 @@ public final class Diaries {
         makeHere("Fletch a Magic Longbow in Tirannwn", "magic_longbow", 1, FLETCHING, 85);
         kc("Kill the Thermonuclear Smoke devil", "thermonuclear_smoke_devil", 1, SLAYER, 93);
         xp("Have Prissy Scilla protect your Magic tree", FARMING, 75);
-        visit("Use the Elven overpass advanced cliffside shortcut", 2340, 3260, 15, AGILITY, 85);
+        shortcut("Use the Elven overpass advanced cliffside shortcut", "elven_overpass_advanced", AGILITY, 85);
         wear("Equip any complete void set", "void_knight_top|elite_void_top&void_knight_robe|elite_void_robe&void_knight_gloves"
                 + "&void_melee_helm|void_ranger_helm|void_mage_helm", null, ATTACK, 42, STRENGTH, 42, DEFENCE, 42, HITPOINTS, 42,
                 RANGED, 42, MAGIC, 42, PRAYER, 22);
-        quest("Claim a Chompy bird hat from Rantz after registering at least 1000 kills", "big_chompy_bird_hunting");
+        quest("Claim a Chompy bird hat from Rantz after registering at least 1000 kills", "big_chompy_bird_hunting"); approx(); // approx
         xp("Pickpocket an Elf", THIEVING, 85);
 
         // ======================= Wilderness (12 / 11 / 10 / 7) =======================
@@ -912,7 +937,7 @@ public final class Diaries {
         visit("Enter the King Black Dragon Lair", 3016, 3849, 12);
         get("Collect 5 Red spider's eggs from the Wilderness", "red_spiders_eggs", 5);
         get("Mine some Iron ore in the Wilderness", "iron_ore", 1, MINING, 15);
-        quest("Have the Mage of Zamorak teleport you to the Abyss", "enter_the_abyss");
+        quest("Have the Mage of Zamorak teleport you to the Abyss", "enter_the_abyss"); approx(); // approx
         wear("Equip any team cape in the Wilderness", teamCapes(), "wilderness");
         in("wilderness", Tier.MEDIUM);
         get("Mine some Mithril ore in the wilderness", "mithril_ore", 1, MINING, 55);
@@ -936,7 +961,7 @@ public final class Diaries {
         killAny("Kill a Lava dragon on Lava Dragon Isle", "lava dragon", 1);
         kc("Kill the Chaos Elemental", "chaos_elemental", 1);
         kc("Kill the Crazy Archaeologist, Chaos Fanatic and Scorpia", "crazy_archaeologist&chaos_fanatic&scorpia", 1);
-        visit("Take the agility shortcut from Trollheim into the Wilderness", 2949, 3768, 12, AGILITY, 64);
+        shortcut("Take the agility shortcut from Trollheim into the Wilderness", "trollheim_wilderness", AGILITY, 64);
         kill("Kill a Spiritual warrior in the Wilderness God Wars Dungeon", "spiritual warrior", 1, SLAYER, 68, AGILITY, 60);
         get("Fish some raw lava eel in the Wilderness", "*lava_eel", 1, FISHING, 53, HERBLORE, 25); // the Lava Maze spot
         in("wilderness", Tier.ELITE);
@@ -1200,7 +1225,27 @@ public final class Diaries {
         return kc;
     }
 
-    /** Parses a VISIT target "x,y,r". */
+    /**
+     * Whether the feet block y suits a VISIT target's depth suffix: none (any height), ",u" (below
+     * {@link #UNDERGROUND_BELOW_Y}, a dungeon carved under the circle) or ",bN" (below block y N, a lower dungeon floor).
+     */
+    public static boolean visitDepthOk(String target, int blockY) {
+        String[] p = target.split(",");
+        if (p.length < 4) {
+            return true;
+        }
+        if (p[3].equals("u")) {
+            return blockY < UNDERGROUND_BELOW_Y;
+        }
+        return p[3].startsWith("b") && blockY < Integer.parseInt(p[3].substring(1));
+    }
+
+    /** The activity key of a jewellery teleport: charged pieces report their base id ("digsite_pendant", not "digsite_pendant_3"). */
+    public static String teleportKey(String itemId, String chargeBase, String destination) {
+        return "teleport:" + (chargeBase != null && !chargeBase.isEmpty() ? chargeBase : itemId) + ":" + slug(destination);
+    }
+
+    /** Parses a VISIT target "x,y,r" (a depth suffix is ignored here; see {@link #visitDepthOk}). */
     public static int[] visitTarget(String target) {
         String[] p = target.split(",");
         return new int[]{Integer.parseInt(p[0]), Integer.parseInt(p[1]), Integer.parseInt(p[2])};

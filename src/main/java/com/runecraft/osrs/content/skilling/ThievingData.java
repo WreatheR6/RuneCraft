@@ -178,6 +178,8 @@ public final class ThievingData extends SkillingPart {
     /** The Isle of Souls Dungeon chest and the Dark Chest it gives keys for. */
     public static final String SOUL_CHEST = "isle_of_souls_chest";
     public static final String DARK_CHEST = "dark_chest";
+    /** Stolen from the Gu'Tanoth counter (Watchtower). */
+    public static final String ROCK_CAKE = "rock_cake";
     public static final String DARK_KEY = "dark_key";
     /** Containers that are opened with a key, which is used up: block -> key item. */
     public static final java.util.Map<String, String> KEY_CONTAINERS = java.util.Map.of(DARK_CHEST, DARK_KEY);
@@ -313,7 +315,21 @@ public final class ThievingData extends SkillingPart {
             // Ore stall: 82 Thieving, 350 XP, restocks in 30 s (OSRS: Mor Ul Rek's ore counter; weights approx).
             new Container("ore_stall", "Ore stall", false, 82, 350.0, 50, List.of(),
                     List.of(Loot.of("iron_ore", 30), Loot.of("silver_ore", 15), Loot.of("coal", 30), Loot.of("gold_ore", 12),
-                            Loot.of("mithril_ore", 8), Loot.of("adamantite_ore", 4), Loot.of("runite_ore", 1)), "stall", 0x6A6A6A));
+                            Loot.of("mithril_ore", 8), Loot.of("adamantite_ore", 4), Loot.of("runite_ore", 1)), "stall", 0x6A6A6A),
+            // Round 30, the wiki's other stalls (Stall/Thievable table; loot from each stall's page): Ape Atoll's food stall
+            // (banana) and general stall (hammer, pot, tinderbox 1/3 each) - both Monkey Madness I in OSRS, not checked here -,
+            // the Gu'Tanoth market counter (rock cakes; partial Watchtower in OSRS, not checked) and Port Roberts' cannonball
+            // stall (87 Thieving, 223 XP; it never empties in OSRS, the 4-tick respawn is the table's).
+            new Container("ape_atoll_food_stall", "Food stall (Ape Atoll)", false, 5, 16.0, 6, List.of(), List.of(Loot.of("banana", 1)),
+                    "stall", 0xC0B040),
+            new Container("ape_atoll_general_stall", "General stall (Ape Atoll)", false, 5, 25.0, 8, List.of(),
+                    List.of(Loot.of("hammer", 1), Loot.of("empty_pot", 1), Loot.of("tinderbox", 1)), "stall", 0x8A6A4A),
+            new Container("gutanoth_counter", "Counter (Gu'Tanoth)", false, 15, 6.4, 12, List.of(), List.of(Loot.of(ROCK_CAKE, 1)),
+                    "stall", 0x7A6A5A),
+            new Container("cannonball_stall", "Cannonball stall", false, 87, 223.0, 4, List.of(),
+                    List.of(Loot.of("bronze_cannonball", 79), Loot.of("iron_cannonball", 64), Loot.of("cannonball", 56),
+                            Loot.of("mithril_cannonball", 24), Loot.of("adamant_cannonball", 24), Loot.of("rune_cannonball", 8)),
+                    "stall", 0x4A4A4A));
 
     public static Container container(String blockId) {
         for (Container c : CONTAINERS) {
@@ -338,6 +354,7 @@ public final class ThievingData extends SkillingPart {
                 .examine("Stolen from a house in Civitas illa Fortis.");
         tool(s, "willow_blackjack", "Willow blackjack", "club", 0x9A8A4A, 192).examine("A cosh for knocking people out.");
         simple(s, DARK_KEY, "Dark key", "key", 0x3A2A4A, 1).examine("Opens the Dark Chest in the Crumbling Tower.");
+        simple(s, ROCK_CAKE, "Rock cake", "cake", 0x8A7A6A, 0).examine("Ogres love them. A human would break a tooth.");
     }
 
     @Override
@@ -379,7 +396,9 @@ public final class ThievingData extends SkillingPart {
                         List.of("crossbow_stall", "blast_furnace_stairs", "keldagrim_crafting_stall", "keldagrim_bakery_stall",
                                 "keldagrim_gem_stall")),
                 PlaceDef.of("ape_atoll_stalls", "Ape Atoll market", 2760, 2785, PlaceDef.Style.CAMP,
-                        List.of("magic_stall", "scimitar_stall")),
+                        List.of("magic_stall", "scimitar_stall", "ape_atoll_food_stall", "ape_atoll_general_stall")),
+                // Port Roberts' market: the cannonball stall (the counter in Gu'Tanoth is placed by the islands module's city).
+                PlaceDef.of("port_roberts_market", "Port Roberts market", 1872, 3303, PlaceDef.Style.CAMP, List.of("cannonball_stall")),
                 PlaceDef.of("lovakengj_ore_stall", "Lovakengj ore stall", 1490, 3770, PlaceDef.Style.TOWN, List.of("ore_stall")),
                 // The houses burgled in Stealing valuables (Lavinia's, Victor's and Caius'), approx.: one spot just west of the city walls, as the city structure fills the town.
                 // Isle of Souls: the dungeon chest stands on its OSRS tile inside the dungeons module's Isle of Souls Dungeon

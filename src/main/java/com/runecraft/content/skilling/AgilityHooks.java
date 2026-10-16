@@ -209,6 +209,8 @@ final class AgilityHooks {
             XpService.add(player, Skill.AGILITY, s.xp());
         }
         Msg.action(player, "You " + s.verb() + ".");
+        // Achievement diary tasks that need the shortcut used ("shortcut:" + id).
+        com.runecraft.content.GameEvents.fireActivity(player, "shortcut:" + s.id());
     }
 
     /** A free standing spot (air at feet and head, solid floor) next to the shortcut block at {@code end}. */
