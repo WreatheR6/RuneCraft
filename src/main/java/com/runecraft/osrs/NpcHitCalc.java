@@ -107,14 +107,16 @@ public final class NpcHitCalc {
     }
 
     /**
-     * The Justiciar set: a hit is reduced by (defence bonus against its style / 3000), rounded down. A negative bonus doesn't
-     * add damage. // approx: the calculator would scale it up
+     * The Justiciar set (OSRS Wiki): a hit is reduced by (defence bonus against its style / 3000), rounded down, and always
+     * by at least 1; a negative bonus doesn't add damage (the calculator would scale it up). It doesn't apply in PvP or to
+     * typeless damage ({@code combat/DefenceEffects} skips those).
      */
     public static int justiciar(int damage, int defenceBonus) {
-        if (defenceBonus <= 0) {
-            return damage;
+        if (damage <= 0) {
+            return Math.max(0, damage);
         }
-        return (int) (damage * (1 - defenceBonus / 3000.0));
+        int reduced = defenceBonus <= 0 ? damage : (int) (damage * (1 - defenceBonus / 3000.0));
+        return Math.max(0, Math.min(reduced, damage - 1));
     }
 
     /**

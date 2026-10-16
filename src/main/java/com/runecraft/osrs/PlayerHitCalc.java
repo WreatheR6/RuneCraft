@@ -733,18 +733,22 @@ public final class PlayerHitCalc {
      * Changes to each rolled hit (osrs-dps-calc's hit-distribution transforms, applied after {@link #maxHit}): against
      * vampyres Efaritay's aid (x1.1) and the weapon's vampyrebane multiplier (blisterwood flail / stake x1.25, sickle x1.15,
      * Ivandis flail x1.2, other silver weapons x1.1 against tier 1), then against tier 2 a non-vampyrebane weapon deals
-     * half damage with Efaritay's aid or at most 10 with a silver weapon; immune targets take nothing.
+     * half damage with Efaritay's aid or at most 10 with a silver weapon; immune targets take nothing. The same as
+     * {@link #vampyreLimit}({@link #vampyreScale}); a ranged hit puts its enchanted bolt effect between the two, as the
+     * calculator does (the multipliers are part of the attacker's distribution, the limits are NPC transforms).
      */
     public static int afterRoll(Input in, int damage) {
+        return vampyreLimit(in, vampyreScale(in, damage));
+    }
+
+    /** The vampyrebane multipliers of {@link #afterRoll} (Efaritay's aid and the weapon), before bolt effects. */
+    public static int vampyreScale(Input in, int damage) {
         if (damage <= 0) {
             return 0;
         }
         int tier = vampyreTier(in);
-        if (tier == 0) {
+        if (tier == 0 || immune(in)) {
             return damage;
-        }
-        if (immune(in)) {
-            return 0;
         }
         boolean efaritay = in.has("efaritays_aid");
         int num = 0;
@@ -773,6 +777,25 @@ public final class PlayerHitCalc {
             }
             damage = damage * num / den;
         }
+        return damage;
+    }
+
+    /**
+     * The NPC-side vampyre transforms of {@link #afterRoll}, after bolt effects: an immune target takes nothing; against
+     * tier 2 a non-vampyrebane weapon deals half damage with Efaritay's aid, or at most 10 with a silver weapon.
+     */
+    public static int vampyreLimit(Input in, int damage) {
+        if (damage <= 0) {
+            return 0;
+        }
+        int tier = vampyreTier(in);
+        if (tier == 0) {
+            return damage;
+        }
+        if (immune(in)) {
+            return 0;
+        }
+        boolean efaritay = in.has("efaritays_aid");
         if (tier == 2) {
             if (!vampyrebane(in, 2) && efaritay) {
                 damage = damage / 2;

@@ -29,7 +29,23 @@ public final class BoltProcs {
     }
 
     /** Hook from the ranged attack: the damage to deal after the bolt's effect (unchanged for other ammo). */
+    private static String lastShot;
+    private static long lastShotTick = -1;
+
+    /**
+     * The ammunition of the ranged shot being resolved right now (set by {@link #apply} just before the target's
+     * {@code modifyIncoming}), or null; read once. Boss scripts use it for bolt effects with their own rules (the Phantom
+     * Muspah's prayer shield and enchanted sapphire bolts).
+     */
+    public static String takeShot() {
+        String s = lastShotTick == ActionManager.mcTick() ? lastShot : null;
+        lastShot = null;
+        return s;
+    }
+
     public static int apply(ServerPlayerEntity p, LivingEntity target, String ammo, boolean accurate, int damage, int maxHit) {
+        lastShot = ammo;
+        lastShotTick = ActionManager.mcTick();
         BoltEffects.Enchant en = BoltEffects.ofItem(ammo);
         if (en == null) {
             return damage;

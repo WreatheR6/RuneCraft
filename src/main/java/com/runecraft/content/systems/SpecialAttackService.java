@@ -281,6 +281,9 @@ public final class SpecialAttackService {
                     hits[i] = r.nextDouble() < chance;
                 }
                 a.clawHits = burning ? SpecialAttacks.burningClawHits(r, hits, max) : SpecialAttacks.clawHits(r, hits, max);
+                for (int i = 0; i < a.clawHits.length; i++) {
+                    a.clawHits[i] = com.runecraft.combat.HitCalcBridge.afterRoll(in, a.clawHits[i]); // vampyre tiers
+                }
                 int first = -1;
                 for (int i = 0; i < hits.length; i++) {
                     if (hits[i]) {
@@ -294,10 +297,11 @@ public final class SpecialAttackService {
             case DARK_BOW -> {
                 // Each arrow deals between 5 (8 with dragon arrows) and 48 damage, even on a miss.
                 int min = hasDragonArrows(p) ? 8 : a.spec.param();
-                return Math.max(min, Math.min(48, damage));
+                // The 5/8 minimum doesn't get past a vampyre's immunity or the tier 2 limits.
+                return com.runecraft.combat.HitCalcBridge.vampyreLimit(hitInput(p, target, type), Math.max(min, Math.min(48, damage)));
             }
             case FLAT_BONUS -> {
-                return damage + a.spec.param();
+                return com.runecraft.combat.HitCalcBridge.vampyreLimit(hitInput(p, target, type), damage + a.spec.param());
             }
             case BRUTAL_SWING -> {
                 PlayerHitCalc.Input in = hitInput(p, target, type);
@@ -311,14 +315,16 @@ public final class SpecialAttackService {
                     }
                 }
                 int[] range = SpecialAttacks.kistenRange(successes, max);
-                return successes == 0 ? 0 : range[0] + r.nextInt(Math.max(0, range[1] - range[0]) + 1);
+                int hit = successes == 0 ? 0 : range[0] + r.nextInt(Math.max(0, range[1] - range[0]) + 1);
+                return com.runecraft.combat.HitCalcBridge.afterRoll(in, hit); // vampyre tiers
             }
             case MIN_DAMAGE -> {
                 if (damage <= 0) {
                     return damage;
                 }
-                int max = PlayerHitCalc.maxHit(hitInput(p, target, type));
-                return Math.max(damage, max * a.spec.param() / 100);
+                PlayerHitCalc.Input in = hitInput(p, target, type);
+                int max = PlayerHitCalc.maxHit(in);
+                return com.runecraft.combat.HitCalcBridge.vampyreLimit(in, Math.max(damage, max * a.spec.param() / 100));
             }
             case SHOVE -> {
                 return 0;
@@ -326,6 +332,31 @@ public final class SpecialAttackService {
             default -> {
                 return damage;
             }
+        }
+    }
+
+    /**
+     * Rod of Ivandis' Retainer: a vampyre juvenile or juvinate below half health is held (frozen, its target dropped) for
+     * {@code ticks}; any other target gets the OSRS refusal. Either way the rod loses a charge and crumbles at the last.
+     */
+    private static void retainer(ServerPlayerEntity p, LivingEntity target, int ticks) {
+        String key = target instanceof ServerPlayerEntity ? null : com.runecraft.combat.MonsterStats.of(target).traitsKey();
+        String fail = SpecialAttacks.retainerFailure(key, target.getHealth() / Math.max(1f, target.getMaxHealth()));
+        if (fail != null) {
+            Msg.game(p, fail);
+        } else {
+            SysCombat.freeze(target, ticks);
+            if (target instanceof net.minecraft.entity.mob.MobEntity mob) {
+                mob.setTarget(null);
+            }
+            SysCombat.dust(target, new Vector3f(0.8f, 0.8f, 0.9f), 20);
+            Msg.action(p, "The rod of Ivandis binds the vampyre in place.");
+        }
+        net.minecraft.item.ItemStack rod = p.getMainHandStack();
+        if (Inv.idOf(rod).equals(com.runecraft.osrs.content.systems.Charges.ROD_OF_IVANDIS)
+                && com.runecraft.item.ItemCharges.drain(rod, 1)) {
+            rod.decrement(1);
+            Msg.red(p, "Your rod of Ivandis crumbles to dust.");
         }
     }
 
@@ -483,6 +514,7 @@ public final class SpecialAttackService {
                 }
             }
             case BEHEAD -> SysState.of(p).soulStacks = 0;
+            case RETAINER -> retainer(p, target, spec.param());
             default -> {
             }
         }

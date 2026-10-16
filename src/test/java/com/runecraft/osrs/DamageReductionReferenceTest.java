@@ -48,8 +48,8 @@ class DamageReductionReferenceTest {
             boolean dinhs = gear.contains("Dinh's bulwark") && r.get("styleName").equals("Block");
             boolean justiciar = gear.contains("Justiciar faceguard") && gear.contains("Justiciar chestguard") && gear.contains("Justiciar legguards");
             int bonus = Integer.parseInt(r.get("defBonus"));
-            if (justiciar && bonus < 0) {
-                continue; // RuneCraft never lets a negative bonus add damage (the calculator does)
+            if (justiciar && bonus <= 0) {
+                continue; // RuneCraft never lets a negative bonus add damage (the calculator does) and always takes 1 off
             }
             rows++;
             int max = Integer.parseInt(r.get("npcMaxHit"));
@@ -94,6 +94,9 @@ class DamageReductionReferenceTest {
         assertEquals(1, NpcHitCalc.elysian(2));
         assertEquals(32, NpcHitCalc.dinhsBlock(40));
         assertEquals(36, NpcHitCalc.justiciar(40, 300)); // 40 x (1 - 300/3000)
-        assertEquals(40, NpcHitCalc.justiciar(40, -20));
+        assertEquals(39, NpcHitCalc.justiciar(40, -20)); // wiki: always at least 1 less, never more
+        assertEquals(39, NpcHitCalc.justiciar(40, 0));
+        assertEquals(0, NpcHitCalc.justiciar(1, 300));
+        assertEquals(0, NpcHitCalc.justiciar(0, 300));
     }
 }

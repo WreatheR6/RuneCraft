@@ -92,6 +92,11 @@ public final class CombatHooks {
         return attackStyle;
     }
 
+    /** True when the attack being applied was named without a style: a boss mechanic's typeless damage. */
+    static boolean typelessNamed() {
+        return attackName != null && attackStyle == null;
+    }
+
     /** Forgets an attack name that didn't reach a player. */
     static void clearAttackName() {
         attackName = null;

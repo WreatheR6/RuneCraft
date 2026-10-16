@@ -53,7 +53,7 @@ public final class BossMechanics {
             "shadow_engulf", "shadow_stomp", "shadow_wave", "shadow_crash", "glyph_flames", "fire_streak", "fire_wave", "void_flare",
             "glyph_of_fire", "cavern_shake", "forfeit", "tentacle", "swinging_axe", "darting_spikes", "ice_spikes", "screech", "carrion",
             "slam", "larva", "fire_wall", "icicle_wall", "elemental_blast", "elemental_explosion", "sleepwalker", "power_blast",
-            "bleed", "strangle", "burn", "knockback");
+            "bleed", "strangle", "burn", "knockback", "parasite_burst", "spike");
 
     // ------------------------------------------------------------ minion ids
     public static final String YAMA_JUDGE = "yama_judge";
@@ -467,5 +467,167 @@ public final class BossMechanics {
             stacks = kept;
             return damage;
         }
+    }
+
+    // ------------------------------------------------------------ The Nightmare's parasites (OSRS Wiki "Parasite")
+    /** The parasite bursts out ~18 ticks after it lands. */
+    public static final int PARASITE_BURST_TICKS = 18;
+    /** Hitpoints of a weakened parasite (a dose of sanfew serum or relicym's balm before it bursts) and of a full one. */
+    public static final int PARASITE_HP_WEAKENED = 40;
+    public static final int PARASITE_HP = 80;
+    /** Each support blast restores 31-50 of the Nightmare's shield (or health here, where the shield is the totems). */
+    public static final int PARASITE_HEAL_MIN = 31;
+    public static final int PARASITE_HEAL_MAX = 50;
+    /** Game ticks between a parasite's support blasts (approx: the wiki only says "periodically"). */
+    public static final int PARASITE_HEAL_INTERVAL = 10;
+    /** "Terrible Parent": the parasites may heal her for at most 100 in a solo kill. */
+    public static final String COUNT_NIGHTMARE_PARASITE_HEAL = "nightmare_parasite_heal";
+    public static final int TERRIBLE_PARENT_MAX_HEAL = 100;
+    /** Phosani's: a parasite or husk survived the hit it took ("Crush Hour"). */
+    public static final String FLAG_PHOSANI_MINION_SURVIVED = "phosani_minion_survived";
+
+    /** One support blast: 31-50 (the range since the parasite rework; 1-80 before). */
+    public static int parasiteHeal(java.util.Random r) {
+        return PARASITE_HEAL_MIN + r.nextInt(PARASITE_HEAL_MAX - PARASITE_HEAL_MIN + 1);
+    }
+
+    /** Damage of the burst: much less when it was weakened in time (approx: the wiki gives no numbers). */
+    public static int parasiteBurst(java.util.Random r, boolean weakened) {
+        return weakened ? 5 + r.nextInt(6) : 30 + r.nextInt(21); // approx: 5-10 weakened, 30-50 otherwise
+    }
+
+    /** The parasite's hitpoints for how it burst out. */
+    public static int parasiteHitpoints(boolean weakened) {
+        return weakened ? PARASITE_HP_WEAKENED : PARASITE_HP;
+    }
+
+    // ------------------------------------------------------------ Phantom Muspah (OSRS Wiki "Phantom Muspah/Strategies")
+    /** The shielded form's prayer shield: 75 points, 2 lost to every attack. */
+    public static final int MUSPAH_SHIELD = 75;
+    public static final int MUSPAH_SHIELD_PER_ATTACK = 2;
+    /** An enchanted sapphire bolt activation drains "around 33" of it. */
+    public static final int MUSPAH_SAPPHIRE_DRAIN = 33;
+    /** Enchanted sapphire bolts activate 25% of the time against it (27.5% with the hard Kandarin Diary), after an accurate hit. */
+    public static final double MUSPAH_SAPPHIRE_CHANCE = 0.25;
+    /** Standing on a spike as it emerges knocks the player aside and heals the Muspah ~75% of the damage. */
+    public static final int MUSPAH_SPIKE_MAX = 20; // approx
+    /** After the shield breaks, spikes grow from the existing clusters every four of its attacks. */
+    public static final int MUSPAH_SPIKE_EVERY = 4;
+    /** Prayer-drain sources that can work the shield ("Versatile Drainer" needs three in one kill). */
+    public static final String DRAIN_SMITE = "smite";
+    public static final String DRAIN_SAPPHIRE = "sapphire_bolts";
+    public static final String DRAIN_CORRUPTION = "corruption";
+    public static final String FLAG_MUSPAH_THREE_DRAINS = "muspah_three_drains";
+    /** "Space is Tight": it died with spikes on every tile around it. */
+    public static final String FLAG_MUSPAH_SURROUNDED = "muspah_surrounded";
+
+    /** Healing from a spike hit (75%, rounded down). */
+    public static int muspahSpikeHeal(int damage) {
+        return Math.max(0, damage) * 3 / 4;
+    }
+
+    /** Shield points a Smite hit drains: a quarter of the damage, as Smite takes from players. */
+    public static int muspahSmiteDrain(int damage) {
+        return Math.max(0, damage) / 4;
+    }
+
+    /** Shield points a corruption spell drains: everything its three pulses would take (lesser 1+2+3, greater 2+4+6). */
+    public static int muspahCorruptionDrain(boolean greater) {
+        return greater ? 12 : 6;
+    }
+
+    /** Whether the prayer-drain sources used in one kill complete "Versatile Drainer". */
+    public static boolean versatileDrainer(java.util.Set<String> sources) {
+        return sources.size() >= 3;
+    }
+
+    /** Packs a tile (block x, z) for a spike set. */
+    public static long tile(int x, int z) {
+        return ((long) x << 32) ^ (z & 0xFFFFFFFFL);
+    }
+
+    /**
+     * Whether every tile of the ring around a {@code size} x {@code size} footprint whose north-west corner is ({@code x},
+     * {@code z}) holds a spike.
+     */
+    public static boolean muspahSurrounded(java.util.Set<Long> spikes, int x, int z, int size) {
+        for (int dx = -1; dx <= size; dx++) {
+            for (int dz = -1; dz <= size; dz++) {
+                boolean ring = dx == -1 || dz == -1 || dx == size || dz == size;
+                if (ring && !spikes.contains(tile(x + dx, z + dz))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * One growth wave of the post-shield spikes: every free tile next to an existing spike (4-neighbour) within
+     * {@code radius} of the centre becomes a spike with probability {@code chance}; returns the new tiles.
+     */
+    public static java.util.List<Long> muspahSpikeGrowth(java.util.Set<Long> spikes, int cx, int cz, int radius, double chance,
+                                                         java.util.Random r) {
+        java.util.List<Long> grown = new java.util.ArrayList<>();
+        java.util.List<Long> sorted = new java.util.ArrayList<>(spikes);
+        java.util.Collections.sort(sorted);
+        int[][] steps = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        for (long t : sorted) {
+            int x = (int) (t >> 32);
+            int z = (int) t;
+            for (int[] s : steps) {
+                int nx = x + s[0];
+                int nz = z + s[1];
+                long n = tile(nx, nz);
+                if (Math.abs(nx - cx) > radius || Math.abs(nz - cz) > radius || spikes.contains(n) || grown.contains(n)) {
+                    continue;
+                }
+                if (r.nextDouble() < chance) {
+                    grown.add(n);
+                }
+            }
+        }
+        return grown;
+    }
+
+    // ------------------------------------------------------------ Araxxor's eggs (OSRS Wiki "Araxxor/Strategies")
+    public static final String ARAXYTE_EGG = "araxyte_egg";
+    /** Nine eggs, three of each colour; the first hatches after 3 standard attacks, then one every 6. */
+    public static final int ARAXXOR_EGGS = 9;
+    public static final int ARAXXOR_FIRST_HATCH = 3;
+    public static final int ARAXXOR_HATCH_EVERY = 6;
+    /** An egg has 65 hitpoints, the araxyte inside 58: damage carries over; more than 58 and the egg just despawns. */
+    public static final int ARAXYTE_EGG_HP = 65;
+    public static final int ARAXYTE_HP = 58;
+    /** "Relaxxor": eggs destroyed in the kill. */
+    public static final String COUNT_ARAXXOR_EGGS = "araxxor_eggs_destroyed";
+    public static final int RELAXXOR_EGGS = 6;
+
+    private static final String[][] EGG_PATTERNS = {
+            {"acidic_araxyte", "mirrorback_araxyte", "ruptura_araxyte"},  // green > white > red
+            {"mirrorback_araxyte", "ruptura_araxyte", "acidic_araxyte"},  // white > red > green
+            {"ruptura_araxyte", "acidic_araxyte", "mirrorback_araxyte"}}; // red > green > white
+
+    /**
+     * The araxyte in each of the nine eggs, clockwise from the south-easternmost one: one of the three wiki patterns
+     * (green acidic, white mirrorback, red ruptura), the last two sets copying the first.
+     */
+    public static java.util.List<String> araxxorEggs(int pattern) {
+        String[] p = EGG_PATTERNS[Math.floorMod(pattern, EGG_PATTERNS.length)];
+        java.util.List<String> eggs = new java.util.ArrayList<>();
+        for (int i = 0; i < ARAXXOR_EGGS; i++) {
+            eggs.add(p[i % 3]);
+        }
+        return eggs;
+    }
+
+    /** Whether Araxxor's {@code standardAttacks}-th standard attack hatches the next egg (3rd, 9th, 15th...). */
+    public static boolean araxxorHatches(int standardAttacks) {
+        return standardAttacks >= ARAXXOR_FIRST_HATCH && (standardAttacks - ARAXXOR_FIRST_HATCH) % ARAXXOR_HATCH_EVERY == 0;
+    }
+
+    /** The hatched araxyte's hitpoints after the egg took {@code eggDamage}; 0 when the egg despawns instead (over 58). */
+    public static int araxyteHitpoints(int eggDamage) {
+        return eggDamage > ARAXYTE_HP ? 0 : Math.max(1, ARAXYTE_HP - Math.max(0, eggDamage));
     }
 }

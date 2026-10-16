@@ -111,6 +111,12 @@ final class GameplayChecks {
         }
         checks.add(new SelfTest.Check("boss:bryophyta_growthlings", g::bryophytaGrowthlings));
         checks.add(new SelfTest.Check("boss:obor_knockback", g::oborKnockback));
+        checks.add(new SelfTest.Check("boss:nightmare_parasites",
+                () -> g.scripted("the_nightmare", com.runecraft.content.bosses.BossSelfTests::nightmareParasites)));
+        checks.add(new SelfTest.Check("boss:muspah_shield",
+                () -> g.scripted("phantom_muspah", com.runecraft.content.bosses.BossSelfTests::muspahShield)));
+        checks.add(new SelfTest.Check("boss:araxxor_eggs",
+                () -> g.scripted("araxxor", com.runecraft.content.bosses.BossSelfTests::araxxorEggs)));
         for (Map.Entry<String, int[]> e : destinations().entrySet()) {
             checks.add(new SelfTest.Check("teleport:" + e.getKey(), () -> g.teleport(e.getValue()[0], e.getValue()[1])));
         }
@@ -512,6 +518,25 @@ final class GameplayChecks {
             return com.runecraft.content.bosses.OldBossScripts.selfTestKnockback(boss, p());
         } finally {
             boss.discard();
+        }
+    }
+
+    /** Spawns a data boss next to the player, targeting them, runs one scripted-mechanic check on it and removes it. */
+    private String scripted(String id, java.util.function.BiFunction<DataBossEntity, ServerPlayerEntity, String> test) {
+        BossDef def = ContentRegistry.boss(id);
+        if (def == null) {
+            throw failure("no BossDef " + id);
+        }
+        DataBossEntity boss = DataBossService.spawn(c.world, c.near(3, 0), def, p());
+        if (boss == null) {
+            throw failure("DataBossService.spawn returned null for " + id);
+        }
+        try {
+            boss.setTarget(p());
+            return test.apply(boss, p());
+        } finally {
+            boss.discard();
+            c.heal();
         }
     }
 

@@ -92,6 +92,16 @@ public final class HitCalcBridge {
         return PlayerHitCalc.afterRoll(in, damage);
     }
 
+    /** The vampyrebane multipliers alone (before an enchanted bolt effect); {@link #vampyreLimit} follows the bolt. */
+    public static int vampyreScale(PlayerHitCalc.Input in, int damage) {
+        return PlayerHitCalc.vampyreScale(in, damage);
+    }
+
+    /** Vampyre immunity and the tier 2 limits, after an enchanted bolt effect. */
+    public static int vampyreLimit(PlayerHitCalc.Input in, int damage) {
+        return PlayerHitCalc.vampyreLimit(in, damage);
+    }
+
     /**
      * Stats of items worn in slots another module keeps (the quests module's cape / hands / neck gear such as the imbued
      * god capes and chaos gauntlets), added to the gear totals; set by that module.

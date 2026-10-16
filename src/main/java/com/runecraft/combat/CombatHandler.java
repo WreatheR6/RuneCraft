@@ -191,9 +191,11 @@ public final class CombatHandler {
         boolean accurate = rng.nextDouble() < HitCalcBridge.hitChance(in, attackRoll, defenceRoll); // specials can always hit
         int minHit = Math.min(HitCalcBridge.minHit(in), maxHit); // dark bow special: 5 / 8
         int damage = accurate ? minHit + rng.nextInt(maxHit - minHit + 1) : 0;
-        // Enchanted (e) bolt effects (opal to onyx, dragon variants).
-        damage = HitCalcBridge.afterRoll(in, damage); // vampyre tiers (silver bolts, blisterwood stakes)
+        // Vampyrebane multipliers, then enchanted (e) bolt effects (opal to onyx, dragon variants), then the vampyre
+        // immunity / tier 2 limits: the calculator's order, so a ruby or dragonstone proc can't hurt an immune vyrewatch.
+        damage = HitCalcBridge.vampyreScale(in, damage); // silver bolts, blisterwood stakes
         damage = com.runecraft.content.systems.BoltProcs.apply(player, target, arrowItem, accurate, damage, maxHit);
+        damage = HitCalcBridge.vampyreLimit(in, damage);
         damage = CombatHooks.afterRoll(player, target, AttackType.RANGED, damage, maxHit);
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(player, damage, AttackType.RANGED);
@@ -376,7 +378,7 @@ public final class CombatHandler {
         }
         if (target instanceof ServerPlayerEntity damaged) {
             if (attacker != null && attacker != damaged && damage > 0) {
-                damage = DefenceEffects.reduce(damaged, attacker, CombatHooks.namedStyle(), damage);
+                damage = DefenceEffects.reduce(damaged, attacker, CombatHooks.namedStyle(), CombatHooks.typelessNamed(), damage);
                 damage = CombatHooks.incoming(damaged, attacker, damage);
             }
             CombatHooks.damaged(damaged, attacker, Math.max(0, damage));

@@ -48,4 +48,47 @@ class VampyreTiersTest {
         assertEquals(33, PlayerHitCalc.afterRoll(vs(1, "silver_sickle_b"), 30)); // silver x1.1 vs tier 1
         assertEquals(30, PlayerHitCalc.afterRoll(vs(1, "abyssal_whip"), 30));
     }
+
+    /**
+     * Round 30: the calculator applies the vampyrebane multipliers before bolt effects and the immunity / tier 2 limits
+     * after them, so an enchanted bolt proc (added between the two) can't hurt an immune vampyre or pass the silver cap.
+     */
+    @Test
+    void boltEffectsSitBetweenScaleAndLimit() {
+        PlayerHitCalc.Input stake = vs(1, "blisterwood_stake");
+        stake.type = AttackType.RANGED;
+        assertEquals(37, PlayerHitCalc.vampyreScale(stake, 30));
+        assertEquals(37, PlayerHitCalc.vampyreLimit(stake, 37));
+        PlayerHitCalc.Input ruby = vs(3, "rune_crossbow", "ruby_bolts_e");
+        ruby.type = AttackType.RANGED;
+        assertEquals(25, PlayerHitCalc.vampyreScale(ruby, 25)); // immune: unchanged until the limit
+        assertEquals(0, PlayerHitCalc.vampyreLimit(ruby, 25 + 40)); // a ruby proc on a vyrewatch still deals nothing
+        PlayerHitCalc.Input silver = vs(2, "rune_crossbow", "silver_bolts");
+        silver.type = AttackType.RANGED;
+        assertEquals(10, PlayerHitCalc.vampyreLimit(silver, PlayerHitCalc.vampyreScale(silver, 30)));
+        for (int d = 0; d <= 60; d += 7) { // afterRoll is still the two together
+            for (String w : new String[]{"blisterwood_flail", "silver_sickle_b", "abyssal_whip", "ivandis_flail", "rod_of_ivandis"}) {
+                for (int tier = 1; tier <= 3; tier++) {
+                    PlayerHitCalc.Input in = vs(tier, w, "efaritays_aid");
+                    assertEquals(PlayerHitCalc.afterRoll(in, d), PlayerHitCalc.vampyreLimit(in, PlayerHitCalc.vampyreScale(in, d)));
+                }
+            }
+        }
+    }
+
+    /** The rod of Ivandis: 10 charges, used by its Retainer special on vampyre juveniles / juvinates below half health. */
+    @Test
+    void rodOfIvandis() {
+        com.runecraft.osrs.content.systems.Charges.Spec rod = com.runecraft.osrs.content.systems.Charges.of("rod_of_ivandis");
+        assertEquals(10, rod.max());
+        assertEquals(10, rod.initial());
+        com.runecraft.osrs.content.systems.SpecialAttacks.Spec spec = com.runecraft.osrs.content.systems.SpecialAttacks.of("rod_of_ivandis");
+        assertEquals(10, spec.cost());
+        assertEquals(com.runecraft.osrs.content.systems.SpecialAttacks.Effect.RETAINER, spec.effect());
+        assertEquals(50, spec.param()); // 30 seconds
+        assertTrue(com.runecraft.osrs.content.systems.SpecialAttacks.retainerFailure("vampyre_juvenile", 0.4) == null);
+        assertTrue(com.runecraft.osrs.content.systems.SpecialAttacks.retainerFailure("trek_vampyre_juvinate_2", 0.3) == null);
+        assertTrue(com.runecraft.osrs.content.systems.SpecialAttacks.retainerFailure("vampyre_juvenile", 0.5).contains("half"));
+        assertTrue(com.runecraft.osrs.content.systems.SpecialAttacks.retainerFailure("vyrewatch", 0.1).contains("juveniles"));
+    }
 }
