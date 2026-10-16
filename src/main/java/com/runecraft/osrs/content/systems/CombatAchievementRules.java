@@ -839,7 +839,9 @@ public final class CombatAchievementRules {
             285;RUN;mg:wintertodt;1;flag=warm_gear
             286;RUN;mg:wintertodt;1;flag=points_3000
             358;RUN;mg:tempoross;1;flag=ten_permits
-            359;RUN;mg:tempoross;1;solo noflag=wave_hit
+            359;RUN;mg:tempoross;1;solo noflag=wave_hit noflag=fire_hit
+            356;RUN;mg:tempoross;1;flag=five_fires
+            357;RUN;mg:tempoross;1;flag=tether_repaired
             360;RUN;mg:tempoross;1;flag=both_cannons
             227;RULE;zulrah;1;flag=venge_last
             160;RULE;kalphite_queen;1;flag=venge_last
@@ -885,6 +887,8 @@ public final class CombatAchievementRules {
             597;RULE;branda_the_fire_queen;1;count>=10:titan_elemental_kills
             598;RULE;branda_the_fire_queen;1;flag=titans_charge_kill
             408;RULE;phosanis_nightmare;1;noflag=phosani_sleepwalker_reached
+            38;RULE;bryophyta;1;flag=bryophyta_quick_cut
+            132;RULE;obor;1;noflag=obor_pushed
             """;
 
     private static final Map<Integer, Spec> SPECS = new LinkedHashMap<>();

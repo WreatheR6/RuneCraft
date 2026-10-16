@@ -72,6 +72,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("yama", ModernScripts.Yama::new);
         BossScripts.register("amoxliatl", ModernScripts.Amoxliatl::new);
         BossScripts.register("maggot_king", ModernScripts.MaggotKing::new);
+        OldBossScripts.register();
         // Yama's sigil contracts: one held in the main hand when challenging him is shown to him (and consumed).
         com.runecraft.boss.DataBossService.requirement("yama", (player, def) -> ModernScripts.Yama.offerContract(player));
 

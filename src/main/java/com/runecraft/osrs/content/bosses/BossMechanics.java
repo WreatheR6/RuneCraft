@@ -43,12 +43,17 @@ public final class BossMechanics {
     public static final String FLAG_TITANS_CHARGE_KILL = "titans_charge_kill";
     /** Phosani's Nightmare: a sleepwalker reached her during the desperation phase ("Dreamland Express"). */
     public static final String FLAG_PHOSANI_SLEEPWALKER = "phosani_sleepwalker_reached";
+    /** Bryophyta: all three growthlings of a batch died within 3 seconds of the first ("Quick Cutter"). */
+    public static final String FLAG_BRYOPHYTA_QUICK_CUT = "bryophyta_quick_cut";
+    /** Obor: his knockback pushed the player back more than one square ("Back to the Wall"). */
+    public static final String FLAG_OBOR_PUSHED = "obor_pushed";
 
     /** Names the scripts give their damage (beyond the bosses' AttackDef names), for "no damage from ..." rules. */
     public static final java.util.Set<String> SCRIPTED_ATTACKS = java.util.Set.of(
             "shadow_engulf", "shadow_stomp", "shadow_wave", "shadow_crash", "glyph_flames", "fire_streak", "fire_wave", "void_flare",
             "glyph_of_fire", "cavern_shake", "forfeit", "tentacle", "swinging_axe", "darting_spikes", "ice_spikes", "screech", "carrion",
-            "slam", "larva", "fire_wall", "icicle_wall", "elemental_blast", "elemental_explosion", "sleepwalker", "power_blast");
+            "slam", "larva", "fire_wall", "icicle_wall", "elemental_blast", "elemental_explosion", "sleepwalker", "power_blast",
+            "bleed", "strangle", "burn", "knockback");
 
     // ------------------------------------------------------------ minion ids
     public static final String YAMA_JUDGE = "yama_judge";
@@ -56,6 +61,50 @@ public final class BossMechanics {
     public static final String UNSTABLE_ICE = "unstable_ice";
     public static final String UR_MAGGOT_LARVA = "ur_maggot_larva";
     public static final String PHOSANI_SLEEPWALKER = "phosani_sleepwalker";
+    public static final String GROWTHLING = "growthling";
+    public static final String STRANGLER_SPORE = "strangler_spore";
+
+    // ------------------------------------------------------------ Bryophyta (OSRS Wiki "Growthling")
+    /** Three growthlings at a time; a 1/5 roll each time she attacks; 20 ticks before a new batch after the last dies. */
+    public static final int GROWTHLINGS = 3;
+    public static final int GROWTHLING_CHANCE = 5;
+    public static final int GROWTHLING_COOLDOWN = 20;
+    /** "Quick Cutter": the other two within 3 seconds (5 ticks) of the first one dying. */
+    public static final int QUICK_CUTTER_TICKS = 5;
+
+    /**
+     * Whether a weapon finishes growthlings in one hit: anything with the Axe attack type (woodcutting axes; not the blessed
+     * axe, battleaxes or the zombie axe) or magic secateurs. Other weapons can't bring them below 1 hitpoint.
+     */
+    public static boolean cutsGrowthling(String heldId, boolean woodcuttingAxe) {
+        if (heldId == null) {
+            return false;
+        }
+        return heldId.equals("magic_secateurs") || (woodcuttingAxe && !heldId.equals("blessed_axe"));
+    }
+
+    /** Whether a batch was cut down in time: its last growthling died within 3 seconds of its first. */
+    public static boolean quickCut(long firstDeathTick, long lastDeathTick, int killed) {
+        return killed >= GROWTHLINGS && lastDeathTick - firstDeathTick <= QUICK_CUTTER_TICKS;
+    }
+
+    // ------------------------------------------------------------ Obor (OSRS Wiki)
+    /** Melee 22, ranged 26; Protect from Missiles halves the ranged attack instead of blocking it. */
+    public static final int OBOR_MELEE_MAX = 22;
+    public static final int OBOR_RANGED_MAX = 26;
+    /** Knockback slam: one melee attack in 4 (approx) pushes the target up to 2 tiles (approx) straight away from him. */
+    public static final int OBOR_KNOCKBACK_CHANCE = 4;
+    public static final int OBOR_KNOCKBACK_TILES = 2;
+
+    /** Damage of Obor's ranged attack through Protect from Missiles (50% less). */
+    public static int oborRangedThroughPrayer(int damage) {
+        return damage / 2;
+    }
+
+    /** "Back to the Wall" fails when a knockback moved the player more than one square. */
+    public static boolean oborPushedTooFar(int tilesMoved) {
+        return tilesMoved > 1;
+    }
 
     // ------------------------------------------------------------ Yama
     /** Yama's hitpoints and attack speed (8 ticks; 7 in phase 3 and in every contract). */
@@ -158,6 +207,36 @@ public final class BossMechanics {
         return c == null ? 1.0 : YAMA_CONTRACT_AUTO_MAX / (double) YAMA_AUTO_MAX;
     }
 
+    /**
+     * Yama's defence bonus against a style (OSRS Wiki infobox): magic -30 while his primary target melees him and +60 while
+     * it uses magic; phase 3 raises everything (stab 135, slash 108, crush and light/heavy ranged 449, standard ranged 297,
+     * magic 81). Glyphic attenuation: 666 against everything but crush (80, phase 3 108). Ranged is the standard bonus.
+     */
+    public static int yamaDefenceBonus(com.runecraft.osrs.AttackType type, boolean targetMaging, boolean phase3, YamaContract c) {
+        if (c == YamaContract.GLYPHIC_ATTENUATION) {
+            return type == com.runecraft.osrs.AttackType.CRUSH ? (phase3 ? 108 : 80) : 666;
+        }
+        return switch (type) {
+            case STAB -> phase3 ? 135 : 100;
+            case SLASH -> phase3 ? 108 : 80;
+            case CRUSH -> phase3 ? 449 : 333;
+            case MAGIC -> phase3 ? 81 : targetMaging ? 60 : -30;
+            case RANGED -> phase3 ? 297 : 220;
+        };
+    }
+
+    /** {light, standard, heavy} ranged defence: 333/220/333, phase 3 449/297/449 (glyphic attenuation 666). */
+    public static int[] yamaRangedDefences(boolean phase3, YamaContract c) {
+        if (c == YamaContract.GLYPHIC_ATTENUATION) {
+            return new int[]{666, 666, 666};
+        }
+        return phase3 ? new int[]{449, 297, 449} : new int[]{333, 220, 333};
+    }
+
+    /** Burns: an unprotected Meteor Strike burns for 8; an unprotected fire glyph special for 10 (approx: a full burn). */
+    public static final int YAMA_METEOR_BURN = 8;
+    public static final int YAMA_GLYPH_BURN = 10;
+
     /** Wretched Strength under the Contract of bloodied blows (approx: +10% damage both ways). */
     public static final double WRETCHED_STRENGTH = 1.10;
 
@@ -210,6 +289,48 @@ public final class BossMechanics {
         return awakened ? n + 1 : n;
     }
 
+    /** Swinging axes hit for up to 35 (Protect from Melee halves it) and start a bleed. */
+    public static final int VARDORVIS_AXE_MAX = 35;
+    /** Bleed: 3 damage every 3 ticks for 14 ticks (5 hits), or every tick while the player runs. */
+    public static final int VARDORVIS_BLEED_DAMAGE = 3;
+    public static final int VARDORVIS_BLEED_TICKS = 14;
+    public static final int VARDORVIS_BLEED_INTERVAL = 3;
+    /** Strangle (below 570): destroy the spores within 5 ticks (awakened 4, approx) or take ~25 (awakened ~40). */
+    public static final int VARDORVIS_STRANGLE_TICKS = 5;
+    public static final int VARDORVIS_STRANGLE_TICKS_AWAKENED = 4;
+    public static final int VARDORVIS_STRANGLE_DAMAGE = 25;
+    public static final int VARDORVIS_STRANGLE_DAMAGE_AWAKENED = 40;
+    /** Spores to destroy per Strangle (the wiki says "several"; approx). */
+    public static final int VARDORVIS_STRANGLE_SPORES = 3;
+
+    /** A Vardorvis bleed: damage per game tick, more often while the player is running. */
+    public static final class Bleed {
+        private int ticksLeft;
+        private int sinceHit;
+
+        public void start() {
+            ticksLeft = VARDORVIS_BLEED_TICKS;
+            sinceHit = 1; // the first hit lands 2 ticks in: 5 hits over 14 ticks standing still
+        }
+
+        public boolean active() {
+            return ticksLeft > 0;
+        }
+
+        public int tick(boolean moving) {
+            if (ticksLeft <= 0) {
+                return 0;
+            }
+            ticksLeft--;
+            sinceHit++;
+            if (moving || sinceHit >= VARDORVIS_BLEED_INTERVAL) {
+                sinceHit = 0;
+                return VARDORVIS_BLEED_DAMAGE;
+            }
+            return 0;
+        }
+    }
+
     /** Darting Spikes darts: 1 above ~500 hitpoints, 2 down to ~130, 3 below. */
     public static int vardorvisDarts(int hp) {
         return hp > 500 ? 1 : hp >= 130 ? 2 : 3;
@@ -239,6 +360,10 @@ public final class BossMechanics {
     public static final int MAGGOT_SLAM_PRAYED = 35;
     public static final int MAGGOT_CARRION_MAX = 25;
     public static final int MAGGOT_CARRION_BIT_MAX = 10;
+    /** A landed larva eats each carrion pile on its row, healing the King 1 hitpoint per pile (OSRS Wiki). */
+    public static final int MAGGOT_CARRION_HEAL = 1;
+    /** How long a carrion pile lies on the floor if no larva eats it (approx: until the next screech's carrion). */
+    public static final int MAGGOT_CARRION_TICKS = 60;
     /** A melee punish: +50% damage on the attack landed as the slam comes down. */
     public static final double MAGGOT_PUNISH_DAMAGE = 1.5;
 
@@ -297,4 +422,49 @@ public final class BossMechanics {
     }
 
     public static final int DESPERATION_SLEEPWALKER_DAMAGE = 15;
+
+    // ------------------------------------------------------------ Burn (OSRS Wiki "Burn")
+    /** A burn hits every 4 ticks; a full burn is 10 hits (40 ticks); up to 5 burns stack, each adding 1 to every hit. */
+    public static final int BURN_INTERVAL = 4;
+    public static final int BURN_FULL = 10;
+    public static final int BURN_MAX_STACKS = 5;
+
+    /** The burns on one player or monster. */
+    public static final class Burn {
+        private final int[] hitsLeft = new int[BURN_MAX_STACKS];
+        private int stacks;
+        private int phase;
+
+        /** Adds a burn of {@code hits} hits (a burn of value N); a sixth burn is discarded. */
+        public void add(int hits) {
+            if (hits > 0 && stacks < BURN_MAX_STACKS) {
+                hitsLeft[stacks++] = hits;
+            }
+        }
+
+        public int stacks() {
+            return stacks;
+        }
+
+        /** One game tick: every 4th tick each burn deals 1 and burns out after its hits. */
+        public int tick() {
+            if (stacks == 0) {
+                phase = 0;
+                return 0;
+            }
+            if (++phase < BURN_INTERVAL) {
+                return 0;
+            }
+            phase = 0;
+            int damage = stacks;
+            int kept = 0;
+            for (int i = 0; i < stacks; i++) {
+                if (--hitsLeft[i] > 0) {
+                    hitsLeft[kept++] = hitsLeft[i];
+                }
+            }
+            stacks = kept;
+            return damage;
+        }
+    }
 }

@@ -226,6 +226,12 @@ public final class CombatAchievements {
     public static final String FLAG_WAVE_HIT = "wave_hit";
     /** 10 reward permits from one Tempoross fight. */
     public static final String FLAG_TEN_PERMITS = "ten_permits";
+    /** Tempoross: a fire caught the player ("The Lone Angler"). */
+    public static final String FLAG_FIRE_HIT = "fire_hit";
+    /** Tempoross: the player doused at least 5 fires ("Master of Buckets"). */
+    public static final String FLAG_FIVE_FIRES = "five_fires";
+    /** Tempoross: the player repaired a mast or totem pole ("Calm Before the Storm"). */
+    public static final String FLAG_TETHER_REPAIRED = "tether_repaired";
     /** Times Tekton retreated to his anvil. */
     public static final String COUNT_TEKTON_ANVIL = "tekton_anvil";
     /** Times Vasa Nistirio used his teleport attack. */

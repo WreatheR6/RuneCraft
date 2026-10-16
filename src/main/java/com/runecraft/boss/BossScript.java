@@ -10,6 +10,13 @@ import net.minecraft.server.network.ServerPlayerEntity;
  * instance is created per boss entity, so scripts may keep state.
  */
 public interface BossScript {
+    /**
+     * Adjusts the defence a player's attack of {@code type} meets ({@code in.targetDefenceBonus} and, for ranged,
+     * {@code in.targetRangedDefence}): e.g. Yama's magic defence follows his target's style and rises in phase 3.
+     */
+    default void adjustDefence(DataBossEntity boss, ServerPlayerEntity attacker, AttackType type, com.runecraft.osrs.PlayerHitCalc.Input in) {
+    }
+
     /** Called when the boss spawns. */
     default void onSpawn(DataBossEntity boss) {
     }

@@ -143,6 +143,8 @@ final class ModernScripts {
 
         private YamaContract contract;
         private int stage = 1;
+        /** His primary target last attacked him with magic: magic defence +60 instead of -30 (phases 1 and 2). */
+        private boolean targetMaging;
         private boolean fireStyle;
         private int autosToSpecial = 1;
         private int shadowSpecials;
@@ -216,13 +218,11 @@ final class ModernScripts {
         protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
             if (attacker != null && attacker == target(boss)) {
                 meleeStance = type.isMelee();
+                targetMaging = type == AttackType.MAGIC;
             }
             double d = damage;
             if (exileDelay >= 0) {
                 d *= 0.5; // 50% damage resistance between reaching a threshold and the exile
-            }
-            if (contract == YamaContract.GLYPHIC_ATTENUATION && type != AttackType.CRUSH) {
-                d *= 0.35; // approx: +666 defence against everything but crush
             }
             if (contract == YamaContract.BLOODIED_BLOWS) {
                 d *= BossMechanics.WRETCHED_STRENGTH;
@@ -232,6 +232,29 @@ final class ModernScripts {
             }
             int whole = (int) d;
             return whole + (boss.getRandom().nextDouble() < d - whole ? 1 : 0);
+        }
+
+        /** Defence bonuses by phase, contract and his target's style (OSRS Wiki infobox; glyphic attenuation 666 but crush). */
+        @Override
+        public void adjustDefence(DataBossEntity boss, ServerPlayerEntity attacker, AttackType type,
+                                  com.runecraft.osrs.PlayerHitCalc.Input in) {
+            boolean p3 = stage >= 3;
+            in.targetDefenceBonus = BossMechanics.yamaDefenceBonus(type, targetMaging, p3, contract);
+            if (type == AttackType.RANGED) {
+                in.targetRangedDefence = BossMechanics.yamaRangedDefences(p3, contract);
+            }
+        }
+
+        /** Phase 3: his fire (magic) and shadow (ranged) autos pierce the matching protection prayer for up to 3. */
+        @Override
+        protected void afterAttack(DataBossEntity boss, ServerPlayerEntity target, AttackDef attack) {
+            if (stage < 3 || target == null || (attack != ModernBosses.YAMA_FIRE && attack != ModernBosses.YAMA_SHADOW)) {
+                return;
+            }
+            Prayer prayer = attack == ModernBosses.YAMA_FIRE ? Prayer.PROTECT_FROM_MAGIC : Prayer.PROTECT_FROM_MISSILES;
+            if (BossFx.protects(target, prayer)) {
+                hurt(boss, target, attack.name(), boss.getRandom().nextInt(BossMechanics.YAMA_PIERCE_P3 + 1));
+            }
         }
 
         @Override
@@ -392,12 +415,16 @@ final class ModernScripts {
             ServerWorld w = BossFx.world(boss);
             for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
                 switch (s) {
-                    case GLYPH_FIRE -> hurt(boss, p, "glyph_flames", boss.getRandom().nextInt(BossMechanics.YAMA_GLYPH_SPECIAL_MAX + 1));
+                    case GLYPH_FIRE -> {
+                        hurt(boss, p, "glyph_flames", boss.getRandom().nextInt(BossMechanics.YAMA_GLYPH_SPECIAL_MAX + 1));
+                        BossDots.burn(p, BossMechanics.YAMA_GLYPH_BURN); // unprotected fire specials burn
+                    }
                     case GLYPH_SHADOW -> hurt(boss, p, "shadow_engulf", boss.getRandom().nextInt(BossMechanics.YAMA_GLYPH_SPECIAL_MAX + 1));
                     case METEOR -> {
                         int dmg = BossMechanics.meteorDamage(tiles(flat(p.getPos(), pendingAt)));
                         if (dmg > 0) {
                             hurt(boss, p, "meteor_strike", dmg >= 121 ? dmg : dmg - boss.getRandom().nextInt(6));
+                            BossDots.burn(p, BossMechanics.YAMA_METEOR_BURN);
                         }
                     }
                     case STOMP -> {
@@ -639,6 +666,7 @@ final class ModernScripts {
             }
             ServerWorld w = BossFx.world(boss);
             List<ServerPlayerEntity> players = BossFx.players(boss, 24);
+            BossDots.tick(boss, players);
             if (contract != null && target != null) {
                 if (contract == YamaContract.FORFEIT_BREATH) {
                     for (ServerPlayerEntity p : players) {
@@ -968,7 +996,12 @@ final class ModernScripts {
         private final Set<UUID> punished = new HashSet<>();
         private boolean westNext = true;
         private final List<Larva> larvae = new ArrayList<>();
+        /** Carrion lying on the floor (where it landed, and when it rots away): landed larvae eat it to heal the King. */
+        private final List<Carrion> carrion = new ArrayList<>();
         private MinionRules.AttackWatcher watcher;
+
+        private record Carrion(Vec3d pos, long until) {
+        }
 
         private static final class Larva {
             final MobEntity mob;
@@ -1080,9 +1113,10 @@ final class ModernScripts {
                 Vec3d at = around(boss, homeVec(), 12);
                 namedStrike("carrion", boss, at, 3, BossMechanics.MAGGOT_CARRION_MAX, 1.0, ParticleTypes.MYCELIUM, (hit, pos) -> {
                     Mechanics.clearHazards(w, new Box(pos, pos).expand(1.5, 2, 1.5));
+                    carrion.add(new Carrion(pos, now + BossMechanics.MAGGOT_CARRION_TICKS));
                     for (int[] o : new int[][]{{2, 0}, {-2, 0}, {0, 2}, {0, -2}}) {
                         namedStrike("carrion", boss, pos.add(o[0], 0, o[1]), 2, BossMechanics.MAGGOT_CARRION_BIT_MAX, 0.9,
-                                ParticleTypes.MYCELIUM);
+                                ParticleTypes.MYCELIUM, (h2, bit) -> carrion.add(new Carrion(bit, now + BossMechanics.MAGGOT_CARRION_TICKS)));
                     }
                 });
             }
@@ -1191,6 +1225,12 @@ final class ModernScripts {
         }
 
         private void tickLarvae(DataBossEntity boss, List<ServerPlayerEntity> players) {
+            carrion.removeIf(c -> now >= c.until());
+            if (now % 4 == 0) {
+                for (Carrion c : carrion) {
+                    BossFx.world(boss).spawnParticles(ParticleTypes.MYCELIUM, c.pos().x, c.pos().y + 0.2, c.pos().z, 3, 0.4, 0.05, 0.4, 0);
+                }
+            }
             Iterator<Larva> it = larvae.iterator();
             while (it.hasNext()) {
                 Larva l = it.next();
@@ -1224,6 +1264,21 @@ final class ModernScripts {
                     nx = l.mob.getX() + l.dirX * 0.5;
                 }
                 l.mob.requestTeleport(nx, l.mob.getY(), l.mob.getZ());
+                eatCarrion(boss, l);
+            }
+        }
+
+        /** A landed larva eats the carrion it crawls over: 1 hitpoint back to the King per pile (OSRS Wiki). */
+        private void eatCarrion(DataBossEntity boss, Larva l) {
+            Iterator<Carrion> it = carrion.iterator();
+            while (it.hasNext()) {
+                Carrion c = it.next();
+                if (flat(l.mob.getPos(), c.pos()) < 1.2) {
+                    it.remove();
+                    boss.heal(mcHp(boss, BossMechanics.MAGGOT_CARRION_HEAL));
+                    CombatAchievementService.flagNear(boss, BossMechanics.FLAG_MAGGOT_HEALED);
+                    BossFx.world(boss).spawnParticles(ParticleTypes.HEART, l.mob.getX(), l.mob.getY() + 0.6, l.mob.getZ(), 1, 0, 0, 0, 0);
+                }
             }
         }
 

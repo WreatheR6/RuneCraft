@@ -25,8 +25,14 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
+import com.runecraft.osrs.Prayer;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.util.List;
+import java.util.Map;
 
 /** Scripts for the Gauntlet, Nightmare, Muspah, Desert Treasure II and Varlamore bosses. */
 final class EncounterScripts {
@@ -750,6 +756,11 @@ final class EncounterScripts {
         private final double scale;
         private int autos;
         private boolean enraged;
+        // Strangle: the spores to destroy, when the tendrils tighten, and whether the last special was a Strangle.
+        private final List<MobEntity> spores = new ArrayList<>();
+        private long strangleDue = -1;
+        private ServerPlayerEntity strangled;
+        private boolean lastStrangle;
 
         Vardorvis() {
             this(1.0);
@@ -810,21 +821,104 @@ final class EncounterScripts {
             return damage;
         }
 
+        /**
+         * Swinging axes: each axe hits a player once for up to 35 (awakened approx 50; Protect from Melee halves it) and
+         * starts a bleed (3 every 3 ticks for 14 ticks, every tick while running).
+         */
         private void axes(DataBossEntity boss, ServerPlayerEntity target) {
             int n = BossMechanics.vardorvisAxes(hp(boss), boss.awakened());
             BossFx.warn(boss, n == 1 ? "An axe swings out from the walls!" : n + " axes swing out from the walls!");
             Vec3d p = target.getPos();
             Vec3d toward = p.subtract(boss.getPos());
             double base = Math.atan2(toward.z, toward.x);
+            int max = (int) Math.round((boss.awakened() ? BossMechanics.VARDORVIS_AXE_MAX * 61.0 / 43 : BossMechanics.VARDORVIS_AXE_MAX)
+                    * scale); // awakened: approx, scaled like his melee ramp
             for (int a = 0; a < n; a++) {
                 double ang = base + a * Math.PI / 4 * (a % 2 == 0 ? 1 : -1);
                 Vec3d dir = new Vec3d(Math.cos(ang), 0, Math.sin(ang));
+                Set<UUID> struck = new HashSet<>();
                 for (int i = -4; i <= 4; i++) {
                     Vec3d at = p.add(dir.multiply(i * 1.5));
-                    namedStrike("swinging_axe", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3,
-                            (int) Math.round(maxHit(boss, Dt2Bosses.VARD_AXES) * scale), 1.1, ParticleTypes.SWEEP_ATTACK);
+                    namedStrike("swinging_axe", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, 0, 1.1,
+                            ParticleTypes.SWEEP_ATTACK, (hit, pos) -> {
+                                for (ServerPlayerEntity h : hit) {
+                                    if (!struck.add(h.getUuid())) {
+                                        continue;
+                                    }
+                                    int roll = boss.getRandom().nextInt(max + 1);
+                                    if (BossFx.protects(h, Prayer.PROTECT_FROM_MELEE)) {
+                                        roll /= 2;
+                                    }
+                                    CombatHooks.nameAttack("swinging_axe", null);
+                                    CombatHandler.applyDamage(boss, h, roll);
+                                    BossDots.bleed(h);
+                                }
+                            });
                 }
             }
+        }
+
+        /**
+         * Strangle (below 570 hitpoints, never twice in a row): tendrils root the target and spores appear around them; any
+         * spore left after 5 ticks (awakened 4) tightens the tendrils for ~25 (awakened ~40).
+         */
+        private void strangle(DataBossEntity boss, ServerPlayerEntity target) {
+            boolean awake = boss.awakened();
+            int ticks = awake ? BossMechanics.VARDORVIS_STRANGLE_TICKS_AWAKENED : BossMechanics.VARDORVIS_STRANGLE_TICKS;
+            BossFx.warn(boss, "Vardorvis strikes the ground and tendrils entangle you - destroy the spores!");
+            target.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(net.minecraft.entity.effect.StatusEffects.SLOWNESS,
+                    ticks * 12, 10, false, true));
+            spores.forEach(MobEntity::discard);
+            spores.clear();
+            for (int i = 0; i < BossMechanics.VARDORVIS_STRANGLE_SPORES; i++) {
+                double a = Math.PI * 2 * i / BossMechanics.VARDORVIS_STRANGLE_SPORES + boss.getRandom().nextDouble();
+                Vec3d at = BossFx.ground(BossFx.world(boss), target.getX() + Math.cos(a) * 1.6, target.getZ() + Math.sin(a) * 1.6,
+                        target.getY());
+                MobEntity spore = BossFx.spawnMinion(boss, BossMechanics.STRANGLER_SPORE, at, null);
+                if (spore != null) {
+                    MinionRules.set(spore, new MinionRules.Rule() {
+                        @Override
+                        public double accuracy(ServerPlayerEntity pl, net.minecraft.entity.LivingEntity m, AttackType t) {
+                            return MinionRules.ALWAYS_HITS;
+                        }
+
+                        @Override
+                        public int damage(ServerPlayerEntity pl, net.minecraft.entity.LivingEntity m, AttackType t, int d) {
+                            return MinionRules.lethal(m);
+                        }
+                    });
+                    spores.add(spore);
+                }
+            }
+            strangled = target;
+            strangleDue = now + ticks;
+            cooldown = Math.max(cooldown, ticks + 1);
+        }
+
+        private void tickStrangle(DataBossEntity boss) {
+            if (strangleDue < 0 || now < strangleDue) {
+                return;
+            }
+            strangleDue = -1;
+            boolean left = spores.stream().anyMatch(MobEntity::isAlive);
+            spores.forEach(MobEntity::discard);
+            spores.clear();
+            if (left && strangled != null && strangled.isAlive()) {
+                int dmg = (int) Math.round((boss.awakened() ? BossMechanics.VARDORVIS_STRANGLE_DAMAGE_AWAKENED
+                        : BossMechanics.VARDORVIS_STRANGLE_DAMAGE) * scale);
+                CombatHooks.nameAttack("strangle", null);
+                CombatHandler.applyDamage(boss, strangled, dmg - boss.getRandom().nextInt(4)); // approx: "~25"
+                Msg.red(strangled, "The tendrils tighten around you!");
+            } else if (strangled != null) {
+                Msg.game(strangled, "You break free of the tendrils.");
+            }
+            strangled = null;
+        }
+
+        @Override
+        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+            spores.forEach(MobEntity::discard);
+            spores.clear();
         }
 
         private void darts(DataBossEntity boss, ServerPlayerEntity target) {
@@ -859,6 +953,12 @@ final class EncounterScripts {
             if (hp < BossMechanics.VARDORVIS_HEAD_HP && boss.getRandom().nextInt(enraged ? 3 : 6) == 0) {
                 return boss.getRandom().nextBoolean() ? Dt2Bosses.VARD_HEAD_RANGED : Dt2Bosses.VARD_HEAD_MAGIC;
             }
+            if (hp < BossMechanics.VARDORVIS_HEAD_HP && !lastStrangle && strangleDue < 0 && boss.getRandom().nextInt(8) == 0) { // approx rate
+                lastStrangle = true;
+                strangle(boss, target);
+                return null;
+            }
+            lastStrangle = false;
             if (autos > 3 && boss.getRandom().nextInt(enraged ? 5 : 8) == 0) {
                 darts(boss, target);
                 cooldown = Math.max(cooldown, 2);
@@ -872,6 +972,8 @@ final class EncounterScripts {
             // Defence follows his hitpoints (defence-draining specials make no difference on top).
             int lost = (int) Math.round((1 - hpFraction(boss)) * BossMechanics.VARDORVIS_HITPOINTS);
             com.runecraft.content.systems.SysCombat.drain(boss).defence = BossMechanics.vardorvisDefenceReduction(lost);
+            tickStrangle(boss);
+            BossDots.tick(boss, BossFx.players(boss, 24));
             if (target == null || home == null) {
                 return;
             }
@@ -931,6 +1033,8 @@ final class EncounterScripts {
             long fadesAt;
             boolean[] gone;
             boolean formed;
+            /** The blocks standing in each formed cell (walls block movement as in OSRS); restored to air when it goes. */
+            final Map<Integer, List<BlockPos>> blocks = new HashMap<>();
 
             Wall(boolean fire, long formsAt) {
                 this.fire = fire;
@@ -1010,6 +1114,7 @@ final class EncounterScripts {
             }
             for (int i = Math.max(0, bestCell - 1); i <= Math.min(best.cells.size() - 1, bestCell + 1); i++) {
                 best.gone[i] = true;
+                unblock(BossFx.world(boss), best, i);
                 Vec3d c = best.cells.get(i);
                 BossFx.world(boss).spawnParticles(fire ? ParticleTypes.CLOUD : ParticleTypes.SPLASH, c.x, c.y + 0.6, c.z, 8, 0.3, 0.4, 0.3, 0.02);
             }
@@ -1185,6 +1290,7 @@ final class EncounterScripts {
                             wall.formed ? 4 : 1, 0.3, wall.formed ? 0.5 : 0.05, 0.3, 0);
                 }
                 if (!any) {
+                    unblockAll(w, wall);
                     it.remove();
                     continue;
                 }
@@ -1207,10 +1313,14 @@ final class EncounterScripts {
                                 CombatAchievementService.countNear(boss, BossMechanics.COUNT_TITAN_ELEMENTAL_KILLS);
                             }
                         }
+                        if (!wall.gone[i]) {
+                            block(w, wall, i);
+                        }
                     }
                 } else if (wall.formed) {
                     if (now >= wall.fadesAt) {
                         CombatAchievementService.flagNear(boss, BossMechanics.FLAG_TITANS_WALL_DISSIPATED);
+                        unblockAll(w, wall);
                         it.remove();
                         continue;
                     }
@@ -1226,6 +1336,50 @@ final class EncounterScripts {
                         }
                     }
                 }
+            }
+        }
+
+        /**
+         * Raises a formed wall cell: a 2x2-block (one tile), 2-high column of magma (fire) or packed ice (icicles) in the
+         * air blocks of the tile that no creature stands in, so players and elementals have to go around it.
+         */
+        private static void block(ServerWorld w, Wall wall, int cell) {
+            Vec3d c = wall.cells.get(cell);
+            List<BlockPos> placed = new ArrayList<>();
+            net.minecraft.block.BlockState state = (wall.fire ? Blocks.MAGMA_BLOCK : Blocks.PACKED_ICE).getDefaultState();
+            int y = (int) Math.floor(c.y + 0.01);
+            for (int bx : new int[]{(int) Math.floor(c.x - 0.5), (int) Math.floor(c.x + 0.5)}) {
+                for (int bz : new int[]{(int) Math.floor(c.z - 0.5), (int) Math.floor(c.z + 0.5)}) {
+                    for (int dy = 0; dy < 2; dy++) {
+                        BlockPos pos = new BlockPos(bx, y + dy, bz);
+                        if (placed.contains(pos) || !w.getBlockState(pos).isAir()
+                                || !w.getEntitiesByClass(net.minecraft.entity.LivingEntity.class, new net.minecraft.util.math.Box(pos),
+                                e -> e.isAlive()).isEmpty()) {
+                            continue;
+                        }
+                        w.setBlockState(pos, state);
+                        placed.add(pos);
+                    }
+                }
+            }
+            wall.blocks.put(cell, placed);
+        }
+
+        private static void unblock(ServerWorld w, Wall wall, int cell) {
+            List<BlockPos> placed = wall.blocks.remove(cell);
+            if (placed == null) {
+                return;
+            }
+            for (BlockPos pos : placed) {
+                if (w.getBlockState(pos).isOf(Blocks.MAGMA_BLOCK) || w.getBlockState(pos).isOf(Blocks.PACKED_ICE)) {
+                    w.setBlockState(pos, Blocks.AIR.getDefaultState());
+                }
+            }
+        }
+
+        private static void unblockAll(ServerWorld w, Wall wall) {
+            for (Integer cell : new ArrayList<>(wall.blocks.keySet())) {
+                unblock(w, wall, cell);
             }
         }
 
@@ -1282,6 +1436,11 @@ final class EncounterScripts {
             if (watcher != null) {
                 MinionRules.unwatch(watcher);
             }
+            ServerWorld w = BossFx.world(boss);
+            for (Wall wall : walls) {
+                unblockAll(w, wall);
+            }
+            walls.clear();
         }
     }
 
