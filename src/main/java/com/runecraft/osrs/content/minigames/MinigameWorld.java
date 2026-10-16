@@ -208,6 +208,10 @@ public final class MinigameWorld {
     public static final String SORCERESS_SHELVES = "sg_shelves";
     /** The blackboard at the Barbarian Outpost: honour points, role levels and upgrades. */
     public static final String BA_BLACKBOARD = "ba_blackboard";
+    /** The Nightmare Zone lobby's potion barrels: doses bought at Dom Onion's are stored and withdrawn here. */
+    public static final String NMZ_BARRELS = "nmz_potion_barrels";
+    /** Dampe's coffin service by the Shade Catacombs: a broken coffin, then locks fitted to make a remains-carrying coffin. */
+    public static final String DAMPE_COFFINS = "dampe_coffins";
 
     public static List<BlockDef> blocks() {
         List<BlockDef> list = new ArrayList<>();
@@ -226,6 +230,8 @@ public final class MinigameWorld {
         list.add(BlockDef.scripted("rogues_den_jewel_trader", "Brian O'Richard's crate", 0x5A5A60, "chest"));
         list.add(BlockDef.scripted(SORCERESS_SHELVES, "Shelves", 0x8A6A3A, "crate"));
         list.add(BlockDef.scripted(KET_RAK_SCOREBOARD, "Scoreboard (TzHaar-Ket-Rak)", 0x6A2A10, "statue"));
+        list.add(BlockDef.scripted(NMZ_BARRELS, "Potion barrels (Nightmare Zone)", 0x6A4A2A, "crate"));
+        list.add(BlockDef.scripted(DAMPE_COFFINS, "Dampe's coffins", 0x4A3A2A, "chest"));
         list.add(BlockDef.scripted(FortisColosseum.SCOREBOARD, "Colosseum scoreboard", 0xC0A060, "statue"));
         list.add(BlockDef.scripted(FortisColosseum.BANK_CHEST, "Bank chest (Fortis Colosseum)", 0x8A6A3A, "chest"));
         list.add(BlockDef.scripted(TempleTrekking.RAMBLE_ENTRANCE, "Burgh de Rott Ramble entrance", 0x8060C0, "portal_glow"));
@@ -266,6 +272,8 @@ public final class MinigameWorld {
         map.get(Minigame.SORCERESS_GARDEN.place()).add(SORCERESS_SHELVES);
         map.get(Minigame.SHADES_OF_MORTTON.place()).addAll(MORTTON_BLOCKS);
         map.get(Minigame.TZHAAR_KET_RAK.place()).add(KET_RAK_SCOREBOARD);
+        map.get(Minigame.NIGHTMARE_ZONE.place()).add(NMZ_BARRELS);
+        map.get(Minigame.SHADES_OF_MORTTON.place()).add(DAMPE_COFFINS);
         map.get(Minigame.BARBARIAN_ASSAULT.place()).add(BA_BLACKBOARD);
         map.get(Minigame.FORTIS_COLOSSEUM.place()).add(FortisColosseum.SCOREBOARD);
         map.get(Minigame.FORTIS_COLOSSEUM.place()).add(FortisColosseum.BANK_CHEST);
@@ -384,6 +392,12 @@ public final class MinigameWorld {
                 0x4A2A6A, 0x2A1A1A));
         list.add(NpcDef.of("mg_mortton_priest", "Ulsquire Shauncy", Minigame.SHADES_OF_MORTTON.place(), 2, 2, 0xB0B0A0, 0x3A3A3A,
                 0x2A2A2A, 0x8A8A8A));
+        // The afflicted villagers of Mort'ton: serum 207 or 208 cures them for a while, for a reward. // approx positions
+        int[][] afflicted = {{-8, 6}, {9, -7}, {-10, -9}, {7, 10}};
+        for (int i = 0; i < ShadesOfMortton.AFFLICTED.length; i++) {
+            list.add(NpcDef.of(ShadesOfMortton.AFFLICTED[i], "Afflicted", Minigame.SHADES_OF_MORTTON.place(), afflicted[i][0],
+                    afflicted[i][1], 0x9AA08A, 0x5A5A4A, 0x3A3A2A, 0x6A6A5A));
+        }
         list.addAll(TaiBwoWannai.npcs());
         list.addAll(VarrockMuseum.npcs());
         return list;

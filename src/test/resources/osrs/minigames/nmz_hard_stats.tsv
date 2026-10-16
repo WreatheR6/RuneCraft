@@ -1,0 +1,13 @@
+# boss	attack	attack_hard	strength	strength_hard	max_hit	max_hit_hard	ranged	ranged_hard	magic	magic_hard  (OSRS Wiki "<boss> (Nightmare Zone)" infoboxes, Normal Mode / Hard Mode; dump July 2026; melee max hit for Elvarg and Arrg)
+nmz_count_draynor	30	198	25	165	3	17	1	1	1	1
+nmz_king_roald	35	140	30	120	3	9	1	1	1	1
+nmz_the_kendal	65	195	65	195	9	24	0	0	0	0
+nmz_me	75	225	78	234	9	24	1	1	1	1
+nmz_elvarg	70	210	70	210	8	22	1	1	70	210
+nmz_tree_spirit	90	200	95	209	10	22	1	1	1	1
+nmz_dad	60	132	120	264	27	57	0	0	0	0
+nmz_khazard_warlord	75	165	78	170	10	18	1	1	1	1
+nmz_arrg	70	140	140	280	38	74	70	140	0	0
+nmz_black_knight_titan	91	182	100	200	15	28	1	1	1	1
+nmz_bouncer	120	240	120	240	13	25	1	1	1	1
+nmz_glod	115	230	120	240	13	25	1	1	1	1

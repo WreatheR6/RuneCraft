@@ -121,6 +121,11 @@ public final class MinigamesHooks implements ModuleHooks {
                 RewardShopService.open(player, e.getValue());
             });
         }
+        // Dominic Onion offers the four dream modes as well as his shop; the lobby's potion barrels hold bought doses.
+        QuestScripts.onTalk("mg_dominic_onion", (player, npc) -> com.runecraft.content.minigames.games.NightmareZoneSession.dominic(player));
+        BlockHooks.register(MinigameWorld.NMZ_BARRELS, (player, pos, state) ->
+                com.runecraft.content.minigames.games.NightmareZoneSession.barrels(player));
+        com.runecraft.content.minigames.games.NightmareZoneSession.register();
         BlockHooks.register("pyramid_plunder_artefact_trader", (player, pos, state) -> PyramidPlunderSession.sellArtefacts(player));
         BlockHooks.register("rogues_den_jewel_trader", (player, pos, state) -> RoguesDenSession.tradeJewel(player));
         BlockHooks.register("tempoross_reward_pool", (player, pos, state) -> TemporossSession.rewardPool(player));
@@ -266,6 +271,60 @@ public final class MinigamesHooks implements ModuleHooks {
                                     }
                                     return 1;
                                 }))))
+                        .then(CommandManager.literal("nmz")
+                                .then(CommandManager.literal("bosses").executes(ctx -> {
+                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    if (p != null) {
+                                        com.runecraft.content.minigames.games.NightmareZoneSession.toggle(p, null);
+                                    }
+                                    return 1;
+                                }))
+                                .then(CommandManager.literal("shop").executes(ctx -> {
+                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    if (p != null && nearNpc(p, "mg_dominic_onion")) {
+                                        com.runecraft.content.minigames.games.NightmareZoneSession.shop(p);
+                                    }
+                                    return 1;
+                                }))
+                                .then(CommandManager.literal("toggle").then(CommandManager.argument("boss", StringArgumentType.word())
+                                        .executes(ctx -> {
+                                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                            if (p != null) {
+                                                com.runecraft.content.minigames.games.NightmareZoneSession.toggle(p,
+                                                        StringArgumentType.getString(ctx, "boss"));
+                                            }
+                                            return 1;
+                                        })))
+                                .then(CommandManager.literal("barrel").then(CommandManager.argument("potion", StringArgumentType.word())
+                                        .then(CommandManager.argument("doses", IntegerArgumentType.integer(1, 255)).executes(ctx -> {
+                                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                            if (p != null && nearBlock(p, MinigameWorld.NMZ_BARRELS)) {
+                                                com.runecraft.content.minigames.games.NightmareZoneSession.withdraw(p,
+                                                        StringArgumentType.getString(ctx, "potion"), IntegerArgumentType.getInteger(ctx, "doses"));
+                                            }
+                                            return 1;
+                                        }))))
+                                .then(CommandManager.argument("mode", StringArgumentType.word())
+                                        .then(CommandManager.argument("difficulty", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                                    if (p != null && nearNpc(p, "mg_dominic_onion")) {
+                                                        com.runecraft.content.minigames.games.NightmareZoneSession.choose(p,
+                                                                StringArgumentType.getString(ctx, "mode"),
+                                                                StringArgumentType.getString(ctx, "difficulty"), null);
+                                                    }
+                                                    return 1;
+                                                })
+                                                .then(CommandManager.argument("boss", StringArgumentType.word()).executes(ctx -> {
+                                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                                    if (p != null && nearNpc(p, "mg_dominic_onion")) {
+                                                        com.runecraft.content.minigames.games.NightmareZoneSession.choose(p,
+                                                                StringArgumentType.getString(ctx, "mode"),
+                                                                StringArgumentType.getString(ctx, "difficulty"),
+                                                                StringArgumentType.getString(ctx, "boss"));
+                                                    }
+                                                    return 1;
+                                                })))))
                         .then(CommandManager.literal("token").then(CommandManager.argument("reward", StringArgumentType.word())
                                 .executes(ctx -> {
                                     ServerPlayerEntity p = ctx.getSource().getPlayer();
@@ -366,6 +425,29 @@ public final class MinigamesHooks implements ModuleHooks {
         }
         com.runecraft.item.ItemCharges.set(sceptre, cap);
         QuestApi.say(p, "Guardian mummy", "Grrr... very well. Your sceptre now holds " + cap + " charges.");
+    }
+
+    /** Whether the player stands near one of an NPC's entities (commands behind clickable dialogue options). */
+    static boolean nearNpc(ServerPlayerEntity p, String npcId) {
+        boolean near = !p.getWorld().getEntitiesByClass(com.runecraft.entity.QuestNpcEntity.class, p.getBoundingBox().expand(12),
+                e -> npcId.equals(e.npcId())).isEmpty();
+        if (!near) {
+            Msg.game(p, "You need to be next to them to do that.");
+        }
+        return near;
+    }
+
+    /** Whether one of the module's blocks is within a few blocks of the player. */
+    static boolean nearBlock(ServerPlayerEntity p, String blockId) {
+        net.minecraft.block.BlockState want = Arena.module(blockId);
+        net.minecraft.util.math.BlockPos at = p.getBlockPos();
+        for (net.minecraft.util.math.BlockPos q : net.minecraft.util.math.BlockPos.iterate(at.add(-6, -3, -6), at.add(6, 3, 6))) {
+            if (p.getWorld().getBlockState(q).isOf(want.getBlock())) {
+                return true;
+            }
+        }
+        Msg.game(p, "You need to be next to the potion barrels.");
+        return false;
     }
 
     private static void talk(String npc, String name, String line) {

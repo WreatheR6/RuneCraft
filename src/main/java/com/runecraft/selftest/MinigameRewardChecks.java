@@ -58,11 +58,217 @@ final class MinigameRewardChecks {
         checks.add(new SelfTest.Check("minigame:colosseum_cash_out", g::colosseumCashOut));
         checks.add(new SelfTest.Check("minigame:colosseum_waves", g::colosseumWaves));
         checks.add(new SelfTest.Check("minigame:colosseum_glory", g::colosseumGlory));
+        checks.add(new SelfTest.Check("minigame:nmz_modes", g::nmzModes));
+        checks.add(new SelfTest.Check("minigame:nmz_barrels", g::nmzBarrels));
+        checks.add(new SelfTest.Check("minigame:trek_tomes", g::trekTomes));
+        checks.add(new SelfTest.Check("minigame:shades_town", g::shadesTown));
         return checks;
     }
 
     private ServerPlayerEntity p() {
         return c.player;
+    }
+
+    /** Ticks a session until a boss is alive (at most 12 game ticks). */
+    private static List<net.minecraft.entity.LivingEntity> bosses(MinigameSession s, NightmareZoneSession nmz) {
+        for (int i = 0; i < 12 && nmz.bosses().isEmpty(); i++) {
+            MinigameManager.selfTestTick(s);
+        }
+        return nmz.bosses();
+    }
+
+    /**
+     * Nightmare Zone modes: a hard practice dream spawns only the chosen boss with its hard hitpoints and the hard tag and
+     * pays no points; endurance uses every boss at the wiki's full points; the zapper spares Count Draynor until he's hit.
+     */
+    private String nmzModes() {
+        List<String> done = new ArrayList<>();
+        NightmareZone.Dream practice = new NightmareZone.Dream(NightmareZone.Mode.PRACTICE, true, "nmz_glod");
+        MinigameSession s = MinigameManager.selfTestStart(Minigame.NIGHTMARE_ZONE, practice.variant(), p());
+        try {
+            if (!(s instanceof NightmareZoneSession nmz) || nmz.dream().mode() != NightmareZone.Mode.PRACTICE) {
+                throw failure("a practice dream did not start in practice mode");
+            }
+            List<net.minecraft.entity.LivingEntity> bosses = bosses(s, nmz);
+            if (bosses.size() != 1 || !MinigameManager.creatureId(bosses.get(0)).equals("nmz_glod")) {
+                throw failure("practice spawned " + bosses.size() + " bosses instead of Glod alone");
+            }
+            net.minecraft.entity.LivingEntity glod = bosses.get(0);
+            if (!glod.getCommandTags().contains(NightmareZoneSession.HARD_TAG)
+                    || Math.round(glod.getMaxHealth()) != NightmareZone.hardHitpoints("nmz_glod")) {
+                throw failure("hard Glod has " + glod.getMaxHealth() + " hitpoints / tag " + glod.getCommandTags());
+            }
+            if (nmz.pointsFor("nmz_glod") != 0) {
+                throw failure("practice kills pay points");
+            }
+            done.add("hard practice Glod (" + Math.round(glod.getMaxHealth()) + " HP, no points)");
+        } finally {
+            s.end(true);
+        }
+        NightmareZone.Dream endurance = new NightmareZone.Dream(NightmareZone.Mode.ENDURANCE, false, null);
+        s = MinigameManager.selfTestStart(Minigame.NIGHTMARE_ZONE, endurance.variant(), p());
+        try {
+            NightmareZoneSession nmz = (NightmareZoneSession) s;
+            List<net.minecraft.entity.LivingEntity> bosses = bosses(s, nmz);
+            if (nmz.pool().size() != NightmareZone.BOSSES.length || bosses.size() != 1) {
+                throw failure("endurance pool " + nmz.pool().size() + ", " + bosses.size() + " bosses at once");
+            }
+            if (nmz.pointsFor("nmz_glod") != NightmareZone.points("nmz_glod", false)) {
+                throw failure("endurance with every boss pays " + nmz.pointsFor("nmz_glod") + " for Glod");
+            }
+            net.minecraft.entity.LivingEntity first = bosses.get(0);
+            if (MinigameManager.creatureId(first).equals("nmz_count_draynor")) {
+                first.setHealth(2);
+                nmz.zap(p(), first, NightmareZone.ZAPPER_MAX_HIT);
+                if (!first.isAlive() || first.getHealth() < 1) {
+                    throw failure("the zapper killed Count Draynor before the player hit him");
+                }
+                nmz.noteHit(first);
+                nmz.zap(p(), first, NightmareZone.ZAPPER_MAX_HIT);
+                if (first.isAlive() && first.getHealth() > 0) {
+                    throw failure("the zapper could not finish Count Draynor after he was hit");
+                }
+                done.add("zapper spares Count Draynor until hit");
+            }
+            done.add("endurance: " + nmz.pool().size() + " bosses one at a time, full points");
+        } finally {
+            s.end(true);
+        }
+        return String.join("; ", done);
+    }
+
+    /** Dom Onion's potions go into the barrel by the dose and come out as 4-dose potions plus the rest. */
+    private String nmzBarrels() {
+        MinigameData data = MinigameData.of(p());
+        String key = MinigameCurrencies.key(MinigameCurrencies.NIGHTMARE_ZONE);
+        int before = data.points(p().getUuid(), key);
+        int stored = NightmareZoneSession.barrel(p(), NightmareZone.ABSORPTION);
+        RewardShop shop = RewardShops.get("nightmare_zone");
+        int index = -1;
+        for (int i = 0; i < shop.entries().size(); i++) {
+            if (shop.entries().get(i).item().equals(NightmareZone.ABSORPTION)) {
+                index = i;
+            }
+        }
+        try {
+            p().getInventory().clear();
+            data.setStat(p().getUuid(), "nmz_barrel:" + NightmareZone.ABSORPTION, 0);
+            data.addPoints(p().getUuid(), key, 6 * 1000 - data.points(p().getUuid(), key));
+            RewardShopService.buy(p(), "nightmare_zone", index, 6);
+            if (NightmareZoneSession.barrel(p(), NightmareZone.ABSORPTION) != 6 || Inv.count(p(), NightmareZone.ABSORPTION) != 0
+                    || data.points(p().getUuid(), key) != 0) {
+                throw failure("buying 6 doses left " + NightmareZoneSession.barrel(p(), NightmareZone.ABSORPTION) + " in the barrel and "
+                        + Inv.count(p(), NightmareZone.ABSORPTION) + " potions carried");
+            }
+            int taken = NightmareZoneSession.withdraw(p(), NightmareZone.ABSORPTION, 6);
+            int doses = 0;
+            for (ItemStack st : p().getInventory().main) {
+                if (NightmareZone.ABSORPTION.equals(Inv.idOf(st))) {
+                    doses += 4 - st.getDamage();
+                }
+            }
+            if (taken != 6 || doses != 6 || NightmareZoneSession.barrel(p(), NightmareZone.ABSORPTION) != 0) {
+                throw failure("withdrew " + taken + " doses, carrying " + doses);
+            }
+        } finally {
+            p().getInventory().clear();
+            data.setStat(p().getUuid(), "nmz_barrel:" + NightmareZone.ABSORPTION, stored);
+            data.addPoints(p().getUuid(), key, before - data.points(p().getUuid(), key));
+        }
+        return "6 absorption doses bought into the barrel and withdrawn as 4 + 2";
+    }
+
+    /** A reward token's tome is an item; reading it gives XP in the route's range. */
+    private String trekTomes() {
+        try {
+            p().getInventory().clear();
+            ItemStack token = Inv.stack("reward_token_red", 1);
+            p().setStackInHand(Hand.MAIN_HAND, token);
+            com.runecraft.content.minigames.games.TempleTrekkingSession.claim(p(), "tome");
+            String tome = null;
+            for (ItemStack st : p().getInventory().main) {
+                if (com.runecraft.osrs.content.minigames.TempleTrekking.tome(Inv.idOf(st)) != null) {
+                    tome = Inv.idOf(st);
+                }
+            }
+            if (tome == null || !tome.endsWith("_red")) {
+                throw failure("the red token's tome reward gave " + tome);
+            }
+            Skill skill = (Skill) com.runecraft.osrs.content.minigames.TempleTrekking.tome(tome)[0];
+            int xp = Players.data(p()).skills().xp(skill);
+            if (!com.runecraft.content.minigames.games.TempleTrekkingSession.readTome(p(), tome)) {
+                throw failure(tome + " could not be read");
+            }
+            int gained = Players.data(p()).skills().xp(skill) - xp;
+            var route = com.runecraft.osrs.content.minigames.TempleTrekking.Route.ROUTE_3;
+            if (gained < route.tomeMin || gained > route.tomeMax + 1) {
+                throw failure("reading " + tome + " gave " + gained + " XP");
+            }
+            return tome + " read for " + gained + " " + skill.displayName() + " XP";
+        } finally {
+            p().getInventory().clear();
+        }
+    }
+
+    /**
+     * Mort'ton: serum 207 becomes serum 208 at the sacred fire (5% sanctity a dose), an afflicted villager takes a dose for a
+     * reward, the flamtaer bag holds supplies, Dampe fits locks to coffins and a coffin holds shade remains.
+     */
+    private String shadesTown() {
+        String riyl = com.runecraft.osrs.content.minigames.ShadesOfMortton.Shade.RIYL.remains();
+        try {
+            p().getInventory().clear();
+            com.runecraft.content.minigames.ShadesService.addSanctity(p(), 30 - com.runecraft.content.minigames.ShadesService.sanctity(p()));
+            Inv.give(p(), "serum_207", 1);
+            if (com.runecraft.content.minigames.ShadesService.sanctifySerums(p()) != 1 || !Inv.has(p(), "serum_208", 1)
+                    || Math.abs(com.runecraft.content.minigames.ShadesService.sanctity(p()) - 10) > 0.01) {
+                throw failure("serum 207 did not become serum 208 for 20% sanctity (sanctity now "
+                        + com.runecraft.content.minigames.ShadesService.sanctity(p()) + ")");
+            }
+            int items = p().getInventory().main.stream().filter(st -> !st.isEmpty()).mapToInt(ItemStack::getCount).sum();
+            com.runecraft.content.minigames.ShadesService.cure(p());
+            ItemStack serum = ItemStack.EMPTY;
+            for (ItemStack st : p().getInventory().main) {
+                if ("serum_208".equals(Inv.idOf(st))) {
+                    serum = st;
+                }
+            }
+            int after = p().getInventory().main.stream().filter(st -> !st.isEmpty()).mapToInt(ItemStack::getCount).sum();
+            boolean coins = Players.data(p()).coins() > 0;
+            if (serum.isEmpty() || serum.getDamage() != 1 || (after <= items && !coins)) {
+                throw failure("curing an afflicted villager used " + (serum.isEmpty() ? "?" : serum.getDamage()) + " doses / gave nothing");
+            }
+            p().getInventory().clear();
+            Inv.give(p(), "flamtaer_bag", 1);
+            Inv.give(p(), "timber_beam", 10);
+            com.runecraft.content.minigames.ShadesService.useBag(p(), p().getInventory().getStack(0));
+            ItemStack bag = p().getInventory().getStack(0);
+            if (Inv.count(p(), "timber_beam") != 0 || bag.getNbt() == null || bag.getNbt().getInt("rc_bag_timber_beam") != 10) {
+                throw failure("the flamtaer bag did not take the timber beams");
+            }
+            p().getInventory().clear();
+            com.runecraft.content.minigames.ShadesService.dampe(p());
+            Inv.give(p(), "steel_locks", 1);
+            com.runecraft.content.minigames.ShadesService.dampe(p());
+            if (!Inv.has(p(), "steel_coffin", 1) || Inv.has(p(), "steel_locks", 1)) {
+                throw failure("Dampe did not make a steel coffin from a broken coffin and steel locks");
+            }
+            Inv.give(p(), riyl, 10);
+            ItemStack coffin = ItemStack.EMPTY;
+            for (ItemStack st : p().getInventory().main) {
+                if ("steel_coffin".equals(Inv.idOf(st))) {
+                    coffin = st;
+                }
+            }
+            com.runecraft.content.minigames.ShadesService.useCoffin(p(), coffin,
+                    com.runecraft.osrs.content.minigames.ShadesOfMortton.Coffin.STEEL);
+            if (Inv.count(p(), riyl) != 2) {
+                throw failure("the steel coffin took " + (10 - Inv.count(p(), riyl)) + " remains (holds 8)");
+            }
+        } finally {
+            p().getInventory().clear();
+        }
+        return "serum 208 made and given to an afflicted villager; bag holds 10 beams; steel coffin holds 8 remains";
     }
 
     private static AssertionError failure(String message) {

@@ -278,7 +278,8 @@ public final class RewardShops {
                 .item("herb_box", NIGHTMARE_ZONE, 9500)
                 .item("scroll_of_redirection", NIGHTMARE_ZONE, 775);
         for (String potion : MinigameRules.NightmareZone.POTIONS) {
-            nmz.item(potion, NIGHTMARE_ZONE, 4 * MinigameRules.NightmareZone.doseCost(potion));
+            // Sold by the dose into the lobby's potion barrels (RewardShopService), not as 4-dose potions.
+            nmz.item(potion, NIGHTMARE_ZONE, MinigameRules.NightmareZone.doseCost(potion));
         }
         for (Object[] imbue : MinigameRules.Imbues.ITEMS) {
             nmz.upgrade((String) imbue[0], (String) imbue[1], NIGHTMARE_ZONE, (Integer) imbue[2]);

@@ -28,7 +28,9 @@ import java.util.function.DoubleSupplier;
  * the vine swing over a river). Killing a monster is worth 325/625/1,125 points by route, most puzzles 500; a trek scores
  * 325-8,000 points. The follower hands over a blue/yellow/red reward token whose reward scales with the points:
  * {@code low + floor((high - low) * (points - 325) / 7675)}, or a tome of 1,100-1,650 / 2,035-3,025 / 4,015-5,005 XP.
- * Undead lumberjacks can drop pieces of the lumberjack outfit (+2.5% Woodcutting XP).
+ * Undead lumberjacks can drop pieces of the lumberjack outfit (+2.5% Woodcutting XP). Route 3 can bring the boat trip, where a
+ * swamp creature's head and four tentacles attack. The tome reward is an item (one of seven skills, coloured like the token)
+ * read for its XP. The activity is dangerous: a death is a normal one, at the trek's start.
  */
 public final class TempleTrekking {
     private TempleTrekking() {
@@ -214,7 +216,12 @@ public final class TempleTrekking {
         BRIDGE(EventType.PUZZLE, "trek_zombie", 4, "The bridge is broken. Chop the trees and patch it with logs."),
         /** Since the bog event's removal (September 2024) this bridge has the extra weight. */
         LUMBERJACK_BRIDGE(EventType.PUZZLE, "trek_undead_lumberjack", 6, "The bridge is broken. Undead lumberjacks wade out of the river..."),
-        RIVER(EventType.PUZZLE, null, 4, "A river blocks the path. Cut three vines from the small trees and swing across.");
+        RIVER(EventType.PUZZLE, null, 4, "A river blocks the path. Cut three vines from the small trees and swing across."),
+        /**
+         * Route 3's boat trip to Mort'ton: a swamp creature's head (level 140) and four tentacles (level 99) attack the boat.
+         * The head can't die while a tentacle lives: near death it returns to full health. Only rolled on route 3.
+         */
+        BOAT(EventType.COMBAT, "trek_swamp_head", 4, "A swamp creature rises around the boat!");
 
         public final EventType kind;
         public final String creature;
@@ -230,10 +237,15 @@ public final class TempleTrekking {
 
         /** The creature of this event on a route (combat monsters and lumberjacks come in three tiers). */
         public String creature(Route route) {
-            if (creature == null || this == BRIDGE) {
+            if (creature == null || this == BRIDGE || this == BOAT) {
                 return creature;
             }
             return creature + "_" + route.number();
+        }
+
+        /** Relative weight of the event on a route: the boat trip only happens on route 3. */
+        public int weight(Route route) {
+            return this == BOAT ? (route == Route.ROUTE_3 ? weight : 0) : weight;
         }
 
         /** Points the event's completion is worth (combat events score per kill instead). */
@@ -247,7 +259,7 @@ public final class TempleTrekking {
         List<Event> out = new ArrayList<>();
         int total = 0;
         for (Event e : Event.values()) {
-            total += e.weight;
+            total += e.weight(route);
         }
         for (int i = 0; i < route.slots; i++) {
             if (rng.getAsDouble() >= route.eventChance) {
@@ -255,7 +267,10 @@ public final class TempleTrekking {
             }
             double r = rng.getAsDouble() * total;
             for (Event e : Event.values()) {
-                r -= e.weight;
+                if (e.weight(route) == 0) {
+                    continue;
+                }
+                r -= e.weight(route);
                 if (r < 0) {
                     out.add(e);
                     break;
@@ -350,6 +365,38 @@ public final class TempleTrekking {
     public static final List<Skill> TOME_SKILLS = List.of(Skill.AGILITY, Skill.FIREMAKING, Skill.FISHING, Skill.MINING, Skill.SLAYER,
             Skill.THIEVING, Skill.WOODCUTTING);
 
+    /** The boat event's creatures: one head and four tentacles. */
+    public static final String SWAMP_HEAD = "trek_swamp_head";
+    public static final String SWAMP_TENTACLE = "trek_swamp_tentacle";
+    public static final int BOAT_TENTACLES = 4;
+    /** Below this share of its hitpoints the head returns to full health while a tentacle lives. // approx threshold */
+    public static final double HEAD_HEAL_BELOW = 0.1;
+
+    /** Whether the head heals: it is near death and at least one tentacle is alive. */
+    public static boolean headHeals(double health, double maxHealth, int tentaclesAlive) {
+        return tentaclesAlive > 0 && health > 0 && health < maxHealth * HEAD_HEAL_BELOW;
+    }
+
+    /** Tome colours by route, like the reward token: blue, yellow, red. */
+    private static final String[] TOME_COLOURS = {"blue", "yellow", "red"};
+
+    /** A tome of experience item: e.g. {@code agility_tome_blue} (OSRS item "Agility tome (blue)"). */
+    public static String tomeId(Skill skill, Route route) {
+        return skill.name().toLowerCase(java.util.Locale.ROOT) + "_tome_" + TOME_COLOURS[route.ordinal()];
+    }
+
+    /** The skill and route of a tome item, or null. */
+    public static Object[] tome(String id) {
+        for (Skill s : TOME_SKILLS) {
+            for (Route r : Route.values()) {
+                if (tomeId(s, r).equals(id)) {
+                    return new Object[]{s, r};
+                }
+            }
+        }
+        return null;
+    }
+
     /** XP of a tome: uniform in the route's range. */
     public static int tomeXp(Route route, DoubleSupplier rng) {
         return route.tomeMin + (int) (rng.getAsDouble() * (route.tomeMax - route.tomeMin + 1));
@@ -419,6 +466,12 @@ public final class TempleTrekking {
                 4, 0, "zombie", new String[]{"undead"}, 0.6f, 1.95f, 1.0f, 0x6A8A5A, 0xC03030,
                 new int[][]{{30, 10, 73, 6, 10, 1, 1, 2}, {50, 14, 117, 16, 14, 1, 1, 3}, {70, 18, 163, 26, 18, 1, 1, 4}},
                 Drop.always("plank"));
+        // Route 3's boat trip: the swamp creature's head and its four tentacles (OSRS Wiki "Head (Temple Trekking)",
+        // "Tentacle (Temple Trekking)"). Each part killed scores like a route-3 monster. // approx points
+        list.add(MonsterDef.of(SWAMP_HEAD, "Head").level(140).model("cave_kraken").stats(150, 73, 186, 75, 50, 50).speed(10)
+                .attack(melee(AttackType.CRUSH, 20)).size(1.4f, 1.4f, 1.6f).skin(0x3A4A2A, 0x2A3A1A, 0x1A2A10, 0xC0D040));
+        list.add(MonsterDef.of(SWAMP_TENTACLE, "Tentacle").level(99).model("sea_snake").stats(75, 115, 76, 75, 50, 115).speed(6)
+                .attack(melee(AttackType.CRUSH, 12)).size(0.8f, 2.0f, 1.2f).skin(0x3A4A2A, 0x2A3A1A, 0x1A2A10, 0x6A8A3A));
         list.add(MonsterDef.of("trek_zombie", "Zombie").level(13).model("zombie").stats(22, 8, 9, 10, 1, 1).speed(4)
                 .attack(melee(AttackType.CRUSH, 2)).attributes("undead").drops(Drop.always("bronze_axe"))
                 .skin(0x6A8A5A, 0x4A4A3A, 0x3A3A2A, 0x202020));
@@ -457,6 +510,16 @@ public final class TempleTrekking {
         for (String[] t : tokens) {
             items.add(t[0], t[1], Kind.SIMPLE, "mark", Integer.parseInt(t[2], 16)).value(1).stack(1)
                     .examine("A reward from a grateful follower. Right-click it to choose your reward.");
+        }
+        // Tomes of experience: one per skill and token colour, read for a random amount of XP in the route's range.
+        int[] tomeRgb = {0x3060E0, 0xE0C030, 0xC03030};
+        for (Skill s : TOME_SKILLS) {
+            for (Route r : Route.values()) {
+                items.add(tomeId(s, r), s.displayName() + " tome (" + TOME_COLOURS[r.ordinal()] + ")", Kind.SIMPLE, "book",
+                        tomeRgb[r.ordinal()]).value(5000).stack(1)
+                        .examine("A tome of learning which focuses on " + s.displayName() + ". Read it for " + r.tomeMin + "-"
+                                + r.tomeMax + " XP.");
+            }
         }
         items.add("trek_vine", "Vine", Kind.SIMPLE, "string", 0x3A6A2A).value(1).examine("A short piece of vine.");
         items.add("trek_long_vine", "Long vine", Kind.SIMPLE, "string", 0x2A5A1A).value(1).stack(1)

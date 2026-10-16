@@ -224,6 +224,16 @@ public final class RewardShopService {
             }
             times = Math.min(times, left);
         }
+        // Nightmare Zone potions are bought by the dose into the lobby's potion barrels (255 doses each).
+        boolean barrel = shop.id().equals("nightmare_zone")
+                && com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.POTIONS.contains(e.item());
+        if (barrel) {
+            times = com.runecraft.content.minigames.games.NightmareZoneSession.barrelRoom(player, e.item(), times);
+            if (times <= 0) {
+                Msg.game(player, "That potion barrel is full.");
+                return;
+            }
+        }
         Map<String, Integer> bal = balances(player, shop);
         if (!e.affordable(bal, times)) {
             // Buy as many as affordable.
@@ -248,6 +258,13 @@ public final class RewardShopService {
         }
         switch (e.reward()) {
             case ITEM -> {
+                if (barrel) {
+                    com.runecraft.content.minigames.games.NightmareZoneSession.storeDoses(player, e.item(), times);
+                    Msg.game(player, "You buy " + times + " dose" + (times == 1 ? "" : "s") + " of " + label(e) + ". The barrel now holds "
+                            + com.runecraft.content.minigames.games.NightmareZoneSession.barrel(player, e.item()) + ".");
+                    open(player, shopId);
+                    return;
+                }
                 if (RewardShops.noted(shop.id(), e.item())
                         && com.runecraft.osrs.bank.BankNotes.canNote(e.item())) {
                     // Handed out as bank notes; whatever doesn't fit drops at the player's feet.
