@@ -35,6 +35,8 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.shape.VoxelShape;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -949,11 +951,13 @@ public class ColosseumSession extends MinigameSession {
 
     /**
      * Wave 12: gladiators with shields close the arena down to the square between the four pillars (wiki: "roughly a 16x15
-     * arena"); here a fence ring one block inside the pillars' line. The player is moved inside it.
+     * arena"); here a sandstone wall ring on the pillars' line. Wall blocks join the sandstone-wall pillars (a fence would leave
+     * a gap a player fits through at each pillar), so nobody can stand outside where Sol can't reach. The player is moved
+     * inside it.
      */
     private void gladiatorWall() {
         removeWall();
-        BlockState fence = Blocks.SPRUCE_FENCE.getDefaultState();
+        BlockState fence = Blocks.SANDSTONE_WALL.getDefaultState();
         int r = PILLAR;
         for (int i = -r + 2; i <= r - 2; i++) {
             for (int[] d : new int[][]{{i, -r}, {i, r}, {-r, i}, {r, i}}) {
@@ -981,6 +985,36 @@ public class ColosseumSession extends MinigameSession {
     /** Whether the gladiator wall stands (self-test). */
     public int wallBlocks() {
         return wall.size();
+    }
+
+    /**
+     * Whether every joint along the gladiator wall (ring block to ring block, end block to pillar) is closed: one side's
+     * collision box reaches the shared face, so what is left between them is narrower than a player (self-test).
+     */
+    public boolean wallSealed() {
+        if (wall.isEmpty()) {
+            return false;
+        }
+        for (BlockPos at : wall) {
+            BlockPos a = rel(at.getX(), at.getY(), at.getZ());
+            boolean alongX = Math.abs(at.getZ()) == PILLAR;
+            for (Direction d : alongX ? new Direction[]{Direction.EAST, Direction.WEST} : new Direction[]{Direction.SOUTH, Direction.NORTH}) {
+                BlockPos b = a.offset(d);
+                VoxelShape sa = world.getBlockState(a).getCollisionShape(world, a);
+                VoxelShape sb = world.getBlockState(b).getCollisionShape(world, b);
+                if (sa.isEmpty() || sb.isEmpty()) {
+                    return false;
+                }
+                boolean positive = d.getOffsetX() + d.getOffsetZ() > 0;
+                boolean joined = positive
+                        ? sa.getMax(d.getAxis()) >= 1.0 || sb.getMin(d.getAxis()) <= 0.0
+                        : sa.getMin(d.getAxis()) <= 0.0 || sb.getMax(d.getAxis()) >= 1.0;
+                if (!joined) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /** A follow-up hit of a multi-hit attack (own accuracy roll, blocked by the matching protection prayer). */
