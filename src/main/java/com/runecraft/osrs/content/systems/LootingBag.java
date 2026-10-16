@@ -12,7 +12,8 @@ import java.util.List;
  * <p>Storage (OSRS Wiki, "Looting bag"): the bag holds 28 stacks. Tradeable items can only be put in while in the
  * Wilderness (use them on the bag, or its Deposit option); stackable and noted items stack as in the inventory. While the
  * bag is open, tradeable items picked up in the Wilderness go straight into it. At a bank (or deposit box) everything in
- * it is banked; unbankable items go to the inventory. Contents belong to the player (one bag per player).
+ * it is banked; unbankable items go to the inventory. Contents belong to the player (one bag per player) and are all
+ * dropped when the player dies in the Wilderness.
  */
 public final class LootingBag {
     public static final String ID = "looting_bag";
