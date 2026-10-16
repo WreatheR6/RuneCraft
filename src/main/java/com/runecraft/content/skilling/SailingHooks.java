@@ -63,6 +63,7 @@ final class SailingHooks {
         }
         BlockHooks.register("sea_chart_marker", (player, pos, state) -> chart(player, pos));
         SeaHooks.init();
+        SailingLockboxHooks.init();
         for (SailingTraining.ChartTask c : SailingTraining.CHARTS) {
             if (!c.underground()) {
                 LandmarkBuilder.registerCustom(c.placeId(), (world, centre) -> placeAtSea(world, centre, "sea_chart_marker", 0));
@@ -99,7 +100,7 @@ final class SailingHooks {
     private static final Set<String> SHIPWRIGHT_PORTS = Set.of("port_sarim", "rellekka", "port_piscarilius", "aldarin");
 
     /** Puts a module block on the water surface (or on the ground if the spot turned out to be land). */
-    private static void placeAtSea(ServerWorld world, BlockPos centre, String blockId, int dx) {
+    static void placeAtSea(ServerWorld world, BlockPos centre, String blockId, int dx) {
         BlockState block = SkillingUtil.moduleBlock(blockId);
         if (block == null) {
             return;
@@ -540,6 +541,11 @@ final class SailingHooks {
             }
         } else if (!SkillingUtil.need(player, Skill.SAILING, sailing, "build this") || !SkillingUtil.need(player, Skill.CONSTRUCTION, con,
                 "build this")) {
+            return;
+        }
+        String noSchematic = SailingLockboxHooks.missing(player, o);
+        if (noSchematic != null) {
+            Msg.game(player, noSchematic);
             return;
         }
         if (!SkillingUtil.needItem(player, "hammer", "You need a hammer to build boat parts.")) {

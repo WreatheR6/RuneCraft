@@ -48,11 +48,9 @@ public final class SystemsContent implements ContentModule {
                 .examine("Slide the pieces into order to solve the puzzle.");
         Defs.simple(items, CluePuzzles.LIGHT_BOX, "Light box", "package", 0xE0D060, 1).stack(1)
                 .examine("Turn all of the lights on to solve the puzzle.");
-        // Weiss Salt Mine (ItemSources): basalt and the three salts that make the basalt teleports (OSRS Wiki values).
+        // Weiss Salt Mine (ItemSources): basalt and the three salts that make the basalt teleports (OSRS Wiki values; the salts
+        // are in CommonItems, since the skilling module's eternal brazier takes them too).
         Defs.simple(items, "basalt", "Basalt", "ore", 0x3A3A40, 10).stack(1).weight(1).examine("A rock that holds salts well.");
-        Defs.simple(items, "te_salt", "Te salt", "ore", 0xE0E0D0, 1).stack(100000).examine("A salt from Weiss's salt mine.");
-        Defs.simple(items, "efh_salt", "Efh salt", "ore", 0xB0D8F0, 1).stack(100000).examine("A salt from Weiss's salt mine.");
-        Defs.simple(items, "urt_salt", "Urt salt", "ore", 0x9A6A4A, 1).stack(100000).examine("A salt from Weiss's salt mine.");
     }
 
     /**

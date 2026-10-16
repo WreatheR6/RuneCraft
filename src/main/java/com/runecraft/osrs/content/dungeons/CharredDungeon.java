@@ -30,6 +30,11 @@ final class CharredDungeon {
     static final int[] CD_LAVA_STRYKEWYRMS = {2714, 8869, 2718, 8867, 2719, 8863, 2723, 8864, 2724, 8860, 2725, 8856, 2726, 8882,
             2728, 8887, 2730, 8881, 2733, 8884, 2734, 8888, 2737, 8883};
 
+    /** The 24 rubium rocks of the south-central mine (wiki Rubium rocks object tiles; Kragin's two rubium deposits are not built). */
+    static final int[] CD_RUBIUM = {2680, 8836, 2682, 8836, 2684, 8837, 2685, 8839, 2682, 8839, 2681, 8840, 2681, 8842, 2684, 8842,
+            2683, 8843, 2684, 8844, 2680, 8844, 2679, 8845, 2683, 8846, 2678, 8848, 2681, 8848, 2682, 8849, 2679, 8850, 2680, 8854,
+            2681, 8855, 2684, 8853, 2683, 8852, 2684, 8851, 2685, 8851, 2687, 8849};
+
     private CharredDungeon() {
     }
 
@@ -41,7 +46,8 @@ final class CharredDungeon {
         int[] south = {2620, 8828, 2680, 8848};
         int[] dragons = {2641, 8849, 2676, 8882};
         int[] east = {2688, 8845, 2741, 8892};
-        int[][] rooms = {west, south, dragons, east};
+        int[] rubium = {2676, 8834, 2690, 8857};   // the south-central rubium mine (wiki object tiles)
+        int[][] rooms = {west, south, dragons, east, rubium};
         for (int[] r : rooms) {
             s.room(r, f, 7);
         }
@@ -52,6 +58,9 @@ final class CharredDungeon {
         c.rocks(s.x(2622), s.z(8830), s.x(2640), s.z(8830), f + 1, 4, rc("coal_rock"));       // 10 coal
         c.rocks(s.x(2622), s.z(8832), s.x(2626), s.z(8832), f + 1, 4, rc("adamantite_rock")); // 3 adamantite
         c.rocks(s.x(2622), s.z(8834), s.x(2623), s.z(8834), f + 1, 2, rc("runite_rock"));     // 2 runite
+        for (int i = 0; i < CD_RUBIUM.length; i += 2) {
+            c.set(s.x(CD_RUBIUM[i]), f + 1, s.z(CD_RUBIUM[i + 1]), rc("rubium_rock"));         // the 24 rubium rocks
+        }
         for (int[] p : new int[][]{{2650, 8880}, {2670, 8855}, {2705, 8865}, {2630, 8875}}) {
             c.pillar(s.x(p[0]), s.z(p[1]), f, 7, mc("polished_basalt[axis=y]"));
         }

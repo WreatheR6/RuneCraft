@@ -180,6 +180,7 @@ public final class SailingData extends SkillingPart {
 
     @Override
     public void items(ItemSink s) {
+        SailingLockboxes.items(s);
         tool(s, "spyglass", "Spyglass", "spyglass", 0xB09040, 50);
         tool(s, "salvaging_hook", "Salvaging hook", "hook", 0x8A8A9A, 40);
         tool(s, "trawling_net", "Trawling net", "net", 0x8A7A5A, 60);
@@ -366,6 +367,7 @@ public final class SailingData extends SkillingPart {
         list.add(BlockDef.scripted("port_salvaging_station", "Salvaging station", 0x7A6A4A, "crate"));
         list.add(BlockDef.scripted("boat_schematics", "Boat schematics", 0x6A5A3A, "notice_board"));
         list.add(BlockDef.scripted("barracuda_trial_buoy", "Barracuda trial master's buoy", 0x3080C0, "buoy"));
+        list.add(BlockDef.scripted(SailingLockboxes.BLOCK, "Lockbox", 0x6A4A2A, "chest"));
         for (Port p : PORTS) {
             list.add(BlockDef.scripted(p.board(), p.name() + " port task board", 0x8A6A3A, "notice_board"));
         }
@@ -399,6 +401,7 @@ public final class SailingData extends SkillingPart {
         for (SailingTraining.Trial t : SailingTraining.TRIALS) {
             list.add(PlaceDef.of(t.placeId(), t.name(), t.objectiveB()[0], t.objectiveB()[1], PlaceDef.Style.NONE, List.of()));
         }
+        list.addAll(SailingLockboxes.places());
         // Crewmates wait at their wiki towns (tiles approx); talking to one recruits them.
         for (SailingCrew.Crewmate c : SailingCrew.CREW) {
             list.add(PlaceDef.of(c.placeId(), c.name(), c.x(), c.y(), PlaceDef.Style.NONE, List.of()));

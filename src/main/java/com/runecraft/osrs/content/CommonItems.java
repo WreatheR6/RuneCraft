@@ -36,6 +36,10 @@ public final class CommonItems {
         items.add("bucket", "Bucket", Kind.SIMPLE, "bucket", 0x9A9AA0).value(2).stack(1).examine("It's a wooden bucket.");
         items.add("bucket_of_water", "Bucket of water", Kind.SIMPLE, "bucket", 0x4080D0).value(6).stack(1)
                 .examine("It's a bucket of water.");
+        // Weiss salts (systems: Weiss salt mine and basalt teleports; skilling: the Sailing eternal brazier takes 250 of each).
+        items.add("te_salt", "Te salt", Kind.SIMPLE, "ore", 0xE0E0D0).value(1).stack(100000).examine("A salt from Weiss's salt mine.");
+        items.add("efh_salt", "Efh salt", Kind.SIMPLE, "ore", 0xB0D8F0).value(1).stack(100000).examine("A salt from Weiss's salt mine.");
+        items.add("urt_salt", "Urt salt", Kind.SIMPLE, "ore", 0x9A6A4A).value(1).stack(100000).examine("A salt from Weiss's salt mine.");
         items.add("machete", "Machete", Kind.TOOL, "scimitar", 0x9A9AA0).value(40).stack(1).examine("An effective tool for chopping tough jungle plants.");
         items.add("green_dragonhide", "Green dragonhide", Kind.SIMPLE, "hide", 0x3A8A3A).value(1800);
         items.add("blue_dragonhide", "Blue dragonhide", Kind.SIMPLE, "hide", 0x3A5AB0).value(2000);

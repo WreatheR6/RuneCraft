@@ -10,6 +10,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -22,6 +23,8 @@ import net.minecraft.util.math.Vec3d;
 public final class SkillingClientHooks implements ClientModuleHooks {
     /** Per-tick velocity multiplier of the boat being ridden (1 = vanilla). */
     private static double boatSpeed = 1;
+    /** The entity id of the boat the hull speed belongs to (-1: none). */
+    private static int boatId = -1;
     private static boolean riding;
 
     @Override
@@ -43,7 +46,11 @@ public final class SkillingClientHooks implements ClientModuleHooks {
         });
         ClientPlayNetworking.registerGlobalReceiver(SeaNet.BOAT_SPEED, (client, handler, buf, sender) -> {
             double speed = buf.readDouble();
-            client.execute(() -> boatSpeed = speed);
+            int id = buf.readInt();
+            client.execute(() -> {
+                boatSpeed = speed;
+                boatId = id;
+            });
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null || boatSpeed == 1) {
@@ -59,7 +66,10 @@ public final class SkillingClientHooks implements ClientModuleHooks {
                 return;
             }
             riding = true;
-            if (vehicle instanceof BoatEntity && vehicle.isLogicalSideForUpdatingMovement()) {
+            // Only the Sailing boat the server named, and only while it floats (not sliding over ice or land).
+            if (vehicle instanceof BoatEntity && vehicle.getId() == boatId && vehicle.isLogicalSideForUpdatingMovement()
+                    && (vehicle.isTouchingWater() || vehicle.getWorld().getFluidState(vehicle.getBlockPos()).isIn(FluidTags.WATER)
+                    || vehicle.getWorld().getFluidState(vehicle.getBlockPos().down()).isIn(FluidTags.WATER))) {
                 Vec3d v = vehicle.getVelocity();
                 vehicle.setVelocity(v.x * boatSpeed, v.y, v.z * boatSpeed);
             }
