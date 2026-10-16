@@ -120,6 +120,8 @@ class CombatAchievementRulesTest {
                 b.phases.forEach(ph -> ph.attacks().forEach(a -> attacks.add(CombatAchievementRules.attackKey(a.name()))));
             }
         }
+        Set<String> names = new java.util.HashSet<>();
+        profiles.forEach(p -> names.add(p.name.toLowerCase(java.util.Locale.ROOT)));
         List<String> problems = new ArrayList<>();
         for (Task t : CombatAchievements.tasks()) {
             if (t.rule() == null) {
@@ -130,6 +132,13 @@ class CombatAchievementRulesTest {
                     for (String a : token.substring(6).split(",")) {
                         if (!attacks.contains(a)) {
                             problems.add(t.name() + ": no attack " + a);
+                        }
+                    }
+                }
+                if (token.startsWith("onlydmg=")) {
+                    for (String a : token.substring(8).split(",")) {
+                        if (!attacks.contains(a) && !names.contains(a.replace('+', ' '))) {
+                            problems.add(t.name() + ": no attack or attacker " + a);
                         }
                     }
                 }
@@ -238,6 +247,11 @@ class CombatAchievementRulesTest {
         assertTrue(CombatAchievementRules.meets("nodmg=bossmelee", m));
         assertTrue(CombatAchievementRules.meets("nohitby=tztok-jad", m));
         assertTrue(CombatAchievementRules.meets("nodmg=boss || nodmg=melee", m));
+        // onlydmg: every damaging hit is one of the listed attacks or attackers.
+        assertFalse(CombatAchievementRules.meets("onlydmg=lava_pool", m));
+        assertTrue(CombatAchievementRules.meets("onlydmg=lava_pool,mechanic", m));
+        assertTrue(CombatAchievementRules.meets("onlydmg=lava_pool,spiritual+mage", m));
+        assertTrue(CombatAchievementRules.meets("onlydmg=boss,other", m));
         assertFalse(CombatAchievementRules.meets("offprayerhitby=spiritual+mage", m));
         assertTrue(CombatAchievementRules.meets("offprayerhitby=cerberus", m));
     }

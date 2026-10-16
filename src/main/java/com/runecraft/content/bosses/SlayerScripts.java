@@ -841,6 +841,8 @@ final class SlayerScripts {
      */
     static final class Araxxor extends ScriptedBoss {
         private final List<MobEntity> araxytes = new ArrayList<>();
+        /** The hatched ruptura araxytes (they explode instead of attacking). */
+        private final List<MobEntity> rupturas = new ArrayList<>();
         private final List<MobEntity> eggs = new ArrayList<>();
         private List<String> eggKinds = List.of();
         private int nextEgg;
@@ -862,6 +864,7 @@ final class SlayerScripts {
             if (eggs.isEmpty() && target != null) {
                 placeEggs(boss);
             }
+            tickRupturas(boss);
             for (int i = 0; i < eggs.size(); i++) {
                 MobEntity egg = eggs.get(i);
                 if (egg != null && !egg.isAlive()) {
@@ -912,10 +915,78 @@ final class SlayerScripts {
                 if (m != null) {
                     m.setHealth(Math.max(1f, m.getMaxHealth() * hp / com.runecraft.osrs.content.bosses.BossMechanics.ARAXYTE_HP));
                     araxytes.add(m);
+                    if ("ruptura_araxyte".equals(kind)) {
+                        rupturas.add(m);
+                    }
                     BossFx.say(boss, "An egg hatches into " + com.runecraft.util.Msg.article(kind.replace('_', ' ')) + "!");
                 }
                 return;
             }
+        }
+
+        /** Ruptura araxytes walk up to a player and explode once in melee range. */
+        private void tickRupturas(DataBossEntity boss) {
+            rupturas.removeIf(m -> !m.isAlive());
+            for (MobEntity r : new ArrayList<>(rupturas)) {
+                for (ServerPlayerEntity p : BossFx.players(r, 3)) {
+                    if (p.squaredDistanceTo(r) <= 1.6 * 1.6) {
+                        explode(boss, r);
+                        break;
+                    }
+                }
+            }
+        }
+
+        /**
+         * A ruptura araxyte explodes (OSRS Wiki "Araxxor/Strategies"): players take up to 70 (21 less per tile away, scaled by
+         * its health); Araxxor, other araxytes and eggs take 80 under it, 64 next to it and at least 33 up to 3 tiles away.
+         * Three araxytes killed by one explosion is "Araxyte Betrayal". Returns how many araxytes it killed.
+         */
+        int explode(DataBossEntity boss, MobEntity r) {
+            Vec3d at = r.getPos();
+            double hp = r.getHealth() / Math.max(1f, r.getMaxHealth());
+            rupturas.remove(r);
+            r.discard();
+            BossFx.world(boss).spawnParticles(ParticleTypes.EXPLOSION, at.x, at.y + 0.5, at.z, 4, 1.2, 0.4, 1.2, 0);
+            BossFx.sound(r, SoundEvents.ENTITY_GENERIC_EXPLODE, 0.8f);
+            for (ServerPlayerEntity p : BossFx.players(r, BossMechanics.RUPTURA_RANGE + 1)) {
+                int dmg = BossMechanics.rupturaPlayerDamage(tiles(at, p.getPos()), hp);
+                if (dmg > 0) {
+                    com.runecraft.combat.CombatHooks.nameAttack("ruptura_explosion", AttackType.CRUSH);
+                    CombatHandler.applyDamage(r, p, dmg);
+                }
+            }
+            int killed = 0;
+            List<MobEntity> victims = new ArrayList<>(araxytes);
+            eggs.forEach(e -> {
+                if (e != null) {
+                    victims.add(e);
+                }
+            });
+            for (MobEntity v : victims) {
+                if (v == r || !v.isAlive()) {
+                    continue;
+                }
+                int dmg = BossMechanics.rupturaEnemyDamage(tiles(at, v.getPos()));
+                if (dmg > 0) {
+                    CombatHandler.applyDamage(null, v, dmg);
+                    if (!v.isAlive() && araxytes.contains(v)) {
+                        killed++;
+                    }
+                }
+            }
+            int bossDmg = BossMechanics.rupturaEnemyDamage(tiles(at, boss.getPos()) - 1); // Araxxor is a large creature
+            if (bossDmg > 0 && boss.isAlive()) {
+                CombatHandler.applyDamage(null, boss, bossDmg);
+            }
+            if (killed >= BossMechanics.ARAXYTE_BETRAYAL_KILLS) {
+                CombatAchievementService.flagNear(boss, BossMechanics.FLAG_ARAXYTE_BETRAYAL);
+            }
+            return killed;
+        }
+
+        private static int tiles(Vec3d a, Vec3d b) {
+            return (int) Math.floor(Math.max(Math.abs(a.x - b.x), Math.abs(a.z - b.z)));
         }
 
         /** The eggs still standing (for the self-test). */
@@ -927,6 +998,7 @@ final class SlayerScripts {
         public void onPhase(DataBossEntity boss, int phase) {
             araxytes.forEach(MobEntity::discard);
             araxytes.clear();
+            rupturas.clear();
         }
 
         /** "Perfect Araxxor 2": no damage on it once it has enraged. */

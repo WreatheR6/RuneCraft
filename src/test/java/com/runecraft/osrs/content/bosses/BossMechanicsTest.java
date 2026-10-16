@@ -331,4 +331,80 @@ class BossMechanicsTest {
                 .orElseThrow();
         assertEquals(65, egg.hitpoints);
     }
+
+    /** Awakened Vardorvis: the bleed deals 5 per hit (3 normally), on the same 14-tick schedule. */
+    @Test
+    void awakenedVardorvisBleed() {
+        BossMechanics.Bleed b = new BossMechanics.Bleed();
+        b.start(BossMechanics.VARDORVIS_BLEED_DAMAGE_AWAKENED);
+        int total = 0;
+        while (b.active()) {
+            total += b.tick(false);
+        }
+        assertEquals(25, total);
+        b.start();
+        total = 0;
+        while (b.active()) {
+            total += b.tick(false);
+        }
+        assertEquals(15, total);
+    }
+
+    /** Moons of Peril: flat armour and the Eclipse Moon's parry check. */
+    @Test
+    void moonsOfPeril() {
+        assertEquals(14, BossMechanics.flatArmour(20, BossMechanics.ECLIPSE_FLAT_ARMOUR));
+        assertEquals(0, BossMechanics.flatArmour(3, BossMechanics.ECLIPSE_FLAT_ARMOUR));
+        assertEquals(1, BossMechanics.flatArmour(5, BossMechanics.ECLIPSE_FLAT_ARMOUR_CLONES));
+        assertEquals(15, BossMechanics.flatArmour(10, BossMechanics.BLUE_MOON_FLAT_ARMOUR));
+        assertEquals(0, BossMechanics.flatArmour(0, BossMechanics.BLUE_MOON_FLAT_ARMOUR), "a miss stays a miss");
+        assertEquals(15, BossMechanics.ECLIPSE_CLONE_CYCLES * BossMechanics.ECLIPSE_CLONES_PER_CYCLE);
+        // Minecraft yaw 0 faces +z (south), 90 faces -x (west), 180 faces -z.
+        assertTrue(BossMechanics.faces(0, 0, 3));
+        assertTrue(BossMechanics.faces(90, -3, 0));
+        assertTrue(BossMechanics.faces(0, 1, 3), "a tile off still parries");
+        assertFalse(BossMechanics.faces(0, 0, -3));
+        assertFalse(BossMechanics.faces(0, 3, 0));
+        assertFalse(BossMechanics.faces(180, 0, 3));
+    }
+
+    /** The Hueycoatl: pillar prayers per team size, the tail's damage cap. */
+    @Test
+    void hueycoatl() {
+        int[][] table = {{1, 1}, {5, 1}, {6, 2}, {8, 2}, {9, 3}, {11, 3}, {12, 4}, {14, 4}, {15, 5}, {17, 5}, {18, 6}, {20, 6}};
+        for (int[] row : table) {
+            assertEquals(row[1], BossMechanics.hueyPrayersPerPillar(row[0]), "team of " + row[0]);
+        }
+        assertFalse(BossMechanics.hueyPillarsCharged(1, 1, 0, 2), "a duo can't charge all three");
+        assertTrue(BossMechanics.hueyPillarsCharged(1, 1, 1, 3));
+        assertFalse(BossMechanics.hueyPillarsCharged(2, 2, 1, 6));
+        assertTrue(BossMechanics.hueyPillarsCharged(2, 2, 2, 6));
+        assertEquals(4, BossMechanics.hueyTailDamage(30, false));
+        assertEquals(0, BossMechanics.hueyTailDamage(0, false));
+        assertEquals(9, BossMechanics.hueyTailDamage(30, true));
+        assertEquals(1, BossMechanics.hueyTailDamage(0, true), "crush rounds misses up to 1");
+        assertEquals(4050, BossMechanics.HUEY_BODY_SEGMENTS * BossMechanics.HUEY_BODY_HP + 2500 + BossMechanics.HUEY_TAIL_HP,
+                "4,050 damage for the whole encounter");
+        assertNotNull(ItemCatalog.get("hueycoatl_hide_body"));
+        assertNotNull(ItemCatalog.get("hueycoatl_hide_vambraces"));
+        Set<String> ids = new HashSet<>();
+        ContentRegistry.monsters().forEach(m -> ids.add(m.id));
+        assertTrue(ids.contains(BossMechanics.HUEYCOATL_BODY));
+        assertTrue(ids.contains(BossMechanics.HUEYCOATL_TAIL));
+    }
+
+    /** Ruptura araxytes: 70 under a player at full health, 21 less per tile; 80/64/... at least 33 on other creatures. */
+    @Test
+    void rupturaExplosion() {
+        assertEquals(70, BossMechanics.rupturaPlayerDamage(0, 1.0));
+        assertEquals(49, BossMechanics.rupturaPlayerDamage(1, 1.0));
+        assertEquals(28, BossMechanics.rupturaPlayerDamage(2, 1.0));
+        assertEquals(7, BossMechanics.rupturaPlayerDamage(3, 1.0));
+        assertEquals(0, BossMechanics.rupturaPlayerDamage(4, 1.0));
+        assertEquals(35, BossMechanics.rupturaPlayerDamage(0, 0.5));
+        assertEquals(80, BossMechanics.rupturaEnemyDamage(0));
+        assertEquals(64, BossMechanics.rupturaEnemyDamage(1));
+        assertEquals(33, BossMechanics.rupturaEnemyDamage(3));
+        assertEquals(0, BossMechanics.rupturaEnemyDamage(5));
+    }
 }

@@ -118,6 +118,10 @@ final class GameplayChecks {
                 () -> g.scripted("phantom_muspah", com.runecraft.content.bosses.BossSelfTests::muspahShield)));
         checks.add(new SelfTest.Check("boss:araxxor_eggs",
                 () -> g.scripted("araxxor", com.runecraft.content.bosses.BossSelfTests::araxxorEggs)));
+        checks.add(new SelfTest.Check("boss:eclipse_clones",
+                () -> g.scripted("eclipse_moon", com.runecraft.content.bosses.BossSelfTests::eclipseClones)));
+        checks.add(new SelfTest.Check("boss:hueycoatl_phases",
+                () -> g.scripted("the_hueycoatl", com.runecraft.content.bosses.BossSelfTests::hueycoatlPhases)));
         for (Map.Entry<String, int[]> e : destinations().entrySet()) {
             checks.add(new SelfTest.Check("teleport:" + e.getKey(), () -> g.teleport(e.getValue()[0], e.getValue()[1])));
         }

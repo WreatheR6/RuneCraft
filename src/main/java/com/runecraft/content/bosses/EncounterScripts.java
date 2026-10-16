@@ -215,6 +215,16 @@ final class EncounterScripts {
         private boolean finalSet;
         private boolean desperate;
         private int walkerTimer;
+        /** Spores on the arena floor (OSRS Wiki: within one tile one bursts and makes the player weary). */
+        private final List<Vec3d> spores = new ArrayList<>();
+        private int sporeTimer = 50;
+        private int sporesLeft;
+        /** Weary players: game ticks left (no running, slower attacks; Phosani's yawns drain prayer). */
+        private final Map<UUID, Integer> weary = new HashMap<>();
+        /** Phosani's Prayer Deactivation (phase three): the attack she is winding up and when it lands. */
+        private AttackDef windUp;
+        private long windUpLands;
+        private int deactivateTimer = 20;
 
         Nightmare() {
             this(false);
@@ -406,6 +416,7 @@ final class EncounterScripts {
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+            tickSpores(boss);
             if (phosani) {
                 tickWalkers(boss, target);
                 if (!finalSet && !shielded && percent(boss) <= 10) { // approx: the end of her third phase
@@ -447,7 +458,7 @@ final class EncounterScripts {
             if (parasiteIn > 0 && --parasiteIn == 0) {
                 if (host != null && host.isAlive()) {
                     boolean weakened = CURED.remove(host.getUuid());
-                    CombatHooks.nameAttack("parasite_burst", null);
+                    CombatHooks.nameAttack(weakened ? BossMechanics.WEAKENED_PARASITE_BURST : BossMechanics.PARASITE_BURST, null);
                     CombatHandler.applyDamage(boss, host, BossMechanics.parasiteBurst(new java.util.Random(boss.getRandom().nextLong()), weakened));
                     MobEntity parasite = BossFx.spawnMinion(boss, "nightmare_parasite", host.getPos(), host);
                     if (parasite != null) {
@@ -470,10 +481,110 @@ final class EncounterScripts {
                 curseTimer = 45 + boss.getRandom().nextInt(20);
                 BossFx.disablePrayers(target, "The Nightmare curses you, shuffling your prayers!");
             }
+            // Spores: the Nightmare only uses them in her third phase; Phosani in any phase (her A special sets). approx rate
+            if (!shielded && (phosani || boss.phase() >= 1) && spores.isEmpty() && --sporeTimer <= 0) {
+                sporeTimer = 60 + boss.getRandom().nextInt(30);
+                placeSpores(boss);
+            }
+            if (phosani && boss.phase() >= 1) {
+                tickDeactivation(boss, target);
+            }
+        }
+
+        void placeSpores(DataBossEntity boss) {
+            spores.clear();
+            Vec3d c = homeVec();
+            for (int i = 0; i < BossMechanics.SPORES; i++) {
+                spores.add(around(boss, c, 8));
+            }
+            sporesLeft = 30; // approx: how long they stay
+            BossFx.warn(boss, "Spores sprout around the arena! Don't stand next to them.");
+        }
+
+        /** Spores burst when a player comes within a tile; weary players can't run and their yawns drain prayer (Phosani). */
+        void tickSpores(DataBossEntity boss) {
+            if (!spores.isEmpty()) {
+                List<ServerPlayerEntity> near = BossFx.players(boss, 32);
+                java.util.Iterator<Vec3d> it = spores.iterator();
+                while (it.hasNext()) {
+                    Vec3d sp = it.next();
+                    BossFx.world(boss).spawnParticles(ParticleTypes.SPORE_BLOSSOM_AIR, sp.x, sp.y + 0.4, sp.z, 2, 0.2, 0.2, 0.2, 0);
+                    for (ServerPlayerEntity p : near) {
+                        if (Math.abs(p.getX() - sp.x) <= 1.5 && Math.abs(p.getZ() - sp.z) <= 1.5) {
+                            burstSpore(boss, p, sp);
+                            it.remove();
+                            break;
+                        }
+                    }
+                }
+                if (--sporesLeft <= 0) {
+                    spores.clear();
+                }
+            }
+            if (weary.isEmpty()) {
+                return;
+            }
+            java.util.Iterator<Map.Entry<UUID, Integer>> wi = weary.entrySet().iterator();
+            while (wi.hasNext()) {
+                Map.Entry<UUID, Integer> e = wi.next();
+                ServerPlayerEntity p = BossFx.world(boss).getServer().getPlayerManager().getPlayer(e.getKey());
+                int left = e.getValue() - 1;
+                if (p == null || left <= 0) {
+                    wi.remove();
+                    continue;
+                }
+                e.setValue(left);
+                p.setSprinting(false);
+                if (phosani && left % 5 == 0) {
+                    BossFx.drainPrayer(p, BossMechanics.SPORE_YAWN_PRAYER);
+                    Msg.action(p, "You yawn...");
+                }
+            }
+        }
+
+        void burstSpore(DataBossEntity boss, ServerPlayerEntity p, Vec3d at) {
+            BossFx.world(boss).spawnParticles(ParticleTypes.SNEEZE, at.x, at.y + 0.6, at.z, 20, 0.6, 0.4, 0.6, 0.02);
+            weary.put(p.getUuid(), BossMechanics.SPORE_WEARY_TICKS);
+            p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, BossMechanics.SPORE_WEARY_TICKS * 12, 1, false, true));
+            p.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, BossMechanics.SPORE_WEARY_TICKS * 12,
+                    phosani ? BossMechanics.SPORE_SLOW_TICKS_PHOSANI : BossMechanics.SPORE_SLOW_TICKS, false, true));
+            CombatAchievementService.flag(p, BossMechanics.FLAG_NIGHTMARE_SPORED);
+            Msg.red(p, "A spore bursts in your face and you feel weary.");
+        }
+
+        /**
+         * Phosani's Prayer Deactivation (OSRS Wiki, phase three only): she winds up an attack and, if the player already has
+         * the matching protection prayer up as the animation starts, switches it off; praying correctly only after the
+         * wind-up is the counter. approx: the wind-up is announced in chat and lands 2 ticks later; rate guessed.
+         */
+        void tickDeactivation(DataBossEntity boss, ServerPlayerEntity target) {
+            if (windUp != null) {
+                if (now >= windUpLands) {
+                    perform(boss, target, windUp);
+                    windUp = null;
+                }
+                return;
+            }
+            if (--deactivateTimer > 0) {
+                return;
+            }
+            deactivateTimer = 16 + boss.getRandom().nextInt(10);
+            AttackDef[] styles = {MinigameBosses.PHOSANI_MELEE, MinigameBosses.PHOSANI_MAGIC, MinigameBosses.PHOSANI_RANGED};
+            Prayer[] counters = {Prayer.PROTECT_FROM_MELEE, Prayer.PROTECT_FROM_MAGIC, Prayer.PROTECT_FROM_MISSILES};
+            int i = boss.getRandom().nextInt(3);
+            windUp = styles[i];
+            windUpLands = now + 2;
+            BossFx.warn(boss, "Phosani's Nightmare winds up a " + (i == 0 ? "melee" : i == 1 ? "magic" : "ranged") + " attack...");
+            if (BossFx.protects(target, counters[i])) {
+                BossFx.disablePrayers(target, "Phosani's Nightmare saw your prayer coming and switches it off!");
+                CombatAchievementService.flag(target, BossMechanics.FLAG_PHOSANI_PRAYER_DISABLED);
+            }
         }
 
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+            spores.clear();
+            weary.clear();
             totems.forEach(MobEntity::discard);
             husks.forEach(MobEntity::discard);
             walkers.forEach(MobEntity::discard);
@@ -1115,7 +1226,8 @@ final class EncounterScripts {
 
         /**
          * Swinging axes: each axe hits a player once for up to 35 (awakened 96; Protect from Melee halves it) and
-         * starts a bleed (3 every 3 ticks for 14 ticks, every tick while running).
+         * starts a bleed (3 every 3 ticks for 14 ticks, every tick while running; awakened 5 a hit). Awakened axes also hit
+         * whoever stands where they appear, and that hit does not bleed (OSRS Wiki "Vardorvis/Strategies").
          */
         private void axes(DataBossEntity boss, ServerPlayerEntity target) {
             int n = BossMechanics.vardorvisAxes(hp(boss), boss.awakened());
@@ -1125,10 +1237,28 @@ final class EncounterScripts {
             double base = Math.atan2(toward.z, toward.x);
             int max = (int) Math.round((boss.awakened() ? BossMechanics.VARDORVIS_AXE_MAX_AWAKENED : BossMechanics.VARDORVIS_AXE_MAX)
                     * scale);
+            boolean awake = boss.awakened();
+            int bleed = awake ? BossMechanics.VARDORVIS_BLEED_DAMAGE_AWAKENED : BossMechanics.VARDORVIS_BLEED_DAMAGE;
             for (int a = 0; a < n; a++) {
                 double ang = base + a * Math.PI / 4 * (a % 2 == 0 ? 1 : -1);
                 Vec3d dir = new Vec3d(Math.cos(ang), 0, Math.sin(ang));
                 Set<UUID> struck = new HashSet<>();
+                if (awake) {
+                    // The axe hits on appearing at the start of its path (no bleed from this hit).
+                    Vec3d from = p.add(dir.multiply(-4 * 1.5));
+                    for (ServerPlayerEntity h : BossFx.players(boss, 24)) {
+                        if (h.getPos().squaredDistanceTo(from.x, h.getY(), from.z) <= 1.1 * 1.1) {
+                            int roll = boss.getRandom().nextInt(max + 1);
+                            if (BossFx.protects(h, Prayer.PROTECT_FROM_MELEE)) {
+                                roll /= 2;
+                            }
+                            CombatHooks.nameAttack("swinging_axe", null);
+                            CombatHandler.applyDamage(boss, h, roll);
+                            struck.add(h.getUuid());
+                        }
+                    }
+                    BossFx.world(boss).spawnParticles(ParticleTypes.SWEEP_ATTACK, from.x, p.y + 1.0, from.z, 3, 0.4, 0.3, 0.4, 0);
+                }
                 for (int i = -4; i <= 4; i++) {
                     Vec3d at = p.add(dir.multiply(i * 1.5));
                     namedStrike("swinging_axe", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, 0, 1.1,
@@ -1143,7 +1273,7 @@ final class EncounterScripts {
                                     }
                                     CombatHooks.nameAttack("swinging_axe", null);
                                     CombatHandler.applyDamage(boss, h, roll);
-                                    BossDots.bleed(h);
+                                    BossDots.bleed(h, bleed);
                                 }
                             });
                 }
@@ -1281,20 +1411,74 @@ final class EncounterScripts {
         }
     }
 
-    /** The Hueycoatl: every attack is announced by its glowing head colour; thunderstorms and tail sweeps. */
+    /**
+     * The Hueycoatl (OSRS Wiki "The Hueycoatl/Strategies"). Phase one: five body parts (250 hitpoints each, they don't
+     * attack) block the way; the head can't be harmed until all are down. Phase two: the head; the seer charges the three
+     * pillars from the players' protection prayers (Melee/Missiles/Magic, enough of each for the team size) and, when its bar
+     * fills with all three charged, the braziers light: +30% damage for everyone until a check finds a pillar draining. At
+     * 50% she shields herself and her tail (300 hitpoints, hits capped at 4, or 9 with crush as the best attack bonus)
+     * must be broken; it changes sides every ~20 s with a 20-25 shockwave. Final phase: the head again, attacking faster,
+     * with a shockwave every ~15 s. Throughout: glowing symbols (lightning) and the coloured feather volleys.
+     * approx: the body parts stand in an arc in front of her rather than along her coils; the shockwave is a dodgeable
+     * strike at the player's tile.
+     */
     static final class Hueycoatl extends ScriptedBoss {
+        private static final int BODY = 1;
+        private static final int HEAD = 2;
+        private static final int TAIL = 3;
+        private static final int FINAL = 4;
+        private int stage;
+        private final List<MobEntity> segments = new ArrayList<>();
+        private MobEntity tail;
+        private boolean lit;
+        private int seerTimer = BossMechanics.HUEY_SEER_CHARGE_TICKS;
+        private int shockTimer;
+
+        @Override
+        public void onSpawn(DataBossEntity boss) {
+            home = boss.getBlockPos();
+            spawnSegments(boss);
+        }
+
+        private void spawnSegments(DataBossEntity boss) {
+            segments.forEach(MobEntity::discard);
+            segments.clear();
+            Vec3d c = boss.getPos();
+            for (int i = 0; i < BossMechanics.HUEY_BODY_SEGMENTS; i++) {
+                double a = Math.PI * 0.6 + i * Math.PI * 0.2;
+                MobEntity m = BossFx.spawnMinion(boss, BossMechanics.HUEYCOATL_BODY,
+                        BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 6, c.z + Math.sin(a) * 6, c.y), null);
+                if (m != null) {
+                    segments.add(m);
+                }
+            }
+            stage = BODY;
+            BossFx.say(boss, "The Hueycoatl's coils block the way to the summit. Cut through her body!");
+        }
+
+        @Override
+        public boolean isVulnerable(DataBossEntity boss) {
+            return stage == HEAD || stage == FINAL;
+        }
+
         @Override
         protected boolean driven() {
             return true;
         }
 
         @Override
+        protected int attackDelay(DataBossEntity boss, AttackDef attack) {
+            int base = super.attackDelay(boss, attack);
+            return stage == FINAL ? Math.max(2, base - 2) : base; // approx: "significantly" faster in the final phase
+        }
+
+        @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
-            if (attackCount % 6 == 5) {
-                BossFx.warn(boss, "Thunder rumbles overhead!");
+            if (attackCount % 6 == 5 || (stage == FINAL && attackCount % 3 == 2)) {
+                BossFx.warn(boss, "Glowing symbols appear around you!");
                 for (int i = 0; i < 5; i++) {
-                    strike(boss, i == 0 ? target.getPos() : around(boss, target.getPos(), 5), 3, VarlamoreBosses.HUEY_LIGHTNING.maxHit(),
-                            1.4, ParticleTypes.ELECTRIC_SPARK);
+                    namedStrike("thunderstorm", boss, i == 0 ? target.getPos() : around(boss, target.getPos(), 5), 4,
+                            maxHit(boss, VarlamoreBosses.HUEY_LIGHTNING), 1.4, ParticleTypes.ELECTRIC_SPARK);
                 }
                 attackCount++;
                 cooldown = 3;
@@ -1306,6 +1490,169 @@ final class EncounterScripts {
             AttackDef[] styles = {VarlamoreBosses.HUEY_MELEE, VarlamoreBosses.HUEY_RANGED, VarlamoreBosses.HUEY_MAGIC};
             return styles[boss.getRandom().nextInt(3)];
         }
+
+        @Override
+        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            if (!isVulnerable(boss)) {
+                if (attacker != null) {
+                    Msg.action(attacker, stage == BODY ? "The Hueycoatl is out of reach. Cut through her body first."
+                            : "The Hueycoatl's tail shields her!");
+                }
+                return 0;
+            }
+            int d = lit && damage > 0 ? (int) Math.floor(damage * BossMechanics.HUEY_BRAZIER_DAMAGE) : damage;
+            if (lit && d > 0 && mcHp(boss, d) >= boss.getHealth()) {
+                // "Pillar Lover": the killing blow lands while the braziers are lit.
+                CombatAchievementService.flagNear(boss, BossMechanics.FLAG_HUEY_VULNERABLE_KILL);
+            }
+            return d;
+        }
+
+        /** The seer's bar: every player near her counts towards the team size and the pillar their protection prayer charges. */
+        void seerCheck(DataBossEntity boss) {
+            List<ServerPlayerEntity> team = BossFx.players(boss, 32);
+            int melee = 0;
+            int missiles = 0;
+            int magic = 0;
+            for (ServerPlayerEntity p : team) {
+                if (BossFx.protects(p, Prayer.PROTECT_FROM_MELEE)) {
+                    melee++;
+                } else if (BossFx.protects(p, Prayer.PROTECT_FROM_MISSILES)) {
+                    missiles++;
+                } else if (BossFx.protects(p, Prayer.PROTECT_FROM_MAGIC)) {
+                    magic++;
+                }
+            }
+            boolean charged = !team.isEmpty() && BossMechanics.hueyPillarsCharged(melee, missiles, magic, team.size());
+            if (charged != lit) {
+                lit = charged;
+                for (ServerPlayerEntity p : team) {
+                    if (lit) {
+                        Msg.game(p, "The braziers atop the pillars ignite! The Hueycoatl is vulnerable.");
+                    } else {
+                        Msg.red(p, "The braziers are extinguished.");
+                    }
+                }
+            }
+        }
+
+        private void shockwave(DataBossEntity boss, ServerPlayerEntity target) {
+            BossFx.warn(boss, "The Hueycoatl's tail slams the ground!");
+            for (ServerPlayerEntity p : BossFx.players(boss, 32)) {
+                namedStrike("tail_shockwave", boss, p.getPos(), 3, 0, 1.2, ParticleTypes.CLOUD, (hit, pos) -> {
+                    for (ServerPlayerEntity h : hit) {
+                        CombatHooks.nameAttack("tail_shockwave", null);
+                        CombatHandler.applyDamage(boss, h, BossMechanics.HUEY_SHOCKWAVE_MIN
+                                + h.getRandom().nextInt(BossMechanics.HUEY_SHOCKWAVE_MAX - BossMechanics.HUEY_SHOCKWAVE_MIN + 1));
+                    }
+                });
+            }
+        }
+
+        private void spawnTail(DataBossEntity boss, ServerPlayerEntity target) {
+            Vec3d c = boss.getPos();
+            double a = boss.getRandom().nextBoolean() ? 0 : Math.PI;
+            tail = BossFx.spawnMinion(boss, BossMechanics.HUEYCOATL_TAIL,
+                    BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 5, c.z + Math.sin(a) * 5, c.y), null);
+            if (tail != null) {
+                MinionRules.set(tail, new MinionRules.Rule() {
+                    @Override
+                    public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType t, int d) {
+                        com.runecraft.osrs.EquipmentStats g = com.runecraft.combat.HitCalcBridge.gearStats(p);
+                        boolean crushBest = g.crushAttack() > g.stabAttack() && g.crushAttack() > g.slashAttack()
+                                && g.crushAttack() > g.magicAttack() && g.crushAttack() > g.rangedAttack();
+                        return BossMechanics.hueyTailDamage(d, crushBest);
+                    }
+                });
+            }
+        }
+
+        @Override
+        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+            if (stage == 0) {
+                spawnSegments(boss);
+            }
+            if (stage == BODY) {
+                segments.removeIf(m -> !m.isAlive());
+                if (segments.isEmpty()) {
+                    stage = HEAD;
+                    BossFx.say(boss, "The Hueycoatl's tail withdraws: the path to the summit is open!");
+                }
+            }
+            if (stage == HEAD || stage == TAIL || stage == FINAL) {
+                if (--seerTimer <= 0) {
+                    seerTimer = BossMechanics.HUEY_SEER_CHARGE_TICKS;
+                    seerCheck(boss);
+                }
+            }
+            if (stage == HEAD && percent(boss) <= 50) {
+                stage = TAIL;
+                shockTimer = BossMechanics.HUEY_TAIL_SWAP_TICKS;
+                spawnTail(boss, target);
+                BossFx.say(boss, "The Hueycoatl shields herself and her tail bursts from the cave!");
+            }
+            if (stage == TAIL) {
+                if (tail == null || !tail.isAlive()) {
+                    tail = null;
+                    stage = FINAL;
+                    shockTimer = BossMechanics.HUEY_FINAL_SHOCKWAVE_TICKS;
+                    BossFx.say(boss, "The tail breaks! The Hueycoatl is exposed once more.");
+                } else if (--shockTimer <= 0 && target != null) {
+                    // The tail changes sides and slams out a shockwave.
+                    shockTimer = BossMechanics.HUEY_TAIL_SWAP_TICKS;
+                    Vec3d c = boss.getPos();
+                    Vec3d now0 = tail.getPos();
+                    tail.requestTeleport(2 * c.x - now0.x, now0.y, 2 * c.z - now0.z);
+                    shockwave(boss, target);
+                }
+            }
+            if (stage == FINAL && target != null && --shockTimer <= 0) {
+                shockTimer = BossMechanics.HUEY_FINAL_SHOCKWAVE_TICKS;
+                shockwave(boss, target);
+            }
+            if (lit) {
+                BossFx.ring(BossFx.world(boss), boss.getPos(), 2.5, ParticleTypes.FLAME);
+            }
+        }
+
+        @Override
+        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+            segments.forEach(MobEntity::discard);
+            segments.clear();
+            if (tail != null) {
+                tail.discard();
+            }
+        }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            onDeath(boss, null);
+        }
+    }
+
+    /**
+     * Self-test (boss:hueycoatl_phases): the head can't be harmed while her body parts stand; with them down she is; a
+     * team of three praying all three protections lights the braziers.
+     */
+    static String selfTestHueycoatl(DataBossEntity boss, ServerPlayerEntity p) {
+        if (!(boss.script() instanceof Hueycoatl h)) {
+            throw new IllegalStateException("the Hueycoatl has no Hueycoatl script");
+        }
+        h.gameTick(boss, com.runecraft.action.ActionManager.gameTick());
+        if (h.segments.size() != BossMechanics.HUEY_BODY_SEGMENTS) {
+            throw new IllegalStateException(h.segments.size() + " body parts, expected " + BossMechanics.HUEY_BODY_SEGMENTS);
+        }
+        if (h.isVulnerable(boss)) {
+            throw new IllegalStateException("the head is vulnerable while her body parts stand");
+        }
+        h.segments.forEach(m -> m.setHealth(0f));
+        h.gameTick(boss, com.runecraft.action.ActionManager.gameTick());
+        if (!h.isVulnerable(boss)) {
+            throw new IllegalStateException("the head is still protected with every body part down");
+        }
+        h.seerCheck(boss);
+        boolean soloLit = h.lit;
+        return "body parts block the head, then open it; solo braziers lit: " + soloLit;
     }
 
     /**

@@ -68,6 +68,9 @@ public final class BossesHooks implements ModuleHooks {
         AwakenedService.init();
         DoomDelveService.init();
         BossScripts.register("the_hueycoatl", EncounterScripts.Hueycoatl::new);
+        // Moons of Peril (zeah module bosses): flat armour and the Eclipse Moon's clones.
+        BossScripts.register("eclipse_moon", MoonScripts.EclipseMoon::new);
+        BossScripts.register("blue_moon", MoonScripts.BlueMoon::new);
         BossScripts.register("branda_the_fire_queen", EncounterScripts.RoyalTitans::new);
         MinionRules.register();
         BossScripts.register("yama", ModernScripts.Yama::new);

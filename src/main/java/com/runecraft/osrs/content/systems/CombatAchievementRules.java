@@ -24,6 +24,8 @@ import java.util.Set;
  *
  * <ul>
  *   <li>{@code t<M:SS}, {@code t<=M:SS} (or {@code Nt} in game ticks): fight/raid/run time.</li>
+ *   <li>{@code onlydmg=a,b}: every damaging hit was one of these attacks (or attackers, by name), with the same extra names
+ *       as {@code nodmg}.</li>
  *   <li>{@code nodmg}: no damage at all; {@code nodmg=a,b}: no damage from these attacks. Besides boss attack names:
  *       {@code boss} (anything the target itself did), {@code other} (minions, bodyguards, other monsters),
  *       {@code melee} (any melee-style hit), {@code bossmelee}, {@code offprayer} (hits without the matching protection
@@ -313,6 +315,9 @@ public final class CombatAchievementRules {
             case "t" -> compare(m.ticks, op, parseTime(v));
             case "nodmg" -> op.isEmpty() ? !m.damaged
                     : m.taken.stream().filter(h -> h.damage() > 0).noneMatch(h -> list(v, ",").stream().anyMatch(it -> hitMatches(h, it)));
+            // Every damaging hit was one of these attacks (or came from one of these attackers, by name).
+            case "onlydmg" -> m.taken.stream().filter(h -> h.damage() > 0)
+                    .allMatch(h -> list(v, ",").stream().anyMatch(it -> hitMatches(h, it) || matches(it, h.attacker())));
             case "prayed" -> !m.damagedUnprotected;
             case "noprayloss" -> !m.prayerLost;
             case "style" -> !m.styles.isEmpty() && m.styles.stream()
@@ -514,7 +519,7 @@ public final class CombatAchievementRules {
      */
     private static final String TABLE = """
             7;RULE;abyssal_sire;1;nodmg=miasma,hazard
-            8;RULE;abyssal_sire;1;nodmg=miasma,hazard,mechanic,offprayer
+            8;RULE;abyssal_sire;1;nodmg=miasma,hazard,tentacle,explosion,mechanic,offprayer
             137;RULE;alchemical_hydra;1;nodmg=poison_pool,hazard
             138;RULE;alchemical_hydra;1;nodmg=lightning
             139;RULE;alchemical_hydra;1;nodmg=fire_wall
@@ -895,6 +900,14 @@ public final class CombatAchievementRules {
             481;RULE;phantom_muspah;1;flag=muspah_surrounded
             482;RULE;phantom_muspah;1;flag=muspah_three_drains
             564;RULE;araxxor;1;count>=6:araxxor_eggs_destroyed
+            566;RULE;araxxor;1;flag=araxyte_betrayal
+            526;RULE;eclipse_moon;1;noflag=eclipse_direct_hit
+            531;WINDOW;MOONS;3;t<=30:00 fromstart distinct onlydmg=spear_thrust,shield_bash,atlatl_dart,macuahuitl_flurry
+            572;RULE;the_hueycoatl;1;flag=huey_vulnerable_kill
+            575;RULE;the_hueycoatl;1;wear=hueycoatl_hide_coif,hueycoatl_hide_body || wear=hueycoatl_hide_coif,hueycoatl_hide_chaps || wear=hueycoatl_hide_coif,hueycoatl_hide_vambraces || wear=hueycoatl_hide_body,hueycoatl_hide_chaps || wear=hueycoatl_hide_body,hueycoatl_hide_vambraces || wear=hueycoatl_hide_chaps,hueycoatl_hide_vambraces
+            188;RULE;the_nightmare;1;nodmg=grasping_claws,surge,parasite_burst,offprayer noflag=nightmare_spored
+            403;RULE;phosanis_nightmare;1;onlydmg=husk,power_blast,weakened_parasite_burst noflag=nightmare_spored noflag=phosani_sleepwalker_reached
+            407;RULE;phosanis_nightmare;1;noflag=phosani_prayer_disabled
             """;
 
     private static final Map<Integer, Spec> SPECS = new LinkedHashMap<>();
