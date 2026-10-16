@@ -126,6 +126,12 @@ final class ClassicScripts {
         protected String creditAs() {
             return "kalphite_queen";
         }
+
+        /** A fresh form: Defence lowered on the grounded form no longer counts for "Chitin Penetrator". */
+        @Override
+        public void onSpawn(DataBossEntity boss) {
+            CombatAchievementService.unflagNear(boss, CombatAchievements.FLAG_DEFENCE_LOWERED);
+        }
     }
 
     /** Dagannoth Rex brings his brothers: Prime and Supreme spawn alongside him. */

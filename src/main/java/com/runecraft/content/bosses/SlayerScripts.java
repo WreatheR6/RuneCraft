@@ -709,6 +709,15 @@ final class SlayerScripts {
             araxytes.clear();
         }
 
+        /** "Perfect Araxxor 2": no damage on it once it has enraged. */
+        @Override
+        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            if (boss.phase() >= 0 && damage > 0 && attacker != null) {
+                CombatAchievementService.flag(attacker, CombatAchievements.FLAG_ARAXXOR_ENRAGE_HIT);
+            }
+            return damage;
+        }
+
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
             araxytes.forEach(MobEntity::discard);

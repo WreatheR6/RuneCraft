@@ -39,6 +39,9 @@ public class InfernoSession extends TzHaarSession {
     private long zukSpawnedAt = -1;
     private long setTimer;
     private boolean zukDead;
+    /** "Playing with Jads": when the first of wave 68's JalTok-Jads died, and whether the wave has been judged. */
+    private long firstJadDeath = -1;
+    private boolean jadsJudged;
 
     public InfernoSession(int id, int slot, ServerWorld world, String variant) {
         super(Minigame.INFERNO, id, slot, world, variant);
@@ -143,6 +146,12 @@ public class InfernoSession extends TzHaarSession {
             zukPhase();
             healers();
             return;
+        }
+        if (wave == 68 && firstJadDeath >= 0 && !jadsJudged && mobsAlive() == 0) {
+            jadsJudged = true;
+            if (ticks - firstJadDeath <= 50) { // 30 seconds
+                caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_JADS_QUICK);
+            }
         }
         super.gameTick();
         nibblers();
@@ -313,6 +322,11 @@ public class InfernoSession extends TzHaarSession {
                 end(true);
             }
             case TzHaarWaves.JAL_MEJRAH, TzHaarWaves.JAL_IMKOT, TzHaarWaves.JAL_XIL -> fallen.add(creatureId);
+            case TzHaarWaves.JALTOK_JAD -> {
+                if (wave == 68 && firstJadDeath < 0) {
+                    firstJadDeath = ticks;
+                }
+            }
             default -> {
             }
         }

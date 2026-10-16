@@ -248,7 +248,8 @@ public final class CombatHooks {
         }
     }
 
-    static void hurt(ServerPlayerEntity p, LivingEntity attacker, int damage) {
+    /** Tells the hurt listeners (Vengeance, recoil, charges...) that a monster's attack damaged a player. */
+    public static void hurt(ServerPlayerEntity p, LivingEntity attacker, int damage) {
         for (PlayerHurtListener l : HURT) {
             l.onHurt(p, attacker, damage);
         }

@@ -214,6 +214,10 @@ public final class Mechanics {
         damage = mob.onHitPlayer(target, damage, a.style());
         com.runecraft.combat.CombatHooks.nameAttack(a.name(), a.style());
         int dealt = CombatHandler.applyDamage(mob, target, damage);
+        if (dealt > 0) {
+            // As for regular monster hits: Vengeance, rings of recoil and hit-taken charges react to scripted attacks too.
+            com.runecraft.combat.CombatHooks.hurt(target, mob, dealt);
+        }
         long tick = ActionManager.gameTick();
         switch (a.special()) {
             case POISON -> {

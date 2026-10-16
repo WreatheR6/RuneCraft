@@ -79,6 +79,12 @@ public final class CombatAchievementService {
         String target;
         /** Where the player stood last tick (tiles walked). */
         Vec3d pos;
+        /** Fights: the creature first engaged and where it stood then ("without the boss ever moving"). */
+        LivingEntity targetEntity;
+        Vec3d targetStart;
+        /** Fights: the game tick of the player's latest attack still to be compared with the target's attack tick, and on whom. */
+        long pendingAttackTick = -1;
+        int pendingAttackMob;
 
         Tracker(String key, long now) {
             this.key = key;
@@ -87,7 +93,7 @@ public final class CombatAchievementService {
         }
 
         boolean fight() {
-            return !key.startsWith("mg:") && !key.equals("raid") && !key.startsWith("delve:");
+            return !key.startsWith("mg:") && !key.equals("raid") && !key.startsWith("delve:") && !key.startsWith("run:");
         }
     }
 
@@ -107,6 +113,18 @@ public final class CombatAchievementService {
     private static final Map<UUID, Tracker> RUNS = new HashMap<>();
     /** Doom of Mokhaiotl delve runs: from the delve 1 fight on, judged at every level completed. */
     private static final Map<UUID, Tracker> DELVES = new HashMap<>();
+    /** Barrows runs: from the first brother fought to the chest being looted (in memory: a relog starts a new one). */
+    private static final Map<UUID, Tracker> BARROWS = new HashMap<>();
+    /** A Barrows run with no brother fought for this long (30 minutes, approx) is dropped. */
+    private static final long BARROWS_RUN_TIMEOUT_TICKS = 3000;
+    /** Game tick of each monster's latest attack (keyed by entity id), for "attack on the same tick" conditions. */
+    private static final Map<Integer, Long> LAST_ATTACK_TICK = new HashMap<>();
+    /** Attack key of the latest damaging hit each player took (what a Vengeance recoil reflects). */
+    private static final Map<UUID, String> LAST_HIT = new HashMap<>();
+    /** Recent crossbow/ballista hits on tormented demons per player: {entity id, game tick}. */
+    private static final Map<UUID, List<long[]>> TD_HITS = new HashMap<>();
+    /** "Rapid Reload": three demons within 3 seconds (5 game ticks). */
+    private static final int RAPID_RELOAD_TICKS = 5;
     private static final Map<UUID, Map<String, Streak>> STREAKS = new HashMap<>();
     private static final Map<UUID, Map<String, List<Kill>>> WINDOWS = new HashMap<>();
     private static final Map<UUID, Map<String, List<Long>>> DURATIONS = new HashMap<>();
@@ -183,6 +201,11 @@ public final class CombatAchievementService {
         }
     }
 
+    /** Attack key of the latest damaging hit the player took ("mechanic" when it had no name). */
+    public static String lastHitAttack(ServerPlayerEntity p) {
+        return LAST_HIT.getOrDefault(p.getUuid(), "mechanic");
+    }
+
     /** The last attack of each monster, for "the same attack twice in a row" conditions (keyed by entity id). */
     private static final Map<Integer, String> LAST_ATTACK = new HashMap<>();
 
@@ -198,6 +221,10 @@ public final class CombatAchievementService {
         String prev = LAST_ATTACK.put(mob.getId(), key);
         if (LAST_ATTACK.size() > 512) {
             LAST_ATTACK.clear();
+        }
+        LAST_ATTACK_TICK.put(mob.getId(), SysTicks.now());
+        if (LAST_ATTACK_TICK.size() > 512) {
+            LAST_ATTACK_TICK.clear();
         }
         String fight = fightKey(mob);
         if (target != null) {
@@ -263,6 +290,17 @@ public final class CombatAchievementService {
             return null;
         }
         long now = SysTicks.now();
+        if (key.equals("barrows_brother")) {
+            Tracker run = BARROWS.get(p.getUuid());
+            if (run == null) {
+                run = new Tracker(CombatAchievements.BARROWS_RUN, now);
+                run.target = key;
+                run.kcAtStart = Players.data(p).killCount("barrows_chests");
+                start(p, run);
+                BARROWS.put(p.getUuid(), run);
+            }
+            run.last = now;
+        }
         Tracker f = FIGHTS.get(p.getUuid());
         if (f != null && !f.key.equals(key) && !f.key.startsWith("kill:")) {
             // A boss fight carries on while its minions, bodyguards or spawns join in.
@@ -273,6 +311,8 @@ public final class CombatAchievementService {
         if (f == null || !f.key.equals(key)) {
             f = new Tracker(key, now);
             f.kcAtStart = bossKc(p, key);
+            f.targetEntity = other;
+            f.targetStart = other.getPos();
             start(p, f);
             for (Kill k : RECENT.getOrDefault(p.getUuid(), List.of())) {
                 if (now - k.end() <= CombatAchievements.FIGHT_TIMEOUT_TICKS) {
@@ -307,6 +347,9 @@ public final class CombatAchievementService {
     private static void start(ServerPlayerEntity p, Tracker t) {
         PlayerData d = Players.data(p);
         t.prayer = d.prayerPoints();
+        if (t.prayer > 0) {
+            t.m.flags.add(CombatAchievements.FLAG_HAD_PRAYER);
+        }
         t.health = p.getHealth();
         t.m.maxHp = (int) Math.ceil(p.getHealth());
         t.m.minHp = t.m.maxHp;
@@ -376,6 +419,11 @@ public final class CombatAchievementService {
             if (damage > 0) {
                 f.m.targetHits++;
             }
+            f.pendingAttackTick = SysTicks.now();
+            f.pendingAttackMob = target.getId();
+            if (damage > 0 && f.key.equals("kill:tormented demon") && (weapon.contains("crossbow") || weapon.contains("ballista"))) {
+                rapidReload(p, f, target);
+            }
         }
         Tracker run = RUNS.get(p.getUuid());
         if (run != null) {
@@ -384,6 +432,21 @@ public final class CombatAchievementService {
         Tracker delve = DELVES.get(p.getUuid());
         if (delve != null && delve.target.equals(fightKey(target))) {
             record(delve.m, type, weapon, spell, spec);
+        }
+    }
+
+    /** "Rapid Reload": a damaging crossbow/ballista hit on a tormented demon; three different demons within 3 seconds flag the fight. */
+    private static void rapidReload(ServerPlayerEntity p, Tracker f, LivingEntity target) {
+        long now = SysTicks.now();
+        List<long[]> hits = TD_HITS.computeIfAbsent(p.getUuid(), u -> new ArrayList<>());
+        hits.removeIf(h -> now - h[1] >= RAPID_RELOAD_TICKS);
+        hits.add(new long[]{target.getId(), now});
+        Set<Long> demons = new HashSet<>();
+        for (long[] h : hits) {
+            demons.add(h[0]);
+        }
+        if (demons.size() >= 3) {
+            f.m.flags.add(CombatAchievements.FLAG_RAPID_RELOAD);
         }
     }
 
@@ -406,6 +469,9 @@ public final class CombatAchievementService {
         String attackerKey = fightKey(attacker);
         String attackerName = nameOf(attacker);
         boolean prayed = protectedFrom(p, style);
+        if (damage > 0) {
+            LAST_HIT.put(p.getUuid(), CombatAchievementRules.attackKey(attack));
+        }
         for (Tracker t : trackers(p)) {
             boolean fromTarget = t.fight() ? t.key.equals(attackerKey) : t.target != null && t.target.equals(attackerKey);
             if (attacker != null) {
@@ -435,6 +501,10 @@ public final class CombatAchievementService {
         if (d != null) {
             list.add(d);
         }
+        Tracker b = BARROWS.get(p.getUuid());
+        if (b != null) {
+            list.add(b);
+        }
         return list;
     }
 
@@ -445,6 +515,7 @@ public final class CombatAchievementService {
             FIGHTS.remove(p.getUuid());
             STREAKS.remove(p.getUuid());
             DELVES.remove(p.getUuid());
+            BARROWS.remove(p.getUuid());
             return;
         }
         Tracker f = FIGHTS.get(p.getUuid());
@@ -452,7 +523,22 @@ public final class CombatAchievementService {
             FIGHTS.remove(p.getUuid());
             f = null;
         }
+        if (f != null) {
+            tickFight(f, tick);
+        }
         tickRun(p);
+        Tracker barrows = BARROWS.get(p.getUuid());
+        if (barrows != null && Players.data(p).killCount("barrows_chests") > barrows.kcAtStart) {
+            BARROWS.remove(p.getUuid());
+            completeRun(p, barrows);
+        } else if (barrows != null && tick - barrows.last > BARROWS_RUN_TIMEOUT_TICKS) {
+            BARROWS.remove(p.getUuid()); // an abandoned run: the next brother fought starts a new one
+        }
+        if (com.runecraft.combat.PoisonService.isVenomImmune(p, tick) || com.runecraft.combat.PoisonService.isPoisonImmune(p, tick)) {
+            for (Tracker t : trackers(p)) {
+                t.m.flags.add(CombatAchievements.FLAG_TOXIN_IMMUNE);
+            }
+        }
         List<Tracker> active = trackers(p);
         if (!active.isEmpty()) {
             Snapshot s = snapshot(p);
@@ -471,6 +557,24 @@ public final class CombatAchievementService {
         checkStreakRange(p);
         if ((tick + p.getId()) % 20 == 0) {
             checkKillCounts(p);
+        }
+    }
+
+    /**
+     * Per-tick fight checks: an attack from the previous tick that the target didn't answer on the same tick ("Mirror Image"),
+     * and the target having moved more than a tile (two blocks) from where the fight started.
+     */
+    private static void tickFight(Tracker f, long tick) {
+        if (f.pendingAttackTick >= 0 && tick > f.pendingAttackTick) {
+            Long at = LAST_ATTACK_TICK.get(f.pendingAttackMob);
+            if (at == null || at != f.pendingAttackTick) {
+                f.m.flags.add(CombatAchievements.FLAG_OFF_BEAT);
+            }
+            f.pendingAttackTick = -1;
+        }
+        LivingEntity target = f.targetEntity;
+        if (target != null && target.isAlive() && f.targetStart != null && target.getPos().squaredDistanceTo(f.targetStart) > 4.0) {
+            f.m.flags.add(CombatAchievements.FLAG_TARGET_MOVED);
         }
     }
 
@@ -541,6 +645,9 @@ public final class CombatAchievementService {
             m.prayerRestored = true;
         }
         t.prayer = s.prayer();
+        if (s.prayer() > 0) {
+            m.flags.add(CombatAchievements.FLAG_HAD_PRAYER);
+        }
         if (t.food != null) {
             for (Map.Entry<String, Integer> e : t.food.entrySet()) {
                 if (s.food().getOrDefault(e.getKey(), 0) < e.getValue()) {

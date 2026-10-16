@@ -745,6 +745,10 @@ final class EncounterScripts {
 
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            if (eldricAlive() && attacker != null) {
+                // "One by one": Branda can't fall first, so attacking her while Eldric stands is attacking both at once.
+                CombatAchievementService.flag(attacker, CombatAchievements.FLAG_TITANS_BOTH);
+            }
             if (eldricAlive() && damage >= boss.getHealth()) {
                 Msg.action(attacker, "Branda refuses to fall while her brother still stands!");
                 return Math.max(0, (int) Math.ceil(boss.getHealth()) - 1);

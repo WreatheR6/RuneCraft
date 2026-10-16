@@ -33,7 +33,12 @@ public final class SysModifier implements CombatHooks.PlayerAttackModifier {
         SysState.SysPlayer sp = SysState.of(player);
         sp.lastCombatTick = ActionManager.gameTick();
         sp.lastTargetId = target.getId();
+        int defence = target instanceof ServerPlayerEntity ? -1 : SysCombat.drainedStatLevel(target, com.runecraft.osrs.Skill.DEFENCE);
         SpecialAttackService.afterHit(player, target, type, dealt);
+        if (defence >= 0 && SysCombat.drainedStatLevel(target, com.runecraft.osrs.Skill.DEFENCE) < defence) {
+            // "Chitin Penetrator": the target's Defence was last lowered by this player.
+            CombatAchievementService.flag(player, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_DEFENCE_LOWERED);
+        }
         SpellService.corruptOnHit(player, target, dealt);
     }
 }

@@ -276,6 +276,28 @@ public final class CombatAchievements {
     public static final String FLAG_NEX_COUGHING = "nex_coughing";
     /** A tormented demon's killing blow landed while its fire shield was down ("Through Fire and Flames"). */
     public static final String FLAG_TD_SHIELD_DOWN = "td_shield_down";
+    /** Prefix of the flag a Vengeance recoil sets, followed by the attack key of the hit it reflected ("Demonic Rebound"). */
+    public static final String FLAG_VENGEANCE_ON = "venge:";
+    /** The player attacked the target on a game tick it didn't attack them ("Mirror Image" fails). */
+    public static final String FLAG_OFF_BEAT = "off_beat";
+    /** The fight's target moved more than a tile from where the fight started ("Swimming in Venom" fails). */
+    public static final String FLAG_TARGET_MOVED = "target_moved";
+    /** Three different tormented demons hit within 3 seconds with a crossbow or ballista ("Rapid Reload"). */
+    public static final String FLAG_RAPID_RELOAD = "rapid_reload";
+    /** The player's own special attack lowered the target's Defence ("Chitin Penetrator"). */
+    public static final String FLAG_DEFENCE_LOWERED = "defence_lowered";
+    /** The player had poison or venom immunity at some point ("Let it seep in" fails). */
+    public static final String FLAG_TOXIN_IMMUNE = "toxin_immune";
+    /** The player had any prayer points at some point ("Faithless Crypt Run" fails). */
+    public static final String FLAG_HAD_PRAYER = "had_prayer";
+    /** Araxxor took damage during its enrage phase ("Perfect Araxxor 2" fails). */
+    public static final String FLAG_ARAXXOR_ENRAGE_HIT = "araxxor_enrage_hit";
+    /** Branda was attacked while Eldric still stood ("One by one" fails). */
+    public static final String FLAG_TITANS_BOTH = "titans_both";
+    /** Inferno wave 68 was cleared within 30 seconds of the first JalTok-Jad dying ("Playing with Jads"). */
+    public static final String FLAG_JADS_QUICK = "jads_quick";
+    /** Barrows runs: the run tracker's key (from the first brother fought to the chest). */
+    public static final String BARROWS_RUN = "run:barrows";
     /** A fight is forgotten after this many game ticks without either side attacking. */
     public static final int FIGHT_TIMEOUT_TICKS = 100;
 
