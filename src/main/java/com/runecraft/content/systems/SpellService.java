@@ -68,6 +68,18 @@ public final class SpellService {
         COMBO.put("mud_rune", new String[]{"water", "earth"});
         COMBO.put("steam_rune", new String[]{"water", "fire"});
         COMBO.put("lava_rune", new String[]{"earth", "fire"});
+        // An aether rune counts as one cosmic and one soul rune (OSRS Wiki, Aether rune).
+        COMBO.put("aether_rune", new String[]{"cosmic", "soul"});
+    }
+
+    /** Whether a combination rune can stand in for this base rune (the four elements, cosmic and soul). */
+    private static boolean combinable(String base) {
+        for (String[] parts : COMBO.values()) {
+            if (parts[0].equals(base) || parts[1].equals(base)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private SpellService() {
@@ -114,7 +126,7 @@ public final class SpellService {
                 remove.merge(rune, use, Integer::sum);
             }
             if (use < e.getValue()) {
-                if (!elemental) {
+                if (!combinable(element)) {
                     return null;
                 }
                 elementNeed.put(element, e.getValue() - use);

@@ -134,7 +134,10 @@ public final class Gathering {
 
     /** Invisible Mining boost for success rolls (celestial ring, +4); set by the skilling module. */
     public static java.util.function.ToIntFunction<ServerPlayerEntity> miningBoost = p -> 0;
-    /** Whether a mining enhancer gives an extra ore (charged celestial ring, 1/10); set by the skilling module. */
+    /**
+     * Called once per ore mined: whether a mining enhancer gives an extra ore (a charged celestial ring uses a charge on
+     * every ore and gives an extra one 1/10 of the time); set by the skilling module.
+     */
     public static java.util.function.BiPredicate<ServerPlayerEntity, String> extraOre = (p, ore) -> false;
 
     public static void mine(ServerPlayerEntity player, BlockPos pos, Rock rock) {

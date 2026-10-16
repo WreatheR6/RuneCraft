@@ -121,6 +121,11 @@ public final class SkillingHooks implements ModuleHooks {
         });
     }
 
+    /** Empties the farming patch at {@code pos}: its saved crop and the decoration above it (for the self-test). */
+    public static void clearPatch(net.minecraft.server.world.ServerWorld world, net.minecraft.util.math.BlockPos pos) {
+        FarmingHooks.forget(world, pos);
+    }
+
     /** Prospector kit Mining XP bonus in percent (0.4/0.8/0.6/0.2, +0.5 for the full set = 2.5%). */
     static double prospectorBonus(ServerPlayerEntity player) {
         double pct = 0;

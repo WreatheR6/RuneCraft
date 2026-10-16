@@ -733,6 +733,14 @@ final class EasternMorytania {
         for (int[] h : houses) {
             k.house(h[0], h[1], h[2], h[3], i++ % 3 == 0 ? 3 : 2, DARKMEYER, sides[h[4]]);
         }
+        // The daeyalt essence mine (OSRS: a cave below the city, stairs at 3632,3340). Approx: its three essence rocks
+        // stand in a paved yard between the south-east houses, where the skilling module's "daeyalt_essence_mine"
+        // place puts Noranna Tytanin. The rocks are 4 blocks apart in a row so each gets its own active turn
+        // (RunecraftData.daeyaltPhase).
+        k.floor(3633, 3345, 3640, 3350, "minecraft:polished_deepslate");
+        for (int rx = bx(3635); rx <= bx(3639); rx += 4) {
+            k.set(rx, g, bz(3347) - 1, "runecraft:daeyalt_essence_rock");
+        }
         // Arboretum of dead trees and iron railings.
         k.floor(3597, 3345, 3625, 3350, "minecraft:crimson_nylium");
         for (int tx = 3599; tx <= 3623; tx += 6) {

@@ -773,6 +773,11 @@ final class FarmingHooks {
         state.remove("patches", key);
     }
 
+    /** Forgets whatever grows in the patch at {@code pos} and removes its decoration (self-test clean-up). */
+    static void forget(ServerWorld world, BlockPos pos) {
+        clear(world, pos, null, SkillingState.get(world.getServer()), SkillingUtil.key(world, pos));
+    }
+
     // ------------------------------------------------------------------ visuals
 
     /** stage: 0 growing, 1 grown, 2 stump. */

@@ -306,8 +306,10 @@ public final class FarmingData extends SkillingPart {
             case "flax" -> new int[]{140, 194};
             case "hemp" -> new int[]{120, 178};
             case "cotton" -> new int[]{82, 142};
-            // Coral: at least 4, "a decent chance of over 16 at 99" (wiki; chance values approx).
-            case "elkhorn", "pillar", "umbral" -> new int[]{140, 200}; // approx
+            // Coral (wiki Farming yield calculator low/high, July 2026 dump; 4 lives, see CORAL_LIVES).
+            case "elkhorn" -> new int[]{100, 205};
+            case "pillar" -> new int[]{48, 205};
+            case "umbral" -> new int[]{-110, 205};
             default -> null;
         };
     }
@@ -319,6 +321,8 @@ public final class FarmingData extends SkillingPart {
 
     /** Coral nurseries always give at least four coral (OSRS Wiki, Coral nursery). */
     public static final int CORAL_MIN_YIELD = 4;
+    /** Coral has 4 harvest lives, which compost cannot raise (OSRS Wiki, Elkhorn/Pillar/Umbral frag). */
+    public static final int CORAL_LIVES = 4;
 
     /** Most belladonna a harvest can give: 6 at level 63, rising to 18 at 99 (OSRS; the curve in between approx.). */
     public static int belladonnaMax(int level) {
@@ -333,8 +337,9 @@ public final class FarmingData extends SkillingPart {
      * Produce from harvesting a whole patch (Harvest.ALL crops). Flowers give a fixed amount (woad 3
      * leaves; limpwurt 3 roots plus 0..floor((level - 1) / 10) more) and ignore compost. Hops, seaweed
      * and grapes use harvest lives (3 plus compost; {@code bonus} is the save-chance item bonus, e.g.
-     * magic secateurs 0.10 and attas 0.05). Bittercap mushrooms give 6 (more only with attas),
-     * belladonna 6 to {@link #belladonnaMax}; other crops min..max plus one per compost level.
+     * magic secateurs 0.10 and attas 0.05); coral uses {@link #CORAL_LIVES} fixed lives. Bittercap
+     * mushrooms give 6 (more only with attas), belladonna 6 to {@link #belladonnaMax}; other crops
+     * min..max plus one per compost level.
      * {@code random.applyAsInt(n)} must return 0..n-1.
      */
     public static int harvestYield(Crop c, int level, int compost, double bonus, java.util.function.IntUnaryOperator random) {
@@ -353,10 +358,9 @@ public final class FarmingData extends SkillingPart {
         }
         int[] lives = harvestChance(c);
         if (lives != null && c.patch() == Patch.CORAL) {
-            // Coral can't be composted: three lives plus one guaranteed coral (minimum 4).
+            // Coral can't be composted: 4 fixed harvest lives (so at least 4 coral).
             int chance = com.runecraft.osrs.FarmingYield.saveChance(lives[0], lives[1], level, bonus, 0);
-            return CORAL_MIN_YIELD - com.runecraft.osrs.FarmingYield.lives(0)
-                    + com.runecraft.osrs.FarmingYield.harvest(com.runecraft.osrs.FarmingYield.lives(0), chance, random);
+            return com.runecraft.osrs.FarmingYield.harvest(CORAL_LIVES, chance, random);
         }
         if (lives != null) {
             int chance = com.runecraft.osrs.FarmingYield.saveChance(lives[0], lives[1], level, bonus, 0);
