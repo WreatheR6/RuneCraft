@@ -704,6 +704,7 @@ public final class CombatAchievementRules {
             421;RAID;TOA;1;level>=150 t<18:00
             422;RAID;TOA;1;level>=300 t<20:00
             423;RAID;TOA;1;level>=300 size=8 t<18:00
+            424;RAID;TOA;1;level>=150 deathless noflag=toa_outside_supply
             425;RAID;TOA;1;nospirit deathless
             426;RAID;TOA;1;inv=ON_A_DIET,DEHYDRATION deathless
             428;RULE;zebak;1;style=melee nodeath

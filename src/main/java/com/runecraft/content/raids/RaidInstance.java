@@ -695,7 +695,7 @@ public final class RaidInstance {
     void onRoomComplete(RoomLogic logic) {
         RoomDef def = logic.def;
         long secs = roomTicks() * 6 / 10;
-        if (def.kind() != RoomDef.Kind.LOBBY && def.kind() != RoomDef.Kind.REWARD) {
+        if (def.kind() != RoomDef.Kind.LOBBY && def.kind() != RoomDef.Kind.REWARD && def.kind() != RoomDef.Kind.RESOURCE) {
             say(def.name() + " complete! Duration: " + secs / 60 + ":" + String.format("%02d", secs % 60), Formatting.GREEN);
         }
         for (UUID u : party) {
@@ -856,15 +856,18 @@ public final class RaidInstance {
             Msg.game(p, "The storage unit is for your own items. The Helpful Spirit brings supplies after the second and fourth paths.");
             return;
         }
+        if (type == RaidType.COX) {
+            // OSRS: the Chambers hand out no supplies; they come from the resource rooms (scavengers, farming, fishing,
+            // hunting) and raid herblore.
+            Msg.game(p, "The storage unit is for your own items. Gather and brew your supplies in the resource rooms.");
+            return;
+        }
         if (!suppliesTaken.add(p.getUuid())) {
             Msg.game(p, "You have already taken your share of the supplies.");
             return;
         }
         switch (type) {
             case COX -> {
-                Inv.give(p, "saradomin_brew", 3);
-                Inv.give(p, "super_restore", 3);
-                Inv.give(p, "shark", 6);
             }
             case TOB -> {
                 Inv.give(p, "saradomin_brew", 2);
@@ -968,6 +971,7 @@ public final class RaidInstance {
         downed.remove(u);
         RaidManager.unbind(u);
         ToaSupplyService.forget(u);
+        CoxSupplyService.forget(u);
         ServerPlayerEntity p = world.getServer().getPlayerManager().getPlayer(u);
         if (p != null) {
             for (String item : RaidItems.RAID_ONLY_ITEMS) {

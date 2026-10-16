@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/cox_cooking_fire_side",
+    "top": "runecraft:block/module/cox_cooking_fire_top",
+    "bottom": "runecraft:block/module/cox_cooking_fire_bottom"
+  }
+}

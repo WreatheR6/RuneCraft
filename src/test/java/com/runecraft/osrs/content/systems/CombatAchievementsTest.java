@@ -100,7 +100,7 @@ class CombatAchievementsTest {
 
     @Test
     void awakenedAndDelveTasksAreTracked() {
-        assertEquals(588, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
+        assertEquals(589, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
         for (int id : new int[]{490, 499, 508, 517, 610, 611, 612, 616, 617, 618, 619, 621, 622, 623}) {
             assertTrue(CombatAchievements.task("ca_" + id).track() != Track.UNTRACKED, "ca_" + id);
         }

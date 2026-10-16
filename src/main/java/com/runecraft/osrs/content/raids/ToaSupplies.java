@@ -29,6 +29,17 @@ public final class ToaSupplies {
     public static final List<String> ITEMS = List.of(NECTAR, TEARS, AMBROSIA, SILK_DRESSING, CRYSTAL_SCARAB, SMELLING_SALTS,
             ADRENALINE, HONEY_LOCUST);
 
+    /** Combat achievement flag set on the party when anyone eats or drinks something brought into the tomb. */
+    public static final String OUTSIDE_SUPPLY_FLAG = com.runecraft.osrs.content.systems.CombatAchievements.FLAG_TOA_OUTSIDE_SUPPLY;
+
+    /**
+     * Whether a consumable was given inside the tomb (CA 424 "You are not prepared", OSRS: only the Helpful Spirit's
+     * supplies and the honey locusts handed out after a wipe).
+     */
+    public static boolean givenInsideTomb(String id) {
+        return ITEMS.contains(id);
+    }
+
     /** The Helpful Spirit's three bundles. */
     public enum Bundle {
         LIFE("Life", "nectar, tears of Elidinis, silk dressings, blessed crystal scarabs and ambrosia"),

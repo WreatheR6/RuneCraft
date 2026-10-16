@@ -51,3 +51,5 @@ akkhas_shadow	Akkha's Shadow		108	70	100	140	30	100	100	60	120	120	10	60	6
 toa_baboon_brawler	Baboon Brawler	Level 56	56	25	40	40	12	40	40	900	900	900	-60	900	4
 toa_baboon_thrower	Baboon Thrower	Level 56	56	30	40	40	12	40	40	-50	-50	-50	900	900	4
 toa_baboon_mage	Baboon Mage	Level 56	56	20	40	40	12	40	40	900	900	900	900	-50	4
+toa_agile_scarab	Agile Scarab		53	30	60	20	5	30	40	0	0	0	0	0	4
+cox_scavenger_beast	Scavenger beast	Normal	0	30	120	120	45	1	1	0	0	0	0	0	0

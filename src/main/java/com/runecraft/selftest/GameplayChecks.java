@@ -102,6 +102,7 @@ final class GameplayChecks {
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }
+        checks.add(new SelfTest.Check("raid:cox_supplies", g::coxSupplies));
         for (Boss b : ModEntities.BOSS_TYPES.keySet()) {
             checks.add(new SelfTest.Check("boss:" + b.entityId(), () -> g.legacyBoss(b)));
         }
@@ -438,6 +439,22 @@ final class GameplayChecks {
             throw failure("the player is still bound to the raid after it closed");
         }
         return raid.rooms.size() + " rooms, " + rooms + " started, party " + party + " online / " + active + " active";
+    }
+
+    /** CoX raid herblore through the real service: clean, brew, mix an overload and drink (round 29). */
+    private String coxSupplies() {
+        RaidManager.enter(p(), RaidType.COX, c.near(0, 2));
+        RaidInstance raid = RaidManager.of(p());
+        if (raid == null) {
+            throw failure("RaidManager.enter did not start a raid");
+        }
+        try {
+            return com.runecraft.content.raids.CoxSupplyService.selfTest(p());
+        } catch (AssertionError e) {
+            throw failure(e.getMessage());
+        } finally {
+            RaidManager.selfTestClose(raid);
+        }
     }
 
     // ------------------------------------------------------------------ bosses
