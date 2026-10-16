@@ -92,6 +92,9 @@ final class MinigameRewardChecks {
      */
     private String nmzModes() {
         List<String> done = new ArrayList<>();
+        // Dreams only hold the bosses of completed quests; the real player starts with none (the fake player, who isn't
+        // in the session's player list, gets every boss).
+        c.completeQuests(null);
         NightmareZone.Dream practice = new NightmareZone.Dream(NightmareZone.Mode.PRACTICE, true, "nmz_glod");
         MinigameSession s = MinigameManager.selfTestStart(Minigame.NIGHTMARE_ZONE, practice.variant(), p());
         try {
