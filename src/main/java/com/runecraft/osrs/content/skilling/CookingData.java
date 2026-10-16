@@ -58,7 +58,12 @@ public final class CookingData extends SkillingPart {
             new NewFish("yellowfin", "Yellowfin", 79, 155.5, 79, 200.0, 19, 99, 0xD0B030, 160),
             new NewFish("halibut", "Halibut", 83, 195.5, 83, 212.5, 20, 100, 0xA09080, 300),
             new NewFish("bluefin", "Bluefin", 87, 220.5, 87, 215.0, 22, 100, 0x305080, 600),
-            new NewFish("marlin", "Marlin", 91, 265.5, 93, 225.0, 24, 100, 0x3A5AA0, 1200));
+            new NewFish("marlin", "Marlin", 91, 265.5, 93, 225.0, 24, 100, 0x3A5AA0, 1200),
+            // Lantern harpooning squids (OSRS Wiki): swordtip 52 Fishing/55 XP, 56 Cooking/150 XP, heals 15, stops burning
+            // at 91; jumbo 69 Fishing/75 XP, 71 Cooking/180 XP, heals 17, only stops burning at 98 in the Hosidius kitchen
+            // (never on a plain fire or range here).
+            new NewFish("swordtip_squid", "Swordtip squid", 52, 55.0, 56, 150.0, 15, 91, 0xC08A9A, 100),
+            new NewFish("jumbo_squid", "Jumbo squid", 69, 75.0, 71, 180.0, 17, 100, 0xA05A7A, 160));
 
     /**
      * Snails from Mort Myre (OSRS Wiki): Cooking level, XP, heal (middle of the wiki's 5-7, 5-8 and 7-9 ranges) and

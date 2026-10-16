@@ -63,6 +63,8 @@ public final class SeaHooks {
 
     private static final Random RNG = new Random();
     static final String SEA_TAG = "runecraft_sea_creature";
+    /** The one boat paint RuneCraft has (a port task reward). */
+    static final String PAINT = "shark_paint";
 
     static void init() {
         BlockHooks.register("port_salvaging_station", (player, pos, state) ->
@@ -72,6 +74,19 @@ public final class SeaHooks {
             QuestScripts.onTalk(c.id(), (player, npc) -> crewTalk(player, c));
         }
         // Sneak + use your boat with an empty hand: empty its cargo hold into your inventory.
+        // Boat paint (OSRS: a cosmetic colour scheme for your boat): use the paint on one of your boats to repaint its hull.
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+            if (hand != Hand.MAIN_HAND || !(entity instanceof BoatEntity boat) || !PAINT.equals(Inv.idOf(player.getMainHandStack()))) {
+                return ActionResult.PASS;
+            }
+            if (world.isClient() || !(player instanceof ServerPlayerEntity sp) || SailingHooks.boatType(entity) == null) {
+                return ActionResult.PASS;
+            }
+            boat.setVariant(BoatEntity.Type.DARK_OAK); // approx: the shark scheme's dark grey hull
+            player.getMainHandStack().decrement(1);
+            Msg.action(sp, "You paint your boat in the colours of a shark.");
+            return ActionResult.SUCCESS;
+        });
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (hand != Hand.MAIN_HAND || !(entity instanceof BoatEntity) || !player.isSneaking() || !player.getMainHandStack().isEmpty()) {
                 return ActionResult.PASS;
@@ -256,6 +271,19 @@ public final class SeaHooks {
         int crewRepair;
         UUID speedVehicle;
         double speed = 1;
+        /** The cannonball last loaded by hand (plain, chainshot or incendiary): auto-fire and the crew keep firing it. */
+        String ammo;
+    }
+
+    /** The cannonball a player last loaded (null for none); used by the self-test. */
+    public static String loadedAmmo(ServerPlayerEntity player) {
+        Sea s = SEA.get(player.getUuid());
+        return s == null ? null : s.ammo;
+    }
+
+    /** Loads a cannonball type for auto-fire and the crew (self-test and manual fire). */
+    public static void loadAmmo(ServerPlayerEntity player, String item) {
+        SEA.computeIfAbsent(player.getUuid(), k -> new Sea()).ammo = item;
     }
 
     private static final Map<UUID, Sea> SEA = new HashMap<>();
@@ -302,7 +330,7 @@ public final class SeaHooks {
         if (!vehicle.getUuid().equals(s.speedVehicle) || speed != s.speed) {
             s.speedVehicle = vehicle.getUuid();
             s.speed = speed;
-            sendSpeed(player, speed);
+            sendSpeed(player, speed, vehicle.getId());
         }
         crewTick(player, vehicle, type, s);
         Vec3d v = vehicle.getVelocity();
@@ -330,7 +358,7 @@ public final class SeaHooks {
         } else if (s.target != null) {
             Entity e = ((ServerWorld) player.getWorld()).getEntity(s.target);
             if (e instanceof MobEntity mob && mob.isAlive() && mob.distanceTo(player) <= SailingSea.CANNON_RANGE) {
-                fire(player, type, mob, null);
+                fire(player, type, mob, s.ammo);
             } else {
                 s.target = null;
             }
@@ -342,7 +370,7 @@ public final class SeaHooks {
         Sea sea = SEA.get(player.getUuid());
         if (sea != null && sea.speedVehicle != null) {
             sea.speedVehicle = null;
-            sendSpeed(player, 1);
+            sendSpeed(player, 1, -1);
         }
         if (SPAWNED.isEmpty()) {
             return;
@@ -836,10 +864,19 @@ public final class SeaHooks {
      */
     public static int crewFire(ServerPlayerEntity player, String type, MobEntity target, SailingSea.Cannon cannon, SailingCrew.Crewmate c) {
         SailingSea.Ball ball = null;
+        String item = null;
+        // The cannonball you loaded (chainshot and incendiary included) first, then the best plain ball the cannon takes.
+        String loaded = loadedAmmo(player);
+        SailingSea.Ball l = loaded == null ? null : SailingCrew.ballStats(loaded);
+        if (l != null && l.tier() <= cannon.tier() && (takeFromHold(player, type, loaded) || Inv.remove(player, loaded, 1) > 0)) {
+            ball = l;
+            item = loaded;
+        }
         for (int i = SailingSea.BALLS.size() - 1; i >= 0 && ball == null; i--) {
             SailingSea.Ball b = SailingSea.BALLS.get(i);
             if (b.tier() <= cannon.tier() && (takeFromHold(player, type, b.item()) || Inv.remove(player, b.item(), 1) > 0)) {
                 ball = b;
+                item = b.item();
             }
         }
         if (ball == null) {
@@ -855,6 +892,9 @@ public final class SeaHooks {
         int max = SailingCrew.crewMaxHit(SkillingUtil.level(player, Skill.SAILING), cannon, ball, c.privateering());
         boolean hit = sp == null || RNG.nextDouble() < SailingSea.cannonAccuracy(cannon, ball, false, sp.creature);
         int dmg = hit ? RNG.nextInt(max + 1) : 0;
+        if (hit) {
+            special(sp, item);
+        }
         CombatHandler.applyDamage(player, target, dmg);
         if (dmg > 0) {
             XpService.add(player, Skill.SAILING, dmg); // approx: crew shots give the Sailing share of a player's shot
@@ -862,12 +902,27 @@ public final class SeaHooks {
         return dmg;
     }
 
-    private static void sendSpeed(ServerPlayerEntity player, double speed) {
+    /** A chainshot hit delays the creature's next attack; an incendiary hit adds a burn (up to 5). */
+    private static void special(Spawned sp, String item) {
+        SailingCrew.Special special = item == null ? null : SailingCrew.special(item);
+        if (special == null || sp == null) {
+            return;
+        }
+        if (special.chainshot()) {
+            sp.cooldown = Math.min(sp.cooldown, 0) - SailingCrew.CHAINSHOT_TICKS;
+        } else if (sp.burns.size() < SailingCrew.BURN_MAX_STACKS) {
+            sp.burns.add(SailingCrew.BURN_HITS);
+        }
+    }
+
+    /** Sends the hull speed of the boat entity {@code boatId} you ride (-1 and 1: none); the client applies it on water only. */
+    private static void sendSpeed(ServerPlayerEntity player, double speed, int boatId) {
         if (!ServerPlayNetworking.canSend(player, SeaNet.BOAT_SPEED)) {
             return;
         }
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeDouble(speed);
+        buf.writeInt(boatId);
         ServerPlayNetworking.send(player, SeaNet.BOAT_SPEED, buf);
     }
 
@@ -898,6 +953,7 @@ public final class SeaHooks {
         }
         Sea s = SEA.computeIfAbsent(player.getUuid(), k -> new Sea());
         s.target = target.getUuid();
+        s.ammo = ball; // auto-fire and the crew keep firing this cannonball while you carry it
         if (s.cannonCooldown <= 0) {
             fire(player, type, target, ball);
         }
@@ -966,12 +1022,8 @@ public final class SeaHooks {
         int max = SailingSea.cannonMaxHit(SkillingUtil.level(player, Skill.RANGED), cannon, ball, true);
         boolean hit = c == null || RNG.nextDouble() < SailingSea.cannonAccuracy(cannon, ball, true, c);
         int dmg = hit ? RNG.nextInt(max + 1) : 0;
-        if (hit && special != null && sp != null) {
-            if (special.chainshot()) {
-                sp.cooldown = Math.min(sp.cooldown, 0) - SailingCrew.CHAINSHOT_TICKS;
-            } else if (sp.burns.size() < SailingCrew.BURN_MAX_STACKS) {
-                sp.burns.add(SailingCrew.BURN_HITS);
-            }
+        if (hit && special != null) {
+            special(sp, item);
         }
         CombatHandler.applyDamage(player, target, dmg);
         if (dmg > 0) {
@@ -1007,9 +1059,15 @@ public final class SeaHooks {
                         + " on deck.");
             }
             case LOST_CRATE -> {
-                SailingSea.Got g = SailingSea.lostCrate(level, RNG);
+                if (level < SailingSea.CRATE_LEVELS[0]) {
+                    return;
+                }
+                int tier = SailingSea.lostCrateTier(level, RNG);
+                SailingSea.Got g = SailingSea.lostCrateLoot(tier, RNG);
                 SkillingUtil.give(player, g.item(), g.count());
-                Msg.action(player, "You fish a lost crate out of the water: " + g.count() + " x " + SkillingUtil.lower(SkillingUtil.name(g.item())) + ".");
+                XpService.add(player, Skill.SAILING, SailingSea.CRATE_XP[tier]);
+                Msg.action(player, "You fish a lost " + SailingSea.CRATE_NAMES[tier] + " crate out of the water: " + g.count() + " x "
+                        + SkillingUtil.lower(SkillingUtil.name(g.item())) + ".");
             }
             case CASTAWAY -> {
                 if (Inv.has(player, "castaway", 1)) {

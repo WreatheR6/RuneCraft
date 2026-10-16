@@ -214,7 +214,12 @@ class SailingCrewReferenceTest {
         assertEquals(1, cupro.inputs().get("nickel_ore"));
         assertTrue(MiningData.ROCKS.stream().anyMatch(r -> r.blockId().equals("nickel_rock") && r.level() == 74));
         assertTrue(ResourceSites.SITES.stream().anyMatch(s -> s.block().equals("nickel_rock")));
-        assertTrue(ResourceSites.SITES.stream().anyMatch(s -> s.block().equals("rubium_rock")));
+        // Nickel on Deepfin Point, Ynysdail (3) and Grimstone (8); rubium only in the Charred Dungeon, not on the island.
+        for (String[] site : new String[][]{{"deepfin_point_nickel", "9"}, {"ynysdail_nickel", "3"}, {"grimstone_nickel", "8"}}) {
+            assertEquals(Integer.parseInt(site[1]), ResourceSites.SITES.stream().filter(s -> s.id().equals(site[0])).findFirst()
+                    .orElseThrow().tiles().size(), site[0]);
+        }
+        assertFalse(ResourceSites.SITES.stream().anyMatch(s -> s.block().equals("rubium_rock")));
         assertEquals(36, SailingCrew.SHARK_PAINT_RATE);
     }
 }

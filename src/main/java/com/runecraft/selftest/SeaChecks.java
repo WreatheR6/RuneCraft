@@ -1,11 +1,15 @@
 package com.runecraft.selftest;
 
+import com.runecraft.content.skilling.SailingLockboxHooks;
 import com.runecraft.content.skilling.SeaHooks;
 import com.runecraft.osrs.Experience;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.skilling.SailingCrew;
 import com.runecraft.osrs.content.skilling.SailingData;
+import com.runecraft.osrs.content.skilling.SailingLockboxes;
 import com.runecraft.osrs.content.skilling.SailingSea;
+import com.runecraft.osrs.content.skilling.SailingTraining;
+import com.runecraft.osrs.world.StructureDef;
 import com.runecraft.player.Players;
 import com.runecraft.registry.ModBlocks;
 import com.runecraft.util.Inv;
@@ -35,7 +39,103 @@ final class SeaChecks {
         checks.add(new SelfTest.Check("sailing:crew", () -> crew(c)));
         checks.add(new SelfTest.Check("sailing:incendiary", () -> incendiary(c)));
         checks.add(new SelfTest.Check("sailing:wreck_recovery", () -> wreckRecovery(c)));
+        checks.add(new SelfTest.Check("sailing:crew_special_ammo", () -> crewSpecialAmmo(c)));
+        checks.add(new SelfTest.Check("sailing:lockbox", () -> lockbox(c)));
         return checks;
+    }
+
+    /** The crew fire the cannonball you loaded: an incendiary ball from the cargo hold sets the creature alight. */
+    private static String crewSpecialAmmo(TestContext c) {
+        ServerPlayerEntity p = c.player;
+        level(p, Skill.SAILING, 99);
+        level(p, Skill.RANGED, 99);
+        List<String> before = SeaHooks.crewOrder(p);
+        String ammoBefore = SeaHooks.loadedAmmo(p);
+        String ball = "bronze_incendiary_cannonball";
+        SailingCrew.Crewmate jim = SailingCrew.crewmate("jobless_jim");
+        MobEntity mob = null;
+        try {
+            SeaHooks.setCrew(p, new ArrayList<>(List.of("jobless_jim")));
+            SeaHooks.clearHold(p, "skiff");
+            SeaHooks.stockHold(p, "skiff", "bronze_cannonball", 50);
+            SeaHooks.stockHold(p, "skiff", ball, 50);
+            SeaHooks.loadAmmo(p, ball);
+            BlockPos at = c.near(0, -6);
+            SailingSea.SeaCreature shark = SailingSea.creature("bull_shark");
+            if (shark == null) {
+                shark = SailingSea.CREATURES.get(SailingSea.CREATURES.size() - 1);
+            }
+            mob = SeaHooks.spawnCreature(c.world, shark, new Vec3d(at.getX() + 0.5, at.getY(), at.getZ() + 0.5), p);
+            if (mob == null) {
+                throw new SelfTest.Skip("no " + shark.id() + " entity");
+            }
+            int shots = 0;
+            while (mob.isAlive() && SeaHooks.burns(mob) == 0 && shots < 50) {
+                SeaHooks.crewFire(p, "skiff", mob, SailingSea.CANNONS.get(0), jim);
+                shots++;
+            }
+            if (SeaHooks.inHold(p, "skiff", ball) != 50 - shots || SeaHooks.inHold(p, "skiff", "bronze_cannonball") != 50) {
+                throw new AssertionError("crew fired " + (50 - SeaHooks.inHold(p, "skiff", ball)) + " incendiary and "
+                        + (50 - SeaHooks.inHold(p, "skiff", "bronze_cannonball")) + " plain balls in " + shots + " shots");
+            }
+            if (mob.isAlive() && SeaHooks.burns(mob) == 0) {
+                throw new AssertionError(shots + " crew incendiary shots never set the " + shark.name() + " alight");
+            }
+            return "crew fired the loaded incendiary balls, burning after " + shots + " shots";
+        } finally {
+            if (mob != null && mob.isAlive()) {
+                mob.discard();
+            }
+            SeaHooks.clearHold(p, "skiff");
+            SeaHooks.setCrew(p, before);
+            SeaHooks.loadAmmo(p, ammoBefore);
+        }
+    }
+
+    /**
+     * A lost schematic lockbox: locked without its small key, digging on the key's spot finds it, the key opens the
+     * lockbox, and reading the schematic unlocks the dragon cannon at the boat schematics.
+     */
+    private static String lockbox(TestContext c) {
+        ServerPlayerEntity p = c.player;
+        level(p, Skill.SAILING, 99);
+        SailingLockboxes.Lockbox l = SailingLockboxes.byIsland("deepfin_point");
+        SailingTraining.Facility cannon = null;
+        for (SailingTraining.Facility f : SailingSea.FACILITIES) {
+            if (f.id().equals("dragon_cannon")) {
+                cannon = f;
+            }
+        }
+        if (l == null || cannon == null) {
+            throw new AssertionError("no Deepfin Point lockbox or dragon cannon facility");
+        }
+        boolean creative = p.getAbilities().creativeMode;
+        p.getAbilities().creativeMode = false;
+        SailingLockboxHooks.forget(p);
+        try {
+            if (SailingLockboxHooks.missing(p, cannon) == null) {
+                throw new AssertionError("the dragon cannon can be built without its schematic");
+            }
+            BlockPos box = new BlockPos(StructureDef.bx(l.x()), c.near(0, 0).getY(), StructureDef.bz(l.y()));
+            if (SailingLockboxHooks.open(p, box)) {
+                throw new AssertionError("opened the lockbox without its small key");
+            }
+            Inv.give(p, l.keyId(), 1);
+            if (!SailingLockboxHooks.open(p, box) || !Inv.has(p, l.schematic(), 1) || Inv.has(p, l.keyId(), 1)) {
+                throw new AssertionError("the small key didn't open the lockbox for its schematic");
+            }
+            ItemStack schematic = new ItemStack(com.runecraft.registry.ModItems.get(l.schematic()), 1);
+            SailingLockboxHooks.read(p, schematic, l);
+            if (!schematic.isEmpty() || SailingLockboxHooks.missing(p, cannon) != null) {
+                throw new AssertionError("reading the schematic didn't unlock the dragon cannon");
+            }
+            return "key opened the " + l.islandName() + " lockbox; the dragon cannon schematic unlocks the build";
+        } finally {
+            SailingLockboxHooks.forget(p);
+            Inv.remove(p, l.keyId(), Inv.count(p, l.keyId()));
+            Inv.remove(p, l.schematic(), Inv.count(p, l.schematic()));
+            p.getAbilities().creativeMode = creative;
+        }
     }
 
     private static void level(ServerPlayerEntity p, Skill skill, int level) {

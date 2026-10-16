@@ -86,8 +86,7 @@ public final class SlayerItems {
                 .examine("Kills mutated zygomites.");
         items.add("unlit_bug_lantern", "Unlit bug lantern", Kind.SIMPLE, "lantern", 0x6A6A6A).value(130).stack(1)
                 .examine("Light it with a tinderbox (33 Firemaking).");
-        items.add("bug_lantern", "Lit bug lantern", Kind.SIMPLE, "lantern_lit", 0xF0C040).value(130).stack(1)
-                .examine("Harpie bug swarms are drawn to the light.");
+        // The lit bug lantern is in CommonItems (skilling: it lights lantern harpooning).
         items.add("slayer_bell", "Slayer bell", Kind.SIMPLE, "bell", 0xC8A030).value(150).stack(1)
                 .examine("Used to lure out wall beasts... or so they say.");
         items.add("slayer_ring_8", "Slayer ring (8)", Kind.SLAYER_GEM, "ring", 0x8A30C0).value(87).stack(1)

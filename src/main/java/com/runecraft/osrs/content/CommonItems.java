@@ -31,6 +31,13 @@ public final class CommonItems {
         items.add("aether_rune", "Aether rune", Kind.RUNE, "rune", 0xB070E0).value(300).examine("A combined cosmic and soul rune.");
         items.add("aether_catalyst", "Aether catalyst", Kind.SIMPLE, "orb", 0x9A60D0).value(100)
                 .examine("Used with soul runes at the Cosmic Altar to make aether runes.");
+        // Weiss salts (systems: Weiss salt mine and basalt teleports; skilling: the Sailing eternal brazier takes 250 of each).
+        items.add("te_salt", "Te salt", Kind.SIMPLE, "ore", 0xE0E0D0).value(1).stack(100000).examine("A salt from Weiss's salt mine.");
+        items.add("efh_salt", "Efh salt", Kind.SIMPLE, "ore", 0xB0D8F0).value(1).stack(100000).examine("A salt from Weiss's salt mine.");
+        items.add("urt_salt", "Urt salt", Kind.SIMPLE, "ore", 0x9A6A4A).value(1).stack(100000).examine("A salt from Weiss's salt mine.");
+        // Lit bug lantern (slayer: harpie bug swarms; skilling: lights lantern harpooning).
+        items.add("bug_lantern", "Lit bug lantern", Kind.SIMPLE, "lantern_lit", 0xF0C040).value(130).stack(1)
+                .examine("Harpie bug swarms are drawn to the light.");
         // Machete (npcs: Karamja shops; minigames: Tai Bwo Wannai Cleanup; skilling: hunter loot).
         items.add("machete", "Machete", Kind.TOOL, "scimitar", 0x9A9AA0).value(40).stack(1).examine("An effective tool for chopping tough jungle plants.");
         items.add("green_dragonhide", "Green dragonhide", Kind.SIMPLE, "hide", 0x3A8A3A).value(1800);

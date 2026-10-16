@@ -34,11 +34,9 @@ public final class SailingSea {
             Map.entry("Bird nest (egg)#Red egg", "bird_nest"), Map.entry("Bird nest (egg)#Green egg", "bird_nest"),
             Map.entry("Bird nest (egg)#Blue egg", "bird_nest"));
 
-    /** Wiki loot that has no RuneCraft item (left out of the tables). */
+    /** Wiki loot that has no RuneCraft item (left out of the tables; a test checks none of them exists). */
     public static final Set<String> SKIPPED = Set.of("Feather", "Gnomeball", "Soup", "Platinum token", "Old boot",
-            "Adamant halberd", "Giant seaweed", "Dragon keel parts", "Large dragon keel parts",
-            "Camphor repair kit", "Ironwood repair kit", "Mahogany repair kit", "Rosewood repair kit", "Teak repair kit",
-            "Mudskipper hat");
+            "Adamant halberd", "Dragon keel parts", "Large dragon keel parts", "Mudskipper hat");
 
     /** The RuneCraft item id of a wiki item name. */
     public static String itemId(String wikiName) {
@@ -212,11 +210,15 @@ public final class SailingSea {
             f.add(new SailingTraining.Facility(c.id(), title(c.metal()) + " cannon", c.sailing(), c.construction(), c.conXp(),
                     Collections.unmodifiableMap(m), "Fire cannonballs at sea creatures (Ranged " + c.ranged() + ")."));
         }
-        // Eternal brazier (wiki: 78 Sailing, 72 Construction, 1,373 XP); its 250 each of te, efh and urt salt are left out (approx).
+        // Eternal brazier (wiki: 78 Sailing, 72 Construction, 1,373 XP, with 250 each of te, efh and urt salt).
         f.add(new SailingTraining.Facility("eternal_brazier", "Eternal brazier", 78, 72, 1373, mapOf("ironwood_plank", 4, "rune_nails", 16,
-                "runite_bar", 6, "cupronickel_bar", 6), "Keeps the crew warm in the icy seas of the Northern Ocean."));
+                "runite_bar", 6, "cupronickel_bar", 6, "te_salt", BRAZIER_SALTS, "efh_salt", BRAZIER_SALTS, "urt_salt", BRAZIER_SALTS),
+                "Keeps the crew warm in the icy seas of the Northern Ocean."));
         return List.copyOf(f);
     }
+
+    /** Salts of each kind the eternal brazier takes (wiki). */
+    public static final int BRAZIER_SALTS = 250;
 
     private static Map<String, Integer> mapOf(Object... kv) {
         Map<String, Integer> m = new LinkedHashMap<>();
@@ -508,7 +510,7 @@ public final class SailingSea {
 
     // ------------------------------------------------------------------ ocean encounters
 
-    /** Wiki ocean encounters with their rough share of spawns. */
+    /** Wiki ocean encounters with their share of spawns (wiki Ocean encounters: ~60%, 12%, 12%, 6%, 6%, 2.5%, 1.2%, 0.1%). */
     public enum Encounter {
         STRONG_WINDS(600), MYSTERIOUS_GLOW(120), LOST_CRATE(120), CASTAWAY(60), GIANT_CLAM(60), CLUE_TURTLE(25), OCEAN_MAN(12),
         LOST_CASKET(1);
@@ -582,27 +584,63 @@ public final class SailingSea {
         return 10.0 * level;
     }
 
-    /** Lost crate loot: one category item of the crate tier the level allows (wiki item lists; tier odds approx). */
+    /**
+     * Lost crates (wiki Lost crate): wooden, oak, teak, mahogany, camphor and ironwood crates open at Sailing 5, 26, 51,
+     * 71, 86 and 95 and give 25, 50, 150, 235, 335 and 450 Sailing XP. Each crate gives one of eight kinds of loot (1/8
+     * each) at the crate's tier, in a fixed amount. The odds of each unlocked tier are not on the wiki: equal here (approx).
+     */
+    public static final int[] CRATE_LEVELS = {5, 26, 51, 71, 86, 95};
+    public static final double[] CRATE_XP = {25, 50, 150, 235, 335, 450};
+    public static final String[] CRATE_NAMES = {"wooden", "oak", "teak", "mahogany", "camphor", "ironwood"};
+    /**
+     * Loot per kind (ammunition, construction supplies, farming goods, potions, hides, weapons, metals, runes) and tier,
+     * as "item:amount". Sawmill coupons are not in RuneCraft: the wooden and oak crates give the planks they buy (approx);
+     * the ironwood hides line (mixed hide base) is a black dragon leather here (approx).
+     */
     private static final String[][] CRATE = {
-            {"steel_arrow", "mithril_arrow", "adamant_arrow", "rune_arrow", "amethyst_arrow", "dragon_arrow"},
-            {"plank", "oak_plank", "teak_plank", "mahogany_plank", "camphor_plank", "ironwood_plank"},
-            {"leather", "snakeskin", "green_dragon_leather", "red_dragon_leather", "black_dragon_leather", "black_dragon_leather"},
-            {"steel_scimitar", "black_warhammer", "adamant_scimitar", "rune_dagger", "rune_battleaxe", "dragon_sword"},
-            {"silver_bar", "gold_bar", "mithril_bar", "adamantite_bar", "runite_bar", "dragon_metal_sheet"},
-            {"mind_rune", "law_rune", "chaos_rune", "nature_rune", "blood_rune", "wrath_rune"}};
-    private static final int[] CRATE_COUNT = {25, 5, 3, 1, 3, 25};
+            {"steel_arrow:40", "mithril_arrow:40", "adamant_arrow:40", "rune_arrow:30", "amethyst_arrow:25", "dragon_arrow:20"},
+            {"plank:20", "oak_plank:12", "teak_plank:1", "mahogany_plank:1", "camphor_plank:1", "ironwood_plank:1"},
+            {"sweetcorn_seed:6", "willow_seed:2", "ranarr_seed:2", "watermelon_seed:6", "yew_seed:1", "spirit_seed:1"},
+            {"strength_potion:1", "superantipoison:1", "prayer_potion:1", "stamina_potion:1", "super_combat_potion:1",
+                    "prayer_regeneration_potion:1"},
+            {"leather:1", "snakeskin:1", "green_dragon_leather:1", "red_dragon_leather:1", "black_dragon_leather:1", "black_dragon_leather:1"},
+            {"steel_scimitar:1", "black_warhammer:1", "adamant_scimitar:1", "rune_dagger:1", "rune_battleaxe:1", "dragon_sword:1"},
+            {"silver_bar:1", "gold_bar:1", "mithril_bar:1", "adamantite_bar:1", "runite_bar:1", "dragon_metal_sheet:1"},
+            {"mind_rune:80", "law_rune:10", "chaos_rune:100", "nature_rune:100", "blood_rune:85", "wrath_rune:20"}};
+
+    /** The best crate tier a Sailing level opens (0 = wooden), or -1 below level 5. */
+    public static int maxCrateTier(int level) {
+        int t = -1;
+        for (int i = 0; i < CRATE_LEVELS.length; i++) {
+            if (level >= CRATE_LEVELS[i]) {
+                t = i;
+            }
+        }
+        return t;
+    }
+
+    /** The tier of a lost crate found at a Sailing level: any unlocked tier, equally likely (approx). */
+    public static int lostCrateTier(int level, Random random) {
+        return random.nextInt(Math.max(0, maxCrateTier(level)) + 1);
+    }
+
+    /** The loot of a crate of a tier: one of the eight kinds, 1/8 each, in the wiki amount. */
+    public static Got lostCrateLoot(int tier, Random random) {
+        String[] it = CRATE[random.nextInt(CRATE.length)][Math.max(0, Math.min(5, tier))].split(":");
+        return new Got(it[0], Integer.parseInt(it[1]));
+    }
 
     public static Got lostCrate(int level, Random random) {
-        int tier = Math.min(5, random.nextInt(1 + Math.min(5, level / 15)));
-        int cat = random.nextInt(CRATE.length);
-        return new Got(CRATE[cat][tier], cat == 3 ? 1 : 1 + random.nextInt(CRATE_COUNT[cat]));
+        return lostCrateLoot(lostCrateTier(level, random), random);
     }
 
     /** Every item a lost crate can give (for tests). */
     public static List<String> lostCrateItems() {
         List<String> out = new ArrayList<>();
         for (String[] row : CRATE) {
-            out.addAll(List.of(row));
+            for (String it : row) {
+                out.add(it.split(":")[0]);
+            }
         }
         return out;
     }
