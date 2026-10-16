@@ -348,6 +348,21 @@ public final class SpawnTable {
         s("vyrewatch_sentinel", 3598, 3353, 5, 11);    // Darkmeyer (19 in OSRS)
         s("vyrewatch_sentinel", 3601, 3383, 3, 6);
         s("vyrewatch_sentinel", 3627, 3381, 3, 7);
+        // Meiyerditch's Vyrewatch on their ground-floor cache clusters (the rooftop ones stand in for the plane 1-3 spawns),
+        // and Darkmeyer's level 105s.
+        s("vyrewatch_lvl105", 3608, 3200, 4, 12);
+        s("vyrewatch_lvl105", 3615, 3262, 2, 18);
+        s("vyrewatch_lvl105", 3648, 3362, 6, 18);       // Darkmeyer
+        s("vyrewatch_lvl110", 3622, 3196, 4, 14);
+        s("vyrewatch_lvl110", 3626, 3240, 3, 8);
+        s("vyrewatch_lvl120", 3612, 3212, 3, 14);
+        s("vyrewatch_lvl120", 3627, 3260, 4, 12);
+        s("vyrewatch_lvl125", 3600, 3210, 3, 20);
+        // The Ice Path's level 120-124 ice trolls (cache: 9, 6, 3 and 3 around 2849-2865, 3720-3738).
+        s("ice_troll_lvl120", 2857, 3729, 9, 8);
+        s("ice_troll_lvl121", 2860, 3727, 6, 7);
+        s("ice_troll_lvl123", 2857, 3729, 3, 8);
+        s("ice_troll_lvl124", 2856, 3730, 3, 6);
         s("elf_archer", 2329, 3170, 1, 3);             // Lletya
         s("iorwerth_archer", 2206, 3256, 3, 5);        // the Iorwerth Camp
         s("iorwerth_archer", 2191, 3246, 2, 5);

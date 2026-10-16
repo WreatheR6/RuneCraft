@@ -189,6 +189,7 @@ public final class SlayerCategories {
         member("zombies", "trek_zombie", "trek_undead_lumberjack_1", "trek_undead_lumberjack_2",
                 "trek_undead_lumberjack_3");
         member("shades", "trek_shade_1", "trek_shade_2", "trek_shade_3");
+        member("vampyres", "trek_vampyre_juvinate_1", "trek_vampyre_juvinate_2", "trek_vampyre_juvinate_3");
         member("monkeys", "maniacal_monkey_archer");
         member("crabs", "giant_rock_crab");
         // Wiki "cat = Monkeys, Zombies" / "Black Demons, Monkeys": a second task the creature also counts for.

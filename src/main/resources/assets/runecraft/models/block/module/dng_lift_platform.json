@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/dng_lift_platform_side",
+    "top": "runecraft:block/module/dng_lift_platform_top",
+    "bottom": "runecraft:block/module/dng_lift_platform_bottom"
+  }
+}

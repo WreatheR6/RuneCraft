@@ -33,6 +33,8 @@ final class Cave {
     final List<Dungeons.Entrance> entrances = new ArrayList<>();
     final List<Dungeons.Camp> camps = new ArrayList<>();
     final List<com.runecraft.osrs.content.skilling.AgilityShortcuts.BlockEnds> shortcuts = new ArrayList<>();
+    final List<Dungeons.Passage> passages = new ArrayList<>();
+    final List<int[]> multi = new ArrayList<>();
     private boolean carved;
 
     Cave(String id, String name, String wall, String floor, String light) {
@@ -409,7 +411,88 @@ final class Cave {
         return this;
     }
 
+    /**
+     * A one-way passage: the scripted {@code block} stands at feet level on floor f at (x, z) (after {@link #carve()}),
+     * and using it takes the player to feet block (toX, toY, toZ) ({@link Dungeons#SURFACE} for open ground there).
+     */
+    Cave passage(String block, int x, int z, int f, int toX, int toY, int toZ, String message) {
+        if (!carved || !inside(x, f + 1, z)) {
+            throw new IllegalStateException(id + ": passage " + block + " must stand in carved air");
+        }
+        b.set(x, f + 1, z, rc(block));
+        passages.add(new Dungeons.Passage(block, x, f + 1, z, toX, toY, toZ, null, message));
+        return this;
+    }
+
+    /** A two-way passage between (ax, az) on floor fa and (bx, bz) on floor fb: a block at each end, arriving beside the other. */
+    Cave passage2(String block, int ax, int az, int fa, String messageAtoB, int bx, int bz, int fb, String messageBtoA) {
+        if (!carved || !inside(ax + 1, fa + 1, az) || !inside(bx + 1, fb + 1, bz)) {
+            throw new IllegalStateException(id + ": passage " + block + " needs carved air east of both ends");
+        }
+        passage(block, ax, az, fa, bx + 1, fb + 1, bz, messageAtoB);
+        return passage(block, bx, bz, fb, ax + 1, fa + 1, az, messageBtoA);
+    }
+
+    /** A door into a boss's arena (built by the bosses module wherever {@code ArenaLayout} puts it). */
+    Cave arenaDoor(String block, int x, int z, int f, String bossId, String message) {
+        if (!carved || !inside(x, f + 1, z)) {
+            throw new IllegalStateException(id + ": arena door must stand in carved air");
+        }
+        b.set(x, f + 1, z, rc(block));
+        passages.add(new Dungeons.Passage(block, x, f + 1, z, x, f + 1, z, bossId, message));
+        return this;
+    }
+
+    /**
+     * A lift between the surface and floor f: a 7x7 plinth and hut at surface column (sx, sz) like {@link #entrance}
+     * but with the lift platform inside instead of a ladder, and a platform at (x, z) on floor f. Each takes the
+     * player to the other (beside its platform, to the east).
+     */
+    Cave lift(String block, int sx, int sz, char door, String hutWall, String hutFloor, int x, int z, int f, String down, String up) {
+        if (!carved || !inside(x + 1, f + 1, z)) {
+            throw new IllegalStateException(id + ": lift platform needs carved air east of it");
+        }
+        int s = SURFACE;
+        b.op(StructureDef.Op.Type.FILL_AIR, sx - 3, s - 11, sz - 3, sx + 3, s - 1, sz + 3, wall, null);
+        b.fill(sx - 3, s, sz - 3, sx + 3, s, sz + 3, hutFloor);
+        b.clear(sx - 3, s + 1, sz - 3, sx + 3, s + 8, sz + 3);
+        b.walls(sx - 2, s + 1, sz - 2, sx + 2, s + 3, sz + 2, hutWall);
+        b.fill(sx - 2, s + 4, sz - 2, sx + 2, s + 4, sz + 2, hutWall);
+        switch (door) {
+            case 'n' -> b.clear(sx, s + 1, sz - 2, sx, s + 2, sz - 2);
+            case 's' -> b.clear(sx, s + 1, sz + 2, sx, s + 2, sz + 2);
+            case 'e' -> b.clear(sx + 2, s + 1, sz, sx + 2, s + 2, sz);
+            default -> b.clear(sx - 2, s + 1, sz, sx - 2, s + 2, sz);
+        }
+        b.set(sx + 1, s + 3, sz + 1, mc("lantern[hanging=true]"));
+        b.set(sx, s + 1, sz, rc(block));
+        entrances.add(new Dungeons.Entrance(sx - 3, sz - 3, sx + 3, sz + 3, s + 8, true));
+        passages.add(new Dungeons.Passage(block, sx, s + 1, sz, x + 1, f + 1, z, null, down));
+        return passage(block, x, z, f, sx + 1, s + 1, sz, up);
+    }
+
+    /**
+     * A lift platform inside the hut of an {@link #entrance} at (sx, sz) (its north-west corner), and its other platform
+     * at (x, z) on floor f; each takes the player to the other.
+     */
+    Cave liftInHut(String block, int sx, int sz, int x, int z, int f, String down, String up) {
+        if (!carved || !inside(x + 1, f + 1, z)) {
+            throw new IllegalStateException(id + ": lift platform needs carved air east of it");
+        }
+        int s = SURFACE;
+        b.set(sx - 1, s + 1, sz - 1, rc(block));
+        passages.add(new Dungeons.Passage(block, sx - 1, s + 1, sz - 1, x + 1, f + 1, z, null, down));
+        return passage(block, x, z, f, sx + 1, s + 1, sz, up);
+    }
+
+    /** Marks a box of floor f (from the floor up to height h) as multicombat (the rest of the dungeon is single-way). */
+    Cave multi(int x1, int z1, int x2, int z2, int f, int h) {
+        multi.add(new int[]{Math.min(x1, x2), f, Math.min(z1, z2), Math.max(x1, x2), f + h, Math.max(z1, z2)});
+        return this;
+    }
+
     Dungeons.Dungeon build() {
-        return new Dungeons.Dungeon(id, name, b.build(), List.copyOf(entrances), List.copyOf(camps), List.copyOf(shortcuts));
+        return new Dungeons.Dungeon(id, name, b.build(), List.copyOf(entrances), List.copyOf(camps), List.copyOf(shortcuts),
+                List.copyOf(passages), List.copyOf(multi));
     }
 }

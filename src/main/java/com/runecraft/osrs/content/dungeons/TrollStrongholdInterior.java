@@ -16,10 +16,12 @@ import static com.runecraft.osrs.content.dungeons.Cave.mc;
  * door is a ladder from the courtyard just south of the keep (tile {@link #LADDER_X}, {@link #LADDER_Y}, approx: OSRS
  * walks straight in). Rooms are boxes around the cache spawns and transport tiles (approx shapes); the staircases are
  * ladders at the stair tiles (the two ends of each OSRS staircase are a few tiles apart, the ladder stands between
- * them). The mountain trolls are the cache's 8 on plane 2 and 8 on plane 1; the Troll Generals stay the quests
- * module's boss (fought at its arena in the courtyard), and the stronghold's named trolls and prisoners are the quests
- * module's NPCs at the surface place (approx). The secret exit from the prison (2823, 10050 to 2827, 3646 on the
- * mountain's south slope) is not built.
+ * them). The mountain trolls are the cache's 8 on plane 2 and 8 on plane 1, the three Troll generals stand in their
+ * hall on the cache tiles (the quests module's "troll_general" stays the quest's boss, fought at its arena in the
+ * courtyard), and the guards Twig and Berry stand by the cells, where the dungeons module's hooks move Godric and put a
+ * copy of Mad Eadgar (the quests module's NPCs; Burntmeat and the other named trolls stay at the surface place, approx).
+ * A tunnel south from the prison leads to its secret exit (2823, 10050), which comes out on the mountain's south slope
+ * (2827, 3646).
  */
 final class TrollStrongholdInterior {
     /** Cache entrance tile (2837, 10090) under the real door (2840, 3690). */
@@ -35,6 +37,16 @@ final class TrollStrongholdInterior {
     static final int LADDER_X = 2838;
     static final int LADDER_Y = 3688;
     static final int RESPAWN = 35; // approx (OSRS mid-level respawn)
+
+    /** Cache spawns of the three Troll generals (plane 2) and of Twig and Berry (plane 0). */
+    static final int[] GENERALS = {2831, 10086, 2822, 10073, 2829, 10100};
+    static final int[] TWIG = {2832, 10079};
+    static final int[] BERRY = {2832, 10083};
+    /** Cache tiles of Godric and Eadgar in their cells. */
+    static final int[][] PRISONERS = {{2827, 10077}, {2829, 10083}};
+    /** The secret exit (cache tile) and where it comes out on the surface. */
+    static final int[] SECRET_EXIT = {2823, 10050};
+    static final int[] SECRET_EXIT_SURFACE = {2827, 3646};
 
     /** Cache spawns (mejrs/data_osrs NPCList_OSRS.json): mountain trolls on planes 2 and 1. */
     static final int[] TROLLS_P2 = {2836, 10074, 2836, 10082, 2836, 10087, 2836, 10095, 2838, 10098, 2851, 10052, 2852, 10107,
@@ -57,6 +69,8 @@ final class TrollStrongholdInterior {
     static final int[] P0_SOUTH = {2846, 10060, 2856, 10068};
     static final int[] P0_PRISON = {2822, 10072, 2838, 10090};
     static final int[] P0_STORE = {2865, 10080, 2872, 10090};
+    /** The end of the tunnel to the secret exit. */
+    static final int[] P0_EXIT = {2822, 10048, 2826, 10053};
 
     private TrollStrongholdInterior() {
     }
@@ -76,13 +90,14 @@ final class TrollStrongholdInterior {
         }
         s.hall(2840, 10060, 2840, 10064, F1);
         // ---- plane 0
-        int[][] p0 = {P0_NORTH, P0_SOUTH, P0_PRISON, P0_STORE};
+        int[][] p0 = {P0_NORTH, P0_SOUTH, P0_PRISON, P0_STORE, P0_EXIT};
         for (int[] r : p0) {
             s.room(r, F0, 5);
         }
         s.hallZ(2851, 10068, 2851, 10098, F0);
         s.hall(2851, 10084, 2838, 10084, F0);
         s.hall(2851, 10084, 2865, 10084, F0);
+        s.hallZ(2824, 10072, 2824, 10053, F0); // the tunnel to the secret exit
         c.carve();
 
         // Staircases (ladders between the two ends of each OSRS staircase).
@@ -120,6 +135,21 @@ final class TrollStrongholdInterior {
 
         s.camps(p2, F2, RESPAWN, "mountain_troll", TROLLS_P2);
         s.camps(p1, F1, RESPAWN, "mountain_troll", TROLLS_P1);
+        s.camps(p2, F2, RESPAWN, "stronghold_troll_general", GENERALS);
+        // The two guards each keep to their spot by the cells.
+        c.camp(s.x(TWIG[0]), s.z(TWIG[1]), s.x(TWIG[0]) + 1, s.z(TWIG[1]) + 1, F0, 1, RESPAWN, "twig_troll");
+        c.camp(s.x(BERRY[0]), s.z(BERRY[1]), s.x(BERRY[0]) + 1, s.z(BERRY[1]) + 1, F0, 1, RESPAWN, "berry_troll");
+        // The secret exit at the end of the tunnel.
+        c.passage(DungeonBlocks.SECRET_EXIT, s.x(SECRET_EXIT[0]), s.z(SECRET_EXIT[1]), F0,
+                com.runecraft.osrs.world.StructureDef.bx(SECRET_EXIT_SURFACE[0]), Dungeons.SURFACE,
+                com.runecraft.osrs.world.StructureDef.bz(SECRET_EXIT_SURFACE[1]),
+                "You push the secret door open and squeeze out onto the mountainside.");
         return c.build();
+    }
+
+    /** Feet block {x, y, z} of a prisoner's cell spot (0 = Godric, 1 = Eadgar). */
+    static int[] prisoner(int which) {
+        int[] t = PRISONERS[which];
+        return new int[]{com.runecraft.osrs.world.StructureDef.bx(t[0] + DX), F0 + 1, com.runecraft.osrs.world.StructureDef.bz(t[1] + DY)};
     }
 }

@@ -372,6 +372,7 @@ public final class DungeonMonsters {
         list.add(m("zamorak_crafter", "Zamorak crafter", 19, 25, 15, 15, 12, 20, 1).speed(4).attack(melee(AttackType.CRUSH, 2))
                 .defenceBonus(0, 0, 0, 0, 0).drops(Drop.always("bones"), Drop.of("pure_essence", 1, 1, 4))
                 .skin(0xC8A080, 0x8A2A2A, 0x5A1A1A, 0x6A4A8A));
+        list.addAll(DungeonMonstersExtra.all());
     }
 
     /** The wiki's locust rider drop table (rarities x/128, noted stacks as plain stacks). */

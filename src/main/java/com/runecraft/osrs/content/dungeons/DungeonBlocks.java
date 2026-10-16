@@ -133,6 +133,27 @@ public final class DungeonBlocks {
     /** Coins from each chest (the Cradle of Life gives boots instead). */
     public static final List<Integer> SOS_COINS = List.of(2000, 3000, 5000, 0);
 
+    /** A lift platform between a dungeon floor and the surface (Ruins of Tapoyauik, Tonali Cavern; {@link Dungeons.Passage}). */
+    public static final String LIFT_PLATFORM = "dng_lift_platform";
+    /** The imposing door at the west end of the Ruins of Tapoyauik's bottom floor, into Amoxliatl's lair. */
+    public static final String IMPOSING_DOOR = "dng_imposing_door";
+    /** The Troll Stronghold prison's secret exit, out onto the mountain's south slope. */
+    public static final String SECRET_EXIT = "dng_secret_exit";
+    /** The way from the Tonali Cavern into the Ruins of Mokhaiotl and on to the Doom of Mokhaiotl. */
+    public static final String MOKHAIOTL_ENTRANCE = "dng_mokhaiotl_entrance";
+    /** Every block that is a {@link Dungeons.Passage}. */
+    public static final List<String> PASSAGES = List.of(LIFT_PLATFORM, IMPOSING_DOOR, SECRET_EXIT, MOKHAIOTL_ENTRANCE);
+
+    /** The passage (lift, door, exit) whose block is at (x, y, z), or null. */
+    public static Dungeons.Passage passageAt(int x, int y, int z) {
+        return Dungeons.passageAt(x, y, z);
+    }
+
+    /** Feet blocks {x, y, z} of Godric's and Eadgar's cells in the Troll Stronghold prison (0 = Godric, 1 = Eadgar). */
+    public static int[] trollPrisoner(int which) {
+        return TrollStrongholdInterior.prisoner(which);
+    }
+
     /** A portal out of the Rune essence mine: returns the player to the NPC who teleported them ({@link EssenceMine}). */
     public static final String ESSENCE_PORTAL = "dng_essence_mine_portal";
 
@@ -163,7 +184,11 @@ public final class DungeonBlocks {
                 BlockDef.scripted(DOOR_SUPPORT, "Door-support", 0x6A5A3A, "statue"),
                 BlockDef.scripted(LIGHTHOUSE_LADDER, "Iron ladder (Lighthouse)", 0x5A5A5A, "pit"),
                 BlockDef.scripted(ROCK_PILE, "Pile of rocks", 0x7A7A72, "boulder"),
-                BlockDef.scripted(ESSENCE_PORTAL, "Portal", 0xC8D8F0, "portal_glow")));
+                BlockDef.scripted(ESSENCE_PORTAL, "Portal", 0xC8D8F0, "portal_glow"),
+                BlockDef.scripted(LIFT_PLATFORM, "Lift Platform", 0x8A8A7A, "pit"),
+                BlockDef.scripted(IMPOSING_DOOR, "Imposing door", 0x9AC8E0, "portal_door"),
+                BlockDef.scripted(SECRET_EXIT, "Exit", 0x4A4A42, "door"),
+                BlockDef.scripted(MOKHAIOTL_ENTRANCE, "Entrance (Ruins of Mokhaiotl)", 0x6A5A3A, "portal_door")));
         for (String metal : com.runecraft.osrs.content.CommonItems.SHADE_KEY_METALS) {
             list.add(BlockDef.scripted(shadeDoor(metal), "Wooden doors (" + metal + " lock)", 0x6A4A2A, "portal_door"));
         }

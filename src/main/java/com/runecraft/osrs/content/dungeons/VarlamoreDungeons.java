@@ -1,5 +1,7 @@
 package com.runecraft.osrs.content.dungeons;
 
+import com.runecraft.osrs.world.StructureDef;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,15 +50,17 @@ final class VarlamoreDungeons {
     static final int NEY_DX = 0;
     static final int NEY_DY = 3128 - 9509;
     static final int[] NEY_WYRMLINGS = {1363, 9707, 1366, 9704, 1366, 9709, 1367, 9693, 1367, 9697, 1371, 9695};
+    /** The wiki's 9 moonlight cockatrice pins in the Earthbound Cavern. */
+    static final int[] NEY_MOONLIGHT_COCKATRICES = {1352, 9680, 1354, 9697, 1355, 9683, 1355, 9692, 1356, 9677, 1358, 9681, 1358, 9700,
+            1359, 9687, 1359, 9694};
     static final int[] NEY_GRIMY_LIZARDS = {1483, 9716, 1489, 9704, 1490, 9714, 1494, 9711, 1498, 9709, 1499, 9718, 1504, 9714,
             1510, 9715};
 
     /**
      * Neypotzli, the Moons of Peril's prison below Cam Torum (Perilous Moons): the antechamber with its obsidian
-     * icosahedron, the Earthbound Cavern (north-west; 6 wyrmlings) and the Streambound Cavern (north-east; 8 grimy
-     * lizards, its stream), joined by the passages of the wiki's layout map. The three moons' chambers are the bosses
-     * module's arenas, the Ancient prison and shrine are not carved, and the moonlight cockatrices are not in the game
-     * yet. In OSRS the way in is at the north end of the underground city; Cam Torum is a surface place here, so a hut
+     * icosahedron, the Earthbound Cavern (north-west; 6 wyrmlings and 9 moonlight cockatrices) and the Streambound Cavern
+     * (north-east; 8 grimy lizards, its stream), joined by the passages of the wiki's layout map. The three moons'
+     * chambers are the bosses module's arenas and the Ancient prison and shrine are not carved. In OSRS the way in is at the north end of the underground city; Cam Torum is a surface place here, so a hut
      * stands over the prison's entrance (approx).
      */
     static Dungeons.Dungeon neypotzli() {
@@ -84,6 +88,7 @@ final class VarlamoreDungeons {
         c.entrance(s.x(1440), s.z(9602), f, mc("deepslate_tiles"), mc("polished_deepslate"), 's');
         s.camps(rooms, f, RESPAWN, "wyrmling", NEY_WYRMLINGS);
         s.camps(rooms, f, RESPAWN, "grimy_lizard", NEY_GRIMY_LIZARDS);
+        s.camps(rooms, f, RESPAWN, "moonlight_cockatrice", NEY_MOONLIGHT_COCKATRICES);
         return c.build();
     }
 
@@ -91,8 +96,13 @@ final class VarlamoreDungeons {
 
     /**
      * The entrance under the Tower of Ascension (1693, 3232). Its landing tile inside is not in the transport data, so
-     * the shift puts it on the top floor next to the cave crawlers (approx).
+     * the shift puts it on the top floor next to the cave crawlers (approx). The lift platform on the Tower of
+     * Ascension's ground floor (1641, 3221) comes down in the middle of the bottom floor's ice platform (1633, 9631).
      */
+    static final int[] TAP_LIFT_SURFACE = {1641, 3221};
+    static final int[] TAP_LIFT_BOTTOM = {1633, 9631};
+    /** Amoxliatl's door at the west end of the bottom floor, past the frost nagua. */
+    static final int[] TAP_AMOXLIATL_DOOR = {1622, 9630};
     static final int TAP_DX = 0;
     static final int TAP_DY = 3232 - 9620;
     /** Top floor (plane 2). */
@@ -122,9 +132,10 @@ final class VarlamoreDungeons {
      * and ice warriors and the great bottom floor - frost crabs, icefiends and ice warriors under the chain, the chilled
      * jellies north-east of the lift, the frost nagua before Amoxliatl's door, ice spiders, ice giants, and blue, baby
      * blue and brutal blue dragons to the south-west - all on their wiki tiles (the Varlamore variants are the regular
-     * monsters here). The chain stands for the agility obstacles between the floors; the Tower of Ascension's lift,
-     * the moon key chest and Amoxliatl's lair (the bosses module's arena) are not carved. The hut stands 6 tiles north
-     * of the entrance tile, clear of the zeah module's Ruins of Tapoyauik marker and the plaza beside it (approx).
+     * monsters here). The chain stands for the agility obstacles between the floors; the Tower of Ascension's lift
+     * platform (its own hut on the surface tile; the tower is not built) comes down on the ice platform, and the imposing
+     * door leads into Amoxliatl's lair (the bosses module's arena). The moon key chest is not built. The entrance hut
+     * stands on the entrance tile.
      */
     static Dungeons.Dungeon ruinsOfTapoyauik() {
         Cave c = new Cave("dng_ruins_of_tapoyauik", "Ruins of Tapoyauik", mc("packed_ice"), mc("snow_block"), mc("sea_lantern"));
@@ -155,6 +166,9 @@ final class VarlamoreDungeons {
         c.ladderUp(s.x(1703), s.z(9612), mid, top);      // the chain, top to middle floor (approx)
         c.ladderUp(s.x(1706), s.z(9628), bottom, mid);   // the chain, middle to bottom floor (approx)
         c.fill(s.x(1622), bottom + 1, s.z(9628), s.x(1622) + 1, bottom + 5, s.z(9632) + 1, mc("blue_ice")); // Amoxliatl's door
+        c.fill(s.x(1622) + 1, bottom + 1, s.z(TAP_AMOXLIATL_DOOR[1]), s.x(1622) + 1, bottom + 2, s.z(TAP_AMOXLIATL_DOOR[1]), mc("air"));
+        c.arenaDoor(DungeonBlocks.IMPOSING_DOOR, s.x(TAP_AMOXLIATL_DOOR[0]) + 1, s.z(TAP_AMOXLIATL_DOOR[1]), bottom, "amoxliatl",
+                "You push the imposing door open and step into Amoxliatl's frozen lair...");
         for (int[] p : new int[][]{{1586, 9658}, {1580, 9658}}) {
             c.set(s.x(p[0]), bottom + 1, s.z(p[1]), Cave.rc("runite_rock")); // the two runite rocks, north-west corner
         }
@@ -162,7 +176,11 @@ final class VarlamoreDungeons {
             c.pillar(s.x(p[0]), s.z(p[1]), bottom, 7, mc("packed_ice"));
         }
         c.pillar(s.x(1715), s.z(9640), mid, 6, mc("packed_ice"));
-        c.entrance(s.x(1693), s.z(9626), top, mc("packed_ice"), mc("snow_block"), 'n');
+        c.entrance(s.x(1693), s.z(9620), top, mc("packed_ice"), mc("snow_block"), 'n');
+        c.lift(DungeonBlocks.LIFT_PLATFORM, StructureDef.bx(TAP_LIFT_SURFACE[0]), StructureDef.bz(TAP_LIFT_SURFACE[1]), 'n',
+                mc("packed_ice"), mc("snow_block"), s.x(TAP_LIFT_BOTTOM[0]), s.z(TAP_LIFT_BOTTOM[1]), bottom,
+                "The lift platform carries you down to the bottom of the Ruins of Tapoyauik.",
+                "The lift platform carries you up to the Tower of Ascension.");
         s.camps(new int[][]{topFloor}, top, RESPAWN, "cave_crawler", TAP_CAVE_CRAWLERS);
         s.camps(new int[][]{midFloor}, mid, RESPAWN, "frost_crab", TAP_MID_FROST_CRABS);
         s.camps(new int[][]{midFloor}, mid, RESPAWN, "ice_warrior", TAP_MID_ICE_WARRIORS);
@@ -202,6 +220,11 @@ final class VarlamoreDungeons {
     static final int[] TON_LIZARDS_SOUTH = {1292, 9391, 1295, 9391, 1294, 9387, 1294, 9384, 1297, 9386};
     static final int[] TON_MOSS_GIANTS_MIDDLE = {1323, 9400, 1323, 9404, 1327, 9403};
     static final int[] TON_ROCKSLUGS = {1321, 9382, 1323, 9382, 1322, 9380, 1324, 9379, 1322, 9377, 1323, 9377};
+    /** The lift platform: the surface pit (1311, 3104) and the central section (1311, 9428, plane 2). */
+    static final int[] TON_LIFT = {1311, 9428};
+    /** Agility shortcuts (46): the log balance (1304, 9398) and the stepping stone (1315, 9378), both on the bottom floor. */
+    static final int[] TON_LOG_BALANCE = {1302, 9398, 1307, 9398};
+    static final int[] TON_STEPPING_STONE = {1311, 9376, 1319, 9376};
     /** Central section (plane 2). */
     static final int[] TON_SKELETONS_CENTRAL = {1311, 9401, 1313, 9404, 1311, 9409, 1312, 9413};
 
@@ -209,10 +232,12 @@ final class VarlamoreDungeons {
      * The Tonali Cavern below the Crypt of Tonali (The Final Dawn): the Moon and Sun Chambers (grimy lizards, earthen
      * nagua), the southern cavern's three floors (earthen nagua, grimy lizards, giant rock crabs, moss giants, rockslugs
      * and skeletons) and the central section, on the wiki's tiles: 25 earthen nagua and 15 grimy lizards (the wiki's
-     * monster table, last updated before the chambers were mapped, says 17 and 5). The rooms and the ladders between the
-     * floors are approximate; the lift, the tonali teleporters, the Agility shortcuts and the way on to the Ruins of
-     * Mokhaiotl are not carved. The northern hut stands 7 tiles east of the crypt's entrance, clear of the plazas on
-     * that tile (approx).
+     * monster table, last updated before the chambers were mapped, says 17 and 5). The Moon and Sun chambers are
+     * multicombat. The lift platform joins the central section to the pit beside the crypt's north entrance (inside the
+     * entrance hut here), the log balance and the stepping stone (46 Agility) cross the bottom floor, and a passage north
+     * of the hub leads into the Ruins of Mokhaiotl (1311, 9520 in OSRS; its lobby is approx) and on to the Doom of
+     * Mokhaiotl. The rooms and the ladders between the floors are approximate; the tonali teleporters (a pair of
+     * placeable nodes) are not modelled. The northern hut stands on the crypt's entrance tile.
      */
     static Dungeons.Dungeon tonaliCavern() {
         Cave c = new Cave("dng_tonali_cavern", "Tonali Cavern", mc("mossy_cobblestone"), mc("rooted_dirt"), mc("ochre_froglight"));
@@ -232,7 +257,9 @@ final class VarlamoreDungeons {
         int[] mossRoom = {1320, 9397, 1330, 9407};
         int[] slugs = {1318, 9374, 1327, 9386};
         // Central section.
-        int[] centre = {1307, 9398, 1317, 9421};
+        int[] centre = {1307, 9398, 1317, 9430};
+        // The Ruins of Mokhaiotl, north of the cavern (approx lobby).
+        int[] mokhaiotl = {1300, 9500, 1322, 9528};
         int[][] bottomRooms = {southCavern, southChamber0};
         int[][] middleRooms = {hub, moon, sun, midSouth, southChamber1, mossRoom, slugs};
         for (int[] r : bottomRooms) {
@@ -242,6 +269,8 @@ final class VarlamoreDungeons {
             s.room(r, middle, 6);
         }
         s.room(centre, central, 6);
+        s.room(mokhaiotl, middle, 6);
+        s.hallZ(1310, 9458, 1310, 9500, middle);   // hub - the Ruins of Mokhaiotl
         s.hall(1297, 9445, 1302, 9445, middle);    // hub - Moon Chamber
         s.hall(1318, 9445, 1324, 9445, middle);    // hub - Sun Chamber
         s.hallZ(1302, 9428, 1296, 9416, middle);   // hub - southern cavern (middle floor)
@@ -257,7 +286,18 @@ final class VarlamoreDungeons {
             c.pillar(s.x(p[0]), s.z(p[1]), f, f == middle ? 6 : 7, mc("mossy_stone_bricks"));
         }
         c.pool(s.x(1312), s.z(9372), s.x(1318), s.z(9378), bottom, mc("water")); // the stepping-stone pool (approx)
-        c.entrance(s.x(1316), s.z(9450), middle, mc("mossy_stone_bricks"), mc("rooted_dirt"), 'n');
+        c.entrance(s.x(1309), s.z(9454), middle, mc("mossy_stone_bricks"), mc("rooted_dirt"), 'n');
+        c.liftInHut(DungeonBlocks.LIFT_PLATFORM, s.x(1309), s.z(9454), s.x(TON_LIFT[0]), s.z(TON_LIFT[1]), central,
+                "The lift platform carries you down into the heart of the Crypt of Tonali.",
+                "The lift platform carries you up to the Tlati Rainforest.");
+        c.shortcut("tonali_log_balance", s.x(TON_LOG_BALANCE[0]), s.z(TON_LOG_BALANCE[1]), bottom, s.x(TON_LOG_BALANCE[2]),
+                s.z(TON_LOG_BALANCE[3]), bottom);
+        c.shortcut("tonali_stepping_stone", s.x(TON_STEPPING_STONE[0]), s.z(TON_STEPPING_STONE[1]), bottom, s.x(TON_STEPPING_STONE[2]),
+                s.z(TON_STEPPING_STONE[3]), bottom);
+        c.arenaDoor(DungeonBlocks.MOKHAIOTL_ENTRANCE, s.x(1311), s.z(9527), middle, "doom_of_mokhaiotl",
+                "You pass through the ruins of the archive and descend towards the Doom of Mokhaiotl...");
+        s.multi(moon, middle, 6);
+        s.multi(sun, middle, 6);
         c.entrance(s.x(1305), s.z(9383), bottom, mc("mossy_stone_bricks"), mc("rooted_dirt"), 's');
         s.camps(bottomRooms, bottom, RESPAWN, "earthen_nagua", TON_NAGUA_BOTTOM);
         s.camps(bottomRooms, bottom, RESPAWN, "giant_rock_crab", TON_GIANT_ROCK_CRABS);
@@ -287,15 +327,17 @@ final class VarlamoreDungeons {
     static final int[] SD_ELDERS = {1296, 9818, 1297, 9821, 1299, 9817, 1301, 9824, 1303, 9818, 1304, 9822, 1322, 9806, 1323, 9808,
             1324, 9804, 1328, 9803, 1328, 9809, 1329, 9806, 1331, 9805, 1332, 9810, // single-way
             1263, 9767, 1265, 9770, 1266, 9764, 1267, 9773, 1268, 9767, 1270, 9770};  // multicombat
+    /** The stepping stone across the spring (64 Agility). */
+    static final int[] SD_STEPPING_STONE = {1308, 9782, 1309, 9786};
     static final int[] SD_ZYGOMITES = {1318, 9775, 1321, 9780, 1313, 9778, 1298, 9782, 1291, 9785, 1289, 9791, 1300, 9792, 1311, 9790,
             1315, 9795};
 
     /**
      * The Stalker Den below the Custodia Pass (Shadows of Custodia): the spring in the middle with its 9 ancient
-     * zygomites, the south-western caverns (multicombat in OSRS; single-way here) with 6 juvenile, 13 mature and 6
-     * elder custodian stalkers, the two single-way caves in the south-east (4 juveniles, 5 matures) and the two in the
-     * north (14 elders), all on the wiki's tiles. Only the northern entrance is built: the southern squeeze-through
-     * (59 Agility) and the stepping stone are not carved.
+     * zygomites, the multicombat south-western caverns with 6 juvenile, 13 mature and 6 elder custodian stalkers, the
+     * two single-way caves in the south-east (4 juveniles, 5 matures) and the two in the north (14 elders), all on the
+     * wiki's tiles, and the stepping stone across the spring (64 Agility). Only the northern entrance is built: the
+     * southern squeeze-through (59 Agility) comes out on the Custodia Mountains' south face, which is not carved.
      */
     static Dungeons.Dungeon stalkerDen() {
         Cave c = new Cave("dng_stalker_den", "Stalker Den", mc("tuff"), mc("moss_block"), mc("shroomlight"));
@@ -322,6 +364,9 @@ final class VarlamoreDungeons {
             c.pillar(s.x(p[0]), s.z(p[1]), f, 6, mc("tuff"));
         }
         c.entrance(s.x(1296), s.z(9767), f, mc("tuff"), mc("moss_block"), 'n');
+        c.shortcut("stalker_den_stepping_stone", s.x(SD_STEPPING_STONE[0]), s.z(SD_STEPPING_STONE[1]), f, s.x(SD_STEPPING_STONE[2]),
+                s.z(SD_STEPPING_STONE[3]), f);
+        s.multi(southWest, f, 6);
         s.camps(rooms, f, RESPAWN, "juvenile_custodian_stalker", SD_JUVENILES);
         s.camps(rooms, f, RESPAWN, "mature_custodian_stalker", SD_MATURE_SINGLE);
         s.camps(rooms, f, RESPAWN, "mature_custodian_stalker", SD_MATURES);

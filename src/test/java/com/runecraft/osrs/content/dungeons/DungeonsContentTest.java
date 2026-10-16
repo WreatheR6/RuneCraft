@@ -138,11 +138,16 @@ class DungeonsContentTest {
                 replaced.add(s.replacesLandmark());
             }
         }
+        // A style-NONE place that only marks a dungeon's entrance (same name) builds nothing: its hut may stand on it.
+        Set<String> dungeonNames = new HashSet<>();
+        for (Dungeons.Dungeon d : Dungeons.all()) {
+            dungeonNames.add(d.name());
+        }
         for (PlaceDef p : ContentRegistry.places()) {
             if (p.style() != PlaceDef.Style.NONE && !replaced.contains(p.id())) {
                 int r = Math.max(5, 3 + (p.stations().size() + p.blocks().size()) / 2 + 2);
                 keepOut.add(new int[]{p.blockX(), p.blockZ(), r + 3});
-            } else {
+            } else if (!(p.style() == PlaceDef.Style.NONE && dungeonNames.contains(p.name()))) {
                 keepOut.add(new int[]{p.blockX(), p.blockZ(), 6});
             }
         }
@@ -283,6 +288,10 @@ class DungeonsContentTest {
                         ladder = op;
                     }
                 }
+                if (ladder == null && d.passages().stream().anyMatch(p -> DungeonBlocks.LIFT_PLATFORM.equals(p.block())
+                        && p.x() >= e.x1() && p.x() <= e.x2() && p.z() >= e.z1() && p.z() <= e.z2() && p.y() > Dungeons.DEEP_TOP)) {
+                    continue; // a lift hut (its platform goes down instead of a ladder)
+                }
                 assertNotNull(ladder, d.id() + " entrance without a ladder " + e);
                 // The ladder's bottom block is inside the carved dungeon.
                 boolean landed = false;
@@ -341,7 +350,7 @@ class DungeonsContentTest {
     /** The Varlamore dungeons, the Poison Waste Dungeon and the Charred Dungeon hold the wiki's LocLine spawn counts. */
     @Test
     void varlamoreDungeonsHoldTheWikiSpawnCounts() {
-        assertEquals(Map.of("wyrmling", 6, "grimy_lizard", 8), caps("dng_neypotzli"));
+        assertEquals(Map.of("wyrmling", 6, "grimy_lizard", 8, "moonlight_cockatrice", 9), caps("dng_neypotzli"));
         assertEquals(Map.ofEntries(Map.entry("cave_crawler", 7), Map.entry("frost_crab", 23), Map.entry("ice_warrior", 7),
                 Map.entry("icefiend", 15), Map.entry("chilled_jelly", 10), Map.entry("frost_nagua", 11), Map.entry("ice_spider", 7),
                 Map.entry("ice_giant", 14), Map.entry("blue_dragon", 7), Map.entry("baby_blue_dragon", 7),
@@ -365,6 +374,68 @@ class DungeonsContentTest {
                 assertFalse(c.creatures().contains(id), id + " still camps on the surface at " + c.place());
             }
         }
+    }
+
+    /**
+     * Round 28: the Varlamore lifts and doors, the Troll Stronghold's generals, guards and secret exit, and the partly
+     * multicombat Stalker Den and Tonali Cavern.
+     */
+    @Test
+    void varlamorePassagesAndTrollStronghold() {
+        Map<String, Integer> passages = new HashMap<>();
+        for (Dungeons.Dungeon d : Dungeons.all()) {
+            for (Dungeons.Passage p : d.passages()) {
+                passages.merge(d.id() + ":" + p.block(), 1, Integer::sum);
+                assertTrue(DungeonBlocks.PASSAGES.contains(p.block()), p.block());
+                int found = 0;
+                for (Op op : d.structure().ops()) {
+                    if (("runecraft:" + p.block()).equals(op.block()) && op.x1() == p.x() && op.y1() == p.y() && op.z1() == p.z()) {
+                        found++;
+                    }
+                }
+                assertEquals(1, found, d.id() + " " + p + " block placed");
+                assertEquals(p, Dungeons.passageAt(p.x(), p.y(), p.z()));
+                if (p.arena() != null) {
+                    assertNotNull(com.runecraft.osrs.world.ArenaLayout.of(p.arena()), p.arena() + " has an arena");
+                } else if (p.toY() != Dungeons.SURFACE && p.toY() <= Dungeons.DEEP_TOP) {
+                    assertTrue(d.structure().ops().stream().anyMatch(op -> op.type() == Op.Type.CLEAR && p.toX() >= op.x1()
+                            && p.toX() <= op.x2() && p.toZ() >= op.z1() && p.toZ() <= op.z2() && p.toY() >= op.y1()
+                            && p.toY() <= op.y2()), d.id() + " " + p + " arrives in carved air");
+                }
+            }
+        }
+        // Two lift ends each (Tapoyauik's on its own hut, Tonali's in the entrance hut), the two doors and the exit.
+        assertEquals(Map.of("dng_ruins_of_tapoyauik:dng_lift_platform", 2, "dng_ruins_of_tapoyauik:dng_imposing_door", 1,
+                "dng_tonali_cavern:dng_lift_platform", 2, "dng_tonali_cavern:dng_mokhaiotl_entrance", 1,
+                "dng_troll_stronghold:dng_secret_exit", 1), passages);
+        // The Tonali lift's surface platform stands in the hut on the crypt's entrance tile (1309, 3104); Tapoyauik's
+        // lift hut is on the Tower of Ascension's tile (1641, 3221) and its entrance hut on (1693, 3232).
+        Dungeons.Dungeon tap = Dungeons.all().stream().filter(x -> x.id().equals("dng_ruins_of_tapoyauik")).findFirst().orElseThrow();
+        assertTrue(tap.entrances().stream().anyMatch(e -> e.x1() + 3 == StructureDef.bx(1693) && e.z1() + 3 == StructureDef.bz(3232)));
+        assertTrue(tap.entrances().stream().anyMatch(e -> e.x1() + 3 == StructureDef.bx(1641) && e.z1() + 3 == StructureDef.bz(3221)));
+        Dungeons.Dungeon ton = Dungeons.all().stream().filter(x -> x.id().equals("dng_tonali_cavern")).findFirst().orElseThrow();
+        assertTrue(ton.entrances().stream().anyMatch(e -> e.x1() + 3 == StructureDef.bx(1309) && e.z1() + 3 == StructureDef.bz(3104)));
+        // The Troll Stronghold: the three generals, Twig and Berry on top of the cache's mountain trolls; the boss stays.
+        assertEquals(Map.of("mountain_troll", 16, "stronghold_troll_general", 3, "twig_troll", 1, "berry_troll", 1),
+                caps("dng_troll_stronghold"));
+        assertNotNull(ContentRegistry.boss("troll_general"), "the quest's Troll General");
+        assertEquals(113, ContentRegistry.monster("stronghold_troll_general").combatLevel);
+        assertEquals(71, ContentRegistry.monster("twig_troll").combatLevel);
+        int[] godric = DungeonBlocks.trollPrisoner(0);
+        assertEquals(StructureDef.bx(2827 + TrollStrongholdInterior.DX), godric[0]);
+        assertEquals(TrollStrongholdInterior.F0 + 1, godric[1]);
+        // Multicombat: the Stalker Den's south-western caverns and Tonali's Moon and Sun chambers, not the rest.
+        int f = 18;
+        int sx = StructureDef.bx(1258);
+        int sz = StructureDef.bz(9770 + VarlamoreDungeons.SD_DY);
+        assertTrue(com.runecraft.osrs.MultiCombat.isMultiAtBlock(sx, f + 1, sz), "Stalker Den south-west");
+        assertFalse(com.runecraft.osrs.MultiCombat.isMultiAtBlock(StructureDef.bx(1305), f + 1, StructureDef.bz(9790 + VarlamoreDungeons.SD_DY)),
+                "Stalker Den spring");
+        assertTrue(com.runecraft.osrs.MultiCombat.isMultiAtBlock(StructureDef.bx(1290), 25, StructureDef.bz(9445 + VarlamoreDungeons.TON_DY)),
+                "Tonali Moon chamber");
+        assertFalse(com.runecraft.osrs.MultiCombat.isMultiAtBlock(StructureDef.bx(1310), 25, StructureDef.bz(9440 + VarlamoreDungeons.TON_DY)),
+                "Tonali hub");
+        assertEquals("cockatrice", ContentRegistry.monster("moonlight_cockatrice").slayerCategory);
     }
 
     /** The Kalphite Cave and the Shadow Dungeon are multicombat underground only; the Kalphite Cave is task-only. */

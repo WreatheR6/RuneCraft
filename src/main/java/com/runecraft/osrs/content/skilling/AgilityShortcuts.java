@@ -118,7 +118,11 @@ public final class AgilityShortcuts {
             in("fremennik_slayer_crevice", "Narrow crevice (Fremennik Slayer Dungeon)", "squeeze through the crevice", 62),
             in("fremennik_slayer_strange_floor", "Strange floor (Fremennik Slayer Dungeon)", "jump over the strange floor", 81),
             in("stronghold_slayer_tunnel", "Tunnel (Stronghold Slayer Cave)", "crawl through the tunnel", 72),
-            in("asgarnian_ice_tunnel", "Tunnel (Asgarnian Ice Dungeon)", "crawl through the tunnel", 72));
+            in("asgarnian_ice_tunnel", "Tunnel (Asgarnian Ice Dungeon)", "crawl through the tunnel", 72),
+            // Varlamore (round 28): Tonali Cavern's log balance and stepping stone (46), the Stalker Den's stepping stone (64).
+            in("tonali_log_balance", "Log balance (Tonali Cavern)", "walk across the log", 46),
+            in("tonali_stepping_stone", "Stepping stone (Tonali Cavern)", "cross the stepping stone", 46),
+            in("stalker_den_stepping_stone", "Stepping stone (Stalker Den)", "cross the stepping stone", 64));
 
     /** Two block positions joined by an indoor shortcut: end a and end b, each the block the shortcut stands in. */
     public record BlockEnds(String id, int x1, int y1, int z1, int x2, int y2, int z2) {

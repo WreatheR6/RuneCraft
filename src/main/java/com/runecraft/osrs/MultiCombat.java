@@ -279,7 +279,8 @@ public final class MultiCombat {
      * air (the structure's CLEAR boxes below y {@link #UNDERGROUND_TOP}) is multi-way, the surface above them is not.
      * OSRS wiki: Waterbirth Island Dungeon (with the Dagannoth Kings' lair), the Lighthouse dungeon, Kruk's Dungeon and the
      * Charred Dungeon (all but its lava strykewyrms, which are single-way in OSRS: approx) are multicombat throughout. The Stalker
-     * Den (south-western sections only) and Tonali Cavern (the Moon and Sun chambers) are only partly multi and stay single here.
+     * Den (south-western sections only) and Tonali Cavern (the Moon and Sun chambers) are only partly multi: their multicombat
+     * parts are the dungeons module's {@code Dungeons.multiBoxes()}.
      */
     public static final List<String> UNDERGROUND = List.of("dng_kalphite_cave", "dng_shadow_dungeon", "dng_waterbirth_dungeon",
             "dng_lighthouse_dungeon", "dng_kruks_dungeon", "dng_charred_dungeon");
@@ -288,6 +289,7 @@ public final class MultiCombat {
 
     private static volatile List<Box> resolved;
     private static volatile List<com.runecraft.osrs.world.StructureDef.Op> undergroundAir;
+    private static volatile List<int[]> dungeonParts;
 
     private MultiCombat() {
     }
@@ -385,6 +387,16 @@ public final class MultiCombat {
         for (com.runecraft.osrs.world.StructureDef.Op op : air) {
             if (blockX >= op.x1() && blockX <= op.x2() && blockZ >= op.z1() && blockZ <= op.z2() && blockY >= op.y1() - 1
                     && blockY <= op.y2()) {
+                return true;
+            }
+        }
+        List<int[]> parts = dungeonParts;
+        if (parts == null) {
+            parts = List.copyOf(com.runecraft.osrs.content.dungeons.Dungeons.multiBoxes());
+            dungeonParts = parts;
+        }
+        for (int[] b : parts) {
+            if (blockX >= b[0] && blockX <= b[3] && blockY >= b[1] && blockY <= b[4] && blockZ >= b[2] && blockZ <= b[5]) {
                 return true;
             }
         }

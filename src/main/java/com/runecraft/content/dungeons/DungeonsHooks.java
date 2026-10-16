@@ -71,6 +71,10 @@ public final class DungeonsHooks implements ModuleHooks {
         BlockHooks.register(DungeonBlocks.DOOR_SUPPORT, DungeonsHooks::doorSupport);
         BlockHooks.register(DungeonBlocks.LIGHTHOUSE_LADDER, DungeonsHooks::lighthouseLadder);
         BlockHooks.register(DungeonBlocks.ROCK_PILE, DungeonsHooks::rockPile);
+        for (String block : DungeonBlocks.PASSAGES) {
+            BlockHooks.register(block, DungeonsHooks::passage);
+        }
+        com.runecraft.world.LandmarkBuilder.registerCustom("troll_stronghold", (world, centre) -> placeTrollPrisoners(world, centre));
         DungeonCamps.register();
         BarrowsHooks.register();
         // Task-only dungeons (the Kalphite Cave): no damage to their monsters without the matching Slayer task.
@@ -433,6 +437,73 @@ public final class DungeonsHooks implements ModuleHooks {
         BlockPos to = Gielinor.safeSpot(world, l[0], l[1]);
         Msg.game(player, "You climb the long iron ladder up into the Lighthouse.");
         player.teleport(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYaw(), player.getPitch());
+    }
+
+    /**
+     * A dungeon passage ({@link Dungeons.Passage}): the Varlamore lift platforms, Amoxliatl's imposing door, the way into
+     * the Ruins of Mokhaiotl and the Troll Stronghold prison's secret exit.
+     */
+    private static void passage(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+        if (!(player.getWorld() instanceof ServerWorld world)) {
+            return;
+        }
+        Dungeons.Passage p = DungeonBlocks.passageAt(pos.getX(), pos.getY(), pos.getZ());
+        if (p == null) {
+            Msg.game(player, "Nothing interesting happens.");
+            return;
+        }
+        if (p.arena() != null) {
+            com.runecraft.osrs.world.ArenaLayout.Arena a = com.runecraft.osrs.world.ArenaLayout.of(p.arena());
+            if (a == null) {
+                Msg.game(player, "The way is blocked.");
+                return;
+            }
+            BlockPos to = Gielinor.safeSpot(world, a.x(), a.z() + Math.max(2, a.radius() / 2));
+            Msg.game(player, p.message());
+            player.teleport(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYaw(), player.getPitch());
+            return;
+        }
+        Msg.game(player, p.message());
+        if (p.toY() == Dungeons.SURFACE) {
+            BlockPos to = Gielinor.safeSpot(world, p.toX(), p.toZ());
+            player.teleport(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYaw(), player.getPitch());
+            return;
+        }
+        com.runecraft.world.StructurePlacer.applyIfLoaded(world, p.toX() >> 4, p.toZ() >> 4);
+        player.teleport(world, p.toX() + 0.5, p.toY(), p.toZ() + 0.5, player.getYaw(), player.getPitch());
+    }
+
+    /**
+     * Puts the Troll Stronghold's prisoners in their cells when the stronghold place is built: the quests module's Godric
+     * (spawned at the place) is moved into his cell and a Mad Eadgar stands in the next one (OSRS: both are freed in
+     * the Troll Stronghold quest). Skipped while the prison's chunk is not loaded.
+     */
+    private static void placeTrollPrisoners(ServerWorld world, BlockPos centre) {
+        int[] godric = DungeonBlocks.trollPrisoner(0);
+        int[] eadgar = DungeonBlocks.trollPrisoner(1);
+        if (!world.isChunkLoaded(godric[0] >> 4, godric[2] >> 4) || !world.isChunkLoaded(eadgar[0] >> 4, eadgar[2] >> 4)) {
+            return;
+        }
+        com.runecraft.world.StructurePlacer.applyIfLoaded(world, godric[0] >> 4, godric[2] >> 4);
+        com.runecraft.world.StructurePlacer.applyIfLoaded(world, eadgar[0] >> 4, eadgar[2] >> 4);
+        net.minecraft.util.math.Box around = new net.minecraft.util.math.Box(centre.getX() - 48, world.getBottomY(), centre.getZ() - 48,
+                centre.getX() + 48, centre.getY() + 64, centre.getZ() + 48);
+        for (com.runecraft.entity.QuestNpcEntity npc : world.getEntitiesByClass(com.runecraft.entity.QuestNpcEntity.class, around,
+                e -> "godric".equals(e.npcId()))) {
+            npc.refreshPositionAndAngles(godric[0] + 0.5, godric[1], godric[2] + 0.5, 0f, 0f);
+        }
+        com.runecraft.osrs.content.NpcDef def = com.runecraft.osrs.content.ContentRegistry.npc("mad_eadgar");
+        if (def == null) {
+            return;
+        }
+        com.runecraft.entity.QuestNpcEntity entity = com.runecraft.registry.ModEntities.QUEST_NPC.create(world);
+        if (entity == null) {
+            return;
+        }
+        entity.refreshPositionAndAngles(eadgar[0] + 0.5, eadgar[1], eadgar[2] + 0.5, 180f, 0f);
+        entity.setNpc(def);
+        entity.initialize(world, world.getLocalDifficulty(entity.getBlockPos()), net.minecraft.entity.SpawnReason.STRUCTURE, null, null);
+        world.spawnEntity(entity);
     }
 
     /** The rock pile by Waterbirth's arrival ladder: just rocks (pet rocks come from Askeladden in Rellekka, as in OSRS). */

@@ -70,6 +70,11 @@ final class CacheDungeons {
             c.room(x(r[0]), z(r[3]), x(r[2]) + 1, z(r[1]) + 1, f, h);
         }
 
+        /** Marks the cache tile box {x1, y1, x2, y2} on floor f as multicombat (height h). */
+        void multi(int[] r, int f, int h) {
+            c.multi(x(r[0]), z(r[3]), x(r[2]) + 1, z(r[1]) + 1, f, h);
+        }
+
         /** A 3-wide passage between two cache tiles (along x first, then along y). */
         void hall(int ax, int ay, int bx, int by, int f) {
             c.hall(x(ax), z(ay), x(bx), z(by), f, 3, 5);

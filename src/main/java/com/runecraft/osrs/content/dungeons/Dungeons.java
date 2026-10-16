@@ -43,10 +43,28 @@ public final class Dungeons {
         }
     }
 
-    /** One dungeon. */
+    /**
+     * One dungeon. {@code passages} are its lifts, doors and exits ({@link Passage}); {@code multi} are block boxes
+     * {x1, y1, z1, x2, y2, z2} of the parts that are multicombat in OSRS where the rest is single-way.
+     */
     public record Dungeon(String id, String name, StructureDef structure, List<Entrance> entrances, List<Camp> camps,
-                          List<AgilityShortcuts.BlockEnds> shortcuts) {
+                          List<AgilityShortcuts.BlockEnds> shortcuts, List<Passage> passages, List<int[]> multi) {
     }
+
+    /**
+     * A lift, door or exit: using the scripted {@code block} at (x, y, z) takes the player to stand at feet block
+     * (toX, toY, toZ); when {@code toY} is {@link #SURFACE} to the open ground of column (toX, toZ); when {@code arena}
+     * is set, into that boss's arena (the bosses module's, {@code ArenaLayout}). {@code message} is shown on use.
+     */
+    public record Passage(String block, int x, int y, int z, int toX, int toY, int toZ, String arena, String message) {
+        /** True if a block at (bx, by, bz) is this passage's block (or the block above it). */
+        public boolean at(int bx, int by, int bz) {
+            return bx == x && bz == z && (by == y || by == y + 1);
+        }
+    }
+
+    /** {@link Passage#toY()} of a passage that comes out on the surface. */
+    public static final int SURFACE = Integer.MIN_VALUE;
 
     /** An Abyss rift: using it takes the player to that rune altar (a {@code Landmark} name). */
     public record Rift(int x, int y, int z, String altar, String rune) {
@@ -104,6 +122,36 @@ public final class Dungeons {
         List<AgilityShortcuts.BlockEnds> out = new ArrayList<>();
         for (Dungeon d : all()) {
             out.addAll(d.shortcuts());
+        }
+        return out;
+    }
+
+    /** Every dungeon passage (lifts, doors, exits). */
+    public static List<Passage> passages() {
+        List<Passage> out = new ArrayList<>();
+        for (Dungeon d : all()) {
+            out.addAll(d.passages());
+        }
+        return out;
+    }
+
+    /** The passage whose block is at (x, y, z), or null. */
+    public static Passage passageAt(int x, int y, int z) {
+        for (Dungeon d : all()) {
+            for (Passage p : d.passages()) {
+                if (p.at(x, y, z)) {
+                    return p;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Block boxes {x1, y1, z1, x2, y2, z2} of the multicombat parts of otherwise single-way dungeons. */
+    public static List<int[]> multiBoxes() {
+        List<int[]> out = new ArrayList<>();
+        for (Dungeon d : all()) {
+            out.addAll(d.multi());
         }
         return out;
     }

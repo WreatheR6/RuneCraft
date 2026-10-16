@@ -56,6 +56,7 @@ public final class SlayerContent implements ContentModule {
             list.addAll(SpawnVariants.all());
             list.addAll(SlayerTaskMonsters.all());
             list.addAll(SlayerTaskMonsters2.all());
+            list.addAll(SlayerTaskMonsters3.all());
             list.add(TormentedDemons.monster());
             list.addAll(DemonicGorillas.monsters());
             list.addAll(Superiors.build(list));
