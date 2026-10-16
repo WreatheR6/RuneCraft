@@ -129,6 +129,16 @@ public final class CannonService {
             return TypedActionResult.success(p.getStackInHand(hand), false);
         });
         QuestScripts.onTalk(Multicannon.NULODION, (p, npc) -> nulodion(p));
+        net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT.register((dispatcher, access, env) -> dispatcher.register(
+                net.minecraft.server.command.CommandManager.literal("cannon").then(net.minecraft.server.command.CommandManager.literal("buy")
+                        .then(net.minecraft.server.command.CommandManager.argument("item",
+                                com.mojang.brigadier.arguments.StringArgumentType.word()).executes(ctx -> {
+                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                            if (p != null) {
+                                buyPart(p, com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "item"));
+                            }
+                            return 1;
+                        })))));
         SysTicks.everyTick((server, tick) -> tick(server, tick));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             Cannon c = CANNONS.remove(handler.player.getUuid());
@@ -182,7 +192,7 @@ public final class CannonService {
             }
         }
         Box near = block(centre).expand(BOSS_RADIUS);
-        if (!p.getWorld().getEntitiesByClass(LivingEntity.class, near, e -> e.isAlive() && isBoss(e)).isEmpty()) {
+        if (!p.getWorld().getEntitiesByClass(LivingEntity.class, near, e -> e.isAlive() && destroysCannons(e)).isEmpty()) {
             return "It doesn't seem safe to set up a cannon here.";
         }
         return null;
@@ -448,7 +458,7 @@ public final class CannonService {
         boolean single = !CombatZones.isMulti(owner);
         LivingEntity attacker = owner.getAttacker();
         boolean underAttack = single && attacker != null && attacker.isAlive() && validTarget(attacker);
-        double reach = Multicannon.RANGE + 1;
+        double reach = Multicannon.reachBlocks();
         Box box = block(c.pos).expand(reach, 4, reach);
         LivingEntity best = null;
         double bestDist = Double.MAX_VALUE;
@@ -456,9 +466,9 @@ public final class CannonService {
             if (underAttack && e != attacker) {
                 continue;
             }
-            int dx = e.getBlockX() - c.pos.getX();
-            int dy = c.pos.getZ() - e.getBlockZ(); // OSRS north is -z
-            if (!Multicannon.inArea(c.facing, dx, dy)) {
+            // Target areas are in OSRS tiles (2 blocks each), measured from the tile under the cannon's centre block.
+            int[] d = Multicannon.tileDelta(c.pos.getX(), c.pos.getZ(), e.getBlockX(), e.getBlockZ());
+            if (!Multicannon.inArea(c.facing, d[0], d[1])) {
                 continue;
             }
             if (CombatZones.check(owner, e) != SingleCombat.Verdict.OK) {
@@ -474,7 +484,8 @@ public final class CannonService {
     }
 
     static boolean validTarget(LivingEntity e) {
-        if (e instanceof ServerPlayerEntity || e instanceof QuestNpcEntity || isBoss(e)) {
+        if (e instanceof ServerPlayerEntity || e instanceof QuestNpcEntity || e instanceof BossEntity
+                || Multicannon.immune(creatureId(e))) {
             return false;
         }
         return e instanceof OsrsMonsterEntity || e instanceof HostileEntity
@@ -488,6 +499,20 @@ public final class CannonService {
 
     static boolean isBoss(LivingEntity e) {
         return e instanceof BossEntity || e instanceof DataBossEntity;
+    }
+
+    /** The RuneCraft creature id of an entity (a data boss's id, or the entity type's path), or null. */
+    public static String creatureId(LivingEntity e) {
+        if (e instanceof DataBossEntity b && b.def() != null) {
+            return b.def().id;
+        }
+        net.minecraft.util.Identifier id = net.minecraft.registry.Registries.ENTITY_TYPE.getId(e.getType());
+        return id == null ? null : id.getPath();
+    }
+
+    /** A boss that destroys cannons set up near it (all but {@link Multicannon#CANNON_BOSSES}). */
+    static boolean destroysCannons(LivingEntity e) {
+        return isBoss(e) && !Multicannon.CANNON_BOSSES.contains(creatureId(e));
     }
 
     private static boolean lineOfSight(ServerPlayerEntity owner, Cannon c, LivingEntity e) {
@@ -601,7 +626,14 @@ public final class CannonService {
         }
         if (!p.isSneaking()) {
             QuestApi.say(p, name, "Hello again. I can sell you a dwarf multicannon: all four parts and an ammo mould for "
-                    + String.format("%,d", Multicannon.SET_PRICE) + " coins. (Talk to me while sneaking to buy it.)");
+                    + String.format("%,d", Multicannon.SET_PRICE) + " coins (talk to me while sneaking), or the parts one at a time.");
+            net.minecraft.text.MutableText line = net.minecraft.text.Text.literal("Multicannon parts for sale: ")
+                    .formatted(net.minecraft.util.Formatting.GRAY);
+            for (String part : Multicannon.PARTS) {
+                line.append(buyLink(Inv.stack(part, 1).getName().getString(), part, Multicannon.PART_PRICE)).append(" ");
+            }
+            line.append(buyLink("Ammo mould", Multicannon.AMMO_MOULD, Multicannon.MOULD_PRICE));
+            p.sendMessage(line, false);
             return;
         }
         if (!Inv.has(p, Inv.COINS, Multicannon.SET_PRICE)) {
@@ -614,6 +646,45 @@ public final class CannonService {
         }
         Inv.give(p, Multicannon.AMMO_MOULD, 1);
         QuestApi.say(p, name, "There you go, a fine dwarf multicannon. Use the base to set it up somewhere roomy.");
+    }
+
+    private static net.minecraft.text.MutableText buyLink(String label, String item, int price) {
+        return net.minecraft.text.Text.literal("[" + label + " " + String.format("%,d", price) + "]").styled(st -> st
+                .withColor(net.minecraft.util.Formatting.GOLD)
+                .withClickEvent(new net.minecraft.text.ClickEvent(net.minecraft.text.ClickEvent.Action.RUN_COMMAND, "/cannon buy " + item))
+                .withHoverEvent(new net.minecraft.text.HoverEvent(net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
+                        net.minecraft.text.Text.literal("Buy one " + label))));
+    }
+
+    /**
+     * Nulodion's shop ("Multicannon parts for sale", OSRS Wiki: 107% of value, so 200,625 coins a part and 5 for the ammo
+     * mould): sells one part (or mould) after Dwarf Cannon. Shop stock limits (5 of each) are not modelled. Returns success.
+     */
+    public static boolean buyPart(ServerPlayerEntity p, String item) {
+        int price = item.equals(Multicannon.AMMO_MOULD) ? Multicannon.MOULD_PRICE
+                : Multicannon.PARTS.contains(item) ? Multicannon.PART_PRICE : -1;
+        if (price < 0) {
+            return false;
+        }
+        QuestInfo quest = ContentRegistry.quest(Multicannon.QUEST);
+        if (quest != null && !Players.data(p).questComplete(quest)) {
+            Msg.game(p, "Nulodion only sells cannon parts to those who have completed Dwarf Cannon.");
+            return false;
+        }
+        double nx = GielinorMap.toBlockX(Multicannon.NULODION_X);
+        double nz = GielinorMap.toBlockZ(Multicannon.NULODION_Y);
+        if (p.squaredDistanceTo(nx, p.getY(), nz) > 24 * 24) {
+            Msg.game(p, "You need to be at Nulodion's workshop to buy cannon parts.");
+            return false;
+        }
+        if (!Inv.has(p, Inv.COINS, price)) {
+            Msg.game(p, "You don't have enough coins.");
+            return false;
+        }
+        Inv.remove(p, Inv.COINS, price);
+        Inv.give(p, item, 1);
+        Msg.game(p, "You buy " + Inv.stack(item, 1).getName().getString() + " for " + String.format("%,d", price) + " coins.");
+        return true;
     }
 
     /** Raids are checked through the raids module's manager. */

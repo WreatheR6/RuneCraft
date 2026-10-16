@@ -29,6 +29,7 @@ final class CannonChecks {
         List<SelfTest.Check> checks = new ArrayList<>();
         checks.add(new SelfTest.Check("cannon:setup_load_fire_pickup", () -> cycle(c)));
         checks.add(new SelfTest.Check("cannon:granite_cannonballs", () -> granite(c)));
+        checks.add(new SelfTest.Check("cannon:immune_sand_crab", () -> immune(c)));
         return checks;
     }
 
@@ -78,8 +79,8 @@ final class CannonChecks {
             if (!(e instanceof LivingEntity target)) {
                 throw new AssertionError("moss_giant is not a living entity");
             }
-            // Three tiles north of the cannon's centre: in the north direction's area.
-            BlockPos at = centre.add(0, 0, -3);
+            // Three OSRS tiles (six blocks) north of the cannon's centre: in the north direction's area.
+            BlockPos at = centre.add(0, 0, -3 * com.runecraft.osrs.GielinorMap.SCALE);
             target.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0f, 0f);
             if (target instanceof MobEntity mob) {
                 mob.initialize(c.world, c.world.getLocalDifficulty(at), SpawnReason.SPAWNER, null, null);
@@ -129,6 +130,60 @@ final class CannonChecks {
             }
             return cannon.fired + " shots, " + gained / 10 + " Ranged XP, " + left + " balls back";
         } finally {
+            clean(p);
+            c.world.removeBlock(centre, false);
+        }
+    }
+
+    /** A monster whose wiki infobox says immunecannon = Yes (sand crab) is never shot, even standing in a double-hit spot. */
+    private static String immune(TestContext c) {
+        ServerPlayerEntity p = c.player;
+        clean(p);
+        c.completeQuests(null);
+        for (String part : Multicannon.PARTS) {
+            Inv.give(p, part, 1);
+        }
+        BlockPos centre = c.near(-4, 0);
+        LivingEntity crab = null;
+        try {
+            if (!Multicannon.immune("sand_crab")) {
+                throw new AssertionError("sand_crab is not on the cannon immunity list");
+            }
+            EntityType<?> type = ModEntities.typeById("sand_crab");
+            if (type == null) {
+                throw new SelfTest.Skip("no sand_crab entity");
+            }
+            if (!CannonService.setUp(p, centre, true)) {
+                throw new AssertionError("couldn't set up a cannon at " + centre.toShortString());
+            }
+            CannonService.Cannon cannon = CannonService.of(p);
+            Inv.give(p, Multicannon.STEEL_BALL, 30);
+            CannonService.load(p);
+            Entity e = type.create(c.world);
+            if (!(e instanceof LivingEntity living)) {
+                throw new AssertionError("sand_crab is not a living entity");
+            }
+            crab = living;
+            BlockPos at = centre.add(0, 0, -3 * com.runecraft.osrs.GielinorMap.SCALE);
+            crab.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0f, 0f);
+            if (crab instanceof MobEntity mob) {
+                mob.initialize(c.world, c.world.getLocalDifficulty(at), SpawnReason.SPAWNER, null, null);
+                mob.setPersistent();
+                mob.setAiDisabled(true);
+            }
+            c.world.spawnEntity(crab);
+            long now = SysTicks.now();
+            for (int i = 0; i < 16; i++) {
+                CannonService.tick(p, cannon, now + i);
+            }
+            if (cannon.fired != 0) {
+                throw new AssertionError("the cannon fired " + cannon.fired + " times at an immune sand crab");
+            }
+            return "16 ticks, no shots at a sand crab 3 tiles north";
+        } finally {
+            if (crab != null) {
+                crab.discard();
+            }
             clean(p);
             c.world.removeBlock(centre, false);
         }

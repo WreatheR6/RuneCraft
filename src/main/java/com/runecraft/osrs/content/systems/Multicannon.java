@@ -1,11 +1,13 @@
 package com.runecraft.osrs.content.systems;
 
+import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.ItemDef.Kind;
 import com.runecraft.osrs.content.ItemSink;
 import com.runecraft.osrs.content.systems.CombatAchievements.Tier;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The dwarf multicannon (OSRS Wiki, "Dwarf multicannon"): unlocked by Dwarf Cannon, bought from Nulodion (750,000 coins for
@@ -58,6 +60,61 @@ public final class Multicannon {
     public static final int DECAY_TICKS = 3_500;
     /** Farthest tile (Chebyshev distance from the cannon's centre tile) it fires at. // approx */
     public static final int RANGE = 8;
+    /** Ammo mould from Nulodion's shop (store value 5 coins at his 107% rate). */
+    public static final int MOULD_PRICE = 5;
+
+    /**
+     * The cannon's target tile offset: OSRS tiles east ({@code [0]}) and north ({@code [1]}) of the tile under the cannon's
+     * centre block. Gielinor tiles are {@link GielinorMap#SCALE} blocks, and OSRS north is Minecraft -z.
+     */
+    public static int[] tileDelta(int cannonBlockX, int cannonBlockZ, int targetBlockX, int targetBlockZ) {
+        return new int[]{GielinorMap.toOsrsX(targetBlockX) - GielinorMap.toOsrsX(cannonBlockX),
+                GielinorMap.toOsrsY(targetBlockZ) - GielinorMap.toOsrsY(cannonBlockZ)};
+    }
+
+    /** Blocks around the cannon's centre block that can hold a target within {@link #RANGE} tiles. */
+    public static int reachBlocks() {
+        return (RANGE + 1) * GielinorMap.SCALE;
+    }
+
+    /**
+     * Monsters the cannon won't fire at: every RuneCraft creature whose wiki infobox says {@code immunecannon = Yes} (or
+     * "Immune") for all its versions (snapshot {@code osrs/systems/cannon_immunity.tsv}, diffed by MulticannonTest). Sand,
+     * ammonite and frost crabs are among them, as are demonic gorillas, tormented demons and the Iorwerth kurask/turoth.
+     */
+    public static final Set<String> IMMUNE = Set.of(
+            "acidic_araxyte", "akkhas_shadow", "ammonite_crab", "amoxliatl", "araxxor", "arrav", "balance_elemental",
+            "basilisk_knight", "blood_jaguar", "blood_moon", "blood_reaver", "blue_moon", "branda_the_fire_queen", "brutus",
+            "callisto", "cave_kraken", "champion_of_scabaras", "cruor", "demonic_brutus", "demonic_gorilla", "doom_of_mokhaiotl",
+            "ds2_vorkath", "dt2_forsaken_assassin", "dt2_kasonde", "dt2_kasonde_the_craven", "dt2_ketla_the_unworthy",
+            "dt2_persten_the_deceitful", "dt2_quest_duke_sucellus", "dt2_quest_leviathan", "dt2_quest_vardorvis",
+            "dt2_quest_whisperer", "duke_sucellus", "eclipse_moon", "eldric_the_ice_king", "elidinis_warden",
+            "fremennik_warband_archer", "fremennik_warband_berserker", "fremennik_warband_seer", "frost_crab", "fumus",
+            "gemstone_crab", "glacies", "gwd_spiritual_mage_armadyl", "gwd_spiritual_mage_bandos", "gwd_spiritual_mage_saradomin",
+            "gwd_spiritual_mage_zamorak", "gwd_spiritual_ranger_armadyl", "gwd_spiritual_ranger_bandos",
+            "gwd_spiritual_ranger_saradomin", "gwd_spiritual_ranger_zamorak", "gwd_spiritual_warrior_armadyl",
+            "gwd_spiritual_warrior_bandos", "gwd_spiritual_warrior_saradomin", "gwd_spiritual_warrior_zamorak", "hespori",
+            "jaguar_warrior", "javelin_colossus", "kraken", "kruk", "kurask", "mirrorback_araxyte", "nex", "phantom_muspah",
+            "phosanis_nightmare", "quest_assassin", "quest_black_eye_bethel", "quest_blood_moon", "quest_blue_moon",
+            "quest_eclipse_moon", "quest_evelot", "quest_giant_lobster", "quest_lowerniel_drakan", "quest_shellbane_gryphon",
+            "quest_strange_creature", "ruptura_araxyte", "sand_crab", "scurrius", "serpent_shaman", "shellbane_gryphon",
+            "spiritual_mage", "spiritual_ranger", "spiritual_warrior", "temple_guardian", "the_hueycoatl", "the_leviathan",
+            "the_nightmare", "the_whisperer", "toa_arcane_scarab", "toa_baboon_brawler", "toa_baboon_mage", "toa_baboon_thrower",
+            "toa_scarab_swarm", "toa_soldier_scarab", "toa_spitting_scarab", "tormented_demon", "tumekens_warden", "turoth",
+            "umbra", "vardorvis", "vorkath", "vyrewatch_sentinel", "wyrm", "yama");
+
+    /** Whether the cannon refuses to fire at this creature id. */
+    public static boolean immune(String creatureId) {
+        return creatureId != null && IMMUNE.contains(creatureId);
+    }
+
+    /**
+     * Bosses a cannon may be set up near: most bosses destroy a cannon (it is refused near them), but the wiki's usage notes
+     * name the Wilderness bosses and the Corporeal Beast as cannon targets; these are the ones whose infobox also says
+     * {@code immunecannon = No} and whose lair isn't a no-cannon zone (Callisto is immune; Vet'ion's Rest is prohibited).
+     */
+    public static final Set<String> CANNON_BOSSES = Set.of("corporeal_beast", "chaos_elemental", "chaos_fanatic",
+            "crazy_archaeologist", "scorpia", "venenatis", "artio", "spindel");
 
     private Multicannon() {
     }

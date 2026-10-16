@@ -70,13 +70,15 @@ public final class MinigameBosses {
             .telegraph(3, "Darkness engulfs the arena!").particle("minecraft:squid_ink");
 
     // ---- Sol Heredit ----
-    public static final AttackDef SOL_SPEAR = AttackDef.of("spear", AttackType.STAB, 46, 5, 5);
-    public static final AttackDef SOL_SHIELD = AttackDef.of("shield_bash", AttackType.CRUSH, 46, 4, 3).special(Special.KNOCKBACK, 4);
-    public static final AttackDef SOL_TRIPLE = AttackDef.of("triple_attack", AttackType.STAB, 60, 5, 2)
+    // Sol's attacks are scripted (SolHereditScript, rules in minigames.SolHeredit); these carry the wiki max hits and the
+    // attack names his Combat Achievements watch: 44 typeless AoE (spear, shield), 45 triple, 75 light beam, 44 grapple.
+    public static final AttackDef SOL_SPEAR = AttackDef.of("spear", AttackType.STAB, 44, 5, 5);
+    public static final AttackDef SOL_SHIELD = AttackDef.of("shield_bash", AttackType.CRUSH, 44, 4, 3);
+    public static final AttackDef SOL_TRIPLE = AttackDef.of("triple_attack", AttackType.STAB, 45, 5, 2)
             .telegraph(3, "Sol Heredit grips his spear tightly...");
-    public static final AttackDef SOL_LASERS = AttackDef.of("solar_flare", AttackType.MAGIC, 40, 16, 2).special(Special.SKY_STRIKE, 0)
+    public static final AttackDef SOL_LASERS = AttackDef.of("solar_flare", AttackType.MAGIC, 75, 16, 2).special(Special.SKY_STRIKE, 0)
             .telegraph(3, "Beams of sunlight sweep across the arena!").particle("minecraft:end_rod");
-    public static final AttackDef SOL_GRAPPLE = AttackDef.of("grapple", AttackType.CRUSH, 30, 16, 1).special(Special.PULL, 0)
+    public static final AttackDef SOL_GRAPPLE = AttackDef.of("grapple", AttackType.CRUSH, 44, 16, 1).special(Special.PULL, 0)
             .message("Sol Heredit grapples you!");
 
     public static List<BossDef> all() {
@@ -192,8 +194,12 @@ public final class MinigameBosses {
         return BossDef.of("sol_heredit", "Sol Heredit").level(1563).stats(1500, 350, 350, 300, 300, 300).speed(5)
                 .defenceBonus(65, 65, 65, 65, 65)
                 .attack(SOL_SPEAR).attack(SOL_SHIELD).attack(SOL_TRIPLE).attack(SOL_LASERS).attack(SOL_GRAPPLE)
-                .phase(50, "Sol Heredit: Impressive. Let's see how you handle this!", 1.15, false)
-                .phase(25, "Sol Heredit: You fight well... but the sun never sets on the Colosseum!", 1.3, false)
+                // Wiki phase transitions and lines (minigames.SolHeredit); his damage doesn't scale with the phase.
+                .phase(90, com.runecraft.osrs.content.minigames.SolHeredit.PHASE_LINES.get(0), 1.0, false)
+                .phase(75, com.runecraft.osrs.content.minigames.SolHeredit.PHASE_LINES.get(1), 1.0, false)
+                .phase(50, com.runecraft.osrs.content.minigames.SolHeredit.PHASE_LINES.get(2), 1.0, false)
+                .phase(25, com.runecraft.osrs.content.minigames.SolHeredit.PHASE_LINES.get(3), 1.0, false)
+                .phase(10, com.runecraft.osrs.content.minigames.SolHeredit.PHASE_LINES.get(4), 1.0, false)
                 .drops(Drop.of("sunfire_splinters", 200, 600, 1), Drop.of("dizanas_quiver", 1, 1, 1),
                         Drop.of("sunfire_fanatic_helm", 1, 1, 90), Drop.of("sunfire_fanatic_cuirass", 1, 1, 90),
                         Drop.of("sunfire_fanatic_chausses", 1, 1, 90), Drop.of("echo_crystal", 1, 1, 60),

@@ -31,7 +31,8 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("hespori", ClassicScripts.Hespori::new);
         BossScripts.register("scurrius", ClassicScripts.Scurrius::new);
         BossScripts.register("zalcano", ClassicScripts.Zalcano::new);
-        BossScripts.register("sol_heredit", ClassicScripts.SolHeredit::new);
+        BossScripts.register("sol_heredit", SolHereditScript::new);
+        SolHereditScript.register();
 
         for (String form : new String[]{"zulrah", "zulrah_magma", "zulrah_tanzanite"}) {
             BossScripts.register(form, () -> new ZulrahScript(form));

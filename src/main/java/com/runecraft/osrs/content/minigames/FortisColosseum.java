@@ -112,12 +112,13 @@ public final class FortisColosseum {
                 .defenceBonus(15, 15, 15, 20, 30).attackBonus(0, 0, 25)
                 .attack(AttackDef.of("javelin", AttackType.RANGED, 48, 12, 10).particle("minecraft:crit"))
                 .size(1.6f, 3.4f, 1.6f).skin(0xA08060, 0xC0A060, 0x8A6A3A, 0xE0C040));
-        // The manticore fires three orbs (magic, ranged, melee) per 10-tick cycle; modelled as three attacks.
-        list.add(m(MANTICORE, "Manticore", 320).stats(250, 300, 300, 250, 300, 350).speed(10)
+        // The manticore fires three orbs per 10-tick cycle (manticorePattern): its own attack is the first orb (magic or
+        // ranged; the melee orb is never first, weight 0) and the Colosseum session fires the other two a tick apart. Range 15.
+        list.add(m(MANTICORE, "Manticore", 320).stats(250, 300, 300, 250, 300, 350).speed(MANTICORE_CYCLE_TICKS)
                 .defenceBonus(0, 0, 0, 10, 25).attackBonus(0, 0, 0)
-                .attack(AttackDef.of("melee_orb", AttackType.CRUSH, 31, 10, 10).particle("minecraft:crit"))
-                .attack(AttackDef.of("ranged_orb", AttackType.RANGED, 36, 10, 10).particle("minecraft:crit"))
-                .attack(AttackDef.of("magic_orb", AttackType.MAGIC, 31, 10, 10).particle("minecraft:witch"))
+                .attack(AttackDef.of("melee_orb", AttackType.CRUSH, 31, MANTICORE_RANGE, 0).particle("minecraft:crit"))
+                .attack(AttackDef.of("ranged_orb", AttackType.RANGED, 36, MANTICORE_RANGE, 10).particle("minecraft:crit"))
+                .attack(AttackDef.of("magic_orb", AttackType.MAGIC, 31, MANTICORE_RANGE, 10).particle("minecraft:witch"))
                 .size(1.6f, 2.0f, 1.6f).skin(0xB06A2A, 0x8A4A1A, 0x6A3A1A, 0x3A2A1A));
         list.add(m(SHOCKWAVE, "Shockwave Colossus", 239).stats(125, 120, 190, 150, 350, 220).speed(5)
                 .defenceBonus(15, 15, 15, 5, 35).attackBonus(0, 55, 0)
@@ -420,9 +421,12 @@ public final class FortisColosseum {
         return 10 * tier; // approx
     }
 
-    /** Totemic: a healing totem appears when an enemy drops to 50%; it heals 30% of the enemy's health every few ticks. */
+    /**
+     * Totemic: a healing totem appears when an enemy drops to 50%; it heals 30% of the enemy's health "every few ticks". The
+     * strategy guide times the heals on Sol Heredit (75 hitpoints) at every 4.2 seconds, i.e. 7 ticks, used for every enemy.
+     */
     public static final int TOTEM_HEAL_PERCENT = 30;
-    public static final int TOTEM_HEAL_TICKS = 10; // approx: "every few ticks"
+    public static final int TOTEM_HEAL_TICKS = 7;
     public static final int TOTEM_RESPAWN_TICKS = 200;
 
     /** Volatility: an enemy explodes on death, one (I) or two (II, III) tiles beyond its size; III leaves molten sand. */
@@ -438,6 +442,40 @@ public final class FortisColosseum {
     /** The Javelin Colossus replaces every fifth attack with a javelin thrown at the player's tile (ignores prayer). */
     public static final int JAVELIN_EVERY = 5;
     public static final int JAVELIN_FLIGHT_TICKS = 3; // approx
+
+    // ------------------------------------------------------------------ manticores
+
+    /** Manticores charge for 10 ticks and attack from up to 15 tiles (= blocks in the arena). */
+    public static final int MANTICORE_CYCLE_TICKS = 10;
+    public static final int MANTICORE_RANGE = 15;
+
+    /** An orb's max hit: 31 melee, 36 ranged, 31 magic. */
+    public static int manticoreOrbMaxHit(AttackType style) {
+        return style == AttackType.RANGED ? 36 : 31;
+    }
+
+    /**
+     * A manticore's three orbs, launched a tick apart (OSRS Wiki, "Manticore"): ranged-magic or magic-ranged, the last always
+     * melee; with Mantimayhem III the melee orb can come anywhere. {@code first} is the orb its own attack fired.
+     * // approx: with Mantimayhem III the melee orb is never first here, and paired manticores don't copy each other's pattern
+     */
+    public static List<AttackType> manticorePattern(int mayhemTier, AttackType first, Random random) {
+        List<AttackType> rest = new ArrayList<>(List.of(AttackType.MAGIC, AttackType.RANGED, AttackType.CRUSH));
+        rest.remove(first.isMelee() ? AttackType.CRUSH : first);
+        AttackType lead = first.isMelee() ? AttackType.CRUSH : first;
+        if (mayhemTier >= 3 || lead == AttackType.CRUSH) {
+            java.util.Collections.shuffle(rest, random);
+        }
+        List<AttackType> out = new ArrayList<>();
+        out.add(lead);
+        out.addAll(rest);
+        return out;
+    }
+
+    /** Mantimayhem I: each orb hits twice. */
+    public static int manticoreHitsPerOrb(int mayhemTier) {
+        return mayhemTier >= 1 ? 2 : 1;
+    }
 
     /** The minotaur heals another monster below 75% to full when the player is out of its melee reach (within 7 tiles). */
     public static final int MINOTAUR_HEAL_BELOW_PERCENT = 75;

@@ -8,9 +8,18 @@ import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.systems.CombatAchievements.Tier;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -120,5 +129,96 @@ class MulticannonTest {
         assertNotNull(ContentRegistry.quest(Multicannon.QUEST));
         assertTrue(ContentRegistry.blocks().stream().anyMatch(b -> b.id().equals(Multicannon.BLOCK)));
         assertTrue(ContentRegistry.npcs().stream().anyMatch(n -> n.id().equals(Multicannon.NULODION)));
+    }
+
+    private static List<String[]> snapshot() throws IOException {
+        String res = "osrs/systems/cannon_immunity.tsv";
+        Path p = Path.of("src/test/resources", res);
+        List<String> lines;
+        if (Files.exists(p)) {
+            lines = Files.readAllLines(p, StandardCharsets.UTF_8);
+        } else {
+            try (InputStream in = MulticannonTest.class.getClassLoader().getResourceAsStream(res)) {
+                assertNotNull(in, "missing " + res);
+                lines = new String(in.readAllBytes(), StandardCharsets.UTF_8).lines().toList();
+            }
+        }
+        List<String[]> out = new ArrayList<>();
+        for (String l : lines) {
+            if (!l.isBlank() && !l.startsWith("#")) {
+                out.add(l.split("\t", -1));
+            }
+        }
+        return out;
+    }
+
+    /** Immune when every infobox version says immunecannon = Yes (or Immune). */
+    private static boolean immuneOnWiki(String value) {
+        for (String v : value.toLowerCase(Locale.ROOT).split("/")) {
+            if (!v.equals("yes") && !v.equals("immune")) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Test
+    void immunityMatchesTheWikiSnapshot() throws IOException {
+        List<String[]> rows = snapshot();
+        assertTrue(rows.size() > 600, rows.size() + " snapshot rows");
+        Set<String> expected = new TreeSet<>();
+        List<String> wrong = new ArrayList<>();
+        for (String[] r : rows) {
+            boolean immune = immuneOnWiki(r[2]);
+            for (String id : r[1].split(",")) {
+                if (immune) {
+                    expected.add(id);
+                }
+                if (Multicannon.immune(id) != immune) {
+                    wrong.add(r[0] + " (" + id + "): wiki " + r[2] + ", mod " + Multicannon.immune(id));
+                }
+            }
+        }
+        assertEquals(List.of(), wrong);
+        assertEquals(expected, new TreeSet<>(Multicannon.IMMUNE));
+        // Crabs used for AFK training and demonic gorillas are the wiki's named examples.
+        for (String id : new String[]{"sand_crab", "ammonite_crab", "demonic_gorilla", "kurask", "gemstone_crab"}) {
+            assertTrue(Multicannon.immune(id), id);
+        }
+        for (String id : new String[]{"moss_giant", "hill_giant", "green_dragon", "corporeal_beast", "giant_mole"}) {
+            assertFalse(Multicannon.immune(id), id);
+        }
+        for (String boss : Multicannon.CANNON_BOSSES) {
+            assertNotNull(ContentRegistry.boss(boss), boss);
+            assertFalse(Multicannon.immune(boss), boss);
+        }
+    }
+
+    @Test
+    void targetAreasAreMeasuredInTilesNotBlocks() {
+        // Gielinor tiles are two blocks: a monster six blocks north of the centre block is three tiles north.
+        int[] d = Multicannon.tileDelta(0, 0, 0, -6);
+        assertEquals(0, d[0]);
+        assertEquals(3, d[1]);
+        assertTrue(Multicannon.inArea(0, d[0], d[1]));
+        d = Multicannon.tileDelta(10, -20, 26, -20); // 16 blocks east = 8 tiles: the edge of the range
+        assertEquals(8, d[0]);
+        assertEquals(0, d[1]);
+        assertTrue(Multicannon.inArea(2, d[0], d[1]));
+        d = Multicannon.tileDelta(10, -20, 28, -20); // 9 tiles: out of range
+        assertFalse(Multicannon.inArea(2, d[0], d[1]));
+        assertEquals(18, Multicannon.reachBlocks());
+        // The old block-unit check shot a monster 12 blocks (6 tiles) away as if it were out of range of an 8-block box.
+        d = Multicannon.tileDelta(0, 0, 12, 0);
+        assertEquals(6, d[0]);
+        assertTrue(Multicannon.inArea(2, d[0], d[1]));
+    }
+
+    @Test
+    void nulodionSellsPartsSingly() {
+        // OSRS Wiki, Nulodion: "Multicannon parts for sale", 107% sell rate: 200,625 a part (802,500 for four) vs 750,000.
+        assertEquals(200_625, Multicannon.PART_PRICE);
+        assertTrue(4 * Multicannon.PART_PRICE > Multicannon.SET_PRICE);
+        assertEquals(ItemCatalog.get(Multicannon.AMMO_MOULD).value() * 107 / 100, Multicannon.MOULD_PRICE);
     }
 }
