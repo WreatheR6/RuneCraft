@@ -216,7 +216,7 @@ final class KandarinMoreQuests {
     }
 
     private static void watchtower(QuestBook b) {
-        b.npc("watchtower_wizard", "Watchtower Wizard", "watchtower", 0, 3, 0xF0D8CB, 0x6A3A9A, 0x4A2A6A, 0xE0E0E5);
+        b.npc("watchtower_wizard", "Watchtower Wizard", "watchtower", 0, -8, 0xF0D8CB, 0x6A3A9A, 0x4A2A6A, 0xE0E0E5);
         b.npc("og_ogre", "Og", "gu_tanoth", 3, 3, 0x9AA06A, 0x6A4A2C, 0x4A3A1C, 0x5A6A3B);
         b.item("power_crystal", "Power crystal", "gem", 0x80F0E0, "A crystal that powers the watchtower's shield.");
         b.boss(BossDef.of("ogre_shaman", "Ogre shaman").level(113).stats(110, 80, 80, 80, 90, 1).speed(4)

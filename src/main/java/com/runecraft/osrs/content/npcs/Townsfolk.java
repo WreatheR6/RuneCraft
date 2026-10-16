@@ -222,7 +222,7 @@ public final class Townsfolk {
         bankers("gnome_stronghold_tree", "Tree Gnome Stronghold", 2449, 3484, 2451, 3484); // OSRS: first floor of the Grand Tree
         bankers("canifis", "Canifis", 3512, 3478, 3512, 3481);
         bankers("port_phasmatys", "Port Phasmatys", 3689, 3466, 3691, 3466);
-        bankers("shilo", "Shilo Village", 2852, 2953, 2855, 2953);
+        bankers("shilo", "Shilo Village", 2851, 2954, 2853, 2955); // OSRS tiles, behind the booths along 2953
         bankers("nardah", "Nardah", 3425, 2891, 3425, 2893); // behind the booths along x 3426 (OSRS 3425, 2889-2894)
         bankers("lletya", "Lletya", 2352, 3166, 2354, 3166);
         bankers("castle_wars", "Castle Wars", 2443, 3085, 2445, 3085);

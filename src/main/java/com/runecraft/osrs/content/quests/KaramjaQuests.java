@@ -54,7 +54,8 @@ final class KaramjaQuests {
     }
 
     private static void shiloVillage(QuestBook b) {
-        b.npc("mosol_rei", "Mosol Rei", "SHILO_VILLAGE", 0, 9, 0x7A4A2A, 0xC0A040, 0x6A4A1A, 0x3A2A1A);
+        b.npc("mosol_rei", "Mosol Rei", "SHILO_VILLAGE", 62, 8, // outside the east gate (OSRS 2883, 2951)
+                0x7A4A2A, 0xC0A040, 0x6A4A1A, 0x3A2A1A);
         b.item("zadimus_corpse", "Zadimus corpse", "bones", 0xA09080, "The remains of the priest Zadimus.");
         b.item("sword_pommel", "Sword pommel", "gem", 0xC0A060, "An ivory sword pommel.");
         b.item("bone_key", "Bone key", "key", 0xE8E0C8, "A key carved from bone.");

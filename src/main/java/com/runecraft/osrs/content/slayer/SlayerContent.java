@@ -105,13 +105,15 @@ public final class SlayerContent implements ContentModule {
     public List<NpcDef> npcs() {
         return List.of(
                 NpcDef.of("turael", "Turael", "BURTHORPE", 4, 3, 0xC8A080, 0x3A5A8A, 0x3A3A4A, 0x6A4A2A),
-                NpcDef.of("mazchna", "Mazchna", "CANIFIS", -4, 3, 0xB09070, 0x4A3A2A, 0x3A2A2A, 0x2A2A2A),
+                NpcDef.of("mazchna", "Mazchna", "CANIFIS", 30, -42, // north-east of the square (OSRS 3511, 3509)
+                        0xB09070, 0x4A3A2A, 0x3A2A2A, 0x2A2A2A),
                 NpcDef.of("vannaka", "Vannaka", "EDGEVILLE", 5, -4, 0xC8A080, 0x6A6A70, 0x4A4A50, 0x8A8A8A),
                 NpcDef.of("chaeldar", "Chaeldar", "zanaris", 3, 2, 0xA0C0A0, 0x6A9A5A, 0x4A6A3A, 0xD0E0B0),
                 NpcDef.of("nieve", "Nieve", "GNOME_STRONGHOLD", 4, -3, 0xD8B898, 0x3A6A3A, 0x2A4A2A, 0xB08040),
                 // Steve takes over from Nieve after Monkey Madness II; both stand at the Stronghold Slayer Cave entrance.
                 NpcDef.of("steve", "Steve", "GNOME_STRONGHOLD", 6, -3, 0xC8A080, 0x3A5A2A, 0x2A3A1A, 0x6A4A2A),
-                NpcDef.of("duradel", "Duradel", "SHILO_VILLAGE", 3, 4, 0x6A4A3A, 0x8A2A2A, 0x5A1A1A, 0x202020),
+                NpcDef.of("duradel", "Duradel", "SHILO_VILLAGE", 34, -54, // in his hut (OSRS 2869, 2982)
+                        0x6A4A3A, 0x8A2A2A, 0x5A1A1A, 0x202020),
                 NpcDef.of("konar", "Konar quo Maten", "mount_karuulm", 2, 2, 0x8AA080, 0x6A4A6A, 0x4A2A4A, 0xC0A040),
                 NpcDef.of("krystilia", "Krystilia", "EDGEVILLE", -6, 4, 0xE0C0A0, 0x2A2A2A, 0x1A1A1A, 0xC03030));
     }

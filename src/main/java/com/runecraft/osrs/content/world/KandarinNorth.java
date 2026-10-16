@@ -366,7 +366,7 @@ final class KandarinNorth {
      * Rellekka's market square as in the OSRS cache: two rows of stalls facing each other across the
      * square, the west row at x 2638 (fish 3672, fur 3676, fish 3680, facing east) and the east row at
      * x 2647 (market stall 3672, fish 3676, fur 3680, facing west), with the barrels and crates beside them.
-     * The thieving chest (steel arrowtips) stays by the market's south-east corner (approx; OSRS 2650, 3659).
+     * The thieving chest (steel arrowtips) stands on its OSRS tile south-east of the market (2650, 3659).
      */
     static StructureDef rellekkaMarket() {
         KandarinKit k = new KandarinKit("rellekka_market", "Rellekka market").replaces("rellekka_arrowtip_chest");
@@ -385,8 +385,8 @@ final class KandarinNorth {
             k.set(KandarinKit.X(c[0]), 0, KandarinKit.Z(c[1]), "minecraft:spruce_planks");
         }
         k.set(KandarinKit.X(2638), 1, KandarinKit.Z(3666), "minecraft:spruce_planks");
-        k.set(KandarinKit.X(2654), 0, KandarinKit.Z(3666), "runecraft:arrowtip_chest");
-        k.set(KandarinKit.X(2654) + 1, 0, KandarinKit.Z(3666), "minecraft:barrel[facing=up]");
+        k.set(KandarinKit.X(2650), 0, KandarinKit.Z(3659), "runecraft:arrowtip_chest");
+        k.set(KandarinKit.X(2650) + 1, 0, KandarinKit.Z(3659), "minecraft:barrel[facing=up]");
         return k.build();
     }
 
