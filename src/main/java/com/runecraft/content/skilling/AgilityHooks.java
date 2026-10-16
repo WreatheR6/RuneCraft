@@ -1,5 +1,6 @@
 package com.runecraft.content.skilling;
 
+import com.runecraft.action.ActionManager;
 import com.runecraft.collection.CollectionLog;
 import com.runecraft.entity.QuestNpcEntity;
 import com.runecraft.osrs.GielinorMap;
@@ -40,6 +41,8 @@ import java.util.UUID;
 final class AgilityHooks {
     /** Piece each player has selected at Grace's shop (not persisted). */
     private static final Map<UUID, Integer> SELECTED = new HashMap<>();
+    /** Server tick ({@link ActionManager#mcTick()}) until which each player is still crossing a shortcut (not persisted). */
+    private static final Map<UUID, Long> CROSSING = new HashMap<>();
     /**
      * Wilderness course state per player, kept in the skilling world save (section "wilderness_agility"):
      * tickets waiting at the dispenser, fee paid, lap streak and the loot multipliers waiting.
@@ -92,6 +95,7 @@ final class AgilityHooks {
         // Logging out inside the Wilderness course costs ten laps of streak; dying loses the fee (and the streak).
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ServerPlayerEntity player = handler.player;
+            CROSSING.remove(player.getUuid());
             Wild w = wild(player);
             if (w.paid && Gielinor.wildernessLevel(player) > 0) {
                 w.streak = AgilityRewards.streakAfterLogout(w.streak);
@@ -138,9 +142,16 @@ final class AgilityHooks {
 
     // ------------------------------------------------------------------ shortcuts
 
-    /** Uses the agility shortcut whose end is at this block: requirement checks, then off to the other end. */
+    /**
+     * Uses the agility shortcut whose end is at this block: requirement checks, then off to the other end. A use takes the
+     * shortcut's ticks; until they pass, using a shortcut again does nothing (no instant back-and-forth).
+     */
     private static void shortcut(ServerPlayerEntity player, BlockPos pos) {
         ServerWorld world = (ServerWorld) player.getWorld();
+        Long crossing = CROSSING.get(player.getUuid());
+        if (crossing != null && ActionManager.mcTick() < crossing) {
+            return;
+        }
         // Indoor shortcuts (dungeons, the Slayer Tower) by exact block position.
         for (List<AgilityShortcuts.BlockEnds> list : List.of(Dungeons.shortcutEnds(), AgilityShortcuts.TOWER_ENDS)) {
             for (AgilityShortcuts.BlockEnds e : list) {
@@ -155,7 +166,7 @@ final class AgilityHooks {
                 BlockPos to = end == 0 ? new BlockPos(e.x2(), e.y2(), e.z2()) : new BlockPos(e.x1(), e.y1(), e.z1());
                 BlockPos land = beside(world, to);
                 player.teleport(world, land.getX() + 0.5, land.getY(), land.getZ() + 0.5, player.getYaw(), player.getPitch());
-                done(player, s);
+                done(player, s, e.ticks());
                 return;
             }
         }
@@ -166,15 +177,19 @@ final class AgilityHooks {
             Msg.game(player, "Nothing interesting happens.");
             return;
         }
+        boolean fromA = s.endAt(x, y) == 0;
+        if (!fromA && s.oneWay()) {
+            Msg.game(player, "You can't " + s.verb() + " from this side.");
+            return;
+        }
         if (!allowed(player, s)) {
             return;
         }
-        boolean fromA = s.endAt(x, y) == 0;
         int tx = fromA ? s.bx() : s.ax();
         int ty = fromA ? s.by() : s.ay();
         BlockPos land = Gielinor.safeSpot(world, GielinorMap.toBlockX(tx) + 1, GielinorMap.toBlockZ(ty) + 1);
         player.teleport(world, land.getX() + 0.5, land.getY(), land.getZ() + 0.5, player.getYaw(), player.getPitch());
-        done(player, s);
+        done(player, s, s.ticks());
     }
 
     /** Level, skill and equipment requirements of a shortcut (messages the player when one is missing). */
@@ -204,7 +219,8 @@ final class AgilityHooks {
         return true;
     }
 
-    private static void done(ServerPlayerEntity player, AgilityShortcuts.Shortcut s) {
+    private static void done(ServerPlayerEntity player, AgilityShortcuts.Shortcut s, int ticks) {
+        CROSSING.put(player.getUuid(), ActionManager.mcTick() + (long) ticks * ActionManager.MC_TICKS_PER_GAME_TICK);
         if (s.xp() > 0) {
             XpService.add(player, Skill.AGILITY, s.xp());
         }

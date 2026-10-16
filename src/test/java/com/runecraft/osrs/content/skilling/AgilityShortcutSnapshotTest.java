@@ -116,6 +116,31 @@ class AgilityShortcutSnapshotTest {
         assertEquals(49, AgilityShortcuts.at(1776, 3884).level());
     }
 
+    /**
+     * The one-way climbing rocks only go from end a to end b (Yanille: out of the town, north; Taverley: over the wall,
+     * west), and every use takes a few ticks, so no XP shortcut can be clicked back and forth for free.
+     */
+    @Test
+    void oneWayAndUseTicks() {
+        for (String id : AgilityShortcuts.ONE_WAY) {
+            assertTrue(AgilityShortcuts.SHORTCUTS.stream().anyMatch(s -> s.id().equals(id) && s.oneWay()), id);
+        }
+        AgilityShortcuts.Shortcut yanille = AgilityShortcuts.at(2561, 3106);
+        assertEquals("yanille_climbing_rocks", yanille.id());
+        assertTrue(yanille.by() > yanille.ay(), "Yanille's rocks lead north out of the town");
+        AgilityShortcuts.Shortcut taverley = AgilityShortcuts.at(2946, 3439);
+        assertEquals("taverley_climbing_rocks", taverley.id());
+        assertTrue(taverley.bx() < taverley.ax(), "Taverley's rocks lead west into Taverley");
+        assertFalse(AgilityShortcuts.at(3372, 2959).oneWay());
+        for (AgilityShortcuts.Shortcut s : AgilityShortcuts.SHORTCUTS) {
+            assertTrue(s.ticks() >= AgilityShortcuts.MIN_TICKS, s.id());
+        }
+        assertEquals(4, AgilityShortcuts.at(3372, 2959).ticks());
+        for (AgilityShortcuts.BlockEnds e : AgilityShortcuts.TOWER_ENDS) {
+            assertEquals(AgilityShortcuts.MIN_TICKS, e.ticks(), e.id());
+        }
+    }
+
     /** Lists the wiki shortcuts the mod lacks (most are in dungeons or areas that aren't built). */
     @Test
     void reportMissing() throws Exception {
