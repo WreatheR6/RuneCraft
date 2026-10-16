@@ -86,7 +86,7 @@ public class RuneCraftClient implements ClientModInitializer {
         for (com.runecraft.osrs.content.BossDef b : com.runecraft.osrs.content.ContentRegistry.bosses()) {
             register(ModEntities.DATA_BOSS_TYPES.get(b.id), b.id, b.model, b.scale);
         }
-        EntityRendererRegistry.register(ModEntities.QUEST_NPC, ctx -> new OsrsBipedRenderer<>(ctx, null, 1.0f));
+        EntityRendererRegistry.register(ModEntities.QUEST_NPC, QuestNpcRenderer::new);
 
         List<Block> cutout = new ArrayList<>(ModBlocks.FISHING_SPOTS.values());
         cutout.add(ModBlocks.FIRE);

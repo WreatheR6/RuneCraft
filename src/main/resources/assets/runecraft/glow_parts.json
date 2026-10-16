@@ -315,8 +315,7 @@
     "head"
   ],
   "catacomb_hellhound": [
-    "head",
-    "jaw"
+    "eyes"
   ],
   "catacomb_hill_giant": [
     "head"
@@ -1049,8 +1048,7 @@
     "bug11_tail"
   ],
   "hellhound": [
-    "head",
-    "jaw"
+    "eyes"
   ],
   "hespori": [
     "maw",
@@ -1444,6 +1442,76 @@
     "staff_orb",
     "hand_glow"
   ],
+  "mg_tzhaar_hur_tel": [
+    "torso",
+    "belly",
+    "head",
+    "crest",
+    "jaw",
+    "arm_l",
+    "arm_r",
+    "fore_l",
+    "fore_r",
+    "shin_l",
+    "shin_r",
+    "tail"
+  ],
+  "mg_tzhaar_ket_keh": [
+    "torso",
+    "belly",
+    "head",
+    "crest",
+    "jaw",
+    "arm_l",
+    "arm_r",
+    "fore_l",
+    "fore_r",
+    "shin_l",
+    "shin_r",
+    "maul_head"
+  ],
+  "mg_tzhaar_ket_rak": [
+    "torso",
+    "head",
+    "crest",
+    "jaw",
+    "arm_l",
+    "fore_l",
+    "fore_r",
+    "shin_l",
+    "shin_r",
+    "tail",
+    "maul_head"
+  ],
+  "mg_tzhaar_mej_jal": [
+    "torso",
+    "belly",
+    "head",
+    "crest",
+    "jaw",
+    "arm_l",
+    "arm_r",
+    "fore_l",
+    "fore_r",
+    "shin_l",
+    "shin_r",
+    "tail",
+    "orb"
+  ],
+  "mg_tzhaar_mej_kah": [
+    "torso",
+    "belly",
+    "head",
+    "crest",
+    "jaw",
+    "arm_l",
+    "arm_r",
+    "fore_l",
+    "fore_r",
+    "shin_l",
+    "tail",
+    "orb"
+  ],
   "mind_golem": [
     "core",
     "head"
@@ -1458,6 +1526,7 @@
     "head"
   ],
   "mutated_bloodveld": [
+    "torso",
     "head"
   ],
   "muttadile": [
@@ -1472,8 +1541,7 @@
     "head"
   ],
   "nechryael": [
-    "head",
-    "jaw"
+    "head"
   ],
   "nex": [
     "head",
@@ -2331,6 +2399,19 @@
     "eye_r",
     "ear_inner_l",
     "ear_inner_r"
+  ],
+  "tzhaar_hur": [
+    "torso",
+    "belly",
+    "head",
+    "crest",
+    "jaw",
+    "arm_l",
+    "arm_r",
+    "fore_l",
+    "fore_r",
+    "shin_l",
+    "shin_r"
   ],
   "tzhaar_hur_citizen": [
     "torso",

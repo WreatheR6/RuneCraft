@@ -234,6 +234,9 @@ Recurring conflict spots:
   - Quests: DT II's four boss chapters as quest fights at dps-calc quest stats (scaled boss scripts), Mysterious Figure and Sliske's wights; Garden of Tranquillity, Secrets of the North, One Small Favour (Slagilith stats fixed) per the wiki; ToB Sotetseg maze for the arena party and Bloat turning.
   - Bosses: Zulrah's 4 rotations from the wiki, damage cap, green Jad phase; Vorkath acid/spawn/rapid-fire fixes; Grotesque Guardians' four phases; Corp's dark energy core; K'ril's special; KQ invented halving removed; Mole burrow window; Nex cough; Muspah prayer shield; Leviathan shadow stun; CAs 544 → 561.
 
+- **Session 2, round 26 B: slayer models part 5:**
+  - Models (`Common5`, `round26_sheet.png`): hellhound (and the Catacombs one) as a deep-chested hound with a spiked spine and glowing eyes, legless hovering nechryael with bat wings and a curled tail, mutated bloodveld on the bloodveld body; jelly and warped jelly re-sculpts rejected. TzHaar NPCs (TzHaar-Hur, Fight Cave/Pit officials, TzHaar-Ket-Rak) now use the shared TzHaar caste body (`Common5.variants()`, rendered by `client/QuestNpcRenderer` for any NPC id with a model spec).
+
 ## Backlog (things agents reported as missing or approximate)
 
 - **Combat Achievements:**
@@ -270,7 +273,7 @@ Recurring conflict spots:
   - Remaining spawn stand-ins: Braindeath (off-map), Mudskipper Point (cache mudskippers are underground at 2950,9525), Jatizso ice trolls (cache tiles 2387-2418, 3853-3869 lie north of the traced coast), Fortis guards (snapshot has no Varlamore).
   - Zeah multicombat polygons are from 2018; Varlamore has none.
   - Overworld implings don't roam.
-- **Models:** most common creatures are still blocky approximations (still open: hellhound, nechryael, dust devil, aberrant spectre, kurask (round 20 attempt rejected), wyrm, hydra, jelly). TzHaar NPCs (shopkeepers, Fight Pit/Ket-Rak NPCs) are biped skins, not the shared TzHaar model.
+- **Models:** most common creatures are still blocky approximations (still open: wyrm (no reliable reference for its OSRS shape), jelly and its warped/vitreous variants (round 26 attempt rejected), greater nechryael shares the nechryael model).
 - **Bosses:**
   - Doom: grubs, shield/burrow phases, melee punish missing (CAs 613–615, 620, 624); delve runs and held loot are in memory only. Awakened mechanics are guesses; DT2 tablets/quartzes missing; normal Vardorvis stat row has Str/Def 1.
   - Yama, Doom, Maggot King and Royal Titans lairs are approx (no cache surface tile).

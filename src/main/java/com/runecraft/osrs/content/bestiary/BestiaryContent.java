@@ -52,6 +52,7 @@ public final class BestiaryContent implements ContentModule {
     public List<ModelSpec.Variant> modelVariants() {
         List<ModelSpec.Variant> v = new java.util.ArrayList<>(BestiaryLookalikes.variants());
         v.addAll(BestiaryRemnants.variants());
+        v.addAll(Common5.variants());
         return v;
     }
 

@@ -37,6 +37,8 @@ final class Overrides {
         l.addAll(Flagships4.overrides());
         // ---- round 24 re-sculpts, part 4 (slayer creatures) ----
         l.addAll(Common4.overrides());
+        // ---- round 26 re-sculpts, part 5 (slayer creatures) ----
+        l.addAll(Common5.overrides());
         return l;
     }
 }
