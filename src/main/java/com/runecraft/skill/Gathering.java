@@ -132,6 +132,11 @@ public final class Gathering {
 
     // ---------------- Mining ----------------
 
+    /** Invisible Mining boost for success rolls (celestial ring, +4); set by the skilling module. */
+    public static java.util.function.ToIntFunction<ServerPlayerEntity> miningBoost = p -> 0;
+    /** Whether a mining enhancer gives an extra ore (charged celestial ring, 1/10); set by the skilling module. */
+    public static java.util.function.BiPredicate<ServerPlayerEntity, String> extraOre = (p, ore) -> false;
+
     public static void mine(ServerPlayerEntity player, BlockPos pos, Rock rock) {
         if (!Stun.check(player)) {
             return;
@@ -172,7 +177,7 @@ public final class Gathering {
                     return false;
                 }
                 world.playSound(null, pos, SoundEvents.BLOCK_STONE_HIT, SoundCategory.PLAYERS, 1.0f, 0.8f + random.nextFloat() * 0.4f);
-                double chance = Chance.lerp(s.currentLevel(Skill.MINING), rock.low(), rock.high());
+                double chance = Chance.lerp(s.currentLevel(Skill.MINING) + miningBoost.applyAsInt(p), rock.low(), rock.high());
                 if (random.nextDouble() >= chance) {
                     return true;
                 }
@@ -199,6 +204,12 @@ public final class Gathering {
                             .replace(" ore", "")) + ".");
                 }
                 XpService.add(p, Skill.MINING, rock.xp());
+                // A mining enhancer's extra ore (with its XP); lost along with the XP when there is no room for it.
+                if (extraOre.test(p, mined) && Inv.hasRoomFor(p, mined)) {
+                    Inv.give(p, mined, 1);
+                    XpService.add(p, Skill.MINING, rock.xp());
+                    Msg.action(p, "Your celestial ring shines as you mine an extra ore.");
+                }
                 // Random gems while mining ore (1/256, not from essence or gem rocks): sapphire 1/2,
                 // emerald 1/4, ruby 1/8, diamond 1/8.
                 if (rock.oreItem() != null && rock != Rock.RUNE_ESSENCE && rock != Rock.PURE_ESSENCE && random.nextInt(256) == 0) {

@@ -132,7 +132,32 @@ public final class GuardiansRewards {
             {"fire", "water_talisman", "water_rune", "steam_rune", 19, 10.0},
             {"earth", "fire_talisman", "fire_rune", "lava_rune", 23, 10.0},
             {"fire", "earth_talisman", "earth_rune", "lava_rune", 23, 10.5}};
+    /** Without a binding necklace each essence has a 50% chance; a worn necklace (one charge per altar click) makes it 100%. */
     public static final double COMBINATION_SUCCESS = 0.5;
+
+    /** Success chance of a combination rune in the temple, with or without a binding necklace charge used. */
+    public static double combinationSuccess(boolean binding) {
+        return binding ? 1.0 : COMBINATION_SUCCESS;
+    }
+
+    /**
+     * Aether runes in the temple (OSRS Wiki, Aether rune / Polycatalytic guardian stone): at the catalytic Cosmic altar, 90
+     * Runecraft, one soul rune and one aether catalyst per rune, 20 XP each; a crafted rune gives a polycatalytic guardian
+     * stone (3 catalytic energy). A failed rune keeps its catalyst.
+     */
+    public static final String AETHER_ALTAR = "cosmic";
+    public static final int AETHER_LEVEL = 90;
+    public static final double AETHER_XP = 20.0;
+    public static final String AETHER_INPUT = "soul_rune";
+    public static final String AETHER_CATALYST = "aether_catalyst";
+    public static final String AETHER_RUNE = "aether_rune";
+    public static final String POLYCATALYTIC_STONE = "polycatalytic_guardian_stone";
+    public static final int ENERGY_PER_POLYCATALYTIC_STONE = 3;
+
+    /** Catalytic energy from catalytic and polycatalytic stones. */
+    public static int catalyticStoneEnergy(int stones, int polycatalytic) {
+        return stones * ENERGY_PER_STONE + polycatalytic * ENERGY_PER_POLYCATALYTIC_STONE;
+    }
 
     /** Searches affordable with stored points (one elemental + one catalytic point each). */
     public static int searches(int elementalPoints, int catalyticPoints) {

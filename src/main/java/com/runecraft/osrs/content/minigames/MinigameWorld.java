@@ -164,6 +164,7 @@ public final class MinigameWorld {
             // Volcanic Mine
             {"vm_boulder", "Boulder", "5A4A40", "rock"},
             {"vm_vent", "Volcanic vent", "C05020", "fire_lava"},
+            {"vm_gas_hole", "Gas hole", "4A3A30", "rock"},
             {"vm_chamber", "Gas chamber", "6A3A2A", "rock"},
             // Soul Wars
             {"sw_soul_obelisk", "Soul Obelisk", "8A3AC0", "obelisk"},

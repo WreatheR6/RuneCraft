@@ -181,6 +181,16 @@ public final class FarmingDisease {
         pay("yanillian", "tomato", 5);
         pay("krandorian", "cabbage", 30);
         pay("wildblood", "nasturtiums", 1);
+        // Sailing crops (OSRS Wiki): hemp 6 flax, cotton 6 hemp (flax wants 6 grain, which has no item here).
+        pay("hemp", "flax", 6);
+        pay("cotton", "hemp", 6);
+        pay("camphor", "white_berries", 10);
+        pay("ironwood", "curry_leaf", 10);
+        pay("rosewood", "dragonfruit", 8);
+        // Coral nurseries (Chet): 5 giant seaweed / elkhorn coral / pillar coral.
+        pay("elkhorn", "giant_seaweed", 5);
+        pay("pillar", "elkhorn_coral", 5);
+        pay("umbral", "pillar_coral", 5);
         // Trees
         pay("oak", "tomato", 5);
         pay("willow", "cooking_apple", 5);

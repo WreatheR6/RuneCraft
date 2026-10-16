@@ -570,6 +570,12 @@ final class FarmingHooks {
             Msg.action(player, "You dig up the tree stump.");
             return;
         }
+        com.runecraft.osrs.content.skilling.GatheringData.ModTree modTree =
+                com.runecraft.osrs.content.skilling.GatheringData.tree(crop.produce());
+        if (modTree != null) {
+            chopModTree(player, world, pos, crop, modTree, key);
+            return;
+        }
         Tree tree = Tree.valueOf(crop.produce());
         if (!SkillingUtil.need(player, Skill.WOODCUTTING, tree.level(), "chop down this tree")) {
             return;
@@ -599,6 +605,48 @@ final class FarmingHooks {
                     Msg.action(p, "You get some " + SkillingUtil.lower(tree.logName()) + ".");
                     if (expired) {
                         com.runecraft.skill.Gathering.TREE_TIMERS.reset(key);
+                        n.putBoolean("stump", true);
+                        setVisual(world, pos, crop, 2, n);
+                        Msg.game(p, "You have chopped down the tree. Dig up the stump with a spade to clear the patch.");
+                        return false;
+                    }
+                }
+                return true;
+            }
+        });
+    }
+
+    /**
+     * A farmed Sailing hardwood tree (camphor, ironwood, rosewood): chopped like its wild tree in GatheringData, each log
+     * with the wild tree's depletion chance; when it falls the stump is dug up as usual.
+     */
+    private static void chopModTree(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop,
+                                    com.runecraft.osrs.content.skilling.GatheringData.ModTree tree, String key) {
+        if (!SkillingUtil.need(player, Skill.WOODCUTTING, tree.level(), "chop down this tree")) {
+            return;
+        }
+        if (Tools.bestAxe(player, Players.data(player).skills()) == null) {
+            Msg.game(player, "You do not have an axe which you have the woodcutting level to use.");
+            return;
+        }
+        String blockId = SkillingUtil.blockId(world.getBlockState(pos));
+        Msg.action(player, "You swing your axe at the tree.");
+        SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, blockId, 4) {
+            @Override
+            boolean roll(ServerPlayerEntity p, Random random) {
+                NbtCompound n = SkillingState.get(p.getServer()).entry("patches", key);
+                ToolTier axe = Tools.bestAxe(p, Players.data(p).skills());
+                if (axe == null || n.getBoolean("stump") || !n.contains("crop")) {
+                    return false;
+                }
+                world.playSound(null, pos, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.PLAYERS, 1f, 0.9f);
+                double chance = Chance.lerp(SkillingUtil.level(p, Skill.WOODCUTTING), tree.low(axe.woodcuttingMultiplier()),
+                        tree.high(axe.woodcuttingMultiplier()));
+                if (random.nextDouble() < chance) {
+                    SkillingUtil.give(p, tree.log(), 1);
+                    XpService.add(p, Skill.WOODCUTTING, tree.xp());
+                    Msg.action(p, "You get some " + SkillingUtil.lower(SkillingUtil.name(tree.log())) + ".");
+                    if (random.nextDouble() < tree.depleteChance()) {
                         n.putBoolean("stump", true);
                         setVisual(world, pos, crop, 2, n);
                         Msg.game(p, "You have chopped down the tree. Dig up the stump with a spade to clear the patch.");

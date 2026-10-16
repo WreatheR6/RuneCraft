@@ -256,6 +256,8 @@ public final class MinigameItems {
         simple(items, "catalytic_guardian_stone", "Catalytic guardian stone", "ore", 0x8040E0, 0, "Powers the Great Guardian.");
         simple(items, "polyelemental_guardian_stone", "Polyelemental guardian stone", "ore", 0xE0A060, 0,
                 "Powers the Great Guardian (3 elemental energy).");
+        simple(items, GuardiansRewards.POLYCATALYTIC_STONE, "Polycatalytic guardian stone", "ore", 0xB060E0, 0,
+                "Powers the Great Guardian (3 catalytic energy).");
         for (Object[] a : MinigameRules.Guardians.ALTARS) {
             String altar = (String) a[0];
             simple(items, GuardiansRewards.portalTalisman(altar), Character.toUpperCase(altar.charAt(0)) + altar.substring(1)
@@ -272,6 +274,8 @@ public final class MinigameItems {
         }
         // Volcanic Mine boulder byproducts (also sold in Petrified Pete's Ore Shop).
         simple(items, "calcite", "Calcite", "ore", 0xE8E0C8, 100, "A white crystalline mineral.");
+        // Petrified Pete hands every miner a heat-proof vessel (36 uses a game) to harden the lava.
+        simple(items, VolcanicMine.VESSEL, "Heat-proof vessel", "vial_water", 0xC07040, 0, "A heat-proof water container.");
         simple(items, "pyrophosphite", "Pyrophosphite", "ore", 0xC06A3A, 100, "A crystalline mineral that shines with an inner light.");
         single(items, "atlaxs_diary", "Atlax's diary", "book", 0x6A4A8A, 1, "An old diary of someone's experiences at the Temple of the Eye.");
         wear(items, "hat_of_the_eye", "Hat of the eye", "cowl", 0x8A2A8A, Slot.HEAD, 1,

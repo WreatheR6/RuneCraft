@@ -27,6 +27,10 @@ public final class CommonItems {
     }
 
     public static void add(ItemSink items) {
+        // Aether runes (skilling: Cosmic Altar; minigames: Guardians of the Rift) and their catalyst (Doom of Mokhaiotl drop).
+        items.add("aether_rune", "Aether rune", Kind.RUNE, "rune", 0xB070E0).value(300).examine("A combined cosmic and soul rune.");
+        items.add("aether_catalyst", "Aether catalyst", Kind.SIMPLE, "orb", 0x9A60D0).value(100)
+                .examine("Used with soul runes at the Cosmic Altar to make aether runes.");
         // Machete (npcs: Karamja shops; minigames: Tai Bwo Wannai Cleanup; skilling: hunter loot).
         items.add("machete", "Machete", Kind.TOOL, "scimitar", 0x9A9AA0).value(40).stack(1).examine("An effective tool for chopping tough jungle plants.");
         items.add("green_dragonhide", "Green dragonhide", Kind.SIMPLE, "hide", 0x3A8A3A).value(1800);

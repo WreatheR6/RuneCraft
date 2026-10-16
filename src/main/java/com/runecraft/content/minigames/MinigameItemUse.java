@@ -53,7 +53,8 @@ public final class MinigameItemUse {
             if (sp.getItemCooldownManager().isCoolingDown(stack.getItem())) {
                 return TypedActionResult.pass(stack);
             }
-            if (com.runecraft.content.minigames.games.NightmareZoneSession.drink(sp, stack, hand, id) || blighted(sp, stack, hand, id)) {
+            if (com.runecraft.content.minigames.games.NightmareZoneSession.drink(sp, stack, hand, id) || blighted(sp, stack, hand, id)
+                    || com.runecraft.content.minigames.games.VolcanicMineSession.useVessel(sp, id)) {
                 return TypedActionResult.success(stack);
             }
             boolean used = switch (id) {

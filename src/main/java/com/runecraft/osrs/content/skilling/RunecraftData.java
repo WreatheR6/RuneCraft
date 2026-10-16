@@ -43,7 +43,7 @@ public final class RunecraftData extends SkillingPart {
             new Combination("lava_rune", "Lava rune", 23, RuneAltar.EARTH, "fire_talisman", "fire_rune", 10.0, 0xE06020),
             new Combination("lava_rune", "Lava rune", 23, RuneAltar.FIRE, "earth_talisman", "earth_rune", 10.5, 0xE06020));
 
-    /** A binding necklace guarantees combination runes for 16 crafting trips (charges kept in this NBT key). */
+    /** A binding necklace guarantees combination runes for 16 altar clicks (per-player charges, Jewellery.chargePool; the NBT key is legacy). */
     public static final int BINDING_CHARGES = 16;
     public static final String BINDING_NBT = "BindingCharges";
 
@@ -127,6 +127,35 @@ public final class RunecraftData extends SkillingPart {
         return null;
     }
 
+    /**
+     * Aether runes (OSRS Wiki): 90 Runecraft, at the Cosmic Altar with Magic Imbue, one soul rune and one aether catalyst per
+     * rune; 20 XP each (30 with daeyalt essence). 50% per essence without a binding necklace; a failed rune loses its essence
+     * and soul rune but not the catalyst.
+     */
+    public static final int AETHER_LEVEL = 90;
+    public static final double AETHER_XP = 20.0;
+    public static final String AETHER_RUNE = "aether_rune";
+    public static final String AETHER_CATALYST = "aether_catalyst";
+
+    /**
+     * Daeyalt essence (OSRS Wiki, Daeyalt essence mine): 60 Mining, 5 XP and 2-3 daeyalt shards per successful roll on the
+     * active essence rock (one of three, switching about every 60 seconds); Noranna Tytanin trades each shard for one
+     * daeyalt essence, which crafts like pure essence for 50% more Runecraft XP and is used before pure essence.
+     */
+    public static final int DAEYALT_MINING_LEVEL = 60;
+    public static final double DAEYALT_MINING_XP = 5.0;
+    public static final int DAEYALT_SHARDS_MIN = 2;
+    public static final int DAEYALT_SHARDS_MAX = 3;
+    public static final double DAEYALT_XP_MULTIPLIER = 1.5;
+    public static final int DAEYALT_ROCKS = 3;
+    /** Game ticks between switches of the active daeyalt rock ("roughly every 60 seconds"). */
+    public static final int DAEYALT_SWITCH_TICKS = 100;
+
+    /** Runecraft XP for binding {@code essence} at an altar giving {@code xpPerEssence}, daeyalt or not. */
+    public static double essenceXp(double xpPerEssence, int essence, boolean daeyalt) {
+        return xpPerEssence * essence * (daeyalt ? DAEYALT_XP_MULTIPLIER : 1.0);
+    }
+
     /** Ourania altar XP multiplier over the normal altar (approximation of the ZMI XP table). */
     public static final double OURANIA_MULTIPLIER = 1.7;
 
@@ -152,6 +181,10 @@ public final class RunecraftData extends SkillingPart {
 
     @Override
     public void items(ItemSink s) {
+        simple(s, "daeyalt_shard", "Daeyalt shard", "shard", 0x9A90A8, 1).stack(Integer.MAX_VALUE)
+                .examine("A shard of daeyalt essence. Noranna Tytanin will trade them for daeyalt essence.");
+        simple(s, "daeyalt_essence", "Daeyalt essence", "essence", 0x8A8098, 4)
+                .examine("Imbued with the power of the Stone of Jas: worth half again as much experience as pure essence.");
         for (RuneAltar a : RuneAltar.values()) {
             String name = a.rune().displayName().replace(" rune", "");
             if (a != RuneAltar.AIR) {   // air talisman is built in
@@ -192,7 +225,20 @@ public final class RunecraftData extends SkillingPart {
 
     @Override
     public List<BlockDef> blocks() {
-        return List.of(BlockDef.scripted("ourania_altar", "Ourania altar", 0x6A4A8A, "altar"));
+        return List.of(BlockDef.scripted("ourania_altar", "Ourania altar", 0x6A4A8A, "altar"),
+                BlockDef.scripted(DAEYALT_ROCK, "Daeyalt essence", 0x9A90A8, "ore"));
+    }
+
+    /** The daeyalt essence rock block and Noranna Tytanin, who trades daeyalt shards for essence. */
+    public static final String DAEYALT_ROCK = "daeyalt_essence_rock";
+    public static final String NORANNA = "noranna_tytanin";
+
+    /**
+     * Whether a daeyalt rock is the active one: each of the three is active for one {@link #DAEYALT_SWITCH_TICKS} period in
+     * three, its turn set by {@code phase} (approx: OSRS picks the next rock at random).
+     */
+    public static boolean daeyaltActive(long gameTick, int phase) {
+        return Math.floorMod(gameTick / DAEYALT_SWITCH_TICKS + phase, DAEYALT_ROCKS) == 0;
     }
 
     /** The Dark Mage, who repairs essence pouches (talk to him, or reach him with NPC Contact). */
@@ -205,11 +251,16 @@ public final class RunecraftData extends SkillingPart {
         return List.of(PlaceDef.of("ourania_cave", "Ourania Cave", 2453, 3231, PlaceDef.Style.NONE, List.of()),
                 // Approx: in OSRS he stands in the centre of the Abyss (NPCs aren't placed underground here), so he waits a
                 // little west of the Abyss shaft by the Mage of Zamorak's spot.
-                PlaceDef.of("abyss_dark_mage", "Dark Mage", 3094, 3557, PlaceDef.Style.NONE, List.of()));
+                PlaceDef.of("abyss_dark_mage", "Dark Mage", 3094, 3557, PlaceDef.Style.NONE, List.of()),
+                // The daeyalt essence mine lies beneath Darkmeyer (entrance stairs at 3632,3340, OSRS Wiki); approx: its three
+                // essence rocks and Noranna stand at the entrance instead of in the cave below.
+                PlaceDef.of("daeyalt_essence_mine", "Daeyalt essence mine", 3632, 3340, PlaceDef.Style.CAMP,
+                        List.of(DAEYALT_ROCK, DAEYALT_ROCK, DAEYALT_ROCK)));
     }
 
     @Override
     public List<NpcDef> npcs() {
-        return List.of(NpcDef.of(DARK_MAGE, "Dark Mage", "abyss_dark_mage", 0, 0, 0xC8A080, 0x2A1A3A, 0x1A1A2A, 0x2A1A3A));
+        return List.of(NpcDef.of(DARK_MAGE, "Dark Mage", "abyss_dark_mage", 0, 0, 0xC8A080, 0x2A1A3A, 0x1A1A2A, 0x2A1A3A),
+                NpcDef.of(NORANNA, "Noranna Tytanin", "daeyalt_essence_mine", 3, 2, 0xD8B090, 0x6A3A3A, 0x3A2A2A, 0x6A3A3A));
     }
 }

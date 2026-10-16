@@ -194,10 +194,11 @@ public final class MenuService {
             r.outputs().forEach((item, count) -> {
                 com.runecraft.osrs.ItemDef def = com.runecraft.osrs.ItemCatalog.get(item);
                 if (r.outputDoses() > 0 && def != null && def.kind() == com.runecraft.osrs.ItemDef.Kind.POTION) {
-                    // A 3-dose potion: one dose already used up (potions track doses as item damage).
+                    // A 3-dose potion: one dose already used up (potions track doses as item damage). The amulet of
+                    // chemistry makes some of them with four doses.
                     for (int i = 0; i < count; i++) {
                         net.minecraft.item.ItemStack potion = Inv.stack(item, 1);
-                        potion.setDamage(4 - r.outputDoses());
+                        potion.setDamage(4 - com.runecraft.content.systems.JewelleryService.chemistryDoses(player, r.outputDoses()));
                         Inv.give(player, potion);
                     }
                 } else {

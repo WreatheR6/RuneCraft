@@ -68,6 +68,49 @@ public final class VolcanicMine {
     /** Stalactites from an earthquake hit for up to this much. */
     public static final int EARTHQUAKE_MAX_HIT = 25;
 
+    /**
+     * Heat-proof vessel (OSRS Wiki): handed out on entry, 36 throws of water a game (72 with the 10,000-point "large water
+     * container" upgrade); water hardens the lava ahead (north, east, south or west) into a platform that melts after 90
+     * seconds, and anyone still standing on it falls into the lava.
+     */
+    public static final String VESSEL = "heat_proof_vessel";
+    public static final int VESSEL_USES = 36;
+    public static final int LARGE_VESSEL_USES = 72;
+    public static final int LARGE_VESSEL_POINTS = 10_000;
+    public static final int PLATFORM_TICKS = 150;
+    /** Blocks ahead a throw of water can reach (approx). */
+    public static final int THROW_RANGE = 3;
+    /** Damage from falling into the lava when a platform melts underneath (approx: "massive damage"). */
+    public static final int MELT_DAMAGE = 30;
+
+    /** Throws of water per game. */
+    public static int vesselUses(boolean largeContainer) {
+        return largeContainer ? LARGE_VESSEL_USES : VESSEL_USES;
+    }
+
+    /** Gas holes shoot a player across the lava channel for a little damage (approx: up to 5). */
+    public static final int GAS_HOLE_MAX_HIT = 5;
+
+    /**
+     * Boulders in the mine (OSRS Wiki): one in the central channel; a second in the western channel with ten or more players,
+     * a third in the eastern channel with twenty or more.
+     */
+    public static int boulders(int players) {
+        return players >= 20 ? 3 : players >= 10 ? 2 : 1;
+    }
+
+    /**
+     * Meteorites (OSRS Wiki): waves fall at random, more often as stability drops; they fall slowly (dodgeable) and hit
+     * everything in a 3x3 area about as hard as stalactites. Chance per 10-tick update and fall time approx.
+     */
+    public static final int METEOR_MAX_HIT = 25;
+    public static final int METEOR_FALL_TICKS = 4;
+    public static final int METEOR_RADIUS = 1;
+
+    public static double meteorChance(int stability) {
+        return Math.max(0, Math.min(1, (70 - stability) / 120.0));
+    }
+
     /** Points for killing a lava beast: one per 10 damage dealt (the whole beast here) plus the final blow. */
     public static int lavaBeastPoints() {
         return LAVA_BEAST_HP / LAVA_BEAST_DAMAGE_PER_POINT + LAVA_BEAST_KILL_POINTS;

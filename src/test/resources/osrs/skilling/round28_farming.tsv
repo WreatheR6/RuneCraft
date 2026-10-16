@@ -1,0 +1,11 @@
+# OSRS Wiki "Farming info" infoboxes (Kiyogitpy/osrs-wiki-data, July 2026): crop	patch	level	seeds	plant_xp	check_xp	harvest_xp	growth_minutes	planted	produce	payment
+flax	HOPS	18	3	16	0	17.5	60	flax_seed	flax	-
+hemp	HOPS	37	3	33	0	37	80	hemp_seed	hemp	flax:6
+cotton	HOPS	71	3	72	0	82	100	cotton_seed	cotton_boll	hemp:6
+camphor	HARDWOOD	66	1	88	17840	0	5120	camphor_sapling	camphor_tree	white_berries:10
+ironwood	HARDWOOD	80	1	145	20380	0	5120	ironwood_sapling	ironwood_tree	curry_leaf:10
+rosewood	HARDWOOD	92	1	252	23100	0	5760	rosewood_sapling	rosewood_tree	dragonfruit:8
+elkhorn	CORAL	28	1	20.5	0	24	160	elkhorn_frag	elkhorn_coral	giant_seaweed:5
+pillar	CORAL	52	1	52	0	60	160	pillar_frag	pillar_coral	elkhorn_coral:5
+umbral	CORAL	77	1	136	0	159	160	umbral_frag	umbral_coral	pillar_coral:5
+seaweed	SEAWEED	23	1	19	0	21	40	seaweed_spore	giant_seaweed	-

@@ -1,0 +1,186 @@
+package com.runecraft.content.skilling;
+
+import com.runecraft.action.ActionManager;
+import com.runecraft.content.BlockHooks;
+import com.runecraft.content.systems.SysState;
+import com.runecraft.entity.QuestNpcEntity;
+import com.runecraft.osrs.Chance;
+import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.skilling.RunecraftData;
+import com.runecraft.osrs.content.skilling.ShootingStars;
+import com.runecraft.osrs.content.systems.Jewellery;
+import com.runecraft.player.Players;
+import com.runecraft.quest.QuestScripts;
+import com.runecraft.skill.Gathering;
+import com.runecraft.skill.Tools;
+import com.runecraft.skill.XpService;
+import com.runecraft.util.Inv;
+import com.runecraft.util.Msg;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.random.Random;
+
+/**
+ * Round 28 skilling extras: the celestial ring (invisible +4 Mining, stardust charges giving a 1/10 extra ore) and the
+ * daeyalt essence mine (the active essence rock, shards traded with Noranna Tytanin for daeyalt essence).
+ */
+public final class SkillingExtras {
+    /** NBT key holding a celestial ring's stardust charges. */
+    public static final String CELESTIAL_NBT = "CelestialCharges";
+
+    private SkillingExtras() {
+    }
+
+    static void init() {
+        Gathering.miningBoost = p -> celestialWorn(p) ? ShootingStars.CELESTIAL_BOOST : 0;
+        Gathering.extraOre = SkillingExtras::celestialExtraOre;
+        UseItemCallback.EVENT.register((player, world, hand) -> {
+            ItemStack stack = player.getStackInHand(hand);
+            if (hand != Hand.MAIN_HAND || stack.isEmpty() || !Inv.idOf(stack).equals(ShootingStars.STARDUST)) {
+                return TypedActionResult.pass(stack);
+            }
+            if (world.isClient() || !(player instanceof ServerPlayerEntity sp)) {
+                return TypedActionResult.pass(stack);
+            }
+            return chargeCelestial(sp) ? TypedActionResult.success(stack) : TypedActionResult.pass(stack);
+        });
+        BlockHooks.register(RunecraftData.DAEYALT_ROCK, (player, pos, state) -> mineDaeyalt(player, pos));
+        QuestScripts.onTalk(RunecraftData.NORANNA, SkillingExtras::noranna);
+    }
+
+    // ------------------------------------------------------------------ celestial ring
+
+    /** The worn celestial ring (charged or not), or an empty stack. */
+    private static ItemStack celestialRing(ServerPlayerEntity p) {
+        ItemStack ring = SysState.of(p).worn(Jewellery.Slot.RING);
+        String id = Inv.idOf(ring);
+        return id.equals(ShootingStars.CELESTIAL_RING) || id.equals(ShootingStars.CELESTIAL_RING_UNCHARGED) ? ring : ItemStack.EMPTY;
+    }
+
+    public static boolean celestialWorn(ServerPlayerEntity p) {
+        return !celestialRing(p).isEmpty();
+    }
+
+    public static int celestialCharges(ItemStack ring) {
+        NbtCompound nbt = ring.getNbt();
+        return nbt != null && nbt.contains(CELESTIAL_NBT) ? nbt.getInt(CELESTIAL_NBT) : 0;
+    }
+
+    private static boolean celestialExtraOre(ServerPlayerEntity p, String ore) {
+        ItemStack ring = celestialRing(p);
+        if (ring.isEmpty() || !ShootingStars.celestialExtraOre(ore, celestialCharges(ring), p.getRandom().nextDouble())) {
+            return false;
+        }
+        int left = celestialCharges(ring) - 1;
+        if (left <= 0) {
+            SysState.of(p).worn.put(Jewellery.Slot.RING, Inv.stack(ShootingStars.CELESTIAL_RING_UNCHARGED, 1));
+            Msg.red(p, "Your celestial ring has run out of stardust.");
+        } else {
+            ring.getOrCreateNbt().putInt(CELESTIAL_NBT, left);
+        }
+        return true;
+    }
+
+    /**
+     * Using stardust charges the celestial ring worn, or else the first one in the inventory: one charge per stardust, up to
+     * 10,000. An uncharged ring becomes a charged one.
+     */
+    public static boolean chargeCelestial(ServerPlayerEntity p) {
+        ItemStack ring = celestialRing(p);
+        boolean worn = !ring.isEmpty();
+        int slot = -1;
+        if (!worn) {
+            for (int i = 0; i < p.getInventory().size(); i++) {
+                String id = Inv.idOf(p.getInventory().getStack(i));
+                if (id.equals(ShootingStars.CELESTIAL_RING) || id.equals(ShootingStars.CELESTIAL_RING_UNCHARGED)) {
+                    slot = i;
+                    ring = p.getInventory().getStack(i);
+                    break;
+                }
+            }
+        }
+        if (ring.isEmpty()) {
+            return false;
+        }
+        int charges = celestialCharges(ring);
+        int add = ShootingStars.celestialCharge(charges, Inv.count(p, ShootingStars.STARDUST));
+        if (add <= 0) {
+            Msg.game(p, "Your celestial ring can't hold any more stardust.");
+            return true;
+        }
+        Inv.remove(p, ShootingStars.STARDUST, add);
+        ItemStack charged = Inv.idOf(ring).equals(ShootingStars.CELESTIAL_RING) ? ring : Inv.stack(ShootingStars.CELESTIAL_RING, 1);
+        charged.getOrCreateNbt().putInt(CELESTIAL_NBT, charges + add);
+        if (charged != ring) {
+            if (worn) {
+                SysState.of(p).worn.put(Jewellery.Slot.RING, charged);
+            } else {
+                p.getInventory().setStack(slot, charged);
+            }
+        }
+        Msg.game(p, "You add " + add + " stardust to your celestial ring. It now has " + (charges + add) + " charges.");
+        return true;
+    }
+
+    // ------------------------------------------------------------------ daeyalt essence mine
+
+    private static int phase(BlockPos pos) {
+        return Math.floorMod(pos.getX() + pos.getZ(), RunecraftData.DAEYALT_ROCKS);
+    }
+
+    private static void mineDaeyalt(ServerPlayerEntity player, BlockPos pos) {
+        if (!SkillingUtil.need(player, Skill.MINING, RunecraftData.DAEYALT_MINING_LEVEL, "mine daeyalt essence")) {
+            return;
+        }
+        if (Tools.bestPickaxe(player, Players.data(player).skills()) == null) {
+            Msg.game(player, "You need a pickaxe to mine this rock.");
+            return;
+        }
+        if (!RunecraftData.daeyaltActive(ActionManager.gameTick(), phase(pos))) {
+            Msg.game(player, "This rock isn't active at the moment. Look for the one with sparkles spiralling around it.");
+            return;
+        }
+        String blockId = SkillingUtil.blockId(player.getWorld().getBlockState(pos));
+        Msg.action(player, "You swing your pickaxe at the rock.");
+        SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, blockId, 4) {
+            @Override
+            boolean roll(ServerPlayerEntity p, Random random) {
+                if (!RunecraftData.daeyaltActive(ActionManager.gameTick(), phase(pos))) {
+                    Msg.game(p, "The rock's sparkle fades: another daeyalt rock is active now.");
+                    return false;
+                }
+                p.getWorld().playSound(null, pos, SoundEvents.BLOCK_STONE_HIT, SoundCategory.PLAYERS, 1f, 1f);
+                // Success curve approx (OSRS: about 4,000 shards an hour with a dragon pickaxe).
+                int level = SkillingUtil.level(p, Skill.MINING) + (celestialWorn(p) ? ShootingStars.CELESTIAL_BOOST : 0);
+                if (random.nextDouble() < Chance.lerp(level, 96, 160)) {
+                    int shards = RunecraftData.DAEYALT_SHARDS_MIN
+                            + random.nextInt(RunecraftData.DAEYALT_SHARDS_MAX - RunecraftData.DAEYALT_SHARDS_MIN + 1);
+                    SkillingUtil.give(p, "daeyalt_shard", shards);
+                    XpService.add(p, Skill.MINING, RunecraftData.DAEYALT_MINING_XP);
+                    Msg.action(p, "You mine " + shards + " daeyalt shards.");
+                }
+                return true;
+            }
+        });
+    }
+
+    /** Noranna Tytanin trades every daeyalt shard for a daeyalt essence (OSRS sends them to the bank; here, the inventory). */
+    private static void noranna(ServerPlayerEntity player, QuestNpcEntity npc) {
+        int shards = Inv.count(player, "daeyalt_shard");
+        if (shards <= 0) {
+            Msg.game(player, "Noranna Tytanin: Bring me daeyalt shards from the essence rocks and I'll give you daeyalt essence"
+                    + " for them, one for one.");
+            return;
+        }
+        Inv.remove(player, "daeyalt_shard", shards);
+        SkillingUtil.give(player, "daeyalt_essence", shards);
+        Msg.game(player, "Noranna Tytanin exchanges your " + shards + " daeyalt shards for daeyalt essence.");
+    }
+}

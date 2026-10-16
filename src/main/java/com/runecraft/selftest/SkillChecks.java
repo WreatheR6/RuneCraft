@@ -91,7 +91,145 @@ final class SkillChecks {
         checks.add(new SelfTest.Check("skill:fletching", g::fletching));
         checks.add(new SelfTest.Check("skill:smithing", g::smithing));
         checks.add(new SelfTest.Check("skill:construction", g::construction));
+        checks.add(new SelfTest.Check("skill:daeyalt_essence", g::daeyaltEssence));
+        checks.add(new SelfTest.Check("skill:aether_runes", g::aetherRunes));
+        checks.add(new SelfTest.Check("skill:celestial_ring", g::celestialRing));
+        checks.add(new SelfTest.Check("skill:jewellery_chemistry_bounty", g::chemistryAndBounty));
+        checks.add(new SelfTest.Check("skill:farming_flax", g::flaxPatch));
         return checks;
+    }
+
+    // ------------------------------------------------------------------ round 28 skilling extras
+
+    private com.runecraft.content.systems.SysState.SysPlayer sys() {
+        return com.runecraft.content.systems.SysState.of(p());
+    }
+
+    /** Daeyalt essence is crafted first, like pure essence, for 50% more XP. */
+    private String daeyaltEssence() {
+        p().getInventory().clear();
+        RuneAltar altar = RuneAltar.AIR;
+        BlockPos pos = placeNear(ModBlocks.ALTARS.get(altar).getDefaultState());
+        give("daeyalt_essence", 4);
+        give("pure_essence", 2);
+        String rune = altar.rune().itemId();
+        int xp0 = xp(Skill.RUNECRAFT);
+        useBlock(pos, Direction.WEST);
+        int want = 4 * altar.runesPerEssence(99);
+        if (Inv.count(p(), rune) != want || Inv.count(p(), "daeyalt_essence") != 0 || Inv.count(p(), "pure_essence") != 2) {
+            throw failure("4 daeyalt + 2 pure essence made " + Inv.count(p(), rune) + " " + rune + " (expected " + want + " from the daeyalt"
+                    + " alone), left " + Inv.count(p(), "daeyalt_essence") + " daeyalt and " + Inv.count(p(), "pure_essence") + " pure");
+        }
+        int got = gained(Skill.RUNECRAFT, xp0, (int) Math.round(altar.xp() * 4 * 1.5 * 10), "daeyalt essence");
+        p().getInventory().clear();
+        return want + " " + rune + ", +" + got / 10.0 + " xp (1.5x)";
+    }
+
+    /** Aether runes at the Cosmic Altar with Magic Imbue and a binding necklace: certain, one catalyst per rune. */
+    private String aetherRunes() {
+        p().getInventory().clear();
+        java.util.function.Predicate<ServerPlayerEntity> imbued = com.runecraft.skill.Runecrafting.imbued;
+        com.runecraft.skill.Runecrafting.imbued = q -> true;
+        try {
+            BlockPos pos = placeNear(ModBlocks.ALTARS.get(RuneAltar.COSMIC).getDefaultState());
+            sys().jewelleryCharges.remove("binding_necklace");
+            sys().worn.put(com.runecraft.osrs.content.systems.Jewellery.Slot.NECK, Inv.stack("binding_necklace", 1));
+            hold("soul_rune", 3);
+            give("pure_essence", 3);
+            give("aether_catalyst", 5);
+            int xp0 = xp(Skill.RUNECRAFT);
+            useBlock(pos, Direction.WEST);
+            int made = Inv.count(p(), "aether_rune");
+            if (made != 3 || Inv.count(p(), "aether_catalyst") != 2 || Inv.count(p(), "soul_rune") != 0 || Inv.count(p(), "pure_essence") != 0) {
+                throw failure("3 essence, soul runes and catalysts with a binding necklace made " + made + " aether runes, left "
+                        + Inv.count(p(), "aether_catalyst") + " catalysts, " + Inv.count(p(), "soul_rune") + " soul runes, "
+                        + Inv.count(p(), "pure_essence") + " essence");
+            }
+            int charges = sys().jewelleryCharges.getOrDefault("binding_necklace", -1);
+            if (charges != com.runecraft.osrs.content.systems.Jewellery.BINDING_CHARGES - 1) {
+                throw failure("the binding necklace has " + charges + " charges after one altar click, expected 15");
+            }
+            int got = gained(Skill.RUNECRAFT, xp0, 600, "aether runes");
+            return "3 aether runes, binding necklace 15 charges left, +" + got / 10.0 + " xp";
+        } finally {
+            com.runecraft.skill.Runecrafting.imbued = imbued;
+            sys().worn.remove(com.runecraft.osrs.content.systems.Jewellery.Slot.NECK);
+            sys().jewelleryCharges.remove("binding_necklace");
+            p().getInventory().clear();
+        }
+    }
+
+    /** The celestial ring: +4 invisible Mining while worn, charged with stardust by using it. */
+    private String celestialRing() {
+        p().getInventory().clear();
+        com.runecraft.osrs.content.systems.Jewellery.Slot ring = com.runecraft.osrs.content.systems.Jewellery.Slot.RING;
+        sys().worn.put(ring, Inv.stack("celestial_ring_uncharged", 1));
+        try {
+            int boost = com.runecraft.skill.Gathering.miningBoost.applyAsInt(p());
+            if (boost != 4) {
+                throw failure("a worn celestial ring gives a Mining boost of " + boost + ", expected 4");
+            }
+            hold("stardust", 25);
+            useItem();
+            ItemStack worn = sys().worn(ring);
+            int charges = com.runecraft.content.skilling.SkillingExtras.celestialCharges(worn);
+            if (!Inv.idOf(worn).equals("celestial_ring") || charges != 25 || Inv.count(p(), "stardust") != 0) {
+                throw failure("using 25 stardust left the ring " + Inv.idOf(worn) + " with " + charges + " charges and "
+                        + Inv.count(p(), "stardust") + " stardust");
+            }
+            return "+4 Mining, charged with 25 stardust";
+        } finally {
+            sys().worn.remove(ring);
+            p().getInventory().clear();
+        }
+    }
+
+    /** Amulets of chemistry (5% four-dose potions, 5 charges) and bounty (25% one seed, 10 charges) until they crumble. */
+    private String chemistryAndBounty() {
+        com.runecraft.osrs.content.systems.Jewellery.Slot neck = com.runecraft.osrs.content.systems.Jewellery.Slot.NECK;
+        String[] ids = {"amulet_of_chemistry", "amulet_of_bounty"};
+        int[] saves = new int[2];
+        int[] tries = new int[2];
+        try {
+            for (int k = 0; k < 2; k++) {
+                sys().jewelleryCharges.remove(ids[k]);
+                sys().worn.put(neck, Inv.stack(ids[k], 1));
+                for (int i = 0; i < 4000 && sys().wornId(neck).equals(ids[k]); i++) {
+                    tries[k]++;
+                    boolean saved = k == 0 ? com.runecraft.content.systems.JewelleryService.chemistryDoses(p(), 3) == 4
+                            : com.runecraft.content.systems.JewelleryService.bountySeeds(p(), 3) == 1;
+                    if (saved) {
+                        saves[k]++;
+                    }
+                }
+                int pool = com.runecraft.osrs.content.systems.Jewellery.chargePool(ids[k]);
+                if (saves[k] != pool || sys().wornId(neck).equals(ids[k])) {
+                    throw failure(ids[k] + " gave " + saves[k] + " effects in " + tries[k] + " tries (expected " + pool
+                            + " and then to crumble), still worn: " + sys().wornId(neck));
+                }
+            }
+        } finally {
+            sys().worn.remove(neck);
+            sys().jewelleryCharges.remove(ids[0]);
+            sys().jewelleryCharges.remove(ids[1]);
+        }
+        return "chemistry " + saves[0] + " four-dose in " + tries[0] + ", bounty " + saves[1] + " saves in " + tries[1];
+    }
+
+    /** Sailing flax seeds planted in a hops patch (3 seeds, 16 Farming XP). */
+    private String flaxPatch() {
+        p().getInventory().clear();
+        BlockPos pos = placeNear(com.runecraft.content.minigames.Arena.module("hops_patch"));
+        hold("flax_seed", 3);
+        give("seed_dibber", 1);
+        int xp0 = xp(Skill.FARMING);
+        useBlock(pos, Direction.UP);
+        if (Inv.count(p(), "flax_seed") != 0) {
+            throw failure("planting flax in a hops patch left " + Inv.count(p(), "flax_seed") + " of 3 flax seeds");
+        }
+        int got = gained(Skill.FARMING, xp0, 160, "planting flax");
+        p().getInventory().clear();
+        return "planted 3 flax seeds, +" + got / 10.0 + " xp";
     }
 
     private static AssertionError failure(String message) {

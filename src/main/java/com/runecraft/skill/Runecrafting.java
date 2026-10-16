@@ -29,6 +29,22 @@ public final class Runecrafting {
             Msg.game(player, "You need a Runecraft level of " + altar.level() + " to infuse these runes.");
             return;
         }
+        // Daeyalt essence crafts like pure essence for 50% more XP and is used first, in its own craft (OSRS Wiki).
+        int daeyalt = Inv.count(player, "daeyalt_essence");
+        if (daeyalt > 0) {
+            Inv.remove(player, "daeyalt_essence", daeyalt);
+            int runes = daeyalt * altar.runesPerEssence(level);
+            Inv.give(player, altar.rune().itemId(), runes);
+            CollectionLog.record(player, altar.rune().itemId());
+            com.runecraft.content.GameEvents.fireObtain(player, altar.rune().itemId(), runes);
+            XpService.add(player, Skill.RUNECRAFT,
+                    com.runecraft.osrs.content.skilling.RunecraftData.essenceXp(altar.xp(), daeyalt, true));
+            Msg.game(player, "You bind the temple's power into " + altar.rune().name().toLowerCase(Locale.ROOT)
+                    + " runes, using your daeyalt essence first.");
+            ServerWorld world = (ServerWorld) player.getWorld();
+            world.spawnParticles(ParticleTypes.WITCH, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 30, 0.4, 0.4, 0.4, 0.1);
+            return;
+        }
         int pure = Inv.count(player, "pure_essence");
         int normal = altar.pureOnly() ? 0 : Inv.count(player, "rune_essence");
         int essence = pure + normal;

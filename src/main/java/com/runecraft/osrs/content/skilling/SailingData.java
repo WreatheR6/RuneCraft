@@ -240,6 +240,12 @@ public final class SailingData extends SkillingPart {
         simple(s, "shark_paint", "Shark paint", "pot_item", 0x5A6A7A, 1000).examine("Paint for the trim of a skiff or sloop.");
         // Salvage, sea creature and bounty items (wiki names; values approx).
         for (String[] it : SEA_ITEMS) {
+            if (it[0].endsWith(" seed") || it[0].endsWith(" frag")) {
+                // Sailing seeds and coral frags are planted (FarmingData: hops, hardwood and coral nursery crops).
+                s.add(SailingSea.itemId(it[0]), it[0], com.runecraft.osrs.ItemDef.Kind.SEED, it[1], Integer.parseInt(it[2], 16))
+                        .value(Integer.parseInt(it[3]));
+                continue;
+            }
             simple(s, SailingSea.itemId(it[0]), it[0], it[1], Integer.parseInt(it[2], 16), Integer.parseInt(it[3]));
         }
         for (String part : SailingSea.bountyParts()) {

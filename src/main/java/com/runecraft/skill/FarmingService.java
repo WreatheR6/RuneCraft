@@ -215,7 +215,8 @@ public final class FarmingService {
             Msg.game(player, "You need " + seeds + " seeds to plant an allotment.");
             return;
         }
-        held.decrement(seeds);
+        // Amulet of bounty: a 25% chance of using one seed instead of three in an allotment (OSRS Wiki).
+        held.decrement(seeds > 1 ? com.runecraft.content.systems.JewelleryService.bountySeeds(player, seeds) : seeds);
         // Hosidius: disease-free for players who completed the easy Kourend & Kebos diary.
         boolean diaryFree = com.runecraft.world.Gielinor.is(world) && FarmingDisease.hosidiusFarm(
                 com.runecraft.osrs.GielinorMap.toOsrsX(pos.getX()), com.runecraft.osrs.GielinorMap.toOsrsY(pos.getZ()))
