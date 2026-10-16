@@ -45,6 +45,10 @@ public final class SkullService {
             if (server.getTicks() % 20 != 0) {
                 return;
             }
+            // Keep each online player's skull ticks in SysState so the timer survives logouts and restarts.
+            for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+                com.runecraft.content.systems.SysState.of(p).skullTicks = (int) SKULLS.ticksLeft(p.getUuid(), ActionManager.gameTick());
+            }
             for (UUID id : SKULLS.expire(ActionManager.gameTick())) {
                 ServerPlayerEntity p = server.getPlayerManager().getPlayer(id);
                 if (p != null) {
@@ -54,16 +58,26 @@ public final class SkullService {
                 }
             }
         });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            ServerPlayerEntity p = handler.getPlayer();
+            com.runecraft.content.systems.SysState.of(p).skullTicks = (int) SKULLS.ticksLeft(p.getUuid(), ActionManager.gameTick());
+        });
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             if (!alive) {
+                com.runecraft.content.systems.SysState.of(newPlayer).skullTicks = 0;
                 SKULLS.clear(newPlayer.getUuid());
                 removeFromTeam(newPlayer);
                 showChampion(newPlayer);
             }
         });
-        // The scoreboard team is saved with the world but the timers are not: drop stale skulls on join.
+        // The skull's ticks left are saved in SysState: restore the timer on join, drop stale scoreboard skulls.
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity p = handler.getPlayer();
+            int saved = com.runecraft.content.systems.SysState.of(p).skullTicks;
+            if (saved > 0 && !SKULLS.isSkulled(p.getUuid(), ActionManager.gameTick())) {
+                SKULLS.skull(p.getUuid(), ActionManager.gameTick(), saved);
+                addToTeam(p);
+            }
             if (!SKULLS.isSkulled(p.getUuid(), ActionManager.gameTick())) {
                 removeFromTeam(p);
             }

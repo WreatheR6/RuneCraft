@@ -42,7 +42,7 @@ public enum Boss {
                     Drop.of("staff_of_the_dead", 1, 1, 508), Drop.of("wine_of_zamorak", 3, 6, 8))),
     TZTOK_JAD("tztok_jad", "TzTok-Jad", 702, 250, 640, 960, 480, 480, 960, 8, AttackType.MAGIC, 97, 0, Mechanic.JAD, 2.8f,
             0xC04010, Landmark.MOR_UL_REK, null,
-            List.of(Drop.always("fire_cape"), Drop.of("tokkul", 8000, 16000, 1), Drop.of("tzrek_jad", 1, 1, 200))),
+            List.of(Drop.always("fire_cape"), Drop.of("tokkul", 8032, 8032, 1), Drop.of("tzrek_jad", 1, 1, 200))),
     COUNT_DRAYNOR("count_draynor", "Count Draynor", 34, 35, 30, 25, 30, 1, 1, 4, AttackType.CRUSH, 3, 0, Mechanic.VAMPIRE,
             1.0f, 0x202030, Landmark.DRAYNOR_MANOR, null, List.of(Drop.always("bones"))),
     DELRITH("delrith", "Delrith", 27, 7, 32, 25, 27, 1, 1, 6, AttackType.SLASH, 3, 0, Mechanic.DEMON, 1.4f, 0xA02020,

@@ -33,6 +33,10 @@ public final class SysState extends PersistentState {
         public int runEnergy = 10000;
         public final Map<Jewellery.Slot, ItemStack> worn = new EnumMap<>(Jewellery.Slot.class);
         public int recoilCharges = Jewellery.RECOIL_CHARGES;
+        /** Per-player charge pools of the semi-precious jewellery (item id -> charges left; see Jewellery.chargePool). */
+        public final Map<String, Integer> jewelleryCharges = new HashMap<>();
+        /** Game ticks left on the PvP skull (SkullService), kept so a skull survives logging out and restarts. */
+        public int skullTicks;
         public Spellbooks.Book book = Spellbooks.Book.STANDARD;
         public String autocast = "";
         public final Map<ClueScrolls.Tier, long[]> clues = new EnumMap<>(ClueScrolls.Tier.class);
@@ -135,6 +139,10 @@ public final class SysState extends PersistentState {
             });
             n.put("Worn", worn);
             n.putInt("Recoil", recoilCharges);
+            n.putInt("SkullTicks", skullTicks);
+            NbtCompound jc = new NbtCompound();
+            jewelleryCharges.forEach(jc::putInt);
+            n.put("JewelleryCharges", jc);
             n.putString("Book", book.name());
             n.putString("Autocast", autocast);
             NbtCompound clues = new NbtCompound();
@@ -185,6 +193,12 @@ public final class SysState extends PersistentState {
                 }
             }
             recoilCharges = n.contains("Recoil") ? n.getInt("Recoil") : Jewellery.RECOIL_CHARGES;
+            skullTicks = n.getInt("SkullTicks");
+            jewelleryCharges.clear();
+            NbtCompound jc = n.getCompound("JewelleryCharges");
+            for (String k : jc.getKeys()) {
+                jewelleryCharges.put(k, jc.getInt(k));
+            }
             try {
                 book = Spellbooks.Book.valueOf(n.getString("Book"));
             } catch (IllegalArgumentException e) {

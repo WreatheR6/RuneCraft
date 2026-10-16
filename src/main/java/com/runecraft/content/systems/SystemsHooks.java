@@ -55,11 +55,13 @@ public final class SystemsHooks implements ModuleHooks {
         com.runecraft.combat.HitCalcBridge.specialAttack = SpecialAttackService::isSpecial;
         com.runecraft.combat.HitCalcBridge.soulStacks = p -> SysState.of(p).soulStacks;
         CombatHooks.addHurtListener(JewelleryService::onHurt);
+        CombatHooks.addIncomingModifier(JewelleryService::ethereum);
 
         GameEvents.onKill((p, e, stats) -> {
             ClueService.onKill(p, e, stats);
             DiaryService.onKill(p, e, stats);
             SpellService.onKill(p, e);
+            JewelleryService.onKill(p, e, stats);
         });
         GameEvents.onXp(DiaryService::onXp);
         GameEvents.onMake(DiaryService::onMake);

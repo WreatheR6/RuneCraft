@@ -207,7 +207,7 @@ callisto|Callisto|470|Blighted super restore(3)|3-4|1/18|super_restore(3):3-4/18
 callisto|Callisto|470|Blighted super restore(4)|3-4|1/18|super_restore:3-4/18
 callisto|Callisto|470|Ranging potion(2)|2-3|1/18|ranging_potion(2):2-3/18
 callisto|Callisto|470|Super combat potion(2)|2-3|1/18|super_combat_potion(2):2-3/18
-callisto|Callisto|470|Looting bag|1|1/3|-not in game
+callisto|Callisto|470|Looting bag|1|1/3|looting_bag:1-1/3
 callisto|Callisto|470|Brimstone key|1|-|-handled elsewhere:brimstone_key
 callisto|Callisto|470|Long bone|1|1/400|long_bone:1-1/400
 callisto|Callisto|470|Callisto cub|1|1/1500|-handled elsewhere:callisto_cub
@@ -252,7 +252,7 @@ artio|Artio|320|Blighted super restore(3)|3-4|1/18|super_restore(3):3-4/18
 artio|Artio|320|Blighted super restore(4)|3-4|1/18|super_restore:3-4/18
 artio|Artio|320|Ranging potion(2)|2-3|1/18|ranging_potion(2):2-3/18
 artio|Artio|320|Super combat potion(2)|2-3|1/18|super_combat_potion(2):2-3/18
-artio|Artio|320|Looting bag|1|1/3|-not in game
+artio|Artio|320|Looting bag|1|1/3|looting_bag:1-1/3
 artio|Artio|320|Brimstone key|1|-|-handled elsewhere:brimstone_key
 artio|Artio|320|Long bone|1|1/400|long_bone:1-1/400
 artio|Artio|320|Curved bone|1|1/5012.5|curved_bone:1-1/5012
@@ -303,7 +303,7 @@ venenatis|Venenatis|464|Blighted super restore(3)|3-4|1/18|super_restore(3):3-4/
 venenatis|Venenatis|464|Blighted super restore(4)|3-4|1/18|super_restore:3-4/18
 venenatis|Venenatis|464|Ranging potion(2)|2-3|1/18|ranging_potion(2):2-3/18
 venenatis|Venenatis|464|Super combat potion(2)|2-3|1/18|super_combat_potion(2):2-3/18
-venenatis|Venenatis|464|Looting bag|1|1/3|-not in game
+venenatis|Venenatis|464|Looting bag|1|1/3|looting_bag:1-1/3
 venenatis|Venenatis|464|Strange fruit|1|1/5|-not in game
 venenatis|Venenatis|464|Brimstone key|1|-|-handled elsewhere:brimstone_key
 venenatis|Venenatis|464|Long bone|1|1/400|long_bone:1-1/400
@@ -348,7 +348,7 @@ spindel|Spindel|302|Blighted super restore(3)|3-4|5/54|super_restore(3):3-4/11
 spindel|Spindel|302|Blighted super restore(4)|3-4|5/54|super_restore:3-4/11
 spindel|Spindel|302|Ranging potion(2)|2-3|5/54|ranging_potion(2):2-3/11
 spindel|Spindel|302|Super combat potion(2)|2-3|5/54|super_combat_potion(2):2-3/11
-spindel|Spindel|302|Looting bag|1|1/3|-not in game
+spindel|Spindel|302|Looting bag|1|1/3|looting_bag:1-1/3
 spindel|Spindel|302|Strange fruit|1|1/5|-not in game
 spindel|Spindel|302|Brimstone key|1|-|-handled elsewhere:brimstone_key
 spindel|Spindel|302|Venenatis spiderling|1|1/2800|-handled elsewhere:pet_venenatis_spiderling
@@ -399,7 +399,7 @@ vetion|Vet'ion|454|Blighted super restore(3)|3-4|1/18|super_restore(3):3-4/18
 vetion|Vet'ion|454|Blighted super restore(4)|3-4|1/18|super_restore:3-4/18
 vetion|Vet'ion|454|Ranging potion(2)|2-3|1/18|ranging_potion(2):2-3/18
 vetion|Vet'ion|454|Super combat potion(2)|2-3|1/18|super_combat_potion(2):2-3/18
-vetion|Vet'ion|454|Looting bag|1|1/3|-not in game
+vetion|Vet'ion|454|Looting bag|1|1/3|looting_bag:1-1/3
 vetion|Vet'ion|454|Brimstone key|1|-|-handled elsewhere:brimstone_key
 vetion|Vet'ion|454|Long bone|1|1/400|long_bone:1-1/400
 vetion|Vet'ion|454|Vet'ion Jr.|1|1/1500|-handled elsewhere:vetion_jr
@@ -445,7 +445,7 @@ calvarion|Calvar'ion|264|Blighted super restore(3)|3-4|1/18|super_restore(3):3-4
 calvarion|Calvar'ion|264|Blighted super restore(4)|3-4|1/18|super_restore:3-4/18
 calvarion|Calvar'ion|264|Ranging potion(2)|2-3|1/18|ranging_potion(2):2-3/18
 calvarion|Calvar'ion|264|Super combat potion(2)|2-3|1/18|super_combat_potion(2):2-3/18
-calvarion|Calvar'ion|264|Looting bag|1|1/3|-not in game
+calvarion|Calvar'ion|264|Looting bag|1|1/3|looting_bag:1-1/3
 calvarion|Calvar'ion|264|Long bone|1|1/400|long_bone:1-1/400
 calvarion|Calvar'ion|264|Curved bone|1|1/5012.5|curved_bone:1-1/5012
 calvarion|Calvar'ion|264|Skeleton champion scroll|1|1/5000|skeleton_champion_scroll:1-1/5000
@@ -483,7 +483,7 @@ scorpia|Scorpia|225|Coins|25002-34962|7/128|coins:25002-34962/18
 scorpia|Scorpia|225|Blighted anglerfish|15-25 (noted)|5/128|anglerfish:15-25/26
 scorpia|Scorpia|225|Blighted super restore(4)|5 (noted)|5/128|super_restore:5-5/26
 scorpia|Scorpia|225|Wilderness crabs teleport|2|2/128|-not in game
-scorpia|Scorpia|225|Looting bag|1|1/3|-not in game
+scorpia|Scorpia|225|Looting bag|1|1/3|looting_bag:1-1/3
 scorpia|Scorpia|225|Ensouled scorpion head|1|1/18|ensouled_scorpion_head:1-1/18
 scorpia|Scorpia|225|Brimstone key|1|-|-handled elsewhere:brimstone_key
 scorpia|Scorpia|225|Scorpia's offspring|1|1/2015.75|-handled elsewhere:pet_scorpias_offspring
@@ -515,12 +515,12 @@ chaos_elemental|Chaos Elemental|305|Grimy kwuarm|5-8 (noted)|3/128|grimy_kwuarm:
 chaos_elemental|Chaos Elemental|305|Coal|75-150 (noted)|5/128|coal:75-150/26
 chaos_elemental|Chaos Elemental|305|Mahogany plank|8-16 (noted)|5/128|mahogany_plank:8-16/26
 chaos_elemental|Chaos Elemental|305|Adamantite bar|8-12 (noted)|4/128|adamantite_bar:8-12/32
-chaos_elemental|Chaos Elemental|305|Blighted ancient ice sack|20-40|5/128|-not in game
+chaos_elemental|Chaos Elemental|305|Blighted ancient ice sack|20-40|5/128|blighted_ancient_ice_sack:20-40/26
 chaos_elemental|Chaos Elemental|305|Blighted karambwan|15-25 (noted)|4/128|cooked_karambwan:15-25/32
 chaos_elemental|Chaos Elemental|305|Blighted anglerfish|10-15 (noted)|4/128|anglerfish:10-15/32
 chaos_elemental|Chaos Elemental|305|Wilderness crabs teleport|2|2/128|-not in game
 chaos_elemental|Chaos Elemental|305|Weapon poison(++)|1|10/128|weapon_poison_plus_plus:1-1/13
-chaos_elemental|Chaos Elemental|305|Looting bag|1|1/3|-not in game
+chaos_elemental|Chaos Elemental|305|Looting bag|1|1/3|looting_bag:1-1/3
 chaos_elemental|Chaos Elemental|305|Brimstone key|1|-|-handled elsewhere:brimstone_key
 chaos_elemental|Chaos Elemental|305|Pet chaos elemental|1|1/300|-handled elsewhere:pet_chaos_elemental
 chaos_elemental|Chaos Elemental|305|Coins|3000|1/97.5|-expanded shared table
@@ -574,7 +574,7 @@ chaos_fanatic|Chaos Fanatic|202|Chaos talisman|1|6/128|chaos_talisman:1-1/21
 chaos_fanatic|Chaos Fanatic|202|Wine of Zamorak|10 (noted)|6/128|wine_of_zamorak:10-10/21
 chaos_fanatic|Chaos Fanatic|202|Sinister key|1|4/128|-not in game
 chaos_fanatic|Chaos Fanatic|202|Pure essence|250 (noted)|2/128|pure_essence:250-250/64
-chaos_fanatic|Chaos Fanatic|202|Looting bag|1|1/3|-not in game
+chaos_fanatic|Chaos Fanatic|202|Looting bag|1|1/3|looting_bag:1-1/3
 chaos_fanatic|Chaos Fanatic|202|Brimstone key|1|-|-handled elsewhere:brimstone_key
 chaos_fanatic|Chaos Fanatic|202|Pet chaos elemental|1|1/1000|-handled elsewhere:pet_chaos_elemental
 chaos_fanatic|Chaos Fanatic|202|Coins|3000|1/195.0|-expanded shared table
@@ -627,7 +627,7 @@ crazy_archaeologist|Crazy archaeologist|204|Rusty sword|1|4/128|rusty_sword:1-1/
 crazy_archaeologist|Crazy archaeologist|204|Muddy key|1|4/128|muddy_key:1-1/32
 crazy_archaeologist|Crazy archaeologist|204|Onyx bolt tips|12|4/128|onyx_bolt_tips:12-12/32
 crazy_archaeologist|Crazy archaeologist|204|Long bone|1|2/128|long_bone:1-1/64
-crazy_archaeologist|Crazy archaeologist|204|Looting bag|1|1/3|-not in game
+crazy_archaeologist|Crazy archaeologist|204|Looting bag|1|1/3|looting_bag:1-1/3
 crazy_archaeologist|Crazy archaeologist|204|Brimstone key|1|-|-handled elsewhere:brimstone_key
 crazy_archaeologist|Crazy archaeologist|204|Fedora|1|1/128|-not in game
 crazy_archaeologist|Crazy archaeologist|204|Coins|3000|1/195.0|-expanded shared table
@@ -1235,7 +1235,7 @@ hespori|Hespori|284|Spirit seed|1|1/80|spirit_seed:1-1/80
 hespori|Hespori|284|Redwood tree seed|1|1/80|redwood_tree_seed:1-1/80
 hespori|Hespori|284|Tangleroot|1|1/5375|-handled elsewhere:pet_tangleroot
 scurrius|Scurrius|250|Big bones|1|Always|big_bones:1-1/1
-scurrius|Scurrius|250|Raw rat meat|1|Always|-not in game
+scurrius|Scurrius|250|Raw rat meat|1|Always|raw_rat_meat:1-1/1
 scurrius|Scurrius|250|Adamant platebody|1|6/100|adamant_platebody:1-1/17
 scurrius|Scurrius|250|Rune med helm|1|6/100|rune_med_helm:1-1/17
 scurrius|Scurrius|250|Rune full helm|1|6/100|rune_full_helm:1-1/17
@@ -1381,7 +1381,7 @@ vorkath|Vorkath|732|Magic logs|50 (noted)|5/150|magic_logs:50-50/30
 vorkath|Vorkath|732|Dragon bones|15-20 (noted)|4/150|dragon_bones:15-20/38
 vorkath|Vorkath|732|Diamond|10-20 (noted)|4/150|diamond:10-20/38
 vorkath|Vorkath|732|Wrath talisman|1|3/150|wrath_talisman:1-1/50
-vorkath|Vorkath|732|Scaly blue dragonhide|1|1/10|-not in game
+vorkath|Vorkath|732|Scaly blue dragonhide|1|1/10|scaly_blue_dragonhide:1-1/10
 vorkath|Vorkath|732|Vorkath's head|1|1/50|vorkaths_head:1-1/50
 vorkath|Vorkath|732|Brimstone key|1|-|-handled elsewhere:brimstone_key
 vorkath|Vorkath|732|Dragonbone necklace|1|1/1000|dragonbone_necklace:1-1/1000
@@ -1595,7 +1595,7 @@ abyssal_sire|Abyssal Sire|350|Unsired|1|1/100|unsired:1-1/100
 abyssal_sire|Abyssal Sire|350|Abyssal ashes|1|Always|abyssal_ashes:1-1/1
 abyssal_sire|Abyssal Sire|350|Battlestaff|10 (noted)|6/139|battlestaff:10-10/23
 abyssal_sire|Abyssal Sire|350|Rune full helm|3 (noted)|4/139|rune_full_helm:3-3/35
-abyssal_sire|Abyssal Sire|350|Mystic lava staff|2 (noted)|4/139|-not in game
+abyssal_sire|Abyssal Sire|350|Mystic lava staff|2 (noted)|4/139|mystic_lava_staff:2-2/35
 abyssal_sire|Abyssal Sire|350|Rune sword|3 (noted)|4/139|rune_sword:3-3/35
 abyssal_sire|Abyssal Sire|350|Rune platebody|2 (noted)|4/139|rune_platebody:2-2/35
 abyssal_sire|Abyssal Sire|350|Mystic air staff|2 (noted)|2/139|mystic_air_staff:2-2/70
@@ -2080,7 +2080,7 @@ amoxliatl|Amoxliatl|263|Gold ore|20-30 (noted)|5/58|gold_ore:20-30/12
 amoxliatl|Amoxliatl|263|Adamantite ore|5-10 (noted)|4/58|adamantite_ore:5-10/14
 amoxliatl|Amoxliatl|263|Prayer potion(3)|1|2/58|prayer_potion(3):1-1/29
 amoxliatl|Amoxliatl|263|Runite ore|1 (noted)|2/58|runite_ore:1-1/29
-amoxliatl|Amoxliatl|263|Blessed bone shards|60-100|2/58|-not in game
+amoxliatl|Amoxliatl|263|Blessed bone shards|60-100|2/58|blessed_bone_shards:60-100/29
 amoxliatl|Amoxliatl|263|Water orb|10-20 (noted)|2/58|water_orb:10-20/29
 amoxliatl|Amoxliatl|263|Water talisman|1|2/58|water_talisman:1-1/29
 amoxliatl|Amoxliatl|263|Huasca seed|1|1/58|huasca_seed:1-1/58
@@ -2150,8 +2150,8 @@ shellbane_gryphon|Shellbane gryphon|235|Big bones|1|Always|big_bones:1-1/1
 shellbane_gryphon|Shellbane gryphon|235|Gryphon feather|7-10|Always|-not in game
 shellbane_gryphon|Shellbane gryphon|235|Rune claws|1|10/128|rune_claws:1-1/13
 shellbane_gryphon|Shellbane gryphon|235|Rune scimitar|1|8/128|rune_scimitar:1-1/16
-shellbane_gryphon|Shellbane gryphon|235|Adamant cannonball|35-50|8/128|-not in game
-shellbane_gryphon|Shellbane gryphon|235|Rune cannonball|20-30|6/128|-not in game
+shellbane_gryphon|Shellbane gryphon|235|Adamant cannonball|35-50|8/128|adamant_cannonball:35-50/16
+shellbane_gryphon|Shellbane gryphon|235|Rune cannonball|20-30|6/128|rune_cannonball:20-30/21
 shellbane_gryphon|Shellbane gryphon|235|Raw swordfish|1|14/128|raw_swordfish:1-1/9
 shellbane_gryphon|Shellbane gryphon|235|Sweetcorn|1|10/128|sweetcorn:1-1/13
 shellbane_gryphon|Shellbane gryphon|235|Watermelon|1|10/128|watermelon:1-1/13
@@ -2161,8 +2161,8 @@ shellbane_gryphon|Shellbane gryphon|235|Onion seed|1-3|1/|-no rate:onion_seed
 shellbane_gryphon|Shellbane gryphon|235|Cabbage seed|1-3|1/|-no rate:cabbage_seed
 shellbane_gryphon|Shellbane gryphon|235|Tomato seed|1-2|1/|-no rate:tomato_seed
 shellbane_gryphon|Shellbane gryphon|235|Sweetcorn seed|1-2|1/|-no rate:sweetcorn_seed
-shellbane_gryphon|Shellbane gryphon|235|Elkhorn frag|1|1/128|-not in game
-shellbane_gryphon|Shellbane gryphon|235|Pillar frag|1|1/128|-not in game
+shellbane_gryphon|Shellbane gryphon|235|Elkhorn frag|1|1/128|elkhorn_frag:1-1/128
+shellbane_gryphon|Shellbane gryphon|235|Pillar frag|1|1/128|pillar_frag:1-1/128
 shellbane_gryphon|Shellbane gryphon|235|Strawberry seed|1|1/|-no rate:strawberry_seed
 shellbane_gryphon|Shellbane gryphon|235|Watermelon seed|1|1/|-no rate:watermelon_seed
 shellbane_gryphon|Shellbane gryphon|235|Snape grass seed|1|1/|-no rate:snape_grass_seed
@@ -2273,3 +2273,157 @@ deranged_archaeologist|Deranged archaeologist|276|Nature talisman|1|1/805.7|-exp
 deranged_archaeologist|Deranged archaeologist|276|<rare_drop_table>|1|6/131|#rare:1-1/22
 deranged_archaeologist|Deranged archaeologist|276|<gem_drop_table>|1|6/131|#gems:1-1/22
 deranged_archaeologist|Deranged archaeologist|276|<fossil_table>|1|-|-no shared table
+Boss.OBOR|Obor|106|Giant bones|1|Always|-not in game
+Boss.OBOR|Obor|106|Giant key|1|1/16|giant_key:1-1/16
+Boss.OBOR|Obor|106|Iron full helm|1|5/135|iron_full_helm:1-1/27
+Boss.OBOR|Obor|106|Iron dagger|1|4/135|iron_dagger:1-1/34
+Boss.OBOR|Obor|106|Iron kiteshield|1|3/135|iron_kiteshield:1-1/45
+Boss.OBOR|Obor|106|Steel longsword|1|2/135|steel_longsword:1-1/68
+Boss.OBOR|Obor|106|Iron arrow|3|6/135|iron_arrow:3-3/22
+Boss.OBOR|Obor|106|Fire rune|15|3/135|fire_rune:15-15/45
+Boss.OBOR|Obor|106|Water rune|7|3/135|water_rune:7-7/45
+Boss.OBOR|Obor|106|Law rune|2|3/135|law_rune:2-2/45
+Boss.OBOR|Obor|106|Steel arrow|10|2/135|steel_arrow:10-10/68
+Boss.OBOR|Obor|106|Mind rune|3|2/135|mind_rune:3-3/68
+Boss.OBOR|Obor|106|Cosmic rune|2|2/135|cosmic_rune:2-2/68
+Boss.OBOR|Obor|106|Nature rune|6|2/135|nature_rune:6-6/68
+Boss.OBOR|Obor|106|Chaos rune|2|1/135|chaos_rune:2-2/135
+Boss.OBOR|Obor|106|Death rune|2|1/135|death_rune:2-2/135
+Boss.OBOR|Obor|106|Coins|38|14/135|coins:38-38/10
+Boss.OBOR|Obor|106|Coins|52|10/135|coins:52-52/14
+Boss.OBOR|Obor|106|Coins|15|8/135|coins:15-15/17
+Boss.OBOR|Obor|106|Coins|8|6/135|coins:8-8/22
+Boss.OBOR|Obor|106|Coins|88|2/135|coins:88-88/68
+Boss.OBOR|Obor|106|Limpwurt root|1|11/135|limpwurt_root:1-1/12
+Boss.OBOR|Obor|106|Beer|1|6/135|beer:1-1/22
+Boss.OBOR|Obor|106|Body talisman|1|2/135|body_talisman:1-1/68
+Boss.OBOR|Obor|106|Nothing||1/135|-handled elsewhere
+Boss.OBOR|Obor|106|Ensouled giant head|1|1/25|-handled elsewhere
+Boss.OBOR|Obor|106|Long bone|1|1/400|long_bone:1-1/400
+Boss.OBOR|Obor|106|Giant champion scroll|1|1/5000|-handled elsewhere
+Boss.OBOR|Obor|106|Curved bone|1|1/5012.5|curved_bone:1-1/5012
+Boss.OBOR|Obor|106|Big bones|1|Always|big_bones:1-1/1
+Boss.OBOR|Obor|106|Coins|5|18/135|coins:5-5/8
+Boss.OBOR|Obor|106|Coins|10|7/135|coins:10-10/19
+Boss.OBOR|Obor|106|<HerbDropTableInfo>|1|7/135|#herbs:1-1/19
+Boss.OBOR|Obor|106|<GeneralSeedDropTableInfo>|1|18/135|#allotment_seeds:1-1/8
+Boss.OBOR|Obor|106|<GemDropTable>|1|3/135|#gems:1-1/45
+Boss.BRYOPHYTA|Bryophyta|128|Giant bones|1|Always|-not in game
+Boss.BRYOPHYTA|Bryophyta|128|Black sq shield|1|5/128|black_sq_shield:1-1/26
+Boss.BRYOPHYTA|Bryophyta|128|Magic staff|1|2/128|magic_staff:1-1/64
+Boss.BRYOPHYTA|Bryophyta|128|Steel med helm|1|2/128|steel_med_helm:1-1/64
+Boss.BRYOPHYTA|Bryophyta|128|Mithril sword|1|2/128|mithril_sword:1-1/64
+Boss.BRYOPHYTA|Bryophyta|128|Mithril spear|1|2/128|mithril_spear:1-1/64
+Boss.BRYOPHYTA|Bryophyta|128|Steel kiteshield|1|1/128|steel_kiteshield:1-1/128
+Boss.BRYOPHYTA|Bryophyta|128|Law rune|3|4/128|law_rune:3-3/32
+Boss.BRYOPHYTA|Bryophyta|128|Air rune|18|3/128|air_rune:18-18/43
+Boss.BRYOPHYTA|Bryophyta|128|Earth rune|27|3/128|earth_rune:27-27/43
+Boss.BRYOPHYTA|Bryophyta|128|Chaos rune|7|3/128|chaos_rune:7-7/43
+Boss.BRYOPHYTA|Bryophyta|128|Nature rune|6|3/128|nature_rune:6-6/43
+Boss.BRYOPHYTA|Bryophyta|128|Cosmic rune|3|2/128|cosmic_rune:3-3/64
+Boss.BRYOPHYTA|Bryophyta|128|Iron arrow|15|2/128|iron_arrow:15-15/64
+Boss.BRYOPHYTA|Bryophyta|128|Steel arrow|30|1/128|steel_arrow:30-30/128
+Boss.BRYOPHYTA|Bryophyta|128|Death rune|3|1/128|death_rune:3-3/128
+Boss.BRYOPHYTA|Bryophyta|128|Blood rune|1|1/128|blood_rune:1-1/128
+Boss.BRYOPHYTA|Bryophyta|128|Coins|37|19/128|coins:37-37/7
+Boss.BRYOPHYTA|Bryophyta|128|Coins|2|8/128|coins:2-2/16
+Boss.BRYOPHYTA|Bryophyta|128|Coins|119|10/128|coins:119-119/13
+Boss.BRYOPHYTA|Bryophyta|128|Coins|300|2/128|coins:300-300/64
+Boss.BRYOPHYTA|Bryophyta|128|Steel bar|1|6/128|steel_bar:1-1/21
+Boss.BRYOPHYTA|Bryophyta|128|Coal|1|1/128|coal:1-1/128
+Boss.BRYOPHYTA|Bryophyta|128|Spinach roll|1|1/128|-not in game
+Boss.BRYOPHYTA|Bryophyta|128|Moss giant bone|1|1/4|-not in game
+Boss.BRYOPHYTA|Bryophyta|128|Ensouled giant head|1|1/24|-handled elsewhere
+Boss.BRYOPHYTA|Bryophyta|128|Long bone|1|1/400|long_bone:1-1/400
+Boss.BRYOPHYTA|Bryophyta|128|Giant champion scroll|1|1/5000|-handled elsewhere
+Boss.BRYOPHYTA|Bryophyta|128|Curved bone|1|1/5012.5|curved_bone:1-1/5012
+Boss.BRYOPHYTA|Bryophyta|128|Big bones|1|Always|big_bones:1-1/1
+Boss.BRYOPHYTA|Bryophyta|128|Coins|10|5/128|coins:10-10/26
+Boss.BRYOPHYTA|Bryophyta|128|Coins|5|35/128|coins:5-5/4
+Boss.BRYOPHYTA|Bryophyta|128|Coins|2|11/128|coins:2-2/12
+Boss.BRYOPHYTA|Bryophyta|128|Clue scroll (beginner)|1|1/45|-handled elsewhere
+Boss.BRYOPHYTA|Bryophyta|128|<HerbDropTableInfo>|1|5/128|#herbs:1-1/26
+Boss.BRYOPHYTA|Bryophyta|128|<UncommonSeedDropTableInfo>|1|35/128|#uncommon_seeds:1-1/4
+Boss.BRYOPHYTA|Bryophyta|128|<GemDropTable>|1|4/128|#gems:1-1/32
+dusk|Grotesque Guardians|328|Granite dust|50-100|Always|granite_dust:50-100/1
+dusk|Grotesque Guardians|328|Granite maul|1|1/250|-handled elsewhere
+dusk|Grotesque Guardians|328|Granite gloves|1|1/500|-handled elsewhere
+dusk|Grotesque Guardians|328|Rune pickaxe|1|6/142|rune_pickaxe:1-1/24
+dusk|Grotesque Guardians|328|Rune full helm|1|5/142|rune_full_helm:1-1/28
+dusk|Grotesque Guardians|328|Rune platelegs|1|5/142|rune_platelegs:1-1/28
+dusk|Grotesque Guardians|328|Rune 2h sword|1|4/142|rune_2h_sword:1-1/36
+dusk|Grotesque Guardians|328|Rune battleaxe|1|3/142|rune_battleaxe:1-1/47
+dusk|Grotesque Guardians|328|Dragon longsword|1|1/142|dragon_longsword:1-1/142
+dusk|Grotesque Guardians|328|Adamant boots|1|1/142|adamant_boots:1-1/142
+dusk|Grotesque Guardians|328|Dragon med helm|1|1/142|dragon_med_helm:1-1/142
+dusk|Grotesque Guardians|328|Mushroom potato|4-6|10/142|-not in game
+dusk|Grotesque Guardians|328|Saradomin brew(4)|2|8/142|saradomin_brew:2-2/18
+dusk|Grotesque Guardians|328|Magic potion(2)|1|6/142|magic_potion(2):1-1/24
+dusk|Grotesque Guardians|328|Ranging potion(2)|1|6/142|ranging_potion(2):1-1/24
+dusk|Grotesque Guardians|328|Super combat potion(2)|1|6/142|super_combat_potion(2):1-1/24
+dusk|Grotesque Guardians|328|Prayer potion(4)|1-2|4/142|prayer_potion:1-2/36
+dusk|Grotesque Guardians|328|Gold ore|40-50 (noted)|7/142|gold_ore:40-50/20
+dusk|Grotesque Guardians|328|Adamantite bar|25-40 (noted)|6/142|adamantite_bar:25-40/24
+dusk|Grotesque Guardians|328|Gold bar|35-50 (noted)|6/142|gold_bar:35-50/24
+dusk|Grotesque Guardians|328|Mithril bar|35-45 (noted)|6/142|mithril_bar:35-45/24
+dusk|Grotesque Guardians|328|Coal|180-250 (noted)|5/142|coal:180-250/28
+dusk|Grotesque Guardians|328|Runite ore|3-6 (noted)|4/142|runite_ore:3-6/36
+dusk|Grotesque Guardians|328|Runite bar|3-5 (noted)|3/142|runite_bar:3-5/47
+dusk|Grotesque Guardians|328|Raw shark|20 (noted)|1.5/142|raw_shark:20-20/95
+dusk|Grotesque Guardians|328|Shark lure|40|1.5/142|-not in game
+dusk|Grotesque Guardians|328|Raw sea turtle|20 (noted)|1/142|raw_sea_turtle:20-20/142
+dusk|Grotesque Guardians|328|Coins|10000-20000|10/142|coins:10000-20000/14
+dusk|Grotesque Guardians|328|Chaos rune|100-150|8/142|chaos_rune:100-150/18
+dusk|Grotesque Guardians|328|Coins|25000|5/142|coins:25000-25000/28
+dusk|Grotesque Guardians|328|Crystal key|1|5/142|crystal_key:1-1/28
+dusk|Grotesque Guardians|328|Death rune|90-130|5/142|death_rune:90-130/28
+dusk|Grotesque Guardians|328|Dragon dart tip|15-25|5/142|dragon_dart_tip:15-25/28
+dusk|Grotesque Guardians|328|Diamond bolt tips|100-150|3/142|diamond_bolt_tips:100-150/47
+dusk|Grotesque Guardians|328|Dragonstone bolt tips|20-40|2/142|dragonstone_bolt_tips:20-40/71
+dusk|Grotesque Guardians|328|Onyx bolt tips|10-15|2/142|onyx_bolt_tips:10-15/71
+dusk|Grotesque Guardians|328|Dragon arrowtips|50-150|1/142|dragon_arrowtips:50-150/142
+dusk|Grotesque Guardians|328|Soul rune|20-40|1/142|soul_rune:20-40/142
+dusk|Grotesque Guardians|328|Noon|1|1/3000|-handled elsewhere
+araxxor|Araxxor|890|Araxyte fang|1|1/600|-handled elsewhere
+araxxor|Araxxor|890|Araxyte venom sac|1|1/16|araxyte_venom_sac:1-1/16
+araxxor|Araxxor|890|Super combat potion(1)|1|1/16|super_combat_potion(1):1-1/16
+araxxor|Araxxor|890|Prayer potion(4)|1|1/8|prayer_potion:1-1/8
+araxxor|Araxxor|890|Shark|2-3|1/16|shark:2-3/16
+araxxor|Araxxor|890|Wild pie|2-3|1/16|wild_pie:2-3/16
+araxxor|Araxxor|890|Rune kiteshield|2 (noted)|8/115|rune_kiteshield:2-2/14
+araxxor|Araxxor|890|Rune platelegs|2 (noted)|8/115|rune_platelegs:2-2/14
+araxxor|Araxxor|890|Dragon mace|2|6/115|dragon_mace:2-2/19
+araxxor|Araxxor|890|Rune 2h sword|5 (noted)|1/115|rune_2h_sword:5-5/115
+araxxor|Araxxor|890|Dragon platelegs|2|1/115|dragon_platelegs:2-2/115
+araxxor|Araxxor|890|Death rune|250|5/115|death_rune:250-250/23
+araxxor|Araxxor|890|Nature rune|80|2/115|nature_rune:80-80/58
+araxxor|Araxxor|890|Mud rune|100|1/115|mud_rune:100-100/115
+araxxor|Araxxor|890|Blood rune|180|1/115|blood_rune:180-180/115
+araxxor|Araxxor|890|Yew seed|1|4/115|yew_seed:1-1/29
+araxxor|Araxxor|890|Toadflax seed|4|3/115|toadflax_seed:4-4/38
+araxxor|Araxxor|890|Ranarr seed|3|1/115|ranarr_seed:3-3/115
+araxxor|Araxxor|890|Snapdragon seed|3|1/115|snapdragon_seed:3-3/115
+araxxor|Araxxor|890|Magic seed|2|1/115|magic_seed:2-2/115
+araxxor|Araxxor|890|Coal|120 (noted)|4/115|coal:120-120/29
+araxxor|Araxxor|890|Adamantite ore|85 (noted)|4/115|adamantite_ore:85-85/29
+araxxor|Araxxor|890|Raw shark|21 (noted)|4/115|raw_shark:21-21/29
+araxxor|Araxxor|890|Yew logs|70 (noted)|3/115|yew_logs:70-70/38
+araxxor|Araxxor|890|Runite ore|12 (noted)|2/115|runite_ore:12-12/58
+araxxor|Araxxor|890|Raw shark|100 (noted)|1/115|raw_shark:100-100/115
+araxxor|Araxxor|890|Raw monkfish|120 (noted)|1/115|raw_monkfish:120-120/115
+araxxor|Araxxor|890|Pure essence|1200 (noted)|1/115|pure_essence:1200-1200/115
+araxxor|Araxxor|890|Spider cave teleport|3|8/115|-not in game
+araxxor|Araxxor|890|Earth orb|45 (noted)|6/115|earth_orb:45-45/19
+araxxor|Araxxor|890|Araxyte venom sac|6|5/115|araxyte_venom_sac:6-6/23
+araxxor|Araxxor|890|Mort myre fungus|24 (noted)|4/115|mort_myre_fungus:24-24/29
+araxxor|Araxxor|890|Antidote++(3)|6 (noted)|4/115|antidote_plus_plus(3):6-6/29
+araxxor|Araxxor|890|Wine of zamorak|8 (noted)|3/115|wine_of_zamorak:8-8/38
+araxxor|Araxxor|890|Red spiders' eggs|40 (noted)|2/115|red_spiders_eggs:40-40/58
+araxxor|Araxxor|890|Araxyte venom sac|12|2/115|araxyte_venom_sac:12-12/58
+araxxor|Araxxor|890|Bark|15 (noted)|1/115|bark:15-15/115
+araxxor|Araxxor|890|Araxyte head|1|1/250|-handled elsewhere
+araxxor|Araxxor|890|Jar of venom|1|1/1500|-handled elsewhere
+araxxor|Araxxor|890|Coagulated venom|1|Always|-handled elsewhere
+araxxor|Araxxor|890|Nid|1|1/3000|-handled elsewhere
+araxxor|Araxxor|890|<TreeHerbSeedDropTableInfo>|1|1/115|#tree_herb_seeds:1-1/115
+araxxor|Araxxor|890|<RareDropTable>|1|1/115|#rare:1-1/115

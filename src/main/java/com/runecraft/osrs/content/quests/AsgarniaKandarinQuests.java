@@ -164,7 +164,7 @@ final class AsgarniaKandarinQuests {
         b.npc("candle_maker", "Candle maker", "CATHERBY", 5, 5, 0xE0B898, 0xE0E0A0, 0x6A5A3A, 0x8A6A3A);
         b.npc("thrantax", "Thrantax the Mighty", "CAMELOT", 5, -4, 0x8A2A2A, 0x3A0A0A, 0x2A0A0A, 0xE0D8B0);
         b.item("black_candle", "Lit black candle", "pot", 0x1A1A1A, "A black candle. It burns with an eerie flame.");
-        b.item("bat_bones", "Bat bones", "bones", 0x8A8070, "The bones of a bat.");
+        // bat_bones is a built-in Bone (osrs/data/Bone) since round 27.
         b.boss(BossDef.of("sir_mordred", "Sir Mordred").level(39).stats(38, 34, 37, 34, 1, 1).speed(4)
                 .defenceBonus(60, 60, 50, -10, 50)
                 .attack(AttackDef.of("sword", AttackType.SLASH, 7, 2.5, 10))

@@ -21,7 +21,12 @@ public enum Bone {
     LARGE_ZOMBIE_MONKEY_BONES("large_zombie_monkey_bones", "Large zombie monkey bones", 5.0, 0xB0B898),
     JOGRE_BONES("jogre_bones", "Jogre bones", 15.0, 0xD0C8B0),
     WYRM_BONES("wyrm_bones", "Wyrm bones", 50.0, 0xC8C8B8),
-    DRAKE_BONES("drake_bones", "Drake bones", 80.0, 0xC0B8A8);
+    DRAKE_BONES("drake_bones", "Drake bones", 80.0, 0xC0B8A8),
+    // Round 27 (OSRS Wiki Prayer XP). Bat and wolf bones were plain module items before; append only (ordinal-sensitive).
+    BAT_BONES("bat_bones", "Bat bones", 5.3, 0x8A8070),
+    WOLF_BONES("wolf_bones", "Wolf bones", 4.5, 0xE0D8C8),
+    WYRMLING_BONES("wyrmling_bones", "Wyrmling bones", 21.0, 0xC8C0B0),
+    ZOGRE_BONES("zogre_bones", "Zogre bones", 22.5, 0xB8C0A0);
 
     /** Best bone-offering multiplier at a gilded altar (both incense burners lit); see {@link PrayerAltars}. */
     public static final double ALTAR_MULTIPLIER = 3.5;

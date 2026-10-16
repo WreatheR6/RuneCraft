@@ -22,7 +22,9 @@ public final class Jewellery {
     /** Special behaviour of a worn item. */
     public enum Perk {
         NONE, RECOIL, SUFFERING, LIFE, PHOENIX, WEALTH, BERSERKER, REGEN, FORGING, DODGY, CLAY, INOCULATION, BINDING,
-        LIGHTBEARER, SALVE, TELEPORT_ONLY
+        LIGHTBEARER, SALVE, TELEPORT_ONLY,
+        // Round 27 (append only): semi-precious enchanted jewellery and the bracelet of ethereum.
+        PURSUIT, BOUNTY, EXPEDITIOUS, CHEMISTRY, FLAMTAER, FAITH, SLAUGHTER, ETHEREUM
     }
 
     /**
@@ -133,6 +135,26 @@ public final class Jewellery {
         wornExternal("amulet_of_avarice", Slot.NECK, s(10, 10, 10, 10, 10, 3, 3, 3, 3, 3, 6, 0, 0, 3)); // item in CommonItems (revenant drop)
         worn("efaritays_aid", "Efaritay's aid", Slot.RING, "ring", 0xE06A3A, 1_800, NONE, Perk.NONE,
                 "A ring that aids its wearer against vampyres when wielding silver.");
+        // Semi-precious enchanted jewellery (OSRS Wiki): opal (Lvl-1), jade (Lvl-2), topaz (Lvl-3). Charges are per player, as
+        // in OSRS (SysState jewellery charges): the worn item crumbles when the player's pool runs out.
+        worn("ring_of_pursuit", "Ring of pursuit", Slot.RING, "ring", 0xD0E0E0, 1050, NONE, Perk.PURSUIT,
+                "Reveals the whole track of hunter creatures caught with a noose wand.");
+        worn("amulet_of_bounty", "Amulet of bounty", Slot.NECK, "amulet", 0xD0E0E0, 900, NONE, Perk.BOUNTY,
+                "A 25% chance to use one seed instead of three when planting allotments.");
+        worn("expeditious_bracelet", "Expeditious bracelet", Slot.HANDS, "bracelet", 0xD0E0E0, 1150, NONE, Perk.EXPEDITIOUS,
+                "A 25% chance for a Slayer task kill to count twice.");
+        worn("amulet_of_chemistry", "Amulet of chemistry", Slot.NECK, "amulet", 0x60B070, 1050, NONE, Perk.CHEMISTRY,
+                "Useful when making potions - has the chance of giving an extra dose.");
+        worn("flamtaer_bracelet", "Flamtaer bracelet", Slot.HANDS, "bracelet", 0x60B070, 1300, NONE, Perk.FLAMTAER,
+                "Speeds up building the Flamtaer temple.");
+        worn("necklace_of_faith", "Necklace of faith", Slot.NECK, "necklace", 0xE06A3A, 1425, NONE, Perk.FAITH,
+                "Restores prayer when your hitpoints fall low.");
+        worn("bracelet_of_slaughter", "Bracelet of slaughter", Slot.HANDS, "bracelet", 0xE06A3A, 2500, NONE, Perk.SLAUGHTER,
+                "A 25% chance for a Slayer task kill not to count.");
+        // Bracelet of ethereum (godwars module item, revenant drop): charged with revenant ether (Charges), it cuts revenant
+        // damage by 75% for one ether per attack (JewelleryService).
+        WORN.put("bracelet_of_ethereum", new Worn("bracelet_of_ethereum", "Bracelet of ethereum", Slot.HANDS, NONE, Perk.ETHEREUM,
+                null, -1, List.of(), false));
         // ---------- Other worn items ----------
         charged("digsite_pendant", "Digsite pendant", Slot.NECK, "necklace", 0xB08040, 1200, NONE, 5, Teleports.DIGSITE, true);
         charged("necklace_of_passage", "Necklace of passage", Slot.NECK, "necklace", 0x70A0D0, 2000, NONE, 5, Teleports.PASSAGE, true);
@@ -380,6 +402,63 @@ public final class Jewellery {
         return damage <= 0 ? 0 : damage / 10 + 1;
     }
 
+    /** Per-player charge pools of the semi-precious jewellery (OSRS Wiki). */
+    public static final int PURSUIT_CHARGES = 10;
+    public static final int BOUNTY_CHARGES = 10;
+    public static final int EXPEDITIOUS_CHARGES = 30;
+    public static final int CHEMISTRY_CHARGES = 5;
+    public static final int FLAMTAER_CHARGES = 80;
+    public static final int SLAUGHTER_CHARGES = 30;
+    /** Expeditious bracelet / bracelet of slaughter / amulet of bounty: 25% chance; amulet of chemistry: 5%. */
+    public static final double SLAYER_BRACELET_CHANCE = 0.25;
+    public static final double BOUNTY_CHANCE = 0.25;
+    public static final double CHEMISTRY_CHANCE = 0.05;
+    /** Necklace of faith: below 20% hitpoints it restores 25% of the Prayer level, then crumbles. */
+    public static final double FAITH_HP_FRACTION = 0.2;
+    /** Bracelet of ethereum: revenant damage is reduced by 75% (one ether per attack). */
+    public static final double ETHEREUM_REDUCTION = 0.75;
+
+    /** Charge pool of a charged-per-player item (0 when the item has none). */
+    public static int chargePool(String id) {
+        return switch (id) {
+            case "ring_of_pursuit" -> PURSUIT_CHARGES;
+            case "amulet_of_bounty" -> BOUNTY_CHARGES;
+            case "expeditious_bracelet" -> EXPEDITIOUS_CHARGES;
+            case "amulet_of_chemistry" -> CHEMISTRY_CHARGES;
+            case "flamtaer_bracelet" -> FLAMTAER_CHARGES;
+            case "bracelet_of_slaughter" -> SLAUGHTER_CHARGES;
+            case "necklace_of_faith" -> 1;
+            default -> 0;
+        };
+    }
+
+    /**
+     * Slayer task credit of one kill: the expeditious bracelet doubles it (no extra XP), the bracelet of slaughter voids it
+     * (not for TzTok-Jad or TzKal-Zuk); {@code roll} is uniform in [0, 1).
+     */
+    public static int slayerCredit(int base, String hands, double roll, boolean jadOrZuk) {
+        if (roll >= SLAYER_BRACELET_CHANCE) {
+            return base;
+        }
+        if (hands.equals("expeditious_bracelet")) {
+            return base * 2;
+        }
+        if (hands.equals("bracelet_of_slaughter") && !jadOrZuk) {
+            return 0;
+        }
+        return base;
+    }
+
+    /** Prayer points the necklace of faith restores: 25% of the Prayer level. */
+    public static int faithRestore(int prayerLevel) {
+        return Math.max(1, prayerLevel / 4);
+    }
+
+    /** Revenant damage through a charged bracelet of ethereum. */
+    public static int ethereumDamage(int damage) {
+        return (int) Math.floor(damage * (1 - ETHEREUM_REDUCTION));
+    }
+
     /** Enchanting: unenchanted jewellery id -> enchanted id, keyed by enchant level 1-7. */
     public static final Map<String, String> ENCHANT = new LinkedHashMap<>();
     public static final Map<String, Integer> ENCHANT_LEVEL = new LinkedHashMap<>();
@@ -389,10 +468,15 @@ public final class Jewellery {
         enchant(1, "sapphire_necklace", "games_necklace_8");
         enchant(1, "sapphire_amulet", "amulet_of_magic");
         enchant(1, "sapphire_bracelet", "bracelet_of_clay");
-        // Semi-precious jewellery (wiki): opal needs Lvl-1, jade Lvl-2 and topaz Lvl-3 Enchant. Ring of pursuit, amulet of
-        // bounty, expeditious bracelet, amulet of chemistry, flamtaer bracelet, necklace of faith and bracelet of slaughter
-        // are not in RuneCraft yet.
+        // Semi-precious jewellery (wiki): opal needs Lvl-1, jade Lvl-2 and topaz Lvl-3 Enchant.
         enchant(1, "opal_necklace", "dodgy_necklace");
+        enchant(1, "opal_ring", "ring_of_pursuit");
+        enchant(1, "opal_amulet", "amulet_of_bounty");
+        enchant(1, "opal_bracelet", "expeditious_bracelet");
+        enchant(2, "jade_amulet", "amulet_of_chemistry");
+        enchant(2, "jade_bracelet", "flamtaer_bracelet");
+        enchant(3, "topaz_necklace", "necklace_of_faith");
+        enchant(3, "topaz_bracelet", "bracelet_of_slaughter");
         enchant(2, "emerald_ring", "ring_of_dueling_8");
         enchant(2, "emerald_necklace", "binding_necklace");
         enchant(2, "emerald_amulet", "amulet_of_defence");
