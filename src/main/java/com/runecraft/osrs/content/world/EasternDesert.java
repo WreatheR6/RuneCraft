@@ -559,76 +559,166 @@ final class EasternDesert {
 
     // ------------------------------------------------------------------ Pollnivneach
 
-    /** Pollnivneach: central square and well, bar, general store, kebab house, the mayor's house. */
+    /**
+     * Pollnivneach as on the OSRS map (mejrs layers_osrs, plane 0; ladders and stairs from shortest-path; NPC
+     * spawns from mejrs data_osrs): flat-roofed sandstone houses along the winding streets west of the River
+     * Elid. The general store 3355-3362 x 2980-2985 (door south at 3359, ladder at 3357,2983), the bar
+     * 3354-3363 x 2954-2960 (Ali the Barman; door north, approx), the stone-floored house 3366-3376 x 2965-2979
+     * with its open courtyard and well (doors at 3371, 2970-2971, staircase at 3373,2977 north to the first
+     * floor), the dyer's house 3363-3365 x 3000-3003 (ladder 3364,3002), the house 3363-3370 x 2990-2995
+     * (ladder 3368,2991) and the smaller houses on their footprints. Doors without a red mark on the map are
+     * approx. The market stalls stand in the streets (approx: OSRS Pollnivneach has no thieving stalls).
+     */
     static StructureDef pollnivneach() {
         EasternKit k = new EasternKit("pollnivneach", "Pollnivneach").replaces("POLLNIVNEACH");
         int g = k.g;
-        k.flat(3334, 2938, 3384, 3002, SAND);
-        k.patches(3336, 2940, 3382, 3000, "minecraft:sandstone", 30, 51);
-        k.floor(3358, 2938, 3360, 3002, SMOOTH);
-        k.floor(3334, 2970, 3384, 2971, SMOOTH);
-        k.floor(3355, 2965, 3363, 2977, CUT);
-        k.well(cx(3359), bz(2971), SS, "minecraft:smooth_sandstone_slab");
-        // East side.
-        int[] bar = k.hall(3362, 2944, 3370, 2953, 1, DESERT, "north");
-        k.counterX(bar[0] + 2, bar[2] - 6, bar[3] - 3, g, "minecraft:jungle_slab[type=top]", null);
-        k.fill(bar[0] + 1, g, bar[3] - 1, bar[2] - 1, g, bar[3] - 1, "minecraft:barrel[facing=up]");
-        for (int x = bar[0] + 3; x < bar[2] - 2; x += 5) {
-            k.set(x, g, bar[1] + 4, "minecraft:jungle_slab[type=top]");
-            k.set(x - 1, g, bar[1] + 4, "minecraft:jungle_stairs[facing=west]");
-            k.set(x + 1, g, bar[1] + 4, "minecraft:jungle_stairs[facing=east]");
+        k.flat(3334, 2938, 3384, 3006, SAND);
+        k.patches(3336, 2940, 3382, 3004, "minecraft:sandstone", 30, 51);
+        // the streets: north-south past the general store, west to the house portal, south to the bar
+        k.floor(3350, 2996, 3362, 2999, SMOOTH);
+        k.floor(3340, 2997, 3350, 3003, SMOOTH);
+        k.floor(3356, 2986, 3362, 2990, SMOOTH);
+        k.floor(3352, 2961, 3365, 2971, SMOOTH);
+        k.floor(3356, 2972, 3359, 2979, SMOOTH);
+        k.floor(3363, 2972, 3365, 2989, SMOOTH);
+        k.floor(3346, 2957, 3353, 2963, SMOOTH);
+        k.floor(3366, 2968, 3370, 2972, "minecraft:smooth_stone");
+        MapTown t = new MapTown(k.b);
+        String[] plan = {
+                "................nnnn", // 3004
+                "................nnnn...ooo",
+                "................nnnn...ooo",
+                "................nnnn...ooo",
+                "................nnnn...ooo", // 3000
+                "",
+                "",
+                "",
+                "",
+                ".................mmmm..qqqq", // 2995
+                ".................mmmm..qqqq",
+                ".................mmmm..qqqq",
+                ".................mmmm..qqqqqqqq",
+                ".................mmmm..qqqqqqqq",
+                ".......................qqqqqqqq", // 2990
+                ".....ww",
+                "..wwwwww",
+                "..wwwwww",
+                "..wwwwww.................ffff",
+                ".....ww.........ggggg....ffff", // 2985
+                ".....ww........gggggggg..fffff",
+                "...............gggggggg..fffff",
+                "...............gggggggg..fffff",
+                "...............ggg.......fffff",
+                "...............ggg", // 2980
+                "....................eee..........rrr",
+                "....................eee..........rrr",
+                "....................eee..........rrr",
+                "............kkkk..........uuuuurrrrr",
+                "............kkkk..........uuuuurrrrr", // 2975
+                "............kkkk..........uuuuurrrrr",
+                "............kkkk..........uuuuurrrrrr",
+                "............kkkk...............rrrrrr",
+                "...............................rrrrrr",
+                "...............................rrrrrr", // 2970
+                "...............................rrrrrr",
+                "......hhhhhh...................rrrrr",
+                "......hhhhhh..............lllllrrrrr",
+                "......hhhhhh..............lllllrrrrr",
+                "......hhhhhh..............lllllrrrrr", // 2965
+                "......hhhhhh",
+                "",
+                "",
+                "",
+                "..............BBBBBBBBBB", // 2960
+                "..............BBBBBBBBBB",
+                "..............BBBBBBBBBB",
+                "..............BBBBBBBBBB",
+                "aaaaa...bbbb..BBBBBBBBBB",
+                "aaaaa...bbbb..BBBBBBBBBB", // 2955
+                "aaaaa...bbbb..BBBBBBBBBB",
+                "aaaaa...bbbb",
+                ".........bbb",
+                ".........bbb",
+                ".........bbb", // 2950
+                ".........bbb",
+                ".........bbb",
+                ".........bbb",
+        };
+        String parapet = "minecraft:sandstone_wall";
+        String fl = SMOOTH;
+        String wood = "minecraft:jungle_planks";
+        String pane = "minecraft:orange_stained_glass_pane";
+        t.bld(3340, 3004, "n", plan).wall(SMOOTH).floor(fl, wood).window(pane).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).door(3358, 3000, 's', "jungle").build();
+        t.bld(3340, 3004, "o", plan).wall(SMOOTH).floor(fl, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3364, 3000, 's', "jungle").ladder(3364, 3002, "south").build();
+        t.bld(3340, 3004, "m", plan).wall(SMOOTH).floor(fl, wood).window(pane).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).door(3360, 2993, 'e', "jungle").build();
+        t.bld(3340, 3004, "q", plan).wall(SMOOTH).floor(fl, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3363, 2992, 'w', "jungle").ladder(3368, 2991, "south").build();
+        t.bld(3340, 3004, "w", plan).wall(SMOOTH).floor(fl, wood).window(pane).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).door(3342, 2987, 'w', "jungle").build();
+        t.bld(3340, 3004, "g", plan).wall(SMOOTH).floor(fl, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3359, 2982, 's', "jungle").ladder(3357, 2983, "east").build();
+        t.bld(3340, 3004, "e", plan).wall(SMOOTH).floor(fl, wood).window(pane).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).door(3361, 2979, 'n', "jungle").build();
+        t.bld(3340, 3004, "f", plan).wall(SMOOTH).floor(fl, wood).window(pane).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).door(3365, 2983, 'w', "jungle").build();
+        t.bld(3340, 3004, "k", plan).wall(SMOOTH).floor(fl, wood).window(pane).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).door(3353, 2972, 's', "jungle").build();
+        t.bld(3340, 3004, "h", plan).wall(SMOOTH).floor(fl, wood).window(pane).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).door(3346, 2965, 'w', "jungle").build();
+        t.bld(3340, 3004, "a", plan).wall(SMOOTH).floor(fl, wood).window(pane).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).door(3344, 2955, 'e', "jungle").build();
+        t.bld(3340, 3004, "b", plan).wall(SMOOTH).floor(fl, wood).window(pane).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).door(3350, 2956, 'n', "jungle").build();
+        t.bld(3340, 3004, "B", plan).wall(SMOOTH).floor(wood, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3356, 2960, 'n', "jungle").ladder(3355, 2957, "east").build();
+        // the stone-floored house: two rooms west of the hall, the courtyard with its well between them
+        String stone = "minecraft:smooth_stone";
+        t.bld(3340, 3004, "u", plan).wall(SMOOTH).floor(stone, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).build();
+        t.bld(3340, 3004, "l", plan).wall(SMOOTH).floor(stone, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).build();
+        t.bld(3340, 3004, "r", plan).wall(SMOOTH).floor(stone, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3371, 2970, 'w', "jungle").door(3371, 2971, 'w', "jungle").build();
+        t.gap(3370, 2975, 'e', 0, 3);
+        t.door(3371, 2975, 'w', 0, "jungle");
+        t.gap(3370, 2966, 'e', 0, 3);
+        t.door(3371, 2966, 'w', 0, "jungle");
+        t.stairs(bx(3373) + 1, bz(2977) + 1, "north", 0, 4, 2, "minecraft:sandstone_stairs", SMOOTH);
+        k.well(cx(3367), cz(2970), CUT, SMOOTH);
+        // furnishings: the general store, the bar, the kebab house, the dyer
+        k.set(bx(3360), g, bz(2983), GENERAL);
+        k.fill(bx(3358), g, bz(2984), bx(3361) + 1, g, bz(2984), "minecraft:jungle_slab[type=top]");
+        k.set(bx(3356), g, bz(2981), "minecraft:barrel[facing=up]");
+        k.fill(bx(3359), g, bz(2958), bx(3362) + 1, g, bz(2958), "minecraft:jungle_slab[type=top]");
+        k.set(bx(3362), g, bz(2955), RANGE);
+        k.fill(bx(3360), g, bz(2956), bx(3362), g, bz(2956), "minecraft:barrel[facing=up]");
+        for (int tx = 3356; tx <= 3360; tx += 4) {
+            k.set(bx(tx), g, bz(2955), "minecraft:jungle_slab[type=top]");
+            k.set(bx(tx), g + 2, bz(2956), "minecraft:lantern[hanging=true]");
         }
-        k.awning(bar, "north", "minecraft:brown_wool");
-        int[] ali = k.house(3373, 2950, 3381, 2958, 2, DESERT_RICH, "west");
-        k.set(ali[2] - 2, g + 4, ali[1] + 2, "minecraft:jungle_slab[type=top]");
-        k.desertShop(3364, 2976, 3370, 2982, "west", RANGE, ORANGE_WOOL);
-        k.desertHouse(3372, 2976, 3378, 2982, 1, "west", null);
-        k.desertHouse(3364, 2986, 3370, 2992, 2, "south", WHITE_WOOL);
-        k.desertHouse(3372, 2986, 3378, 2992, 1, "west", ORANGE_WOOL);
-        k.desertHouse(3363, 2994, 3369, 2999, 1, "west", null);
-        // West side.
-        k.desertShop(3347, 2976, 3353, 2982, "east", GENERAL, ORANGE_WOOL);
-        k.desertHouse(3339, 2976, 3345, 2982, 1, "north", null);
-        k.desertHouse(3339, 2960, 3345, 2966, 2, "east", RED_WOOL);
-        k.desertHouse(3347, 2960, 3353, 2966, 1, "east", ORANGE_WOOL);
-        k.desertHouse(3339, 2948, 3345, 2954, 1, "east", null);
-        k.desertHouse(3347, 2946, 3353, 2954, 1, "east", WHITE_WOOL);
-        k.desertHouse(3340, 2986, 3346, 2992, 1, "south", null);
-        k.desertHouse(3348, 2986, 3354, 2992, 2, "east", ORANGE_WOOL);
-        k.desertHouse(3372, 2940, 3378, 2946, 1, "north", null);
-        k.desertHouse(3340, 2940, 3346, 2945, 1, "north", ORANGE_WOOL);
-        // Market stalls on the square.
-        k.stall(3355, 2979, "runecraft:silk_stall", RED_WOOL);
-        k.stall(3361, 2979, "runecraft:spice_stall", ORANGE_WOOL);
-        k.stall(3355, 2961, "runecraft:fish_stall", WHITE_WOOL);
-        for (int[] p : new int[][]{{3356, 2966}, {3363, 2966}, {3356, 2976}, {3363, 2975}, {3337, 2970}, {3382, 2972},
-                {3359, 2940}, {3359, 3000}}) {
+        k.set(bx(3354), g, bz(2975), "minecraft:smoker[facing=east]");
+        k.set(bx(3365), g, bz(3002), "minecraft:cauldron");
+        k.fill(bx(3363) + 1, g, bz(3003), bx(3363) + 1, g, bz(3001), "minecraft:orange_wool");
+        k.set(bx(3374), g, bz(2967), "minecraft:chest[facing=north]");
+        k.set(bx(3368), g, bz(2975), "minecraft:red_bed[facing=north,part=foot]");
+        // market stalls in the streets (approx)
+        k.stall(3355, 2988, "runecraft:silk_stall", RED_WOOL);
+        k.stall(3361, 2988, "runecraft:spice_stall", ORANGE_WOOL);
+        k.stall(3358, 2964, "runecraft:fish_stall", WHITE_WOOL);
+        for (int[] p : new int[][]{{3356, 2966}, {3363, 2966}, {3356, 2978}, {3364, 2986}, {3344, 3000}, {3359, 2997}}) {
+            int x = bx(p[0]);
+            int z = bz(p[1]);
+            k.fill(x, g, z, x, g + 2, z, "minecraft:sandstone_wall");
+            k.set(x, g + 3, z, "minecraft:lantern");
+        }
+        for (int[] p : new int[][]{{3340, 2990}, {3352, 2989}, {3346, 2981}, {3345, 2972}, {3366, 2961}, {3343, 2958}}) {
             k.palm(p[0], p[1], 6);
         }
-        k.scatter(3334, 2938, 3384, 3002, 0, "minecraft:dead_bush", 20, 52);
-        // Kerbed main street, benches round the well, the bar's outdoor tables and the market lamps
-        // (kept off the Source of the Elid cave mouth, which is its own structure).
-        int[] ms = r(3358, 2938, 3360, 3002);
-        k.d.kerb(ms[0], ms[1], ms[2], ms[3], CUT);
-        k.d.bench(cx(3359) - 4, bz(2969), false, "east", "minecraft:jungle");
-        k.d.bench(cx(3359) + 4, bz(2969), false, "west", "minecraft:jungle");
-        for (int x = bar[0] + 2; x < bar[2] - 2; x += 4) {
-            k.set(x, g, bar[1] - 3, "minecraft:jungle_slab[type=top]");
-            k.set(x, g + 1, bar[1] - 3, "minecraft:candle[candles=2,lit=true]");
-            k.set(x - 1, g, bar[1] - 3, "minecraft:jungle_stairs[facing=east]");
+        k.scatter(3334, 2938, 3384, 3004, 0, "minecraft:dead_bush", 20, 52);
+        for (int[] q : new int[][]{{3340, 2947, 3376, 3004}}) {
+            k.take(bx(q[0]), bz(q[3]), bx(q[2]) + 1, bz(q[1]) + 1);
         }
-        k.take(bx(3366), bz(2972), bx(3375), bz(2961));
-        k.take(bar[0], bar[1] - 4, bar[2], bar[1]);
-        k.dressTown(3334, 2938, 3384, 3002, "desert", 30, 53);
         return k.build();
     }
 
-    /** The rocky cave mouth leading down to the Source of the Elid, east of Pollnivneach's square. */
+    /** The rocky cave mouth leading down to the Source of the Elid: the crevice at 3372-3375, 2902-2906 (shortest-path). */
     static StructureDef elidCave() {
         EasternKit k = new EasternKit("elid_cave_entrance", "Source of the Elid entrance").replaces("elid_cave");
         int g = k.g;
-        int x = cx(3370);
-        int z = cz(2966);
+        int x = cx(3373);
+        int z = cz(2903);
         k.dome(x, z, g, 5.5, 4, "minecraft:sandstone", "minecraft:smooth_sandstone");
         k.clear(x - 1, g, z - 1, x + 1, g + 2, z + 6);
         k.clear(x - 1, g - 4, z - 1, x + 1, g - 1, z + 1);
@@ -642,81 +732,159 @@ final class EasternDesert {
 
     // ------------------------------------------------------------------ Nardah
 
-    /** Nardah: walled town with the Elidinis shrine, the fountain plaza, bank and shops. */
+    /**
+     * Nardah as on the OSRS map (mejrs layers_osrs, plane 0; ladders and stairs from shortest-path; NPC spawns
+     * from mejrs data_osrs): no town wall, flat-roofed sandstone houses round the well (3425-3427, 2914-2916).
+     * The Shrine of Elidinis 3420-3433 x 2924-2931 (the statue restores prayer), the Mayor's house 3438-3450 x
+     * 2909-2922 with its open garden (staircase at 3445,2911 east to the first floor), the bank 3424-3431 x
+     * 2887-2894 (bankers at 3425, booths along 3426, door east at 2891-2892), Kazemde's general store
+     * 3413-3420 x 2904-2911 (door north, ladder 3417,2905), Zahur's herb shop 3423-3430 x 2905-2910 (ladder
+     * 3429,2905), Seddu's adventurers' store 3402-3409 x 2920-2928 (ladder 3403,2926) and the houses with
+     * their ladders (3426,2901 / 3439,2892 / 3449,2898 / 3409,2932). Open doorways are drawn without a mark
+     * on the map, so the doors are approx.
+     */
     static StructureDef nardah() {
         EasternKit k = new EasternKit("nardah", "Nardah").replaces("NARDAH");
         int g = k.g;
-        k.flat(3396, 2876, 3450, 2926, SAND);
-        k.wall(3398, 2878, 3448, 2878, 5, SS, CUT);
-        k.wall(3398, 2924, 3448, 2924, 5, SS, CUT);
-        k.wall(3398, 2878, 3398, 2924, 5, SS, CUT);
-        k.wall(3448, 2878, 3448, 2924, 5, SS, CUT);
-        k.gate(3398, 2896, 3398, 2899, 5);
-        k.gate(3448, 2896, 3448, 2899, 5);
-        for (int[] t : new int[][]{{3398, 2878}, {3448, 2878}, {3398, 2924}, {3448, 2924}, {3398, 2894}, {3398, 2901},
-                {3448, 2894}, {3448, 2901}}) {
-            k.tower(t[0], t[1], 2, 8, CUT, SMOOTH, null, null);
+        k.flat(3396, 2880, 3454, 2938, SAND);
+        k.patches(3396, 2880, 3454, 2938, "minecraft:sandstone", 24, 61);
+        k.floor(3412, 2912, 3437, 2923, SMOOTH);
+        k.floor(3421, 2895, 3436, 2911, SMOOTH);
+        k.floor(3432, 2886, 3436, 2895, SMOOTH);
+        MapTown t = new MapTown(k.b);
+        String[] plan = {
+                ".....................................dddddddd", // 2935
+                "......cccc...........................dddddddd",
+                "......cccc...........................dddddddd",
+                "......cccc...........................dddddddd",
+                "......cccc........ssssssssssssss.....dddddddd",
+                "......cccc........ssssssssssssss", // 2930
+                "......cccc........ssssssssssssss",
+                "aaa...............ssssssssssssss",
+                "aaa...............ssssssssssssss",
+                "aaa...............ssssssssssssss",
+                "aaaaaaaa..............ssssss", // 2925
+                "aaaaaaaa..............ssssss",
+                "..aaaaaa",
+                "..aaaaaa..............................MMMMMMMMMM",
+                "..aaaaaa............................MMMMMMMMMMMMM",
+                "..aaaaaa............................MMMMMMMMMMMMM", // 2920
+                "....................................MMMMMMMMMMMMM",
+                "....................................MMMMMMMMMMMMM",
+                "....................................MMMMMMMMMMMMM",
+                "....................................MMMMMMMMMMMMM",
+                "....................................MMMMMMMMMMMMM", // 2915
+                "....................................MMMMMMMMMMMMM",
+                "....................................MMMMMMMMMMMMM",
+                "....................................MMMMMMMMMMMMM",
+                "...........ggggg....................MMMMMMMMMMMMM",
+                "...........ggggg.....hhhhh..........MMMMMMMMMMMMM", // 2910
+                "...........ggggg.....hhhhh............MMMMMMMMMM",
+                "...........gggggggg..hhhhh",
+                "...........gggggggg..hhhhhhhh",
+                "...........gggggggg..hhhhhhhh",
+                "...........gggggggg..hhhhhhhh..........vvvv", // 2905
+                "...........gggggggg....................vvvv",
+                ".......................................vvvv",
+                "......................jjjjjjj.......vvvvvvv",
+                "......................jjjjjjj.......vvvvvvv",
+                "......................jjjjjjj.......vvvv.....zzzzz", // 2900
+                ".....................jjjjjjjj.......vvvv.....zzzzz",
+                ".....................jjjjjjjj................zzzzz",
+                ".....................jjj.....................zzzzz",
+                ".............................................zzzzz",
+                ".............................................zzzzz", // 2895
+                "......................kkkkkkk................zzzzz",
+                "......................kkkkkkk.......uuuu.....zzzzz",
+                "......................kkkkkkkk......uuuu",
+                "......................kkkkkkkk......uuuu",
+                "......................kkkkkkk.......uuuu", // 2890
+                "......................kkkkkkk.......uuuu",
+                "......................kkk...........uuu",
+                "......................kkk...........uuu",
+        };
+        String parapet = "minecraft:sandstone_wall";
+        String fl = SMOOTH;
+        String wood = "minecraft:jungle_planks";
+        String pane = "minecraft:orange_stained_glass_pane";
+        t.bld(3402, 2935, "d", plan).wall(SMOOTH).floor(fl, wood).window(pane).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).door(3439, 2933, 'w', "jungle").build();
+        t.bld(3402, 2935, "c", plan).wall(SMOOTH).floor(fl, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3411, 2931, 'e', "jungle").ladder(3409, 2932, "east").build();
+        t.bld(3402, 2935, "a", plan).wall(SMOOTH).floor(fl, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3406, 2920, 's', "jungle").ladder(3403, 2926, "east").build();
+        t.bld(3402, 2935, "s", plan).wall(CUT).trim(CHIS).floor("minecraft:chiseled_sandstone", wood)
+                .window("minecraft:light_blue_stained_glass_pane").roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat("minecraft:cut_sandstone_slab[type=bottom]")
+                .door(3426, 2924, 's', "jungle").door(3427, 2924, 's', "jungle").build();
+        t.bld(3402, 2935, "M", plan).wall(SMOOTH).trim(CUT).floor(fl, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3438, 2912, 'w', "jungle").door(3438, 2913, 'w', "jungle").build();
+        t.bld(3402, 2935, "g", plan).wall(SMOOTH).floor(fl, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3415, 2911, 'n', "jungle").door(3416, 2911, 'n', "jungle").ladder(3417, 2905, "south").build();
+        t.bld(3402, 2935, "h", plan).wall(SMOOTH).floor(fl, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3425, 2910, 'n', "jungle").door(3426, 2910, 'n', "jungle").ladder(3429, 2905, "north").build();
+        t.bld(3402, 2935, "j", plan).wall(SMOOTH).floor(fl, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3427, 2902, 'n', "jungle").ladder(3426, 2901, "south").build();
+        t.bld(3402, 2935, "v", plan).wall(SMOOTH).floor(fl, wood).window(pane).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet).door(3438, 2901, 'w', "jungle").build();
+        t.bld(3402, 2935, "z", plan).wall(SMOOTH).floor(fl, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3447, 2897, 'w', "jungle").ladder(3449, 2898, "south").build();
+        t.bld(3402, 2935, "k", plan).wall(SMOOTH).trim(CUT).floor("minecraft:smooth_quartz", wood).window(pane).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3431, 2891, 'e', "jungle").door(3431, 2892, 'e', "jungle").build();
+        t.bld(3402, 2935, "u", plan).wall(SMOOTH).floor(fl, wood).window(pane).storeys(2).roof("minecraft:smooth_sandstone_stairs", SMOOTH).flat(parapet)
+                .door(3441, 2890, 'e', "jungle").ladder(3439, 2892, "south").build();
+        // the Mayor's house: the open garden in the middle (3440-3444 x 2914-2917) and the staircase east
+        int yx1 = bx(3440);
+        int yx2 = bx(3444) + 1;
+        int yz1 = bz(2917);
+        int yz2 = bz(2914) + 1;
+        k.clear(yx1, g, yz1, yx2, g + 8, yz2);
+        k.fill(yx1, g - 1, yz1, yx2, g - 1, yz2, GRASS);
+        k.b.walls(yx1, g + 3, yz1, yx2, g + 4, yz2, parapet);
+        k.b.walls(yx1, g, yz1, yx2, g, yz2, "minecraft:cut_sandstone_slab[type=bottom]");
+        k.palm(3442, 2915, 5);
+        t.stairs(bx(3445), bz(2911) + 1, "east", 0, 4, 2, "minecraft:sandstone_stairs", SMOOTH);
+        k.set(bx(3442), g, bz(2920), "minecraft:lectern[facing=south]");
+        k.set(bx(3448), g + 4, bz(2920), "minecraft:red_bed[facing=north,part=foot]");
+        // the shrine: Elidinis' statue and the altar, blue banners
+        int sx = bx(3426) + 1;
+        int sz = bz(2930);
+        k.fill(sx - 1, g, sz, sx + 2, g, sz + 1, CHIS);
+        k.fill(sx, g + 1, sz, sx + 1, g + 3, sz, "minecraft:quartz_pillar[axis=y]");
+        k.set(sx, g + 4, sz, "minecraft:light_blue_glazed_terracotta");
+        k.set(sx + 1, g + 4, sz, "minecraft:light_blue_glazed_terracotta");
+        k.set(sx, g + 1, sz + 2, ALTAR);
+        k.fill(bx(3424), g - 1, bz(2929), bx(3429) + 1, g - 1, bz(2925) + 1, "minecraft:light_blue_wool");
+        k.set(bx(3421) + 1, g + 2, bz(2928), "minecraft:blue_wall_banner[facing=east]");
+        k.set(bx(3432), g + 2, bz(2928), "minecraft:blue_wall_banner[facing=west]");
+        // the bank: booths along 3426 with the bankers behind them at 3425
+        for (int ty = 2888; ty <= 2894; ty++) {
+            String s = ty == 2889 || ty == 2891 || ty == 2893 || ty == 2894 ? BANK : "minecraft:cut_sandstone";
+            k.fill(bx(3426), g, bz(ty), bx(3426), g, bz(ty) + 1, s);
         }
-        k.floor(3399, 2896, 3447, 2899, SMOOTH);
-        k.floor(3416, 2889, 3436, 2905, CUT);
-        k.floor(3418, 2891, 3434, 2903, SMOOTH);
-        // The fountain of Elidinis.
-        int fx = cx(3426);
-        int fz = cz(2897);
-        k.fountain(fx, fz, 4, CHIS, CHIS);
-        for (int[] d : new int[][]{{-6, -6}, {6, -6}, {-6, 6}, {6, 6}}) {
-            k.pillar(fx + d[0], fz + d[1], 4, CHIS, "minecraft:lantern");
+        k.set(bx(3428), g + 2, bz(2891), "minecraft:lantern[hanging=true]");
+        // the shops
+        k.set(bx(3419), g, bz(2906), GENERAL);
+        k.fill(bx(3414), g, bz(2909), bx(3416) + 1, g, bz(2909), "minecraft:jungle_slab[type=top]");
+        k.set(bx(3424), g, bz(2907), "runecraft:apothecary_table");
+        k.set(bx(3427), g, bz(2909), "minecraft:brewing_stand");
+        k.set(bx(3407), g, bz(2922), WEAPONS);
+        k.set(bx(3408), g, bz(2922), "minecraft:barrel[facing=up]");
+        k.set(bx(3428), g, bz(2899), "minecraft:furnace[facing=north]");
+        k.set(bx(3449), g + 4, bz(2895), "minecraft:chest[facing=north]");
+        // the well, a cake stall by it (approx: OSRS Nardah has no thieving stalls), lamps and palms
+        int wx = bx(3426) + 1;
+        int wz = bz(2915) + 1;
+        k.b.walls(wx - 2, g, wz - 2, wx + 2, g, wz + 2, CUT);
+        k.fill(wx - 1, g - 3, wz - 1, wx + 1, g - 1, wz + 1, "minecraft:water");
+        k.stall(3419, 2916, "runecraft:cake_stall", "minecraft:brown_wool");
+        for (int[] p : new int[][]{{3421, 2913}, {3432, 2913}, {3421, 2919}, {3432, 2919}, {3433, 2897}, {3433, 2888}}) {
+            int x = bx(p[0]);
+            int z = bz(p[1]);
+            k.fill(x, g, z, x, g + 2, z, "minecraft:sandstone_wall");
+            k.set(x, g + 3, z, "minecraft:lantern");
         }
-        // Shrine of Elidinis.
-        int[] sh = k.hall(3418, 2909, 3434, 2920, 2, DESERT_RICH, "south");
-        k.openUp(sh, 2);
-        int smx = (sh[0] + sh[2]) / 2;
-        for (int z = sh[1] + 3; z < sh[3] - 2; z += 4) {
-            k.fill(sh[0] + 4, g, z, sh[0] + 4, g + 6, z, CHIS);
-            k.fill(sh[2] - 4, g, z, sh[2] - 4, g + 6, z, CHIS);
-        }
-        k.fill(sh[0] + 2, g - 1, sh[1] + 2, sh[0] + 2, g - 1, sh[3] - 3, WATER);
-        k.fill(sh[2] - 2, g - 1, sh[1] + 2, sh[2] - 2, g - 1, sh[3] - 3, WATER);
-        k.fill(smx - 3, g, sh[1] + 1, smx + 3, g, sh[1] + 4, CHIS);
-        k.set(smx, g + 1, sh[1] + 4, ALTAR);
-        k.fill(smx, g + 1, sh[1] + 1, smx + 1, g + 5, sh[1] + 2, SMOOTH);
-        k.fill(smx, g + 6, sh[1] + 1, smx + 1, g + 7, sh[1] + 2, CHIS);
-        k.set(smx - 1, g + 4, sh[1] + 2, "minecraft:smooth_sandstone_slab[type=top]");
-        k.set(smx + 2, g + 4, sh[1] + 2, "minecraft:smooth_sandstone_slab[type=top]");
-        k.fill(smx, g + 1, sh[1] + 3, smx + 1, g + 1, sh[1] + 3, "minecraft:light_blue_stained_glass");
-        k.fill(smx, g, sh[1] + 5, smx + 1, g, sh[3] - 1, "minecraft:light_blue_carpet");
-        for (int x = sh[0] + 2; x <= sh[2]; x += 4) {
-            k.fill(x, g, sh[3] + 2, x, g + 7, sh[3] + 2, CHIS);
-        }
-        k.fill(sh[0], g + 8, sh[3] + 1, sh[2], g + 8, sh[3] + 2, CUT);
-        k.dome(smx, (sh[1] + sh[3]) / 2, g + 8, 6.5, 5, SMOOTH, "minecraft:light_blue_terracotta");
-        k.set(smx, g + 13, (sh[1] + sh[3]) / 2, GOLD);
-        // Bank, shops, houses.
-        int[] bank = k.hall(3420, 2880, 3432, 2886, 1, DESERT_RICH, "north");
-        k.boothsX(bank[0] + 3, bank[2] - 3, bank[3] - 3, g, CUT);
-        k.awning(bank, "north", ORANGE_WOOL);
-        k.desertShop(3404, 2901, 3411, 2907, "east", GENERAL, ORANGE_WOOL);
-        k.desertShop(3404, 2910, 3411, 2916, "east", "runecraft:cake_stall", "minecraft:brown_wool");
-        k.desertShop(3438, 2901, 3445, 2907, "west", WEAPONS, RED_WOOL);
-        k.desertShop(3438, 2910, 3445, 2916, "west", "runecraft:apothecary_table", "minecraft:lime_wool");
-        k.desertHouse(3404, 2887, 3411, 2893, 2, "east", WHITE_WOOL);
-        k.desertHouse(3438, 2887, 3445, 2893, 1, "west", ORANGE_WOOL);
-        k.desertHouse(3402, 2918, 3409, 2922, 1, "east", null);
-        k.desertHouse(3438, 2918, 3445, 2922, 1, "west", null);
-        k.desertHouse(3402, 2880, 3408, 2884, 1, "north", null);
-        k.desertHouse(3438, 2880, 3445, 2884, 1, "north", ORANGE_WOOL);
-        for (int[] p : new int[][]{{3416, 2889}, {3436, 2889}, {3416, 2905}, {3436, 2905}, {3413, 2897}, {3440, 2897}}) {
+        for (int[] p : new int[][]{{3410, 2915}, {3436, 2925}, {3413, 2897}, {3445, 2888}, {3400, 2910}, {3416, 2930}}) {
             k.palm(p[0], p[1], 6);
         }
-        // Benches and planters round the fountain plaza, blue banners of Elidinis on the shrine portico.
-        for (int[] bch : new int[][]{{-8, -3}, {-8, 2}, {8, -3}, {8, 2}}) {
-            k.d.bench(fx + bch[0], fz + bch[1], false, bch[0] < 0 ? "east" : "west", "minecraft:jungle");
-        }
-        for (int x = sh[0] + 4; x <= sh[2] - 4; x += 8) {
-            k.set(x, g + 6, sh[3] + 3, "minecraft:light_blue_wall_banner[facing=south]");
-        }
-        k.take(bx(3416), bz(2905), bx(3436) + 1, bz(2889) + 1);
-        k.dressTown(3398, 2878, 3448, 2924, "desert", 22, 82);
+        k.scatter(3396, 2880, 3454, 2938, 0, "minecraft:dead_bush", 14, 62);
         return k.build();
     }
 

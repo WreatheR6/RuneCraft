@@ -25,7 +25,7 @@ final class LateQuestsB {
     }
 
     static void register(QuestBook b) {
-        b.place("elid_cave", "Source of the Elid", 3370, 2970, PlaceDef.Style.CAVE);
+        b.place("elid_cave", "Source of the Elid", 3373, 2904, PlaceDef.Style.CAVE); // the crevice west of Nardah
         b.place("sophanem_dungeon", "Sophanem dungeon", 3290, 2770, PlaceDef.Style.CAVE);
         b.place("necropolis", "Necropolis", 3340, 2730, PlaceDef.Style.RUINS);
         b.place("piscatoris", "Piscatoris Fishing Colony", 2342, 3650, PlaceDef.Style.CAMP);

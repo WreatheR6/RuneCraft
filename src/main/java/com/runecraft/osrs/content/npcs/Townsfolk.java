@@ -164,7 +164,7 @@ public final class Townsfolk {
         keeper("npc_karim", "Karim", "Al Kharid", 3273, 3180, "karims_kebabs", desert);
         keeper("npc_shantay", "Shantay", "Shantay Pass", 3304, 3123, "shantay_pass_shop", desert);
         keeper("npc_rokuh", "Rokuh", "Nardah", 3428, 2913, "rokuhs_choc_ice_emporium", desert);
-        keeper("npc_seddu", "Seddu", "Nardah", 3436, 2911, "seddus_adventurers_store", desert);
+        keeper("npc_seddu", "Seddu", "Nardah", 3406, 2923, "seddus_adventurers_store", desert);
 
         // ------------------------------------------------------------- Kandarin
         keeper("npc_harry", "Harry", "Catherby", 2834, 3443, "harrys_fishing_shop", sailor);
@@ -223,7 +223,7 @@ public final class Townsfolk {
         bankers("canifis", "Canifis", 3512, 3478, 3512, 3481);
         bankers("port_phasmatys", "Port Phasmatys", 3689, 3466, 3691, 3466);
         bankers("shilo", "Shilo Village", 2852, 2953, 2855, 2953);
-        bankers("nardah", "Nardah", 3428, 2889, 3430, 2889);
+        bankers("nardah", "Nardah", 3425, 2891, 3425, 2893); // behind the booths along x 3426 (OSRS 3425, 2889-2894)
         bankers("lletya", "Lletya", 2352, 3166, 2354, 3166);
         bankers("castle_wars", "Castle Wars", 2443, 3085, 2445, 3085);
         bankers("fishing_guild", "Fishing Guild", 2586, 3418, 2588, 3418);

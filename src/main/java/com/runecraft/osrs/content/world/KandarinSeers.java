@@ -402,11 +402,11 @@ final class KandarinSeers {
         String fl = "minecraft:polished_andesite";
         String up = "minecraft:spruce_planks";
         String crenel = "minecraft:stone_brick_wall";
-        t.bld(2746, 3517, "wW", towers).wall(w).floor(fl, up).storeys(2).flat(crenel).build();
-        t.bld(2746, 3517, "eE", towers).wall(w).floor(fl, up).storeys(2).flat(crenel).build();
-        t.bld(2746, 3517, "W", towers).wall(w).floor(fl, up).storeys(3).flat(crenel).ladder(2748, 3493, "east").build();
-        t.bld(2746, 3517, "E", towers).wall(w).floor(fl, up).storeys(3).flat(crenel).ladder(2769, 3493, "west").build();
-        t.bld(2746, 3517, "k", towers).wall(w).floor(fl, up).storeys(3).flat(crenel).window("minecraft:white_stained_glass_pane")
+        t.bld(2746, 3517, "wW", towers).wall(w).floor(fl, up).storeys(2).roof("minecraft:stone_brick_stairs", w).flat(crenel).build();
+        t.bld(2746, 3517, "eE", towers).wall(w).floor(fl, up).storeys(2).roof("minecraft:stone_brick_stairs", w).flat(crenel).build();
+        t.bld(2746, 3517, "W", towers).wall(w).floor(fl, up).storeys(3).roof("minecraft:stone_brick_stairs", w).flat(crenel).ladder(2748, 3493, "east").build();
+        t.bld(2746, 3517, "E", towers).wall(w).floor(fl, up).storeys(3).roof("minecraft:stone_brick_stairs", w).flat(crenel).ladder(2769, 3493, "west").build();
+        t.bld(2746, 3517, "k", towers).wall(w).floor(fl, up).storeys(3).roof("minecraft:stone_brick_stairs", w).flat(crenel).window("minecraft:white_stained_glass_pane")
                 .door(2757, 3504, 's', "dark_oak").door(2758, 3504, 's', "dark_oak").build();
         int g = k.g;
         // wings to keep and towers on both floors, the wings' courtyard doors
