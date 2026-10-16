@@ -104,74 +104,145 @@ final class EasternMorytania {
 
     // ------------------------------------------------------------------ Canifis
 
-    /** Canifis: dark timber houses around the village green, pub, bank, Mazchna, shops and the herb patch. */
+    /**
+     * Canifis as on the OSRS map (mejrs layers_osrs, planes 0-1; NPC spawns from mejrs data_osrs): seven dark
+     * timber houses with slate roofs round the muddy square. The Hair of the Dog tavern 3488-3504 x 3468-3479
+     * (door north at 3494, chamfered south-east corner, two storeys), the bank 3508-3516 x 3474-3483 (door west
+     * at 3480), the general store / Rufus' meat shop 3504-3511 x 3491-3498 (door west at 3492), Sbott's tannery
+     * 3485-3493 x 3498-3505 (door south at 3488), Barker's haberdashery 3496-3504 x 3503-3507 (door south at
+     * 3497), the taxidermist 3477-3484 x 3481-3487 (door east at 3482) and the house 3474-3480 x 3491-3500 (door
+     * east at 3494, two storeys). Mazchna stands outside to the north-east (3511, 3509).
+     */
     static StructureDef canifis() {
         EasternKit k = new EasternKit("canifis", "Canifis").replaces("CANIFIS");
         int g = k.g;
         k.flat(3468, 3462, 3522, 3514, PODZOL);
         k.patches(3468, 3462, 3522, 3514, COARSE, 30, 111);
         k.patches(3468, 3462, 3522, 3514, MUD, 12, 112);
-        k.floor(3483, 3476, 3507, 3500, GRAVEL);
-        k.floor(3485, 3478, 3505, 3498, GRASS);
-        k.floor(3494, 3500, 3496, 3501, GRAVEL);
-        // North side: the pub, general store, a house.
-        int[] pub = k.hall(3486, 3502, 3495, 3510, 2, MORY, "south");
-        k.counterX(pub[0] + 2, pub[2] - 6, pub[1] + 3, g, "minecraft:dark_oak_slab[type=top]", null);
-        k.fill(pub[0] + 2, g, pub[1] + 1, pub[2] - 6, g, pub[1] + 1, "minecraft:barrel[facing=up]");
-        k.set(pub[2] - 2, g, pub[1] + 1, RANGE);
-        for (int x = pub[0] + 3; x < pub[2] - 2; x += 5) {
-            k.set(x, g, pub[3] - 3, "minecraft:dark_oak_slab[type=top]");
-            k.set(x - 1, g, pub[3] - 3, "minecraft:dark_oak_stairs[facing=west]");
-            k.set(x + 1, g, pub[3] - 3, "minecraft:dark_oak_stairs[facing=east]");
+        // the swampy green and the muddy lane crossing it from the south-west to Mazchna in the north-east
+        int[][] lane = {{3470, 3474}, {3480, 3478}, {3490, 3487}, {3500, 3497}, {3512, 3511}};
+        for (int s = 0; s + 1 < lane.length; s++) {
+            int n = Math.max(Math.abs(lane[s + 1][0] - lane[s][0]), Math.abs(lane[s + 1][1] - lane[s][1]));
+            for (int i = 0; i <= n; i++) {
+                int tx = lane[s][0] + (lane[s + 1][0] - lane[s][0]) * i / n;
+                int ty = lane[s][1] + (lane[s + 1][1] - lane[s][1]) * i / n;
+                k.floor(tx - 1, ty - 1, tx + 1, ty, "minecraft:mud");
+            }
         }
-        k.shop(3497, 3503, 3503, 3509, 1, MORY, "south", GENERAL);
-        k.house(3476, 3502, 3483, 3508, 2, MORY, "south");
-        // East side: the bank, Rufus' meat emporium, a house.
-        int[] bank = k.hall(3509, 3475, 3516, 3484, 1, MORY_STONE, "west");
-        k.boothsZ(bank[2] - 3, bank[1] + 2, bank[3] - 2, g, POL_DEEP);
-        k.fill(bank[0] + 1, g, (bank[1] + bank[3]) / 2, bank[2] - 4, g, (bank[1] + bank[3]) / 2 + 1, "minecraft:gray_carpet");
-        int[] rufus = k.shop(3510, 3488, 3516, 3494, 1, MORY, "west", null);
-        k.set(rufus[2] - 1, g, rufus[1] + 2, "minecraft:smoker[facing=west]");
-        k.fill(rufus[2] - 1, g + 2, rufus[1] + 3, rufus[2] - 1, g + 2, rufus[3] - 2, "minecraft:chain");
-        k.house(3510, 3497, 3516, 3503, 2, MORY, "west");
-        // South side: a house, Mazchna the slayer master, Sbott the tanner.
-        k.house(3486, 3466, 3492, 3473, 1, MORY, "north");
-        k.shop(3494, 3466, 3501, 3473, 1, MORY_STONE, "north", "runecraft:slayer_master");
-        k.shop(3503, 3466, 3509, 3472, 1, MORY, "north", TANNER);
-        // West side: houses and the fur trader.
-        k.house(3471, 3478, 3479, 3485, 2, MORY, "east");
-        k.shop(3471, 3489, 3479, 3496, 1, MORY, "east", "runecraft:fur_stall");
-        k.house(3472, 3466, 3479, 3472, 1, MORY, "east");
-        // The green: fenced garden (OSRS has no herb patch in Canifis), dead trees, lantern posts.
-        int hx = bx(3498);
-        int hz = bz(3482);
-        k.b.walls(hx - 2, g, hz - 2, hx + 2, g, hz + 2, "minecraft:dark_oak_fence");
-        k.set(hx, g, hz + 2, "minecraft:dark_oak_fence_gate[facing=south]");
-        k.fill(hx - 1, g - 1, hz - 1, hx + 1, g - 1, hz + 1, "minecraft:farmland");
-        k.set(hx, g, hz, "minecraft:potted_dead_bush");
+        k.patches(3482, 3480, 3507, 3497, "minecraft:moss_block", 10, 119);
+        MapTown t = new MapTown(k.b);
+        String[] plan = {
+                ".......................eeeeeeee", // 3507
+                "......................eeeeeeeee",
+                "...............ddddd..eeeeeeeee", // 3505
+                "...............ddddd..eeeeeeeee",
+                "..............dddddd..eeeeeeeee",
+                "...........ddddddddd",
+                "...........ddddddddd",
+                "..bbbbb....ddddddddd", // 3500
+                "bbbbbbb....ddddddddd",
+                "bbbbbbb....dddddddd...........nnnnnnnn",
+                "bbbbbbb.......................nnnnnnnn",
+                "bbbbbbb.......................nnnnnnnn",
+                "bbbbbbb.......................nnnnnnnn", // 3495
+                "bbbbbbb.......................nnnnnnnn",
+                "bbbbbbb.......................nnnnnn",
+                "bbbbbbb.......................nnnnn",
+                "bbbbbbb.......................nnnnn",
+                "", // 3490
+                "",
+                "",
+                "...cccccccc",
+                "...cccccccc",
+                "...cccccccc", // 3485
+                "...cccccc",
+                "...ccccc...........................ffffffff",
+                "...ccccc..........................fffffffff",
+                "...ccccc..........................fffffffff",
+                "..................................fffffffff", // 3480
+                "..............ppppppppppppppppp...fffffffff",
+                "..............ppppppppppppppppp...fffffffff",
+                "..............ppppppppppppppppp....ffffffff",
+                "..............ppppppppppppppppp....fffffff",
+                "..............ppppppppppppppppp....fffff", // 3475
+                "..............ppppppppppppppppp....ffff",
+                "..............ppppppppppppppppp",
+                "..............ppppppppppppppppp",
+                "..............ppppppppppppppppp",
+                "..............ppppppppppppppp", // 3470
+                "..............pppppppppppppp",
+                "..............ppppppppppppp",
+        };
+        String wall = "minecraft:dark_oak_planks";
+        String trim = "minecraft:dark_oak_log[axis=y]";
+        String slateS = "minecraft:deepslate_tile_stairs";
+        String fl = "minecraft:spruce_planks";
+        t.bld(3474, 3507, "e", plan).wall(wall).trim(trim).floor(fl, fl).roof(slateS, DEEP_TILES).door(3497, 3503, 's', "dark_oak").build();
+        t.bld(3474, 3507, "d", plan).wall(wall).trim(trim).floor(fl, fl).roof(slateS, DEEP_TILES).door(3488, 3498, 's', "dark_oak").build();
+        t.bld(3474, 3507, "b", plan).wall(wall).trim(trim).floor(fl, fl).roof(slateS, DEEP_TILES).storeys(2)
+                .door(3480, 3494, 'e', "dark_oak").ladder(3474, 3499, "east").build();
+        t.bld(3474, 3507, "n", plan).wall(wall).trim(trim).floor(fl, fl).roof(slateS, DEEP_TILES).door(3504, 3492, 'w', "dark_oak").build();
+        t.bld(3474, 3507, "c", plan).wall(wall).trim(trim).floor(fl, fl).roof(slateS, DEEP_TILES).door(3481, 3482, 'e', "dark_oak").build();
+        t.bld(3474, 3507, "f", plan).wall(DEEP_BRICKS).trim(POL_DEEP).floor(POL_DEEP, fl).roof(slateS, DEEP_TILES)
+                .door(3508, 3480, 'w', "dark_oak").build();
+        t.bld(3474, 3507, "p", plan).wall(wall).trim(trim).floor(fl, fl).roof(slateS, DEEP_TILES).storeys(2)
+                .door(3494, 3479, 'n', "dark_oak").ladder(3499, 3476, "west").build();
+        for (int[] q : new int[][]{{3496, 3503, 3504, 3507}, {3485, 3498, 3493, 3505}, {3474, 3491, 3480, 3500},
+                {3504, 3491, 3511, 3498}, {3477, 3481, 3484, 3487}, {3508, 3474, 3516, 3483}, {3488, 3468, 3504, 3479}}) {
+            k.take(bx(q[0]), bz(q[3]), bx(q[2]) + 1, bz(q[1]) + 1);
+        }
+        // the bank: booths along x 3511 with the bankers behind them (3512, 3478 / 3481)
+        for (int ty = 3477; ty <= 3482; ty++) {
+            k.set(bx(3511) + 1, g, bz(ty), ty == 3478 || ty == 3481 ? BANK : POL_DEEP);
+            k.set(bx(3511) + 1, g, bz(ty) + 1, ty == 3478 || ty == 3481 ? BANK : POL_DEEP);
+        }
+        k.fill(bx(3509), g - 1, bz(3480), bx(3510) + 1, g - 1, bz(3479) + 1, "minecraft:gray_wool");
+        k.set(bx(3510), g + 2, bz(3477), SOUL_LANTERN);
+        // the tavern: the bar along 3472 (Roavar behind it at 3493, 3471), the range in the kitchen, tables,
+        // the trapdoor to the Myreque hideout (OSRS 3495, 3464 in the south room; here inside the hall, approx)
+        k.fill(bx(3490), g, bz(3472) + 1, bx(3497) + 1, g, bz(3472) + 1, "minecraft:dark_oak_slab[type=top]");
+        k.fill(bx(3490), g, bz(3469) + 1, bx(3492), g, bz(3469) + 1, "minecraft:barrel[facing=up]");
+        k.set(bx(3501), g, bz(3471), RANGE);
+        k.set(bx(3500), g, bz(3471), "minecraft:smoker[facing=north]");
+        for (int tx = 3491; tx <= 3501; tx += 5) {
+            k.set(bx(tx), g, bz(3476), "minecraft:dark_oak_slab[type=top]");
+            k.set(bx(tx) - 1, g, bz(3476), "minecraft:dark_oak_stairs[facing=west]");
+            k.set(bx(tx) + 1, g, bz(3476), "minecraft:dark_oak_stairs[facing=east]");
+            k.set(bx(tx), g + 2, bz(3475), "minecraft:lantern[hanging=true]");
+        }
+        k.set(bx(3495), g - 1, bz(3469), "minecraft:spruce_trapdoor[half=top,open=false]");
+        k.set(bx(3494) + 1, g + 3, bz(3479) - 1, "minecraft:black_wall_banner[facing=north]");
+        k.set(bx(3500), g + 4, bz(3474), "minecraft:red_bed[facing=north,part=foot]");
+        k.set(bx(3492), g + 4, bz(3474), "minecraft:red_bed[facing=north,part=foot]");
+        // the shops
+        k.set(bx(3509), g, bz(3497), GENERAL);
+        k.set(bx(3505), g, bz(3497), "minecraft:barrel[facing=up]");
+        k.set(bx(3506), g, bz(3491), "minecraft:smoker[facing=north]");
+        k.fill(bx(3509), g + 2, bz(3493), bx(3509), g + 2, bz(3494), "minecraft:chain");
+        k.set(bx(3491), g, bz(3501), TANNER);
+        k.set(bx(3486), g, bz(3501), "minecraft:barrel[facing=up]");
+        k.set(bx(3500), g, bz(3506), "minecraft:loom[facing=south]");
+        k.fill(bx(3502), g, bz(3506), bx(3503), g, bz(3506), "minecraft:white_wool");
+        k.set(bx(3479), g, bz(3486), "minecraft:skeleton_skull");
+        k.set(bx(3478), g, bz(3486), "minecraft:bookshelf");
+        k.set(bx(3478), g + 4, bz(3496), "minecraft:gray_bed[facing=north,part=foot]");
+        k.set(bx(3477), g, bz(3492), "minecraft:chest[facing=east]");
+        // Mazchna's post outside to the north-east
+        k.set(bx(3510), g, bz(3508), "runecraft:slayer_master");
+        k.set(bx(3512), g, bz(3510), "minecraft:skeleton_skull");
+        // the square: dead trees, lantern posts, a well
         k.deadTree(3489, 3483, 7);
         k.deadTree(3501, 3494, 6);
-        k.deadTree(3490, 3495, 5);
-        k.set(bx(3495), g, bz(3488), "minecraft:mossy_cobblestone");
-        for (int[] p : new int[][]{{3483, 3476}, {3507, 3476}, {3483, 3500}, {3507, 3500}, {3495, 3476}, {3483, 3488},
-                {3507, 3488}}) {
+        k.deadTree(3487, 3492, 5);
+        for (int[] p : new int[][]{{3483, 3480}, {3506, 3485}, {3483, 3497}, {3506, 3490}, {3495, 3482}}) {
             int x = bx(p[0]);
             int z = bz(p[1]);
             k.fill(x, g, z, x, g + 2, z, "minecraft:dark_oak_fence");
             k.set(x, g + 3, z, SOUL_LANTERN);
         }
         k.scatter(3468, 3462, 3522, 3514, 0, "minecraft:dead_bush", 16, 113);
-        k.scatter(3485, 3478, 3505, 3498, 0, "minecraft:fern", 14, 114);
-        // The pub sign (a black banner over the door), a muddy cart track round the green, picket fences
-        // and back-garden clutter; lamp posts along the lanes and gloomy props on free ground.
-        k.set((pub[0] + pub[2]) / 2 - 2, g + 3, pub[3] + 1, "minecraft:black_wall_banner[facing=south]");
-        k.d.weather(bx(3483), g - 1, bz(3500), bx(3507) + 1, g - 1, bz(3476) + 1, GRAVEL, MUD, 30, 115);
-        k.d.weather(bx(3483), g - 1, bz(3500), bx(3507) + 1, g - 1, bz(3476) + 1, GRAVEL, COARSE, 20, 116);
-        k.d.flowerBed(bx(3486), bz(3497), bx(3488) + 1, bz(3496) + 1, "minecraft:dark_oak_planks", 117);
-        k.set(bx(3492), g, bz(3486), "minecraft:dark_oak_fence");
-        k.set(bx(3492), g + 1, bz(3486), "minecraft:carved_pumpkin[facing=south]");
-        k.take(bx(3483), bz(3500), bx(3507) + 1, bz(3476) + 1);
-        k.dressTown(3468, 3462, 3522, 3514, "mory", 26, 118);
+        k.take(bx(3482), bz(3497), bx(3507) + 1, bz(3480) + 1);
+        k.dressTown(3468, 3462, 3522, 3514, "mory", 18, 118);
         return k.build();
     }
 

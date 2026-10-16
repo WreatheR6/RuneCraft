@@ -41,7 +41,7 @@ final class LateQuestsA {
         b.place("penguin_iceberg", "Penguin iceberg", 2650, 4000, PlaceDef.Style.CAMP);
         b.place("tower_of_life", "Tower of Life", 2649, 3220, PlaceDef.Style.RUINS);
         b.place("castle_wars_knights", "Black Knights' prison", 2895, 3550, PlaceDef.Style.CAVE);
-        b.place("grim_tales_tower", "Witch's tower", 2905, 3450, PlaceDef.Style.RUINS);
+        b.place("grim_tales_tower", "Witch's tower", 2968, 3466, PlaceDef.Style.RUINS); // the tower south of the Mind Altar
         b.spot("yanille_beach", "Yanille sandpit", 2550, 3100);
         fairytales(b);
         gardenOfTranquillity(b);

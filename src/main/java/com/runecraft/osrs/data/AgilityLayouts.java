@@ -27,7 +27,7 @@ public final class AgilityLayouts {
         put(AgilityCourse.VARROCK, 3222, 3417, 3211, 3411, 3200, 3420, 3195, 3417, 3191, 3404, 3212, 3400, 3233, 3402,
                 3236, 3406, 3239, 3419);
         // Tall tree, four gaps, pole-vault, two gaps around the Canifis square.
-        put(AgilityCourse.CANIFIS, 3508, 3488, 3504, 3498, 3497, 3501, 3487, 3499, 3481, 3489, 3481, 3482, 3503, 3476,
+        put(AgilityCourse.CANIFIS, 3508, 3488, 3502, 3499, 3497, 3501, 3487, 3497, 3481, 3489, 3483, 3482, 3506, 3476,
                 3507, 3480);
         // Rough wall east of the Falador square, round the north-east roofs and back west along the south.
         put(AgilityCourse.FALADOR, 3032, 3338, 3032, 3335, 3048, 3352, 3048, 3358, 3044, 3361, 3034, 3361, 3027, 3358,
