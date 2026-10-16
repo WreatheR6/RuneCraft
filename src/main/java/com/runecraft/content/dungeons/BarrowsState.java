@@ -43,6 +43,7 @@ final class BarrowsState extends PersistentState {
             tag.putBoolean("Hidden", run.hiddenSummoned());
             tag.putInt("Solved", run.solvedMask());
             tag.putInt("Monsters", run.monsterKills());
+            tag.putInt("MonsterLevels", run.monsterLevels());
             nbt.put(uuid.toString(), tag);
         });
         return nbt;
@@ -55,7 +56,7 @@ final class BarrowsState extends PersistentState {
                 NbtCompound tag = nbt.getCompound(key);
                 state.runs.put(UUID.fromString(key), BarrowsRun.of(tag.getInt("Killed"), tag.getInt("Summoned"),
                         tag.getInt("Tunnel"), tag.getLong("Seed"), tag.getBoolean("Hidden"),
-                        tag.getInt("Solved"), tag.getInt("Monsters")));
+                        tag.getInt("Solved"), tag.getInt("Monsters"), tag.getInt("MonsterLevels")));
             } catch (IllegalArgumentException ignored) {
                 // Not a player entry.
             }

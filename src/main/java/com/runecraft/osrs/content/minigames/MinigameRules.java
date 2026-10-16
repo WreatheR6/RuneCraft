@@ -877,6 +877,11 @@ public final class MinigameRules {
 
         private Imbues() {
         }
+
+        /** A tool that must be carried (not used up) to imbue {@code item}, or null: the ring of the gods needs a holy wrench. */
+        public static String tool(String item) {
+            return "ring_of_the_gods".equals(item) ? "holy_wrench" : null;
+        }
     }
 
     // ---------------------------------------------------------------- Nightmare Zone

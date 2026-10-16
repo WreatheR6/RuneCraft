@@ -264,17 +264,28 @@ public final class EmirsArenaService {
      * Uses a scroll of imbuing on the first item the player wears or carries that can be imbued (the Nightmare Zone / Soul
      * Wars list). Returns true if the scroll was used up.
      */
+    /** What the scroll turns {@code item} into, or null (also when a needed tool, the holy wrench, isn't carried). */
+    private static String imbuable(ServerPlayerEntity p, String item) {
+        String to = EmirsArena.imbued(item);
+        String tool = to == null ? null : com.runecraft.osrs.content.minigames.MinigameRules.Imbues.tool(item);
+        if (tool != null && !Inv.has(p, tool, 1)) {
+            Msg.game(p, "You need a holy wrench in your inventory to imbue the ring of the gods.");
+            return null;
+        }
+        return to;
+    }
+
     static boolean useScrollOfImbuing(ServerPlayerEntity p) {
         SysState.SysPlayer sp = SysState.of(p);
         for (Jewellery.Slot slot : new Jewellery.Slot[]{Jewellery.Slot.RING, Jewellery.Slot.NECK}) {
-            String to = EmirsArena.imbued(sp.wornId(slot));
+            String to = imbuable(p, sp.wornId(slot));
             if (to != null) {
                 sp.worn.put(slot, Inv.stack(to, 1));
                 imbuedMessage(p, to);
                 return true;
             }
         }
-        String head = EmirsArena.imbued(Inv.idOf(p.getEquippedStack(EquipmentSlot.HEAD)));
+        String head = imbuable(p, Inv.idOf(p.getEquippedStack(EquipmentSlot.HEAD)));
         if (head != null) {
             p.equipStack(EquipmentSlot.HEAD, Inv.stack(head, 1));
             imbuedMessage(p, head);
@@ -283,7 +294,7 @@ public final class EmirsArenaService {
         var inv = p.getInventory();
         for (int i = 0; i < inv.size(); i++) {
             ItemStack s = inv.getStack(i);
-            String to = s.isEmpty() ? null : EmirsArena.imbued(Inv.idOf(s));
+            String to = s.isEmpty() ? null : imbuable(p, Inv.idOf(s));
             if (to != null) {
                 s.decrement(1);
                 if (s.isEmpty()) {

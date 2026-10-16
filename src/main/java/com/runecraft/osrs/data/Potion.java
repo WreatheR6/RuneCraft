@@ -65,6 +65,19 @@ public enum Potion {
         return color;
     }
 
+    /** Items that add 2% of the Prayer level to prayer restores (OSRS Wiki "Holy wrench"; the effects don't stack). */
+    public static final String HOLY_WRENCH = "holy_wrench";
+    public static final java.util.Set<String> WRENCH_WORN = java.util.Set.of("ring_of_the_gods_i", "prayer_cape", "prayer_cape_t", "max_cape");
+
+    /**
+     * Extra prayer points a holy wrench (or prayer cape / ring of the gods (i)) adds to one dose of a prayer-restoring potion
+     * whose restore is {@code percent}% of the Prayer level (25: prayer potion, super restore and their mixes, blighted super
+     * restore; 30: Sanfew serum): the restore becomes {@code percent + 2}% (OSRS Wiki "Holy wrench").
+     */
+    public static int wrenchBonus(int prayerLevel, int percent) {
+        return prayerLevel * (percent + 2) / 100 - prayerLevel * percent / 100;
+    }
+
     /** Applies one dose to a skill set; returns prayer points restored (applied by the caller). */
     public int apply(com.runecraft.osrs.SkillSet skills) {
         switch (this) {

@@ -194,13 +194,13 @@ class BarrowsTest {
             for (BarrowsRun.Reward r : one.rollRewards(random)) {
                 assertNotNull(ItemCatalog.get(r.item()), r.item());
                 assertTrue(r.count() > 0);
-                if (!r.item().equals("coins") && !r.item().endsWith("_rune")) {
+                if (!mainTable(r.item())) {
                     assertTrue(karilOnly.contains(r.item()), "piece from a brother not killed: " + r.item());
                     pieces++;
                 }
             }
             assertTrue(BarrowsRun.of(0, 0, 0, i, true).rollRewards(random).stream()
-                    .allMatch(r -> r.item().equals("coins") || r.item().endsWith("_rune")));
+                    .allMatch(r -> r.item().equals("clue_scroll_elite")), "no potential, no brothers: only the clue roll");
         }
         assertTrue(pieces > 0 && pieces < 60, "about 3000 * 2 / 392 pieces, got " + pieces);
         int full = 0;
@@ -209,7 +209,7 @@ class BarrowsTest {
             List<BarrowsRun.Reward> rewards = all.rollRewards(random);
             assertTrue(rewards.size() >= 1 && rewards.size() <= 7);
             for (BarrowsRun.Reward r : rewards) {
-                if (!r.item().equals("coins") && !r.item().endsWith("_rune")) {
+                if (!mainTable(r.item())) {
                     full++;
                 }
             }
@@ -336,29 +336,34 @@ class BarrowsTest {
         }
     }
 
+    private static boolean mainTable(String item) {
+        return item.equals("clue_scroll_elite") || BarrowsRun.BANDS.stream().anyMatch(b -> b.item().equals(item));
+    }
+
     @Test
-    void tunnelMonsterKillsAddCappedRewardPotential() {
+    void tunnelMonsterKillsAddTheirCombatLevelsToRewardPotential() {
         BarrowsRun run = BarrowsRun.of(1, 1, 3, 5L, true);
-        assertEquals(100, run.quantityPercent());
+        assertEquals(98 + 2, run.rewardPotential(), "Ahrim (98) + 2 per brother");
         for (int i = 0; i < 25; i++) {
-            run.addMonsterKill();
+            run.addMonsterKill(68);
         }
         assertEquals(25, run.monsterKills());
-        assertEquals(BarrowsRun.MONSTER_POTENTIAL_CAP, run.monsterPotential());
-        assertEquals(100 + BarrowsRun.MONSTER_POTENTIAL_CAP * BarrowsRun.MONSTER_POTENTIAL_PERCENT, run.quantityPercent());
+        assertEquals(BarrowsRun.LEVEL_SUM_CAP + 2, run.rewardPotential(), "levels capped at 1000, plus 2 per brother");
+        assertEquals(656 + 12, BarrowsRun.of(63, 63, 3, 5L, true).rewardPotential(), "all six brothers: 656 + 12");
         long plain = 0;
         long boosted = 0;
         for (int i = 0; i < 2000; i++) {
             for (BarrowsRun.Reward r : BarrowsRun.of(1, 1, 3, 5L, true).rollRewards(new Random(i))) {
                 plain += r.item().equals("coins") ? r.count() : 0;
             }
-            for (BarrowsRun.Reward r : BarrowsRun.of(1, 1, 3, 5L, true, 0, 25).rollRewards(new Random(i))) {
-                boosted += r.item().equals("coins") ? r.count() : 0;
+            for (BarrowsRun.Reward r : BarrowsRun.of(1, 1, 3, 5L, true, 0, 10, 500).rollRewards(new Random(i))) {
+                boosted += r.item().endsWith("_rune") ? 1 : 0;
             }
         }
-        assertTrue(boosted > plain * 1.3 && boosted <= plain * 1.5 + 1, plain + " vs " + boosted);
+        assertTrue(plain > 0 && boosted > 0, "potential 100 gives coins only; 600 reaches the rune bands");
         run.reset(new Random(2));
         assertEquals(0, run.monsterKills());
+        assertEquals(0, run.monsterLevels());
     }
 
     @Test

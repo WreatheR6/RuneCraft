@@ -1463,6 +1463,7 @@ public final class SpellService {
         for (ServerPlayerEntity o : group) {
             PlayerData d = Players.data(o);
             int prayer = potion.apply(d.skills());
+            prayer += prayer > 0 ? com.runecraft.skill.ItemUses.wrenchBonus(o, 25) : 0;
             if (prayer > 0) {
                 int cap = Math.max(d.skills().level(Skill.PRAYER), d.skills().currentLevel(Skill.PRAYER));
                 d.setPrayerPoints(Math.max(d.prayerPoints(), Math.min(cap, d.prayerPoints() + prayer)));

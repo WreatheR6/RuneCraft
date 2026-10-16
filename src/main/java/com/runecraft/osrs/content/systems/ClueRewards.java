@@ -557,6 +557,9 @@ public final class ClueRewards {
     private static void thirdAge(ItemSink items) {
         int white = 0xE8E8E0;
         Map<Skill, Integer> rngReq = req(Skill.RANGED, 65, Skill.DEFENCE, 45);
+        // The Mimic's unique (OSRS Wiki "Ring of 3rd age"): no bonuses, transforms the wearer's look.
+        items.add("ring_of_3rd_age", "Ring of 3rd age", Kind.SIMPLE, "ring", 0xE8E8F0).value(12000).stack(1).weight(0.004)
+                .examine("A ring of the 3rd age.");
         Defs.armour(items, "3rd_age_range_coif", "3rd age range coif", "cowl", white, "dragon", 5000000, Slot.HEAD,
                 st(0, 0, 0, -2, 9, 4, 7, 10, 5, 8, 0, 0, 0, 0), rngReq);
         Defs.armour(items, "3rd_age_range_top", "3rd age range top", "leather_body", white, "dragon", 5000000, Slot.CHEST,

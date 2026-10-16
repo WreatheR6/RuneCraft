@@ -208,6 +208,11 @@ public final class CommonItems {
                 .examine("A scaled blue dragonhide.");
         items.add("crystal_teleport_seed", "Crystal teleport seed", Kind.SIMPLE, "seed", 0x9AE0E0).value(1).weight(0.01)
                 .examine("A seed to be sung into a powerful teleport crystal.");
+        // Round 29: Karil's crossbow ammunition from the Barrows chest, and the holy wrench (Rum Deal; prayer restores, imbues).
+        items.add("bolt_rack", "Bolt rack", Kind.ARROW, "arrow", 0x6A6A70).value(50).rangedStrength(55).stack(100000).weight(0) // value approx
+                .examine("Bolt racks for use with Karil's crossbow.");
+        items.add("holy_wrench", "Holy wrench", Kind.SIMPLE, "hammer", 0xE0D070).value(5).stack(1).weight(0.4)
+                .examine("Deep in Davey's bag of tricks, the holiest of wrenches.");
         teleportItems(items);
         for (String c : new String[]{"bloodied_blows", "glyphic_attenuation", "divine_severance", "forfeit_breath", "sensory_clouding"}) {
             String words = c.replace('_', ' ');

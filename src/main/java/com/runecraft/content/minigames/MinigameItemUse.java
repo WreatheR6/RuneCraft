@@ -245,6 +245,7 @@ public final class MinigameItemUse {
         }
         com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
         int prayer = com.runecraft.osrs.data.Potion.SUPER_RESTORE.apply(data.skills());
+        prayer += com.runecraft.skill.ItemUses.wrenchBonus(p, 25);
         if (prayer > 0) {
             int cap = Math.max(data.skills().level(Skill.PRAYER), data.skills().currentLevel(Skill.PRAYER));
             data.setPrayerPoints(Math.max(data.prayerPoints(), Math.min(cap, data.prayerPoints() + prayer)));

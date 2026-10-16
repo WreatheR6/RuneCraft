@@ -107,7 +107,7 @@ public final class BarrowsHooks {
                 BlockPos at = e.getBlockPos();
                 if (boss == null && Gielinor.is(p) && Barrows.inTunnels(at.getX(), at.getY(), at.getZ())) {
                     BarrowsState state = BarrowsState.get(p.getServer());
-                    state.run(p.getUuid()).addMonsterKill();
+                    state.run(p.getUuid()).addMonsterKill(stats.combatLevel());
                     state.markDirty();
                 }
                 return;
@@ -396,7 +396,7 @@ public final class BarrowsHooks {
         return false;
     }
 
-    /** Rune quantity multiplier for a player's Barrows chest (Morytania elite diary perk; 1.0 = none). */
+    /** Rune quantity multiplier for a player's Barrows chest (Morytania hard diary perk; 1.0 = none). */
     public static java.util.function.ToDoubleFunction<ServerPlayerEntity> runeBonus = p -> 1.0;
 
     private static void chest(ServerPlayerEntity p, BlockPos pos, BlockState blockState) {
@@ -416,10 +416,8 @@ public final class BarrowsHooks {
         List<BarrowsRun.Reward> rewards = run.rollRewards(new Random(p.getRandom().nextLong()));
         int killed = run.killedCount();
         Msg.game(p, "You open the chest (" + killed + " of 6 brothers killed) and find:");
-        if (run.monsterPotential() > 0) {
-            Msg.game(p, "Your " + run.monsterKills() + " tunnel kills add reward potential (+"
-                    + (run.quantityPercent() - 100) + "% coins and runes).");
-        }
+        Msg.game(p, "Reward potential: " + run.rewardPotential() + "/" + BarrowsRun.MAX_POTENTIAL
+                + (run.monsterKills() > 0 ? " (" + run.monsterKills() + " tunnel kills)." : "."));
         StringBuilder sb = new StringBuilder();
         double runes = runeBonus.applyAsDouble(p);
         for (BarrowsRun.Reward r : rewards) {

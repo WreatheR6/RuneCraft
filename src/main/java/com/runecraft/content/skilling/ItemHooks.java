@@ -363,6 +363,9 @@ final class ItemHooks {
     private static void applyEffect(ServerPlayerEntity player, HerbloreData.Effect e, long now) {
         PlayerData data = Players.data(player);
         int prayer = e.apply(data.skills());
+        if (prayer > 0 && e == HerbloreData.Effect.SANFEW) {
+            prayer += com.runecraft.skill.ItemUses.wrenchBonus(player, 30);
+        }
         if (prayer > 0) {
             data.setPrayerPoints(Math.min(data.skills().level(Skill.PRAYER), data.prayerPoints() + prayer));
         }
@@ -427,6 +430,7 @@ final class ItemHooks {
                     continue;
                 }
                 int prayer = p.apply(data.skills());
+                prayer += prayer > 0 ? com.runecraft.skill.ItemUses.wrenchBonus(player, 25) : 0;
                 if (prayer > 0) {
                     int cap = Math.max(data.skills().level(Skill.PRAYER), data.skills().currentLevel(Skill.PRAYER));
                     data.setPrayerPoints(Math.max(data.prayerPoints(), Math.min(cap, data.prayerPoints() + prayer)));

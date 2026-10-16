@@ -89,7 +89,8 @@ public final class HerbloreData extends SkillingPart {
                             s.restore(sk, 8, 0.25);
                         }
                     }
-                    return 8 + s.level(Skill.PRAYER) / 4;
+                    // Prayer: 4 + 30% of the Prayer level (OSRS Wiki "Holy wrench" restore table).
+                    return 4 + s.level(Skill.PRAYER) * 30 / 100;
                 }
                 case MAGIC_ESSENCE -> s.applyBoost(Skill.MAGIC, 3, 0.0);
                 case ANCIENT_BREW -> {

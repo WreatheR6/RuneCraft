@@ -150,7 +150,7 @@ Barrows Chests|Karil's coif|4732|karils_coif
 Barrows Chests|Karil's crossbow|4734|karils_crossbow
 Barrows Chests|Karil's leathertop|4736|karils_leathertop
 Barrows Chests|Karil's leatherskirt|4738|karils_leatherskirt
-Barrows Chests|Bolt rack|4740|-
+Barrows Chests|Bolt rack|4740|bolt_rack
 Barrows Chests|Torag's helm|4745|torags_helm
 Barrows Chests|Torag's hammers|4747|torags_hammers
 Barrows Chests|Torag's platebody|4749|torags_platebody
@@ -1894,10 +1894,10 @@ Yama|Oathplate helm|30750|oathplate_helm
 Yama|Oathplate chest|30753|oathplate_chest
 Yama|Oathplate legs|30756|oathplate_legs
 Yama|Soulflame horn|30759|soulflame_horn
-Yama|Forgotten lockbox|30763|-
+Yama|Forgotten lockbox|30763|forgotten_lockbox
 Yama|Oathplate shards|30765|oathplate_shards
-Yama|Chasm teleport scroll|30775|-
-Yama|Barrel of demonic tallow (full)|30795|-
+Yama|Chasm teleport scroll|30775|chasm_teleport_scroll
+Yama|Barrel of demonic tallow (full)|30795|barrel_of_demonic_tallow
 Yama|Dossier|30805|dossier
 Yama|Rite of vile transference|30806|-
 Yama|Yami|30888|pet_yami

@@ -255,7 +255,7 @@ final class KandarinMoreQuests {
         b.quest("rum_deal", "Rum Deal", Difficulty.EXPERIENCED, 2)
                 .reqQuest("zogre_flesh_eaters", "priest_in_peril")
                 .req(Skill.CRAFTING, 42).req(Skill.FISHING, 50).req(Skill.FARMING, 40).req(Skill.PRAYER, 47).req(Skill.SLAYER, 42)
-                .xp(Skill.FISHING, 7000).xp(Skill.FARMING, 7000).xp(Skill.PRAYER, 7000)
+                .xp(Skill.FISHING, 7000).xp(Skill.FARMING, 7000).xp(Skill.PRAYER, 7000).reward("holy_wrench:1")
                 .stage("I can start this quest by speaking to Pirate Pete in Port Phasmatys. (Requires Zogre Flesh Eaters, Priest in Peril and more.)")
                 .talk("pirate_pete").travel("braindeath_island").say("Captain Braindeath's rum distillery has been overrun by zombie pirates! He needs a hand. *Pete sails you to Braindeath Island.*")
                 .stage("I should help Captain Braindeath restart his rum distillery.")
