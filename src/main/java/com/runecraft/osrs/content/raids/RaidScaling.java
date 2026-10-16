@@ -475,6 +475,25 @@ public final class RaidScaling {
     }
 
     /**
+     * Path of Apmeken's baboons have static hitpoints (OSRS, May 2024): neither the raid level, the path level nor
+     * the party size scales them.
+     */
+    static final Set<String> TOA_STATIC_HP = Set.of("toa_baboon_brawler", "toa_baboon_thrower", "toa_baboon_mage");
+
+    /** {@link #toaScaledHp(int, int, int, int, boolean)} for creature {@code id}, keeping static-hitpoint creatures. */
+    public static int toaScaledHp(String id, int baseHp, int raidLevel, int pathLevel, int partySize, boolean pathMonster) {
+        return TOA_STATIC_HP.contains(id) ? Math.max(1, baseHp) : toaScaledHp(baseHp, raidLevel, pathLevel, partySize, pathMonster);
+    }
+
+    /** Ba-Ba's baboons: 10 hitpoints, static (OSRS, June 2025; they were 35). */
+    public static final int BABA_BABOON_HP = 10;
+
+    /** Baboons Ba-Ba has out at once (OSRS: 1-4 by party size). // approx: one per player, up to four */
+    public static int babaBaboons(int partySize) {
+        return clampParty(partySize, 4);
+    }
+
+    /**
      * ToA creature damage multiplier (OSRS wiki): +2% per 5 raid levels, additively, capped at +150% (so x1.4 at
      * raid level 100, x2.2 at 300 and x2.5 from 375).
      */

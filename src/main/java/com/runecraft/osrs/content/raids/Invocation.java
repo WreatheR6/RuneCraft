@@ -12,8 +12,8 @@ import java.util.Set;
  * <p>Implemented effects: the raid level scales creature hitpoints, accuracy, defence, damage and loot (see
  * {@link RaidScaling}); the attempts group limits the wipes over the whole raid; time limits lower the raid level when
  * missed; the path level invocations and Walk the Path's random level-ups scale the paths; Quiet Prayers, Deadly
- * Prayers, On a Diet, Dehydration and Overly Draining change the player's rules; and every boss invocation changes its
- * encounter (see the static helpers below). The Helpful Spirit group only adds raid levels (no Helpful Spirit here).
+ * Prayers, On a Diet, Dehydration and Overly Draining change the player's rules; every boss invocation changes its
+ * encounter (see the static helpers below); and the Helpful Spirit group cuts the supplies (see {@link ToaSupplies}).
  */
 public enum Invocation {
     TRY_AGAIN("Try Again", 5, "attempts"),
@@ -225,6 +225,25 @@ public enum Invocation {
 
     // ------------------------------------------------------------------ Akkha
 
+    /** Akkha always cycles his styles melee, ranged, magic (OSRS; style 0, 1, 2), with or without Stay Vigilant. */
+    public static int akkhaNextStyle(int style) {
+        return (Math.floorMod(style, 3) + 1) % 3;
+    }
+
+    /**
+     * Odds (one in n) that Akkha changes style after an attack, or 0 for never (OSRS wiki): normally only after each
+     * special attack; with Stay Vigilant a 1/4 roll after an auto-attack and a 1/5 roll after a special.
+     */
+    public static int akkhaSwitchOneIn(Set<Invocation> set, boolean afterSpecial) {
+        if (!set.contains(STAY_VIGILANT)) {
+            return afterSpecial ? 1 : 0;
+        }
+        return afterSpecial ? 5 : 4;
+    }
+
+    /** Attacks Akkha makes with a style before Stay Vigilant may switch it again (OSRS: at least two). */
+    public static final int AKKHA_MIN_STYLE_ATTACKS = 2;
+
     /** Keep Back (OSRS): Akkha also melees whoever stands next to him, just before each ranged or magic attack. */
     public static boolean akkhaKeepBack(Set<Invocation> set) {
         return set.contains(KEEP_BACK);
@@ -305,6 +324,11 @@ public enum Invocation {
             return null;
         }
         return phase <= 1 ? "toa_soldier_scarab" : "toa_spitting_scarab";
+    }
+
+    /** Speed multiplier of the scarab swarms Medic! sends outside the shield phases (OSRS: 50% slower). */
+    public static double kephriMedicSwarmSpeed(Set<Invocation> set) {
+        return set.contains(MEDIC) ? 0.5 : 1.0;
     }
 
     /** Radius in tiles of Kephri's fireball (OSRS: one tile, 3x3 with Aerial Assault). */

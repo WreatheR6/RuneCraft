@@ -38,6 +38,7 @@ public final class RaidsHooks implements ModuleHooks {
         RaidManager.register();
         RaidCommands.register();
         registerToaScaling();
+        ToaSupplyService.init();
         registerNylocasStyles();
         LandmarkBuilder.registerCustom(RaidType.COX.placeId(), RaidsHooks::buildMountQuidamortem);
         LandmarkBuilder.registerCustom(RaidType.TOB.placeId(), RaidsHooks::buildVerSinhaza);
@@ -46,7 +47,7 @@ public final class RaidsHooks implements ModuleHooks {
 
     /**
      * ToA raid level (OSRS): +2% creature accuracy and defence per 5 raid levels (attack and defence rolls x (250 +
-     * level) / 250), and Overly Draining making every special attack cost 100% energy.
+     * level) / 250), and Overly Draining making every special attack cost 100% energy (halved by liquid adrenaline).
      */
     private static void registerToaScaling() {
         com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
@@ -67,7 +68,11 @@ public final class RaidsHooks implements ModuleHooks {
         });
         com.runecraft.content.systems.SpecialAttackService.addCostRule((player, spec) -> {
             RaidInstance raid = RaidManager.of(player);
-            return raid == null || raid.type != RaidType.TOA || !raid.contains(player) ? -1 : Invocation.specialCost(raid.invocations());
+            if (raid == null || raid.type != RaidType.TOA || !raid.contains(player)) {
+                return -1;
+            }
+            return com.runecraft.osrs.content.raids.ToaSupplies.specialCost(spec.cost(),
+                    Invocation.specialCost(raid.invocations()) >= 0, ToaSupplyService.adrenaline(player));
         });
     }
 

@@ -367,7 +367,7 @@ public final class RaidInstance {
             case COX -> id.equals("cox_guardian") ? guardianHp()
                     : RaidScaling.coxScaledHp(id, base, partySize, mode == RaidMode.CHALLENGE);
             case TOB -> RaidScaling.tobScaledHp(id, base, partySize, mode);
-            case TOA -> RaidScaling.toaScaledHp(base, raidLevel, pathLevel(), partySize, inPath());
+            case TOA -> RaidScaling.toaScaledHp(id, base, raidLevel, pathLevel(), partySize, inPath());
         };
         setHitpoints(e, hp);
         coxPools.remove(e);
@@ -744,6 +744,10 @@ public final class RaidInstance {
                         say("You hear a mysterious rumbling coming from the Path of " + PATH_GODS[i] + ".", Formatting.LIGHT_PURPLE);
                     }
                 }
+                if (com.runecraft.osrs.content.raids.ToaSupplies.offeredAfter(pathsCompleted)) {
+                    // OSRS: the Helpful Spirit offers supplies after the second and the fourth path.
+                    ToaSupplyService.offer(this);
+                }
             }
         }
     }
@@ -841,7 +845,17 @@ public final class RaidInstance {
         return claimed.contains(p.getUuid());
     }
 
+    /** Records that a player used Helpful Spirit supplies or honey locusts ("Helpful spirit who?"). */
+    public void markSuppliesTaken(UUID u) {
+        suppliesTaken.add(u);
+    }
+
     public void takeSupplies(ServerPlayerEntity p) {
+        if (type == RaidType.TOA) {
+            // OSRS: the tomb has no free supply chest; the Helpful Spirit offers bundles after the second and fourth path.
+            Msg.game(p, "The storage unit is for your own items. The Helpful Spirit brings supplies after the second and fourth paths.");
+            return;
+        }
         if (!suppliesTaken.add(p.getUuid())) {
             Msg.game(p, "You have already taken your share of the supplies.");
             return;
@@ -857,9 +871,6 @@ public final class RaidInstance {
                 Inv.give(p, "super_restore", 2);
             }
             case TOA -> {
-                Inv.give(p, "saradomin_brew", 3);
-                Inv.give(p, "super_restore", 2);
-                Inv.give(p, "anglerfish", 4);
             }
         }
         Msg.game(p, "You take some supplies from the storage unit.");
@@ -918,6 +929,8 @@ public final class RaidInstance {
             }
             say("Your party has fallen! The room resets" + (retriesLeft >= 0 ? " (" + retriesLeft + " attempts left)." : "."),
                     Formatting.RED);
+            // OSRS: wiping hands out honey locusts (not with On a Diet).
+            ToaSupplyService.wiped(this);
             RoomLogic logic = logics[current];
             logic.reset();
             for (ServerPlayerEntity p : players()) {
@@ -954,6 +967,7 @@ public final class RaidInstance {
         }
         downed.remove(u);
         RaidManager.unbind(u);
+        ToaSupplyService.forget(u);
         ServerPlayerEntity p = world.getServer().getPlayerManager().getPlayer(u);
         if (p != null) {
             for (String item : RaidItems.RAID_ONLY_ITEMS) {

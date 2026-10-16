@@ -27,6 +27,10 @@ final class RaidCommands {
                         .executes(ctx -> stats(ctx.getSource().getPlayerOrThrow()))
                         .then(CommandManager.literal("leave").executes(ctx -> leave(ctx.getSource().getPlayerOrThrow())))
                         .then(CommandManager.literal("invocations").executes(ctx -> invocations(ctx.getSource().getPlayerOrThrow())))
+                        .then(CommandManager.literal("supplies")
+                                .then(CommandManager.argument("bundle", StringArgumentType.word())
+                                        .executes(ctx -> ToaSupplyService.claim(ctx.getSource().getPlayerOrThrow(),
+                                                StringArgumentType.getString(ctx, "bundle")))))
                         .then(CommandManager.literal("mode")
                                 .then(CommandManager.argument("mode", StringArgumentType.word())
                                         .executes(ctx -> mode(ctx.getSource().getPlayerOrThrow(),

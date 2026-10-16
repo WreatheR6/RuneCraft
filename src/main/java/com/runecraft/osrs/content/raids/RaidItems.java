@@ -22,7 +22,9 @@ import java.util.Map;
  */
 public final class RaidItems {
     /** Items handed out inside a raid that are removed when the player leaves. */
-    public static final List<String> RAID_ONLY_ITEMS = List.of("cox_kindling", "cavern_grubs", "crondis_water_container");
+    public static final List<String> RAID_ONLY_ITEMS = List.of("cox_kindling", "cavern_grubs", "crondis_water_container",
+            ToaSupplies.NECTAR, ToaSupplies.TEARS, ToaSupplies.AMBROSIA, ToaSupplies.SILK_DRESSING, ToaSupplies.CRYSTAL_SCARAB,
+            ToaSupplies.SMELLING_SALTS, ToaSupplies.ADRENALINE, ToaSupplies.HONEY_LOCUST);
 
     private RaidItems() {
     }
@@ -197,6 +199,24 @@ public final class RaidItems {
                 .examine("Scavengers love these.");
         items.add("crondis_water_container", "Water container", Kind.SIMPLE, "vial_water", 0x3A7AC0).value(1).stack(1)
                 .examine("Full of precious water for the Palm of Resourcefulness.");
+
+        // ---------------- Tombs of Amascut supplies (Helpful Spirit; doses are item damage) ----------------
+        items.add(ToaSupplies.NECTAR, "Nectar", Kind.POTION, "potion", 0xE0A030).value(1).stack(1)
+                .examine("A drink fit for the gods. It heals, but dulls your combat stats.");
+        items.add(ToaSupplies.TEARS, "Tears of elidinis", Kind.POTION, "potion", 0x5AB0E0).value(1).stack(1)
+                .examine("Restores stats and prayer, for you and anyone right next to you.");
+        items.add(ToaSupplies.AMBROSIA, "Ambrosia", Kind.POTION, "potion", 0xF0E070).value(1).stack(1)
+                .examine("Fully restores and boosts hitpoints and prayer, and refills run energy.");
+        items.add(ToaSupplies.SILK_DRESSING, "Silk dressing", Kind.POTION, "cloth", 0xE8E0D0).value(1).stack(1)
+                .examine("Heals you over a minute.");
+        items.add(ToaSupplies.CRYSTAL_SCARAB, "Blessed crystal scarab", Kind.POTION, "gem", 0x9AD8E8).value(1).stack(1)
+                .examine("Restores prayer over a short time.");
+        items.add(ToaSupplies.SMELLING_SALTS, "Smelling salts", Kind.POTION, "pot_item", 0xD8D8C8).value(1).stack(1)
+                .examine("Boosts your combat stats and run energy for eight minutes.");
+        items.add(ToaSupplies.ADRENALINE, "Liquid adrenaline", Kind.POTION, "potion", 0xD03A3A).value(1).stack(1)
+                .examine("Halves the cost of performing special attacks for a short time.");
+        items.add(ToaSupplies.HONEY_LOCUST, "Honey locust", Kind.FOOD, "produce", 0xC89A3A).value(1).heal(ToaSupplies.HONEY_LOCUST_HEAL)
+                .examine("A sweet treat, given to those who have fallen.");
     }
 
     /** Collection log items per raid (uniques followed by the pet). */
