@@ -242,12 +242,12 @@ final class SkillChecks {
         }
     }
 
-    /** Drift net fishing: set a net on an anchor, two shoals swim in (Fishing + Hunter XP), harvest gives two rolls. */
+    /** Drift net fishing: set a net on an anchor, two shoals swim in (Fishing + Hunter XP), fill it, harvest gives the rolls. */
     private String driftNet() {
         p().getInventory().clear();
         BlockPos pos = placeNear(com.runecraft.content.minigames.Arena.module(com.runecraft.osrs.content.skilling.DriftNetFishing.ANCHOR));
-        // Nets are saved per anchor position with the world: start clean and forget the net afterwards.
-        com.runecraft.content.skilling.DriftNetHooks.clear(c.world, pos);
+        // Nets are saved per player and anchor with the world: start clean and forget the net afterwards.
+        com.runecraft.content.skilling.DriftNetHooks.clear(p(), c.world, pos);
         try {
             hold(com.runecraft.osrs.content.skilling.DriftNetFishing.NET, 1);
             useBlock(pos, Direction.UP);
@@ -264,20 +264,29 @@ final class SkillChecks {
             // Level 99: 77 Fishing and 101.5 Hunter XP per shoal (capped at level 70).
             int fishXp = gained(Skill.FISHING, fish0, 1540, "two drift net shoals");
             int hunterXp = gained(Skill.HUNTER, hunter0, 2030, "two drift net shoals");
+            // Fill the net: a fossil roll can give nothing (wiki 145/175), so ten rolls make sure something comes out.
+            int shoals = 2;
+            while (com.runecraft.content.skilling.DriftNetHooks.catchShoal(p(), c.world, pos)) {
+                shoals++;
+            }
+            if (shoals != com.runecraft.osrs.content.skilling.DriftNetFishing.CAPACITY) {
+                throw failure("the drift net filled up at " + shoals + " shoals");
+            }
             useBlock(pos, Direction.UP);
-            if (com.runecraft.content.skilling.DriftNetHooks.caught(c.world, pos) != 0) {
-                throw failure("harvesting left " + com.runecraft.content.skilling.DriftNetHooks.caught(c.world, pos) + " shoals in the net");
+            if (com.runecraft.content.skilling.DriftNetHooks.caught(p(), c.world, pos) != 0) {
+                throw failure("harvesting left " + com.runecraft.content.skilling.DriftNetHooks.caught(p(), c.world, pos) + " shoals in the net");
             }
             int loot = 0;
             for (int i = 0; i < p().getInventory().size(); i++) {
                 loot += p().getInventory().getStack(i).getCount();
             }
-            if (loot < 2) {
-                throw failure("harvesting a 2-shoal drift net gave " + loot + " items");
+            if (loot < 1) {
+                throw failure("harvesting a " + shoals + "-shoal drift net gave " + loot + " items");
             }
-            return "2 shoals, +" + fishXp / 10.0 + " Fishing / +" + hunterXp / 10.0 + " Hunter xp, " + loot + " items harvested";
+            return "2 shoals, +" + fishXp / 10.0 + " Fishing / +" + hunterXp / 10.0 + " Hunter xp; " + shoals + "-shoal net harvested, "
+                    + loot + " items";
         } finally {
-            com.runecraft.content.skilling.DriftNetHooks.clear(c.world, pos);
+            com.runecraft.content.skilling.DriftNetHooks.clear(p(), c.world, pos);
             p().getInventory().clear();
         }
     }

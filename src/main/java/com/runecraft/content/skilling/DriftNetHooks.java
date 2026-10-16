@@ -21,9 +21,10 @@ import java.util.List;
 
 /**
  * Drift net fishing ({@link DriftNetFishing}): set a drift net on an anchor, chase fish shoals into it (Fishing and Hunter
- * XP per shoal caught), and harvest it for one loot roll per shoal. Nets are saved per anchor in {@link SkillingState}
- * with their owner; shoals that swim in by themselves while you are away give their XP when the net is harvested (approx:
- * OSRS gives it at the catch, even in other areas).
+ * XP per shoal caught), and harvest it for one loot roll per shoal. Nets are saved per player and anchor in
+ * {@link SkillingState} (OSRS: every player has their own nets), so one player's nets never block another's. Shoals that
+ * swim in by themselves give only Fishing XP (wiki: Hunter XP is only for chased shoals), paid when the net is harvested
+ * (approx: OSRS gives it at the catch, even in other areas).
  */
 public final class DriftNetHooks {
     private static final String SECTION = "drift_nets";
@@ -43,19 +44,29 @@ public final class DriftNetHooks {
                 && SkillingUtil.need(player, Skill.HUNTER, DriftNetFishing.HUNTER_LEVEL, "fish with a drift net");
     }
 
-    private static NbtCompound net(ServerWorld world, BlockPos pos) {
-        return SkillingState.get(world.getServer()).entry(SECTION, SkillingUtil.key(world, pos));
+    /** A player's net on an anchor: keyed by player and anchor, so every player has their own net on each anchor. */
+    private static String key(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+        return player.getUuidAsString() + "|" + SkillingUtil.key(world, pos);
     }
 
-    /** Forgets the net on an anchor (self-test cleanup: the client run loads the server run's world). */
-    public static void clear(ServerWorld world, BlockPos pos) {
-        SkillingState.get(world.getServer()).remove(SECTION, SkillingUtil.key(world, pos));
+    private static NbtCompound net(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+        return SkillingState.get(world.getServer()).entry(SECTION, key(player, world, pos));
     }
 
-    /** Shoals caught on an anchor's net (0 when no net is set). */
-    public static int caught(ServerWorld world, BlockPos pos) {
-        NbtCompound n = net(world, pos);
-        return n.getBoolean("set") ? n.getInt("fish") : 0;
+    /** Whether the player has a net set on an anchor (doesn't create an entry). */
+    private static boolean isSet(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+        return SkillingState.get(world.getServer()).has(SECTION, key(player, world, pos))
+                && net(player, world, pos).getBoolean("set");
+    }
+
+    /** Forgets a player's net on an anchor (self-test cleanup: the client run loads the server run's world). */
+    public static void clear(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+        SkillingState.get(world.getServer()).remove(SECTION, key(player, world, pos));
+    }
+
+    /** Shoals caught in a player's net on an anchor (0 when no net is set). */
+    public static int caught(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+        return isSet(player, world, pos) ? net(player, world, pos).getInt("fish") : 0;
     }
 
     /** Adds the shoals that swam in by themselves since the last look. */
@@ -80,25 +91,21 @@ public final class DriftNetHooks {
             return;
         }
         ServerWorld world = (ServerWorld) player.getWorld();
-        NbtCompound n = net(world, pos);
-        if (!n.getBoolean("set")) {
+        if (!isSet(player, world, pos)) {
             if (!Inv.has(player, DriftNetFishing.NET, 1)) {
                 Msg.game(player, "You need a drift net to set up here. Weave one from two jute fibre at a loom (26 Crafting).");
                 return;
             }
             Inv.remove(player, DriftNetFishing.NET, 1);
+            NbtCompound n = net(player, world, pos);
             n.putBoolean("set", true);
             n.putInt("fish", 0);
             n.putInt("passive", 0);
-            n.putString("owner", player.getUuidAsString());
             n.putLong("last", world.getTime());
             Msg.action(player, "You set up the drift net. Chase fish shoals into it.");
             return;
         }
-        if (!n.getString("owner").equals(player.getUuidAsString())) {
-            Msg.game(player, "Someone else's drift net is set here.");
-            return;
-        }
+        NbtCompound n = net(player, world, pos);
         drift(world, n);
         if (n.getInt("fish") == 0) {
             Msg.game(player, "Your drift net hasn't caught anything yet.");
@@ -113,15 +120,17 @@ public final class DriftNetHooks {
         int passive = Math.min(fish, n.getInt("passive"));
         int fishing = SkillingUtil.level(player, Skill.FISHING);
         if (passive > 0) {
+            // Wiki: shoals that swim in by themselves give Fishing XP only; Hunter XP is only for chased shoals.
             XpService.add(player, Skill.FISHING, passive * DriftNetFishing.fishingXp(fishing));
-            XpService.add(player, Skill.HUNTER, passive * DriftNetFishing.hunterXp(SkillingUtil.level(player, Skill.HUNTER)));
         }
         java.util.Random random = new java.util.Random(player.getRandom().nextLong());
         for (int i = 0; i < fish; i++) {
             Object[] loot = DriftNetFishing.roll(fishing, !Inv.has(player, DriftNetFishing.CLUE, 1), random);
-            SkillingUtil.give(player, (String) loot[0], (Integer) loot[1]);
+            if (loot != null) {
+                SkillingUtil.give(player, (String) loot[0], (Integer) loot[1]);
+            }
         }
-        clear(world, pos);
+        clear(player, world, pos);
         Msg.action(player, "You harvest the drift net (" + fish + " fish shoal" + (fish == 1 ? "" : "s") + "). The net is destroyed.");
     }
 
@@ -134,10 +143,7 @@ public final class DriftNetHooks {
             }
         }
         out.sort((a, b) -> Double.compare(a.getSquaredDistance(shoal), b.getSquaredDistance(shoal)));
-        out.removeIf(p -> {
-            NbtCompound n = net(world, p);
-            return !n.getBoolean("set") || !n.getString("owner").equals(player.getUuidAsString());
-        });
+        out.removeIf(p -> !isSet(player, world, p));
         return out;
     }
 
@@ -157,8 +163,8 @@ public final class DriftNetHooks {
             boolean roll(ServerPlayerEntity p, Random random) {
                 BlockPos target = null;
                 for (BlockPos a : anchors) {
-                    NbtCompound n = net(world, a);
-                    if (n.getBoolean("set") && n.getString("owner").equals(p.getUuidAsString())) {
+                    if (isSet(p, world, a)) {
+                        NbtCompound n = net(p, world, a);
                         drift(world, n);
                         if (n.getInt("fish") < DriftNetFishing.CAPACITY) {
                             target = a;
@@ -186,9 +192,11 @@ public final class DriftNetHooks {
      * the player's with room is set there. Public for the self-test (the fake player is never ticked).
      */
     public static boolean catchShoal(ServerPlayerEntity player, ServerWorld world, BlockPos anchor) {
-        NbtCompound n = net(world, anchor);
-        if (!n.getBoolean("set") || !n.getString("owner").equals(player.getUuidAsString())
-                || n.getInt("fish") >= DriftNetFishing.CAPACITY) {
+        if (!isSet(player, world, anchor)) {
+            return false;
+        }
+        NbtCompound n = net(player, world, anchor);
+        if (n.getInt("fish") >= DriftNetFishing.CAPACITY) {
             return false;
         }
         n.putInt("fish", n.getInt("fish") + 1);
