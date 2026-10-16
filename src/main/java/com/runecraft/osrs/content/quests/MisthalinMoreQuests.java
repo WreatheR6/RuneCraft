@@ -12,6 +12,7 @@ import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.Drop;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -405,7 +406,7 @@ final class MisthalinMoreQuests {
         b.items(s -> s.add("initiate_sallet", "Initiate sallet", Kind.ARMOUR, "full_helm", 0xA0A0B1).value(1).stack(1)
                 .equipment(EquipmentDef.armour(EquipmentDef.Slot.HEAD, new EquipmentStats(0, 0, 0, -6, -2, 13, 16, 11, -1, 15, 0, 0, 0, 3), 20))
                 .examine("A Temple Knight's initiate helm."));
-        // The test rooms (OSRS picks 5 of these 7 at random; all are offered here). Sir Leye: wiki infobox (level 20, 20 HP, max hit 3).
+        // The test rooms (each recruit gets 5 of these 7 at random, see recruitmentDriveTests). Sir Leye: wiki infobox (level 20, 20 HP, max hit 3).
         b.npc("sir_spishyus", "Sir Spishyus", "falador_temple_knights", 4, 0, 0xE0C0A0, 0xE0E0F2, 0x3A3A8C, 0x6A4A2A);
         b.npc("lady_table", "Lady Table", "falador_temple_knights", -4, 0, 0xF0C8B0, 0xE0E0F2, 0x3A3A8C, 0xC08A3A);
         b.npc("sir_tinley", "Sir Tinley", "falador_temple_knights", 0, 4, 0xD8B090, 0xE0E0F2, 0x3A3A8C, 0x2A2A2A);
@@ -415,39 +416,112 @@ final class MisthalinMoreQuests {
         b.boss(BossDef.of("sir_leye", "Sir Leye").level(20).stats(20, 18, 18, 15, 1, 1).speed(5)
                 .attack(AttackDef.of("warhammer", AttackType.CRUSH, 3, 2.5, 10))
                 .drops(Drop.always("bones")).skin(0xE0B898, 0xE0E0F2, 0x3A3A8C, 0x6A4A2A));
+        QuestPuzzle tests = recruitmentDriveTests();
         b.quest("recruitment_drive", "Recruitment Drive", Difficulty.NOVICE, 1)
                 .reqQuest("black_knights_fortress", "DRUIDIC_RITUAL")
                 .xp(Skill.PRAYER, 1000.5).xp(Skill.HERBLORE, 1000.5).xp(Skill.AGILITY, 1000.5).reward("initiate_sallet")
-                .stage("I can start this quest by speaking to Sir Tiffy Cashien in Falador Park. (Requires Black Knights' Fortress, Druidic Ritual.)")
-                .talk("sir_tiffy_cashien").travel("falador_temple_knights").say("I say, we're recruiting for the Temple Knights! Let's see if you pass the tests.")
-                .stage("I must pass the Temple Knights' tests: Sir Spishyus's river crossing, Lady Table's statues and Sir Kuam's duel with Sir Leye.")
-                .talk("sir_spishyus").stay().unlessFlag("rd_spishyus").flag("rd_spishyus")
-                .say("Get the fox, the chicken and the grain across the bridge. You can only carry one at a time, and never leave the fox with the chicken, or the chicken with the grain!",
-                        "* Chicken over. Back. Fox over, chicken back. Grain over. Back. Chicken over.", "Well thought out! You may proceed.")
-                .talk("lady_table").stay().unlessFlag("rd_table").flag("rd_table")
-                .say("Study these statues carefully. When you return, one will be missing.", "* You point to the empty plinth where the statue stood.",
-                        "Excellent observation. Proceed.")
-                .talk("sir_tiffy_training").stay().unlessFlag("rd_leye").spawn("sir_leye")
-                .say("Your test is combat. Defeat Sir Leye! They say no man can defeat him... think on that.")
-                .kill("sir_leye").stay().unlessFlag("rd_leye").flag("rd_leye").say("* Sir Leye yields. 'Well fought!'")
-                .talk("sir_tiffy_training").needFlag("rd_spishyus", "rd_table", "rd_leye")
-                .say("Three tests passed. Splendid! The rest of the examiners are waiting.")
-                .missing("You've not yet passed Sir Spishyus's, Lady Table's and my own test.")
-                .stage("I must pass the remaining tests: Sir Tinley's patience, Sir Ren Itchood's lock, Miss Cheevers's chemistry and Ms Hynn Terprett's riddle; "
-                        + "then report to Sir Tiffy in Falador Park.")
-                .talk("sir_tinley").stay().unlessFlag("rd_tinley").flag("rd_tinley")
-                .say("Ah, a recruit. *He says nothing more.*", "* You wait patiently, doing nothing at all.", "Patience is a virtue. Well done; you may go.")
-                .talk("sir_ren_itchood").stay().unlessFlag("rd_ren").flag("rd_ren")
-                .say("Let me tell you a riddle: the answer opens the door. *His rhyme spells out a four-letter word.*",
-                        "* You turn the dials of the combination lock to spell it and the door swings open.")
-                .talk("miss_cheevers").stay().unlessFlag("rd_cheevers").flag("rd_cheevers")
-                .say("The door is locked tight. Use what's in the shelves, crate and cupboard.",
-                        "* You pour acid on the bronze key mould, dissolve the gypsum with the vials, and work the tin into a key. The door opens.")
-                .talk("ms_hynn_terprett").stay().unlessFlag("rd_hynn").flag("rd_hynn")
-                .say("Answer my riddle and you may pass. What is always coming but never arrives?", "> Tomorrow.", "Correct.")
-                .talk("sir_tiffy_cashien").needFlag("rd_tinley", "rd_ren", "rd_cheevers", "rd_hynn")
-                .say("Top-hole! You're a Temple Knight initiate now. Here's your sallet.")
-                .missing("Not finished the tests yet? Off you go: Sir Tinley, Sir Ren Itchood, Miss Cheevers and Ms Hynn Terprett are waiting.");
+                .stage("I can start this quest by speaking to Sir Amik Varze in the White Knights' Castle in Falador. (Requires Black Knights' Fortress, Druidic Ritual.)")
+                .talk("sir_amik_varze").say("The Temple Knights are recruiting, and I've put your name forward. Sir Tiffy Cashien in Falador Park will test you.")
+                .stage("I must pass five of the Temple Knights' tests in a row (they are picked at random; Sir Kuam's duel with Sir Leye is always one). "
+                        + "Sir Tiffy Cashien in Falador Park takes me to the testing grounds.")
+                .talk("sir_tiffy_cashien").stay().travel("falador_temple_knights")
+                .say("I say, we're recruiting for the Temple Knights! Five tests, one after another. Fail one and it's back to the start with you.")
+                .puzzle("falador_temple_knights", tests, 0).unlessFlag("rd_test0").flag("rd_test0").stay()
+                .say("Well done! *A portal opens to the next room.*")
+                .puzzle("falador_temple_knights", tests, 1).needFlag("rd_test0").unlessFlag("rd_test1").flag("rd_test1").stay()
+                .say("Well done! *A portal opens to the next room.*")
+                .puzzle("falador_temple_knights", tests, 2).needFlag("rd_test1").flag("rd_test2")
+                .say("Well done! *A portal opens to the next room.*")
+                .stage("Three tests passed. I must pass the last two of the Temple Knights' tests.")
+                .talk("sir_tiffy_cashien").stay().travel("falador_temple_knights").say("Back to it! Two tests to go.")
+                .puzzle("falador_temple_knights", tests, 3).unlessFlag("rd_test3").flag("rd_test3").stay()
+                .say("Well done! *A portal opens to the last room.*")
+                .puzzle("falador_temple_knights", tests, 4).needFlag("rd_test3").travel("falador_park")
+                .say("* Your fifth test passed, you are teleported back to Falador Park.",
+                        "@Sir Tiffy Cashien: Top-hole! You're a Temple Knight initiate now. Here's your sallet.");
+    }
+
+    /**
+     * Recruitment Drive's seven test rooms (wiki): each recruit gets five in a random order, Sir Kuam Ferentse's duel
+     * with Sir Leye always among them; failing one sends the recruit back to the start with a fresh draw. Sir Ren
+     * Itchood's riddle wording and Sir Tinley's "stand still" test (a dialogue choice here) are approx.
+     */
+    static QuestPuzzle recruitmentDriveTests() {
+        QuestPuzzle.Builder t = QuestPuzzle.builder("rd_tests").picks(5).always("kuam")
+                .failTo(1, "rd_test0", "rd_test1", "rd_test2", "rd_test3", "rd_test4")
+                .failLines("I'm afraid you have failed this test.", "* You are sent back. Speak to Sir Tiffy Cashien to start the tests again.");
+        t.room("kuam").variant("sir_tiffy_training")
+                .prompt("Your test is combat: defeat Sir Leye. Saradomin has blessed him so that no blade may harm him.",
+                        "* A sword, claws, a battleaxe and a warhammer hang on the rack. Which do you fight with?")
+                .options("Steel sword", "Steel claws", "Steel battleaxe", "Steel warhammer", "Fight unarmed")
+                .solution(3).solution(4).spawnKill("sir_leye", "sir_leye");
+        t.room("spishyus").variant("sir_spishyus")
+                .prompt("Get the fox, the chicken and the grain across the bridge. It holds you and one of them at a time.",
+                        "Never leave the fox alone with the chicken, or the chicken alone with the grain!")
+                .options("Take the chicken over", "Take the fox over", "Take the grain over", "Walk back alone", "Bring the chicken back")
+                .solution(0, 3, 2, 4, 1, 3, 0).solution(0, 3, 1, 4, 2, 3, 0);
+        String[] colours = {"Bronze", "Silver", "Gold"};
+        String[] weapons = {"sword", "halberd", "greataxe", "mace"};
+        String[] statues = new String[12];
+        for (int i = 0; i < 12; i++) {
+            statues[i] = colours[i / 4] + " " + weapons[i % 4];
+        }
+        int[] scramble = {5, 2, 9, 0, 7, 11, 3, 8, 1, 10, 4, 6};
+        t.room("table");
+        for (int missing = 0; missing < 12; missing++) {
+            List<String> seen = new java.util.ArrayList<>();
+            for (int i : scramble) {
+                if (i != missing) {
+                    seen.add(statues[i].toLowerCase(java.util.Locale.ROOT));
+                }
+            }
+            t.variant("lady_table").prompt("Study these statues carefully. There should be twelve: four bronze, four silver and four gold.",
+                            "* Before her stand eleven knight statues: " + String.join(", ", seen) + ".", "* A moment later the room shimmers and a twelfth statue stands among them. Which one was missing?")
+                    .options(statues).solution(missing);
+        }
+        String[][] rhymes = {
+                {"BITE", "Bright is the dawn when the herald calls,", "In every hall the banners rise,", "Time runs short for those who wait,", "Every door yields to the wise."},
+                {"FISH", "Few who come here pass this door,", "In riddles lies the key you need,", "Search each line, and nothing more,", "Heed the start of each, and read."},
+                {"LAST", "Long have knights stood at this gate,", "All who enter must think twice,", "Speak the word and do not wait,", "Truth lies first in my advice."},
+                {"MEAT", "Many a squire has failed before,", "Each one hasty, none would think,", "All the answer lies in store,", "Tied to the start of every link."},
+                {"RAIN", "Read my verse from first to last,", "All the letters you will need,", "In the opening of each are cast,", "Name the word, and so proceed."},
+                {"TIME", "Twice I'll tell you, then no more,", "In my words the answer lies,", "Mark the letters, unlock the door,", "Each line's start will make you wise."}};
+        t.room("ren");
+        for (String[] r : rhymes) {
+            t.variant("sir_ren_itchood").prompt("Let me tell you a riddle: the answer opens the door's combination lock.", r[1], r[2], r[3], r[4],
+                    "* The lock has four lettered dials.").options(QuestPuzzle.letters()).solution(QuestPuzzle.word(r[0]));
+        }
+        t.room("tinley").variant("sir_tinley")
+                .prompt("Ah, a recruit. *He says nothing more.*")
+                .options("Ask him what the test is", "Walk to the far door", "Stand still and say nothing")
+                .solution(2);
+        // Miss Cheevers' two doors (wiki): the spade handle burnt off and the spade jammed in the handle hole with cupric
+        // sulfate and liquid; then a gypsum mould of the key, tin and cupric ore powder melted into it and cut free.
+        t.room("cheevers").variant("miss_cheevers")
+                .prompt("Both doors are stuck fast: the first has lost its handle, the second is locked. Use what's in the shelves, crates and chest.",
+                        "* You have a metal spade, a knife, a cake tin, gypsum, cupric sulfate, cupric ore powder, tin ore powder, nitrous oxide and vials of liquid.")
+                .options("Heat the tin on the Bunsen burner", "Pour liquid into the tin", "Put the spade in the first door's handle hole",
+                        "Drink the nitrous oxide", "Add tin ore powder to the tin", "Burn the spade's wooden handle on the Bunsen burner",
+                        "Pour cupric sulfate on the spade in the door", "Press the tin onto the key by the portal", "Cut the key free with the knife",
+                        "Pour liquid on the door", "Add gypsum to the tin", "Add cupric ore powder to the tin", "Unlock the second door")
+                .solution(5, 2, 6, 9, 1, 10, 7, 4, 11, 0, 8, 12).solution(5, 2, 6, 9, 1, 10, 7, 11, 4, 0, 8, 12);
+        t.room("hynn");
+        t.variant("ms_hynn_terprett").prompt("You have been captured by an enemy, who lets you pick your own demise: drowned in a lake of acid, "
+                        + "burned on a fire, thrown to wolves that have not been fed in over a month, or thrown from castle walls hundreds of feet high.")
+                .options("The lake of acid", "The fire", "The wolves", "The castle walls").solution(2);
+        t.variant("ms_hynn_terprett").prompt("I have both a husband and a daughter. My husband is four times older than my daughter. "
+                        + "In twenty years' time he will be twice as old as her. How old is my daughter now?")
+                .options("5", "10", "15", "20").solution(1); // approx: the in-game answer options
+        t.variant("ms_hynn_terprett").prompt("I dropped four identical stones into four identical buckets of water: the first at 32 degrees "
+                        + "Fahrenheit, then 33, 34 and 35. Which bucket's stone reached the bottom last?")
+                .options("Bucket A (32 degrees)", "Bucket B (33 degrees)", "Bucket C (34 degrees)", "Bucket D (35 degrees)").solution(0);
+        t.variant("ms_hynn_terprett").prompt("I estimate there to be a million inhabitants of Gielinor, creatures and people. What do you get if you "
+                        + "multiply the number of fingers on everything's left hand, to the nearest million?")
+                .options("0", "1,000,000", "4,000,000", "5,000,000").solution(0); // approx: the in-game answer options
+        t.variant("ms_hynn_terprett").prompt("Which is true? The number of false statements here is one. The number of false statements here is two. "
+                        + "The number of false statements here is three. The number of false statements here is four.")
+                .options("One false", "Two false", "Three false", "Four false").solution(2);
+        return t.build();
     }
 
     private static void lostTribe(QuestBook b) {

@@ -480,8 +480,10 @@ public final class QuestManager {
         PlayerData data = Players.data(p);
         int tx = GielinorMap.toOsrsX(p.getBlockX());
         int ty = GielinorMap.toOsrsY(p.getBlockZ());
+        // under the surface (a basement or dungeon): dungeon spots (OSRS y 6400+) are drawn under their surface tile
+        boolean below = p.getBlockY() < com.runecraft.osrs.world.Elevation.height(p.getBlockX(), p.getBlockZ()) - 4;
         for (FreeQuestObjectives.Spot spot : FreeQuestObjectives.SPOTS) {
-            if (!spot.active(data.questStage(spot.quest())) || !spot.contains(tx, ty) || !spot.applies(item -> Inv.has(p, item, 1))) {
+            if (!spot.active(data.questStage(spot.quest())) || !spot.contains(tx, ty, below) || !spot.applies(item -> Inv.has(p, item, 1))) {
                 continue;
             }
             p.sendMessage(Text.literal(spot.message()).formatted(Formatting.GRAY, Formatting.ITALIC), false);

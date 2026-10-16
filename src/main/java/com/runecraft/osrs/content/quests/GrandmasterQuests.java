@@ -231,17 +231,86 @@ final class GrandmasterQuests {
                 .qp(180)
                 .req(Skill.THIEVING, 72).req(Skill.MAGIC, 67).req(Skill.AGILITY, 66).req(Skill.FARMING, 65)
                 .req(Skill.HERBLORE, 65).req(Skill.HUNTER, 62).req(Skill.FIREMAKING, 49) // 49 Firemaking: sapphire lantern
-                .stage("I can start this quest by speaking to Akrisae at the Temple Knight headquarters in Falador. (Requires 180 quest points and much more.)")
-                .talk("akrisae").say("Lucien seeks the resting place of Guthix himself. The Temple Knights need an agent to infiltrate his followers.")
-                .stage("I should find the Zamorakian Movario's base beneath the Lumbridge Swamp.")
-                .reach("movarios_base", 10).give("movarios_notes").say("* Past deadly traps you find Movario's notes. They point to Guthix's sanctum, deep below.")
+                .stage("I can start this quest by speaking to Ivy Sophista. (Requires 180 quest points and much more.)")
+                .talk("ivy_sophista").say("Lucien seeks the resting place of Guthix himself. Thaerisk and the Temple Knights need an agent.",
+                        "*Two assassins burst in; you fight them off.* Clearly someone doesn't want us talking. Track down Lucien's man, Movario.")
+                .stage("I should track Movario to his base under the battlefield west of Ardougne and search it for his notes.")
+                .puzzle("movarios_base", WGS_DOOR).reqSkill(Skill.HUNTER, 62).unlessFlag("wgs_door").flag("wgs_door").stay()
+                .say("* The rune's power flows into the door's lock and it creaks open.")
+                .puzzle("movarios_base", WGS_WEIGHTS).needFlag("wgs_door").unlessFlag("wgs_weights").flag("wgs_weights").stay()
+                .say("* The gauge settles on your weight: the floor beneath the study stops humming and the way upstairs is safe.")
+                .reach("movarios_base", 10).needFlag("wgs_door", "wgs_weights").give("movarios_notes")
+                .say("* From the desk and the trapped bed chest you take both volumes of Movario's notes. They point to Guthix's sanctum, deep below.")
+                .missing("* Movario's base is sealed by a door marked PROHIBITED and a pressure-gauged study.")
                 .stage("I should show Movario's notes to Akrisae.")
                 .talk("akrisae").take("movarios_notes").say("Guthix's sanctum! Lucien and his generals are already moving. Go, and hurry. Ivy will brief you.")
                 .stage("I should speak to Ivy Sophista, then descend to Guthix's sanctum.")
                 .talk("ivy_sophista").say("The Mahjarrat are converging on the sanctum. Something is guarding the way: a creature of pure balance.")
-                .stage("I must defeat the Balance Elemental guarding Guthix's sanctum.")
-                .kill("balance_elemental").say("* The Balance Elemental dissolves. Guthix stirs... and the Temple Knights drive back the Mahjarrat.")
+                .stage("I must open the way through the Chasm of Tears and defeat the Balance Elemental guarding Guthix's sanctum.")
+                .puzzle("guthix_sanctum", WGS_SKULLS).unlessFlag("wgs_skulls").flag("wgs_skulls").stay()
+                .say("* The last block clicks into place and the stone cube in the fourth skull grinds open.")
+                .kill("balance_elemental").needFlag("wgs_skulls")
+                .say("* The Balance Elemental dissolves. Guthix stirs... and the Temple Knights drive back the Mahjarrat.")
+                .missing("* The way into the sanctum is sealed by the three skulls' mechanisms.")
                 .stage("I should report to Akrisae.")
                 .talk("akrisae").say("Guthix sleeps on, and Lucien has been stopped... for now. Gielinor owes you more than it will ever know.");
+    }
+
+    /**
+     * While Guthix Sleeps, Movario's base (wiki): one letter of "PROHIBITED" on the battered door is drawn as a rune's
+     * symbol, different for every player, and that rune opens it. The symbol descriptions and which letter is styled
+     * are approx.
+     */
+    static final QuestPuzzle WGS_DOOR = wgsDoor();
+    /** The study's pressure gauge reads the player's weight on entering; they must weigh that again (1, 2 and 5 kg weights). */
+    static final QuestPuzzle WGS_WEIGHTS = wgsWeights();
+    /** The Chasm of Tears: an elemental block in each of three skulls' mechanisms, matching symbols individual to each player. */
+    static final QuestPuzzle WGS_SKULLS = wgsSkulls();
+
+    private static QuestPuzzle wgsDoor() {
+        String[] runes = {"Air", "Water", "Earth", "Fire", "Mind", "Body", "Cosmic", "Chaos", "Nature", "Law", "Death", "Blood"};
+        String[] symbols = {"a pale swirl", "a blue droplet", "a brown clod", "a red flame", "an orange-ringed eye", "a blue figure", "a yellow star",
+                "an orange burst", "a green leaf", "a blue diamond", "a white skull", "a red drop"};
+        String[] letters = {"P", "R", "O", "H", "I", "B", "T", "E", "D"};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("wgs_door").room("door");
+        for (int r = 0; r < runes.length; r++) {
+            b.variant(null).prompt("* An old battered door. Painted across it: PROHIBITED.",
+                            "* Looking closely, the " + letters[r % letters.length] + " is drawn as " + symbols[r] + ". Which rune do you use on the door?")
+                    .options(runes).solution(r);
+        }
+        return b.failLines("* Nothing happens.").build();
+    }
+
+    private static QuestPuzzle wgsWeights() {
+        QuestPuzzle.Builder b = QuestPuzzle.builder("wgs_weights").room("gauge");
+        for (int diff = 1; diff <= 8; diff++) {
+            int gauge = 52 + diff * 3;
+            b.variant(null).prompt("* Notes on pressure: the study floor remembers your weight as you came in.",
+                            "* The pressure gauge reads " + gauge + " tickits (1 tickit = 1 kg). Without your gear you now weigh " + (gauge - diff) + " kg.",
+                            "* How much do you take from the pile of 1, 2 and 5 kg weights?")
+                    .options("1 kg", "2 kg", "3 kg", "4 kg", "5 kg", "6 kg", "7 kg", "8 kg").solution(diff - 1);
+        }
+        return b.failLines("* The gauge's needle swings wildly and a jolt runs through the floor. Try again.").build();
+    }
+
+    private static QuestPuzzle wgsSkulls() {
+        String[] elements = {"Air", "Water", "Earth", "Fire"};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("wgs_skulls").room("skulls");
+        for (int l = 0; l < 4; l++) {
+            for (int m = 0; m < 4; m++) {
+                for (int r = 0; r < 4; r++) {
+                    if (l == m || m == r || l == r) {
+                        continue;
+                    }
+                    b.variant(null).prompt("* From the braziers you chisel four elemental orbs and turn them into blocks.",
+                                    "* Crawling into the skulls' nose cavities you find the mechanisms: the left one bears the symbol of "
+                                            + elements[l].toLowerCase(java.util.Locale.ROOT) + ", the middle one " + elements[m].toLowerCase(java.util.Locale.ROOT)
+                                            + ", the right one " + elements[r].toLowerCase(java.util.Locale.ROOT) + ".",
+                                    "* Which block goes in each, from left to right?")
+                            .options("Air block", "Water block", "Earth block", "Fire block").solution(l, m, r);
+                }
+            }
+        }
+        return b.failLines("* The block won't fit the mechanism. You crawl back out to start again.").build();
     }
 }

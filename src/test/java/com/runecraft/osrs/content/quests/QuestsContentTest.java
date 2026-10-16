@@ -165,6 +165,9 @@ class QuestsContentTest {
         Set<String> used = new HashSet<>();
         for (QuestSpec q : BOOK.quests) {
             q.triggers().forEach(t -> used.add(t.target));
+            // puzzle rooms presented by their own NPC (Recruitment Drive's examiners)
+            q.triggers().stream().filter(t -> t.puzzle != null).forEach(t -> t.puzzle.rooms
+                    .forEach(r -> r.variants().forEach(v -> used.add(v.npc()))));
             used.addAll(q.doneLines.keySet());
             q.stages.forEach(s -> used.addAll(s.hints.keySet()));
         }
@@ -180,6 +183,14 @@ class QuestsContentTest {
             q.triggers().forEach(t -> {
                 if (t.kind == QuestSpec.Trigger.Kind.KILL) {
                     killable.add(t.target);
+                }
+                if (t.puzzle != null) {
+                    // a fight room: solving it raises the foe whose death passes the room (Sir Leye)
+                    t.puzzle.rooms.forEach(r -> r.variants().forEach(v -> {
+                        if (v.kill() != null) {
+                            killable.add(v.kill());
+                        }
+                    }));
                 }
             });
         }

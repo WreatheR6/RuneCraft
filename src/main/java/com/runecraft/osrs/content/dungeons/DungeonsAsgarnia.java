@@ -75,6 +75,8 @@ final class DungeonsAsgarnia {
         c.carve();
         // The dusty-key gate before the blue dragons.
         gate(c, ox + 37, oz - 20, f, 'z');
+        // The Cauldron of Thunder (Druidic Ritual) in the corridor before the gate, OSRS tile (2890, 9806) here. // approx
+        c.set(ox + 38, f + 1, oz - 16, mc("water_cauldron[level=3]"));
         // The 70 Agility obstacle pipe from the chaos druids into the blue dragons' cavern, past the gate.
         c.shortcut("taverley_dungeon_pipe", ox + 42, oz - 7, f, ox + 42, oz - 31, f);
         // The lesser demons' cage (iron bars).

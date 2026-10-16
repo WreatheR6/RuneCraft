@@ -97,9 +97,11 @@ public final class Dt2Bosses {
         return d;
     }
 
+    // Levels, skills and defence bonuses below are the osrs-dps-calc values that MonsterStatsTable applies anyway (kept
+    // equal by Dt2BossStatsTest; they were stale literals before round 30).
     static BossDef duke() {
-        BossDef b = BossDef.of("duke_sucellus", "Duke Sucellus").level(1146).stats(485, 300, 300, 200, 300, 1).speed(5)
-                .defenceBonus(20, 250, 250, 300, 300)
+        BossDef b = BossDef.of("duke_sucellus", "Duke Sucellus").level(758).stats(485, 300, 345, 275, 310, 1).speed(5)
+                .defenceBonus(255, 45, 190, 440, 320)
                 .attack(DUKE_SLAM).attack(DUKE_MAGIC).attack(DUKE_GAZE).attack(DUKE_VENTS)
                 .pet("pet_baron").at("ghorrock_prison").arena(13, "ice").size(1.8f, 2.4f, 2.0f).moveSpeed(0.0);
         b.drops.addAll(dt2Drops(b.id, "magus_vestige", "eye_of_the_duke", "frozen_tablet", "ice_quartz"));
@@ -107,8 +109,8 @@ public final class Dt2Bosses {
     }
 
     static BossDef leviathan() {
-        BossDef b = BossDef.of("the_leviathan", "The Leviathan").level(1062).stats(900, 300, 300, 250, 300, 300).speed(4)
-                .defenceBonus(300, 300, 300, 200, 40)
+        BossDef b = BossDef.of("the_leviathan", "The Leviathan").level(798).stats(900, 300, 360, 250, 160, 160).speed(4)
+                .defenceBonus(260, 190, 230, 280, 50)
                 .attack(LEVI_RANGED).attack(LEVI_MAGIC).attack(LEVI_MELEE).attack(LEVI_DEBRIS)
                 .pet("pet_lilviathan").at("the_scar").arena(14, "water").size(2.2f, 2.2f, 2.0f).moveSpeed(0.0);
         b.drops.addAll(dt2Drops(b.id, "venator_vestige", "leviathans_lure", "scarred_tablet", "smoke_quartz"));
@@ -116,8 +118,8 @@ public final class Dt2Bosses {
     }
 
     static BossDef whisperer() {
-        BossDef b = BossDef.of("the_whisperer", "The Whisperer").level(1227).stats(900, 250, 250, 200, 300, 300).speed(5)
-                .defenceBonus(200, 200, 200, 20, 120)
+        BossDef b = BossDef.of("the_whisperer", "The Whisperer").level(791).stats(900, 280, 280, 250, 180, 180).speed(5)
+                .defenceBonus(180, 300, 220, 10, 300)
                 .attack(WHISPER_MAGIC).attack(WHISPER_RANGED).attack(WHISPER_SIPHON)
                 .phase(50, "The Whisperer drags you into the Shadow Realm!", 1.1, false)
                 .pet("pet_wisp").at("lassar_undercity").arena(13, "void").flying().size(1.8f, 2.6f, 2.0f).moveSpeed(0.18);
@@ -126,8 +128,8 @@ public final class Dt2Bosses {
     }
 
     static BossDef vardorvis() {
-        BossDef b = BossDef.of("vardorvis", "Vardorvis").level(1009).stats(700, 300, 300, 250, 1, 1).speed(5)
-                .defenceBonus(40, 200, 200, 300, 300)
+        BossDef b = BossDef.of("vardorvis", "Vardorvis").level(784).stats(700, 280, 270, 215, 215, 1).speed(5)
+                .defenceBonus(215, 65, 85, 580, 580)
                 .attack(VARD_SLASH).attack(VARD_AXES).attack(VARD_BLOOD)
                 .pet("pet_butch").at("stranglewood").arena(12, "crypt").size(0.9f, 2.4f, 1.6f).moveSpeed(0.28);
         b.drops.addAll(dt2Drops(b.id, "ultor_vestige", "executioners_axe_head", "strangled_tablet", "blood_quartz"));

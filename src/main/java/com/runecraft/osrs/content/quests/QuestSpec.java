@@ -185,6 +185,25 @@ public final class QuestSpec {
         return this;
     }
 
+    /**
+     * An in-world {@link QuestPuzzle} (one room of it: {@code slot} of the player's draw), answered through chat links.
+     * It is presented by talking to {@code at} when that is an NPC (or to the room variant's own NPC), or on arriving
+     * within the radius (8 blocks) of {@code at} when that is a place; solving it fires the trigger.
+     */
+    public QuestSpec puzzle(String at, QuestPuzzle puzzle, int slot) {
+        add(Trigger.Kind.PUZZLE, at);
+        if (slot < 0 || slot >= puzzle.picks) {
+            throw new IllegalArgumentException(id() + ": puzzle slot " + slot + " outside " + puzzle.picks);
+        }
+        current.puzzle = puzzle;
+        current.slot = slot;
+        return this;
+    }
+
+    public QuestSpec puzzle(String at, QuestPuzzle puzzle) {
+        return puzzle(at, puzzle, 0);
+    }
+
     /** While at this stage, killing {@code creature} drops {@code item} with a 1/{@code chance} chance (once). */
     public QuestSpec drop(String creature, String item, int chance) {
         add(Trigger.Kind.DROP, creature);
@@ -414,7 +433,7 @@ public final class QuestSpec {
 
     /** One objective / transition of a stage. */
     public static final class Trigger {
-        public enum Kind { TALK, KILL, REACH, DROP }
+        public enum Kind { TALK, KILL, REACH, DROP, PUZZLE }
 
         public static final int DEFAULT = -2;
         public static final int COMPLETE = -1;
@@ -445,6 +464,9 @@ public final class QuestSpec {
         public int radius = 8;
         public String spawn;
         public String travel;
+        /** The puzzle a {@link Kind#PUZZLE} trigger shows, and which slot of the player's draw. */
+        public QuestPuzzle puzzle;
+        public int slot;
 
         Trigger(Kind kind, String target, int stage) {
             this.kind = kind;

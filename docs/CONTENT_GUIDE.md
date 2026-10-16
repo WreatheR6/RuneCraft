@@ -101,6 +101,7 @@ Implement the methods you need on your module class (`ContentModule`):
 - `QuestScripts.onTalk(npcId, (player, npcEntity) -> ...)` and `QuestScripts.onKill(...)`.
 - `QuestApi.say/you/stage/setStage/start/complete/isComplete/takeAll/has/give`.
 - Declarative quests (`QuestSpec`): `.kill("ice_troll", 5)` (or `.kill(x).times(5)`) needs N kills, counted per player in `QuestsState` and saved; `.drop(x, item, chance).times(5)` keeps dropping until the player carries 5. The self-test reports `count` kills.
+- Puzzles: `.puzzle(npcOrPlace, QuestPuzzle, slot)` shows an in-world puzzle (combination lock, river crossing, riddle, deduction) answered through chat links (`/questpuzzle`). `QuestPuzzle.builder(key).room(id).variant(npc).prompt(..).options(..).solution(..)`; rooms are drawn per player (`picks`, `always`), variants picked per player, a wrong answer can send the player back and re-draw (`failTo`). Never change a quest's stage count (it is saved): put extra steps inside existing stages with `.stay().flag(..)`.
 
 ### Events
 - `GameEvents.onXp/onKill/onMake/onObtain`: diaries, clue steps, points.

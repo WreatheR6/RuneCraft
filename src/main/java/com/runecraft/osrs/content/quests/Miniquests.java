@@ -55,17 +55,37 @@ final class Miniquests {
         Cast.npc(b, "quest_hosa", "Hosa", "quest_kourend_castle", 0, 2, Cast.GHOST, 0x8A8AA0);
         Cast.npc(b, "quest_archeio", "Archeio", "arceuus", 3, -3, Cast.PALE, 0x5A2A6A);
         b.item("quest_kourend_plans", "Building plans", "note", 0xD8D0B0, "Old plans of Kourend's architecture.");
+        // The five houses' architects (wiki map pins); Hosa (Hosidius) waits by the statue of King Rada I.
+        b.spot("aa_arcis", "Arcis's house", 1652, 3754);
+        b.spot("aa_lovada", "Lovada's house", 1487, 3833);
+        b.spot("aa_piliar", "Piliar's house", 1794, 3738);
+        b.spot("aa_shayda", "Shayda's house", 1532, 3545);
+        b.npc("quest_arcis", "Arcis", "aa_arcis", 0, 0, 0xE8C8B0, 0x4A2A6A, 0x2A1A4A, 0x9A7AC0);
+        b.npc("quest_lovada", "Lovada", "aa_lovada", 0, 0, 0xC8946A, 0x8A5A2A, 0x5A3A1A, 0xD0A040);
+        b.npc("quest_piliar", "Piliar", "aa_piliar", 0, 0, 0xE0B89A, 0x2A4A6A, 0x1A2A4A, 0x60A0C0);
+        b.npc("quest_shayda", "Shayda", "aa_shayda", 0, 0, 0xA86A45, 0x7A1A1A, 0x4A0A0A, 0xC0C0C0);
         b.quest("architectural_alliance", "Architectural Alliance (miniquest)", Difficulty.EXPERIENCED, 0)
                 .req(Skill.MINING, 42)
+                .reqNote("100% favour with each of Kourend's five houses before its architect will help (favour isn't modelled)")
                 // OSRS: a 10,000 XP antique lamp (any skill above 40) from Hosa. // approx
                 .xp(Skill.MINING, 1000)
                 .unlock("Xeric's talisman teleport to Xeric's Heart")
-                .stage("I can start this miniquest by speaking to the ghost Hosa in Kourend Castle. (Requires Client of Kourend, 42 Mining.)")
-                .talk("quest_hosa").say("I was Kourend's architect, long ago. My plans were lost when I died. Find them, and I'll show you a secret of Xeric's.")
-                .stage("I should ask Archeio in Arceuus whether the library kept Hosa's plans.")
-                .talk("quest_archeio").reqSkill(Skill.MINING, 42).give("quest_kourend_plans").say("Ah, the architect's plans. Dusty, but intact. Take them to him.")
-                .stage("I should bring the plans to Hosa.")
-                .talk("quest_hosa").take("quest_kourend_plans").reqSkill(Skill.MINING, 42).say("My plans! Xeric's talisman can take you to the heart of his works now. Use it well.");
+                .stage("I can start this miniquest by speaking to the ghost Hosa by the statue of King Rada I outside Kourend Castle. (Requires 42 Mining.)")
+                .talk("quest_hosa").say("A storm wrecked King Rada's statue, and I can't rebuild it alone. I need the architects of all five houses.",
+                        "Win over Arcis of Arceuus, Lovada of Lovakengj, Piliar of Port Piscarilius and Shayda of Shayzien. I speak for Hosidius.")
+                .stage("I should win the support of the architects: Arcis in Arceuus, Lovada in Lovakengj, Piliar in Port Piscarilius and Shayda in Shayzien.")
+                .talk("quest_arcis").stay().unlessFlag("aa_arcis").flag("aa_arcis").say("Arceuus will lend its architect. I'll meet you at the statue.")
+                .talk("quest_lovada").stay().unlessFlag("aa_lovada").flag("aa_lovada").reqSkill(Skill.MINING, 42)
+                .say("You've worked our mines, so Lovakengj will help. I'll bring the stone.")
+                .talk("quest_piliar").stay().unlessFlag("aa_piliar").flag("aa_piliar").say("Piscarilius never forgets a friend. I'll be there.")
+                .talk("quest_shayda").stay().unlessFlag("aa_shayda").flag("aa_shayda").say("Shayzien honours its allies. Count me in.")
+                .talk("quest_hosa").needFlag("aa_arcis", "aa_lovada", "aa_piliar", "aa_shayda")
+                .say("All five houses together! Meet us at the statue and we'll begin.")
+                .missing("Not every architect has agreed yet: Arcis, Lovada, Piliar and Shayda must all come.")
+                .hint("quest_archeio", "Arcis is the Arceuus architect. You'll find his house in the north of the city.")
+                .stage("I should speak to an architect at the statue of King Rada I.")
+                .reach("quest_kourend_castle", 8).say("* The five architects gather at the statue of King Rada I and rebuild it.",
+                        "@Hosa: Splendid! As thanks, Xeric's talisman can now take you to Xeric's Heart.");
     }
 
     private static void barbarianTraining(QuestBook b) {
@@ -111,8 +131,18 @@ final class Miniquests {
     }
 
     private static void curseOfTheEmptyLord(QuestBook b) {
-        Cast.npc(b, "quest_valdez", "Valdez", "quest_mage_arena", -6, 4, Cast.GHOST, 0x6A6A8A);
-        Cast.npc(b, "quest_rennard", "Rennard", "BRIMHAVEN", 7, -3, Cast.GHOST, 0x3A3A5A);
+        Cast.npc(b, "quest_valdez", "Valdez", "glarials_tomb", 2, 3, Cast.GHOST, 0x6A6A8A); // wiki 2558, 3446
+        // The other five ghosts, at their places in the wiki's first sequence. // approx: OSRS picks one of three routes
+        b.spot("cel_shipwreck", "Wilderness shipwreck", 3022, 3946);
+        b.spot("cel_chaos_temple", "Chaos Temple (Wilderness)", 2950, 3820);
+        b.spot("cel_entrana_church", "Entrana church", 2850, 3348);
+        b.spot("cel_wizards_tower", "Wizards' Tower ground floor", 3109, 3160);
+        b.spot("cel_rogues_castle", "Rogues' Castle", 3294, 3934);
+        Cast.npc(b, "quest_rennard", "Rennard", "cel_shipwreck", 0, 0, Cast.GHOST, 0x3A3A5A);
+        b.npc("quest_kharrim", "Kharrim", "cel_chaos_temple", 0, 0, 0xD8E8F0, 0x5A3A2A, 0x3A2A1A, 0x8A8AB0);
+        b.npc("quest_lennissa", "Lennissa", "cel_entrana_church", 0, 0, 0xD8E8F0, 0x6A2A4A, 0x4A1A2A, 0xB0A0C8);
+        b.npc("quest_dhalak", "Dhalak", "cel_wizards_tower", 0, 0, 0xD8E8F0, 0x2A2A6A, 0x1A1A4A, 0xA0B0D8);
+        b.npc("quest_viggora", "Viggora", "cel_rogues_castle", 0, 0, 0xD8E8F0, 0x1A1A1A, 0x0A0A0A, 0x8A1A1A);
         b.items(s -> s.add("ring_of_visibility", "Ring of visibility", Kind.SIMPLE, "ring", 0xC0C0E0).value(1).stack(1)
                 .examine("A ring that reveals what is hidden."));
         b.items(s -> s.add("ghostly_hood", "Ghostly hood", Kind.ARMOUR, "cowl", 0xD8E8F0).value(1).stack(1)
@@ -124,18 +154,38 @@ final class Miniquests {
         b.items(s -> s.add("ghostly_robe_bottom", "Ghostly robe bottoms", Kind.ARMOUR, "chaps", 0xD8E8F0).value(1).stack(1)
                 .equipment(EquipmentDef.armour(EquipmentDef.Slot.LEGS, new EquipmentStats(0, 0, 0, 6, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0), 1))
                 .examine("The robe bottoms of the Empty Lord."));
+        // Wiki: ghostly gloves and boots +2, cloak +5 magic attack and defence (the six pieces total +21).
+        b.items(s -> s.add("ghostly_gloves", "Ghostly gloves", Kind.SIMPLE, "gloves", 0xD8E8F0).value(1).stack(1)
+                .examine("The gloves of the Empty Lord's robes. Right-click to wear."));
+        b.gear("ghostly_gloves", QuestBook.GearSlot.HANDS, new EquipmentStats(0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0), null);
+        b.items(s -> s.add("ghostly_boots", "Ghostly boots", Kind.ARMOUR, "boots", 0xD8E8F0).value(1).stack(1)
+                .equipment(EquipmentDef.armour(EquipmentDef.Slot.FEET, new EquipmentStats(0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0), 1))
+                .examine("The boots of the Empty Lord's robes."));
+        b.items(s -> s.add("ghostly_cloak", "Ghostly cloak", Kind.SIMPLE, "cape", 0xD8E8F0).value(1).stack(1)
+                .examine("The cloak of the Empty Lord. Right-click to wear."));
+        b.gear("ghostly_cloak", QuestBook.GearSlot.CAPE, new EquipmentStats(0, 0, 0, 5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0), null);
+        String[] sight = {"ring_of_visibility", "ghostspeak_amulet"};
         b.quest("curse_of_the_empty_lord", "Curse of the Empty Lord (miniquest)", Difficulty.EXPERIENCED, 0)
                 .reqQuest("desert_treasure_i", "RESTLESS_GHOST").req(Skill.PRAYER, 31)
-                .reward("ghostly_hood", "ghostly_robe_top", "ghostly_robe_bottom")
-                .stage("I can start this miniquest by speaking to the ghost Valdez in the Wilderness while wearing a ring of visibility and an amulet of ghostspeak. (Requires Desert Treasure I, The Restless Ghost, 31 Prayer.)")
-                .talk("quest_valdez").need("ghostspeak_amulet").give("ring_of_visibility")
-                .say("I am cursed to wander. The Empty Lord bound us. Find Rennard in Brimhaven; he knows his name. Wear this ring, or you'll never see him.")
-                .missing("*The ghost's words are an eerie wail. You need an amulet of ghostspeak.*")
-                .stage("I should find the ghost Rennard in Brimhaven.")
-                .talk("quest_rennard").need("ring_of_visibility", "ghostspeak_amulet").say("The Empty Lord... his name was Viggora. Speak it at the Wilderness ruins and the curse breaks.")
-                .missing("*You feel something watching you, but can't see it.*")
-                .stage("I should return to Valdez with the Empty Lord's name.")
-                .talk("quest_valdez").need("ghostspeak_amulet").say("Viggora! The name breaks his hold. Take his robes; they are ours to give now.");
+                .stage("I can start this miniquest by speaking to the ghost Valdez at Glarial's Tomb, north-west of the Fishing Guild, while carrying "
+                        + "a ring of visibility and an amulet of ghostspeak. (Requires Desert Treasure I, The Restless Ghost, 31 Prayer.)")
+                .talk("quest_valdez").need(sight).give("ghostly_robe_top")
+                .say("You can see me? Then hear my tale. I was carrying the Staff of Armadyl to Entrana when the thief Rennard stole it.",
+                        "Since that day I've been cursed. Take my robe... and find Rennard by the pirates' shipwreck in the Wilderness.")
+                .missing("*Something is here, but you can't see or understand it. You need a ring of visibility and an amulet of ghostspeak.*")
+                .stage("I should follow the ghosts' tale: Rennard at the shipwreck in the Wilderness, Kharrim at the Chaos Temple, "
+                        + "Lennissa in Entrana's church and Dhalak in the Wizards' Tower.")
+                .talk("quest_rennard").need(sight).stay().unlessFlag("cel_rennard").flag("cel_rennard").give("ghostly_gloves")
+                .say("I stole the staff, aye, and sold it to Kharrim. Then the curse took me too. Take these gloves; seek him at the Chaos Temple.")
+                .talk("quest_kharrim").need(sight).needFlag("cel_rennard").stay().unlessFlag("cel_kharrim").flag("cel_kharrim").give("ghostly_boots")
+                .say("The staff? I lost it to Lennissa's band. Cursed, all of us. Wear these boots and look for her on Entrana.")
+                .talk("quest_lennissa").need(sight).needFlag("cel_kharrim").stay().unlessFlag("cel_lennissa").flag("cel_lennissa").give("ghostly_robe_bottom")
+                .say("I passed it to Dhalak, the wizard, to hide. Take these robes and ask him at the Wizards' Tower.")
+                .talk("quest_dhalak").need(sight).needFlag("cel_lennissa").give("ghostly_hood")
+                .say("I hid the staff from the one who wanted it most: Viggora, the Empty Lord. His curse binds us. He lingers in the Rogues' Castle.")
+                .stage("I should confront Viggora, the Empty Lord, in the Rogues' Castle in the Wilderness.")
+                .talk("quest_viggora").need(sight).give("ghostly_cloak")
+                .say("So you know my name, and the tale of the staff. Very well: take my cloak. The robes are yours; their curse ends with you.");
     }
 
     private static void daddysHome(QuestBook b) {
@@ -261,28 +311,57 @@ final class Miniquests {
 
     private static void inSearchOfKnowledge(QuestBook b) {
         Cast.npc(b, "quest_professor_gracklebone", "Professor Gracklebone", "quest_arceuus_library", 0, 2, Cast.PALE, 0x3A2A5A);
+        b.npc("quest_brother_aimeri", "Brother Aimeri", "forthos_dungeon", 3, 3, 0xD8B898, 0x6A5A3A, 0x4A3A2A, 0x8A2A2A);
+        b.npc("quest_logosia", "Logosia", "quest_arceuus_library", 3, 2, 0xE8D0B8, 0x3A4A7A, 0x2A2A5A, 0xD0B060);
         b.item("quest_lost_tome", "Lost tome", "book", 0x5A3A2A, "A tome missing from the Arceuus Library.");
         b.item("book_of_knowledge", "Book of knowledge", "book", 0xE0C060, "Reading this book grants experience in a skill of your choice.");
+        b.item("tome_of_the_sun", "Tome of the sun", "book", 0xE0B030, "An old tome about the sun. Some pages are missing.");
+        b.item("tome_of_the_moon", "Tome of the moon", "book", 0x8090C0, "An old tome about the moon. Some pages are missing.");
+        b.item("tome_of_the_temple", "Tome of the temple", "book", 0x6A8A5A, "An old tome about the temple. Some pages are missing.");
+        b.item("tattered_sun_page", "Tattered sun page", "note", 0xE8C870, "A tattered page from the tome of the sun.");
+        b.item("tattered_moon_page", "Tattered moon page", "note", 0xB0B8D8, "A tattered page from the tome of the moon.");
+        b.item("tattered_temple_page", "Tattered temple page", "note", 0xA0B890, "A tattered page from the tome of the temple.");
+        // Wiki: the three tomes are on the musty bookshelves in the undead druids' rooms, and four of each tattered page drop
+        // from the Forthos Dungeon's monsters. The druids drop the tomes here (no bookshelves) and the page rate is approx.
         b.quest("in_search_of_knowledge", "In Search of Knowledge (miniquest)", Difficulty.NOVICE, 0)
                 .reward("book_of_knowledge")
-                .stage("I can start this miniquest by speaking to Professor Gracklebone in the Arceuus Library.")
-                .talk("quest_professor_gracklebone").say("A tome has gone missing from the library. My students say a sea troll took it to the Piscatoris shore! Absurd, I know.")
-                .stage("I should search the shore near Piscatoris for the lost tome.")
-                .reach("piscatoris", 10).give("quest_lost_tome").say("* Among the rocks you find a damp but legible book.")
-                .stage("I should return the tome to Professor Gracklebone.")
-                .talk("quest_professor_gracklebone").take("quest_lost_tome").say("Remarkable! The library thanks you. Here, a book of knowledge for your trouble.");
+                .stage("I can start this miniquest by speaking to the starving Brother Aimeri in the Forthos Dungeon, by the entrance to Sarachnis' lair.")
+                .talk("quest_brother_aimeri").say("*He wolfs down the food you give him.* Thank you, friend. I came for the temple's old tomes, "
+                        + "but the druids and the spiders... Find the tomes of the sun, moon and temple, and their lost pages, and take them to Logosia.")
+                .stage("I should find the tomes of the sun, moon and temple in the undead druids' rooms, and four tattered sun, moon and temple pages "
+                        + "from the Forthos Dungeon's monsters.")
+                .drop("undead_druid", "tome_of_the_sun", 1).drop("undead_druid", "tome_of_the_moon", 1).drop("undead_druid", "tome_of_the_temple", 1)
+                .drop("temple_spider", "tattered_sun_page", 4).times(4).drop("temple_spider", "tattered_moon_page", 4).times(4)
+                .drop("temple_spider", "tattered_temple_page", 4).times(4)
+                .drop("undead_druid", "tattered_sun_page", 4).times(4).drop("undead_druid", "tattered_moon_page", 4).times(4)
+                .drop("undead_druid", "tattered_temple_page", 4).times(4)
+                .talk("quest_brother_aimeri").need("tome_of_the_sun", "tome_of_the_moon", "tome_of_the_temple")
+                .take("tattered_sun_page:4", "tattered_moon_page:4", "tattered_temple_page:4")
+                .say("*You put the pages back in their tomes.* Complete! Take them to Logosia in the Arceuus Library.")
+                .missing("The three tomes, and four of each kind of page. The undead druids guard the tomes; the pages are scattered about.")
+                .stage("I should take the tomes to Logosia in the Arceuus Library.")
+                .talk("quest_logosia").take("tome_of_the_sun", "tome_of_the_moon", "tome_of_the_temple")
+                .say("The lost tomes of the Forthos temple! The library is in your debt. Take this, and learn something new.")
+                .hint("quest_professor_gracklebone", "Lost tomes? Logosia looks after those. She's just over there.");
     }
 
     private static void intoTheTombs(QuestBook b) {
+        // Wiki: Maisa at the Jaltevas Pyramid hands over Akila's journal; a full Tombs of Amascut run (the four lesser gods
+        // freed, both Wardens beaten) follows, then Maisa in the tombs' lobby.
         b.quest("into_the_tombs", "Into the Tombs (miniquest)", Difficulty.MASTER, 0)
                 .reqQuest("beneath_cursed_sands")
                 .unlock("The Tombs of Amascut's full story")
-                .stage("I can start this miniquest by speaking to the Priest of Tumeken at the Necropolis. (Requires Beneath Cursed Sands.)")
-                .talk("tumeken_priest").say("Amascut's followers gather in the tombs beneath Jaldraocht. Go and see what they plan.")
-                .stage("I should enter the Tombs of Amascut.")
-                .reach("toa_jaldraocht_entrance", 10).flag("itt_tombs").say("* In the tombs you hear Amascut's voice, promising the destruction of Tumeken's line.")
-                .stage("I should report to the Priest of Tumeken.")
-                .talk("tumeken_priest").needFlag("itt_tombs").say("So Amascut's plan runs deeper than we feared. The tombs must be raided, again and again.");
+                .stage("I can start this miniquest by speaking to Maisa. (Requires Beneath Cursed Sands.)")
+                .talk("maisa").say("Amascut has seized the lesser gods - Apmeken, Crondis, Het and Scabaras - in the tombs beneath Jaltevas. "
+                        + "Take Akila's journal, free them, and stop her.")
+                .stage("I should complete a full raid of the Tombs of Amascut, freeing the lesser gods and defeating the Wardens.")
+                .reach("toa_jaldraocht_entrance", 10).stay().unlessFlag("itt_tombs").flag("itt_tombs")
+                .say("* In the tombs you hear Amascut's voice, promising the destruction of Tumeken's line.")
+                .kill("tumekens_warden").flag("itt_tombs").say("* The Warden crumbles. In Osmumten's burial chamber the lesser gods stand free.")
+                .kill("elidinis_warden").flag("itt_tombs").say("* The Warden crumbles. In Osmumten's burial chamber the lesser gods stand free.")
+                .stage("I should talk to Maisa in the tombs' lobby.")
+                .talk("maisa").needFlag("itt_tombs").say("Amascut fled... to Menaphos, perhaps, to think again. The gods are free because of you.")
+                .done("tumeken_priest", "Amascut's followers are scattered. Tumeken's line endures, thanks to you.");
     }
 
     private static void lairOfTarnRazorlor(QuestBook b) {
@@ -395,14 +474,44 @@ final class Miniquests {
     }
 
     private static void valeTotems(QuestBook b) {
-        Cast.npc(b, "quest_totem_carver", "Totem carver", "quest_auburn_vale", 0, 2, Cast.BROWN, 0x8A6A2A);
+        // Ranulph keeps the old id quest_totem_carver (saved worlds).
+        Cast.npc(b, "quest_totem_carver", "Ranulph", "quest_auburn_vale", 0, 2, Cast.BROWN, 0x8A6A2A);
         b.quest("vale_totems", "Vale Totems (miniquest)", Difficulty.NOVICE, 0)
                 .reqQuest("children_of_the_sun").req(Skill.FLETCHING, 20) // OSRS: no XP reward (Sacraments of ent folk, access to Vale Totems)
                 .unlock("Carving and decorating totems in Auburnvale")
-                .stage("I can start this miniquest by speaking to the Totem carver in Auburnvale. (Requires Children of the Sun, 20 Fletching.)")
-                .talk("quest_totem_carver").say("The vale's totems have rotted. Help me carve new ones and the spirits of the vale will be pleased.")
-                .stage("I should carve a totem from 3 oak logs with a knife.")
-                .talk("quest_totem_carver").take("oak_logs:3").need("knife").say("*You carve the totem's faces.* Beautiful work! The spirits are content.")
-                .missing("Three oak logs and a knife, friend.");
+                .stage("I can start this miniquest by speaking to Ranulph in north-western Auburnvale. (Requires Children of the Sun, 20 Fletching.)")
+                .talk("quest_totem_carver").say("The ents are restless. This old totem... *crack* Oops. Well, now we'll have to build a new one, won't we?")
+                .stage("I should build a new totem from oak logs (or better), carve the nearby spirit animals into it and decorate it with four "
+                        + "oak shortbows (u) fletched from the same wood.")
+                .talk("quest_totem_carver").take("oak_logs:3").need("knife").stay().unlessFlag("vt_base").flag("vt_base")
+                .say("*You build the totem's base at the site.* Good and solid. Now carve the spirits that watch over this place.")
+                .missing("Logs for the base - oak or better - and a knife, friend.")
+                .puzzle("quest_totem_carver", VALE_SPIRITS).needFlag("vt_base").unlessFlag("vt_carved").flag("vt_carved").stay()
+                .say("*You carve the three spirits into the totem.* They'll like that. Now decorate it with bows of the same wood.")
+                .talk("quest_totem_carver").needFlag("vt_carved").take("oak_shortbow_u:4")
+                .say("*You hang the bows on the totem.* Look - the ents have left an offering! They approve. These sacraments are yours.")
+                .missing("Four oak shortbows, unstrung, to decorate the totem.");
+    }
+
+    /**
+     * Vale Totems' carving (wiki): each player's totem site is watched by three of the vale's spirit animals, which must
+     * be carved (in any order). The five animals are approx.
+     */
+    static final QuestPuzzle VALE_SPIRITS = valeSpirits();
+
+    private static QuestPuzzle valeSpirits() {
+        String[] animals = {"Buffalo", "Jaguar", "Eagle", "Snake", "Scorpion"};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("vale_totems").room("carving");
+        for (int a = 0; a < animals.length; a++) {
+            for (int c = a + 1; c < animals.length; c++) {
+                for (int d = c + 1; d < animals.length; d++) {
+                    b.variant(null).prompt("* Around the totem site you spot the spirits of a " + animals[a].toLowerCase(java.util.Locale.ROOT) + ", a "
+                                    + animals[c].toLowerCase(java.util.Locale.ROOT) + " and a " + animals[d].toLowerCase(java.util.Locale.ROOT) + ".",
+                            "* Which spirits do you carve into the totem?")
+                            .options(animals).anyOrder(a, c, d);
+                }
+            }
+        }
+        return b.failLines("Those aren't the spirits watching this place. Look around again.").build();
     }
 }

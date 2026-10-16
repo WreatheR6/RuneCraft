@@ -1,5 +1,6 @@
 package com.runecraft.content.quests;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -45,6 +46,20 @@ final class QuestCommands {
                                     QuestBook.get().quests.stream().map(QuestSpec::id), b))
                             .executes(QuestCommands::guide)));
             dispatcher.register(CommandManager.literal("questcape").executes(QuestCommands::cape));
+            // quest puzzles: the chat links QuestPuzzles prints run "/questpuzzle <quest> <stage>.<trigger> <option>"
+            dispatcher.register(CommandManager.literal("questpuzzle")
+                    .then(CommandManager.argument("quest", StringArgumentType.word())
+                            .executes(ctx -> {
+                                QuestPuzzles.reshow(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "quest"));
+                                return 1;
+                            })
+                            .then(CommandManager.argument("ref", StringArgumentType.word())
+                                    .then(CommandManager.argument("option", IntegerArgumentType.integer(0))
+                                            .executes(ctx -> {
+                                                QuestPuzzles.answer(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "quest"),
+                                                        StringArgumentType.getString(ctx, "ref"), IntegerArgumentType.getInteger(ctx, "option"));
+                                                return 1;
+                                            })))));
         });
     }
 

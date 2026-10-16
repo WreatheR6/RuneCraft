@@ -55,7 +55,10 @@ public final class NpcFloor {
      */
     public static BlockPos spot(ServerWorld world, int x, int z, boolean banker, int floor) {
         BlockPos ground = spot(world, x, z, banker);
-        if (floor <= 0) {
+        if (floor < 0) {
+            return basement(world, ground, -floor);
+        }
+        if (floor == 0) {
             return ground;
         }
         int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
@@ -74,6 +77,29 @@ public final class NpcFloor {
             }
         }
         return new BlockPos(x, best, z);
+    }
+
+    /**
+     * The depth-th standable spot below the ground one, each under rock of its own (a basement or cellar under the
+     * building); the ground spot if there is none within the scan depth.
+     */
+    private static BlockPos basement(ServerWorld world, BlockPos ground, int depth) {
+        BlockPos.Mutable pos = new BlockPos.Mutable(ground.getX(), ground.getY(), ground.getZ());
+        int found = 0;
+        boolean rock = false;
+        for (int y = ground.getY() - 1; y > ground.getY() - SCAN_DEPTH && y > world.getBottomY(); y--) {
+            pos.setY(y);
+            if (solid(world, pos)) {
+                rock = true;
+            } else if (rock && standable(world, pos)) {
+                found++;
+                rock = false;
+                if (found == depth) {
+                    return pos.toImmutable();
+                }
+            }
+        }
+        return ground;
     }
 
     /** Y to put an entity's feet at when standing in this block (on top of a carpet, if any). */

@@ -212,6 +212,10 @@ public final class QuestInterpreter {
 
     static void talk(ServerPlayerEntity p, String npcId) {
         String name = npcName(npcId);
+        // 0. Puzzles this NPC presents (Recruitment Drive's examiners, Murder Mystery's accusation).
+        if (QuestPuzzles.talk(p, npcId, book.quests)) {
+            return;
+        }
         // 1. Objectives of quests in progress (the first satisfiable one across all active quests).
         List<QuestSpec> owners = new ArrayList<>();
         List<Trigger> here = new ArrayList<>();
@@ -347,6 +351,9 @@ public final class QuestInterpreter {
 
     static void onKill(ServerPlayerEntity p, LivingEntity entity, MonsterStats stats) {
         List<String> ids = ids(entity, stats);
+        if (QuestPuzzles.onKill(p, ids)) {
+            return;
+        }
         for (QuestSpec q : book.quests) {
             if (!active(p, q)) {
                 continue;
@@ -460,6 +467,15 @@ public final class QuestInterpreter {
                     continue;
                 }
                 for (Trigger t : q.stages.get(stage(p, q)).triggers) {
+                    if (t.kind == Trigger.Kind.PUZZLE && !skipped(p, t)) {
+                        int[] at = placeCentre(t.target);
+                        if (at != null) {
+                            double px = p.getX() - at[0];
+                            double pz = p.getZ() - at[1];
+                            QuestPuzzles.reach(p, q, t, px * px + pz * pz <= t.radius * t.radius);
+                        }
+                        continue;
+                    }
                     if (t.kind != Trigger.Kind.REACH || skipped(p, t)) {
                         continue;
                     }

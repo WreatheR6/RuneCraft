@@ -41,6 +41,22 @@ public final class FreeQuestObjectives {
             return dx * dx + dy * dy <= radius * radius;
         }
 
+        /** Whether the spot is underground: a dungeon tile (OSRS y 6400 and above, drawn 6400 tiles north, under the surface). */
+        public boolean underground() {
+            return y >= UNDERGROUND_Y;
+        }
+
+        /**
+         * Whether a player on surface-map tile (tx, ty) is at the spot: an underground spot needs the player below the
+         * surface ({@code below}) at the matching dungeon tile (ty + 6400), a surface spot needs them above it.
+         */
+        public boolean contains(int tx, int ty, boolean below) {
+            if (underground()) {
+                return below && contains(tx, ty + UNDERGROUND_Y);
+            }
+            return !below && contains(tx, ty);
+        }
+
         /** Whether the objective still has something to do for a player holding {@code has}. */
         public boolean applies(Predicate<String> has) {
             if (action == Action.GIVE) {
@@ -61,6 +77,9 @@ public final class FreeQuestObjectives {
         }
     }
 
+    /** OSRS y of the dungeon layer: dungeon tiles are drawn this many tiles north of their OSRS y, under the surface. */
+    public static final int UNDERGROUND_Y = 6400;
+
     /** Druidic Ritual: raw meat -> enchanted meat (Cauldron of Thunder). Raw beef/chicken are the vanilla items. */
     public static final Map<String, String> DRUIDIC_MEATS = new LinkedHashMap<>();
 
@@ -73,16 +92,16 @@ public final class FreeQuestObjectives {
 
     public static final List<Spot> SPOTS = List.of(
             // The Restless Ghost: the skull lies on the altar in the Wizards' Tower basement (3120, 9567); searching it
-            // raises a skeleton (level 13). The mod has no basement, so going into the tower (3109, 3162) stands in for
-            // climbing down to the altar. // approx
-            new Spot(Quest.RESTLESS_GHOST, 3, 3, 3109, 3162, 5, Action.GIVE, "ghosts_skull", List.of(),
-                    "You climb down to the tower basement and search the altar: a skull! A skeleton rises to guard it.", "minecraft:skeleton"),
+            // raises a skeleton (level 13). The basement is built under the tower (MisthalinDraynor.wizardsTower).
+            new Spot(Quest.RESTLESS_GHOST, 3, 3, 3120, 9567, 3, Action.GIVE, "ghosts_skull", List.of(),
+                    "You search the altar in the tower basement: a skull! A skeleton rises to guard it.", "minecraft:skeleton"),
             // Romeo & Juliet: wild cadava bushes south-east of Varrock (wiki map pins 3264,3366 / 3268,3370 / 3277,3374).
             new Spot(Quest.ROMEO_AND_JULIET, 1, 4, 3270, 3370, 9, Action.GIVE, "cadava_berries", List.of("cadava_potion"),
                     "You pick some cadava berries from the bush.", null),
-            // Druidic Ritual: the Cauldron of Thunder is in Taverley Dungeon (2893, 9831); the dungeon is a separate cave
-            // here, so the meats are dipped at the dungeon entrance ladder (2884, 3397). // approx
-            new Spot(Quest.DRUIDIC_RITUAL, 2, 2, 2884, 3397, 4, Action.ENCHANT_MEATS, null, List.of(),
+            // Druidic Ritual: the Cauldron of Thunder is in Taverley Dungeon (wiki 2893, 9831). The dungeon's layout here is
+            // schematic and that tile is rock north of the blue dragons, so the cauldron stands in the corridor north of the
+            // entrance, before the dusty-key gate (DungeonsAsgarnia.taverley). // approx: ~25 tiles south-west of OSRS
+            new Spot(Quest.DRUIDIC_RITUAL, 2, 2, 2890, 9806, 3, Action.ENCHANT_MEATS, null, List.of(),
                     "You dip the meat into the Cauldron of Thunder. It glows with a strange light.", null),
             // Witch's Potion: drink from Hetty's cauldron (2967, 3205) to finish.
             new Spot(Quest.WITCHS_POTION, 2, 2, 2967, 3205, 2, Action.COMPLETE, null, List.of(),
