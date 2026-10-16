@@ -11,7 +11,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 /**
  * Damage reduction on hits a player takes (round 17), applied by {@link CombatHandler#applyDamage} to every hit from a
  * monster or another player: the Elysian spirit shield (70% chance to take a quarter off, at least 1), Dinh's bulwark in
- * its Block stance (-20%) and the Justiciar set (-defence bonus / 3000 of the hit). The maths is
+ * its Block stance (-20%) and the Justiciar set (-defence bonus / 3000 of the hit, at least 1; not in PvP and not on
+ * typeless damage, i.e. a boss mechanic named without a style). The maths is
  * {@link NpcHitCalc#reduceIncoming}, tested against the OSRS Wiki DPS calculator. Dinh's bulwark can't attack in Block.
  */
 public final class DefenceEffects {
@@ -19,12 +20,14 @@ public final class DefenceEffects {
     }
 
     /** The hit after the defender's damage-reducing gear; {@code style} is the attack's style when known. */
-    public static int reduce(ServerPlayerEntity p, LivingEntity attacker, AttackType style, int damage) {
+    public static int reduce(ServerPlayerEntity p, LivingEntity attacker, AttackType style, boolean typeless, int damage) {
         String shield = Inv.idOf(p.getOffHandStack());
         String weapon = Inv.idOf(p.getMainHandStack());
         boolean elysian = "elysian_spirit_shield".equals(shield);
         boolean dinhs = NpcHitCalc.dinhsBlocking(weapon, Players.data(p).style());
-        boolean justiciar = NpcHitCalc.justiciarSet(Inv.idOf(p.getEquippedStack(EquipmentSlot.HEAD)),
+        // OSRS Wiki: the Justiciar set effect works outside PvP only and never on typeless damage.
+        boolean justiciar = !typeless && !(attacker instanceof ServerPlayerEntity)
+                && NpcHitCalc.justiciarSet(Inv.idOf(p.getEquippedStack(EquipmentSlot.HEAD)),
                 Inv.idOf(p.getEquippedStack(EquipmentSlot.CHEST)), Inv.idOf(p.getEquippedStack(EquipmentSlot.LEGS)));
         if (!elysian && !dinhs && !justiciar) {
             return damage;
@@ -33,8 +36,8 @@ public final class DefenceEffects {
         if (justiciar) {
             AttackType s = style;
             if (s == null) {
-                // approx: unnamed hits use the attacking monster's main style (crush for players' unnamed hits)
-                s = attacker instanceof ServerPlayerEntity ? AttackType.CRUSH : MonsterStats.of(attacker).style();
+                // approx: a hit that wasn't named at all uses the attacking monster's main style
+                s = MonsterStats.of(attacker).style();
             }
             bonus = HitCalcBridge.gearStats(p).defence(s);
         }

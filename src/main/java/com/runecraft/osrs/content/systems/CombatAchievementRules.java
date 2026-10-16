@@ -890,6 +890,11 @@ public final class CombatAchievementRules {
             408;RULE;phosanis_nightmare;1;noflag=phosani_sleepwalker_reached
             38;RULE;bryophyta;1;flag=bryophyta_quick_cut
             132;RULE;obor;1;noflag=obor_pushed
+            186;RULE;the_nightmare;1;solo count<=100:nightmare_parasite_heal
+            406;RULE;phosanis_nightmare;1;noflag=phosani_minion_survived
+            481;RULE;phantom_muspah;1;flag=muspah_surrounded
+            482;RULE;phantom_muspah;1;flag=muspah_three_drains
+            564;RULE;araxxor;1;count>=6:araxxor_eggs_destroyed
             """;
 
     private static final Map<Integer, Spec> SPECS = new LinkedHashMap<>();

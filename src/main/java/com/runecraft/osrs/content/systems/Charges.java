@@ -95,6 +95,9 @@ public final class Charges {
     /** Revenant ether a revenant weapon holds (wiki). */
     public static final int REVENANT_ETHER_MAX = 16_000;
     public static final String PHARAOHS_SCEPTRE = "pharaohs_sceptre";
+    /** Rod of Ivandis (wiki): 10 charges, one per Retainer special attack; it crumbles to dust when the last is used. */
+    public static final String ROD_OF_IVANDIS = "rod_of_ivandis";
+    public static final int ROD_OF_IVANDIS_MAX = 10;
     public static final int PHARAOHS_SCEPTRE_MAX = 100;
     private static final int[] PHARAOHS_SCEPTRE_CAPS = {3, 10, 25, 50, 100};
 
@@ -188,6 +191,9 @@ public final class Charges {
         // sceptre: made with 10-26 charges by Varrock Diary tier (skullSceptreCap), crumbles when empty.
         put(new Spec(CAMULET, "Camulet", Kind.CHARGED, CAMULET_MAX, CAMULET_MAX, Drain.TELEPORT, ordered(UGTHANKI_DUNG, 1), 1, 0));
         put(new Spec(SKULL_SCEPTRE, "Skull sceptre", Kind.CHARGED, SKULL_SCEPTRE_MAX, 10, Drain.TELEPORT, ordered(), 1, 0));
+        // Drained by its special attack only (SpecialAttackService), so it uses the manual TELEPORT drain.
+        put(new Spec(ROD_OF_IVANDIS, "Rod of Ivandis", Kind.CHARGED, ROD_OF_IVANDIS_MAX, ROD_OF_IVANDIS_MAX, Drain.TELEPORT, ordered(),
+                1, 0));
         put(new Spec(TELEPORT_CRYSTAL, "Teleport crystal", Kind.CHARGED, TELEPORT_CRYSTAL_MAX, 4, Drain.TELEPORT,
                 ordered("coins", TELEPORT_CRYSTAL_COINS), 1, 0));
         put(new Spec(CHRONICLE, "Chronicle", Kind.CHARGED, CHRONICLE_MAX, 0, Drain.TELEPORT, ordered("teleport_card", 1), 1, 0));

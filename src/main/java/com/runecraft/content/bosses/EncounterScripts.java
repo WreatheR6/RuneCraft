@@ -191,6 +191,15 @@ final class EncounterScripts {
      * phase, sleepwalkers keep coming and each one that arrives deals 15.
      */
     static final class Nightmare extends ScriptedBoss {
+        /** Players who drank a sanfew serum or relicym's balm since their parasite landed (it bursts out weakened). */
+        private static final java.util.Set<java.util.UUID> CURED = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+        static {
+            com.runecraft.content.skilling.ItemHooks.DISEASE_CURE.add(p -> CURED.add(p.getUuid()));
+        }
+
+        private final List<MobEntity> parasites = new ArrayList<>();
+        private int parasiteHealTimer = BossMechanics.PARASITE_HEAL_INTERVAL;
         private final List<MobEntity> totems = new ArrayList<>();
         private final List<MobEntity> husks = new ArrayList<>();
         private boolean shielded;
@@ -252,10 +261,66 @@ final class EncounterScripts {
                     MobEntity h = BossFx.spawnMinion(boss, "nightmare_husk", around(boss, target.getPos(), 2), target);
                     if (h != null) {
                         husks.add(h);
+                        watchOneHit(h);
                     }
                 }
                 BossFx.stun(target, 30);
                 Msg.red(target, "Husks grab hold of you! Kill them to break free.");
+            }
+        }
+
+        /** Phosani's "Crush Hour": every parasite and husk must die to the first hit it takes. */
+        private void watchOneHit(MobEntity m) {
+            if (!phosani) {
+                return;
+            }
+            MinionRules.set(m, (p, mob, type, d) -> {
+                if (d > 0 && d < mob.getHealth()) {
+                    CombatAchievementService.flag(p, BossMechanics.FLAG_PHOSANI_MINION_SURVIVED);
+                }
+                return d;
+            });
+        }
+
+        /**
+         * Parasites support the Nightmare (OSRS Wiki "Parasite"): every few ticks each one restores 31-50 of her health, or
+         * of the weakest totem while she is shielded; counted for "Terrible Parent".
+         */
+        private void tickParasites(DataBossEntity boss, ServerPlayerEntity target) {
+            parasites.removeIf(m -> !m.isAlive());
+            if (parasites.isEmpty() || --parasiteHealTimer > 0) {
+                return;
+            }
+            parasiteHealTimer = BossMechanics.PARASITE_HEAL_INTERVAL;
+            for (MobEntity parasite : parasites) {
+                int heal = BossMechanics.parasiteHeal(new java.util.Random(boss.getRandom().nextLong()));
+                net.minecraft.entity.LivingEntity healed = boss;
+                if (shielded) {
+                    MobEntity weakest = null;
+                    for (MobEntity t : totems) {
+                        if (t.isAlive() && t.getHealth() < t.getMaxHealth() && (weakest == null || t.getHealth() < weakest.getHealth())) {
+                            weakest = t;
+                        }
+                    }
+                    if (weakest == null) {
+                        continue; // nothing to support: it attacks the player instead (its own AttackDef)
+                    }
+                    weakest.heal(heal);
+                    healed = weakest;
+                } else if (boss.getHealth() < boss.getMaxHealth()) {
+                    boss.heal(mcHp(boss, heal));
+                } else {
+                    continue;
+                }
+                BossFx.burst(parasite, ParticleTypes.HEART, 4, 0.4);
+                BossFx.burst(healed, ParticleTypes.HEART, 6, 0.8);
+                java.util.Set<ServerPlayerEntity> fighters = new java.util.LinkedHashSet<>(BossFx.players(boss, 24));
+                if (target != null) {
+                    fighters.add(target);
+                }
+                for (ServerPlayerEntity p : fighters) {
+                    CombatAchievementService.count(p, BossMechanics.COUNT_NIGHTMARE_PARASITE_HEAL, heal);
+                }
             }
         }
 
@@ -371,16 +436,32 @@ final class EncounterScripts {
             if (target == null) {
                 return;
             }
+            tickParasites(boss, target);
             if (boss.phase() >= 0 && parasiteIn < 0 && boss.getRandom().nextInt(45) == 0) {
-                parasiteIn = 18;
+                parasiteIn = BossMechanics.PARASITE_BURST_TICKS;
                 host = target;
-                Msg.red(target, "The Nightmare has impregnated you with a deadly parasite!");
+                CURED.remove(target.getUuid());
+                Msg.red(target, "The Nightmare has impregnated you with a deadly parasite! Drink a sanfew serum or relicym's balm.");
             }
             if (parasiteIn > 0 && --parasiteIn == 0) {
                 if (host != null && host.isAlive()) {
-                    CombatHandler.applyDamage(boss, host, 10 + boss.getRandom().nextInt(16));
-                    BossFx.spawnMinion(boss, "nightmare_parasite", host.getPos(), host);
-                    Msg.red(host, "The parasite bursts out of you!");
+                    boolean weakened = CURED.remove(host.getUuid());
+                    CombatHooks.nameAttack("parasite_burst", null);
+                    CombatHandler.applyDamage(boss, host, BossMechanics.parasiteBurst(new java.util.Random(boss.getRandom().nextLong()), weakened));
+                    MobEntity parasite = BossFx.spawnMinion(boss, "nightmare_parasite", host.getPos(), host);
+                    if (parasite != null) {
+                        if (!weakened) {
+                            // 80 hitpoints instead of the weakened parasite's 40.
+                            var hp = parasite.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH);
+                            if (hp != null) {
+                                hp.setBaseValue(hp.getBaseValue() * BossMechanics.PARASITE_HP / BossMechanics.PARASITE_HP_WEAKENED);
+                                parasite.setHealth(parasite.getMaxHealth());
+                            }
+                        }
+                        parasites.add(parasite);
+                        watchOneHit(parasite);
+                    }
+                    Msg.red(host, weakened ? "The weakened parasite bursts out of you!" : "The parasite bursts out of you!");
                 }
                 parasiteIn = -1;
             }
@@ -395,42 +476,179 @@ final class EncounterScripts {
             totems.forEach(MobEntity::discard);
             husks.forEach(MobEntity::discard);
             walkers.forEach(MobEntity::discard);
+            parasites.forEach(MobEntity::discard);
         }
     }
 
-    /** Phantom Muspah: ranged form, then a melee charge (faster), then a frozen shield that soaks damage. */
+    /**
+     * Self-test (boss:nightmare_parasites): a parasite that lands on a player who then drinks a cure bursts out weakened
+     * (40 hitpoints), and a living parasite heals the unshielded Nightmare.
+     */
+    static String selfTestNightmare(DataBossEntity boss, ServerPlayerEntity p) {
+        if (!(boss.script() instanceof Nightmare n)) {
+            throw new IllegalStateException("the Nightmare has no Nightmare script");
+        }
+        n.gameTick(boss, com.runecraft.action.ActionManager.gameTick());
+        try {
+            n.parasiteIn = 1;
+            n.host = p;
+            com.runecraft.content.skilling.ItemHooks.DISEASE_CURE.forEach(l -> l.accept(p)); // a sanfew serum dose
+            n.onGameTick(boss, p);
+            n.parasites.removeIf(m -> !m.isAlive());
+            if (n.parasites.size() != 1) {
+                throw new IllegalStateException(n.parasites.size() + " parasites after the burst, expected 1");
+            }
+            float weakHp = n.parasites.get(0).getMaxHealth();
+            n.shielded = false;
+            boss.setHealth(boss.getMaxHealth() * 0.5f);
+            float before = boss.getHealth();
+            n.parasiteHealTimer = 1;
+            n.tickParasites(boss, p);
+            if (boss.getHealth() <= before) {
+                throw new IllegalStateException("the parasite didn't heal the Nightmare (" + before + " -> " + boss.getHealth() + ")");
+            }
+            return "weakened parasite " + weakHp + " hp, healed the Nightmare " + before + " -> " + boss.getHealth();
+        } finally {
+            Nightmare.CURED.remove(p.getUuid());
+            n.onDeath(boss, p);
+        }
+    }
+
+    /**
+     * Self-test (boss:muspah_shield): Smite and a corruption spell drain the prayer shield beyond its 2 per attack, and a
+     * spike raised under a player hits them and stays.
+     */
+    static String selfTestMuspah(DataBossEntity boss, ServerPlayerEntity p) {
+        if (!(boss.script() instanceof Muspah m)) {
+            throw new IllegalStateException("the Phantom Muspah has no Muspah script");
+        }
+        m.gameTick(boss, com.runecraft.action.ActionManager.gameTick());
+        var data = com.runecraft.player.Players.data(p);
+        var sp = com.runecraft.content.systems.SysState.of(p);
+        boolean hadSmite = data.activePrayers().contains(Prayer.SMITE);
+        try {
+            m.onPhase(boss, 1);
+            data.activePrayers().add(Prayer.SMITE);
+            int absorbed = m.incoming(boss, p, 20, AttackType.RANGED);
+            int afterSmite = m.shield;
+            int expected = BossMechanics.MUSPAH_SHIELD - BossMechanics.MUSPAH_SHIELD_PER_ATTACK - BossMechanics.muspahSmiteDrain(20);
+            if (absorbed != 0 || afterSmite > expected) {
+                throw new IllegalStateException("Smite hit: took " + absorbed + ", shield " + afterSmite + " (expected <= " + expected + ")");
+            }
+            data.activePrayers().remove(Prayer.SMITE);
+            sp.corruptionPending = 2;
+            sp.corruptionPendingUntil = com.runecraft.content.systems.SysTicks.now() + 100;
+            m.incoming(boss, p, 0, AttackType.MAGIC);
+            int afterCorruption = m.shield;
+            if (afterSmite - afterCorruption != BossMechanics.MUSPAH_SHIELD_PER_ATTACK + BossMechanics.muspahCorruptionDrain(true)) {
+                throw new IllegalStateException("Greater Corruption drained " + (afterSmite - afterCorruption) + " of the shield");
+            }
+            if (!m.drains.containsAll(java.util.Set.of(BossMechanics.DRAIN_SMITE, BossMechanics.DRAIN_CORRUPTION))) {
+                throw new IllegalStateException("drain sources " + m.drains);
+            }
+            long under = BossMechanics.tile(p.getBlockX(), p.getBlockZ());
+            m.raiseSpikes(boss, p, List.of());
+            if (!m.spikes.contains(under)) {
+                throw new IllegalStateException("no spike raised under the player");
+            }
+            return "shield 75 -> " + afterSmite + " (Smite) -> " + afterCorruption + " (Greater Corruption), " + m.spikes.size() + " spikes";
+        } finally {
+            if (!hadSmite) {
+                data.activePrayers().remove(Prayer.SMITE);
+            }
+            sp.corruptionPending = 0;
+        }
+    }
+
+    /**
+     * Phantom Muspah: ranged form, then a melee charge (faster), then a frozen prayer shield that soaks damage. Every form
+     * change raises spikes (one under the player) that knock a player standing there aside and heal it 75% of the damage;
+     * once the shield breaks, spikes grow from the existing clusters every four of its attacks until they surround it.
+     * The shield loses 2 per attack plus whatever prayer drains take: Smite, an enchanted sapphire bolt, a corruption spell.
+     */
     static final class Muspah extends ScriptedBoss {
         private int shield;
+        private boolean shieldBroken;
+        private final Set<String> drains = new HashSet<>();
+        private final Set<Long> spikes = new HashSet<>();
+        private int attacks;
+        private int spikeFx;
 
         @Override
         public void onPhase(DataBossEntity boss, int phase) {
+            ServerPlayerEntity target = target(boss);
             if (phase == 0) {
                 var speed = boss.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
                 if (speed != null) {
                     speed.setBaseValue(0.3);
                 }
+                raiseSpikes(boss, target, randomTiles(boss, 6));
             } else if (phase == 1) {
-                shield = 75;
+                shield = BossMechanics.MUSPAH_SHIELD;
+                drains.clear();
                 var speed = boss.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
                 if (speed != null) {
                     speed.setBaseValue(0.18);
                 }
+                raiseSpikes(boss, target, randomTiles(boss, 4));
             }
+        }
+
+        private List<Long> randomTiles(DataBossEntity boss, int n) {
+            List<Long> tiles = new ArrayList<>();
+            Vec3d c = homeVec();
+            for (int i = 0; i < n; i++) {
+                Vec3d v = around(boss, c, 8);
+                tiles.add(BossMechanics.tile((int) Math.floor(v.x), (int) Math.floor(v.z)));
+            }
+            return tiles;
+        }
+
+        /** New spikes (plus one under the target): players standing on one are hit, knocked aside, and heal the Muspah. */
+        private void raiseSpikes(DataBossEntity boss, ServerPlayerEntity target, List<Long> tiles) {
+            List<Long> fresh = new ArrayList<>(tiles);
+            if (target != null) {
+                fresh.add(BossMechanics.tile(target.getBlockX(), target.getBlockZ()));
+            }
+            spikes.addAll(fresh);
+            Set<ServerPlayerEntity> near = new java.util.LinkedHashSet<>(BossFx.players(boss, 24));
+            if (target != null) {
+                near.add(target);
+            }
+            for (ServerPlayerEntity p : near) {
+                if (!fresh.contains(BossMechanics.tile(p.getBlockX(), p.getBlockZ()))) {
+                    continue;
+                }
+                int dmg = 1 + boss.getRandom().nextInt(BossMechanics.MUSPAH_SPIKE_MAX);
+                CombatHooks.nameAttack("spike", null);
+                int dealt = CombatHandler.applyDamage(boss, p, dmg);
+                boss.heal(mcHp(boss, BossMechanics.muspahSpikeHeal(dealt)));
+                Vec3d away = p.getPos().subtract(boss.getPos()).normalize();
+                p.takeKnockback(0.8, -away.x, -away.z);
+                p.velocityModified = true;
+                Msg.red(p, "A spike erupts beneath you!");
+            }
+            BossFx.sound(boss, SoundEvents.BLOCK_GLASS_BREAK, 0.6f);
         }
 
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
             if (shield > 0) {
                 // OSRS Wiki: the shielded form is immune to damage; its 75-point prayer shield loses 2 per attack, and
-                // prayer drains speed it up (approx: Smite drains a quarter of the hit, as on players).
-                shield -= 2;
-                if (attacker != null && com.runecraft.player.Players.data(attacker).isActive(com.runecraft.osrs.Prayer.SMITE)) {
-                    shield -= damage / 4;
+                // prayer drains speed it up.
+                shield -= BossMechanics.MUSPAH_SHIELD_PER_ATTACK;
+                if (attacker != null) {
+                    shield -= drainShield(attacker, damage, type);
+                    if (BossMechanics.versatileDrainer(drains)) {
+                        CombatAchievementService.flag(attacker, BossMechanics.FLAG_MUSPAH_THREE_DRAINS);
+                    }
                 }
                 BossFx.burst(boss, ParticleTypes.SNOWFLAKE, 8, 1.0);
                 if (shield <= 0) {
                     shield = 0;
+                    shieldBroken = true;
                     BossFx.say(boss, "The Phantom Muspah's prayer shield shatters!");
+                    raiseSpikes(boss, attacker, randomTiles(boss, 10));
                 } else if (attacker != null) {
                     Msg.action(attacker, "The Phantom Muspah's prayer shield absorbs your attack. (" + shield + " left)");
                 }
@@ -439,11 +657,47 @@ final class EncounterScripts {
             return damage;
         }
 
+        /** Extra shield points this attack's prayer drains take: Smite, an enchanted sapphire bolt, a pending corruption spell. */
+        private int drainShield(ServerPlayerEntity attacker, int damage, AttackType type) {
+            int drained = 0;
+            if (com.runecraft.player.Players.data(attacker).isActive(Prayer.SMITE) && damage > 0) {
+                drained += BossMechanics.muspahSmiteDrain(damage);
+                drains.add(BossMechanics.DRAIN_SMITE);
+            }
+            if (type == AttackType.RANGED && damage > 0) {
+                String ammo = com.runecraft.content.systems.BoltProcs.takeShot();
+                var en = com.runecraft.osrs.content.systems.BoltEffects.ofItem(ammo);
+                if (en != null && en.effect() == com.runecraft.osrs.content.systems.BoltEffects.Effect.CLEAR_MIND) {
+                    boolean kandarin = com.runecraft.osrs.content.systems.Diaries.tierComplete(
+                            com.runecraft.content.systems.SysState.of(attacker).diaryDone, "kandarin",
+                            com.runecraft.osrs.content.systems.Diaries.Tier.HARD);
+                    double chance = BossMechanics.MUSPAH_SAPPHIRE_CHANCE
+                            * (kandarin ? com.runecraft.osrs.content.systems.BoltEffects.KANDARIN_FACTOR : 1.0);
+                    if (attacker.getRandom().nextDouble() < chance) {
+                        drained += BossMechanics.MUSPAH_SAPPHIRE_DRAIN;
+                        drains.add(BossMechanics.DRAIN_SAPPHIRE);
+                    }
+                }
+            }
+            var sp = com.runecraft.content.systems.SysState.of(attacker);
+            if (sp.corruptionPending > 0 && sp.corruptionPendingUntil >= com.runecraft.content.systems.SysTicks.now()) {
+                drained += BossMechanics.muspahCorruptionDrain(sp.corruptionPending == 2);
+                sp.corruptionPending = 0;
+                drains.add(BossMechanics.DRAIN_CORRUPTION);
+            }
+            return drained;
+        }
+
         /** While shielded it also has Soul Split: it heals half the damage it deals. */
         @Override
         public int onHitPlayer(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
             if (shield > 0 && damage > 1) {
                 boss.heal(mcHp(boss, damage / 2));
+            }
+            if (shieldBroken && ++attacks % BossMechanics.MUSPAH_SPIKE_EVERY == 0) {
+                Vec3d c = homeVec();
+                raiseSpikes(boss, player, BossMechanics.muspahSpikeGrowth(spikes, (int) Math.floor(c.x), (int) Math.floor(c.z), 9,
+                        0.35, new java.util.Random(boss.getRandom().nextLong()))); // approx: growth rate
             }
             return damage;
         }
@@ -453,6 +707,43 @@ final class EncounterScripts {
             if (shield > 0) {
                 BossFx.ring(BossFx.world(boss), boss.getPos(), 2.2, ParticleTypes.SNOWFLAKE);
             }
+            if (!spikes.isEmpty() && ++spikeFx % 3 == 0) {
+                ServerWorld w = BossFx.world(boss);
+                int shown = 0;
+                for (long t : spikes) {
+                    if (++shown > 120) {
+                        break;
+                    }
+                    w.spawnParticles(ParticleTypes.SNOWFLAKE, (int) (t >> 32) + 0.5, boss.getY() + 0.3, (int) t + 0.5, 2, 0.15, 0.4, 0.15, 0.0);
+                }
+            }
+            if (shieldBroken) {
+                // "Space is Tight": spikes on every tile around its footprint.
+                int size = Math.max(1, (int) Math.ceil(boss.getWidth()));
+                int x = (int) Math.floor(boss.getX() - size / 2.0);
+                int z = (int) Math.floor(boss.getZ() - size / 2.0);
+                boolean surrounded = BossMechanics.muspahSurrounded(spikes, x, z, size);
+                Set<ServerPlayerEntity> near = new java.util.LinkedHashSet<>(BossFx.players(boss, 24));
+                if (target != null) {
+                    near.add(target);
+                }
+                for (ServerPlayerEntity p : near) {
+                    if (surrounded) {
+                        CombatAchievementService.flag(p, BossMechanics.FLAG_MUSPAH_SURROUNDED);
+                    } else {
+                        CombatAchievementService.unflag(p, BossMechanics.FLAG_MUSPAH_SURROUNDED);
+                    }
+                }
+            }
+        }
+
+        /** The spikes it stands in now (for the self-test). */
+        Set<Long> spikes() {
+            return spikes;
+        }
+
+        int shield() {
+            return shield;
         }
     }
 

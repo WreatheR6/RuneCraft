@@ -801,27 +801,126 @@ final class SlayerScripts {
     }
 
     /** Araxxor: hatches araxytes from eggs until it enrages at 25% (then cleaves and stops hatching). */
+    /**
+     * Self-test (boss:araxxor_eggs): nine eggs ring the lair, the third standard attack hatches the first, and a destroyed
+     * egg is dropped from the rotation.
+     */
+    static String selfTestAraxxor(DataBossEntity boss, ServerPlayerEntity p) {
+        if (!(boss.script() instanceof Araxxor a)) {
+            throw new IllegalStateException("Araxxor has no Araxxor script");
+        }
+        try {
+            a.gameTick(boss, com.runecraft.action.ActionManager.gameTick());
+            if (a.eggsLeft() != com.runecraft.osrs.content.bosses.BossMechanics.ARAXXOR_EGGS) {
+                throw new IllegalStateException(a.eggsLeft() + " eggs placed, expected 9");
+            }
+            for (int i = 0; i < com.runecraft.osrs.content.bosses.BossMechanics.ARAXXOR_FIRST_HATCH; i++) {
+                a.onHitPlayer(boss, p, 0, AttackType.RANGED);
+            }
+            a.araxytes.removeIf(m -> !m.isAlive());
+            if (a.eggsLeft() != 8 || a.araxytes.size() != 1) {
+                throw new IllegalStateException("after 3 attacks: " + a.eggsLeft() + " eggs, " + a.araxytes.size() + " araxytes");
+            }
+            MobEntity egg = a.eggs.stream().filter(e -> e != null && e.isAlive()).findFirst().orElseThrow();
+            egg.setHealth(0f);
+            a.gameTick(boss, com.runecraft.action.ActionManager.gameTick());
+            if (a.eggsLeft() != 7) {
+                throw new IllegalStateException(a.eggsLeft() + " eggs after destroying one, expected 7");
+            }
+            return "9 eggs, first hatched into " + a.eggKinds.get(0) + ", destroyed egg skipped";
+        } finally {
+            a.onDeath(boss, p);
+        }
+    }
+
+    /**
+     * Araxxor (OSRS Wiki "Araxxor/Strategies"): nine eggs ring the lair, three of each colour in one of the three wiki
+     * patterns; the first hatches after three standard attacks, clockwise from the south-easternmost, then one every six.
+     * Players may destroy eggs (65 hitpoints; a destroyed egg is skipped); damage on an egg carries over to its araxyte, and
+     * an egg that took more than the araxyte's 58 hitpoints just crumbles when its turn comes.
+     */
     static final class Araxxor extends ScriptedBoss {
         private final List<MobEntity> araxytes = new ArrayList<>();
-        private int eggTimer = 20;
+        private final List<MobEntity> eggs = new ArrayList<>();
+        private List<String> eggKinds = List.of();
+        private int nextEgg;
+        private int standardAttacks;
+
+        private void placeEggs(DataBossEntity boss) {
+            eggKinds = com.runecraft.osrs.content.bosses.BossMechanics.araxxorEggs(boss.getRandom().nextInt(3));
+            Vec3d c = homeVec();
+            for (int i = 0; i < eggKinds.size(); i++) {
+                // Clockwise from the south-east (Minecraft +x east, +z south: increasing angle turns clockwise from above).
+                double a = Math.PI / 4 + i * 2 * Math.PI / eggKinds.size();
+                eggs.add(BossFx.spawnMinion(boss, com.runecraft.osrs.content.bosses.BossMechanics.ARAXYTE_EGG,
+                        BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 9, c.z + Math.sin(a) * 9, c.y), null));
+            }
+        }
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
-            if (target == null || boss.phase() >= 0 || --eggTimer > 0) {
-                return;
+            if (eggs.isEmpty() && target != null) {
+                placeEggs(boss);
             }
-            eggTimer = 22;
+            for (int i = 0; i < eggs.size(); i++) {
+                MobEntity egg = eggs.get(i);
+                if (egg != null && !egg.isAlive()) {
+                    eggs.set(i, null);
+                    if (egg.isDead()) {
+                        java.util.Set<ServerPlayerEntity> near = new java.util.LinkedHashSet<>(BossFx.players(boss, 24));
+                        if (target != null) {
+                            near.add(target);
+                        }
+                        for (ServerPlayerEntity p : near) {
+                            CombatAchievementService.count(p, com.runecraft.osrs.content.bosses.BossMechanics.COUNT_ARAXXOR_EGGS, 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        /** Counts Araxxor's standard attacks (before it enrages) and hatches the next egg on the 3rd, 9th, 15th... */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+            if (boss.phase() < 0 && com.runecraft.osrs.content.bosses.BossMechanics.araxxorHatches(++standardAttacks)) {
+                hatch(boss, player);
+            }
+            return damage;
+        }
+
+        private void hatch(DataBossEntity boss, ServerPlayerEntity target) {
             araxytes.removeIf(m -> !m.isAlive());
-            if (araxytes.size() >= 3) {
+            for (int k = 0; k < eggs.size(); k++) {
+                int i = (nextEgg + k) % eggs.size();
+                MobEntity egg = eggs.get(i);
+                if (egg == null || !egg.isAlive()) {
+                    continue; // destroyed: the next egg in the rotation hatches instead
+                }
+                nextEgg = i + 1;
+                int eggDamage = (int) Math.round((egg.getMaxHealth() - egg.getHealth()) / Math.max(1f, egg.getMaxHealth())
+                        * com.runecraft.osrs.content.bosses.BossMechanics.ARAXYTE_EGG_HP);
+                int hp = com.runecraft.osrs.content.bosses.BossMechanics.araxyteHitpoints(eggDamage);
+                Vec3d at = egg.getPos();
+                egg.discard();
+                eggs.set(i, null);
+                if (hp <= 0) {
+                    BossFx.say(boss, "A damaged egg crumbles before it can hatch.");
+                    return;
+                }
+                String kind = eggKinds.get(i);
+                MobEntity m = BossFx.spawnMinion(boss, kind, at, target);
+                if (m != null) {
+                    m.setHealth(Math.max(1f, m.getMaxHealth() * hp / com.runecraft.osrs.content.bosses.BossMechanics.ARAXYTE_HP));
+                    araxytes.add(m);
+                    BossFx.say(boss, "An egg hatches into " + com.runecraft.util.Msg.article(kind.replace('_', ' ')) + "!");
+                }
                 return;
             }
-            String[] kinds = {"acidic_araxyte", "mirrorback_araxyte", "ruptura_araxyte"};
-            String kind = kinds[boss.getRandom().nextInt(kinds.length)];
-            MobEntity m = BossFx.spawnMinion(boss, kind, around(boss, homeVec(), 8), target);
-            if (m != null) {
-                araxytes.add(m);
-                BossFx.say(boss, "An egg hatches into " + com.runecraft.util.Msg.article(kind.replace('_', ' ')) + "!");
-            }
+        }
+
+        /** The eggs still standing (for the self-test). */
+        long eggsLeft() {
+            return eggs.stream().filter(e -> e != null && e.isAlive()).count();
         }
 
         @Override
@@ -842,6 +941,11 @@ final class SlayerScripts {
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
             araxytes.forEach(MobEntity::discard);
+            eggs.forEach(e -> {
+                if (e != null) {
+                    e.discard();
+                }
+            });
         }
     }
 }

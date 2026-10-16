@@ -148,7 +148,7 @@ public class GorillaEntity extends OsrsMonsterEntity {
         DemonicGorillas.Tracker t = tracker();
         lastCombatTick = ActionManager.gameTick();
         Style style = Style.of(type);
-        if (t.blocks(style)) {
+        if (t.blocks(style) && !com.runecraft.combat.SetEffectHooks.takeVeracHit(attacker)) {
             Msg.action(attacker, "The demonic gorilla's " + style.prayerName() + " blocks your attack.");
             return 0;
         }

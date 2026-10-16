@@ -47,7 +47,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /** Right-click behaviour for this module's items. */
-final class ItemHooks {
+public final class ItemHooks {
     private static final int EAT_DELAY = 3 * ActionManager.MC_TICKS_PER_GAME_TICK;
     /** NBT key on a weapon stack holding its poison damage (weapon poison). */
     static final String POISON_NBT = "RunecraftPoison";
@@ -359,6 +359,13 @@ final class ItemHooks {
         ServerNetworking.sync(player);
     }
 
+    /**
+     * Called when a player drinks a dose that cures disease (sanfew serum, relicym's balm): the Nightmare's parasites are
+     * weakened by it.
+     */
+    public static final java.util.List<java.util.function.Consumer<ServerPlayerEntity>> DISEASE_CURE =
+            new java.util.concurrent.CopyOnWriteArrayList<>();
+
     /** The effect of one dose of a module potion (also used by barbarian mixes). */
     private static void applyEffect(ServerPlayerEntity player, HerbloreData.Effect e, long now) {
         PlayerData data = Players.data(player);
@@ -370,8 +377,12 @@ final class ItemHooks {
             data.setPrayerPoints(Math.min(data.skills().level(Skill.PRAYER), data.prayerPoints() + prayer));
         }
         switch (e) {
-            case SANFEW -> PoisonService.cure(player, false, com.runecraft.osrs.Toxins.ANTIPOISON[0], now);
+            case SANFEW -> {
+                PoisonService.cure(player, false, com.runecraft.osrs.Toxins.ANTIPOISON[0], now);
+                DISEASE_CURE.forEach(l -> l.accept(player));
+            }
             case RELICYMS_BALM -> {
+                DISEASE_CURE.forEach(l -> l.accept(player));
                 // Cures disease: RuneCraft has none, so it clears the closest vanilla ailments.
                 player.removeStatusEffect(StatusEffects.WEAKNESS);
                 player.removeStatusEffect(StatusEffects.HUNGER);

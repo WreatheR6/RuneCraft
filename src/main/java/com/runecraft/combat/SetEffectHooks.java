@@ -18,8 +18,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class SetEffectHooks {
     /** Players whose next roll is a Verac's "Defiler" hit (ignores defence, +1 damage). */
     private static final Map<UUID, Boolean> VERAC_PROC = new ConcurrentHashMap<>();
+    /** The Minecraft tick of each player's latest Verac's hit, for targets whose prayers it pierces (demonic gorillas). */
+    private static final Map<UUID, Long> VERAC_HIT = new ConcurrentHashMap<>();
 
     private SetEffectHooks() {
+    }
+
+    /**
+     * True (once) when the hit being applied now is a Verac's "Defiler" hit, which also passes through protection prayers:
+     * demonic gorillas can't block it (OSRS Wiki), although they block special attacks.
+     */
+    public static boolean takeVeracHit(ServerPlayerEntity p) {
+        Long tick = p == null ? null : VERAC_HIT.remove(p.getUuid());
+        return tick != null && tick == com.runecraft.action.ActionManager.mcTick();
     }
 
     private static String worn(ServerPlayerEntity p, EquipmentSlot slot) {
@@ -52,6 +63,7 @@ public final class SetEffectHooks {
             @Override
             public int afterRoll(ServerPlayerEntity player, LivingEntity target, AttackType type, int damage) {
                 if (VERAC_PROC.remove(player.getUuid()) != null) {
+                    VERAC_HIT.put(player.getUuid(), com.runecraft.action.ActionManager.mcTick());
                     return damage + 1;
                 }
                 // Ahrim's set with the amulet of the damned: 25% of spells deal 30% more damage (osrs-dps-calc).
@@ -67,7 +79,10 @@ public final class SetEffectHooks {
                 // Karil's set with the amulet of the damned: 25% of shots hit a second time for half the damage.
                 if (dealt > 1 && type == AttackType.RANGED && barrows(player) == SetEffects.KARIL && damned(player)
                         && target.isAlive() && player.getRandom().nextDouble() < SetEffects.BARROWS_PROC_CHANCE) {
-                    CombatHandler.applyDamage(player, target, SetEffects.karilDamnedSecondHit(dealt));
+                    // The second hitsplat goes through the after-roll hooks and the target's own rules, and gives XP.
+                    int second = CombatHooks.afterRoll(player, target, AttackType.RANGED, SetEffects.karilDamnedSecondHit(dealt));
+                    int done = com.runecraft.content.systems.SysCombat.hit(player, target, AttackType.RANGED, second);
+                    CombatHandler.awardXp(player, com.runecraft.player.Players.data(player).style().forRanged(), done, false);
                 }
                 if (dealt > 0 && type.isMelee() && barrows(player) == SetEffects.GUTHAN
                         && player.getRandom().nextDouble() < SetEffects.BARROWS_PROC_CHANCE) {

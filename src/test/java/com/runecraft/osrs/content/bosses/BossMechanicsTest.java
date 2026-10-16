@@ -126,7 +126,8 @@ class BossMechanicsTest {
         }
         for (String id : new String[]{BossMechanics.YAMA_JUDGE, BossMechanics.YAMA_VOID_FLARE, BossMechanics.UNSTABLE_ICE,
                 BossMechanics.UR_MAGGOT_LARVA, BossMechanics.PHOSANI_SLEEPWALKER, BossMechanics.GROWTHLING,
-                BossMechanics.STRANGLER_SPORE}) {
+                BossMechanics.STRANGLER_SPORE, BossMechanics.ARAXYTE_EGG, "acidic_araxyte", "mirrorback_araxyte", "ruptura_araxyte",
+                "nightmare_parasite"}) {
             assertTrue(ids.contains(id), id);
         }
     }
@@ -250,5 +251,83 @@ class BossMechanicsTest {
     void maggotCarrion() {
         assertEquals(1, BossMechanics.MAGGOT_CARRION_HEAL);
         assertTrue(BossMechanics.SCRIPTED_ATTACKS.containsAll(Set.of("bleed", "strangle", "burn", "knockback")));
+    }
+
+    @Test
+    void nightmareParasites() {
+        assertEquals(18, BossMechanics.PARASITE_BURST_TICKS);
+        assertEquals(40, BossMechanics.parasiteHitpoints(true));
+        assertEquals(80, BossMechanics.parasiteHitpoints(false));
+        java.util.Random r = new java.util.Random(7);
+        for (int i = 0; i < 500; i++) {
+            int heal = BossMechanics.parasiteHeal(r);
+            assertTrue(heal >= 31 && heal <= 50, "heal " + heal);
+            assertTrue(BossMechanics.parasiteBurst(r, true) < BossMechanics.parasiteBurst(r, false));
+        }
+        assertEquals(100, BossMechanics.TERRIBLE_PARENT_MAX_HEAL);
+        assertTrue(BossMechanics.SCRIPTED_ATTACKS.contains("parasite_burst"));
+    }
+
+    @Test
+    void muspahShieldAndSpikes() {
+        assertEquals(75, BossMechanics.MUSPAH_SHIELD);
+        assertEquals(2, BossMechanics.MUSPAH_SHIELD_PER_ATTACK);
+        assertEquals(33, BossMechanics.MUSPAH_SAPPHIRE_DRAIN);
+        assertEquals(0.25, BossMechanics.MUSPAH_SAPPHIRE_CHANCE);
+        assertEquals(17, BossMechanics.muspahSpikeHeal(23)); // ~75%
+        assertEquals(6, BossMechanics.muspahCorruptionDrain(false)); // 1 + 2 + 3
+        assertEquals(12, BossMechanics.muspahCorruptionDrain(true)); // 2 + 4 + 6
+        assertFalse(BossMechanics.versatileDrainer(Set.of(BossMechanics.DRAIN_SMITE, BossMechanics.DRAIN_SAPPHIRE)));
+        assertTrue(BossMechanics.versatileDrainer(Set.of(BossMechanics.DRAIN_SMITE, BossMechanics.DRAIN_SAPPHIRE,
+                BossMechanics.DRAIN_CORRUPTION)));
+        // A 2x2 footprint at (10, 10): the ring is the 12 tiles around it.
+        Set<Long> spikes = new HashSet<>();
+        for (int x = 9; x <= 12; x++) {
+            for (int z = 9; z <= 12; z++) {
+                if (x == 9 || z == 9 || x == 12 || z == 12) {
+                    spikes.add(BossMechanics.tile(x, z));
+                }
+            }
+        }
+        assertEquals(12, spikes.size());
+        assertTrue(BossMechanics.muspahSurrounded(spikes, 10, 10, 2));
+        spikes.remove(BossMechanics.tile(12, 11));
+        assertFalse(BossMechanics.muspahSurrounded(spikes, 10, 10, 2));
+        assertEquals(BossMechanics.tile(-3, 5), BossMechanics.tile(-3, 5));
+        assertEquals(-3, (int) (BossMechanics.tile(-3, -5) >> 32));
+        assertEquals(-5, (int) BossMechanics.tile(-3, -5));
+        // Growth only spreads next to existing spikes, inside the radius, and eventually fills the area.
+        Set<Long> grow = new HashSet<>(Set.of(BossMechanics.tile(0, 0)));
+        java.util.Random r = new java.util.Random(1);
+        for (int wave = 0; wave < 40; wave++) {
+            for (long t : BossMechanics.muspahSpikeGrowth(grow, 0, 0, 3, 0.35, r)) {
+                assertTrue(Math.abs((int) (t >> 32)) <= 3 && Math.abs((int) t) <= 3);
+                grow.add(t);
+            }
+        }
+        assertEquals(49, grow.size());
+        assertTrue(BossMechanics.muspahSurrounded(grow, 0, 0, 1));
+    }
+
+    @Test
+    void araxxorEggs() {
+        java.util.List<String> eggs = BossMechanics.araxxorEggs(0);
+        assertEquals(9, eggs.size());
+        assertEquals(java.util.List.of("acidic_araxyte", "mirrorback_araxyte", "ruptura_araxyte"), eggs.subList(0, 3));
+        assertEquals(eggs.subList(0, 3), eggs.subList(6, 9)); // the last two sets copy the first
+        assertEquals("mirrorback_araxyte", BossMechanics.araxxorEggs(1).get(0));
+        assertEquals("ruptura_araxyte", BossMechanics.araxxorEggs(2).get(0));
+        assertFalse(BossMechanics.araxxorHatches(2));
+        assertTrue(BossMechanics.araxxorHatches(3));
+        assertFalse(BossMechanics.araxxorHatches(8));
+        assertTrue(BossMechanics.araxxorHatches(9));
+        assertTrue(BossMechanics.araxxorHatches(15));
+        assertEquals(58, BossMechanics.araxyteHitpoints(0));
+        assertEquals(18, BossMechanics.araxyteHitpoints(40));
+        assertEquals(1, BossMechanics.araxyteHitpoints(58));
+        assertEquals(0, BossMechanics.araxyteHitpoints(59)); // more than the araxyte has: the egg crumbles
+        MonsterDef egg = new BossesContent().monsters().stream().filter(m -> m.id.equals(BossMechanics.ARAXYTE_EGG)).findFirst()
+                .orElseThrow();
+        assertEquals(65, egg.hitpoints);
     }
 }

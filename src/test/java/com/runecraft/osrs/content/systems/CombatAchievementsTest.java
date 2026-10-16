@@ -100,7 +100,7 @@ class CombatAchievementsTest {
 
     @Test
     void awakenedAndDelveTasksAreTracked() {
-        assertEquals(593, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
+        assertEquals(598, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
         for (int id : new int[]{490, 499, 508, 517, 610, 611, 612, 616, 617, 618, 619, 621, 622, 623}) {
             assertTrue(CombatAchievements.task("ca_" + id).track() != Track.UNTRACKED, "ca_" + id);
         }
@@ -121,6 +121,36 @@ class CombatAchievementsTest {
         assertTrue(CombatAchievementRules.meets("onehand", m));
         m.weapons.add("scythe_of_vitur");
         assertFalse(CombatAchievementRules.meets("onehand", m));
+    }
+
+    @Test
+    void round30BossMechanicTasksAreTracked() {
+        for (int id : new int[]{186, 406, 481, 482, 564}) {
+            assertTrue(CombatAchievements.task("ca_" + id).track() != Track.UNTRACKED, "ca_" + id);
+        }
+        // Terrible Parent: solo, parasites healed at most 100.
+        CombatAchievementRules.Metrics m = new CombatAchievementRules.Metrics();
+        m.count(com.runecraft.osrs.content.bosses.BossMechanics.COUNT_NIGHTMARE_PARASITE_HEAL, 100);
+        CombatAchievementRules.Metrics heavy = new CombatAchievementRules.Metrics();
+        heavy.count(com.runecraft.osrs.content.bosses.BossMechanics.COUNT_NIGHTMARE_PARASITE_HEAL, 101);
+        assertFalse(CombatAchievementRules.meets(CombatAchievements.task("ca_186").rule(), heavy));
+        // Relaxxor: six eggs destroyed.
+        CombatAchievementRules.Metrics eggs = new CombatAchievementRules.Metrics();
+        eggs.count(com.runecraft.osrs.content.bosses.BossMechanics.COUNT_ARAXXOR_EGGS, 5);
+        assertFalse(CombatAchievementRules.meets(CombatAchievements.task("ca_564").rule(), eggs));
+        eggs.count(com.runecraft.osrs.content.bosses.BossMechanics.COUNT_ARAXXOR_EGGS, 1);
+        assertTrue(CombatAchievementRules.meets(CombatAchievements.task("ca_564").rule(), eggs));
+        // Versatile Drainer / Space is Tight / Crush Hour come from the scripts' flags.
+        CombatAchievementRules.Metrics f = new CombatAchievementRules.Metrics();
+        assertFalse(CombatAchievementRules.meets(CombatAchievements.task("ca_482").rule(), f));
+        assertFalse(CombatAchievementRules.meets(CombatAchievements.task("ca_481").rule(), f));
+        assertTrue(CombatAchievementRules.meets(CombatAchievements.task("ca_406").rule(), f));
+        f.flags.add(com.runecraft.osrs.content.bosses.BossMechanics.FLAG_MUSPAH_THREE_DRAINS);
+        f.flags.add(com.runecraft.osrs.content.bosses.BossMechanics.FLAG_MUSPAH_SURROUNDED);
+        f.flags.add(com.runecraft.osrs.content.bosses.BossMechanics.FLAG_PHOSANI_MINION_SURVIVED);
+        assertTrue(CombatAchievementRules.meets(CombatAchievements.task("ca_482").rule(), f));
+        assertTrue(CombatAchievementRules.meets(CombatAchievements.task("ca_481").rule(), f));
+        assertFalse(CombatAchievementRules.meets(CombatAchievements.task("ca_406").rule(), f));
     }
 
     @Test

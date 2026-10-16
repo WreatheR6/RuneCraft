@@ -83,7 +83,12 @@ public final class SpecialAttacks {
         /** Soulreaper axe: consumes every soul stack (+12% accuracy and +6% min and max hit each). */
         BEHEAD,
         /** A hit dealing at least {@code param}% of the max hit (Vesta's longsword's Feint, Statius's Smash). */
-        MIN_DAMAGE
+        MIN_DAMAGE,
+        /**
+         * Rod of Ivandis: traps a vampyre juvenile or juvinate below half health so it can't retaliate for {@code param}
+         * ticks; every use costs one of the rod's charges.
+         */
+        RETAINER
     }
 
     public record Spec(String itemId, String name, int cost, Style style, double accuracy, double damage, Effect effect,
@@ -139,6 +144,9 @@ public final class SpecialAttacks {
         alias("crystal_halberd_attuned", "crystal_halberd");
         alias("crystal_halberd_perfected", "crystal_halberd");
         melee("voidwaker", "Disrupt", 50, 1.0, 1.0, Effect.VOIDWAKER, 0, "A guaranteed magic hit of 50-150% of your max hit.");
+        // Rod of Ivandis (OSRS Wiki): Retainer, 10% energy, 30 seconds; one of its 10 charges per special attack, used or not.
+        melee("rod_of_ivandis", "Retainer", 10, 1.0, 0.0, Effect.RETAINER, 50 /* RETAINER_TICKS */,
+                "Traps a vampyre juvenile or juvinate below half health for 30 seconds; uses a charge.");
         melee("arclight", "Weaken", 50, 1.0, 1.0, Effect.WEAKEN, 5, "Drains Attack, Strength and Defence by 5% (10% vs demons).");
         melee("darklight", "Weaken", 50, 1.0, 1.0, Effect.WEAKEN, 5, "Drains Attack, Strength and Defence by 5% (10% vs demons).");
         melee("emberlight", "Weaken", 50, 1.0, 1.0, Effect.WEAKEN, 5, "Drains Attack, Strength and Defence by 5% (10% vs demons).");
@@ -214,6 +222,25 @@ public final class SpecialAttacks {
     }
 
     private SpecialAttacks() {
+    }
+
+    /** Retainer holds its vampyre for 30 seconds (50 game ticks). */
+    public static final int RETAINER_TICKS = 50;
+
+    /** Creatures the rod of Ivandis' Retainer works on: vampyre juveniles and juvinates. */
+    public static boolean retainerTarget(String creatureId) {
+        return creatureId != null && (creatureId.contains("vampyre_juvenile") || creatureId.contains("vampyre_juvinate"));
+    }
+
+    /** Why Retainer fails on a target (the OSRS messages), or null when it takes hold. */
+    public static String retainerFailure(String creatureId, double healthFraction) {
+        if (!retainerTarget(creatureId)) {
+            return "This spell can only be used on vampyre juveniles or vampyre juvinates.";
+        }
+        if (healthFraction >= 0.5) {
+            return "This spell only works against vampyres with less than half of their health remaining.";
+        }
+        return null;
     }
 
     private static void melee(String id, String name, int cost, double acc, double dmg, Effect e, int param, String desc) {
