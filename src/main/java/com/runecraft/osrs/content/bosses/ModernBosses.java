@@ -156,7 +156,8 @@ public final class ModernBosses {
                 // Phase 3: Yama attacks every 7 ticks with higher defences (wiki "Phase 3" stat line).
                 .phase(33, "Yama: Enough! You will burn!", 1.0, false, YAMA_FIRE, YAMA_SHADOW, YAMA_SLASH, YAMA_METEOR,
                         YAMA_SHADOW_CRASH, YAMA_GLYPH)
-                .minion("yama_void_flare", 2)
+                // No .minion(): the script spawns and tracks its own void flares (a BossDef minion would make the engine's
+                // idle SUMMON attack spawn untracked ones).
                 // Unique table 1/120 per solo kill: soulflame horn 2/5, each oathplate piece 1/5. Pet Yami 1/2,500.
                 .drops(Drop.of("soulflame_horn", 1, 1, 300), Drop.of("oathplate_helm", 1, 1, 600), Drop.of("oathplate_chest", 1, 1, 600),
                         Drop.of("oathplate_legs", 1, 1, 600), Drop.of("dossier", 1, 1, 17),
