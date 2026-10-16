@@ -35,6 +35,28 @@ public final class QuestsState extends PersistentState {
         return get(player.getServer());
     }
 
+    private record Saved(Set<String> flags, Map<String, String> gear, Map<String, Integer> kills) {
+    }
+
+    /** Self-test hook ({@code com.runecraft.selftest}): an opaque copy of one player's flags, gear and kill counters. */
+    public Object selfTestSave(UUID player) {
+        return new Saved(new HashSet<>(flags.getOrDefault(player, Set.of())), new LinkedHashMap<>(gear.getOrDefault(player, Map.of())),
+                new HashMap<>(kills.getOrDefault(player, Map.of())));
+    }
+
+    /** Self-test hook: puts back a {@link #selfTestSave} copy; null clears the player's flags, gear and kill counters. */
+    public void selfTestRestore(UUID player, Object saved) {
+        flags.remove(player);
+        gear.remove(player);
+        kills.remove(player);
+        if (saved instanceof Saved s) {
+            flags.put(player, new HashSet<>(s.flags()));
+            gear.put(player, new LinkedHashMap<>(s.gear()));
+            kills.put(player, new HashMap<>(s.kills()));
+        }
+        markDirty();
+    }
+
     public boolean hasFlag(UUID player, String flag) {
         return flags.getOrDefault(player, Set.of()).contains(flag);
     }

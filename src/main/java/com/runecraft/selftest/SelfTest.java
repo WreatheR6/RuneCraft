@@ -29,9 +29,10 @@ import java.util.Locale;
  * <p>{@code /rc selftest real [filter...]} runs the checks against the player who typed the command instead of a fake
  * player: a real, online player is in the server's player list, so minigame sessions, raid rooms, boss targeting and
  * area triggers see it. Its RuneCraft data, inventory, position and game mode are saved first and restored at the end;
- * meanwhile it is in survival mode (bosses ignore creative players), invulnerable and healed before every check. Meant
- * for a throwaway test world (tools/smoke_client.sh): other per-module state (quest flags, slayer, minigame points)
- * the checks touch is not restored. Several filter words (separated by spaces or commas) match a check containing any of them.
+ * meanwhile it is in survival mode (bosses ignore creative players), invulnerable and healed before every check. The
+ * modules' per-player state (systems, Slayer profile, minigame points and flags, quest flags) is reset before every
+ * check and put back at the end too; other module state is not, so it is meant for a throwaway test world
+ * (tools/smoke_client.sh). Several filter words (separated by spaces or commas) match a check containing any of them.
  * Everything is logged at INFO so a failing check never trips the smoke test's "RuneCraft logged errors" rule.
  */
 public final class SelfTest {

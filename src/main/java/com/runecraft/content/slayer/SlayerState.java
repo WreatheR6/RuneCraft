@@ -102,6 +102,20 @@ public final class SlayerState extends PersistentState {
         return profiles.computeIfAbsent(uuid, u -> new Profile());
     }
 
+    /** Self-test hook ({@code com.runecraft.selftest}): an opaque copy of one player's profile, or null if there is none. */
+    public Object selfTestSave(UUID uuid) {
+        Profile p = profiles.get(uuid);
+        return p == null ? null : p.toNbt();
+    }
+
+    /** Self-test hook: puts back a {@link #selfTestSave} copy; null drops the profile (a fresh one is made on use). */
+    public void selfTestRestore(UUID uuid, Object saved) {
+        profiles.remove(uuid);
+        if (saved instanceof NbtCompound n) {
+            profiles.put(uuid, Profile.fromNbt(n.copy()));
+        }
+    }
+
     /** Profiles change on every task kill; always save. */
     @Override
     public boolean isDirty() {

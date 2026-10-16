@@ -1,8 +1,14 @@
 package com.runecraft.selftest;
 
 import com.runecraft.action.ActionManager;
+import com.runecraft.content.minigames.MinigameData;
 import com.runecraft.content.minigames.MinigameManager;
 import com.runecraft.content.minigames.MinigameSession;
+import com.runecraft.content.quests.QuestsState;
+import com.runecraft.content.slayer.SlayerState;
+import com.runecraft.content.systems.SysNet;
+import com.runecraft.content.systems.SysState;
+import com.runecraft.network.ServerNetworking;
 import com.runecraft.content.raids.RaidInstance;
 import com.runecraft.content.raids.RaidManager;
 import com.runecraft.osrs.Experience;
@@ -51,6 +57,10 @@ public final class TestContext {
     private double savedZ;
     private boolean savedCreative;
     private boolean savedSpectator;
+    /** Real mode: the player's per-module world-save state (systems, slayer, minigames, quests), see {@link #moduleStates}. */
+    private final List<Object> savedModuleState = new ArrayList<>();
+    /** Blocks the checks placed (skill nodes, stations, patches), cleared after every check. */
+    private final java.util.Set<BlockPos> placed = new java.util.LinkedHashSet<>();
 
     TestContext(MinecraftServer server, ServerWorld world, ServerPlayerEntity real) {
         this.server = server;
@@ -82,6 +92,10 @@ public final class TestContext {
         savedZ = player.getZ();
         savedCreative = player.isCreative();
         savedSpectator = player.isSpectator();
+        savedModuleState.clear();
+        for (ModuleState s : moduleStates()) {
+            savedModuleState.add(s.save(player.getUuid()));
+        }
         // Bosses and raid rooms ignore creative and spectator players.
         if (savedCreative || savedSpectator) {
             command("gamemode survival");
@@ -97,6 +111,10 @@ public final class TestContext {
             return;
         }
         Players.data(player).fromNbt(savedData);
+        List<ModuleState> states = moduleStates();
+        for (int i = 0; i < states.size() && i < savedModuleState.size(); i++) {
+            states.get(i).restore(player.getUuid(), savedModuleState.get(i));
+        }
         XpService.updateMaxHealth(player);
         player.setHealth(player.getMaxHealth());
         player.getInventory().clear();
@@ -110,6 +128,64 @@ public final class TestContext {
             command("gamemode spectator");
         }
         player.teleport(savedWorld, savedX, savedY, savedZ, player.getYaw(), player.getPitch());
+        ServerNetworking.sync(player);
+        SysNet.sendState(player);
+    }
+
+    /** One module's per-player world-save state: an opaque save, and a restore (null = drop it, so it starts fresh). */
+    private interface ModuleState {
+        Object save(java.util.UUID player);
+
+        void restore(java.util.UUID player, Object saved);
+    }
+
+    /**
+     * Per-player state the modules keep outside PlayerData: worn extra slots, spellbook, diaries and Combat Achievements
+     * (systems), the Slayer profile, minigame points and flags, quest flags and kill counters. Reset before every check so
+     * checks don't leak into each other, and put back for a real player at the end.
+     */
+    private List<ModuleState> moduleStates() {
+        SysState sys = SysState.get(server);
+        SlayerState slayer = SlayerState.of(server);
+        MinigameData minigames = MinigameData.get(server);
+        QuestsState quests = QuestsState.get(server);
+        return List.of(
+                new ModuleState() {
+                    public Object save(java.util.UUID p) {
+                        return sys.selfTestSave(p);
+                    }
+
+                    public void restore(java.util.UUID p, Object saved) {
+                        sys.selfTestRestore(p, saved);
+                    }
+                },
+                new ModuleState() {
+                    public Object save(java.util.UUID p) {
+                        return slayer.selfTestSave(p);
+                    }
+
+                    public void restore(java.util.UUID p, Object saved) {
+                        slayer.selfTestRestore(p, saved);
+                    }
+                },
+                new ModuleState() {
+                    public Object save(java.util.UUID p) {
+                        return minigames.selfTestSave(p);
+                    }
+
+                    public void restore(java.util.UUID p, Object saved) {
+                        minigames.selfTestRestore(p, saved);
+                    }
+                },
+                new ModuleState() {
+                    public Object save(java.util.UUID p) {
+                        return quests.selfTestSave(p);
+                    }
+
+                    public void restore(java.util.UUID p, Object saved) {
+                        quests.selfTestRestore(p, saved);
+                    }
+                });
     }
 
     /** Runs a command as the (real) player with operator rights. */
@@ -149,6 +225,9 @@ public final class TestContext {
             RaidManager.selfTestClose(raid);
         }
         Players.state(server).remove(player.getUuid());
+        for (ModuleState s : moduleStates()) {
+            s.restore(player.getUuid(), null);
+        }
         PlayerData data = Players.data(player);
         for (Skill s : Skill.values()) {
             data.skills().setXpTenths(s, Experience.xpForLevel(99) * 10);
@@ -176,9 +255,30 @@ public final class TestContext {
         }
     }
 
-    /** Removes every non-player entity around the platform (bosses, minions, drops, hazards). */
+    /**
+     * Places a block for a check (a tree, rock, station or patch next to the platform); it is removed again after the
+     * check. Returns the position.
+     */
+    public BlockPos place(BlockPos pos, BlockState state) {
+        placed.add(pos.toImmutable());
+        world.setBlockState(pos, state, Block.NOTIFY_ALL);
+        return pos;
+    }
+
+    /** Records a block a check made the game place (a lit fire, a laid trap) so it is removed after the check. */
+    public void track(BlockPos pos) {
+        placed.add(pos.toImmutable());
+    }
+
+    /** Removes every non-player entity around the platform (bosses, minions, drops, hazards) and the blocks checks placed. */
     void cleanUp() {
         ActionManager.cancel(player);
+        for (BlockPos pos : placed) {
+            world.setBlockState(pos, pos.getY() == PLATFORM.getY() - 1 && Math.abs(pos.getX() - PLATFORM.getX()) <= RADIUS
+                    && Math.abs(pos.getZ() - PLATFORM.getZ()) <= RADIUS ? Blocks.SMOOTH_STONE.getDefaultState()
+                    : Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
+        }
+        placed.clear();
         Box box = new Box(PLATFORM.add(-48, -60, -48), PLATFORM.add(48, 60, 48));
         for (Entity e : world.getEntitiesByClass(Entity.class, box, e -> !(e instanceof PlayerEntity))) {
             e.discard();

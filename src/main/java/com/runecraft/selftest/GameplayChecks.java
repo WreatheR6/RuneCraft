@@ -30,6 +30,7 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.quests.QuestBook;
 import com.runecraft.osrs.content.quests.QuestSpec;
 import com.runecraft.osrs.content.quests.QuestSpec.Trigger;
+import com.runecraft.osrs.content.quests.QuestWalk;
 import com.runecraft.osrs.content.raids.RaidType;
 import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.osrs.content.systems.Teleports;
@@ -241,23 +242,6 @@ final class GameplayChecks {
 
     // ------------------------------------------------------------------ quests
 
-    /** The trigger that moves a stage on: the first non-drop one, else a drop that advances. */
-    private static Trigger advancing(QuestSpec.Stage stage) {
-        Trigger drop = null;
-        for (Trigger t : stage.triggers) {
-            if (t.next == t.stage) {
-                continue;
-            }
-            if (t.kind != Trigger.Kind.DROP) {
-                return t;
-            }
-            if (drop == null) {
-                drop = t;
-            }
-        }
-        return drop;
-    }
-
     /** Hands the player whatever a trigger needs and removes what would make it skip. */
     private void prepare(Trigger t) {
         t.need.forEach((item, n) -> Inv.give(p(), item, n));
@@ -271,6 +255,17 @@ final class GameplayChecks {
         if (t.kind == Trigger.Kind.DROP) {
             t.give.keySet().forEach(item -> Inv.remove(p(), item, 10_000));
         }
+    }
+
+    /** Why a directly fired trigger did nothing: the items it takes that the player still lacks. */
+    private String whyNot(Trigger t) {
+        List<String> missing = new ArrayList<>();
+        t.take.forEach((item, n) -> {
+            if (!Inv.has(p(), item, n)) {
+                missing.add(n + " x " + item + (!item.equals(Inv.COINS) && Inv.stack(item, 1).isEmpty() ? " (not a registered item)" : ""));
+            }
+        });
+        return missing.isEmpty() ? "" : ": its take failed, missing " + String.join(", ", missing);
     }
 
     /**
@@ -315,13 +310,13 @@ final class GameplayChecks {
             int steps = 0;
             int forced = 0;
             String stuck = null;
-            for (int guard = 0; guard < spec.stages.size() * 3 + 3 && !data.questComplete(q); guard++) {
+            for (int guard = 0; guard < QuestWalk.maxSteps(spec) && !data.questComplete(q); guard++) {
                 int s = data.questStage(q);
                 if (s < 0 || s >= spec.stages.size()) {
                     stuck = "stage " + s + " is outside the " + spec.stages.size() + " stages";
                     break;
                 }
-                Trigger t = advancing(spec.stages.get(s));
+                Trigger t = QuestWalk.advancing(spec.stages.get(s));
                 if (t == null) {
                     stuck = "stage " + s + " has no trigger that moves it on";
                     break;
@@ -329,7 +324,15 @@ final class GameplayChecks {
                 prepare(t);
                 boolean handled = true;
                 switch (t.kind) {
-                    case TALK -> QuestInterpreter.selfTestTalk(p(), t.target);
+                    case TALK -> {
+                        // A real player talks again after a once-only side dialogue (stay + flag) answered first.
+                        for (int talk = 0; talk < 3 && data.questStage(q) == s && !data.questComplete(q); talk++) {
+                            if (talk > 0) {
+                                prepare(t);
+                            }
+                            QuestInterpreter.selfTestTalk(p(), t.target);
+                        }
+                    }
                     case KILL -> handled = kill(t.target, t.count);
                     default -> QuestInterpreter.selfTestFire(p(), spec, t);
                 }
@@ -338,15 +341,26 @@ final class GameplayChecks {
                     prepare(t);
                     QuestInterpreter.selfTestFire(p(), spec, t);
                     if (data.questStage(q) == s && !data.questComplete(q)) {
-                        stuck = "stuck at stage " + s + " (" + t.kind.name().toLowerCase(Locale.ROOT) + " " + t.target + ")";
+                        stuck = "stage " + s + "/" + spec.stages.size() + " (" + QuestWalk.describe(t) + ") did not advance" + whyNot(t);
                         break;
                     }
                     forced++;
                 }
                 steps++;
             }
-            walk = data.questComplete(q) ? "walked " + steps + " steps" + (forced > 0 ? " (" + forced + " fired directly)" : "")
-                    : "walked " + steps + "/" + spec.stages.size() + " then forced complete" + (stuck == null ? "" : ": " + stuck);
+            if (stuck == null && !data.questComplete(q)) {
+                stuck = "no completion after " + steps + " triggers (now at stage " + data.questStage(q) + ")";
+            }
+            if (stuck != null) {
+                String allowed = QuestWalk.UNWALKABLE.get(id);
+                if (allowed == null) {
+                    throw failure("quest walk stuck after " + steps + " steps: " + stuck
+                            + " (fix the quest, or list it in QuestWalk.UNWALKABLE with the reason)");
+                }
+                walk = "walked " + steps + "/" + spec.stages.size() + " then forced complete (unwalkable: " + allowed + "; " + stuck + ")";
+            } else {
+                walk = "walked " + steps + " steps" + (forced > 0 ? " (" + forced + " fired directly)" : "");
+            }
         }
         boolean natural = data.questComplete(q);
         if (!natural) {

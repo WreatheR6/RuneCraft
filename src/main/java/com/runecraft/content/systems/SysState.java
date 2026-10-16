@@ -273,6 +273,22 @@ public final class SysState extends PersistentState {
         return players.computeIfAbsent(uuid, u -> new SysPlayer());
     }
 
+    /** Self-test hook ({@code com.runecraft.selftest}): an opaque copy of one player's state, or null if there is none. */
+    public Object selfTestSave(UUID uuid) {
+        SysPlayer p = players.get(uuid);
+        return p == null ? null : p.toNbt();
+    }
+
+    /** Self-test hook: puts back a {@link #selfTestSave} copy; null drops the player's state (a fresh one is made on use). */
+    public void selfTestRestore(UUID uuid, Object saved) {
+        players.remove(uuid);
+        if (saved instanceof NbtCompound n) {
+            SysPlayer p = new SysPlayer();
+            p.fromNbt(n.copy());
+            players.put(uuid, p);
+        }
+    }
+
     public GrandExchange ge() {
         return ge;
     }

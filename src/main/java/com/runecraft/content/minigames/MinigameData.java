@@ -34,6 +34,28 @@ public final class MinigameData extends PersistentState {
         return get(player.getServer());
     }
 
+    private record Saved(Map<String, Integer> points, Map<String, Integer> stats, Set<String> flags) {
+    }
+
+    /** Self-test hook ({@code com.runecraft.selftest}): an opaque copy of one player's points, stats and flags. */
+    public Object selfTestSave(UUID player) {
+        return new Saved(new HashMap<>(points.getOrDefault(player, Map.of())), new HashMap<>(stats.getOrDefault(player, Map.of())),
+                new HashSet<>(flags.getOrDefault(player, Set.of())));
+    }
+
+    /** Self-test hook: puts back a {@link #selfTestSave} copy; null clears the player's points, stats and flags. */
+    public void selfTestRestore(UUID player, Object saved) {
+        points.remove(player);
+        stats.remove(player);
+        flags.remove(player);
+        if (saved instanceof Saved s) {
+            points.put(player, new HashMap<>(s.points()));
+            stats.put(player, new HashMap<>(s.stats()));
+            flags.put(player, new HashSet<>(s.flags()));
+        }
+        markDirty();
+    }
+
     /** Points balance for a key such as "pest_control" (no "pts:" prefix). */
     public int points(UUID player, String key) {
         return points.getOrDefault(player, Map.of()).getOrDefault(key, 0);
