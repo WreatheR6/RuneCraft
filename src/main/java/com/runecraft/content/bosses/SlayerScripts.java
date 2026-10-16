@@ -8,6 +8,7 @@ import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
+import com.runecraft.osrs.content.bosses.BossMechanics;
 import com.runecraft.osrs.content.bosses.SlayerBosses;
 import com.runecraft.osrs.content.bosses.SlayerBosses.HydraPhase;
 import com.runecraft.util.Inv;
@@ -224,15 +225,23 @@ final class SlayerScripts {
     }
 
     /**
-     * Abyssal Sire. Phase 1: asleep, protected by four respiratory systems - destroy them to wake it.
-     * Phase 2: tendril swipes, slams and miasma pools while spawns crawl out. Phase 3 (below 50%):
-     * spawns grow into scions and the Sire swells up and explodes - get far away.
+     * Abyssal Sire. Phase 1: it sleeps until attacked; awake, its six tentacles lash anyone near them (up to 30) and shield
+     * the four respiratory systems (0-3 damage) while it throws miasma pools and spawns. Disorient it - 75 ranged/magic
+     * damage or a shadow spell (Rush 25%, Burst 50%, Blitz 75%, Barrage always) - and for 30 seconds (the tentacles wake
+     * after 27) the systems are open; damage to the Sire itself in this phase only counts towards disorienting it. With all
+     * four systems gone it awakens in a fury (phase 2: tendril swipes, slams and miasma); below 50% (phase 3) its
+     * tentacles return, spawns grow into scions and it swells up and explodes - get far away.
      */
     static final class Sire extends ScriptedBoss {
         private final List<MobEntity> systems = new ArrayList<>();
+        private final List<Vec3d> tentacles = new ArrayList<>();
         private int stage = 1;
+        private boolean awake;
+        private int disoriented;
+        private int disorientDamage;
         private int spawnTimer = 10;
         private int explodeTimer = -1;
+        private int miasmaTimer = 6;
 
         @Override
         public void onSpawn(DataBossEntity boss) {
@@ -240,12 +249,47 @@ final class SlayerScripts {
             for (int i = 0; i < 4; i++) {
                 double a = Math.PI / 4 + Math.PI / 2 * i;
                 MobEntity m = BossFx.spawnMinion(boss, "respiratory_system",
-                        BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 5, c.z + Math.sin(a) * 5, c.y), null);
+                        BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 7, c.z + Math.sin(a) * 7, c.y), null);
                 if (m != null) {
                     systems.add(m);
+                    // Protected by the tentacles while the Sire is awake and not disoriented; open (always hitting) otherwise.
+                    MinionRules.set(m, new MinionRules.Rule() {
+                        @Override
+                        public double accuracy(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type) {
+                            return systemsOpen() ? 10.0 : 1.0; // approx: OSRS deals at least half the max hit when open
+                        }
+
+                        @Override
+                        public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type, int d) {
+                            if (systemsOpen()) {
+                                return d;
+                            }
+                            if (d > 0) {
+                                Msg.action(p, "The Sire's tentacles shield the respiratory system!");
+                            }
+                            return Math.min(d, p.getRandom().nextInt(BossMechanics.SIRE_PROTECTED_MAX + 1));
+                        }
+                    });
                 }
             }
-            BossFx.say(boss, "The Abyssal Sire slumbers. Destroy its respiratory systems!");
+            for (int i = 0; i < 6; i++) {
+                double a = Math.PI / 3 * i + Math.PI / 6;
+                tentacles.add(BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 4.5, c.z + Math.sin(a) * 4.5, c.y));
+            }
+            BossFx.say(boss, "The Abyssal Sire slumbers, guarded by its tentacles and respiratory systems.");
+        }
+
+        /** The respiratory systems can only be hurt while the Sire is disoriented. */
+        private boolean systemsOpen() {
+            return disoriented > 0;
+        }
+
+        /** The tentacles lash out while the Sire is awake in phase 1 (from 27 s into a disorientation) and again in phase 3. */
+        private boolean tentaclesActive() {
+            if (stage == 1) {
+                return awake && disoriented <= BossMechanics.SIRE_DISORIENT_TICKS - BossMechanics.SIRE_TENTACLE_WAKE_TICKS;
+            }
+            return stage >= 3;
         }
 
         @Override
@@ -255,17 +299,46 @@ final class SlayerScripts {
 
         @Override
         protected boolean wantsMelee(DataBossEntity boss, ServerPlayerEntity target) {
-            return stage >= 2;
+            return stage == 2;
         }
 
         @Override
         public boolean isVulnerable(DataBossEntity boss) {
-            return stage >= 2;
+            return true;
         }
 
         @Override
         protected boolean canAttack(DataBossEntity boss) {
             return stage >= 2 && explodeTimer < 0;
+        }
+
+        @Override
+        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            if (stage != 1) {
+                return damage;
+            }
+            if (!awake) {
+                awake = true;
+                BossFx.say(boss, "The Abyssal Sire stirs and its tentacles awaken!");
+                BossFx.sound(boss, SoundEvents.ENTITY_WITHER_AMBIENT, 0.6f);
+            }
+            if (attacker != null && disoriented <= 0) {
+                boolean stun = false;
+                int chance = type == AttackType.MAGIC ? BossMechanics.sireStunChance(MinionRules.spell(attacker)) : 0;
+                if (chance > 0 && boss.getRandom().nextInt(100) < chance) {
+                    stun = true;
+                } else if (!type.isMelee()) {
+                    disorientDamage += damage;
+                    stun = disorientDamage >= BossMechanics.SIRE_DISORIENT_DAMAGE;
+                }
+                if (stun) {
+                    disorientDamage = 0;
+                    disoriented = BossMechanics.SIRE_DISORIENT_TICKS;
+                    CombatAchievementService.count(attacker, BossMechanics.COUNT_SIRE_STUN, 1);
+                    BossFx.say(boss, "The Abyssal Sire is disoriented! Its respiratory systems are exposed.");
+                }
+            }
+            return 0; // phase 1 damage only counts towards disorienting it
         }
 
         @Override
@@ -277,14 +350,62 @@ final class SlayerScripts {
             return r < 4 ? SlayerBosses.SIRE_TENDRIL : r < 6 ? SlayerBosses.SIRE_SLAM : SlayerBosses.SIRE_MIASMA;
         }
 
+        private void tickTentacles(DataBossEntity boss) {
+            boolean active = tentaclesActive();
+            for (Vec3d t : tentacles) {
+                BossFx.world(boss).spawnParticles(active ? ParticleTypes.SQUID_INK : ParticleTypes.SMOKE, t.x, t.y + 1.0, t.z,
+                        active ? 3 : 1, 0.2, 0.6, 0.2, 0);
+            }
+            if (!active || now % 4 != 0) {
+                return;
+            }
+            for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
+                for (Vec3d t : tentacles) {
+                    double dx = p.getX() - t.x;
+                    double dz = p.getZ() - t.z;
+                    if (dx * dx + dz * dz <= 2.5 * 2.5) {
+                        int roll = boss.getRandom().nextInt(BossMechanics.SIRE_TENTACLE_MAX + 1);
+                        if (BossFx.protects(p, Prayer.PROTECT_FROM_MELEE)) {
+                            roll = roll * 3 / 4; // approx: "reduced slightly"
+                        }
+                        com.runecraft.combat.CombatHooks.nameAttack("tentacle", AttackType.CRUSH);
+                        CombatHandler.applyDamage(boss, p, roll);
+                        break;
+                    }
+                }
+            }
+        }
+
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+            tickTentacles(boss);
             if (stage == 1) {
-                BossFx.burst(boss, ParticleTypes.SQUID_INK, 3, 1.0);
+                if (disoriented > 0) {
+                    disoriented--;
+                    BossFx.burst(boss, ParticleTypes.ENCHANTED_HIT, 4, 1.0);
+                    if (disoriented == 0) {
+                        BossFx.say(boss, "The Abyssal Sire regains its senses.");
+                    }
+                } else {
+                    BossFx.burst(boss, ParticleTypes.SQUID_INK, 3, 1.0);
+                }
                 if (systems.stream().noneMatch(MobEntity::isAlive)) {
                     stage = 2;
+                    disoriented = 0;
                     BossFx.say(boss, "The Abyssal Sire awakens in a fury!");
                     BossFx.sound(boss, SoundEvents.ENTITY_WITHER_SPAWN, 0.6f);
+                    return;
+                }
+                // Awake and not disoriented: miasma pools under the player and spawns.
+                if (awake && disoriented <= 0 && target != null) {
+                    if (--miasmaTimer <= 0) {
+                        miasmaTimer = 8;
+                        perform(boss, target, SlayerBosses.SIRE_MIASMA);
+                    }
+                    if (--spawnTimer <= 0) {
+                        spawnTimer = 15;
+                        BossFx.spawnMinion(boss, "abyssal_spawn", around(boss, boss.getPos(), 3), target);
+                    }
                 }
                 return;
             }
@@ -294,7 +415,7 @@ final class SlayerScripts {
             if (stage == 2 && percent(boss) <= 50) {
                 stage = 3;
                 explodeTimer = 8;
-                BossFx.say(boss, "The Abyssal Sire begins to swell... RUN!");
+                BossFx.say(boss, "The Abyssal Sire begins to swell... RUN! Its tentacles thrash again!");
             }
             if (explodeTimer > 0) {
                 explodeTimer--;

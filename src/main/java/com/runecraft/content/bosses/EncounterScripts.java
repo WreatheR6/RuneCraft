@@ -2,9 +2,11 @@ package com.runecraft.content.bosses;
 
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.combat.CombatHandler;
+import com.runecraft.combat.CombatHooks;
 import com.runecraft.content.systems.CombatAchievementService;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
+import com.runecraft.osrs.content.bosses.BossMechanics;
 import com.runecraft.osrs.content.bosses.Dt2Bosses;
 import com.runecraft.osrs.content.bosses.MinigameBosses;
 import com.runecraft.osrs.content.bosses.VarlamoreBosses;
@@ -17,6 +19,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -176,7 +179,9 @@ final class EncounterScripts {
     /**
      * The Nightmare / Phosani's Nightmare: shielded at the start of each phase until four totems are
      * charged (destroyed); husks bind you until killed, parasites hatch from players, and the curse
-     * switches off protection prayers.
+     * switches off protection prayers. Phosani's Nightmare summons sleepwalkers at the end of each phase (2, 3, then 4):
+     * every one that reaches her strengthens her power blast (5 + 144 x unkilled / total); then, in her desperation
+     * phase, sleepwalkers keep coming and each one that arrives deals 15.
      */
     static final class Nightmare extends ScriptedBoss {
         private final List<MobEntity> totems = new ArrayList<>();
@@ -185,6 +190,22 @@ final class EncounterScripts {
         private int parasiteIn = -1;
         private ServerPlayerEntity host;
         private int curseTimer = 40;
+        private final boolean phosani;
+        private final List<MobEntity> walkers = new ArrayList<>();
+        private long walkersMoveAt;
+        private int setTotal;
+        private int setReached;
+        private boolean finalSet;
+        private boolean desperate;
+        private int walkerTimer;
+
+        Nightmare() {
+            this(false);
+        }
+
+        Nightmare(boolean phosani) {
+            this.phosani = phosani;
+        }
 
         @Override
         public void onSpawn(DataBossEntity boss) {
@@ -213,6 +234,9 @@ final class EncounterScripts {
 
         @Override
         public void onPhase(DataBossEntity boss, int phase) {
+            if (phosani) {
+                summonWalkers(boss, BossMechanics.sleepwalkers(phase + 1));
+            }
             raiseShield(boss);
             ServerPlayerEntity target = target(boss);
             if (target != null) {
@@ -228,8 +252,99 @@ final class EncounterScripts {
             }
         }
 
+        /** Sleepwalkers walk in from the edges of the arena; any hit kills one. */
+        private void summonWalkers(DataBossEntity boss, int count) {
+            Vec3d c = homeVec();
+            for (int i = 0; i < count; i++) {
+                double a = boss.getRandom().nextDouble() * Math.PI * 2;
+                MobEntity m = BossFx.spawnMinion(boss, BossMechanics.PHOSANI_SLEEPWALKER,
+                        BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 11, c.z + Math.sin(a) * 11, c.y), null);
+                if (m == null) {
+                    continue;
+                }
+                walkers.add(m);
+                MinionRules.set(m, new MinionRules.Rule() {
+                    @Override
+                    public double accuracy(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type) {
+                        return MinionRules.ALWAYS_HITS;
+                    }
+
+                    @Override
+                    public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type, int d) {
+                        return MinionRules.lethal(mob);
+                    }
+                });
+            }
+            if (!desperate) {
+                setTotal = count;
+                setReached = 0;
+                walkersMoveAt = now + 4;
+                BossFx.warn(boss, "Sleepwalkers stumble towards the Nightmare - stop them before they reach her!");
+            }
+        }
+
+        private void tickWalkers(DataBossEntity boss, ServerPlayerEntity target) {
+            java.util.Iterator<MobEntity> it = walkers.iterator();
+            while (it.hasNext()) {
+                MobEntity m = it.next();
+                if (!m.isAlive()) {
+                    it.remove();
+                    continue;
+                }
+                if (now < walkersMoveAt) {
+                    continue;
+                }
+                Vec3d d = boss.getPos().subtract(m.getPos());
+                double len = d.horizontalLength();
+                if (len <= boss.getWidth() / 2 + 1.0) {
+                    m.discard();
+                    it.remove();
+                    if (desperate) {
+                        CombatAchievementService.flagNear(boss, BossMechanics.FLAG_PHOSANI_SLEEPWALKER);
+                        for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
+                            CombatHooks.nameAttack("sleepwalker", null);
+                            CombatHandler.applyDamage(boss, p, BossMechanics.DESPERATION_SLEEPWALKER_DAMAGE);
+                        }
+                    } else {
+                        setReached++;
+                    }
+                    BossFx.burst(boss, ParticleTypes.WITCH, 10, 1.0);
+                    continue;
+                }
+                double step = Math.min(0.35, len);
+                m.requestTeleport(m.getX() + d.x / len * step, m.getY(), m.getZ() + d.z / len * step);
+            }
+            if (setTotal > 0 && walkers.isEmpty()) {
+                // Every sleepwalker of the set is dead or arrived: the power blast.
+                int dmg = BossMechanics.sleepwalkerBlast(setReached, setTotal);
+                setTotal = 0;
+                BossFx.say(boss, setReached == 0 ? "The Nightmare's power blast fizzles." : "The Nightmare unleashes a power blast!");
+                for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
+                    CombatHooks.nameAttack("power_blast", null);
+                    CombatHandler.applyDamage(boss, p, dmg);
+                }
+                if (finalSet && !desperate) {
+                    desperate = true;
+                    walkerTimer = 20;
+                    BossFx.warn(boss, "Phosani's Nightmare lashes out in desperation!");
+                }
+            }
+        }
+
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+            if (phosani) {
+                tickWalkers(boss, target);
+                if (!finalSet && !shielded && percent(boss) <= 10) { // approx: the end of her third phase
+                    finalSet = true;
+                    summonWalkers(boss, BossMechanics.sleepwalkers(3));
+                }
+                if (desperate && target != null && --walkerTimer <= 0) {
+                    walkerTimer = 8; // approx: how often they spawn in the desperation phase
+                    summonWalkers(boss, 1);
+                    walkersMoveAt = now;
+                }
+            }
             if (shielded) {
                 BossFx.ring(BossFx.world(boss), boss.getPos(), 2.0, ParticleTypes.WITCH);
                 if (totems.stream().noneMatch(MobEntity::isAlive)) {
@@ -272,6 +387,7 @@ final class EncounterScripts {
         public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
             totems.forEach(MobEntity::discard);
             husks.forEach(MobEntity::discard);
+            walkers.forEach(MobEntity::discard);
         }
     }
 
@@ -622,13 +738,17 @@ final class EncounterScripts {
     }
 
     /**
-     * Vardorvis: relentless melee that grows stronger as he weakens; his parasitic head emerges to fire a
-     * telegraphed ranged or magic attack; axes swing out of the walls; blood splats heal him unless you
-     * stand on them.
+     * Vardorvis: relentless melee that heals him for half the damage dealt. His Strength and Defence follow his hitpoints
+     * (OSRS Wiki): the max hit climbs from 32 to 43 and his Defence drops by round(0.1021 x damage taken - 0.2075). Swinging
+     * axes (1 above 690 hitpoints, 2 down to 231, 3 below), darting spikes (1/2/3 darts), and below 570 hitpoints his
+     * parasitic head fires a ranged or magic projectile. Below 33% he enrages: a new set of axes as soon as the last is
+     * thrown and the head comes more often.
      */
     static final class Vardorvis extends ScriptedBoss {
         /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
         private final double scale;
+        private int autos;
+        private boolean enraged;
 
         Vardorvis() {
             this(1.0);
@@ -648,51 +768,104 @@ final class EncounterScripts {
             return true;
         }
 
+        private double hpFraction(DataBossEntity boss) {
+            return boss.getHealth() / boss.getMaxHealth();
+        }
+
+        /** His hitpoints on the normal 700 scale (awakened: half of the real ones). */
+        private int hp(DataBossEntity boss) {
+            return (int) Math.round(hpFraction(boss) * BossMechanics.VARDORVIS_HITPOINTS);
+        }
+
         @Override
         protected double multiplier(DataBossEntity boss) {
-            return (1.0 + (1.0 - boss.getHealth() / boss.getMaxHealth()) * 0.5) * scale;
+            boolean awake = boss.awakened();
+            double base = awake ? 46 : 32;
+            return BossMechanics.vardorvisMaxHit(hpFraction(boss), awake) / base * scale;
+        }
+
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+            if (damage > 1) {
+                boss.heal(mcHp(boss, damage / 2)); // heals 50% of the damage he deals, rounded down
+            }
+            return damage;
+        }
+
+        private void axes(DataBossEntity boss, ServerPlayerEntity target) {
+            int n = BossMechanics.vardorvisAxes(hp(boss), boss.awakened());
+            BossFx.warn(boss, n == 1 ? "An axe swings out from the walls!" : n + " axes swing out from the walls!");
+            Vec3d p = target.getPos();
+            Vec3d toward = p.subtract(boss.getPos());
+            double base = Math.atan2(toward.z, toward.x);
+            for (int a = 0; a < n; a++) {
+                double ang = base + a * Math.PI / 4 * (a % 2 == 0 ? 1 : -1);
+                Vec3d dir = new Vec3d(Math.cos(ang), 0, Math.sin(ang));
+                for (int i = -4; i <= 4; i++) {
+                    Vec3d at = p.add(dir.multiply(i * 1.5));
+                    namedStrike("swinging_axe", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3,
+                            (int) Math.round(maxHit(boss, Dt2Bosses.VARD_AXES) * scale), 1.1, ParticleTypes.SWEEP_ATTACK);
+                }
+            }
+        }
+
+        private void darts(DataBossEntity boss, ServerPlayerEntity target) {
+            int n = BossMechanics.vardorvisDarts(hp(boss));
+            BossFx.warn(boss, "Vardorvis darts around you, leaving cracks in the ground!");
+            int max = (int) Math.round((boss.awakened() ? 40 : 25) * scale);
+            for (int i = 0; i < n; i++) {
+                Vec3d at = i == 0 ? target.getPos() : around(boss, target.getPos(), 3);
+                namedStrike("darting_spikes", boss, at, 4 + i, max, 1.3, ParticleTypes.DAMAGE_INDICATOR, (hit, pos) -> {
+                    for (ServerPlayerEntity h : hit) {
+                        boss.heal(mcHp(boss, max / 4.0)); // heals half the (average) damage dealt
+                    }
+                });
+            }
+            cooldown += n; // each dart delays his next auto-attack by a tick
         }
 
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
-            boolean awake = boss.awakened(); // approx: awakened Vardorvis' specials come faster
-            int head = awake ? 4 : 6;
-            int axes = awake ? 5 : 8;
-            int blood = awake ? 9 : 11;
-            if (attackCount % head == head - 1) {
+            boolean awake = boss.awakened();
+            int hp = hp(boss);
+            if (!enraged && hp < BossMechanics.VARDORVIS_ENRAGE_HP) {
+                enraged = true; // no visual tell in OSRS; announced here
+                BossFx.warn(boss, "Vardorvis' attacks grow frantic!");
+            }
+            autos++;
+            // Three autos before the first axes; enraged (or awakened), a new set after every other attack.
+            int axeEvery = enraged || awake ? 2 : 5;
+            if (autos > 3 && autos % axeEvery == 0) {
+                axes(boss, target);
+            }
+            if (hp < BossMechanics.VARDORVIS_HEAD_HP && boss.getRandom().nextInt(enraged ? 3 : 6) == 0) {
                 return boss.getRandom().nextBoolean() ? Dt2Bosses.VARD_HEAD_RANGED : Dt2Bosses.VARD_HEAD_MAGIC;
             }
-            if (attackCount % axes == axes - 1) {
-                BossFx.warn(boss, "Axes swing out from the walls!");
-                Vec3d p = target.getPos();
-                Vec3d dir = p.subtract(boss.getPos()).normalize();
-                for (int i = -4; i <= 4; i++) {
-                    Vec3d at = p.add(dir.multiply(i * 1.5));
-                    strike(boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, (int) Math.round(maxHit(boss, Dt2Bosses.VARD_AXES) * scale), 1.1,
-                            ParticleTypes.SWEEP_ATTACK);
-                }
-                attackCount++;
-                cooldown = 2;
-                return null;
-            }
-            if (attackCount % blood == blood - 1) {
-                BossFx.warn(boss, "Blood splatters across the ground - absorb it before it heals him!");
-                for (int i = 0; i < 4; i++) {
-                    strike(boss, around(boss, target.getPos(), 4), 5, 0, 1.0, ParticleTypes.DAMAGE_INDICATOR, (hit, pos) -> {
-                        if (hit.isEmpty()) {
-                            boss.heal(8);
-                        } else {
-                            for (ServerPlayerEntity h : hit) {
-                                CombatHandler.applyDamage(boss, h, 2 + h.getRandom().nextInt(5));
-                            }
-                        }
-                    });
-                }
-                attackCount++;
-                cooldown = 2;
+            if (autos > 3 && boss.getRandom().nextInt(enraged ? 5 : 8) == 0) {
+                darts(boss, target);
+                cooldown = Math.max(cooldown, 2);
                 return null;
             }
             return Dt2Bosses.VARD_SLASH;
+        }
+
+        @Override
+        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+            // Defence follows his hitpoints (defence-draining specials make no difference on top).
+            int lost = (int) Math.round((1 - hpFraction(boss)) * BossMechanics.VARDORVIS_HITPOINTS);
+            com.runecraft.content.systems.SysCombat.drain(boss).defence = BossMechanics.vardorvisDefenceReduction(lost);
+            if (target == null || home == null) {
+                return;
+            }
+            // "Axe Enthusiast": time survived at his max speed, within the centre 25 tiles (5x5) of the arena.
+            double dx = target.getX() - (home.getX() + 0.5);
+            double dz = target.getZ() - (home.getZ() + 0.5);
+            if (Math.max(Math.abs(dx), Math.abs(dz)) > 5.5) {
+                CombatAchievementService.flag(target, BossMechanics.FLAG_VARDORVIS_LEFT_CENTRE);
+            }
+            if (enraged) {
+                CombatAchievementService.count(target, BossMechanics.COUNT_VARDORVIS_ENRAGE, 1);
+            }
         }
     }
 
@@ -724,69 +897,397 @@ final class EncounterScripts {
     }
 
     /**
-     * Royal Titans (Branda): Eldric fights alongside her. Standing together they heal each other, and
-     * Branda refuses to fall while Eldric lives. Elementals are summoned to their sides.
+     * Royal Titans (Branda the Fire Queen's script also runs Eldric the Ice King). Phase 1: the Titans alternate between
+     * keeping their distance - conjuring fire and icicle walls that form after 4 ticks (12 to anyone standing in them, which
+     * stops that part forming) and, once a Titan has taken 100 damage, elementals that self-destruct - and closing in to
+     * stomp. Water Blast or ice spells douse fire and Fire Blast or stronger melts icicles (approx: the spell clears the wall
+     * nearest the caster rather than a clicked tile). Phase 2 (either Titan below 210): Elemental Blast - a charge, then
+     * three blasts of up to 30 everywhere but one safe spot. Elementals caught in an opposing wall or blast die. A Titan
+     * brought down while the other still stands is subdued; both fall together.
      */
     static final class RoyalTitans extends ScriptedBoss {
+        private static final class Wall {
+            final List<Vec3d> cells = new ArrayList<>();
+            final boolean fire;
+            final long formsAt;
+            long fadesAt;
+            boolean[] gone;
+            boolean formed;
+
+            Wall(boolean fire, long formsAt) {
+                this.fire = fire;
+                this.formsAt = formsAt;
+            }
+        }
+
+        private record Elemental(MobEntity mob, boolean fire, long explodeAt) {
+        }
+
         private DataBossEntity eldric;
-        private int elementalTimer = 25;
-        private final List<MobEntity> elementals = new ArrayList<>();
+        private final List<Elemental> elementals = new ArrayList<>();
+        private final List<Wall> walls = new ArrayList<>();
+        private boolean rangedMode = true;
+        private int modeTimer = 33;
+        private int wallTimer = 6;
+        private int elementalTimer;
+        private boolean phaseTwo;
+        private long chargeUntil = -1;
+        private int chargeId;
+        private int blastsLeft;
+        private long nextBlast;
+        private int blastCycle = 10;
+        private Vec3d safe;
+        private boolean subdued;
+        private int subduedCharge = -2;
+        private int eldricDeadCharge = -3;
+        private boolean eldricDead;
+        private MinionRules.AttackWatcher watcher;
 
         @Override
         public void onSpawn(DataBossEntity boss) {
             ServerPlayerEntity target = boss.getTarget() instanceof ServerPlayerEntity p ? p : null;
             eldric = BossFx.spawnBoss(boss, "eldric_the_ice_king", boss.getBlockPos().add(5, 0, 0), target);
-            BossFx.say(boss, "Branda the Fire Queen and Eldric the Ice King rise! Keep them apart.");
+            BossFx.say(boss, "Branda the Fire Queen and Eldric the Ice King rise! Douse the fires and melt the icicles.");
+            watcher = (p, t, type, d) -> {
+                if (!boss.isRemoved() && type == AttackType.MAGIC && p.squaredDistanceTo(boss) < 32 * 32) {
+                    String spell = MinionRules.spell(p);
+                    if (BossMechanics.dousesFire(spell)) {
+                        clearWall(boss, p.getPos(), true);
+                    } else if (BossMechanics.meltsIce(spell)) {
+                        clearWall(boss, p.getPos(), false);
+                    }
+                }
+            };
+            MinionRules.watch(watcher);
         }
 
         private boolean eldricAlive() {
             return eldric != null && eldric.isAlive();
         }
 
+        private boolean charging() {
+            return chargeUntil >= 0 && now <= chargeUntil;
+        }
+
+        /** Removes the wall cell nearest {@code from} and the two next to it. */
+        private void clearWall(DataBossEntity boss, Vec3d from, boolean fire) {
+            Wall best = null;
+            int bestCell = -1;
+            double bestD = 12 * 12;
+            for (Wall w : walls) {
+                if (w.fire != fire) {
+                    continue;
+                }
+                for (int i = 0; i < w.cells.size(); i++) {
+                    double d = w.cells.get(i).squaredDistanceTo(from);
+                    if (!w.gone[i] && d < bestD) {
+                        bestD = d;
+                        best = w;
+                        bestCell = i;
+                    }
+                }
+            }
+            if (best == null) {
+                return;
+            }
+            for (int i = Math.max(0, bestCell - 1); i <= Math.min(best.cells.size() - 1, bestCell + 1); i++) {
+                best.gone[i] = true;
+                Vec3d c = best.cells.get(i);
+                BossFx.world(boss).spawnParticles(fire ? ParticleTypes.CLOUD : ParticleTypes.SPLASH, c.x, c.y + 0.6, c.z, 8, 0.3, 0.4, 0.3, 0.02);
+            }
+        }
+
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+            return subdued || charging() ? IDLE_MELEE : null;
+        }
+
+        @Override
+        public boolean isVulnerable(DataBossEntity boss) {
+            return !subdued;
+        }
+
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
             if (eldricAlive() && attacker != null) {
-                // "One by one": Branda can't fall first, so attacking her while Eldric stands is attacking both at once.
+                // "One by one": attacking Branda while Eldric stands.
                 CombatAchievementService.flag(attacker, CombatAchievements.FLAG_TITANS_BOTH);
             }
             if (eldricAlive() && damage >= boss.getHealth()) {
-                Msg.action(attacker, "Branda refuses to fall while her brother still stands!");
+                subdued = true;
+                subduedCharge = charging() ? chargeId : -2;
+                ModernScriptsAccess.stop(boss);
+                BossFx.say(boss, "Branda the Fire Queen is subdued! She falls when her brother does.");
                 return Math.max(0, (int) Math.ceil(boss.getHealth()) - 1);
             }
             return damage;
         }
 
+        private static int trueHp(DataBossEntity e) {
+            return (int) Math.round(e.getHealth() / e.getMaxHealth() * 600);
+        }
+
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
-            if (eldricAlive() && eldric.squaredDistanceTo(boss) < 16) {
-                boss.heal(3);
-                eldric.heal(3);
-                BossFx.burst(boss, ParticleTypes.HEART, 2, 0.5);
-                if (now % 10 == 0) {
-                    BossFx.warn(boss, "The Royal Titans draw strength from each other - separate them!");
+            ServerWorld w = BossFx.world(boss);
+            if (!eldricDead && eldric != null && !eldric.isAlive()) {
+                eldricDead = true;
+                eldricDeadCharge = charging() ? chargeId : -3;
+                if (subdued) {
+                    if (subduedCharge == eldricDeadCharge) {
+                        CombatAchievementService.flagNear(boss, BossMechanics.FLAG_TITANS_CHARGE_KILL);
+                    }
+                    ServerPlayerEntity killer = eldric.getAttacker() instanceof ServerPlayerEntity p ? p : target;
+                    if (killer != null) {
+                        boss.setHealth(0f);
+                        boss.onDeath(CombatHandler.source(killer));
+                        return;
+                    }
                 }
             }
-            if (target != null && --elementalTimer <= 0) {
+            tickWalls(boss, w);
+            tickElementals(boss, w);
+            if (target == null || subdued) {
+                return;
+            }
+            if (!phaseTwo && (trueHp(boss) < BossMechanics.TITAN_PHASE_TWO_HP || eldricAlive() && trueHp(eldric) < BossMechanics.TITAN_PHASE_TWO_HP)) {
+                phaseTwo = true;
+                BossFx.warn(boss, "The Royal Titans take their places at either end of the arena!");
+                blastCycle = 8;
+            }
+            if (phaseTwo) {
+                phaseTwoTick(boss, w, target);
+                return;
+            }
+            // Phase 1: ranged (walls and elementals) for ~20 seconds, then melee (stomps).
+            if (--modeTimer <= 0) {
+                rangedMode = !rangedMode;
+                modeTimer = rangedMode ? 33 : 25;
+                BossFx.warn(boss, rangedMode ? "The Royal Titans back away and raise their staves." : "The Royal Titans close in to stomp!");
+            }
+            double speed = rangedMode ? 0.0 : 0.2;
+            ModernScriptsAccess.speed(boss, speed);
+            if (eldricAlive()) {
+                ModernScriptsAccess.speed(eldric, speed);
+            }
+            if (rangedMode && --wallTimer <= 0) {
+                wallTimer = 9;
+                conjureWall(boss, w, true);
+                if (eldricAlive()) {
+                    conjureWall(boss, w, false);
+                }
+            }
+            boolean hurtEnough = trueHp(boss) <= 600 - BossMechanics.TITAN_ELEMENTAL_DAMAGE
+                    || eldricAlive() && trueHp(eldric) <= 600 - BossMechanics.TITAN_ELEMENTAL_DAMAGE;
+            if (rangedMode && hurtEnough && --elementalTimer <= 0) {
                 elementalTimer = 30;
-                elementals.removeIf(m -> !m.isAlive());
-                if (elementals.size() < 2) {
-                    MobEntity f = BossFx.spawnMinion(boss, "titan_fire_elemental", around(boss, boss.getPos(), 3), target);
-                    if (f != null) {
-                        elementals.add(f);
+                summonElementals(boss, target);
+            }
+        }
+
+        private void phaseTwoTick(DataBossEntity boss, ServerWorld w, ServerPlayerEntity target) {
+            ModernScriptsAccess.speed(boss, 0.0);
+            if (eldricAlive()) {
+                ModernScriptsAccess.speed(eldric, 0.0);
+            }
+            if (blastsLeft > 0) {
+                if (safe != null) {
+                    BossFx.ring(w, safe, 1.0, ParticleTypes.END_ROD);
+                }
+                if (now >= nextBlast) {
+                    blastsLeft--;
+                    nextBlast = now + 2;
+                    for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
+                        if (safe == null || ModernScriptsAccess.flat(p.getPos(), safe) > 1.5) {
+                            CombatHooks.nameAttack("elemental_blast", null);
+                            CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(BossMechanics.TITAN_BLAST_MAX + 1));
+                        }
                     }
+                    for (Elemental e : elementals) {
+                        if (e.mob().isAlive()) {
+                            e.mob().discard(); // caught in the opposing Titan's blast
+                            CombatAchievementService.countNear(boss, BossMechanics.COUNT_TITAN_ELEMENTAL_KILLS);
+                        }
+                    }
+                    BossFx.burst(boss, ParticleTypes.FLAME, 30, 6.0);
                     if (eldricAlive()) {
-                        MobEntity i = BossFx.spawnMinion(boss, "titan_ice_elemental", around(boss, eldric.getPos(), 3), target);
-                        if (i != null) {
-                            elementals.add(i);
+                        BossFx.burst(eldric, ParticleTypes.SNOWFLAKE, 30, 6.0);
+                    }
+                    if (blastsLeft == 0) {
+                        chargeUntil = now; // the charging window closes with the last blast
+                        blastCycle = 20;
+                    }
+                }
+                return;
+            }
+            if (charging()) {
+                BossFx.burst(boss, ParticleTypes.FLAME, 6, 1.0);
+                if (now >= chargeUntil - 1) {
+                    blastsLeft = 3;
+                    nextBlast = now;
+                }
+                return;
+            }
+            if (--blastCycle <= 0) {
+                chargeId++;
+                chargeUntil = now + 8;
+                safe = around(boss, homeVec().add(2.5, 0, 0), 5);
+                BossFx.warn(boss, "The Royal Titans charge an Elemental Blast! Find the safe spot!");
+                return;
+            }
+            if (blastCycle == 12) {
+                summonElementals(boss, target);
+            }
+        }
+
+        private void conjureWall(DataBossEntity boss, ServerWorld w, boolean fire) {
+            Vec3d c = homeVec().add(2.5, 0, 0);
+            double x = c.x + (boss.getRandom().nextInt(9) - 4) * 2;
+            Wall wall = new Wall(fire, now + BossMechanics.TITAN_WALL_FORM_TICKS);
+            for (int i = -2; i <= 2; i++) {
+                wall.cells.add(BossFx.ground(w, x, c.z + i * 2, c.y));
+            }
+            wall.gone = new boolean[wall.cells.size()];
+            walls.add(wall);
+        }
+
+        private void tickWalls(DataBossEntity boss, ServerWorld w) {
+            List<ServerPlayerEntity> players = BossFx.players(boss, 24);
+            java.util.Iterator<Wall> it = walls.iterator();
+            while (it.hasNext()) {
+                Wall wall = it.next();
+                boolean any = false;
+                for (int i = 0; i < wall.cells.size(); i++) {
+                    if (wall.gone[i]) {
+                        continue;
+                    }
+                    any = true;
+                    Vec3d c = wall.cells.get(i);
+                    w.spawnParticles(wall.fire ? ParticleTypes.FLAME : ParticleTypes.SNOWFLAKE, c.x, c.y + (wall.formed ? 0.8 : 0.1), c.z,
+                            wall.formed ? 4 : 1, 0.3, wall.formed ? 0.5 : 0.05, 0.3, 0);
+                }
+                if (!any) {
+                    it.remove();
+                    continue;
+                }
+                String name = wall.fire ? "fire_wall" : "icicle_wall";
+                if (!wall.formed && now >= wall.formsAt) {
+                    wall.formed = true;
+                    wall.fadesAt = now + 30; // approx: how long a wall lasts by itself
+                    for (int i = 0; i < wall.cells.size(); i++) {
+                        Vec3d c = wall.cells.get(i);
+                        for (ServerPlayerEntity p : players) {
+                            if (ModernScriptsAccess.flat(p.getPos(), c) < 1.1) {
+                                CombatHooks.nameAttack(name, null);
+                                CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(BossMechanics.TITAN_WALL_MAX + 1));
+                                wall.gone[i] = true; // standing on the tile stops it forming
+                            }
+                        }
+                        for (Elemental e : elementals) {
+                            if (!wall.gone[i] && e.fire() != wall.fire && e.mob().isAlive() && ModernScriptsAccess.flat(e.mob().getPos(), c) < 1.3) {
+                                e.mob().discard();
+                                CombatAchievementService.countNear(boss, BossMechanics.COUNT_TITAN_ELEMENTAL_KILLS);
+                            }
+                        }
+                    }
+                } else if (wall.formed) {
+                    if (now >= wall.fadesAt) {
+                        CombatAchievementService.flagNear(boss, BossMechanics.FLAG_TITANS_WALL_DISSIPATED);
+                        it.remove();
+                        continue;
+                    }
+                    for (int i = 0; i < wall.cells.size(); i++) {
+                        if (wall.gone[i]) {
+                            continue;
+                        }
+                        for (ServerPlayerEntity p : players) {
+                            if (ModernScriptsAccess.flat(p.getPos(), wall.cells.get(i)) < 0.9) {
+                                CombatHooks.nameAttack(name, null);
+                                CombatHandler.applyDamage(boss, p, 2); // approx: walls block the tile in OSRS
+                            }
                         }
                     }
                 }
             }
         }
 
+        private void summonElementals(DataBossEntity boss, ServerPlayerEntity target) {
+            elementals.removeIf(e -> !e.mob().isAlive());
+            if (elementals.size() >= 6) {
+                return;
+            }
+            for (int i = 0; i < 3; i++) {
+                MobEntity f = BossFx.spawnMinion(boss, "titan_fire_elemental", around(boss, boss.getPos(), 3), target);
+                if (f != null) {
+                    elementals.add(new Elemental(f, true, now + 20)); // approx: when they self-destruct
+                }
+                if (eldricAlive()) {
+                    MobEntity ice = BossFx.spawnMinion(boss, "titan_ice_elemental", around(boss, eldric.getPos(), 3), target);
+                    if (ice != null) {
+                        elementals.add(new Elemental(ice, false, now + 20));
+                    }
+                }
+            }
+            BossFx.warn(boss, "The Royal Titans summon elementals!");
+        }
+
+        private void tickElementals(DataBossEntity boss, ServerWorld w) {
+            java.util.Iterator<Elemental> it = elementals.iterator();
+            while (it.hasNext()) {
+                Elemental e = it.next();
+                if (!e.mob().isAlive()) {
+                    it.remove();
+                    continue;
+                }
+                if (now < e.explodeAt()) {
+                    continue;
+                }
+                for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
+                    if (ModernScriptsAccess.flat(p.getPos(), e.mob().getPos()) <= 3.0) {
+                        CombatHooks.nameAttack("elemental_explosion", null);
+                        CombatHandler.applyDamage(boss, p, BossMechanics.TITAN_ELEMENTAL_BLAST_MIN
+                                + boss.getRandom().nextInt(BossMechanics.TITAN_ELEMENTAL_BLAST_MAX - BossMechanics.TITAN_ELEMENTAL_BLAST_MIN + 1));
+                    }
+                }
+                w.spawnParticles(ParticleTypes.EXPLOSION, e.mob().getX(), e.mob().getY() + 0.5, e.mob().getZ(), 1, 0, 0, 0, 0);
+                e.mob().discard();
+                it.remove();
+            }
+        }
+
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
-            elementals.forEach(MobEntity::discard);
+            if (charging() && eldricDead && eldricDeadCharge == chargeId) {
+                CombatAchievementService.flagNear(boss, BossMechanics.FLAG_TITANS_CHARGE_KILL);
+            }
+            elementals.forEach(e -> e.mob().discard());
+            if (watcher != null) {
+                MinionRules.unwatch(watcher);
+            }
+        }
+    }
+
+    /** Small helpers shared by the scripts in this file. */
+    private static final class ModernScriptsAccess {
+        private ModernScriptsAccess() {
+        }
+
+        static double flat(Vec3d a, Vec3d b) {
+            double dx = a.x - b.x;
+            double dz = a.z - b.z;
+            return Math.sqrt(dx * dx + dz * dz);
+        }
+
+        static void speed(MobEntity mob, double speed) {
+            var attr = mob.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+            if (attr != null && attr.getBaseValue() != speed) {
+                attr.setBaseValue(speed);
+            }
+        }
+
+        static void stop(MobEntity mob) {
+            speed(mob, 0.0);
+            mob.getNavigation().stop();
         }
     }
 }

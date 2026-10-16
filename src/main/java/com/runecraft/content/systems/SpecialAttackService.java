@@ -234,6 +234,11 @@ public final class SpecialAttackService {
         return secondary ? null : ACTIVE.get(p.getUuid());
     }
 
+    /** Whether the player's current attack is a special attack (boss scripts: "killed only with special attacks"). */
+    public static boolean specialActive(ServerPlayerEntity p) {
+        return active(p) != null;
+    }
+
     /**
      * Starts the special on the attack's accuracy roll. Its accuracy and damage changes, minimum hits, the defence style it
      * rolls against and always-hitting specials come from PlayerHitCalc (HitCalcBridge marks the input special), so this

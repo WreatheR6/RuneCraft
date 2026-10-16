@@ -111,11 +111,11 @@ public final class ModernBosses {
 
     public static List<MonsterDef> minions() {
         return List.of(
-                // Yama's void flares (fire and shadow); they explode for up to 45 if left alive.
+                // Yama's void flares (fire and shadow): static orbs that charge for ~15 seconds and then explode for up to 44
+                // (scaled by their remaining health), healing Yama; the Yama script times and resolves the explosion.
                 MonsterDef.of("yama_void_flare", "Void Flare").level(130).stats(140, 1, 1, 100, 200, 1).speed(4)
-                        .attack(AttackDef.of("flare_burst", AttackType.MAGIC, 45, 3, 1).special(Special.AOE, 3)
-                                .telegraph(3, "The void flare pulses violently!"))
-                        .attributes("demon").skin(0x3A1A4A, 0xE05010, 0x2A0A3A, 0xFF8A1E).size(0.9f, 1.4f, 1.0f).moveSpeed(0.12),
+                        .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()
+                        .attributes("demon").skin(0x3A1A4A, 0xE05010, 0x2A0A3A, 0xFF8A1E).size(0.9f, 1.4f, 1.0f).moveSpeed(0.0),
                 // The Doom of Mokhaiotl's demonic larvae (2 hitpoints, a giant one 4) crawl to the Doom and are moved by its script;
                 // volatile earth (1 hitpoint) raises the earthen shield against the shockwave.
                 MonsterDef.of(DOOM_LARVA, "Demonic larva").level(1).stats(DoomDelves.larvaHitpoints(false), 1, 1, 1, 1, 1)
@@ -126,17 +126,35 @@ public final class ModernBosses {
                         .skin(0xA03A2A, 0x7A2A1A, 0x5A1A10, 0xE07A3A).size(1.0f, 0.7f, 1.2f).moveSpeed(0.0),
                 MonsterDef.of(DOOM_VOLATILE_EARTH, "Volatile earth").level(1).stats(1, 1, 1, 1, 1, 1)
                         .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()
-                        .skin(0x6A5A4A, 0x8A6A3A, 0x4A3A2A, 0xE0A040).size(1.0f, 1.0f, 1.0f).moveSpeed(0.0));
+                        .skin(0x6A5A4A, 0x8A6A3A, 0x4A3A2A, 0xE0A040).size(1.0f, 1.0f, 1.0f).moveSpeed(0.0),
+                // The Judge of Yama fought between Yama's phases (400 hitpoints; its fire spells are cast by the Yama script).
+                MonsterDef.of(BossMechanics.YAMA_JUDGE, "Judge of Yama").level(168).stats(BossMechanics.JUDGE_HITPOINTS, 150, 150, 130, 150, 1)
+                        .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive().attributes("demon").model("judge_of_yama")
+                        .skin(0x5A1A2A, 0x1A0A10, 0x2A0A10, 0xFF6020).size(1.0f, 2.6f, 1.0f).moveSpeed(0.0),
+                // Amoxliatl's unstable ice: only melee breaks it (in one hit); left alone it shatters after 15 ticks.
+                MonsterDef.of(BossMechanics.UNSTABLE_ICE, "Unstable ice").level(1).stats(20, 1, 1, 1, 1, 1) // hitpoints approx
+                        .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()
+                        .skin(0xB8E8FF, 0x90D0F0, 0x70B0E0, 0xFFFFFF).size(0.9f, 1.0f, 1.0f).moveSpeed(0.0),
+                // The Maggot King's ur-maggot larvae: a bow kills one in the air; landed, it crawls along its row (moved by the script).
+                MonsterDef.of(BossMechanics.UR_MAGGOT_LARVA, "Ur-maggot larvae").level(1).stats(10, 1, 1, 1, 1, 1) // hitpoints approx
+                        .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()
+                        .skin(0xD8C8A0, 0xC0B080, 0xA09060, 0x8A2A2A).size(0.6f, 0.4f, 0.9f).moveSpeed(0.0),
+                // Phosani's sleepwalkers: 10 hitpoints, die to any hit; walk to the Nightmare (moved by the script).
+                MonsterDef.of(BossMechanics.PHOSANI_SLEEPWALKER, "Sleepwalker").level(1).stats(10, 1, 1, 1, 1, 1)
+                        .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()
+                        .skin(0x8A7AA0, 0x5A4A70, 0x3A2A50, 0xC0A0FF).size(0.6f, 1.8f, 1.0f).moveSpeed(0.0));
     }
 
     static BossDef yama() {
         return BossDef.of("yama", "Yama").level(1238).stats(2500, 320, 350, 225, 250, 210).speed(8)
                 .attackBonus(50, 100, 100).defenceBonus(100, 80, 333, 0, 220).attributes("demon")
                 .attack(YAMA_FIRE).attack(YAMA_SHADOW).attack(YAMA_SLASH).attack(YAMA_METEOR).attack(YAMA_GLYPH)
-                .phase(66, "The Judge of Yama steps forth as void flares burst from the ground!", 1.0, true, YAMA_FIRE, YAMA_SHADOW,
+                // The Yama script (content/bosses/ModernScripts) runs the fight: glyph specials, shadow waves, fire streaks, void
+                // flares, the Judge of Yama between phases and phase 3's Shadow Crash; these phase lists only mark the thresholds.
+                .phase(66, "Yama slams the pommel of his axe into the ground!", 1.0, false, YAMA_FIRE, YAMA_SHADOW,
                         YAMA_SLASH, YAMA_METEOR, YAMA_SHADOW_CRASH)
                 // Phase 3: Yama attacks every 7 ticks with higher defences (wiki "Phase 3" stat line).
-                .phase(33, "Yama: Enough! You will burn!", 1.15, true, YAMA_FIRE, YAMA_SHADOW, YAMA_SLASH, YAMA_METEOR,
+                .phase(33, "Yama: Enough! You will burn!", 1.0, false, YAMA_FIRE, YAMA_SHADOW, YAMA_SLASH, YAMA_METEOR,
                         YAMA_SHADOW_CRASH, YAMA_GLYPH)
                 .minion("yama_void_flare", 2)
                 // Unique table 1/120 per solo kill: soulflame horn 2/5, each oathplate piece 1/5. Pet Yami 1/2,500.
@@ -146,7 +164,7 @@ public final class ModernBosses {
                         Drop.of("soul_rune", 250, 500, 8), Drop.of("blood_rune", 300, 600, 8), Drop.of("fire_rune", 3000, 6000, 8),
                         Drop.of("runite_bar", 5, 10, 10), Drop.of("dragon_bones", 20, 30, 12), Drop.of("infernal_ashes", 10, 20, 10),
                         Drop.of("coins", 30000, 90000, 4), Drop.of("uncut_onyx", 1, 1, 400), Drop.of("clue_scroll_elite", 1, 1, 50)) // approx
-                .pet("pet_yami").at("yamas_lair").arena(15, "lava").size(1.8f, 3.4f, 2.0f).moveSpeed(0.0);
+                .pet("pet_yami").at("yamas_lair").arena(15, "lava").size(1.8f, 3.4f, 2.0f).moveSpeed(0.22); // chases melee attackers
     }
 
     static BossDef doom() {
