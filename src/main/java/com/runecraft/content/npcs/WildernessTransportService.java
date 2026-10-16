@@ -207,12 +207,16 @@ public final class WildernessTransportService {
         }
     }
 
-    /** Sends everyone on the obelisk's platform to the same spot of the destination obelisk's platform. */
+    /**
+     * Sends everyone on the obelisk's platform to the same spot of the destination obelisk's platform, except players under
+     * a Tele Block (OSRS: "The obelisk will only teleport players who are not under the effects of a Tele Block").
+     */
     static int fire(ServerWorld world, WildernessTransport.Obelisk from, WildernessTransport.Obelisk to) {
         List<ServerPlayerEntity> riders = new ArrayList<>();
         for (ServerPlayerEntity p : world.getPlayers()) {
             BlockPos at = p.getBlockPos();
-            if (WildernessTransport.platformAt(GielinorMap.toOsrsX(at.getX()), GielinorMap.toOsrsY(at.getZ())) == from) {
+            if (WildernessTransport.platformAt(GielinorMap.toOsrsX(at.getX()), GielinorMap.toOsrsY(at.getZ())) == from
+                    && !com.runecraft.combat.Teleblock.blocked(p)) {
                 riders.add(p);
             }
         }

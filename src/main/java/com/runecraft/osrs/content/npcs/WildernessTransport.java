@@ -20,6 +20,7 @@ import java.util.Random;
  *   their place on the platform.</li>
  * </ul>
  *
+ * The level 13 obelisk is moved {@link #OBELISK_13_EAST_SHIFT} tiles east, clear of this world's Ferox Enclave.
  * The Mage Bank is a separate area in OSRS (tile 2539, 4712); here it is a small cavern carved at that tile, deep under
  * the sea, with its bank booths and the lever back up (see {@link #mageBank()}).
  */
@@ -48,8 +49,14 @@ public final class WildernessTransport {
             new Lever("mage_arena", "Mage Arena lever", 3090, 3956, 2539, 4712, "the Mage Bank"),
             new Lever("mage_bank", "Mage Bank lever", 2539, 4712, 3090, 3956, "the Mage Arena"));
 
+    /**
+     * Tiles the level 13 obelisk stands east of its OSRS tile (3156, 3620): this world's Ferox Enclave (approx layout) has
+     * its east wall, south-east tower and shop hall there, which laying the obelisk's square would cut through.
+     */
+    public static final int OBELISK_13_EAST_SHIFT = 4;
+
     public static final List<Obelisk> OBELISKS = List.of(
-            new Obelisk(13, "south-east of the Ferox Enclave", 3156, 3620),
+            new Obelisk(13, "south-east of the Ferox Enclave", 3156 + OBELISK_13_EAST_SHIFT, 3620),
             new Obelisk(19, "east of the Graveyard of Shadows", 3227, 3667),
             new Obelisk(27, "north of the Bandit Camp", 3035, 3732),
             new Obelisk(35, "south of the Lava Maze", 3106, 3794),

@@ -96,7 +96,10 @@ public final class IslandsTravel {
             {"DLQ", 3423, 3016, "Kharidian Desert: North of Nardah", null},
     };
 
-    /** Stop place of the player-owned house's fairy ring (DIQ): travelling there is a Teleport to House. */
+    /**
+     * Stop place of the player-owned house's fairy ring (DIQ): travelling there is a Teleport to House, and only works with
+     * a fairy ring built in the house.
+     */
     public static final String HOUSE_PLACE = "isl_house_ring";
 
     /**

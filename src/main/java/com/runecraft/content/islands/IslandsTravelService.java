@@ -29,6 +29,9 @@ public final class IslandsTravelService {
     /** Whether a player may use fairy rings without a staff (set by the systems module: Lumbridge elite diary). */
     public static java.util.function.Predicate<ServerPlayerEntity> staffless = p -> false;
 
+    /** Whether a player has built a fairy ring in their house (set by the extras module's house): DIQ needs one. */
+    public static java.util.function.Predicate<ServerPlayerEntity> houseFairyRing = p -> false;
+
     private IslandsTravelService() {
     }
 
@@ -97,6 +100,11 @@ public final class IslandsTravelService {
                         + end.code() + " fairy ring.");
                 return;
             }
+        }
+        // OSRS: DIQ "only works if the player has a fairy ring in their house".
+        if (IslandsTravel.HOUSE_PLACE.equals(to.place()) && !houseFairyRing.test(player)) {
+            Msg.game(player, "The " + to.code() + " fairy ring code only works if you have built a fairy ring in your house.");
+            return;
         }
         Msg.game(player, fairy ? "You step into the fairy ring... " + to.name() + "." : "The mushtree's spores carry you to " + to.name()
                 + ". (Sneak and use it to choose another destination.)");

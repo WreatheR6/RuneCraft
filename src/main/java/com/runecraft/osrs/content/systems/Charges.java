@@ -111,6 +111,16 @@ public final class Charges {
         return RING_OF_THE_ELEMENTS.equals(itemId) || CAMULET.equals(itemId);
     }
 
+    /**
+     * A {@link #perPlayer} item's charges: the player's own count ({@code player}, null before they first had one) merged
+     * with {@code legacyStack}, the charges a stack held from before they moved to the player (null when the stack has
+     * none, or only mirrors the player's count). The larger of the two is kept; with neither, the item's starting charges.
+     */
+    public static int perPlayerCharges(Spec s, Integer player, Integer legacyStack) {
+        int own = player != null ? player : legacyStack != null ? legacyStack : s.initial();
+        return clamp(s, legacyStack != null ? Math.max(own, legacyStack) : own);
+    }
+
     /** The sceptre's charge cap for the number of Desert Diary tiers completed (0-4). */
     public static int pharaohsSceptreCap(int desertTiersDone) {
         return PHARAOHS_SCEPTRE_CAPS[Math.max(0, Math.min(4, desertTiersDone))];
