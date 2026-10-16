@@ -53,7 +53,8 @@ public final class BossMechanics {
             "shadow_engulf", "shadow_stomp", "shadow_wave", "shadow_crash", "glyph_flames", "fire_streak", "fire_wave", "void_flare",
             "glyph_of_fire", "cavern_shake", "forfeit", "tentacle", "swinging_axe", "darting_spikes", "ice_spikes", "screech", "carrion",
             "slam", "larva", "fire_wall", "icicle_wall", "elemental_blast", "elemental_explosion", "sleepwalker", "power_blast",
-            "bleed", "strangle", "burn", "knockback", "parasite_burst", "spike");
+            "bleed", "strangle", "burn", "knockback", "parasite_burst", "spike", "weakened_parasite_burst", "tail_shockwave", "spore", "explosion",
+            "ruptura_explosion");
 
     // ------------------------------------------------------------ minion ids
     public static final String YAMA_JUDGE = "yama_judge";
@@ -294,6 +295,11 @@ public final class BossMechanics {
     public static final int VARDORVIS_AXE_MAX_AWAKENED = 96;
     /** Bleed: 3 damage every 3 ticks for 14 ticks (5 hits), or every tick while the player runs. */
     public static final int VARDORVIS_BLEED_DAMAGE = 3;
+    /**
+     * Awakened Vardorvis (OSRS Wiki "Vardorvis/Strategies", Awakened mode): bleed damage 3 -> 5; each axe also hits on
+     * appearing (that hit doesn't bleed). The appearing hit's max isn't documented: the swing's max is used (approx).
+     */
+    public static final int VARDORVIS_BLEED_DAMAGE_AWAKENED = 5;
     public static final int VARDORVIS_BLEED_TICKS = 14;
     public static final int VARDORVIS_BLEED_INTERVAL = 3;
     /** Strangle (below 570): destroy the spores within 5 ticks (awakened 4, approx) or take ~25 (awakened ~40). */
@@ -308,10 +314,17 @@ public final class BossMechanics {
     public static final class Bleed {
         private int ticksLeft;
         private int sinceHit;
+        private int damage = VARDORVIS_BLEED_DAMAGE;
 
         public void start() {
+            start(VARDORVIS_BLEED_DAMAGE);
+        }
+
+        /** Starts (or restarts) the bleed with {@code perHit} damage per bleed hit (5 for awakened Vardorvis). */
+        public void start(int perHit) {
             ticksLeft = VARDORVIS_BLEED_TICKS;
             sinceHit = 1; // the first hit lands 2 ticks in: 5 hits over 14 ticks standing still
+            damage = perHit;
         }
 
         public boolean active() {
@@ -326,7 +339,7 @@ public final class BossMechanics {
             sinceHit++;
             if (moving || sinceHit >= VARDORVIS_BLEED_INTERVAL) {
                 sinceHit = 0;
-                return VARDORVIS_BLEED_DAMAGE;
+                return damage;
             }
             return 0;
         }
@@ -629,5 +642,124 @@ public final class BossMechanics {
     /** The hatched araxyte's hitpoints after the egg took {@code eggDamage}; 0 when the egg despawns instead (over 58). */
     public static int araxyteHitpoints(int eggDamage) {
         return eggDamage > ARAXYTE_HP ? 0 : Math.max(1, ARAXYTE_HP - Math.max(0, eggDamage));
+    }
+
+    // ---------------- Moons of Peril (OSRS Wiki "Moons of Peril/Strategies") ----------------
+
+    /** Combat Achievement flag: a player damaged the Eclipse Moon other than through a parried clone ("The Clone Zone"). */
+    public static final String FLAG_ECLIPSE_DIRECT_HIT = "eclipse_direct_hit";
+    /** Eclipse Moon flat armour: every hitsplat on her is reduced by 6, by 4 during her Clone special. */
+    public static final int ECLIPSE_FLAT_ARMOUR = 6;
+    public static final int ECLIPSE_FLAT_ARMOUR_CLONES = 4;
+    /** Blue Moon flat armour of -5: every hitsplat on her is increased by 5. */
+    public static final int BLUE_MOON_FLAT_ARMOUR = -5;
+    /** The Clone special: five cycles of three clones, 15 attacks; face each clone as it appears to parry it. */
+    public static final int ECLIPSE_CLONE_CYCLES = 5;
+    public static final int ECLIPSE_CLONES_PER_CYCLE = 3;
+    /** Game ticks between clones (approx: the wiki gives no timing; about one clone per weapon swing). */
+    public static final int ECLIPSE_CLONE_INTERVAL = 2;
+    /** How far (degrees) a player's facing may be off a clone and still parry it ("you can click one tile away"). approx */
+    public static final double ECLIPSE_PARRY_ARC = 50;
+
+    /** A hitsplat after flat armour: hits that land are reduced (or, for negative armour, increased); misses stay 0. */
+    public static int flatArmour(int damage, int armour) {
+        return damage <= 0 ? damage : Math.max(0, damage - armour);
+    }
+
+    /**
+     * Whether a player facing {@code yawDegrees} (Minecraft yaw: 0 = +z, 90 = -x) faces a clone at offset (dx, dz) closely
+     * enough to parry it.
+     */
+    public static boolean faces(double yawDegrees, double dx, double dz) {
+        double len = Math.sqrt(dx * dx + dz * dz);
+        if (len < 1e-6) {
+            return true;
+        }
+        double yaw = Math.toRadians(yawDegrees);
+        double fx = -Math.sin(yaw);
+        double fz = Math.cos(yaw);
+        return (fx * dx + fz * dz) / len >= Math.cos(Math.toRadians(ECLIPSE_PARRY_ARC));
+    }
+
+    // ---------------- The Hueycoatl (OSRS Wiki "The Hueycoatl/Strategies") ----------------
+
+    /** Phase one: five body parts of 250 hitpoints (they don't attack) block the way to the head. */
+    public static final String HUEYCOATL_BODY = "hueycoatl_body";
+    public static final String HUEYCOATL_TAIL = "hueycoatl_tail";
+    public static final int HUEY_BODY_SEGMENTS = 5;
+    public static final int HUEY_BODY_HP = 250;
+    /** Phase three: the tail (300 hitpoints) shields her from 50%; hits on it cap at 4, or 9 with crush as the best bonus. */
+    public static final int HUEY_TAIL_HP = 300;
+    public static final int HUEY_TAIL_CAP = 4;
+    public static final int HUEY_TAIL_CAP_CRUSH = 9;
+    /** The tail changes sides about every 20 seconds and slams out a 20-25 shockwave; in the final phase every ~15 s. */
+    public static final int HUEY_TAIL_SWAP_TICKS = 33;
+    public static final int HUEY_FINAL_SHOCKWAVE_TICKS = 25;
+    public static final int HUEY_SHOCKWAVE_MIN = 20;
+    public static final int HUEY_SHOCKWAVE_MAX = 25;
+    /** Lit braziers (all three pillars charged when the seer's bar fills) give every player 30% more damage. */
+    public static final double HUEY_BRAZIER_DAMAGE = 1.30;
+    /** Ticks for the seer's charge bar to fill (approx: not documented). */
+    public static final int HUEY_SEER_CHARGE_TICKS = 16;
+    /** Combat Achievement flag: the Hueycoatl died while the braziers were lit ("Pillar Lover"). */
+    public static final String FLAG_HUEY_VULNERABLE_KILL = "huey_vulnerable_kill";
+
+    /** Active protection prayers needed per pillar for a team: 1+ for 1-5 players, 2+ for 6-8, 3+ for 9-11... 6+ for 18-20. */
+    public static int hueyPrayersPerPillar(int teamSize) {
+        return teamSize <= 5 ? 1 : (teamSize - 3) / 3 + 1;
+    }
+
+    /** Whether the blue (Magic), red (Melee) and green (Missiles) pillars are all charging for this team. */
+    public static boolean hueyPillarsCharged(int prayingMelee, int prayingMissiles, int prayingMagic, int teamSize) {
+        int need = hueyPrayersPerPillar(teamSize);
+        return prayingMelee >= need && prayingMissiles >= need && prayingMagic >= need;
+    }
+
+    /** A hit on the tail: capped at 4 (9 with crush as the attacker's highest attack bonus, which also turns misses into 1). */
+    public static int hueyTailDamage(int damage, boolean crushBest) {
+        if (crushBest) {
+            return Math.max(1, Math.min(damage, HUEY_TAIL_CAP_CRUSH));
+        }
+        return Math.max(0, Math.min(damage, HUEY_TAIL_CAP));
+    }
+
+    // ---------------- The Nightmare / Phosani's Nightmare ----------------
+
+    /** Combat Achievement flags: a player was made weary by a spore; Phosani switched off a player's protection prayer. */
+    public static final String FLAG_NIGHTMARE_SPORED = "nightmare_spored";
+    public static final String FLAG_PHOSANI_PRAYER_DISABLED = "phosani_prayer_disabled";
+    /** Spores: standing within one tile bursts one; weary players can't run and attack 1 tick slower (Phosani: 2). */
+    public static final int SPORE_SLOW_TICKS = 1;
+    public static final int SPORE_SLOW_TICKS_PHOSANI = 2;
+    /** Phosani's spores: every yawn drains 6 prayer points. */
+    public static final int SPORE_YAWN_PRAYER = 6;
+    /** How long a player stays weary (approx: "a short duration"). */
+    public static final int SPORE_WEARY_TICKS = 20;
+    /** Spores placed per Spores special (approx: "set patterns"). */
+    public static final int SPORES = 8;
+    /** Attack names of the weakened (cured) and full parasite bursts ("Perfect Phosani's Nightmare" allows the weakened one). */
+    public static final String PARASITE_BURST = "parasite_burst";
+    public static final String WEAKENED_PARASITE_BURST = "weakened_parasite_burst";
+
+    // ---------------- Araxxor: ruptura araxytes (OSRS Wiki "Araxxor/Strategies") ----------------
+
+    /** Combat Achievement flag: one ruptura araxyte's explosion killed three other araxytes ("Araxyte Betrayal"). */
+    public static final String FLAG_ARAXYTE_BETRAYAL = "araxyte_betrayal";
+    public static final int ARAXYTE_BETRAYAL_KILLS = 3;
+    /** The explosion reaches 4 tiles from the ruptura (an 8x8 area). */
+    public static final int RUPTURA_RANGE = 4;
+
+    /** Explosion damage to a player {@code tiles} away: 70 underneath, 21 less per tile, scaled by the ruptura's health. */
+    public static int rupturaPlayerDamage(int tiles, double hpFraction) {
+        int full = Math.max(0, 70 - 21 * Math.max(0, tiles));
+        return (int) Math.floor(full * Math.max(0, Math.min(1, hpFraction)));
+    }
+
+    /** Explosion damage to Araxxor, araxytes and eggs: 80 under it, 64 next to it, at least 33 up to 3 tiles (approx between). */
+    public static int rupturaEnemyDamage(int tiles) {
+        if (tiles > RUPTURA_RANGE) {
+            return 0;
+        }
+        return tiles <= 0 ? 80 : Math.max(33, 80 - 16 * tiles);
     }
 }

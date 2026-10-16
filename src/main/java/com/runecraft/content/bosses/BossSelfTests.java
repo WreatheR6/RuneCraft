@@ -25,4 +25,14 @@ public final class BossSelfTests {
     public static String araxxorEggs(DataBossEntity boss, ServerPlayerEntity p) {
         return SlayerScripts.selfTestAraxxor(boss, p);
     }
+
+    /** The Eclipse Moon's clones: a faced clone is parried, one behind the player hits. */
+    public static String eclipseClones(DataBossEntity boss, ServerPlayerEntity p) {
+        return MoonScripts.selfTestEclipse(boss, p);
+    }
+
+    /** The Hueycoatl's body parts block the head until they are down. */
+    public static String hueycoatlPhases(DataBossEntity boss, ServerPlayerEntity p) {
+        return EncounterScripts.selfTestHueycoatl(boss, p);
+    }
 }

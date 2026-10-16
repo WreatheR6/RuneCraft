@@ -32,7 +32,12 @@ final class BossDots {
 
     /** Starts (or restarts) a Vardorvis bleed. */
     static void bleed(ServerPlayerEntity p) {
-        BLEEDS.computeIfAbsent(p.getUuid(), u -> new BossMechanics.Bleed()).start();
+        bleed(p, BossMechanics.VARDORVIS_BLEED_DAMAGE);
+    }
+
+    /** Starts (or restarts) a bleed of {@code perHit} damage per bleed hit (awakened Vardorvis: 5). */
+    static void bleed(ServerPlayerEntity p, int perHit) {
+        BLEEDS.computeIfAbsent(p.getUuid(), u -> new BossMechanics.Bleed()).start(perHit);
         LAST_POS.put(p.getUuid(), p.getPos());
     }
 

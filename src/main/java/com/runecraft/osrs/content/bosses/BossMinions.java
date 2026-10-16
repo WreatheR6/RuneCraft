@@ -89,6 +89,14 @@ public final class BossMinions {
                 // The Nightmare
                 MonsterDef.of("nightmare_totem", "Totem").level(1).stats(50, 1, 1, 1, 1, 1)
                         .attack(inert()).passive().size(1.0f, 2.4f, 1.0f).moveSpeed(0.0),
+                // The Hueycoatl's body parts (250 hitpoints, they don't attack) and tail (300; its hits are capped by the script).
+                // Defence as the head's 125 (approx: the body's own stats aren't in the reference data).
+                MonsterDef.of(BossMechanics.HUEYCOATL_BODY, "The Hueycoatl (Body)").level(1)
+                        .stats(BossMechanics.HUEY_BODY_HP, 1, 1, 125, 1, 1).attack(inert()).passive()
+                        .skin(0x2A7A6A, 0x3A9A8A, 0x1A5A4A, 0xE0C040).size(1.4f, 1.4f, 1.0f).moveSpeed(0.0),
+                MonsterDef.of(BossMechanics.HUEYCOATL_TAIL, "The Hueycoatl (Tail)").level(1)
+                        .stats(BossMechanics.HUEY_TAIL_HP, 1, 1, 125, 1, 1).attack(inert()).passive()
+                        .skin(0x2A7A6A, 0x3A9A8A, 0x1A5A4A, 0xE0C040).size(1.4f, 1.6f, 1.0f).moveSpeed(0.0),
                 MonsterDef.of("nightmare_husk", "Husk").level(48).stats(20, 40, 40, 20, 60, 60).speed(4)
                         .attack(AttackDef.of("grasp", AttackType.MAGIC, 6, 8, 1))
                         .skin(0x6A6A5A, 0x4A4A3A, 0x3A3A2A, 0x9A4AC0).size(0.6f, 1.8f, 1.0f).moveSpeed(0.1),

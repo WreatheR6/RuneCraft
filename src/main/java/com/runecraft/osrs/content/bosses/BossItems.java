@@ -419,6 +419,18 @@ public final class BossItems {
 
         // ---------------- Varlamore ----------------
         simple(items, "hueycoatl_hide", "Hueycoatl hide", "hide", 0x3A9A8A, 1, "Used to craft Hueycoatl armour.");
+        // Hueycoatl hide armour (OSRS Wiki item pages; bonuses from the equipment snapshot): sewn from the hide with thread.
+        wear(items, "hueycoatl_hide_coif", "Hueycoatl hide coif", Kind.ARMOUR, "cowl", 0x3A9A8A, 2000, Slot.HEAD,
+                st(0, 0, 0, -1, 7, 4, 7, 10, 5, 8, 0, 0, 0, 2), Skill.RANGED, 70, Skill.DEFENCE, 40)
+                .examine("A coif made from the hide of the Hueycoatl.");
+        wear(items, "hueycoatl_hide_body", "Hueycoatl hide body", Kind.ARMOUR, "leather_body", 0x3A9A8A, 13480, Slot.CHEST,
+                st(0, 0, 0, -15, 30, 55, 47, 60, 56, 55, 0, 0, 0, 3), Skill.RANGED, 70, Skill.DEFENCE, 40)
+                .examine("A body made from the hide of the Hueycoatl.");
+        wear(items, "hueycoatl_hide_chaps", "Hueycoatl hide chaps", Kind.ARMOUR, "chaps", 0x3A9A8A, 6220, Slot.LEGS,
+                st(0, 0, 0, -10, 17, 31, 25, 33, 30, 31, 0, 0, 0, 2), Skill.RANGED, 70)
+                .examine("Chaps made from the hide of the Hueycoatl.");
+        accessory(items, "hueycoatl_hide_vambraces", "Hueycoatl hide vambraces", "gloves", 0x3A9A8A, 4320, "hands",
+                st(0, 0, 0, -10, 11, 6, 5, 7, 8, 0, 0, 0, 0, 1), "Vambraces made from the hide of the Hueycoatl.");
         simple(items, "tome_of_earth", "Tome of earth", "book", 0x6A5A3A, 1, "Boosts earth spells.");
         weapon(items, "dragon_hunter_wand", "Dragon hunter wand", Kind.STAFF, "wand", 0x3A9A8A, 20000000,
                 st(0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 4, AttackType.MAGIC, WeaponClass.STAFF, Skill.MAGIC, 82)
@@ -485,6 +497,15 @@ public final class BossItems {
 
     /** Combinations and crafting of boss uniques. */
     public static void recipes(Consumer<Recipe> recipes) {
+        // Hueycoatl hide armour (OSRS Wiki: needle and thread, 3 ticks): coif 76 (2 hides, 190 xp), body 78 (3, 285),
+        // chaps 77 (2, 190), vambraces 76 (1, 95). Thread is string here, as for the other hide armour.
+        for (Object[] h : new Object[][]{{"coif", 76, 190.0, 2}, {"body", 78, 285.0, 3}, {"chaps", 77, 190.0, 2},
+                {"vambraces", 76, 95.0, 1}}) {
+            String id = "hueycoatl_hide_" + h[0];
+            recipes.accept(Recipe.builder("craft_" + id, MenuType.LEATHERWORKING, "Hueycoatl hide " + h[0])
+                    .skill(Skill.CRAFTING, (Integer) h[1], (Double) h[2]).in("hueycoatl_hide", (Integer) h[3]).in("minecraft:string", 1)
+                    .out(id, 1).tool("needle").ticks(3).build());
+        }
         // Zulrah
         recipes.accept(Recipe.builder("make_toxic_blowpipe", MenuType.FLETCHING, "Toxic blowpipe").skill(Skill.FLETCHING, 78, 120)
                 .in("tanzanite_fang", 1).out("toxic_blowpipe", 1).tool("chisel").ticks(3).build());

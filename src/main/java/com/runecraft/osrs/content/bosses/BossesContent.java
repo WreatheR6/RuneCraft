@@ -70,4 +70,11 @@ public final class BossesContent implements ContentModule {
     public List<ModelSpec> models() {
         return BossModels.all();
     }
+
+    /** The Hueycoatl's body parts and tail: smaller copies of her own model. */
+    @Override
+    public List<ModelSpec.Variant> modelVariants() {
+        return List.of(ModelSpec.Variant.of(BossMechanics.HUEYCOATL_BODY, "the_hueycoatl", 0.45f),
+                ModelSpec.Variant.of(BossMechanics.HUEYCOATL_TAIL, "the_hueycoatl", 0.55f));
+    }
 }
