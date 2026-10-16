@@ -29,8 +29,11 @@ class AgilityShortcutSnapshotTest {
 
     static Map<String, Row> snapshot() throws Exception {
         Map<String, Row> rows = new HashMap<>();
-        try (BufferedReader r = new BufferedReader(new InputStreamReader(
-                AgilityShortcutSnapshotTest.class.getResourceAsStream("/osrs/skilling/agility_shortcuts.tsv"), StandardCharsets.UTF_8))) {
+        java.nio.file.Path file = java.nio.file.Path.of("src/test/resources/osrs/skilling/agility_shortcuts.tsv");
+        java.io.InputStream in = java.nio.file.Files.exists(file) ? java.nio.file.Files.newInputStream(file)
+                : AgilityShortcutSnapshotTest.class.getResourceAsStream("/osrs/skilling/agility_shortcuts.tsv");
+        assertNotNull(in, "missing agility_shortcuts.tsv");
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
             r.readLine();
             for (String line; (line = r.readLine()) != null; ) {
                 String[] p = line.split("\t");

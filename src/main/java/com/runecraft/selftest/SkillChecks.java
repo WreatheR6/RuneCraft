@@ -80,6 +80,7 @@ final class SkillChecks {
         checks.add(new SelfTest.Check("skill:firemaking", g::firemaking));
         checks.add(new SelfTest.Check("skill:cooking_range", g::cooking));
         checks.add(new SelfTest.Check("skill:agility_lap", g::agility));
+        checks.add(new SelfTest.Check("skill:agility_shortcut_diary", g::shortcutDiary));
         checks.add(new SelfTest.Check("skill:thieving_pickpocket", g::pickpocket));
         checks.add(new SelfTest.Check("skill:thieving_stall", g::stall));
         checks.add(new SelfTest.Check("skill:farming_herb", g::farming));
@@ -525,6 +526,27 @@ final class SkillChecks {
         }
         int got = gained(Skill.AGILITY, xp0, expected - n, "a lap");
         return n + " obstacles, +" + got / 10.0 + " xp (expected " + expected / 10.0 + ")";
+    }
+
+    /** Using an agility shortcut reports "shortcut:" + id, which completes the diary task that needs it (round 30). */
+    private String shortcutDiary() {
+        String key = "shortcut:salve_ornate_railing";
+        com.runecraft.osrs.content.systems.Diaries.Task task = com.runecraft.osrs.content.systems.Diaries.tasks().stream()
+                .filter(t -> key.equals(t.target())).findFirst().orElse(null);
+        if (task == null) {
+            throw failure("no diary task needs the Salve shortcut");
+        }
+        if (data().skills().level(Skill.AGILITY) < 65) {
+            data().skills().setXpTenths(Skill.AGILITY, com.runecraft.osrs.Experience.xpForLevel(65) * 10);
+        }
+        // The client run loads the world the server run saved: start from an incomplete task.
+        java.util.Set<String> done = com.runecraft.content.systems.SysState.of(p()).diaryDone;
+        done.remove(task.id());
+        com.runecraft.content.GameEvents.fireActivity(p(), key);
+        if (!done.contains(task.id())) {
+            throw failure("the " + key + " activity did not complete diary task " + task.id());
+        }
+        return task.id() + " completed by " + key;
     }
 
     private String pickpocket() {
