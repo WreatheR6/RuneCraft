@@ -1227,11 +1227,15 @@ final class ItemCombatChecks {
         }
         int credit = SlayerTasks.killCredit(task, prof.unlocks);
         if (prof.region != null) {
-            // Konar: a kill outside her region must not count (the platform is above Lumbridge).
+            // Konar: a kill outside her region must not count. The platform straddles the Misthalin / Lumbridge Swamp
+            // border, so judge by where the victim stands (as the game does), not the player.
             int before = prof.remaining;
-            killAsPlayer(spawn(type, 3, 0));
-            if (prof.remaining != before && !prof.region.equals(com.runecraft.world.Gielinor.region(p()).name())) {
-                throw failure("a kill outside Konar's region " + prof.region + " counted");
+            LivingEntity victim = spawn(type, 3, 0);
+            BlockPos at = victim.getBlockPos();
+            String here = com.runecraft.osrs.world.TaskRegions.at(at.getX(), at.getY(), at.getZ()).name();
+            killAsPlayer(victim);
+            if (prof.remaining != before && !prof.region.equals(here)) {
+                throw failure("a kill in " + here + ", outside Konar's region " + prof.region + ", counted");
             }
             note += ", outside " + prof.region + " ignored";
             prof.region = null;
