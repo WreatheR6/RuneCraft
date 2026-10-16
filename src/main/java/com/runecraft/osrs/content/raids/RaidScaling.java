@@ -453,8 +453,14 @@ public final class RaidScaling {
      * for path monsters (+3% + 5% per level), party size, then rounded to 5 (over 100) or 10 (over 300).
      */
     public static int toaScaledHp(int baseHp, int raidLevel, int pathLevel, int partySize, boolean pathMonster) {
+        return toaScaledHp(baseHp, 4, raidLevel, pathLevel, partySize, pathMonster);
+    }
+
+    /** {@link #toaScaledHp} with this many percent per 10 raid levels (4, or 1 for the core-ejected Warden). */
+    private static int toaScaledHp(int baseHp, int percentPer10Levels, int raidLevel, int pathLevel, int partySize,
+            boolean pathMonster) {
         int hp = baseHp;
-        hp += hp * (4 * Math.max(0, raidLevel) / 10) / 100;
+        hp += hp * (percentPer10Levels * Math.max(0, raidLevel) / 10) / 100;
         int path = Math.max(0, Math.min(TOA_MAX_PATH_LEVEL, pathLevel));
         if (pathMonster && path >= 1) {
             hp = hp * (100 + 3 + 5 * path) / 100;
@@ -637,16 +643,19 @@ public final class RaidScaling {
         };
     }
 
-    /** Phase 2 Warden ("core-ejected") hitpoints before scaling (OSRS wiki/DPS calculator: 4,500, scaled). */
+    /**
+     * Phase 2 Warden ("core-ejected") hitpoints before scaling (OSRS wiki/DPS calculator: 4,500, scaled by only +0.1% per
+     * raid level - its health scaling with invocations was cut by 75%).
+     */
     public static final int TOA_WARDEN_P2_HP = 4500;
     /** Phase 2 Warden body ("active") hitpoints before scaling: the yellow bar that ejects the core when full (140). */
     public static final int TOA_WARDEN_BODY_HP = 140;
     /** Damage dealt to an ejected core counts five times against the Warden (OSRS: a 55 deals 275). */
     public static final int TOA_CORE_MULTIPLIER = 5;
 
-    /** The phase 2 Warden's hitpoints at this raid level and party size (raid level and party scaling, no path). */
+    /** The phase 2 Warden's hitpoints at this raid level and party size (reduced raid level and party scaling, no path). */
     public static int toaWardenP2Hp(int raidLevel, int partySize) {
-        return toaScaledHp(TOA_WARDEN_P2_HP, raidLevel, 0, partySize, false);
+        return toaScaledHp(TOA_WARDEN_P2_HP, 1, raidLevel, 0, partySize, false);
     }
 
     /** Damage the phase 2 Warden's body must take before its core is ejected (its scaled 140 "active" hitpoints). */

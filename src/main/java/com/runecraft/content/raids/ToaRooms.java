@@ -465,6 +465,19 @@ final class ToaRooms {
             return damage;
         }
 
+        /** Poison, venom, recoil or Vengeance (which skip bossIncoming) can't kill her through a shield either. */
+        @Override
+        public boolean bossAllowDeath(DataBossEntity boss) {
+            if (boss != kephri || broken >= 3) {
+                return true;
+            }
+            raid.setCurrentHitpoints(kephri, 1);
+            if (!dazed) {
+                RaidEffects.later(1, this::shieldBroken);
+            }
+            return false;
+        }
+
         private void shieldBroken() {
             if (!alive(kephri) || dazed || broken >= 3) {
                 return;
@@ -506,8 +519,9 @@ final class ToaRooms {
                 int point = (start + i) % 6;
                 RaidEffects.later(delay, () -> {
                     if (alive(kephri) && dazed) {
-                        double a = Math.PI / 3 * point;
-                        spawnMob("toa_scarab_swarm", at(14 + (int) Math.round(Math.cos(a) * 16), (int) Math.round(Math.sin(a) * 16)), false);
+                        // Six points on a ring around the room's centre, half a step off her axis so none is at her side.
+                        double a = Math.PI / 3 * point + Math.PI / 6;
+                        spawnMob("toa_scarab_swarm", at((int) Math.round(Math.cos(a) * 16), (int) Math.round(Math.sin(a) * 16)), false);
                     }
                 });
             }
@@ -700,7 +714,7 @@ final class ToaRooms {
                 int dark = Invocation.kephriDarkEggs(inv, rnd());
                 for (int i = 0; i < dark; i++) {
                     ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
-                    BlockPos egg = BlockPos.ofFloored(p.getPos().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4));
+                    BlockPos egg = inRoom(BlockPos.ofFloored(p.getPos().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4)));
                     world().spawnParticles(ParticleTypes.SQUID_INK, egg.getX() + 0.5, egg.getY() + 0.3, egg.getZ() + 0.5, 8, 0.3, 0.1, 0.3, 0.01);
                     RaidEffects.later(8, () -> {
                         if (!alive(kephri)) {
@@ -717,6 +731,14 @@ final class ToaRooms {
                     });
                 }
             }
+        }
+
+        /** Keeps a spot inside the room's walls. */
+        private BlockPos inRoom(BlockPos pos) {
+            BlockPos c = center();
+            int h = RaidBuilder.HALF - 2;
+            return new BlockPos(Math.max(c.getX() - h, Math.min(c.getX() + h, pos.getX())), pos.getY(),
+                    Math.max(c.getZ() - h, Math.min(c.getZ() + h, pos.getZ())));
         }
 
         /** Agile Scarabs retreat from players at running speed (OSRS). */
@@ -1468,7 +1490,22 @@ final class ToaRooms {
                 restoreOther();
                 return;
             }
-            raid.setCurrentHitpoints(warden, (int) Math.ceil(raid.maxHitpoints(warden) * (p2Hp / (double) p2Max)));
+            syncBody();
+        }
+
+        /** The phase 2 Warden's visible health follows its core's pool. */
+        private void syncBody() {
+            raid.setCurrentHitpoints(warden, (int) Math.ceil(raid.maxHitpoints(warden) * (p2Hp / (double) Math.max(1, p2Max))));
+        }
+
+        /** Only core damage counts in phase 2: recoil, Vengeance or poison (which skip bossIncoming) can't kill the body. */
+        @Override
+        public boolean bossAllowDeath(DataBossEntity boss) {
+            if (phase != 2 || boss != warden) {
+                return true;
+            }
+            syncBody();
+            return false;
         }
 
         /** The phase 2 Warden collapses and uses its last power to restore the other one (OSRS). */
@@ -1525,6 +1562,9 @@ final class ToaRooms {
             if (!alive(warden)) {
                 if (phase == 3) {
                     complete();
+                } else if (phase == 2) {
+                    // The body went some other way (removed, or a death the guard didn't see): don't stall the fight.
+                    restoreOther();
                 }
                 return;
             }
@@ -1536,6 +1576,8 @@ final class ToaRooms {
         }
 
         private void phaseTwo(long tick, List<ServerPlayerEntity> players, Set<Invocation> inv) {
+            // Undo chip damage that skipped bossIncoming (recoil, Vengeance, poison) so it can't build up.
+            syncBody();
             if (core != null) {
                 coreTicks--;
                 world().spawnParticles(ParticleTypes.END_ROD, core.getX(), core.getY() + 0.5, core.getZ(), 3, 0.3, 0.3, 0.3, 0.01);

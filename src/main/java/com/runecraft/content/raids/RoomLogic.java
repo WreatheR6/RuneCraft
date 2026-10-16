@@ -236,6 +236,14 @@ public class RoomLogic {
     public void bossDeath(DataBossEntity boss, ServerPlayerEntity killer) {
     }
 
+    /**
+     * Whether a boss may die now. Damage that skips {@link #bossIncoming} (poison, venom, recoil, Vengeance) can still be
+     * fatal; returning false cancels the death, and the room must then give the boss its health back.
+     */
+    public boolean bossAllowDeath(DataBossEntity boss) {
+        return true;
+    }
+
     // ------------------------------------------------------------------ combat helpers
 
     /** Whether nothing solid lies between two points. */
