@@ -159,13 +159,48 @@ public final class ModernBosses {
                 // No .minion(): the script spawns and tracks its own void flares (a BossDef minion would make the engine's
                 // idle SUMMON attack spawn untracked ones).
                 // Unique table 1/120 per solo kill: soulflame horn 2/5, each oathplate piece 1/5. Pet Yami 1/2,500.
-                .drops(Drop.of("soulflame_horn", 1, 1, 300), Drop.of("oathplate_helm", 1, 1, 600), Drop.of("oathplate_chest", 1, 1, 600),
-                        Drop.of("oathplate_legs", 1, 1, 600), Drop.of("dossier", 1, 1, 17),
-                        Drop.of("oathplate_shards", 6, 12, 10), // approx
-                        Drop.of("soul_rune", 250, 500, 8), Drop.of("blood_rune", 300, 600, 8), Drop.of("fire_rune", 3000, 6000, 8),
-                        Drop.of("runite_bar", 5, 10, 10), Drop.of("dragon_bones", 20, 30, 12), Drop.of("infernal_ashes", 10, 20, 10),
-                        Drop.of("coins", 30000, 90000, 4), Drop.of("uncut_onyx", 1, 1, 400), Drop.of("clue_scroll_elite", 1, 1, 50)) // approx
+                .drops(yamaDrops().toArray(new Drop[0]))
                 .pet("pet_yami").at("yamas_lair").arena(15, "lava").size(1.8f, 3.4f, 2.0f).moveSpeed(0.22); // chases melee attackers
+    }
+
+    /**
+     * Yama, solo kill at full contribution (OSRS Wiki "Yama" drop table, effective rates after the pre-rolls; 1/N rounded):
+     * uniques (soulflame horn 2/600, each oathplate piece 1/600), dossier 1/12.1, forgotten lockbox 1/33, 12 oathplate shards
+     * 1/17.07; the 78-slot main table (/95.11 effective); elite clue 1/30 (the pet is the boss's .pet()). The supply drop
+     * (15/95.11, one of each pair) is split into its six lines.
+     */
+    static List<Drop> yamaDrops() {
+        return List.of(Drop.of("soulflame_horn", 1, 1, 300), Drop.of("oathplate_helm", 1, 1, 600), Drop.of("oathplate_chest", 1, 1, 600),
+                Drop.of("oathplate_legs", 1, 1, 600), Drop.of("dossier", 1, 1, 12), Drop.of("forgotten_lockbox", 1, 1, 33),
+                Drop.of("oathplate_shards", 12, 12, 17),
+                Drop.of("pineapple_pizza", 3, 4, 13), Drop.of("wild_pie", 3, 4, 13), Drop.of("prayer_potion(3)", 2, 2, 13),
+                Drop.of("super_restore_mix", 2, 2, 13), Drop.of("super_combat_potion(1)", 1, 1, 13), Drop.of("zamorak_mix", 1, 1, 13),
+                Drop.of("rune_chainbody", 8, 8, 19), Drop.of("battlestaff", 40, 40, 24), Drop.of("rune_platebody", 8, 8, 32),
+                Drop.of("dragon_plateskirt", 1, 1, 48), Drop.of("dragon_platelegs", 1, 1, 48),
+                Drop.of("blood_rune", 400, 400, 32), Drop.of("law_rune", 150, 150, 32), Drop.of("smoke_rune", 350, 350, 48),
+                Drop.of("soul_rune", 500, 500, 48), Drop.of("soul_rune", 1000, 1000, 48), Drop.of("fire_rune", 40000, 40000, 95),
+                Drop.of("wrath_rune", 800, 800, 95),
+                Drop.of("aether_catalyst", 850, 850, 14), Drop.of("diabolic_worms", 90, 90, 14), Drop.of("barrel_of_demonic_tallow", 1, 1, 19),
+                Drop.of("chasm_teleport_scroll", 6, 6, 24), Drop.of("emerald", 40, 40, 32), Drop.of("ruby", 40, 40, 32),
+                Drop.of("diamond", 40, 40, 32), Drop.of("onyx_bolt_tips", 150, 150, 95),
+                Drop.of("clue_scroll_elite", 1, 1, 30));
+    }
+
+    /**
+     * The Maggot King (OSRS Wiki "Maggot King", 15 July 2026 rates): uniques 1/340 and 1/520, the 159-slot main table (1/N
+     * rounded; stymphike tartare and the dull ancient medal come together) and the elite clue 1/40.
+     */
+    static List<Drop> maggotKingDrops() {
+        return List.of(Drop.of("elder_venator_fang", 1, 1, 340), Drop.of("crimson_kisten", 1, 1, 520),
+                Drop.of("stymphike_tartare", 2, 4, 4), Drop.of("dull_ancient_medal", 1, 1, 4),
+                Drop.of("uncut_ruby", 6, 13, 11), Drop.of("stymphike_feather", 51, 74, 16), Drop.of("mort_myre_fungus", 50, 76, 16),
+                Drop.of("letvek", 23, 34, 16), Drop.of("runite_ore", 12, 15, 32), Drop.of("blood_sac", 8, 11, 32),
+                Drop.of("gold_ore", 24, 32, 32), Drop.of("mithril_ore", 39, 41, 32), Drop.of("adamantite_ore", 30, 40, 16),
+                Drop.of("orikalkum_gravel", 4, 5, 40), Drop.of("venator_fang", 112, 179, 80), Drop.of("venator_tooth", 178, 219, 80),
+                Drop.of("tarnished_spear", 1, 1, 13), Drop.of("tarnished_ring", 1, 1, 27), Drop.of("tarnished_bracelet", 1, 1, 53),
+                Drop.of("tarnished_necklace", 1, 1, 53), Drop.of("tarnished_amulet", 1, 1, 53), Drop.of("tarnished_battleaxe", 1, 1, 80),
+                Drop.of("tarnished_longsword", 1, 1, 80), Drop.of("tarnished_halberd", 1, 1, 80), Drop.of("tarnished_2h_sword", 1, 1, 80),
+                Drop.of("clue_scroll_elite", 1, 1, 40));
     }
 
     static BossDef doom() {
@@ -246,14 +281,44 @@ public final class ModernBosses {
                 .phase(40, "The Maggot King roars, its hide splitting open!", 1.1, false, MAGGOT_MAGIC, MAGGOT_RANGED, MAGGOT_MELEE,
                         MAGGOT_SWARM, MAGGOT_ROAR)
                 // Any unique 1/205.6: elder venator fang 1/340, crimson kisten 1/520. Maggot marquess 1/3,500 (open-stomach).
-                .drops(Drop.of("elder_venator_fang", 1, 1, 340), Drop.of("crimson_kisten", 1, 1, 520),
-                        Drop.of("blood_rune", 300, 600, 8), Drop.of("soul_rune", 150, 300, 8), Drop.of("runite_bar", 4, 8, 10),
-                        Drop.of("coins", 25000, 70000, 4), Drop.of("clue_scroll_elite", 1, 1, 50)) // approx
+                .drops(maggotKingDrops().toArray(new Drop[0]))
                 .pet("pet_maggot_marquess").at("maggot_kings_hive").arena(14, "crypt").size(2.2f, 2.6f, 2.0f).moveSpeed(0.0);
     }
 
     /** Uniques and pets with their OSRS equipment bonuses (wiki infobox values). */
     static void items(ItemSink items) {
+        // Round 29: Yama and Maggot King common loot (OSRS Wiki names; values approx where the wiki gives none).
+        items.add("diabolic_worms", "Diabolic worms", Kind.SIMPLE, "bait", 0x8A2A2A).value(60).stack(100000) // value approx
+                .examine("Worms from the depths of the Chasm of Fire.");
+        items.add("barrel_of_demonic_tallow", "Barrel of demonic tallow (full)", Kind.SIMPLE, "pot_item", 0x5A3A2A).value(1000) // value approx
+                .examine("A barrel of demonic tallow.");
+        items.add("chasm_teleport_scroll", "Chasm teleport scroll", Kind.SIMPLE, "note", 0xC04020).value(200).stack(100000) // value approx
+                .examine("A scroll that teleports you to the Chasm of Fire.");
+        items.add("forgotten_lockbox", "Forgotten lockbox", Kind.SIMPLE, "casket", 0x6A5A4A).value(1000) // value approx
+                .examine("A lockbox left behind by one of Yama's victims.");
+        items.add("stymphike_tartare", "Stymphike tartare", Kind.FOOD, "meat_cooked", 0xB04040).heal(18).value(300) // heal approx
+                .examine("Raw, but perfectly safe to eat.");
+        items.add("dull_ancient_medal", "Dull ancient medal", Kind.SIMPLE, "mark", 0xA08A5A).value(500).stack(100000) // value approx
+                .examine("An old medal, dull with age.");
+        items.add("stymphike_feather", "Stymphike feather", Kind.SIMPLE, "secondary", 0x8A6A4A).value(20).stack(100000) // value approx
+                .examine("A sharp feather from a stymphike.");
+        items.add("letvek", "Letvek", Kind.SIMPLE, "secondary", 0x6A8A3A).value(50).stack(100000) // value approx
+                .examine("A pungent Varlamoran root.");
+        items.add("orikalkum_gravel", "Orikalkum gravel", Kind.SIMPLE, "ore", 0xC08A3A).value(500).stack(100000) // value approx
+                .examine("Gravel with flecks of orikalkum.");
+        items.add("blood_sac", "Blood sac", Kind.SIMPLE, "secondary", 0x8A1A1A).value(100).stack(100000) // value approx
+                .examine("A sac full of blood.");
+        items.add("venator_fang", "Venator fang", Kind.SIMPLE, "secondary", 0xE0D8C0).value(30).stack(100000) // value approx
+                .examine("A small fang from a venator.");
+        items.add("venator_tooth", "Venator tooth", Kind.SIMPLE, "secondary", 0xD8D0B8).value(20).stack(100000) // value approx
+                .examine("A tooth from a venator.");
+        String[][] tarnished = {{"spear", "spear"}, {"ring", "ring"}, {"bracelet", "ring"}, {"necklace", "necklace"}, {"amulet", "amulet"},
+                {"battleaxe", "battleaxe"}, {"longsword", "longsword"}, {"halberd", "spear"}, {"2h_sword", "2h_sword"}};
+        for (String[] t : tarnished) {
+            String name = "Tarnished " + t[0].replace("2h_sword", "2h sword");
+            items.add("tarnished_" + t[0], name, Kind.SIMPLE, t[1], 0x7A6A4A).value(5000) // value approx
+                    .examine("Old and tarnished. It might be worth something to a collector.");
+        }
         // ---------------- Yama ----------------
         BossItems.wearItem(items, "oathplate_helm", "Oathplate helm", Kind.ARMOUR, "full_helm", 0x5A2A2A, 15_000_000, Slot.HEAD,
                 st(0, 10, 0, -2, -7, 50, 72, 45, 0, 50, 6, 0, 0, 0), Skill.DEFENCE, 85).examine("A helm sworn to Yama.");

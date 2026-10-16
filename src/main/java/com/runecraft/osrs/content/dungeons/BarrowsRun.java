@@ -21,7 +21,7 @@ import java.util.Random;
  * spanning tree of the corridors plus one extra, so every room can be reached but the route changes.
  * About half of the doors into the chest room pose a puzzle ({@link BarrowsPuzzles}) that must be
  * solved once per run, brothers who are still alive may ambush the player in the tunnels
- * ({@link #tunnelEncounter(Random)}), and killing tunnel monsters adds a little reward potential.
+ * ({@link #tunnelEncounter(Random)}), and killing tunnel monsters adds their combat levels to the reward potential.
  */
 public final class BarrowsRun {
     public static final int EDGES = 12;
@@ -34,6 +34,7 @@ public final class BarrowsRun {
     private boolean hiddenSummoned;
     private int solved;
     private int monsterKills;
+    private int monsterLevels;
 
     private BarrowsRun(int killed, int summoned, int tunnel, long seed, boolean hiddenSummoned, int solved, int monsterKills) {
         this.killed = killed & ALL;
@@ -60,6 +61,14 @@ public final class BarrowsRun {
         return new BarrowsRun(killed, summoned, tunnel, seed, hiddenSummoned, solved, monsterKills);
     }
 
+    /** Restores a saved run including the combat levels of the tunnel monsters killed (reward potential). */
+    public static BarrowsRun of(int killed, int summoned, int tunnel, long seed, boolean hiddenSummoned, int solved, int monsterKills,
+                                int monsterLevels) {
+        BarrowsRun run = new BarrowsRun(killed, summoned, tunnel, seed, hiddenSummoned, solved, monsterKills);
+        run.monsterLevels = Math.max(0, Math.min(LEVEL_SUM_CAP, monsterLevels));
+        return run;
+    }
+
     /** Ends the run (after the chest is looted): everything is reset and a new tunnel brother picked. */
     public void reset(Random random) {
         killed = 0;
@@ -69,6 +78,7 @@ public final class BarrowsRun {
         hiddenSummoned = false;
         solved = 0;
         monsterKills = 0;
+        monsterLevels = 0;
     }
 
     public int killedMask() {
@@ -100,7 +110,7 @@ public final class BarrowsRun {
         return solved;
     }
 
-    /** Tunnel monsters killed this run (all of them; only {@link #MONSTER_POTENTIAL_CAP} count). */
+    /** Tunnel monsters killed this run. */
     public int monsterKills() {
         return monsterKills;
     }
@@ -283,26 +293,63 @@ public final class BarrowsRun {
 
     // ------------------------------------------------------------------ rewards
 
-    /** At most this many tunnel monster kills add reward potential. */
-    public static final int MONSTER_POTENTIAL_CAP = 10;
-    /** Percent more coins and runes per counted tunnel monster kill (so at most +50%). */
-    public static final int MONSTER_POTENTIAL_PERCENT = 5;
+    /** OSRS Wiki: the combat levels counted toward reward potential are capped at this sum. */
+    public static final int LEVEL_SUM_CAP = 1000;
+    /** Full reward potential: 1000 + 2 x 6 brothers. */
+    public static final int MAX_POTENTIAL = 1012;
+    /** Elite clue scroll chance per roll (1/200; the first success skips the clue roll on later rolls). */
+    public static final int CLUE_CHANCE = 200;
 
-    /** A monster was killed in the tunnels this run. */
-    public void addMonsterKill() {
-        if (monsterKills < 1000) {
-            monsterKills++;
+    /**
+     * The main table (OSRS Wiki "Chest (Barrows)", reward mechanics): a roll of 1..potential lands in a band; the band's
+     * item comes in a quantity that grows across the band from the wiki's minimum to its maximum (the wiki lists the range
+     * at full potential; the even spread within a band is approx). Key halves and the dragon med helm are always 1.
+     */
+    public record Band(String item, int from, int to, int minQty, int maxQty) {
+        public int quantity(int roll) {
+            if (to <= from || maxQty <= minQty) {
+                return minQty;
+            }
+            return minQty + (int) ((long) (roll - from) * (maxQty - minQty) / (to - from));
         }
     }
 
-    /** Reward potential from tunnel monsters: one point per kill, capped. */
-    public int monsterPotential() {
-        return Math.min(MONSTER_POTENTIAL_CAP, monsterKills);
+    public static final List<Band> BANDS = List.of(
+            new Band("coins", 1, 380, 2, 774),
+            new Band("mind_rune", 381, 505, 253, 336),
+            new Band("chaos_rune", 506, 630, 112, 139),
+            new Band("death_rune", 631, 755, 70, 83),
+            new Band("blood_rune", 756, 880, 37, 43),
+            new Band("bolt_rack", 881, 1005, 35, 40),
+            new Band("loop_half_of_key", 1006, 1008, 1, 1),
+            new Band("tooth_half_of_key", 1009, 1011, 1, 1),
+            new Band("dragon_med_helm", 1012, 1012, 1, 1));
+
+    /** A monster was killed in the tunnels this run (its combat level adds reward potential). */
+    public void addMonsterKill(int combatLevel) {
+        if (monsterKills < 1000) {
+            monsterKills++;
+        }
+        monsterLevels = (int) Math.min(LEVEL_SUM_CAP, (long) monsterLevels + Math.max(0, combatLevel));
     }
 
-    /** Coins/runes quantity multiplier in percent from the tunnel monster kills (100 = none). */
-    public int quantityPercent() {
-        return 100 + MONSTER_POTENTIAL_PERCENT * monsterPotential();
+    /** Combat levels of the tunnel monsters killed this run (capped at {@link #LEVEL_SUM_CAP}). */
+    public int monsterLevels() {
+        return monsterLevels;
+    }
+
+    /**
+     * OSRS Wiki reward potential R = min(sum of combat levels killed, 1000) + 2 x brothers killed: the brothers count with
+     * their combat levels (656 for all six) plus the tunnel monsters.
+     */
+    public int rewardPotential() {
+        int sum = monsterLevels;
+        for (int i = 0; i < 6; i++) {
+            if (killed(i)) {
+                sum += Barrows.BROTHERS.get(i).combatLevel();
+            }
+        }
+        return Math.min(LEVEL_SUM_CAP, sum) + 2 * killedCount();
     }
 
     /** One stack from the chest. */
@@ -323,41 +370,55 @@ public final class BarrowsRun {
         return !d.item().equals("coins") && !d.item().endsWith("_rune") && !d.item().startsWith("#");
     }
 
+    /** The main-table band a roll (1..potential) lands in, or null. */
+    public static Band band(int roll) {
+        for (Band b : BANDS) {
+            if (roll >= b.from() && roll <= b.to()) {
+                return b;
+            }
+        }
+        return null;
+    }
+
     /**
-     * Rolls the chest using the brothers' own drop tables ({@link Boss#drops()}): every roll is either
-     * one of the killed brothers' equipment pieces (OSRS chance) or one of the common lines (coins and
-     * runes) of the brothers' tables. Nothing can be won from a brother who wasn't killed. Tunnel
-     * monster kills raise the coin and rune quantities ({@link #quantityPercent()}).
+     * Rolls the chest (OSRS Wiki): one roll per brother killed plus one. Each roll first tries for a Barrows piece of a killed
+     * brother (1 / (450 - 58N); a piece already won this chest is never picked again); otherwise it rolls 1..reward potential
+     * on the main table ({@link #BANDS}). Each roll also has a 1/200 elite clue chance until one is won.
      */
     public List<Reward> rollRewards(Random random) {
         int n = killedCount();
         List<String> pieces = new ArrayList<>();
-        List<Drop> common = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
+            if (!killed(i)) {
+                continue;
+            }
             for (Drop d : Barrows.BROTHERS.get(i).drops()) {
-                if (isPiece(d)) {
-                    if (killed(i)) {
-                        pieces.add(d.item());
-                    }
-                } else if (!common.contains(d)) {
-                    common.add(d);
+                if (isPiece(d) && !pieces.contains(d.item())) {
+                    pieces.add(d.item());
                 }
             }
         }
+        int potential = rewardPotential();
         Map<String, Integer> out = new LinkedHashMap<>();
         int chance = barrowsItemChance(n);
+        boolean clue = false;
         for (int roll = 0; roll < rolls(n); roll++) {
-            if (!pieces.isEmpty() && random.nextInt(chance) == 0) {
-                String piece = pieces.get(random.nextInt(pieces.size()));
-                if (!out.containsKey(piece)) {
-                    out.put(piece, 1);
-                    continue;
-                }
+            if (!clue && random.nextInt(CLUE_CHANCE) == 0) {
+                clue = true;
+                out.put("clue_scroll_elite", 1);
             }
-            Drop d = common.get(random.nextInt(common.size()));
-            int count = d.min() + (d.max() > d.min() ? random.nextInt(d.max() - d.min() + 1) : 0);
-            count = (int) ((long) count * quantityPercent() / 100);
-            out.merge(d.item(), count, Integer::sum);
+            if (!pieces.isEmpty() && random.nextInt(chance) == 0) {
+                out.put(pieces.remove(random.nextInt(pieces.size())), 1);
+                continue;
+            }
+            if (potential < 1) {
+                continue;
+            }
+            int r = 1 + random.nextInt(Math.min(potential, MAX_POTENTIAL));
+            Band b = band(r);
+            if (b != null) {
+                out.merge(b.item(), b.quantity(r), Integer::sum);
+            }
         }
         List<Reward> list = new ArrayList<>();
         out.forEach((item, count) -> list.add(new Reward(item, count)));

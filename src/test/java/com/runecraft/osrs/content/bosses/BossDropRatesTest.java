@@ -155,7 +155,7 @@ class BossDropRatesTest {
         for (String piece : new String[]{"oathplate_helm", "oathplate_chest", "oathplate_legs"}) {
             assertEquals(600, rate("yama", piece));
         }
-        assertEquals(17, rate("yama", "dossier"));
+        assertEquals(12, rate("yama", "dossier")); // wiki 1/12.1 (round 29)
         for (String u : new String[]{"mokhaiotl_cloth", "eye_of_ayak", "avernic_treads"}) {
             assertEquals(540, rate("doom_of_mokhaiotl", u));
         }

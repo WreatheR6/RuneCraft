@@ -100,6 +100,9 @@ public final class SysState extends PersistentState {
         public boolean cannonOut;
         public int cannonSteel;
         public int cannonGranite;
+        /** Looting bag contents (LootingBagService) and whether the bag is open (auto-collects Wilderness pickups). */
+        public final com.runecraft.osrs.content.systems.LootingBag.Contents lootingBag = new com.runecraft.osrs.content.systems.LootingBag.Contents();
+        public boolean lootingBagOpen;
 
         public ItemStack worn(Jewellery.Slot slot) {
             return worn.getOrDefault(slot, ItemStack.EMPTY);
@@ -181,6 +184,18 @@ public final class SysState extends PersistentState {
                 cannon.putInt("Granite", cannonGranite);
                 n.put("Cannon", cannon);
             }
+            NbtList bag = new NbtList();
+            for (com.runecraft.osrs.content.systems.LootingBag.Stack st : lootingBag.stacks()) {
+                NbtCompound c = new NbtCompound();
+                c.putString("Item", st.item);
+                c.putString("Tag", st.tag);
+                c.putBoolean("Noted", st.noted);
+                c.putBoolean("Stackable", st.stackable);
+                c.putLong("Count", st.count());
+                bag.add(c);
+            }
+            n.put("LootingBag", bag);
+            n.putBoolean("LootingBagOpen", lootingBagOpen);
             return n;
         }
 
@@ -257,6 +272,14 @@ public final class SysState extends PersistentState {
             cannonOut = n.contains("Cannon");
             cannonSteel = n.getCompound("Cannon").getInt("Steel");
             cannonGranite = n.getCompound("Cannon").getInt("Granite");
+            lootingBag.takeAll();
+            NbtList bag = n.getList("LootingBag", NbtElement.COMPOUND_TYPE);
+            for (int i = 0; i < bag.size(); i++) {
+                NbtCompound c = bag.getCompound(i);
+                lootingBag.restore(new com.runecraft.osrs.content.systems.LootingBag.Stack(c.getString("Item"), c.getString("Tag"),
+                        c.getBoolean("Noted"), c.getBoolean("Stackable"), c.getLong("Count")));
+            }
+            lootingBagOpen = n.getBoolean("LootingBagOpen");
         }
     }
 

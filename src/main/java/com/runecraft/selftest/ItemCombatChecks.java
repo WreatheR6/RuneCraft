@@ -189,6 +189,7 @@ final class ItemCombatChecks {
             checks.add(g.check("slayer:" + m.id(), () -> g.slayer(m)));
         }
         checks.add(g.check("bank:deposit_withdraw_notes", g::bank));
+        checks.add(g.check("item:looting_bag", g::lootingBag));
         checks.add(g.check("ge:instant_buy_sell", g::geInstant));
         checks.add(g.check("ge:offer_abort_collect", g::geOffer));
         for (ShopDef s : Shops.all()) {
@@ -1261,6 +1262,61 @@ final class ItemCombatChecks {
             }
         }
         return -1;
+    }
+
+    /** Looting bag: store tradeables, survive a save/load of the systems state, bank everything when a bank opens. */
+    private String lootingBag() {
+        String item = "lobster";
+        String bagId = com.runecraft.osrs.content.systems.LootingBag.ID;
+        BankModel bank = data().bank();
+        long bankedBefore = bank.count(item, "");
+        SysState.SysPlayer sp = SysState.of(p());
+        sp.lootingBag.takeAll();
+        sp.lootingBagOpen = false;
+        Inv.remove(p(), bagId, Inv.count(p(), bagId));
+        Inv.remove(p(), item, Inv.count(p(), item));
+        try {
+            Inv.give(p(), bagId, 1);
+            Inv.give(p(), item, 6);
+            int stored = com.runecraft.content.systems.LootingBagService.storeAll(p(), true);
+            if (stored != 6 || Inv.count(p(), item) != 0 || sp.lootingBag.count(item) != 6 || sp.lootingBag.slotsUsed() != 6) {
+                throw failure("storing 6 lobsters put " + stored + " in the bag (" + sp.lootingBag.count(item) + " in " + sp.lootingBag.slotsUsed()
+                        + " slots), " + Inv.count(p(), item) + " left carried");
+            }
+            SysState state = SysState.get(p().getServer());
+            state.selfTestRestore(p().getUuid(), state.selfTestSave(p().getUuid()));
+            sp = SysState.of(p());
+            if (sp.lootingBag.count(item) != 6) {
+                throw failure("bag contents lost on save/load: " + com.runecraft.content.systems.LootingBagService.contents(p()));
+            }
+            int bagSlot = -1;
+            for (int i = 0; i < p().getInventory().main.size(); i++) {
+                if (bagId.equals(Inv.idOf(p().getInventory().main.get(i)))) {
+                    bagSlot = i;
+                }
+            }
+            if (bagSlot < 0) {
+                throw failure("no looting bag in the inventory");
+            }
+            ItemStack bagStack = p().getInventory().main.get(bagSlot).copy();
+            p().getInventory().main.set(bagSlot, ItemStack.EMPTY);
+            p().setStackInHand(Hand.MAIN_HAND, bagStack);
+            BankService.open(p());
+            BankService.selfTestAction(p(), BankService.OP_CLOSE, "", 0, BankQuantity.Mode.ONE, 0);
+            if (!sp.lootingBag.isEmpty() || bank.count(item, "") != bankedBefore + 6) {
+                throw failure("opening the bank with the bag left " + sp.lootingBag.slotsUsed() + " stacks in it and banked "
+                        + (bank.count(item, "") - bankedBefore) + " lobsters");
+            }
+            return "6 lobsters stored, kept over save/load and banked";
+        } finally {
+            long extra = bank.count(item, "") - bankedBefore;
+            if (extra > 0) {
+                bank.withdraw(item, "", extra);
+            }
+            SysState.of(p()).lootingBag.takeAll();
+            Inv.remove(p(), bagId, Inv.count(p(), bagId));
+            Inv.remove(p(), item, Inv.count(p(), item));
+        }
     }
 
     private String bank() {

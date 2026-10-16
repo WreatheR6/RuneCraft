@@ -174,9 +174,10 @@ public final class DiaryRewards {
         return hardDone || (mediumDone && inArdougne) ? 1.1 : 1.0;
     }
 
-    /** Morytania elite diary: 50% more runes from the Barrows chest. */
-    public static double barrowsRuneMultiplier(boolean eliteDone) {
-        return eliteDone ? 1.5 : 1.0;
+    /** Morytania hard diary: 50% more runes from the Barrows chest. */
+    public static double barrowsRuneMultiplier(boolean hardDone) {
+        // Morytania legs 3 (hard diary, OSRS Wiki "Morytania Diary"): 50% more runes from the Barrows chest.
+        return hardDone ? 1.5 : 1.0;
     }
 
     // ------------------------------------------------------------------ perks hooked into other systems

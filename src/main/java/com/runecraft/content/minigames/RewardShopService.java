@@ -122,6 +122,11 @@ public final class RewardShopService {
             ItemDef def = ItemCatalog.get(e.requiresItem());
             return "Requires " + (def == null ? e.requiresItem() : def.name());
         }
+        String tool = e.reward() == RewardShop.Reward.UPGRADE ? com.runecraft.osrs.content.minigames.MinigameRules.Imbues.tool(e.requiresItem()) : null;
+        if (tool != null && !Inv.has(player, tool, 1)) {
+            ItemDef def = ItemCatalog.get(tool);
+            return "Requires " + (def == null ? tool : def.name().toLowerCase(java.util.Locale.ROOT)) + " in your inventory";
+        }
         if (e.item().startsWith(com.runecraft.osrs.content.minigames.RewardShops.GRACEFUL_RECOLOUR)) {
             for (com.runecraft.osrs.content.skilling.AgilityData.Piece p : com.runecraft.osrs.content.skilling.AgilityData.GRACEFUL) {
                 if (!Inv.has(player, p.id(), 1)) {

@@ -158,6 +158,7 @@ public final class ItemUses {
         }
         PlayerData data = Players.data(player);
         int prayer = potion.apply(data.skills());
+        prayer += prayer > 0 ? wrenchBonus(player, 25) : 0;
         if (prayer > 0) {
             // Prayer restores never exceed the (possibly boosted) Prayer level.
             int cap = Math.max(data.skills().level(Skill.PRAYER), data.skills().currentLevel(Skill.PRAYER));
@@ -320,4 +321,21 @@ public final class ItemUses {
         MagicService.autocastAttack(player);
     }
 
+
+    /**
+     * Holy wrench (carried), prayer cape or ring of the gods (i) (worn): the extra prayer points for one dose of a
+     * prayer-restoring potion whose restore is {@code percent}% of the Prayer level ({@link com.runecraft.osrs.data.Potion#wrenchBonus}).
+     */
+    public static int wrenchBonus(ServerPlayerEntity player, int percent) {
+        boolean wrench = com.runecraft.util.Inv.has(player, com.runecraft.osrs.data.Potion.HOLY_WRENCH, 1);
+        if (!wrench) {
+            var sp = com.runecraft.content.systems.SysState.of(player);
+            for (String id : com.runecraft.osrs.data.Potion.WRENCH_WORN) {
+                wrench |= sp.wearing(id);
+            }
+            wrench |= com.runecraft.osrs.data.Potion.WRENCH_WORN.contains(com.runecraft.util.Inv.idOf(
+                    player.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST)));
+        }
+        return wrench ? com.runecraft.osrs.data.Potion.wrenchBonus(Players.data(player).skills().level(com.runecraft.osrs.Skill.PRAYER), percent) : 0;
+    }
 }

@@ -205,6 +205,22 @@ public final class ClassicBosses {
                 .size(1.0f, 1.0f, 2.2f).moveSpeed(0.25);
     }
 
+    /**
+     * The Mimic from a master casket, killed on the first attempt (OSRS Wiki "The Mimic", master drops): always a mahogany
+     * plank; main table 221/1,140 each of 600 death runes, 500 blood runes, 25 noted grimy ranarr weed, 25 noted wine of zamorak
+     * and 15 noted raw manta rays. The ring of 3rd age / 3rd age pre-roll is the systems module's (MimicRewards). Later
+     * attempts (smaller quantities, 6/240) aren't modelled.
+     */
+    static List<Drop> mimicDrops() {
+        List<Drop> d = new java.util.ArrayList<>(List.of(Drop.always("mahogany_plank")));
+        d.add(Drop.of("death_rune", 600, 600, 5));
+        d.add(Drop.of("blood_rune", 500, 500, 5));
+        d.add(Drop.of("grimy_ranarr_weed", 25, 25, 5));
+        d.add(Drop.of("wine_of_zamorak", 25, 25, 5));
+        d.add(Drop.of("raw_manta_ray", 15, 15, 5));
+        return d;
+    }
+
     static BossDef mimic() {
         // The Mimic guards elite/master caskets: summon it with a master clue and loot extra clue rewards.
         return BossDef.of("the_mimic", "The Mimic").level(186).stats(220, 160, 160, 150, 1, 150).speed(4)
@@ -213,8 +229,7 @@ public final class ClassicBosses {
                 .attack(AttackDef.of("candy_barrage", AttackType.RANGED, 28, 12, 3).special(Special.SKY_STRIKE, 0)
                         .telegraph(3, "The Mimic flings a barrage of candies!").particle("minecraft:totem_of_undying"))
                 .attack(AttackDef.of("lid_slam", AttackType.CRUSH, 25, 3, 2).special(Special.AOE, 3))
-                .drops(Drop.of("coins", 50000, 150000, 1), Drop.of("rune_platebody", 1, 1, 4), Drop.of("dragon_scimitar", 1, 1, 8),
-                        Drop.of("dragon_longsword", 1, 1, 12), Drop.of("onyx", 1, 1, 20), Drop.of("clue_scroll_elite", 1, 1, 4))
+                .drops(mimicDrops().toArray(new Drop[0]))
                 .key("clue_scroll_master").at("watsons_house").arena(10, "stone")
                 .size(1.0f, 1.0f, 1.8f).moveSpeed(0.2);
     }

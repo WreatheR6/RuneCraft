@@ -1,0 +1,11 @@
+# OSRS Wiki "Chest (Barrows)" reward mechanics: item, reward potential range of its band, quantity range at full potential.
+# item	rp_from	rp_to	min	max
+coins	1	380	2	774
+mind_rune	381	505	253	336
+chaos_rune	506	630	112	139
+death_rune	631	755	70	83
+blood_rune	756	880	37	43
+bolt_rack	881	1005	35	40
+loop_half_of_key	1006	1008	1	1
+tooth_half_of_key	1009	1011	1	1
+dragon_med_helm	1012	1012	1	1

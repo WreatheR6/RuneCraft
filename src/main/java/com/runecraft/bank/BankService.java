@@ -106,13 +106,22 @@ public final class BankService {
             unnote(player);
             return;
         }
+        bankLootingBag(player);
         OPEN.put(player.getUuid(), new Session(player.getPos(), false));
         send(player, true);
     }
 
     public static void openDepositBox(ServerPlayerEntity player) {
+        bankLootingBag(player);
         OPEN.put(player.getUuid(), new Session(player.getPos(), true));
         send(player, true);
+    }
+
+    /** Holding the looting bag when the bank opens banks everything in it (OSRS: the bank's looting bag "deposit all"). */
+    private static void bankLootingBag(ServerPlayerEntity player) {
+        if (com.runecraft.osrs.content.systems.LootingBag.ID.equals(Inv.idOf(player.getMainHandStack()))) {
+            com.runecraft.content.systems.LootingBagService.bankAll(player);
+        }
     }
 
     /** Exchanges the notes in hand for items, one per free inventory slot (or a stack per slot for stacking items). */

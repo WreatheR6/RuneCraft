@@ -45,6 +45,8 @@ public final class SystemsHooks implements ModuleHooks {
         CapeService.registerCommands();
         AccessGateService.register();
         ChargeService.register();
+        LootingBagService.register();
+        PrayerOfferings.register();
         CombatAchievementService.register();
         CaMenus.registerHandlers();
         DiaryExtrasService.register();
@@ -62,6 +64,14 @@ public final class SystemsHooks implements ModuleHooks {
             DiaryService.onKill(p, e, stats);
             SpellService.onKill(p, e);
             JewelleryService.onKill(p, e, stats);
+            if (com.runecraft.osrs.content.systems.MimicRewards.MIMIC.equals(
+                    net.minecraft.registry.Registries.ENTITY_TYPE.getId(e.getType()).getPath())) {
+                String unique = com.runecraft.osrs.content.systems.MimicRewards.roll(new java.util.Random(p.getRandom().nextLong()));
+                if (unique != null) {
+                    e.dropStack(Inv.stack(unique, 1));
+                    com.runecraft.collection.CollectionLog.obtain(p, unique);
+                }
+            }
         });
         GameEvents.onXp(DiaryService::onXp);
         GameEvents.onMake(DiaryService::onMake);
@@ -195,7 +205,7 @@ public final class SystemsHooks implements ModuleHooks {
             return com.runecraft.osrs.data.Thieving.coinPouchLimit(tier);
         };
         com.runecraft.content.dungeons.BarrowsHooks.runeBonus = p ->DiaryRewards.barrowsRuneMultiplier(
-                Diaries.tierComplete(SysState.of(p).diaryDone, "morytania", Diaries.Tier.ELITE));
+                Diaries.tierComplete(SysState.of(p).diaryDone, "morytania", Diaries.Tier.HARD));
         com.runecraft.content.minigames.RewardShopService.costAdjuster = (p, shop, amount) -> shop.equals("tzhaar")
                 ? DiaryRewards.tzhaarPrice(amount, SysState.of(p).wornId(Jewellery.Slot.HANDS).startsWith("karamja_gloves_")) : amount;
         com.runecraft.content.minigames.RewardShopService.imbueCost = (p, amount) ->
