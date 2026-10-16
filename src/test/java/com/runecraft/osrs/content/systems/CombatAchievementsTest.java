@@ -19,6 +19,8 @@ import com.runecraft.osrs.data.Monster;
 import com.runecraft.osrs.data.Untradeables;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -98,7 +100,7 @@ class CombatAchievementsTest {
 
     @Test
     void awakenedAndDelveTasksAreTracked() {
-        assertEquals(561, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
+        assertEquals(573, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
         for (int id : new int[]{490, 499, 508, 517, 610, 611, 612, 616, 617, 618, 619, 621, 622, 623}) {
             assertTrue(CombatAchievements.task("ca_" + id).track() != Track.UNTRACKED, "ca_" + id);
         }
@@ -119,6 +121,97 @@ class CombatAchievementsTest {
         assertTrue(CombatAchievementRules.meets("onehand", m));
         m.weapons.add("scythe_of_vitur");
         assertFalse(CombatAchievementRules.meets("onehand", m));
+    }
+
+    @Test
+    void round26TasksAreTracked() {
+        for (int id : new int[]{6, 26, 27, 30, 159, 344, 520, 555, 562, 563, 565, 591}) {
+            assertTrue(CombatAchievements.task("ca_" + id).track() != Track.UNTRACKED, "ca_" + id);
+        }
+        assertEquals(CombatAchievements.BARROWS_RUN, CombatAchievements.task("ca_30").target());
+        CombatAchievementRules.Metrics m = new CombatAchievementRules.Metrics();
+        String faithless = CombatAchievements.task("ca_30").rule();
+        m.killed.put("barrows_brother", 6);
+        assertTrue(CombatAchievementRules.meets(faithless, m));
+        m.flags.add(CombatAchievements.FLAG_HAD_PRAYER);
+        assertFalse(CombatAchievementRules.meets(faithless, m));
+        CombatAchievementRules.Metrics t = new CombatAchievementRules.Metrics();
+        t.killed.put("barrows_brother", 6);
+        t.attackers.add("ahrim the blighted");
+        assertTrue(CombatAchievementRules.meets(CombatAchievements.task("ca_26").rule(), t));
+        t.attackers.add("verac the defiled");
+        assertFalse(CombatAchievementRules.meets(CombatAchievements.task("ca_26").rule(), t));
+        CombatAchievementRules.Metrics v = new CombatAchievementRules.Metrics();
+        v.flags.add(CombatAchievements.FLAG_VENGEANCE_ON + "explosion");
+        assertTrue(CombatAchievementRules.meets(CombatAchievements.task("ca_6").rule(), v));
+    }
+
+    /** Values of the String constants in the pure-Java core (flag names live in CombatAchievements, DoomDelves...). */
+    private static Map<String, List<String>> coreConstants(List<Path> core) throws java.io.IOException {
+        Map<String, List<String>> byValue = new java.util.HashMap<>();
+        java.util.regex.Pattern c = java.util.regex.Pattern.compile("static final String (\\w+) = \"([^\"]+)\";");
+        for (Path f : core) {
+            java.util.regex.Matcher mt = c.matcher(Files.readString(f));
+            while (mt.find()) {
+                byValue.computeIfAbsent(mt.group(2), k -> new ArrayList<>()).add(mt.group(1));
+            }
+        }
+        return byValue;
+    }
+
+    /**
+     * Every {@code flag=}/{@code noflag=} a rule checks is set somewhere in the Minecraft code: as a string literal, or
+     * through a core constant holding it (or holding a prefix of it ending in ':', like "venge:" or "repeat:").
+     */
+    @Test
+    void everyRuleFlagIsFiredSomewhere() throws java.io.IOException {
+        List<Path> core = new ArrayList<>();
+        StringBuilder game = new StringBuilder();
+        try (var files = Files.walk(Path.of("src/main/java/com/runecraft"))) {
+            for (Path f : files.filter(x -> x.toString().endsWith(".java")).toList()) {
+                if (f.toString().replace('\\', '/').contains("/com/runecraft/osrs/")) {
+                    core.add(f);
+                } else {
+                    game.append(Files.readString(f)).append('\n');
+                }
+            }
+        }
+        String mc = game.toString();
+        Map<String, List<String>> constants = coreConstants(core);
+        java.util.regex.Pattern flag = java.util.regex.Pattern.compile("(?:^|\\s)(?:no)?flag=(\\S+)");
+        List<String> missing = new ArrayList<>();
+        for (Task t : CombatAchievements.tasks()) {
+            if (t.rule() == null) {
+                continue;
+            }
+            java.util.regex.Matcher mt = flag.matcher(t.rule());
+            while (mt.find()) {
+                for (String f : mt.group(1).split("/")) {
+                    if (!fired(f, mc, constants)) {
+                        missing.add(t.name() + ": " + f);
+                    }
+                }
+            }
+        }
+        assertTrue(missing.isEmpty(), "flags never set: " + missing);
+    }
+
+    private static boolean fired(String flag, String mc, Map<String, List<String>> constants) {
+        List<String> values = new ArrayList<>(List.of(flag));
+        for (int i = flag.indexOf(':'); i >= 0; i = flag.indexOf(':', i + 1)) {
+            values.add(flag.substring(0, i + 1));
+        }
+        for (String v : values) {
+            if (mc.contains("\"" + v + "\"")) {
+                return true;
+            }
+            for (String name : constants.getOrDefault(v, List.of())) {
+                if (java.util.regex.Pattern.compile("\\b" + name + "\\b").matcher(mc).find()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Test
@@ -176,7 +269,8 @@ class CombatAchievementsTest {
                     }
                 }
                 case RUN -> {
-                    boolean delve = t.target().startsWith("delve:") && bosses.contains(t.target().substring(6));
+                    boolean delve = t.target().startsWith("delve:") && bosses.contains(t.target().substring(6))
+                            || t.target().equals(CombatAchievements.BARROWS_RUN);
                     if (!delve && (!t.target().startsWith("mg:") || !minigames.contains(t.target().substring(3)))) {
                         problems.add(t.name() + ": no minigame " + t.target());
                     }

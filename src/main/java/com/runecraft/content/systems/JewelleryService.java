@@ -438,6 +438,9 @@ public final class JewelleryService {
                 if (back > 0) {
                     // Combat Achievements "finish with Vengeance": the recoil is the player's latest damage until they attack again.
                     CombatAchievementService.flag(p, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_VENGEANCE_LAST);
+                    // "Demonic Rebound": which attack the recoil reflected (the Abyssal Sire's explosion).
+                    CombatAchievementService.flag(p, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_VENGEANCE_ON
+                            + CombatAchievementService.lastHitAttack(p));
                     CombatHandler.applyDamage(p, attacker, back);
                 }
                 SysNet.sendState(p);

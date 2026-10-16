@@ -858,6 +858,18 @@ public final class CombatAchievementRules {
             552;RULE;kill:tormented demon;1;flag=td_shield_down
             331;RULE;zalcano;1;solo
             200;RULE;dagannoth_prime;1;finishspec finish=rune_thrownaxe
+            6;RULE;abyssal_sire;1;flag=venge:explosion
+            520;RULE;duke_sucellus;1;noflag=off_beat
+            565;RULE;araxxor;1;noflag=target_moved
+            563;RULE;araxxor;1;noflag=toxin_immune
+            562;RULE;araxxor;1;nodmg=acid_spit,web_magic,acid_ball,hazard,other,offprayer noflag=araxxor_enrage_hit
+            555;RULE;kill:tormented demon;1;flag=rapid_reload
+            159;RULE;kalphite_queen;1;flag=defence_lowered
+            591;RULE;branda_the_fire_queen;1;noflag=titans_both
+            344;RUN;mg:inferno;1;flag=jads_quick
+            27;RUN;run:barrows;1;killed>=6:barrows_brother nodmg=boss
+            30;RUN;run:barrows;1;killed>=6:barrows_brother noflag=had_prayer
+            26;RUN;run:barrows;1;killed>=6:barrows_brother noattacker=*dharok/*verac/*torag/*guthan
             """;
 
     private static final Map<Integer, Spec> SPECS = new LinkedHashMap<>();

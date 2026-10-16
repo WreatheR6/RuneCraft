@@ -85,6 +85,11 @@ public final class PoisonService {
         return s != null && s.venomImmune(gameTick);
     }
 
+    public static boolean isPoisonImmune(LivingEntity target, long gameTick) {
+        Toxins.State s = STATES.get(target.getUuid());
+        return s != null && s.poisonImmune(gameTick);
+    }
+
     /** Called once per game tick for each player (and for module mobs from their tick). */
     public static void tick(LivingEntity entity, long gameTick) {
         Toxins.State s = STATES.get(entity.getUuid());

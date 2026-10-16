@@ -201,7 +201,7 @@ class CombatAchievementRulesTest {
                     continue;
                 }
                 for (String n : name.split("/")) {
-                    if (!n.startsWith("used:") && !n.startsWith("repeat:") && !reported.contains(n)) {
+                    if (!n.startsWith("used:") && !n.startsWith("repeat:") && !n.startsWith(CombatAchievements.FLAG_VENGEANCE_ON) && !reported.contains(n)) {
                         problems.add(t.name() + ": " + n);
                     }
                 }
