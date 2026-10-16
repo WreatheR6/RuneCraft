@@ -148,6 +148,10 @@ public final class MagicService {
             Msg.action(player, "No target.");
             return;
         }
+        if (!(target instanceof ServerPlayerEntity) && target.isInvulnerable()) {
+            Msg.game(player, "You can't attack that."); // GotR's abyssal creatures: no cast, so no base spell XP either
+            return;
+        }
         if (target instanceof ServerPlayerEntity other && !CombatHandler.canAttackPlayer(player, other)) {
             Msg.game(player, "You can't attack that player.");
             return;
@@ -209,6 +213,10 @@ public final class MagicService {
         LivingEntity target = forced != null ? forced : lookTarget(player);
         if (target == null) {
             Msg.action(player, "No target.");
+            return;
+        }
+        if (!(target instanceof ServerPlayerEntity) && target.isInvulnerable()) {
+            Msg.game(player, "You can't attack that."); // GotR's abyssal creatures: no cast, so no base spell XP either
             return;
         }
         if (target instanceof ServerPlayerEntity other && !CombatHandler.canAttackPlayer(player, other)) {

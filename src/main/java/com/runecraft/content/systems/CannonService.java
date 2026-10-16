@@ -484,7 +484,7 @@ public final class CannonService {
     }
 
     static boolean validTarget(LivingEntity e) {
-        if (e instanceof ServerPlayerEntity || e instanceof QuestNpcEntity || e instanceof BossEntity
+        if (e instanceof ServerPlayerEntity || e instanceof QuestNpcEntity || e instanceof BossEntity || e.isInvulnerable()
                 || Multicannon.immune(creatureId(e))) {
             return false;
         }

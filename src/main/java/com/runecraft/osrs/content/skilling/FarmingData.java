@@ -13,6 +13,7 @@ import com.runecraft.osrs.content.PlaceDef;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -74,9 +75,23 @@ public final class FarmingData extends SkillingPart {
         }
     }
 
-    /** Length of one growth cycle of a crop in minutes (potato cacti grow in 10-minute cycles). */
+    /**
+     * Length of one growth cycle of a crop in minutes: potato cacti grow in 10-minute cycles, and the Sailing crops in hops
+     * patches (flax, hemp, cotton) in 20-minute ones although hops grow every 10 (OSRS Wiki: 3/4/5 stages over 60/80/100).
+     */
     public static int cycleMinutes(Crop c) {
-        return c.id().equals("potato_cactus") ? 10 : c.patch().cycleMinutes;
+        if (c.id().equals("potato_cactus")) {
+            return 10;
+        }
+        return SAILING_HOPS.contains(c.id()) ? 20 : c.patch().cycleMinutes;
+    }
+
+    /** Sailing crops grown in hops patches. */
+    public static final Set<String> SAILING_HOPS = Set.of("flax", "hemp", "cotton");
+
+    /** Coral nurseries can't be treated with compost (OSRS Wiki, Coral nursery); every other patch can. */
+    public static boolean compostable(Patch p) {
+        return p != Patch.CORAL;
     }
 
     /** Number of growth cycles of a crop (e.g. oak 5, magic 12, fruit trees 6, redberry 5). */
@@ -318,6 +333,10 @@ public final class FarmingData extends SkillingPart {
     public static boolean secateursBoost(Crop c) {
         return c.patch() == Patch.HOPS || c.patch() == Patch.GRAPE;
     }
+
+    /** Stand-in tile of the Coral Nurseries camp, on the Great Conch's east shore (see {@link #places()}). */
+    public static final int CORAL_NURSERIES_X = 3240;
+    public static final int CORAL_NURSERIES_Y = 2460;
 
     /** Coral nurseries always give at least four coral (OSRS Wiki, Coral nursery). */
     public static final int CORAL_MIN_YIELD = 4;
@@ -570,17 +589,17 @@ public final class FarmingData extends SkillingPart {
         }
         for (String t : SAILING_TREES) {
             Crop c = byId(t);
-            simple(s, c.planted(), c.name().replace(" tree", "") + " sapling", "sapling", c.color(), c.level() * 6);
+            simple(s, c.planted(), c.name().replace(" tree", "") + " sapling", "sapling", c.color(), 1); // wiki: value 1
         }
         simple(s, "giant_seaweed", "Giant seaweed", "secondary", 0x2A5A2A, 2).examine("Seaweed of large size.");
         simple(s, "hemp", "Hemp", "flax", 0x7A8A3A, 30).examine("I should use this with a spinning wheel.");
-        simple(s, "cotton_boll", "Cotton boll", "wool", 0xF0F0E8, 60).examine("I should use this with a spinning wheel.");
-        simple(s, "linen_yarn", "Linen yarn", "string", 0xD8D0B8, 20).examine("Spun from flax, ready for the loom.");
-        simple(s, "hemp_yarn", "Hemp yarn", "string", 0x9AA060, 60).examine("Spun from hemp, ready for the loom.");
+        simple(s, "cotton_boll", "Cotton boll", "wool", 0xF0F0E8, 100).examine("I should use this with a spinning wheel.");
+        simple(s, "linen_yarn", "Linen yarn", "string", 0xD8D0B8, 6).examine("Spun from flax, ready for the loom.");
+        simple(s, "hemp_yarn", "Hemp yarn", "string", 0x9AA060, 35).examine("Spun from hemp, ready for the loom.");
         simple(s, "cotton_yarn", "Cotton yarn", "string", 0xF4F0E8, 120).examine("Spun from cotton, ready for the loom.");
-        simple(s, "elkhorn_coral", "Elkhorn coral", "shard", 0xD0C0A0, 50).examine("A branch of elkhorn coral.");
-        simple(s, "pillar_coral", "Pillar coral", "shard", 0xE0A0B0, 150).examine("A column of pillar coral.");
-        simple(s, "umbral_coral", "Umbral coral", "shard", 0x5A3A7A, 600).examine("A dark piece of umbral coral.");
+        simple(s, "elkhorn_coral", "Elkhorn coral", "shard", 0xD0C0A0, 52).examine("A branch of elkhorn coral.");
+        simple(s, "pillar_coral", "Pillar coral", "shard", 0xE0A0B0, 50).examine("A column of pillar coral.");
+        simple(s, "umbral_coral", "Umbral coral", "shard", 0x5A3A7A, 75).examine("A dark piece of umbral coral.");
         food(s, "redberries", "Redberries", "produce", 0xC02040, 3, 2);
         simple(s, "dwellberries", "Dwellberries", "produce", 0x3A5AA0, 4);
         food(s, "cooking_apple", "Cooking apple", "produce", 0x9AB040, 3, 2);
@@ -777,8 +796,9 @@ public final class FarmingData extends SkillingPart {
                 PlaceDef.of("locus_oasis_hardwood", "Locus Oasis hardwood patch", 1684, 2974, PlaceDef.Style.CAMP,
                         List.of("hardwood_patch")),
                 // The Coral Nurseries lie under water off the Great Conch's east coast (wiki map 3298,8860, entered by the steps
-                // at 3272,2463); approx: the two nurseries stand at the steps.
-                PlaceDef.of("coral_nurseries", "Coral Nurseries", 3272, 2463, PlaceDef.Style.CAMP,
+                // at the end of the dock at 3272,2463). Approx: the Great Conch is still an ellipse whose east coast ends near
+                // x 3248, so the steps tile is open sea; the two nurseries stand on its east shore instead.
+                PlaceDef.of("coral_nurseries", "Coral Nurseries", CORAL_NURSERIES_X, CORAL_NURSERIES_Y, PlaceDef.Style.CAMP,
                         List.of("coral_nursery_patch", "coral_nursery_patch")));
     }
 }

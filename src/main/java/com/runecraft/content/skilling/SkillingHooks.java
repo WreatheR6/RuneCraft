@@ -43,6 +43,7 @@ public final class SkillingHooks implements ModuleHooks {
         AgilityHooks.init();
         GatheringHooks.init();
         AerialFishingHooks.init();
+        DriftNetHooks.init();
         ShootingStarHooks.init();
         CamdozaalHooks.init();
         ResourceSitePlacer.init();

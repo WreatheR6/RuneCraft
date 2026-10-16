@@ -97,6 +97,7 @@ final class SkillChecks {
         checks.add(new SelfTest.Check("skill:celestial_ring", g::celestialRing));
         checks.add(new SelfTest.Check("skill:jewellery_chemistry_bounty", g::chemistryAndBounty));
         checks.add(new SelfTest.Check("skill:farming_flax", g::flaxPatch));
+        checks.add(new SelfTest.Check("skill:drift_net", g::driftNet));
         return checks;
     }
 
@@ -237,6 +238,46 @@ final class SkillChecks {
             return "planted 3 flax seeds, +" + got / 10.0 + " xp";
         } finally {
             com.runecraft.content.skilling.SkillingHooks.clearPatch(c.world, pos);
+            p().getInventory().clear();
+        }
+    }
+
+    /** Drift net fishing: set a net on an anchor, two shoals swim in (Fishing + Hunter XP), harvest gives two rolls. */
+    private String driftNet() {
+        p().getInventory().clear();
+        BlockPos pos = placeNear(com.runecraft.content.minigames.Arena.module(com.runecraft.osrs.content.skilling.DriftNetFishing.ANCHOR));
+        // Nets are saved per anchor position with the world: start clean and forget the net afterwards.
+        com.runecraft.content.skilling.DriftNetHooks.clear(c.world, pos);
+        try {
+            hold(com.runecraft.osrs.content.skilling.DriftNetFishing.NET, 1);
+            useBlock(pos, Direction.UP);
+            if (Inv.count(p(), com.runecraft.osrs.content.skilling.DriftNetFishing.NET) != 0) {
+                throw failure("using the drift net anchor didn't set the net");
+            }
+            int fish0 = xp(Skill.FISHING);
+            int hunter0 = xp(Skill.HUNTER);
+            for (int i = 0; i < 2; i++) {
+                if (!com.runecraft.content.skilling.DriftNetHooks.catchShoal(p(), c.world, pos)) {
+                    throw failure("no fish shoal could swim into the set drift net");
+                }
+            }
+            // Level 99: 77 Fishing and 101.5 Hunter XP per shoal (capped at level 70).
+            int fishXp = gained(Skill.FISHING, fish0, 1540, "two drift net shoals");
+            int hunterXp = gained(Skill.HUNTER, hunter0, 2030, "two drift net shoals");
+            useBlock(pos, Direction.UP);
+            if (com.runecraft.content.skilling.DriftNetHooks.caught(c.world, pos) != 0) {
+                throw failure("harvesting left " + com.runecraft.content.skilling.DriftNetHooks.caught(c.world, pos) + " shoals in the net");
+            }
+            int loot = 0;
+            for (int i = 0; i < p().getInventory().size(); i++) {
+                loot += p().getInventory().getStack(i).getCount();
+            }
+            if (loot < 2) {
+                throw failure("harvesting a 2-shoal drift net gave " + loot + " items");
+            }
+            return "2 shoals, +" + fishXp / 10.0 + " Fishing / +" + hunterXp / 10.0 + " Hunter xp, " + loot + " items harvested";
+        } finally {
+            com.runecraft.content.skilling.DriftNetHooks.clear(c.world, pos);
             p().getInventory().clear();
         }
     }
