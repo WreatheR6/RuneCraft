@@ -45,7 +45,7 @@ final class SlayerTaskMonsters3 {
 
     private static MonsterDef iceTroll(int level, int hp, int att, int str, int def, int max, double slayerXp) {
         MonsterDef d = m("ice_troll_lvl" + level, "Ice troll", level, hp, att, str, def, 1, 1).speed(4).attack(melee(AttackType.CRUSH, max))
-                .attackBonus(60, 0, 0).defenceBonus(30, 60, 30, 0, 0)
+                .attackBonus(60, 0, 0).defenceBonus(30, 60, 30, 0, 0).weakness("fire", 100)
                 .drops(Drop.always("big_bones"), Drop.of("black_platebody", 1, 1, 32), Drop.of("adamant_axe", 1, 1, 64),
                         Drop.of("adamant_kiteshield", 1, 1, 128), Drop.of("black_warhammer", 1, 1, 128), Drop.of("mithril_platebody", 1, 1, 128),
                         Drop.of("rune_battleaxe", 1, 1, 128), Drop.of("blood_rune", 2, 2, 16), Drop.of("blood_rune", 5, 5, 26),
