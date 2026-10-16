@@ -474,11 +474,15 @@ class RaidsContentTest {
         assertEquals(45 * 50, RaidRewards.toaWeight(lightbearer, 425));
         assertEquals(66 * 50, RaidRewards.toaWeight(fang, 320));
         assertEquals(70 * 50, RaidRewards.toaWeight(fang, 300));
-        // OSRS wiki: phase 2 Warden 4,500 hitpoints ("core-ejected"), body 140 ("active"), both scaled by raid level.
+        // OSRS wiki: phase 2 Warden 4,500 hitpoints ("core-ejected"), body 140 ("active"), both scaled by raid level; the
+        // core-ejected pool only by +0.1% per raid level (DPS calculator: 5,180 at 150, 5,850 at 300, 6,080 at 350).
         assertEquals(140, RaidScaling.toaCoreChargeNeeded(0, 1));
         assertEquals(310, RaidScaling.toaCoreChargeNeeded(300, 1));
         assertEquals(4500, RaidScaling.toaWardenP2Hp(0, 1));
-        assertEquals(9900, RaidScaling.toaWardenP2Hp(300, 1));
+        assertEquals(5180, RaidScaling.toaWardenP2Hp(150, 1));
+        assertEquals(5850, RaidScaling.toaWardenP2Hp(300, 1));
+        assertEquals(6080, RaidScaling.toaWardenP2Hp(350, 1));
+        assertEquals(16380, RaidScaling.toaWardenP2Hp(300, 3));
         assertEquals(21, RaidScaling.toaCoreExposureTicks(1.0));
         assertEquals(21, RaidScaling.toaCoreExposureTicks(0.8));
         assertEquals(29, RaidScaling.toaCoreExposureTicks(0.79));

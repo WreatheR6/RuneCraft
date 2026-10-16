@@ -114,6 +114,10 @@ public final class RaidManager {
                     return false;
                 }
             }
+            if (entity instanceof com.runecraft.boss.DataBossEntity boss && at(boss) != null) {
+                RoomLogic r = RaidScript.room(boss);
+                return r == null || r.bossAllowDeath(boss);
+            }
             return true;
         });
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {

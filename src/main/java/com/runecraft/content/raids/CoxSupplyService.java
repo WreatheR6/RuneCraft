@@ -166,8 +166,8 @@ public final class CoxSupplyService {
 
     /**
      * Brews with the secondary just used: golpar or buchu leaf (the one in the off-hand first) into a water-filled gourd
-     * vial; a noxifer mixes an elder, a twisted and a kodai potion of one strength into an overload. The strength made
-     * follows the Herblore level.
+     * vial; a noxifer mixes an elder, a twisted and a kodai potion (any strengths) into an overload. The strength made
+     * follows the Herblore level (and, for an overload, the weakest of the three potions).
      */
     static void mix(ServerPlayerEntity p, String secondary) {
         int herblore = level(p, Skill.HERBLORE);
@@ -177,25 +177,39 @@ public final class CoxSupplyService {
                 Msg.game(p, "You need a Herblore level of " + CoxSupplies.Potion.OVERLOAD.level(CoxSupplies.Strength.WEAK) + " to make overloads.");
                 return;
             }
-            // Use the strongest set of elder, twisted and kodai potions the player both carries and can mix.
-            for (int i = s.ordinal(); i >= 0; i--) {
-                CoxSupplies.Strength t = CoxSupplies.Strength.values()[i];
-                String elder = CoxSupplies.Potion.ELDER.id(t);
-                String twisted = CoxSupplies.Potion.TWISTED.id(t);
-                String kodai = CoxSupplies.Potion.KODAI.id(t);
-                if (Inv.has(p, elder, 1) && Inv.has(p, twisted, 1) && Inv.has(p, kodai, 1)) {
-                    Inv.remove(p, elder, 1);
-                    Inv.remove(p, twisted, 1);
-                    Inv.remove(p, kodai, 1);
-                    Inv.remove(p, CoxSupplies.Herb.NOXIFER.clean, 1);
-                    Inv.give(p, CoxSupplies.Potion.OVERLOAD.id(t), 1);
-                    XpService.add(p, Skill.HERBLORE, CoxSupplies.Potion.OVERLOAD.xp(t));
-                    Msg.action(p, "You mix the potions with the noxifer into an " + CoxSupplies.Potion.OVERLOAD.displayName(t).toLowerCase(java.util.Locale.ROOT) + ".");
-                    finish(p);
+            // OSRS: any variant of each potion works; the overload is capped by the Herblore level and the weakest potion.
+            CoxSupplies.Potion[] parts = {CoxSupplies.Potion.ELDER, CoxSupplies.Potion.TWISTED, CoxSupplies.Potion.KODAI};
+            CoxSupplies.Strength t = s;
+            for (CoxSupplies.Potion part : parts) {
+                CoxSupplies.Strength best = null;
+                for (CoxSupplies.Strength x : CoxSupplies.Strength.values()) {
+                    if (Inv.has(p, part.id(x), 1)) {
+                        best = x;
+                    }
+                }
+                if (best == null) {
+                    Msg.game(p, "You need an elder, a twisted and a kodai potion to make an overload.");
                     return;
                 }
+                if (best.ordinal() < t.ordinal()) {
+                    t = best;
+                }
             }
-            Msg.game(p, "You need an elder, a twisted and a kodai potion of the same strength to make an overload.");
+            // Use the weakest of each potion that still makes this strength, keeping any stronger ones.
+            for (CoxSupplies.Potion part : parts) {
+                for (int i = t.ordinal(); i < CoxSupplies.Strength.values().length; i++) {
+                    String id = part.id(CoxSupplies.Strength.values()[i]);
+                    if (Inv.has(p, id, 1)) {
+                        Inv.remove(p, id, 1);
+                        break;
+                    }
+                }
+            }
+            Inv.remove(p, CoxSupplies.Herb.NOXIFER.clean, 1);
+            Inv.give(p, CoxSupplies.Potion.OVERLOAD.id(t), 1);
+            XpService.add(p, Skill.HERBLORE, CoxSupplies.Potion.OVERLOAD.xp(t));
+            Msg.action(p, "You mix the potions with the noxifer into an " + CoxSupplies.Potion.OVERLOAD.displayName(t).toLowerCase(java.util.Locale.ROOT) + ".");
+            finish(p);
             return;
         }
         String offhand = Inv.idOf(p.getOffHandStack());

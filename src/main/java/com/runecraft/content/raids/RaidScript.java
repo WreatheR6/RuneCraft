@@ -12,7 +12,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
  * applies raid-wide rules: ToA damage scaling and downed players being untouchable.
  */
 public final class RaidScript implements BossScript {
-    private RoomLogic room(DataBossEntity boss) {
+    static RoomLogic room(DataBossEntity boss) {
         RaidInstance raid = RaidManager.at(boss);
         if (raid == null) {
             return null;
