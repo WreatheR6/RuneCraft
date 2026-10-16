@@ -3,6 +3,7 @@ package com.runecraft.content.systems;
 import com.runecraft.item.ItemCharges;
 import com.runecraft.osrs.content.systems.Charges;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 /**
@@ -10,6 +11,13 @@ import net.minecraft.server.network.ServerPlayerEntity;
  * ({@link Charges#perPlayer}: the ring of the elements, the camulet), in the player's systems state.
  */
 final class TeleportCharges {
+    /**
+     * Stack NBT flag: this stack's {@link ItemCharges#KEY} only mirrors its holder's charges. A per-player item charged
+     * before its charges moved to the player has the key without the flag; those charges are merged in once
+     * ({@link Charges#perPlayerCharges}) and the stack is flagged on the next change.
+     */
+    private static final String MIRRORED = "RcChargesMirrored";
+
     private TeleportCharges() {
     }
 
@@ -18,12 +26,18 @@ final class TeleportCharges {
         return s != null && Charges.perPlayer(s.id()) ? s : null;
     }
 
+    /** Charges a per-player stack held from before they moved to the player, or null. */
+    private static Integer legacy(ItemStack stack) {
+        NbtCompound nbt = stack.getNbt();
+        return nbt != null && nbt.contains(ItemCharges.KEY) && !nbt.getBoolean(MIRRORED) ? ItemCharges.get(stack) : null;
+    }
+
     static int get(ServerPlayerEntity p, ItemStack stack) {
         Charges.Spec s = perPlayerSpec(stack);
         if (s == null) {
             return ItemCharges.get(stack);
         }
-        return Charges.clamp(s, SysState.of(p).playerCharges.getOrDefault(s.id(), s.initial()));
+        return Charges.perPlayerCharges(s, SysState.of(p).playerCharges.get(s.id()), legacy(stack));
     }
 
     static void set(ServerPlayerEntity p, ItemStack stack, int charges) {
@@ -34,5 +48,6 @@ final class TeleportCharges {
         }
         SysState.of(p).playerCharges.put(s.id(), Charges.clamp(s, charges));
         ItemCharges.set(stack, charges); // mirrored on the stack for its tooltip
+        stack.getOrCreateNbt().putBoolean(MIRRORED, true);
     }
 }

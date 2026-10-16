@@ -348,9 +348,10 @@ class TransportSnapshotTest {
         assertEquals(6, WildernessTransport.OBELISKS.size());
         for (WildernessTransport.Obelisk o : WildernessTransport.OBELISKS) {
             Set<String> mine = new HashSet<>();
+            int shift = o.level() == 13 ? WildernessTransport.OBELISK_13_EAST_SHIFT : 0; // clear of the Ferox Enclave
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
-                    mine.add((o.x() + dx) + "," + (o.y() + dy));
+                    mine.add((o.x() - shift + dx) + "," + (o.y() + dy));
                     assertEquals(o, WildernessTransport.platformAt(o.x() + dx, o.y() + dy));
                 }
             }
@@ -369,6 +370,21 @@ class TransportSnapshotTest {
             }
             assertEquals(5, reached.size());
             assertEquals(o.level(), GielinorMap.wildernessLevel(GielinorMap.toBlockX(o.x()), GielinorMap.toBlockZ(o.y())), "obelisk " + o.level() + " Wilderness level");
+        }
+        // Laying an obelisk's 5x5-tile square (floor, pillars, five blocks of air) cuts into no structure above ground.
+        for (WildernessTransport.Obelisk o : WildernessTransport.OBELISKS) {
+            int x1 = GielinorMap.toBlockX(o.x() - 2);
+            int x2 = GielinorMap.toBlockX(o.x() + 2) + 1;
+            int z1 = GielinorMap.toBlockZ(o.y() + 2);
+            int z2 = GielinorMap.toBlockZ(o.y() - 2) + 1;
+            for (com.runecraft.osrs.world.StructureDef s : ContentRegistry.structures()) {
+                for (com.runecraft.osrs.world.StructureDef.Op op : s.ops()) {
+                    boolean builds = op.type() != com.runecraft.osrs.world.StructureDef.Op.Type.FLATTEN
+                            && op.type() != com.runecraft.osrs.world.StructureDef.Op.Type.CLEAR;
+                    assertFalse(builds && op.y2() >= com.runecraft.osrs.world.StructureDef.GROUND && op.x2() >= x1 && op.x1() <= x2
+                            && op.z2() >= z1 && op.z1() <= z2, "obelisk " + o.level() + " cuts into " + s.id() + ": " + op);
+                }
+            }
         }
         // Every lever and obelisk tile on the surface is dry land (the Mage Bank is its own cavern under the sea).
         for (WildernessTransport.Lever l : WildernessTransport.LEVERS) {
@@ -859,6 +875,17 @@ class TransportSnapshotTest {
         assertTrue(com.runecraft.osrs.content.systems.Charges.perPlayer("ring_of_the_elements"));
         assertTrue(com.runecraft.osrs.content.systems.Charges.perPlayer("camulet"));
         assertFalse(com.runecraft.osrs.content.systems.Charges.perPlayer("pendant_of_ates")); // "the charges are not shared"
+        // Charges a ring or camulet held on its stack before they moved to the player carry over (the larger count wins).
+        com.runecraft.osrs.content.systems.Charges.Spec ring = com.runecraft.osrs.content.systems.Charges.of("ring_of_the_elements");
+        com.runecraft.osrs.content.systems.Charges.Spec camulet = com.runecraft.osrs.content.systems.Charges.of("camulet");
+        assertEquals(0, com.runecraft.osrs.content.systems.Charges.perPlayerCharges(ring, null, null));
+        assertEquals(100, com.runecraft.osrs.content.systems.Charges.perPlayerCharges(ring, null, 100));
+        assertEquals(100, com.runecraft.osrs.content.systems.Charges.perPlayerCharges(ring, 40, 100));
+        assertEquals(120, com.runecraft.osrs.content.systems.Charges.perPlayerCharges(ring, 120, 100));
+        assertEquals(40, com.runecraft.osrs.content.systems.Charges.perPlayerCharges(ring, 40, null));
+        assertEquals(4, com.runecraft.osrs.content.systems.Charges.perPlayerCharges(camulet, null, null));
+        assertEquals(1, com.runecraft.osrs.content.systems.Charges.perPlayerCharges(camulet, null, 1));
+        assertEquals(0, com.runecraft.osrs.content.systems.Charges.perPlayerCharges(camulet, 0, null));
         assertEquals(4, com.runecraft.osrs.content.systems.Charges.camuletRefill(0, 1));
         assertEquals(3, com.runecraft.osrs.content.systems.Charges.camuletRefill(1, 1));
         assertEquals(0, com.runecraft.osrs.content.systems.Charges.camuletRefill(4, 1));
