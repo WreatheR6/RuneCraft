@@ -148,7 +148,11 @@ class CombatAchievementsTest {
         // Tempoross: a wave breaks a mast or totem 15% of the time, rising to 25% as the storm intensifies.
         assertEquals(15, com.runecraft.osrs.content.minigames.MinigameRules.Tempoross.tetherBreakChance(0));
         assertEquals(25, com.runecraft.osrs.content.minigames.MinigameRules.Tempoross.tetherBreakChance(1));
-        assertNotNull(ItemCatalog.get("bucket_of_water"));
+        // Tempoross uses the game's ordinary buckets (shops, farming), not a minigame-only copy.
+        assertEquals("minecraft:bucket", com.runecraft.osrs.content.minigames.MinigameRules.Tempoross.BUCKET);
+        assertEquals("minecraft:water_bucket", com.runecraft.osrs.content.minigames.MinigameRules.Tempoross.WATER_BUCKET);
+        assertTrue(com.runecraft.osrs.content.minigames.MinigameRules.Tempoross.LOSABLE.contains("minecraft:water_bucket"));
+        assertNull(ItemCatalog.get("bucket_of_water"));
     }
 
     @Test

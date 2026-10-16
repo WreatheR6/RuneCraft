@@ -125,6 +125,11 @@ public class DataBossEntity extends OsrsMonsterEntity {
             nbt.putString("RcVariant", variant.kind());
             nbt.putInt("RcVariantLevel", variant.level());
         }
+        NbtCompound scriptData = new NbtCompound();
+        script.writeNbt(this, scriptData);
+        if (!scriptData.isEmpty()) {
+            nbt.put("RcScript", scriptData);
+        }
     }
 
     @Override
@@ -138,6 +143,9 @@ public class DataBossEntity extends OsrsMonsterEntity {
             } else if (BossVariant.DELVE.equals(kind) && DoomDelves.BOSS.equals(def.id)) {
                 applyVariant(DoomDelves.variant(def, nbt.getInt("RcVariantLevel")), false);
             }
+        }
+        if (nbt.contains("RcScript")) {
+            script.readNbt(this, nbt.getCompound("RcScript"));
         }
     }
 
@@ -293,5 +301,8 @@ public class DataBossEntity extends OsrsMonsterEntity {
     public void remove(RemovalReason reason) {
         super.remove(reason);
         bossBar.clearPlayers();
+        if (!getWorld().isClient() && reason != RemovalReason.UNLOADED_TO_CHUNK) {
+            script.onRemoved(this); // gone for good (not a chunk unload that saves the boss to come back)
+        }
     }
 }

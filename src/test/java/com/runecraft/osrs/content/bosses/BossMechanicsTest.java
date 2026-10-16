@@ -190,6 +190,7 @@ class BossMechanicsTest {
         }
         assertEquals(14 * 3, ran);
         assertEquals(35, BossMechanics.VARDORVIS_AXE_MAX);
+        assertEquals(96, BossMechanics.VARDORVIS_AXE_MAX_AWAKENED); // OSRS Wiki: "Swinging Axes damage increased from 35 to 96"
         assertEquals(25, BossMechanics.VARDORVIS_STRANGLE_DAMAGE);
         assertEquals(5, BossMechanics.VARDORVIS_STRANGLE_TICKS);
     }

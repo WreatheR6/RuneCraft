@@ -289,8 +289,9 @@ public final class BossMechanics {
         return awakened ? n + 1 : n;
     }
 
-    /** Swinging axes hit for up to 35 (Protect from Melee halves it) and start a bleed. */
+    /** Swinging axes hit for up to 35 (awakened 96; Protect from Melee halves it) and start a bleed. */
     public static final int VARDORVIS_AXE_MAX = 35;
+    public static final int VARDORVIS_AXE_MAX_AWAKENED = 96;
     /** Bleed: 3 damage every 3 ticks for 14 ticks (5 hits), or every tick while the player runs. */
     public static final int VARDORVIS_BLEED_DAMAGE = 3;
     public static final int VARDORVIS_BLEED_TICKS = 14;

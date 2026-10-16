@@ -32,10 +32,6 @@ public final class CommonItems {
         items.add("aether_catalyst", "Aether catalyst", Kind.SIMPLE, "orb", 0x9A60D0).value(100)
                 .examine("Used with soul runes at the Cosmic Altar to make aether runes.");
         // Machete (npcs: Karamja shops; minigames: Tai Bwo Wannai Cleanup; skilling: hunter loot).
-        // Buckets (Tempoross douses fires with buckets of water; the gen_assets "bucket" id draws an empty bucket).
-        items.add("bucket", "Bucket", Kind.SIMPLE, "bucket", 0x9A9AA0).value(2).stack(1).examine("It's a wooden bucket.");
-        items.add("bucket_of_water", "Bucket of water", Kind.SIMPLE, "bucket", 0x4080D0).value(6).stack(1)
-                .examine("It's a bucket of water.");
         items.add("machete", "Machete", Kind.TOOL, "scimitar", 0x9A9AA0).value(40).stack(1).examine("An effective tool for chopping tough jungle plants.");
         items.add("green_dragonhide", "Green dragonhide", Kind.SIMPLE, "hide", 0x3A8A3A).value(1800);
         items.add("blue_dragonhide", "Blue dragonhide", Kind.SIMPLE, "hide", 0x3A5AB0).value(2000);

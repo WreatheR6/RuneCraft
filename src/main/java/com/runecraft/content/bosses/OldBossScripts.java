@@ -76,6 +76,19 @@ public final class OldBossScripts {
         if (boss.maxHitAgainst(p, AttackType.RANGED) != BossMechanics.OBOR_RANGED_MAX) {
             throw new IllegalStateException("Obor's ranged max hit is " + boss.maxHitAgainst(p, AttackType.RANGED));
         }
+        if (boss.script() instanceof Obor o && !Obor.frozen(boss)) {
+            double farSq = Math.pow(boss.getWidth() * 1.4 + 4, 2);
+            long was = o.rangedFrom;
+            o.rangedFrom = ActionManager.mcTick() + 100;
+            AttackType walking = boss.chooseStyle(p, farSq);
+            o.rangedFrom = 0;
+            AttackType throwing = boss.chooseStyle(p, farSq);
+            o.rangedFrom = was;
+            if (walking != AttackType.CRUSH || throwing != AttackType.RANGED) {
+                throw new IllegalStateException("out of reach Obor chose " + walking + " before his throw was due (expected CRUSH: "
+                        + "walk to the player) and " + throwing + " once it was (expected RANGED)");
+            }
+        }
         return "pushed " + tiles + " tiles (" + String.format(java.util.Locale.ROOT, "%.1f", before) + " -> "
                 + String.format(java.util.Locale.ROOT, "%.1f", after) + " blocks)";
     }
@@ -182,9 +195,28 @@ public final class OldBossScripts {
      * knockback slam that pushes the target straight back unless a wall stops it.
      */
     static final class Obor implements BossEntity.Script {
+        /** Game ticks (0-2, approx) Obor keeps walking after his attack is ready before throwing at a player out of reach. */
+        static final int RANGED_WALK_TICKS = 2;
+        /** Earliest Minecraft tick he may throw at a player out of melee reach (0: right away). */
+        long rangedFrom;
+
+        /**
+         * Melee in reach. Out of reach he walks at the player (OSRS Wiki: snare him "to prevent Obor from reaching you"), and
+         * only throws a rock once his attack is ready and he has walked a moment longer, or straight away while frozen.
+         * A melee style makes the attack goal chase; a ranged one makes it stand and shoot.
+         */
         @Override
         public AttackType chooseStyle(BossEntity boss, ServerPlayerEntity target, double distanceSq, AttackType chosen) {
-            return boss.adjacent(distanceSq) ? AttackType.CRUSH : AttackType.RANGED;
+            if (boss.adjacent(distanceSq)) {
+                return AttackType.CRUSH;
+            }
+            return frozen(boss) || ActionManager.mcTick() >= rangedFrom ? AttackType.RANGED : AttackType.CRUSH;
+        }
+
+        /** Whether a freeze or bind holds him in place (the same test as the "frozen" Combat Achievement rule). */
+        static boolean frozen(BossEntity boss) {
+            var slow = boss.getStatusEffect(net.minecraft.entity.effect.StatusEffects.SLOWNESS);
+            return slow != null && slow.getAmplifier() >= 6;
         }
 
         @Override
@@ -199,6 +231,8 @@ public final class OldBossScripts {
 
         @Override
         public void afterAttack(BossEntity boss, ServerPlayerEntity target, AttackType type) {
+            rangedFrom = ActionManager.mcTick() + ((long) boss.stats().attackSpeed()
+                    + boss.getRandom().nextInt(RANGED_WALK_TICKS + 1)) * ActionManager.MC_TICKS_PER_GAME_TICK;
             if (type.isMelee() && boss.getRandom().nextInt(BossMechanics.OBOR_KNOCKBACK_CHANCE) == 0) {
                 knockback(boss, target);
             }
