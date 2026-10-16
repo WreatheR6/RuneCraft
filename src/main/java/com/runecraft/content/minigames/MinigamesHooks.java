@@ -295,10 +295,16 @@ public final class MinigamesHooks implements ModuleHooks {
                                             }
                                             return 1;
                                         })))
-                                .then(CommandManager.literal("barrel").then(CommandManager.argument("potion", StringArgumentType.word())
+                                .then(CommandManager.literal("barrel").executes(ctx -> {
+                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    if (p != null && nearBarrels(p)) {
+                                        com.runecraft.content.minigames.games.NightmareZoneSession.barrels(p);
+                                    }
+                                    return 1;
+                                }).then(CommandManager.argument("potion", StringArgumentType.word())
                                         .then(CommandManager.argument("doses", IntegerArgumentType.integer(1, 255)).executes(ctx -> {
                                             ServerPlayerEntity p = ctx.getSource().getPlayer();
-                                            if (p != null && nearBlock(p, MinigameWorld.NMZ_BARRELS)) {
+                                            if (p != null && nearBarrels(p)) {
                                                 com.runecraft.content.minigames.games.NightmareZoneSession.withdraw(p,
                                                         StringArgumentType.getString(ctx, "potion"), IntegerArgumentType.getInteger(ctx, "doses"));
                                             }
@@ -437,16 +443,23 @@ public final class MinigamesHooks implements ModuleHooks {
         return near;
     }
 
-    /** Whether one of the module's blocks is within a few blocks of the player. */
-    static boolean nearBlock(ServerPlayerEntity p, String blockId) {
-        net.minecraft.block.BlockState want = Arena.module(blockId);
+    /**
+     * Whether the player is by the Nightmare Zone potion barrels, or by Dominic Onion: a lobby built before the barrels were
+     * added has no barrel block (places are built once), so the doses bought there are withdrawn through him.
+     */
+    static boolean nearBarrels(ServerPlayerEntity p) {
+        net.minecraft.block.BlockState want = Arena.module(MinigameWorld.NMZ_BARRELS);
         net.minecraft.util.math.BlockPos at = p.getBlockPos();
         for (net.minecraft.util.math.BlockPos q : net.minecraft.util.math.BlockPos.iterate(at.add(-6, -3, -6), at.add(6, 3, 6))) {
             if (p.getWorld().getBlockState(q).isOf(want.getBlock())) {
                 return true;
             }
         }
-        Msg.game(p, "You need to be next to the potion barrels.");
+        if (!p.getWorld().getEntitiesByClass(com.runecraft.entity.QuestNpcEntity.class, p.getBoundingBox().expand(12),
+                e -> "mg_dominic_onion".equals(e.npcId())).isEmpty()) {
+            return true;
+        }
+        Msg.game(p, "You need to be next to the potion barrels or Dominic Onion.");
         return false;
     }
 

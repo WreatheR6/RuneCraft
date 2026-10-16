@@ -119,11 +119,15 @@ public class NightmareZoneSession extends MinigameSession {
         return out;
     }
 
-    /** Entry check: five boss quests, the dream's fee in coins, and a valid boss choice. */
+    /** Entry check: five boss quests, at least one dream boss beaten, the dream's fee in coins, and a valid boss choice. */
     public static String requirement(ServerPlayerEntity player, String variant) {
         if (!NightmareZone.canEnter(q -> ContentRegistry.quest(q) != null && QuestApi.isComplete(player, q))) {
             return "Dominic Onion: Your brain is insufficiently trained for my dreams. Complete at least "
                     + NightmareZone.QUESTS_NEEDED + " quests with bosses in them first.";
+        }
+        if (unlocked(player).isEmpty()) {
+            // Dreams only use bosses the player has beaten in a quest (OSRS Wiki).
+            return "Dominic Onion: You haven't defeated any of my dream bosses yet.";
         }
         NightmareZone.Dream d = NightmareZone.Dream.parse(variant);
         if (d.mode() == NightmareZone.Mode.PRACTICE && (d.boss() == null || !unlocked(player).contains(d.boss()))) {
@@ -151,7 +155,7 @@ public class NightmareZoneSession extends MinigameSession {
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(hover))));
     }
 
-    /** Dominic Onion: the four dream modes (normal or hard) as clickable options, and his reward shop. */
+    /** Dominic Onion: the four dream modes (normal or hard) as clickable options, his reward shop and the potion barrels. */
     public static void dominic(ServerPlayerEntity player) {
         QuestApi.say(player, "Dominic Onion", "Welcome to the Nightmare Zone! Which dream would you like? Practice is free; the others "
                 + "cost coins, and hard dreams make the bosses far stronger.");
@@ -172,7 +176,9 @@ public class NightmareZoneSession extends MinigameSession {
             }
             player.sendMessage(line, false);
         }
-        player.sendMessage(option("Rewards", "/minigame nmz shop", "Dom Onion's Reward Shop", Formatting.GREEN), false);
+        player.sendMessage(Text.literal("").append(option("Rewards", "/minigame nmz shop", "Dom Onion's Reward Shop", Formatting.GREEN))
+                .append(Text.literal(" "))
+                .append(option("Potion barrels", "/minigame nmz barrel", "Withdraw the doses you have bought", Formatting.GREEN)), false);
     }
 
     /** "/minigame nmz <mode> <normal|hard> [boss]": start a dream, or list the practice bosses. */
@@ -183,6 +189,10 @@ public class NightmareZoneSession extends MinigameSession {
         }
         boolean h = difficulty.equals("hard");
         if (mode == NightmareZone.Mode.PRACTICE && boss == null) {
+            if (unlocked(player).isEmpty()) {
+                Msg.game(player, "Dominic Onion: You haven't defeated any of my dream bosses yet.");
+                return;
+            }
             MutableText line = Text.literal("Practise against: ").formatted(Formatting.GRAY);
             for (String b : unlocked(player)) {
                 line.append(option(bossName(b), "/minigame nmz practice normal " + b, "Normal", Formatting.GOLD));
@@ -326,15 +336,23 @@ public class NightmareZoneSession extends MinigameSession {
         if (dream.mode() == NightmareZone.Mode.PRACTICE) {
             pool = new ArrayList<>(List.of(dream.boss() != null ? dream.boss() : (String) NightmareZone.BOSSES[0][0]));
         } else if (list.isEmpty()) {
-            pool = NightmareZone.unlocked(q -> false); // the self-test's fake player: every boss
+            pool = NightmareZone.allBosses(); // the self-test's fake player: every boss
         } else if (dream.mode() == NightmareZone.Mode.CUSTOM_RUMBLE) {
             pool = customPool(list.get(0));
         } else {
             pool = unlocked(list.get(0));
         }
         if (pool.isEmpty()) {
-            pool = NightmareZone.unlocked(q -> false);
+            // requirement() refuses players who have beaten no dream boss; should one get here, the dream holds the first
+            // boss alone, which pays the least.
+            pool = new ArrayList<>(List.of((String) NightmareZone.BOSSES[0][0]));
         }
+    }
+
+    /** Practice dreams give no experience and no Slayer task credit (OSRS Wiki); every other dream does. */
+    @Override
+    public boolean awardsXp() {
+        return dream.mode() != NightmareZone.Mode.PRACTICE;
     }
 
     private MobEntity spawnBoss(String id) {

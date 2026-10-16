@@ -69,6 +69,14 @@ final class MinigameRewardChecks {
         return c.player;
     }
 
+    /** Attack and Hitpoints experience (tenths) a 10-damage accurate melee hit gives the player right now. */
+    private int combatXpFor(int damage) {
+        SkillSet skills = Players.data(p()).skills();
+        int before = skills.xpTenths(Skill.ATTACK) + skills.xpTenths(Skill.HITPOINTS);
+        com.runecraft.combat.CombatHandler.awardXp(p(), com.runecraft.osrs.CombatStyle.ACCURATE, damage, false);
+        return skills.xpTenths(Skill.ATTACK) + skills.xpTenths(Skill.HITPOINTS) - before;
+    }
+
     /** Ticks a session until a boss is alive (at most 12 game ticks). */
     private static List<net.minecraft.entity.LivingEntity> bosses(MinigameSession s, NightmareZoneSession nmz) {
         for (int i = 0; i < 12 && nmz.bosses().isEmpty(); i++) {
@@ -79,7 +87,8 @@ final class MinigameRewardChecks {
 
     /**
      * Nightmare Zone modes: a hard practice dream spawns only the chosen boss with its hard hitpoints and the hard tag and
-     * pays no points; endurance uses every boss at the wiki's full points; the zapper spares Count Draynor until he's hit.
+     * pays no points or experience; endurance uses every boss at the wiki's full points; the zapper spares Count Draynor
+     * until he's hit.
      */
     private String nmzModes() {
         List<String> done = new ArrayList<>();
@@ -101,7 +110,10 @@ final class MinigameRewardChecks {
             if (nmz.pointsFor("nmz_glod") != 0) {
                 throw failure("practice kills pay points");
             }
-            done.add("hard practice Glod (" + Math.round(glod.getMaxHealth()) + " HP, no points)");
+            if (combatXpFor(10) != 0) {
+                throw failure("practice hits give combat experience");
+            }
+            done.add("hard practice Glod (" + Math.round(glod.getMaxHealth()) + " HP, no points, no XP)");
         } finally {
             s.end(true);
         }
@@ -115,6 +127,9 @@ final class MinigameRewardChecks {
             }
             if (nmz.pointsFor("nmz_glod") != NightmareZone.points("nmz_glod", false)) {
                 throw failure("endurance with every boss pays " + nmz.pointsFor("nmz_glod") + " for Glod");
+            }
+            if (combatXpFor(10) <= 0) {
+                throw failure("endurance hits give no combat experience");
             }
             net.minecraft.entity.LivingEntity first = bosses.get(0);
             if (MinigameManager.creatureId(first).equals("nmz_count_draynor")) {

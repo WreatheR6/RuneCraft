@@ -978,8 +978,8 @@ public final class MinigameRules {
         }
 
         /**
-         * The bosses a player can meet: those whose quest is complete, in the wiki table's order. With none unlocked every
-         * boss is used. // approx fallback
+         * The bosses a player can meet: those whose quest is complete, in the wiki table's order. Empty when none is: dreams
+         * only use bosses "they have previously defeated during completed quests" (OSRS Wiki).
          */
         public static List<String> unlocked(java.util.function.Predicate<String> questComplete) {
             List<String> out = new java.util.ArrayList<>();
@@ -988,12 +988,12 @@ public final class MinigameRules {
                     out.add((String) b[0]);
                 }
             }
-            if (out.isEmpty()) {
-                for (Object[] b : BOSSES) {
-                    out.add((String) b[0]);
-                }
-            }
             return out;
+        }
+
+        /** Every boss, in the wiki table's order (the self-test's dreams). */
+        public static List<String> allBosses() {
+            return unlocked(q -> true);
         }
 
         /**

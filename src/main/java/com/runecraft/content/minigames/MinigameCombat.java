@@ -121,6 +121,11 @@ public final class MinigameCombat {
                 }
             }
         });
+        // Sessions that give no experience (Nightmare Zone practice dreams); Slayer task credit follows the Slayer XP.
+        XpService.addGate((player, skill) -> {
+            MinigameSession s = MinigameManager.session(player);
+            return s == null || s.isEnded() || s.awardsXp();
+        });
         GameEvents.onXp((player, skill, tenths) -> {
             String[] outfit = OUTFITS.get(skill);
             if (outfit == null || addingBonus || tenths <= 0) {
