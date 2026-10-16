@@ -1408,6 +1408,18 @@ final class ItemCombatChecks {
             throw new SelfTest.Skip("the cheapest item costs " + expected + " " + def.currency() + ", more than an inventory holds");
         }
         Inv.give(p(), def.currency(), give);
+        String[] gate = Shops.QUEST_GATES.get(def.id());
+        if (gate != null && com.runecraft.osrs.content.ContentRegistry.quest(gate[0]) != null) {
+            // The fresh test player has no quests: a quest-gated keeper must refuse to trade.
+            ShopService.open(p(), def.id(), p().getPos());
+            int curG = Inv.count(p(), def.currency());
+            int haveG = Inv.count(p(), item);
+            ShopService.selfTestBuy(p(), def.id(), item, 1);
+            if (Inv.count(p(), item) != haveG || Inv.count(p(), def.currency()) != curG) {
+                throw failure("sold " + item + " without " + gate[0] + " complete");
+            }
+        }
+        c.completeQuests(null); // quest-gated shops (Shops.QUEST_GATES)
         ShopService.open(p(), def.id(), p().getPos());
         int cur0 = Inv.count(p(), def.currency());
         int have0 = Inv.count(p(), item);
