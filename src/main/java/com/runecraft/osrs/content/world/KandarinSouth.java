@@ -185,22 +185,99 @@ final class KandarinSouth {
         return k.build();
     }
 
+    /**
+     * The Watchtower as on the OSRS map (mejrs layers_osrs planes 0-2): an 8 x 8 tile stone keep at
+     * 2543-2550 x 3111-3118 against Yanille's north wall, three storeys. Ground floor: the guards' mess
+     * (tables and chairs as in the cache, banners on the north and south walls), the door east at 3114-3115
+     * and the ladder up at 2544,3111; first floor: a table with stools and the ladder up at 2549,3111
+     * (shortest-path); top: the chequered, open-air platform with the power crystals at the corners. The
+     * Watchtower teleport (2549, 3112) lands on the platform, so nothing roofs it over.
+     */
     static StructureDef watchtower() {
         KandarinKit k = new KandarinKit("watchtower", "Watchtower").replaces("watchtower");
-        k.road(2549, 3109, 2550, 3112, PATH, null);
-        Pal p = STONE.roof("flat:minecraft:stone_bricks");
-        Bld t = k.house(2547, 3113, 2553, 3119, 3, p, 's', FLAT | ROOF_LADDER | FURN);
-        int top = t.top() + 1;
-        // the four power crystals and the shield on the roof
-        for (int[] c : new int[][]{{t.x1() + 1, t.z1() + 1}, {t.x2() - 1, t.z1() + 1}, {t.x1() + 1, t.z2() - 1}, {t.x2() - 1, t.z2() - 1}}) {
-            k.set(c[0], top, c[1], "minecraft:quartz_pillar");
-            k.set(c[0], top + 1, c[1], "minecraft:amethyst_cluster");
+        String sb = "minecraft:stone_bricks";
+        String trim = "minecraft:polished_andesite";
+        int x1 = KandarinKit.X(2543);
+        int x2 = KandarinKit.X(2550) + 1;
+        int z1 = KandarinKit.Z(3118);
+        int z2 = KandarinKit.Z(3111) + 1;
+        k.fill(x1, -3, z1, x2, -1, z2, "minecraft:cobblestone");
+        k.walls(x1, 0, z1, x2, 13, z2, sb);
+        k.walls(x1, 0, z1, x2, 0, z2, "minecraft:mossy_stone_bricks");
+        k.clear(x1 + 1, 0, z1 + 1, x2 - 1, 13, z2 - 1);
+        k.fill(x1 + 1, -1, z1 + 1, x2 - 1, -1, z2 - 1, "minecraft:polished_andesite");
+        k.fill(x1 + 1, 4, z1 + 1, x2 - 1, 4, z2 - 1, "minecraft:spruce_planks");
+        k.walls(x1, 4, z1, x2, 4, z2, trim);
+        // the top platform: chequered floor (light and grey tiles), parapet with crenels
+        for (int x = x1 + 1; x < x2; x++) {
+            for (int z = z1 + 1; z < z2; z++) {
+                k.set(x, 9, z, (((x - x1 - 1) / 2 + (z - z1 - 1) / 2) & 1) == 0 ? "minecraft:smooth_stone" : "minecraft:polished_andesite");
+            }
         }
-        k.set(t.cx(), top, t.cz(), "minecraft:beacon");
-        k.fence(2545, 3111, 2555, 3121, "minecraft:spruce_fence");
-        k.tClear(2549, 3111, 2550, 3111, 0, 0);
+        k.walls(x1, 9, z1, x2, 9, z2, trim);
+        for (int x = x1; x <= x2; x += 2) {
+            k.clear(x, 13, z1, x, 13, z1);
+            k.clear(x, 13, z2, x, 13, z2);
+        }
+        for (int z = z1; z <= z2; z += 2) {
+            k.clear(x1, 13, z, x1, 13, z);
+            k.clear(x2, 13, z, x2, 13, z);
+        }
+        for (int[] c : new int[][]{{x1, z1}, {x2, z1}, {x1, z2}, {x2, z2}}) {
+            k.fill(c[0], 0, c[1], c[0], 13, c[1], "minecraft:chiseled_stone_bricks");
+        }
+        // windows on the two closed storeys
+        for (int y : new int[]{1, 6}) {
+            for (int x = x1 + 3; x < x2 - 2; x += 5) {
+                k.set(x, y, z1, "minecraft:glass_pane").set(x, y + 1, z1, "minecraft:glass_pane");
+                k.set(x, y, z2, "minecraft:glass_pane").set(x, y + 1, z2, "minecraft:glass_pane");
+            }
+            for (int z = z1 + 3; z < z2 - 2; z += 5) {
+                k.set(x1, y, z, "minecraft:glass_pane").set(x1, y + 1, z, "minecraft:glass_pane");
+            }
+        }
+        // the door east (3114-3115) and a path round to the Yanille road
+        int dz = KandarinKit.Z(3115);
+        k.clear(x2, 0, dz, x2, 2, dz + 3);
+        k.set(x2, 0, dz + 1, "minecraft:spruce_door[facing=east,half=lower,hinge=left]");
+        k.set(x2, 0, dz + 2, "minecraft:spruce_door[facing=east,half=lower,hinge=right]");
+        k.fill(x2, 0, dz, x2, 2, dz, sb).fill(x2, 0, dz + 3, x2, 2, dz + 3, sb);
+        k.road(2551, 3113, 2552, 3116, PATH, null);
+        k.road(2549, 3109, 2552, 3112, PATH, null);
+        // ladders: ground (2544, 3111) to the first floor, first floor (2549, 3111) to the platform
+        k.fill(KandarinKit.X(2544), 0, KandarinKit.Z(3111), KandarinKit.X(2544), 4, KandarinKit.Z(3111), "minecraft:ladder[facing=north]");
+        k.fill(KandarinKit.X(2549), 5, KandarinKit.Z(3111), KandarinKit.X(2549), 9, KandarinKit.Z(3111), "minecraft:ladder[facing=north]");
+        // ground floor: the mess tables (2546,3114 / 2545,3116 / 2548,3116) with their chairs, banners
+        k.table(KandarinKit.X(2546) + 1, 0, KandarinKit.Z(3114), "spruce");
+        k.table(KandarinKit.X(2545) + 1, 0, KandarinKit.Z(3116), "spruce");
+        k.table(KandarinKit.X(2548) + 1, 0, KandarinKit.Z(3116), "spruce");
+        for (int tx : new int[]{2546, 2547}) {
+            k.set(KandarinKit.X(tx) + 1, 2, z1 + 1, "minecraft:red_wall_banner[facing=south]");
+            k.set(KandarinKit.X(tx) + 1, 2, z2 - 1, "minecraft:red_wall_banner[facing=north]");
+        }
+        k.set(x1 + 1, 0, z1 + 1, "minecraft:barrel[facing=up]").set(x1 + 2, 0, z1 + 1, "minecraft:barrel[facing=up]");
+        k.set(x2 - 1, 0, z2 - 1, "minecraft:chest[facing=west]");
+        k.set(KandarinKit.X(2547), 3, KandarinKit.Z(3115), "minecraft:lantern[hanging=true]");
+        // first floor: the table (2547, 3114) and four stools, the corner tables (2543,3118 / 2550,3118), bunks
+        k.set(KandarinKit.X(2547), 5, KandarinKit.Z(3114), "minecraft:spruce_fence").set(KandarinKit.X(2547), 6, KandarinKit.Z(3114), "minecraft:spruce_pressure_plate");
+        for (int[] st : new int[][]{{2546, 3113}, {2548, 3113}, {2547, 3115}, {2548, 3115}}) {
+            k.set(KandarinKit.X(st[0]), 5, KandarinKit.Z(st[1]), "minecraft:spruce_slab[type=bottom]");
+        }
+        k.set(x1 + 1, 5, z1 + 1, "minecraft:spruce_slab[type=top]").set(x2 - 1, 5, z1 + 1, "minecraft:spruce_slab[type=top]");
+        k.set(x1 + 2, 5, z1 + 4, "minecraft:white_bed[facing=east,part=foot]");
+        k.set(x1 + 2, 5, z1 + 6, "minecraft:white_bed[facing=east,part=foot]");
+        k.set(x2 - 1, 5, z1 + 4, "minecraft:bookshelf").set(x2 - 1, 6, z1 + 4, "minecraft:bookshelf");
+        k.set(KandarinKit.X(2547), 8, KandarinKit.Z(3115), "minecraft:lantern[hanging=true]");
+        // the platform: the four power crystals (Watchtower quest) and the wizard's lectern
+        // (corner blocks, clear of the teleport tile 2549, 3112 and the ladder at 2549, 3111)
+        for (int[] c : new int[][]{{x1 + 1, z1 + 1}, {x2 - 1, z1 + 1}, {x1 + 1, z2 - 1}, {x2 - 1, z2 - 1}}) {
+            k.set(c[0], 10, c[1], "minecraft:quartz_pillar[axis=y]");
+            k.set(c[0], 11, c[1], "minecraft:amethyst_cluster[facing=up]");
+        }
+        k.set(KandarinKit.X(2546), 10, KandarinKit.Z(3116), "minecraft:lectern[facing=south]");
+        k.set(KandarinKit.X(2547) + 1, 10, KandarinKit.Z(3116), "minecraft:enchanting_table");
         k.spruce(KandarinKit.X(2558), KandarinKit.Z(3122), 9);
-        k.spruce(KandarinKit.X(2540), KandarinKit.Z(3118), 8);
+        k.spruce(KandarinKit.X(2539), KandarinKit.Z(3119), 8);
         return k.build();
     }
 
