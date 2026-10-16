@@ -16,8 +16,8 @@ import java.util.function.Consumer;
  * Drift net fishing (OSRS Wiki "Drift net fishing", "Fish shoal", July 2026 dump): 47 Fishing and 44 Hunter. A drift net
  * is set on one of two drift net anchors; fish shoals swim into it slowly by themselves, or faster when chased. Each shoal
  * caught gives Fishing and Hunter XP that scale with level up to 70; a net holds 10 shoals and is destroyed when
- * harvested, giving one loot roll per shoal: 1/25 the fossil table, else 1/600 a medium clue, else one fish from the
- * level-based table (all equally likely, a new fish every 10 levels from 50).
+ * harvested, giving one loot roll per shoal: 1/25 the fossil roll (which usually gives nothing), else 1/600 a medium clue,
+ * else one fish from the level-based table (all equally likely, a new fish every 10 levels from 50).
  *
  * <p>Approx: the underwater area (Ceto's daily numulite fee, oxygen, Annette's net storage) isn't built; the anchors and
  * shoals stand on Fossil Island's north coast next to the underwater seaweed stand-in, and the shoals are fishing-spot
@@ -45,7 +45,7 @@ public final class DriftNetFishing extends SkillingPart {
     public static final double CHASE_CHANCE_TOOL = 0.65;
     /** A set net catches a shoal by itself about once a minute ("a slow rate"). // approx */
     public static final int PASSIVE_TICKS = 100;
-    /** Pre-rolls per shoal: 1/25 the fossil table, then 1/600 a medium clue (a pufferfish if the clue can't be had). */
+    /** Pre-rolls per shoal: 1/25 the fossil roll, then 1/600 a medium clue (a pufferfish if the clue can't be had). */
     public static final int FOSSIL_CHANCE = 25;
     public static final int CLUE_CHANCE = 600;
     public static final String CLUE = "clue_scroll_medium"; // approx: the clue bottle (medium) is a plain medium clue here
@@ -61,9 +61,19 @@ public final class DriftNetFishing extends SkillingPart {
             new Fish("raw_sardine", 47), new Fish("raw_tuna", 47), new Fish("raw_lobster", 50), new Fish("raw_swordfish", 60),
             new Fish("raw_shark", 70), new Fish("raw_sea_turtle", 80), new Fish("raw_manta_ray", 90));
 
-    /** Fossil table on the 1/25 pre-roll (Fossil Island fossils and numulites; the weights are approx). */
-    public static final Object[][] FOSSIL_TABLE = {{"numulite", 10, 40}, {"unidentified_small_fossil", 1, 30},
-            {"unidentified_medium_fossil", 1, 18}, {"unidentified_large_fossil", 1, 10}, {"unidentified_rare_fossil", 1, 2}};
+    /**
+     * The fossil roll on the 1/25 pre-roll (wiki "Fossil Island fossil", drift net fishing: 3/4375 fossil, 27/4375
+     * numulite, 145/4375 nothing per shoal): out of 175, 3 give a fossil, 27 give numulites, and the rest give nothing for
+     * that shoal (Mod Ash: "a fossil roll (which may fail and give nothing)").
+     */
+    public static final int FOSSIL_ROLL = 175;
+    public static final int FOSSIL_WEIGHT = 3;
+    public static final int NUMULITE_WEIGHT = 27;
+    public static final String NUMULITE = "numulite";
+    public static final int NUMULITES = 10;
+    /** Which fossil the fossil roll gives (wiki: 50% small, 25% medium, 20% large, 5% rare): {item, weight}. */
+    public static final Object[][] FOSSIL_TABLE = {{"unidentified_small_fossil", 50}, {"unidentified_medium_fossil", 25},
+            {"unidentified_large_fossil", 20}, {"unidentified_rare_fossil", 5}};
 
     private static double tenths(double xp) {
         return Math.floor(xp * 10 + 1e-9) / 10.0;
@@ -96,20 +106,24 @@ public final class DriftNetFishing extends SkillingPart {
         return tool ? CHASE_CHANCE_TOOL : CHASE_CHANCE;
     }
 
-    /** One loot roll for a caught shoal: {item, count}. */
+    /** One loot roll for a caught shoal: {item, count}, or null when the fossil roll gives nothing. */
     public static Object[] roll(int fishingLevel, boolean clueAllowed, Random random) {
         if (random.nextInt(FOSSIL_CHANCE) == 0) {
-            int total = 0;
-            for (Object[] l : FOSSIL_TABLE) {
-                total += (Integer) l[2];
-            }
-            int r = random.nextInt(total);
-            for (Object[] l : FOSSIL_TABLE) {
-                r -= (Integer) l[2];
-                if (r < 0) {
-                    return new Object[]{l[0], l[1]};
+            int r = random.nextInt(FOSSIL_ROLL);
+            if (r < FOSSIL_WEIGHT) {
+                int total = 0;
+                for (Object[] l : FOSSIL_TABLE) {
+                    total += (Integer) l[1];
+                }
+                int f = random.nextInt(total);
+                for (Object[] l : FOSSIL_TABLE) {
+                    f -= (Integer) l[1];
+                    if (f < 0) {
+                        return new Object[]{l[0], 1};
+                    }
                 }
             }
+            return r < FOSSIL_WEIGHT + NUMULITE_WEIGHT ? new Object[]{NUMULITE, NUMULITES} : null;
         }
         if (random.nextInt(CLUE_CHANCE) == 0) {
             return new Object[]{clueAllowed ? CLUE : PUFFERFISH, 1};

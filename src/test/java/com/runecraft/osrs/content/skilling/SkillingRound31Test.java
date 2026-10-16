@@ -122,30 +122,34 @@ class SkillingRound31Test {
         assertEquals("raw_sea_turtle", DriftNetFishing.fishTable(80).get(8));
         assertEquals(10, DriftNetFishing.fishTable(99).size());
         assertEquals("raw_manta_ray", DriftNetFishing.fishTable(99).get(9));
-        // Every loot item exists; the fish are equally likely and fossils come up about 1 in 25.
+        // Every loot item exists; the fish are equally likely, and the 1/25 fossil roll gives a fossil 3/175, numulites
+        // 27/175 and nothing 145/175 (wiki "Fossil Island fossil": 3/4375, 27/4375 and 145/4375 per shoal).
         for (DriftNetFishing.Fish f : DriftNetFishing.FISH) {
             assertTrue(ItemCatalog.exists(f.item()), f.item());
         }
         for (Object[] l : DriftNetFishing.FOSSIL_TABLE) {
             assertTrue(ItemCatalog.exists((String) l[0]), (String) l[0]);
         }
+        assertTrue(ItemCatalog.exists(DriftNetFishing.NUMULITE));
         assertTrue(ItemCatalog.exists(DriftNetFishing.CLUE));
         for (String t : DriftNetFishing.CHASE_TOOLS) {
             assertTrue(ItemCatalog.exists(t), t);
         }
         Random random = new Random(31);
         Map<String, Integer> counts = new HashMap<>();
-        int n = 100_000;
+        int n = 1_000_000;
         for (int i = 0; i < n; i++) {
-            counts.merge((String) DriftNetFishing.roll(99, true, random)[0], 1, Integer::sum);
+            Object[] loot = DriftNetFishing.roll(99, true, random);
+            counts.merge(loot == null ? "nothing" : (String) loot[0], 1, Integer::sum);
         }
         double fish = n * (24.0 / 25) * (599.0 / 600) / 10;
-        assertEquals(fish, counts.get("raw_manta_ray"), fish * 0.08);
-        assertEquals(fish, counts.get("oyster"), fish * 0.08);
-        int fossils = counts.getOrDefault("numulite", 0) + counts.getOrDefault("unidentified_small_fossil", 0)
-                + counts.getOrDefault("unidentified_medium_fossil", 0) + counts.getOrDefault("unidentified_large_fossil", 0)
-                + counts.getOrDefault("unidentified_rare_fossil", 0);
-        assertEquals(n / 25.0, fossils, n / 25.0 * 0.12);
+        assertEquals(fish, counts.get("raw_manta_ray"), fish * 0.03);
+        assertEquals(fish, counts.get("oyster"), fish * 0.03);
+        int fossils = counts.getOrDefault("unidentified_small_fossil", 0) + counts.getOrDefault("unidentified_medium_fossil", 0)
+                + counts.getOrDefault("unidentified_large_fossil", 0) + counts.getOrDefault("unidentified_rare_fossil", 0);
+        assertEquals(n * 3.0 / 4375, fossils, n * 3.0 / 4375 * 0.15);
+        assertEquals(n * 27.0 / 4375, counts.getOrDefault("numulite", 0), n * 27.0 / 4375 * 0.06);
+        assertEquals(n * 145.0 / 4375, counts.getOrDefault("nothing", 0), n * 145.0 / 4375 * 0.03);
         assertEquals(10, DriftNetFishing.CAPACITY);
         assertTrue(DriftNetFishing.chaseChance(true) > DriftNetFishing.chaseChance(false));
     }
