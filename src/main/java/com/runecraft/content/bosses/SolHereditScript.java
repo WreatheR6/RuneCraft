@@ -64,6 +64,8 @@ public final class SolHereditScript extends ScriptedBoss {
     private long grappleStart;
     private UUID grappled;
     private boolean defended;
+    /** The grapple was answered (right or wrong slot): later answers are refused, so a wrong slot can't be taken back. */
+    private boolean answered;
     // Protect from Melee tracking (per target).
     private long protectSince = -1;
     // Light beams.
@@ -110,6 +112,11 @@ public final class SolHereditScript extends ScriptedBoss {
             Msg.game(p, "There is nothing to defend against.");
             return false;
         }
+        if (s.answered) {
+            Msg.game(p, "You have already answered Sol Heredit's grapple.");
+            return s.defended;
+        }
+        s.answered = true;
         Grapple g = Grapple.bySlot(slot);
         if (g != s.grapple) {
             Msg.red(p, "You defend the wrong slot!");
@@ -127,7 +134,7 @@ public final class SolHereditScript extends ScriptedBoss {
         return true;
     }
 
-    /** A wrong slot leaves the grapple undefended: it lands at the end of the window. */
+    /** A wrong slot leaves the grapple undefended: it lands on the next game tick (and {@link #answered} refuses a retry). */
     private void grappleTicksLeftWrong() {
         defended = false;
         grappleStart = now - SolHeredit.GRAPPLE_WINDOW_TICKS;
@@ -215,7 +222,8 @@ public final class SolHereditScript extends ScriptedBoss {
         }
         afterPhase = false;
         previous = a;
-        wait = SolHeredit.attackDelay(a, phase);
+        // wait counts down on the ticks in between (the ScriptedBoss convention), so the next attack starts attackDelay ticks on.
+        wait = Math.max(1, SolHeredit.attackDelay(a, phase)) - 1;
         switch (a) {
             case TRIPLE -> {
                 tripleStart = now;
@@ -229,7 +237,7 @@ public final class SolHereditScript extends ScriptedBoss {
                 pendingLands = now + SolHeredit.AOE_LAND_TICKS;
                 pendingCentre = c;
                 pendingFacing = SolHeredit.facing(t.getX() - c.getX(), t.getZ() - c.getZ());
-                rooted = SolHeredit.AOE_ROOT_TICKS;
+                rooted = SolHeredit.AOE_ROOT_TICKS - 1; // this tick plus the next AOE_ROOT_TICKS - 1
                 boss.getNavigation().stop();
                 BossFx.warn(boss, a.spear() ? "Sol Heredit draws back his spear!" : "Sol Heredit raises his shield!");
             }
@@ -315,6 +323,7 @@ public final class SolHereditScript extends ScriptedBoss {
         grappleStart = now;
         grappled = target.getUuid();
         defended = false;
+        answered = false;
         GRAPPLED.put(target.getUuid(), this);
         BossFx.say(boss, "Sol Heredit: " + grapple.shout);
         MutableText line = Text.literal("Defend: ").formatted(Formatting.GRAY);

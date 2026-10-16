@@ -591,6 +591,9 @@ final class MinigameRewardChecks {
             if (c.wallBlocks() == 0) {
                 throw failure("no gladiator wall closed the arena for Sol Heredit");
             }
+            if (!c.wallSealed()) {
+                throw failure("the gladiator wall leaves a gap a player fits through (ring to ring or ring to pillar)");
+            }
             for (int i = 0; i < 5; i++) {
                 MinigameManager.selfTestTick(c);
                 this.c.heal();
