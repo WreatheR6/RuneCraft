@@ -1,5 +1,6 @@
 package com.runecraft.osrs.content.skilling;
 
+import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.world.StructureDef;
 
@@ -11,7 +12,9 @@ import java.util.Map;
  * stands at each end (placed on the surface when the chunk first loads, never over a structure
  * block); using it with the level requirement carries the player to the other end. Requirements are
  * the wiki's; most shortcuts give no experience (XP given only where the wiki lists some). End tiles
- * are approx. to a tile or two.
+ * are approx. to a tile or two. The {@link #ONE_WAY} shortcuts only go from end a to end b, and a use
+ * takes {@link Shortcut#ticks()} game ticks (a tick per tile crossed, at least {@link #MIN_TICKS}),
+ * during which no shortcut can be used again.
  *
  * <p>Grapple shortcuts ({@link #GRAPPLE}) also need a mith grapple carried and a crossbow wielded, as
  * well as their Ranged and Strength levels.
@@ -29,6 +32,13 @@ public final class AgilityShortcuts {
     /** Requirement tag: a rope carried (tied to the rocks to climb down). */
     public static final String ROPE = "rope";
     public static final String MITH_GRAPPLE = "mith_grapple";
+    /** Fewest game ticks a shortcut use takes. */
+    public static final int MIN_TICKS = 2;
+    /**
+     * Shortcuts that are one-way in OSRS, used only from end a to end b: Yanille's climbing rocks lead out of the town
+     * (they can't be used to enter it), Taverley's are only on the wall's east side.
+     */
+    public static final java.util.Set<String> ONE_WAY = java.util.Set.of("yanille_climbing_rocks", "taverley_climbing_rocks");
 
     /**
      * One shortcut between end {@code a} and end {@code b} (OSRS tiles; unused for indoor shortcuts);
@@ -45,6 +55,16 @@ public final class AgilityShortcuts {
                 return 1;
             }
             return -1;
+        }
+
+        /** True if the shortcut only goes from end a to end b ({@link #ONE_WAY}). */
+        public boolean oneWay() {
+            return ONE_WAY.contains(id);
+        }
+
+        /** Game ticks a use of this surface shortcut takes: a tick per tile between its ends, at least {@link #MIN_TICKS}. */
+        public int ticks() {
+            return Math.max(MIN_TICKS, Math.max(Math.abs(bx - ax), Math.abs(by - ay)));
         }
     }
 
@@ -76,7 +96,7 @@ public final class AgilityShortcuts {
      * Surface shortcuts. Ends, levels and XP follow the wiki's "List of shortcuts" ({@code agility_shortcuts.tsv}, diffed in
      * {@code AgilityShortcutSnapshotTest}) and the shortest-path transport tiles; where the two OSRS objects stand a tile
      * apart an end is moved a tile or two out (approx) so the two shortcut blocks don't touch. Every shortcut works both
-     * ways (a few are one-way in OSRS).
+     * ways but the {@link #ONE_WAY} ones (a to b).
      */
     public static final List<Shortcut> SHORTCUTS = List.of(
             s("falador_crumbling_wall", "Crumbling wall (Falador)", "climb over the crumbling wall", 5, 0.5, 2938, 3358, 2933, 3355),
@@ -246,6 +266,11 @@ public final class AgilityShortcuts {
                 return 1;
             }
             return -1;
+        }
+
+        /** Game ticks a use takes: a tick per OSRS tile between the ends, at least {@link #MIN_TICKS}. */
+        public int ticks() {
+            return Math.max(MIN_TICKS, Math.max(Math.abs(x2 - x1), Math.abs(z2 - z1)) / GielinorMap.SCALE);
         }
     }
 
