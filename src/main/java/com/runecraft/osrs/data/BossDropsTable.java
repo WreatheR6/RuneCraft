@@ -19,9 +19,9 @@ import java.util.Set;
  * every line of the items it names (wiki rarity 1/N rounded to a whole N, one line per wiki quantity; noted
  * quantities drop as plain stacks), removes common invented lines the wiki table doesn't list and appends the rest.
  * The dump often leaves out a boss's unique rows, so rare lines (1/50 or rarer) are never removed; pets, clue
- * scrolls, wilderness/brimstone keys, frozen key pieces, awakened-only and other conditional rows are left to
- * the code that hands them out. Bosses whose wiki page has no ordinary per-kill table (Barrows, Gauntlet, Moons,
- * Colosseum, Zalcano, Doom delves) or whose dump row is wrong (Obor, Bryophyta, the Mimic) have no patch.
+ * scrolls, wilderness/brimstone keys, looting bags, frozen key pieces, awakened-only and other conditional rows are
+ * left to the code that hands them out. Bosses whose wiki page has no ordinary per-kill table (Barrows, Gauntlet,
+ * Moons, Colosseum, Zalcano, Doom delves) or whose dump row is wrong (Obor, Bryophyta, the Mimic) have no patch.
  *
  * <p>The collection log is not built from these lines: boss pages use the wiki's page contents
  * ({@code OsrsPages}), so adding common wiki drops here never adds log slots.
@@ -696,34 +696,9 @@ public final class BossDropsTable {
     }
 
     private static void rows5() {
-        // Round 27: Obor, Bryophyta, the Grotesque Guardians and Araxxor from their wiki DropsLine tables (uniques the
-        // modules already roll, pets, keys and conditional rows left alone; shared tables by marker).
-        // Boss.OBOR <- wiki:Obor(106) DropsLine table
-        p("Boss.OBOR", rm("rune_full_helm"),
-                d("giant_key", 1, 1, 16), d("iron_full_helm", 1, 1, 27), d("iron_dagger", 1, 1, 34),
-                d("iron_kiteshield", 1, 1, 45), d("steel_longsword", 1, 1, 68), d("iron_arrow", 3, 3, 22),
-                d("fire_rune", 15, 15, 45), d("water_rune", 7, 7, 45), d("law_rune", 2, 2, 45),
-                d("steel_arrow", 10, 10, 68), d("mind_rune", 3, 3, 68), d("cosmic_rune", 2, 2, 68),
-                d("nature_rune", 6, 6, 68), d("chaos_rune", 2, 2, 135), d("death_rune", 2, 2, 135),
-                d("coins", 38, 38, 10), d("coins", 52, 52, 14), d("coins", 15, 15, 17),
-                d("coins", 8, 8, 22), d("coins", 88, 88, 68), d("limpwurt_root", 1, 1, 12),
-                d("beer", 1, 1, 22), d("body_talisman", 1, 1, 68), d("long_bone", 1, 1, 400),
-                d("curved_bone", 1, 1, 5012), d("big_bones", 1, 1, 1), d("coins", 5, 5, 8),
-                d("coins", 10, 10, 19), d("#herbs", 1, 1, 19), d("#allotment_seeds", 1, 1, 8),
-                d("#gems", 1, 1, 45));
-        // Boss.BRYOPHYTA <- wiki:Bryophyta(128) DropsLine table
-        p("Boss.BRYOPHYTA", rm("rune_platelegs"),
-                d("black_sq_shield", 1, 1, 26), d("magic_staff", 1, 1, 64), d("steel_med_helm", 1, 1, 64),
-                d("mithril_sword", 1, 1, 64), d("mithril_spear", 1, 1, 64), d("steel_kiteshield", 1, 1, 128),
-                d("law_rune", 3, 3, 32), d("air_rune", 18, 18, 43), d("earth_rune", 27, 27, 43),
-                d("chaos_rune", 7, 7, 43), d("nature_rune", 6, 6, 43), d("cosmic_rune", 3, 3, 64),
-                d("iron_arrow", 15, 15, 64), d("steel_arrow", 30, 30, 128), d("death_rune", 3, 3, 128),
-                d("blood_rune", 1, 1, 128), d("coins", 37, 37, 7), d("coins", 2, 2, 16),
-                d("coins", 119, 119, 13), d("coins", 300, 300, 64), d("steel_bar", 1, 1, 21),
-                d("coal", 1, 1, 128), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012),
-                d("big_bones", 1, 1, 1), d("coins", 10, 10, 26), d("coins", 5, 5, 4),
-                d("coins", 2, 2, 12), d("#herbs", 1, 1, 26), d("#uncommon_seeds", 1, 1, 4),
-                d("#gems", 1, 1, 32));
+        // Round 27: the Grotesque Guardians and Araxxor from their wiki DropsLine tables (uniques the modules already
+        // roll, pets, keys and conditional rows left alone; shared tables by marker). Obor and Bryophyta stay
+        // unpatched: their dump rows are the hill giant and moss giant tables.
         // dusk <- wiki:Grotesque Guardians(328) DropsLine table
         p("dusk", rm("rune_platebody"),
                 d("granite_dust", 50, 100, 1), d("rune_pickaxe", 1, 1, 24), d("rune_full_helm", 1, 1, 28),
@@ -753,29 +728,10 @@ public final class BossDropsTable {
                 d("antidote_plus_plus(3)", 6, 6, 29), d("wine_of_zamorak", 8, 8, 38), d("red_spiders_eggs", 40, 40, 58),
                 d("bark", 15, 15, 115), d("#tree_herb_seeds", 1, 1, 115),
                 d("#rare", 1, 1, 115));
-        // Rows of the snapshot that were "not in game" until round 27 added the item.
-        // Callisto: Looting bag (was "not in game")
-        add("callisto", d("looting_bag", 1, 1, 3));
-        // Artio: Looting bag (was "not in game")
-        add("artio", d("looting_bag", 1, 1, 3));
-        // Venenatis: Looting bag (was "not in game")
-        add("venenatis", d("looting_bag", 1, 1, 3));
-        // Spindel: Looting bag (was "not in game")
-        add("spindel", d("looting_bag", 1, 1, 3));
-        // Vet'ion: Looting bag (was "not in game")
-        add("vetion", d("looting_bag", 1, 1, 3));
-        // Calvar'ion: Looting bag (was "not in game")
-        add("calvarion", d("looting_bag", 1, 1, 3));
-        // Scorpia: Looting bag (was "not in game")
-        add("scorpia", d("looting_bag", 1, 1, 3));
+        // Rows of the snapshot that were "not in game" until round 27 added the item. The Wilderness bosses' looting
+        // bag row is the generic Wilderness drop (JewelleryService.onKill), so it is not on their tables.
         // Chaos Elemental: Blighted ancient ice sack (was "not in game")
         add("chaos_elemental", d("blighted_ancient_ice_sack", 20, 40, 26));
-        // Chaos Elemental: Looting bag (was "not in game")
-        add("chaos_elemental", d("looting_bag", 1, 1, 3));
-        // Chaos Fanatic: Looting bag (was "not in game")
-        add("chaos_fanatic", d("looting_bag", 1, 1, 3));
-        // Crazy archaeologist: Looting bag (was "not in game")
-        add("crazy_archaeologist", d("looting_bag", 1, 1, 3));
         // Scurrius: Raw rat meat (was "not in game")
         add("scurrius", d("raw_rat_meat", 1, 1, 1));
         // Vorkath: Scaly blue dragonhide (was "not in game")
