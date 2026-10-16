@@ -173,6 +173,49 @@ class MinigameBenefitsTest {
     }
 
     @Test
+    void nightmareZoneHardBossesHitHarder() throws IOException {
+        List<String[]> rows = tsv("nmz_hard_stats.tsv");
+        assertEquals(NightmareZone.BOSSES.length, rows.size());
+        for (String[] row : rows) {
+            NightmareZone.HardStats h = NightmareZone.hardStats(row[0]);
+            assertNotNull(h, row[0]);
+            assertEquals(Integer.parseInt(row[1]), h.attack(), row[0] + " attack");
+            assertEquals(Integer.parseInt(row[2]), h.hardAttack(), row[0] + " hard attack");
+            assertEquals(Integer.parseInt(row[5]), h.maxHit(), row[0] + " max hit");
+            assertEquals(Integer.parseInt(row[6]), h.hardMaxHit(), row[0] + " hard max hit");
+            assertEquals(Integer.parseInt(row[1]), ContentRegistry.monster(row[0]).attack, row[0] + " normal attack level");
+            assertEquals(Integer.parseInt(row[5]), ContentRegistry.monster(row[0]).attacks.get(0).maxHit(), row[0] + " normal max hit");
+            assertTrue(NightmareZone.isBoss(row[0]));
+            assertNotNull(ContentRegistry.quest(NightmareZone.BOSS_QUEST.get(row[0])), row[0] + " quest");
+        }
+        // Count Draynor: attack 30 -> 198, so his attack roll grows by (198 + 9) / (30 + 9); max hit 3 -> 17.
+        assertEquals(207 / 39.0, NightmareZone.hardAccuracy("nmz_count_draynor", true, false), 1e-9);
+        assertEquals(14, NightmareZone.hardMaxHitBonus("nmz_count_draynor"));
+        assertEquals(1.0, NightmareZone.hardAccuracy("chicken", true, false), 1e-9);
+        assertEquals(149 / 79.0, NightmareZone.hardAccuracy("nmz_arrg", false, true), 1e-9);
+        // Zapper: only Count Draynor is protected from its killing blow, until the player has hit him.
+        assertTrue(NightmareZone.zapperMayKill("nmz_glod", false));
+        assertTrue(!NightmareZone.zapperMayKill("nmz_count_draynor", false));
+        assertTrue(NightmareZone.zapperMayKill("nmz_count_draynor", true));
+        // Modes and their fees (wiki "Cost per dream").
+        assertEquals(0, NightmareZone.Mode.PRACTICE.cost(true));
+        assertEquals(1000, NightmareZone.Mode.ENDURANCE.cost(false));
+        assertEquals(5000, NightmareZone.Mode.ENDURANCE.cost(true));
+        assertEquals(2000, NightmareZone.Mode.RUMBLE.cost(false));
+        assertEquals(26000, NightmareZone.Mode.CUSTOM_RUMBLE.cost(true));
+        NightmareZone.Dream d = new NightmareZone.Dream(NightmareZone.Mode.PRACTICE, true, "nmz_elvarg");
+        assertEquals(d, NightmareZone.Dream.parse(d.variant()));
+        assertEquals(new NightmareZone.Dream(NightmareZone.Mode.RUMBLE, true, null), NightmareZone.Dream.parse("nightmare_zone_hard_entrance"));
+        assertEquals(new NightmareZone.Dream(NightmareZone.Mode.RUMBLE, false, null), NightmareZone.Dream.parse("nightmare_zone_entrance"));
+        // Unlocks and point scaling: all twelve bosses pay the wiki maximum, six pay half.
+        assertEquals(List.of("nmz_count_draynor", "nmz_elvarg"),
+                NightmareZone.unlocked(q -> q.equals("VAMPYRE_SLAYER") || q.equals("dragon_slayer_i")));
+        assertEquals(NightmareZone.BOSSES.length, NightmareZone.unlocked(q -> false).size());
+        assertEquals(NightmareZone.points("nmz_glod", true), NightmareZone.points("nmz_glod", true, NightmareZone.BOSSES.length));
+        assertEquals(17493 / 2, NightmareZone.points("nmz_glod", true, 6));
+    }
+
+    @Test
     void nightmareZoneMatchesTheWiki() throws IOException {
         Map<String, String[]> wiki = new HashMap<>();
         for (String[] row : tsv("nmz_bosses.tsv")) {
@@ -187,12 +230,15 @@ class MinigameBenefitsTest {
             assertEquals(Integer.parseInt(row[2]), NightmareZone.points(id, true), id + " hard points");
             assertEquals(Integer.parseInt(row[4]), NightmareZone.hardHitpoints(id), id + " hard hitpoints");
         }
-        // Benefits: per-dose prices, sold as 4-dose potions.
+        // Benefits: sold by the dose into the potion barrels.
         RewardShop nmz = RewardShops.get("nightmare_zone");
-        assertEquals(6000, cost(nmz, NightmareZone.OVERLOAD));
-        assertEquals(4000, cost(nmz, NightmareZone.ABSORPTION));
-        assertEquals(1000, cost(nmz, NightmareZone.SUPER_RANGING));
-        assertEquals(1000, cost(nmz, NightmareZone.SUPER_MAGIC));
+        assertEquals(1500, cost(nmz, NightmareZone.OVERLOAD));
+        assertEquals(1000, cost(nmz, NightmareZone.ABSORPTION));
+        assertEquals(250, cost(nmz, NightmareZone.SUPER_RANGING));
+        assertEquals(250, cost(nmz, NightmareZone.SUPER_MAGIC));
+        assertEquals(255, NightmareZone.barrelRoom(0, 1000));
+        assertEquals(5, NightmareZone.barrelRoom(250, 10));
+        assertEquals(0, NightmareZone.barrelRoom(255, 1));
         assertEquals(9500, cost(nmz, "herb_box"));
         assertEquals(15, RewardShops.dailyLimit("nightmare_zone", "herb_box")); // wiki: 15 a day from the NMZ
         assertEquals(0, RewardShops.dailyLimit("tithe_farm", "herb_box")); // no limit at Tithe Farm

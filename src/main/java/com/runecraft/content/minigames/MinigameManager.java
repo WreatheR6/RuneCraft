@@ -469,6 +469,11 @@ public final class MinigameManager {
         if (s == null) {
             return true;
         }
+        if (s.isDangerous()) {
+            // A real death (items lost as anywhere else), at the minigame's entry point rather than in the instance.
+            s.dieDangerously(player);
+            return true;
+        }
         player.setHealth(player.getMaxHealth());
         player.extinguish();
         s.onDeath(player);

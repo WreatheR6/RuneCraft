@@ -482,6 +482,18 @@ public final class JewelleryService {
         return left;
     }
 
+    /**
+     * Flamtaer bracelet: while worn, each Mort'ton temple repair uses one of its 80 charges (the minigames module adds the
+     * extra sanctity). Returns whether a bracelet was worn.
+     */
+    public static boolean useFlamtaerCharge(ServerPlayerEntity p) {
+        if (!SysState.of(p).wornId(Jewellery.Slot.HANDS).equals("flamtaer_bracelet")) {
+            return false;
+        }
+        useCharge(p, Jewellery.Slot.HANDS, "flamtaer_bracelet");
+        return true;
+    }
+
     /** Slayer task credit of a kill with an expeditious bracelet or bracelet of slaughter worn (OSRS: 25%, 30 charges). */
     public static int slayerCredit(ServerPlayerEntity p, int base, boolean jadOrZuk) {
         String hands = SysState.of(p).wornId(Jewellery.Slot.HANDS);

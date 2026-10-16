@@ -168,7 +168,12 @@ public class TempleTrekkingSession extends MinigameSession {
     }
 
     private void buildArea(Event e) {
-        room(Blocks.MUD, Blocks.MUD_BRICKS, Blocks.MOSS_BLOCK);
+        if (e == Event.BOAT) {
+            // The boat to Mort'ton: a plank deck, the swamp creature surfacing around it.
+            room(Blocks.DARK_OAK_PLANKS, Blocks.DARK_OAK_LOG, Blocks.MOSS_BLOCK);
+        } else {
+            room(Blocks.MUD, Blocks.MUD_BRICKS, Blocks.MOSS_BLOCK);
+        }
         for (int i = 0; i < 14; i++) {
             int x = random.nextInt(40) - 20;
             int z = random.nextInt(14) - 7;
@@ -260,6 +265,21 @@ public class TempleTrekkingSession extends MinigameSession {
         broadcastRed(event.message);
         switch (event.kind) {
             case COMBAT -> {
+                if (event == Event.BOAT) {
+                    // One head and four tentacles, whatever the follower's difficulty.
+                    MobEntity head = spawn(TempleTrekking.SWAMP_HEAD, rel(14, 1, 0));
+                    if (head != null) {
+                        spawned++;
+                        aggro(head);
+                    }
+                    for (int i = 0; i < TempleTrekking.BOAT_TENTACLES; i++) {
+                        MobEntity t = spawn(TempleTrekking.SWAMP_TENTACLE, rel(6 + 4 * i, 1, i % 2 == 0 ? -6 : 6));
+                        if (t != null) {
+                            spawned++;
+                        }
+                    }
+                    break;
+                }
                 int n = (follower == null ? TempleTrekking.Difficulty.EASY : follower.difficulty).monsters(random::nextDouble);
                 for (int i = 0; i < n; i++) {
                     MobEntity m = spawn(event.creature(route), randomFloor(14, 0, 6));
@@ -379,6 +399,16 @@ public class TempleTrekkingSession extends MinigameSession {
                 CombatHandler.applyDamage(mob, companion, random.nextInt(max + 1));
             }
         }
+        // The swamp creature's head returns to full health near death while any tentacle lives.
+        if (event == Event.BOAT) {
+            int tentacles = living(TempleTrekking.SWAMP_TENTACLE).size();
+            for (LivingEntity head : living(TempleTrekking.SWAMP_HEAD)) {
+                if (TempleTrekking.headHeals(head.getHealth(), head.getMaxHealth(), tentacles)) {
+                    head.setHealth(head.getMaxHealth());
+                    broadcastRed("The head draws strength from its tentacles and returns to full health!");
+                }
+            }
+        }
         // Undead lumberjacks keep wading out of the river until the bridge is fixed.
         if (event == Event.LUMBERJACK_BRIDGE && !solved && ticks % 15 == 0 && living(event.creature(route)).size() < 2) {
             MobEntity lj = spawn(event.creature(route), rel(-CHANNEL - 2, 1, random.nextInt(13) - 6));
@@ -413,7 +443,8 @@ public class TempleTrekkingSession extends MinigameSession {
         if (event == null || entity == companion) {
             return;
         }
-        if (event.kind == EventType.COMBAT && creatureId.equals(event.creature(route))) {
+        boolean boatPart = event == Event.BOAT && creatureId.equals(TempleTrekking.SWAMP_TENTACLE);
+        if (event.kind == EventType.COMBAT && (creatureId.equals(event.creature(route)) || boatPart)) {
             killed++;
             points += route.killPoints;
             if (killed >= spawned) {
@@ -618,6 +649,26 @@ public class TempleTrekkingSession extends MinigameSession {
         player.sendMessage(line, false);
     }
 
+    /** Reading a tome of experience: XP in its skill, uniform in its route's range. Returns true if the item was a tome. */
+    public static boolean readTome(ServerPlayerEntity player, String id) {
+        Object[] tome = TempleTrekking.tome(id);
+        if (tome == null) {
+            return false;
+        }
+        Skill skill = (Skill) tome[0];
+        int xp = TempleTrekking.tomeXp((Route) tome[1], player.getRandom()::nextDouble);
+        com.runecraft.skill.XpService.add(player, skill, xp);
+        Msg.game(player, "You read the " + skill.displayName() + " tome and gain " + String.format("%,d", xp) + " "
+                + skill.displayName() + " experience.");
+        return true;
+    }
+
+    /** Temple Trekking is dangerous: dying ends the trek and is a normal death at the trek's start, items and all. */
+    @Override
+    protected boolean dangerous() {
+        return true;
+    }
+
     private static int tokenPoints(ItemStack token) {
         NbtCompound nbt = token.getNbt();
         return nbt != null && nbt.contains(POINTS_NBT) ? nbt.getInt(POINTS_NBT) : TempleTrekking.MIN_POINTS;
@@ -639,12 +690,12 @@ public class TempleTrekkingSession extends MinigameSession {
         int pts = tokenPoints(token);
         token.decrement(1);
         if (reward == Reward.TOME) {
-            java.util.Random rng = new java.util.Random();
-            Skill skill = TempleTrekking.TOME_SKILLS.get(rng.nextInt(TempleTrekking.TOME_SKILLS.size()));
-            int xp = TempleTrekking.tomeXp(r, rng::nextDouble);
-            // approx: the tome is read at once instead of being handed over as an item
-            com.runecraft.skill.XpService.add(player, skill, xp);
-            Msg.game(player, "You read the " + skill.displayName() + " tome and gain " + xp + " " + skill.displayName() + " XP.");
+            // The skill is chosen at random (one in seven) when the tome is picked; the XP is rolled when it is read.
+            Skill skill = TempleTrekking.TOME_SKILLS.get(player.getRandom().nextInt(TempleTrekking.TOME_SKILLS.size()));
+            String tome = TempleTrekking.tomeId(skill, r);
+            Inv.give(player, tome, 1);
+            com.runecraft.collection.CollectionLog.obtain(player, tome);
+            Msg.game(player, "You exchange your reward token for a " + skill.displayName() + " tome.");
             return;
         }
         for (MinigameReward m : TempleTrekking.reward(reward, r, pts, harralander)) {

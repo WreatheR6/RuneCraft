@@ -91,7 +91,7 @@ public final class MinigameItemUse {
                     showRedirects(sp);
                     yield false;
                 }
-                default -> false;
+                default -> com.runecraft.content.minigames.games.TempleTrekkingSession.readTome(sp, id);
             };
             if (used) {
                 stack.decrement(1);

@@ -278,14 +278,43 @@ public final class SorceressGarden {
         };
     }
 
-    /** Whether any elemental of a garden sees square (u, v) at a game tick. */
+    /**
+     * Whether any elemental of a garden sees square (u, v) at a game tick: within its sight and with no hedge on the straight
+     * line between them (OSRS: elementals can't see through the hedges).
+     */
     public static boolean seen(Season s, long ticks, int u, int v) {
         for (Patrol p : patrols(s)) {
-            if (p.sees(ticks, u, v)) {
+            if (p.sees(ticks, u, v) && clearLine(s, p.u(ticks), p.v(ticks), u, v)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /** Whether no hedge square lies on the straight line between two squares (Bresenham; the end squares don't block). */
+    public static boolean clearLine(Season s, int u1, int v1, int u2, int v2) {
+        int du = Math.abs(u2 - u1);
+        int dv = Math.abs(v2 - v1);
+        int su = Integer.signum(u2 - u1);
+        int sv = Integer.signum(v2 - v1);
+        int err = du - dv;
+        int u = u1;
+        int v = v1;
+        while (u != u2 || v != v2) {
+            int e2 = 2 * err;
+            if (e2 > -dv) {
+                err -= dv;
+                u += su;
+            }
+            if (e2 < du) {
+                err += du;
+                v += sv;
+            }
+            if ((u != u2 || v != v2) && !walkable(s, u, v)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** Whether garden square (u, v) is open (corridor, alcove, an elemental's path or the clearing); the rest is hedge. */

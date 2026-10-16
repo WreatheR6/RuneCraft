@@ -302,6 +302,135 @@ public final class ShadesOfMortton {
         }
     }
 
+    // ------------------------------------------------------------------ diary bonuses, the flamtaer bag and bracelet
+
+    /**
+     * Cremation XP with the Morytania diaries (OSRS Wiki, Oct 2023 diary rewards poll): +50% Prayer XP with the hard diary,
+     * +50% Firemaking XP with the elite diary.
+     */
+    public static double cremationPrayerXp(double base, boolean hardDiary) {
+        return hardDiary ? base * 1.5 : base;
+    }
+
+    public static double cremationFiremakingXp(double base, boolean eliteDiary) {
+        return eliteDiary ? base * 1.5 : base;
+    }
+
+    /** Flamtaer bag capacity: 60 timber beams, 60 limestone bricks and 500 swamp paste (OSRS Wiki). */
+    public static final String[] BAG_ITEMS = {"timber_beam", "limestone_brick", "swamp_paste"};
+    public static final int[] BAG_CAPACITY = {60, 60, 500};
+
+    /** Flamtaer bracelet: about 75% more sanctity per repair while worn, one of its 80 charges per repair (OSRS Wiki). */
+    public static final double FLAMTAER_BRACELET_SANCTITY = 1.75; // approx: "around 75% more"
+
+    /** Sanctity per repair, with or without a charged flamtaer bracelet worn. */
+    public static double repairSanctity(boolean bracelet) {
+        return bracelet ? SANCTITY_PER_REPAIR * FLAMTAER_BRACELET_SANCTITY : SANCTITY_PER_REPAIR;
+    }
+
+    // ------------------------------------------------------------------ serums and the afflicted
+
+    public static final String SERUM_207 = "serum_207";
+    public static final String SERUM_208 = "serum_208";
+    /** Serum 208: serum 207 sanctified at the fire altar, needing 20% sanctity and costing 5% a dose (since July 2024). */
+    public static final double SERUM_MIN_SANCTITY = 20.0;
+    public static final double SANCTITY_PER_SERUM_DOSE = 5.0;
+
+    /**
+     * Rewards for curing an afflicted villager with a dose of serum 207 (/256) or serum 208 (/128) (OSRS Wiki "Cure rewards").
+     * Olive oils carry their dose count; the shade keys are the bronze red, brown and crimson keys.
+     */
+    public record CureReward(String item, int doses, int min, int max, int weight) {
+    }
+
+    /** Rolls a cure reward with a random value in [0,1). */
+    public static CureReward cure(List<CureReward> table, double random) {
+        int total = 0;
+        for (CureReward c : table) {
+            total += c.weight();
+        }
+        double r = random * total;
+        for (CureReward c : table) {
+            r -= c.weight();
+            if (r < 0) {
+                return c;
+            }
+        }
+        return table.get(table.size() - 1);
+    }
+
+    public static final List<CureReward> CURE_207 = List.of(
+            new CureReward("coins", 0, 10, 20, 59), new CureReward("swamp_paste", 0, 1, 20, 26),
+            new CureReward("olive_oil", 1, 1, 3, 20), new CureReward("olive_oil", 2, 1, 3, 15),
+            new CureReward("olive_oil", 3, 1, 1, 8), new CureReward("olive_oil", 4, 1, 1, 11),
+            new CureReward("vial_of_water", 0, 1, 3, 30), new CureReward("logs", 0, 1, 5, 40),
+            new CureReward("grimy_tarromin", 0, 1, 3, 34), new CureReward("hammer", 0, 1, 1, 3),
+            new CureReward("vial", 0, 1, 3, 10));
+    public static final List<CureReward> CURE_208 = List.of(
+            new CureReward("coins", 0, 30, 40, 30), new CureReward("grimy_tarromin", 0, 2, 5, 16),
+            new CureReward("limestone_brick", 0, 1, 5, 14), new CureReward("swamp_paste", 0, 10, 35, 14),
+            new CureReward("olive_oil", 1, 2, 5, 10), new CureReward("olive_oil", 2, 2, 5, 7),
+            new CureReward("olive_oil", 4, 1, 3, 5), new CureReward("logs", 0, 1, 5, 5),
+            new CureReward("olive_oil", 3, 1, 3, 4), new CureReward(key("bronze", "red"), 0, 1, 1, 4),
+            new CureReward("oak_logs", 0, 1, 5, 4), new CureReward(key("bronze", "crimson"), 0, 1, 1, 3),
+            new CureReward(key("bronze", "brown"), 0, 1, 1, 3), new CureReward("lean_snail", 0, 1, 3, 2),
+            new CureReward("thin_snail", 0, 1, 3, 3), // "Uncommon" on the wiki: the rest of the 128
+            new CureReward("willow_logs", 0, 1, 5, 2), new CureReward("maple_logs", 0, 1, 5, 1),
+            new CureReward("fat_snail", 0, 1, 3, 1));
+
+    /** The afflicted villagers wandering Mort'ton (levels 30, 32, 34 and 37). */
+    public static final String[] AFFLICTED = {"mg_mortton_afflicted_1", "mg_mortton_afflicted_2", "mg_mortton_afflicted_3",
+            "mg_mortton_afflicted_4"};
+
+    // ------------------------------------------------------------------ Dampe's coffins
+
+    /** A coffin tier: the locks Dampe fits and the shade remains it holds (OSRS Wiki "Broken coffin upgrades"). */
+    public enum Coffin {
+        BRONZE("bronze", 3), STEEL("steel", 8), BLACK("black", 14), SILVER("silver", 20), GOLD("gold", 28);
+
+        public final String metal;
+        public final int capacity;
+
+        Coffin(String metal, int capacity) {
+            this.metal = metal;
+            this.capacity = capacity;
+        }
+
+        public String id() {
+            return metal + "_coffin";
+        }
+
+        public String locks() {
+            return metal + "_locks";
+        }
+
+        public static Coffin byId(String id) {
+            for (Coffin c : values()) {
+                if (c.id().equals(id)) {
+                    return c;
+                }
+            }
+            return null;
+        }
+    }
+
+    public static final String BROKEN_COFFIN = "broken_coffin";
+
+    /** The best coffin Dampe can make from a coffin (or broken coffin) and carried locks, or null for no upgrade. */
+    public static Coffin upgrade(String coffin, Set<String> locksCarried) {
+        Coffin from = Coffin.byId(coffin);
+        if (from == null && !BROKEN_COFFIN.equals(coffin)) {
+            return null;
+        }
+        Coffin best = null;
+        for (Coffin c : Coffin.values()) {
+            if ((from == null || c.ordinal() > from.ordinal()) && locksCarried.contains(c.locks())) {
+                best = c;
+            }
+        }
+        return best;
+    }
+
     // ------------------------------------------------------------------ sanctity and the temple
 
     /** Sanctity (percent) needed to use the fire altar, and the cost per dose of olive oil sanctified. */
@@ -481,6 +610,16 @@ public final class ShadesOfMortton {
                 .examine("A hefty beam of timber, perfect for building temples.");
         single(items, "flamtaer_hammer", "Flamtaer hammer", "hammer", 0x8A6A4A, 1, "Repairs the Mort'ton temple faster.");
         single(items, "fine_cloth", "Fine cloth", "cloth", 0xE0D8C0, 500, "Amazingly untouched by time.");
+        // Serum 208 (serum 207 sanctified at the fire altar): cures the afflicted for better rewards. Not drinkable.
+        items.add(SERUM_208, "Serum 208", Kind.POTION, "potion", 0x8AC0E0).value(25).stack(1).notDrinkable()
+                .examine("4 doses of serum 208.");
+        single(items, BROKEN_COFFIN, "Broken coffin", "casket", 0x4A3A2A, 1, "A coffin with broken locks. Dampe can fit new ones.");
+        int[] coffinRgb = {0x8A5A2A, 0x9A9AA0, 0x2A2A2A, 0xD0D0E0, 0xE0B030};
+        for (Coffin c : Coffin.values()) {
+            String cap = Character.toUpperCase(c.metal.charAt(0)) + c.metal.substring(1);
+            single(items, c.id(), cap + " coffin", "casket", coffinRgb[c.ordinal()], 1,
+                    "A coffin for carrying up to " + c.capacity + " shade remains.");
+        }
         single(items, "flamtaer_bag", "Flamtaer bag", "package", 0x6A5A3A, 150,
                 "A handy sack of supplies for repairing the Flamtaer Temple at Mort'ton.");
         single(items, "runescroll_of_swampbark", "Runescroll of swampbark", "note", 0x3A6A3A, 400,

@@ -108,6 +108,23 @@ public abstract class MinigameSession {
         removePlayer(player, true);
     }
 
+    /**
+     * Dangerous minigames (Temple Trekking) return true: a death there is a real one. The player is sent back to where they
+     * entered and dies there, keeping only the usual items kept on death.
+     */
+    protected boolean dangerous() {
+        return false;
+    }
+
+    /** A death in a dangerous minigame: the player leaves the session at its entry point, then the normal death runs. */
+    final void dieDangerously(ServerPlayerEntity player) {
+        removePlayer(player, true);
+    }
+
+    final boolean isDangerous() {
+        return dangerous();
+    }
+
     /** A player left (logout, exit portal, /minigame leave or death). */
     protected void onLeave(ServerPlayerEntity player) {
     }

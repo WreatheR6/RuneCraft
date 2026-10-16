@@ -888,7 +888,9 @@ public final class MinigameRules {
                 "lunar_diplomacy", "getting_ahead", "dragon_slayer_i", "the_grand_tree", "haunted_mine", "shilo_village",
                 "in_search_of_the_myreque", "contact", "fairytale_i_growing_pains", "tree_gnome_village", "troll_romance",
                 "holy_grail", "the_fremennik_isles", "lost_city", "fight_arena", "legends_quest", "dream_mentor",
-                "recipe_for_disaster", "desert_treasure_i");
+                "recipe_for_disaster", "desert_treasure_i", "troll_stronghold", "grim_tales", "family_crest", "horror_from_the_deep",
+                "monkey_madness_i", "my_arms_big_adventure", "one_small_favour", "roving_elves", "shadow_of_the_storm",
+                "song_of_the_elves", "the_great_brain_robbery");
         public static final int QUESTS_NEEDED = 5;
         /** At most four bosses at once for a solo rumble. */
         public static final int MAX_BOSSES = 4;
@@ -901,6 +903,173 @@ public final class MinigameRules {
                 {"nmz_me", 1263, 9207, 135}, {"nmz_elvarg", 1385, 10357, 240}, {"nmz_tree_spirit", 2078, 8976, 187},
                 {"nmz_dad", 2078, 9207, 240}, {"nmz_khazard_warlord", 2547, 8286, 256}, {"nmz_arrg", 2588, 10127, 255},
                 {"nmz_black_knight_titan", 2934, 10127, 255}, {"nmz_bouncer", 3811, 13580, 232}, {"nmz_glod", 3872, 17493, 255}};
+
+        /** The quest that unlocks each rumble boss (OSRS Wiki boss table). */
+        public static final java.util.Map<String, String> BOSS_QUEST = java.util.Map.ofEntries(
+                java.util.Map.entry("nmz_count_draynor", "VAMPYRE_SLAYER"), java.util.Map.entry("nmz_king_roald", "what_lies_below"),
+                java.util.Map.entry("nmz_the_kendal", "mountain_daughter"), java.util.Map.entry("nmz_me", "lunar_diplomacy"),
+                java.util.Map.entry("nmz_elvarg", "dragon_slayer_i"), java.util.Map.entry("nmz_tree_spirit", "lost_city"),
+                java.util.Map.entry("nmz_dad", "troll_stronghold"), java.util.Map.entry("nmz_khazard_warlord", "tree_gnome_village"),
+                java.util.Map.entry("nmz_arrg", "troll_romance"), java.util.Map.entry("nmz_black_knight_titan", "holy_grail"),
+                java.util.Map.entry("nmz_bouncer", "fight_arena"), java.util.Map.entry("nmz_glod", "grim_tales"));
+
+        /** Dream modes and their fee in coins, normal / hard (OSRS Wiki "Nightmare Zone", cost per dream). */
+        public enum Mode {
+            /** One chosen boss, 1-on-1, until one of you dies: no points (drops still fall). */
+            PRACTICE("practice", "Practice", 0, 0),
+            /** Every unlocked boss in turn, 1-on-1, until the player dies or beats them all. */
+            ENDURANCE("endurance", "Endurance", 1000, 5000),
+            /** Up to four bosses at once in a random order with duplicates, endlessly. */
+            RUMBLE("rumble", "Rumble", RUMBLE_COST, HARD_RUMBLE_COST),
+            /**
+             * A rumble with chosen bosses switched off (fewer bosses pay fewer points). The 12,000 / 16,000 fee with maximum
+             * quest points is not modelled (RuneCraft's quest point total differs).
+             */
+            CUSTOM_RUMBLE("custom", "Customisable rumble", 22000, 26000);
+
+            public final String id;
+            public final String displayName;
+            private final int cost;
+            private final int hardCost;
+
+            Mode(String id, String displayName, int cost, int hardCost) {
+                this.id = id;
+                this.displayName = displayName;
+                this.cost = cost;
+                this.hardCost = hardCost;
+            }
+
+            public int cost(boolean hard) {
+                return hard ? hardCost : cost;
+            }
+
+            public boolean rumble() {
+                return this == RUMBLE || this == CUSTOM_RUMBLE;
+            }
+
+            public static Mode byId(String id) {
+                for (Mode m : values()) {
+                    if (m.id.equals(id)) {
+                        return m;
+                    }
+                }
+                return null;
+            }
+        }
+
+        /** A dream as encoded in a session variant: {@code nmz:<mode>:<normal|hard>[:<practice boss>]}. */
+        public record Dream(Mode mode, boolean hard, String boss) {
+            public String variant() {
+                return "nmz:" + mode.id + ":" + (hard ? "hard" : "normal") + (boss == null ? "" : ":" + boss);
+            }
+
+            /** Parses a variant; the entrance blocks ("nightmare_zone_entrance", "..._hard_entrance") start rumbles. */
+            public static Dream parse(String variant) {
+                String[] f = variant.split(":");
+                if (f.length >= 3 && f[0].equals("nmz") && Mode.byId(f[1]) != null) {
+                    return new Dream(Mode.byId(f[1]), f[2].equals("hard"), f.length > 3 ? f[3] : null);
+                }
+                return new Dream(Mode.RUMBLE, variant.contains("hard"), null);
+            }
+        }
+
+        public static boolean isBoss(String id) {
+            return BOSS_QUEST.containsKey(id);
+        }
+
+        /**
+         * The bosses a player can meet: those whose quest is complete, in the wiki table's order. With none unlocked every
+         * boss is used. // approx fallback
+         */
+        public static List<String> unlocked(java.util.function.Predicate<String> questComplete) {
+            List<String> out = new java.util.ArrayList<>();
+            for (Object[] b : BOSSES) {
+                if (questComplete.test(BOSS_QUEST.get((String) b[0]))) {
+                    out.add((String) b[0]);
+                }
+            }
+            if (out.isEmpty()) {
+                for (Object[] b : BOSSES) {
+                    out.add((String) b[0]);
+                }
+            }
+            return out;
+        }
+
+        /**
+         * Points for a kill when only {@code included} of the rumble's bosses are in the dream: the wiki's values are the
+         * maximum, with every boss enabled, and "point values increase based on the number of bosses included".
+         * Linear in the share of bosses included. // approx: the exact scaling isn't documented
+         */
+        public static int points(String boss, boolean hard, int included) {
+            int max = points(boss, hard);
+            int all = BOSSES.length;
+            return (int) ((long) max * Math.max(0, Math.min(included, all)) / all);
+        }
+
+        /**
+         * Hard-mode offence per boss (OSRS Wiki infoboxes, normal / hard): attack level, max hit of the melee (or main)
+         * attack, and ranged and magic levels. Defence and defensive bonuses stay the same in hard mode.
+         */
+        public record HardStats(String boss, int attack, int hardAttack, int maxHit, int hardMaxHit, int ranged, int hardRanged,
+                                int magic, int hardMagic) {
+        }
+
+        public static final List<HardStats> HARD_STATS = List.of(
+                new HardStats("nmz_count_draynor", 30, 198, 3, 17, 1, 1, 1, 1),
+                new HardStats("nmz_king_roald", 35, 140, 3, 9, 1, 1, 1, 1),
+                new HardStats("nmz_the_kendal", 65, 195, 9, 24, 1, 1, 1, 1),
+                new HardStats("nmz_me", 75, 225, 9, 24, 1, 1, 1, 1),
+                new HardStats("nmz_elvarg", 70, 210, 8, 22, 1, 1, 70, 210),
+                new HardStats("nmz_tree_spirit", 90, 200, 10, 22, 1, 1, 1, 1),
+                new HardStats("nmz_dad", 60, 132, 27, 57, 1, 1, 1, 1),
+                new HardStats("nmz_khazard_warlord", 75, 165, 10, 18, 1, 1, 1, 1),
+                new HardStats("nmz_arrg", 70, 140, 38, 74, 70, 140, 1, 1),
+                new HardStats("nmz_black_knight_titan", 91, 182, 15, 28, 1, 1, 1, 1),
+                new HardStats("nmz_bouncer", 120, 240, 13, 25, 1, 1, 1, 1),
+                new HardStats("nmz_glod", 115, 230, 13, 25, 1, 1, 1, 1));
+
+        public static HardStats hardStats(String boss) {
+            for (HardStats h : HARD_STATS) {
+                if (h.boss().equals(boss)) {
+                    return h;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * A hard boss's attack roll factor for a style: OSRS NPC attack rolls are (level + 9) * (bonus + 64), and hard mode
+         * raises only the level, so the roll scales by (hard + 9) / (normal + 9).
+         */
+        public static double hardAccuracy(String boss, boolean melee, boolean ranged) {
+            HardStats h = hardStats(boss);
+            if (h == null) {
+                return 1.0;
+            }
+            int from = melee ? h.attack() : ranged ? h.ranged() : h.magic();
+            int to = melee ? h.hardAttack() : ranged ? h.hardRanged() : h.hardMagic();
+            return (to + 9) / (double) (from + 9);
+        }
+
+        /** Extra max hit of a hard boss's melee attack (its ranged and dragonfire max hits don't change). */
+        public static int hardMaxHitBonus(String boss) {
+            HardStats h = hardStats(boss);
+            return h == null ? 0 : Math.max(0, h.hardMaxHit() - h.maxHit());
+        }
+
+        /** Each potion barrel holds up to 255 doses of its potion (OSRS Wiki). */
+        public static final int BARREL_CAPACITY = 255;
+
+        /** Doses that fit in a barrel holding {@code stored}, of the {@code wanted} being bought. */
+        public static int barrelRoom(int stored, int wanted) {
+            return Math.max(0, Math.min(wanted, BARREL_CAPACITY - Math.max(0, stored)));
+        }
+
+        /** The zapper only refuses the killing blow on Count Draynor, and only while the player hasn't hit him. */
+        public static boolean zapperMayKill(String boss, boolean playerHitIt) {
+            return !boss.equals("nmz_count_draynor") || playerHitIt;
+        }
 
         // ---- Benefits: potions sold by the dose at Dom Onion's Reward Shop, usable only inside a dream (OSRS Wiki).
         public static final String OVERLOAD = "overload";
@@ -961,7 +1130,10 @@ public final class MinigameRules {
         private NightmareZone() {
         }
 
-        /** Points per dose at Dom Onion's: overload 1,500, absorption 1,000, super ranging and super magic 250. */
+        /**
+         * Points per dose at Dom Onion's: overload 1,500, absorption 1,000, super ranging and super magic 250. Doses go into
+         * the potion barrels in the lobby and are withdrawn from there, as many as wanted.
+         */
         public static int doseCost(String potion) {
             return switch (potion) {
                 case OVERLOAD -> 1500;
