@@ -137,7 +137,18 @@ public final class GatheringData extends SkillingPart {
             new Spot("minnow_fishing_spot", "Fishing spot (minnow)", "small_fishing_net", null, List.of(
                     Catch.of("minnow", 82, 26.1, 150, 256)), List.of(), 0),
             // Ruins of Camdozaal: small net here, big net via Camdozaal.otherNet (the spot block takes both nets).
-            Camdozaal.SMALL_NET);
+            Camdozaal.SMALL_NET,
+            // Lantern harpooning (Sailing islands): any harpoon plus a lit lantern (see LIT_LANTERNS). The wiki has no
+            // success chart: low/high approx, tuned to its ~305 squid an hour at 78 Fishing (about 40% jumbo squid).
+            new Spot("lantern_fishing_spot", "Fishing spot (lantern)", "harpoon", null, List.of(
+                    Catch.of("raw_jumbo_squid", 69, 75.0, 4, 40), Catch.of("raw_swordtip_squid", 52, 55.0, 10, 60)), List.of(), 0));
+
+    public static final String LANTERN_SPOT = "lantern_fishing_spot";
+    /**
+     * Lit lanterns that light lantern harpooning (OSRS takes any lit lantern; the candle, oil, bullseye and gem lanterns
+     * are not in RuneCraft yet, so only the lit bug lantern from CommonItems works here, approx).
+     */
+    public static final List<String> LIT_LANTERNS = List.of("bug_lantern");
 
     public static final String MINNOW = "minnow";
     public static final String MINNOW_SPOT = "minnow_fishing_spot";

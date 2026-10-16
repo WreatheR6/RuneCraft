@@ -287,9 +287,9 @@ class SuccessRateSnapshotTest {
         keys.put("infernal_eel", new String[]{"Infernal eel", "Infernal eel"});
         keys.put("raw_shark", new String[]{"Raw shark", "Harpoon"});
         // Deep sea fishing (manta rays, sea turtles) has no wiki chart: approx.
-        // Camdozaal fish: the wiki pages are tagged "Needs skilling success chart".
+        // Camdozaal fish: the wiki pages are tagged "Needs skilling success chart". Lantern harpooning squid: no chart either.
         Set<String> noChart = Set.of("raw_manta_ray", "raw_sea_turtle", GatheringData.MINNOW, "raw_guppy", "raw_cavefish", "raw_tetra",
-                "raw_catfish");
+                "raw_catfish", "raw_swordtip_squid", "raw_jumbo_squid");
         for (GatheringData.Spot s : GatheringData.SPOTS) {
             for (GatheringData.Catch c : s.catches()) {
                 if (noChart.contains(c.item())) {

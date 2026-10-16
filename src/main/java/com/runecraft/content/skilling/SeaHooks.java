@@ -63,6 +63,8 @@ public final class SeaHooks {
 
     private static final Random RNG = new Random();
     static final String SEA_TAG = "runecraft_sea_creature";
+    /** The one boat paint RuneCraft has (a port task reward). */
+    static final String PAINT = "shark_paint";
 
     static void init() {
         BlockHooks.register("port_salvaging_station", (player, pos, state) ->
@@ -72,6 +74,19 @@ public final class SeaHooks {
             QuestScripts.onTalk(c.id(), (player, npc) -> crewTalk(player, c));
         }
         // Sneak + use your boat with an empty hand: empty its cargo hold into your inventory.
+        // Boat paint (OSRS: a cosmetic colour scheme for your boat): use the paint on one of your boats to repaint its hull.
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+            if (hand != Hand.MAIN_HAND || !(entity instanceof BoatEntity boat) || !PAINT.equals(Inv.idOf(player.getMainHandStack()))) {
+                return ActionResult.PASS;
+            }
+            if (world.isClient() || !(player instanceof ServerPlayerEntity sp) || SailingHooks.boatType(entity) == null) {
+                return ActionResult.PASS;
+            }
+            boat.setVariant(BoatEntity.Type.DARK_OAK); // approx: the shark scheme's dark grey hull
+            player.getMainHandStack().decrement(1);
+            Msg.action(sp, "You paint your boat in the colours of a shark.");
+            return ActionResult.SUCCESS;
+        });
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (hand != Hand.MAIN_HAND || !(entity instanceof BoatEntity) || !player.isSneaking() || !player.getMainHandStack().isEmpty()) {
                 return ActionResult.PASS;

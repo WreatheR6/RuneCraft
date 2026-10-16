@@ -132,6 +132,15 @@ public final class ResourceSites {
                     1935, 2795, 1933, 2794, 1936, 2794, 1934, 2792, 1932, 2791, 1930, 2789, 1939, 2789),
             rock("onyx_crest_lead", "Onyx Crest lead rocks", "lead", Region.UNCHARTED_ISLES,
                     2975, 2255, 2975, 2253, 2977, 2253, 2974, 2252, 2975, 2251, 2978, 2251),
+            // Lantern harpooning spots on the Onyx Crest, Laguna Aurorae, Wintumber Island and Buccaneers' Haven (wiki tiles).
+            fish("onyx_crest_lantern", "The Onyx Crest lantern fishing", GatheringData.LANTERN_SPOT, Region.UNCHARTED_ISLES,
+                    3002, 2271, 3003, 2274, 3003, 2275, 3004, 2279, 3004, 2280),
+            fish("laguna_aurorae_lantern", "Laguna Aurorae lantern fishing", GatheringData.LANTERN_SPOT, Region.UNCHARTED_ISLES,
+                    1176, 2717, 1179, 2717, 1183, 2719, 1184, 2723, 1173, 2724, 1178, 2717),
+            fish("wintumber_island_lantern", "Wintumber Island lantern fishing", GatheringData.LANTERN_SPOT, Region.UNCHARTED_ISLES,
+                    2074, 2601, 2074, 2604, 2076, 2608, 2074, 2602, 2071, 2596),
+            fish("buccaneers_haven_lantern", "Buccaneers' Haven lantern fishing", GatheringData.LANTERN_SPOT, Region.UNCHARTED_ISLES,
+                    2075, 3675, 2078, 3672),
             // Nickel rocks on Deepfin Point, Ynysdail and Grimstone (wiki object tiles; the Deepfin Mine's are underground and not
             // built). The rubium rocks are in the Charred Dungeon (dungeons module, CharredDungeon).
             rock("deepfin_point_nickel", "Deepfin Point nickel rocks", "nickel", Region.UNCHARTED_ISLES,

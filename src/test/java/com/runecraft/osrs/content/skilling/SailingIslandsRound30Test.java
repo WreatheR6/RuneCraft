@@ -87,6 +87,37 @@ class SailingIslandsRound30Test {
     }
 
     @Test
+    void lanternHarpooningForSquid() {
+        GatheringData.Spot spot = GatheringData.spot(GatheringData.LANTERN_SPOT);
+        assertNotNull(spot);
+        assertEquals("harpoon", spot.tool());
+        assertEquals(List.of("raw_jumbo_squid", "raw_swordtip_squid"), spot.catches().stream().map(GatheringData.Catch::item).toList());
+        assertEquals(69, spot.catches().get(0).level());
+        assertEquals(75.0, spot.catches().get(0).xp());
+        assertEquals(52, spot.catches().get(1).level());
+        assertEquals(55.0, spot.catches().get(1).xp());
+        for (String id : List.of("raw_swordtip_squid", "swordtip_squid", "raw_jumbo_squid", "jumbo_squid", "bug_lantern")) {
+            assertTrue(ItemCatalog.exists(id), id);
+        }
+        CookingData.NewFish swordtip = CookingData.FISH.stream().filter(f -> f.id().equals("swordtip_squid")).findFirst().orElseThrow();
+        assertEquals(56, swordtip.cookLevel());
+        assertEquals(150.0, swordtip.cookXp());
+        assertEquals(15, swordtip.heal());
+        assertEquals(91, swordtip.stopBurn());
+        int tiles = 0;
+        for (ResourceSites.Site s : ResourceSites.SITES) {
+            if (s.block().equals(GatheringData.LANTERN_SPOT)) {
+                tiles += s.tiles().size();
+            }
+        }
+        assertEquals(18, tiles); // Onyx Crest 5, Laguna Aurorae 6, Wintumber Island 5, Buccaneers' Haven 2
+        // About 0.3 squid per roll at 78 Fishing with a plain harpoon, 40-45% of them jumbo.
+        double jumbo = spot.catches().get(0).chance(78, 1.0);
+        double any = jumbo + (1 - jumbo) * spot.catches().get(1).chance(78, 1.0);
+        assertTrue(any > 0.25 && any < 0.35, "per roll " + any);
+    }
+
+    @Test
     void lostCratesFollowTheWikiTiers() {
         assertEquals(-1, SailingSea.maxCrateTier(4));
         assertEquals(0, SailingSea.maxCrateTier(5));
