@@ -275,9 +275,9 @@ public final class SysState extends PersistentState {
             lootingBag.takeAll();
             NbtList bag = n.getList("LootingBag", NbtElement.COMPOUND_TYPE);
             for (int i = 0; i < bag.size(); i++) {
-                NbtCompound c = bag.getCompound(i);
-                lootingBag.restore(new com.runecraft.osrs.content.systems.LootingBag.Stack(c.getString("Item"), c.getString("Tag"),
-                        c.getBoolean("Noted"), c.getBoolean("Stackable"), c.getLong("Count")));
+                NbtCompound e = bag.getCompound(i);
+                lootingBag.restore(new com.runecraft.osrs.content.systems.LootingBag.Stack(e.getString("Item"), e.getString("Tag"),
+                        e.getBoolean("Noted"), e.getBoolean("Stackable"), e.getLong("Count")));
             }
             lootingBagOpen = n.getBoolean("LootingBagOpen");
         }
