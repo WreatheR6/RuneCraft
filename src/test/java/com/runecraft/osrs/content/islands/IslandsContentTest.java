@@ -122,7 +122,8 @@ class IslandsContentTest {
             if (p.id().startsWith(IslandsTravel.RING_PLACE_PREFIX)) {
                 // Bare places holding stand-alone fairy rings sit at the rings' OSRS tiles, Kourend and Varlamore included.
                 assertEquals(PlaceDef.Style.NONE, p.style(), p.id());
-                assertTrue(GielinorMap.wildernessLevel(p.blockX(), p.blockZ()) == 0, p.id() + " in the Wilderness");
+                boolean dungeon = IslandsTravel.dungeonRing(p.id().substring(IslandsTravel.RING_PLACE_PREFIX.length()).toUpperCase()) != null;
+                assertTrue(dungeon || GielinorMap.wildernessLevel(p.blockX(), p.blockZ()) == 0, p.id() + " in the Wilderness"); // the Abyss lies under it
                 continue;
             }
             // the Sailing-era islands reach west to Laguna Aurorae (x 1165) and south to the Onyx Crest (y 2286)
@@ -444,6 +445,10 @@ class IslandsContentTest {
             Set<String> codes = new HashSet<>();
             for (IslandsTravel.Stop s : n.stops()) {
                 assertTrue(codes.add(s.code()), s.code());
+                if (s.place().equals(IslandsTravel.HOUSE_PLACE)) {
+                    assertTrue(!s.hasBlock(), s.code()); // the house ring is a Teleport to House
+                    continue;
+                }
                 int[] c = centre(s.place());
                 assertNotNull(c, s.place());
                 if (s.hasBlock() && !s.place().startsWith(IslandsTravel.RING_PLACE_PREFIX)) { // those are laid at runtime
@@ -458,7 +463,8 @@ class IslandsContentTest {
         assertEquals("AIR", next.code());
         assertEquals("AIQ", IslandsTravel.next(IslandsTravel.FAIRY_RINGS, "ZANARIS", "CIP").code());
         assertEquals("CKQ", IslandsTravel.next(IslandsTravel.FAIRY_RINGS, "CKP", "ZANARIS").code());
-        assertEquals("ZANARIS", IslandsTravel.next(IslandsTravel.FAIRY_RINGS, "DLR", "AIQ").code());
+        assertEquals("DLS", IslandsTravel.next(IslandsTravel.FAIRY_RINGS, "DLR", "AIQ").code());
+        assertEquals("ZANARIS", IslandsTravel.next(IslandsTravel.FAIRY_RINGS, "DLS", "AIQ").code());
     }
 
     @Test

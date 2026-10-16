@@ -59,8 +59,14 @@ public final class JewelleryService {
         int[] at = SysTeleport.osrs(p);
         SysState.SysPlayer sp = SysState.of(p);
         for (Teleports.Destination d : w.teleports()) {
+            String quest = Teleports.activationQuest(d);
             if (Teleports.needsVisit(d) && !sp.unlocks.contains(d.name())
                     && Teleports.within(at[0], at[1], d.x(), d.y(), Teleports.ACTIVATE_RADIUS)) {
+                if (quest != null && !com.runecraft.quest.QuestApi.isComplete(p, quest)) {
+                    Msg.game(p, "The statue doesn't respond. (Complete "
+                            + com.runecraft.osrs.content.ContentRegistry.quest(quest).displayName() + " to activate it.)");
+                    continue;
+                }
                 sp.unlocks.add(d.name());
                 out.add(d.name());
             }
@@ -150,11 +156,11 @@ public final class JewelleryService {
         Charges.Spec charged = teleportCharges(stack);
         if (w.chargeBase() != null && w.charges() == 0) {
             s.line("It has no charges left. Recharge it at the Fountain of Heroes (Heroes' Guild, Burthorpe).", 0xFF8080);
-        } else if (charged != null && ItemCharges.get(stack) <= 0) {
+        } else if (charged != null && TeleportCharges.get(p, stack) <= 0) {
             s.line("It has no charges left. Sneak and use it with " + materialName(charged) + "s in your inventory to charge it.", 0xFF8080);
         } else {
             if (charged != null) {
-                s.line(Charges.describe(charged, ItemCharges.get(stack)) + " (one per teleport; sneak and use it with "
+                s.line(Charges.describe(charged, TeleportCharges.get(p, stack)) + " (one per teleport; sneak and use it with "
                         + materialName(charged) + "s to add more).");
             }
             s.line("Where would you like to teleport to?");
@@ -310,23 +316,60 @@ public final class JewelleryService {
                             + " before you can teleport there.");
                     return;
                 }
+                String locked = lockedReason(p, dest);
+                if (locked != null) {
+                    Msg.game(p, locked);
+                    return;
+                }
                 Charges.Spec charged = teleportCharges(stack);
-                if (charged != null && ItemCharges.get(stack) <= 0) {
+                if (charged != null && TeleportCharges.get(p, stack) <= 0) {
                     Msg.game(p, "Your " + charged.name() + " has no charges left.");
                     return;
                 }
-                if (SysTeleport.teleport(p, dest, Teleports.wildernessLimit(w.id()))) {
+                // Ring of returning: the player's own respawn point (a bed in Gielinor), else Lumbridge.
+                net.minecraft.util.math.BlockPos home = "ring_of_returning".equals(w.chargeBase()) ? SysTeleport.respawnPoint(p) : null;
+                boolean went = home != null ? SysTeleport.teleportTo(p, home, "your respawn point", Teleports.wildernessLimit(w.id()))
+                        : SysTeleport.teleport(p, dest, Teleports.wildernessLimit(w.id()));
+                if (went) {
+                    if (Jewellery.SINGLE_USE.contains(w.id()) && source.equals("hand")) {
+                        stack.decrement(1);
+                        Msg.game(p, "Your " + w.name().toLowerCase(java.util.Locale.ROOT) + " is used up.");
+                    }
                     DiaryService.onActivity(p, "teleport:" + w.id() + ":" + com.runecraft.osrs.content.systems.Diaries.slug(dest.name()));
                     if (w.chargeBase() != null) {
                         setStack(p, source, useCharge(p, stack));
                     } else if (charged != null) {
-                        ItemCharges.drain(stack, 1);
-                        int left = ItemCharges.get(stack);
+                        TeleportCharges.set(p, stack, TeleportCharges.get(p, stack) - 1);
+                        int left = TeleportCharges.get(p, stack);
                         Msg.game(p, "Your " + charged.name() + " has " + left + " charge" + (left == 1 ? "" : "s") + " left.");
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Why a destination is closed to this player (a Kourend memoir story whose quest isn't done, the camulet's quarry or the
+     * stony basalt's roof without their diary tier or Agility level), or null.
+     */
+    static String lockedReason(ServerPlayerEntity p, Teleports.Destination dest) {
+        String memoir = Teleports.memoirQuest(dest);
+        if (memoir != null && com.runecraft.osrs.content.ContentRegistry.quest(memoir) != null
+                && !com.runecraft.quest.QuestApi.isComplete(p, memoir)) {
+            return "You need to complete " + com.runecraft.osrs.content.ContentRegistry.quest(memoir).displayName()
+                    + " to read that story.";
+        }
+        String[] diary = Teleports.needsDiary(dest);
+        if (diary != null && !com.runecraft.osrs.content.systems.Diaries.tierComplete(SysState.of(p).diaryDone, diary[0],
+                com.runecraft.osrs.content.systems.Diaries.Tier.valueOf(diary[1]))) {
+            return "You need to complete the " + diary[1].toLowerCase(java.util.Locale.ROOT) + " " + Character.toUpperCase(diary[0].charAt(0))
+                    + diary[0].substring(1) + " Diary to teleport to " + dest.name() + ".";
+        }
+        if (dest.equals(Teleports.STONY_BASALT_ROOF)
+                && data(p).skills().level(Skill.AGILITY) < Teleports.STONY_BASALT_ROOF_AGILITY) {
+            return "You need level " + Teleports.STONY_BASALT_ROOF_AGILITY + " Agility to teleport onto the Stronghold's roof.";
+        }
+        return null;
     }
 
     /** Uses an unlock item (the ancient tablet) on a teleport item: permanently unlocks that destination. */

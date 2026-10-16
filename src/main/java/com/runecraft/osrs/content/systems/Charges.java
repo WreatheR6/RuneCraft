@@ -65,8 +65,19 @@ public final class Charges {
     /** Game ticks without attacking or being attacked after which a player counts as out of combat (approx). */
     public static final String CAMULET = "camulet";
     public static final int CAMULET_MAX = 4;
+    /** One bucket of ugthanki dung refills the camulet completely (wiki). */
+    public static final String UGTHANKI_DUNG = "ugthanki_dung";
     public static final String SKULL_SCEPTRE = "skull_sceptre";
-    public static final int SKULL_SCEPTRE_MAX = 10;
+    /** Skull sceptre (wiki): 10 charges, 14/18/22/26 with each Varrock Diary tier; made with the cap's charges. */
+    public static final int SKULL_SCEPTRE_MAX = 26;
+    /** Teleport crystal (wiki): made with 4 charges, (5) the most; Eluned recharges it in Lletya or Prifddinas. */
+    public static final String TELEPORT_CRYSTAL = "teleport_crystal";
+    public static final int TELEPORT_CRYSTAL_MAX = 5;
+    /** Coins per charge Eluned takes (OSRS: 150-750 coins for 3 charges, 5 with the hard Western Provinces Diary). approx */
+    public static final int TELEPORT_CRYSTAL_COINS = 50;
+    /** Chronicle (wiki): one teleport card per charge, at most 1,000. */
+    public static final String CHRONICLE = "chronicle";
+    public static final int CHRONICLE_MAX = 1_000;
     public static final int COMBAT_TIMEOUT_TICKS = 8;
     /** Ring of the elements (wiki): one air, water, earth, fire and law rune per charge, at most 10,000. */
     public static final String RING_OF_THE_ELEMENTS = "ring_of_the_elements";
@@ -86,6 +97,19 @@ public final class Charges {
     public static final String PHARAOHS_SCEPTRE = "pharaohs_sceptre";
     public static final int PHARAOHS_SCEPTRE_MAX = 100;
     private static final int[] PHARAOHS_SCEPTRE_CAPS = {3, 10, 25, 50, 100};
+
+    /** The skull sceptre's charges for the number of Varrock Diary tiers completed (0-4): 10, 14, 18, 22, 26. */
+    public static int skullSceptreCap(int varrockTiersDone) {
+        return 10 + 4 * Math.max(0, Math.min(4, varrockTiersDone));
+    }
+
+    /**
+     * Teleport items whose charges belong to the player rather than to one item (OSRS): the ring of the elements and the
+     * camulet (using a charge on one camulet uses it on all of them).
+     */
+    public static boolean perPlayer(String itemId) {
+        return RING_OF_THE_ELEMENTS.equals(itemId) || CAMULET.equals(itemId);
+    }
 
     /** The sceptre's charge cap for the number of Desert Diary tiers completed (0-4). */
     public static int pharaohsSceptreCap(int desertTiersDone) {
@@ -150,12 +174,14 @@ public final class Charges {
                 ordered("ancient_shard", 3), ARCLIGHT_PER_3_SHARDS, 0));
         put(new Spec(XERICS_TALISMAN, "Xeric's talisman", Kind.CHARGED, XERICS_TALISMAN_MAX, XERICS_TALISMAN_START, Drain.TELEPORT,
                 ordered("lizardman_fang", 1), 1, 0));
-        // Camulet: 4 teleport charges (OSRS: refilled with ugthanki dung, which RuneCraft doesn't have). Skull sceptre: 10
-        // charges, crumbles when empty (the Varrock diary's 14-26 charge caps are not applied). // approx
-        put(new Spec(CAMULET, "Camulet", Kind.CHARGED, CAMULET_MAX, CAMULET_MAX, Drain.TELEPORT, ordered(), 1, 0));
-        put(new Spec(SKULL_SCEPTRE, "Skull sceptre", Kind.CHARGED, SKULL_SCEPTRE_MAX, SKULL_SCEPTRE_MAX, Drain.TELEPORT,
-                ordered(), 1, 0));
-        // Round 17 teleport items. OSRS tracks the ring of the elements' charges per player; here per ring (approx).
+        // Camulet: 4 teleport charges per player, one bucket of ugthanki dung refills all of them (ChargeService). Skull
+        // sceptre: made with 10-26 charges by Varrock Diary tier (skullSceptreCap), crumbles when empty.
+        put(new Spec(CAMULET, "Camulet", Kind.CHARGED, CAMULET_MAX, CAMULET_MAX, Drain.TELEPORT, ordered(UGTHANKI_DUNG, 1), 1, 0));
+        put(new Spec(SKULL_SCEPTRE, "Skull sceptre", Kind.CHARGED, SKULL_SCEPTRE_MAX, 10, Drain.TELEPORT, ordered(), 1, 0));
+        put(new Spec(TELEPORT_CRYSTAL, "Teleport crystal", Kind.CHARGED, TELEPORT_CRYSTAL_MAX, 4, Drain.TELEPORT,
+                ordered("coins", TELEPORT_CRYSTAL_COINS), 1, 0));
+        put(new Spec(CHRONICLE, "Chronicle", Kind.CHARGED, CHRONICLE_MAX, 0, Drain.TELEPORT, ordered("teleport_card", 1), 1, 0));
+        // Round 17 teleport items. The ring of the elements' charges belong to the player (perPlayer).
         put(new Spec(RING_OF_THE_ELEMENTS, "Ring of the elements", Kind.CHARGED, RING_OF_THE_ELEMENTS_MAX, 0, Drain.TELEPORT,
                 ordered("air_rune", 1, "water_rune", 1, "earth_rune", 1, "fire_rune", 1, "law_rune", 1), 1, 0));
         put(new Spec(GIANTSOUL_AMULET, "Giantsoul amulet", Kind.CHARGED, GIANTSOUL_AMULET_MAX, 0, Drain.TELEPORT,
@@ -172,8 +198,8 @@ public final class Charges {
         // Bracelet of ethereum (wiki): up to 16,000 revenant ether; one per revenant attack while worn (JewelleryService).
         put(new Spec("bracelet_of_ethereum", "Bracelet of ethereum", Kind.CHARGED, REVENANT_ETHER_MAX, 0, Drain.HIT_TAKEN,
                 ordered("revenant_ether", 1), 1, 0));
-        // A sceptre found in the pyramid holds the default 3 charges (approx: OSRS hands it out uncharged since 2022).
-        put(new Spec(PHARAOHS_SCEPTRE, "Pharaoh's sceptre", Kind.CHARGED, PHARAOHS_SCEPTRE_MAX, 3, Drain.TELEPORT,
+        // A sceptre found in the pyramid is uncharged (OSRS since 2022): the guardian mummy charges it.
+        put(new Spec(PHARAOHS_SCEPTRE, "Pharaoh's sceptre", Kind.CHARGED, PHARAOHS_SCEPTRE_MAX, 0, Drain.TELEPORT,
                 ordered(), 1, 0));
     }
 
@@ -250,6 +276,11 @@ public final class Charges {
     }
 
     // ------------------------------------------------------------------ recharging
+
+    /** Camulet: one bucket of ugthanki dung refills it to full; a full camulet takes none (no dung wasted). */
+    public static int camuletRefill(int charges, int dung) {
+        return dung <= 0 || charges >= CAMULET_MAX ? 0 : CAMULET_MAX - Math.max(0, charges);
+    }
 
     /** How many charges can be added from the materials available (capped by the free capacity). */
     public static int rechargeable(Spec s, int charges, Map<String, Integer> available) {

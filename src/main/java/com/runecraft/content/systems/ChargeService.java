@@ -54,6 +54,8 @@ public final class ChargeService {
             EquipmentSlot.FEET, EquipmentSlot.OFFHAND};
     /** Lletya (KandarinElves) in OSRS tiles. */
     private static final AccessGates.Rect LLETYA = new AccessGates.Rect(2318, 3146, 2362, 3190);
+    /** Pollnivneach and Ali the Camel Man's camels, where a camulet wearer can get ugthanki dung. approx bounds */
+    private static final AccessGates.Rect POLLNIVNEACH = new AccessGates.Rect(3330, 2930, 3385, 3005);
     private static final Map<UUID, Fight> FIGHTS = new HashMap<>();
     private static final Map<UUID, Quote> QUOTES = new HashMap<>();
 
@@ -214,7 +216,27 @@ public final class ChargeService {
     }
 
     private static void recharge(ServerPlayerEntity p, ItemStack stack, Charges.Spec s) {
-        if (s.kind() == Charges.Kind.CRYSTAL) {
+        if (s.id().equals(Charges.CAMULET)) {
+            if (Inv.count(p, Charges.UGTHANKI_DUNG) <= 0 && POLLNIVNEACH.contains(AccessGateService.tileX(p.getX()), AccessGateService.tileY(p.getZ()))
+                    && (com.runecraft.quest.QuestApi.stage(p, "my_arms_big_adventure") > 0
+                    || com.runecraft.quest.QuestApi.isComplete(p, "my_arms_big_adventure"))) {
+                // OSRS: camels talk to camulet wearers (after starting My Arm's Big Adventure) and leave ugthanki dung.
+                Inv.give(p, Charges.UGTHANKI_DUNG, 1);
+                Msg.action(p, "One of the camels takes a liking to your camulet and obliges. You scoop up some ugthanki dung.");
+                return;
+            }
+            int add = Charges.camuletRefill(TeleportCharges.get(p, stack), Inv.count(p, Charges.UGTHANKI_DUNG));
+            if (add <= 0) {
+                Msg.game(p, TeleportCharges.get(p, stack) >= s.max() ? "Your camulet is already fully charged."
+                        : "You need a bucket of ugthanki dung to recharge your camulet.");
+                return;
+            }
+            Inv.remove(p, Charges.UGTHANKI_DUNG, 1);
+            TeleportCharges.set(p, stack, s.max());
+            Msg.game(p, "You recharge the camulet with the ugthanki dung. It has " + s.max() + " charges.");
+            return;
+        }
+        if (s.kind() == Charges.Kind.CRYSTAL || s.id().equals(Charges.TELEPORT_CRYSTAL)) {
             double x = AccessGateService.tileX(p.getX());
             double y = AccessGateService.tileY(p.getZ());
             AccessGates.Gate prif = AccessGates.byId("prifddinas");
@@ -223,7 +245,7 @@ public final class ChargeService {
                 return;
             }
         }
-        int charges = ItemCharges.get(stack);
+        int charges = TeleportCharges.get(p, stack);
         Map<String, Integer> have = new LinkedHashMap<>();
         for (String item : s.materials().keySet()) {
             have.put(item, Inv.count(p, item));
@@ -240,9 +262,9 @@ public final class ChargeService {
         for (Map.Entry<String, Integer> e : Charges.cost(s, add).entrySet()) {
             Inv.remove(p, e.getKey(), e.getValue());
         }
-        ItemCharges.set(stack, charges + add);
+        TeleportCharges.set(p, stack, charges + add);
         Msg.game(p, "You add " + add + " charge" + (add == 1 ? "" : "s") + " to your " + name(s) + ". "
-                + Charges.describe(s, ItemCharges.get(stack)) + ".");
+                + Charges.describe(s, TeleportCharges.get(p, stack)) + ".");
         com.runecraft.network.ServerNetworking.sync(p);
     }
 

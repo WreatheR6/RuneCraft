@@ -34,6 +34,10 @@ public final class IslandsTravelService {
 
     /** Block position (x, z) of a stop's ring or tree, or null if its place is unknown. */
     static int[] position(IslandsTravel.Stop stop) {
+        IslandsTravel.DungeonRing ring = dungeonRing(stop);
+        if (ring != null) {
+            return new int[]{ring.x(), ring.z()};
+        }
         PlaceDef p = ContentRegistry.place(stop.place());
         if (p != null) {
             return new int[]{p.blockX() + stop.dx(), p.blockZ() + stop.dz()};
@@ -46,7 +50,10 @@ public final class IslandsTravelService {
     static IslandsTravel.Stop here(IslandsTravel.Network network, BlockPos pos) {
         for (IslandsTravel.Stop s : network.stops()) {
             int[] at = position(s);
-            if (s.hasBlock() && at != null && Math.abs(at[0] - pos.getX()) <= 1 && Math.abs(at[1] - pos.getZ()) <= 1) {
+            IslandsTravel.DungeonRing ring = dungeonRing(s);
+            boolean level = ring == null ? pos.getY() > com.runecraft.osrs.content.dungeons.Dungeons.DEEP_TOP
+                    : Math.abs(pos.getY() - (ring.floorY() + 1)) <= 2;
+            if (s.hasBlock() && at != null && level && Math.abs(at[0] - pos.getX()) <= 1 && Math.abs(at[1] - pos.getZ()) <= 1) {
                 return s;
             }
         }
@@ -102,7 +109,29 @@ public final class IslandsTravelService {
             // The place centre is its chunk's centre; the ring stands on its own OSRS tile in that chunk.
             int x = com.runecraft.osrs.GielinorMap.toBlockX(p.osrsX());
             int z = com.runecraft.osrs.GielinorMap.toBlockZ(p.osrsY());
-            LandmarkBuilder.registerCustom(p.id(), (world, plaza) -> layRing(world, ground(world, x, z)));
+            IslandsTravel.DungeonRing ring = null;
+            for (IslandsTravel.DungeonRing d : IslandsTravel.DUNGEON_RINGS) {
+                if (IslandsTravel.ringPlace(d.code()).equals(p.id())) {
+                    ring = d;
+                }
+            }
+            IslandsTravel.DungeonRing underground = ring;
+            LandmarkBuilder.registerCustom(p.id(), (world, plaza) -> {
+                if (underground == null) {
+                    layRing(world, ground(world, x, z));
+                } else {
+                    layDungeonRing(world, underground); // on the dungeon's floor, once the dungeon is carved
+                }
+            });
+        }
+    }
+
+    /** Lays a dungeon realm's ring on its dungeon's floor (carving the dungeon's chunks first), unless it is there. */
+    static void layDungeonRing(ServerWorld world, IslandsTravel.DungeonRing ring) {
+        StructurePlacer.applyAround(world, ring.x(), ring.z(), 16);
+        net.minecraft.block.Block block = net.minecraft.registry.Registries.BLOCK.get(RuneCraft.resolve(IslandsBlocks.FAIRY_RING));
+        if (!world.getBlockState(new BlockPos(ring.x(), ring.floorY() + 1, ring.z())).isOf(block)) {
+            layRing(world, new BlockPos(ring.x(), ring.floorY(), ring.z()));
         }
     }
 
@@ -131,7 +160,29 @@ public final class IslandsTravelService {
         world.setBlockState(centre.up(), ring.getDefaultState());
     }
 
+    /** The dungeon ring a stop stands for (a ring carved into a dungeon realm), or null. */
+    static IslandsTravel.DungeonRing dungeonRing(IslandsTravel.Stop stop) {
+        IslandsTravel.DungeonRing ring = IslandsTravel.dungeonRing(stop.code());
+        return ring != null && IslandsTravel.ringPlace(ring.code()).equals(stop.place()) ? ring : null;
+    }
+
     static void travel(ServerPlayerEntity player, IslandsTravel.Stop to) {
+        if (IslandsTravel.HOUSE_PLACE.equals(to.place())) {
+            // DIQ: the player-owned house's ring (the extras module's house registers the teleport).
+            com.runecraft.content.systems.SysTeleport.houseTeleport.accept(player);
+            return;
+        }
+        IslandsTravel.DungeonRing ring = dungeonRing(to);
+        if (ring != null) {
+            ServerWorld world = Gielinor.world(player.getServer());
+            if (world == null) {
+                return;
+            }
+            layDungeonRing(world, ring);
+            int[] a = IslandsTravel.dungeonArrival(ring);
+            player.teleport(world, a[0] + 0.5, a[1], a[2] + 0.5, player.getYaw(), player.getPitch());
+            return;
+        }
         Landmark landmark = Landmark.byName(to.place());
         if (landmark != null && ContentRegistry.place(to.place()) == null) {
             Gielinor.teleport(player, landmark);

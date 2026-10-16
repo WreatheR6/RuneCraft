@@ -45,7 +45,15 @@ public final class NpcsContent implements ContentModule {
             String id = placeId(n.x(), n.y());
             places.putIfAbsent(id, new PlaceDef(id, n.area(), n.x(), n.y(), PlaceDef.Style.NONE, List.of(), List.of()));
         }
-        return new ArrayList<>(places.values());
+        List<PlaceDef> out = new ArrayList<>(places.values());
+        out.addAll(WildernessTransport.places());
+        return out;
+    }
+
+    /** The Mage Bank cavern under the sea at its OSRS tile (the Mage Arena lever's destination). */
+    @Override
+    public List<com.runecraft.osrs.world.StructureDef> structures() {
+        return List.of(WildernessTransport.mageBank());
     }
 
     @Override

@@ -57,7 +57,7 @@ public final class Teleports {
     /** Slayer ring (8 charges; the eternal ring is unlimited). */
     public static final List<Destination> SLAYER = List.of(at("Stronghold Slayer Cave", 2431, 3422),
             at("Slayer Tower", 3421, 3537, "priest_in_peril"),
-            at("Fremennik Slayer Dungeon", 2797, 3614), // relocated: the dungeon entrance (OSRS lands inside it)
+            at("Fremennik Slayer Dungeon", 2802, 9999), // inside the dungeon (Teleports.underground)
             at("Tarn's Lair", 3445, 3223, "haunted_mine"), // relocated: the Haunted Mine entrance to the lair as built here
             at("Dark Beasts", 2232, 3300, "mournings_end_part_ii")); // relocated: the Iorwerth Dungeon, where dark beasts live here
 
@@ -65,8 +65,13 @@ public final class Teleports {
     public static String unlockItem(Destination d) {
         return XERICS_HONOUR.equals(d) ? ANCIENT_TABLET : null;
     }
-    /** Camulet (Enakhra's Lament): the temple entrance; 4 charges, refilled with ugthanki dung in OSRS. */
-    public static final List<Destination> CAMULET = List.of(at("Enakhra's Temple", 3104, 2932, "enakhras_lament"));
+    /**
+     * Camulet (Enakhra's Lament): Enakhra's Temple (OSRS lands inside it, plane 2; here at its entrance) or, with the hard
+     * Desert Diary, the Bandit Camp Quarry ({@link #needsDiary}). 4 charges shared by every camulet the player owns,
+     * refilled by a bucket of ugthanki dung.
+     */
+    public static final Destination CAMULET_QUARRY = at("Bandit Camp Quarry", 3191, 2924);
+    public static final List<Destination> CAMULET = List.of(at("Enakhra's Temple", 3104, 2932), CAMULET_QUARRY);
     /** Skull sceptre: the Stronghold of Security entrance in Barbarian Village (usable up to level 20 Wilderness). */
     public static final Destination SKULL_SCEPTRE = at("Barbarian Village", 3081, 3421);
     public static final List<Destination> DRAKAN = List.of(at("Ver Sinhaza", 3649, 3230),
@@ -109,6 +114,83 @@ public final class Teleports {
     public static final List<Destination> ATES = List.of(at("The Darkfrost", 1491, 3283), at("Twilight Temple", 1668, 3223),
             at("Ralos' Rise", 1459, 3138), at("North Aldarin", 1426, 2995), at("Kastori", 1366, 3086),
             at("Nemus Retreat", 1364, 3277));
+    /** The quest that must be complete before a statue can be activated: North Aldarin's needs Death on the Isle's icon. */
+    public static String activationQuest(Destination d) {
+        return ATES.get(3).equals(d) ? "death_on_the_isle" : null; // approx: the icon errand after the quest is not modelled
+    }
+
+    /*
+     * Round 27 teleport items (OSRS arrival tiles from the shortest-path snapshot, checked by TransportSnapshotTest).
+     */
+    /** Teleport crystal (and the eternal one): Lletya, or Prifddinas after Song of the Elves. */
+    public static final List<Destination> TELEPORT_CRYSTAL = List.of(at("Lletya", 2330, 3171),
+            at("Prifddinas", 3264, 6066, "song_of_the_elves"));
+    /** Royal and grand seed pods: the Grand Tree (usable up to level 30 Wilderness). */
+    public static final List<Destination> SEED_POD = List.of(at("Grand Tree", 2465, 3495));
+    /** Icy basalt (Making Friends with My Arm): Weiss, by the herb patch. Consumed. */
+    public static final List<Destination> ICY_BASALT = List.of(at("Weiss", 2846, 3938, "making_friends_with_my_arm"));
+    /** Stony basalt: below the Troll Stronghold's climbing rocks, or its roof with 73 Agility and the hard Fremennik Diary. */
+    public static final Destination STONY_BASALT_ROOF = at("Roof", 2837, 3695, "making_friends_with_my_arm");
+    public static final List<Destination> STONY_BASALT = List.of(at("Troll Stronghold", 2845, 3694, "making_friends_with_my_arm"),
+            STONY_BASALT_ROOF);
+    /** Agility level the stony basalt's roof destination needs (boostable in OSRS). */
+    public static final int STONY_BASALT_ROOF_AGILITY = 73;
+    /**
+     * Amulet of the eye: the Temple of the Eye. OSRS lands south of the Great Guardian's portal in the temple (an
+     * underground area); here the Guardians of the Rift place on the surface by the Wizards' Tower.
+     */
+    public static final List<Destination> AMULET_OF_THE_EYE = List.of(at("Temple of the Eye", 3115, 3149));
+    /** Chronicle: outside the Champions' Guild; one teleport card per charge; useless in the Wilderness. */
+    public static final List<Destination> CHRONICLE = List.of(at("Champions' Guild", 3200, 3355));
+    /** Mythical cape: the Myths' Guild (wearing it needs Dragon Slayer II). */
+    public static final List<Destination> MYTHICAL_CAPE = List.of(at("Myths' Guild", 2457, 2850));
+    /** Music cape: Falo the Bard on the hill south of the Fremennik Province. */
+    public static final List<Destination> MUSIC_CAPE = List.of(at("Falo the Bard", 2689, 3547));
+    /**
+     * Kharedst's memoirs and the book of the dead: the five Kourend memoir stories. Each needs that house's quest
+     * ({@link #MEMOIR_QUESTS}; OSRS: reading the story it unlocks). Charges are not modelled. approx
+     */
+    public static final List<Destination> MEMOIRS = List.of(at("Lunch by the Lancalliums", 1710, 3611), // relocated: OSRS 1714 is in this world's river
+            at("The Fisher's Flute", 1803, 3748), at("History and Hearsay", 1478, 3576), at("Jewelry of Jubilation", 1544, 3761),
+            at("A Dark Disposition", 1681, 3746));
+    public static final List<String> MEMOIR_QUESTS = List.of("the_depths_of_despair", "the_queen_of_thieves",
+            "tale_of_the_righteous", "the_forsaken_tower", "the_ascent_of_arceuus");
+    /** Hallowed crystal shard: the Hallowed Sepulchre (OSRS: its lobby instance; here the minigame's place in Darkmeyer). */
+    public static final List<Destination> HALLOWED_SHARD = List.of(at("Hallowed Sepulchre", 3653, 3381));
+
+    /** The quest a memoir destination needs, or null. */
+    public static String memoirQuest(Destination d) {
+        int i = MEMOIRS.indexOf(d);
+        return i < 0 ? null : MEMOIR_QUESTS.get(i);
+    }
+
+    /** Diary tier a destination needs ({area, tier name}), or null: the camulet's quarry (hard Desert), the basalt roof. */
+    public static String[] needsDiary(Destination d) {
+        if (CAMULET_QUARRY.equals(d)) {
+            return new String[]{"desert", "HARD"};
+        }
+        if (STONY_BASALT_ROOF.equals(d)) {
+            return new String[]{"fremennik", "HARD"};
+        }
+        return null;
+    }
+
+    /**
+     * OSRS dungeon tiles sit 6,400 tiles north of the surface above them (y 9,000 and up here); such a destination lands
+     * in the dungeon carved under that surface tile.
+     */
+    public static final int UNDERGROUND_MIN_Y = 9000;
+    public static final int UNDERGROUND_OFFSET = 6400;
+
+    public static boolean underground(Destination d) {
+        return d.y() >= UNDERGROUND_MIN_Y;
+    }
+
+    /** The surface tile y above an underground destination (its own y otherwise). */
+    public static int surfaceY(Destination d) {
+        return underground(d) ? d.y() - UNDERGROUND_OFFSET : d.y();
+    }
+
     /** How close (tiles) a player must be to a {@link #needsVisit} destination to activate it. approx */
     public static final int ACTIVATE_RADIUS = 12;
 
@@ -119,13 +201,18 @@ public final class Teleports {
 
     /**
      * Highest Wilderness level an item's teleport works from (OSRS): dragonstone jewellery (glory, wealth,
-     * skills, combat) and the slayer ring work up to level 30, everything else up to level 20.
+     * skills, combat), the slayer ring and the seed pods work up to level 30, the Chronicle not at all, everything
+     * else up to level 20.
      */
     public static int wildernessLimit(String itemId) {
         String id = itemId == null ? "" : itemId;
         if (id.startsWith("amulet_of_glory") || id.startsWith("amulet_of_eternal_glory") || id.startsWith("combat_bracelet")
-                || id.startsWith("skills_necklace") || id.startsWith("ring_of_wealth") || id.startsWith("slayer_ring")) {
+                || id.startsWith("skills_necklace") || id.startsWith("ring_of_wealth") || id.startsWith("slayer_ring")
+                || id.equals("royal_seed_pod") || id.equals("grand_seed_pod")) {
             return 30;
+        }
+        if (id.equals("chronicle")) {
+            return 0; // the Chronicle's powers do not work in the Wilderness
         }
         return 20;
     }

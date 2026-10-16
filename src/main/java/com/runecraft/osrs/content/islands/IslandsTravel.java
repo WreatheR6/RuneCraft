@@ -1,5 +1,7 @@
 package com.runecraft.osrs.content.islands;
 
+import com.runecraft.osrs.world.StructureDef;
+
 import java.util.List;
 
 /**
@@ -53,8 +55,8 @@ public final class IslandsTravel {
     /**
      * Fairy rings that stand on their own (OSRS code, tile of the ring, name, quest). Each gets a bare place at
      * the ring's tile; the Minecraft side lays the ring there. Rings in realms this world doesn't build (the
-     * Abyss, Enchanted Valley, Yu'biusk, the Dorgeshuun caves, the Myreque hideout, the Abyssal Nexus, TzHaar,
-     * the Great Conch) and the player-owned house ring (DIQ) are not included.
+     * Enchanted Valley, Yu'biusk, the Great Conch) are not included; the dungeon realms (TzHaar, the Abyss, the
+     * Dorgeshuun caves) are {@link #DUNGEON_RINGS}, and the house ring (DIQ) is a virtual stop.
      */
     private static final Object[][] RINGS = {
             {"AIR", 2700, 3247, "Kandarin: South-east of Ardougne", null},
@@ -94,14 +96,62 @@ public final class IslandsTravel {
             {"DLQ", 3423, 3016, "Kharidian Desert: North of Nardah", null},
     };
 
-    /** The bare places that hold the stand-alone fairy rings. */
+    /** Stop place of the player-owned house's fairy ring (DIQ): travelling there is a Teleport to House. */
+    public static final String HOUSE_PLACE = "isl_house_ring";
+
+    /**
+     * A fairy ring in a dungeon realm: the ring block stands at (x, floorY + 1, z) on that dungeon's floor (block
+     * coordinates; these dungeons are hand-carved, not at their OSRS tiles, so each spot is picked inside the matching
+     * cavern and checked against the dungeon's carved air by TransportSnapshotTest).
+     */
+    public record DungeonRing(String code, String dungeon, int x, int floorY, int z) {
+    }
+
+    public static final List<DungeonRing> DUNGEON_RINGS = List.of(
+            // TzHaar city (DungeonsKaramjaDesert.tzhaarCity): the market cavern, west of the lava river and north of the
+            // east-west one (OSRS: south-west of the city, near the bank).
+            new DungeonRing("BLP", "dng_tzhaar_city", StructureDef.bx(2820) + 54, 6, StructureDef.bz(3166) - 34),
+            // The Abyss (DungeonsMisthalin.abyss): its outer ring, east-north-east of the centre, outside the inner wall.
+            new DungeonRing("ALR", "dng_the_abyss", StructureDef.bx(3106) + 30, -24, StructureDef.bz(3556) - 52),
+            // Dorgesh-Kaan (DungeonsMisthalin.lumbridgeCellar): the south-west corner of the city cavern, beside the houses.
+            new DungeonRing("AJQ", "dng_lumbridge_cellar_caves", 66, 10, 56));
+
+    /** The dungeon ring with this code, or null. */
+    public static DungeonRing dungeonRing(String code) {
+        for (DungeonRing d : DUNGEON_RINGS) {
+            if (d.code().equals(code)) {
+                return d;
+            }
+        }
+        return null;
+    }
+
+    /** Where a traveller arriving at a dungeon ring stands: two blocks east of the ring, on the same floor. */
+    public static int[] dungeonArrival(DungeonRing d) {
+        return new int[]{d.x() + 2, d.floorY() + 1, d.z()};
+    }
+
+    /**
+     * The bare places that hold the stand-alone fairy rings, then one over each dungeon ring (the Minecraft side lays
+     * that ring on the dungeon's floor below once the dungeon is carved).
+     */
     public static List<com.runecraft.osrs.content.PlaceDef> ringPlaces() {
         List<com.runecraft.osrs.content.PlaceDef> out = new java.util.ArrayList<>();
         for (Object[] r : RINGS) {
             out.add(com.runecraft.osrs.content.PlaceDef.of(RING_PLACE_PREFIX + ((String) r[0]).toLowerCase(),
                     "Fairy ring " + r[0], (Integer) r[1], (Integer) r[2], com.runecraft.osrs.content.PlaceDef.Style.NONE, List.of()));
         }
+        for (DungeonRing d : DUNGEON_RINGS) {
+            out.add(com.runecraft.osrs.content.PlaceDef.of(RING_PLACE_PREFIX + d.code().toLowerCase(), "Fairy ring " + d.code(),
+                    com.runecraft.osrs.GielinorMap.toOsrsX(d.x()), com.runecraft.osrs.GielinorMap.toOsrsY(d.z()),
+                    com.runecraft.osrs.content.PlaceDef.Style.NONE, List.of()));
+        }
         return out;
+    }
+
+    /** The place id over a dungeon ring. */
+    public static String ringPlace(String code) {
+        return RING_PLACE_PREFIX + code.toLowerCase();
     }
 
     private static List<Stop> fairyStops() {
@@ -122,7 +172,12 @@ public final class IslandsTravel {
                         IslandsStructures.APE_RING_DZ, true, "monkey_madness_i"),
                 new Stop("DIR", "Other realms: Gorak's Plane", "gorak_plane", 3, 3, false, null),
                 new Stop("DLR", "Islands: Poison Waste, south of Isafdar", IslandsPlaces.ZUL_ANDRA, IslandsStructures.ZUL_ANDRA_RING_DX,
-                        IslandsStructures.ZUL_ANDRA_RING_DZ, true, null)));
+                        IslandsStructures.ZUL_ANDRA_RING_DZ, true, null),
+                // Realms built as places elsewhere in this world (arrival only, like CKP/BJR/DIR).
+                new Stop("DIP", "Other realms: Abyssal Nexus", "abyssal_nexus", 3, 3, false, null),
+                new Stop("DLS", "Morytania: Myreque hideout under Canifis", "myreque_hideout", 3, 3, false, "in_search_of_the_myreque"),
+                // The player-owned house's ring: a virtual stop (Teleport to House).
+                new Stop("DIQ", "Player-owned house", HOUSE_PLACE, 0, 0, false, null)));
         List<com.runecraft.osrs.content.PlaceDef> places = ringPlaces();
         for (int i = 0; i < RINGS.length; i++) {
             Object[] r = RINGS[i];
@@ -131,6 +186,14 @@ public final class IslandsTravel {
             int dx = com.runecraft.osrs.GielinorMap.toBlockX(p.osrsX()) - p.blockX();
             int dz = com.runecraft.osrs.GielinorMap.toBlockZ(p.osrsY()) - p.blockZ();
             stops.add(new Stop((String) r[0], (String) r[3], p.id(), dx, dz, true, (String) r[4]));
+        }
+        // Dungeon realms: rings on the floors of this world's dungeons (DUNGEON_RINGS), under their bare places.
+        String[][] realms = {{"BLP", "Dungeons: TzHaar area", null}, {"ALR", "Other realms: The Abyss", null},
+                {"AJQ", "Dungeons: Cave south of Dorgesh-Kaan", "death_to_the_dorgeshuun"}};
+        for (int i = 0; i < DUNGEON_RINGS.size(); i++) {
+            DungeonRing d = DUNGEON_RINGS.get(i);
+            com.runecraft.osrs.content.PlaceDef p = places.get(RINGS.length + i);
+            stops.add(new Stop(d.code(), realms[i][1], p.id(), d.x() - p.blockX(), d.z() - p.blockZ(), true, realms[i][2]));
         }
         // The dial runs in code order after the Zanaris hub, like the three wheels of an OSRS ring.
         Stop hub = stops.remove(0);
