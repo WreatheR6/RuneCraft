@@ -292,6 +292,10 @@ public final class SlayerService {
         if (!p.hasTask() || !counts(p.task, stats)) {
             return;
         }
+        if (!XpService.allowed(player, Skill.SLAYER)) {
+            // Kills that give no experience (Nightmare Zone practice dreams) give no task credit either.
+            return;
+        }
         SlayerMasters.Master master = p.master == null ? null : SlayerMasters.get(p.master);
         if (master != null && master.wilderness() && Gielinor.wildernessLevel(entity) <= 0) {
             Msg.game(player, "Krystilia's tasks only count in the Wilderness.");

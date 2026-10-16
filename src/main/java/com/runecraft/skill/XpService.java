@@ -18,13 +18,33 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiPredicate;
 
 /** Grants experience, announces level-ups and keeps derived stats (max HP) in sync. */
 public final class XpService {
     private static final UUID HITPOINTS_MODIFIER = UUID.fromString("5d2a7c3e-6b8e-4f63-9a51-0e1c2b3a4d5f");
+    /** Gates that can withhold experience (registered by modules, e.g. Nightmare Zone practice dreams give none). */
+    private static final List<BiPredicate<ServerPlayerEntity, Skill>> GATES = new CopyOnWriteArrayList<>();
 
     private XpService() {
+    }
+
+    /** Registers a gate: experience in a skill is only given while every gate returns true. */
+    public static void addGate(BiPredicate<ServerPlayerEntity, Skill> gate) {
+        GATES.add(gate);
+    }
+
+    /** Whether the player may gain experience in the skill right now. */
+    public static boolean allowed(ServerPlayerEntity player, Skill skill) {
+        for (BiPredicate<ServerPlayerEntity, Skill> gate : GATES) {
+            if (!gate.test(player, skill)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static void add(ServerPlayerEntity player, Skill skill, double xp) {
@@ -32,7 +52,7 @@ public final class XpService {
     }
 
     public static void addTenths(ServerPlayerEntity player, Skill skill, int tenths) {
-        if (tenths <= 0) {
+        if (tenths <= 0 || !allowed(player, skill)) {
             return;
         }
         PlayerData data = Players.data(player);

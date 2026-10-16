@@ -210,7 +210,9 @@ class MinigameBenefitsTest {
         // Unlocks and point scaling: all twelve bosses pay the wiki maximum, six pay half.
         assertEquals(List.of("nmz_count_draynor", "nmz_elvarg"),
                 NightmareZone.unlocked(q -> q.equals("VAMPYRE_SLAYER") || q.equals("dragon_slayer_i")));
-        assertEquals(NightmareZone.BOSSES.length, NightmareZone.unlocked(q -> false).size());
+        // No boss quest done: no bosses (not every boss at full points), so the dream is refused.
+        assertTrue(NightmareZone.unlocked(q -> false).isEmpty());
+        assertEquals(NightmareZone.BOSSES.length, NightmareZone.allBosses().size());
         assertEquals(NightmareZone.points("nmz_glod", true), NightmareZone.points("nmz_glod", true, NightmareZone.BOSSES.length));
         assertEquals(17493 / 2, NightmareZone.points("nmz_glod", true, 6));
     }

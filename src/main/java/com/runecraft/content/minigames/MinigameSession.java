@@ -146,6 +146,14 @@ public abstract class MinigameSession {
     protected void onPlayerHit(ServerPlayerEntity player, LivingEntity target, int dealt) {
     }
 
+    /**
+     * Whether players in this session gain experience (and Slayer task credit, which goes with the Slayer XP). Nightmare Zone
+     * practice dreams return false.
+     */
+    public boolean awardsXp() {
+        return true;
+    }
+
     /** Whether two players in this session may fight each other (team PvP). */
     protected boolean canAttackPlayer(ServerPlayerEntity attacker, ServerPlayerEntity target) {
         return false;
