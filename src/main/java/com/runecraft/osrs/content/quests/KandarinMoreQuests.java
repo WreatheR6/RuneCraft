@@ -102,6 +102,10 @@ final class KandarinMoreQuests {
                 .say("* The prints match. Now for the poison: the salesman in Seers' Village says who bought some.")
                 .hint("david_sinclair", "Don't look at me like that. Father and I argued, but I'd never... Talk to the guard if you've found something.")
                 .stage("I should tell the guard who the murderer is.")
+                // Saves from before the puzzles reach this stage without the print (David took it): the guard lifts another.
+                .talk("sinclair_guard").need("silver_dagger_evidence").unless("killers_print").stay().give("killers_print")
+                .say("Lost the fingerprint? I'll dust the dagger again... there. Now, who did it?")
+                .missing("You'll need the murder weapon, the silver dagger, before you accuse anyone.")
                 .puzzle("sinclair_guard", MURDER_ACCUSE).take("silver_dagger_evidence", "killers_print")
                 .say("Arrest them! Excellent work, detective. Here's your reward.");
     }

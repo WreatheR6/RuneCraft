@@ -131,7 +131,10 @@ final class Miniquests {
     }
 
     private static void curseOfTheEmptyLord(QuestBook b) {
-        Cast.npc(b, "quest_valdez", "Valdez", "glarials_tomb", 2, 3, Cast.GHOST, 0x6A6A8A); // wiki 2558, 3446
+        // NPCs spawn when their place is first built, and glarials_tomb is already built in saved worlds: Valdez gets his own spot
+        // on the same chunk (the old Valdez at quest_mage_arena keeps the id, so he still works where he stands).
+        b.spot("cel_glarials_tomb", "Glarial's tomb (Valdez)", 2557, 3444);
+        Cast.npc(b, "quest_valdez", "Valdez", "cel_glarials_tomb", 2, 3, Cast.GHOST, 0x6A6A8A); // wiki 2558, 3446
         // The other five ghosts, at their places in the wiki's first sequence. // approx: OSRS picks one of three routes
         b.spot("cel_shipwreck", "Wilderness shipwreck", 3022, 3946);
         b.spot("cel_chaos_temple", "Chaos Temple (Wilderness)", 2950, 3820);
@@ -169,7 +172,7 @@ final class Miniquests {
                 .reqQuest("desert_treasure_i", "RESTLESS_GHOST").req(Skill.PRAYER, 31)
                 .stage("I can start this miniquest by speaking to the ghost Valdez at Glarial's Tomb, north-west of the Fishing Guild, while carrying "
                         + "a ring of visibility and an amulet of ghostspeak. (Requires Desert Treasure I, The Restless Ghost, 31 Prayer.)")
-                .talk("quest_valdez").need(sight).give("ghostly_robe_top")
+                .talk("quest_valdez").need(sight).flag("cel_valdez").give("ghostly_robe_top")
                 .say("You can see me? Then hear my tale. I was carrying the Staff of Armadyl to Entrana when the thief Rennard stole it.",
                         "Since that day I've been cursed. Take my robe... and find Rennard by the pirates' shipwreck in the Wilderness.")
                 .missing("*Something is here, but you can't see or understand it. You need a ring of visibility and an amulet of ghostspeak.*")
@@ -181,9 +184,16 @@ final class Miniquests {
                 .say("The staff? I lost it to Lennissa's band. Cursed, all of us. Wear these boots and look for her on Entrana.")
                 .talk("quest_lennissa").need(sight).needFlag("cel_kharrim").stay().unlessFlag("cel_lennissa").flag("cel_lennissa").give("ghostly_robe_bottom")
                 .say("I passed it to Dhalak, the wizard, to hide. Take these robes and ask him at the Wizards' Tower.")
-                .talk("quest_dhalak").need(sight).needFlag("cel_lennissa").give("ghostly_hood")
+                .talk("quest_dhalak").need(sight).needFlag("cel_lennissa").flag("cel_dhalak").give("ghostly_hood")
                 .say("I hid the staff from the one who wanted it most: Viggora, the Empty Lord. His curse binds us. He lingers in the Rogues' Castle.")
                 .stage("I should confront Viggora, the Empty Lord, in the Rogues' Castle in the Wilderness.")
+                // Saves from the old three-step version (whose completion gave the hood, top and bottoms) get the pieces they
+                // missed: past Rennard (old stage 2) all five, past Valdez only (old stage 1) the robe top.
+                .talk("quest_viggora").need(sight).stay().unlessFlag("cel_dhalak").flag("cel_dhalak", "cel_valdez")
+                .give("ghostly_robe_top", "ghostly_gloves", "ghostly_boots", "ghostly_robe_bottom", "ghostly_hood")
+                .say("The other ghosts' robes... they are bound to my curse. Take them, all of them, and hear me out.")
+                .talk("quest_viggora").need(sight).stay().unlessFlag("cel_valdez").flag("cel_valdez").give("ghostly_robe_top")
+                .say("Valdez's robe has drifted to me with the rest. Take it, and hear me out.")
                 .talk("quest_viggora").need(sight).give("ghostly_cloak")
                 .say("So you know my name, and the tale of the staff. Very well: take my cloak. The robes are yours; their curse ends with you.");
     }
@@ -311,8 +321,12 @@ final class Miniquests {
 
     private static void inSearchOfKnowledge(QuestBook b) {
         Cast.npc(b, "quest_professor_gracklebone", "Professor Gracklebone", "quest_arceuus_library", 0, 2, Cast.PALE, 0x3A2A5A);
-        b.npc("quest_brother_aimeri", "Brother Aimeri", "forthos_dungeon", 3, 3, 0xD8B898, 0x6A5A3A, 0x4A3A2A, 0x8A2A2A);
-        b.npc("quest_logosia", "Logosia", "quest_arceuus_library", 3, 2, 0xE8D0B8, 0x3A4A7A, 0x2A2A5A, 0xD0B060);
+        // NPCs spawn when their place is first built, and forthos_dungeon and quest_arceuus_library are already built in saved
+        // worlds: the new NPCs get their own spots on the same chunks, at the same positions.
+        b.spot("isk_forthos", "Forthos Dungeon entrance", 1702, 3574);
+        b.spot("isk_arceuus_library", "Arceuus Library (Logosia)", 1632, 3808);
+        b.npc("quest_brother_aimeri", "Brother Aimeri", "isk_forthos", 3, 3, 0xD8B898, 0x6A5A3A, 0x4A3A2A, 0x8A2A2A);
+        b.npc("quest_logosia", "Logosia", "isk_arceuus_library", 3, 2, 0xE8D0B8, 0x3A4A7A, 0x2A2A5A, 0xD0B060);
         b.item("quest_lost_tome", "Lost tome", "book", 0x5A3A2A, "A tome missing from the Arceuus Library.");
         b.item("book_of_knowledge", "Book of knowledge", "book", 0xE0C060, "Reading this book grants experience in a skill of your choice.");
         b.item("tome_of_the_sun", "Tome of the sun", "book", 0xE0B030, "An old tome about the sun. Some pages are missing.");
@@ -342,6 +356,9 @@ final class Miniquests {
                 .stage("I should take the tomes to Logosia in the Arceuus Library.")
                 .talk("quest_logosia").take("tome_of_the_sun", "tome_of_the_moon", "tome_of_the_temple")
                 .say("The lost tomes of the Forthos temple! The library is in your debt. Take this, and learn something new.")
+                // Saves from the old version (a lost tome found on the Piscatoris shore) reach this stage carrying it.
+                .talk("quest_logosia").take("quest_lost_tome")
+                .say("Professor Gracklebone's lost tome! The library is in your debt. Take this, and learn something new.")
                 .hint("quest_professor_gracklebone", "Lost tomes? Logosia looks after those. She's just over there.");
     }
 
