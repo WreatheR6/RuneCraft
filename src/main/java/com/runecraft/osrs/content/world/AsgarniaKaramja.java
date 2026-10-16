@@ -248,50 +248,144 @@ final class AsgarniaKaramja {
 
     // ------------------------------------------------------------------ Shilo Village
 
+    /**
+     * Shilo Village as on the OSRS map (mejrs layers_osrs, plane 0; ladders from shortest-path; NPC spawns from
+     * mejrs data_osrs): the river crossing the village west to east (the bridge at 2831-2832), bamboo huts
+     * with thatched roofs on their footprints. The bank is the three joined huts 2843-2861 x 2951-2957
+     * (ladders at 2845 and 2859, 2954), the furnace house 2852-2861 x 2963-2968 entered between its two feet
+     * by Yohnus (2857, 2963), Obli's general store 2822-2827 x 2956-2961 (ladder 2824, 2958), Yanni's antiques
+     * the double hut 2832-2839 x 2980-2993 (ladder 2835, 2988), Fernahei's fishing shop 2869-2873 x 2966-2972
+     * (ladder 2871, 2971) and Duradel's hut 2868-2870 x 2981-2983. The palisade closes the village, entered
+     * through the gate yard in the south-east (2867-2878 x 2944-2962, Mosol Rei outside); doors (the map has no
+     * door marks here), the range in the antiques hut and Kaleb's raised house (not built) are approx.
+     */
     static StructureDef shilo() {
         StructureDef.Builder b = StructureDef.builder("shilo_village", "Shilo Village").replaces("SHILO_VILLAGE");
         AsgarniaKit k = new AsgarniaKit(b);
         k.doorWood = "bamboo";
         k.flatten(2814, 2940, 2882, 3010);
         int[] r = rect(2817, 2944, 2878, 3006);
-        // palisade
-        k.w(r[0], -1, r[1], r[2], 4, r[3], mc("stripped_jungle_log[axis=y]"));
+        // the palisade with the gate yard in the south-east corner: inner gate at 2867, outer at 2878
+        String log = mc("stripped_jungle_log[axis=y]");
+        k.w(r[0], -1, r[1], r[2], 4, r[3], log);
         k.w(r[0], 5, r[1], r[2], 5, r[3], mc("jungle_fence"));
-        int[] gate = rect(2850, 3006, 2853, 3006);
-        k.c(gate[0], 0, gate[1], gate[2], 5, gate[1]);
-        for (int x : new int[]{gate[0] - 1, gate[2] + 1}) {
-            k.f(x, 0, gate[1] - 1, x, 7, gate[1] + 1, mc("jungle_log[axis=y]"));
-            k.s(x, 8, gate[1], mc("skeleton_skull"));
+        int[] yard = rect(2867, 2944, 2878, 2962);
+        k.f(yard[0], -1, yard[1], yard[0], 4, yard[3], log);
+        k.f(yard[0], -1, yard[1], yard[2], 4, yard[1], log);
+        k.f(yard[0], 5, yard[1], yard[0], 5, yard[3], mc("jungle_fence"));
+        k.clearT(2867, 2954, 2867, 2956, 0, 5);
+        k.clearT(2878, 2951, 2878, 2953, 0, 5);
+        for (int[] p : new int[][]{{bx(2867), bz(2956) - 1}, {bx(2867), bz(2953)}, {bx(2878) + 1, bz(2953) - 1}, {bx(2878) + 1, bz(2950)}}) {
+            k.f(p[0], -1, p[1], p[0], 6, p[1], mc("jungle_log[axis=y]"));
+            k.s(p[0], 7, p[1], mc("skeleton_skull"));
         }
-        k.f(gate[0] - 1, 6, gate[1], gate[2] + 1, 6, gate[1], mc("jungle_planks"));
-        // paths and plaza
-        k.path(2850, 2962, 2853, 3006, mc("dirt_path"), mc("coarse_dirt"));
-        k.path(2818, 2955, 2877, 2957, mc("dirt_path"), mc("coarse_dirt"));
-        k.path(2844, 2950, 2856, 2962, mc("coarse_dirt"), mc("cobblestone"));
-        // bank, furnace, store, fishing shop and the cook's hut
-        AsgarniaRoom bank = k.house(KAR_STONE, 2858, 2952, 2867, 2960, 1, "west", PITCHED);
-        bank.bank(mc("mossy_stone_bricks"));
-        AsgarniaRoom fur = k.house(KAR_STONE, 2836, 2951, 2842, 2958, 1, "east", PITCHED);
-        fur.set(1, 0, 0, rc("furnace"));
-        fur.set(2, 0, 0, mc("bricks"));
-        fur.set(3, 0, 0, rc("anvil"));
-        fur.set(fur.len() - 1, 0, 0, mc("coal_block"));
-        AsgarniaRoom obli = k.house(KAR2, 2844, 2965, 2851, 2971, 1, "south", PITCHED);
-        obli.shop(rc("general_store"), mc("bamboo_slab[type=top]"), mc("barrel[facing=up]"), mc("chest[facing=south]"));
-        AsgarniaRoom fern = k.house(KAR, 2855, 2965, 2861, 2971, 1, "south", PITCHED);
-        fern.shop(rc("tool_shop"), mc("bamboo_slab[type=top]"), mc("barrel[facing=up]"), mc("cobweb"));
-        AsgarniaRoom cook = k.house(KAR, 2826, 2952, 2832, 2958, 1, "east", PITCHED);
-        cook.set(1, 0, 0, rc("cooking_range"));
-        cook.home("jungle", "orange");
-        // round huts
-        int[][] huts = {{2826, 2972}, {2834, 2984}, {2846, 2990}, {2862, 2988}, {2870, 2976}, {2870, 2948},
-                {2838, 2998}, {2862, 2999}, {2872, 2994}, {2824, 2948}, {2834, 2968}, {2870, 2964}};
-        String[] doors = {"east", "east", "east", "west", "west", "west", "east", "west", "west", "east", "east", "west"};
-        for (int i = 0; i < huts.length; i++) {
-            roundHut(k, bx(huts[i][0]), bz(huts[i][1]), 4, mc(i % 2 == 0 ? "bamboo_block[axis=y]" : "jungle_planks"),
-                    mc("hay_block"), doors[i]);
+        // the river and the bridge
+        MapTown t = new MapTown(b);
+        String[] river = {
+                "...................................bbbbbbb........bbbbbbbb", // 2977
+                "...............................bbbbbbbbbbbbbbb..bbbbbbbbbbbbb",
+                "........................bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 2975
+                "...........aaa..bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "aa.......aaaaa..bbbbbbbbbbbbbbbbbbbbb...bbbbbbbbbbbbbbbbbbbbbbbb",
+                "aaaaaaaaaaaaaa..bbbbbbbbbbbbbbbbbb........bbbbbbbb",
+                "aaaaaaaaaaaa......bbbbbbbbbbbb",
+                "aaaaaaaaaaa", // 2970
+                "...aaaaaa",
+        };
+        t.mask(2817, 2977, "ab", -4, -4, mc("sand"), river);
+        t.mask(2817, 2977, "ab", -3, -1, mc("water"), river);
+        k.fillT(2831, 2970, 2832, 2976, -1, -1, mc("jungle_planks"));
+        k.f(bx(2831), 0, bz(2976), bx(2831), 0, bz(2970) + 1, mc("jungle_fence"));
+        k.f(bx(2832) + 1, 0, bz(2976), bx(2832) + 1, 0, bz(2970) + 1, mc("jungle_fence"));
+        // paths: north-south through the village to the bridge, east to the gate, the cart track
+        k.path(2850, 2958, 2853, 2962, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2850, 2978, 2853, 3004, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2818, 2957, 2866, 2959, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2862, 2954, 2870, 2956, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2870, 2951, 2878, 2956, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2831, 2960, 2832, 2969, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2831, 2977, 2832, 2980, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2829, 2950, 2835, 2955, mc("coarse_dirt"), mc("gravel"));
+        // the village, row 0 = 2993, column 0 = 2822
+        String[] plan = {
+                "...........cccccc",
+                "...........cccccc",
+                "...........cccccc",
+                "...........cccccc", // 2990
+                "...........cccccc",
+                "............cccc",
+                "............cccc",
+                "...........cccccc",
+                "..........cccccccc", // 2985
+                "..........cccccccc",
+                "..........cccccccc............................fff",
+                "..........cccccccc............................fff",
+                "..........cccccccc............................fff",
+                "...........cccccc", // 2980
+                "",
+                "",
+                "",
+                "",
+                "", // 2975
+                "",
+                "",
+                "...............................................gggg",
+                "...............................................gggg",
+                "...............................................gggg", // 2970
+                "...............................................gggg",
+                "...............................eeeeeeee........ggggg",
+                "..............................eeeeeeeeee.......ggggg",
+                "..............................eeeeeeeeee.......gggg",
+                "..............................eeeeeeeeee", // 2965
+                "..............................eeeeeeeeee",
+                "...............................eee..eee",
+                "",
+                ".aaaa",
+                "aaaaaa", // 2960
+                "aaaaaa",
+                "aaaaaa",
+                "aaaaaa......................ddddd",
+                ".aaaa................dddd..ddddddd..dddd",
+                ".....................ddddddddddddddddddd", // 2955
+                ".....................ddddddddddddddddddd",
+                ".....................ddddddddddddddddddd",
+                ".....................dddd..ddddddd..dddd",
+                "............................ddddd",
+        };
+        String wall = mc("jungle_planks");
+        String trim = mc("stripped_jungle_log[axis=y]");
+        String thatchS = mc("bamboo_mosaic_stairs");
+        String thatch = mc("bamboo_mosaic");
+        String fl = mc("jungle_planks");
+        t.bld(2822, 2993, "a", plan).wall(wall).trim(trim).floor(fl, fl).roof(thatchS, thatch).storeys(2)
+                .door(2827, 2958, 'e', "bamboo").ladder(2824, 2958, "east").build();
+        t.bld(2822, 2993, "c", plan).wall(wall).trim(trim).floor(fl, fl).roof(thatchS, thatch).storeys(2)
+                .door(2835, 2980, 's', "bamboo").ladder(2835, 2988, "east").build();
+        t.bld(2822, 2993, "d", plan).wall(mc("mossy_stone_bricks")).trim(trim).floor(mc("polished_andesite"), fl)
+                .roof(thatchS, thatch).storeys(2).door(2851, 2957, 'n', "bamboo").door(2852, 2951, 's', "bamboo")
+                .ladder(2845, 2954, "east").ladder(2859, 2954, "west").build();
+        t.bld(2822, 2993, "e", plan).wall(mc("mossy_stone_bricks")).trim(trim).floor(mc("stone_bricks"), fl)
+                .roof(thatchS, thatch).door(2856, 2964, 's', "bamboo").door(2857, 2964, 's', "bamboo").build();
+        t.bld(2822, 2993, "f", plan).wall(wall).trim(trim).floor(fl, fl).roof(thatchS, thatch).door(2869, 2981, 's', "bamboo").build();
+        t.bld(2822, 2993, "g", plan).wall(wall).trim(trim).floor(fl, fl).roof(thatchS, thatch).storeys(2)
+                .door(2869, 2968, 'w', "bamboo").ladder(2871, 2971, "east").build();
+        // stations: the bank's booths in the middle hut (bankers at 2851, 2954 / 2853, 2955), the furnace,
+        // Obli's store, Fernahei's tackle, the range (approx) and Duradel's skulls
+        for (int tx = 2849; tx <= 2855; tx++) {
+            k.fillT(tx, 2953, tx, 2953, 0, 0, tx == 2850 || tx == 2852 || tx == 2854 ? rc("bank_booth") : mc("mossy_stone_brick_slab[type=top]"));
         }
-        // Shilo gem mine
+        k.st(2854, 2966, 0, rc("furnace"));
+        k.st(2855, 2966, 0, rc("anvil"));
+        k.st(2859, 2967, 0, mc("coal_block"));
+        k.st(2825, 2960, 0, rc("general_store"));
+        k.st(2823, 2957, 0, mc("barrel[facing=up]"));
+        k.st(2872, 2969, 0, rc("tool_shop"));
+        k.st(2870, 2967, 0, mc("barrel[facing=up]"));
+        k.st(2837, 2982, 0, rc("cooking_range"));
+        k.st(2834, 2984, 0, mc("chest[facing=east]"));
+        k.st(2836, 2991, 0, mc("bookshelf"));
+        k.st(2869, 2982, 0, mc("skeleton_skull"));
+        // the Shilo gem mine (OSRS: a ladder down at 2825, 2998; here gem rocks on the surface)
         k.floor(2820, 2994, 2830, 3003, mc("gravel"));
         for (int x = 2821; x <= 2829; x += 3) {
             for (int y = 2995; y <= 3002; y += 3) {
@@ -300,8 +394,8 @@ final class AsgarniaKaramja {
         }
         k.fenceRing(2820, 2994, 2830, 3003, mc("jungle_fence"));
         k.clearT(2830, 2998, 2830, 2999, 0, 0);
-        palms(k, new int[][]{{2820, 2960}, {2822, 2984}, {2840, 2976}, {2856, 2980}, {2876, 2958}, {2876, 2984},
-                {2846, 3002}, {2836, 3004}, {2858, 2946}, {2840, 2946}});
+        palms(k, new int[][]{{2820, 2965}, {2822, 2984}, {2840, 2966}, {2846, 2980}, {2876, 2985}, {2862, 2996},
+                {2846, 3002}, {2836, 3004}, {2858, 2946}, {2840, 2946}, {2826, 2948}, {2864, 2988}});
         return k.build();
     }
 

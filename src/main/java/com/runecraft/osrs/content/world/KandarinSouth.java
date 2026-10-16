@@ -29,21 +29,21 @@ final class KandarinSouth {
         KandarinKit k = new KandarinKit("yanille", "Yanille").replaces("YANILLE");
         k.flatten(2528, 3067, 2624, 3112);
         k.flatten(2536, 3113, 2562, 3126);
-        k.cwallRect(2532, 3071, 2620, 3108, 8, SB);
-        KandarinSeers.weather(k, KandarinKit.X(2532), KandarinKit.Z(3108), KandarinKit.X(2620) + 1, KandarinKit.Z(3071) + 1, 0, 7);
+        k.cwallRect(2532, 3072, 2620, 3109, 8, SB); // OSRS map: north wall 3109-3110, south wall 3072
+        KandarinSeers.weather(k, KandarinKit.X(2532), KandarinKit.Z(3109), KandarinKit.X(2620) + 1, KandarinKit.Z(3072) + 1, 0, 7);
         k.gate(2620, 3093, 2620, 3094, 4, COBBLE);
         k.gate(2532, 3093, 2532, 3094, 4, COBBLE);
-        k.gate(2576, 3108, 2577, 3108, 4, COBBLE);
-        for (int[] c : new int[][]{{2532, 3071}, {2620, 3071}, {2532, 3108}, {2620, 3108}}) {
+        k.gate(2576, 3109, 2577, 3109, 4, COBBLE);
+        for (int[] c : new int[][]{{2532, 3072}, {2620, 3072}, {2532, 3109}, {2620, 3109}}) {
             k.tower(c[0], c[1], 4, 11, SB, "minecraft:spruce_planks", null, ' ');
         }
         k.tower(2620, 3091, 3, 11, SB, "minecraft:spruce_planks", null, 'w');
         k.tower(2620, 3096, 3, 11, SB, "minecraft:spruce_planks", null, 'w');
         k.road(2533, 3093, 2619, 3094, COBBLE, GRAVEL);
-        k.road(2576, 3072, 2577, 3107, COBBLE, GRAVEL);
-        k.road(2555, 3072, 2556, 3092, COBBLE, GRAVEL);
+        k.road(2576, 3073, 2577, 3108, COBBLE, GRAVEL);
+        k.road(2555, 3073, 2556, 3092, COBBLE, GRAVEL);
         k.road(2613, 3091, 2614, 3092, COBBLE, null);
-        k.road(2576, 3109, 2577, 3112, PATH, null);
+        k.road(2576, 3110, 2577, 3112, PATH, null);
 
         // Bank (OSRS map: 2609-2616 x 3088-3097, chequered floor, the counter along the east side 2615-2616;
         // door west at 3091-3092 approx)

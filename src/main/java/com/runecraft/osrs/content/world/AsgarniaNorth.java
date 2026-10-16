@@ -83,71 +83,169 @@ final class AsgarniaNorth {
 
     // ------------------------------------------------------------------ Taverley
 
+    /**
+     * Taverley as on the OSRS map (mejrs layers_osrs, planes 0-1; NPC spawns from mejrs data_osrs; stairs and
+     * ladders from shortest-path): the druids' round houses with chamfered walls, stone with thatched roofs.
+     * Jatix's herblore shop is the big octagon 2893-2903 x 3423-3433 (doors west and east at 3428, staircase at
+     * 2898,3427 up to Sanfew); Gaius' two-handed shop the octagon 2882-2887 x 3447-3452 (door north); the long
+     * hall of three octagons 2897-2918 x 3447-3452 (door west, ladder at 2915,3450) and the double house
+     * 2900-2915 x 3438-3443 (door west, ladder at 2914,3441) are two storeys; the hourglass house 2881-2887 x
+     * 3429-3443 is a big and a small octagon joined by a passage (widened to two tiles here); huts at 2880-2883
+     * x 3422-3425, 2884-2887 x 3416-3419 and 2891-2894 x 3417-3420, a shed at 2914-2915 x 3433-3434; the lake
+     * south-east of town (Tegid's laundry). OSRS Taverley has no gem stall or slayer master; the slayer master
+     * station the landmark needs sits in the hut at 2891-2894 x 3417-3420 (approx).
+     */
     static StructureDef taverley() {
         StructureDef.Builder b = StructureDef.builder("taverley", "Taverley").replaces("TAVERLEY");
         AsgarniaKit k = new AsgarniaKit(b);
-        k.flatten(2874, 3414, 2942, 3492);
-        k.path(2896, 3414, 2898, 3462, mc("dirt_path"), mc("gravel"));
-        k.path(2876, 3448, 2936, 3450, mc("dirt_path"), mc("gravel"));
-        k.path(2899, 3462, 2900, 3468, mc("dirt_path"), mc("gravel"));
-        k.path(2892, 3442, 2903, 3447, mc("grass_block"), mc("moss_block"));
-        // walls: east wall with the Falador gate and the south wall
+        k.flatten(2874, 3408, 2942, 3492);
+        k.path(2888, 3444, 2933, 3446, mc("dirt_path"), mc("gravel"));
+        k.path(2888, 3444, 2891, 3462, mc("dirt_path"), mc("gravel"));
+        k.path(2889, 3421, 2891, 3443, mc("dirt_path"), mc("gravel"));
+        k.path(2919, 3447, 2933, 3450, mc("dirt_path"), mc("gravel"));
+        // walls: the east wall with the Falador gate (2935, 3450-3451)
         lowWall(k, 2934, 3418, 2934, 3446);
         lowWall(k, 2934, 3452, 2934, 3462);
-        lowWall(k, 2876, 3416, 2894, 3416);
-        lowWall(k, 2900, 3416, 2934, 3416);
         for (int y : new int[]{3447, 3451}) {
             k.fillT(2934, y, 2934, y, -1, 3, mc("stone_bricks"));
             k.st(2934, y, 4, mc("lantern"));
         }
-        // the well
-        int wx = bx(2901);
-        int wz = bz(3440);
+        MapTown t = new MapTown(b);
+        // the lake south-east of town, row 0 = 3422, column 0 = 2904
+        String[] lake = {
+                ".......................aaaaaaaa",
+                "......................aaaaaaaaaa",
+                ".....................aaaaaaaaaaa",
+                "...................aaaaaaaaaaaaa",
+                ".............aaaaaaaaaaaaaaaaaa",
+                "..........aaaaaaaaaaaaaaaaaa",
+                ".........aaaaaaaaaaaa...aaaa",
+                ".........aaaaaaaaaaa......a",
+                "........aaaaaaaaaaa",
+                "........aaaaaaaaaaa",
+                "........aaaaaaaaaaa",
+                "........aaaaaaaaaaa",
+                ".......aaaaaaaaaaa",
+                ".......aaaaaaaaa",
+                "......aaaaaaaaa",
+        };
+        t.mask(2904, 3422, "a", -4, -4, mc("sand"), lake);
+        t.mask(2904, 3422, "a", -3, -1, mc("water"), lake);
+        // the town, row 0 = 3452, column 0 = 2880
+        String[] plan = {
+                "...cccc...........gggg...gggggg.gggggg.", // 3452
+                "..cccccc.........ggggg...gggggggggggggg",
+                "..cccccc.........gggggggggggggggggggggg",
+                "..cccccc.........gggggggggggggggggggggg",
+                "..cccccc.........gggggggggggggg.gggggg.",
+                "...cccc..................gggggg........", // 3447
+                ".......................................",
+                ".......................................",
+                ".......................................",
+                "...bbb...............hhhh......hhhh....", // 3443
+                "...bbb..............hhhhhhhhhhhhhhhh...",
+                "...bbb..............hhhhhhhhhhhhhhhh...",
+                "....bb..............hhhhhhhhhhhhhhhh...",
+                "....bb..............hhhhhhhhhhhhhhhh...",
+                "....bb...............hhhh......hhhh....", // 3438
+                "...bbb.................................",
+                "..bbbbb................................",
+                ".bbbbbbb...............................",
+                ".bbbbbbb.................kk............", // 3434
+                ".bbbbbbb.......fffffff...kk............",
+                ".bbbbbbb......fffffffff................",
+                ".bbbbbbb.....fffffffffff...............",
+                "..bbbbb......fffffffffff...............", // 3430
+                "...bbb.......fffffffffff...............",
+                ".............fffffffffff...............",
+                ".............fffffffffff...............",
+                ".............fffffffffff...............",
+                "aaaa.........fffffffffff...............", // 3425
+                "aaaa..........fffffffff................",
+                "aaaa...........fffffff.................",
+                "aaaa...................................",
+                ".......................................", // 3421
+                "...........eeee........................",
+                "....dddd...eeee........................",
+                "....dddd...eeee........................",
+                "....dddd...eeee........................", // 3417
+                "....dddd...............................",
+        };
+        String wall = mc("stone_bricks");
+        String trim = mc("stripped_spruce_log[axis=y]");
+        String thatchS = mc("spruce_stairs");
+        String thatch = mc("spruce_planks");
+        String fl = mc("spruce_planks");
+        t.bld(2880, 3452, "a", plan).wall(mc("cobblestone")).trim(trim).floor(fl, fl).roof(thatchS, thatch)
+                .door(2883, 3423, 'e', "spruce").build();
+        t.bld(2880, 3452, "d", plan).wall(mc("cobblestone")).trim(trim).floor(fl, fl).roof(thatchS, thatch)
+                .door(2886, 3419, 'n', "spruce").build();
+        t.bld(2880, 3452, "e", plan).wall(mc("cobblestone")).trim(trim).floor(fl, fl).roof(thatchS, thatch)
+                .door(2893, 3420, 'n', "spruce").build();
+        t.bld(2880, 3452, "k", plan).wall(mc("cobblestone")).trim(trim).floor(fl, fl).roof(thatchS, thatch)
+                .door(2914, 3434, 'n', "spruce").build();
+        t.bld(2880, 3452, "b", plan).wall(wall).trim(trim).floor(fl, fl).roof(thatchS, thatch)
+                .door(2884, 3443, 'n', "spruce").door(2887, 3433, 'e', "spruce").build();
+        t.bld(2880, 3452, "c", plan).wall(wall).trim(trim).floor(fl, fl).roof(thatchS, thatch)
+                .door(2885, 3452, 'n', "spruce").build();
+        t.bld(2880, 3452, "f", plan).wall(wall).trim(trim).floor(fl, fl).roof(thatchS, thatch).storeys(2)
+                .door(2893, 3428, 'w', "spruce").door(2903, 3428, 'e', "spruce").build();
+        t.bld(2880, 3452, "g", plan).wall(wall).trim(trim).floor(fl, fl).roof(thatchS, thatch).storeys(2)
+                .door(2897, 3450, 'w', "spruce").ladder(2915, 3450, "west").build();
+        t.bld(2880, 3452, "h", plan).wall(wall).trim(trim).floor(fl, fl).roof(thatchS, thatch).storeys(2)
+                .door(2900, 3441, 'w', "spruce").ladder(2914, 3441, "west").build();
+        // Jatix's shop: the staircase up to Sanfew (2898, 3427), the herblore table by Jatix (2899, 3427)
+        t.stairs(bx(2898), bz(3426) + 1, "north", 0, 4, 2, mc("spruce_stairs"), fl);
+        k.st(2900, 3426, 0, rc("apothecary_table"));
+        k.st(2900, 3425, 0, mc("brewing_stand"));
+        k.st(2901, 3425, 0, mc("barrel[facing=up]"));
+        k.st(2896, 3430, 0, mc("water_cauldron[level=3]"));
+        k.st(2895, 3425, 0, mc("potted_fern"));
+        k.st(2896, 3426, 2, mc("lantern[hanging=true]"));
+        k.st(2901, 3431, 2, mc("lantern[hanging=true]"));
+        // upstairs: Sanfew's room
+        k.st(2896, 3426, 4, mc("lectern[facing=east]"));
+        k.st(2901, 3430, 4, mc("red_bed[facing=north,part=foot]"));
+        k.st(2895, 3431, 4, mc("chest[facing=east]"));
+        k.st(2902, 3425, 4, mc("brewing_stand"));
+        // Gaius' two-handed shop
+        k.st(2884, 3449, 0, rc("weapon_shop"));
+        k.st(2886, 3448, 0, mc("grindstone[face=floor,facing=north]"));
+        k.st(2883, 3451, 0, mc("iron_block"));
+        // the slayer master's hut (approx) and the other houses' furniture
+        k.st(2892, 3418, 0, rc("slayer_master"));
+        k.st(2894, 3418, 0, mc("chest[facing=west]"));
+        k.st(2881, 3424, 0, mc("red_bed[facing=north,part=foot]"));
+        k.st(2885, 3417, 0, mc("crafting_table"));
+        k.st(2882, 3433, 0, mc("red_bed[facing=north,part=foot]"));
+        k.st(2886, 3431, 0, mc("chest[facing=west]"));
+        k.st(2884, 3442, 0, mc("bookshelf"));
+        k.st(2899, 3448, 0, mc("crafting_table"));
+        k.st(2909, 3451, 0, mc("bookshelf"));
+        k.st(2903, 3439, 0, mc("chest[facing=north]"));
+        k.st(2909, 3440, 4, mc("green_bed[facing=north,part=foot]"));
+        k.st(2903, 3449, 4, mc("green_bed[facing=north,part=foot]"));
+        // the well and the town's trees
+        int wx = bx(2896);
+        int wz = bz(3437);
         k.ring(wx, wz, 2, -1, 0, mc("cobblestone_wall"));
         k.disc(wx, wz, 1.4, -6, -1, mc("water"));
-        k.f(wx - 2, 1, wz, wx - 2, 2, wz, mc("spruce_fence"));
-        k.f(wx + 2, 1, wz, wx + 2, 2, wz, mc("spruce_fence"));
-        k.f(wx - 2, 3, wz, wx + 2, 3, wz, mc("spruce_slab[type=bottom]"));
-        // garden plot (Taverley has no herb patch in OSRS; its farming patch is the tree patch south-east of town)
-        k.floor(2903, 3435, 2906, 3437, mc("coarse_dirt"));
-        k.fenceRing(2903, 3435, 2906, 3437, mc("spruce_fence"));
-        k.clearT(2904, 3437, 2904, 3437, 0, 0);
-        k.st(2905, 3436, 0, mc("potted_fern"));
-        // shops
-        AsgarniaRoom jatix = k.house(STONE, 2895, 3425, 2901, 3431, 1, "north", PITCHED);
-        jatix.shop(rc("apothecary_table"), mc("spruce_slab[type=top]"), mc("brewing_stand"), mc("flower_pot"),
-                mc("potted_fern"), mc("barrel[facing=up]"));
-        jatix.set(jatix.len() - 1, jatix.depth() - 1, 0, mc("water_cauldron[level=3]"));
-        AsgarniaRoom gem = k.house(STONE2, 2884, 3436, 2890, 3442, 1, "east", PITCHED);
-        gem.shop(rc("gem_stall"), mc("spruce_slab[type=top]"), mc("amethyst_block"), mc("chest[facing=east]"), mc("emerald_block"));
-        AsgarniaRoom gaius = k.house(STONE, 2884, 3452, 2890, 3458, 1, "east", PITCHED);
-        gaius.shop(rc("weapon_shop"), mc("spruce_slab[type=top]"), mc("grindstone[face=floor,facing=north]"),
-                mc("iron_block"), mc("barrel[facing=up]"));
-        AsgarniaRoom slayer = k.house(STONE2, 2906, 3424, 2913, 3431, 1, "north", PITCHED);
-        slayer.shop(rc("slayer_master"), mc("dark_oak_slab[type=top]"), mc("skeleton_skull"), mc("bookshelf"),
-                mc("chest[facing=north]"));
-        // houses
-        k.house(STONE, 2878, 3422, 2884, 3428, 1, "east", PITCHED).home("spruce", "green");
-        k.house(STONE2, 2915, 3431, 2922, 3438, 2, "west", PITCHED).home("spruce", "brown");
-        k.house(STONE, 2913, 3453, 2921, 3459, 1, "south", PITCHED).home("oak", "lime");
-        k.house(STONE2, 2876, 3436, 2881, 3443, 1, "east", PITCHED).home("spruce", "yellow");
-        k.house(STONE, 2926, 3422, 2932, 3428, 1, "west", PITCHED).home("oak", "light_gray");
-        k.house(STONE2, 2924, 3453, 2931, 3459, 2, "west", PITCHED).home("spruce", "cyan");
-        // trees and flowers
-        int[][] trees = {{2880, 3418}, {2890, 3420}, {2910, 3418}, {2928, 3434}, {2878, 3460}, {2884, 3478},
-                {2912, 3464}, {2880, 3474}, {2934, 3474}, {2886, 3486}, {2940, 3456}};
+        int[][] trees = {{2878, 3418}, {2890, 3412}, {2908, 3434}, {2926, 3434}, {2878, 3460}, {2884, 3478},
+                {2912, 3458}, {2880, 3472}, {2930, 3476}, {2886, 3486}, {2924, 3442}};
         for (int i = 0; i < trees.length; i++) {
             k.tree(bx(trees[i][0]), bz(trees[i][1]), i % 2 == 0 ? "oak" : "birch", 6 + i % 2);
         }
-        k.flowers(2891, 3430, 2893, 3432);
+        k.flowers(2891, 3430, 2892, 3432);
         return k.build();
     }
 
     static StructureDef witchsTower() {
         StructureDef.Builder b = StructureDef.builder("taverley_witchs_tower", "Witch's tower").replaces("grim_tales_tower");
         AsgarniaKit k = new AsgarniaKit(b);
-        int cx = bx(2906) + 1;
-        int cz = bz(3452);
+        // Grim Tales: the stone tower south of the Mind Altar (Miazrqa 2967,3473, Rupert the Beard on its top
+        // floor at 2968,3468, mejrs data_osrs), not in Taverley
+        int cx = bx(2968) + 1;
+        int cz = bz(3468);
         k.tower(cx, cz, 5, 24, mc("mossy_stone_bricks"), mc("dark_oak_planks"), "south", mc("deepslate_tiles"));
         k.s(cx - 3, 0, cz, mc("water_cauldron[level=3]"));
         k.s(cx - 3, 0, cz + 1, mc("brewing_stand"));
@@ -157,7 +255,7 @@ final class AsgarniaNorth {
         k.s(cx + 2, 5, cz + 1, mc("purple_carpet"));
         k.s(cx - 3, 10, cz, mc("chest[facing=east]"));
         k.s(cx + 3, 10, cz, mc("enchanting_table"));
-        k.path(2905, 3446, 2906, 3449, mc("dirt_path"), mc("gravel"));
+        k.path(2967, 3461, 2968, 3464, mc("dirt_path"), mc("gravel"));
         return k.build();
     }
 

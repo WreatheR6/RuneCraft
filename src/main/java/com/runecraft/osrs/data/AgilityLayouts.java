@@ -27,14 +27,14 @@ public final class AgilityLayouts {
         put(AgilityCourse.VARROCK, 3222, 3417, 3211, 3411, 3200, 3420, 3195, 3417, 3191, 3404, 3212, 3400, 3233, 3402,
                 3236, 3406, 3239, 3419);
         // Tall tree, four gaps, pole-vault, two gaps around the Canifis square.
-        put(AgilityCourse.CANIFIS, 3508, 3488, 3504, 3498, 3497, 3501, 3487, 3499, 3481, 3489, 3481, 3482, 3503, 3476,
+        put(AgilityCourse.CANIFIS, 3508, 3488, 3502, 3499, 3497, 3501, 3487, 3497, 3481, 3489, 3483, 3482, 3506, 3476,
                 3507, 3480);
         // Rough wall east of the Falador square, round the north-east roofs and back west along the south.
         put(AgilityCourse.FALADOR, 3032, 3338, 3032, 3335, 3048, 3352, 3048, 3358, 3044, 3361, 3034, 3361, 3027, 3358,
                 3012, 3348, 3010, 3346, 3012, 3334, 3015, 3332, 3017, 3331, 3025, 3332);
         // Basket, market stall, banner, gap, tree, rough wall, monkeybars, tree, drying line.
-        put(AgilityCourse.POLLNIVNEACH, 3347, 2958, 3350, 2968, 3355, 2976, 3362, 2977, 3365, 2974, 3365, 2984, 3358, 2985,
-                3359, 2995, 3361, 2999);
+        put(AgilityCourse.POLLNIVNEACH, 3347, 2958, 3350, 2970, 3357, 2977, 3363, 2977, 3365, 2974, 3364, 2984, 3358, 2987,
+                3361, 2996, 3361, 2999);
         // Rope swing, log balance, obstacle net, balancing ledge, three crumbling walls (south of the outpost).
         put(AgilityCourse.BARBARIAN_OUTPOST, 2551, 3554, 2551, 3546, 2539, 3546, 2536, 3547, 2537, 3553, 2540, 3553,
                 2543, 3553);

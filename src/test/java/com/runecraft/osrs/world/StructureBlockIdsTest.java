@@ -47,7 +47,8 @@ class StructureBlockIdsTest {
 
     /** Structures rebuilt from the OSRS map since round 26: every block state must exist in 1.20.1. */
     private static final Set<String> CHECKED = Set.of("watchtower", "rellekka", "rellekka_market", "burthorpe_castle",
-            "burthorpe_games_room", "catherby", "draynor_village", "draynor_market", "draynor_manor");
+            "burthorpe_games_room", "catherby", "draynor_village", "draynor_market", "draynor_manor",
+            "taverley", "camelot_castle", "canifis", "pollnivneach", "nardah", "shilo_village");
 
     @Test
     void rebuiltStructuresUseValidBlockStates() throws IOException {

@@ -66,7 +66,7 @@ public final class NpcFloor {
         int best = ground.getY();
         int found = 0;
         boolean ceiling = false;
-        for (int y = ground.getY() + 1; y < top && found < floor; y++) {
+        for (int y = ground.getY() + 1; y <= top && found < floor; y++) { // <= top: an open roof platform counts
             pos.setY(y);
             if (solid(world, pos)) {
                 ceiling = true;
