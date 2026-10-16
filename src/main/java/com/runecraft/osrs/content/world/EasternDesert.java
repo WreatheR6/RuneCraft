@@ -706,7 +706,6 @@ final class EasternDesert {
         for (int[] p : new int[][]{{3340, 2990}, {3352, 2989}, {3346, 2981}, {3345, 2972}, {3366, 2961}, {3343, 2958}}) {
             k.palm(p[0], p[1], 6);
         }
-        k.scatter(3334, 2938, 3384, 3004, 0, "minecraft:dead_bush", 20, 52);
         for (int[] q : new int[][]{{3340, 2947, 3376, 3004}}) {
             k.take(bx(q[0]), bz(q[3]), bx(q[2]) + 1, bz(q[1]) + 1);
         }
