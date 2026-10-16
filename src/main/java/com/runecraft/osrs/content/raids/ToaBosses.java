@@ -93,6 +93,15 @@ public final class ToaBosses {
                 MonsterDef.of("toa_arcane_scarab", "Arcane scarab").level(89).stats(40, 75, 80, 80, 100, 95).speed(6).defenceBonus(15, 250, 30, 75, 50)
                         .attack(AttackDef.of("arcane bolt", AttackType.MAGIC, 8, 10, 10).particle("minecraft:witch")).model("toa_scarab")
                         .size(0.8f, 0.6f, 1.0f).moveSpeed(0.22),
+                // OSRS (wiki/DPS calculator): hatched from Kephri's dark eggs; ranged, max hit 5, flees from players.
+                MonsterDef.of("toa_agile_scarab", "Agile Scarab").level(53).stats(30, 60, 20, 5, 30, 40).speed(4).defenceBonus(0, 0, 0, 0, 0)
+                        .attack(AttackDef.of("spit", AttackType.RANGED, 5, 8, 10).particle("minecraft:item_slime")).model("toa_scarab")
+                        .size(0.5f, 0.4f, 0.6f).moveSpeed(0.34),
+                // The phase 2 Warden's core: damage to it counts five times against the Warden's 4,500 hitpoints (see the
+                // Wardens room). Its own hitpoints only keep it alive. // approx: defence
+                MonsterDef.of("toa_warden_core", "Core").level(1).stats(2000, 1, 1, 1, 1, 1).speed(4).passive().defenceBonus(0, 0, 0, 0, 0)
+                        .attack(AttackDef.of("pulse", AttackType.MAGIC, 0, 1, 10))
+                        .skin(0xF0D070, 0xC09030, 0xC09030, 0xFFF0A0).size(0.8f, 0.8f, 0.6f).flying().moveSpeed(0.0),
                 MonsterDef.of("akkhas_shadow", "Akkha's Shadow").level(108).stats(70, 100, 140, 30, 100, 100).speed(6).defenceBonus(60, 120, 120, 10, 60)
                         .attack(AttackDef.of("shadow strike", AttackType.MAGIC, 15, 12, 10).particle("minecraft:squid_ink"))
                         .attack(AttackDef.of("shadow slash", AttackType.SLASH, 15, 2.5, 10))

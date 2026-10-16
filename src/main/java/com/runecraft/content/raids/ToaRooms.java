@@ -389,11 +389,27 @@ final class ToaRooms {
 
     // ================================================================== bosses
 
-    /** Kephri: her shield regenerates at 66% and 33% while her scarab guardians live; swarms heal her. */
+    /**
+     * Kephri (OSRS wiki): three shield bars, then her 80-hitpoint body. Each time a shield breaks she is dazed and calls
+     * her children: overlords (a Spitting Scarab, then a Soldier and an Arcane Scarab; More Overlords adds one) and 28,
+     * then 24, scarab swarms that recharge her shield when they reach her. While shielded she throws fireballs and
+     * bomber scarabs, Dung Strikes and lays eggs: small eggs burst, dark eggs hatch Agile Scarabs.
+     */
     static final class Kephri extends RoomLogic {
+        /** Arcane Scarab relocation spots around Kephri (OSRS: south-east, north-west, mid-south, north-east). */
+        private static final int[][] ARCANE_SPOTS = {{6, 8}, {-4, -10}, {0, 12}, {6, -8}};
         private DataBossEntity kephri;
         private final List<LivingEntity> guards = new ArrayList<>();
-        private final Set<Integer> shields = new HashSet<>();
+        /** Shield bars broken so far (3 = her body is exposed). */
+        private int broken;
+        private boolean dazed;
+        /** Swarms that reached her during the current intermission, and the shield overcharge they left. */
+        private int leaked;
+        private int overcharge;
+        private LivingEntity arcane;
+        private int arcaneSpot;
+        private int arcaneCharge;
+        private int arcaneHits;
 
         Kephri(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -408,13 +424,17 @@ final class ToaRooms {
 
         @Override
         public void start() {
-            shields.clear();
+            broken = 0;
+            dazed = false;
+            leaked = 0;
+            overcharge = 0;
             guards.clear();
+            arcane = null;
             kephri = spawnBoss("kephri", at(14, 0));
             anchor(kephri);
         }
 
-        private boolean shielded() {
+        private boolean guarded() {
             for (LivingEntity g : guards) {
                 if (alive(g)) {
                     return true;
@@ -425,7 +445,135 @@ final class ToaRooms {
 
         @Override
         public boolean bossVulnerable(DataBossEntity boss) {
-            return !shielded();
+            return !dazed && !guarded();
+        }
+
+        /** A shield bar never takes Kephri below 1 hitpoint: breaking it starts an intermission instead. */
+        @Override
+        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+            if (boss != kephri || broken >= 3 || damage <= 0) {
+                return damage;
+            }
+            int absorbed = Math.min(damage, overcharge);
+            overcharge -= absorbed;
+            damage -= absorbed;
+            int hp = raid.hitpoints(kephri);
+            if (damage >= hp) {
+                RaidEffects.later(1, this::shieldBroken);
+                return Math.max(0, hp - 1);
+            }
+            return damage;
+        }
+
+        private void shieldBroken() {
+            if (!alive(kephri) || dazed || broken >= 3) {
+                return;
+            }
+            broken++;
+            Set<Invocation> inv = raid.invocations();
+            if (broken >= 3) {
+                // OSRS: the third shield exposes her 80-hitpoint body; she Dung Strikes every player once.
+                int body = RaidScaling.toaScaledHp(80, raid.raidLevel(), raid.pathLevel(), raid.partySize(), true);
+                raid.setCurrentHitpoints(kephri, body);
+                warn("Kephri's swarm disperses - she is vulnerable!");
+                for (ServerPlayerEntity p : players()) {
+                    dungStrike(p);
+                }
+                return;
+            }
+            dazed = true;
+            warn("Kephri's shield shatters! Her children rush to her aid!");
+            guards.clear();
+            for (String id : Invocation.kephriOverlords(inv, broken)) {
+                int[] spot = id.equals("toa_arcane_scarab") ? ARCANE_SPOTS[0] : id.equals("toa_spitting_scarab") ? new int[]{6, -8} : new int[]{4, 0};
+                LivingEntity g = spawnMob(id, at(spot[0], spot[1] + (guards.size() > 2 ? 3 : 0)), false);
+                if (g != null) {
+                    guards.add(g);
+                    if (id.equals("toa_arcane_scarab")) {
+                        arcane = g;
+                        arcaneSpot = 0;
+                        arcaneCharge = 0;
+                        arcaneHits = 0;
+                    }
+                }
+            }
+            // OSRS: 28 (then 24) swarms from six points around the room, clockwise, faster and faster.
+            int swarms = Invocation.kephriSwarms(broken);
+            int delay = 0;
+            int start = rnd().nextInt(6);
+            for (int i = 0; i < swarms; i++) {
+                delay += Invocation.kephriSwarmDelay(i);
+                int point = (start + i) % 6;
+                RaidEffects.later(delay, () -> {
+                    if (alive(kephri) && dazed) {
+                        double a = Math.PI / 3 * point;
+                        spawnMob("toa_scarab_swarm", at(14 + (int) Math.round(Math.cos(a) * 16), (int) Math.round(Math.sin(a) * 16)), false);
+                    }
+                });
+            }
+            int finish = delay + 4;
+            RaidEffects.later(finish, this::endIntermission);
+        }
+
+        /** The swarms are spent: once her overlords are dead the shield is back at full strength. */
+        private void endIntermission() {
+            if (!alive(kephri) || !dazed) {
+                return;
+            }
+            if (guarded()) {
+                RaidEffects.later(5, this::endIntermission);
+                return;
+            }
+            dazed = false;
+            int max = raid.maxHitpoints(kephri);
+            raid.setCurrentHitpoints(kephri, max);
+            // OSRS: swarms that reached her overcharge the shield, up to about 15% over its capacity (~10% each).
+            overcharge = Math.min(max * 15 / 100, leaked * max / 10);
+            leaked = 0;
+            warn("Kephri's shield regenerates!" + (overcharge > 0 ? " Her swarms overcharge it!" : ""));
+        }
+
+        @Override
+        public void onCreatureHit(ServerPlayerEntity player, LivingEntity target, int damage) {
+            if (target == arcane && alive(arcane)) {
+                arcaneHits++;
+                // OSRS: three hits (+1 per extra player), or one over 39, make the Arcane Scarab relocate.
+                if (damage > 39 || arcaneHits >= Invocation.arcaneScarabRelocateHits(raid.partySize())) {
+                    relocateArcane();
+                }
+            }
+        }
+
+        private void relocateArcane() {
+            arcaneSpot = (arcaneSpot + 1) % ARCANE_SPOTS.length;
+            arcaneHits = 0;
+            arcaneCharge = 0;
+            BlockPos to = at(ARCANE_SPOTS[arcaneSpot][0], ARCANE_SPOTS[arcaneSpot][1]);
+            arcane.requestTeleport(to.getX() + 0.5, to.getY(), to.getZ() + 0.5);
+            say("The Arcane Scarab scuttles away, dispersing its swarm.");
+        }
+
+        private void dungStrike(ServerPlayerEntity p) {
+            Msg.red(p, "Flies buzz around you...");
+            RaidEffects.later(3, () -> {
+                if (!alive(kephri) || !p.isAlive()) {
+                    return;
+                }
+                Msg.red(p, "Kephri throws you back!");
+                Vec3d push = p.getPos().subtract(kephri.getPos()).multiply(1, 0, 1).normalize().multiply(1.4);
+                p.addVelocity(push.x, 0.4, push.z);
+                p.velocityModified = true;
+                RaidEffects.hit(kephri, p, 5 + rnd().nextInt(11), null, true); // approx: dung strike damage
+                world().spawnParticles(ParticleTypes.ITEM_SLIME, p.getX(), p.getY() + 0.5, p.getZ(), 12, 0.6, 0.3, 0.6, 0.05);
+            });
+        }
+
+        /** Kephri's fireball (and a bomber scarab's): lands where the target stood; 3x3 and harder with Aerial Assault. */
+        private void fireball(ServerPlayerEntity p) {
+            Set<Invocation> inv = raid.invocations();
+            int radius = Invocation.kephriFireballRadius(inv);
+            int max = (int) Math.round(24 * Invocation.kephriFireballDamage(inv));
+            RaidEffects.strike(world(), p.getPos(), 0.8 + 1.5 * radius, max, 3, kephri, ParticleTypes.FLAME, AttackType.MAGIC, true);
         }
 
         @Override
@@ -435,43 +583,22 @@ final class ToaRooms {
                 return;
             }
             Set<Invocation> inv = raid.invocations();
-            // OSRS: Kephri's fireball lands where the target stood (3x3 with Aerial Assault); faster every two path levels.
+            // OSRS: faster auto-attacks every two path levels.
             int every = 6 - Math.min(4, raid.pathLevel()) / 2;
-            if (tick % every == 0) {
+            if (tick % every == 0 && !dazed) {
                 ServerPlayerEntity p = randomPlayer();
                 if (p != null) {
-                    int radius = Invocation.kephriFireballRadius(inv);
-                    int max = (int) Math.round(24 * Invocation.kephriFireballDamage(inv));
-                    RaidEffects.strike(world(), p.getPos(), 0.8 + 1.5 * radius, max, 3, kephri, ParticleTypes.FLAME, AttackType.MAGIC, true);
+                    fireball(p);
                 }
             }
-            double hp = raid.healthFraction(kephri);
-            for (int t : new int[]{66, 33}) {
-                if (hp * 100 <= t && shields.add(t)) {
-                    warn("Kephri's shield regenerates! Her children rush to her aid!");
-                    guards.clear();
-                    List<String> ids = new ArrayList<>(List.of("toa_soldier_scarab", "toa_spitting_scarab", "toa_arcane_scarab"));
-                    // OSRS More Overlords: an extra Soldier Scarab in the first shield phase, a Spitting Scarab in the second.
-                    String extra = Invocation.kephriExtraOverlord(inv, shields.size());
-                    if (extra != null) {
-                        ids.add(extra);
-                    }
-                    for (String id : ids) {
-                        LivingEntity g = spawnMob(id, at(8, rnd().nextInt(13) - 6), false);
-                        if (g != null) {
-                            guards.add(g);
-                        }
-                    }
-                    for (int i = 0; i < 4 + raid.partySize(); i++) {
-                        spawnMob("toa_scarab_swarm", at(-6 + rnd().nextInt(12), i % 2 == 0 ? -18 : 18), false);
-                    }
-                }
-            }
-            if (shielded()) {
+            if (broken < 3 && !dazed) {
                 shieldSpecials(tick, inv);
             }
-            // OSRS: swarms only come outside her shield phases with the Medic! invocation.
-            if (tick % 20 == 0 && raid.invocations().contains(Invocation.MEDIC)) {
+            if (dazed) {
+                intermission(tick);
+            }
+            // OSRS: swarms only come outside her intermissions with the Medic! invocation.
+            if (tick % 20 == 0 && !dazed && inv.contains(Invocation.MEDIC)) {
                 for (int i = 0; i < 2; i++) {
                     LivingEntity swarm = spawnMob("toa_scarab_swarm", at(-6 + rnd().nextInt(12), i % 2 == 0 ? -18 : 18), false);
                     if (swarm != null && Invocation.kephriMedicSwarmSpeed(inv) < 1.0) {
@@ -481,47 +608,129 @@ final class ToaRooms {
                     }
                 }
             }
-            if (tick % 2 == 0 && shielded()) {
+            if (tick % 2 == 0 && (dazed || guarded())) {
                 world().spawnParticles(ParticleTypes.ENCHANT, kephri.getX(), kephri.getY() + 1, kephri.getZ(), 10, 1.2, 0.8, 1.2, 0.2);
             }
-            healers("toa_scarab_swarm", kephri, raid.maxHitpoints(kephri) * 0.02, "A scarab swarm reaches Kephri and heals her!");
+            // OSRS: a swarm that reaches her recharges about 10% of a shield (heals her body in the last phase): 1% of her
+            // maximum per hitpoint of the 10-hitpoint swarm.
+            int reached = healers("toa_scarab_swarm", kephri, raid.maxHitpoints(kephri) * 0.01,
+                    "A scarab swarm reaches Kephri and recharges her shield!");
+            if (dazed) {
+                leaked += reached;
+            }
+            agileScarabs();
+        }
+
+        /** Intermission: bomber scarabs, the Soldier's healing swarms, the Spitting Scarab's spray, the Arcane charge. */
+        private void intermission(long tick) {
+            List<ServerPlayerEntity> players = players();
+            if (players.isEmpty()) {
+                return;
+            }
+            if (tick % 8 == 0) {
+                // OSRS: bomber scarabs fly at players like Kephri's fireball (same flight distance, Aerial Assault applies).
+                ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
+                Msg.red(p, "A bomber scarab homes in on you!");
+                fireball(p);
+            }
+            for (LivingEntity g : guards) {
+                if (!alive(g)) {
+                    continue;
+                }
+                String id = RaidInstance.creatureId(g);
+                if ("toa_soldier_scarab".equals(id) && tick % 8 == 0) {
+                    // OSRS: about every 5 seconds the Soldier sends a swarm that recharges Kephri, more at higher health.
+                    LivingEntity swarm = spawnMob("toa_scarab_swarm", g.getBlockPos(), false);
+                    if (swarm != null) {
+                        swarm.setHealth(Math.max(1, swarm.getMaxHealth() * (float) raid.healthFraction(g)));
+                    }
+                } else if ("toa_spitting_scarab".equals(id) && tick % 3 == 0) {
+                    // OSRS: the Spitting Scarab hits every player within 8 tiles (poisoning from 6).
+                    LivingEntity target = g instanceof net.minecraft.entity.mob.MobEntity m ? m.getTarget() : null;
+                    for (ServerPlayerEntity p : players) {
+                        if (p != target && p.squaredDistanceTo(g) < 8 * 8) {
+                            if (RaidEffects.hit(g, p, rnd().nextInt(9), AttackType.RANGED, false) > 0 && rnd().nextInt(4) == 0) {
+                                com.runecraft.combat.PoisonService.poison(p, 6, com.runecraft.action.ActionManager.gameTick());
+                            }
+                        }
+                    }
+                }
+            }
+            if (alive(arcane)) {
+                arcaneCharge++;
+                world().spawnParticles(ParticleTypes.WITCH, arcane.getX(), arcane.getY() + 0.5, arcane.getZ(), 4 + arcaneCharge / 2, 1.0, 0.4, 1.0, 0.02);
+                if (arcaneCharge >= Invocation.ARCANE_SCARAB_CHARGE_TICKS) {
+                    // OSRS: well over 65 damage unless Protect from Magic is up (which cuts about two thirds).
+                    warn("The Arcane Scarab unleashes its explosive swarm!");
+                    for (ServerPlayerEntity p : players) {
+                        int roll = 45 + rnd().nextInt(26);
+                        RaidEffects.hit(arcane, p, RaidEffects.protectedFrom(p, AttackType.MAGIC) ? roll / 3 : roll, null, true);
+                    }
+                    relocateArcane();
+                }
+            }
         }
 
         /**
          * Kephri's shield phase specials (OSRS): Dung Strike knocks a player back (two players with Blowing Mud) and
-         * Mass Incubation lays eggs that burst in a 3x3 area (four with Lively Larvae).
+         * Mass Incubation lays small eggs that burst in a 3x3 area and dark eggs that hatch Agile Scarabs (3-5 with Lively
+         * Larvae); with too many scarabs about she Dung Strikes instead.
          */
         private void shieldSpecials(long tick, Set<Invocation> inv) {
             List<ServerPlayerEntity> players = players();
             if (players.isEmpty()) {
                 return;
             }
-            if (tick % 16 == 4) {
+            boolean crowded = living("toa_agile_scarab").size() >= 4; // approx: "too many scarabs"
+            if (tick % 16 == 4 || (tick % 16 == 12 && crowded)) {
                 List<ServerPlayerEntity> pool = new ArrayList<>(players);
                 java.util.Collections.shuffle(pool, rnd());
                 int n = Invocation.kephriDungTargets(inv, players.size());
                 for (ServerPlayerEntity p : pool.subList(0, Math.min(n, pool.size()))) {
-                    Msg.red(p, "Flies buzz around you...");
-                    RaidEffects.later(3, () -> {
-                        if (!alive(kephri) || !p.isAlive()) {
+                    dungStrike(p);
+                }
+            } else if (tick % 16 == 12) {
+                say("Kephri lays her eggs!");
+                for (int i = 0; i < 2; i++) {
+                    ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
+                    Vec3d at = p.getPos().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3);
+                    // OSRS: unattended small eggs explode in a 3x3 area. // approx: 8 ticks, up to 12
+                    RaidEffects.strike(world(), at, 1.6, 12, 8, kephri, ParticleTypes.ITEM_SLIME, null, true);
+                }
+                int dark = Invocation.kephriDarkEggs(inv, rnd());
+                for (int i = 0; i < dark; i++) {
+                    ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
+                    BlockPos egg = BlockPos.ofFloored(p.getPos().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4));
+                    world().spawnParticles(ParticleTypes.SQUID_INK, egg.getX() + 0.5, egg.getY() + 0.3, egg.getZ() + 0.5, 8, 0.3, 0.1, 0.3, 0.01);
+                    RaidEffects.later(8, () -> {
+                        if (!alive(kephri)) {
                             return;
                         }
-                        Vec3d push = p.getPos().subtract(kephri.getPos()).multiply(1, 0, 1).normalize().multiply(1.4);
-                        p.addVelocity(push.x, 0.4, push.z);
-                        p.velocityModified = true;
-                        RaidEffects.hit(kephri, p, 5 + rnd().nextInt(11), null, true); // approx: dung strike damage
-                        world().spawnParticles(ParticleTypes.ITEM_SLIME, p.getX(), p.getY() + 0.5, p.getZ(), 12, 0.6, 0.3, 0.6, 0.05);
+                        // A player standing on the dark egg crushes it before it hatches. // approx: OSRS eggs are attacked
+                        for (ServerPlayerEntity q : players()) {
+                            if (q.getBlockPos().getSquaredDistance(egg) <= 2) {
+                                Msg.game(q, "You crush a dark egg.");
+                                return;
+                            }
+                        }
+                        spawnMob("toa_agile_scarab", egg, false);
                     });
                 }
             }
-            if (tick % 16 == 12) {
-                int eggs = Invocation.kephriEggs(inv);
-                say("Kephri lays her eggs!");
-                for (int i = 0; i < eggs; i++) {
-                    ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
-                    Vec3d at = p.getPos().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3);
-                    // OSRS: unattended eggs explode in a 3x3 area. // approx: 8 ticks, up to 12
-                    RaidEffects.strike(world(), at, 1.6, 12, 8, kephri, ParticleTypes.ITEM_SLIME, null, true);
+        }
+
+        /** Agile Scarabs retreat from players at running speed (OSRS). */
+        private void agileScarabs() {
+            for (LivingEntity s : living("toa_agile_scarab")) {
+                ServerPlayerEntity near = null;
+                for (ServerPlayerEntity p : players()) {
+                    if (p.squaredDistanceTo(s) < 9 && (near == null || p.squaredDistanceTo(s) < near.squaredDistanceTo(s))) {
+                        near = p;
+                    }
+                }
+                if (near != null && s instanceof net.minecraft.entity.mob.MobEntity m) {
+                    Vec3d away = s.getPos().subtract(near.getPos()).multiply(1, 0, 1).normalize().multiply(4);
+                    m.getNavigation().startMovingTo(s.getX() + away.x, s.getY(), s.getZ() + away.z, 1.4);
                 }
             }
         }
@@ -529,7 +738,8 @@ final class ToaRooms {
         @Override
         public void cleanup() {
             super.cleanup();
-            for (String k : new String[]{"toa_scarab_swarm", "toa_soldier_scarab", "toa_spitting_scarab", "toa_arcane_scarab"}) {
+            for (String k : new String[]{"toa_scarab_swarm", "toa_soldier_scarab", "toa_spitting_scarab", "toa_arcane_scarab",
+                    "toa_agile_scarab"}) {
                 living(k).forEach(LivingEntity::discard);
             }
         }
@@ -978,6 +1188,8 @@ final class ToaRooms {
     static final class Zebak extends RoomLogic {
         private DataBossEntity zebak;
         private boolean enraged;
+        /** Live blood clouds: x, z and hitpoints. */
+        private final List<double[]> clouds = new ArrayList<>();
 
         Zebak(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -1067,32 +1279,102 @@ final class ToaRooms {
                     raid.heal(zebak, (int) Math.round(total * share));
                 }
             }
+            // OSRS Not Just a Head: Zebak summons blood clouds (three with Blood Thinners). // approx: every 24 ticks
+            int clouds = Invocation.zebakBloodClouds(raid.invocations());
+            if (clouds > 0 && tick % 24 == 0) {
+                say(clouds > 1 ? "Zebak summons blood clouds!" : "Zebak summons a blood cloud!");
+                for (int i = 0; i < clouds; i++) {
+                    this.clouds.add(new double[]{center().getX() + 10.5, center().getZ() + 0.5 + (i - (clouds - 1) / 2.0) * 3,
+                            Invocation.BLOOD_CLOUD_HP});
+                }
+            }
+            moveClouds();
+        }
+
+        /**
+         * Blood clouds drift a tile a tick towards the nearest player, losing 2 hitpoints per tile, and hurt an adjacent
+         * player, healing themselves by the damage (OSRS wiki).
+         */
+        private void moveClouds() {
+            java.util.Iterator<double[]> it = clouds.iterator();
+            double y = center().getY() + 1.2;
+            while (it.hasNext()) {
+                double[] c = it.next();
+                ServerPlayerEntity near = null;
+                double best = Double.MAX_VALUE;
+                for (ServerPlayerEntity p : players()) {
+                    double d = (p.getX() - c[0]) * (p.getX() - c[0]) + (p.getZ() - c[1]) * (p.getZ() - c[1]);
+                    if (d < best) {
+                        best = d;
+                        near = p;
+                    }
+                }
+                if (near == null) {
+                    it.remove();
+                    continue;
+                }
+                if (best <= 2.25) {
+                    int dealt = RaidEffects.hit(zebak, near, 3 + rnd().nextInt(4), null, true);
+                    c[2] += dealt;
+                } else {
+                    double dist = Math.sqrt(best);
+                    c[0] += (near.getX() - c[0]) / dist;
+                    c[1] += (near.getZ() - c[1]) / dist;
+                    c[2] -= Invocation.BLOOD_CLOUD_COST_PER_TILE;
+                }
+                world().spawnParticles(new net.minecraft.particle.DustParticleEffect(new org.joml.Vector3f(0.6f, 0.0f, 0.0f), 2.0f),
+                        c[0], y, c[1], 8, 0.4, 0.3, 0.4, 0);
+                if (c[2] <= 0) {
+                    world().spawnParticles(ParticleTypes.SMOKE, c[0], y, c[1], 10, 0.3, 0.3, 0.3, 0.02);
+                    it.remove();
+                }
+            }
+        }
+
+        @Override
+        public void cleanup() {
+            super.cleanup();
+            clouds.clear();
         }
     }
 
     /**
-     * The Wardens: the obelisk, then both Wardens, then the enraged survivor. In phase 2 a Warden only
-     * loses hitpoints while its core is ejected (OSRS): hitting its body charges it until the core pops
-     * out for a few seconds, and one ejection can take at most half its hitpoints.
+     * The Wardens (OSRS wiki). Phase 1: the obelisk. Phase 2: one Warden (in OSRS the one whose energy flow was blocked
+     * least; here chosen at random) with its own 4,500-hitpoint pool (scaled): hitting its body fills a bar (its 140
+     * "active" hitpoints, scaled) that ejects the core, a separate creature that takes the real damage, five times over,
+     * for 21/29/37 ticks depending on the Warden's health. Phase 3: the other Warden is restored (880 hitpoints), its
+     * phantoms join at 60% and 40% (Elidinis' Warden: Akkha's then Kephri's; Tumeken's: Zebak's then Ba-Ba's), and at
+     * 5% it heals 20% once and enrages.
      */
     static final class Wardens extends RoomLogic {
-        /** Game ticks an ejected core stays out. // approx */
-        private static final int CORE_TICKS = 20;
+        /** Live cores (melee always hits them for its maximum, OSRS). */
+        static final Set<LivingEntity> CORES = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
         private DataBossEntity obelisk;
-        private DataBossEntity elidinis;
-        private DataBossEntity tumeken;
+        /** The phase 2 Warden, then the restored phase 3 Warden. */
+        private DataBossEntity warden;
+        private boolean elidinisFirst;
         private int phase;
-        private final java.util.Map<LivingEntity, Integer> charge = new java.util.HashMap<>();
-        private final java.util.Map<LivingEntity, Integer> coreTicks = new java.util.HashMap<>();
-        private final java.util.Map<LivingEntity, Integer> coreDamage = new java.util.HashMap<>();
+        private int p2Hp;
+        private int p2Max;
+        private int bar;
+        private LivingEntity core;
+        private int coreTicks;
+        private final List<String> phantoms = new ArrayList<>();
+        private boolean enrageHealed;
+        private int akkhaAttacks;
 
-        /** Whether the fight is in its final (enraged) phase. */
+        /** Whether the fight is in its final phase. */
         boolean phaseThree() {
             return phase == 3;
         }
 
         Wardens(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
+        }
+
+        /** Whether this creature is a phase 2 Warden's ejected core. */
+        static boolean isCore(LivingEntity e) {
+            return e != null && CORES.contains(e);
         }
 
         @Override
@@ -1107,86 +1389,132 @@ final class ToaRooms {
         @Override
         public void start() {
             phase = 1;
-            elidinis = null;
-            tumeken = null;
+            warden = null;
+            core = null;
+            coreTicks = 0;
+            phantoms.clear();
+            enrageHealed = false;
+            akkhaAttacks = 0;
             obelisk = spawnBoss("wardens_obelisk", at(12, 0));
             anchor(obelisk);
         }
 
         @Override
         public void reset() {
+            dropCore();
             super.reset();
             obelisk = null;
+            warden = null;
         }
 
-        /** The Warden to show and strike at: one with an ejected core, else a living one. */
-        private DataBossEntity exposed() {
-            if (coreTicks.getOrDefault(elidinis, 0) > 0 && alive(elidinis)) {
-                return elidinis;
-            }
-            if (coreTicks.getOrDefault(tumeken, 0) > 0 && alive(tumeken)) {
-                return tumeken;
-            }
-            return alive(elidinis) ? elidinis : tumeken;
+        @Override
+        public void cleanup() {
+            dropCore();
+            super.cleanup();
         }
 
-        private boolean coreOut(LivingEntity warden) {
-            return coreTicks.getOrDefault(warden, 0) > 0;
+        private void dropCore() {
+            if (core != null) {
+                CORES.remove(core);
+                core.discard();
+                core = null;
+            }
+            coreTicks = 0;
+        }
+
+        private String name(DataBossEntity w) {
+            return w == null || w.def() == null ? "The Warden" : w.def().name;
         }
 
         @Override
         public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
-            if (phase != 2 || (boss != elidinis && boss != tumeken) || damage <= 0) {
+            if (phase != 2 || boss != warden || damage <= 0) {
                 return damage;
             }
-            int max = raid.maxHitpoints(boss);
-            if (!coreOut(boss)) {
-                int c = charge.getOrDefault(boss, 0) + damage;
-                if (c >= RaidScaling.toaCoreChargeNeeded(max)) {
-                    charge.put(boss, 0);
-                    coreTicks.put(boss, CORE_TICKS);
-                    com.runecraft.content.systems.CombatAchievementService.countNear(boss, com.runecraft.osrs.content.systems.CombatAchievements.COUNT_WARDEN_CORE);
-                    coreDamage.put(boss, 0);
-                    warn((boss.def() == null ? "The Warden" : boss.def().name) + " staggers - its core is ejected! Strike it now!");
-                } else {
-                    charge.put(boss, c);
+            if (core == null) {
+                bar += damage;
+                // OSRS loot calculator: phase 2 Warden damage is worth 2 points each.
+                raid.addPoints(attacker.getUuid(), damage * 2);
+                if (bar >= RaidScaling.toaCoreChargeNeeded(raid.raidLevel(), raid.partySize())) {
+                    ejectCore();
                 }
-                return 0;
             }
-            int dealt = coreDamage.getOrDefault(boss, 0);
-            int allowed = Math.max(0, Math.min(damage, RaidScaling.toaCoreDamageCap(max) - dealt));
-            coreDamage.put(boss, dealt + allowed);
-            if (dealt + allowed >= RaidScaling.toaCoreDamageCap(max)) {
-                coreTicks.put(boss, 0);
-                say("The Warden's core retreats back into its body.");
+            // The Warden's own hitpoints only follow its core's pool (see onCreatureHit).
+            return 0;
+        }
+
+        private void ejectCore() {
+            bar = 0;
+            coreTicks = RaidScaling.toaCoreExposureTicks(p2Hp / (double) Math.max(1, p2Max));
+            BlockPos at = BlockPos.ofFloored(warden.getX() - 4, warden.getY(), warden.getZ());
+            core = spawnMob("toa_warden_core", at, false);
+            if (core != null) {
+                CORES.add(core);
             }
-            return allowed;
+            com.runecraft.content.systems.CombatAchievementService.countNear(warden,
+                    com.runecraft.osrs.content.systems.CombatAchievements.COUNT_WARDEN_CORE);
+            warn(name(warden) + " staggers - its core is ejected! Strike the core now!");
+        }
+
+        @Override
+        public void onCreatureHit(ServerPlayerEntity player, LivingEntity target, int damage) {
+            if (phase != 2 || target != core || core == null || damage <= 0) {
+                return;
+            }
+            // OSRS: damage to the core counts five times against the Warden.
+            p2Hp -= damage * RaidScaling.TOA_CORE_MULTIPLIER;
+            core.setHealth(core.getMaxHealth());
+            if (p2Hp <= 0) {
+                restoreOther();
+                return;
+            }
+            raid.setCurrentHitpoints(warden, (int) Math.ceil(raid.maxHitpoints(warden) * (p2Hp / (double) p2Max)));
+        }
+
+        /** The phase 2 Warden collapses and uses its last power to restore the other one (OSRS). */
+        private void restoreOther() {
+            dropCore();
+            String other = elidinisFirst ? "tumekens_warden" : "elidinis_warden";
+            if (warden != null) {
+                unanchor(warden);
+                warden.discard();
+            }
+            warden = spawnBoss(other, at(14, 0));
+            anchor(warden);
+            phase = 3;
+            warn("The Warden's body collapses... " + name(warden) + " is restored! The obelisk explodes!");
+            if (alive(obelisk)) {
+                obelisk.discard();
+            }
         }
 
         @Override
         public int bossOutgoing(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
-            return phase == 3 ? (int) Math.round(damage * 1.3) : damage;
+            return phase == 3 ? (int) Math.round(damage * 1.3) : damage; // approx: phase 3 slams
         }
 
         @Override
         public void gameTick(long tick) {
-            if (obelisk == null) {
+            if (obelisk == null && warden == null) {
                 return;
             }
             List<ServerPlayerEntity> players = players();
+            Set<Invocation> inv = raid.invocations();
             if (phase == 1) {
                 if (!alive(obelisk)) {
                     phase = 2;
-                    elidinis = spawnBoss("elidinis_warden", at(14, -6));
-                    tumeken = spawnBoss("tumekens_warden", at(14, 6));
-                    anchor(elidinis);
-                    anchor(tumeken);
-                    warn("The obelisk shatters - the Wardens awaken!");
+                    elidinisFirst = rnd().nextBoolean();
+                    warden = spawnBoss(elidinisFirst ? "elidinis_warden" : "tumekens_warden", at(14, 0));
+                    anchor(warden);
+                    p2Max = RaidScaling.toaWardenP2Hp(raid.raidLevel(), raid.partySize());
+                    p2Hp = p2Max;
+                    bar = 0;
+                    warn("The obelisk falls silent - " + name(warden) + " awakens!");
                     return;
                 }
                 autoAttack(obelisk, tick, 5);
                 // OSRS Ancient Haste: the Wardens charge faster in phase 1.
-                if (tick % Invocation.wardensChargeEvery(raid.invocations()) == 0) {
+                if (tick % Invocation.wardensChargeEvery(inv) == 0) {
                     say("The obelisk crackles with energy!");
                     for (ServerPlayerEntity p : players) {
                         RaidEffects.strike(world(), p.getPos(), 1.4, 20, 3, obelisk, ParticleTypes.END_ROD);
@@ -1194,49 +1522,41 @@ final class ToaRooms {
                 }
                 return;
             }
-            boolean eAlive = alive(elidinis);
-            boolean tAlive = alive(tumeken);
-            if (!eAlive && !tAlive) {
-                complete();
+            if (!alive(warden)) {
+                if (phase == 3) {
+                    complete();
+                }
                 return;
             }
-            if (phase == 2 && eAlive != tAlive) {
-                phase = 3;
-                DataBossEntity survivor = eAlive ? elidinis : tumeken;
-                warn((survivor.def() == null ? "The Warden" : survivor.def().name) + " absorbs its partner's power! The skulls awaken!");
+            if (phase == 2) {
+                phaseTwo(tick, players, inv);
+            } else {
+                phaseThree(tick, players, inv);
             }
-            for (DataBossEntity w : new DataBossEntity[]{elidinis, tumeken}) {
-                int t = coreTicks.getOrDefault(w, 0);
-                if (t > 0) {
-                    coreTicks.put(w, t - 1);
-                    if (t == 1 && alive(w)) {
-                        say("The Warden's core retreats back into its body.");
-                    }
+        }
+
+        private void phaseTwo(long tick, List<ServerPlayerEntity> players, Set<Invocation> inv) {
+            if (core != null) {
+                coreTicks--;
+                world().spawnParticles(ParticleTypes.END_ROD, core.getX(), core.getY() + 0.5, core.getZ(), 3, 0.3, 0.3, 0.3, 0.01);
+                if (coreTicks <= 0 || !core.isAlive()) {
+                    dropCore();
+                    say("The Warden's core retreats back into its body.");
                 }
             }
-            DataBossEntity core = exposed();
-            if (phase == 2 && coreOut(core) && alive(core)) {
-                world().spawnParticles(ParticleTypes.END_ROD, core.getX(), core.getY() + core.getHeight() * 0.6, core.getZ(), 3, 0.3, 0.3,
-                        0.3, 0.01);
-            }
-            Set<Invocation> inv = raid.invocations();
             // OSRS Acceleration: the phase 2 Warden attacks faster and the obelisk charges faster.
-            int every = phase == 2 ? Invocation.wardensAttackEvery(inv) : 5;
-            if (eAlive) {
-                autoAttack(elidinis, tick, every);
+            if (core == null) {
+                autoAttack(warden, tick, Invocation.wardensAttackEvery(inv));
             }
-            if (tAlive) {
-                autoAttack(tumeken, tick + 2, every);
-            }
-            int strikeEvery = phase == 2 ? Invocation.wardensObeliskEvery(inv) : 15;
+            int strikeEvery = Invocation.wardensObeliskEvery(inv);
             if (tick % strikeEvery == 0 && !players.isEmpty()) {
                 say("Divine lightning strikes the arena!");
                 // OSRS Penetration: the phase 2 obelisk hits harder and its hits switch off overhead prayers.
-                int max = (int) Math.round(25 * (phase == 2 ? Invocation.wardensObeliskDamage(inv) : 1.0));
+                int max = (int) Math.round(25 * Invocation.wardensObeliskDamage(inv));
                 for (ServerPlayerEntity p : players) {
-                    RaidEffects.strike(world(), p.getPos(), 1.4, max, 3, core, ParticleTypes.ELECTRIC_SPARK);
+                    RaidEffects.strike(world(), p.getPos(), 1.4, max, 3, warden, ParticleTypes.ELECTRIC_SPARK);
                 }
-                if (phase == 2 && Invocation.wardensPenetration(inv)) {
+                if (Invocation.wardensPenetration(inv)) {
                     RaidEffects.later(3, () -> {
                         for (ServerPlayerEntity p : players()) {
                             RoomLogic.dropOverheads(p, "The obelisk's energy pierces your prayers!");
@@ -1244,18 +1564,75 @@ final class ToaRooms {
                     });
                 }
             }
-            if (phase == 3 && !players.isEmpty()) {
-                // OSRS: Overclocked, Overclocked 2 and Insanity bring the phase 3 slam 1/2/3 ticks sooner.
-                if (tick % Math.max(3, 6 - Invocation.wardensSlamFaster(inv)) == 0) {
-                    ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
-                    RaidEffects.strike(world(), p.getPos().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2), 1.5, 25, 3, core,
-                            ParticleTypes.FLAME);
+        }
+
+        private void phaseThree(long tick, List<ServerPlayerEntity> players, Set<Invocation> inv) {
+            double hp = raid.healthFraction(warden);
+            boolean elidinis = !elidinisFirst;
+            for (int[] at : new int[][]{{60, 0}, {40, 1}}) {
+                if (hp * 100 <= at[0] && phantoms.size() == at[1]) {
+                    String phantom = elidinis ? (at[1] == 0 ? "Akkha" : "Kephri") : (at[1] == 0 ? "Zebak" : "Ba-Ba");
+                    phantoms.add(phantom);
+                    warn(phantom + "'s phantom rises to assist the Warden!");
                 }
-                if (tick % 20 == 10) {
-                    warn("The ceiling crumbles!");
-                    for (int i = 0; i < 6; i++) {
-                        RaidEffects.strike(world(), vec(rnd().nextInt(30) - 18, rnd().nextInt(34) - 17), 2.0, 35, 4, core,
-                                ParticleTypes.CLOUD);
+            }
+            if (!enrageHealed && hp <= 0.05) {
+                // OSRS: at 5% the Warden heals 20% of its hitpoints once and enrages.
+                enrageHealed = true;
+                raid.heal(warden, raid.maxHitpoints(warden) / 5);
+                warn(name(warden) + " shakes violently and draws in the last of its power!");
+            }
+            if (players.isEmpty()) {
+                return;
+            }
+            // OSRS: Overclocked, Overclocked 2 and Insanity bring the slam 1/2/3 ticks sooner.
+            if (tick % Math.max(3, 6 - Invocation.wardensSlamFaster(inv)) == 0) {
+                ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
+                RaidEffects.strike(world(), p.getPos().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2), 1.5, 25, 3, warden,
+                        ParticleTypes.FLAME);
+            }
+            if (enrageHealed && tick % 20 == 10) {
+                warn("Lightning tears through the arena!");
+                for (int i = 0; i < 6; i++) {
+                    RaidEffects.strike(world(), vec(rnd().nextInt(30) - 18, rnd().nextInt(34) - 17), 2.0, 35, 4, warden,
+                            ParticleTypes.CLOUD);
+                }
+            }
+            for (String phantom : phantoms) {
+                phantomAttack(phantom, tick, players, inv);
+            }
+        }
+
+        /** The path bosses' phantoms use their originals' attacks, with the same invocations (OSRS wiki). */
+        private void phantomAttack(String phantom, long tick, List<ServerPlayerEntity> players, Set<Invocation> inv) {
+            ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
+            switch (phantom) {
+                case "Kephri" -> {
+                    // Kephri's fireball: lands where the player stood; 3x3 and harder with Aerial Assault.
+                    if (tick % 6 == 3) {
+                        int radius = Invocation.kephriFireballRadius(inv);
+                        int max = (int) Math.round(24 * Invocation.kephriFireballDamage(inv));
+                        RaidEffects.strike(world(), p.getPos(), 0.8 + 1.5 * radius, max, 3, warden, ParticleTypes.FLAME, AttackType.MAGIC, true);
+                    }
+                }
+                case "Akkha" -> {
+                    // Ranged and magic, switching every three attacks (randomly with Stay Vigilant), starting with ranged.
+                    if (tick % 5 == 1) { // approx: attack speed
+                        boolean magic = inv.contains(Invocation.STAY_VIGILANT) ? rnd().nextBoolean() : (akkhaAttacks / 3) % 2 == 1;
+                        akkhaAttacks++;
+                        RaidEffects.hit(warden, p, rnd().nextInt(21), magic ? AttackType.MAGIC : AttackType.RANGED, false); // approx: max 20
+                    }
+                }
+                case "Zebak" -> {
+                    if (tick % 7 == 2) { // approx: Zebak's rock and jug attacks
+                        boolean magic = rnd().nextBoolean();
+                        RaidEffects.hit(warden, p, rnd().nextInt(26), magic ? AttackType.MAGIC : AttackType.RANGED, false);
+                    }
+                }
+                default -> {
+                    // Ba-Ba's phantom only launches boulders: step a tile away from the shadow.
+                    if (tick % 6 == 0) {
+                        RaidEffects.strike(world(), p.getPos(), 1.0, 25, 3, warden, ParticleTypes.CAMPFIRE_COSY_SMOKE); // approx: damage
                     }
                 }
             }

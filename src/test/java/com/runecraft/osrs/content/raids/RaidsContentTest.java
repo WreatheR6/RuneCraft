@@ -474,8 +474,15 @@ class RaidsContentTest {
         assertEquals(45 * 50, RaidRewards.toaWeight(lightbearer, 425));
         assertEquals(66 * 50, RaidRewards.toaWeight(fang, 320));
         assertEquals(70 * 50, RaidRewards.toaWeight(fang, 300));
-        assertEquals(220, RaidScaling.toaCoreChargeNeeded(880));
-        assertEquals(440, RaidScaling.toaCoreDamageCap(880));
+        // OSRS wiki: phase 2 Warden 4,500 hitpoints ("core-ejected"), body 140 ("active"), both scaled by raid level.
+        assertEquals(140, RaidScaling.toaCoreChargeNeeded(0, 1));
+        assertEquals(310, RaidScaling.toaCoreChargeNeeded(300, 1));
+        assertEquals(4500, RaidScaling.toaWardenP2Hp(0, 1));
+        assertEquals(9900, RaidScaling.toaWardenP2Hp(300, 1));
+        assertEquals(21, RaidScaling.toaCoreExposureTicks(1.0));
+        assertEquals(21, RaidScaling.toaCoreExposureTicks(0.8));
+        assertEquals(29, RaidScaling.toaCoreExposureTicks(0.79));
+        assertEquals(37, RaidScaling.toaCoreExposureTicks(0.59));
         Random random = new Random(8);
         Map<String, Integer> pts = Map.of("a", 30_000, "b", 30_000);
         for (int i = 0; i < 500; i++) {

@@ -123,6 +123,11 @@ public final class CoxBosses {
 
     public static List<MonsterDef> monsters() {
         return List.of(
+                // OSRS wiki/DPS calculator (stats for a maxed party): 30 hitpoints, Attack/Strength 120, Defence 45, max hit 13.
+                MonsterDef.of("cox_scavenger_beast", "Scavenger beast").level(76).stats(30, 120, 120, 45, 1, 1).speed(4) // approx: level, speed
+                        .defenceBonus(0, 0, 0, 0, 0)
+                        .attack(AttackDef.of("bite", AttackType.CRUSH, 13, 2, 10))
+                        .skin(0x7A6A4A, 0x5A4A3A, 0x5A4A3A, 0xC0A060).size(0.8f, 1.1f, 1.0f).moveSpeed(0.25),
                 MonsterDef.of("cox_lizardman_spawn", "Spawn").level(55).stats(15, 120, 30, 10, 1, 50).speed(4).defenceBonus(0, 0, 0, -10, 0)
                         .attack(AttackDef.of("explode", AttackType.CRUSH, 1, 2, 10)).model("cox_lizardman_spawn")
                         .skin(0x8A3AB0, 0x6A2A90, 0x6A2A90, 0xE0A0FF).size(0.5f, 0.6f, 1.0f).moveSpeed(0.32),

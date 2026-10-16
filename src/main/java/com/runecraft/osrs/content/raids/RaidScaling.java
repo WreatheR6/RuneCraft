@@ -631,21 +631,38 @@ public final class RaidScaling {
             case "zebak" -> 1.5;
             case "wardens_obelisk" -> 1.5;
             case "elidinis_warden", "tumekens_warden" -> wardenPhaseThree ? 2.5 : 2.0;
+            // Core damage counts five times against the phase 2 Warden, which is worth 2 points per hitpoint.
+            case "toa_warden_core" -> 2.0 * TOA_CORE_MULTIPLIER;
             default -> id.contains("baboon") ? 1.2 : id.contains("scarab") ? 0.5 : 1.0;
         };
     }
 
-    /** Damage a Warden's body must take in phase 2 before its core is ejected: a quarter of its hitpoints. // approx */
-    public static int toaCoreChargeNeeded(int wardenMaxHp) {
-        return Math.max(1, wardenMaxHp / 4);
+    /** Phase 2 Warden ("core-ejected") hitpoints before scaling (OSRS wiki/DPS calculator: 4,500, scaled). */
+    public static final int TOA_WARDEN_P2_HP = 4500;
+    /** Phase 2 Warden body ("active") hitpoints before scaling: the yellow bar that ejects the core when full (140). */
+    public static final int TOA_WARDEN_BODY_HP = 140;
+    /** Damage dealt to an ejected core counts five times against the Warden (OSRS: a 55 deals 275). */
+    public static final int TOA_CORE_MULTIPLIER = 5;
+
+    /** The phase 2 Warden's hitpoints at this raid level and party size (raid level and party scaling, no path). */
+    public static int toaWardenP2Hp(int raidLevel, int partySize) {
+        return toaScaledHp(TOA_WARDEN_P2_HP, raidLevel, 0, partySize, false);
+    }
+
+    /** Damage the phase 2 Warden's body must take before its core is ejected (its scaled 140 "active" hitpoints). */
+    public static int toaCoreChargeNeeded(int raidLevel, int partySize) {
+        return toaScaledHp(TOA_WARDEN_BODY_HP, raidLevel, 0, partySize, false);
     }
 
     /**
-     * Phase 2 Wardens only lose hitpoints while their core is ejected, and one ejection can take at most
-     * half of the Warden's hitpoints, so each needs at least two "downs" (OSRS). // approx: the exact cap
+     * Game ticks an ejected core stays out, by the Warden's health when it was ejected (OSRS wiki): 21 from 80%, 29 from
+     * 60%, 37 below.
      */
-    public static int toaCoreDamageCap(int wardenMaxHp) {
-        return Math.max(1, wardenMaxHp / 2);
+    public static int toaCoreExposureTicks(double wardenHealthFraction) {
+        if (wardenHealthFraction >= 0.8) {
+            return 21;
+        }
+        return wardenHealthFraction >= 0.6 ? 29 : 37;
     }
 
     /** ToA: a death costs 20% of your personal points (approximation of the OSRS death penalty). */

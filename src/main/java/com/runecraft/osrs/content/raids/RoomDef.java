@@ -26,7 +26,12 @@ public record RoomDef(String id, String name, RaidType raid, Kind kind, String s
         /** Final boss room. */
         FINAL,
         /** Reward chest and exit. */
-        REWARD
+        REWARD,
+        /**
+         * CoX resource room (scavengers, farming): its exit opens at once and its stations stay usable for the rest of
+         * the raid.
+         */
+        RESOURCE
     }
 
     public boolean combat() {

@@ -22,9 +22,10 @@ import java.util.Map;
  */
 public final class RaidItems {
     /** Items handed out inside a raid that are removed when the player leaves. */
-    public static final List<String> RAID_ONLY_ITEMS = List.of("cox_kindling", "cavern_grubs", "crondis_water_container",
+    public static final List<String> RAID_ONLY_ITEMS = java.util.stream.Stream.concat(java.util.stream.Stream.of("cox_kindling",
+            "cavern_grubs", "crondis_water_container",
             ToaSupplies.NECTAR, ToaSupplies.TEARS, ToaSupplies.AMBROSIA, ToaSupplies.SILK_DRESSING, ToaSupplies.CRYSTAL_SCARAB,
-            ToaSupplies.SMELLING_SALTS, ToaSupplies.ADRENALINE, ToaSupplies.HONEY_LOCUST);
+            ToaSupplies.SMELLING_SALTS, ToaSupplies.ADRENALINE, ToaSupplies.HONEY_LOCUST), CoxSupplies.ITEMS.stream()).toList();
 
     private RaidItems() {
     }
@@ -44,6 +45,7 @@ public final class RaidItems {
     }
 
     public static void add(ItemSink items) {
+        CoxSupplies.add(items);
         // ---------------- Chambers of Xeric ----------------
         items.add("dexterous_prayer_scroll", "Dexterous prayer scroll", Kind.SIMPLE, "note", 0x3A9A4A).value(30_000_000).stack(1)
                 .examine("Read this to learn the Rigour prayer.");

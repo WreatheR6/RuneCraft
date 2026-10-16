@@ -61,6 +61,11 @@ public final class RaidLayouts {
                 "Kill the deathly mages and rangers, then cross the tightrope.");
         room("crystal_crabs", "Crystal crabs", RaidType.COX, Kind.PUZZLE, "ice", List.of(), 0,
                 "Strike the crystal crabs to make them shimmer, and lead a shimmering crab to each dark crystal to light it.");
+        room("cox_scavengers", "Scavengers", RaidType.COX, Kind.RESOURCE, "crypt", List.of(), 0,
+                "Scavenger beasts drop tools, cave worms and potion secondaries. The way on is open; come back at any time.");
+        room("cox_farming", "Resources", RaidType.COX, Kind.RESOURCE, "jungle", List.of(), 0,
+                "Rake the weeds for seeds and grow herbs, fish the pool, net bats and cook on the fire. Mix herbs into "
+                        + "water-filled gourd vials (right-click a secondary) to brew raid potions.");
         room("olm", "The Great Olm", RaidType.COX, Kind.FINAL, "lava", List.of("great_olm"), 0,
                 "Kill both claws to expose the head. Watch for falling crystals, acid, lightning and portals.");
         room("cox_reward", "Ancient chest", RaidType.COX, Kind.REWARD, "crypt", List.of(), 0,
@@ -136,8 +141,10 @@ public final class RaidLayouts {
         }
         List<String> puzzles = new ArrayList<>(COX_PUZZLES);
         Collections.shuffle(puzzles, random);
-        List<String> ids = List.of("cox_lobby", combats.get(0), puzzles.get(0), combats.get(1),
-                combats.get(2), puzzles.get(1), combats.get(3), "olm", "cox_reward");
+        // OSRS: every floor has resource rooms; here the scavengers come after the first combat room and the farming
+        // room in the middle of the raid, so supplies can be gathered and brewed before the second floor.
+        List<String> ids = List.of("cox_lobby", combats.get(0), "cox_scavengers", puzzles.get(0), combats.get(1),
+                "cox_farming", combats.get(2), puzzles.get(1), combats.get(3), "olm", "cox_reward");
         return resolve(ids);
     }
 

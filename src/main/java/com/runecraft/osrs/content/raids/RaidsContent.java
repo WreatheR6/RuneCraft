@@ -34,6 +34,12 @@ public final class RaidsContent implements ContentModule {
     public static final String APMEKEN_ROOF = "apmeken_roof_support";
     public static final String CRONDIS_WATER = "crondis_water_container_block";
     public static final String CRONDIS_PALM = "crondis_palm";
+    public static final String HERB_PATCH = "cox_herb_patch";
+    public static final String FISHING_POOL = "cox_fishing_pool";
+    public static final String BAT_ROOST = "cox_bat_roost";
+    public static final String COOKING_FIRE = "cox_cooking_fire";
+    public static final String GOURD_TREE = "cox_gourd_tree";
+    public static final String GEYSER = "cox_geyser";
 
     @Override
     public String id() {
@@ -86,7 +92,13 @@ public final class RaidsContent implements ContentModule {
                 BlockDef.scripted(APMEKEN_VENT, "Vent", 0x6A5A4A, "vent"),
                 BlockDef.scripted(APMEKEN_ROOF, "Roof support", 0x8A6A4A, "crate"),
                 BlockDef.scripted(CRONDIS_WATER, "Water container", 0x3A7AC0, "water_container"),
-                BlockDef.scripted(CRONDIS_PALM, "Palm of Resourcefulness", 0x5A8A3A, "palm"));
+                BlockDef.scripted(CRONDIS_PALM, "Palm of Resourcefulness", 0x5A8A3A, "palm"),
+                BlockDef.scripted(HERB_PATCH, "Herb patch", 0x5A4A2A, "plant"),
+                BlockDef.scripted(FISHING_POOL, "Fishing spot", 0x2A5A8A, "pool"),
+                BlockDef.scripted(BAT_ROOST, "Bat roost", 0x3A3A3A, "rock"),
+                BlockDef.scripted(COOKING_FIRE, "Fire", 0x8A4A1A, "fire"),
+                BlockDef.scripted(GOURD_TREE, "Gourd tree", 0x6A8A3A, "tree"),
+                BlockDef.scripted(GEYSER, "Geyser", 0x4A7AA0, "water"));
     }
 
     @Override

@@ -1497,4 +1497,256 @@ final class CoxRooms {
             }
         }
     }
+
+    // ================================================================== resource rooms
+
+    /**
+     * Scavengers (OSRS): scavenger beasts roam the ruins and drop tools, cave worms and the potion secondaries (see
+     * {@link com.runecraft.osrs.content.raids.CoxSupplies#scavengerDrop}). The way on is open from the start.
+     */
+    static final class Scavengers extends RoomLogic {
+        private final List<LivingEntity> beasts = new ArrayList<>();
+
+        Scavengers(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void decorate() {
+            for (int[] r : new int[][]{{-8, -10}, {4, 9}, {10, -6}, {-2, 12}}) {
+                RaidBuilder.set(world(), at(r[0], r[1]), Blocks.MOSSY_COBBLESTONE.getDefaultState());
+                RaidBuilder.set(world(), at(r[0], r[1]).up(), Blocks.COBBLESTONE_WALL.getDefaultState());
+            }
+        }
+
+        @Override
+        public void start() {
+            beasts.clear();
+            // approx: four scavengers, one more per two extra players
+            int n = 4 + Math.max(0, raid.partySize() - 1) / 2;
+            for (int i = 0; i < n; i++) {
+                LivingEntity b = spawnMob("cox_scavenger_beast", at(-6 + rnd().nextInt(16), -12 + rnd().nextInt(25)), false);
+                if (b != null) {
+                    beasts.add(b);
+                }
+            }
+            complete();
+        }
+
+        /** The scavengers stay when the exit opens. */
+        @Override
+        protected void onComplete() {
+        }
+
+        @Override
+        public void onCreatureHit(ServerPlayerEntity player, LivingEntity target, int damage) {
+            if (!beasts.contains(target) || (target.isAlive() && target.getHealth() > 0)) {
+                return;
+            }
+            beasts.remove(target);
+            for (Map.Entry<String, Integer> e : com.runecraft.osrs.content.raids.CoxSupplies.scavengerDrop(rnd()).entrySet()) {
+                net.minecraft.item.ItemStack stack = Inv.stack(e.getKey(), e.getValue());
+                if (!stack.isEmpty()) {
+                    world().spawnEntity(new net.minecraft.entity.ItemEntity(world(), target.getX(), target.getY() + 0.3, target.getZ(), stack));
+                }
+            }
+        }
+
+        @Override
+        public void cleanup() {
+            super.cleanup();
+            beasts.forEach(LivingEntity::discard);
+            beasts.clear();
+        }
+    }
+
+    /**
+     * The farming and skilling resource room (OSRS): herb patches (rake the weeds for seeds, plant with a seed dibber,
+     * pick the grimy herbs), a fishing spot (fishing rod and cave worms), a bat roost (butterfly net), a fire to cook
+     * on, a gourd tree for empty gourd vials and a geyser to fill them.
+     */
+    static final class Farming extends RoomLogic {
+        private static final int WEEDY = 0;
+        private static final int CLEAR = 1;
+        private static final int GROWING = 2;
+        private static final int GROWN = 3;
+
+        /** Patch state, herb ordinal and the game tick its stage ends. */
+        private final Map<BlockPos, int[]> patches = new HashMap<>();
+        private final Map<BlockPos, Long> stageEnds = new HashMap<>();
+
+        Farming(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void decorate() {
+            for (int z = -9; z <= 9; z += 6) {
+                BlockPos p = at(-8, z);
+                RaidBuilder.set(world(), p.down(), Blocks.COARSE_DIRT.getDefaultState());
+                RaidBuilder.set(world(), p, RaidBuilder.module(RaidsContent.HERB_PATCH));
+                patches.put(p, new int[]{WEEDY, 0});
+            }
+            BlockPos c = center();
+            RaidBuilder.fill(world(), c.getX() + 6, c.getY() - 1, c.getZ() - 12, c.getX() + 9, c.getY() - 1, c.getZ() - 8,
+                    Blocks.WATER.getDefaultState());
+            RaidBuilder.set(world(), at(5, -10), RaidBuilder.module(RaidsContent.FISHING_POOL));
+            RaidBuilder.set(world(), at(8, 10), RaidBuilder.module(RaidsContent.BAT_ROOST));
+            RaidBuilder.set(world(), at(0, 0), RaidBuilder.module(RaidsContent.COOKING_FIRE));
+            RaidBuilder.set(world(), at(-2, -12), RaidBuilder.module(RaidsContent.GOURD_TREE));
+            RaidBuilder.set(world(), at(2, -12), RaidBuilder.module(RaidsContent.GEYSER));
+        }
+
+        @Override
+        public void start() {
+            complete();
+        }
+
+        @Override
+        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+            long now = ActionManager.gameTick();
+            switch (blockId) {
+                case RaidsContent.HERB_PATCH -> patch(player, pos, now);
+                case RaidsContent.FISHING_POOL -> gather(player, Skill.FISHING, "fishing_rod", "You need a fishing rod to fish here.");
+                case RaidsContent.BAT_ROOST -> gather(player, Skill.HUNTER, "butterfly_net", "You need a butterfly net to catch the bats.");
+                case RaidsContent.COOKING_FIRE -> cook(player);
+                case RaidsContent.GOURD_TREE -> {
+                    if (cooldown(player, 2)) {
+                        return true;
+                    }
+                    Inv.give(player, com.runecraft.osrs.content.raids.CoxSupplies.EMPTY_GOURD, 1); // approx: one per pick
+                    Msg.game(player, "You pick an empty gourd vial.");
+                }
+                case RaidsContent.GEYSER -> {
+                    String empty = com.runecraft.osrs.content.raids.CoxSupplies.EMPTY_GOURD;
+                    int n = Inv.count(player, empty);
+                    if (n <= 0) {
+                        Msg.game(player, "Use the geyser to fill empty gourd vials from the gourd tree.");
+                        return true;
+                    }
+                    Inv.remove(player, empty, n);
+                    Inv.give(player, com.runecraft.osrs.content.raids.CoxSupplies.WATER_GOURD, n);
+                    Msg.game(player, "You fill " + n + " gourd vial" + (n > 1 ? "s" : "") + " from the geyser.");
+                }
+                default -> {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private void patch(ServerPlayerEntity player, BlockPos pos, long now) {
+            int[] patch = patches.computeIfAbsent(pos, k -> new int[]{WEEDY, 0});
+            long ends = stageEnds.getOrDefault(pos, 0L);
+            if (patch[0] == CLEAR && ends > 0 && now >= ends) {
+                patch[0] = WEEDY; // approx: weeds grow back on an empty patch after a while
+            }
+            if (patch[0] == GROWING && now >= ends) {
+                patch[0] = GROWN;
+            }
+            int farming = level(player, Skill.FARMING);
+            com.runecraft.osrs.content.raids.CoxSupplies.Herb[] herbs = com.runecraft.osrs.content.raids.CoxSupplies.Herb.values();
+            switch (patch[0]) {
+                case WEEDY -> {
+                    if (cooldown(player, 3)) {
+                        return;
+                    }
+                    player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+                    patch[0] = CLEAR;
+                    stageEnds.put(pos, now + 50);
+                    String seed = com.runecraft.osrs.content.raids.CoxSupplies.rakeSeed(farming, rnd());
+                    if (seed != null) {
+                        Inv.give(player, seed, 1);
+                        Msg.game(player, "You rake the weeds and find a " + seed.replace('_', ' ') + ".");
+                    } else {
+                        Msg.game(player, "You rake the weeds, but find nothing you could grow.");
+                    }
+                }
+                case CLEAR -> {
+                    com.runecraft.osrs.content.raids.CoxSupplies.Herb pick = null;
+                    for (com.runecraft.osrs.content.raids.CoxSupplies.Herb h : herbs) {
+                        if (Inv.has(player, h.seed(), 1) && farming >= h.farmingLevel) {
+                            pick = h;
+                        }
+                    }
+                    if (pick == null) {
+                        Msg.game(player, "You have no seeds you can plant here. Rake the weeds of another patch for seeds.");
+                        return;
+                    }
+                    if (!Inv.has(player, "seed_dibber", 1)) {
+                        Msg.game(player, "You need a seed dibber to plant seeds.");
+                        return;
+                    }
+                    Inv.remove(player, pick.seed(), 1);
+                    XpService.add(player, Skill.FARMING, pick.plantXp);
+                    patch[0] = GROWING;
+                    patch[1] = pick.ordinal();
+                    stageEnds.put(pos, now + com.runecraft.osrs.content.raids.CoxSupplies.HERB_GROW_TICKS);
+                    Msg.game(player, "You plant the " + pick.seed().replace('_', ' ') + ".");
+                }
+                case GROWING -> Msg.game(player, "The " + herbs[patch[1]].name.toLowerCase(java.util.Locale.ROOT) + " is still growing.");
+                default -> {
+                    com.runecraft.osrs.content.raids.CoxSupplies.Herb herb = herbs[patch[1]];
+                    int n = com.runecraft.osrs.content.raids.CoxSupplies.herbYield(herb, farming);
+                    Inv.give(player, herb.grimy(), n);
+                    XpService.add(player, Skill.FARMING, herb.harvestXp * n);
+                    patch[0] = CLEAR;
+                    stageEnds.put(pos, now + 50);
+                    Msg.game(player, "You pick " + n + " grimy " + herb.name.toLowerCase(java.util.Locale.ROOT) + (n > 1 ? "s." : "."));
+                }
+            }
+        }
+
+        /** One catch per click: the best fish or bat the level allows (fish need cave worms as bait). */
+        private void gather(ServerPlayerEntity player, Skill skill, String tool, String noTool) {
+            if (cooldown(player, 3)) {
+                return;
+            }
+            if (!Inv.has(player, tool, 1)) {
+                Msg.game(player, noTool);
+                return;
+            }
+            boolean fish = skill == Skill.FISHING;
+            String bait = com.runecraft.osrs.content.raids.CoxSupplies.CAVE_WORMS;
+            if (fish && !Inv.has(player, bait, 1)) {
+                Msg.game(player, "You need cave worms as bait. Scavengers drop them.");
+                return;
+            }
+            int lvl = level(player, skill);
+            com.runecraft.osrs.content.raids.CoxSupplies.Food food = com.runecraft.osrs.content.raids.CoxSupplies.catchFor(skill, lvl);
+            player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+            if (food == null || rnd().nextDouble() > 0.5 + lvl / 250.0) { // approx: catch chance
+                Msg.game(player, fish ? "You fail to catch anything." : "The bat flutters out of reach.");
+                return;
+            }
+            if (fish) {
+                Inv.remove(player, bait, 1);
+            }
+            Inv.give(player, food.raw(), 1);
+            XpService.add(player, skill, food.gatherXp());
+            Msg.game(player, "You catch a raw " + food.name().toLowerCase(java.util.Locale.ROOT) + ".");
+        }
+
+        /** Cooks every raw fish and bat the player's Cooking level allows. // approx: CoX food never burns here */
+        private void cook(ServerPlayerEntity player) {
+            int lvl = level(player, Skill.COOKING);
+            int cooked = 0;
+            for (com.runecraft.osrs.content.raids.CoxSupplies.Food f : com.runecraft.osrs.content.raids.CoxSupplies.FOODS) {
+                int n = Inv.count(player, f.raw());
+                if (n <= 0) {
+                    continue;
+                }
+                if (lvl < f.level()) {
+                    Msg.game(player, "You need a Cooking level of " + f.level() + " to cook the " + f.name().toLowerCase(java.util.Locale.ROOT) + ".");
+                    continue;
+                }
+                Inv.remove(player, f.raw(), n);
+                Inv.give(player, f.cooked(), n);
+                XpService.add(player, Skill.COOKING, f.cookXp() * n);
+                cooked += n;
+            }
+            Msg.game(player, cooked > 0 ? "You cook " + cooked + " piece" + (cooked > 1 ? "s" : "") + " of food on the fire."
+                    : "You have nothing to cook.");
+        }
+    }
 }

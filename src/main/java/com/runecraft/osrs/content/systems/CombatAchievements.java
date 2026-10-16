@@ -266,6 +266,8 @@ public final class CombatAchievements {
     public static final String COUNT_BABA_BOULDER = "baba_boulder";
     /** Times a Warden's core was ejected in phase 2 (ToA "Down Do Specs"). */
     public static final String COUNT_WARDEN_CORE = "warden_core";
+    /** Someone in a ToA party ate or drank supplies brought into the tomb (ToA "You are not prepared" fails). */
+    public static final String FLAG_TOA_OUTSIDE_SUPPLY = "toa_outside_supply";
     /** Crumble Undead was cast on Vorkath's zombified spawn ("Zombie Destroyer" fails). */
     public static final String FLAG_VORKATH_CRUMBLE = "vorkath_crumble";
     /** 12 hits on Vorkath during one acid phase without rapid fire or acid damage ("The Walk"). */

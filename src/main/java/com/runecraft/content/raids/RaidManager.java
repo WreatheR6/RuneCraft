@@ -124,6 +124,12 @@ public final class RaidManager {
             return true;
         });
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
+            /** OSRS: melee always hits a Warden's ejected core for its maximum. */
+            @Override
+            public boolean alwaysMaxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+                return ToaRooms.Wardens.isCore(target) && (type == AttackType.STAB || type == AttackType.SLASH || type == AttackType.CRUSH);
+            }
+
             @Override
             public void afterHit(ServerPlayerEntity player, LivingEntity target, AttackType type, int dealt) {
                 RaidInstance raid = of(player);
@@ -151,6 +157,13 @@ public final class RaidManager {
                     || def.id().contains("ambrosia");
             if (def.kind() == com.runecraft.osrs.ItemDef.Kind.POTION && heals && !Invocation.healingPotionsAllowed(raid.invocations())) {
                 return "The 'Dehydration' invocation stops you from drinking that.";
+            }
+            if (!com.runecraft.osrs.content.raids.ToaSupplies.givenInsideTomb(def.id())) {
+                // CA 424 "You are not prepared": anyone using supplies brought from outside fails it for the party.
+                for (ServerPlayerEntity member : raid.players()) {
+                    com.runecraft.content.systems.CombatAchievementService.flag(member,
+                            com.runecraft.osrs.content.systems.CombatAchievements.FLAG_TOA_OUTSIDE_SUPPLY);
+                }
             }
             return null;
         });
@@ -327,7 +340,9 @@ public final class RaidManager {
             default -> {
                 int room = raid.roomAt(Vec3d.ofCenter(pos));
                 RoomLogic logic = room >= 0 ? raid.logic(room) : null;
-                if (logic == null || !logic.started || logic.done || !logic.useBlock(player, blockId, pos)) {
+                // CoX resource rooms open their exit at once but their stations stay usable for the rest of the raid.
+                boolean usable = logic != null && logic.started && (!logic.done || logic.def.kind() == com.runecraft.osrs.content.raids.RoomDef.Kind.RESOURCE);
+                if (!usable || !logic.useBlock(player, blockId, pos)) {
                     Msg.game(player, "Nothing interesting happens.");
                 }
             }

@@ -218,6 +218,13 @@ public enum Invocation {
         return set.contains(BLOOD_THINNERS) ? 3 : 1;
     }
 
+    /**
+     * Blood clouds (OSRS wiki): each loses 2 hitpoints per tile it moves and hurts an adjacent player, healing itself
+     * by the damage. // approx: 40 hitpoints, 3-6 damage a tick
+     */
+    public static final int BLOOD_CLOUD_HP = 40;
+    public static final int BLOOD_CLOUD_COST_PER_TILE = 2;
+
     /** Akkha's special attack interval in attacks (OSRS: every 7th attack, every 6th with Stay Vigilant). */
     public static int akkhaSpecialEvery(Set<Invocation> set) {
         return set.contains(STAY_VIGILANT) ? 6 : 7;
@@ -325,6 +332,45 @@ public enum Invocation {
         }
         return phase <= 1 ? "toa_soldier_scarab" : "toa_spitting_scarab";
     }
+
+    /**
+     * The overlords Kephri summons when her shield breaks for the {@code phase}th time (1 or 2), OSRS wiki: a Spitting
+     * Scarab first, then a Soldier and an Arcane Scarab; More Overlords adds a Soldier, then a Spitting Scarab.
+     */
+    public static List<String> kephriOverlords(Set<Invocation> set, int phase) {
+        List<String> ids = new ArrayList<>(phase <= 1 ? List.of("toa_spitting_scarab") : List.of("toa_soldier_scarab", "toa_arcane_scarab"));
+        String extra = kephriExtraOverlord(set, phase);
+        if (extra != null) {
+            ids.add(extra);
+        }
+        return ids;
+    }
+
+    /** Scarab swarms in Kephri's {@code phase}th intermission (OSRS wiki: 28, then 24). */
+    public static int kephriSwarms(int phase) {
+        return phase <= 1 ? 28 : 24;
+    }
+
+    /**
+     * Game ticks before the {@code index}th swarm (0-based) of an intermission (OSRS wiki): the first four every 4
+     * ticks, the next four every 3, the next four every 2, the rest every tick.
+     */
+    public static int kephriSwarmDelay(int index) {
+        return index < 4 ? 4 : index < 8 ? 3 : index < 12 ? 2 : 1;
+    }
+
+    /** Dark (hatching) eggs in one Mass Incubation (OSRS wiki: 2, or 3-5 with Lively Larvae). */
+    public static int kephriDarkEggs(Set<Invocation> set, java.util.Random random) {
+        return set.contains(LIVELY_LARVAE) ? 3 + random.nextInt(3) : 2;
+    }
+
+    /** Hits (three, +1 per extra player) or one hit over 39 that make the Arcane Scarab relocate (OSRS wiki). */
+    public static int arcaneScarabRelocateHits(int partySize) {
+        return 3 + Math.max(0, partySize - 1);
+    }
+
+    /** Game ticks the Arcane Scarab charges before its explosive swarm goes off. // approx */
+    public static final int ARCANE_SCARAB_CHARGE_TICKS = 16;
 
     /** Speed multiplier of the scarab swarms Medic! sends outside the shield phases (OSRS: 50% slower). */
     public static double kephriMedicSwarmSpeed(Set<Invocation> set) {
