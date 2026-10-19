@@ -418,19 +418,19 @@ for tag in ["bypasses_armor", "bypasses_cooldown", "bypasses_shield", "bypasses_
 
 catalog = json.load(open("build/catalog.json"))
 arrows = [f"runecraft:{i['id']}" for i in catalog["items"] if i["kind"] == "ARROW"]
-write("minecraft/tags/items/arrows.json", {"replace": False, "values": arrows})
+write("minecraft/tags/item/arrows.json", {"replace": False, "values": arrows})
 logs = [f"runecraft:{t['id']}_tree_log" for t in catalog["trees"]]
-write("minecraft/tags/blocks/logs.json", {"replace": False, "values": logs})
+write("minecraft/tags/block/logs.json", {"replace": False, "values": logs})
 stations = ["bank_booth", "furnace", "anvil", "cooking_range", "prayer_altar", "general_store", "rune_shop", "weapon_shop",
             "tool_shop", "archery_shop", "spinning_wheel", "tanning_rack", "construction_workbench", "slayer_master",
             "apothecary_table", "gielinor_portal"]
-write("minecraft/tags/blocks/mineable/pickaxe.json", {"replace": False, "values": [f"runecraft:{s}" for s in stations]})
+write("minecraft/tags/block/mineable/pickaxe.json", {"replace": False, "values": [f"runecraft:{s}" for s in stations]})
 
 # ---------------------------------------------------------------- recipes
-write("runecraft/recipes/gielinor_portal.json", {
+write("runecraft/recipe/gielinor_portal.json", {
     "type": "minecraft:crafting_shaped", "category": "misc",
     "pattern": ["OEO", "EDE", "OEO"],
     "key": {"O": {"item": "minecraft:obsidian"}, "E": {"item": "minecraft:ender_pearl"}, "D": {"item": "minecraft:diamond"}},
-    "result": {"item": "runecraft:gielinor_portal", "count": 1}})
+    "result": {"id": "runecraft:gielinor_portal", "count": 1}})
 
 print(f"Wrote {written} data files")

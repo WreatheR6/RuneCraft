@@ -4792,7 +4792,7 @@ STATIONS = {
 
 def gen_loot_tables():
     for sid in STATIONS:
-        write_json(os.path.join(RES, "data", NS, "loot_tables", "blocks", sid + ".json"), {
+        write_json(os.path.join(RES, "data", NS, "loot_table", "blocks", sid + ".json"), {
             "type": "minecraft:block",
             "pools": [{
                 "rolls": 1,
@@ -7157,7 +7157,7 @@ def gen_module_blocks(cat, names):
 
 
 def self_drop_loot(bid):
-    write_json(os.path.join(RES, "data", NS, "loot_tables", "blocks", bid + ".json"), {
+    write_json(os.path.join(RES, "data", NS, "loot_table", "blocks", bid + ".json"), {
         "type": "minecraft:block",
         "pools": [{
             "rolls": 1,
@@ -7383,7 +7383,7 @@ def validate(cat):
         if not exists("models", "item", bid + ".json"):
             errors.append(f"block {bid}: missing block item model")
     for b in cat.get("blocks", []):
-        if b.get("breakable") and not os.path.exists(os.path.join(RES, "data", NS, "loot_tables", "blocks",
+        if b.get("breakable") and not os.path.exists(os.path.join(RES, "data", NS, "loot_table", "blocks",
                                                                   b["id"] + ".json")):
             errors.append(f"block {b['id']}: breakable but has no loot table")
     item_ids = Counter(i["id"] for i in cat["items"])
