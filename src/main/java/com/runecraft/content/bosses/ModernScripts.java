@@ -835,9 +835,24 @@ final class ModernScripts {
                 judge.discard();
             }
             if (contract != null && killer != null) {
-                Inv.give(killer, contract.item, 1);
-                Msg.game(killer, "Yama returns your " + contract.displayName().toLowerCase(java.util.Locale.ROOT)
-                        + ". (Its purifying sigil piece isn't in this world yet.)");
+                // OSRS Wiki "Yama#Contracts": sigil contracts come back with their purifying sigil piece; acquisition
+                // contracts are used up and guarantee their reward (oathplate: the first piece the player isn't carrying).
+                if (contract.returnedOnKill()) {
+                    Inv.give(killer, contract.item, 1);
+                    Msg.game(killer, "Yama returns your " + contract.displayName().toLowerCase(java.util.Locale.ROOT) + ".");
+                }
+                String reward = contract.reward();
+                if (contract == YamaContract.OATHPLATE_ACQUISITION) {
+                    for (String piece : new String[]{"oathplate_legs", "oathplate_chest", "oathplate_helm"}) {
+                        if (!Inv.has(killer, piece, 1)) {
+                            reward = piece;
+                        }
+                    }
+                }
+                Inv.give(killer, reward, contract.rewardQuantity());
+                com.runecraft.collection.CollectionLog.obtain(killer, reward);
+                Msg.game(killer, "Yama honours the terms of your contract: " + contract.rewardQuantity() + " x "
+                        + com.runecraft.osrs.ItemCatalog.get(reward).name() + ".");
             }
         }
 
@@ -855,7 +870,8 @@ final class ModernScripts {
 
     /**
      * Amoxliatl: a standard magic attack that also drops ice spikes and leaves an icy pool on your tile; after every 2-4
-     * standard attacks she alternates between Unstable Ice (1-4 blocks to break with melee within 15 ticks, or they shatter
+     * standard attacks she alternates between Unstable Ice (1-4 blocks to break with melee - one hit each, at attack speed
+     * 1 - within 15 ticks, or they shatter
      * into icy pools and heal her) and Icicle Crash (switches off your prayers, then a 34 you can block by praying again).
      */
     static final class Amoxliatl extends ScriptedBoss {
@@ -926,6 +942,11 @@ final class ModernScripts {
                             Msg.action(p, "Only a melee attack can break the unstable ice.");
                             return 0;
                         }
+                        // OSRS Wiki: melee on unstable ice works at attack speed 1, so the next swing is ready a tick later.
+                        com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+                        int speed = com.runecraft.combat.Equipment.weaponSpeed(p, data.skills());
+                        data.lastAttackTick = com.runecraft.action.ActionManager.mcTick()
+                                - (long) (speed - 1) * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK;
                         return MinionRules.lethal(mob);
                     }
                 });

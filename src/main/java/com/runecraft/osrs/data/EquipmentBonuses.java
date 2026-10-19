@@ -593,6 +593,9 @@ public final class EquipmentBonuses {
         put("oathplate_helm", 0, 0, 10, 0, -2, -7,  50, 72, 45, 0, 50,  6, 0, 0, 0);
         put("oathplate_chest", 0, 0, 16, 0, -16, -18,  105, 128, 100, -5, 112,  4, 0, 0, 0);
         put("oathplate_legs", 0, 0, 12, 0, -12, -14,  75, 100, 73, -3, 81,  2, 0, 0, 0);
+        put("radiant_oathplate_helm", 0, 0, 10, 0, -2, -7,  50, 72, 45, 0, 50,  6, 0, 0, 0);
+        put("radiant_oathplate_chest", 0, 0, 16, 0, -16, -18,  105, 128, 100, -5, 112,  4, 0, 0, 0);
+        put("radiant_oathplate_legs", 0, 0, 12, 0, -12, -14,  75, 100, 73, -3, 81,  2, 0, 0, 0);
         put("soulflame_horn", 5, 2, 0, 21, 0, 0,  0, 7, 3, 11, 0,  23, 0, 1, 0);
         put("eye_of_ayak", 3, 0, 0, 0, 30, 0,  1, 5, 5, 10, 0,  0, 0, 0, 2);
         put("avernic_treads", 0, 5, 5, 5, 11, 15,  21, 25, 25, 10, 10,  4, 2, 1, 0);
@@ -1048,6 +1051,10 @@ public final class EquipmentBonuses {
         put("guthix_staff", 4, -1, -1, 6, 6, 0,  2, 3, 1, 6, 0,  2, 0, 0, 0);
         put("zamorak_staff", 4, -1, -1, 6, 6, 0,  2, 3, 1, 6, 0,  2, 0, 0, 0);
         put("ancient_sceptre", 4, 20, -1, 50, 20, 0,  2, 3, 1, 15, 0,  60, 0, 10, -1);
+        put("blood_ancient_sceptre", 4, 20, -1, 50, 20, 0,  2, 3, 1, 15, 0,  60, 0, 10, -1);
+        put("ice_ancient_sceptre", 4, 20, -1, 50, 20, 0,  2, 3, 1, 15, 0,  60, 0, 10, -1);
+        put("smoke_ancient_sceptre", 4, 20, -1, 50, 20, 0,  2, 3, 1, 15, 0,  60, 0, 10, -1);
+        put("shadow_ancient_sceptre", 4, 20, -1, 50, 20, 0,  2, 3, 1, 15, 0,  60, 0, 10, -1);
         put("saradomin_cape", 0, 0, 0, 0, 10, 0,  1, 1, 2, 10, 0,  0, 0, 0, 0);
         put("guthix_cape", 0, 0, 0, 0, 10, 0,  1, 1, 2, 10, 0,  0, 0, 0, 0);
         put("zamorak_cape", 0, 0, 0, 0, 10, 0,  1, 1, 2, 10, 0,  0, 0, 0, 0);

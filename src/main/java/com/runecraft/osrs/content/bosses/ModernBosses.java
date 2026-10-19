@@ -347,6 +347,23 @@ public final class ModernBosses {
         items.add("oathplate_shards", "Oathplate shards", Kind.SIMPLE, "shard", 0x7A3A2A).value(50_000).stack(100000)
                 .examine("Fragments of oathplate. Used to smith oathplate armour.");
         BossItems.simpleItem(items, "dossier", "Dossier", "book", 0x6A4A2A, 1, "Details of a contract for Yama.");
+        // Round 32: the purifying sigil (sigil contract rewards), radiant oathplate (cosmetic, same bonuses) and the
+        // acquisition contracts (dossier rewards). Values approx except the sigil (9,500, wiki).
+        for (String piece : new String[]{"top", "bottom", "left", "right", "middle"}) {
+            BossItems.simpleItem(items, "purifying_sigil_" + piece, "Purifying sigil (" + piece + ")", "shard", 0xA0C8E0, 1,
+                    "Part of an ancient sigil, made of a brittle material.");
+        }
+        BossItems.simpleItem(items, "purifying_sigil", "Purifying sigil", "orb", 0xA0C8E0, 9500, "An ancient sigil, made of a brittle material.");
+        BossItems.wearItem(items, "radiant_oathplate_helm", "Radiant oathplate helm", Kind.ARMOUR, "full_helm", 0xD8D8E0, 15_000_000, Slot.HEAD,
+                st(0, 10, 0, -2, -7, 50, 72, 45, 0, 50, 6, 0, 0, 0), Skill.DEFENCE, 85).examine("A helm sworn to Yama, purified.");
+        BossItems.wearItem(items, "radiant_oathplate_chest", "Radiant oathplate chest", Kind.ARMOUR, "platebody", 0xD8D8E0, 30_000_000, Slot.CHEST,
+                st(0, 16, 0, -16, -18, 105, 128, 100, -5, 112, 4, 0, 0, 0), Skill.DEFENCE, 85).examine("A chestplate sworn to Yama, purified.");
+        BossItems.wearItem(items, "radiant_oathplate_legs", "Radiant oathplate legs", Kind.ARMOUR, "platelegs", 0xD8D8E0, 25_000_000, Slot.LEGS,
+                st(0, 12, 0, -12, -14, 75, 100, 73, -3, 81, 2, 0, 0, 0), Skill.DEFENCE, 85).examine("Platelegs sworn to Yama, purified.");
+        for (String c : new String[]{"catalyst", "worm", "shard", "oathplate", "harmony"}) {
+            items.add("contract_of_" + c + "_acquisition", "Contract of " + c + " acquisition", Kind.SIMPLE, "scroll", 0x6A2A5A)
+                    .value(75000).weight(0.4).examine("A contract issued by Yama. Present it to him to discuss some new terms.");
+        }
         BossItems.petItem(items, "pet_yami", "Yami", "Yama", 0x5A2A4A);
 
         // ---------------- Doom of Mokhaiotl ----------------

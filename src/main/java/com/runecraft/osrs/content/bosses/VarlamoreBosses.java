@@ -17,16 +17,18 @@ public final class VarlamoreBosses {
     private VarlamoreBosses() {
     }
 
-    // ---- The Hueycoatl: each attack is announced by the colour of its glowing head ----
-    public static final AttackDef HUEY_MELEE = AttackDef.of("tail_strike", AttackType.CRUSH, 30, 16, 1)
-            .telegraph(2, "The Hueycoatl's head glows red...").particle("minecraft:flame");
-    public static final AttackDef HUEY_RANGED = AttackDef.of("earth_spike", AttackType.RANGED, 30, 16, 1)
-            .telegraph(2, "The Hueycoatl's head glows green...").particle("minecraft:composter");
-    public static final AttackDef HUEY_MAGIC = AttackDef.of("storm_bolt", AttackType.MAGIC, 30, 16, 1)
-            .telegraph(2, "The Hueycoatl's head glows blue...").particle("minecraft:electric_spark");
-    public static final AttackDef HUEY_LIGHTNING = AttackDef.of("thunderstorm", AttackType.MAGIC, 35, 16, 1).special(Special.SKY_STRIKE, 0)
+    // ---- The Hueycoatl (OSRS Wiki "The Hueycoatl/Strategies"): Rain Fire launches the feathers on her back, coloured by
+    // style (up to 14, 0-2 through the right protection prayer); glowing symbols call lightning (up to 16 after 4 ticks);
+    // the tail slam's shockwave deals 20-25 (typeless). Was 30/30/30, 35 and 40, above anything she can hit.
+    public static final AttackDef HUEY_MELEE = AttackDef.of("tail_strike", AttackType.CRUSH, 14, 16, 1)
+            .telegraph(2, "The Hueycoatl's feathers glow red...").particle("minecraft:flame");
+    public static final AttackDef HUEY_RANGED = AttackDef.of("earth_spike", AttackType.RANGED, 14, 16, 1)
+            .telegraph(2, "The Hueycoatl's feathers glow green...").particle("minecraft:composter");
+    public static final AttackDef HUEY_MAGIC = AttackDef.of("storm_bolt", AttackType.MAGIC, 14, 16, 1)
+            .telegraph(2, "The Hueycoatl's feathers glow blue...").particle("minecraft:electric_spark");
+    public static final AttackDef HUEY_LIGHTNING = AttackDef.of("thunderstorm", AttackType.MAGIC, 16, 16, 1).special(Special.SKY_STRIKE, 0)
             .telegraph(3, "Thunder rumbles overhead!").particle("minecraft:electric_spark");
-    public static final AttackDef HUEY_TAIL = AttackDef.of("tail_sweep", AttackType.CRUSH, 40, 6, 1).special(Special.KNOCKBACK, 5)
+    public static final AttackDef HUEY_TAIL = AttackDef.of("tail_sweep", AttackType.CRUSH, 25, 6, 1).special(Special.KNOCKBACK, 5)
             .telegraph(3, "The Hueycoatl coils to sweep its tail!");
 
     // ---- Amoxliatl: a magic-only spectral boss (0 Attack/Strength); 22 standard, 34 Icicle Crash ----

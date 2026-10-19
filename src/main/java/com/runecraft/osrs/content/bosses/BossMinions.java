@@ -114,8 +114,9 @@ public final class BossMinions {
                 araxyte("ruptura_araxyte", "Ruptura araxyte", AttackDef.of("rupture", AttackType.CRUSH, 25, 2.0, 1)
                         .special(Special.AOE, 2).particle("minecraft:explosion")),
                 // Zalcano
-                MonsterDef.of("zalcano_golem", "Golem").level(1).stats(150, 80, 80, 60, 1, 1).speed(5)
-                        .attack(AttackDef.of("slam", AttackType.CRUSH, 20, 2.5, 1))
+                // Zalcano's golem (wiki): level 64, 14 hitpoints, no attack; it walks to her and restores her armour.
+                MonsterDef.of("zalcano_golem", "Golem").level(64).stats(14, 1, 1, 1, 1, 1).speed(5)
+                        .attack(AttackDef.of("slam", AttackType.CRUSH, 0, 2.5, 1))
                         .skin(0x7A6A5A, 0x5A4A3A, 0x4A3A2A, 0xE07020).size(0.9f, 2.0f, 1.2f).moveSpeed(0.12),
                 // The Whisperer's shadow tentacles
                 MonsterDef.of("whisperer_tentacle", "Tentacle").level(1).stats(40, 1, 1, 20, 1, 1).speed(4)

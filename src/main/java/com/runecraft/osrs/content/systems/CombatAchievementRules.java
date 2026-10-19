@@ -666,7 +666,7 @@ public final class CombatAchievementRules {
             49;RULE;skotizo;1;noweapon=DEMONBANE
             50;RULE;skotizo;1;finish=*chinchompa
             355;RUN;mg:tempoross;1;wear=angler_hat,angler_top,angler_waders,angler_boots
-            571;STREAK;the_hueycoatl;5;nodmg=thunderstorm,tail_strike,tail_sweep,mechanic,hazard,offprayer
+            571;STREAK;the_hueycoatl;5;nodmg=thunderstorm,tail_sweep,tail_shockwave,mechanic,hazard,offprayer
             573;RULE;the_hueycoatl;1;weapon=*dragon_hunter
             574;RULE;the_hueycoatl;1;style=magic spell=*earth
             189;RULE;the_nightmare;1;solo
@@ -782,7 +782,7 @@ public final class CombatAchievementRules {
             602;AVERAGE;yama;4;t<3:00
             603;AVERAGE;yama;4;t<2:34
             604;RULE;yama;1;nopotion foodonly=plain_pizza/half_plain_pizza
-            329;STREAK;zalcano;5;nodmg=rockfall,red_symbol,mechanic,hazard
+            329;STREAK;zalcano;5;nodmg=rockfall,red_symbol,rock_explosion,zalcano_shockwave,mechanic,hazard
             229;RULE;zulrah;1;nodmg=other,toxic_cloud,venom_spit,tail_slam,mechanic,hazard
             228;WINDOW;kill:snakeling;3;t<=1t
             187;WINDOW;kill:husk;2;t<=1t
@@ -865,6 +865,7 @@ public final class CombatAchievementRules {
             418;RULE;nex;1;flag=nex_coughing
             552;RULE;kill:tormented demon;1;flag=td_shield_down
             331;RULE;zalcano;1;solo
+            330;RULE;zalcano;1;flag=zalcano_golem_tephra
             200;RULE;dagannoth_prime;1;finishspec finish=rune_thrownaxe
             6;RULE;abyssal_sire;1;flag=venge:explosion
             520;RULE;duke_sucellus;1;noflag=off_beat

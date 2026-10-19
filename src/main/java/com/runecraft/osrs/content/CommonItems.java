@@ -217,6 +217,12 @@ public final class CommonItems {
         items.add("holy_wrench", "Holy wrench", Kind.SIMPLE, "hammer", 0xE0D070).value(5).stack(1).weight(0.4)
                 .examine("Deep in Davey's bag of tricks, the holiest of wrenches.");
         teleportItems(items);
+        // Ancient sceptre (systems: moved here in round 32; bosses: the four elemental sceptres are made by using a Desert
+        // Treasure II quartz on it). Stats come from EquipmentBonuses.
+        items.add("ancient_sceptre", "Ancient sceptre", Kind.STAFF, "staff_orb", 0x6A3A8A).value(3_000_000).stack(1).tier("rune")
+                .equipment(new EquipmentDef(EquipmentDef.Slot.WEAPON, new EquipmentStats(0, 0, 0, 20, 0, 0, 0, 0, 20, 0, 0, 0, 5, 0),
+                        Map.of(Skill.MAGIC, 70), 4, AttackType.MAGIC, EquipmentDef.WeaponClass.STAFF))
+                .examine("Boosts the power of Ancient Magicks.");
         for (String c : new String[]{"bloodied_blows", "glyphic_attenuation", "divine_severance", "forfeit_breath", "sensory_clouding"}) {
             String words = c.replace('_', ' ');
             items.add("contract_of_" + c, "Contract of " + words, Kind.SIMPLE, "scroll", 0x8A2A2A).value(75000).weight(0.4)

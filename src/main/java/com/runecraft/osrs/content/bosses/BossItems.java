@@ -312,6 +312,13 @@ public final class BossItems {
         simple(items, "gauntlet_cape", "Gauntlet cape", "cape", 0x9AD8F0, 1, "Earned by completing the Gauntlet.");
         pet(items, "pet_youngllef", "Youngllef", "Crystalline Hunllef", 0x9AD8F0);
         simple(items, "zalcano_shard", "Zalcano shard", "shard", 0xE07020, 1, "Combine with a dragon pickaxe for a crystal pickaxe.");
+        // Zalcano's tephra: mined from the prison's rock formations, refined at the furnace, imbued at the altar (wiki).
+        items.add("tephra", "Tephra", Kind.SIMPLE, "ore", 0x8A3A2A).value(1).stack(1).weight(1)
+                .examine("Volcanic rock. Refine it at the furnace in Zalcano's prison.");
+        items.add("refined_tephra", "Refined tephra", Kind.SIMPLE, "bar", 0xB04A2A).value(1).stack(1).weight(1)
+                .examine("Refined tephra. Imbue it at the altar in Zalcano's prison.");
+        items.add("imbued_tephra", "Imbued tephra", Kind.SIMPLE, "ore", 0xE0602A).value(1).stack(1).weight(1)
+                .examine("Imbued tephra. Throw it at Zalcano to break her armour.");
         pet(items, "pet_smolcano", "Smolcano", "Zalcano", 0x5A4A4A);
 
         // ---------------- The Nightmare ----------------
@@ -357,12 +364,14 @@ public final class BossItems {
                 "A mysterious orb of unknown power. Use it on a Desert Treasure II boss's summoning stone to awaken the boss.");
         simple(items, AwakenedBosses.BLOOD_KIT, "Ancient blood ornament kit", "package", 0x8A1A1A, 1,
                 "Earned by defeating all four awakened bosses. Turns Torva armour into sanguine Torva.");
-        // Teleport tablets (75k value) and quartzes (100k), untradeable (wiki).
-        for (String[] t : new String[][]{{"frozen_tablet", "Frozen tablet", "Duke Sucellus", "9AC8E0"},
-                {"scarred_tablet", "Scarred tablet", "the Leviathan", "5A7A8A"}, {"sirenic_tablet", "Sirenic tablet", "the Whisperer", "6A4A9A"},
-                {"strangled_tablet", "Strangled tablet", "Vardorvis", "8A3A3A"}}) {
+        // Tablets (75k value) and quartzes (100k), untradeable (wiki). A tablet used on the ring of shadows unlocks its
+        // teleport to that boss's lair (systems Teleports.unlockItem); it is not a one-off teleport.
+        for (String[] t : new String[][]{{"frozen_tablet", "Frozen tablet", "the Ghorrock Dungeon", "9AC8E0"},
+                {"scarred_tablet", "Scarred tablet", "the Scar", "5A7A8A"}, {"sirenic_tablet", "Sirenic tablet", "the Lassar Undercity", "6A4A9A"},
+                {"strangled_tablet", "Strangled tablet", "the Stranglewood", "8A3A3A"}}) {
             simple(items, t[0], t[1], "tablet", Integer.parseInt(t[3], 16), 75000,
-                    "Strange glowing symbols are inscribed upon this tablet. (A one-off teleport to " + t[2] + ".)");
+                    "Strange glowing symbols are inscribed upon this tablet. Use it on a ring of shadows to unlock a teleport to "
+                            + t[2] + ".");
         }
         for (String[] q : new String[][]{{"ice", "A0D8F0"}, {"smoke", "8A8A8A"}, {"shadow", "4A3A5A"}, {"blood", "A01A2A"}}) {
             simple(items, q[0] + "_quartz", Character.toUpperCase(q[0].charAt(0)) + q[0].substring(1) + " quartz", "gem",
@@ -398,6 +407,15 @@ public final class BossItems {
         pet(items, "pet_lilviathan", "Lil'viathan", "The Leviathan", 0x2A5A6A);
         pet(items, "pet_wisp", "Wisp", "The Whisperer", 0x2A3A5A);
         pet(items, "pet_butch", "Butch", "Vardorvis", 0x6A2A2A);
+        // Elemental ancient sceptres (wiki): a Desert Treasure II quartz used on the ancient sceptre (CommonItems); same
+        // bonuses (EquipmentBonuses). approx: their passive effects (+10% Ancient Magicks, blood overheal, ice accuracy,
+        // smoke heal reduction, shadow drains) aren't modelled.
+        for (String[] e : new String[][]{{"blood", "A01A2A"}, {"ice", "A0D8F0"}, {"smoke", "8A8A8A"}, {"shadow", "4A3A5A"}}) {
+            String cap = Character.toUpperCase(e[0].charAt(0)) + e[0].substring(1);
+            weapon(items, e[0] + "_ancient_sceptre", cap + " ancient sceptre", Kind.STAFF, "staff_orb", Integer.parseInt(e[1], 16), 3_000_000,
+                    st(20, -1, 50, 20, 0, 2, 3, 1, 15, 0, 60, 0, 10, -1), 4, AttackType.MAGIC, WeaponClass.STAFF, Skill.MAGIC, 70)
+                    .examine("An ancient sceptre empowered by " + e[0] + " quartz."); // value approx
+        }
 
         // ---------------- Scurrius ----------------
         simple(items, "scurrius_spine", "Scurrius' spine", "bone", 0xD8C8A8, 1, "The spine of the rat king.");
@@ -598,6 +616,25 @@ public final class BossItems {
         recipes.accept(Recipe.builder("make_soulreaper_axe", MenuType.SMITHING, "Soulreaper axe")
                 .in("executioners_axe_head", 1).in("leviathans_lure", 1).in("sirens_staff", 1).in("eye_of_the_duke", 1)
                 .out("soulreaper_axe", 1).build());
+        // Elemental ancient sceptres: a quartz on the ancient sceptre, reversible (dismantle returns both).
+        for (String e : new String[]{"blood", "ice", "smoke", "shadow"}) {
+            String cap = Character.toUpperCase(e.charAt(0)) + e.substring(1);
+            recipes.accept(Recipe.builder("make_" + e + "_ancient_sceptre", MenuType.SMITHING, cap + " ancient sceptre")
+                    .in("ancient_sceptre", 1).in(e + "_quartz", 1).out(e + "_ancient_sceptre", 1).build());
+            recipes.accept(Recipe.builder("dismantle_" + e + "_ancient_sceptre", MenuType.SMITHING, "Dismantle " + e + " ancient sceptre")
+                    .in(e + "_ancient_sceptre", 1).out("ancient_sceptre", 1).out(e + "_quartz", 1).build());
+        }
+        // Yama: the five purifying sigil pieces make the sigil; with 2,500 aether runes it turns oathplate radiant (wiki).
+        Recipe.Builder sigil = Recipe.builder("make_purifying_sigil", MenuType.SMITHING, "Purifying sigil");
+        for (String piece : BossMechanics.SIGIL_PIECES) {
+            sigil.in(piece, 1);
+        }
+        recipes.accept(sigil.out("purifying_sigil", 1).build());
+        for (String part : new String[]{"helm", "chest", "legs"}) {
+            recipes.accept(Recipe.builder("make_radiant_oathplate_" + part, MenuType.SMITHING, "Radiant oathplate " + part)
+                    .in("oathplate_" + part, 1).in("aether_rune", BossMechanics.RADIANT_AETHER_RUNES).tool("purifying_sigil")
+                    .out("radiant_oathplate_" + part, 1).build());
+        }
         // Araxxor
         recipes.accept(Recipe.builder("make_noxious_halberd", MenuType.SMITHING, "Noxious halberd")
                 .in("noxious_point", 1).in("noxious_blade", 1).in("noxious_pommel", 1).out("noxious_halberd", 1).build());

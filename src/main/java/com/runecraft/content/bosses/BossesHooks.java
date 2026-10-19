@@ -102,6 +102,71 @@ public final class BossesHooks implements ModuleHooks {
             return false;
         });
         BlockHooks.register(BossPlaces.SCAR_GROWTH, BossesHooks::pluckGrowth);
+        BlockHooks.register(BossPlaces.ANCIENT_VAULT_CHEST, BossesHooks::openVaultChest);
+        // Yama's dossiers open into a contract or chasm teleport scrolls (OSRS Wiki "Dossier").
+        net.fabricmc.fabric.api.event.player.UseItemCallback.EVENT.register((player, world, hand) -> {
+            net.minecraft.item.ItemStack stack = player.getStackInHand(hand);
+            if (world.isClient() || stack.isEmpty() || !(player instanceof ServerPlayerEntity p) || !"dossier".equals(Inv.idOf(stack))) {
+                return net.minecraft.util.TypedActionResult.pass(stack);
+            }
+            openDossier(p);
+            return net.minecraft.util.TypedActionResult.success(stack, false);
+        });
+    }
+
+    /**
+     * The Ancient Vault's chest: a quartz (the one in hand, else the first carried) is consumed for one of its five
+     * rewards (Dt2Bosses.VAULT_CHEST); noted rewards come as bank notes.
+     */
+    private static void openVaultChest(ServerPlayerEntity player, BlockPos pos, net.minecraft.block.BlockState state) {
+        if (!questDone(player, "desert_treasure_ii", "The chest is sealed by Zarosian magic. (Complete Desert Treasure II.)")) {
+            return;
+        }
+        int q = Dt2Bosses.QUARTZES.indexOf(com.runecraft.util.Inv.idOf(player.getMainHandStack()));
+        for (int i = 0; q < 0 && i < Dt2Bosses.QUARTZES.size(); i++) {
+            if (Inv.has(player, Dt2Bosses.QUARTZES.get(i), 1)) {
+                q = i;
+            }
+        }
+        if (q < 0) {
+            Msg.game(player, "The chest has four sockets, shaped for quartzes from the old empire's generals.");
+            return;
+        }
+        Inv.remove(player, Dt2Bosses.QUARTZES.get(q), 1);
+        java.util.List<Object[]> table = Dt2Bosses.VAULT_CHEST.get(q);
+        Object[] r = table.get(player.getRandom().nextInt(table.size()));
+        String item = (String) r[0];
+        int n = (Integer) r[1];
+        net.minecraft.item.ItemStack note = (Integer) r[2] == 1 && com.runecraft.osrs.bank.BankNotes.canNote(item)
+                ? com.runecraft.bank.Notes.note(item, "", 1) : net.minecraft.item.ItemStack.EMPTY;
+        if (note.isEmpty()) {
+            Inv.give(player, item, n);
+        } else {
+            int in = com.runecraft.bank.Notes.insert(player, note, n);
+            if (in < n) {
+                player.dropItem(note.copyWithCount(n - in), false);
+            }
+        }
+        com.runecraft.osrs.ItemDef def = com.runecraft.osrs.ItemCatalog.get(item);
+        Msg.game(player, "The quartz shatters as the chest opens. You find " + n + " x " + (def == null ? item : def.name()) + ".");
+    }
+
+    /** Opens one dossier: a roll on its 1,740-weight table. Public for the self-test. */
+    public static String openDossier(ServerPlayerEntity player) {
+        if (!Inv.has(player, "dossier", 1)) {
+            return null;
+        }
+        Inv.remove(player, "dossier", 1);
+        Object[] e = com.runecraft.osrs.content.bosses.BossMechanics.dossierRoll(
+                player.getRandom().nextInt(com.runecraft.osrs.content.bosses.BossMechanics.DOSSIER_TOTAL));
+        String item = (String) e[0];
+        int min = (Integer) e[1];
+        int max = (Integer) e[2];
+        int n = min + player.getRandom().nextInt(max - min + 1);
+        Inv.give(player, item, n);
+        com.runecraft.osrs.ItemDef def = com.runecraft.osrs.ItemCatalog.get(item);
+        Msg.game(player, "You open the dossier and find " + n + " x " + (def == null ? item : def.name()) + ".");
+        return item;
     }
 
     private static boolean questDone(ServerPlayerEntity player, String questId, String message) {
