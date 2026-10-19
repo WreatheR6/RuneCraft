@@ -630,6 +630,21 @@ class DungeonsContentTest {
         assertEquals(29, temple.get("monkey_zombie_lvl82"));
         assertEquals(5, temple.get("monkey_zombie"));
         assertEquals(7, temple.get("monkey_zombie_lvl129"));
+        assertEquals(22, temple.get("minecraft:cave_spider"));
+        assertEquals(29, caps.get("minecraft:cave_spider"));
+        // A camp counts its creatures in its box grown by 6-7 blocks (DungeonCamps): no other camp of the same creature
+        // may lie in that area, or the two starve each other.
+        for (String id : List.of("dng_ape_atoll_dungeon", "dng_temple_of_marimbo_dungeon")) {
+            List<Dungeons.Camp> camps = dungeon(id).camps();
+            for (Dungeons.Camp a : camps) {
+                for (Dungeons.Camp b : camps) {
+                    if (a != b && a.creatures().equals(b.creatures())) {
+                        assertTrue(b.x1() > a.x2() + 7 || b.x2() < a.x1() - 7 || b.z1() > a.z2() + 7 || b.z2() < a.z1() - 7,
+                                id + " camps count each other's monsters: " + a + " and " + b);
+                    }
+                }
+            }
+        }
         // The trapped tunnel's traps stand on its floor, and the rock ledges shelter from falling rocks.
         int traps = 0;
         for (Op op : dungeon("dng_temple_of_marimbo_dungeon").structure().ops()) {
