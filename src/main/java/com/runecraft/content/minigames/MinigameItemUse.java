@@ -10,6 +10,7 @@ import com.runecraft.skill.Drops;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.util.StackData;
 import com.runecraft.platform.UseItemCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
@@ -31,15 +32,14 @@ public final class MinigameItemUse {
     public static ItemStack container(String item, int rolls) {
         ItemStack stack = Inv.stack(item, 1);
         if (!stack.isEmpty()) {
-            CompoundTag nbt = stack.getOrCreateTag();
-            nbt.putInt(ROLLS, rolls);
+            StackData.update(stack, nbt -> nbt.putInt(ROLLS, rolls));
         }
         return stack;
     }
 
     private static int rolls(ItemStack stack) {
-        CompoundTag nbt = stack.getTag();
-        return nbt != null && nbt.contains(ROLLS) ? Math.max(1, nbt.getInt(ROLLS)) : 1;
+        CompoundTag nbt = StackData.get(stack);
+        return nbt.contains(ROLLS) ? Math.max(1, nbt.getInt(ROLLS)) : 1;
     }
 
     static void register() {

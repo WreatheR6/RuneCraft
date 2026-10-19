@@ -121,7 +121,7 @@ public final class JewelleryService {
                 Inv.give(p, old);
             }
         }
-        p.level().playSound(null, p.blockPosition(), SoundEvents.ARMOR_EQUIP_CHAIN, SoundSource.PLAYERS, 0.6f, 1.2f);
+        p.level().playSound(null, p.blockPosition(), SoundEvents.ARMOR_EQUIP_CHAIN.value(), SoundSource.PLAYERS, 0.6f, 1.2f);
         Msg.action(p, "You put on the " + one.getHoverName().getString() + ".");
         ServerNetworking.sync(p);
     }

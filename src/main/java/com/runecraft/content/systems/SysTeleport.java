@@ -135,8 +135,9 @@ public final class SysTeleport {
         if (world == null || spawn == null || p.getRespawnDimension() != Gielinor.WORLD) {
             return null;
         }
-        return net.minecraft.world.entity.player.Player.findRespawnPositionAndUseSpawnBlock(world, spawn, p.getRespawnAngle(), p.isRespawnForced(), true)
-                .map(BlockPos::containing).orElse(null);
+        net.minecraft.world.level.portal.DimensionTransition respawn = p.findRespawnPositionAndUseSpawnBlock(true,
+                net.minecraft.world.level.portal.DimensionTransition.DO_NOTHING);
+        return respawn.missingRespawnBlock() || respawn.newLevel() != world ? null : BlockPos.containing(respawn.pos());
     }
 
     /** Teleports a player to a block position in Gielinor (Tele Block and the Wilderness limit apply). */

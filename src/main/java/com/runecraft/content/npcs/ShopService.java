@@ -125,7 +125,7 @@ public final class ShopService {
         for (int i = 0; i < player.getInventory().items.size(); i++) {
             ItemStack s = player.getInventory().items.get(i);
             boolean note = com.runecraft.bank.Notes.isNote(s) && com.runecraft.bank.Notes.notedTag(s).isEmpty();
-            if (s.isEmpty() || (s.hasTag() && !note)) {
+            if (s.isEmpty() || (!s.getComponentsPatch().isEmpty() && !note)) {
                 continue;
             }
             // Shops buy bank notes as the item they stand for.

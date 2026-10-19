@@ -21,6 +21,7 @@ import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.util.StackData;
 import com.runecraft.world.Gielinor;
 import java.util.ArrayList;
 import java.util.List;
@@ -328,7 +329,7 @@ public class TempleTrekkingSession extends MinigameSession {
         for (ServerPlayer p : list) {
             ItemStack token = Inv.stack(route.token, 1);
             if (!token.isEmpty()) {
-                token.getOrCreateTag().putInt(POINTS_NBT, total);
+                StackData.update(token, t -> t.putInt(POINTS_NBT, total));
             }
             Inv.give(p, token);
             int kc = MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
@@ -669,8 +670,8 @@ public class TempleTrekkingSession extends MinigameSession {
     }
 
     private static int tokenPoints(ItemStack token) {
-        CompoundTag nbt = token.getTag();
-        return nbt != null && nbt.contains(POINTS_NBT) ? nbt.getInt(POINTS_NBT) : TempleTrekking.MIN_POINTS;
+        CompoundTag nbt = StackData.get(token);
+        return nbt.contains(POINTS_NBT) ? nbt.getInt(POINTS_NBT) : TempleTrekking.MIN_POINTS;
     }
 
     /** "/minigame token <choice>": claims the reward of the token in the player's hand. */

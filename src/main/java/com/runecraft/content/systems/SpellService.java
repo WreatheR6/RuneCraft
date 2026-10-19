@@ -1319,7 +1319,7 @@ public final class SpellService {
         }
         Vec3 at = p.position().add(p.getLookAngle().scale(2.0));
         husk.moveTo(at.x, p.getY(), at.z, p.getYRot() + 180, 0);
-        husk.finalizeSpawn(world, world.getCurrentDifficultyAt(p.blockPosition()), MobSpawnType.MOB_SUMMONED, null, null);
+        husk.finalizeSpawn(world, world.getCurrentDifficultyAt(p.blockPosition()), MobSpawnType.MOB_SUMMONED, null);
         String name = head.name().replace("Ensouled ", "Reanimated ").replace(" head", "");
         husk.setCustomName(Component.literal(name));
         husk.setCustomNameVisible(true);

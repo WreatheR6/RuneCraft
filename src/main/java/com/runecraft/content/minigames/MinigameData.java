@@ -1,5 +1,6 @@
 package com.runecraft.content.minigames;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -26,7 +27,7 @@ public final class MinigameData extends SavedData {
     private final Map<UUID, Set<String>> flags = new HashMap<>();
 
     public static MinigameData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(MinigameData::fromNbt, MinigameData::new, KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(MinigameData::new, MinigameData::fromNbt, null), KEY);
     }
 
     public static MinigameData of(ServerPlayer player) {
@@ -116,7 +117,7 @@ public final class MinigameData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         nbt.put("Points", writeMap(points));
         nbt.put("Stats", writeMap(stats));
         CompoundTag f = new CompoundTag();
@@ -129,7 +130,7 @@ public final class MinigameData extends SavedData {
         return nbt;
     }
 
-    public static MinigameData fromNbt(CompoundTag nbt) {
+    public static MinigameData fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         MinigameData data = new MinigameData();
         readMap(nbt.getCompound("Points"), data.points);
         readMap(nbt.getCompound("Stats"), data.stats);

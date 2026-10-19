@@ -230,7 +230,7 @@ final class TaiBwoWannaiService {
             return false;
         }
         mob.moveTo(p.getX() + 1.5, p.getY(), p.getZ() + 1.5, p.getYRot(), 0);
-        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null, null);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null);
         mob.addTag(EVENT_TAG);
         mob.setTarget(p);
         world.addFreshEntity(mob);

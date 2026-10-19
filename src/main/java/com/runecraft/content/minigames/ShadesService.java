@@ -14,6 +14,7 @@ import com.runecraft.quest.QuestApi;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.util.StackData;
 import com.runecraft.platform.ServerTickEvents;
 import com.runecraft.platform.UseItemCallback;
 import com.runecraft.platform.ServerPlayConnectionEvents;
@@ -249,7 +250,7 @@ public final class ShadesService {
 
     /** Right-clicking the flamtaer bag: fills it with carried supplies, or empties it when there's nothing to put in. */
     public static void useBag(ServerPlayer player, ItemStack bag) {
-        var nbt = bag.getOrCreateTag();
+        var nbt = StackData.get(bag);
         int moved = 0;
         for (int i = 0; i < ShadesOfMortton.BAG_ITEMS.length; i++) {
             String item = ShadesOfMortton.BAG_ITEMS[i];
@@ -270,9 +271,11 @@ public final class ShadesService {
                     moved += n;
                 }
             }
+            StackData.set(bag, nbt);
             Msg.game(player, moved > 0 ? "You empty the flamtaer bag." : "The flamtaer bag holds timber beams, limestone bricks and swamp paste.");
             return;
         }
+        StackData.set(bag, nbt);
         Msg.game(player, "The bag holds " + nbt.getInt("rc_bag_timber_beam") + " timber beams, " + nbt.getInt("rc_bag_limestone_brick")
                 + " limestone bricks and " + nbt.getInt("rc_bag_swamp_paste") + " swamp paste.");
     }
@@ -280,8 +283,8 @@ public final class ShadesService {
     /** Takes one repair set's worth of an item from a carried flamtaer bag; true if the bag had it. */
     private static boolean takeFromBag(ServerPlayer p, String item, int n) {
         for (ItemStack s : p.getInventory().items) {
-            if (!s.isEmpty() && "flamtaer_bag".equals(Inv.idOf(s)) && s.getTag() != null && s.getTag().getInt("rc_bag_" + item) >= n) {
-                s.getTag().putInt("rc_bag_" + item, s.getTag().getInt("rc_bag_" + item) - n);
+            if (!s.isEmpty() && "flamtaer_bag".equals(Inv.idOf(s)) && StackData.has(s) && StackData.get(s).getInt("rc_bag_" + item) >= n) {
+                StackData.update(s, t -> t.putInt("rc_bag_" + item, t.getInt("rc_bag_" + item) - n));
                 return true;
             }
         }
@@ -290,8 +293,8 @@ public final class ShadesService {
 
     private static int inBag(ServerPlayer p, String item) {
         for (ItemStack s : p.getInventory().items) {
-            if (!s.isEmpty() && "flamtaer_bag".equals(Inv.idOf(s)) && s.getTag() != null) {
-                return s.getTag().getInt("rc_bag_" + item);
+            if (!s.isEmpty() && "flamtaer_bag".equals(Inv.idOf(s)) && StackData.has(s)) {
+                return StackData.get(s).getInt("rc_bag_" + item);
             }
         }
         return 0;
@@ -299,7 +302,7 @@ public final class ShadesService {
 
     /** Right-clicking a coffin: stores carried shade remains up to its capacity, or empties it. */
     public static void useCoffin(ServerPlayer player, ItemStack coffin, ShadesOfMortton.Coffin tier) {
-        var nbt = coffin.getOrCreateTag();
+        var nbt = StackData.get(coffin);
         int stored = 0;
         for (Shade s : Shade.values()) {
             stored += nbt.getInt("rc_coffin_" + s.remains());
@@ -323,9 +326,11 @@ public final class ShadesService {
                     moved += n;
                 }
             }
+            StackData.set(coffin, nbt);
             Msg.game(player, moved > 0 ? "You take the remains out of the coffin." : "The coffin holds up to " + tier.capacity + " shade remains.");
             return;
         }
+        StackData.set(coffin, nbt);
         Msg.game(player, "You put " + moved + " shade remains in the coffin (" + stored + " / " + tier.capacity + ").");
     }
 
@@ -360,8 +365,8 @@ public final class ShadesService {
         }
         Inv.remove(player, to.locks(), 1);
         ItemStack coffin = Inv.stack(to.id(), 1);
-        if (old.getTag() != null) {
-            coffin.setTag(old.getTag().copy());
+        if (StackData.has(old)) {
+            StackData.set(coffin, StackData.get(old));
         }
         main.set(slot, coffin);
         CollectionLog.obtain(player, to.id());
