@@ -271,7 +271,7 @@ public class DataBossEntity extends OsrsMonsterEntity {
             if (e instanceof Mob mob) {
                 double angle = random.nextDouble() * Math.PI * 2;
                 mob.moveTo(getX() + Math.cos(angle) * 3, getY(), getZ() + Math.sin(angle) * 3, 0, 0);
-                mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null, null);
+                mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null);
                 if (getTarget() != null) {
                     mob.setTarget(getTarget());
                 }

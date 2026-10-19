@@ -2,6 +2,7 @@ package com.runecraft.item;
 
 import com.runecraft.osrs.content.systems.Charges;
 import com.runecraft.util.Inv;
+import com.runecraft.util.StackData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 
@@ -30,8 +31,8 @@ public final class ItemCharges {
         if (s == null) {
             return 0;
         }
-        CompoundTag nbt = stack.getTag();
-        return nbt != null && nbt.contains(KEY) ? Charges.clamp(s, nbt.getInt(KEY)) : s.initial();
+        CompoundTag nbt = StackData.get(stack);
+        return nbt.contains(KEY) ? Charges.clamp(s, nbt.getInt(KEY)) : s.initial();
     }
 
     public static void set(ItemStack stack, int charges) {
@@ -39,7 +40,7 @@ public final class ItemCharges {
         if (s == null) {
             return;
         }
-        stack.getOrCreateTag().putInt(KEY, Charges.clamp(s, charges));
+        StackData.update(stack, t -> t.putInt(KEY, Charges.clamp(s, charges)));
     }
 
     /** Drains charges; returns true when this made the item run out. */

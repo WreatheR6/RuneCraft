@@ -102,7 +102,7 @@ public final class DataBossService {
             return null;
         }
         entity.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, world.getRandom().nextFloat() * 360f, 0);
-        entity.finalizeSpawn(world, world.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null, null);
+        entity.finalizeSpawn(world, world.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null);
         if (target != null) {
             entity.setTarget(target);
         }

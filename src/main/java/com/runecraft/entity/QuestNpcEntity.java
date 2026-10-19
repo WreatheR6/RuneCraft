@@ -38,9 +38,9 @@ public class QuestNpcEntity extends PathfinderMob {
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(NPC, QuestNpc.COOK.name());
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(NPC, QuestNpc.COOK.name());
     }
 
     @Override

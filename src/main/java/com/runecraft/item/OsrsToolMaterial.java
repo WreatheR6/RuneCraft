@@ -1,8 +1,11 @@
 package com.runecraft.item;
 
 import com.runecraft.osrs.data.MetalTier;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.level.block.Block;
 
 /** Vanilla tool stats for RuneCraft metal tiers, so tools also work outside Gielinor. */
 public final class OsrsToolMaterial implements Tier {
@@ -37,12 +40,12 @@ public final class OsrsToolMaterial implements Tier {
     }
 
     @Override
-    public int getLevel() {
+    public TagKey<Block> getIncorrectBlocksForDrops() {
         return switch (tier) {
-            case BRONZE -> 1;
-            case IRON, STEEL, BLACK -> 2;
-            case MITHRIL, ADAMANT -> 3;
-            case RUNE, DRAGON -> 4;
+            case BRONZE -> BlockTags.INCORRECT_FOR_STONE_TOOL;
+            case IRON, STEEL, BLACK -> BlockTags.INCORRECT_FOR_IRON_TOOL;
+            case MITHRIL, ADAMANT -> BlockTags.INCORRECT_FOR_DIAMOND_TOOL;
+            case RUNE, DRAGON -> BlockTags.INCORRECT_FOR_NETHERITE_TOOL;
         };
     }
 

@@ -133,7 +133,7 @@ public final class PrayerEffectsService {
             targets.add(player.getLastHurtByMob());
         }
         world.sendParticles(ParticleTypes.EXPLOSION, player.getX(), player.getY() + 1, player.getZ(), 6, 1.0, 0.5, 1.0, 0.0);
-        world.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.6f, 1.3f);
+        world.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.6f, 1.3f);
         for (LivingEntity t : targets) {
             if (t instanceof ServerPlayer other && !CombatHandler.canAttackPlayer(player, other)) {
                 continue;

@@ -17,10 +17,12 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
@@ -29,6 +31,7 @@ import net.minecraft.world.item.Rarity;
 public final class ModItems {
     private static final Map<String, Item> BY_ID = new LinkedHashMap<>();
     private static final Map<String, OsrsArmorMaterial> ARMOR_MATERIALS = new HashMap<>();
+    private static final Map<String, Holder<ArmorMaterial>> ARMOR_MATERIAL_HOLDERS = new HashMap<>();
     private static final Map<MetalTier, OsrsToolMaterial> TOOL_MATERIALS = new EnumMap<>(MetalTier.class);
 
     private ModItems() {
@@ -64,8 +67,12 @@ public final class ModItems {
                 float speed = -4.0f + 1.0f / (eq.attackSpeed() * 0.6f);
                 yield new OsrsEquipmentItems.Weapon(def, TOOL_MATERIALS.get(metal), damage, speed, new Item.Properties());
             }
-            case ARMOUR -> new OsrsEquipmentItems.Armour(def, armorMaterial(def.tier()), armorType(def.equipment().slot()),
-                    new Item.Properties());
+            case ARMOUR -> {
+                OsrsArmorMaterial material = armorMaterial(def.tier());
+                ArmorItem.Type type = armorType(def.equipment().slot());
+                yield new OsrsEquipmentItems.Armour(def, armorMaterialHolder(material), type,
+                        new Item.Properties().durability(material.getDurabilityForType(type)));
+            }
             case BOW -> new OsrsEquipmentItems.Bow(def, new Item.Properties().durability(384));
             case ARROW -> new OsrsEquipmentItems.Arrow(def, new Item.Properties());
             case STAFF -> new OsrsEquipmentItems.Staff(def, new Item.Properties().stacksTo(1));
@@ -94,6 +101,11 @@ public final class ModItems {
                     case "barrows", "bandos" -> 8;
                     default -> metal(t).ordinal() + 1;
                 }));
+    }
+
+    private static Holder<ArmorMaterial> armorMaterialHolder(OsrsArmorMaterial material) {
+        return ARMOR_MATERIAL_HOLDERS.computeIfAbsent(material.tier(), tier ->
+                Registry.registerForHolder(BuiltInRegistries.ARMOR_MATERIAL, RuneCraft.id(tier), material.toMaterial()));
     }
 
     private static ArmorItem.Type armorType(EquipmentDef.Slot slot) {

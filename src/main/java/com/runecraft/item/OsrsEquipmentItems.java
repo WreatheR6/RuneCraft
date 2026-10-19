@@ -5,6 +5,7 @@ import com.runecraft.osrs.data.AmmoRules;
 import com.runecraft.osrs.data.ArrowTier;
 import com.runecraft.skill.ItemUses;
 import java.util.function.Predicate;
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -35,7 +36,7 @@ public final class OsrsEquipmentItems {
         private final ItemDef def;
 
         public Axe(ItemDef def, Tier material, Properties settings) {
-            super(material, 5.0f, -3.0f, settings);
+            super(material, settings.attributes(AxeItem.createAttributes(material, 5.0f, -3.0f)));
             this.def = def;
         }
 
@@ -49,7 +50,7 @@ public final class OsrsEquipmentItems {
         private final ItemDef def;
 
         public Pickaxe(ItemDef def, Tier material, Properties settings) {
-            super(material, 1, -2.8f, settings);
+            super(material, settings.attributes(PickaxeItem.createAttributes(material, 1, -2.8f)));
             this.def = def;
         }
 
@@ -63,7 +64,7 @@ public final class OsrsEquipmentItems {
         private final ItemDef def;
 
         public Weapon(ItemDef def, Tier material, int attackDamage, float attackSpeed, Properties settings) {
-            super(material, attackDamage, attackSpeed, settings);
+            super(material, settings.attributes(SwordItem.createAttributes(material, attackDamage, attackSpeed)));
             this.def = def;
         }
 
@@ -76,7 +77,7 @@ public final class OsrsEquipmentItems {
     public static class Armour extends ArmorItem implements OsrsItemLike {
         private final ItemDef def;
 
-        public Armour(ItemDef def, ArmorMaterial material, ArmorItem.Type type, Properties settings) {
+        public Armour(ItemDef def, Holder<ArmorMaterial> material, ArmorItem.Type type, Properties settings) {
             super(material, type, settings);
             this.def = def;
         }
@@ -127,8 +128,9 @@ public final class OsrsEquipmentItems {
         }
 
         @Override
-        public AbstractArrow createArrow(Level world, ItemStack stack, LivingEntity shooter) {
-            net.minecraft.world.entity.projectile.Arrow arrow = new net.minecraft.world.entity.projectile.Arrow(world, shooter);
+        public AbstractArrow createArrow(Level world, ItemStack stack, LivingEntity shooter, ItemStack weapon) {
+            net.minecraft.world.entity.projectile.Arrow arrow =
+                    new net.minecraft.world.entity.projectile.Arrow(world, shooter, stack.copyWithCount(1), weapon);
             arrow.addTag(RANGED_STRENGTH_TAG + def.rangedStrength());
             arrow.addTag("runecraft_arrow_" + def.id());
             // OSRS arrows break or drop on hit (handled by the combat handler); never pick up vanilla arrows.
