@@ -18,7 +18,7 @@ if [ ! -f build/smoke/world/level.dat ]; then
     echo "### Client smoke test: not run (no server world)" >> "$SUMMARY"
     exit 1
 fi
-rm -rf "$R/saves" "$R/screenshots" "$R/logs" "$R/crash-reports"
+rm -rf "$R/saves" "$R/screenshots" "$R/logs" "$R/crash-reports" "$R/quit_stuck.txt"
 mkdir -p "$R/saves"
 cp -r build/smoke/world "$R/saves/smoke"
 rm -f "$R/saves/smoke/session.lock"
@@ -90,6 +90,12 @@ grep -q 'RUNECRAFT CLIENT SMOKE: FAILED' "$FULL_LOG" && problems+=("walkthrough 
 [ "$code" != 0 ] && [ "$code" != 124 ] && problems+=("exit code $code")
 [ $ok = 1 ] || problems+=("no 'RUNECRAFT CLIENT SMOKE: OK' line")
 ls "$R"/crash-reports/*.txt >/dev/null 2>&1 && problems+=("crash report written")
+# ClientSmokeTest's watchdog writes every thread's stack when quitting the world hangs.
+if [ -f "$R/quit_stuck.txt" ]; then
+    problems+=("quitting hung (thread dump below)")
+    echo "---- quit watchdog thread dump ----"
+    head -400 "$R/quit_stuck.txt"
+fi
 grep -q 'Game crashed\|---- Minecraft Crash Report ----\|Crash report saved' "$R/run.log" "$FULL_LOG" && problems+=("game crashed")
 
 ASSET_RE='Unable to load model|Missing textures|Exception loading|Failed to load|Unable to resolve texture|Using missing texture|Unable to parse'

@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -56,6 +57,7 @@ public final class ClientSmokeTest {
     private static final int WORLD_TIMEOUT_TICKS = 20 * 60 * 6;
     /** Client ticks for the whole run, self-test included (the shell step's wall-clock timeout is the real limit). */
     private static final int TOTAL_TIMEOUT_TICKS = 20 * 60 * 26;
+    private static final long QUIT_TIMEOUT_MS = 90_000;
     private static final List<String> BOSSES = List.of("tztok_jad", "general_graardor", "king_black_dragon", "kreearra",
             "zulrah", "vorkath", "cerberus", "abyssal_sire");
     private static final List<String> MONSTERS = List.of("man", "goblin", "guard", "hill_giant", "hobgoblin");
@@ -428,19 +430,55 @@ public final class ClientSmokeTest {
             }
             LOG.error("RUNECRAFT CLIENT SMOKE: FAILED ({} errors)", ERRORS.size());
         }
+        startQuitWatchdog();
         try {
             if (client.level != null) {
                 boolean singleplayer = client.isLocalServer();
+                LOG.info("[ClientSmoke] leaving the world");
                 client.level.disconnect();
                 if (singleplayer) {
                     client.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
                 } else {
                     client.disconnect();
                 }
+                LOG.info("[ClientSmoke] left the world");
             }
         } catch (RuntimeException e) {
             LOG.error("[ClientSmoke] disconnect failed", e);
         }
+        LOG.info("[ClientSmoke] stopping the client");
         client.stop();
+    }
+
+    /**
+     * If quitting hangs (e.g. the integrated server never shuts down), logs every thread's stack after
+     * QUIT_TIMEOUT_MS and exits with code 3 so CI shows where it stuck instead of waiting for its timeout.
+     */
+    private static void startQuitWatchdog() {
+        Thread t = new Thread(() -> {
+            try {
+                Thread.sleep(QUIT_TIMEOUT_MS);
+            } catch (InterruptedException e) {
+                return;
+            }
+            StringBuilder dump = new StringBuilder("[ClientSmoke] quit stuck after " + QUIT_TIMEOUT_MS / 1000 + "s; thread dump:");
+            for (Map.Entry<Thread, StackTraceElement[]> e : Thread.getAllStackTraces().entrySet()) {
+                dump.append("\n\"").append(e.getKey().getName()).append("\" ").append(e.getKey().getState());
+                for (StackTraceElement frame : e.getValue()) {
+                    dump.append("\n    at ").append(frame);
+                }
+            }
+            LOG.error(dump.toString());
+            System.err.println(dump);
+            try {
+                java.nio.file.Files.writeString(Minecraft.getInstance().gameDirectory.toPath().resolve("quit_stuck.txt"), dump);
+                Thread.sleep(1000);
+            } catch (java.io.IOException | InterruptedException ignored) {
+                // exiting anyway
+            }
+            Runtime.getRuntime().halt(3);
+        }, "RuneCraft smoke quit watchdog");
+        t.setDaemon(true);
+        t.start();
     }
 }
