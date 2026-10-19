@@ -322,7 +322,7 @@ public final class MagicService {
 
     private static void teleport(ServerPlayerEntity player, Spell spell) {
         Landmark dest = spell.destination();
-        if (Teleblock.blocked(player)) {
+        if (Teleblock.blocked(player) || com.runecraft.content.minigames.MinigameManager.teleportBlocked(player)) {
             return;
         }
         int wild = Gielinor.wildernessLevel(player);
