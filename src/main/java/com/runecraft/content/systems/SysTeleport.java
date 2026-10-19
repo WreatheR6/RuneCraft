@@ -32,7 +32,7 @@ public final class SysTeleport {
     }
 
     public static boolean canTeleport(ServerPlayerEntity p, int maxWilderness) {
-        if (com.runecraft.combat.Teleblock.blocked(p)) {
+        if (com.runecraft.combat.Teleblock.blocked(p) || com.runecraft.content.minigames.MinigameManager.teleportBlocked(p)) {
             return false;
         }
         int wild = Gielinor.wildernessLevel(p);

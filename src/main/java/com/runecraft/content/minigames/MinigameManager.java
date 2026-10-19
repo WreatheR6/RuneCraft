@@ -85,6 +85,18 @@ public final class MinigameManager {
         return BY_PLAYER.get(player.getUuid());
     }
 
+    /**
+     * True (and tells the player) while they play a game on a stashed kit (Last Man Standing, a ranked Emir's Arena duel):
+     * teleporting out would carry the kit, its supplies and the build's levels away before {@link LmsStash#restore} runs.
+     */
+    public static boolean teleportBlocked(ServerPlayerEntity player) {
+        if (session(player) == null || !LmsStash.has(player)) {
+            return false;
+        }
+        Msg.game(player, "A magical force stops you from teleporting away.");
+        return true;
+    }
+
     static void forget(ServerPlayerEntity player) {
         BY_PLAYER.remove(player.getUuid());
     }

@@ -38,7 +38,8 @@ import java.util.UUID;
 /**
  * A fight in Emir's Arena (see {@link EmirsArena}): a legacy duel between a challenger and the player who accepted, under the
  * challenger's duel options, or a ranked 1v1 duel paired at the recruitment board (reward points and rank). Deaths are safe;
- * the loser is sent back to the hospital and both players are healed. Leaving early (exit portal, logging out) forfeits.
+ * the loser is sent back to the hospital and both players are healed. Leaving early (exit portal, logging out, getting out of
+ * the arena) forfeits.
  * Ranked fighters play the week's account build ({@link EmirsArena#weeklyBuild}): their own items and stats wait in the
  * crash-safe {@link LmsStash} (given back on leaving, or on the next login) while they fight with the build's levels and kit.
  */
@@ -287,6 +288,13 @@ public class EmirsArenaSession extends MinigameSession {
             return;
         }
         for (ServerPlayerEntity p : online()) {
+            if (p.getWorld() != world || !box().contains(p.getPos())) {
+                // Getting out of the arena any other way forfeits, like the exit portal, and gives a ranked fighter's own
+                // items and levels back (the build's kit and supplies stay behind).
+                Msg.game(p, "You have left the arena.");
+                removePlayer(p, false);
+                return;
+            }
             if (options.has(Rule.NO_SPECIAL_ATTACKS)) {
                 SysState.of(p).specEnergy = 0;
             }
