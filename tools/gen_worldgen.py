@@ -24,7 +24,7 @@ def write(path, obj):
 # ---------------------------------------------------------------- dimension
 write("runecraft/dimension_type/gielinor.json", {
     "ultrawarm": False, "natural": True, "coordinate_scale": 1.0, "has_skylight": True, "has_ceiling": False,
-    "ambient_light": 0.0, "monster_spawn_light_level": {"type": "minecraft:uniform", "value": {"min_inclusive": 0, "max_inclusive": 7}},
+    "ambient_light": 0.0, "monster_spawn_light_level": {"type": "minecraft:uniform", "min_inclusive": 0, "max_inclusive": 7},
     "monster_spawn_block_light_limit": 0, "piglin_safe": False, "bed_works": True, "respawn_anchor_works": False,
     "has_raids": False, "logical_height": 384, "min_y": -64, "height": 384,
     "infiniburn": "#minecraft:infiniburn_overworld", "effects": "minecraft:overworld"
@@ -170,9 +170,9 @@ TREES = {  # id: (leaves, base height, rand, foliage radius, foliage height, pla
 for tid, (leaves, h, r, rad, fh, place) in TREES.items():
     foliage = {"type": "minecraft:blob_foliage_placer", "radius": rad, "offset": 0, "height": fh}
     if tid == "redwood":
-        foliage = {"type": "minecraft:spruce_foliage_placer", "radius": {"type": "minecraft:uniform", "value": {"min_inclusive": 2, "max_inclusive": 3}},
-                   "offset": {"type": "minecraft:uniform", "value": {"min_inclusive": 0, "max_inclusive": 2}},
-                   "trunk_height": {"type": "minecraft:uniform", "value": {"min_inclusive": 1, "max_inclusive": 2}}}
+        foliage = {"type": "minecraft:spruce_foliage_placer", "radius": {"type": "minecraft:uniform", "min_inclusive": 2, "max_inclusive": 3},
+                   "offset": {"type": "minecraft:uniform", "min_inclusive": 0, "max_inclusive": 2},
+                   "trunk_height": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 2}}
     write(f"runecraft/worldgen/configured_feature/{tid}_tree.json", {"type": "minecraft:tree", "config": {
         "ignore_vines": True, "force_dirt": False,
         "minimum_size": {"type": "minecraft:two_layers_feature_size", "limit": 1, "lower_size": 0, "upper_size": 1},

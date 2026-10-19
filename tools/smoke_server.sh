@@ -46,29 +46,37 @@ LOG=server.log
 AREAS=("-80 -80 80 80" "-100 -500 60 -340" "-600 -400 -440 -240" "60 20 220 180" "-330 -110 -170 50" "-1010 -630 -850 -470")
 G="execute in runecraft:gielinor"
 
+# Sleeps N seconds, or returns 1 at once when the server process has exited (marker written below).
+nap() {
+    for _ in $(seq 1 "$1"); do
+        [ -f exited ] && return 1
+        sleep 1
+    done
+}
+
 feed() {
     for _ in $(seq 1 400); do
         grep -q 'Done (' "$LOG" && break
         grep -q 'Crash report saved\|crash report has been saved\|Failed to start the minecraft server\|Exception in server tick loop' "$LOG" && return
-        sleep 1
+        nap 1 || return
     done
     for a in "${AREAS[@]}"; do
         echo "$G run forceload add $a"
-        sleep 45
+        nap 45 || return
     done
     # Chunks holding station checks / spawn spots outside the areas above.
     for s in "${STATIONS[@]}" "${SPAWNS[@]}"; do
         read -r _ _ x _ z _ <<< "$s"
         echo "$G run forceload add $x $z"
-        sleep 1
+        nap 1 || return
     done
-    sleep 40
+    nap 40 || return
     # Station blocks: each check is preceded by a marker so results can be matched in the log.
     for s in "${STATIONS[@]}"; do
         read -r _ town x y z block structure <<< "$s"
         echo "say SMOKE-CHECK station $town $block at $x $y $z ($structure)"
         echo "$G if block $x $y $z $block"
-        sleep 1
+        nap 1 || return
     done
     # Creatures: summon, let them tick, check they exist, then kill them (drops, death hooks).
     read -r sx sy sz <<< "$SPAWN_POS"
@@ -76,24 +84,24 @@ feed() {
     for e in "${BOSSES[@]}" "${MONSTERS[@]}"; do
         echo "$G run summon runecraft:$e $((sx - 4 + i % 9)) $sy $((sz - 2 + i / 9 * 4))"
         i=$((i + 1))
-        sleep 1
+        nap 1 || return
     done
-    sleep 20
+    nap 20 || return
     for e in "${BOSSES[@]}" "${MONSTERS[@]}"; do
         echo "say SMOKE-CHECK entity $e"
         echo "$G if entity @e[type=runecraft:$e]"
-        sleep 1
+        nap 1 || return
     done
     # Console-safe mod commands.
     echo "rc hiscores"
-    sleep 2
+    nap 2 || return
     echo "rc hiscores attack"
-    sleep 2
+    nap 2 || return
     for e in "${MONSTERS[@]}" "${BOSSES[@]}"; do
         echo "$G run kill @e[type=runecraft:$e]"
-        sleep 1
+        nap 1 || return
     done
-    sleep 15
+    nap 15 || return
     # Second look at every station (late chunks may still have been building on the first pass),
     # plus whether the spot is plain air, to tell "not built yet/never built" from "overwritten".
     for s in "${STATIONS[@]}"; do
@@ -102,7 +110,7 @@ feed() {
         echo "$G if block $x $y $z $block"
         echo "say SMOKE-CHECK air $town at $x $y $z"
         echo "$G if block $x $y $z minecraft:air"
-        sleep 1
+        nap 1 || return
     done
     # In-game self-test (com.runecraft.selftest, "/rc selftest [filter]"): menus, recipes, quests, minigames,
     # raids, bosses, teleports and save/load exercised against a fake player. Reported below; not blocking yet.
@@ -110,15 +118,15 @@ feed() {
     for _ in $(seq 1 "${SELFTEST_TIMEOUT:-1200}"); do
         grep -q 'SELFTEST END' "$LOG" && break
         grep -q 'Crash report saved\|crash report has been saved\|Considering it to be crashed\|Exception in server tick loop' "$LOG" && break
-        sleep 1
+        nap 1 || return
     done
-    sleep 5
+    nap 5 || return
     echo "save-all"
-    sleep 5
+    nap 5 || return
     echo "stop"
-    sleep 60
+    nap 60 || return
 }
-feed | timeout 2700 java -Xmx4G @"$ARGS" nogui >> "$LOG" 2>&1
+feed | { timeout 2700 java -Xmx4G @"$ARGS" nogui >> "$LOG" 2>&1; echo $? > exited; }
 # The self-test provokes failures on purpose: what is logged between its BEGIN and END markers is reported
 # in its own section and kept out of the blocking checks below (a crash still fails the job).
 awk '/SELFTEST BEGIN/ { skip = 1 } !skip { print } /SELFTEST END/ { skip = 0 }' "$LOG" > strict.log
