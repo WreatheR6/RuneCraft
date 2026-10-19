@@ -270,9 +270,9 @@ public final class IslandsTravelService {
         StructurePlacer.applyAround(world, x, z, 16);
         if (IslandsTravel.REALM_RINGS.contains(to.code())) {
             // Step out beside the ring (on its mycelium, east of the ring block), wherever the ground there lies.
-            BlockPos ring = ensureRealmRing(world, to);
-            if (ring != null) {
-                player.teleport(world, ring.getX() + 1.5, ring.getY() + 1, ring.getZ() + 0.5, player.getYaw(), player.getPitch());
+            BlockPos realm = ensureRealmRing(world, to);
+            if (realm != null) {
+                player.teleport(world, realm.getX() + 1.5, realm.getY() + 1, realm.getZ() + 0.5, player.getYaw(), player.getPitch());
                 return;
             }
         }
