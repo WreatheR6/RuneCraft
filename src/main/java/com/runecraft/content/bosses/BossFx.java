@@ -151,7 +151,7 @@ final class BossFx {
             return;
         }
         for (Drops.Rolled r : Drops.roll(def.drops, form.getRandom(), false)) {
-            form.spawnAtLocation(Drops.withDoses(Inv.stack(r.item(), r.count()), r.doses()));
+            Inv.spawnAtLocation(form, Drops.withDoses(Inv.stack(r.item(), r.count()), r.doses()));
             CollectionLog.obtain(killer, r.item());
         }
         int petRate = com.runecraft.osrs.content.extras.Pets.engineRate(def.id);

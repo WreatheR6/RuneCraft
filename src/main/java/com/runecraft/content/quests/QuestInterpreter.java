@@ -367,7 +367,7 @@ public final class QuestInterpreter {
                 }
                 if (t.kind == Trigger.Kind.DROP) {
                     if (unmet(p, t) == null && p.getRandom().nextInt(Math.max(1, t.chance)) == 0) {
-                        t.give.forEach((item, n) -> entity.spawnAtLocation(Inv.stack(item, n)));
+                        t.give.forEach((item, n) -> Inv.spawnAtLocation(entity, Inv.stack(item, n)));
                     }
                 } else if (t.kind == Trigger.Kind.KILL && unmet(p, t) == null) {
                     if (t.count > 1) {

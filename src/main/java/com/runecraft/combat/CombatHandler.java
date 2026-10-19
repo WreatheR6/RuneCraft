@@ -472,13 +472,7 @@ public final class CombatHandler {
                 : stats.profile() instanceof com.runecraft.osrs.content.MonsterDef md ? md.drops : null;
         if (table != null) {
             for (Drops.Rolled r : Drops.roll(table, entity.getRandom(), false)) {
-                ItemStack drop = Drops.withDoses(CombatHooks.dropStack(player, entity, r.item(), r.count()), r.doses());
-                // One item entity per full stack: an item entity holding more can't be saved with the chunk.
-                for (int left = drop.getCount(); left > 0; ) {
-                    int n = Math.min(left, drop.getMaxStackSize());
-                    entity.spawnAtLocation(drop.copyWithCount(n));
-                    left -= n;
-                }
+                Inv.spawnAtLocation(entity, Drops.withDoses(CombatHooks.dropStack(player, entity, r.item(), r.count()), r.doses()));
                 CollectionLog.obtain(player, r.item());
             }
         }

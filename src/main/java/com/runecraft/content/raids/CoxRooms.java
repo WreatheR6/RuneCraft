@@ -1545,7 +1545,8 @@ final class CoxRooms {
             for (Map.Entry<String, Integer> e : com.runecraft.osrs.content.raids.CoxSupplies.scavengerDrop(rnd()).entrySet()) {
                 net.minecraft.world.item.ItemStack stack = Inv.stack(e.getKey(), e.getValue());
                 if (!stack.isEmpty()) {
-                    world().addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(world(), target.getX(), target.getY() + 0.3, target.getZ(), stack));
+                    Inv.splitStacks(stack, s -> world().addFreshEntity(
+                            new net.minecraft.world.entity.item.ItemEntity(world(), target.getX(), target.getY() + 0.3, target.getZ(), s)));
                 }
             }
         }

@@ -279,7 +279,7 @@ public final class RewardShopService {
                         give(player, e.item(), n);
                     } else {
                         if (in < n) {
-                            player.drop(note.copyWithCount(n - in), false);
+                            Inv.drop(player, note.copyWithCount(n - in), false);
                         }
                         CollectionLog.obtain(player, e.item());
                     }

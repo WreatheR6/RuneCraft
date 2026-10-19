@@ -91,7 +91,7 @@ public final class GwdKillcount {
         if (entity instanceof BossEntity be && be.boss() != null) {
             String id = be.boss().entityId();
             for (Drops.Rolled r : Drops.roll(GwdBosses.builtinExtraDrops(id), entity.getRandom(), false)) {
-                entity.spawnAtLocation(Inv.stack(r.item(), r.count()));
+                Inv.spawnAtLocation(entity, Inv.stack(r.item(), r.count()));
                 CollectionLog.obtain(player, r.item());
             }
             String pet = GwdBosses.builtinPet(id);

@@ -140,7 +140,7 @@ public final class MinigameItemUse {
         }
         int in = com.runecraft.bank.Notes.insert(p, note, n);
         if (in < n) {
-            p.drop(note.copyWithCount(n - in), false);
+            Inv.drop(p, note.copyWithCount(n - in), false);
         }
         CollectionLog.obtain(p, item);
     }

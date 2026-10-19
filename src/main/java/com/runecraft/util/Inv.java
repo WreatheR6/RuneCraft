@@ -3,8 +3,10 @@ package com.runecraft.util;
 import com.runecraft.RuneCraft;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
+import java.util.function.Consumer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -98,11 +100,35 @@ public final class Inv {
 
     public static void give(Player player, ItemStack stack) {
         if (!player.getInventory().add(stack) && !stack.isEmpty()) {
-            ItemEntity entity = player.drop(stack, false);
-            if (entity != null) {
+            drop(player, stack, true);
+        }
+    }
+
+    /**
+     * Hands {@code stack} to {@code sink} one full stack at a time, for spawning item entities: one holding more than
+     * 99 items can't be saved with its chunk.
+     */
+    public static void splitStacks(ItemStack stack, Consumer<ItemStack> sink) {
+        for (int left = stack.getCount(); left > 0; ) {
+            int n = Math.min(left, stack.getMaxStackSize());
+            sink.accept(stack.copyWithCount(n));
+            left -= n;
+        }
+    }
+
+    /** {@link Entity#spawnAtLocation(ItemStack)}, one item entity per full stack. */
+    public static void spawnAtLocation(Entity entity, ItemStack stack) {
+        splitStacks(stack, entity::spawnAtLocation);
+    }
+
+    /** {@link Player#drop(ItemStack, boolean)} at the player's feet, one item entity per full stack. */
+    public static void drop(Player player, ItemStack stack, boolean noPickUpDelay) {
+        splitStacks(stack, s -> {
+            ItemEntity entity = player.drop(s, false);
+            if (entity != null && noPickUpDelay) {
                 entity.setNoPickUpDelay();
             }
-        }
+        });
     }
 
     /** True if one more of {@code id} would fit in the inventory. */

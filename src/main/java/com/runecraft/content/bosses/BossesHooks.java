@@ -143,7 +143,7 @@ public final class BossesHooks implements ModuleHooks {
         } else {
             int in = com.runecraft.bank.Notes.insert(player, note, n);
             if (in < n) {
-                player.drop(note.copyWithCount(n - in), false);
+                Inv.drop(player, note.copyWithCount(n - in), false);
             }
         }
         com.runecraft.osrs.ItemDef def = com.runecraft.osrs.ItemCatalog.get(item);
