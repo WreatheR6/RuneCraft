@@ -270,14 +270,14 @@ public final class PlayerData {
         System.arraycopy(laps, 0, agilityLaps, 0, Math.min(laps.length, agilityLaps.length));
         bank.clear();
         if (nbt.contains("Bank2")) {
-            com.runecraft.bank.BankService.read(bank, nbt.getCompound("Bank2"));
+            com.runecraft.bank.BankService.read(bank, nbt.getCompound("Bank2"), registries);
         } else {
             // Old 54-slot chest bank: move every stack into the new bank.
             ListTag bankList = nbt.getList("Bank", Tag.TAG_COMPOUND);
             for (int i = 0; i < bankList.size(); i++) {
-                ItemStack stack = ItemStack.parseOptional(registries, bankList.getCompound(i));
+                ItemStack stack = com.runecraft.util.LegacyStacks.parse(registries, bankList.getCompound(i));
                 if (!stack.isEmpty()) {
-                    com.runecraft.bank.BankService.depositStack(bank, stack, stack.getCount(), 0);
+                    com.runecraft.bank.BankService.depositStack(registries, bank, stack, stack.getCount(), 0);
                 }
             }
         }

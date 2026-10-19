@@ -195,7 +195,7 @@ public class BankScreen extends Screen {
 
     private ItemStack stackOf(BankModel.Entry e) {
         return stacks.computeIfAbsent(e.key(), k -> {
-            ItemStack s = Notes.stackOf(e.item, e.tag, 1);
+            ItemStack s = Notes.stackOf(minecraft.level.registryAccess(), e.item, e.tag, 1);
             return s.isEmpty() ? new ItemStack(net.minecraft.world.item.Items.BARRIER) : s;
         });
     }
@@ -205,7 +205,7 @@ public class BankScreen extends Screen {
         if (def != null) {
             return def.name();
         }
-        ItemStack s = Notes.stackOf(item, "", 1);
+        ItemStack s = Notes.stackOf(null, item, "", 1);
         return s.isEmpty() ? item : s.getHoverName().getString();
     }
 

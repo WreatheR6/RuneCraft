@@ -6,6 +6,7 @@ import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.skill.XpService;
+import com.runecraft.util.LegacyStacks;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -73,13 +74,13 @@ public final class LmsStash extends SavedData {
         }
         state.setDirty();
         player.getInventory().clearContent();
-        player.getInventory().load(c.getList("Inventory", Tag.TAG_COMPOUND));
+        player.getInventory().load(LegacyStacks.upgrade(c.getList("Inventory", Tag.TAG_COMPOUND)));
         SysState.SysPlayer sp = SysState.of(player);
         sp.worn.clear();
         CompoundTag worn = c.getCompound("Worn");
         for (Jewellery.Slot slot : Jewellery.Slot.values()) {
             if (worn.contains(slot.name())) {
-                ItemStack stack = ItemStack.parseOptional(player.registryAccess(), worn.getCompound(slot.name()));
+                ItemStack stack = LegacyStacks.parse(player.registryAccess(), worn.getCompound(slot.name()));
                 if (!stack.isEmpty()) {
                     sp.worn.put(slot, stack);
                 }

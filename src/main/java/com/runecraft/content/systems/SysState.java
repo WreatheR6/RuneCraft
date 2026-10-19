@@ -195,6 +195,7 @@ public final class SysState extends SavedData {
                 bag.add(c);
             }
             n.put("LootingBag", bag);
+            n.putInt("LootingBagKeyFormat", com.runecraft.bank.Notes.KEY_FORMAT);
             n.putBoolean("LootingBagOpen", lootingBagOpen);
             return n;
         }
@@ -206,7 +207,7 @@ public final class SysState extends SavedData {
             CompoundTag w = n.getCompound("Worn");
             for (Jewellery.Slot slot : Jewellery.Slot.values()) {
                 if (w.contains(slot.name())) {
-                    ItemStack s = ItemStack.parseOptional(registries, w.getCompound(slot.name()));
+                    ItemStack s = com.runecraft.util.LegacyStacks.parse(registries, w.getCompound(slot.name()));
                     if (!s.isEmpty()) {
                         worn.put(slot, s);
                     }
@@ -273,11 +274,17 @@ public final class SysState extends SavedData {
             cannonSteel = n.getCompound("Cannon").getInt("Steel");
             cannonGranite = n.getCompound("Cannon").getInt("Granite");
             lootingBag.takeAll();
+            boolean oldKeys = n.getInt("LootingBagKeyFormat") < com.runecraft.bank.Notes.KEY_FORMAT;
             ListTag bag = n.getList("LootingBag", Tag.TAG_COMPOUND);
             for (int i = 0; i < bag.size(); i++) {
                 CompoundTag entry = bag.getCompound(i);
-                lootingBag.restore(new com.runecraft.osrs.content.systems.LootingBag.Stack(entry.getString("Item"), entry.getString("Tag"),
-                        entry.getBoolean("Noted"), entry.getBoolean("Stackable"), entry.getLong("Count")));
+                String[] key = {entry.getString("Item"), entry.getString("Tag")};
+                boolean noted = entry.getBoolean("Noted");
+                if (oldKeys && !noted) { // a noted entry's tag is the note's own NotedTag, which never changed
+                    key = com.runecraft.bank.Notes.upgradeKey(registries, key[0], key[1]);
+                }
+                lootingBag.restore(new com.runecraft.osrs.content.systems.LootingBag.Stack(key[0], key[1],
+                        noted, entry.getBoolean("Stackable"), entry.getLong("Count")));
             }
             lootingBagOpen = n.getBoolean("LootingBagOpen");
         }

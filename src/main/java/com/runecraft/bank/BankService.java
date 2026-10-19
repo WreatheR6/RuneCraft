@@ -18,6 +18,7 @@ import com.runecraft.platform.PacketByteBufs;
 import com.runecraft.platform.ServerPlayConnectionEvents;
 import com.runecraft.platform.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -33,6 +34,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,8 +78,9 @@ public final class BankService {
     public static void register() {
         ServerPlayNetworking.registerGlobalReceiver(ACTION, (server, player, handler, buf, sender) -> {
             int op = buf.readVarInt();
-            String key = buf.readUtf(1024);
-            String key2 = buf.readUtf(1024);
+            // Keys of items with components (enchantments, contents) can be long; take back any key send() wrote.
+            String key = buf.readUtf();
+            String key2 = buf.readUtf();
             int slot = buf.readVarInt();
             int mode = buf.readVarInt();
             long x = buf.readVarLong();
@@ -238,7 +241,7 @@ public final class BankService {
         if (bank.noted && !asNote) {
             Msg.game(player, "This item cannot be withdrawn as a note.");
         }
-        ItemStack proto = asNote ? Notes.note(e.item, e.tag, 1) : Notes.stackOf(e.item, e.tag, 1);
+        ItemStack proto = asNote ? Notes.note(e.item, e.tag, 1) : Notes.stackOf(player.registryAccess(), e.item, e.tag, 1);
         if (proto.isEmpty()) {
             Msg.game(player, "That item no longer exists.");
             return;
@@ -257,17 +260,22 @@ public final class BankService {
     }
 
     /** Bank key parts for a stack: notes deposit as the item they stand for. */
-    private static String[] keyOf(ItemStack stack) {
+    private static String[] keyOf(HolderLookup.Provider registries, ItemStack stack) {
         if (Notes.isNote(stack)) {
             return new String[]{Notes.notedId(stack), Notes.notedTag(stack)};
         }
-        return new String[]{Inv.idOf(stack), Notes.tagOf(stack)};
+        return new String[]{Inv.idOf(stack), Notes.tagOf(registries, stack)};
     }
 
     /** Deposits up to {@code n} of a stack's item into the bank model (no inventory change); returns the amount. */
-    public static long depositStack(BankModel bank, ItemStack stack, long n, int tab) {
-        String[] k = keyOf(stack);
+    public static long depositStack(HolderLookup.Provider registries, BankModel bank, ItemStack stack, long n, int tab) {
+        String[] k = keyOf(registries, stack);
         return bank.deposit(k[0], k[1], n, tab);
+    }
+
+    /** {@link #depositStack(HolderLookup.Provider, BankModel, ItemStack, long, int)} with the running server's registries. */
+    public static long depositStack(BankModel bank, ItemStack stack, long n, int tab) {
+        return depositStack(ServerLifecycleHooks.getCurrentServer().registryAccess(), bank, stack, n, tab);
     }
 
     static void depositSlot(ServerPlayer player, BankModel bank, int slot, BankQuantity.Mode mode, long x, int tab) {
@@ -276,13 +284,13 @@ public final class BankService {
             return;
         }
         ItemStack target = inv.items.get(slot);
-        String[] k = keyOf(target);
+        String[] k = keyOf(player.registryAccess(), target);
         boolean noted = Notes.isNote(target);
         // Every stack of the same item counts towards the quantity, as in OSRS; notes and unnoted items are
         // different items there, so only stacks of the clicked kind count.
         long available = 0;
         for (ItemStack s : inv.items) {
-            if (!s.isEmpty() && sameBankItem(s, k) && Notes.isNote(s) == noted) {
+            if (!s.isEmpty() && sameBankItem(player, s, k) && Notes.isNote(s) == noted) {
                 available += s.getCount();
             }
         }
@@ -290,8 +298,8 @@ public final class BankService {
         depositMatching(player, bank, k, n, tab, slot, noted);
     }
 
-    private static boolean sameBankItem(ItemStack s, String[] k) {
-        String[] o = keyOf(s);
+    private static boolean sameBankItem(ServerPlayer player, ItemStack s, String[] k) {
+        String[] o = keyOf(player.registryAccess(), s);
         return o[0].equals(k[0]) && o[1].equals(k[1]);
     }
 
@@ -314,7 +322,7 @@ public final class BankService {
                     continue;
                 }
                 ItemStack s = inv.items.get(i);
-                if (!s.isEmpty() && sameBankItem(s, k) && Notes.isNote(s) == noted) {
+                if (!s.isEmpty() && sameBankItem(player, s, k) && Notes.isNote(s) == noted) {
                     int take = (int) Math.min(left, s.getCount());
                     s.shrink(take);
                     left -= take;
@@ -341,7 +349,7 @@ public final class BankService {
             if (s.isEmpty()) {
                 continue;
             }
-            long put = depositStack(bank, s, s.getCount(), tab);
+            long put = depositStack(player.registryAccess(), bank, s, s.getCount(), tab);
             s.shrink((int) put);
             full |= !s.isEmpty();
         }
@@ -357,7 +365,7 @@ public final class BankService {
         for (List<ItemStack> list : List.of(inv.armor, inv.offhand)) {
             for (ItemStack s : list) {
                 if (!s.isEmpty()) {
-                    long put = depositStack(bank, s, s.getCount(), tab);
+                    long put = depositStack(player.registryAccess(), bank, s, s.getCount(), tab);
                     s.shrink((int) put);
                     any |= put > 0;
                 }
@@ -371,7 +379,7 @@ public final class BankService {
                 it.remove();
                 continue;
             }
-            long put = depositStack(bank, s, s.getCount(), tab);
+            long put = depositStack(player.registryAccess(), bank, s, s.getCount(), tab);
             s.shrink((int) put);
             any |= put > 0;
             if (s.isEmpty()) {
@@ -440,6 +448,7 @@ public final class BankService {
             list.add(c);
         }
         nbt.put("Items", list);
+        nbt.putInt("KeyFormat", Notes.KEY_FORMAT);
         nbt.putBoolean("Noted", bank.noted);
         nbt.putBoolean("Placeholders", bank.placeholders);
         nbt.putString("Quantity", bank.quantity.name());
@@ -447,12 +456,26 @@ public final class BankService {
         return nbt;
     }
 
-    public static void read(BankModel bank, CompoundTag nbt) {
+    public static void read(BankModel bank, CompoundTag nbt, HolderLookup.Provider registries) {
         bank.clear();
+        boolean oldKeys = nbt.getInt("KeyFormat") < Notes.KEY_FORMAT;
         ListTag list = nbt.getList("Items", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
             CompoundTag c = list.getCompound(i);
-            bank.load(c.getString("Item"), c.getString("Tag"), c.getLong("Count"), c.getByte("Tab"));
+            String item = c.getString("Item");
+            String tag = c.getString("Tag");
+            if (oldKeys) {
+                String[] k = Notes.upgradeKey(registries, item, tag);
+                item = k[0];
+                tag = k[1];
+                // Old keys that now name the same item share the first one's slot.
+                BankModel.Entry same = bank.find(item, tag);
+                if (same != null) {
+                    same.count = Math.min(BankQuantity.MAX, same.count + Math.max(0, c.getLong("Count")));
+                    continue;
+                }
+            }
+            bank.load(item, tag, c.getLong("Count"), c.getByte("Tab"));
         }
         bank.finishLoad();
         bank.noted = nbt.getBoolean("Noted");

@@ -3,9 +3,14 @@ package com.runecraft.bank;
 import com.runecraft.RuneCraft;
 import com.runecraft.osrs.bank.BankNotes;
 import com.runecraft.util.Inv;
+import com.runecraft.util.LegacyStacks;
 import com.runecraft.util.StackData;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponentPatch;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.world.entity.player.Inventory;
@@ -23,6 +28,10 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 public final class Notes {
     public static final String NOTED = "Noted";
     public static final String NOTED_TAG = "NotedTag";
+    /** Key-tag entry holding a stack's other components (enchantments, name, potion, contents...) as a component patch. */
+    public static final String COMPONENTS = "rc_components";
+    /** Saved next to stored keys; older keys are 1.20.1 stack NBT and go through {@link #upgradeKey} when loaded. */
+    public static final int KEY_FORMAT = 2;
     private static final String DAMAGE = "Damage";
 
     private Notes() {
@@ -30,17 +39,31 @@ public final class Notes {
 
     // ------------------------------------------------------------------ stack <-> bank key
 
-    /** The stack's NBT as a string ("" for none). */
-    public static String tagOf(ItemStack stack) {
+    /**
+     * The stack's key tag ("" for none): its custom data, Damage when the item takes damage, and every other component
+     * under {@link #COMPONENTS}.
+     */
+    public static String tagOf(HolderLookup.Provider registries, ItemStack stack) {
         CompoundTag n = StackData.get(stack);
-        if (stack.isDamageableItem()) {
+        boolean damageable = new ItemStack(stack.getItem()).isDamageableItem();
+        if (damageable) {
             n.putInt(DAMAGE, stack.getDamageValue());
+        }
+        DataComponentPatch rest = stack.getComponentsPatch()
+                .forget(t -> t == DataComponents.CUSTOM_DATA || (damageable && t == DataComponents.DAMAGE));
+        if (!rest.isEmpty()) {
+            DataComponentPatch.CODEC.encodeStart(registries.createSerializationContext(NbtOps.INSTANCE), rest)
+                    .resultOrPartial(e -> RuneCraft.LOGGER.warn("Bank key of {} drops data: {}", stack, e))
+                    .ifPresent(t -> n.put(COMPONENTS, t));
         }
         return n.isEmpty() ? "" : n.getAsString();
     }
 
-    /** A stack of a bank item (id + NBT string), or EMPTY for unknown items. */
-    public static ItemStack stackOf(String item, String tag, int count) {
+    /**
+     * A stack of a bank item (id + key tag), or EMPTY for unknown items. {@code registries} may be null for tags that never
+     * hold {@link #COMPONENTS} (empty and note tags).
+     */
+    public static ItemStack stackOf(HolderLookup.Provider registries, String item, String tag, int count) {
         Item it = BuiltInRegistries.ITEM.get(RuneCraft.resolve(item));
         if (it == Items.AIR || count <= 0) {
             return ItemStack.EMPTY;
@@ -49,7 +72,15 @@ public final class Notes {
         if (tag != null && !tag.isEmpty()) {
             try {
                 CompoundTag n = TagParser.parseTag(tag);
-                if (s.isDamageableItem() && n.contains(DAMAGE, Tag.TAG_ANY_NUMERIC)) {
+                boolean damageable = s.isDamageableItem();
+                Tag components = n.get(COMPONENTS);
+                n.remove(COMPONENTS);
+                if (components != null && registries != null) {
+                    DataComponentPatch.CODEC.parse(registries.createSerializationContext(NbtOps.INSTANCE), components)
+                            .resultOrPartial(e -> RuneCraft.LOGGER.warn("Bad bank item components for {}: {}", item, e))
+                            .ifPresent(s::applyComponents);
+                }
+                if (damageable && n.contains(DAMAGE, Tag.TAG_ANY_NUMERIC)) {
                     s.setDamageValue(n.getInt(DAMAGE));
                     n.remove(DAMAGE);
                 }
@@ -59,6 +90,32 @@ public final class Notes {
             }
         }
         return s;
+    }
+
+    /**
+     * A key (item id + tag) stored before {@link #KEY_FORMAT}, as today's key. Those tags were the whole 1.20.1 stack NBT,
+     * so vanilla data in them (display, Enchantments, BlockEntityTag, Potion...) and renamed item ids go through the item
+     * stack data fixer; tags holding only custom data and Damage come out unchanged. Unknown items are kept as they are.
+     */
+    public static String[] upgradeKey(HolderLookup.Provider registries, String item, String tag) {
+        if (tag.isEmpty() && !item.contains(":")) {
+            return new String[]{item, tag};
+        }
+        try {
+            CompoundTag old = new CompoundTag();
+            old.putString("id", RuneCraft.resolve(item).toString());
+            old.putByte("Count", (byte) 1);
+            if (!tag.isEmpty()) {
+                old.put("tag", TagParser.parseTag(tag));
+            }
+            ItemStack s = LegacyStacks.parse(registries, old);
+            if (!s.isEmpty()) {
+                return new String[]{Inv.idOf(s), tagOf(registries, s)};
+            }
+        } catch (CommandSyntaxException | RuntimeException e) {
+            RuneCraft.LOGGER.warn("Can't upgrade bank item {} {}: {}", item, tag, e.toString());
+        }
+        return new String[]{item, tag};
     }
 
     // ------------------------------------------------------------------ notes
@@ -79,7 +136,7 @@ public final class Notes {
 
     /** A single unnoted item for a note (EMPTY if the note is invalid). */
     public static ItemStack unnoted(ItemStack note, int count) {
-        return stackOf(notedId(note), notedTag(note), count);
+        return stackOf(null, notedId(note), notedTag(note), count);
     }
 
     /**
@@ -93,12 +150,14 @@ public final class Notes {
         if (tag == null || tag.isEmpty()) {
             return true;
         }
-        ItemStack s = stackOf(item, tag, 1);
-        CompoundTag n = StackData.get(s);
-        for (String k : n.getAllKeys()) {
-            if (!k.equals(DAMAGE)) {
-                return false;
+        try {
+            for (String k : TagParser.parseTag(tag).getAllKeys()) {
+                if (!k.equals(DAMAGE)) {
+                    return false;
+                }
             }
+        } catch (CommandSyntaxException e) {
+            RuneCraft.LOGGER.warn("Bad bank item data for {}: {}", item, tag);
         }
         return true;
     }

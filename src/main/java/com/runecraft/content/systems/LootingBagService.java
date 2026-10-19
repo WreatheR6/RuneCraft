@@ -87,7 +87,7 @@ public final class LootingBagService {
             return;
         }
         for (LootingBag.Stack st : sp.lootingBag.takeAll()) {
-            ItemStack proto = st.noted ? Notes.note(st.item, st.tag, 1) : Notes.stackOf(st.item, st.tag, 1);
+            ItemStack proto = st.noted ? Notes.note(st.item, st.tag, 1) : Notes.stackOf(p.registryAccess(), st.item, st.tag, 1);
             if (proto.isEmpty()) {
                 continue;
             }
@@ -156,7 +156,7 @@ public final class LootingBagService {
             Msg.game(p, "Only tradeable items can be put in the looting bag.");
             return 0;
         }
-        int put = put(SysState.of(p).lootingBag, st);
+        int put = put(p, SysState.of(p).lootingBag, st);
         if (put == 0) {
             Msg.game(p, "The bag's too full.");
         }
@@ -177,7 +177,7 @@ public final class LootingBagService {
         for (ItemStack st : p.getInventory().items) {
             if (!st.isEmpty() && storable(st)) {
                 int before = st.getCount();
-                total += put(bag, st);
+                total += put(p, bag, st);
                 full |= st.getCount() > 0 && st.getCount() == before;
             }
         }
@@ -190,10 +190,10 @@ public final class LootingBagService {
     }
 
     /** Moves as much of a stack as fits into the bag; returns the amount moved. */
-    private static int put(LootingBag.Contents bag, ItemStack st) {
+    private static int put(ServerPlayer p, LootingBag.Contents bag, ItemStack st) {
         boolean noted = Notes.isNote(st);
         String item = noted ? Notes.notedId(st) : Inv.idOf(st);
-        String tag = noted ? Notes.notedTag(st) : Notes.tagOf(st);
+        String tag = noted ? Notes.notedTag(st) : Notes.tagOf(p.registryAccess(), st);
         int put = bag.store(item, tag, noted, st.isStackable(), st.getCount());
         st.shrink(put);
         return put;
@@ -220,7 +220,7 @@ public final class LootingBagService {
                 left -= put;
             }
             if (left > 0) {
-                ItemStack proto = st.noted ? Notes.note(st.item, st.tag, 1) : Notes.stackOf(st.item, st.tag, 1);
+                ItemStack proto = st.noted ? Notes.note(st.item, st.tag, 1) : Notes.stackOf(p.registryAccess(), st.item, st.tag, 1);
                 int in = proto.isEmpty() ? 0 : Notes.insert(p, proto, (int) Math.min(Integer.MAX_VALUE, left));
                 toInventory += in;
                 left -= in;
@@ -251,7 +251,7 @@ public final class LootingBagService {
             for (ItemEntity e : items) {
                 ItemStack st = e.getItem();
                 int before = st.getCount();
-                int put = put(sp.lootingBag, st);
+                int put = put(p, sp.lootingBag, st);
                 if (put <= 0) {
                     continue;
                 }

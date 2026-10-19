@@ -120,16 +120,30 @@ public final class ShopService {
         return def == null ? 0 : def.value();
     }
 
+    /**
+     * The item a shop buys a stack as: a plain copy (no stack data, so undamaged, full doses, uncharged) as itself, a plain
+     * bank note as the item it stands for; null for anything else.
+     */
+    private static String plainId(ItemStack s) {
+        if (s.isEmpty()) {
+            return null;
+        }
+        if (com.runecraft.bank.Notes.isNote(s)) {
+            return com.runecraft.bank.Notes.notedTag(s).isEmpty() ? com.runecraft.bank.Notes.notedId(s) : null;
+        }
+        return s.getComponentsPatch().isEmpty() ? Inv.idOf(s) : null;
+    }
+
     private static List<Offer> offers(ServerPlayer player, ShopStock stock) {
         Map<String, Offer> map = new LinkedHashMap<>();
         for (int i = 0; i < player.getInventory().items.size(); i++) {
             ItemStack s = player.getInventory().items.get(i);
-            boolean note = com.runecraft.bank.Notes.isNote(s) && com.runecraft.bank.Notes.notedTag(s).isEmpty();
-            if (s.isEmpty() || (!s.getComponentsPatch().isEmpty() && !note)) {
+            String id = plainId(s);
+            boolean note = com.runecraft.bank.Notes.isNote(s);
+            // Damageable items (gear, potions) are not offered.
+            if (id == null || (!note && s.isDamageableItem())) {
                 continue;
             }
-            // Shops buy bank notes as the item they stand for.
-            String id = note ? com.runecraft.bank.Notes.notedId(s) : Inv.idOf(s);
             int amount = s.getCount();
             if (note) {
                 s = Inv.stack(id, 1);
@@ -244,12 +258,29 @@ public final class ShopService {
             Msg.game(player, "You can't sell this item to this shop.");
             return;
         }
-        int have = com.runecraft.bank.Notes.countWithNotes(player, item);
-        int n = Math.min(have, Math.max(1, Math.min(quantity, 10_000)));
+        // Only plain copies in the inventory are sold (each is paid the plain item's value): never a damaged, partly drunk,
+        // charged or worn one. Real items go before notes.
+        List<ItemStack> items = player.getInventory().items;
+        long have = 0;
+        for (ItemStack s : items) {
+            if (item.equals(plainId(s))) {
+                have += s.getCount();
+            }
+        }
+        int n = (int) Math.min(have, Math.max(1, Math.min(quantity, 10_000)));
         if (n <= 0) {
             return;
         }
-        int removed = com.runecraft.bank.Notes.removeWithNotes(player, item, n);
+        int removed = 0;
+        for (int pass = 0; pass < 2; pass++) {
+            for (ItemStack s : items) {
+                if (removed < n && item.equals(plainId(s)) && com.runecraft.bank.Notes.isNote(s) == (pass == 1)) {
+                    int k = Math.min(n - removed, s.getCount());
+                    s.shrink(k);
+                    removed += k;
+                }
+            }
+        }
         long paid = stock.sell(item, removed, value);
         if (paid > 0) {
             Inv.give(player, def.currency(), (int) Math.min(Integer.MAX_VALUE, paid));

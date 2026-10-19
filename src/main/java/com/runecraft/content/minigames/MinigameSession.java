@@ -231,7 +231,7 @@ public abstract class MinigameSession {
         if (!players.remove(player.getUUID())) {
             return;
         }
-        onLeave(player);
+        leave(player);
         BlockPos back = returnTo.remove(player.getUUID());
         MinigameManager.forget(player);
         if (teleport && back != null) {
@@ -246,6 +246,15 @@ public abstract class MinigameSession {
     /** Ends the game: rewards ({@link #onEnd}), loot on the floor goes to a player, everyone is sent back. */
     public final void end(boolean success) {
         finish(success, true);
+    }
+
+    /** {@link #onLeave}, with a failure logged so the player is still sent back and the session still released. */
+    private void leave(ServerPlayer player) {
+        try {
+            onLeave(player);
+        } catch (RuntimeException e) {
+            com.runecraft.RuneCraft.LOGGER.error("Minigame {} failed to let {} leave", game.id(), player.getGameProfile().getName(), e);
+        }
     }
 
     private void finish(boolean success, boolean rewards) {
@@ -275,7 +284,7 @@ public abstract class MinigameSession {
         }
         for (ServerPlayer p : online) {
             players.remove(p.getUUID());
-            onLeave(p);
+            leave(p);
             BlockPos back = returnTo.remove(p.getUUID());
             MinigameManager.forget(p);
             if (back != null) {

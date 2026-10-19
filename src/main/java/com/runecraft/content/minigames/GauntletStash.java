@@ -6,6 +6,7 @@ import com.runecraft.osrs.content.minigames.Gauntlet;
 import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
+import com.runecraft.util.LegacyStacks;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -74,7 +75,10 @@ public final class GauntletStash extends SavedData {
         ServerNetworking.sync(player);
     }
 
-    /** Puts a run's loot into the player's reward chest in the lobby (saved with the world). */
+    /**
+     * Puts a run's loot into the player's reward chest in the lobby (saved with the world). Loot amounts (200 cosmic runes,
+     * 1,000 mithril arrows) are saved as stacks of at most the item's stack size, the most a saved stack can hold.
+     */
     public static void addToChest(ServerPlayer player, List<ItemStack> loot) {
         if (loot.isEmpty()) {
             return;
@@ -82,8 +86,10 @@ public final class GauntletStash extends SavedData {
         GauntletStash state = get(player.getServer());
         ListTag list = state.chest.computeIfAbsent(player.getUUID(), u -> new ListTag());
         for (ItemStack s : loot) {
-            if (!s.isEmpty()) {
-                list.add(s.saveOptional(player.registryAccess()));
+            for (int left = s.getCount(); left > 0; ) {
+                int n = Math.min(left, s.getMaxStackSize());
+                list.add(s.copyWithCount(n).save(player.registryAccess()));
+                left -= n;
             }
         }
         state.setDirty();
@@ -104,7 +110,7 @@ public final class GauntletStash extends SavedData {
         }
         state.setDirty();
         for (int i = 0; i < list.size(); i++) {
-            ItemStack s = ItemStack.parseOptional(player.registryAccess(), list.getCompound(i));
+            ItemStack s = LegacyStacks.parse(player.registryAccess(), list.getCompound(i));
             if (!s.isEmpty()) {
                 Inv.give(player, s);
             }
@@ -137,13 +143,13 @@ public final class GauntletStash extends SavedData {
             }
         }
         player.getInventory().clearContent();
-        player.getInventory().load(c.getList("Inventory", Tag.TAG_COMPOUND));
+        player.getInventory().load(LegacyStacks.upgrade(c.getList("Inventory", Tag.TAG_COMPOUND)));
         SysState.SysPlayer sp = SysState.of(player);
         sp.worn.clear();
         CompoundTag worn = c.getCompound("Worn");
         for (Jewellery.Slot slot : Jewellery.Slot.values()) {
             if (worn.contains(slot.name())) {
-                ItemStack stack = ItemStack.parseOptional(player.registryAccess(), worn.getCompound(slot.name()));
+                ItemStack stack = LegacyStacks.parse(player.registryAccess(), worn.getCompound(slot.name()));
                 if (!stack.isEmpty()) {
                     sp.worn.put(slot, stack);
                 }
