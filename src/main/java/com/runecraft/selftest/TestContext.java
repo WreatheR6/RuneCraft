@@ -31,6 +31,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -109,7 +110,7 @@ public final class TestContext {
         if (real == null) {
             return;
         }
-        Players.data(player).fromNbt(savedData);
+        Players.data(player).fromNbt(savedData, server.registryAccess());
         List<ModuleState> states = moduleStates();
         for (int i = 0; i < states.size() && i < savedModuleState.size(); i++) {
             states.get(i).restore(player.getUUID(), savedModuleState.get(i));
@@ -278,7 +279,7 @@ public final class TestContext {
                     : Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
         }
         placed.clear();
-        AABB box = new AABB(PLATFORM.offset(-48, -60, -48), PLATFORM.offset(48, 60, 48));
+        AABB box = new AABB(Vec3.atLowerCornerOf(PLATFORM.offset(-48, -60, -48)), Vec3.atLowerCornerOf(PLATFORM.offset(48, 60, 48)));
         for (Entity e : world.getEntitiesOfClass(Entity.class, box, e -> !(e instanceof Player))) {
             e.discard();
         }

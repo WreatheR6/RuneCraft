@@ -610,7 +610,7 @@ final class SkillChecks {
         BlockPos pos = c.near(2, 0);
         man.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0f, 0f);
         if (man instanceof Mob mob) {
-            mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(pos), MobSpawnType.SPAWNER, null, null);
+            mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(pos), MobSpawnType.SPAWNER, null);
             mob.setPersistenceRequired();
             mob.setNoAi(true);
         }

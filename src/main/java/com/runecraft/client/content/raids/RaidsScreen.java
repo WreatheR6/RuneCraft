@@ -29,8 +29,8 @@ final class RaidsScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
-        renderBackground(ctx);
+    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+        super.renderBackground(ctx, mouseX, mouseY, delta);
         int w = 280;
         int h = 40 + rows.size() * 34;
         int x = (width - w) / 2;
@@ -50,7 +50,6 @@ final class RaidsScreen extends Screen {
             ctx.drawString(font, right, x + w - 10 - font.width(right), ry + 12, 0xFFC090FF);
             ry += 34;
         }
-        super.render(ctx, mouseX, mouseY, delta);
     }
 
     @Override

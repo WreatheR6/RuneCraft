@@ -52,6 +52,7 @@ public class RuneScapeScreen extends Screen {
     private int top;
     private com.runecraft.osrs.QuestInfo selectedQuest;
     private int selectedIndex;
+    private List<String> skillTip;
 
     public RuneScapeScreen(Tab tab) {
         super(Component.literal("RuneScape"));
@@ -144,11 +145,11 @@ public class RuneScapeScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        if (tab == Tab.SKILLS && skillsTab.scroll(amount)) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (tab == Tab.SKILLS && skillsTab.scroll(scrollY)) {
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, amount);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     private static void send(ResourceLocation channel, int value) {
@@ -301,8 +302,8 @@ public class RuneScapeScreen extends Screen {
     // ---------------- Rendering ----------------
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
-        renderBackground(ctx);
+    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+        super.renderBackground(ctx, mouseX, mouseY, delta);
         // OSRS stone frame with a row of icon tabs along the top.
         OsrsUi.stonePanel(ctx, left - 4, top - TAB_H - 4, PANEL_W + 8, PANEL_H + TAB_H + 8);
         Tab hoveredTab = tabAt(mouseX, mouseY);
@@ -314,7 +315,7 @@ public class RuneScapeScreen extends Screen {
         }
         ctx.fill(left - 1, top - 1, left + PANEL_W + 1, top + PANEL_H + 1, OsrsUi.EDGE);
         OsrsUi.stone(ctx, left, top, PANEL_W, PANEL_H);
-        List<String> skillTip = null;
+        skillTip = null;
         switch (tab) {
             case SKILLS -> {
                 ctx.pose().pushPose();
@@ -332,6 +333,10 @@ public class RuneScapeScreen extends Screen {
             case EQUIPMENT -> renderEquipment(ctx);
             case COLLECTION -> renderCollection(ctx, mouseX, mouseY);
         }
+    }
+
+    @Override
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         super.render(ctx, mouseX, mouseY, delta);
         if (skillTip != null) {
             ctx.pose().pushPose();
@@ -341,6 +346,7 @@ public class RuneScapeScreen extends Screen {
                     (int) ((left + PANEL_W - skillsX()) / SKILLS_SCALE), (int) (PANEL_H / SKILLS_SCALE));
             ctx.pose().popPose();
         }
+        Tab hoveredTab = tabAt(mouseX, mouseY);
         if (hoveredTab != null) {
             ctx.renderTooltip(font, Component.literal(hoveredTab.label), mouseX, mouseY);
         }

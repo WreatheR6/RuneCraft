@@ -11,6 +11,7 @@ import com.runecraft.platform.client.KeyBindingHelper;
 import com.runecraft.platform.client.ClientPlayNetworking;
 import com.runecraft.platform.client.HudRenderCallback;
 import com.runecraft.platform.PacketByteBufs;
+import com.runecraft.util.StackData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -59,7 +60,7 @@ public final class SystemsClientHooks implements ClientModuleHooks {
             if (spec == null) {
                 return;
             }
-            CompoundTag nbt = stack.getTag();
+            CompoundTag nbt = StackData.get(stack);
             int charges = nbt != null && nbt.contains(ItemCharges.KEY) ? Charges.clamp(spec, nbt.getInt(ItemCharges.KEY)) : spec.initial();
             ChatFormatting color = Charges.depleted(spec, charges) ? ChatFormatting.RED
                     : charges * 4 < spec.max() ? ChatFormatting.GOLD : ChatFormatting.DARK_AQUA;

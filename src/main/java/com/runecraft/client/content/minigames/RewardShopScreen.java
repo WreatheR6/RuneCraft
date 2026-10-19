@@ -114,8 +114,8 @@ public class RewardShopScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
-        renderBackground(ctx);
+    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+        super.renderBackground(ctx, mouseX, mouseY, delta);
         ctx.fill(left - 2, top - 2, left + W + 2, top + H + 2, 0xFF1A140C);
         ctx.fill(left, top, left + W, top + H, 0xF03E3529);
         ctx.drawCenteredString(font, title, left + W / 2, top + 6, 0xFFFF9800);
@@ -138,6 +138,5 @@ public class RewardShopScreen extends Screen {
             String cost = font.plainSubstrByWidth(e.locked().isEmpty() ? e.cost() : e.locked(), W - 26 - 136 - 92);
             ctx.drawString(font, cost, left + 160, y + 4, 0xFFFFD700);
         }
-        super.render(ctx, mouseX, mouseY, delta);
     }
 }

@@ -3,8 +3,10 @@ package com.runecraft.bank;
 import com.runecraft.RuneCraft;
 import com.runecraft.osrs.bank.BankNotes;
 import com.runecraft.util.Inv;
+import com.runecraft.util.StackData;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -21,6 +23,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 public final class Notes {
     public static final String NOTED = "Noted";
     public static final String NOTED_TAG = "NotedTag";
+    private static final String DAMAGE = "Damage";
 
     private Notes() {
     }
@@ -29,8 +32,11 @@ public final class Notes {
 
     /** The stack's NBT as a string ("" for none). */
     public static String tagOf(ItemStack stack) {
-        CompoundTag n = stack.getTag();
-        return n == null || n.isEmpty() ? "" : n.getAsString();
+        CompoundTag n = StackData.get(stack);
+        if (stack.isDamageableItem()) {
+            n.putInt(DAMAGE, stack.getDamageValue());
+        }
+        return n.isEmpty() ? "" : n.getAsString();
     }
 
     /** A stack of a bank item (id + NBT string), or EMPTY for unknown items. */
@@ -42,7 +48,12 @@ public final class Notes {
         ItemStack s = new ItemStack(it, count);
         if (tag != null && !tag.isEmpty()) {
             try {
-                s.setTag(TagParser.parseTag(tag));
+                CompoundTag n = TagParser.parseTag(tag);
+                if (s.isDamageableItem() && n.contains(DAMAGE, Tag.TAG_ANY_NUMERIC)) {
+                    s.setDamageValue(n.getInt(DAMAGE));
+                    n.remove(DAMAGE);
+                }
+                StackData.set(s, n);
             } catch (CommandSyntaxException e) {
                 RuneCraft.LOGGER.warn("Bad bank item data for {}: {}", item, tag);
             }
@@ -53,18 +64,17 @@ public final class Notes {
     // ------------------------------------------------------------------ notes
 
     public static boolean isNote(ItemStack stack) {
-        return !stack.isEmpty() && Inv.idOf(stack).equals(BankNotes.NOTE_ITEM) && stack.hasTag()
-                && stack.getTag().contains(NOTED);
+        return !stack.isEmpty() && Inv.idOf(stack).equals(BankNotes.NOTE_ITEM) && StackData.contains(stack, NOTED);
     }
 
     /** The item a note stands for ("" if not a note). */
     public static String notedId(ItemStack stack) {
-        return isNote(stack) ? stack.getTag().getString(NOTED) : "";
+        return isNote(stack) ? StackData.get(stack).getString(NOTED) : "";
     }
 
     /** The noted item's own stack data ("" for none). */
     public static String notedTag(ItemStack stack) {
-        return isNote(stack) ? stack.getTag().getString(NOTED_TAG) : "";
+        return isNote(stack) ? StackData.get(stack).getString(NOTED_TAG) : "";
     }
 
     /** A single unnoted item for a note (EMPTY if the note is invalid). */
@@ -84,12 +94,9 @@ public final class Notes {
             return true;
         }
         ItemStack s = stackOf(item, tag, 1);
-        CompoundTag n = s.getTag();
-        if (n == null) {
-            return true;
-        }
+        CompoundTag n = StackData.get(s);
         for (String k : n.getAllKeys()) {
-            if (!k.equals("Damage")) {
+            if (!k.equals(DAMAGE)) {
                 return false;
             }
         }
@@ -107,7 +114,7 @@ public final class Notes {
         if (tag != null && !tag.isEmpty()) {
             n.putString(NOTED_TAG, tag);
         }
-        s.setTag(n);
+        StackData.set(s, n);
         return s;
     }
 
@@ -122,7 +129,7 @@ public final class Notes {
             ItemStack s = inv.items.get(i);
             if (s.isEmpty()) {
                 room += max;
-            } else if (ItemStack.isSameItemSameTags(s, proto)) {
+            } else if (ItemStack.isSameItemSameComponents(s, proto)) {
                 room += Math.max(0, max - s.getCount());
             }
         }
@@ -136,7 +143,7 @@ public final class Notes {
         int max = proto.getMaxStackSize();
         for (int i = 0; i < inv.items.size() && left > 0; i++) {
             ItemStack s = inv.items.get(i);
-            if (!s.isEmpty() && ItemStack.isSameItemSameTags(s, proto) && s.getCount() < max) {
+            if (!s.isEmpty() && ItemStack.isSameItemSameComponents(s, proto) && s.getCount() < max) {
                 int n = Math.min(left, max - s.getCount());
                 s.grow(n);
                 left -= n;

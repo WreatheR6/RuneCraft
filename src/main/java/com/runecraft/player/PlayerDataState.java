@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -55,7 +56,7 @@ public final class PlayerDataState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         CompoundTag playersNbt = new CompoundTag();
         players.forEach((uuid, data) -> playersNbt.put(uuid.toString(), data.toNbt()));
         nbt.put("Players", playersNbt);
@@ -72,13 +73,13 @@ public final class PlayerDataState extends SavedData {
         return nbt;
     }
 
-    public static PlayerDataState fromNbt(CompoundTag nbt) {
+    public static PlayerDataState fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         PlayerDataState state = new PlayerDataState();
         CompoundTag playersNbt = nbt.getCompound("Players");
         for (String key : playersNbt.getAllKeys()) {
             try {
                 PlayerData data = new PlayerData();
-                data.fromNbt(playersNbt.getCompound(key));
+                data.fromNbt(playersNbt.getCompound(key), registries);
                 state.players.put(UUID.fromString(key), data);
             } catch (IllegalArgumentException ignored) {
                 // skip malformed entries
