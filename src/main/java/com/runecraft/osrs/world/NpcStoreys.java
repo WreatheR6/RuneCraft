@@ -9,7 +9,9 @@ import java.util.Map;
  */
 public final class NpcStoreys {
     private static final Map<String, Integer> STOREYS = Map.of(
-            "watchtower_wizard", 2); // the Watchtower's top platform (OSRS 2549, 3116, plane 2)
+            "watchtower_wizard", 2, // the Watchtower's top platform (OSRS 2549, 3116, plane 2)
+            "sir_lancelot", 1, // Camelot keep, by the Round Table (OSRS 2759, 3515, plane 1)
+            "merlin", 2); // top of Camelot's south-east tower, where his crystal stood (approx)
 
     /**
      * Module NPCs that stand in a carved dungeon below their place: the block y of their feet (the place's dx/dz still

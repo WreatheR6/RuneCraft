@@ -155,14 +155,19 @@ final class AsgarniaKandarinQuests {
 
     // ---------------------------------------------------------------- Merlin's Crystal
     private static void merlinsCrystal(QuestBook b) {
-        b.npc("king_arthur", "King Arthur", "CAMELOT", 0, 3, 0xE8C8A8, 0xA01A1A, 0x6A1A1A, 0xE0C030);
-        b.npc("sir_gawain", "Sir Gawain", "CAMELOT", 3, 3, 0xE0B898, 0xC0C0C8, 0x2A6A2A, 0x6A4A2A);
-        b.npc("sir_lancelot", "Sir Lancelot", "CAMELOT", -3, 3, 0xF0C8A8, 0xC0C0C9, 0x2A2A8A, 0xE0C060);
-        b.npc("merlin", "Merlin", "CAMELOT", 0, -3, 0xF0D8C8, 0x5A2A8A, 0x3A1A6A, 0xE8E8E8);
+        b.npc("king_arthur", "King Arthur", "CAMELOT", 14, -76, // by his throne (OSRS 2764, 3515)
+                0xE8C8A8, 0xA01A1A, 0x6A1A1A, 0xE0C030);
+        b.npc("sir_gawain", "Sir Gawain", "CAMELOT", 12, -58, // in the great hall (OSRS 2763, 3506)
+                0xE0B898, 0xC0C0C8, 0x2A6A2A, 0x6A4A2A);
+        b.npc("sir_lancelot", "Sir Lancelot", "CAMELOT", 4, -76, // upstairs by the Round Table (OSRS 2759, 3515, plane 1)
+                0xF0C8A8, 0xC0C0C9, 0x2A2A8A, 0xE0C060);
+        b.npc("merlin", "Merlin", "CAMELOT", 20, -30, // top of the south-east tower, where his crystal stood (approx)
+                0xF0D8C8, 0x5A2A8A, 0x3A1A6A, 0xE8E8E8);
         b.npc("morgan_le_faye", "Morgan Le Faye", "keep_le_faye", 2, 2, 0xF0D0C0, 0x2A0A2A, 0x1A0A1A, 0x1A1A1A);
         b.npc("the_lady_of_the_lake", "The Lady of the Lake", "lady_of_the_lake", 0, 0, 0xE8E8F8, 0x6AA0E0, 0x4A80C0, 0xE0E0F0);
         b.npc("candle_maker", "Candle maker", "CATHERBY", 5, 5, 0xE0B898, 0xE0E0A0, 0x6A5A3A, 0x8A6A3A);
-        b.npc("thrantax", "Thrantax the Mighty", "CAMELOT", 5, -4, 0x8A2A2A, 0x3A0A0A, 0x2A0A0A, 0xE0D8B0);
+        b.npc("thrantax", "Thrantax the Mighty", "CAMELOT", 46, -78, // by the magic symbol (2780, 3515)
+                0x8A2A2A, 0x3A0A0A, 0x2A0A0A, 0xE0D8B0);
         b.item("black_candle", "Lit black candle", "pot", 0x1A1A1A, "A black candle. It burns with an eerie flame.");
         // bat_bones is a built-in Bone (osrs/data/Bone) since round 27.
         b.boss(BossDef.of("sir_mordred", "Sir Mordred").level(39).stats(38, 34, 37, 34, 1, 1).speed(4)
@@ -657,7 +662,8 @@ final class AsgarniaKandarinQuests {
 
     // ---------------------------------------------------------------- Witch's House
     private static void witchsHouse(QuestBook b) {
-        b.npc("witchs_house_boy", "Boy", "witchs_house", 3, 4, 0xF0D0B0, 0x3A6AC0, 0x3A3A6A, 0xC08A3A);
+        b.npc("witchs_house_boy", "Boy", "witchs_house", 56, 36, // south of the garden (OSRS 2928, 3456)
+                0xF0D0B0, 0x3A6AC0, 0x3A3A6A, 0xC08A3A);
         b.item("childs_ball", "Ball", "bead", 0xE03A3A, "A child's ball.");
         b.item("door_key_witch", "Door key", "key", 0x8A8A8A, "The key to the witch's house.");
         b.item("magnet", "Magnet", "bar", 0x9A2A2A, "A very attractive magnet.");

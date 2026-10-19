@@ -261,40 +261,126 @@ final class AsgarniaTowns {
 
     // ------------------------------------------------------------------ Rimmington
 
+    /**
+     * Rimmington as on the OSRS map (mejrs layers_osrs; shopkeepers and Hetty from mejrs data_osrs): the Chemist's
+     * L-shaped house 2929-2940 x 3206-3213 (doors north at 2932 and west at 3209) in its walled yard 2926-2941 x
+     * 3204-3215 (gateway 2931-2933 on the north), the general store 2946-2950 x 3210-3218 (door east, ladder at
+     * 2948,3212), Rommik's crafting shop 2946-2951 x 3202-3208 and Brian's archery shop 2952-2960 x 3202-3205 (door
+     * north at 2956) along the south, Hengel and Anja's two-storey house 2963-2970 x 3209-3216 (doors north at 2969
+     * and west at 3212, ladder at 2965,3214) with Hetty's house 2965-2970 x 3202-3208 behind it (door west at 3206),
+     * the crossroads square, the wheat field 2976-2982 x 3212-3218 and the mine. The well and the house portal's
+     * spot (OSRS 2951-2952 x 3221-3222) are approx.
+     */
     static StructureDef rimmington() {
         StructureDef.Builder b = StructureDef.builder("rimmington", "Rimmington").replaces("RIMMINGTON");
         AsgarniaKit k = new AsgarniaKit(b);
-        k.flatten(2928, 3194, 2986, 3238);
+        MapTown t = new MapTown(b);
+        k.flatten(2924, 3194, 2986, 3238);
         k.flatten(2968, 3238, 2986, 3250);
-        k.path(2928, 3212, 2986, 3213, mc("dirt_path"), mc("coarse_dirt"));
-        k.path(2952, 3194, 2953, 3238, mc("dirt_path"), mc("coarse_dirt"));
-        k.path(2954, 3226, 2976, 3227, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2952, 3206, 2962, 3216, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2953, 3217, 2954, 3238, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2926, 3225, 2952, 3226, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2931, 3216, 2933, 3224, mc("dirt_path"), mc("coarse_dirt"));
+        k.path(2955, 3226, 2976, 3227, mc("dirt_path"), mc("coarse_dirt"));
         k.path(2974, 3227, 2975, 3238, mc("dirt_path"), mc("coarse_dirt"));
-        // well on the village green
+        k.path(2961, 3200, 2964, 3205, mc("dirt_path"), mc("coarse_dirt"));
+        // well on the square (approx)
         int wx = bx(2958);
-        int wz = bz(3218);
+        int wz = bz(3212);
         k.ring(wx, wz, 2, -1, 0, mc("cobblestone_wall"));
         k.disc(wx, wz, 1.4, -6, -1, mc("water"));
         k.f(wx - 2, 1, wz, wx - 2, 2, wz, mc("oak_fence"));
         k.f(wx + 2, 1, wz, wx + 2, 2, wz, mc("oak_fence"));
         k.f(wx - 2, 3, wz, wx + 2, 3, wz, mc("spruce_slab[type=bottom]"));
-        // shops
-        AsgarniaRoom rommik = k.house(RIMM, 2942, 3201, 2948, 3207, 1, "north", PITCHED);
-        rommik.shop(rc("tool_shop"), mc("oak_slab[type=top]"), mc("loom[facing=north]"), mc("barrel[facing=up]"));
-        rommik.set(1, rommik.depth() - 1, 0, rc("spinning_wheel"));
-        AsgarniaRoom brian = k.house(RIMM, 2956, 3200, 2962, 3207, 1, "north", PITCHED);
-        brian.shop(rc("archery_shop"), mc("oak_slab[type=top]"), mc("fletching_table"), mc("target"), mc("barrel[facing=up]"));
-        AsgarniaRoom hetty = k.house(RIMM, 2966, 3203, 2972, 3209, 1, "west", PITCHED);
-        hetty.set(hetty.len() / 2, hetty.depth() / 2, 0, mc("water_cauldron[level=3]"));
-        hetty.set(hetty.len() / 2 + 1, hetty.depth() / 2, 0, mc("campfire[lit=false]"));
-        hetty.fill(1, 0, 3, 0, 0, 1, mc("bookshelf"));
-        hetty.set(4, 0, 0, mc("brewing_stand"));
-        hetty.set(hetty.len() - 1, 0, 0, rc("cooking_range"));
-        hetty.set(hetty.len() - 1, 1, 0, mc("cobweb"));
-        hetty.set(1, hetty.depth() - 1, 0, mc("potted_dead_bush"));
-        hetty.bed(hetty.len() - 1, 2, "black");
-        AsgarniaRoom chem = k.house(RIMM, 2931, 3204, 2938, 3210, 1, "west", PITCHED);
-        chem.shop(rc("apothecary_table"), mc("oak_slab[type=top]"), mc("brewing_stand"), mc("bookshelf"), mc("cauldron"));
+        String wall = mc("stone_bricks");
+        String trim = mc("stripped_oak_log[axis=y]");
+        String fl = mc("oak_planks");
+        String rs = mc("spruce_stairs");
+        String rf = mc("spruce_planks");
+        // the Chemist's yard wall and house
+        String yard = mc("mossy_stone_bricks");
+        k.f(bx(2926), -1, bz(3215), bx(2930) + 1, 1, bz(3215), yard);
+        k.f(bx(2934), -1, bz(3215), bx(2941) + 1, 1, bz(3215), yard);
+        k.f(bx(2941) + 1, -1, bz(3215), bx(2941) + 1, 1, bz(3204) + 1, yard);
+        k.f(bx(2926), -1, bz(3204) + 1, bx(2941) + 1, 1, bz(3204) + 1, yard);
+        k.f(bx(2926), -1, bz(3215), bx(2926), 1, bz(3204) + 1, yard);
+        String[] chem = {
+                "cccccccc", // 3213
+                "cccccccc",
+                "cccccccc",
+                "cccccccccccc", // 3210
+                "cccccccccccc",
+                "cccccccccccc",
+                "cccccccccccc",
+                "ccccccccccc", // 3206
+        };
+        t.bld(2929, 3213, "c", chem).wall(wall).trim(trim).floor(fl, fl).roof(rs, rf)
+                .door(2932, 3213, 'n', "oak").door(2929, 3209, 'w', "oak").build();
+        k.st(2933, 3211, 0, rc("apothecary_table"));
+        k.st(2930, 3212, 0, mc("brewing_stand"));
+        k.st(2935, 3212, 0, mc("cauldron"));
+        k.f(bx(2937), 0, bz(3210) + 1, bx(2939) + 1, 1, bz(3210) + 1, mc("bookshelf"));
+        k.st(2938, 3207, 0, mc("chest[facing=north]"));
+        k.st(2930, 3207, 0, mc("lantern"));
+        // the general store and Rommik's Crafty Supplies
+        String[] store = {
+                "ssss", // 3218
+                "sssss",
+                "sssss",
+                "sssss",
+                "sssss", // 3214
+                "sssss",
+                "sssss",
+                "sssss",
+                "sssss", // 3210
+        };
+        t.bld(2946, 3218, "s", store).wall(wall).trim(trim).floor(fl, fl).roof(rs, rf).storeys(2)
+                .door(2950, 3214, 'e', "oak").ladder(2948, 3212, "east").build();
+        k.f(bx(2946) + 1, 0, bz(3217), bx(2949) + 1, 0, bz(3217), mc("barrel[facing=up]"));
+        k.s(bx(2946) + 1, 0, bz(3215), mc("oak_slab[type=top]"));
+        k.s(bx(2946) + 1, 4, bz(3216), mc("white_bed[facing=south,part=foot]"));
+        String[] rommik = {
+                "ppppp", // 3208
+                "pppppp",
+                "pppppp",
+                "pppppp",
+                "pppppp",
+                "pppppp",
+                "pppppp", // 3202
+        };
+        t.bld(2946, 3208, "p", rommik).wall(wall).trim(trim).floor(fl, fl).roof(rs, rf)
+                .door(2950, 3208, 'n', "oak").build();
+        k.st(2948, 3205, 0, rc("tool_shop"));
+        k.st(2947, 3203, 0, mc("loom[facing=north]"));
+        k.st(2950, 3203, 0, rc("spinning_wheel"));
+        k.st(2947, 3207, 0, mc("barrel[facing=up]"));
+        // Brian's Archery Supplies
+        String[] brian = {"aaaaaaaaa", "aaaaaaaaa", "aaaaaaaaa", "aaaaaaaaa"};
+        t.bld(2952, 3205, "a", brian).wall(wall).trim(trim).floor(fl, fl).roof(rs, rf)
+                .door(2956, 3205, 'n', "oak").build();
+        k.st(2958, 3204, 0, rc("archery_shop"));
+        k.st(2953, 3203, 0, mc("fletching_table"));
+        k.st(2960, 3203, 0, mc("target"));
+        k.st(2959, 3203, 0, mc("barrel[facing=up]"));
+        // Hengel and Anja's house and Hetty's house behind it
+        String[] hengel = {"hhhhhhhh", "hhhhhhhh", "hhhhhhhh", "hhhhhhhh", "hhhhhhhh", "hhhhhhhh", "hhhhhhhh", "hhhhhhhh"};
+        t.bld(2963, 3216, "h", hengel).wall(wall).trim(trim).floor(fl, fl).roof(rs, rf).storeys(2)
+                .door(2969, 3216, 'n', "oak").door(2963, 3212, 'w', "oak").ladder(2965, 3214, "east").build();
+        k.st(2967, 3211, 0, mc("crafting_table"));
+        k.st(2968, 3211, 0, mc("oak_stairs[facing=west,half=bottom]"));
+        k.st(2970, 3210, 0, mc("chest[facing=west]"));
+        k.st(2967, 3213, 4, mc("red_bed[facing=south,part=foot]"));
+        k.st(2968, 3213, 4, mc("yellow_bed[facing=south,part=foot]"));
+        String[] hetty = {"tttttt", "tttttt", "tttttt", "tttttt", "tttttt", "tttttt", "tttttt"};
+        t.bld(2965, 3208, "t", hetty).wall(mc("cobblestone")).trim(mc("dark_oak_log[axis=y]")).floor(fl, fl)
+                .roof(mc("dark_oak_stairs"), mc("dark_oak_planks")).door(2965, 3206, 'w', "dark_oak").build();
+        k.st(2967, 3205, 0, mc("water_cauldron[level=3]")); // Witch's Potion: Hetty's cauldron (2967, 3205)
+        k.st(2968, 3205, 0, mc("campfire[lit=false]"));
+        k.st(2966, 3203, 0, mc("brewing_stand"));
+        k.st(2969, 3203, 0, rc("cooking_range"));
+        k.st(2969, 3207, 0, mc("bookshelf"));
+        k.st(2970, 3207, 0, mc("black_bed[facing=south,part=foot]"));
+        k.st(2966, 3207, 2, mc("cobweb"));
         // the player-owned house portal and workbench
         int[] pr = rect(2946, 3224, 2949, 3224);
         k.f(pr[0], 0, pr[1], pr[2], 5, pr[1], mc("obsidian"));
@@ -303,23 +389,15 @@ final class AsgarniaTowns {
         k.st(2950, 3224, 0, rc("construction_workbench"));
         k.st(2951, 3224, 0, mc("oak_planks"));
         k.st(2951, 3224, 1, mc("oak_planks"));
-        // houses
-        k.house(RIMM, 2942, 3216, 2948, 3222, 1, "south", PITCHED).home("oak", "yellow");
-        k.house(RIMM, 2962, 3216, 2968, 3222, 2, "south", PITCHED).home("spruce", "red");
-        k.house(RIMM, 2960, 3230, 2966, 3236, 1, "south", PITCHED).home("oak", "green");
-        k.house(RIMM, 2940, 3228, 2946, 3234, 1, "east", PITCHED).home("spruce", "blue");
-        k.house(RIMM, 2975, 3200, 2981, 3206, 1, "west", PITCHED).home("oak", "orange");
         // wheat field
-        int[] fr = rect(2971, 3214, 2984, 3224);
+        int[] fr = rect(2976, 3212, 2982, 3218);
         k.f(fr[0], -1, fr[1], fr[2], -1, fr[3], mc("farmland[moisture=7]"));
         k.f(fr[0], 0, fr[1], fr[2], 0, fr[3], mc("wheat[age=7]"));
-        for (int x = fr[0] + 4; x < fr[2]; x += 9) {
-            k.f(x, -1, fr[1], x, -1, fr[3], mc("water"));
-            k.f(x, 0, fr[1], x, 0, fr[3], mc("air"));
-        }
+        k.f(fr[0] + 6, -1, fr[1], fr[0] + 6, -1, fr[3], mc("water"));
+        k.f(fr[0] + 6, 0, fr[1], fr[0] + 6, 0, fr[3], mc("air"));
         k.w(fr[0] - 1, 0, fr[1] - 1, fr[2] + 1, 0, fr[3] + 1, mc("oak_fence"));
-        k.s(fr[0] + 6, 0, fr[3] + 1, mc("air"));
-        k.s(fr[0] + 6, 1, fr[3] + 1, mc("air"));
+        k.s(fr[0] - 1, 0, fr[1] + 6, mc("air"));
+        k.s(fr[0] - 1, 1, fr[1] + 6, mc("air"));
         // Rimmington mine
         k.floor(2969, 3237, 2985, 3249, mc("gravel"));
         String[] rocks = {"copper_rock", "tin_rock", "iron_rock", "clay_rock", "copper_rock", "gold_rock", "tin_rock", "iron_rock"};

@@ -49,7 +49,8 @@ class StructureBlockIdsTest {
     private static final Set<String> CHECKED = Set.of("watchtower", "rellekka", "rellekka_market", "burthorpe_castle",
             "burthorpe_games_room", "catherby", "draynor_village", "draynor_market", "draynor_manor",
             "taverley", "camelot_castle", "canifis", "pollnivneach", "nardah", "shilo_village",
-            "dng_ape_atoll_dungeon", "dng_temple_of_marimbo_dungeon", "dng_waterbirth_dungeon");
+            "dng_ape_atoll_dungeon", "dng_temple_of_marimbo_dungeon", "dng_waterbirth_dungeon",
+            "taverley_witchs_house", "seers_village", "rimmington");
 
     @Test
     void rebuiltStructuresUseValidBlockStates() throws IOException {

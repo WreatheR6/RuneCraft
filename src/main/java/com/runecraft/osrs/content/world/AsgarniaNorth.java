@@ -35,9 +35,6 @@ final class AsgarniaNorth {
     static final AsgarniaKit.Style BLACK = new AsgarniaKit.Style(mc("polished_blackstone_bricks"), mc("deepslate_bricks"),
             mc("dark_oak_planks"), mc("polished_blackstone"), mc("deepslate_tile_stairs"), mc("deepslate_tiles"),
             mc("red_stained_glass_pane"), false);
-    static final AsgarniaKit.Style WITCH = new AsgarniaKit.Style(mc("deepslate_bricks"), mc("dark_oak_log[axis=y]"),
-            mc("dark_oak_planks"), mc("cobbled_deepslate"), mc("dark_oak_stairs"), mc("dark_oak_planks"),
-            mc("purple_stained_glass_pane"), true);
 
     private AsgarniaNorth() {
     }
@@ -105,7 +102,13 @@ final class AsgarniaNorth {
         k.path(2919, 3447, 2933, 3450, mc("dirt_path"), mc("gravel"));
         // walls: the east wall with the Falador gate (2935, 3450-3451)
         lowWall(k, 2934, 3418, 2934, 3446);
-        lowWall(k, 2934, 3452, 2934, 3462);
+        // north of the gate the wall bends east and runs north along 2940, past the witch's garden shed
+        lowWall(k, 2935, 3452, 2935, 3453);
+        lowWall(k, 2936, 3454, 2939, 3454);
+        lowWall(k, 2940, 3454, 2940, 3471);
+        lowWall(k, 2939, 3472, 2939, 3473);
+        lowWall(k, 2938, 3474, 2938, 3475);
+        lowWall(k, 2937, 3476, 2937, 3480);
         for (int y : new int[]{3447, 3451}) {
             k.fillT(2934, y, 2934, y, -1, 3, mc("stone_bricks"));
             k.st(2934, y, 4, mc("lantern"));
@@ -259,32 +262,119 @@ final class AsgarniaNorth {
         return k.build();
     }
 
+    /**
+     * The witch's house as on the OSRS map (mejrs layers_osrs planes 0-1, the staircase from shortest-path, Nora
+     * T. Hagg and the boy from mejrs data_osrs): the two-storey house 2901-2907 x 3468-3476 (front door west at
+     * 2901,3473; a partition with its door at 2902 north of row 3474; the staircase at 2906,3468 climbs north to
+     * 2906,3472) with its porch 2901-2903 x 3466-3467 (back door south at 2901,3466, the mouse hole by it), the
+     * walled courtyard 2908-2913 x 3467-3476 with the fountain (2909-2910 x 3469-3470), the long hedged garden
+     * 2898-2933 x 3459-3467 (a path round two flower-bed hedges) and the wooden shed 2934-2937 x 3459-3467
+     * (door west at 2934,3463). Upstairs the red-carpeted room 2901-2904 x 3473-3476. The basement (OSRS
+     * 2898,9874) is not built; a trapdoor marks the way down at 2907,3476 // approx
+     */
     static StructureDef witchsHouse() {
         StructureDef.Builder b = StructureDef.builder("taverley_witchs_house", "Witch's house").replaces("witchs_house");
         AsgarniaKit k = new AsgarniaKit(b);
-        AsgarniaRoom h = k.house(WITCH, 2887, 3464, 2895, 3472, 2, "east", PITCHED);
-        h.set(h.len() / 2, 2, 0, mc("water_cauldron[level=3]"));
-        h.fill(1, 0, 4, 0, 0, 2, mc("bookshelf"));
-        h.set(5, 0, 0, mc("brewing_stand"));
-        h.set(h.len() - 1, 0, 0, mc("cobweb"));
-        h.set(h.len() - 1, h.depth() - 1, 0, mc("potted_dead_bush"));
-        h.set(1, h.depth() - 1, 0, mc("cauldron"));
-        AsgarniaRoom up = h.level(1);
-        up.bed(up.len() - 1, 0, "black");
-        up.table(up.len() / 2, up.depth() / 2, "dark_oak");
-        up.set(1, up.depth() - 1, 0, mc("chest[facing=east]"));
-        // the garden with its fence, pumpkins and the shed
-        k.floor(2896, 3462, 2903, 3474, mc("podzol"));
-        k.fenceRing(2896, 3462, 2903, 3474, mc("dark_oak_fence"));
-        k.clearT(2899, 3462, 2900, 3462, 0, 0);
-        k.st(2899, 3466, 0, mc("pumpkin"));
-        k.clearT(2896, 3467, 2896, 3468, 0, 0);
-        k.st(2898, 3471, 0, mc("carved_pumpkin[facing=west]"));
-        k.st(2897, 3464, 0, mc("dead_bush"));
-        k.st(2902, 3465, 0, mc("sweet_berry_bush[age=2]"));
-        AsgarniaRoom shed = k.house(WITCH, 2900, 3471, 2903, 3474, 1, "west", PITCHED);
-        shed.set(0, 0, 0, mc("barrel[facing=up]"));
-        shed.set(shed.len() - 1, 0, 0, mc("chest[facing=east]"));
+        MapTown t = new MapTown(b);
+        String hedge = mc("oak_leaves[persistent=true]");
+        String fence = mc("dark_oak_fence");
+        String wall = mc("cobblestone");
+        String fl = mc("dark_oak_planks");
+        // the garden: outer hedges (3459 and 3467, 2900), the path round it and the two flower-bed hedges
+        k.floor(2898, 3459, 2933, 3467, mc("grass_block"));
+        k.path(2901, 3460, 2933, 3460, mc("coarse_dirt"), mc("gravel"));
+        k.path(2904, 3466, 2933, 3467, mc("coarse_dirt"), mc("gravel"));
+        k.path(2901, 3460, 2901, 3466, mc("coarse_dirt"), mc("gravel"));
+        k.path(2933, 3460, 2933, 3466, mc("coarse_dirt"), mc("gravel"));
+        k.fillT(2900, 3459, 2933, 3459, 0, 1, hedge);
+        k.fillT(2900, 3459, 2900, 3465, 0, 1, hedge);
+        k.fillT(2913, 3467, 2933, 3467, 0, 1, hedge);
+        k.fillT(2902, 3461, 2932, 3461, 0, 0, hedge);
+        k.fillT(2902, 3465, 2932, 3465, 0, 0, hedge);
+        k.fillT(2902, 3461, 2902, 3465, 0, 0, hedge);
+        k.fillT(2932, 3461, 2932, 3465, 0, 0, hedge);
+        int[][] beds = {{2904, 3461, 2906}, {2910, 3461, 2914}, {2918, 3461, 2922}, {2926, 3461, 2928},
+                {2915, 3465, 2918}, {2922, 3465, 2925}, {2929, 3465, 2931}};
+        String[] flowers = {mc("red_tulip"), mc("poppy"), mc("allium"), mc("oxeye_daisy")};
+        for (int i = 0; i < beds.length; i++) {
+            k.clearT(beds[i][0], beds[i][1], beds[i][2], beds[i][1], 0, 0);
+            k.floor(beds[i][0], beds[i][1], beds[i][2], beds[i][1], mc("podzol"));
+            for (int x = beds[i][0]; x <= beds[i][2]; x++) {
+                k.st(x, beds[i][1], 0, flowers[(i + x) % flowers.length]);
+            }
+        }
+        // the grass strip west of the garden hedge, fenced along 2898 up to the porch
+        int fz1 = bz(3466);
+        int fz2 = bz(3459) + 1;
+        k.f(bx(2898), 0, fz1, bx(2898), 0, fz2, fence);
+        k.f(bx(2898), 0, fz1, bx(2900) + 1, 0, fz1, fence);
+        k.f(bx(2898), 0, fz2, bx(2899) + 1, 0, fz2, fence);
+        // the courtyard: its north wall, the hedge along 2913 and the fountain (the shed key, 2910,3471)
+        k.path(2908, 3468, 2912, 3475, mc("coarse_dirt"), mc("coarse_dirt"));
+        k.path(2909, 3468, 2911, 3475, mc("gravel"), mc("cobblestone"));
+        k.fillT(2913, 3467, 2913, 3476, 0, 1, hedge);
+        k.f(bx(2908), 0, bz(3476), bx(2913) + 1, 2, bz(3476), wall);
+        int fx = bx(2909);
+        int fz = bz(3470);
+        k.f(fx, 0, fz, fx + 3, 0, fz + 3, mc("stone_brick_slab[type=bottom]"));
+        k.f(fx + 1, -1, fz + 1, fx + 2, 0, fz + 2, mc("water"));
+        k.s(fx + 1, 0, fz + 1, mc("chiseled_stone_bricks"));
+        k.s(fx + 1, 1, fz + 1, mc("water"));
+        // the house: the porch under the upper storey, the partition north of 3474, the staircase
+        String[] house = {
+                "hhhhhhh", // 3476
+                "hhhhhhh",
+                "hhhhhhh",
+                "hhhhhhh",
+                "hhhhhhh", // 3472
+                "hhhhhhh",
+                "hhhhhhh",
+                "hhhhhhh",
+                "hhhhhhh", // 3468
+                "hhh",
+                "hhh", // 3466
+        };
+        t.bld(2901, 3476, "h", house).wall(wall).trim(mc("dark_oak_log[axis=y]")).floor(fl, fl)
+                .roof(mc("dark_oak_stairs"), mc("dark_oak_planks")).window(mc("purple_stained_glass_pane")).storeys(2)
+                .door(2901, 3473, 'w', "dark_oak").door(2901, 3466, 's', "dark_oak").build();
+        k.f(bx(2901) + 1, 0, bz(3468) + 1, bx(2903) + 1, 2, bz(3468) + 1, wall);
+        t.door(2902, 3468, 's', 0, "dark_oak");
+        k.f(bx(2901) + 1, 0, bz(3474), bx(2907), 2, bz(3474), wall);
+        t.door(2902, 3474, 'n', 0, "dark_oak");
+        t.stairs(bx(2906), bz(3468), "north", 0, 4, 3, mc("dark_oak_stairs"), fl);
+        k.f(bx(2906) - 1, 4, bz(3470) + 1, bx(2906) - 1, 4, bz(3468), fence);
+        // ground floor: the witch's kitchen and study, the trapdoor to the basement
+        k.s(bx(2901) + 1, 0, bz(3472), mc("cauldron"));
+        k.st(2903, 3469, 0, mc("crafting_table"));
+        k.st(2904, 3469, 0, mc("spruce_stairs[facing=west,half=bottom]"));
+        k.f(bx(2904), 0, bz(3473), bx(2905) + 1, 0, bz(3473), mc("bookshelf"));
+        k.st(2902, 3470, 0, mc("brewing_stand"));
+        k.st(2903, 3471, 2, mc("cobweb"));
+        k.s(bx(2907), 0, bz(3476) + 1, mc("spruce_trapdoor[facing=west,half=bottom]"));
+        k.s(bx(2904), 0, bz(3476) + 1, mc("barrel[facing=up]"));
+        k.s(bx(2901) + 1, 0, bz(3476) + 1, mc("chest[facing=east]"));
+        k.st(2903, 3466, 0, mc("potted_dead_bush"));
+        // the doormat (the key under it) and a pot by the front door
+        k.f(bx(2900) + 1, 0, bz(3473), bx(2900) + 1, 0, bz(3473) + 1, mc("brown_carpet"));
+        k.s(bx(2900) + 1, 0, bz(3474) + 1, mc("potted_fern"));
+        // upstairs: the red room 2901-2904 x 3473-3476 and the landing
+        k.f(bx(2904) + 1, 4, bz(3476), bx(2904) + 1, 6, bz(3473) + 1, wall);
+        k.f(bx(2901) + 1, 4, bz(3473) + 1, bx(2904), 6, bz(3473) + 1, wall);
+        t.door(2902, 3473, 's', 4, "dark_oak");
+        k.f(bx(2901) + 1, 4, bz(3476) + 1, bx(2904), 4, bz(3473), mc("red_carpet"));
+        k.s(bx(2901) + 1, 4, bz(3476) + 1, mc("black_bed[facing=south,part=foot]"));
+        k.s(bx(2904), 4, bz(3476) + 1, mc("chest[facing=south]"));
+        k.s(bx(2907), 4, bz(3476) + 1, mc("bookshelf"));
+        k.st(2906, 3473, 4, mc("cauldron"));
+        k.s(bx(2901) + 1, 4, bz(3468), mc("barrel[facing=up]"));
+        // the shed at the end of the garden, where the experiment guards the ball
+        String[] shed = {"ssss", "ssss", "ssss", "ssss", "ssss", "ssss", "ssss", "ssss", "ssss"};
+        t.bld(2934, 3467, "s", shed).wall(mc("dark_oak_planks")).trim(mc("dark_oak_log[axis=y]")).floor(fl, fl)
+                .roof(mc("spruce_stairs"), mc("spruce_planks")).door(2934, 3463, 'w', "spruce").build();
+        k.st(2936, 3466, 0, mc("barrel[facing=up]"));
+        k.st(2936, 3460, 0, mc("chest[facing=north]"));
+        k.st(2935, 3460, 0, mc("composter"));
+        k.st(2936, 3464, 0, mc("red_wool"));
         return k.build();
     }
 

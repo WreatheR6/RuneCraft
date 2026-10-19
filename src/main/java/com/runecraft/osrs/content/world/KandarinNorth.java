@@ -154,45 +154,108 @@ final class KandarinNorth {
         k.water(2606, 3696, 2652, 3712, 4);
         palisade(k, 2610, 3642, 2690, 3642);
         palisade(k, 2610, 3642, 2610, 3691);
-        palisade(k, 2690, 3642, 2690, 3694);
-        palisade(k, 2653, 3694, 2690, 3694);
+        palisade(k, 2690, 3642, 2690, 3706); // the east fence, with the broken fence at 3697; the north is open
         k.tClear(2658, 3642, 2659, 3642, 0, 4);
         for (int tx : new int[]{2657, 2660}) {
             k.tFill(tx, 3642, tx, 3642, -1, 6, "minecraft:stripped_spruce_log");
             k.at(tx, 3642, 7, "minecraft:carved_pumpkin[facing=south]");
         }
         k.road(2658, 3643, 2659, 3669, PATH, GRAVEL);
-        k.road(2612, 3660, 2688, 3661, PATH, GRAVEL);
-        k.road(2633, 3662, 2634, 3692, PATH, GRAVEL);
+        k.road(2614, 3646, 2688, 3647, PATH, GRAVEL);
+        k.road(2624, 3668, 2653, 3669, PATH, GRAVEL);
+        k.road(2633, 3670, 2634, 3692, PATH, GRAVEL);
         k.road(2640, 3656, 2654, 3668, "minecraft:coarse_dirt", GRAVEL);
 
         // the market square (2636-2649 x 3670-3682) is open ground; its stalls are rellekkaMarket()
-        // smithy and range house
-        Bld sm = k.house(2664, 3645, 2670, 3651, 1, FREM_DARK, 'w', NO_LADDER);
-        k.set(sm.x2() - 1, 0, sm.z1() + 1, FURNACE);
-        k.set(sm.cx(), 0, sm.cz(), ANVIL);
-        k.set(sm.x2() - 1, 0, sm.z2() - 1, "minecraft:water_cauldron[level=3]");
-        k.set(sm.x2() - 1, 0, sm.z1() + 2, "minecraft:grindstone[face=floor,facing=west]");
-        Bld rh = k.house(2640, 3645, 2648, 3651, 1, FREM.roof("minecraft:spruce"), 'n', FURN);
-        k.set(rh.cx(), 0, rh.z2() - 1, RANGE);
-        // longhouses
-        int[][] hs = {{2614, 3646, 2624, 3652, 'n'}, {2626, 3645, 2636, 3651, 'n'}, {2614, 3664, 2624, 3670, 's'},
-                {2614, 3676, 2624, 3682, 's'}, {2626, 3676, 2631, 3684, 'e'}, {2627, 3663, 2631, 3669, 'e'}, {2678, 3684, 2688, 3690, 'w'}, {2614, 3685, 2624, 3690, 's'}};
-        for (int i = 0; i < hs.length; i++) {
-            int[] h = hs[i];
-            k.house(h[0], h[1], h[2], h[3], 1, i % 2 == 0 ? FREM.roof("minecraft:spruce") : FREM_DARK, (char) h[4], FURN);
-        }
-        // rooftop course houses (flat sod roofs)
+        // The houses on their OSRS footprints (mejrs layers_osrs, round 32; residents from mejrs data_osrs). The
+        // rooftop course runs over the west side's flat roofs as in OSRS: Yrsa's shoe store D 2621-2627 x
+        // 3671-3677, A 2615-2622 x 3657-3669, Sassilik's E 2625-2631 x 3650-3656, Jennella's F 2638-2645 x
+        // 3648-3654 and Swensen's L-shaped house C 2643-2651 x 3656-3662 (the arrowtip chest inside, set by
+        // rellekkaMarket()). OSRS has no furnace or anvil here: they stand in Pontak's house H (approx), the range in
+        // Jennella's house.
         Pal flat = FREM.roof("flat:minecraft:spruce_planks");
-        Bld r0 = k.house(2672, 3664, 2678, 3670, 1, flat, 'w', FURN | FLAT | NO_LADDER);
-        Bld r1 = k.house(2672, 3674, 2678, 3680, 1, flat, 'w', FURN | FLAT | NO_LADDER);
-        Bld r2 = k.house(2682, 3674, 2688, 3680, 1, flat, 'w', FURN | FLAT | NO_LADDER);
-        Bld r3 = k.house(2682, 3662, 2688, 3668, 1, flat, 'w', FURN | FLAT | NO_LADDER);
-        Bld r4 = k.house(2682, 3650, 2688, 3656, 1, flat, 'w', FURN | FLAT | NO_LADDER);
-        Bld r5 = k.house(2672, 3650, 2678, 3656, 1, flat, 'w', FURN | FLAT | NO_LADDER);
-        rellekkaCourse(k, r0, r1, r2, r3, r4, r5);
+        MapTown mt = new MapTown(k.b);
+        Bld d = k.house(2621, 3671, 2627, 3677, 1, flat, 'e', FURN | FLAT | NO_LADDER);
+        Bld a = k.house(2615, 3657, 2622, 3669, 1, flat, 'e', FURN | FLAT | NO_LADDER);
+        Bld e = k.house(2625, 3650, 2631, 3656, 1, flat, 'n', FURN | FLAT | NO_LADDER);
+        Bld f = k.house(2638, 3648, 2645, 3654, 1, flat, 'w', FURN | FLAT | NO_LADDER);
+        k.set(f.cx(), 0, f.z2() - 1, RANGE);
+        String[] cPlan = {
+                "ppppppppp", // 3662
+                "ppppppppp",
+                "ppppppppp",
+                "ppppppppp", // 3659
+                "...pppppp",
+                "...pppppp",
+                "...pppppp", // 3656
+        };
+        mt.bld(2643, 3662, "p", cPlan).wall(FREM.wall()).trim(FREM.post()).floor(FREM.floor(), FREM.floor())
+                .roof("minecraft:spruce_stairs", "minecraft:spruce_planks").flat("minecraft:spruce_fence")
+                .door(2645, 3662, 'n', "spruce").build();
+        k.set(KandarinKit.X(2644), 0, KandarinKit.Z(3660), "minecraft:white_bed[facing=south,part=foot]");
+        k.set(KandarinKit.X(2647), 0, KandarinKit.Z(3657), "minecraft:barrel[facing=up]");
+        Bld c5 = new Bld(KandarinKit.X(2643), KandarinKit.Z(3662), KandarinKit.X(2651) + 1, KandarinKit.Z(3659) + 1,
+                1, 'n', KandarinKit.X(2645), KandarinKit.Z(3662));
+        rellekkaCourse(k, d, a, e, f, c5);
+        // B: the two-roomed house 2628-2639 x 3658-3667 (doors north at 2631 and 2636, a ladder in each room)
+        String wood = FREM.wall();
+        String dark = FREM_DARK.wall();
+        String[] bPlan = {"bbbbbbbbbbbb", "bbbbbbbbbbbb", "bbbbbbbbbbbb", "bbbbbbbbbbbb", "bbbbbbbbbbbb",
+                "bbbbbbbbbbbb", "bbbbbbbbbbbb", "bbbbbbbbbbbb", "bbbbbbbbbbbb", "bbbbbbbbbbbb"};
+        mt.bld(2628, 3667, "b", bPlan).wall(wood).trim(FREM.post()).floor(FREM.floor(), FREM.floor())
+                .roof("minecraft:spruce_stairs", "minecraft:spruce_planks").storeys(2)
+                .door(2631, 3667, 'n', "spruce").door(2636, 3667, 'n', "spruce")
+                .ladder(2631, 3662, "east").ladder(2636, 3662, "east").build();
+        k.fill(KandarinKit.X(2634), 0, KandarinKit.Z(3667) + 1, KandarinKit.X(2634), 2, KandarinKit.Z(3658), wood);
+        // the octagonal and timber houses east of the longhall and on the north shore
+        String[] g = {".ooooo.", "ooooooo", "ooooooo", "ooooooo", "ooooooo", ".ooooo."};
+        mt.bld(2653, 3654, "o", g).wall(dark).trim(FREM_DARK.post()).floor(FREM.floor(), FREM.floor())
+                .roof("minecraft:dark_oak_stairs", "minecraft:dark_oak_planks").door(2655, 3654, 'n', "dark_oak").build();
+        String[] h = {"hhhhhhhh", "hhhhhhhh", "hhhhhhhh", "hhhhhhhh", "hhhhhhhh", "hhhhhhhh"};
+        mt.bld(2664, 3655, "h", h).wall(dark).trim(FREM_DARK.post()).floor(FREM.floor(), FREM.floor())
+                .roof("minecraft:dark_oak_stairs", "minecraft:dark_oak_planks")
+                .door(2664, 3652, 'w', "dark_oak").door(2671, 3652, 'e', "dark_oak").build();
+        k.set(KandarinKit.X(2665), 0, KandarinKit.Z(3654), FURNACE);
+        k.set(KandarinKit.X(2668), 0, KandarinKit.Z(3654), ANVIL);
+        k.set(KandarinKit.X(2670), 0, KandarinKit.Z(3654), "minecraft:water_cauldron[level=3]");
+        k.set(KandarinKit.X(2667), 0, KandarinKit.Z(3651) + 1, "minecraft:grindstone[face=floor,facing=north]");
+        // Pontak's vegetable garden east of his house
+        int[] gr = {KandarinKit.x1(2673, 2681), KandarinKit.z1(3651, 3656), KandarinKit.x2(2673, 2681),
+                KandarinKit.z2(3651, 3656)};
+        k.fill(gr[0], -1, gr[1], gr[2], -1, gr[3], "minecraft:farmland[moisture=7]");
+        k.fill(gr[0], 0, gr[1], gr[2], 0, gr[3], "minecraft:potatoes[age=7]");
+        k.walls(gr[0] - 1, 0, gr[1] - 1, gr[2] + 1, 0, gr[3] + 1, "minecraft:spruce_fence");
+        k.set(gr[0] - 1, 0, gr[1] + 3, AIR);
+        String[] oct = {".oooooo.", "oooooooo", "oooooooo", "oooooooo", "oooooooo", "oooooooo", ".oooooo."};
+        mt.bld(2671, 3668, "o", oct).wall(wood).trim(FREM.post()).floor(FREM.floor(), FREM.floor())
+                .roof("minecraft:spruce_stairs", "minecraft:spruce_planks")
+                .door(2671, 3665, 'w', "spruce").door(2678, 3665, 'e', "spruce").build();
+        String[] j = {".tttttt.", "tttttttt", "tttttttt", "tttttttt", "tttttttt", "tttttttt", ".tttttt."};
+        mt.bld(2672, 3679, "t", j).wall(dark).trim(FREM_DARK.post()).floor(FREM.floor(), FREM.floor())
+                .roof("minecraft:dark_oak_stairs", "minecraft:dark_oak_planks").door(2672, 3675, 'w', "dark_oak").build();
+        String[] kk = {".kkkk.", "kkkkkk", "kkkkkk", "kkkkkk", "kkkkkk", "kkkkkk", ".kkkk."};
+        mt.bld(2681, 3679, "k", kk).wall(wood).trim(FREM.post()).floor(FREM.floor(), FREM.floor())
+                .roof("minecraft:spruce_stairs", "minecraft:spruce_planks")
+                .door(2683, 3679, 'n', "spruce").door(2684, 3673, 's', "spruce").build();
+        String[] l = {".lllll.", "lllllll", "lllllll", "lllllll", ".lllll."};
+        mt.bld(2679, 3684, "l", l).wall(dark).trim(FREM_DARK.post()).floor(FREM.floor(), FREM.floor())
+                .roof("minecraft:dark_oak_stairs", "minecraft:dark_oak_planks")
+                .door(2682, 3684, 'n', "dark_oak").door(2683, 3680, 's', "dark_oak").build();
+        String[] m3 = {".mmmmmm.", "mmmmmmmm", "mmmmmmmm", "mmmmmmmm", "mmmmmmmm", "mmmmmmmm", "mmmmmmmm", ".mmmmmm."};
+        mt.bld(2678, 3693, "m", m3).wall(wood).trim(FREM.post()).floor(FREM.floor(), FREM.floor())
+                .roof("minecraft:spruce_stairs", "minecraft:spruce_planks").door(2678, 3690, 'w', "spruce").build();
+        String[] sk = {"sssssss", "sssssss", "sssssss", "sssssss", "sssssss", "sssssss", "sssssss"};
+        mt.bld(2662, 3695, "s", sk).wall(dark).trim(FREM_DARK.post()).floor(FREM.floor(), FREM.floor())
+                .roof("minecraft:dark_oak_stairs", "minecraft:dark_oak_planks").door(2662, 3692, 'w', "dark_oak").build();
+        k.set(KandarinKit.X(2667), 0, KandarinKit.Z(3694), "minecraft:smithing_table");
+        k.set(KandarinKit.X(2665), 0, KandarinKit.Z(3694), "minecraft:iron_block");
+        String[] n = {"nnnnnn", "nnnnnn", "nnnnnn", "nnnnnn", "nnnnnn", "nnnnnn"};
+        mt.bld(2666, 3704, "n", n).wall(wood).trim(FREM.post()).floor(FREM.floor(), FREM.floor())
+                .roof("minecraft:spruce_stairs", "minecraft:spruce_planks").door(2666, 3702, 'w', "spruce").build();
+        int[][] hs = {{2628, 3658, 2639, 3667, 'n'}, {2664, 3650, 2671, 3655, 'w'}, {2672, 3673, 2679, 3679, 'w'},
+                {2662, 3689, 2668, 3695, 'w'}, {2666, 3699, 2671, 3704, 'w'}};
         // trees inside the walls
-        for (int[] t : new int[][]{{2612, 3656}, {2637, 3656}, {2650, 3646}, {2686, 3646}, {2668, 3658}, {2612, 3674}}) {
+        for (int[] t : new int[][]{{2612, 3656}, {2634, 3654}, {2650, 3651}, {2686, 3646}, {2668, 3658}, {2612, 3674}}) {
             k.spruce(KandarinKit.X(t[0]), KandarinKit.Z(t[1]), 9);
         }
         rellekkaDetails(k, hs);
@@ -243,10 +306,10 @@ final class KandarinNorth {
             k.d.air(x, g + 2, z, x + 3, g + 2, z, "minecraft:spruce_fence");
             k.d.air(x + 1, g + 1, z, x + 2, g + 1, z, "minecraft:dried_kelp_block");
         }
-        // braziers along the main east-west street
-        for (int tx = 2616; tx <= 2686; tx += 14) {
-            int x = KandarinKit.X(tx);
-            int z = KandarinKit.Z(3662);
+        // braziers along the road from the gate to the longhall
+        for (int[] bt : new int[][]{{2656, 3648}, {2661, 3648}, {2656, 3657}, {2661, 3661}, {2652, 3664}}) {
+            int x = KandarinKit.X(bt[0]);
+            int z = KandarinKit.Z(bt[1]);
             k.d.air(x, g, z, x, g, z, "minecraft:cobblestone_wall");
             k.d.air(x, g + 1, z, x, g + 1, z, "minecraft:campfire[lit=true]");
         }
@@ -260,41 +323,67 @@ final class KandarinNorth {
         }
     }
 
-    /** Rellekka rooftop course (7 obstacles) over the six flat-roofed houses on the east side. */
-    private static void rellekkaCourse(KandarinKit k, Bld r0, Bld r1, Bld r2, Bld r3, Bld r4, Bld r5) {
+    /**
+     * Rellekka rooftop course (7 obstacles) over the west side's flat roofs, in the OSRS order: climb the rough
+     * wall of Yrsa's shoe store (D), leap the gap south to A, the tightrope from A's south-east corner to E, the
+     * gaps east to F and north to C, then a tightrope north off C and the jump down onto the fish pile west of
+     * the longhall. OSRS's last tightrope runs on to the longhall's roof; here it ends on a drying platform at
+     * 2649-2651 x 3666-3667 // approx
+     */
+    private static void rellekkaCourse(KandarinKit k, Bld d, Bld a, Bld e, Bld f, Bld c5) {
         int c = 8;
         int top = 4;
-        int lx = r0.x1() + 2;
+        // 0: climb the rough wall on the north side of Yrsa's shop (OSRS 2625, 3678)
+        int lx = KandarinKit.X(2624);
         for (int dx = 0; dx < 4; dx++) {
-            if (k.ladder(r0.x1() + 2 + dx, r0.z2() + 1, 0, top, "south")) {
-                lx = r0.x1() + 2 + dx;
+            if (k.ladder(KandarinKit.X(2624) + dx, d.z1() - 1, 0, top, "north")) {
+                lx = KandarinKit.X(2624) + dx;
                 break;
             }
         }
-        k.set(lx, top + 1, r0.z2(), AIR);
-        k.set(lx, top, r0.z2() - 1, obstacle(c, 0));
-        // 1: rope north to r1
-        int x1 = KandarinKit.X(2675);
-        ropeZ(k, x1, r1.z2(), r0.z1(), top);
-        k.set(x1, top, r1.z2() - 1, obstacle(c, 1));
-        // 2: plank east to r2
-        KandarinArdougne.bridgeX(k, r1.x2(), r2.x1(), KandarinKit.Z(3677), top);
-        k.set(r2.x1() + 1, top, KandarinKit.Z(3677), obstacle(c, 2));
-        // 3: rope south to r3
-        int x3 = KandarinKit.X(2685);
-        ropeZ(k, x3, r2.z2(), r3.z1(), top);
-        k.set(x3, top, r3.z1() + 1, obstacle(c, 3));
-        // 4: rope south to r4
-        ropeZ(k, x3, r3.z2(), r4.z1(), top);
-        k.set(x3, top, r4.z1() + 1, obstacle(c, 4));
-        // 5: plank west to r5
-        KandarinArdougne.bridgeX(k, r5.x2(), r4.x1(), KandarinKit.Z(3653), top);
-        k.set(r5.x2() - 1, top, KandarinKit.Z(3653), obstacle(c, 5));
-        // 6: jump down onto the hay
-        int gx = r5.x1() - 4;
-        int gz = KandarinKit.Z(3653);
-        k.set(r5.x1(), top + 1, gz, AIR);
+        k.set(lx, top + 1, d.z1(), AIR);
+        k.set(lx, top, d.z1() + 1, obstacle(c, 0));
+        // 1: leap the gap south onto A (OSRS 2622, 3672)
+        int x1 = KandarinKit.X(2621) + 1;
+        k.set(x1, top + 1, d.z2(), AIR);
+        k.set(x1, top + 1, a.z1(), AIR);
+        k.fill(x1, top, d.z2() + 1, x1, top, a.z1() - 1, "minecraft:spruce_planks");
+        k.set(x1, top, d.z2() + 1, AIR);
+        k.set(x1, top, a.z1() + 1, obstacle(c, 1));
+        // 2: tightrope from A's south-east corner over to E (OSRS 2622, 3658)
+        int rz = KandarinKit.Z(3658) + 1;
+        int rx = KandarinKit.X(2626);
+        k.set(a.x2(), top + 1, rz, AIR);
+        k.fill(a.x2() + 1, top, rz, rx, top, rz, "minecraft:spruce_slab[type=top]");
+        ropeZ(k, rx, rz, e.z1(), top);
+        k.set(rx, top, e.z1() + 1, obstacle(c, 2));
+        // 3: leap the gap east onto F (OSRS 2629, 3655)
+        int z3 = KandarinKit.Z(3652);
+        KandarinArdougne.bridgeX(k, e.x2(), f.x1(), z3, top);
+        k.set(f.x1() + 1, top, z3, obstacle(c, 3));
+        // 4: leap the gap north onto C (OSRS 2643, 3653)
+        int x4 = KandarinKit.X(2644);
+        k.set(x4, top + 1, f.z1(), AIR);
+        k.set(x4, top + 1, c5.z2(), AIR);
+        k.fill(x4, top, c5.z2() + 1, x4, top, f.z1() - 1, "minecraft:spruce_planks");
+        k.set(x4, top, (c5.z2() + f.z1()) / 2, AIR);
+        k.set(x4, top, c5.z2() - 1, obstacle(c, 4));
+        // 5: tightrope north off C onto the drying platform (OSRS 2647, 3662)
+        int px1 = KandarinKit.X(2649);
+        int pz1 = KandarinKit.Z(3667);
+        k.fill(px1, top, pz1, px1 + 5, top, pz1 + 3, "minecraft:spruce_planks");
+        for (int[] p : new int[][]{{px1, pz1}, {px1 + 5, pz1}, {px1, pz1 + 3}, {px1 + 5, pz1 + 3}}) {
+            k.fill(p[0], 0, p[1], p[0], top - 1, p[1], "minecraft:stripped_spruce_log");
+        }
+        int x5 = KandarinKit.X(2650);
+        k.fill(x5, top, pz1 + 4, x5, top, c5.z1() - 1, "minecraft:spruce_slab[type=top]");
+        k.set(x5, top + 1, c5.z1(), AIR);
+        k.set(x5, top, pz1 + 1, obstacle(c, 5));
+        // 6: jump down onto the fish pile (OSRS 2653, 3676)
+        int gx = KandarinKit.X(2653);
+        int gz = KandarinKit.Z(3667);
         k.fill(gx - 1, -1, gz - 1, gx + 1, -1, gz + 1, HAY);
+        k.set(gx, 0, gz + 1, "minecraft:dried_kelp_block");
         k.set(gx, -1, gz, obstacle(c, 6));
     }
 
