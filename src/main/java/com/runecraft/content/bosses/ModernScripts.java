@@ -16,7 +16,6 @@ import com.runecraft.osrs.content.bosses.BossMechanics;
 import com.runecraft.osrs.content.bosses.BossMechanics.YamaContract;
 import com.runecraft.osrs.content.bosses.ModernBosses;
 import com.runecraft.osrs.content.bosses.VarlamoreBosses;
-import com.runecraft.osrs.world.ArenaLayout;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
@@ -173,6 +172,7 @@ final class ModernScripts {
 
         @Override
         public void onSpawn(DataBossEntity boss) {
+            // The glyphs, the exile spot and the Judge are laid out around the arena centre, and he plants himself there.
             home = arenaCentre(boss);
             ServerPlayerEntity challenger = boss.getTarget() instanceof ServerPlayerEntity p ? p : null;
             if (challenger != null) {
@@ -263,21 +263,6 @@ final class ModernScripts {
                 SysState.of(player).runEnergy -= damage * 40; // approx
             }
             return damage;
-        }
-
-        /**
-         * The centre of the arena Yama was summoned in (the glyphs, the exile spot and the Judge are laid out around it, and
-         * he plants himself there), or his spawn block when he was summoned away from his arena. The summoning stone sits by
-         * the arena's north edge, so his spawn block is not the centre.
-         */
-        private static BlockPos arenaCentre(DataBossEntity boss) {
-            BlockPos at = boss.getBlockPos();
-            ArenaLayout.Arena a = boss.def() == null ? null : ArenaLayout.of(boss.def().id);
-            if (a == null || Math.hypot(at.getX() - a.x(), at.getZ() - a.z()) > a.radius() + 3) {
-                return at;
-            }
-            Vec3d floor = BossFx.ground(BossFx.world(boss), a.x() + 0.5, a.z() + 0.5, at.getY());
-            return new BlockPos(a.x(), (int) Math.floor(floor.y), a.z());
         }
 
         /** A floor spot at an offset from the arena centre, pulled in to stay at least two blocks inside the ring wall. */

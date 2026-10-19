@@ -313,11 +313,12 @@ public final class BossItems {
         pet(items, "pet_youngllef", "Youngllef", "Crystalline Hunllef", 0x9AD8F0);
         simple(items, "zalcano_shard", "Zalcano shard", "shard", 0xE07020, 1, "Combine with a dragon pickaxe for a crystal pickaxe.");
         // Zalcano's tephra: mined from the prison's rock formations, refined at the furnace, imbued at the altar (wiki).
+        // Raw and refined tephra take a slot each; imbued tephra stacks and weighs nothing (wiki).
         items.add("tephra", "Tephra", Kind.SIMPLE, "ore", 0x8A3A2A).value(1).stack(1).weight(1)
                 .examine("Volcanic rock. Refine it at the furnace in Zalcano's prison.");
         items.add("refined_tephra", "Refined tephra", Kind.SIMPLE, "bar", 0xB04A2A).value(1).stack(1).weight(1)
                 .examine("Refined tephra. Imbue it at the altar in Zalcano's prison.");
-        items.add("imbued_tephra", "Imbued tephra", Kind.SIMPLE, "ore", 0xE0602A).value(1).stack(1).weight(1)
+        items.add("imbued_tephra", "Imbued tephra", Kind.SIMPLE, "ore", 0xE0602A).value(1).stack(64000).weight(0)
                 .examine("Imbued tephra. Throw it at Zalcano to break her armour.");
         pet(items, "pet_smolcano", "Smolcano", "Zalcano", 0x5A4A4A);
 

@@ -453,7 +453,10 @@ final class ClassicScripts {
      * from other sources (poison, recoil) is undone while she is armoured, and hits on her roll 1 to the max.
      */
     static final class Zalcano extends ScriptedBoss {
-        /** Block offsets from her spawn: rock formations NE, SE, SW, NW (the north-east glows first), furnace east, altar west. */
+        /**
+         * Block offsets from the arena centre: rock formations NE, SE, SW, NW (the north-east glows first), furnace east, altar
+         * west. {@link #spot} pulls each in to stay inside the ring wall.
+         */
         private static final int[][] CORNERS = {{9, -9}, {9, 9}, {-9, 9}, {-9, -9}};
         private static final int[] FURNACE = {11, 0};
         private static final int[] ALTAR = {-11, 0};
@@ -484,9 +487,25 @@ final class ClassicScripts {
 
         private final List<Golem> golems = new ArrayList<>();
 
-        private Vec3d spot(int[] off) {
+        /** How far from the centre stations, golems and symbols may sit: two blocks inside the ring wall. */
+        private static double reach(DataBossEntity boss) {
+            return Math.max(2.0, (boss.def() == null ? 13 : boss.def().arenaRadius) - 2.0);
+        }
+
+        /** A point at an offset from the arena centre, pulled in to stay at least two blocks inside the ring wall. */
+        private Vec3d spot(DataBossEntity boss, double dx, double dz) {
+            double max = reach(boss);
+            double len = Math.hypot(dx, dz);
+            if (len > max) {
+                dx *= max / len;
+                dz *= max / len;
+            }
             Vec3d c = homeVec();
-            return new Vec3d(c.x + off[0], c.y, c.z + off[1]);
+            return new Vec3d(c.x + dx, c.y, c.z + dz);
+        }
+
+        private Vec3d spot(DataBossEntity boss, int[] off) {
+            return spot(boss, off[0], off[1]);
         }
 
         private static double flat(Vec3d a, Vec3d b) {
@@ -520,7 +539,14 @@ final class ClassicScripts {
 
         @Override
         public void onSpawn(DataBossEntity boss) {
-            home = boss.getBlockPos();
+            // The stations are laid out around the arena centre (her spawn block sits by the summoning stone at the north
+            // edge), and she stands in the middle of her prison.
+            home = arenaCentre(boss);
+            if (!home.equals(boss.getBlockPos())) {
+                Vec3d c = homeVec();
+                boss.getNavigation().stop();
+                boss.requestTeleport(c.x, c.y, c.z);
+            }
             BossFx.say(boss, "Zalcano rises in her prison! Mine tephra at the glowing rocks, refine it at the furnace (east) and "
                     + "imbue it at the altar (west) to break her armour.");
         }
@@ -570,7 +596,7 @@ final class ClassicScripts {
             symbols.clear();
             int blue = 2 + boss.getRandom().nextInt(4);
             for (int i = 0; i < 9; i++) {
-                symbols.add(new Symbol(around(boss, homeVec(), 11), i < blue, now + 3, now + 18)); // approx duration
+                symbols.add(new Symbol(around(boss, homeVec(), reach(boss)), i < blue, now + 3, now + 18)); // approx duration
             }
             BossFx.warn(boss, "Zalcano summons demonic symbols! Blue ones empower your tephra; avoid the orange.");
         }
@@ -578,9 +604,8 @@ final class ClassicScripts {
         /** Spawns a golem at the prison's wall; it walks to her. Package-private for the self-test. */
         Golem spawnGolem(DataBossEntity boss) {
             double a = boss.getRandom().nextDouble() * Math.PI * 2;
-            Vec3d c = homeVec();
-            MobEntity m = BossFx.spawnMinion(boss, "zalcano_golem", BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 12,
-                    c.z + Math.sin(a) * 12, c.y), null);
+            Vec3d at = spot(boss, Math.cos(a) * 12, Math.sin(a) * 12);
+            MobEntity m = BossFx.spawnMinion(boss, "zalcano_golem", BossFx.ground(BossFx.world(boss), at.x, at.z, at.y), null);
             if (m == null) {
                 return null;
             }
@@ -721,11 +746,12 @@ final class ClassicScripts {
         /** Mining at the rock formations, refining at the furnace and imbuing at the altar (one tephra a tick). */
         private void tephraLoop(DataBossEntity boss) {
             ServerWorld w = BossFx.world(boss);
-            Vec3d furnace = spot(FURNACE);
-            Vec3d altar = spot(ALTAR);
+            Vec3d furnace = spot(boss, FURNACE);
+            Vec3d altar = spot(boss, ALTAR);
             if (now % 4 == 0) {
                 for (int i = 0; i < CORNERS.length; i++) {
-                    BossFx.column(w, spot(CORNERS[i]), i == glowing ? ParticleTypes.FLAME : ParticleTypes.SMOKE, i == glowing ? 6 : 2);
+                    BossFx.column(w, spot(boss, CORNERS[i]), i == glowing ? ParticleTypes.FLAME : ParticleTypes.SMOKE,
+                            i == glowing ? 6 : 2);
                 }
                 BossFx.ring(w, furnace, 1.2, ParticleTypes.LAVA);
                 BossFx.ring(w, altar, 1.2, ParticleTypes.ENCHANT);
@@ -734,7 +760,7 @@ final class ClassicScripts {
                 Vec3d pos = p.getPos();
                 int corner = -1;
                 for (int i = 0; i < CORNERS.length; i++) {
-                    if (flat(pos, spot(CORNERS[i])) <= STATION_RANGE) {
+                    if (flat(pos, spot(boss, CORNERS[i])) <= STATION_RANGE) {
                         corner = i;
                     }
                 }
@@ -791,7 +817,7 @@ final class ClassicScripts {
             tickGolems(boss);
             if (explodeAt >= 0 && now >= explodeAt) {
                 explodeAt = -1;
-                Vec3d rock = spot(CORNERS[glowing]);
+                Vec3d rock = spot(boss, CORNERS[glowing]);
                 BossFx.world(boss).spawnParticles(ParticleTypes.EXPLOSION, rock.x, rock.y + 0.5, rock.z, 4, 0.8, 0.5, 0.8, 0);
                 for (ServerPlayerEntity p : BossFx.players(boss, 32)) {
                     if (flat(p.getPos(), rock) <= 3.0) {
