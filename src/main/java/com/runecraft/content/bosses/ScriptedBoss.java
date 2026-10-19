@@ -7,6 +7,7 @@ import com.runecraft.combat.CombatHandler;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.world.ArenaLayout;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -279,5 +280,19 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
 
     protected Vec3d homeVec() {
         return home == null ? Vec3d.ZERO : Vec3d.ofBottomCenter(home);
+    }
+
+    /**
+     * The centre of the arena the boss was summoned in, or its spawn block when it was summoned away from its arena. The
+     * summoning stone sits by the arena's north edge, so a stone-summoned boss's spawn block is not the centre.
+     */
+    protected static BlockPos arenaCentre(DataBossEntity boss) {
+        BlockPos at = boss.getBlockPos();
+        ArenaLayout.Arena a = boss.def() == null ? null : ArenaLayout.of(boss.def().id);
+        if (a == null || Math.hypot(at.getX() - a.x(), at.getZ() - a.z()) > a.radius() + 3) {
+            return at;
+        }
+        Vec3d floor = BossFx.ground(BossFx.world(boss), a.x() + 0.5, a.z() + 0.5, at.getY());
+        return new BlockPos(a.x(), (int) Math.floor(floor.y), a.z());
     }
 }
