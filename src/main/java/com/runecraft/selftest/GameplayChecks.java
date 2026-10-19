@@ -780,6 +780,8 @@ final class GameplayChecks {
         int[] a = com.runecraft.osrs.content.npcs.WildernessTransport.kbdLairArrival();
         near(a, "lair arrival");
         int[] st = com.runecraft.osrs.content.npcs.WildernessTransport.KBD_STONE_TILE;
+        // The stone lies outside the chunks the arrival builds (a real player's view distance queues them): build its chunk.
+        com.runecraft.world.StructurePlacer.applyAround(c.world, GielinorMap.toBlockX(st[0]), GielinorMap.toBlockZ(st[1]), 0);
         BlockState stone = c.world.getBlockState(new BlockPos(GielinorMap.toBlockX(st[0]), a[1], GielinorMap.toBlockZ(st[1])));
         if (!(stone.getBlock() instanceof com.runecraft.block.DataBossSummonBlock)) {
             throw failure("no King Black Dragon summoning stone in the lair, found " + stone);

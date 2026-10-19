@@ -45,7 +45,8 @@ class TransportSnapshotTest {
     private static final Map<String, String> RELOCATED = Map.ofEntries(
             Map.entry("Games necklace: Corporeal Beast", "lair built on the surface (corporeal_beast_lair)"),
             Map.entry("Games necklace: Tears of Guthix", "cave built on the surface (tears_of_guthix_cave)"),
-            Map.entry("Skills necklace: Mining Guild", "OSRS's tile lies east of this world's carved Mining Guild; inside the guild"),
+            Map.entry("Skills necklace: Mining Guild",
+                    "OSRS's underground entrance tile lies east of this world's carved Mining Guild; the hall outside its door"),
             Map.entry("Ring of wealth: Dondakan", "OSRS lands underground; mine entrance at White Wolf Mountain"),
             Map.entry("Digsite pendant: Lithkren", "OSRS lands in the vault; Lithkren's surface"),
             Map.entry("Drakan's medallion: Slepe", "OSRS lands in the sanctuary under Slepe; the village"),

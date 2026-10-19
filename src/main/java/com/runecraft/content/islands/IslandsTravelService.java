@@ -161,19 +161,20 @@ public final class IslandsTravelService {
      * Lays a {@link IslandsTravel#REALM_RINGS} ring beside its place unless it is already there (worlds whose place was built
      * before the ring existed get it when a traveller arrives).
      */
-    static void ensureRealmRing(ServerWorld world, IslandsTravel.Stop stop) {
+    static BlockPos ensureRealmRing(ServerWorld world, IslandsTravel.Stop stop) {
         int[] at = position(stop);
         if (at == null) {
-            return;
+            return null;
         }
         net.minecraft.block.Block ring = net.minecraft.registry.Registries.BLOCK.get(RuneCraft.resolve(IslandsBlocks.FAIRY_RING));
         BlockPos floor = ground(world, at[0], at[1]);
         for (int dy = -3; dy <= 2; dy++) {
-            if (world.getBlockState(floor.up(dy)).isOf(ring)) {
-                return;
+            if (world.getBlockState(floor.up(dy + 1)).isOf(ring)) {
+                return floor.up(dy);
             }
         }
         layRing(world, floor);
+        return floor;
     }
 
     /** Lays a dungeon realm's ring on its dungeon's floor (carving the dungeon's chunks first), unless it is there. */
@@ -188,8 +189,19 @@ public final class IslandsTravelService {
     /** The top solid block at (x, z), never below the sea surface. */
     static BlockPos ground(ServerWorld world, int x, int z) {
         world.getChunk(x >> 4, z >> 4);
-        int top = world.getTopY(net.minecraft.world.Heightmap.Type.OCEAN_FLOOR, x, z) - 1;
-        return new BlockPos(x, Math.max(top, world.getSeaLevel() - 1), z);
+        // The OCEAN_FLOOR heightmap stops on tree tops (leaves and logs block motion), which used to put rings in the canopy
+        // out of reach of their travellers: walk down through trees, plants and air to the real ground.
+        BlockPos.Mutable pos = new BlockPos.Mutable(x, world.getTopY(net.minecraft.world.Heightmap.Type.OCEAN_FLOOR, x, z) - 1, z);
+        while (pos.getY() > world.getSeaLevel() - 1) {
+            net.minecraft.block.BlockState here = world.getBlockState(pos);
+            boolean through = here.isIn(net.minecraft.registry.tag.BlockTags.LOGS) || here.isIn(net.minecraft.registry.tag.BlockTags.LEAVES)
+                    || here.isAir() || (here.isReplaceable() && here.getFluidState().isEmpty());
+            if (!through) {
+                break;
+            }
+            pos.move(0, -1, 0);
+        }
+        return new BlockPos(x, Math.max(pos.getY(), world.getSeaLevel() - 1), z);
     }
 
     private static void layRing(ServerWorld world, BlockPos centre) {
@@ -257,7 +269,12 @@ public final class IslandsTravelService {
         int z = p.blockZ() + to.dz();
         StructurePlacer.applyAround(world, x, z, 16);
         if (IslandsTravel.REALM_RINGS.contains(to.code())) {
-            ensureRealmRing(world, to);
+            // Step out beside the ring (on its mycelium, east of the ring block), wherever the ground there lies.
+            BlockPos ring = ensureRealmRing(world, to);
+            if (ring != null) {
+                player.teleport(world, ring.getX() + 1.5, ring.getY() + 1, ring.getZ() + 0.5, player.getYaw(), player.getPitch());
+                return;
+            }
         }
         BlockPos pos = Gielinor.safeSpot(world, x + 2, z);
         player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());

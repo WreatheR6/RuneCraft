@@ -217,7 +217,28 @@ class TransportRound32Test {
         }
         for (String id : List.of("enchanted_lyre", "kharedsts_memoirs", "book_of_the_dead", "sailors_amulet_inert")) {
             assertTrue(com.runecraft.osrs.ItemCatalog.exists(id), id);
+            assertEquals(1, com.runecraft.osrs.ItemCatalog.get(id).maxStack(), id + " keeps its charges per item, so it never stacks");
         }
+    }
+
+    /** The skills necklace's Mining Guild lands in the Dwarven Mine hall outside the guild door, which checks 60 Mining. */
+    @Test
+    void skillsNecklaceMiningGuildLandsOutsideTheDoor() {
+        Teleports.Destination d = Teleports.SKILLS.stream().filter(t -> t.name().equals("Mining Guild")).findFirst().orElseThrow();
+        assertTrue(Teleports.underground(d));
+        StructureDef mine = structure("dng_dwarven_mine");
+        assertNotNull(mine);
+        StructureDef.Op door = null;
+        for (StructureDef.Op op : mine.ops()) {
+            if (op.block() != null && op.block().endsWith(com.runecraft.osrs.content.dungeons.DungeonBlocks.MINING_GUILD_DOOR)) {
+                door = op;
+            }
+        }
+        assertNotNull(door, "Mining Guild door");
+        int x = GielinorMap.toBlockX(d.x());
+        int z = GielinorMap.toBlockZ(Teleports.surfaceY(d));
+        assertTrue(z < door.z1(), "lands past the guild door at z " + z + " (door z " + door.z1() + ")");
+        standable(mine, x, door.y1(), z, "Mining Guild arrival");
     }
 
     @Test
