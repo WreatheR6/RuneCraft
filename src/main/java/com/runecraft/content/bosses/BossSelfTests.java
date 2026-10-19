@@ -31,6 +31,22 @@ public final class BossSelfTests {
         return MoonScripts.selfTestEclipse(boss, p);
     }
 
+    /** A dossier (Yama) opens into a contract or chasm teleport scrolls. */
+    public static String yamaDossier(DataBossEntity boss, ServerPlayerEntity p) {
+        com.runecraft.util.Inv.give(p, "dossier", 1);
+        String got = BossesHooks.openDossier(p);
+        if (got == null || !com.runecraft.util.Inv.has(p, got, 1) || com.runecraft.util.Inv.has(p, "dossier", 1)) {
+            throw new IllegalStateException("the dossier didn't open (" + got + ")");
+        }
+        com.runecraft.util.Inv.remove(p, got, com.runecraft.util.Inv.count(p, got));
+        return "dossier gave " + got;
+    }
+
+    /** Zalcano's armour only takes imbued tephra; a golem killed with tephra leaves 16-24 imbued tephra. */
+    public static String zalcanoTephra(DataBossEntity boss, ServerPlayerEntity p) {
+        return ClassicScripts.selfTestZalcano(boss, p);
+    }
+
     /** The Hueycoatl's body parts block the head until they are down. */
     public static String hueycoatlPhases(DataBossEntity boss, ServerPlayerEntity p) {
         return EncounterScripts.selfTestHueycoatl(boss, p);

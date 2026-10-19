@@ -85,6 +85,9 @@ public final class Charges {
     /** Giantsoul amulet (wiki): one big bones and one law rune per charge, at most 16,000. */
     public static final String GIANTSOUL_AMULET = "giantsoul_amulet";
     public static final int GIANTSOUL_AMULET_MAX = 16_000;
+    /** Ring of shadows (wiki): one blood, soul, death and law rune per charge, at most 1,000; one charge per teleport. */
+    public static final String RING_OF_SHADOWS = "ring_of_shadows";
+    public static final int RING_OF_SHADOWS_MAX = 1_000;
     /** Pendant of ates (wiki): one frozen tear per charge, at most 1,000; it drops inert (uncharged). */
     public static final String PENDANT_OF_ATES = "pendant_of_ates";
     public static final int PENDANT_OF_ATES_MAX = 1_000;
@@ -204,6 +207,8 @@ public final class Charges {
                 ordered("big_bones", 1, "law_rune", 1), 1, 0));
         put(new Spec(PENDANT_OF_ATES, "Pendant of ates", Kind.CHARGED, PENDANT_OF_ATES_MAX, 0, Drain.TELEPORT,
                 ordered("frozen_tear", 1), 1, 0));
+        put(new Spec(RING_OF_SHADOWS, "Ring of shadows", Kind.CHARGED, RING_OF_SHADOWS_MAX, 0, Drain.TELEPORT,
+                ordered("blood_rune", 1, "soul_rune", 1, "death_rune", 1, "law_rune", 1), 1, 0));
         // Revenant weapons and their wilderness-boss upgrades (wiki): up to 16,000 revenant ether, one per attack; they drop
         // uncharged ("(u)") and can't attack empty, which also ends their +50% Wilderness bonus (PlayerHitCalc.revWeapon).
         for (String[] w : new String[][]{{"craws_bow", "Craw's bow"}, {"viggoras_chainmace", "Viggora's chainmace"},

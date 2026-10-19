@@ -15,6 +15,8 @@ public final class BossPlaces {
     }
 
     public static final String FONT_OF_CONSUMPTION = "font_of_consumption";
+    /** The Ancient Vault's chest: a Desert Treasure II quartz opens it (OSRS Wiki "Chest (Ancient Vault)"). */
+    public static final String ANCIENT_VAULT_CHEST = "ancient_vault_chest";
     /** The growth in the Scar: pluck it for abyssal potatoes (after Desert Treasure II). */
     public static final String SCAR_GROWTH = "scar_growth";
     /** The Deranged archaeologist's clearing at the south end of Fossil Island's Tar Swamp. */
@@ -47,6 +49,8 @@ public final class BossPlaces {
                 PlaceDef.of("the_scar", "The Scar", 3418, 2790, Style.RUINS, List.of(SCAR_GROWTH)),
                 PlaceDef.of("lassar_undercity", "Lassar Undercity", 3360, 3432, Style.RUINS, List.of()),
                 PlaceDef.of("stranglewood", "The Stranglewood", 1160, 3430, Style.RUINS, List.of()),
+                // The Ancient Vault (an instance in OSRS): beside the Vault of Desert Treasure II, with its quartz chest. approx
+                PlaceDef.of("ancient_vault", "Ancient Vault", 3180, 2850, Style.RUINS, List.of(ANCIENT_VAULT_CHEST)),
                 PlaceDef.of("varrock_sewers", "Varrock Sewers (Scurrius)", 3237, 3458, Style.CAVE, List.of()),
                 PlaceDef.of("araxyte_cave", "Morytania Spider Cave", 3657, 3405, Style.CAVE, List.of()),
                 PlaceDef.of("hueycoatl_lair", "The Hueycoatl's lair", 1510, 3285, Style.RUINS, List.of()),
@@ -77,6 +81,7 @@ public final class BossPlaces {
 
     public static List<BlockDef> blocks() {
         return List.of(BlockDef.scripted(FONT_OF_CONSUMPTION, "Font of Consumption", 0x6A1A3A, "altar"),
-                BlockDef.scripted(SCAR_GROWTH, "Growth", 0x4A2A4A, "plant"));
+                BlockDef.scripted(SCAR_GROWTH, "Growth", 0x4A2A4A, "plant"),
+                BlockDef.scripted(ANCIENT_VAULT_CHEST, "Chest", 0x6A4A6A, "chest"));
     }
 }

@@ -230,6 +230,9 @@ public final class Jewellery {
         // Guardians of the Rift reward (minigames module): elemental altar teleports, one charge of each elemental rune and
         // a law rune per teleport.
         externalTeleporter("ring_of_the_elements", "Ring of the elements", Slot.RING, NONE, Teleports.ELEMENTS);
+        // Ring of shadows (quests module, Desert Treasure II): brimstone-like stats (wiki) and the Ancient Vault / lair teleports.
+        externalTeleporter("ring_of_shadows", "Ring of shadows", Slot.RING, s(4, 4, 4, 5, 4, 0, 0, 0, 5, 0, 2, 0, 0, 2),
+                Teleports.SHADOWS);
         // Ring of returning: a jade ring enchanted with Lvl-2 Enchant; five teleports to the respawn point, then it crumbles.
         charged("ring_of_returning", "Ring of returning", Slot.RING, "ring", 0x50C060, 1140, NONE, RING_OF_RETURNING_CHARGES,
                 Teleports.RETURNING, true); // value approx

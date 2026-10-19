@@ -111,15 +111,16 @@ public final class MinigameBosses {
     }
 
     static BossDef zalcano() {
-        // Zalcano's rocky armour must be mined (attack her with a pickaxe); falling rocks and red symbols punish standing still.
-        return BossDef.of("zalcano", "Zalcano").level(1).stats(1000, 1, 1, 1, 1, 1).speed(6)
-                .attack(AttackDef.of("rockfall", AttackType.CRUSH, 25, 16, 3).special(Special.SKY_STRIKE, 0)
+        // Zalcano (wiki): break her 300 stone armour with imbued tephra (mined, refined at the furnace, imbued at the altar),
+        // then mine her with a pickaxe while she is down. Her attacks are typeless and the script (ClassicScripts.Zalcano)
+        // performs them: falling boulders (infobox max hit 53), orange demonic symbols (up to 26), exploding glowing rocks,
+        // golems that restore her armour, pebbles. Attack speed 5.
+        return BossDef.of("zalcano", "Zalcano").level(1).stats(1000, 1, 1, 1, 1, 1).speed(5)
+                .attack(AttackDef.of("rockfall", AttackType.CRUSH, 53, 16, 3).special(Special.SKY_STRIKE, 0)
                         .telegraph(4, "Rocks begin to fall from the ceiling!").particle("minecraft:ash"))
-                .attack(AttackDef.of("red_symbol", AttackType.MAGIC, 15, 16, 2).special(Special.HAZARD, 6)
+                .attack(AttackDef.of("red_symbol", AttackType.MAGIC, 26, 16, 2).special(Special.HAZARD, 6)
                         .particle("minecraft:flame").message("Zalcano's demonic energy scorches the ground!"))
-                .attack(AttackDef.of("golem", AttackType.MAGIC, 0, 16, 1).special(Special.SUMMON, 1)
-                        .message("Zalcano animates a golem from the rubble!"))
-                .minion("zalcano_golem", 1)
+                // No BossDef minion: the script spawns and tracks her golems itself (the driven idle attack would summon one).
                 // Round 28: the OSRS Wiki contribution table (one roll out of 36, as 1/N lines). Quantities scale with
                 // contribution in OSRS; RuneCraft rolls the wiki's whole range (approx). Tertiaries: crystal tool seed table
                 // 1/200 (39/8000 for the seed), Zalcano shard 1/750 (top contributor), uncut onyx 1/8000; the pet (1/2250)

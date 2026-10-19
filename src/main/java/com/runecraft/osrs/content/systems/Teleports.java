@@ -61,9 +61,29 @@ public final class Teleports {
             at("Tarn's Lair", 3445, 3223, "haunted_mine"), // relocated: the Haunted Mine entrance to the lair as built here
             at("Dark Beasts", 2232, 3300, "mournings_end_part_ii")); // relocated: the Iorwerth Dungeon, where dark beasts live here
 
+    /**
+     * Ring of shadows (Desert Treasure II reward, quests module): the Ancient Vault, plus the four lairs of the Forgotten
+     * Four once their tablet (dropped by that boss) has been used on the ring (OSRS Wiki). OSRS lands in instanced areas
+     * (y 6,400+) or the Ghorrock Dungeon; here the vault, the Ghorrock Dungeon and the lairs this world builds (places
+     * quest_the_vault, ghorrock_dungeon, the_scar, lassar_undercity), beside or a few tiles south of their centres - approx. The
+     * Stranglewood is on the surface and uses the OSRS tile.
+     */
+    public static final Destination SHADOWS_VAULT = at("Ancient Vault", 3180, 2856);
+    public static final Destination SHADOWS_GHORROCK = at("Ghorrock Dungeon", 2911, 3950);
+    public static final Destination SHADOWS_SCAR = at("The Scar", 3418, 2783);
+    public static final Destination SHADOWS_LASSAR = at("Lassar Undercity", 3360, 3425);
+    public static final Destination SHADOWS_STRANGLEWOOD = at("The Stranglewood", 1175, 3424);
+    public static final List<Destination> SHADOWS = List.of(SHADOWS_VAULT, SHADOWS_GHORROCK, SHADOWS_SCAR, SHADOWS_LASSAR,
+            SHADOWS_STRANGLEWOOD);
+
     /** The unlock item a destination needs (used on the teleport item once), or null. */
     public static String unlockItem(Destination d) {
-        return XERICS_HONOUR.equals(d) ? ANCIENT_TABLET : null;
+        if (XERICS_HONOUR.equals(d)) {
+            return ANCIENT_TABLET;
+        }
+        // The Forgotten Four's tablets (bosses module drops, 1/25) unlock the ring of shadows' lair teleports.
+        return SHADOWS_GHORROCK.equals(d) ? "frozen_tablet" : SHADOWS_SCAR.equals(d) ? "scarred_tablet"
+                : SHADOWS_LASSAR.equals(d) ? "sirenic_tablet" : SHADOWS_STRANGLEWOOD.equals(d) ? "strangled_tablet" : null;
     }
     /**
      * Camulet (Enakhra's Lament): Enakhra's Temple (OSRS lands inside it, plane 2; here at its entrance) or, with the hard

@@ -67,9 +67,23 @@ public final class Dt2Bosses {
 
     public static final int TABLET_RATE = 25;
     public static final int QUARTZ_RATE = 200;
-    /** Each boss's teleport tablet and quartz (for the ancient sceptres and the Zaros icons). */
+    /** Each boss's tablet (a ring of shadows teleport unlock) and quartz (for its elemental ancient sceptre). */
     public static final List<String> TABLETS = List.of("frozen_tablet", "scarred_tablet", "sirenic_tablet", "strangled_tablet");
     public static final List<String> QUARTZES = List.of("ice_quartz", "smoke_quartz", "shadow_quartz", "blood_quartz");
+
+    /**
+     * The Ancient Vault's chest (OSRS Wiki "Chest (Ancient Vault)"): using a quartz on it (consumed) gives one of five
+     * rewards at 1/5 each, {item, quantity, noted (1) or not (0)}, by quartz (same order as {@link #QUARTZES}).
+     */
+    public static final List<List<Object[]>> VAULT_CHEST = List.of(
+            List.of(new Object[]{"mist_rune", 500, 0}, new Object[]{"raw_sea_turtle", 100, 1}, new Object[]{"dragon_arrowtips", 100, 0},
+                    new Object[]{"dragon_platelegs", 1, 0}, new Object[]{"runite_ore", 20, 1}),
+            List.of(new Object[]{"smoke_rune", 500, 0}, new Object[]{"raw_manta_ray", 100, 1}, new Object[]{"dragon_bolts_unf", 100, 0},
+                    new Object[]{"gold_ore", 400, 1}, new Object[]{"dragon_javelin_heads", 100, 0}),
+            List.of(new Object[]{"raw_monkfish", 100, 1}, new Object[]{"soul_rune", 500, 0}, new Object[]{"dragon_plateskirt", 1, 0},
+                    new Object[]{"steam_rune", 500, 0}, new Object[]{"runite_ore", 20, 1}),
+            List.of(new Object[]{"dragon_platelegs", 1, 0}, new Object[]{"dragon_dart_tip", 100, 0}, new Object[]{"blood_rune", 500, 0},
+                    new Object[]{"tuna_potato", 100, 1}, new Object[]{"runite_ore", 20, 1}));
 
     public static List<BossDef> all() {
         return List.of(duke(), leviathan(), whisperer(), vardorvis());
@@ -89,7 +103,7 @@ public final class Dt2Bosses {
                 Drop.of("runite_bar", 4, 8, 8), // approx: the standard table below is a simplification
                 Drop.of("death_rune", 200, 300, 8), Drop.of("soul_rune", 150, 250, 8), Drop.of("dragon_platelegs", 1, 1, 16),
                 Drop.of("coins", 30000, 90000, 4), Drop.of("clue_scroll_elite", 1, 1, 160)));
-        // Wiki: the boss's tablet (one-off teleport to the lair) 1/25 and its quartz 1/200, both rolled after the unique
+        // Wiki: the boss's tablet (unlocks the ring of shadows' teleport to the lair) 1/25 and its quartz 1/200, both rolled after the unique
         // table (shown as ~1/25.8 and ~1/206). Before the first quartz OSRS improves its rate from 1/200 to 1/50 over the
         // first 300 kills; that ramp isn't modelled. // approx
         d.add(Drop.of(tablet, 1, 1, TABLET_RATE));

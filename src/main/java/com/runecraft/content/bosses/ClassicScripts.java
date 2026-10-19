@@ -2,9 +2,11 @@ package com.runecraft.content.bosses;
 
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.combat.CombatHandler;
+import com.runecraft.combat.CombatHooks;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
+import com.runecraft.osrs.content.bosses.BossMechanics;
 import com.runecraft.osrs.content.bosses.ClassicBosses;
 import com.runecraft.osrs.content.bosses.SkotizoRules;
 import com.runecraft.skill.XpService;
@@ -18,11 +20,16 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /** Scripts for the classic bosses (Mole, Kalphite Queen, Dagannoth Kings, Corp, Skotizo, Hespori, Scurrius, Zalcano, Sol). */
 final class ClassicScripts {
@@ -432,20 +439,467 @@ final class ClassicScripts {
     }
 
     /** Zalcano: her armour can only be broken by mining it; damage scales with Mining level. */
+    /**
+     * Zalcano (OSRS Wiki "Zalcano", "Zalcano/Strategies"). Her 300 stone armour only takes imbued tephra: mine tephra at the
+     * glowing rock formation in one of the prison's four corners (the others give it far more slowly), refine it at the
+     * furnace (east), imbue it at the altar (west), then attack her with it in your inventory: up to 5 + (Smithing +
+     * Runecraft) / 14, 50% more standing on a blue demonic symbol. With the armour gone she falls for 12-16 s and is mined
+     * with a pickaxe (max 30-33 by Mining level plus the pickaxe's bonus, 35.2 Mining XP a hit); then she rises, throwing
+     * back and hurting anyone beside her and destroying every tephra in the prison, armoured again. Golems walk to her and
+     * restore up to 50 armour; killed with imbued tephra they leave the top attacker 16-24 imbued tephra ("Team Player").
+     * Her attacks are typeless: falling boulders, orange (ramping damage) and blue (empowering) demonic symbols, the glowing
+     * rock exploding when she moves its glow, and pebbles. approx: the rock formations, furnace and altar are marked spots
+     * (stand on them; mining needs a pickaxe in hand) rather than objects, mining success is a flat chance per swing, damage
+     * from other sources (poison, recoil) is undone while she is armoured, and hits on her roll 1 to the max.
+     */
     static final class Zalcano extends ScriptedBoss {
+        /** Block offsets from her spawn: rock formations NE, SE, SW, NW (the north-east glows first), furnace east, altar west. */
+        private static final int[][] CORNERS = {{9, -9}, {9, 9}, {-9, 9}, {-9, -9}};
+        private static final int[] FURNACE = {11, 0};
+        private static final int[] ALTAR = {-11, 0};
+        private static final double STATION_RANGE = 2.5;
+        /** The boulders' max hit (MinigameBosses' rockfall: the infobox max hit). */
+        private static final int BOULDER_MAX = 53;
+        private int armour = BossMechanics.ZALCANO_ARMOUR;
+        private long downUntil = -1;
+        private int glowing;
+        private long explodeAt = -1;
+        private float armouredHealth = -1;
+        private final Map<UUID, Long> nextSwing = new HashMap<>();
+
+        private record Symbol(Vec3d pos, boolean blue, long activeAt, long until) {
+        }
+
+        private final List<Symbol> symbols = new ArrayList<>();
+
+        private static final class Golem {
+            final MobEntity mob;
+            final Map<UUID, Integer> damage = new HashMap<>();
+            ServerPlayerEntity last;
+
+            Golem(MobEntity mob) {
+                this.mob = mob;
+            }
+        }
+
+        private final List<Golem> golems = new ArrayList<>();
+
+        private Vec3d spot(int[] off) {
+            Vec3d c = homeVec();
+            return new Vec3d(c.x + off[0], c.y, c.z + off[1]);
+        }
+
+        private static double flat(Vec3d a, Vec3d b) {
+            double dx = a.x - b.x;
+            double dz = a.z - b.z;
+            return Math.sqrt(dx * dx + dz * dz);
+        }
+
+        boolean down() {
+            return downUntil >= 0;
+        }
+
+        private static int level(ServerPlayerEntity p, Skill skill) {
+            return com.runecraft.player.Players.data(p).skills().currentLevel(skill);
+        }
+
+        private boolean onBlue(ServerPlayerEntity p) {
+            for (Symbol s : symbols) {
+                if (s.blue() && now <= s.until() && flat(p.getPos(), s.pos()) <= 1.5) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /** A thrown imbued tephra's damage (0 to the max). */
+        private int tephraHit(ServerPlayerEntity p) {
+            int max = BossMechanics.tephraMaxHit(level(p, Skill.SMITHING), level(p, Skill.RUNECRAFT), onBlue(p));
+            return p.getRandom().nextInt(max + 1);
+        }
+
+        @Override
+        public void onSpawn(DataBossEntity boss) {
+            home = boss.getBlockPos();
+            BossFx.say(boss, "Zalcano rises in her prison! Mine tephra at the glowing rocks, refine it at the furnace (east) and "
+                    + "imbue it at the altar (west) to break her armour.");
+        }
+
+        @Override
+        protected boolean driven() {
+            return true;
+        }
+
+        @Override
+        protected boolean canAttack(DataBossEntity boss) {
+            return !down();
+        }
+
+        @Override
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+            int roll = boss.getRandom().nextInt(10);
+            List<ServerPlayerEntity> players = BossFx.players(boss, 28);
+            if (roll < 3) {
+                BossFx.warn(boss, "Zalcano stomps the ground... rocks fall from the ceiling!");
+                for (ServerPlayerEntity p : players) {
+                    namedStrike("rockfall", boss, p.getPos(), 4, maxHit(boss, BOULDER_MAX), 1.0, ParticleTypes.ASH);
+                }
+            } else if (roll < 5) {
+                summonSymbols(boss);
+            } else if (roll < 7 && explodeAt < 0) {
+                explodeAt = now + 3;
+                BossFx.warn(boss, "Zalcano hurls a ball of energy at the glowing rock formation!");
+            } else if (roll < 9 && golems.size() < 2) {
+                spawnGolem(boss);
+            } else {
+                for (ServerPlayerEntity p : players) {
+                    CombatHooks.nameAttack("pebbles", null);
+                    CombatHandler.applyDamage(boss, p, 1 + p.getRandom().nextInt(5)); // approx: "only a few hitpoints"
+                }
+            }
+            attackCount++;
+            cooldown = Math.max(1, attackDelay(boss, null)) - 1;
+            return null;
+        }
+
+        private static int maxHit(DataBossEntity boss, int base) {
+            return (int) Math.round(base * boss.variantHitScale(null));
+        }
+
+        private void summonSymbols(DataBossEntity boss) {
+            symbols.clear();
+            int blue = 2 + boss.getRandom().nextInt(4);
+            for (int i = 0; i < 9; i++) {
+                symbols.add(new Symbol(around(boss, homeVec(), 11), i < blue, now + 3, now + 18)); // approx duration
+            }
+            BossFx.warn(boss, "Zalcano summons demonic symbols! Blue ones empower your tephra; avoid the orange.");
+        }
+
+        /** Spawns a golem at the prison's wall; it walks to her. Package-private for the self-test. */
+        Golem spawnGolem(DataBossEntity boss) {
+            double a = boss.getRandom().nextDouble() * Math.PI * 2;
+            Vec3d c = homeVec();
+            MobEntity m = BossFx.spawnMinion(boss, "zalcano_golem", BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 12,
+                    c.z + Math.sin(a) * 12, c.y), null);
+            if (m == null) {
+                return null;
+            }
+            Golem g = new Golem(m);
+            golems.add(g);
+            MinionRules.set(m, new MinionRules.Rule() {
+                @Override
+                public double accuracy(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type) {
+                    return MinionRules.ALWAYS_HITS;
+                }
+
+                @Override
+                public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type, int d) {
+                    if (!Inv.has(p, BossMechanics.IMBUED_TEPHRA, 1)) {
+                        Msg.action(p, "Only imbued tephra can harm the golem.");
+                        return 0;
+                    }
+                    Inv.remove(p, BossMechanics.IMBUED_TEPHRA, 1);
+                    int hit = tephraHit(p);
+                    g.damage.merge(p.getUuid(), hit, Integer::sum);
+                    g.last = p;
+                    return hit;
+                }
+            });
+            BossFx.warn(boss, "Zalcano fires a ball of energy at the wall... a golem forms from the rubble!");
+            return g;
+        }
+
+        private void tickGolems(DataBossEntity boss) {
+            Iterator<Golem> it = golems.iterator();
+            while (it.hasNext()) {
+                Golem g = it.next();
+                if (!g.mob.isAlive()) {
+                    it.remove();
+                    if (g.mob.getHealth() <= 0) {
+                        rewardGolem(boss, g);
+                    }
+                    continue;
+                }
+                g.mob.setTarget(null);
+                if (now % 5 == 0) {
+                    g.mob.getNavigation().startMovingTo(boss.getX(), boss.getY(), boss.getZ(), 1.0);
+                }
+                if (g.mob.squaredDistanceTo(boss) < 3.0 * 3.0) {
+                    if (!down()) {
+                        int heal = BossMechanics.golemArmourHeal(g.mob.getHealth() / g.mob.getMaxHealth());
+                        armour = Math.min(BossMechanics.ZALCANO_ARMOUR, armour + heal);
+                        BossFx.say(boss, "The golem reaches Zalcano and restores " + heal + " of her armour (" + armour + "/"
+                                + BossMechanics.ZALCANO_ARMOUR + ").");
+                    }
+                    BossFx.burst(g.mob, ParticleTypes.EXPLOSION, 2, 0.4);
+                    g.mob.discard();
+                    it.remove();
+                }
+            }
+        }
+
+        /** The golem's 16-24 imbued tephra go to whoever dealt it the most damage (or its last attacker). */
+        private void rewardGolem(DataBossEntity boss, Golem g) {
+            UUID best = null;
+            int most = -1;
+            for (Map.Entry<UUID, Integer> e : g.damage.entrySet()) {
+                if (e.getValue() > most) {
+                    most = e.getValue();
+                    best = e.getKey();
+                }
+            }
+            ServerPlayerEntity to = g.last;
+            if (best != null && (to == null || !to.getUuid().equals(best))) {
+                for (ServerPlayerEntity p : BossFx.players(boss, 48)) {
+                    if (p.getUuid().equals(best)) {
+                        to = p;
+                    }
+                }
+            }
+            if (to == null) {
+                return;
+            }
+            int n = BossMechanics.ZALCANO_GOLEM_TEPHRA_MIN
+                    + to.getRandom().nextInt(BossMechanics.ZALCANO_GOLEM_TEPHRA_MAX - BossMechanics.ZALCANO_GOLEM_TEPHRA_MIN + 1);
+            Inv.give(to, BossMechanics.IMBUED_TEPHRA, n);
+            CombatAchievementService.flag(to, BossMechanics.FLAG_ZALCANO_GOLEM_TEPHRA);
+            Msg.game(to, "The golem crumbles, leaving you " + n + " imbued tephra.");
+        }
+
+        private void fall(DataBossEntity boss) {
+            armour = 0;
+            downUntil = now + BossMechanics.ZALCANO_DOWN_MIN_TICKS
+                    + boss.getRandom().nextInt(BossMechanics.ZALCANO_DOWN_MAX_TICKS - BossMechanics.ZALCANO_DOWN_MIN_TICKS + 1);
+            BossFx.say(boss, "Zalcano's armour shatters and she collapses! Mine her with a pickaxe!");
+            BossFx.burst(boss, ParticleTypes.LAVA, 20, 1.2);
+        }
+
+        private void rise(DataBossEntity boss) {
+            downUntil = -1;
+            armour = BossMechanics.ZALCANO_ARMOUR;
+            BossFx.say(boss, "Zalcano rises again, her armour restored! Her shockwave destroys all tephra in the prison.");
+            for (ServerPlayerEntity p : BossFx.players(boss, 32)) {
+                if (p.squaredDistanceTo(boss) < 3.5 * 3.5) {
+                    p.takeKnockback(1.0, boss.getX() - p.getX(), boss.getZ() - p.getZ());
+                    p.velocityModified = true;
+                    CombatHooks.nameAttack("zalcano_shockwave", null);
+                    CombatHandler.applyDamage(boss, p, BossMechanics.ZALCANO_RISE_DAMAGE);
+                    BossFx.stun(p, 1 + p.getRandom().nextInt(2));
+                }
+                destroyTephra(p);
+            }
+            BossFx.burst(boss, ParticleTypes.CLOUD, 30, 2.0);
+        }
+
+        private static void destroyTephra(ServerPlayerEntity p) {
+            for (String id : BossMechanics.TEPHRA_ITEMS) {
+                int n = Inv.count(p, id);
+                if (n > 0) {
+                    Inv.remove(p, id, n);
+                }
+            }
+        }
+
+        private void mine(ServerPlayerEntity p, boolean glowingRock) {
+            Long due = nextSwing.get(p.getUuid());
+            if (due != null && now < due) {
+                return;
+            }
+            nextSwing.put(p.getUuid(), now + 3); // approx: one swing every 3 ticks
+            int pick = com.runecraft.osrs.content.raids.RaidScaling.pickaxeLevel(BossFx.heldId(p));
+            double chance = glowingRock ? Math.min(0.9, 0.3 + level(p, Skill.MINING) / 200.0 + pick / 400.0) : 0.08; // approx
+            if (p.getRandom().nextDouble() >= chance) {
+                return;
+            }
+            Inv.give(p, BossMechanics.TEPHRA, 1);
+            XpService.add(p, Skill.MINING, BossMechanics.TEPHRA_MINING_XP);
+            if (p.getRandom().nextInt(BossMechanics.TEPHRA_SHARD_CHANCE) == 0) {
+                Inv.give(p, "crystal_shard", 1 + p.getRandom().nextInt(3));
+            }
+        }
+
+        /** Mining at the rock formations, refining at the furnace and imbuing at the altar (one tephra a tick). */
+        private void tephraLoop(DataBossEntity boss) {
+            ServerWorld w = BossFx.world(boss);
+            Vec3d furnace = spot(FURNACE);
+            Vec3d altar = spot(ALTAR);
+            if (now % 4 == 0) {
+                for (int i = 0; i < CORNERS.length; i++) {
+                    BossFx.column(w, spot(CORNERS[i]), i == glowing ? ParticleTypes.FLAME : ParticleTypes.SMOKE, i == glowing ? 6 : 2);
+                }
+                BossFx.ring(w, furnace, 1.2, ParticleTypes.LAVA);
+                BossFx.ring(w, altar, 1.2, ParticleTypes.ENCHANT);
+            }
+            for (ServerPlayerEntity p : BossFx.players(boss, 28)) {
+                Vec3d pos = p.getPos();
+                int corner = -1;
+                for (int i = 0; i < CORNERS.length; i++) {
+                    if (flat(pos, spot(CORNERS[i])) <= STATION_RANGE) {
+                        corner = i;
+                    }
+                }
+                if (corner >= 0 && BossFx.heldId(p).endsWith("pickaxe")) {
+                    mine(p, corner == glowing);
+                } else if (flat(pos, furnace) <= STATION_RANGE && Inv.has(p, BossMechanics.TEPHRA, 1)) {
+                    Inv.remove(p, BossMechanics.TEPHRA, 1);
+                    Inv.give(p, BossMechanics.REFINED_TEPHRA, 1);
+                    XpService.add(p, Skill.SMITHING, BossMechanics.TEPHRA_REFINE_XP);
+                } else if (flat(pos, altar) <= STATION_RANGE && Inv.has(p, BossMechanics.REFINED_TEPHRA, 1)) {
+                    Inv.remove(p, BossMechanics.REFINED_TEPHRA, 1);
+                    Inv.give(p, BossMechanics.IMBUED_TEPHRA, 1);
+                    XpService.add(p, Skill.RUNECRAFT, BossMechanics.TEPHRA_IMBUE_XP);
+                }
+            }
+        }
+
+        private void tickSymbols(DataBossEntity boss) {
+            ServerWorld w = BossFx.world(boss);
+            symbols.removeIf(s -> now > s.until());
+            for (Symbol s : symbols) {
+                if (now % 2 == 0) {
+                    BossFx.ring(w, s.pos(), 1.5, s.blue() ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.FLAME);
+                }
+                if (s.blue() || now < s.activeAt()) {
+                    continue;
+                }
+                // Orange symbols hurt more the longer they've been active, up to 26.
+                int dmg = (int) Math.min(BossMechanics.ZALCANO_SYMBOL_MAX, 4 + 3 * (now - s.activeAt())); // approx ramp
+                for (ServerPlayerEntity p : BossFx.players(boss, 32)) {
+                    if (flat(p.getPos(), s.pos()) <= 1.5) {
+                        CombatHooks.nameAttack("red_symbol", null);
+                        CombatHandler.applyDamage(boss, p, dmg);
+                    }
+                }
+            }
+        }
+
+        @Override
+        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+            if (!boss.isAlive()) {
+                return;
+            }
+            // Only mining can hurt her: undo damage from other sources while she is armoured.
+            if (!down() && armouredHealth > 0 && boss.getHealth() < armouredHealth) {
+                boss.setHealth(armouredHealth);
+            }
+            if (down() && now >= downUntil) {
+                rise(boss);
+            }
+            armouredHealth = boss.getHealth();
+            tephraLoop(boss);
+            tickSymbols(boss);
+            tickGolems(boss);
+            if (explodeAt >= 0 && now >= explodeAt) {
+                explodeAt = -1;
+                Vec3d rock = spot(CORNERS[glowing]);
+                BossFx.world(boss).spawnParticles(ParticleTypes.EXPLOSION, rock.x, rock.y + 0.5, rock.z, 4, 0.8, 0.5, 0.8, 0);
+                for (ServerPlayerEntity p : BossFx.players(boss, 32)) {
+                    if (flat(p.getPos(), rock) <= 3.0) {
+                        CombatHooks.nameAttack("rock_explosion", null);
+                        CombatHandler.applyDamage(boss, p, BossMechanics.ZALCANO_ROCK_MIN
+                                + p.getRandom().nextInt(BossMechanics.ZALCANO_ROCK_MAX - BossMechanics.ZALCANO_ROCK_MIN + 1));
+                    }
+                }
+                glowing = (glowing + 1 + boss.getRandom().nextInt(CORNERS.length - 1)) % CORNERS.length;
+                BossFx.warn(boss, "The rock formation explodes! Another one starts to glow.");
+            }
+            if (down()) {
+                for (ServerPlayerEntity p : BossFx.players(boss, 4)) {
+                    if (flat(p.getPos(), boss.getPos()) <= 1.6) {
+                        CombatHooks.nameAttack("under_zalcano", null);
+                        CombatHandler.applyDamage(boss, p, BossMechanics.ZALCANO_UNDER_MIN
+                                + p.getRandom().nextInt(BossMechanics.ZALCANO_UNDER_MAX - BossMechanics.ZALCANO_UNDER_MIN + 1));
+                    }
+                }
+            }
+        }
+
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
-            String held = BossFx.heldId(attacker);
-            if (!held.endsWith("pickaxe")) {
-                Msg.action(attacker, "Zalcano's rocky armour can only be broken with a pickaxe.");
+            if (attacker == null) {
                 return 0;
             }
-            int mining = com.runecraft.player.Players.data(attacker).skills().currentLevel(Skill.MINING);
-            int dealt = 1 + boss.getRandom().nextInt(Math.max(1, mining / 6));
-            XpService.add(attacker, Skill.MINING, dealt * 2.5);
-            BossFx.burst(boss, ParticleTypes.LAVA, 4, 0.6);
-            return dealt;
+            if (down()) {
+                String held = BossFx.heldId(attacker);
+                if (!held.endsWith("pickaxe")) {
+                    Msg.action(attacker, "Zalcano has fallen: mine her with a pickaxe!");
+                    return 0;
+                }
+                int max = BossMechanics.zalcanoMiningMaxHit(level(attacker, Skill.MINING),
+                        com.runecraft.osrs.content.raids.RaidScaling.pickaxeLevel(held));
+                XpService.add(attacker, Skill.MINING, BossMechanics.ZALCANO_MINING_XP);
+                BossFx.burst(boss, ParticleTypes.LAVA, 4, 0.6);
+                int dealt = 1 + boss.getRandom().nextInt(max);
+                armouredHealth = Math.max(0, boss.getHealth() - dealt);
+                return dealt;
+            }
+            if (!Inv.has(attacker, BossMechanics.IMBUED_TEPHRA, 1)) {
+                Msg.action(attacker, "Zalcano's stone armour can only be broken with imbued tephra.");
+                return 0;
+            }
+            Inv.remove(attacker, BossMechanics.IMBUED_TEPHRA, 1);
+            int hit = tephraHit(attacker);
+            armour = Math.max(0, armour - hit);
+            Msg.action(attacker, "Your imbued tephra hits her armour for " + hit + " (" + armour + "/" + BossMechanics.ZALCANO_ARMOUR + ").");
+            if (armour <= 0) {
+                fall(boss);
+            }
+            return 0;
         }
+
+        @Override
+        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+            golems.forEach(g -> g.mob.discard());
+            golems.clear();
+            symbols.clear();
+        }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            onDeath(boss, null);
+        }
+    }
+
+    /**
+     * Self-test (boss:zalcano_tephra): her armour ignores attacks without imbued tephra, tephra breaks it and she falls; a
+     * golem killed with tephra leaves its attacker 16-24 imbued tephra.
+     */
+    static String selfTestZalcano(DataBossEntity boss, ServerPlayerEntity p) {
+        if (!(boss.script() instanceof Zalcano z)) {
+            throw new IllegalStateException("Zalcano has no Zalcano script");
+        }
+        z.gameTick(boss, com.runecraft.action.ActionManager.gameTick());
+        Zalcano.destroyTephra(p);
+        int before = z.armour;
+        z.incoming(boss, p, 10, AttackType.CRUSH);
+        if (z.armour != before || z.down()) {
+            throw new IllegalStateException("her armour took damage without imbued tephra");
+        }
+        Inv.give(p, BossMechanics.IMBUED_TEPHRA, 20);
+        z.armour = 1;
+        for (int i = 0; i < 20 && !z.down(); i++) {
+            z.incoming(boss, p, 0, AttackType.CRUSH);
+        }
+        if (!z.down()) {
+            throw new IllegalStateException("20 imbued tephra didn't break her last point of armour");
+        }
+        String golem = "no golem spawned";
+        Zalcano.Golem g = z.spawnGolem(boss);
+        if (g != null) {
+            Zalcano.destroyTephra(p);
+            g.damage.put(p.getUuid(), BossMechanics.ZALCANO_GOLEM_HP);
+            g.last = p;
+            g.mob.setHealth(0f);
+            z.gameTick(boss, com.runecraft.action.ActionManager.gameTick());
+            int got = Inv.count(p, BossMechanics.IMBUED_TEPHRA);
+            if (got < BossMechanics.ZALCANO_GOLEM_TEPHRA_MIN || got > BossMechanics.ZALCANO_GOLEM_TEPHRA_MAX) {
+                throw new IllegalStateException("a killed golem left " + got + " imbued tephra");
+            }
+            g.mob.discard();
+            golem = "golem left " + got + " imbued tephra";
+        }
+        Zalcano.destroyTephra(p);
+        return "armour needs imbued tephra, tephra downs her; " + golem;
     }
 
 }

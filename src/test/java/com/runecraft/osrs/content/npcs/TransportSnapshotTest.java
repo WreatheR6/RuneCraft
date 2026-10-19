@@ -28,6 +28,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -58,6 +59,10 @@ class TransportSnapshotTest {
             Map.entry("Giantsoul amulet: 2. Obor", "the Stronghold of Security, not Obor's lair, lies under OSRS's tile here; his summoning stone"),
             Map.entry("Giantsoul amulet: 3. Branda and Eldric", "this world's Asgarnian Ice Dungeon doesn't reach under OSRS's tile; its entrance (Titans' lair)"),
             Map.entry("Amulet of the eye", "the Temple of the Eye is an instance; the Guardians of the Rift place on the surface"),
+            Map.entry("Ring of shadows: Ancient Vault", "an instance in OSRS; the Vault built in the desert (quest_the_vault)"),
+            Map.entry("Ring of shadows: Ghorrock Dungeon", "OSRS lands in the dungeon; the Ghorrock Dungeon place as built here (ghorrock_dungeon)"),
+            Map.entry("Ring of shadows: The Scar", "an instance in OSRS; the Leviathan's Scar as built here"),
+            Map.entry("Ring of shadows: Lassar Undercity", "an instance in OSRS; the Whisperer's Lassar Undercity as built here"),
             Map.entry("Camulet: Enakhra's Temple", "OSRS lands inside the temple (plane 2); its entrance"),
             Map.entry("Hallowed crystal shard", "the Sepulchre lobby is an instance; the minigame's place in Darkmeyer"));
 
@@ -691,13 +696,14 @@ class TransportSnapshotTest {
             Map.entry("Chronicle", Teleports.CHRONICLE), Map.entry("Mythical cape", Teleports.MYTHICAL_CAPE),
             Map.entry("Music cape", Teleports.MUSIC_CAPE), Map.entry("Kharedst's memoirs", Teleports.MEMOIRS),
             Map.entry("Book of the dead", Teleports.MEMOIRS), Map.entry("Hallowed crystal shard", Teleports.HALLOWED_SHARD),
-            Map.entry("Camulet", Teleports.CAMULET));
+            Map.entry("Camulet", Teleports.CAMULET), Map.entry("Ring of shadows", Teleports.SHADOWS));
     private static final Map<String, String> ITEM_IDS = Map.ofEntries(
             Map.entry("Amulet of glory", "amulet_of_glory_4"), Map.entry("Ring of dueling", "ring_of_dueling_8"),
             Map.entry("Games necklace", "games_necklace_8"), Map.entry("Skills necklace", "skills_necklace_4"),
             Map.entry("Combat bracelet", "combat_bracelet_4"), Map.entry("Ring of wealth", "ring_of_wealth_5"),
             Map.entry("Digsite pendant", "digsite_pendant_5"), Map.entry("Necklace of passage", "necklace_of_passage_5"),
             Map.entry("Burning amulet", "burning_amulet_5"), Map.entry("Xeric's talisman", "xerics_talisman"),
+            Map.entry("Ring of shadows", "ring_of_shadows"),
             Map.entry("Drakan's medallion", "drakans_medallion"), Map.entry("Ectophial", "ectophial"),
             Map.entry("Slayer ring", "slayer_ring_8"), Map.entry("Pharaoh's sceptre", "pharaohs_sceptre"),
             Map.entry("Ring of the elements", "ring_of_the_elements"), Map.entry("Giantsoul amulet", "giantsoul_amulet"),
@@ -810,6 +816,16 @@ class TransportSnapshotTest {
         assertEquals(Map.of("lizardman_fang", 1), xeric.materials());
         assertEquals(com.runecraft.osrs.content.systems.Charges.Drain.TELEPORT, xeric.drain());
         assertEquals("ancient_tablet", Teleports.unlockItem(Teleports.XERICS_HONOUR));
+        // Ring of shadows (wiki): the Ancient Vault is open from the start; each lair needs that boss's tablet used on it.
+        assertNull(Teleports.unlockItem(Teleports.SHADOWS_VAULT));
+        assertEquals(List.of("frozen_tablet", "scarred_tablet", "sirenic_tablet", "strangled_tablet"),
+                Teleports.SHADOWS.subList(1, 5).stream().map(Teleports::unlockItem).toList());
+        for (String tablet : List.of("frozen_tablet", "scarred_tablet", "sirenic_tablet", "strangled_tablet")) {
+            assertTrue(com.runecraft.osrs.ItemCatalog.exists(tablet), tablet);
+        }
+        com.runecraft.osrs.content.systems.Charges.Spec shadows = com.runecraft.osrs.content.systems.Charges.of("ring_of_shadows");
+        assertEquals(1000, shadows.max());
+        assertEquals(Map.of("blood_rune", 1, "soul_rune", 1, "death_rune", 1, "law_rune", 1), shadows.materials());
         assertTrue(com.runecraft.osrs.ItemCatalog.exists("ancient_tablet"));
         for (int n = 1; n <= 8; n++) {
             assertTrue(com.runecraft.osrs.ItemCatalog.exists("slayer_ring_" + n), "slayer_ring_" + n);

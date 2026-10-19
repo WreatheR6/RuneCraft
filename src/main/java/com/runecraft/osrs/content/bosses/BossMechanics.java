@@ -1,5 +1,6 @@
 package com.runecraft.osrs.content.bosses;
 
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -54,7 +55,7 @@ public final class BossMechanics {
             "glyph_of_fire", "cavern_shake", "forfeit", "tentacle", "swinging_axe", "darting_spikes", "ice_spikes", "screech", "carrion",
             "slam", "larva", "fire_wall", "icicle_wall", "elemental_blast", "elemental_explosion", "sleepwalker", "power_blast",
             "bleed", "strangle", "burn", "knockback", "parasite_burst", "spike", "weakened_parasite_burst", "tail_shockwave", "spore", "explosion",
-            "ruptura_explosion");
+            "ruptura_explosion", "rock_explosion", "zalcano_shockwave", "pebbles", "under_zalcano");
 
     // ------------------------------------------------------------ minion ids
     public static final String YAMA_JUDGE = "yama_judge";
@@ -153,9 +154,11 @@ public final class BossMechanics {
     }
 
     /**
-     * Yama's sigil contracts (the five that exist as items here; the acquisition contracts and their rewards don't). Each is
-     * consumed when Yama is challenged while holding it, raises his stats (max hit 53, 7-tick attacks) and is returned on a
-     * kill. OSRS Wiki "Yama#Contracts".
+     * Yama's contracts (OSRS Wiki "Yama#Contracts"). Each is consumed when Yama is challenged while holding it and raises
+     * his stats (max hit 53, 7-tick attacks). The five sigil contracts are returned on a kill with their purifying sigil
+     * piece; the acquisition contracts (from dossiers) are not, and guarantee their reward instead. approx: the acquisition
+     * contracts share the sigil contracts' attack cycle; their halved hitpoint/prayer restoration and enhanced incantations
+     * aren't modelled.
      */
     public enum YamaContract {
         /** Drains run energy passively and on hits; reaching 0 loses the fight. */
@@ -167,7 +170,18 @@ public final class BossMechanics {
         /** Protection prayers switched off on sight, no prayer penetration, void flares continuously, lethal flares. */
         DIVINE_SEVERANCE("contract_of_divine_severance", 2500, 2, true, true, true, false),
         /** More and tougher void flares; both Yama and the challenger gain Wretched Strength. */
-        BLOODIED_BLOWS("contract_of_bloodied_blows", 3000, 3, false, false, false, false);
+        BLOODIED_BLOWS("contract_of_bloodied_blows", 3000, 3, false, false, false, false),
+        // Acquisition contracts (appended; dossier rewards): four void flares at a time. Hitpoints approx (base 2,500).
+        /** 2,000 aether catalysts. */
+        CATALYST_ACQUISITION("contract_of_catalyst_acquisition", 2500, 4, false, false, false, false),
+        /** 250 diabolic worms. */
+        WORM_ACQUISITION("contract_of_worm_acquisition", 2500, 4, false, false, false, false),
+        /** 45 oathplate shards. */
+        SHARD_ACQUISITION("contract_of_shard_acquisition", 2500, 4, false, false, false, false),
+        /** One oathplate armour piece of the challenger's choice. */
+        OATHPLATE_ACQUISITION("contract_of_oathplate_acquisition", 2500, 4, false, false, false, false),
+        /** A soulflame horn. */
+        HARMONY_ACQUISITION("contract_of_harmony_acquisition", 2500, 4, false, false, false, false);
 
         public final String item;
         public final int hitpoints;
@@ -201,6 +215,67 @@ public final class BossMechanics {
         public String displayName() {
             return "Contract of " + name().toLowerCase(Locale.ROOT).replace('_', ' ');
         }
+
+        /** The five sigil contracts come back after a kill; acquisition contracts are used up (wiki "Returned on kill"). */
+        public boolean returnedOnKill() {
+            return ordinal() <= BLOODIED_BLOWS.ordinal();
+        }
+
+        /** The guaranteed reward of a kill under this contract (oathplate acquisition: a piece the player picks). */
+        public String reward() {
+            return switch (this) {
+                case FORFEIT_BREATH -> "purifying_sigil_top";
+                case GLYPHIC_ATTENUATION -> "purifying_sigil_bottom";
+                case SENSORY_CLOUDING -> "purifying_sigil_left";
+                case DIVINE_SEVERANCE -> "purifying_sigil_right";
+                case BLOODIED_BLOWS -> "purifying_sigil_middle";
+                case CATALYST_ACQUISITION -> "aether_catalyst";
+                case WORM_ACQUISITION -> "diabolic_worms";
+                case SHARD_ACQUISITION -> "oathplate_shards";
+                case OATHPLATE_ACQUISITION -> "oathplate_helm";
+                case HARMONY_ACQUISITION -> "soulflame_horn";
+            };
+        }
+
+        public int rewardQuantity() {
+            return switch (this) {
+                case CATALYST_ACQUISITION -> 2000;
+                case WORM_ACQUISITION -> 250;
+                case SHARD_ACQUISITION -> 45;
+                default -> 1;
+            };
+        }
+    }
+
+    /** The five purifying sigil pieces, combined into the purifying sigil (wiki). */
+    public static final List<String> SIGIL_PIECES = List.of("purifying_sigil_top", "purifying_sigil_bottom", "purifying_sigil_left",
+            "purifying_sigil_right", "purifying_sigil_middle");
+    /** Aether runes the sigil draws to turn one oathplate piece radiant (wiki). */
+    public static final int RADIANT_AETHER_RUNES = 2500;
+
+    /**
+     * A dossier's contents (OSRS Wiki "Dossier", weights out of 1,740): {item, min, max, weight}. approx: the rite of vile
+     * transference (116) and the contract of familiar acquisition (65) don't exist here and give chasm teleport scrolls.
+     */
+    public static final List<Object[]> DOSSIER_TABLE = List.of(
+            new Object[]{"contract_of_bloodied_blows", 3, 3, 260}, new Object[]{"contract_of_divine_severance", 3, 3, 260},
+            new Object[]{"contract_of_forfeit_breath", 3, 3, 260}, new Object[]{"contract_of_glyphic_attenuation", 3, 3, 260},
+            new Object[]{"contract_of_sensory_clouding", 3, 3, 260}, new Object[]{"chasm_teleport_scroll", 15, 18, 116 + 116 + 65},
+            new Object[]{"contract_of_shard_acquisition", 1, 1, 39}, new Object[]{"contract_of_worm_acquisition", 1, 1, 39},
+            new Object[]{"contract_of_catalyst_acquisition", 1, 1, 39}, new Object[]{"contract_of_harmony_acquisition", 1, 1, 13},
+            new Object[]{"contract_of_oathplate_acquisition", 1, 1, 13});
+    public static final int DOSSIER_TOTAL = 1740;
+
+    /** The dossier entry for a roll in [0, 1740). */
+    public static Object[] dossierRoll(int roll) {
+        int r = Math.floorMod(roll, DOSSIER_TOTAL);
+        for (Object[] e : DOSSIER_TABLE) {
+            r -= (Integer) e[3];
+            if (r < 0) {
+                return e;
+            }
+        }
+        return DOSSIER_TABLE.get(DOSSIER_TABLE.size() - 1);
     }
 
     /** Max-hit multiplier of Yama's attacks under a contract (53 instead of 46). */
@@ -679,6 +754,60 @@ public final class BossMechanics {
         double fx = -Math.sin(yaw);
         double fz = Math.cos(yaw);
         return (fx * dx + fz * dz) / len >= Math.cos(Math.toRadians(ECLIPSE_PARRY_ARC));
+    }
+
+    // ---------------- Zalcano (OSRS Wiki "Zalcano", "Zalcano/Strategies", tephra pages) ----------------
+
+    /** Her stone armour (300) must be broken with imbued tephra before she can be mined (1,000 hitpoints). */
+    public static final int ZALCANO_ARMOUR = 300;
+    public static final String TEPHRA = "tephra";
+    public static final String REFINED_TEPHRA = "refined_tephra";
+    public static final String IMBUED_TEPHRA = "imbued_tephra";
+    public static final List<String> TEPHRA_ITEMS = List.of(TEPHRA, REFINED_TEPHRA, IMBUED_TEPHRA);
+    /** XP: 35.2 Mining per tephra (and per hit on the fallen Zalcano), 10 Smithing per refine, 5 Runecraft per imbue. */
+    public static final double TEPHRA_MINING_XP = 35.2;
+    public static final double TEPHRA_REFINE_XP = 10;
+    public static final double TEPHRA_IMBUE_XP = 5;
+    public static final double ZALCANO_MINING_XP = 35.2;
+    /** 1/65 chance of 1-3 crystal shards with each tephra mined. */
+    public static final int TEPHRA_SHARD_CHANCE = 65;
+    /** Golems (14 hitpoints) restore 50 armour at full health (a share of it when damaged); killed, 16-24 imbued tephra. */
+    public static final int ZALCANO_GOLEM_HP = 14;
+    public static final int ZALCANO_GOLEM_HEAL = 50;
+    public static final int ZALCANO_GOLEM_TEPHRA_MIN = 16;
+    public static final int ZALCANO_GOLEM_TEPHRA_MAX = 24;
+    /** She stays down 12-16 seconds (20-27 ticks); standing under her deals 3-10 a tick. */
+    public static final int ZALCANO_DOWN_MIN_TICKS = 20;
+    public static final int ZALCANO_DOWN_MAX_TICKS = 27;
+    public static final int ZALCANO_UNDER_MIN = 3;
+    public static final int ZALCANO_UNDER_MAX = 10;
+    /** Rising: a shockwave of ~10 to anyone beside her (stunned 1-2 ticks); every tephra in the prison is destroyed. */
+    public static final int ZALCANO_RISE_DAMAGE = 10;
+    /** The glowing rock explodes for 21-28 when she targets it; orange symbols ramp up to 26 after 3 ticks. */
+    public static final int ZALCANO_ROCK_MIN = 21;
+    public static final int ZALCANO_ROCK_MAX = 28;
+    public static final int ZALCANO_SYMBOL_MAX = 26;
+    /** Combat Achievement flag: imbued tephra received from a golem ("Team Player"). */
+    public static final String FLAG_ZALCANO_GOLEM_TEPHRA = "zalcano_golem_tephra";
+
+    /**
+     * Imbued tephra's max hit on her armour (Mod Ash): 5 + floor((Smithing + Runecraft) / 14), 50% more standing on a blue
+     * demonic symbol. approx: the chance of +1 as the average nears the next multiple of 7 isn't modelled.
+     */
+    public static int tephraMaxHit(int smithing, int runecraft, boolean blueSymbol) {
+        int base = 5 + (Math.max(1, smithing) + Math.max(1, runecraft)) / 14;
+        return blueSymbol ? base * 3 / 2 : base;
+    }
+
+    /** Mining the fallen Zalcano: 30 (1-74 Mining), 31, 32, 33 (95+), plus max((pickaxe level - 40) / 15, 0). */
+    public static int zalcanoMiningMaxHit(int mining, int pickaxeLevel) {
+        int base = mining >= 95 ? 33 : mining >= 85 ? 32 : mining >= 75 ? 31 : 30;
+        return base + Math.max((pickaxeLevel - 40) / 15, 0);
+    }
+
+    /** Armour a golem restores when it reaches her: 50 at full health, in proportion when damaged. */
+    public static int golemArmourHeal(double hpFraction) {
+        return (int) Math.round(ZALCANO_GOLEM_HEAL * Math.max(0, Math.min(1, hpFraction)));
     }
 
     // ---------------- The Hueycoatl (OSRS Wiki "The Hueycoatl/Strategies") ----------------
